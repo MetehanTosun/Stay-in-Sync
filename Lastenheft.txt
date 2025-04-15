@@ -1,0 +1,58 @@
+Lastenheft - Vorschlag v.0.1
+1. Einleitung
+
+Zielgruppe: Bosch-interne Entwickler|innen und Partnerunternehmen
+Hintergrund: Synchronisation von Asset Administration Shells und Zugriffskontrolle via Eclipse Dataspace Connector.
+
+2. Projektziele und Nicht Ziele
+
+Ziele:
+- Synchronisation von AAS-Daten zwischen mehreren Systemen.
+- Automatische Konfiguration von EDC-Zugriffsregeln auf Basis der AAS-Konfiguration.
+- Optionale Konfigurations-UI zur einfachen Bedienung.
+- Monitoring Option zur Nachverfolgung von Performance und Synchronisationsstatus
+
+Nicht Ziele:
+- Entwicklung eines vollständigen industriellen Produktivsystems.
+
+3. Ist-Zustand
+Derzeit sind AAS und EDC separate Systeme ? ohne zentrale Verwaltung oder Synchronisationsmechanismen.
+Zugriffskontrolle erfolgt manuell, Synchronisation ist nicht vorhanden.
+
+4. Anforderungen
+Funktionale Anforderungen:
+- Definition und Verwaltung von Synchronisationsregeln zwischen AAS.
+- Automatische Synchronisation über REST-API (bidirektional?).
+- Automatisierte Erstellung und Pflege von EDC-Zugriffsrechten.
+- Unterstützung verschiedener AAS-Metamodelle.
+Nicht-funktionale Anforderungen:
+- Performante Synchronisation (innerhalb Zeitintervall ?)
+- Skalierbarkeit auf mehrere parallele AAS-Verbindungen.
+- Sicherheit (Rollenbasierter Zugriff)
+- Erweiterbarkeit ?
+
+5. Benutzer & Rollen
+- Entwickler: Konfiguration der Synchronisationsregeln.
+- Administratoren: Zugriff auf Logs, Monitoring und Management der EDC-Regeln.
+- (Optional)Nutzer: UI zur grafischen Regel-Erstellung und -Bearbeitung.
+
+6. Abnahmekriterien
+- Synchronisation zwischen mindestens zwei AAS funktioniert zuverlässig.
+- Zugriff auf Daten wird korrekt nach EDC-Regeln gesteuert.
+- System reagiert performant
+- Optional: UI und Monitoring laufen stabil und benutzerfreundlich.
+
+
+Kontaktinformationen der mitwirkenden Studenten:
+Bui, Hien Minh st188256@stud.uni-stuttgart.de
+Ceri, Serhat st177182@stud.uni-stuttgart.de
+Erden, Semih st182604@stud.uni-stuttgart.de
+Feufel, Alexander st187824@stud.uni-stuttgart.de
+Hassnou, Mohammed-Ammar st188386@stud.uni-stuttgart.de
+Krupik, Yarden st175679@stud.uni-stuttgart.de
+Naki Ali, Tima st174314@stud.uni-stuttgart.de
+Tosun, Metehan st188557@stud.uni-stuttgart.de
+ Tüzen, Yasin st187828@stud.uni-stuttgart.de
+Winzer Ortega, Rubén st187719@stud.uni-stuttgart.de
+Peresunchak, Maximilian st152466@stud.uni-stuttgart.de
+Shirali, Junes st189097@stud.uni-stuttgart.de
