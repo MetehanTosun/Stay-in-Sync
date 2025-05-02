@@ -1,4 +1,4 @@
-name: build application
+name: build application and run unit-tests
 
 on:
   pull_request:
@@ -7,17 +7,27 @@ on:
 
 jobs:
   build:
-    runs-on: selfhosted-runner-1
+    runs-on: [ self-hosted ]
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      - name: Set up Java
-        uses: actions/setup-java@v3
-        with:
-          distribution: 'temurin'
-          java-version: '21'  
+      - name: Install dependencies of configurator ui
+        working-directory: stay-in-sync-configurator-ui
+        run: npm install
+
+      - name: Build configurator-ui
+        working-directory: stay-in-sync-configurator-ui
+        run: npm run build
+
+      - name: Install dependencies of monitoring
+        working-directory: stay-in-sync-monitoring/monitoring-ui
+        run: npm install
+
+      - name: Build monitoring-ui
+        working-directory: stay-in-sync-monitoring/monitoring-ui
+        run: npm run build
 
       - name: Build with Maven
         run: mvn clean install --batch-mode

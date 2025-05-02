@@ -9,9 +9,7 @@
   <url>http://maven.apache.org</url>
 
   <modules>
-    <module>stay-in-sync-common</module>
     <module>stay-in-sync-core</module>
-    <module>stay-in-sync-configurator/configurator-backend</module>
     <module>stay-in-sync-monitoring/monitoring-backend</module>
   </modules>
 
