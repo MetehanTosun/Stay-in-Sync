@@ -5,11 +5,8 @@ import jakarta.persistence.Entity;
 
 //TODO Implementierung
 @Entity
-public class SourceSystem extends PanacheEntity {
+public class TargetSystemVariable extends PanacheEntity {
 
     public String name;
 
-    public String address;
-
-    public String apiKey;
 }
