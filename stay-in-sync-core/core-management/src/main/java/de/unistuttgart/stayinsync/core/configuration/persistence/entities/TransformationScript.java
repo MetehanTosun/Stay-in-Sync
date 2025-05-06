@@ -2,14 +2,19 @@ package de.unistuttgart.stayinsync.core.configuration.persistence.entities;
 
 import io.quarkus.hibernate.orm.panache.PanacheEntity;
 import jakarta.persistence.Entity;
+import jakarta.persistence.OneToOne;
 
 //TODO Implementierung
 @Entity
-public class SourceSystem extends PanacheEntity {
+public class TransformationScript extends PanacheEntity {
 
     public String name;
 
-    public String address;
+    String scriptCode;
 
-    public String apiKey;
+    String hash;
+
+    @OneToOne
+    Transformation transformation;
+
 }
