@@ -8,6 +8,7 @@ public class SyncJobFactory {
     public static ScriptEngineService.SyncJob getIncrementByOneJob(String scriptId, String mockedHash, Number input) {
         String scriptCode = """
                 const input = stayinsync.getInput();
+              
                 if(typeof input === 'number'){
                     stayinsync.setOutput(input + 1);
                 } else {
@@ -82,28 +83,31 @@ public class SyncJobFactory {
                 let outputObject = {
                     error: "Input namespaces not found or incomplete."
                 };
+                const input = stayinsync.getInput();
+                const management = input.management;
+                const manufacturing = input.manufacturing;
                 
                 if (typeof management !== 'undefined' && typeof manufacturing !== 'undefined') {
                     const facility = management.facilityName || 'Unknown Facility';
-                    const operatorId = management.operatorId || 'N/A'; // Operator ID from management
+                    const operatorId = management.operatorId || 'N/A';
                 
                     const productId = manufacturing.productId || 'Unknown Product';
-                    // If you needed an operatorId specifically from manufacturing for another purpose:
-                    // const manufacturingOperatorId = manufacturing.operatorId || 'N/A_MFG';
-                    const batchSize = manufacturing.batchSize || 0; // Declare and get batchSize
+
+                    const batchSize = manufacturing.batchSize || 0;
                     const criticalValue = (typeof manufacturing.criticalValue === 'number') ? manufacturing.criticalValue : 0;
                 
                     outputObject = {
                         aasIdentifier: "AAS_FOR_" + facility + "_" + productId,
                         dataPayload: {
-                            managedBy: operatorId, // Uses operatorId from management
+                            managedBy: operatorId,
                             productReference: productId,
-                            currentBatch: batchSize, // Use declared batchSize
+                            currentBatch: batchSize,
                             computedCritical: criticalValue * 2,
-                            managementNotes: management.notes, // Will be undefined if not present, which is fine for JS objects
-                            manufacturingStatus: manufacturing.status // Will be undefined if not present
+                            managementNotes: management.notes,
+                            manufacturingStatus: manufacturing.status,
+                            eqResult: eval(management.equation),
                         },
-                        sourceTimestamp: new Date().toISOString() // Corrected method name
+                        sourceTimestamp: new Date().toISOString()
                     };
                 } else {
                     if (typeof management === 'undefined') stayinsync.log("Management data namespace not found!", "ERROR");
