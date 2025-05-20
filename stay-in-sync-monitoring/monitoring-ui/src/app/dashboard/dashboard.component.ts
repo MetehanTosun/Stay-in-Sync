@@ -1,8 +1,16 @@
 import { Component } from '@angular/core';
+import {GraphPanelComponent} from './graph-panel/graph-panel.component';
+import {LogsPanelComponent} from './logs-panel/logs-panel.component';
+import {MetricsPanelComponent} from './metrics-panel/metrics-panel.component';
+
 
 @Component({
   selector: 'app-dashboard',
-  imports: [],
+  imports: [
+    GraphPanelComponent,
+    LogsPanelComponent,
+    MetricsPanelComponent,
+  ],
   templateUrl: './dashboard.component.html',
   styleUrl: './dashboard.component.css'
 })
