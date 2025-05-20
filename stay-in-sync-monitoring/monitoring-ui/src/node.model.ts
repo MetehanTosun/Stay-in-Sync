@@ -2,13 +2,15 @@
 export interface Node {
   id: string;
   type: 'API' | 'ASS' | 'Syncnode' | 'EDC';
-  status: 'aktiv' | 'inaktiv' | 'fehlerhaft';
+  status: 'active' | 'inactive' | 'error';
   connections: NodeConnection[];
+  x ?: number;
+  y ?: number;
 }
 
 export interface NodeConnection {
   targetNodeId: string;
-  status: 'aktiv' | 'inaktiv' | 'fehlerhaft';
+  status: 'active' | 'inactive' | 'error';
 }
 
 // system-load.model.ts

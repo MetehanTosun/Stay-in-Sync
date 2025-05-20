@@ -30,3 +30,10 @@
   padding: 1rem;
   overflow-y: auto;
 }
+.node-active {
+  fill: #4caf50; /* grün */
+}
+
+.node-inactive {
+  fill: #f44336; /* rot */
+}
