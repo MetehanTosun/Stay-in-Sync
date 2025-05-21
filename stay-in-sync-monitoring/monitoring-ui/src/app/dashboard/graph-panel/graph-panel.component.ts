@@ -92,12 +92,13 @@ export class GraphPanelComponent implements AfterViewInit {
 
     nodeGroup.on('click', (event, d) => {
       this.nodeSelected.emit(d.id);
+      console.log(`Node ${d.id} selected`);
     });
 
     // Drag-Verhalten für Knoten, einzelne Knoten können verschoben werden
     nodeGroup.call(
       d3.drag<SVGGElement, Node>()
-        .on('start', (event, d) => {
+        .on('start', () => {
           simulation.stop();
         })
         .on('drag', (event, d) => {

@@ -18,15 +18,4 @@ export interface NodeConnection extends d3.SimulationLinkDatum<Node>{
   status: 'active' | 'inactive' | 'error';
 }
 
-// system-load.model.ts
-export interface SystemLoad {
-  month: string;
-  loadPercent: number;
-}
 
-// log.model.ts
-export interface LogEntry {
-  timestamp: string;
-  message: string;
-  nodeId?: string;
-}

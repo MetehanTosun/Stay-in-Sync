@@ -15,5 +15,10 @@ import {MetricsPanelComponent} from './metrics-panel/metrics-panel.component';
   styleUrl: './dashboard.component.css'
 })
 export class DashboardComponent {
+  selectedNodeId: string | null = null;
+
+  onNodeSelected(nodeId: string | null) {
+    this.selectedNodeId = nodeId;
+  }
 
 }

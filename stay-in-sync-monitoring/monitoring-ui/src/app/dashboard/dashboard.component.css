@@ -4,31 +4,41 @@
   grid-template-rows: 50% 50%;
   height: 100vh;
   gap: 5px;
-  background-color: #4b4f4b;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 }
 
 .sidebar {
   grid-row: 1 / span 2; /* nimmt beide Zeilen der linken Spalte ein */
-  background: #E0E0E0;
-  border-right: 1px solid #ccc;
+  background: #2a2a40;
+  align-items: center;
 }
 
 .top-right {
   grid-column: 2;
   grid-row: 1;
-  background: #E0E0E0;
-  border-bottom: 1px solid #ccc;
+  background: #2a2a40;
+  border-bottom: 1px solid #444;
+  padding: 1rem;
 }
 
 .bottom-right {
   grid-column: 2;
   grid-row: 2;
-  background: #E0E0E0;
+  background: #2a2a40;
+  padding: 1rem;
+  overflow-y: auto;
 }
+
 h1 {
-  color: #333;
+  color: #ffffff;
   font-size: 2.5rem;
-  font-weight: bold;
+  font-weight: 600;
+  margin-top: 0;
+}
+
+.sidebar h1 {
+  margin-top: 0;
+  color: #ffffff;
 }
 
 .sidebar,
@@ -37,19 +47,20 @@ h1 {
   height: 100%;
   min-height: 0;
   overflow: hidden;
+  border-radius: 10px;
 }
+
 :host {
   display: block;
   height: 100vh;
   margin: 0;
   padding: 0;
+  background-color: #1e1e2f;
 }
 
 :host ::ng-deep body {
   margin: 0;
   padding: 0;
-}
-
-.sidebar h1 {
-  margin-top: 0;
+  background-color: #1e1e2f;
+  color: #f0f0f0;
 }

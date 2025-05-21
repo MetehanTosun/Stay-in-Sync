@@ -1,7 +1,7 @@
 <div class="monitoring-layout">
   <div class="sidebar">
     <h1>Monitoring</h1>
-    <app-graph-panel></app-graph-panel>
+    <app-graph-panel (nodeSelected)="onNodeSelected($event)"></app-graph-panel>
   </div>
 
 
@@ -11,7 +11,7 @@
 
 
   <div class="bottom-right">
-    <app-logs-panel></app-logs-panel>
+    <app-logs-panel [selectedNodeId]="selectedNodeId"></app-logs-panel>
   </div>
 </div>
 
