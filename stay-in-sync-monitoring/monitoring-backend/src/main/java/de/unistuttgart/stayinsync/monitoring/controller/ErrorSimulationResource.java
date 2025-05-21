@@ -6,6 +6,8 @@ import jakarta.inject.Inject;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
 
+//http://localhost:8093/q/swagger-ui/#/
+
 @Path("/simulate-error")
 @Produces(MediaType.APPLICATION_JSON)
 public class ErrorSimulationResource {

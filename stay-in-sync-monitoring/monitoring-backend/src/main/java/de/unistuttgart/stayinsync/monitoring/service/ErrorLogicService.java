@@ -84,4 +84,10 @@ public class ErrorLogicService {
             }
         }
     }
+    //Fallback method used if retries are exhausted.
+
+    public void fallbackErrorHandler(ErrorType errorType) {
+        LOG.warnf("Fallback activated after retries for error type: %s", errorType);
+        // TODO:Implement alternative handling or silently absorb
+    }
 }
