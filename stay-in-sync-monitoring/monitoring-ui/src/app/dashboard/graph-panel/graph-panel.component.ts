@@ -95,6 +95,14 @@ export class GraphPanelComponent implements AfterViewInit {
       console.log(`Node ${d.id} selected`);
     });
 
+    // Klick auf SVG (Hintergrund)
+    svg.on('click', (event: MouseEvent) => {
+      // Prüfe, ob auf das SVG selbst geklickt wurde (und nicht auf einen Knoten)
+      if ((event.target as SVGElement).tagName === 'svg') {
+        this.nodeSelected.emit(null);
+      }
+    });
+
     // Drag-Verhalten für Knoten, einzelne Knoten können verschoben werden
     nodeGroup.call(
       d3.drag<SVGGElement, Node>()
