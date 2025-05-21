@@ -1,18 +1,24 @@
-<div class="monitoring-layout">
-  <div class="sidebar">
-    <h1>Monitoring</h1>
-    <app-graph-panel (nodeSelected)="onNodeSelected($event)"></app-graph-panel>
-  </div>
-
-
-  <div class="top-right">
-    <app-metrics-panel></app-metrics-panel>
-  </div>
-
-
-  <div class="bottom-right">
-    <app-logs-panel [selectedNodeId]="selectedNodeId"></app-logs-panel>
-  </div>
-</div>
+<p-splitter [panelSizes]="[50, 50]" [style]="{ height: '100vh' }" styleClass="mb-8">
+  <ng-template pTemplate="panel">
+    <div class="sidebar">
+      <h1>Monitoring</h1>
+      <app-graph-panel (nodeSelected)="onNodeSelected($event)"></app-graph-panel>
+    </div>
+  </ng-template>
+  <ng-template pTemplate="panel">
+    <p-splitter layout="vertical" [panelSizes]="[50, 50]">
+      <ng-template pTemplate="panel">
+        <div class="top-right">
+          <app-metrics-panel></app-metrics-panel>
+        </div>
+      </ng-template>
+      <ng-template pTemplate="panel">
+        <div class="bottom-right">
+          <app-logs-panel [selectedNodeId]="selectedNodeId"></app-logs-panel>
+        </div>
+      </ng-template>
+    </p-splitter>
+  </ng-template>
+</p-splitter>
 
 

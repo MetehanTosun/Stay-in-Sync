@@ -5,12 +5,12 @@
   height: 100vh;
   gap: 5px;
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  color: #f0f0f0;
 }
 
 .sidebar {
   grid-row: 1 / span 2; /* nimmt beide Zeilen der linken Spalte ein */
   background: #2a2a40;
-  align-items: center;
 }
 
 .top-right {
@@ -41,26 +41,14 @@ h1 {
   color: #ffffff;
 }
 
-.sidebar,
-.top-right,
-.bottom-right {
+:host ::ng-deep .p-splitter,
+:host ::ng-deep .p-splitter-panel {
+  height: 100% !important;
+  width: 100% !important;
+}
+
+.sidebar, .top-right, .bottom-right {
   height: 100%;
-  min-height: 0;
-  overflow: hidden;
-  border-radius: 10px;
-}
-
-:host {
-  display: block;
-  height: 100vh;
-  margin: 0;
-  padding: 0;
-  background-color: #1e1e2f;
-}
-
-:host ::ng-deep body {
-  margin: 0;
-  padding: 0;
-  background-color: #1e1e2f;
-  color: #f0f0f0;
+  width: 100%;
+  box-sizing: border-box;
 }
