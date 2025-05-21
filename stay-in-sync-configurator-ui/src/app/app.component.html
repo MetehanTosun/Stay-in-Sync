@@ -258,8 +258,17 @@
             </svg>
           </a>
         }
+        
       </div>
       <div class="social-links">
+        <button class="pill" (click)="showForm = !showForm">
+          + New source system
+        </button>
+      
+        <div *ngIf="showForm" style="margin-top: 1rem;">
+          <app-source-system-form></app-source-system-form>
+        </div>
+  
         <a
           href="https://github.com/angular/angular"
           aria-label="Github"

@@ -1,13 +1,17 @@
 import { Component } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
+import { CommonModule } from '@angular/common'; 
+import { FormsModule } from '@angular/forms';
+import { SourceSystemFormComponent } from './source-system-form/source-system-form.component';
 
 @Component({
   selector: 'app-root',
-  imports: [RouterOutlet],
-  templateUrl: './app.component.html',
   standalone: true,
+  imports: [RouterOutlet, CommonModule, FormsModule, SourceSystemFormComponent], 
+  templateUrl: './app.component.html',
   styleUrl: './app.component.css'
 })
 export class AppComponent {
   title = 'configurator-ui';
+  showForm = false;
 }
