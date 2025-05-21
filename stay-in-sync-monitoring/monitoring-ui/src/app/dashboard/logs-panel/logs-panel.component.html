@@ -1,1 +1,10 @@
-<p>logs-panel works!</p>
+<div class="logs-panel">
+  <div *ngIf="filteredLogs.length === 0">Keine Logs vorhanden.</div>
+  <ul *ngIf="filteredLogs.length > 0">
+    <li *ngFor="let log of filteredLogs">
+      <span>{{ log.timestamp }}:</span>
+      <span>{{ log.message }}</span>
+      <span *ngIf="log.nodeId">[{{ log.nodeId }}]</span>
+    </li>
+  </ul>
+</div>

@@ -1,0 +1,55 @@
+.monitoring-layout {
+  display: grid;
+  grid-template-columns: 50% 50%;
+  grid-template-rows: 50% 50%;
+  height: 100vh;
+  gap: 5px;
+  background-color: #4b4f4b;
+}
+
+.sidebar {
+  grid-row: 1 / span 2; /* nimmt beide Zeilen der linken Spalte ein */
+  background: #E0E0E0;
+  border-right: 1px solid #ccc;
+}
+
+.top-right {
+  grid-column: 2;
+  grid-row: 1;
+  background: #E0E0E0;
+  border-bottom: 1px solid #ccc;
+}
+
+.bottom-right {
+  grid-column: 2;
+  grid-row: 2;
+  background: #E0E0E0;
+}
+h1 {
+  color: #333;
+  font-size: 2.5rem;
+  font-weight: bold;
+}
+
+.sidebar,
+.top-right,
+.bottom-right {
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+}
+:host {
+  display: block;
+  height: 100vh;
+  margin: 0;
+  padding: 0;
+}
+
+:host ::ng-deep body {
+  margin: 0;
+  padding: 0;
+}
+
+.sidebar h1 {
+  margin-top: 0;
+}

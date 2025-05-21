@@ -1,4 +1,4 @@
-import { Component, AfterViewInit } from '@angular/core';
+import {Component, AfterViewInit, Output, EventEmitter} from '@angular/core';
 import * as d3 from 'd3';
 import {Node, NodeConnection} from '../../../node.model';
 
@@ -8,11 +8,8 @@ import {Node, NodeConnection} from '../../../node.model';
   styleUrl: './graph-panel.component.css'
 })
 export class GraphPanelComponent implements AfterViewInit {
+  @Output() nodeSelected = new EventEmitter<string | null>();
   ngAfterViewInit() {
-    interface CustomLink extends d3.SimulationLinkDatum<Node> {
-      source: Node | string;
-      target: Node | string;
-    }
 
     const nodes: Node[] = [
       { id: 'A', type: 'API', status: 'active', connections: [] },
@@ -25,9 +22,13 @@ export class GraphPanelComponent implements AfterViewInit {
       { source: nodes[1], target: nodes[2], status: "inactive" },
     ];
 
+    const svgElement = document.querySelector('svg');
+    const width = svgElement?.clientWidth ?? 400;
+    const height = svgElement?.clientHeight ?? 300;
+
     const svg = d3.select('svg')
-      .attr('width', 400)
-      .attr('height', 300);
+      .attr('width', '100%')
+      .attr('height', '100%');
 
     const container = svg.append('g');
 
@@ -77,7 +78,7 @@ export class GraphPanelComponent implements AfterViewInit {
     const simulation = d3.forceSimulation<Node>(nodes)
       .force('link', d3.forceLink<Node, NodeConnection>(links).id(d => (d as Node).id).distance(100))
       .force('charge', d3.forceManyBody().strength(-200))
-      .force('center', d3.forceCenter(200, 150))
+      .force('center', d3.forceCenter(width / 2, height / 2))
       .on('tick', () => {
         link
           .attr('x1', d => (d.source as Node).x ?? 0)
@@ -89,7 +90,11 @@ export class GraphPanelComponent implements AfterViewInit {
           .attr('transform', d => `translate(${d.x ?? 0},${d.y ?? 0})`);
       });
 
-    // Drag-Verhalten für Knoten
+    nodeGroup.on('click', (event, d) => {
+      this.nodeSelected.emit(d.id);
+    });
+
+    // Drag-Verhalten für Knoten, einzelne Knoten können verschoben werden
     nodeGroup.call(
       d3.drag<SVGGElement, Node>()
         .on('start', (event, d) => {
