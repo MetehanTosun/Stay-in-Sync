@@ -3,9 +3,11 @@ import { Routes } from '@angular/router';
 import { SyncRulesComponent } from './sync-rules/sync-rules.component';
 import { ConfigBaseComponent } from './config-base/config-base.component';
 import { ConfigurationscriptsBaseComponent } from './configurationscripts-base/configurationscripts-base.component';
-import { AasBaseComponent } from './aas/aas-base/aas-base.component';
+// neu (relativ zu src/app/app.routes.ts)
+import { AasBaseComponent } from './features/source-system/aas-base/aas-base.component';
 import { EdcBaseComponent } from './edc/edc-base/edc-base.component';
-import { CreateSourceSystemComponent } from './aas/aas-base/create-source-system/create-source-system.component';
+import { CreateSourceSystemComponent } from 
+  './features/source-system/create-source-system/create-source-system.component';
 
 
 export const routes: Routes = [
