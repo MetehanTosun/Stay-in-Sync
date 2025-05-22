@@ -17,3 +17,37 @@
   padding: 0; /* Entfernt unnötige Innenabstände */
 }
 
+.nav-list {
+  list-style: none;
+  padding: 0;
+  margin: 1rem 0 0 0;
+}
+
+.nav-list li {
+  margin-bottom: 0.7rem;
+}
+
+.nav-list a {
+  display: block;
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  color: #333;
+  text-decoration: none;
+  transition: background 0.2s, color 0.2s;
+}
+
+.nav-list a:hover {
+  background: #f0f0f0;
+  color: #007ad9;
+}
+
+.active-link {
+  background: #007ad9;
+  color: #fff !important;
+  font-weight: bold;
+}
+
+.sidebar-content{
+  color: midnightblue;
+}
+
