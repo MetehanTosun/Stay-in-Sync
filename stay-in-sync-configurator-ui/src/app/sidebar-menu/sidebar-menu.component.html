@@ -1,0 +1,10 @@
+<p-sidebar [(visible)]="sidebarVisible" [showCloseIcon]="false">
+  <div class="sidebar-header">
+    <h3>Configurator</h3>
+    <button class="close-button" (click)="sidebarVisible = false">X</button>
+  </div>
+  <p>
+    Lorem ipsum dolor sit amet...
+  </p>
+</p-sidebar>
+<p-button (onClick)="sidebarVisible = true" icon="pi pi-home"></p-button>

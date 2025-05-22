@@ -1,0 +1,19 @@
+.sidebar-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.sidebar-header h3 {
+  margin: 0;
+}
+
+.close-button {
+  background: none !important; /* Entfernt die grüne Hintergrundfarbe */
+  color: inherit; /* Verwendet die Standard-Schriftfarbe */
+  border: none; /* Entfernt jegliche Rahmen */
+  font-size: 1.2rem;
+  cursor: pointer;
+  padding: 0; /* Entfernt unnötige Innenabstände */
+}
+
