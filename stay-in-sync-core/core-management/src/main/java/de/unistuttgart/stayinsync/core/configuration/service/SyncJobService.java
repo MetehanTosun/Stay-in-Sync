@@ -2,6 +2,7 @@ package de.unistuttgart.stayinsync.core.configuration.service;
 
 import de.unistuttgart.stayinsync.core.configuration.mapping.SyncJobFullUpdateMapper;
 import de.unistuttgart.stayinsync.core.configuration.persistence.entities.SyncJob;
+import de.unistuttgart.stayinsync.core.management.rabbitmq.producer.SyncJobProducer;
 import io.quarkus.logging.Log;
 import io.smallrye.common.constraint.NotNull;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -24,12 +25,15 @@ public class SyncJobService {
     Validator validator;
 
     @Inject
+    SyncJobProducer syncJobProducer;
+
+    @Inject
     SyncJobFullUpdateMapper syncJobFullUpdateMapper;
 
     public SyncJob persistSyncJob(@NotNull @Valid SyncJob syncJob) {
         Log.debugf("Persisting sync-job: %s", syncJob);
         syncJob.persist();
-
+        syncJobProducer.queueSyncJob(syncJob);
         return syncJob;
     }
 
