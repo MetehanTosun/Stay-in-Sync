@@ -3,7 +3,7 @@ import { Component, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { CommonModule } from '@angular/common';
 // biome-ignore lint/style/useImportType: <explanation>
-import { AasService } from '../aas.service';
+import { AasService } from '../../../aas.service';
 
 import { TreeModule } from 'primeng/tree';
 // biome-ignore lint/style/useImportType: <explanation>
@@ -23,9 +23,9 @@ import { SelectModule } from 'primeng/select';
     TreeModule,
     SelectModule
   ],
-  templateUrl: './source-system-form.component.html'
+  templateUrl: './create-source-system.component.html',
 })
-export class SourceSystemFormComponent implements OnInit {
+export class CreateSourceSystemComponent implements OnInit {
   aasList: any[] = [];
   selectedAasId = '';
   treeSubmodels: TreeNode[] = [];
@@ -40,6 +40,7 @@ export class SourceSystemFormComponent implements OnInit {
   constructor(private aasService: AasService) {}
 
   ngOnInit() {
+    // biome-ignore lint/suspicious/noExplicitAny: <explanation>
     this.aasService.getAllShells().subscribe((data: any) => {
       this.aasList = data;
     });

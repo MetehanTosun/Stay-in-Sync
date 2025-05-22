@@ -1,19 +1,19 @@
 // biome-ignore lint/style/useImportType: <explanation>
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
-import { SourceSystemFormComponent } from './source-system-form.component';
+import { CreateSourceSystemComponent } from './create-source-system.component';
 
 describe('SourceSystemFormComponent', () => {
-  let component: SourceSystemFormComponent;
-  let fixture: ComponentFixture<SourceSystemFormComponent>;
+  let component: CreateSourceSystemComponent;
+  let fixture: ComponentFixture<CreateSourceSystemComponent>;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [SourceSystemFormComponent]
+      imports: [CreateSourceSystemComponent]
     })
     .compileComponents();
 
-    fixture = TestBed.createComponent(SourceSystemFormComponent);
+    fixture = TestBed.createComponent(CreateSourceSystemComponent);
     component = fixture.componentInstance;
     fixture.detectChanges();
   });
