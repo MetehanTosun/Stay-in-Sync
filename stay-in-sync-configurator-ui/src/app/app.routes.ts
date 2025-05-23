@@ -4,7 +4,7 @@ import { SyncRulesComponent } from './sync-rules/sync-rules.component';
 import { ConfigBaseComponent } from './config-base/config-base.component';
 import { ConfigurationscriptsBaseComponent } from './configurationscripts-base/configurationscripts-base.component';
 // neu (relativ zu src/app/app.routes.ts)
-import { AasBaseComponent } from './features/source-system/aas-base/aas-base.component';
+import { SourceSystemBaseComponent } from './features/source-system/source-system-base/source-system-base.component';
 import { EdcBaseComponent } from './edc/edc-base/edc-base.component';
 import { CreateSourceSystemComponent } from 
   './features/source-system/create-source-system/create-source-system.component';
@@ -20,10 +20,10 @@ export const routes: Routes = [
   // Route für Transformation Scripts
   { path: 'transformation-scripts', component: ConfigurationscriptsBaseComponent },
 
-  // Route für Asset Administration Shell (ASS)
+  // Route für Source System
   {
-    path: 'ass',
-    component: AasBaseComponent,
+    path: 'source-system',
+    component: SourceSystemBaseComponent,
     children: [
       {
         path: 'create-source-system',

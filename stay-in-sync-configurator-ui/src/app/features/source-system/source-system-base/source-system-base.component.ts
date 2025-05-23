@@ -3,10 +3,10 @@ import { RouterModule } from '@angular/router'; // RouterModule importieren
 import { ButtonModule } from 'primeng/button'; // PrimeNG ButtonModule importieren
 
 @Component({
-  selector: 'app-ass-base',
+  selector: 'app-source-system-base',
   standalone: true,
   imports: [RouterModule, ButtonModule], // RouterModule hinzufügen
-  templateUrl: './aas-base.component.html',
-  styleUrls: ['./aas-base.component.css']
+  templateUrl: './source-system-base.component.html',
+  styleUrls: ['./source-system-base.component.css']
 })
-export class AasBaseComponent {}
+export class SourceSystemBaseComponent {}
