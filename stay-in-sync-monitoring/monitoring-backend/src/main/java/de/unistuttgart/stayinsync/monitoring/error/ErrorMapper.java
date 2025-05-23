@@ -1,29 +1,50 @@
 package de.unistuttgart.stayinsync.monitoring.error;
 
+import jakarta.ws.rs.core.Context;
+import jakarta.ws.rs.core.Response;
+import jakarta.ws.rs.core.UriInfo;
 import jakarta.ws.rs.ext.ExceptionMapper;
 import jakarta.ws.rs.ext.Provider;
-import jakarta.ws.rs.core.Response;
 import org.jboss.logging.Logger;
-
-//this class should be a global error handler
 
 @Provider
 public class ErrorMapper implements ExceptionMapper<Throwable> {
 
     private static final Logger LOG = Logger.getLogger(ErrorMapper.class);
 
+    @Context
+    UriInfo uriInfo;
+
     @Override
     public Response toResponse(final Throwable exception) {
+        String path = uriInfo != null ? uriInfo.getPath() : "unknown";
+        Response.Status status;
+        ErrorResponse errorResponse;
+
         if (exception instanceof ServiceException se) {
             LOG.error("Handled ServiceException", se);
-            return Response.status(Response.Status.BAD_REQUEST)
-                    .entity(new ErrorResponse("Service Error", se.getMessage(), se.getErrorType()))
-                    .build();
+            status = ErrorMapperUtils.resolveHttpStatus(se.getErrorType());
+            errorResponse = new ErrorResponse(
+                    "Service Error",
+                    se.getMessage(),
+                    se.getErrorType(),
+                    se.getPath() != null ? se.getPath() : path,
+                    status
+            );
+        } else {
+            LOG.error("Unhandled exception", exception);
+            status = Response.Status.fromStatusCode(Response.Status.INTERNAL_SERVER_ERROR.getStatusCode());
+            errorResponse = new ErrorResponse(
+                    "Unknown Error",
+                    exception.getMessage() != null ? exception.getMessage() : "No message available",
+                    ErrorType.UNKNOWN_ERROR,
+                    path,
+                    status
+            );
         }
 
-        LOG.error("Unhandled exception", exception);
-        return Response.serverError()
-                .entity(new ErrorResponse("Unknown Error", exception.getMessage(), ErrorType.UNKNOWN_ERROR))
+        return Response.status(status)
+                .entity(errorResponse)
                 .build();
     }
 }
