@@ -1,11 +1,14 @@
 package de.unistuttgart.stayinsync.scriptengine;
 
+import jakarta.enterprise.context.ApplicationScoped;
+import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.graalvm.polyglot.Context;
 import org.graalvm.polyglot.HostAccess;
 
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 
+@ApplicationScoped
 public class ContextPool {
 
     private static final HostAccess SCRIPT_API_ACCESS = HostAccess.newBuilder()
@@ -15,10 +18,12 @@ public class ContextPool {
             .build();
 
     private final BlockingQueue<Context> pool = new LinkedBlockingQueue<>();
+    private final int poolSize;
 
     // TODO: Look into ResourceLimits, can have execution slowdown since statementLimit counter needs to increment
     // TODO: Define a proper Context environment for script execution (add params)
-    public ContextPool(int size) {
+    public ContextPool(@ConfigProperty(name = "scriptengine.context.pool.size", defaultValue = "4") int size) {
+        this.poolSize = size;
         for (int i = 0; i < size; i++) {
             pool.add(Context.newBuilder("js")
                     .allowAllAccess(false)
@@ -33,5 +38,9 @@ public class ContextPool {
 
     public boolean returnContext(Context context) {
         return pool.offer(context);
+    }
+
+    public int getPoolSize() {
+        return poolSize;
     }
 }

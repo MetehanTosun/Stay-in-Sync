@@ -1,22 +1,26 @@
 package de.unistuttgart.stayinsync.scriptengine;
 
 import org.graalvm.polyglot.HostAccess;
+import org.jboss.logging.Logger;
+import org.jboss.logging.MDC;
 
-import java.util.Collections;
-import java.util.HashMap;
 import java.util.Map;
 
 public class ScriptApi {
 
+    private static final Logger SCRIPT_LOG = Logger.getLogger("ScriptExecutionLogger");
+
     private final Object inputData;
     private Object outputData;
+    private final String jobId;
 
     // TODO: Implement a proper way to assign ExecutionContext
     /*private final ExecutionContext executionContext;*/
 
-    public ScriptApi(Object inputData/*, ExecutionContext executionContext*/) {
+    public ScriptApi(Object inputData, String jobId/*, ExecutionContext executionContext*/) {
         // TODO: Check requirements for possible immutability or deepcopy of inputData for security reasons
         this.inputData = inputData;
+        this.jobId = jobId;
         /*this.executionContext = executionContext;*/
     }
 
@@ -50,6 +54,21 @@ public class ScriptApi {
     // TODO: Integrate with logging environment and discuss metrics generation.
     @HostAccess.Export
     public void log(String message, String logLevel) {
-        System.out.println("Script Log [" + logLevel + "]: " + message);
+        MDC.put("jobId", jobId);
+        // TODO: Add scriptID logging as MDC
+        try{
+            Logger.Level level = Logger.Level.INFO;
+            if(logLevel != null){
+                try{
+                    level = Logger.Level.valueOf(logLevel.toUpperCase());
+                } catch (IllegalArgumentException e){
+                    SCRIPT_LOG.warnf("Invalid log level '%s' provided by script. Defaulting to INFO.", logLevel);
+                }
+            }
+            SCRIPT_LOG.log(level, message);
+        } finally{
+            MDC.remove("jobId");
+            // TODO remove scriptId MDC
+        }
     }
 }

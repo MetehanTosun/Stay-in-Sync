@@ -1,11 +1,13 @@
 package de.unistuttgart.stayinsync.scriptengine;
 
+import jakarta.enterprise.context.ApplicationScoped;
 import org.graalvm.polyglot.Source;
 
 import java.io.IOException;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
+@ApplicationScoped
 public class ScriptCache {
 
     private final Map<String, Source> cache = new ConcurrentHashMap<>();

@@ -1,4 +1,4 @@
-package de.unistuttgart.stayinsync.scriptengine.resultobject;
+package de.unistuttgart.stayinsync.scriptengine.message;
 
 public class IntegrityResult {
 

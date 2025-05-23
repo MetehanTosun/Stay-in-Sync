@@ -1,4 +1,4 @@
-package de.unistuttgart.stayinsync.scriptengine.resultobject;
+package de.unistuttgart.stayinsync.scriptengine.message;
 
 /**
  * This interface defines a common structure in order to get unified data from an execution runtime.

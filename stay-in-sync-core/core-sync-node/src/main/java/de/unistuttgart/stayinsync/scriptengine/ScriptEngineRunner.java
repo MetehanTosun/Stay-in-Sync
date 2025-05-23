@@ -1,6 +1,6 @@
 package de.unistuttgart.stayinsync.scriptengine;
 
-import de.unistuttgart.stayinsync.scriptengine.resultobject.TransformationResult;
+import de.unistuttgart.stayinsync.scriptengine.message.TransformationResult;
 
 public class ScriptEngineRunner implements Runnable {
 
@@ -17,6 +17,7 @@ public class ScriptEngineRunner implements Runnable {
                 ScriptEngineService.SyncJob job = SyncJobQueue.takeJob();
                 TransformationResult result = service.transform(job);
                 System.out.println(result.getOutputData());
+                SyncJobQueue.addResult(result.getOutputData());
             } catch (InterruptedException e){
                 Thread.currentThread().interrupt();
                 e.printStackTrace();

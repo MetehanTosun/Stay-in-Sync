@@ -1,13 +1,16 @@
 package de.unistuttgart.stayinsync.scriptengine;
 
-import de.unistuttgart.stayinsync.scriptengine.resultobject.ConditionResult;
-import de.unistuttgart.stayinsync.scriptengine.resultobject.IntegrityResult;
-import de.unistuttgart.stayinsync.scriptengine.resultobject.TransformationResult;
-import de.unistuttgart.stayinsync.scriptengine.resultobject.ValidationResult;
+import de.unistuttgart.stayinsync.scriptengine.message.ConditionResult;
+import de.unistuttgart.stayinsync.scriptengine.message.IntegrityResult;
+import de.unistuttgart.stayinsync.scriptengine.message.TransformationResult;
+import de.unistuttgart.stayinsync.scriptengine.message.ValidationResult;
+import io.quarkus.runtime.Quarkus;
 import io.vertx.core.spi.launcher.ExecutionContext;
 
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
 import org.graalvm.polyglot.*;
-import org.graalvm.polyglot.proxy.*;
+import org.jboss.logging.Logger;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -15,7 +18,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
 
 /**
  * A Facade ScriptEngineService that provides easy and well-defined entrypoints to interact with the script-engine.
@@ -25,12 +27,17 @@ import java.util.concurrent.TimeUnit;
  * @author Maximilian Peresunchak
  * @since 1.0
  */
+@ApplicationScoped
 public class ScriptEngineService {
+
+    private static final Logger LOG = Logger.getLogger(ScriptEngineService.class);
+
     private final ScriptCache scriptCache;
     private final ContextPool contextPool;
 
     private static final String SCRIPT_API_BINDING_NAME = "stayinsync";
 
+    @Inject
     public ScriptEngineService(ScriptCache scriptCache, ContextPool contextPool) {
         this.scriptCache = scriptCache;
         this.contextPool = contextPool;
@@ -41,16 +48,21 @@ public class ScriptEngineService {
     private static final int RUN_COUNTER = 10_000;
 
     public static void main(String[] args) throws InterruptedException {
-        ScriptEngineService service = new ScriptEngineService(new ScriptCache(), new ContextPool(CONTEXT_POOL_SIZE));
+        Quarkus.run(args);
+    }
+
+    public String triggerBackgroundJob() throws InterruptedException {
         ExecutorService executor = Executors.newFixedThreadPool(CONTEXT_POOL_SIZE);
         for (int i = 0; i < CONTEXT_POOL_SIZE; i++) {
-            executor.submit(new ScriptEngineRunner(service));
+            executor.submit(new ScriptEngineRunner(this));
         }
 
         exampleManagementManufacturingJob();
 
         executor.shutdown();
-        executor.awaitTermination(10, TimeUnit.SECONDS);
+        String result = SyncJobQueue.getResult().toString();
+        System.out.println(result);
+        return result;
     }
 
     // TODO: Implement SyncJob wrapper with necessary values
@@ -79,7 +91,7 @@ public class ScriptEngineService {
     // TODO: Handle proper validity setting of a job inside the VM
     // TODO: Assign proper input and output data formats
     TransformationResult transform(SyncJob syncJob) {
-        TransformationResult result = new TransformationResult();
+        TransformationResult result = new TransformationResult("1", syncJob.scriptId());
         Context context = null;
 
         try {
@@ -91,11 +103,11 @@ public class ScriptEngineService {
             Source source = scriptCache.getScript(syncJob.scriptId, syncJob.expectedHash);
             if (source == null) {
                 result.setValidExecution(false);
-                result.setLoggerInfo("Script source not found in script cache after attempting to add: " + syncJob.scriptId());
+                result.addLogMessage("Script source not found in script cache after attempting to add: " + syncJob.scriptId());
                 return result;
             }
 
-            ScriptApi scriptApi = new ScriptApi(syncJob.data());
+            ScriptApi scriptApi = new ScriptApi(syncJob.data(), syncJob.scriptId());
             context.getBindings("js").putMember(SCRIPT_API_BINDING_NAME, scriptApi);
 
             if (syncJob.data() instanceof Map){
@@ -108,11 +120,9 @@ public class ScriptEngineService {
                     context.getBindings("js").putMember(namespace, namespaceData);
                 }
             } else{
-                // If the assumption that the provided SyncJob data is not a valid Mapping, we need to handle cases
-                // specifically. Possible ways is that its just one namespace or just a specific value.
                 // TODO: Requires Polling and Namespace Packaging to be implemented for further case testing.
                 result.setValidExecution(false);
-                result.setLoggerInfo("Input Data for namespaced script is not a valid Mapping: " + syncJob.scriptId());
+                result.addLogMessage("Input Data for namespaced script is not a valid Mapping: " + syncJob.scriptId());
             }
 
             try {
@@ -121,22 +131,22 @@ public class ScriptEngineService {
                 Object rawOutput = scriptApi.getOutputData();
 
                 if(rawOutput == null){
-                    result.setLoggerInfo("Script did not call " + SCRIPT_API_BINDING_NAME + ".setOutput(). OutputData is null.");
+                    result.addLogMessage("Script did not call " + SCRIPT_API_BINDING_NAME + ".setOutput(). OutputData is null.");
                 }
                 result.setOutputData(extractResult(Value.asValue(rawOutput)));
                 result.setValidExecution(true);
             } catch (PolyglotException e) {
                 result.setValidExecution(false);
-                result.setLoggerInfo("Script execution failed [" + syncJob.scriptId() + "]: " + e.getMessage());
+                result.addLogMessage("Script execution failed [" + syncJob.scriptId() + "]: " + e.getMessage());
                 e.printStackTrace();
             }
         } catch (InterruptedException e) {
-            result.setLoggerInfo("Thread interrupted while waiting for context: " + e.getMessage());
+            result.addLogMessage("Thread interrupted while waiting for context: " + e.getMessage());
             result.setValidExecution(false);
             Thread.currentThread().interrupt();
         } catch (Exception e) {
             result.setValidExecution(false);
-            result.setLoggerInfo("Unexpected error during transformation: " + e.getMessage());
+            result.addLogMessage("Unexpected error during transformation: " + e.getMessage());
             e.printStackTrace();
         } finally {
             // TODO: handle scriptApi still being bound to context / potentially cleanup / packagemanager?
