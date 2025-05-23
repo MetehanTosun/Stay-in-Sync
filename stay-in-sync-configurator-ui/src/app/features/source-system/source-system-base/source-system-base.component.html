@@ -1,8 +1,26 @@
-<button
-  pButton
-  type="button"
-  label="Create Source System"
-  [routerLink]="['/source-system', 'create-source-system']">
-</button>
+<div class="source-system-container">
+  <nav class="sidebar">
+    <button
+      pButton
+      type="button"
+      label="Create Source System"
+      [routerLink]="['create-source-system']">
+    </button>
+  </nav>
 
-<router-outlet></router-outlet>
+  <main class="content">
+    <h2>Available Source Systems</h2>
+
+    <!-- async list of systems -->
+    <ul *ngIf="sourceSystems$ | async as systems; else loading">
+      <li *ngFor="let sys of systems">{{ sys.name }}</li>
+    </ul>
+
+    <ng-template #loading>
+      <p>Loading…</p>
+    </ng-template>
+
+    <!-- nested child routes (e.g. create form) -->
+    <router-outlet></router-outlet>
+  </main>
+</div>
