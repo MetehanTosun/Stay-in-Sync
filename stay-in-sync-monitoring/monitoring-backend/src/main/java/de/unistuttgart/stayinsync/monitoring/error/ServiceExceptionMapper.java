@@ -17,14 +17,11 @@ public class ServiceExceptionMapper implements ExceptionMapper<ServiceException>
     public Response toResponse(ServiceException exception) {
         LOGGER.errorf("ServiceException occurred: %s [%s]", exception.getMessage(), exception.getErrorType());
 
-        //will be edited soon
-        Map<String, String> error = new HashMap<>();
-        error.put("message", exception.getMessage());
-        error.put("type", exception.getErrorType().name());
+        ErrorResponse errorResponse = new ErrorResponse("Service Error", exception.getMessage(), exception.getErrorType());
 
         return Response
-                .status(Response.Status.INTERNAL_SERVER_ERROR)
-                .entity(error)
+                .status(ErrorMapperUtils.resolveHttpStatus(exception.getErrorType()))
+                .entity(errorResponse)
                 .build();
     }
 }

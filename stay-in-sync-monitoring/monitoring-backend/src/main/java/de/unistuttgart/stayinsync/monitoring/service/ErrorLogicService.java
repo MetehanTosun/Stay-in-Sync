@@ -87,7 +87,21 @@ public class ErrorLogicService {
     //Fallback method used if retries are exhausted.
 
     public void fallbackErrorHandler(ErrorType errorType) {
-        LOG.warnf("Fallback activated after retries for error type: %s", errorType);
-        // TODO:Implement alternative handling or silently absorb
+        LOG.warnf("Fallback strategy activated for error type: %s", errorType);
+
+        switch (errorType) {
+            case NETWORK_ERROR -> {
+                LOG.info("Fallback: Saving the failed request for later retry.");
+                // TODO: store request locally or in a queue system
+            }
+            case TIMEOUT -> {
+                LOG.info("Fallback: Notifying admin due to timeout.");
+                // TODO:  alert system or trigger webhook
+            }
+            default -> {
+                LOG.info("Fallback: No specific fallback strategy defined.");
+            }
+        }
     }
+
 }
