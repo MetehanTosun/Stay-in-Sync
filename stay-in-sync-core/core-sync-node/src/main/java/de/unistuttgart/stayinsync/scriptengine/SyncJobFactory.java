@@ -1,11 +1,13 @@
 package de.unistuttgart.stayinsync.scriptengine;
 
+import de.unistuttgart.stayinsync.syncnode.domain.TransformJob;
+
 import java.util.HashMap;
 import java.util.Map;
 
 public class SyncJobFactory {
 
-    public static ScriptEngineService.SyncJob getIncrementByOneJob(String scriptId, String mockedHash, Number input) {
+    public static TransformJob getIncrementByOneJob(String scriptId, String mockedHash, Number input) {
         String scriptCode = """
                 const input = stayinsync.getInput();
               
@@ -16,15 +18,18 @@ public class SyncJobFactory {
                 }
                 """;
 
-        return new ScriptEngineService.SyncJob(
+        return new TransformJob(
+                "incByOne",
+                "Test1",
                 scriptId,
                 scriptCode,
+                "js",
                 mockedHash,
                 input
         );
     }
 
-    public static ScriptEngineService.SyncJob getMultiplyByConstantJob(String scriptId, String mockedHash, Number input, int constant) {
+    public static TransformJob getMultiplyByConstantJob(String scriptId, String mockedHash, Number input, int constant) {
         String scriptCode = String.format("""
                 const input = stayinsync.getInput();
                 if(typeof input === 'number'){
@@ -34,15 +39,18 @@ public class SyncJobFactory {
                 }
                 """, constant);
 
-        return new ScriptEngineService.SyncJob(
+        return new TransformJob(
+                "multByConst",
+                "Test2",
                 scriptId,
                 scriptCode,
+                "js",
                 mockedHash,
                 input
         );
     }
 
-    public static ScriptEngineService.SyncJob getSquaredJob(String scriptId, String mockedHash, Number input) {
+    public static TransformJob getSquaredJob(String scriptId, String mockedHash, Number input) {
         String scriptCode = """
                 const input = stayinsync.getInput();
                 if(typeof input === 'number'){
@@ -52,15 +60,18 @@ public class SyncJobFactory {
                 }
                 """;
 
-        return new ScriptEngineService.SyncJob(
+        return new TransformJob(
+                "squared",
+                "Test3",
                 scriptId,
                 scriptCode,
+                "js",
                 mockedHash,
                 input
         );
     }
 
-    public static ScriptEngineService.SyncJob getConcatenationToHelloJob(String scriptId, String mockedHash, String suffix) {
+    public static TransformJob getConcatenationToHelloJob(String scriptId, String mockedHash, String suffix) {
         String scriptCode = """
                 const suffix = stayinsync.getInput();
                 if(typeof suffix === 'string'){
@@ -70,15 +81,18 @@ public class SyncJobFactory {
                 }
                 """;
 
-        return new ScriptEngineService.SyncJob(
+        return new TransformJob(
+                "concact",
+                "Test4",
                 scriptId,
                 scriptCode,
+                "js",
                 mockedHash,
                 suffix
         );
     }
 
-    public static ScriptEngineService.SyncJob getJSONMockTransformationJobTwoNamespaces(String scriptId, String mockedHash, Map<String, Object> managementData, Map<String, Object> manufacturingData) {
+    public static TransformJob getJSONMockTransformationJobTwoNamespaces(String scriptId, String mockedHash, Map<String, Object> managementData, Map<String, Object> manufacturingData) {
         String scriptCode = """
                 let outputObject = {
                     error: "Input namespaces not found or incomplete."
@@ -121,9 +135,12 @@ public class SyncJobFactory {
         jobInputData.put("management", managementData);
         jobInputData.put("manufacturing", manufacturingData);
 
-        return new ScriptEngineService.SyncJob(
+        return new TransformJob(
+                "twoObjTransform",
+                "Test5",
                 scriptId,
                 scriptCode,
+                "js",
                 mockedHash,
                 jobInputData
         );
