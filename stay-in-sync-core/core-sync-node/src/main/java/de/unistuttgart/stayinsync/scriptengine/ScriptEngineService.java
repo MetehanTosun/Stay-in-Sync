@@ -6,7 +6,6 @@ import de.unistuttgart.stayinsync.scriptengine.message.TransformationResult;
 import de.unistuttgart.stayinsync.scriptengine.message.ValidationResult;
 import de.unistuttgart.stayinsync.syncnode.domain.TransformJob;
 import io.quarkus.runtime.Quarkus;
-import io.vertx.core.spi.launcher.ExecutionContext;
 
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
@@ -23,9 +22,20 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 
 /**
- * A Facade ScriptEngineService that provides easy and well-defined entrypoints to interact with the script-engine.
- * Receives Data and scripts in order to run a transformation and return the respective results in addition to Log
- * information.
+ * A facade service providing well-defined entry points to interact with the script engine.
+ * This service is responsible for orchestrating script execution, including fetching scripts
+ * from a cache, acquiring script execution contexts from a pool, running the scripts with
+ * provided input data, and returning the transformation results.
+ *
+ * <p>The primary way to use this service is via the {@link #transformAsync(TransformJob)} method,
+ * which executes script transformations asynchronously.</p>
+ *
+ * <p>It leverages a {@link ScriptCache} for efficient script parsing and a {@link ContextPoolFactory}
+ * to manage {@link Context} instances for script execution. Asynchronous operations are handled
+ * by a {@link ManagedExecutor}.</p>
+ *
+ * <p>The {@code main} method included is for development or standalone testing purposes of the
+ * Quarkus application and is not part of the service's typical API usage.</p>
  *
  * @author Maximilian Peresunchak
  * @since 1.0
@@ -33,12 +43,25 @@ import java.util.concurrent.CompletionStage;
 @ApplicationScoped
 public class ScriptEngineService {
     private static final Logger LOG = Logger.getLogger(ScriptEngineService.class);
+
+    /**
+     * The name under which the {@link ScriptApi} instance is bound and made available
+     * to the executed scripts. Scripts can access the API using this name (e.g., {@code stayinsync.log("message")}).
+     */
     private static final String SCRIPT_API_BINDING_NAME = "stayinsync";
 
     private final ScriptCache scriptCache;
     private final ContextPoolFactory contextPoolFactory;
     private final ManagedExecutor managedExecutor;
 
+    /**
+     * Constructs a new {@code ScriptEngineService} with injected dependencies.
+     * This constructor is typically invoked by the CDI container.
+     *
+     * @param scriptCache The cache for storing and retrieving pre-parsed scripts.
+     * @param contextPoolFactory The factory for obtaining pools of script execution contexts.
+     * @param managedExecutor The executor service for running asynchronous tasks, managed by the MicroProfile Context Propagation.
+     */
     @Inject
     public ScriptEngineService(ScriptCache scriptCache, ContextPoolFactory contextPoolFactory, ManagedExecutor managedExecutor) {
         this.scriptCache = scriptCache;
@@ -46,6 +69,18 @@ public class ScriptEngineService {
         this.managedExecutor = managedExecutor;
     }
 
+    /**
+     * Asynchronously executes a script transformation based on the provided {@link TransformJob}.
+     * The job contains the script code, its identifier, expected hash, input data, and language.
+     * The transformation is performed on a separate thread managed by the {@link #managedExecutor}.
+     *
+     * <p>MDC (Mapped Diagnostic Context) is used to enrich logs with {@code jobId} and {@code scriptId}
+     * for the duration of the asynchronous task.</p>
+     *
+     * @param job The {@link TransformJob} defining the transformation to be executed.
+     * @return A {@link CompletionStage} that will complete with a {@link TransformationResult}
+     *         containing the output of the script execution, its validity, and any error information.
+     */
     public CompletionStage<TransformationResult> transformAsync(TransformJob job) {
         return CompletableFuture.supplyAsync(()-> {
             try{
@@ -60,12 +95,29 @@ public class ScriptEngineService {
         }, managedExecutor);
     }
 
+    /**
+     * Main method for running the Quarkus application.
+     * This is primarily intended for development, testing, or standalone execution
+     * and is not the typical way to interact with this service's API.
+     *
+     * @param args Command line arguments.
+     */
     public static void main(String[] args){
         Quarkus.run(args);
     }
 
-    // TODO: Handle proper validity setting of a job inside the VM
-    // TODO: Assign proper input and output data formats
+    /**
+     * Internal synchronous method to perform the script transformation.
+     * This method handles context borrowing, script caching, API binding, script evaluation,
+     * and result extraction.
+     *
+     * <p>TODO: Handle proper validity setting of a job inside the VM.</p>
+     * <p>TODO: Assign proper input and output data formats beyond current Map/basic type handling.</p>
+     * <p>TODO: The language is currently hardcoded to "js" for context pool retrieval. This is an extension point.</p>
+     *
+     * @param transformJob The {@link TransformJob} to process.
+     * @return A {@link TransformationResult} encapsulating the outcome of the transformation.
+     */
     private TransformationResult transformInternal(TransformJob transformJob) {
         TransformationResult result = new TransformationResult(transformJob.jobId(), transformJob.scriptId());
         ContextPool contextPool = contextPoolFactory.getPool("js"); // TODO: extension point for more languages
@@ -153,6 +205,18 @@ public class ScriptEngineService {
         return result;
     }
 
+    /**
+     * Extracts a Java object representation from a GraalVM {@link Value}.
+     * This method recursively converts GraalVM Values that represent arrays or objects (maps)
+     * into Java Lists and Maps, respectively. Primitive types are converted to their Java equivalents.
+     *
+     * <p>TODO: Recursive Object conversion might be simpler or more robust with a dedicated library or more comprehensive handling.</p>
+     * <p>TODO: Evaluate other possible return types like functions and promises if they need to be handled.</p>
+     *
+     * @param value The GraalVM {@link Value} to convert.
+     * @return The corresponding Java object, or a string representation as a fallback for unhandled types.
+     *         Returns {@code null} if the input value is {@code null} or represents a GraalVM null.
+     */
     private Object extractResult(Value value) {
         if (value == null || value.isNull()) return null;
         if (value.isHostObject()) return value.asHostObject();
@@ -161,7 +225,8 @@ public class ScriptEngineService {
         if (value.isNumber()) {
             if (value.fitsInLong()) return value.asLong();
             if (value.fitsInDouble()) return value.asDouble();
-            return value.asInt();
+            if (value.fitsInInt()) return value.asInt();
+            return value.asDouble(); // Fallback for numbers that don't fit long, could be a large float or int.
         }
         if (value.hasArrayElements()) {
             List<Object> list = new ArrayList<>();
@@ -171,27 +236,54 @@ public class ScriptEngineService {
             return list;
         }
 
-        // TODO: Recursive Object conversion might be simpler with a library
         if (value.hasMembers()) {
             Map<String, Object> map = new HashMap<>();
             value.getMemberKeys().forEach(key -> map.put(key, extractResult(value.getMember(key))));
             return map;
         }
-        // TODO: Evaluate other possible return types like functions and promises
         LOG.warnf("Unhandled GraalVM value type encountered during result extraction: %s", value);
-        // TODO: Define proper Exception state and logger information handling
-        return value.toString(); // fallback
+        return value.toString(); // fallback in case that no fitting type conversions were found.
     }
 
-    ConditionResult evaluateCondition(String scriptId, String scriptContext, Object inputData, ExecutionContext executionContext) {
-        throw new UnsupportedOperationException("Not supported yet.");
+    /**
+     * Evaluates a condition script.
+     * <strong>NOTE: This method is not yet implemented.</strong>
+     *
+     * @param scriptId The ID of the script.
+     * @param scriptContext The script code or content.
+     * @param inputData The input data for the script.
+     * @return A {@link ConditionResult}.
+     * @throws UnsupportedOperationException always, as this method is not implemented.
+     */
+    ConditionResult evaluateCondition(String scriptId, String scriptContext, Object inputData) {
+        // TODO: Implement condition evaluation logic.
+        throw new UnsupportedOperationException("Condition evaluation is not supported yet.");
     }
 
+    /**
+     * Validates the syntax of a script.
+     * <strong>NOTE: This method is not yet implemented.</strong>
+     *
+     * @param scriptContext The script code or content to validate.
+     * @return A {@link ValidationResult}.
+     * @throws UnsupportedOperationException always, as this method is not implemented.
+     */
     ValidationResult validateSyntax(String scriptContext) {
-        throw new UnsupportedOperationException("Not supported yet.");
+        // TODO: Implement script syntax validation logic.
+        // This could involve attempting to parse the script without full execution.
+        throw new UnsupportedOperationException("Syntax validation is not supported yet.");
     }
 
+    /**
+     * Validates a data source.
+     * <strong>NOTE: This method is not yet implemented.</strong>
+     *
+     * @param inputData The input data to validate.
+     * @return An {@link IntegrityResult}.
+     * @throws UnsupportedOperationException always, as this method is not implemented.
+     */
     IntegrityResult validateDataSource(Object inputData) {
-        throw new UnsupportedOperationException("Not supported yet.");
+        // TODO: Implement data source integrity validation logic.
+        throw new UnsupportedOperationException("Data source validation is not supported yet.");
     }
 }

@@ -7,7 +7,7 @@ import io.quarkus.runtime.annotations.QuarkusMain;
 public class ScriptEngineApp {
 
     public static void main(String ... args) {
-        System.out.println("Running StayInSync Quarkus application...");
+        System.out.println("Running StayInSync Quarkus application as Script Engine standalone...");
         Quarkus.run(args);
     }
 }
