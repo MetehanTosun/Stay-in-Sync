@@ -5,6 +5,9 @@ import org.graalvm.polyglot.HostAccess;
 import org.graalvm.polyglot.ResourceLimits;
 import org.jboss.logging.Logger;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
@@ -41,8 +44,15 @@ public class ContextPool {
      * Using a {@link LinkedBlockingQueue} ensures thread-safe access to the pool.
      */
     private final BlockingQueue<Context> pool;
+
+    /**
+     * The synchronized List that tracks all created Contexts in order to keep household of
+     * creations and closings.
+     */
+    private final List<Context> allCreatedContexts;
     private final int poolSize;
     private final String languageId;
+    private volatile boolean closed = false;
 
     /**
      * Constructs a new {@code ContextPool} for the specified language and size.
@@ -51,12 +61,18 @@ public class ContextPool {
      * @param languageId The identifier of the scripting language (e.g., "js").
      *                   While this parameter is stored, the current implementation of {@link #initializePool()}
      *                   hardcodes "js" for context creation.
-     * @param size The maximum number of contexts to be maintained in this pool.
+     * @param size       The maximum number of contexts to be maintained in this pool. Must be at least 1
+     * @throws IllegalArgumentException if the size is less than or equal to 0.
      */
     public ContextPool(String languageId, int size) {
+        if (size <= 0) {
+            throw new IllegalArgumentException("ContextPool size must be positive but was: " + size);
+        }
+
         this.languageId = languageId;
         this.poolSize = size;
         this.pool = new LinkedBlockingQueue<>(size);
+        this.allCreatedContexts = Collections.synchronizedList(new ArrayList<>());
         initializePool();
     }
 
@@ -65,50 +81,79 @@ public class ContextPool {
      * This method will wait for up to 10 seconds for a context to become available.
      *
      * @return An available {@link Context} instance from the pool.
-     * @throws InterruptedException if the thread is interrupted while waiting for a context,
-     *                              or if a timeout occurs (10 seconds hardcoded, might have to be a config value) while waiting for an available context.
+     * @throws IllegalStateException if the ContextPool is closed or was closed during borrowing.
+     * @throws InterruptedException  if the thread is interrupted while waiting for a context,
+     *                               or if a timeout occurs (10 seconds hardcoded, might have
+     *                               to be a config value) while waiting for an available context.
      */
     public Context borrowContext() throws InterruptedException {
+        if (closed) {
+            throw new IllegalStateException("ContextPool for language " + languageId + " is closed.");
+        }
         LOG.debugf("Attempting to borrow context for language: %s. Available: %d/%d", languageId, pool.size(), poolSize);
         Context context = pool.poll(10, TimeUnit.SECONDS);
         if (context == null) {
+            if (closed) {
+                throw new IllegalStateException("ContextPool for language " + languageId + " is closed.");
+            }
             LOG.warnf("Timeout while waiting for a JavaScript context to borrow from the pool.");
             throw new InterruptedException("Timeout borrowing context for JavaScript");
         }
-        LOG.debugf("Borrowed context for language: %s. Available: %d/%d", languageId, pool.size() +1, poolSize);
+        LOG.debugf("Borrowed context for language: %s. Available: %d/%d", languageId, pool.size(), poolSize);
         return context;
     }
 
     /**
      * Returns a {@link Context} to the pool.
-     * If the context cannot be added to the pool (e.g., if the pool is unexpectedly full or the context is null),
-     * the context will be closed.
+     * null contexts are simply returned as false, since nothing is to be added to the pool.
+     * If the pool is closed, the context itself will be closed safely.
+     * If a context is to be returned from a different Pool, the returned context will be closed.
      *
      * @param context The {@link Context} instance to return to the pool.
      * @return {@code true} if the context was successfully returned to the pool, {@code false} otherwise
-     *         (e.g., if the context was null or the pool was full, leading to the context being closed).
+     * (e.g., if the context was null or the pool was full, leading to the context being closed).
      */
     public boolean returnContext(Context context) {
-        if (context != null && pool.offer(context)) {
+        if (context == null) return false;
+
+        if (closed) {
+            LOG.warnf("Context for language %s returned to an already closed pool. Closing context directly.", languageId);
+            closeSafely(context);
+            return false;
+        }
+
+        if (!allCreatedContexts.contains(context)) {
+            LOG.warnf("Attempt to return a context to pool '%s' that did not originate from it. Closing context.", languageId);
+            closeSafely(context);
+            return false;
+        }
+
+        if (pool.offer(context)) {
             LOG.debugf("Returned context for language: %s. Available: %d/%d", languageId, pool.size(), poolSize);
             return true;
-        } else if(context != null) {
-            LOG.warnf("Context for language %s could not be returned to pool (possibly full). Closing context instead. Pool available: %d/%d",
+        } else {
+            LOG.warnf("Context for language %s could not be returned to pool (possibly full or offer failed). Closing context instead. Pool available: %d/%d",
                     languageId, pool.size(), poolSize);
+            closeSafely(context);
+            return false;
+        }
+    }
+
+    private void closeSafely(Context context) {
+        if (context != null) {
             try {
                 context.close();
             } catch (Exception e) {
                 LOG.errorf(e, "Error closing context that could not be returned to pool for language %s", languageId);
             }
         }
-        return false;
     }
 
     public int getPoolSize() {
         return poolSize;
     }
 
-    public int getAvailableCount(){
+    public int getAvailableCount() {
         return pool.size();
     }
 
@@ -145,7 +190,9 @@ public class ContextPool {
                     builder.option("js.commonjs-require-cwd", "PATH TO MODULE MANAGEMENT");
                 }
                 */
-                pool.add(builder.build());
+                Context newContext = builder.build();
+                allCreatedContexts.add(newContext);
+                pool.add(newContext);
             } catch (Exception e) {
                 // TODO: Test and discussion about validity of sync node and if program may even start.
                 LOG.errorf(e, "Failed to create GraalVM context #%d for language %s", (i + 1), languageId);
@@ -159,15 +206,20 @@ public class ContextPool {
      * to release resources associated with the contexts.
      * Any errors encountered during context closure are logged as warnings.
      */
-    public void closeAllContexts(){
+    public void closeAllContexts() {
         LOG.infof("Closing all contexts in pool for language '%s'", languageId);
-        Context context;
-        while((context = pool.poll()) != null) {
-            try{
-                context.close();
-            } catch(Exception e) {
-                LOG.warnf(e, "Error closing context during pool cleanup for language %s", languageId);
-            }
+        this.closed = true;
+
+        Context contextFromQueue;
+        while ((contextFromQueue = pool.poll()) != null) {
+            closeSafely(contextFromQueue);
+        }
+
+        List<Context> contextsToClose = new ArrayList<>(allCreatedContexts);
+        allCreatedContexts.clear();
+
+        for (Context ctx : contextsToClose) {
+            closeSafely(ctx);
         }
     }
 }
