@@ -1,59 +1,92 @@
-<form #f="ngForm" (ngSubmit)="save()">
-  <!-- 1) Name -->
-  <label for="name">Name:</label>
-  <input
-    id="name"
-    name="name"
-    [(ngModel)]="source.name"
-    required
-    placeholder="e.g. My Source System"
-  />
+<form #sourceForm="ngForm" (ngSubmit)="save()">
+  <div class="p-fluid">
+    <div class="p-field" style="margin-bottom: 1rem;">
+      <label for="name">Name</label>
+      <input
+        id="name"
+        type="text"
+        pInputText
+        name="name"
+        [(ngModel)]="source.name"
+        required
+        placeholder="e.g. My Production Line API"
+      />
+      <small *ngIf="sourceForm.controls['name']?.invalid && sourceForm.controls['name']?.touched" class="p-error">
+        Name is required.
+      </small>
+    </div>
 
-  <!-- 2) Source Type -->
-  <label for="type">Source Type:</label>
-  <select
-    id="type"
-    name="type"
-    [(ngModel)]="sourceType"
-    (ngModelChange)="onTypeChange($event)"
-    required
-  >
-    <option value="AAS">AAS Instance</option>
-    <option value="REST">Generic REST API</option>
-  </select>
+    <div class="p-field" style="margin-bottom: 1rem;">
+      <label for="type">Source Type</label>
+      <p-dropdown
+        id="type"
+        name="type"
+        [options]="sourceTypeOptions"
+        [(ngModel)]="selectedSourceType"
+        placeholder="Select a Type"
+        optionLabel="label"
+        optionValue="value"
+        (onChange)="onTypeChange()"
+        required>
+      </p-dropdown>
+      <small *ngIf="sourceForm.controls['type']?.invalid && sourceForm.controls['type']?.touched" class="p-error">
+        Source Type is required.
+      </small>
+    </div>
 
-  <!-- 3a) AAS-Dropdown, nur wenn sourceType==='AAS' -->
-  <div *ngIf="sourceType === 'AAS'">
-    <label for="aas">Choose AAS:</label>
-    <select
-      id="aas"
-      name="aasId"
-      [(ngModel)]="source.aasId"
-      required
-    >
-      <option value="" disabled selected>-- choose AAS --</option>
-      <ng-container *ngIf="aasList$ | async as aasList">
-        <option *ngFor="let aas of aasList" [value]="aas.id">
-          {{ aas.name }}
-        </option>
-      </ng-container>
-    </select>
+    <div *ngIf="selectedSourceType === 'AAS'" class="p-field" style="margin-bottom: 1rem;">
+      <label for="aas">Choose AAS Instance</label>
+      <p-dropdown
+        id="aas"
+        name="aasId"
+        [options]="aasList"
+        [(ngModel)]="source.aasId"
+        placeholder="Select an AAS Instance"
+        optionLabel="name"
+        optionValue="id"
+        [filter]="true"
+        filterBy="name"
+        [showClear]="true"
+        [required]="selectedSourceType === 'AAS'">
+      </p-dropdown>
+      <small *ngIf="selectedSourceType === 'AAS' && sourceForm.controls['aasId']?.invalid && sourceForm.controls['aasId']?.touched" class="p-error">
+        AAS Instance is required for AAS type.
+      </small>
+      <div *ngIf="isLoadingAas && selectedSourceType === 'AAS'">Loading AAS instances...</div>
+    </div>
+
+    <div *ngIf="selectedSourceType === 'REST'" class="p-field" style="margin-bottom: 1rem;">
+      <label for="endpoint">Endpoint URL</label>
+      <input
+        id="endpoint"
+        type="text"
+        pInputText
+        name="endpoint"
+        [(ngModel)]="source.endpoint"
+        placeholder="e.g. https://api.example.com/data"
+        [required]="selectedSourceType === 'REST'"
+      />
+      <small *ngIf="selectedSourceType === 'REST' && sourceForm.controls['endpoint']?.invalid && sourceForm.controls['endpoint']?.touched" class="p-error">
+        Endpoint URL is required for REST type.
+      </small>
+    </div>
   </div>
 
-  <!-- 3b) Endpoint-Feld, nur wenn sourceType==='REST' -->
-  <div *ngIf="sourceType === 'REST'">
-    <label for="endpoint">Endpoint URL:</label>
-    <input
-      id="endpoint"
-      name="endpoint"
-      [(ngModel)]="source.endpoint"
-      required
-      placeholder="https://example.com/api"
-    />
+  <div class="form-actions" style="text-align: right; margin-top: 2rem;">
+    <button
+      pButton
+      type="button"
+      label="Cancel"
+      icon="pi pi-times"
+      (click)="cancel()"
+      class="p-button-text p-mr-2">
+    </button>
+    <button
+      pButton
+      type="submit"
+      label="Create"
+      icon="pi pi-check"
+      [disabled]="sourceForm.invalid">
+    </button>
   </div>
-
-  <!-- 4) Submit -->
-  <button type="submit" [disabled]="f.invalid">
-    Create Source System
-  </button>
 </form>
