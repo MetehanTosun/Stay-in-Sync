@@ -1,26 +1,27 @@
-<div class="source-system-container">
-  <nav class="sidebar">
-    <button
-      pButton
-      type="button"
-      label="Create Source System"
-      [routerLink]="['create-source-system']">
-    </button>
-  </nav>
-
-  <main class="content">
-    <h2>Available Source Systems</h2>
-
-    <!-- async list of systems -->
-    <ul *ngIf="sourceSystems$ | async as systems; else loading">
-      <li *ngFor="let sys of systems">{{ sys.name }}</li>
-    </ul>
-
-    <ng-template #loading>
-      <p>Loading…</p>
-    </ng-template>
-
-    <!-- nested child routes (e.g. create form) -->
+<section class="systems-list">
+  <div class="create-button-container">
+    <p-button label="Create Source System" icon="pi pi-plus" [routerLink]="['/source-system/create-source-system']"></p-button>
     <router-outlet></router-outlet>
-  </main>
-</div>
+  </div>
+  <h2>Available Source Systems</h2>
+
+  <ng-container *ngIf="loading">
+    <p>Loading…</p>
+  </ng-container>
+
+  <ng-container *ngIf="errorMessage">
+    <p class="error">{{ errorMessage }}</p>
+  </ng-container>
+
+  <p-table [value]="availableSystems" *ngIf="!loading && !errorMessage">
+    <ng-template pTemplate="header">
+      <tr><th>ID</th><th>Name</th></tr>
+    </ng-template>
+    <ng-template pTemplate="body" let-sys>
+      <tr><td>{{ sys.id }}</td><td>{{ sys.idShort }}</td></tr>
+    </ng-template>
+    <ng-template pTemplate="emptymessage">
+      <tr><td colspan="2"><em>No AAS instances found.</em></td></tr>
+    </ng-template>
+  </p-table>
+</section>

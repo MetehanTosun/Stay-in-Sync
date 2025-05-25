@@ -1,10 +1,13 @@
 // biome-ignore lint/style/useImportType: <explanation>
 import { HttpClient, HttpResponse } from '@angular/common/http';
 import { Injectable } from '@angular/core';
+// biome-ignore lint/style/useImportType: <explanation>
 import { Observable, throwError } from 'rxjs';
 import { catchError, map, tap } from 'rxjs/operators';
 
 export interface AasShell {
+  identification: any;
+  idShort: string;
   id: string;
   name: string;
 }
@@ -24,7 +27,8 @@ export class AasService {
 
     return this.http
       // observe: 'response' gibt uns das gesamte HttpResponse-Objekt
-      .get<any[]>(url, { observe: 'response' })
+      // biome-ignore lint/suspicious/noExplicitAny: <explanation>
+            .get<any[]>(url, { observe: 'response' })
       .pipe(
         tap((resp: HttpResponse<any[]>) =>
           console.log('📰 Vollständige Response:', resp)
