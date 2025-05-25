@@ -10,7 +10,7 @@ public class SyncJobFactory {
     public static TransformJob getIncrementByOneJob(String scriptId, String mockedHash, Number input) {
         String scriptCode = """
                 const input = stayinsync.getInput();
-              
+                
                 if(typeof input === 'number'){
                     stayinsync.setOutput(input + 1);
                 } else {
@@ -106,7 +106,7 @@ public class SyncJobFactory {
                     const operatorId = management.operatorId || 'N/A';
                 
                     const productId = manufacturing.productId || 'Unknown Product';
-
+                
                     const batchSize = manufacturing.batchSize || 0;
                     const criticalValue = (typeof manufacturing.criticalValue === 'number') ? manufacturing.criticalValue : 0;
                 

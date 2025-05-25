@@ -84,7 +84,7 @@ public class ContextPoolFactory {
      * After closing all contexts, it clears the internal map of pools.
      */
     @PreDestroy
-    public void cleanup(){
+    public void cleanup() {
         LOG.info("Cleaning up all ContextPools before application shutdown...");
         pools.values().forEach(ContextPool::closeAllContexts);
         pools.clear();

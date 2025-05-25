@@ -167,7 +167,6 @@ public class ScriptApiTests {
 
         assertEquals("value1", resultMap.get("key1"));
         assertThrows(UnsupportedOperationException.class, () -> {
-            @SuppressWarnings("unchecked")
             Map<Object, Object> rawOuterMap = (Map<Object, Object>) resultMap;
             rawOuterMap.put("key3", "newValue");
         }, "Outer map unmodifiable");
@@ -178,7 +177,6 @@ public class ScriptApiTests {
 
         assertEquals("nestedValue", nestedResultMap.get("nestedKey"));
         assertThrows(UnsupportedOperationException.class, () -> {
-            @SuppressWarnings("unchecked")
             Map<Object, Object> rawNestedMap = (Map<Object, Object>) nestedResultMap;
             rawNestedMap.put("newNestedKey", "newNestedValue");
         }, "Nested map should be unmodifiable");
@@ -252,7 +250,7 @@ public class ScriptApiTests {
         List<LogRecord> records = getCapturedLogRecords();
         assertEquals(1, records.size(), "Should only be one log record for valid level. Records: " + records);
 
-        LogRecord record = records.get(0);
+        LogRecord record = records.getFirst();
         assertEquals("Test message for " + inputLevelStr, record.getMessage());
         assertEquals(Level.parse(expectedJulLevelStr), record.getLevel(), "Log level mismatch for input: " + inputLevelStr);
 
@@ -271,7 +269,7 @@ public class ScriptApiTests {
         List<LogRecord> records = getCapturedLogRecords();
         assertEquals(1, records.size(), "Should only be one log record for null level.");
 
-        LogRecord mainRecord = records.get(0);
+        LogRecord mainRecord = records.getFirst();
         assertEquals("Message with null level", mainRecord.getMessage());
         assertEquals(Level.INFO, mainRecord.getLevel(), "Log level should default to INFO for null input.");
 
@@ -290,7 +288,7 @@ public class ScriptApiTests {
 
         List<LogRecord> records = getCapturedLogRecords();
 
-        assertEquals(2, records.size(), "Expected one main log (INFO) and one warning log for: '" + logLevel + "'. Records in test list: " + records.stream().map(r -> r.getLoggerName() + ": " + r.getMessage()).collect(Collectors.toList()));
+        assertEquals(2, records.size(), "Expected one main log (INFO) and one warning log for: '" + logLevel + "'. Records in test list: " + records.stream().map(r -> r.getLoggerName() + ": " + r.getMessage()).toList());
 
         LogRecord mainRecord = records.stream()
                 .filter(r -> r.getMessage().equals("Test message with problematic level"))
@@ -319,7 +317,7 @@ public class ScriptApiTests {
         List<LogRecord> records = getCapturedLogRecords();
         assertEquals(1, records.size(), "Should only be one log record for empty/blank level.");
 
-        LogRecord mainRecord = records.get(0);
+        LogRecord mainRecord = records.getFirst();
         assertEquals("Test message with empty/blank level", mainRecord.getMessage());
         assertEquals(Level.INFO, mainRecord.getLevel(), "Log level should default to INFO for empty/blank input.");
 

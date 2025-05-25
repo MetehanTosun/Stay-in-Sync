@@ -41,10 +41,10 @@ public class ScriptApi {
      * Constructs a new {@code ScriptApi} instance.
      *
      * @param inputData The data to be made available to the script via {@link #getInput()}.
-     *                  TODO: Check requirements for possible immutability or deep copy of inputData for security reasons.
-     * @param jobId The identifier for the current job, used for contextual information like logging.
-     *              // @param executionContext The execution context associated with this script run.
-     *              //                       TODO: Implement and integrate ExecutionContext.
+     *                                   TODO: Check requirements for possible immutability or deep copy of inputData for security reasons.
+     * @param jobId     The identifier for the current job, used for contextual information like logging.
+     *                  // @param executionContext The execution context associated with this script run.
+     *                  //                       TODO: Implement and integrate ExecutionContext.
      */
     public ScriptApi(Object inputData, String jobId/*, ExecutionContext executionContext*/) {
         this.inputData = inputData;
@@ -64,7 +64,7 @@ public class ScriptApi {
      * </p>
      *
      * @return The input data for the script. If the input was a Map, it returns a copy
-     *         (with nested Maps also copied). Otherwise, returns the original input object.
+     * (with nested Maps also copied). Otherwise, returns the original input object.
      */
     @HostAccess.Export
     public Object getInput() {
@@ -117,7 +117,7 @@ public class ScriptApi {
      * TODO: Add scriptID logging as MDC.
      * </p>
      *
-     * @param message The message string to be logged.
+     * @param message  The message string to be logged.
      * @param logLevel A string representing the desired log level (e.g., "INFO", "WARN", "ERROR", "DEBUG", "TRACE").
      *                 If null, invalid, or an unrecognized value is provided, it defaults to "INFO".
      *                 The level is case-insensitive.
@@ -125,17 +125,17 @@ public class ScriptApi {
     @HostAccess.Export
     public void log(String message, String logLevel) {
         MDC.put("jobId", jobId);
-        try{
+        try {
             Logger.Level level = Logger.Level.INFO;
-            if(logLevel != null  && !logLevel.trim().isEmpty()){
-                try{
+            if (logLevel != null && !logLevel.trim().isEmpty()) {
+                try {
                     level = Logger.Level.valueOf(logLevel.toUpperCase());
-                } catch (IllegalArgumentException e){
+                } catch (IllegalArgumentException e) {
                     SCRIPT_LOG.warnf("Invalid log level '%s' provided by script. Defaulting to INFO.", logLevel);
                 }
             }
             SCRIPT_LOG.log(level, message);
-        } finally{
+        } finally {
             MDC.remove("jobId");
         }
     }

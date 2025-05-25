@@ -68,12 +68,22 @@ public class ContextPoolTests {
                 records.add(record);
             }
         }
+
         @Override
-        public void flush() {}
+        public void flush() {
+        }
+
         @Override
-        public void close() throws SecurityException {}
-        public List<LogRecord> getRecords() { return new ArrayList<>(records); }
-        public void clearRecords() { records.clear(); }
+        public void close() throws SecurityException {
+        }
+
+        public List<LogRecord> getRecords() {
+            return new ArrayList<>(records);
+        }
+
+        public void clearRecords() {
+            records.clear();
+        }
     }
 
 
@@ -97,6 +107,7 @@ public class ContextPoolTests {
         if (contextPoolLoggerJul != null && capturingLogHandler != null) {
             contextPoolLoggerJul.removeHandler(capturingLogHandler);
         }
+        assert capturingLogHandler != null;
         capturingLogHandler.clearRecords();
     }
 
@@ -105,6 +116,7 @@ public class ContextPoolTests {
                 .filter(r -> r.getLoggerName().equals(loggerName))
                 .collect(Collectors.toList());
     }
+
     private List<LogRecord> getContextPoolLogs() {
         return getLogsByName(ContextPool.class.getName());
     }
@@ -134,9 +146,7 @@ public class ContextPoolTests {
 
     @Test
     void constructor_withZeroSize_shouldThrowIllegalArgumentException() {
-        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> {
-            new ContextPool(TEST_LANG_ID, 0);
-        });
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> new ContextPool(TEST_LANG_ID, 0));
         assertTrue(exception.getMessage().contains("ContextPool size must be positive"),
                 "Exception message mismatch for zero size.");
         assertTrue(exception.getMessage().contains("0"), "Exception message should contain the invalid size.");
@@ -144,9 +154,7 @@ public class ContextPoolTests {
 
     @Test
     void constructor_withNegativeSize_shouldThrowIllegalArgumentException() {
-        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> {
-            new ContextPool(TEST_LANG_ID, -5);
-        });
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> new ContextPool(TEST_LANG_ID, -5));
         assertTrue(exception.getMessage().contains("ContextPool size must be positive"),
                 "Exception message mismatch for negative size.");
         assertTrue(exception.getMessage().contains("-5"), "Exception message should contain the invalid size.");
@@ -173,9 +181,7 @@ public class ContextPoolTests {
         assertEquals(0, contextPool.getAvailableCount());
 
         long startTime = System.currentTimeMillis();
-        InterruptedException exception = assertThrows(InterruptedException.class, () -> {
-            contextPool.borrowContext();
-        }, "Should throw InterruptedException on timeout");
+        InterruptedException exception = assertThrows(InterruptedException.class, () -> contextPool.borrowContext(), "Should throw InterruptedException on timeout");
         long duration = System.currentTimeMillis() - startTime;
 
         assertTrue(exception.getMessage().contains("Timeout borrowing context"), "Exception message mismatch");
@@ -334,8 +340,7 @@ public class ContextPoolTests {
                         e.printStackTrace();
                         testFailed.set(true);
                         break;
-                    }
-                    finally {
+                    } finally {
                         if (context != null) {
                             boolean returned = contextPool.returnContext(context);
                             if (!returned && contextPool.getAvailableCount() < contextPool.getPoolSize()) {
@@ -345,7 +350,7 @@ public class ContextPoolTests {
                         }
                         latch.countDown();
                     }
-                    if(testFailed.get()) break;
+                    if (testFailed.get()) break;
                 }
             });
         }

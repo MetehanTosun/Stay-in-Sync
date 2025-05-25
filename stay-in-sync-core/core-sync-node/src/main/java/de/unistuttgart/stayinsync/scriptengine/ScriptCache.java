@@ -36,10 +36,10 @@ public class ScriptCache {
     /**
      * Retrieves a pre-parsed {@link Source} object from the cache.
      *
-     * @param scriptId The ID of the script.
+     * @param scriptId   The ID of the script.
      * @param scriptHash The hash of the script's content, representing a specific version.
      * @return The cached {@link Source} object if found, or {@code null} if the script
-     *         (with the specific ID and hash) is not in the cache.
+     * (with the specific ID and hash) is not in the cache.
      */
     public Source getScript(String scriptId, String scriptHash) {
         return cache.get(buildKey(scriptId, scriptHash));
@@ -53,7 +53,7 @@ public class ScriptCache {
      * like Python or C-scripts.
      * </p>
      *
-     * @param scriptId The ID of the script.
+     * @param scriptId   The ID of the script.
      * @param scriptHash The hash of the script's content.
      * @return {@code true} if the script is found in the cache, {@code false} otherwise.
      */
@@ -70,7 +70,7 @@ public class ScriptCache {
      * might not be added to the cache. The {@code TODO} comment indicates that parsing/compile
      * errors might require more sophisticated handling in the future.</p>
      *
-     * @param scriptId The ID of the script.
+     * @param scriptId   The ID of the script.
      * @param scriptHash The hash of the script's content, used for versioning.
      * @param scriptCode The raw source code of the script.
      */

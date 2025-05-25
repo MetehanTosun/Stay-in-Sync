@@ -58,9 +58,9 @@ public class ScriptEngineService {
      * Constructs a new {@code ScriptEngineService} with injected dependencies.
      * This constructor is typically invoked by the CDI container.
      *
-     * @param scriptCache The cache for storing and retrieving pre-parsed scripts.
+     * @param scriptCache        The cache for storing and retrieving pre-parsed scripts.
      * @param contextPoolFactory The factory for obtaining pools of script execution contexts.
-     * @param managedExecutor The executor service for running asynchronous tasks, managed by the MicroProfile Context Propagation.
+     * @param managedExecutor    The executor service for running asynchronous tasks, managed by the MicroProfile Context Propagation.
      */
     @Inject
     public ScriptEngineService(ScriptCache scriptCache, ContextPoolFactory contextPoolFactory, ManagedExecutor managedExecutor) {
@@ -79,11 +79,11 @@ public class ScriptEngineService {
      *
      * @param job The {@link TransformJob} defining the transformation to be executed.
      * @return A {@link CompletionStage} that will complete with a {@link TransformationResult}
-     *         containing the output of the script execution, its validity, and any error information.
+     * containing the output of the script execution, its validity, and any error information.
      */
     public CompletionStage<TransformationResult> transformAsync(TransformJob job) {
-        return CompletableFuture.supplyAsync(()-> {
-            try{
+        return CompletableFuture.supplyAsync(() -> {
+            try {
                 MDC.put("jobId", job.jobId());
                 MDC.put("scriptId", job.scriptId());
                 LOG.infof("Starting async transformation of job: %s, script: %s", job.jobId(), job.scriptId());
@@ -102,7 +102,7 @@ public class ScriptEngineService {
      *
      * @param args Command line arguments.
      */
-    public static void main(String[] args){
+    public static void main(String[] args) {
         Quarkus.run(args);
     }
 
@@ -192,7 +192,7 @@ public class ScriptEngineService {
             // TODO: handle scriptApi still being bound to context / potentially cleanup / packagemanager?
             if (context != null) {
                 context.getBindings(transformJob.scriptLanguage()).removeMember(SCRIPT_API_BINDING_NAME);
-                if("js".equalsIgnoreCase(transformJob.scriptLanguage()) && transformJob.sourceData() instanceof Map) {
+                if ("js".equalsIgnoreCase(transformJob.scriptLanguage()) && transformJob.sourceData() instanceof Map) {
                     Map<String, Object> namespacedData = (Map<String, Object>) transformJob.sourceData();
                     for (Map.Entry<String, Object> entry : namespacedData.entrySet()) {
                         context.getBindings("js").putMember(entry.getKey(), entry.getValue());
@@ -215,7 +215,7 @@ public class ScriptEngineService {
      *
      * @param value The GraalVM {@link Value} to convert.
      * @return The corresponding Java object, or a string representation as a fallback for unhandled types.
-     *         Returns {@code null} if the input value is {@code null} or represents a GraalVM null.
+     * Returns {@code null} if the input value is {@code null} or represents a GraalVM null.
      */
     private Object extractResult(Value value) {
         if (value == null || value.isNull()) return null;
@@ -249,9 +249,9 @@ public class ScriptEngineService {
      * Evaluates a condition script.
      * <strong>NOTE: This method is not yet implemented.</strong>
      *
-     * @param scriptId The ID of the script.
+     * @param scriptId      The ID of the script.
      * @param scriptContext The script code or content.
-     * @param inputData The input data for the script.
+     * @param inputData     The input data for the script.
      * @return A {@link ConditionResult}.
      * @throws UnsupportedOperationException always, as this method is not implemented.
      */
