@@ -127,7 +127,7 @@ public class ScriptApi {
         MDC.put("jobId", jobId);
         try{
             Logger.Level level = Logger.Level.INFO;
-            if(logLevel != null){
+            if(logLevel != null  && !logLevel.trim().isEmpty()){
                 try{
                     level = Logger.Level.valueOf(logLevel.toUpperCase());
                 } catch (IllegalArgumentException e){
