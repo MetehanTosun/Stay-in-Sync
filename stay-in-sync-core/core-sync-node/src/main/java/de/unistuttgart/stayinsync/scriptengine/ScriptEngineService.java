@@ -6,16 +6,11 @@ import de.unistuttgart.stayinsync.scriptengine.message.TransformationResult;
 import de.unistuttgart.stayinsync.scriptengine.message.ValidationResult;
 import de.unistuttgart.stayinsync.syncnode.domain.TransformJob;
 import io.quarkus.runtime.Quarkus;
-import io.smallrye.common.annotation.Blocking;
 import io.vertx.core.spi.launcher.ExecutionContext;
 
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import org.eclipse.microprofile.context.ManagedExecutor;
-import org.eclipse.microprofile.reactive.messaging.Channel;
-import org.eclipse.microprofile.reactive.messaging.Emitter;
-import org.eclipse.microprofile.reactive.messaging.Incoming;
-import org.eclipse.microprofile.reactive.messaging.Message;
 import org.graalvm.polyglot.*;
 import org.jboss.logging.Logger;
 import org.jboss.logging.MDC;
@@ -26,8 +21,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 
 /**
  * A Facade ScriptEngineService that provides easy and well-defined entrypoints to interact with the script-engine.
