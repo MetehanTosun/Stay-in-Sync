@@ -1,0 +1,49 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: aas-web-ui
+  labels:
+    app: aas-web-ui
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: aas-web-ui
+  template:
+    metadata:
+      labels:
+        app: aas-web-ui
+    spec:
+      containers:
+        - name: aas-web-ui
+          image: eclipsebasyx/aas-gui:SNAPSHOT
+          ports:
+            - containerPort: 3000
+          env:
+            - name: AAS_REGISTRY_PATH
+              value: "http://192.168.49.2:30083/shell-descriptors"
+            - name: SUBMODEL_REGISTRY_PATH
+              value: "http://192.168.49.2:30082/submodel-descriptors"
+            - name: AAS_REPO_PATH
+              value: "http://192.168.49.2:30081/shells"
+            - name: SUBMODEL_REPO_PATH
+              value: "http://192.168.49.2:30081/submodels"
+            - name: CD_REPO_PATH
+              value: "http://192.168.49.2:30081/concept-descriptions"
+            - name: PRIMARY_COLOR
+              value: "#FF0000"
+            - name: DASHBOARD_SERVICE_PATH
+              value: "http://dashboard-api:8085/api/elements"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: aas-web-ui
+spec:
+  type: NodePort
+  selector:
+    app: aas-web-ui
+  ports:
+    - port: 3000
+      targetPort: 3000
+      nodePort: 30080

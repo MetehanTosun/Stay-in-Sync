@@ -1,0 +1,332 @@
+# Default values for stay-in-sync-chart.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+# This will set the replicaset count more information can be found here: https://kubernetes.io/docs/concepts/workloads/controllers/replicaset/
+replicaCount: 1
+
+# This sets the container image more information can be found here: https://kubernetes.io/docs/concepts/containers/images/
+image:
+  repository: nginx
+  # This sets the pull policy for images.
+  pullPolicy: IfNotPresent
+  # Overrides the image tag whose default is the chart appVersion.
+  tag: ""
+
+# This is for the secrets for pulling an image from a private repository more information can be found here: https://kubernetes.io/docs/tasks/configure-pod-container/pull-image-private-registry/
+imagePullSecrets: [ ]
+# This is to override the chart name.
+nameOverride: ""
+fullnameOverride: ""
+
+# This section builds out the service account more information can be found here: https://kubernetes.io/docs/concepts/security/service-accounts/
+serviceAccount:
+  # Specifies whether a service account should be created
+  create: true
+  # Automatically mount a ServiceAccount's API credentials?
+  automount: true
+  # Annotations to add to the service account
+  annotations: { }
+  # The name of the service account to use.
+  # If not set and create is true, a name is generated using the fullname template
+  name: ""
+
+# This is for setting Kubernetes Annotations to a Pod.
+# For more information checkout: https://kubernetes.io/docs/concepts/overview/working-with-objects/annotations/
+podAnnotations: { }
+# This is for setting Kubernetes Labels to a Pod.
+# For more information checkout: https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/
+podLabels: { }
+
+podSecurityContext: { }
+# fsGroup: 2000
+
+securityContext: { }
+# capabilities:
+#   drop:
+#   - ALL
+# readOnlyRootFilesystem: true
+# runAsNonRoot: true
+# runAsUser: 1000
+
+# This is for setting up a service more information can be found here: https://kubernetes.io/docs/concepts/services-networking/service/
+service:
+  # This sets the service type more information can be found here: https://kubernetes.io/docs/concepts/services-networking/service/#publishing-services-service-types
+  type: ClusterIP
+  # This sets the ports more information can be found here: https://kubernetes.io/docs/concepts/services-networking/service/#field-spec-ports
+  port: 80
+
+# This block is for setting up the ingress for more information can be found here: https://kubernetes.io/docs/concepts/services-networking/ingress/
+ingress:
+  enabled: false
+  className: ""
+  annotations: { }
+  # kubernetes.io/ingress.class: nginx
+  # kubernetes.io/tls-acme: "true"
+  hosts:
+    - host: chart-example.local
+      paths:
+        - path: /
+          pathType: ImplementationSpecific
+  tls: [ ]
+  #  - secretName: chart-example-tls
+  #    hosts:
+  #      - chart-example.local
+
+resources: { }
+# We usually recommend not to specify default resources and to leave this as a conscious
+# choice for the user. This also increases chances charts run on environments with little
+# resources, such as Minikube. If you do want to specify resources, uncomment the following
+# lines, adjust them as necessary, and remove the curly braces after 'resources:'.
+# limits:
+#   cpu: 100m
+#   memory: 128Mi
+# requests:
+#   cpu: 100m
+#   memory: 128Mi
+
+# This is to setup the liveness and readiness probes more information can be found here: https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes/
+livenessProbe:
+  httpGet:
+    path: /
+    port: http
+readinessProbe:
+  httpGet:
+    path: /
+    port: http
+
+# This section is for setting up autoscaling more information can be found here: https://kubernetes.io/docs/concepts/workloads/autoscaling/
+autoscaling:
+  enabled: false
+  minReplicas: 1
+  maxReplicas: 100
+  targetCPUUtilizationPercentage: 80
+  # targetMemoryUtilizationPercentage: 80
+
+# Additional volumes on the output Deployment definition.
+volumes: [ ]
+# - name: foo
+#   secret:
+#     secretName: mysecret
+#     optional: false
+
+# Additional volumeMounts on the output Deployment definition.
+volumeMounts: [ ]
+# - name: foo
+#   mountPath: "/etc/foo"
+#   readOnly: true
+
+nodeSelector: { }
+
+tolerations: [ ]
+
+affinity: { }
+mariadb:
+  service:
+    type: ClusterIP
+    port: 3306
+mongodb:
+  auth:
+    rootUser: root
+    rootPassword: "rootPassword123!"
+    usernames:
+      - "basyx"
+      - "basyx"
+    passwords:
+      - "basyxUserPassword123!"
+      - "basyxUserPassword123!"
+    databases:
+      - "aasregistry"
+      - "smregistry"
+  service:
+    type: ClusterIP
+    port: 27017
+
+rabbitmq:
+  auth:
+    username: user
+    password: bitnami
+    erlangCookie: my-erlang-cookie
+  tls:
+    enabled: false
+
+  persistence:
+    enabled: false
+
+  replicaCount: 1
+
+umbrella:
+  portal:
+    enabled: true
+
+
+  centralidp:
+    enabled: true
+    # -- uncomment the following for persistance
+    # keycloak:
+    #   postgresql:
+    #     primary:
+    #       persistence:
+    #         enabled: true
+
+  sharedidp:
+    enabled: true
+    # -- uncomment the following for persistance
+    # keycloak:
+    #   postgresql:
+    #     primary:
+    #       persistence:
+    #         enabled: true
+    realmSeeding:
+      realms:
+        cxOperator:
+          sslRequired: "none"
+          centralidp: "http://centralidp.tx.test"
+          initialUser:
+            username: "cx-operator@tx.test"
+            password: "tractusx-umbr3lla!"
+        master:
+          serviceAccounts:
+            provisioning:
+              clientSecret: "changeme"
+            saCxOpergator:
+              clientSecret: "changeme"
+  pgadmin4:
+    enabled: true
+    # -- uncomment the following for persistance
+    # persistentVolume:
+    #   enabled: true
+
+  # Interfaces are disabled by default (other than IAM)
+
+  tx-data-provider:
+    enabled: false
+    seedTestdata: true
+    backendUrl: http://{{ .Release.Name }}-dataprovider-submodelserver:8080
+    registryUrl: http://{{ .Release.Name }}-dataprovider-dtr:8080/api/v3
+    controlplanePublicUrl: http://{{ .Release.Name }}-dataprovider-edc-controlplane:8084
+    controlplaneManagementUrl: http://{{ .Release.Name }}-dataprovider-edc-controlplane:8081
+    dataplaneUrl: http://{{ .Release.Name }}-dataprovider-edc-dataplane:8081
+    nameOverride: dataprovider
+    secrets:
+      edc-wallet-secret: changeme
+    tractusx-connector:
+      nameOverride: dataprovider-edc
+      participant:
+        id: BPNL00000003AYRE
+      iatp:
+        id: did:web:ssi-dim-wallet-stub.tx.test:BPNL00000003AYRE
+        trustedIssuers:
+          - did:web:ssi-dim-wallet-stub.tx.test:BPNL00000003CRHK
+        sts:
+          dim:
+            url: http://ssi-dim-wallet-stub.tx.test/api/sts
+          oauth:
+            token_url: http://ssi-dim-wallet-stub.tx.test/oauth/token
+            client:
+              id: BPNL00000003AYRE
+              secret_alias: edc-wallet-secret
+      controlplane:
+        env:
+          TX_IAM_IATP_CREDENTIALSERVICE_URL: http://ssi-dim-wallet-stub.tx.test/api
+          EDC_IAM_DID_WEB_USE_HTTPS: false
+        bdrs:
+          server:
+            url: http://ssi-dim-wallet-stub.tx.test/api/v1/directory
+        endpoints:
+          management:
+            authKey: TEST2
+        ingresses:
+          - enabled: true
+            hostname: "dataprovider-controlplane.tx.test"
+            endpoints:
+              - default
+              - protocol
+              - management
+            className: "nginx"
+            tls:
+              enabled: false
+      dataplane:
+        env:
+          TX_IAM_IATP_CREDENTIALSERVICE_URL: http://ssi-dim-wallet-stub.tx.test/api
+          EDC_IAM_DID_WEB_USE_HTTPS: false
+        ingresses:
+          - enabled: true
+            hostname: "dataprovider-dataplane.tx.test"
+            endpoints:
+              - default
+              - public
+            className: "nginx"
+            tls:
+              enabled: false
+        token:
+          signer:
+            privatekey_alias: tokenSignerPrivateKey
+          verifier:
+            publickey_alias: tokenSignerPublicKey
+      postgresql:
+        nameOverride: dataprovider-db
+        jdbcUrl: "jdbc:postgresql://{{ .Release.Name }}-dataprovider-db:5432/edc"
+        auth:
+          password: "dbpasswordtxdataprovider"
+          postgresPassword: "dbpasswordtxdataprovider"
+      vault:
+        hashicorp:
+          url: http://edc-dataprovider-vault:8200
+        secretNames:
+          transferProxyTokenSignerPrivateKey: tokenSignerPrivateKey
+          transferProxyTokenSignerPublicKey: tokenSignerPublicKey
+          transferProxyTokenEncryptionAesKey: tokenEncryptionAesKey
+
+    vault:
+      nameOverride: edc-dataprovider-vault
+      fullnameOverride: edc-dataprovider-vault
+      enabled: true
+      server:
+        postStart: [ ]
+
+    digital-twin-registry:
+      nameOverride: dataprovider-dtr
+      postgresql:
+        nameOverride: dataprovider-dtr-db
+        auth:
+          password: "dbpassworddtrdataprovider"
+          existingSecret: dataprovider-secret-dtr-postgres-init
+      registry:
+        host: dataprovider-dtr.test
+
+    simple-data-backend:
+      nameOverride: dataprovider-submodelserver
+      ingress:
+        enabled: true
+        className: "nginx"
+        hosts:
+          - host: "dataprovider-submodelserver.tx.test"
+            paths:
+              - path: "/"
+                pathType: "Prefix"
+
+  # Set 'enabled' to true if onboarding is required
+  bpdm:
+    enabled: false
+
+  bdrs-server-memory:
+    enabled: false
+
+  # Set 'enabled' to true if onboarding is required
+  selfdescription:
+    enabled: false
+
+  bpndiscovery:
+    enabled: false
+
+  discoveryfinder:
+    enabled: false
+
+  # Set 'enabled' to true if onboarding is required
+  ssi-credential-issuer:
+    enabled: false
+
+  # Set 'enabled' to true if onboarding is required
+  ssi-dim-wallet-stub:
+    enabled: false

@@ -1,0 +1,61 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: aas-env-config
+data:
+  application.properties: |
+    server.port=8081
+    spring.application.name=AAS Environment
+    basyx.cors.allowed-origins=*
+    basyx.cors.allowed-methods=GET,POST,PATCH,DELETE,PUT,OPTIONS,HEAD
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: aas-env
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: aas-env
+  template:
+    metadata:
+      labels:
+        app: aas-env
+    spec:
+      containers:
+        - name: aas-env
+          image: eclipsebasyx/aas-environment:2.0.0-SNAPSHOT
+          ports:
+            - containerPort: 8081
+          env:
+            - name: SERVER_PORT
+              value: "8081"
+          volumeMounts:
+            - name: aas-volume
+              mountPath: /application/aas
+            - name: config
+              mountPath: /application/application.properties
+              subPath: application.properties
+      volumes:
+        - name: aas-volume
+          hostPath:
+            path: /path/on/host/aas  # replace with appropriate path or use PVC
+        - name: config
+          configMap:
+            name: aas-env-config
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: aas-env
+spec:
+  type: NodePort
+  ports:
+    - port: 8081
+      targetPort: 8081
+      nodePort: 30081
+  selector:
+    app: aas-env
+
