@@ -1,5 +1,6 @@
 package de.unistuttgart.stayinsync.scriptengine;
 
+import de.unistuttgart.stayinsync.exception.ScriptEngineException;
 import de.unistuttgart.stayinsync.scriptengine.message.ConditionResult;
 import de.unistuttgart.stayinsync.scriptengine.message.IntegrityResult;
 import de.unistuttgart.stayinsync.scriptengine.message.TransformationResult;
@@ -79,17 +80,40 @@ public class ScriptEngineService {
      * containing the output of the script execution, its validity, and any error information.
      */
     public Uni<TransformationResult> transformAsync(TransformJob job) {
-        return Uni.createFrom().item(() ->{
+        return Uni.createFrom().item(() -> {
             try {
                 MDC.put("jobId", job.jobId());
                 MDC.put("scriptId", job.scriptId());
                 Log.infof("Starting async transformation of job: %s, script: %s", job.jobId(), job.scriptId());
+
                 return transformInternal(job);
+            } catch (ScriptEngineException e) {
+                Log.warnf(e, "ScriptEngineException during async transformation for job %s, script %s. Title: %s",
+                        job.jobId(), job.scriptId(), e.getTitle());
+                return getResult(job, e);
+            } catch (Exception e) {
+                Log.errorf(e, "Unexpected generic exception during async transformation for job %s, script %s",
+                        job.jobId(), job.scriptId());
+                TransformationResult errorResult = new TransformationResult(job.jobId(), job.scriptId());
+                errorResult.setValidExecution(false);
+                errorResult.setErrorInfo("Unexpected error during transformation: " + e.getMessage());
+                return errorResult;
             } finally {
-                Log.infof("finished async transformation of job: %s, script: %s", job.jobId(), job.scriptId());
+                Log.infof("Finished async transformation (attempt) for job: %s, script: %s", job.jobId(), job.scriptId());
                 MDC.clear();
             }
         }).runSubscriptionOn(managedExecutor);
+    }
+
+    private static TransformationResult getResult(TransformJob job, ScriptEngineException e) {
+        TransformationResult errorResult = new TransformationResult(job.jobId(), job.scriptId());
+        errorResult.setValidExecution(false);
+        String errorMessage = String.format("[%s] %s (Details: %s)", e.getErrorType(), e.getTitle(), e.getMessage());
+        if (e.getCause() != null) {
+            errorMessage += " | Caused by: " + e.getCause().getClass().getSimpleName() + ": " + e.getCause().getMessage();
+        }
+        errorResult.setErrorInfo(errorMessage);
+        return errorResult;
     }
 
     /**
@@ -117,89 +141,158 @@ public class ScriptEngineService {
      */
     private TransformationResult transformInternal(TransformJob transformJob) {
         TransformationResult result = new TransformationResult(transformJob.jobId(), transformJob.scriptId());
-        ContextPool contextPool = contextPoolFactory.getPool("js"); // TODO: extension point for more languages
+        // TODO: languageId hier dynamisch aus transformJob.scriptLanguage() holen und den Pool entsprechend anfordern
+
+        ContextPool contextPool = contextPoolFactory.getPool("js");
         Context context = null;
 
         try {
-            context = contextPool.borrowContext();
+            try {
+                context = contextPool.borrowContext();
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                throw new ScriptEngineException(
+                        ScriptEngineException.ErrorType.CONTEXT_POOL_ERROR,
+                        "Context Borrow Interrupted",
+                        "Thread interrupted while waiting to borrow context for job " + transformJob.jobId(),
+                        e
+                );
+            }
             Log.debugf("Borrowed context for job %s (language: %s)", transformJob.jobId(), transformJob.scriptLanguage());
 
-            if (!scriptCache.containsScript(transformJob.scriptId(), transformJob.expectedHash())) { // TODO: add scriptLanguage
-                Log.infof("Script %s (hash: %s, lang: %s) not in cache. Compiling...",
-                        transformJob.scriptId(), transformJob.expectedHash(), transformJob.scriptLanguage());
-                scriptCache.putScript(transformJob.scriptId(), transformJob.expectedHash(), transformJob.scriptCode()); // TODO: add scriptLanguage
+            Source source;
+            try {
+                if (!scriptCache.containsScript(transformJob.scriptId(), transformJob.expectedHash())) {
+                    Log.infof("Script %s (hash: %s, lang: %s) not in cache. Compiling...",
+                            transformJob.scriptId(), transformJob.expectedHash(), transformJob.scriptLanguage());
+                    scriptCache.putScript(transformJob.scriptId(), transformJob.expectedHash(), transformJob.scriptCode());
+                }
+                source = scriptCache.getScript(transformJob.scriptId(), transformJob.expectedHash());
+            } catch (ScriptEngineException e) {
+                throw new ScriptEngineException(
+                        e.getErrorType(),
+                        e.getTitle(),
+                        String.format("Caching/Parsing script %s for job %s failed: %s", transformJob.scriptId(), transformJob.jobId(), e.getMessage()),
+                        e
+                );
             }
-            Source source = scriptCache.getScript(transformJob.scriptId(), transformJob.expectedHash());
+
             if (source == null) {
-                result.setValidExecution(false);
-                result.setErrorInfo("Script source not found in cache for: " + transformJob.scriptId() + " (lang: " + transformJob.scriptLanguage() + ")");
-                Log.error(result.getErrorInfo());
-                return result;
+                String errorMsg = "Script source not found or could not be loaded for: " + transformJob.scriptId() + " (job " + transformJob.jobId() + ")";
+                Log.error(errorMsg);
+                throw new ScriptEngineException(
+                        ScriptEngineException.ErrorType.SCRIPT_CACHING_ERROR,
+                        "Script Not Found",
+                        errorMsg
+                );
             }
 
             ScriptApi scriptApi = new ScriptApi(transformJob.sourceData(), transformJob.jobId());
-            context.getBindings(transformJob.scriptLanguage()).putMember(SCRIPT_API_BINDING_NAME, scriptApi);
+            try {
+                context.getBindings(transformJob.scriptLanguage()).putMember(SCRIPT_API_BINDING_NAME, scriptApi);
 
-            if ("js".equalsIgnoreCase(transformJob.scriptLanguage())) {
-                if (transformJob.sourceData() instanceof Map) {
-                    Map<String, Object> namespacedData = (Map<String, Object>) transformJob.sourceData();
-                    for (Map.Entry<String, Object> entry : namespacedData.entrySet()) {
-                        context.getBindings("js").putMember(entry.getKey(), entry.getValue());
+                if ("js".equalsIgnoreCase(transformJob.scriptLanguage())) {
+                    if (transformJob.sourceData() instanceof Map) {
+                        Map<String, Object> namespacedData = (Map<String, Object>) transformJob.sourceData();
+                        for (Map.Entry<String, Object> entry : namespacedData.entrySet()) {
+                            context.getBindings("js").putMember(entry.getKey(), entry.getValue());
+                        }
+                    } else {
+                        Log.warnf("Input data for JS script %s is not a Map. It won't be directly available as global vars.", transformJob.scriptId());
                     }
-                } else {
-                    Log.warnf("Input data for JS script %s is not a Map. It won't be directly available as global vars.", transformJob.scriptId());
                 }
+            } catch (Exception e) {
+                String errorMsg = String.format("Failed to set up bindings for script %s (job %s, lang %s): %s",
+                        transformJob.scriptId(), transformJob.jobId(), transformJob.scriptLanguage(), e.getMessage());
+                Log.errorf(e, errorMsg);
+                throw new ScriptEngineException(
+                        ScriptEngineException.ErrorType.BINDING_ERROR,
+                        "Script Binding Error",
+                        errorMsg,
+                        e
+                );
             }
 
             context.eval(source);
             Object rawOutput = scriptApi.getOutputData();
             if (rawOutput == null) {
-                Log.warnf("Script %s did not call %s.getOutput(). OutputData is null.", transformJob.scriptId(), SCRIPT_API_BINDING_NAME);
+                Log.warnf("Script %s did not call %s.setOutput(). OutputData is null for job %s.", transformJob.scriptId(), SCRIPT_API_BINDING_NAME, transformJob.jobId());
             }
+
             result.setOutputData(extractResult(Value.asValue(rawOutput)));
             result.setValidExecution(true);
             Log.infof("Script %s executed successfully for job %s.", transformJob.scriptId(), transformJob.jobId());
+            return result;
 
         } catch (PolyglotException e) {
-            result.setValidExecution(false);
-            String errorMsg = String.format("Script execution failed for %s (job %s, lang %s): %s",
-                    transformJob.scriptId(), transformJob.jobId(), transformJob.scriptLanguage(), e.getMessage());
-
+            String errorDetails;
+            String title = "Script Execution Error";
             if (e.isHostException()) {
                 Throwable hostEx = e.asHostException();
-                Log.errorf(hostEx, "%s - HostException: %s", errorMsg, hostEx.getMessage());
-                result.setErrorInfo(errorMsg + " - HostException: " + hostEx.getMessage());
+                errorDetails = String.format("HostException: %s", hostEx.getMessage());
+                Log.errorf(hostEx, "Script execution failed for %s (job %s, lang %s) due to HostException: %s",
+                        transformJob.scriptId(), transformJob.jobId(), transformJob.scriptLanguage(), hostEx.getMessage());
             } else if (e.isGuestException()) {
-                Log.errorf("%s - GuestException: %s. Source: %s", errorMsg, e.getMessage(), e.getSourceLocation() != null ? e.getSourceLocation().toString() : "N/A");
-                result.setErrorInfo(errorMsg + " - GuestException: " + e.getMessage());
-            } else {
-                Log.errorf(e, errorMsg);
-                result.setErrorInfo(errorMsg);
+                errorDetails = String.format("GuestException: %s. Source: %s", e.getMessage(), e.getSourceLocation() != null ? e.getSourceLocation().toString() : "N/A");
+                Log.errorf("Script execution failed for %s (job %s, lang %s) due to GuestException: %s. Source: %s",
+                        transformJob.scriptId(), transformJob.jobId(), transformJob.scriptLanguage(), e.getMessage(), e.getSourceLocation() != null ? e.getSourceLocation().toString() : "N/A");
+            } else if (e.isSyntaxError()) {
+                title = "Script Syntax Error";
+                errorDetails = String.format("SyntaxError: %s. Source: %s", e.getMessage(), e.getSourceLocation() != null ? e.getSourceLocation().toString() : "N/A");
+                Log.errorf("Script execution failed for %s (job %s, lang %s) due to SyntaxError: %s. Source: %s",
+                        transformJob.scriptId(), transformJob.jobId(), transformJob.scriptLanguage(), e.getMessage(), e.getSourceLocation() != null ? e.getSourceLocation().toString() : "N/A");
+            } else if (e.isResourceExhausted()) {
+                title = "Resource Limit Exceeded";
+                errorDetails = String.format("ResourceLimitExceeded: %s. Source: %s", e.getMessage(), e.getSourceLocation() != null ? e.getSourceLocation().toString() : "N/A");
+                Log.errorf("Script execution failed for %s (job %s, lang %s) due to ResourceLimitExceeded: %s. Source: %s",
+                        transformJob.scriptId(), transformJob.jobId(), transformJob.scriptLanguage(), e.getMessage(), e.getSourceLocation() != null ? e.getSourceLocation().toString() : "N/A");
             }
-        } catch (InterruptedException e) {
-            result.setValidExecution(false);
-            result.setErrorInfo("Thread interrupted while processing job " + transformJob.jobId() + ": " + e.getMessage());
-            Log.warnf("Thread interrupted for job %s", transformJob.jobId());
-            Thread.currentThread().interrupt();
-        } catch (Exception e) {
-            result.setValidExecution(false);
-            result.setErrorInfo("Unexpected error during transformation for job " + transformJob.jobId() + ": " + e.getMessage());
-            Log.errorf(e, "Unexpected error for job %s", transformJob.jobId());
+            else {
+                errorDetails = String.format("PolyglotException: %s", e.getMessage());
+                Log.errorf(e, "Script execution failed for %s (job %s, lang %s) due to PolyglotException: %s",
+                        transformJob.scriptId(), transformJob.jobId(), transformJob.scriptLanguage(), e.getMessage());
+            }
+            throw new ScriptEngineException(
+                    ScriptEngineException.ErrorType.SCRIPT_EXECUTION_ERROR,
+                    title,
+                    String.format("Script execution failed for %s (job %s, lang %s): %s",
+                            transformJob.scriptId(), transformJob.jobId(), transformJob.scriptLanguage(), errorDetails),
+                    e
+            );
+        } catch (ScriptEngineException e) {
+            Log.errorf(e, "A ScriptEngineException occurred during transformation for job %s, script %s: %s",
+                    transformJob.jobId(), transformJob.scriptId(), e.getMessage());
+            throw e;
+        }
+        catch (Exception e) {
+            String errorMsg = String.format("Unexpected error during transformation for job %s, script %s: %s",
+                    transformJob.jobId(), transformJob.scriptId(), e.getMessage());
+            Log.errorf(e, errorMsg);
+            throw new ScriptEngineException(
+                    ScriptEngineException.ErrorType.SCRIPT_EXECUTION_ERROR,
+                    "Unexpected Transformation Error",
+                    errorMsg,
+                    e
+            );
         } finally {
-            // TODO: handle scriptApi still being bound to context / potentially cleanup / packagemanager?
             if (context != null) {
-                context.getBindings(transformJob.scriptLanguage()).removeMember(SCRIPT_API_BINDING_NAME);
-                if ("js".equalsIgnoreCase(transformJob.scriptLanguage()) && transformJob.sourceData() instanceof Map) {
-                    Map<String, Object> namespacedData = (Map<String, Object>) transformJob.sourceData();
-                    for (Map.Entry<String, Object> entry : namespacedData.entrySet()) {
-                        context.getBindings("js").putMember(entry.getKey(), entry.getValue());
+                try {
+                    context.getBindings(transformJob.scriptLanguage()).removeMember(SCRIPT_API_BINDING_NAME);
+                    if ("js".equalsIgnoreCase(transformJob.scriptLanguage()) && transformJob.sourceData() instanceof Map) {
+                        Map<String, Object> namespacedData = (Map<String, Object>) transformJob.sourceData();
+                        for (Map.Entry<String, Object> entry : namespacedData.entrySet()) {
+                            context.getBindings("js").removeMember(entry.getKey());
+                        }
                     }
+                } catch (Exception e) {
+                    Log.errorf(e, "Error during context binding cleanup for job %s, script %s. Context might be in an inconsistent state when returned to pool.",
+                            transformJob.jobId(), transformJob.scriptId());
+                } finally {
+                    contextPool.returnContext(context);
+                    Log.debugf("Returned context for job %s", transformJob.jobId());
                 }
-                contextPool.returnContext(context);
-                Log.debugf("Returned context for job %s", transformJob.jobId());
             }
         }
-        return result;
     }
 
     /**
@@ -215,7 +308,28 @@ public class ScriptEngineService {
      * Returns {@code null} if the input value is {@code null} or represents a GraalVM null.
      */
     private Object extractResult(Value value) {
-        if (value == null || value.isNull()) return null;
+        try {
+            if (value.isProxyObject()) {
+                String errorMsg = String.format("Unhandled GraalVM proxy object encountered during result extraction: %s", value);
+                Log.warn(errorMsg);
+                throw new ScriptEngineException(ScriptEngineException.ErrorType.RESULT_EXTRACTION_ERROR,
+                        "Result Extraction Error",
+                        errorMsg);
+            }
+        } catch (PolyglotException e) {
+            String errorMsg = String.format("PolyglotException during result extraction of value '%s': %s", value, e.getMessage());
+            Log.warnf(e, errorMsg);
+            throw new ScriptEngineException(ScriptEngineException.ErrorType.RESULT_EXTRACTION_ERROR,
+                    "Result Extraction Error",
+                    errorMsg, e);
+        } catch (Exception e) {
+            String errorMsg = String.format("Unexpected error during result extraction of value '%s': %s", value, e.getMessage());
+            Log.warnf(e, errorMsg);
+            throw new ScriptEngineException(ScriptEngineException.ErrorType.RESULT_EXTRACTION_ERROR,
+                    "Unexpected Result Extraction Error",
+                    errorMsg, e);
+        }
+        if (value.isNull()) return null;
         if (value.isHostObject()) return value.asHostObject();
         if (value.isBoolean()) return value.asBoolean();
         if (value.isString()) return value.asString();
@@ -223,7 +337,7 @@ public class ScriptEngineService {
             if (value.fitsInLong()) return value.asLong();
             if (value.fitsInDouble()) return value.asDouble();
             if (value.fitsInInt()) return value.asInt();
-            return value.asDouble(); // Fallback for numbers that don't fit long, could be a large float or int.
+            return value.asDouble();
         }
         if (value.hasArrayElements()) {
             List<Object> list = new ArrayList<>();
@@ -232,14 +346,18 @@ public class ScriptEngineService {
             }
             return list;
         }
-
         if (value.hasMembers()) {
             Map<String, Object> map = new HashMap<>();
-            value.getMemberKeys().forEach(key -> map.put(key, extractResult(value.getMember(key))));
+            for (String key : value.getMemberKeys()) {
+                map.put(key, extractResult(value.getMember(key)));
+            }
             return map;
         }
-        Log.warnf("Unhandled GraalVM value type encountered during result extraction: %s", value);
-        return value.toString(); // fallback in case that no fitting type conversions were found.
+        String errorMsg = String.format("Unhandled GraalVM value type encountered during result extraction: MetaObject=%s, Value=%s", value.getMetaObject(), value);
+        Log.warn(errorMsg);
+        throw new ScriptEngineException(ScriptEngineException.ErrorType.RESULT_EXTRACTION_ERROR,
+                "Result Extraction Error",
+                errorMsg + ". This type is not explicitly handled.");
     }
 
     /**

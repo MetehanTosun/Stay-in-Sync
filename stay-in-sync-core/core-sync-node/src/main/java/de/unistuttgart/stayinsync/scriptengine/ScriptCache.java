@@ -1,5 +1,6 @@
 package de.unistuttgart.stayinsync.scriptengine;
 
+import de.unistuttgart.stayinsync.exception.ScriptEngineException;
 import io.quarkus.logging.Log;
 import jakarta.enterprise.context.ApplicationScoped;
 import org.graalvm.polyglot.PolyglotException;
@@ -71,6 +72,8 @@ public class ScriptCache {
      * @param scriptId   The ID of the script.
      * @param scriptHash The hash of the script's content, used for versioning.
      * @param scriptCode The raw source code of the script.
+     * @throws ScriptEngineException if there were issues with I/O processing, script parsing errors or other unexpected
+     *                               errors during script compilation phase.
      */
     public void putScript(String scriptId, String scriptHash, String scriptCode) {
         try {
@@ -84,12 +87,33 @@ public class ScriptCache {
             cache.put(buildKey(scriptId, scriptHash), source);
             Log.debugf("Cached script: %s (with hash: %s)", scriptId, scriptHash);
         } catch (IOException e) {
-            Log.errorf(e, "IOException while building source for script %s", scriptId);
+            String errorMsg = String.format("IOException while building source for script %s (id: %s)", scriptId, scriptHash);
+            Log.errorf(e, errorMsg);
+            throw new ScriptEngineException(
+                    ScriptEngineException.ErrorType.SCRIPT_CACHING_ERROR,
+                    "Script Caching I/O Error",
+                    errorMsg,
+                    e
+            );
         } catch (PolyglotException e) {
             // TODO: Parsing/compile errors might require additional handling / features
-            Log.errorf(e, "Error parsing/pre-compiling script %s: %s", scriptId, e.getMessage());
+            String errorMsg = String.format("Error parsing/pre-compiling script %s (id: %s): %s", scriptId, scriptHash, e.getMessage());
+            Log.errorf(e, errorMsg);
+            throw new ScriptEngineException(
+                    ScriptEngineException.ErrorType.SCRIPT_PARSING_ERROR,
+                    "Script Parsing Error",
+                    errorMsg,
+                    e
+            );
         } catch (Exception e) {
-            Log.errorf(e, "Unexpected error putting script into cache: %s", scriptId);
+            String errorMsg = String.format("Unexpected error putting script %s (id: %s) into cache: %s", scriptId, scriptHash, e.getMessage());
+            Log.errorf(e, errorMsg);
+            throw new ScriptEngineException(
+                    ScriptEngineException.ErrorType.SCRIPT_CACHING_ERROR,
+                    "Unexpected Script Caching Error",
+                    errorMsg,
+                    e
+            );
         }
     }
 

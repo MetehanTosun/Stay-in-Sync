@@ -1,5 +1,6 @@
 package de.unistuttgart.stayinsync.scriptengine;
 
+import de.unistuttgart.stayinsync.exception.ScriptEngineException;
 import io.quarkus.logging.Log;
 import org.graalvm.polyglot.Context;
 import org.graalvm.polyglot.HostAccess;
@@ -60,11 +61,14 @@ public class ContextPool {
      *                   While this parameter is stored, the current implementation of {@link #initializePool()}
      *                   hardcodes "js" for context creation.
      * @param size       The maximum number of contexts to be maintained in this pool. Must be at least 1
-     * @throws IllegalArgumentException if the size is less than or equal to 0.
+     * @throws ScriptEngineException if the size is less than or equal to 0.
      */
     public ContextPool(String languageId, int size) {
         if (size <= 0) {
-            throw new IllegalArgumentException("ContextPool size must be positive but was: " + size);
+            throw new ScriptEngineException(
+                    ScriptEngineException.ErrorType.CONFIGURATION_ERROR,
+                    "Wrong Context Pool size",
+                    "ContextPool size must be positive but was: " + size);
         }
 
         this.languageId = languageId;
@@ -79,23 +83,37 @@ public class ContextPool {
      * This method will wait for up to 10 seconds for a context to become available.
      *
      * @return An available {@link Context} instance from the pool.
-     * @throws IllegalStateException if the ContextPool is closed or was closed during borrowing.
-     * @throws InterruptedException  if the thread is interrupted while waiting for a context,
+     * @throws ScriptEngineException if the ContextPool is closed or was closed during borrowing,
+     *                               or if the thread is interrupted while waiting for a context,
      *                               or if a timeout occurs (10 seconds hardcoded, might have
      *                               to be a config value) while waiting for an available context.
      */
     public Context borrowContext() throws InterruptedException {
         if (closed) {
-            throw new IllegalStateException("ContextPool for language " + languageId + " is closed.");
+            throw new ScriptEngineException(
+                    ScriptEngineException.ErrorType.CONTEXT_POOL_ERROR,
+                    "Context Pool Closed",
+                    "ContextPool for language " + languageId + " is closed and cannot provide new contexts."
+            );
         }
         Log.debugf("Attempting to borrow context for language: %s. Available: %d/%d", languageId, pool.size(), poolSize);
         Context context = pool.poll(10, TimeUnit.SECONDS);
         if (context == null) {
             if (closed) {
-                throw new IllegalStateException("ContextPool for language " + languageId + " is closed.");
+                throw new ScriptEngineException(
+                        ScriptEngineException.ErrorType.CONTEXT_POOL_ERROR,
+                        "Context Pool Closed",
+                        "ContextPool for language " + languageId + " was closed while waiting to borrow a context."
+                );
             }
-            Log.warnf("Timeout while waiting for a JavaScript context to borrow from the pool.");
-            throw new InterruptedException("Timeout borrowing context for JavaScript");
+            String errorMsg = String.format("Timeout borrowing context for language %s. Pool size: %d, Available: %d", languageId, poolSize, pool.size());
+            Log.warnf(errorMsg);
+            throw new ScriptEngineException(
+                    ScriptEngineException.ErrorType.CONTEXT_POOL_ERROR,
+                    "Context Borrow Timeout",
+                    errorMsg,
+                    new InterruptedException("Timeout borrowing context from pool")
+            );
         }
         Log.debugf("Borrowed context for language: %s. Available: %d/%d", languageId, pool.size(), poolSize);
         return context;
@@ -171,6 +189,8 @@ public class ContextPool {
      * <p>If context creation fails, an error is logged, and the pool might contain fewer contexts
      * than its configured {@code poolSize}. The {@code TODO} comment suggests further discussion
      * on how to handle such failures, particularly regarding application startup.</p>
+     *
+     * @throws ScriptEngineException if a specific context could not be created because of configuration errors.
      */
     private void initializePool() {
         for (int i = 0; i < poolSize; i++) {
@@ -192,8 +212,14 @@ public class ContextPool {
                 allCreatedContexts.add(newContext);
                 pool.add(newContext);
             } catch (Exception e) {
-                // TODO: Test and discussion about validity of sync node and if program may even start.
-                Log.errorf(e, "Failed to create GraalVM context #%d for language %s", (i + 1), languageId);
+                String errorMsg = String.format("Failed to create GraalVM context #%d for language %s during pool initialization.", (i + 1), languageId);
+                Log.errorf(e, errorMsg);
+                throw new ScriptEngineException(
+                        ScriptEngineException.ErrorType.CONFIGURATION_ERROR,
+                        "Context Initialization Failed",
+                        errorMsg,
+                        e
+                );
             }
         }
     }
@@ -211,13 +237,15 @@ public class ContextPool {
         Context contextFromQueue;
         while ((contextFromQueue = pool.poll()) != null) {
             closeSafely(contextFromQueue);
+            allCreatedContexts.remove(contextFromQueue);
         }
 
-        List<Context> contextsToClose = new ArrayList<>(allCreatedContexts);
-        allCreatedContexts.clear();
-
-        for (Context ctx : contextsToClose) {
-            closeSafely(ctx);
+        synchronized (allCreatedContexts) {
+            for (Context ctx : new ArrayList<>(allCreatedContexts)) {
+                closeSafely(ctx);
+            }
+            allCreatedContexts.clear();
         }
+        Log.infof("ContextPool for language '%s' closed. All contexts processed.", languageId);
     }
 }

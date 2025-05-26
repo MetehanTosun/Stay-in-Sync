@@ -1,5 +1,6 @@
 package de.unistuttgart.stayinsync.scriptengine;
 
+import de.unistuttgart.stayinsync.exception.ScriptEngineException;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.QuarkusTestProfile;
 import io.quarkus.test.junit.TestProfile;
@@ -146,7 +147,7 @@ public class ContextPoolTests {
 
     @Test
     void constructor_withZeroSize_shouldThrowIllegalArgumentException() {
-        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> new ContextPool(TEST_LANG_ID, 0));
+        ScriptEngineException exception = assertThrows(ScriptEngineException.class, () -> new ContextPool(TEST_LANG_ID, 0));
         assertTrue(exception.getMessage().contains("ContextPool size must be positive"),
                 "Exception message mismatch for zero size.");
         assertTrue(exception.getMessage().contains("0"), "Exception message should contain the invalid size.");
@@ -154,7 +155,7 @@ public class ContextPoolTests {
 
     @Test
     void constructor_withNegativeSize_shouldThrowIllegalArgumentException() {
-        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> new ContextPool(TEST_LANG_ID, -5));
+        ScriptEngineException exception = assertThrows(ScriptEngineException.class, () -> new ContextPool(TEST_LANG_ID, -5));
         assertTrue(exception.getMessage().contains("ContextPool size must be positive"),
                 "Exception message mismatch for negative size.");
         assertTrue(exception.getMessage().contains("-5"), "Exception message should contain the invalid size.");
@@ -181,7 +182,7 @@ public class ContextPoolTests {
         assertEquals(0, contextPool.getAvailableCount());
 
         long startTime = System.currentTimeMillis();
-        InterruptedException exception = assertThrows(InterruptedException.class, () -> contextPool.borrowContext(), "Should throw InterruptedException on timeout");
+        ScriptEngineException exception = assertThrows(ScriptEngineException.class, () -> contextPool.borrowContext(), "Should throw ScriptEngineException on timeout");
         long duration = System.currentTimeMillis() - startTime;
 
         assertTrue(exception.getMessage().contains("Timeout borrowing context"), "Exception message mismatch");
@@ -190,7 +191,7 @@ public class ContextPoolTests {
 
         assertTrue(getContextPoolLogs().stream()
                         .anyMatch(r -> r.getLevel().equals(Level.WARNING) &&
-                                r.getMessage().contains("Timeout while waiting for a JavaScript context")),
+                                r.getMessage().contains("Timeout borrowing context for language")),
                 "Expected timeout warning log not found.");
 
         contextPool.returnContext(firstContext);
@@ -296,7 +297,7 @@ public class ContextPoolTests {
             assertTrue(e.getMessage().toLowerCase().contains("closed"));
         }
 
-        assertThrows(IllegalStateException.class, () -> contextPool.borrowContext(),
+        assertThrows(ScriptEngineException.class, () -> contextPool.borrowContext(),
                 "Borrowing from a closed pool should throw IllegalStateException.");
 
         assertTrue(getContextPoolLogs().stream()
