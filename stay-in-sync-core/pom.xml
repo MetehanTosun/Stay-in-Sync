@@ -11,5 +11,6 @@
   <modules>
     <module>core-management</module>
     <module>core-sync-node</module>
+    <module>core-polling-node</module>
   </modules>
 </project>
