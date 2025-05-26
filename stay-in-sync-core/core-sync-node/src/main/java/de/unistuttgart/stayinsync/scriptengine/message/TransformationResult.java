@@ -11,7 +11,7 @@ import java.util.List;
  * @author Maximilian Peresunchak
  * @since 1.0
  */
-public class TransformationResult implements ResultEvaluation{
+public class TransformationResult {
     private String jobId;
     private String scriptId;
     private boolean validExecution;
