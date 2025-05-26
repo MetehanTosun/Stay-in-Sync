@@ -8,6 +8,7 @@ import de.unistuttgart.stayinsync.syncnode.domain.TransformJob;
 import io.quarkus.logging.Log;
 import io.quarkus.runtime.Quarkus;
 
+import io.smallrye.mutiny.Uni;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import org.eclipse.microprofile.context.ManagedExecutor;
@@ -18,8 +19,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionStage;
 
 /**
  * A facade service providing well-defined entry points to interact with the script engine.
@@ -76,11 +75,11 @@ public class ScriptEngineService {
      * for the duration of the asynchronous task.</p>
      *
      * @param job The {@link TransformJob} defining the transformation to be executed.
-     * @return A {@link CompletionStage} that will complete with a {@link TransformationResult}
+     * @return A {@link Uni} that will emit a {@link TransformationResult}
      * containing the output of the script execution, its validity, and any error information.
      */
-    public CompletionStage<TransformationResult> transformAsync(TransformJob job) {
-        return CompletableFuture.supplyAsync(() -> {
+    public Uni<TransformationResult> transformAsync(TransformJob job) {
+        return Uni.createFrom().item(() ->{
             try {
                 MDC.put("jobId", job.jobId());
                 MDC.put("scriptId", job.scriptId());
@@ -90,7 +89,7 @@ public class ScriptEngineService {
                 Log.infof("finished async transformation of job: %s, script: %s", job.jobId(), job.scriptId());
                 MDC.clear();
             }
-        }, managedExecutor);
+        }).runSubscriptionOn(managedExecutor);
     }
 
     /**

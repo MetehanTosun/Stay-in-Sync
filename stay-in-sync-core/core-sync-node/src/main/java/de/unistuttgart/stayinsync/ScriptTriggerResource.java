@@ -5,6 +5,7 @@ import de.unistuttgart.stayinsync.scriptengine.SyncJobFactory;
 import de.unistuttgart.stayinsync.syncnode.domain.TransformJob;
 import io.quarkus.logging.Log;
 import io.smallrye.common.annotation.NonBlocking;
+import io.smallrye.mutiny.Uni;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
@@ -15,7 +16,6 @@ import jakarta.ws.rs.core.Response;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.CompletionStage;
 
 @Path("/api/scripts")
 public class ScriptTriggerResource {
@@ -32,7 +32,7 @@ public class ScriptTriggerResource {
     @Path("/trigger-job")
     @Produces(MediaType.APPLICATION_JSON)
     @NonBlocking
-    public CompletionStage<Response> triggerScriptExecutionJob() {
+    public Uni<Response> triggerScriptExecutionJob() {
         Log.info("Received request for /trigger-job");
 
         Map<String, Object> mgmtData = new HashMap<>();
@@ -59,7 +59,7 @@ public class ScriptTriggerResource {
         );
 
         return scriptEngineService.transformAsync(jsonMockJob)
-                .thenApply(transformationResult -> {
+                .onItem().transform(transformationResult -> {
                     if (transformationResult.isValidExecution()) {
                         Log.infof("Async Transformation successful for job %s. Output: %s", jsonMockJob.jobId(), transformationResult.getOutputData());
                         return Response.ok(transformationResult.getOutputData())
@@ -73,7 +73,7 @@ public class ScriptTriggerResource {
                                 .build();
                     }
                 })
-                .exceptionally(ex -> {
+                .onFailure().recoverWithItem(ex -> {
                     Log.errorf(ex, "Exception during async transformation for job %s", jsonMockJob.jobId());
                     return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
                             .entity("An unexpected error occurred: " + ex.getMessage())
