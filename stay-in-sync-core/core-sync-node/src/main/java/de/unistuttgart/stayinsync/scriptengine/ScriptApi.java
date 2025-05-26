@@ -1,5 +1,6 @@
 package de.unistuttgart.stayinsync.scriptengine;
 
+import io.quarkus.logging.Log;
 import org.graalvm.polyglot.HostAccess;
 import org.jboss.logging.Logger;
 import org.jboss.logging.MDC;
@@ -27,9 +28,6 @@ import java.util.Map;
  * @since 1.0
  */
 public class ScriptApi {
-
-    private static final Logger SCRIPT_LOG = Logger.getLogger("ScriptExecutionLogger");
-
     private final Object inputData;
     private Object outputData;
     private final String jobId;
@@ -131,10 +129,10 @@ public class ScriptApi {
                 try {
                     level = Logger.Level.valueOf(logLevel.toUpperCase());
                 } catch (IllegalArgumentException e) {
-                    SCRIPT_LOG.warnf("Invalid log level '%s' provided by script. Defaulting to INFO.", logLevel);
+                    Log.warnf("Invalid log level '%s' provided by script. Defaulting to INFO.", logLevel);
                 }
             }
-            SCRIPT_LOG.log(level, message);
+            Log.log(level, message);
         } finally {
             MDC.remove("jobId");
         }

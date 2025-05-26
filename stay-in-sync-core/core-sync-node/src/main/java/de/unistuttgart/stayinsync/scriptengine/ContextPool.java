@@ -1,9 +1,9 @@
 package de.unistuttgart.stayinsync.scriptengine;
 
+import io.quarkus.logging.Log;
 import org.graalvm.polyglot.Context;
 import org.graalvm.polyglot.HostAccess;
 import org.graalvm.polyglot.ResourceLimits;
-import org.jboss.logging.Logger;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -24,8 +24,6 @@ import java.util.concurrent.TimeUnit;
  * @since 1.0
  */
 public class ContextPool {
-    private static final Logger LOG = Logger.getLogger(ContextPool.class);
-
     /**
      * Defines the host access permissions for scripts executed within the contexts from this pool.
      * It allows access to Java methods and fields annotated with {@link HostAccess.Export},
@@ -90,16 +88,16 @@ public class ContextPool {
         if (closed) {
             throw new IllegalStateException("ContextPool for language " + languageId + " is closed.");
         }
-        LOG.debugf("Attempting to borrow context for language: %s. Available: %d/%d", languageId, pool.size(), poolSize);
+        Log.debugf("Attempting to borrow context for language: %s. Available: %d/%d", languageId, pool.size(), poolSize);
         Context context = pool.poll(10, TimeUnit.SECONDS);
         if (context == null) {
             if (closed) {
                 throw new IllegalStateException("ContextPool for language " + languageId + " is closed.");
             }
-            LOG.warnf("Timeout while waiting for a JavaScript context to borrow from the pool.");
+            Log.warnf("Timeout while waiting for a JavaScript context to borrow from the pool.");
             throw new InterruptedException("Timeout borrowing context for JavaScript");
         }
-        LOG.debugf("Borrowed context for language: %s. Available: %d/%d", languageId, pool.size(), poolSize);
+        Log.debugf("Borrowed context for language: %s. Available: %d/%d", languageId, pool.size(), poolSize);
         return context;
     }
 
@@ -117,22 +115,22 @@ public class ContextPool {
         if (context == null) return false;
 
         if (closed) {
-            LOG.warnf("Context for language %s returned to an already closed pool. Closing context directly.", languageId);
+            Log.warnf("Context for language %s returned to an already closed pool. Closing context directly.", languageId);
             closeSafely(context);
             return false;
         }
 
         if (!allCreatedContexts.contains(context)) {
-            LOG.warnf("Attempt to return a context to pool '%s' that did not originate from it. Closing context.", languageId);
+            Log.warnf("Attempt to return a context to pool '%s' that did not originate from it. Closing context.", languageId);
             closeSafely(context);
             return false;
         }
 
         if (pool.offer(context)) {
-            LOG.debugf("Returned context for language: %s. Available: %d/%d", languageId, pool.size(), poolSize);
+            Log.debugf("Returned context for language: %s. Available: %d/%d", languageId, pool.size(), poolSize);
             return true;
         } else {
-            LOG.warnf("Context for language %s could not be returned to pool (possibly full or offer failed). Closing context instead. Pool available: %d/%d",
+            Log.warnf("Context for language %s could not be returned to pool (possibly full or offer failed). Closing context instead. Pool available: %d/%d",
                     languageId, pool.size(), poolSize);
             closeSafely(context);
             return false;
@@ -144,7 +142,7 @@ public class ContextPool {
             try {
                 context.close();
             } catch (Exception e) {
-                LOG.errorf(e, "Error closing context that could not be returned to pool for language %s", languageId);
+                Log.errorf(e, "Error closing context that could not be returned to pool for language %s", languageId);
             }
         }
     }
@@ -195,7 +193,7 @@ public class ContextPool {
                 pool.add(newContext);
             } catch (Exception e) {
                 // TODO: Test and discussion about validity of sync node and if program may even start.
-                LOG.errorf(e, "Failed to create GraalVM context #%d for language %s", (i + 1), languageId);
+                Log.errorf(e, "Failed to create GraalVM context #%d for language %s", (i + 1), languageId);
             }
         }
     }
@@ -207,7 +205,7 @@ public class ContextPool {
      * Any errors encountered during context closure are logged as warnings.
      */
     public void closeAllContexts() {
-        LOG.infof("Closing all contexts in pool for language '%s'", languageId);
+        Log.infof("Closing all contexts in pool for language '%s'", languageId);
         this.closed = true;
 
         Context contextFromQueue;

@@ -1,11 +1,11 @@
 package de.unistuttgart.stayinsync.scriptengine;
 
+import io.quarkus.logging.Log;
 import jakarta.annotation.PreDestroy;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
-import org.jboss.logging.Logger;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -24,8 +24,6 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 @ApplicationScoped
 public class ContextPoolFactory {
-    private static final Logger LOG = Logger.getLogger(ContextPoolFactory.class);
-
     /**
      * A thread-safe map to store and retrieve {@link ContextPool} instances.
      * The key is the lowercase language identifier (e.g., "js"), and the value is the
@@ -70,7 +68,7 @@ public class ContextPoolFactory {
         return pools.computeIfAbsent(languageKey, lang -> {
             String configKey = "scriptengine.context.pool.size." + lang;
             int poolSize = mpConfig.getOptionalValue(configKey, Integer.class).orElse(defaultPoolSize);
-            LOG.infof("Creating ContextPool for language '%s' with size %d (default size: %d, config key: %s)",
+            Log.infof("Creating ContextPool for language '%s' with size %d (default size: %d, config key: %s)",
                     lang, poolSize, defaultPoolSize, configKey);
             return new ContextPool(lang, poolSize);
         });
@@ -85,9 +83,9 @@ public class ContextPoolFactory {
      */
     @PreDestroy
     public void cleanup() {
-        LOG.info("Cleaning up all ContextPools before application shutdown...");
+        Log.info("Cleaning up all ContextPools before application shutdown...");
         pools.values().forEach(ContextPool::closeAllContexts);
         pools.clear();
-        LOG.info("All ContextPools have been cleared.");
+        Log.info("All ContextPools have been cleared.");
     }
 }

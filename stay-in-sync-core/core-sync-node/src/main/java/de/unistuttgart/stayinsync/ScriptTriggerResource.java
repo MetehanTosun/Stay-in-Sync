@@ -3,6 +3,7 @@ package de.unistuttgart.stayinsync;
 import de.unistuttgart.stayinsync.scriptengine.ScriptEngineService;
 import de.unistuttgart.stayinsync.scriptengine.SyncJobFactory;
 import de.unistuttgart.stayinsync.syncnode.domain.TransformJob;
+import io.quarkus.logging.Log;
 import io.smallrye.common.annotation.NonBlocking;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.GET;
@@ -10,7 +11,6 @@ import jakarta.ws.rs.Path;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
-import org.jboss.logging.Logger;
 
 import java.util.HashMap;
 import java.util.List;
@@ -19,9 +19,6 @@ import java.util.concurrent.CompletionStage;
 
 @Path("/api/scripts")
 public class ScriptTriggerResource {
-
-    private static final Logger LOG = Logger.getLogger(ScriptTriggerResource.class);
-
     @GET
     @Produces(MediaType.TEXT_PLAIN)
     public String hello() {
@@ -36,7 +33,7 @@ public class ScriptTriggerResource {
     @Produces(MediaType.APPLICATION_JSON)
     @NonBlocking
     public CompletionStage<Response> triggerScriptExecutionJob() {
-        LOG.info("Received request for /trigger-job");
+        Log.info("Received request for /trigger-job");
 
         Map<String, Object> mgmtData = new HashMap<>();
         mgmtData.put("facilityName", "Leipzig Plant");
@@ -64,12 +61,12 @@ public class ScriptTriggerResource {
         return scriptEngineService.transformAsync(jsonMockJob)
                 .thenApply(transformationResult -> {
                     if (transformationResult.isValidExecution()) {
-                        LOG.infof("Async Transformation successful for job %s. Output: %s", jsonMockJob.jobId(), transformationResult.getOutputData());
+                        Log.infof("Async Transformation successful for job %s. Output: %s", jsonMockJob.jobId(), transformationResult.getOutputData());
                         return Response.ok(transformationResult.getOutputData())
                                 .type(MediaType.APPLICATION_JSON_TYPE)
                                 .build();
                     } else {
-                        LOG.warnf("Async Transformation failed for job %s: %s", jsonMockJob.jobId(), transformationResult.getErrorInfo());
+                        Log.warnf("Async Transformation failed for job %s: %s", jsonMockJob.jobId(), transformationResult.getErrorInfo());
                         return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
                                 .entity("Transformation failed: " + transformationResult.getErrorInfo())
                                 .type(MediaType.TEXT_PLAIN_TYPE)
@@ -77,7 +74,7 @@ public class ScriptTriggerResource {
                     }
                 })
                 .exceptionally(ex -> {
-                    LOG.errorf(ex, "Exception during async transformation for job %s", jsonMockJob.jobId());
+                    Log.errorf(ex, "Exception during async transformation for job %s", jsonMockJob.jobId());
                     return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
                             .entity("An unexpected error occurred: " + ex.getMessage())
                             .type(MediaType.TEXT_PLAIN_TYPE)

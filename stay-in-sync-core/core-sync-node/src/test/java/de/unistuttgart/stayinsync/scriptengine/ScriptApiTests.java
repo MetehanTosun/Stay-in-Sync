@@ -77,7 +77,7 @@ public class ScriptApiTests {
         capturingLogHandler = new CapturingLogHandler();
         capturingLogHandler.setLevel(Level.ALL);
 
-        scriptExecutionLoggerJul = Logger.getLogger("ScriptExecutionLogger");
+        scriptExecutionLoggerJul = Logger.getLogger(ScriptApi.class.getName());
 
         for (Handler existingHandler : scriptExecutionLoggerJul.getHandlers()) {
             scriptExecutionLoggerJul.removeHandler(existingHandler);
