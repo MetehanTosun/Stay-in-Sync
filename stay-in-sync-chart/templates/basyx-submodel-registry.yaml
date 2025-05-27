@@ -1,7 +1,7 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: sm-registry-config
+  name: {{ .Release.Name }}-basyx-submodel-registry-config
 data:
   application.yml: |
     spring:
@@ -16,19 +16,19 @@ data:
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: sm-registry
+  name: {{ .Release.Name }}-basyx-submodel-registry
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: sm-registry
+      app: {{ .Release.Name }}-basyx-submodel-registry
   template:
     metadata:
       labels:
-        app: sm-registry
+        app: {{ .Release.Name }}-basyx-submodel-registry
     spec:
       containers:
-        - name: sm-registry
+        - name: {{ .Release.Name }}-basyx-submodel-registry
           image: eclipsebasyx/submodel-registry-log-mongodb:2.0.0-SNAPSHOT
           ports:
             - containerPort: 8080
@@ -42,19 +42,35 @@ spec:
       volumes:
         - name: config-volume
           configMap:
-            name: sm-registry-config
-
+            name: {{ .Release.Name }}-basyx-submodel-registry-config
 ---
 apiVersion: v1
 kind: Service
 metadata:
-  name: sm-registry
+  name: {{ .Release.Name }}-basyx-submodel-registry
 spec:
-  type: NodePort
+  type: ClusterIP
   selector:
-    app: sm-registry
+    app: {{ .Release.Name }}-basyx-submodel-registry
   ports:
     - port: 8080
       targetPort: 8080
-      nodePort: 30082
-
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: {{ .Release.Name }}-basyx-submodel-registry-ingress
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /
+spec:
+  rules:
+    - host: basyx-submodel-registry.test
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ .Release.Name }}-basyx-submodel-registry
+                port:
+                  number: 8080

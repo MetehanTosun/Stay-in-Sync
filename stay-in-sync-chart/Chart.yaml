@@ -28,7 +28,7 @@ dependencies:
     repository: https://charts.bitnami.com/bitnami
     version: 16.0.2
   - name: mariadb
-    version: 20.5.5
+    version: 20.5.6
     repository: https://charts.bitnami.com/bitnami
   - name: mongodb
     version: 16.5.11

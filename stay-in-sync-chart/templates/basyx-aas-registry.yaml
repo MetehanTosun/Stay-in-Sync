@@ -1,7 +1,7 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: aas-registry-config
+  name: {{ .Release.Name }}-basyx-aas-registry-config
 data:
   application.yml: |
     spring:
@@ -16,19 +16,19 @@ data:
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: aas-registry
+  name: {{ .Release.Name }}-basyx-aas-registry
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: aas-registry
+      app: {{ .Release.Name }}-basyx-aas-registry
   template:
     metadata:
       labels:
-        app: aas-registry
+        app: {{ .Release.Name }}-basyx-aas-registry
     spec:
       containers:
-        - name: aas-registry
+        - name: basyx-aas-registry
           image: eclipsebasyx/aas-registry-log-mongodb:2.0.0-SNAPSHOT
           ports:
             - containerPort: 8080
@@ -42,19 +42,35 @@ spec:
       volumes:
         - name: config-volume
           configMap:
-            name: aas-registry-config
-
+            name: {{ .Release.Name }}-basyx-aas-registry-config
 ---
 apiVersion: v1
 kind: Service
 metadata:
-  name: aas-registry
+  name: {{ .Release.Name }}-basyx-aas-registry
 spec:
-  type: NodePort
+  type: ClusterIP
   selector:
-    app: aas-registry
+    app: {{ .Release.Name }}-basyx-aas-registry
   ports:
     - port: 8080
       targetPort: 8080
-      nodePort: 30083
-
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: {{ .Release.Name }}-basyx-aas-registry-ingress
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /
+spec:
+  rules:
+    - host: basyx-aas-registry.test
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ .Release.Name }}-basyx-aas-registry
+                port:
+                  number: 8080

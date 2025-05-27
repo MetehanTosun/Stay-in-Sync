@@ -1,7 +1,7 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: aas-env-config
+  name: {{ .Release.Name }}-basyx-aas-env-config
 data:
   application.properties: |
     server.port=8081
@@ -12,19 +12,19 @@ data:
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: aas-env
+  name: {{ .Release.Name }}-basyx-aas-env
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: aas-env
+      app: {{ .Release.Name }}-basyx-aas-env
   template:
     metadata:
       labels:
-        app: aas-env
+        app: {{ .Release.Name }}-basyx-aas-env
     spec:
       containers:
-        - name: aas-env
+        - name: {{ .Release.Name }}-basyx-aas-env
           image: eclipsebasyx/aas-environment:2.0.0-SNAPSHOT
           ports:
             - containerPort: 8081
@@ -40,22 +40,38 @@ spec:
       volumes:
         - name: aas-volume
           hostPath:
-            path: /path/on/host/aas  # replace with appropriate path or use PVC
+            path: /path/on/host/aas
         - name: config
           configMap:
-            name: aas-env-config
-
+            name: {{ .Release.Name }}-basyx-aas-env-config
 ---
 apiVersion: v1
 kind: Service
 metadata:
-  name: aas-env
+  name: {{ .Release.Name }}-basyx-aas-env
 spec:
-  type: NodePort
+  type: ClusterIP
   ports:
     - port: 8081
       targetPort: 8081
-      nodePort: 30081
   selector:
-    app: aas-env
-
+    app: {{ .Release.Name }}-basyx-aas-env
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: {{ .Release.Name }}-basyx-aas-env-ingress
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /
+spec:
+  rules:
+    - host: basyx-aas-env.test
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ .Release.Name }}-basyx-aas-env
+                port:
+                  number: 8081

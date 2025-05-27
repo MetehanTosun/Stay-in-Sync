@@ -121,10 +121,7 @@ nodeSelector: { }
 tolerations: [ ]
 
 affinity: { }
-mariadb:
-  service:
-    type: ClusterIP
-    port: 3306
+
 mongodb:
   auth:
     rootUser: root
@@ -156,177 +153,38 @@ rabbitmq:
   replicaCount: 1
 
 umbrella:
-  portal:
-    enabled: true
 
-
-  centralidp:
+  dataconsumerOne:
     enabled: true
-    # -- uncomment the following for persistance
-    # keycloak:
+    # -- uncomment the following for persistence
+    # postgresql:
+    #   primary:
+    #     persistence:
+    #       enabled: true
+
+  tx-data-provider:
+    seedTestdata: true
+    enabled: true
+    # -- uncomment the following for persistence
+    # postgresql:
+    #   primary:
+    #     persistence:
+    #       enabled: true
+    # digital-twin-registry:
     #   postgresql:
     #     primary:
     #       persistence:
     #         enabled: true
 
-  sharedidp:
-    enabled: true
-    # -- uncomment the following for persistance
-    # keycloak:
-    #   postgresql:
-    #     primary:
-    #       persistence:
-    #         enabled: true
-    realmSeeding:
-      realms:
-        cxOperator:
-          sslRequired: "none"
-          centralidp: "http://centralidp.tx.test"
-          initialUser:
-            username: "cx-operator@tx.test"
-            password: "tractusx-umbr3lla!"
-        master:
-          serviceAccounts:
-            provisioning:
-              clientSecret: "changeme"
-            saCxOpergator:
-              clientSecret: "changeme"
   pgadmin4:
     enabled: true
-    # -- uncomment the following for persistance
+    # -- uncomment the following for persistence
     # persistentVolume:
     #   enabled: true
 
-  # Interfaces are disabled by default (other than IAM)
-
-  tx-data-provider:
-    enabled: false
-    seedTestdata: true
-    backendUrl: http://{{ .Release.Name }}-dataprovider-submodelserver:8080
-    registryUrl: http://{{ .Release.Name }}-dataprovider-dtr:8080/api/v3
-    controlplanePublicUrl: http://{{ .Release.Name }}-dataprovider-edc-controlplane:8084
-    controlplaneManagementUrl: http://{{ .Release.Name }}-dataprovider-edc-controlplane:8081
-    dataplaneUrl: http://{{ .Release.Name }}-dataprovider-edc-dataplane:8081
-    nameOverride: dataprovider
-    secrets:
-      edc-wallet-secret: changeme
-    tractusx-connector:
-      nameOverride: dataprovider-edc
-      participant:
-        id: BPNL00000003AYRE
-      iatp:
-        id: did:web:ssi-dim-wallet-stub.tx.test:BPNL00000003AYRE
-        trustedIssuers:
-          - did:web:ssi-dim-wallet-stub.tx.test:BPNL00000003CRHK
-        sts:
-          dim:
-            url: http://ssi-dim-wallet-stub.tx.test/api/sts
-          oauth:
-            token_url: http://ssi-dim-wallet-stub.tx.test/oauth/token
-            client:
-              id: BPNL00000003AYRE
-              secret_alias: edc-wallet-secret
-      controlplane:
-        env:
-          TX_IAM_IATP_CREDENTIALSERVICE_URL: http://ssi-dim-wallet-stub.tx.test/api
-          EDC_IAM_DID_WEB_USE_HTTPS: false
-        bdrs:
-          server:
-            url: http://ssi-dim-wallet-stub.tx.test/api/v1/directory
-        endpoints:
-          management:
-            authKey: TEST2
-        ingresses:
-          - enabled: true
-            hostname: "dataprovider-controlplane.tx.test"
-            endpoints:
-              - default
-              - protocol
-              - management
-            className: "nginx"
-            tls:
-              enabled: false
-      dataplane:
-        env:
-          TX_IAM_IATP_CREDENTIALSERVICE_URL: http://ssi-dim-wallet-stub.tx.test/api
-          EDC_IAM_DID_WEB_USE_HTTPS: false
-        ingresses:
-          - enabled: true
-            hostname: "dataprovider-dataplane.tx.test"
-            endpoints:
-              - default
-              - public
-            className: "nginx"
-            tls:
-              enabled: false
-        token:
-          signer:
-            privatekey_alias: tokenSignerPrivateKey
-          verifier:
-            publickey_alias: tokenSignerPublicKey
-      postgresql:
-        nameOverride: dataprovider-db
-        jdbcUrl: "jdbc:postgresql://{{ .Release.Name }}-dataprovider-db:5432/edc"
-        auth:
-          password: "dbpasswordtxdataprovider"
-          postgresPassword: "dbpasswordtxdataprovider"
-      vault:
-        hashicorp:
-          url: http://edc-dataprovider-vault:8200
-        secretNames:
-          transferProxyTokenSignerPrivateKey: tokenSignerPrivateKey
-          transferProxyTokenSignerPublicKey: tokenSignerPublicKey
-          transferProxyTokenEncryptionAesKey: tokenEncryptionAesKey
-
-    vault:
-      nameOverride: edc-dataprovider-vault
-      fullnameOverride: edc-dataprovider-vault
-      enabled: true
-      server:
-        postStart: [ ]
-
-    digital-twin-registry:
-      nameOverride: dataprovider-dtr
-      postgresql:
-        nameOverride: dataprovider-dtr-db
-        auth:
-          password: "dbpassworddtrdataprovider"
-          existingSecret: dataprovider-secret-dtr-postgres-init
-      registry:
-        host: dataprovider-dtr.test
-
-    simple-data-backend:
-      nameOverride: dataprovider-submodelserver
-      ingress:
-        enabled: true
-        className: "nginx"
-        hosts:
-          - host: "dataprovider-submodelserver.tx.test"
-            paths:
-              - path: "/"
-                pathType: "Prefix"
-
-  # Set 'enabled' to true if onboarding is required
-  bpdm:
-    enabled: false
-
-  bdrs-server-memory:
-    enabled: false
-
-  # Set 'enabled' to true if onboarding is required
-  selfdescription:
-    enabled: false
-
-  bpndiscovery:
-    enabled: false
-
-  discoveryfinder:
-    enabled: false
-
-  # Set 'enabled' to true if onboarding is required
   ssi-credential-issuer:
     enabled: false
 
-  # Set 'enabled' to true if onboarding is required
   ssi-dim-wallet-stub:
-    enabled: false
+    enabled: true
+
