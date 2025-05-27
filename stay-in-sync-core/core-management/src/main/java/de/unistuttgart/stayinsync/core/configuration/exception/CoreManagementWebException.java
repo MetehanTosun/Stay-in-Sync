@@ -12,9 +12,21 @@ public class CoreManagementWebException extends WebApplicationException {
     /**
      * Constucts an CoreManagementWebException
      *
-     * @param status {@link Response.Status} of current request
-     * @param title short and descriptive title of the occurred error
+     * @param status  {@link Response.Status} of current request
+     * @param title   short and descriptive title of the occurred error
      * @param message preferably user-friendly message containing more detailed information on the error
+     */
+    public CoreManagementWebException(Response.Status status, String title, String message) {
+        super(buildResponse(title, message, status));
+    }
+
+    /**
+     * Constucts an CoreManagementWebException
+     *
+     * @param status  {@link Response.Status} of current request
+     * @param title   short and descriptive title of the occurred error
+     * @param message preferably user-friendly message containing more detailed information on the error
+     * @param args message params
      */
     public CoreManagementWebException(Response.Status status, String title, String message, Object... args) {
         super(buildResponse(title, message, status, args));
@@ -27,7 +39,7 @@ public class CoreManagementWebException extends WebApplicationException {
     }
 
     /**
-     * Builds a Response Object for the parent class
+     * Builds a Response Object for {@link WebApplicationException}
      *
      * @return {@link Response}
      */
@@ -35,6 +47,19 @@ public class CoreManagementWebException extends WebApplicationException {
         return Response //
                 .status(status) //
                 .entity(new ErrorResponse(title, String.format(message, args))) //
+                .type(MediaType.APPLICATION_JSON) //
+                .build();
+    }
+
+    /**
+     * Builds a Response Object for {@link WebApplicationException}
+     *
+     * @return {@link Response}
+     */
+    private static Response buildResponse(String title, String message, Response.Status status) {
+        return Response //
+                .status(status) //
+                .entity(new ErrorResponse(title, message)) //
                 .type(MediaType.APPLICATION_JSON) //
                 .build();
     }
