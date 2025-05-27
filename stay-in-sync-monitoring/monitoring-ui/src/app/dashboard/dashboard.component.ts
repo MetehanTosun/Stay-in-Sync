@@ -4,6 +4,7 @@ import {LogsPanelComponent} from './logs-panel/logs-panel.component';
 import {MetricsPanelComponent} from './metrics-panel/metrics-panel.component';
 import {Splitter} from 'primeng/splitter';
 import {PrimeTemplate} from 'primeng/api';
+import {SearchBarComponent} from './search-bar/search-bar.component';
 
 
 @Component({
@@ -14,6 +15,7 @@ import {PrimeTemplate} from 'primeng/api';
     MetricsPanelComponent,
     Splitter,
     PrimeTemplate,
+    SearchBarComponent,
   ],
   templateUrl: './dashboard.component.html',
   styleUrl: './dashboard.component.css'
@@ -23,6 +25,12 @@ export class DashboardComponent {
 
   onNodeSelected(nodeId: string | null) {
     this.selectedNodeId = nodeId;
+  }
+
+  searchTerm = '';
+
+  onSearch(term: string) {
+    this.searchTerm = term;
   }
 
 }

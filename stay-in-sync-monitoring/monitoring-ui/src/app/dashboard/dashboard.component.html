@@ -1,8 +1,11 @@
 <p-splitter [panelSizes]="[50, 50]" [style]="{ height: '100vh' }" styleClass="mb-8">
   <ng-template pTemplate="panel">
     <div class="sidebar">
-      <h1>Monitoring</h1>
-      <app-graph-panel (nodeSelected)="onNodeSelected($event)"></app-graph-panel>
+      <div class="sidebar-header">
+        <h1>Monitoring</h1>
+        <app-search-bar (search)="onSearch($event)"></app-search-bar>
+      </div>
+      <app-graph-panel (nodeSelected)="onNodeSelected($event)" [searchTerm]="searchTerm"></app-graph-panel>
     </div>
   </ng-template>
   <ng-template pTemplate="panel">
@@ -20,5 +23,3 @@
     </p-splitter>
   </ng-template>
 </p-splitter>
-
-

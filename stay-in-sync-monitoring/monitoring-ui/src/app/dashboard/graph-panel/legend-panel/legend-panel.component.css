@@ -1,0 +1,21 @@
+.sidebar-toggle-btn {
+  position: fixed;
+  left: 0;
+  top: 10%;
+  transform: translateY(-50%);
+  z-index: 10001;
+}
+
+::ng-deep .custom-sidebar {
+  top: 6% !important;
+  height: 34% !important;
+  border-radius: 8px;
+  overflow: auto;
+}
+
+.sidebar-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+

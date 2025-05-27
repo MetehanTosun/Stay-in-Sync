@@ -1,14 +1,19 @@
-import {Component, AfterViewInit, Output, EventEmitter} from '@angular/core';
+import {Component, AfterViewInit, Output, EventEmitter, Input} from '@angular/core';
 import * as d3 from 'd3';
 import {Node, NodeConnection} from '../../../node.model';
+import {LegendPanelComponent} from './legend-panel/legend-panel.component';
 
 @Component({
   selector: 'app-graph-panel',
   templateUrl: './graph-panel.component.html',
+  imports: [
+    LegendPanelComponent
+  ],
   styleUrl: './graph-panel.component.css'
 })
 export class GraphPanelComponent implements AfterViewInit {
   @Output() nodeSelected = new EventEmitter<string | null>();
+  @Input() searchTerm!: string;
   ngAfterViewInit() {
 
     const nodes: Node[] = [
