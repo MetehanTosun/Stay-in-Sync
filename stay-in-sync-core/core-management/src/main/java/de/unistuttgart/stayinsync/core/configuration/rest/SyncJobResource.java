@@ -1,5 +1,6 @@
 package de.unistuttgart.stayinsync.core.configuration.rest;
 
+import de.unistuttgart.stayinsync.core.configuration.exception.CoreManagementWebException;
 import de.unistuttgart.stayinsync.core.configuration.persistence.entities.SyncJob;
 import de.unistuttgart.stayinsync.core.configuration.service.SyncJobService;
 import io.quarkus.logging.Log;
@@ -107,9 +108,9 @@ public class SyncJobResource {
                     Log.debugf("Found sync-job: %s", syncJob);
                     return Response.ok(syncJob).build();
                 })
-                .orElseGet(() -> {
-                    Log.debugf("No sync-job found with id %d", id);
-                    return Response.status(Response.Status.NOT_FOUND).build();
+                .orElseThrow(() -> {
+                    Log.warnf("No sync-job found using id %d", id);
+                    return new CoreManagementWebException(Response.Status.NOT_FOUND, "Unable to find sync-job", "No sync-job found using id %d", id);
                 });
     }
 
