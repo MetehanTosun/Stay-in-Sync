@@ -6,7 +6,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Observable, of } from 'rxjs';
 // biome-ignore lint/style/useImportType: <explanation>
-import { AasService } from '../../../aas.service';
+import { AasService } from '../../services/aas.service';
 
 type SourceType = 'AAS' | 'REST';
 
