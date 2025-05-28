@@ -1,13 +1,13 @@
 // biome-ignore lint/style/useImportType: <explanation>
 import { Routes } from '@angular/router';
-import { SyncRulesComponent } from './sync-rules/sync-rules.component';
-import { ConfigBaseComponent } from './config-base/config-base.component';
-import { ConfigurationscriptsBaseComponent } from './configurationscripts-base/configurationscripts-base.component';
+import { SyncRulesComponent } from './features/sync-rules/components/sync-rules.component';
+import { ConfigBaseComponent } from './features/configuration/config-base/config-base.component';
+import { ConfigurationscriptsBaseComponent } from './features/configuration/configurationscripts-base/configurationscripts-base.component';
 // neu (relativ zu src/app/app.routes.ts)
-import { AasBaseComponent } from './features/source-system/aas-base/aas-base.component';
-import { EdcBaseComponent } from './edc/edc-base/edc-base.component';
-import { CreateSourceSystemComponent } from 
-  './features/source-system/create-source-system/create-source-system.component';
+import { AasBaseComponent } from './features/source-system/components/aas-base/aas-base.component';
+import { EdcBaseComponent } from './features/edc/components/edc-base/edc-base.component';
+import { CreateSourceSystemComponent } from
+    './features/source-system/components/create-source-system/create-source-system.component';
 
 
 export const routes: Routes = [
