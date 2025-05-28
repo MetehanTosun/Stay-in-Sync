@@ -40,7 +40,7 @@ minikube addons enable ingress-dns
 To enable your local system to resolve the exposed addresses listed under [Ingress](#ingress), please follow the
 instructions of [Step 3](https://minikube.sigs.k8s.io/docs/handbook/addons/ingress-dns/)
 
-Alternatively add following to your /etc/hosts file:
+Alternatively add following to your /etc/hosts (macOs /private/etc/hosts file:
 
 ```shell
 minikube ip
