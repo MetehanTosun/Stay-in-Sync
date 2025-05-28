@@ -15,15 +15,6 @@ export class SidebarMenuComponent {
 
   sidebarVisible: boolean = true;
 
-  constructor(readonly messageService: MessageService) {
 
-  }
-
-
-  test() {
-    this.messageService.add({ severity: 'success', summary: 'Success', detail: `Danke für dein Feedback! Du wirst gleich weitergeleitet.`, life: 2000});
-
-
-  }
 
 }
