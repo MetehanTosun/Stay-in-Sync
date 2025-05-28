@@ -17,5 +17,10 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
+  margin: 0; /* Entfernt unnötige Außenabstände */
+  padding: 0.5rem; /* Optional: Innenabstand anpassen */
 }
 
+.p-drawer-header {
+  display: none;
+}
