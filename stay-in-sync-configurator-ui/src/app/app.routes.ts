@@ -8,6 +8,7 @@ import { AasBaseComponent } from './features/source-system/components/aas-base/a
 import { EdcBaseComponent } from './features/edc/components/edc-base/edc-base.component';
 import { CreateSourceSystemComponent } from
     './features/source-system/components/create-source-system/create-source-system.component';
+import { ScriptEditorPageComponent } from './features/script-editor/script-editor-page.component';
 
 
 export const routes: Routes = [
@@ -19,6 +20,9 @@ export const routes: Routes = [
 
   // Route für Transformation Scripts
   { path: 'transformation-scripts', component: ConfigurationscriptsBaseComponent },
+
+  // Route für Script Editor
+  { path: 'script-editor', component: ScriptEditorPageComponent},
 
   // Route für Asset Administration Shell (ASS)
   {
