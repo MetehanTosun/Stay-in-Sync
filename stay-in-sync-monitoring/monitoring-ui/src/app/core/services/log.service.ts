@@ -1,6 +1,6 @@
 import { Injectable} from '@angular/core';
 import {Observable} from 'rxjs';
-import {LogEntry} from '../../log.model';
+import {LogEntry} from '../models/log.model';
 
 @Injectable({ providedIn: 'root' })
 export class LogService {

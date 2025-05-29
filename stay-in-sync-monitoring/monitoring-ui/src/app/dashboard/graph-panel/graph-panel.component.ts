@@ -1,6 +1,6 @@
 import {AfterViewInit, Component, EventEmitter, Input, Output} from '@angular/core';
 import * as d3 from 'd3';
-import type {Node, NodeConnection} from '../../../node.model';
+import type {Node, NodeConnection} from '../../core/models/node.model';
 import {LegendPanelComponent} from './legend-panel/legend-panel.component';
 
 /**
@@ -35,7 +35,7 @@ export class GraphPanelComponent implements AfterViewInit {
   set searchTerm(value: string) {
     this._searchTerm = value;
     this.filteredNodes = this.filterNodes(this._searchTerm);
-    this.filteredLinks = this.filterLinks(this._searchTerm);
+    this.filteredLinks = this.filterLinks();
     this.updateGraph(this.filteredNodes, this.filteredLinks);
   }
   get searchTerm(): string {
@@ -118,10 +118,9 @@ export class GraphPanelComponent implements AfterViewInit {
   /**
    * Filters the links based on the filtered nodes.
    *
-   * @param term The search term used for filtering links.
    * @returns An array of links that connect filtered nodes.
    */
-  filterLinks(term: string): NodeConnection[] {
+  filterLinks(): NodeConnection[] {
     return this.links.filter(link =>
       this.filteredNodes.includes(link.source as Node) && this.filteredNodes.includes(link.target as Node)
     );
@@ -145,7 +144,7 @@ export class GraphPanelComponent implements AfterViewInit {
     container.selectAll('g').remove();
 
     const svgNode = svg.node();
-    const width = (svgNode instanceof SVGSVGElement) ? svgNode.clientWidth : 400;
+    const width = (svgNode instanceof SVGSVGElement) ? window.innerWidth * 1.5 : 400;
     const height = (svgNode instanceof SVGSVGElement) ? svgNode.clientHeight : 300;
 
     this.renderGraph(container, newNodes, newLinks, width, height);
@@ -189,6 +188,8 @@ export class GraphPanelComponent implements AfterViewInit {
       .attr('fill', '#888');
 
     this.applyStatusStyles(nodeGroup);
+
+    console.log('width:', width, 'height:', height);
 
     const simulation = this.createSimulation(nodes, links, width, height, link, nodeGroup);
 
@@ -285,7 +286,7 @@ export class GraphPanelComponent implements AfterViewInit {
     return d3.forceSimulation<Node>(nodes)
       .force('link', d3.forceLink<Node, NodeConnection>(links).id(d => d.id).distance(100))
       .force('charge', d3.forceManyBody().strength(-200))
-      .force('center', d3.forceCenter(width / 2, height / 2))  //TODO: Fix center position when filtering
+      .force('center', d3.forceCenter(width / 2, height / 2))  //TODO: Fix center position when filtering ??
       .on('tick', () => {
         link
           .attr('x1', d => (d.source as Node).x ?? 0)

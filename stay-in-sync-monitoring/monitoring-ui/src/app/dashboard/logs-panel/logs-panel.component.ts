@@ -1,6 +1,6 @@
 import { Component, Input, OnInit, OnChanges } from '@angular/core';
-import { LogEntry } from '../../../log.model';
-import { LogService } from '../log.service';
+import { LogEntry } from '../../core/models/log.model';
+import { LogService } from '../../core/services/log.service';
 import {NgForOf, NgIf} from '@angular/common';
 
 @Component({
