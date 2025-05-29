@@ -10,7 +10,9 @@ public class ScriptEngineException extends SyncNodeException {
         BINDING_ERROR,
         RESULT_EXTRACTION_ERROR,
         UNSUPPORTED_LANGUAGE_ERROR,
-        CONFIGURATION_ERROR
+        CONFIGURATION_ERROR,
+        SYNTAX_ERROR,
+        RESOURCE_LIMIT_EXCEEDED,
     }
 
     private final ErrorType errorType;

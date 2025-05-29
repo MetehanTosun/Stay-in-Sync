@@ -1,6 +1,6 @@
 package de.unistuttgart.stayinsync.exception;
 
-public class SyncNodeException extends RuntimeException {
+public class SyncNodeException extends Exception {
     private final String title;
 
     public SyncNodeException(String title, String message) {

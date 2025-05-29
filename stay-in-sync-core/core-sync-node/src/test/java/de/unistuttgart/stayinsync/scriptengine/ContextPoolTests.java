@@ -124,7 +124,7 @@ public class ContextPoolTests {
 
 
     @Test
-    void constructor_shouldInitializePoolWithCorrectSizeAndLanguageId() {
+    void constructor_shouldInitializePoolWithCorrectSizeAndLanguageId() throws ScriptEngineException {
         contextPool = new ContextPool(TEST_LANG_ID, DEFAULT_POOL_SIZE);
         assertEquals(DEFAULT_POOL_SIZE, contextPool.getPoolSize());
         assertEquals(DEFAULT_POOL_SIZE, contextPool.getAvailableCount(), "All contexts should be available after init.");
@@ -162,7 +162,7 @@ public class ContextPoolTests {
     }
 
     @Test
-    void borrowContext_whenAvailable_shouldReturnContextAndDecrementCount() throws InterruptedException {
+    void borrowContext_whenAvailable_shouldReturnContextAndDecrementCount() throws InterruptedException, ScriptEngineException {
         contextPool = new ContextPool(TEST_LANG_ID, 1);
         assertEquals(1, contextPool.getAvailableCount());
 
@@ -175,7 +175,7 @@ public class ContextPoolTests {
 
     @Test
     @Timeout(value = BORROW_TIMEOUT_SECONDS + 2)
-    void borrowContext_whenPoolEmpty_shouldBlockAndTimeout() throws InterruptedException {
+    void borrowContext_whenPoolEmpty_shouldBlockAndTimeout() throws InterruptedException, ScriptEngineException  {
         contextPool = new ContextPool(TEST_LANG_ID, 1);
         Context firstContext = contextPool.borrowContext();
         assertNotNull(firstContext);
@@ -198,7 +198,7 @@ public class ContextPoolTests {
     }
 
     @Test
-    void borrowContext_whenInterruptedWhileWaiting_shouldThrowInterruptedException() throws InterruptedException {
+    void borrowContext_whenInterruptedWhileWaiting_shouldThrowInterruptedException() throws InterruptedException, ScriptEngineException {
         contextPool = new ContextPool(TEST_LANG_ID, 1);
         Context first = contextPool.borrowContext();
 
@@ -206,7 +206,7 @@ public class ContextPoolTests {
         Thread t = new Thread(() -> {
             try {
                 contextPool.borrowContext();
-            } catch (InterruptedException e) {
+            } catch (InterruptedException | ScriptEngineException e) {
                 exceptionInThread.set(e);
             }
         });
@@ -226,7 +226,7 @@ public class ContextPoolTests {
 
 
     @Test
-    void returnContext_whenPoolNotFull_shouldReturnTrueAndIncrementCount() throws InterruptedException {
+    void returnContext_whenPoolNotFull_shouldReturnTrueAndIncrementCount() throws InterruptedException, ScriptEngineException {
         contextPool = new ContextPool(TEST_LANG_ID, 1);
         Context context = contextPool.borrowContext();
         assertEquals(0, contextPool.getAvailableCount());
@@ -237,7 +237,7 @@ public class ContextPoolTests {
     }
 
     @Test
-    void returnContext_withNullContext_shouldReturnFalseAndNotChangeCount() {
+    void returnContext_withNullContext_shouldReturnFalseAndNotChangeCount() throws ScriptEngineException {
         contextPool = new ContextPool(TEST_LANG_ID, 1);
         int initialCount = contextPool.getAvailableCount();
 
@@ -249,7 +249,7 @@ public class ContextPoolTests {
     }
 
     @Test
-    void returnContext_whenExternalContextOffered_shouldBeRejectedAndClosed() {
+    void returnContext_whenExternalContextOffered_shouldBeRejectedAndClosed() throws ScriptEngineException {
         contextPool = new ContextPool(TEST_LANG_ID, 1);
         Context extraContext = Context.create("js");
 
@@ -281,7 +281,7 @@ public class ContextPoolTests {
 
 
     @Test
-    void closeAllContexts_shouldCloseAllContextsAndEmptyPool() throws InterruptedException {
+    void closeAllContexts_shouldCloseAllContextsAndEmptyPool() throws InterruptedException, ScriptEngineException {
         contextPool = new ContextPool(TEST_LANG_ID, DEFAULT_POOL_SIZE);
         Context borrowed = contextPool.borrowContext();
         assertEquals(DEFAULT_POOL_SIZE - 1, contextPool.getAvailableCount());
@@ -307,7 +307,7 @@ public class ContextPoolTests {
     }
 
     @Test
-    void concurrentBorrowAndReturn_shouldMaintainPoolIntegrity() throws InterruptedException {
+    void concurrentBorrowAndReturn_shouldMaintainPoolIntegrity() throws InterruptedException, ScriptEngineException {
         int poolSize = 5;
         int numThreads = 10;
         int operationsPerThread = 20;
@@ -371,7 +371,7 @@ public class ContextPoolTests {
     // This is implicitly covered if we were to reduce pool size and see fewer contexts.
 
     @Test
-    void logging_debugMessagesForBorrowAndReturn() throws InterruptedException {
+    void logging_debugMessagesForBorrowAndReturn() throws InterruptedException, ScriptEngineException {
         contextPool = new ContextPool(TEST_LANG_ID, 1);
         capturingLogHandler.clearRecords();
 

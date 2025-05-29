@@ -75,7 +75,7 @@ public class ScriptCache {
      * @throws ScriptEngineException if there were issues with I/O processing, script parsing errors or other unexpected
      *                               errors during script compilation phase.
      */
-    public void putScript(String scriptId, String scriptHash, String scriptCode) {
+    public void putScript(String scriptId, String scriptHash, String scriptCode) throws ScriptEngineException {
         try {
             String wrappedScriptCode = "(function() {\n" +
                     "   \"use strict\";\n" +

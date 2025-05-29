@@ -1,5 +1,6 @@
 package de.unistuttgart.stayinsync;
 
+import de.unistuttgart.stayinsync.exception.ScriptEngineException;
 import de.unistuttgart.stayinsync.scriptengine.ScriptEngineService;
 import de.unistuttgart.stayinsync.scriptengine.SyncJobFactory;
 import de.unistuttgart.stayinsync.syncnode.domain.TransformJob;

@@ -63,7 +63,7 @@ public class ContextPool {
      * @param size       The maximum number of contexts to be maintained in this pool. Must be at least 1
      * @throws ScriptEngineException if the size is less than or equal to 0.
      */
-    public ContextPool(String languageId, int size) {
+    public ContextPool(String languageId, int size) throws ScriptEngineException {
         if (size <= 0) {
             throw new ScriptEngineException(
                     ScriptEngineException.ErrorType.CONFIGURATION_ERROR,
@@ -88,7 +88,7 @@ public class ContextPool {
      *                               or if a timeout occurs (10 seconds hardcoded, might have
      *                               to be a config value) while waiting for an available context.
      */
-    public Context borrowContext() throws InterruptedException {
+    public Context borrowContext() throws ScriptEngineException, InterruptedException {
         if (closed) {
             throw new ScriptEngineException(
                     ScriptEngineException.ErrorType.CONTEXT_POOL_ERROR,
@@ -192,7 +192,7 @@ public class ContextPool {
      *
      * @throws ScriptEngineException if a specific context could not be created because of configuration errors.
      */
-    private void initializePool() {
+    private void initializePool() throws ScriptEngineException {
         for (int i = 0; i < poolSize; i++) {
             try {
                 Context.Builder builder = Context.newBuilder("js")

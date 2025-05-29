@@ -1,5 +1,6 @@
 package de.unistuttgart.stayinsync.scriptengine;
 
+import de.unistuttgart.stayinsync.exception.ScriptEngineException;
 import io.quarkus.logging.Log;
 import jakarta.annotation.PreDestroy;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -63,15 +64,19 @@ public class ContextPoolFactory {
      *                   This is treated case-insensitively for map lookups.
      * @return The {@link ContextPool} for the specified language.
      */
-    public ContextPool getPool(String languageId) {
+    public ContextPool getPool(String languageId) throws ScriptEngineException{
         String languageKey = languageId.toLowerCase();
-        return pools.computeIfAbsent(languageKey, lang -> {
-            String configKey = "scriptengine.context.pool.size." + lang;
+
+        ContextPool pool = pools.get(languageKey);
+        if (pool == null) {
+            String configKey = "scriptengine.context.pool.size" + languageKey;
             int poolSize = mpConfig.getOptionalValue(configKey, Integer.class).orElse(defaultPoolSize);
             Log.infof("Creating ContextPool for language '%s' with size %d (default size: %d, config key: %s)",
-                    lang, poolSize, defaultPoolSize, configKey);
-            return new ContextPool(lang, poolSize);
-        });
+                    languageKey, poolSize, defaultPoolSize, configKey);
+            pool = new ContextPool(languageKey, poolSize);
+            pools.put(languageKey, pool);
+        }
+        return pool;
     }
 
     /**
