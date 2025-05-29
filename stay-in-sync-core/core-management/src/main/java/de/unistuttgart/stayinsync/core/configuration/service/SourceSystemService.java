@@ -36,12 +36,14 @@ public class SourceSystemService {
 
     @Transactional
     public void updateSourceSystem(SourceSystem ss) {
-        SourceSystem existingSs = SourceSystem.findById(ss);
+        SourceSystem existingSs = SourceSystem.findById(ss.id);
         if (existingSs == null) {
             throw new CoreManagementWebException(Response.Status.NOT_FOUND, "Source system not found",
                     "No source system found with id %d", ss.id);
         }
-        ss.persist(); // Panache kann update oder insert
+        existingSs.name = ss.name;
+        existingSs.description = ss.description;
+        existingSs.endpointUrl = ss.endpointUrl;
     }
 
     @Transactional

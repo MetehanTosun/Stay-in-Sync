@@ -1,0 +1,169 @@
+package de.unistuttgart.stayinsync.rest;
+
+import static io.restassured.RestAssured.*;
+import static org.hamcrest.Matchers.*;
+
+import org.junit.jupiter.api.Test;
+
+import io.quarkus.test.junit.QuarkusTest;
+import io.restassured.http.ContentType;
+
+@QuarkusTest
+public class SourceSystemResourceTest {
+
+    /**
+     * Test that getting all SourceSystems returns an empty list initially.
+     */
+    @Test
+    public void testGetAllEmpty() {
+        given()
+                .when().get("/api/aas")
+                .then()
+                .statusCode(200)
+                .body("$.size()", is(0));
+    }
+
+    /**
+     * Test creating a new SourceSystem and then retrieving it by ID.
+     */
+    @Test
+    public void testCreateAndGetById() {
+        String jsonBody = """
+                {
+                    "name": "TestSensor",
+                    "description": "Test Description",
+                    "endpointUrl": "http://localhost:1234"
+                }
+                """;
+
+        // Create a new SourceSystem via POST
+        String location = given()
+                .contentType(ContentType.JSON)
+                .body(jsonBody)
+                .when()
+                .post("/api/aas")
+                .then()
+                .statusCode(201)
+                .extract()
+                .header("Location");
+
+        // Extract ID from the Location header
+        String id = location.substring(location.lastIndexOf("/") + 1);
+
+        // Retrieve the created SourceSystem by ID and verify fields
+        given()
+                .when().get("/api/aas/" + id)
+                .then()
+                .statusCode(200)
+                .body("name", equalTo("TestSensor"))
+                .body("description", equalTo("Test Description"))
+                .body("endpointUrl", equalTo("http://localhost:1234"));
+    }
+
+    /**
+     * Test updating an existing SourceSystem.
+     */
+    @Test
+    public void testUpdate() {
+        String jsonBodyCreate = """
+                {
+                    "name": "SensorBeforeUpdate",
+                    "description": "Description before update",
+                    "endpointUrl": "http://localhost:1111"
+                }
+                """;
+
+        // Create a new SourceSystem
+        String location = given()
+                .contentType(ContentType.JSON)
+                .body(jsonBodyCreate)
+                .when()
+                .post("/api/aas")
+                .then()
+                .statusCode(201)
+                .extract()
+                .header("Location");
+
+        String id = location.substring(location.lastIndexOf("/") + 1);
+
+        String jsonBodyUpdate = """
+                {
+                    "name": "SensorAfterUpdate",
+                    "description": "Description after update",
+                    "endpointUrl": "http://localhost:2222"
+                }
+                """;
+
+        // Update the SourceSystem via PUT
+        given()
+                .contentType(ContentType.JSON)
+                .body(jsonBodyUpdate)
+                .when().put("/api/aas/" + id)
+                .then()
+                .statusCode(200)
+                .body("name", equalTo("SensorAfterUpdate"))
+                .body("description", equalTo("Description after update"))
+                .body("endpointUrl", equalTo("http://localhost:2222"));
+    }
+
+    /**
+     * Test deleting an existing SourceSystem and verify it no longer exists.
+     */
+    @Test
+    public void testDelete() {
+        String jsonBody = """
+                {
+                    "name": "ToDelete",
+                    "description": "Will be deleted",
+                    "endpointUrl": "http://localhost/delete"
+                }
+                """;
+
+        // Create a new SourceSystem
+        String location = given()
+                .contentType(ContentType.JSON)
+                .body(jsonBody)
+                .when()
+                .post("/api/aas")
+                .then()
+                .statusCode(201)
+                .extract()
+                .header("Location");
+
+        String id = location.substring(location.lastIndexOf("/") + 1);
+
+        // Delete the SourceSystem
+        given()
+                .when().delete("/api/aas/" + id)
+                .then()
+                .statusCode(204);
+
+        // Verify it no longer exists
+        given()
+                .when().get("/api/aas/" + id)
+                .then()
+                .statusCode(404);
+    }
+
+    /**
+     * Test retrieving a SourceSystem by an ID that does not exist returns 404.
+     */
+    @Test
+    public void testGetByIdNotFound() {
+        given()
+                .when().get("/api/aas/9999999")
+                .then()
+                .statusCode(404);
+    }
+
+    /**
+     * Test deleting a SourceSystem by an ID that does not exist returns 404.
+     */
+    @Test
+    public void testDeleteNotFound() {
+        given()
+                .when().delete("/api/aas/9999999")
+                .then()
+                .statusCode(404);
+    }
+}
