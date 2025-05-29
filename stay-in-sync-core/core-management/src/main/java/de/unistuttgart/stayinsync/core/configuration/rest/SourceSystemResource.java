@@ -56,13 +56,8 @@ public class SourceSystemResource {
     @APIResponse(responseCode = "404", description = "Source system not found")
     public Response getSsById(@Parameter(name = "id", required = true) @PathParam("id") Long id) {
         var found = ssService.findSourceSystemById(id);
-        if (found != null) {
-            Log.debugf("Found source system: %s", found);
-            return Response.ok(found).build();
-        } else {
-            Log.debugf("No source system found with id %d", id);
-            return Response.status(Response.Status.NOT_FOUND).build();
-        }
+        Log.debugf("Found source system: %s", found);
+        return Response.ok(found).build();
     }
 
     @POST
