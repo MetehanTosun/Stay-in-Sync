@@ -1,0 +1,35 @@
+.flex {
+  display: flex;
+}
+
+.w-60 {
+  width: 290px; /* Breite der Sidebar */
+}
+
+.w-full {
+  width: calc(100% - 15rem); /* Dynamische Breite des Hauptinhalts */
+}
+
+.flex-1 {
+  flex: 1; /* Hauptinhalt nimmt die gesamte Breite ein */
+}
+
+.min-h-screen {
+  min-height: 100vh;
+}
+
+.shadow-lg {
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.bg-white {
+  background-color: #ffffff;
+}
+
+.p-3 {
+  padding: 1rem;
+}
+
+.p-5 {
+  padding: 1.25rem;
+}

@@ -51,3 +51,11 @@
   color: midnightblue;
 }
 
+body .p-sidebar-mask {
+  pointer-events: none; /* deaktiviert Klicks auf Overlay */
+  background: transparent; /* entfernt grauen Hintergrund */
+}
+body .p-sidebar {
+  pointer-events: auto; /* erlaubt Klicks innerhalb der Sidebar */
+}
+
