@@ -1,19 +1,2 @@
-/* You can add global styles to this file, and also import other style files */
+/* Please use tokens.css for design tokens */
 @import "primeicons/primeicons.css";
-
-:root{
-  --primary-color: #007ad9;
-  --secondary-color: #f0f0f0;
-  --text-color: #333;
-  --background-color: #ffffff;
-  --border-color: #e0e0e0;
-  --font-family: 'Inter';
-}
-
-body {
-  font-family: var(--font-family), sans-serif;
-  color: var(--text-color);
-  background-color: var(--background-color);
-  margin: 0;
-  padding: 0;
-}

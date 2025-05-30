@@ -26,9 +26,14 @@
                 "input": "public"
               }
             ],
-            "styles": [
-              "src/styles.css"
-            ],
+   
+         "styles": [
+          "src/styles.css",
+          "../../Shared_Styles/tokens.css",
+        
+
+
+        ],
             "scripts": []
           },
           "configurations": {
@@ -45,6 +50,7 @@
                   "maximumError": "8kB"
                 }
               ],
+
               "outputHashing": "all"
             },
             "development": {
@@ -92,5 +98,8 @@
         }
       }
     }
+  },
+  "cli": {
+    "analytics": "b87e6124-1692-4382-96b6-364a6ff9f203"
   }
 }

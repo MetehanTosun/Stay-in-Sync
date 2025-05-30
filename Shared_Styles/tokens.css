@@ -1,0 +1,106 @@
+
+
+/* 1. CSS-Custom Properties (Design Tokens) */
+:root {
+    /* Farb-Palette */
+    --color-primary:       #66b2ff;  /* helles Blau */
+    --color-success:       #28a745;  /* Akzeptanz/Erfolg – Grün */
+    --color-error:         #dc3545;  /* Fehler – Rot */
+    --color-background:    #ffffff;  /* reines Weiß als Hintergrund */
+    --color-surface:       #ffffff;  
+    --color-text-primary:  #212529;  
+    --color-text-secondary:#495057;  
+  
+    /* Abstände */
+    --spacing-xs: 4px;
+    --spacing-sm: 8px;
+    --spacing-md: 16px;
+    --spacing-lg: 24px;
+    --spacing-xl: 32px;
+  
+    /* Typografie */
+    --font-family-base:     'Inter', sans-serif;
+    --font-size-base:       16px;
+    --font-size-sm:         14px;
+    --font-size-lg:         18px;
+    --line-height-base:     1.5;
+    --font-weight-normal:   400;
+    --font-weight-bold:     600;
+  }
+  
+  /* 2. Global Reset / Base Styles */
+  *,
+  *::before,
+  *::after {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+  }
+  
+  html, body, #root, app-root {
+    width: 100%;
+    height: 100%;
+    font-family: var(--font-family-base);
+    font-size: var(--font-size-base);
+    line-height: var(--line-height-base);
+    background-color: var(--color-background);
+    color: var(--color-text-primary);
+  }
+  
+  /* 3. Standard-Komponenten-Styles */
+  button {
+    font-family: inherit;
+    font-size: inherit;
+    line-height: inherit;
+    cursor: pointer;
+    border: none;
+    background-color: var(--color-primary);
+    color: var(--color-surface);
+    padding: var(--spacing-sm) var(--spacing-md);
+    border-radius: 4px;
+    transition: background-color 0.2s ease;
+  }
+  
+  button:hover {
+    filter: brightness(0.9);
+  }
+  
+  button.success {
+    background-color: var(--color-success);
+  }
+  
+  button.error {
+    background-color: var(--color-error);
+  }
+  
+  a {
+    color: var(--color-primary);
+    text-decoration: none;
+  }
+  
+  a:hover {
+    text-decoration: underline;
+  }
+  
+  /* 4. Alerts und Status-Indikatoren */
+  .alert {
+    padding: var(--spacing-sm) var(--spacing-md);
+    border-radius: 4px;
+    margin-bottom: var(--spacing-md);
+  }
+  
+  .alert--success {
+    background-color: var(--color-success);
+    color: var(--color-surface);
+  }
+  
+  .alert--error {
+    background-color: var(--color-error);
+    color: var(--color-surface);
+  }
+  
+  /* 5. Utility-Klassen */
+  .mt-md { margin-top:    var(--spacing-md) !important; }
+  .mb-md { margin-bottom: var(--spacing-md) !important; }
+  .p-md  { padding:       var(--spacing-md) !important; }
+  
