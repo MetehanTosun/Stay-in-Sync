@@ -1,6 +1,4 @@
-import {Component, EventEmitter, Input, Output} from '@angular/core';
-import { Sidebar } from 'primeng/sidebar';
-import { Button } from 'primeng/button';
+import {Component, EventEmitter, Output} from '@angular/core';
 import { RouterLink, RouterLinkActive } from '@angular/router';
 import {NgIf} from '@angular/common';
 
@@ -9,7 +7,7 @@ import {NgIf} from '@angular/common';
   standalone: true,
   templateUrl: './sidebar-menu.component.html',
   styleUrl: './sidebar-menu.component.css',
-  imports: [Sidebar, Button, RouterLink, RouterLinkActive, NgIf],
+  imports: [RouterLink, RouterLinkActive, NgIf],
 })
 export class SidebarMenuComponent {
 
