@@ -8,7 +8,7 @@ import { AasBaseComponent } from './features/source-system/components/aas-base/a
 import { EdcBaseComponent } from './features/edc/components/edc-base/edc-base.component';
 import { CreateSourceSystemComponent } from
     './features/source-system/components/create-source-system/create-source-system.component';
-import { ScriptEditorPageComponent } from './features/script-editor/script-editor-page.component';
+import { ScriptEditorPageComponent } from './features/script-editor/script-editor-page/script-editor-page.component';
 
 
 export const routes: Routes = [

@@ -1,0 +1,32 @@
+:host ::ng-deep .schema-tree .p-treenode-label {
+    font-size: 0.9em;
+}
+
+:host ::ng-deep .schema-tree .p-tree-toggler {
+    margin-right: .2rem !important;
+}
+
+:host ::ng-deep .schema-tree .p-treenode-icon {
+    margin-right: .2rem !important;
+}
+
+.entity-container {
+    border: 1px solid #dee2e6;
+    border-radius: 3px;
+    padding: 0.5rem;
+    margin-bottom: 0.5rem !important;
+}
+.h-full {
+    height: 100%;
+}
+:host ::ng-deep .p-panel .p-panel-content {
+    height: calc(100% - 40px);
+    padding: 0;
+}
+
+:host ::ng-deep .p-panel .p-panel-content .p-scrollpanel .p-scrollpanel-wrapper {
+     border-right: none;
+}
+:host ::ng-deep .p-panel .p-panel-content .p-scrollpanel .p-scrollpanel-content {
+    padding: 1rem;
+}
