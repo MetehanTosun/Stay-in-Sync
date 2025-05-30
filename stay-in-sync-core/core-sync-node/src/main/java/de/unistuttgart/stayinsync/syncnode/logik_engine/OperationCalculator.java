@@ -1,26 +1,22 @@
 package de.unistuttgart.stayinsync.syncnode.logik_engine;
 
-import java.util.ArrayList;
 import java.util.List;
 
 public class OperationCalculator {
 
-    public static Object evaluate(LogicNode node){
-
-        if(node.getResult() != null){
-            return node.getResult();
-        }
-
-        List<Object> values = new ArrayList<>();
-        for(LogicNode parent : node.getParents()){
-            values.add(evaluate(parent));
-        }
-        Object result = calculate(node.getOperator(), values);
-        node.setResult(result);
-        return result;
-    }
-
-    private static Object calculate(LogicOperator operator, List<Object> values) {
+    /**
+     * Performs the calculation for the given operator with the provided values.
+     *
+     * @param operator The {@link LogicOperator} defining the operation to perform.
+     * @param values   A list of {@link Object}s representing the operands for the operation.
+     *                 The number and type of values expected depend on the operator.
+     * @return The result of the calculation as an {@link Object}.
+     * @throws IllegalArgumentException if the values list is null, or if the number or type
+     *                                  of values is inappropriate for the given operator.
+     * @throws ArithmeticException      if an arithmetic error occurs (e.g., division by zero).
+     * @throws RuntimeException         if an unexpected or unhandled operator is encountered.
+     */
+    public Object calculate(LogicOperator operator, List<Object> values) {
         if (values == null) {
             throw new IllegalArgumentException("Values list cannot be null");
         }
