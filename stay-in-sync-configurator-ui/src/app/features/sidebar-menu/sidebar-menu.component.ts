@@ -2,13 +2,14 @@ import {Component, EventEmitter, Input, Output} from '@angular/core';
 import { Sidebar } from 'primeng/sidebar';
 import { Button } from 'primeng/button';
 import { RouterLink, RouterLinkActive } from '@angular/router';
+import {NgIf} from '@angular/common';
 
 @Component({
   selector: 'app-sidebar-menu',
   standalone: true,
   templateUrl: './sidebar-menu.component.html',
   styleUrl: './sidebar-menu.component.css',
-  imports: [Sidebar, Button, RouterLink, RouterLinkActive],
+  imports: [Sidebar, Button, RouterLink, RouterLinkActive, NgIf],
 })
 export class SidebarMenuComponent {
 

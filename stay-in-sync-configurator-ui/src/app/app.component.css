@@ -3,11 +3,11 @@
 }
 
 .w-60 {
-  width: 290px; /* Breite der Sidebar */
+  width: 265px; /* Breite der Sidebar */
 }
 
 .w-full {
-  width: calc(100% - 15rem); /* Dynamische Breite des Hauptinhalts */
+  width: calc(100% - 265px); /* Dynamische Breite des Hauptinhalts */
 }
 
 .flex-1 {

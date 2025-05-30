@@ -8,6 +8,7 @@ import { AasBaseComponent } from './features/source-system/components/aas-base/a
 import { EdcBaseComponent } from './features/edc/components/edc-base/edc-base.component';
 import { CreateSourceSystemComponent } from
     './features/source-system/components/create-source-system/create-source-system.component';
+import {HelpPageComponent} from './features/help-page/help-page.component';
 
 
 export const routes: Routes = [
@@ -34,10 +35,14 @@ export const routes: Routes = [
 
   // Route für EDC
   { path: 'edc', component: EdcBaseComponent },
+  //Route für help
+  {path: 'help', component:HelpPageComponent},
 
   // Standard-Redirect (optional, falls keine Route passt)
   { path: '', redirectTo: '/sync-rules', pathMatch: 'full' },
 
   // Fallback-Route für nicht gefundene Seiten
   { path: '**', redirectTo: '/sync-rules' }
+
+
 ];
