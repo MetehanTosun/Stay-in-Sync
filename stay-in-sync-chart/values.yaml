@@ -153,7 +153,6 @@ rabbitmq:
   replicaCount: 1
 
 umbrella:
-
   dataconsumerOne:
     enabled: true
     # -- uncomment the following for persistence
@@ -161,6 +160,9 @@ umbrella:
     #   primary:
     #     persistence:
     #       enabled: true
+    vault:
+      hashicorp:
+        url: http://edc-dataconsumer-1-vault:8200
 
   tx-data-provider:
     seedTestdata: true
@@ -175,7 +177,43 @@ umbrella:
     #     primary:
     #       persistence:
     #         enabled: true
-
+    dataplane:
+      env:
+        TX_IAM_IATP_CREDENTIALSERVICE_URL: http://ssi-dim-wallet-stub.tx.test/api
+        EDC_IAM_DID_WEB_USE_HTTPS: false
+#      ingresses:
+#        - enabled: true
+#          hostname: "dataconsumer-1-dataplane.tx.test"
+#          endpoints:
+#            - default
+#            - public
+#          className: "nginx"
+#          tls:
+#            enabled: false
+      token:
+        signer:
+          privatekey_alias: tokenSignerPrivateKey
+        verifier:
+          publickey_alias: tokenSignerPublicKey
+#      postgresql:
+#        nameOverride: dataconsumer-1-db
+#        jdbcUrl: "jdbc:postgresql://{{ .Release.Name }}-dataconsumer-1-db:5432/edc"
+#        auth:
+#          password: "dbpassworddataconsumerone"
+#          postgresPassword: "dbpassworddataconsumerone"
+      vault:
+        hashicorp:
+          url: http://edc-dataconsumer-1-vault:8200
+        secretNames:
+          transferProxyTokenSignerPrivateKey: tokenSignerPrivateKey
+          transferProxyTokenSignerPublicKey: tokenSignerPublicKey
+          transferProxyTokenEncryptionAesKey: tokenEncryptionAesKey
+    vault:
+      nameOverride: edc-dataprovider-vault
+      fullnameOverride: edc-dataprovider-vault
+      enabled: true
+      server:
+        postStart: [ ]
   pgadmin4:
     enabled: true
     # -- uncomment the following for persistence

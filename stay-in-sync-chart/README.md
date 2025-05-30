@@ -77,7 +77,7 @@ minikube ip
 
 ## Usage
 
-Before installing the helm chart make sure to update dependencies:
+Before installing the helm chart make sure to update dependencies, only use this command within the charts folder:
 
 ```shell
 helm dependency update
