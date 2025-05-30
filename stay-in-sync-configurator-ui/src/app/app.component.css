@@ -3,33 +3,22 @@
 }
 
 .w-60 {
-  width: 265px; /* Breite der Sidebar */
+  width: 300px; /* Breite der Sidebar */
 }
 
 .w-full {
-  width: calc(100% - 265px); /* Dynamische Breite des Hauptinhalts */
-}
-
-.flex-1 {
-  flex: 1; /* Hauptinhalt nimmt die gesamte Breite ein */
-}
-
-.min-h-screen {
-  min-height: 100vh;
-}
-
-.shadow-lg {
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-}
-
-.bg-white {
-  background-color: #ffffff;
-}
-
-.p-3 {
-  padding: 1rem;
+  width: calc(100% - 300px); /* Dynamische Breite des Hauptinhalts */
 }
 
 .p-5 {
   padding: 1.25rem;
+}
+.fixed-home-button {
+  position: fixed;
+  top: 1rem; /* Abstand vom oberen Rand */
+  left: 1rem; /* Abstand vom linken Rand */
+  width: 50px; /* Feste Breite */
+  height: 50px; /* Feste Höhe */
+  display: flex;
+  justify-content: center;
 }

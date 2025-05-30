@@ -1,13 +1,3 @@
-.sidebar-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.sidebar-header h3 {
-  margin: 0;
-}
-
 .close-button {
   background: none !important; /* Entfernt die grüne Hintergrundfarbe */
   color: inherit; /* Verwendet die Standard-Schriftfarbe */
@@ -23,13 +13,9 @@
   margin: 1rem 0 0 0;
 }
 
-.nav-list li {
-  margin-bottom: 0.7rem;
-}
-
 .nav-list a {
   display: block;
-  padding: 0.5rem 1rem;
+  padding: 1rem 1rem;
   border-radius: 6px;
   color: #333;
   text-decoration: none;
@@ -51,13 +37,6 @@
   color: midnightblue;
 }
 
-body .p-sidebar-mask {
-  pointer-events: none; /* deaktiviert Klicks auf Overlay */
-  background: transparent; /* entfernt grauen Hintergrund */
-}
-body .p-sidebar {
-  pointer-events: auto; /* erlaubt Klicks innerhalb der Sidebar */
-}
 .custom-sidebar {
   position: fixed;
   top: 0;
@@ -79,12 +58,12 @@ body .p-sidebar {
   justify-content: space-between;
   align-items: center;
   padding: 1rem;
-  background: #007ad9;
-  color: #fff;
 }
 
 .sidebar-content {
-  padding: 1rem;
+  padding-left: 1rem;
+  padding-right: 1rem;
+  padding-bottom: 1rem;
 }
 
 .overlay {
@@ -99,4 +78,16 @@ body .p-sidebar {
 
 .nav-list a i {
   margin-right: 0.5rem; /* Abstand zwischen Icon und Text */
+}
+
+.sidebar-content {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.nav-list.bottom-links {
+  position: absolute;
+  bottom: 0;
+  width: 268px;
 }

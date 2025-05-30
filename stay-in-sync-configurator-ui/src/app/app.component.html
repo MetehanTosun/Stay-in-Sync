@@ -1,11 +1,14 @@
 <div class="flex">
+  <!-- Home-Button -->
+  <button *ngIf="!sidebarVisible" (click)="sidebarVisible = true">
+    <i class="pi pi-home"></i>
+  </button>
+
   <!-- Sidebar -->
-  <p-button (onClick)="sidebarVisible = true" icon="pi pi-home"></p-button>
-  <div *ngIf="sidebarVisible" class="w-60 min-h-screen shadow-lg bg-white p-3">
+  <div *ngIf="sidebarVisible" class="w-60">
     <app-sidebar-menu
       (sidebarVisibleChange)="onSidebarToggle($event)">
     </app-sidebar-menu>
-
   </div>
 
   <!-- Hauptinhalt -->
