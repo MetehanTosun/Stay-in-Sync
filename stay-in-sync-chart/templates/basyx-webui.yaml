@@ -1,0 +1,67 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Release.Name }}-basyx-web-ui
+  labels:
+    app: {{ .Release.Name }}-basyx-web-ui
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: {{ .Release.Name }}-basyx-web-ui
+  template:
+    metadata:
+      labels:
+        app: {{ .Release.Name }}-basyx-web-ui
+    spec:
+      containers:
+        - name: {{ .Release.Name }}-basyx-web-ui
+          image: eclipsebasyx/aas-gui:SNAPSHOT
+          ports:
+            - containerPort: 3000
+          env:
+            - name: AAS_REGISTRY_PATH
+              value: "http://basyx-aas-registry.test/shell-descriptors"
+            - name: SUBMODEL_REGISTRY_PATH
+              value: "http://basyx-submodel-registry.test/submodel-descriptors"
+            - name: AAS_REPO_PATH
+              value: "http://basyx-aas-env.test/shells"
+            - name: SUBMODEL_REPO_PATH
+              value: "http://basyx-aas-env.test/submodels"
+            - name: CD_REPO_PATH
+              value: "http://basyx-aas-env.test/concept-descriptions"
+            - name: PRIMARY_COLOR
+              value: "#FF0000"
+            - name: DASHBOARD_SERVICE_PATH
+              value: "http://dashboard-api:8085/api/elements"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Release.Name }}-basyx-web-ui
+spec:
+  type: ClusterIP
+  selector:
+    app: {{ .Release.Name }}-basyx-web-ui
+  ports:
+    - port: 3000
+      targetPort: 3000
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: {{ .Release.Name }}-basyx-web-ui-ingress
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /
+spec:
+  rules:
+    - host: basyx-web-ui.test
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ .Release.Name }}-basyx-web-ui
+                port:
+                  number: 3000
