@@ -21,9 +21,9 @@ export const routes: Routes = [
   // Route für Transformation Scripts
   { path: 'transformation-scripts', component: ConfigurationscriptsBaseComponent },
 
-  // Route für Asset Administration Shell (ASS)
+  // Route für Asset Administration Shell (AAS)
   {
-    path: 'ass',
+    path: 'aas',
     component: AasBaseComponent,
     children: [
       {
