@@ -152,6 +152,11 @@ rabbitmq:
 
   replicaCount: 1
 
+mariadb:
+  primary:
+    readinessProbe:
+      initialDelaySeconds: 90
+
 umbrella:
   dataconsumerOne:
     enabled: true
