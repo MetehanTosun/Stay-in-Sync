@@ -17,8 +17,8 @@ import { AasService } from '../../services/aas.service';
 import { Observable, of } from 'rxjs';
 import { tap, catchError } from 'rxjs/operators';
 
-// Erlaubte Quellsystem-Typen (angepasst an HTML)
-type SourceType = 'AAS' | 'REST_OPENAPI';
+// Erlaubte Quellsystem-Typen (REST_SAMPLE hinzugefügt)
+type SourceType = 'AAS' | 'REST_OPENAPI' | 'REST_SAMPLE';
 
 @Component({
   selector: 'app-create-source-system',
@@ -43,7 +43,8 @@ export class CreateSourceSystemComponent implements OnInit {
   sourceType: SourceType = 'AAS';
   sourceTypeOptions = [
     { label: 'AAS Registry', value: 'AAS' as SourceType },
-    { label: 'REST (from OpenAPI)', value: 'REST_OPENAPI' as SourceType }
+    { label: 'REST (from OpenAPI)', value: 'REST_OPENAPI' as SourceType },
+    { label: 'REST (from Sample)', value: 'REST_SAMPLE' as SourceType }
   ];
 
   source: { name: string; aasId?: string } = { name: '' };
@@ -68,6 +69,16 @@ export class CreateSourceSystemComponent implements OnInit {
   requestBodyValue: string = '';
   // === Ende Eigenschaften für REST_OPENAPI ===
 
+  // === Eigenschaften für REST_SAMPLE ===
+  restSampleBaseUrl: string = '';
+  restSampleQueryParams: { key: string; value: string }[] = [{ key: '', value: '' }];
+  restSampleHeaders: { key: string; value: string }[] = [{ key: '', value: '' }];
+  restSampleRequestBody: string = '';
+  isInferringSchema: boolean = false;
+  inferredSchema: any = null;
+  schemaInferenceError: string | null = null;
+  // === Ende Eigenschaften für REST_SAMPLE ===
+
   constructor(private aasService: AasService, private http: HttpClient) {}
 
   ngOnInit(): void {
@@ -81,6 +92,9 @@ export class CreateSourceSystemComponent implements OnInit {
     this.source.aasId = undefined;
     if (newType !== 'REST_OPENAPI') {
       this.resetOpenApiFields();
+    }
+    if (newType !== 'REST_SAMPLE') {
+      this.resetRestSampleFields();
     }
     if (newType === 'AAS') {
       this.loadAasList();
@@ -99,6 +113,16 @@ export class CreateSourceSystemComponent implements OnInit {
     this.selectedApiEndpoint = null;
     this.dynamicEndpointParameters = [];
     this.requestBodyValue = '';
+  }
+
+  private resetRestSampleFields(): void {
+    this.restSampleBaseUrl = '';
+    this.restSampleQueryParams = [{ key: '', value: '' }];
+    this.restSampleHeaders = [{ key: '', value: '' }];
+    this.restSampleRequestBody = '';
+    this.isInferringSchema = false;
+    this.inferredSchema = null;
+    this.schemaInferenceError = null;
   }
 
   private loadAasList(): void {
@@ -214,6 +238,118 @@ export class CreateSourceSystemComponent implements OnInit {
     }
   }
 
+  // === REST_SAMPLE Methoden ===
+  addQueryParam(): void {
+    this.restSampleQueryParams.push({ key: '', value: '' });
+  }
+
+  removeQueryParam(index: number): void {
+    if (this.restSampleQueryParams.length > 1) {
+      this.restSampleQueryParams.splice(index, 1);
+    }
+  }
+
+  addHeader(): void {
+    this.restSampleHeaders.push({ key: '', value: '' });
+  }
+
+  removeHeader(index: number): void {
+    if (this.restSampleHeaders.length > 1) {
+      this.restSampleHeaders.splice(index, 1);
+    }
+  }
+
+  async inferSchemaFromSample(): Promise<void> {
+    if (!this.restSampleBaseUrl) {
+      this.schemaInferenceError = 'Please enter a base URL.';
+      return;
+    }
+
+    this.isInferringSchema = true;
+    this.schemaInferenceError = null;
+    this.inferredSchema = null;
+
+    try {
+      const url = this.buildSampleUrl();
+      const headers: { [key: string]: string } = {};
+      
+      // Headers hinzufügen
+      this.restSampleHeaders.forEach(header => {
+        if (header.key && header.value) {
+          headers[header.key] = header.value;
+        }
+      });
+
+      const requestOptions: RequestInit = {
+        method: 'GET',
+        headers: headers
+      };
+
+      // Request Body hinzufügen falls vorhanden
+      if (this.restSampleRequestBody.trim()) {
+        requestOptions.method = 'POST';
+        requestOptions.body = this.restSampleRequestBody;
+        headers['Content-Type'] = 'application/json';
+      }
+
+      const response = await fetch(url, requestOptions);
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+
+      const data = await response.json();
+      this.inferredSchema = this.inferJsonSchema(data);
+      
+    } catch (err: any) {
+      console.error('Error inferring schema:', err);
+      this.schemaInferenceError = `Failed to infer schema: ${err.message || 'Unknown error'}`;
+    } finally {
+      this.isInferringSchema = false;
+    }
+  }
+
+  private buildSampleUrl(): string {
+    let url = this.restSampleBaseUrl;
+    const queryParams = this.restSampleQueryParams
+      .filter(param => param.key && param.value)
+      .map(param => `${encodeURIComponent(param.key)}=${encodeURIComponent(param.value)}`)
+      .join('&');
+    
+    if (queryParams) {
+      url += (url.includes('?') ? '&' : '?') + queryParams;
+    }
+    
+    return url;
+  }
+
+  private inferJsonSchema(data: any): any {
+    // Einfache Schema-Inferierung
+    if (Array.isArray(data)) {
+      return {
+        type: 'array',
+        items: data.length > 0 ? this.inferJsonSchema(data[0]) : { type: 'object' }
+      };
+    } else if (typeof data === 'object' && data !== null) {
+      const properties: { [key: string]: any } = {};
+      Object.keys(data).forEach(key => {
+        properties[key] = this.inferJsonSchema(data[key]);
+      });
+      return {
+        type: 'object',
+        properties: properties
+      };
+    } else if (typeof data === 'string') {
+      return { type: 'string' };
+    } else if (typeof data === 'number') {
+      return { type: 'number' };
+    } else if (typeof data === 'boolean') {
+      return { type: 'boolean' };
+    } else {
+      return { type: 'string' };
+    }
+  }
+  // === Ende REST_SAMPLE Methoden ===
+
   save(): void {
     if (!this.source.name || this.source.name.trim() === '') {
       console.error('Source System Name is required.');
@@ -226,6 +362,7 @@ export class CreateSourceSystemComponent implements OnInit {
     };
 
     this.openApiSpecError = null;
+    this.schemaInferenceError = null;
 
     switch (this.sourceType) {
       case 'AAS':
@@ -267,6 +404,23 @@ export class CreateSourceSystemComponent implements OnInit {
           }
         }
         break;
+      case 'REST_SAMPLE':
+        if (!this.restSampleBaseUrl || this.restSampleBaseUrl.trim() === '') {
+          this.schemaInferenceError = 'Base URL is required.';
+          return;
+        }
+        if (!this.inferredSchema) {
+          this.schemaInferenceError = 'Schema must be inferred before saving.';
+          return;
+        }
+        sourceToSave.baseUrl = this.restSampleBaseUrl.trim();
+        sourceToSave.sampleConfig = {
+          queryParams: this.restSampleQueryParams.filter(p => p.key && p.value),
+          headers: this.restSampleHeaders.filter(h => h.key && h.value),
+          requestBody: this.restSampleRequestBody.trim() || null
+        };
+        sourceToSave.inferredSchema = this.inferredSchema;
+        break;
       default:
         console.error('Unknown source type:', this.sourceType);
         return;
@@ -291,6 +445,7 @@ export class CreateSourceSystemComponent implements OnInit {
     this.source = { name: '' };
     this.sourceType = 'AAS';
     this.resetOpenApiFields();
+    this.resetRestSampleFields();
 
     if (this.sourceType === 'AAS') {
       this.loadAasList();
@@ -299,5 +454,6 @@ export class CreateSourceSystemComponent implements OnInit {
       this.isLoadingAas = false;
     }
     this.openApiSpecError = null;
+    this.schemaInferenceError = null;
   }
 }

@@ -78,33 +78,6 @@
     </div>
     <!-- ===== Ende AAS ===== -->
 
-    <!-- ===== 4) REST (einfach)‐Felder (ENTFERNT) ===== -->
-    <!--
-    <div *ngIf="sourceType === 'REST'" class="type-specific-section card p-3 mb-3">
-      <h5 class="mb-3">REST Configuration</h5>
-      <div class="p-field mb-3">
-        <label for="endpoint" class="form-label">Endpoint URL*</label>
-        <input
-          id="endpoint"
-          type="url"
-          pInputText
-          [(ngModel)]="source.endpoint"
-          name="endpoint"
-          [required]="sourceType === 'REST'"
-          class="form-control"
-          placeholder="https://api.example.com/data"
-        />
-        <small
-          *ngIf="sourceForm.controls['endpoint']?.invalid && (sourceForm.controls['endpoint']?.dirty || sourceForm.controls['endpoint']?.touched || sourceForm.submitted)"
-          class="p-error mt-1 d-block"
-        >
-          <span *ngIf="sourceForm.controls['endpoint']?.errors?.['required']">Endpoint URL is required.</span>
-        </small>
-      </div>
-    </div>
-    -->
-    <!-- ===== Ende REST (einfach) (ENTFERNT) ===== -->
-
     <!-- ===== 5) REST_OPENAPI‐Felder ===== -->
     <div *ngIf="sourceType === 'REST_OPENAPI'" class="type-specific-section card p-3 mb-3">
       <h5 class="mb-3">REST Configuration (from OpenAPI)</h5>
@@ -199,18 +172,16 @@
                 [placeholder]="param.description || (param.schema?.example ? 'Example: ' + param.schema.example : param.name)"
                 class="form-control form-control-sm"
               />
-              <!-- Eindeutiger Name für ngModel in ngFor -->
               <small *ngIf="param.description" class="form-text text-muted d-block mt-1">{{ param.description }}</small>
               <small *ngIf="sourceForm.controls['param_' + param.name + i]?.invalid && (sourceForm.controls['param_' + param.name + i]?.dirty || sourceForm.controls['param_' + param.name + i]?.touched || sourceForm.submitted)" class="p-error mt-1 d-block">
                 <span *ngIf="sourceForm.controls['param_' + param.name + i]?.errors?.['required']">Parameter {{ param.name }} is required.</span>
               </small>
             </div>
           </div>
-          <div *ngIf="!dynamicEndpointParameters || dynamicEndpointParameters.length === 0" class="text-muted ms-2 mb-3"> <!-- Anpassung für Klarheit, falls keine Parameter -->
+          <div *ngIf="!dynamicEndpointParameters || dynamicEndpointParameters.length === 0" class="text-muted ms-2 mb-3">
             <small *ngIf="selectedApiEndpoint.operation?.parameters?.length === 0">This endpoint has no configurable parameters.</small>
             <small *ngIf="!selectedApiEndpoint.operation?.parameters">Parameter information not available.</small>
           </div>
-
 
           <!-- 5.3.2) Request Body (falls vorhanden) -->
           <div *ngIf="selectedApiEndpoint.operation?.requestBody?.content?.['application/json']" class="p-field mb-3">
@@ -233,15 +204,163 @@
               Request body is required.
             </small>
           </div>
-          <!-- 5.3.3) (Optional) Authentifizierungs‐Felder können hier ergänzt werden -->
         </div>
       </ng-container>
     </div>
     <!-- ===== Ende REST_OPENAPI ===== -->
 
-    
+    <!-- ===== 6) REST_SAMPLE‐Felder ===== -->
+    <div *ngIf="sourceType === 'REST_SAMPLE'" class="type-specific-section card p-3 mb-3">
+      <h5 class="mb-3">REST Configuration (from Sample)</h5>
 
-    <!-- 6) Footer: Cancel und Save Buttons -->
+      <!-- 6.1) Base URL -->
+      <div class="p-field mb-3">
+        <label for="restSampleBaseUrl" class="form-label">Base URL*</label>
+        <input
+          id="restSampleBaseUrl"
+          type="url"
+          pInputText
+          [(ngModel)]="restSampleBaseUrl"
+          name="restSampleBaseUrl"
+          [required]="sourceType === 'REST_SAMPLE'"
+          class="form-control"
+          placeholder="https://api.example.com/data"
+        />
+        <small
+          *ngIf="sourceForm.controls['restSampleBaseUrl']?.invalid && (sourceForm.controls['restSampleBaseUrl']?.dirty || sourceForm.controls['restSampleBaseUrl']?.touched || sourceForm.submitted)"
+          class="p-error mt-1 d-block"
+        >
+          <span *ngIf="sourceForm.controls['restSampleBaseUrl']?.errors?.['required']">Base URL is required.</span>
+        </small>
+      </div>
+
+      <!-- 6.2) Query Parameters -->
+      <div class="p-field mb-3">
+        <label class="form-label fw-semibold">Query Parameters</label>
+        <div *ngFor="let param of restSampleQueryParams; let i = index" class="p-inputgroup mb-2">
+          <input
+            type="text"
+            pInputText
+            [(ngModel)]="param.key"
+            [name]="'queryParamKey_' + i"
+            placeholder="Parameter name"
+            class="form-control"
+          />
+          <input
+            type="text"
+            pInputText
+            [(ngModel)]="param.value"
+            [name]="'queryParamValue_' + i"
+            placeholder="Parameter value"
+            class="form-control"
+          />
+          <button
+            pButton
+            type="button"
+            icon="pi pi-plus"
+            (click)="addQueryParam()"
+            *ngIf="i === restSampleQueryParams.length - 1"
+            class="p-button-success"
+            title="Add parameter"
+          ></button>
+          <button
+            pButton
+            type="button"
+            icon="pi pi-minus"
+            (click)="removeQueryParam(i)"
+            *ngIf="restSampleQueryParams.length > 1"
+            class="p-button-danger"
+            title="Remove parameter"
+          ></button>
+        </div>
+      </div>
+
+      <!-- 6.3) Headers -->
+      <div class="p-field mb-3">
+        <label class="form-label fw-semibold">Headers</label>
+        <div *ngFor="let header of restSampleHeaders; let i = index" class="p-inputgroup mb-2">
+          <input
+            type="text"
+            pInputText
+            [(ngModel)]="header.key"
+            [name]="'headerKey_' + i"
+            placeholder="Header name"
+            class="form-control"
+          />
+          <input
+            type="text"
+            pInputText
+            [(ngModel)]="header.value"
+            [name]="'headerValue_' + i"
+            placeholder="Header value"
+            class="form-control"
+          />
+          <button
+            pButton
+            type="button"
+            icon="pi pi-plus"
+            (click)="addHeader()"
+            *ngIf="i === restSampleHeaders.length - 1"
+            class="p-button-success"
+            title="Add header"
+          ></button>
+          <button
+            pButton
+            type="button"
+            icon="pi pi-minus"
+            (click)="removeHeader(i)"
+            *ngIf="restSampleHeaders.length > 1"
+            class="p-button-danger"
+            title="Remove header"
+          ></button>
+        </div>
+      </div>
+
+      <!-- 6.4) Request Body (optional) -->
+      <div class="p-field mb-3">
+        <label for="restSampleRequestBody" class="form-label">Request Body (JSON, optional)</label>
+        <textarea
+          id="restSampleRequestBody"
+          pInputTextarea
+          [(ngModel)]="restSampleRequestBody"
+          name="restSampleRequestBody"
+          rows="4"
+          class="form-control font-monospace"
+          placeholder="Enter JSON body (for POST requests)..."
+        ></textarea>
+      </div>
+
+      <!-- 6.5) Infer Schema Button -->
+      <div class="p-field mb-3">
+        <button
+          pButton
+          type="button"
+          label="Infer Schema"
+          icon="pi pi-search"
+          (click)="inferSchemaFromSample()"
+          [loading]="isInferringSchema"
+          [disabled]="!restSampleBaseUrl || isInferringSchema"
+          class="p-button-info"
+        ></button>
+        <small *ngIf="schemaInferenceError" class="p-error mt-1 d-block">{{ schemaInferenceError }}</small>
+      </div>
+
+      <!-- 6.6) Inferred Schema Display -->
+      <div *ngIf="inferredSchema" class="p-field mb-3">
+        <label class="form-label fw-semibold">Inferred JSON Schema</label>
+        <textarea
+          readonly
+          pInputTextarea
+          [value]="inferredSchema | json"
+          rows="8"
+          class="form-control font-monospace bg-light"
+          style="font-size: 0.85rem;"
+        ></textarea>
+      </div>
+    </div>
+    <!-- ===== Ende REST_SAMPLE ===== -->
+
+    <!-- 7) Footer: Cancel und Save Buttons -->
     <div class="p-dialog-footer mt-5 d-flex justify-content-end">
       <button pButton type="button" label="Cancel" icon="pi pi-times" (click)="cancel()" class="p-button-text me-2"></button>
       <button
@@ -253,7 +372,8 @@
           sourceForm.invalid ||
           !source.name.trim() ||
           (sourceType === 'AAS' && !source.aasId) ||
-          (sourceType === 'REST_OPENAPI' && (!openApiSpecUrl.trim() || !selectedApiEndpoint || isLoadingOpenApiSpec))
+          (sourceType === 'REST_OPENAPI' && (!openApiSpecUrl.trim() || !selectedApiEndpoint || isLoadingOpenApiSpec)) ||
+          (sourceType === 'REST_SAMPLE' && (!restSampleBaseUrl.trim() || !inferredSchema || isInferringSchema))
         "
       ></button>
     </div>
