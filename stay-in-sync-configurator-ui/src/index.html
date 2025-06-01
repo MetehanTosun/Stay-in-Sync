@@ -6,8 +6,14 @@
   <base href="/">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <link rel="icon" type="image/x-icon" href="favicon.ico">
+
+  <!-- ====== HIER das Swagger-Parser Browser-Bundle von unpkg laden ====== -->
+  <!-- Achte darauf, dass dieser <script> VOR den Angular-Skripten (main.js, runtime.js, etc.) geladen wird -->
+  <script src="https://unpkg.com/@apidevtools/swagger-parser/dist/swagger-parser.browser.bundle.js"></script>
+  <!-- ===================================================================== -->
 </head>
 <body>
   <app-root></app-root>
+  <!-- Angular-CLI wird hier seine Bundles einfügen (main.js, polyfills.js, runtime.js, ...) -->
 </body>
 </html>
