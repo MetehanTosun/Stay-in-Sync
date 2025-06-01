@@ -1,0 +1,13 @@
+@startuml
+
+[First component]
+[Another component] as Comp2
+component "stay-in-sync-core" as core {
+  component "core-management" as management
+  component "core-sync-node" as syncNode
+  component "core-polling-node" as pollingNode
+}
+
+syncNode below management
+
+@enduml

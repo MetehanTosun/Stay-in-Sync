@@ -59,6 +59,14 @@
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-core</artifactId>
         </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-rest-client-jackson</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-quartz</artifactId>
+        </dependency>
     </dependencies>
 
     <build>
@@ -92,7 +100,7 @@
                 <configuration>
                     <systemPropertyVariables>
                         <java.util.logging.manager>org.jboss.logmanager.LogManager</java.util.logging.manager>
-                        <maven.home>${maven.home}</maven.home>
+     <!--               <maven.home>${maven.home}</maven.home> -->
                     </systemPropertyVariables>
                 </configuration>
             </plugin>
@@ -111,7 +119,7 @@
                     <systemPropertyVariables>
                         <native.image.path>${project.build.directory}/${project.build.finalName}-runner</native.image.path>
                         <java.util.logging.manager>org.jboss.logmanager.LogManager</java.util.logging.manager>
-                        <maven.home>${maven.home}</maven.home>
+     <!--               <maven.home>${maven.home}</maven.home> -->
                     </systemPropertyVariables>
                 </configuration>
             </plugin>
