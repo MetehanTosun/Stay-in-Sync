@@ -1,9 +1,5 @@
 // src/app/features/source-system/components/create-source-system/create-source-system.component.ts
 
-// TypeScript-Deklaration, damit der Compiler nicht meckert.
-// Zur Laufzeit findet er dann window.SwaggerParser (durch das <script> in index.html).
-declare const SwaggerParser: any;
-
 import { Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -135,8 +131,26 @@ export class CreateSourceSystemComponent implements OnInit {
     this.requestBodyValue = '';
 
     try {
-      // Nutze hier das globale SwaggerParser (aus index.html <script>)
-      const spec = await SwaggerParser.dereference(this.openApiSpecUrl);
+      // Einfacher fetch() statt SwaggerClient
+      const response = await fetch(this.openApiSpecUrl);
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+      
+      const contentType = response.headers.get('content-type');
+      let spec: any;
+      
+      if (contentType?.includes('application/json')) {
+        spec = await response.json();
+      } else if (contentType?.includes('text/yaml') || contentType?.includes('application/yaml') || this.openApiSpecUrl.endsWith('.yaml') || this.openApiSpecUrl.endsWith('.yml')) {
+        const yamlText = await response.text();
+        // Einfaches YAML-zu-JSON für OpenAPI (basic implementation)
+        spec = this.parseYamlToJson(yamlText);
+      } else {
+        // Versuchen als JSON zu parsen
+        spec = await response.json();
+      }
+      
       this.parsedOpenApiSpec = spec;
       this.extractEndpoints();
     } catch (err: any) {
@@ -144,6 +158,18 @@ export class CreateSourceSystemComponent implements OnInit {
       this.openApiSpecError = `Failed to load/parse spec: ${err.message || 'Unknown error'}`;
     } finally {
       this.isLoadingOpenApiSpec = false;
+    }
+  }
+
+  private parseYamlToJson(yamlText: string): any {
+    // Sehr einfacher YAML-Parser für OpenAPI (nur für basic use cases)
+    try {
+      // Versuchen, ob es bereits JSON ist
+      return JSON.parse(yamlText);
+    } catch {
+      // Einfache YAML-zu-JSON-Konvertierung (limitiert)
+      console.warn('YAML parsing is limited. Consider using JSON format for OpenAPI specs.');
+      throw new Error('YAML format not fully supported. Please use JSON format.');
     }
   }
 

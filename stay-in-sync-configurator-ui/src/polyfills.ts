@@ -30,6 +30,10 @@
     // format: utilNode.format, ... etc.
   };
   
+  // Polyfill für Buffer
+  import { Buffer } from 'buffer';
+  (window as any).Buffer = Buffer;
+  
   // --- 3) Polyfill für url.resolve() und url.cwd() ---
   // Wir nutzen das Browser-Global `window.URL`, anstatt aus 'url' zu importieren,
   // weil die npm-Polyfill-Bibliothek "url" unter Umständen keine named export 'URL' bietet.
