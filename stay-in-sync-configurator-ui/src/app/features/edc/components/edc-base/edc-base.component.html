@@ -1,1 +1,18 @@
-<p>edc-base works!</p>
+<div class="sidebar-container">
+  <div class="sidebar">
+    <button (click)="activeTab = 'instances'" [class.active]="activeTab === 'instances'">EDC Instances</button>
+    <button (click)="activeTab = 'partners'" [class.active]="activeTab === 'partners'">Partner Networks</button>
+    <button (click)="activeTab = 'assets'" [class.active]="activeTab === 'assets'">Data Assets & Policies</button>
+  </div>
+  <div class="content">
+    <div *ngIf="activeTab === 'instances'">
+      <p>Content for Tab 1</p>
+    </div>
+    <div *ngIf="activeTab === 'partners'">
+      <p>Content for Tab 2</p>
+    </div>
+    <div *ngIf="activeTab === 'assets'">
+      <p>Content for Tab 3</p>
+    </div>
+  </div>
+</div>
