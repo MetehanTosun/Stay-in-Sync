@@ -1,6 +1,5 @@
 import { definePreset } from '@primeng/themes';
 import Lara from '@primeng/themes/lara';
-import Aura from '@primeng/themes/aura';
 
 const MyPreset = definePreset(Lara, {
   semantic: {
@@ -34,29 +33,30 @@ const MyPreset = definePreset(Lara, {
       }
     },
     spacing: {
-      xs: '0.25rem',   // 4px
-      sm: '0.5rem',    // 8px
-      md: '1rem',      // 16px
-      lg: '1.5rem',    // 24px
-      xl: '2rem'       // 32px
+      xs: '0.25rem',
+      sm: '0.5rem',
+      md: '1rem',
+      lg: '1.5rem',
+      xl: '2rem'
     },
-    typography: {
-      fontFamily: "'Inter', sans-serif",
-      fontSize: {
-        base: '1rem',    // 16px
-        sm: '0.875rem',  // 14px
-        lg: '1.125rem'   // 18px
-      },
-      fontWeight: {
-        normal: '400',
-        bold: '600'
-      },
-      lineHeight: {
-        base: '1.5'
-      }
+
+    // 👉 Richtig platzierte Typography-Tokens
+    fontFamily: "'Inter', sans-serif",
+    fontSize: {
+      base: '1rem',
+      sm: '0.875rem',
+      lg: '1.125rem'
     },
+    fontWeight: {
+      normal: '400',
+      bold: '600'
+    },
+    lineHeight: {
+      base: '1.5'
+    },
+
     borderRadius: {
-      md: '0.25rem' // 4px
+      md: '0.25rem'
     }
   }
 });
