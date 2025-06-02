@@ -15,6 +15,7 @@ import org.eclipse.microprofile.openapi.annotations.parameters.Parameter;
 import org.eclipse.microprofile.openapi.annotations.parameters.RequestBody;
 import org.eclipse.microprofile.openapi.annotations.responses.APIResponse;
 
+import de.unistuttgart.stayinsync.core.configuration.exception.CoreManagementWebException;
 import de.unistuttgart.stayinsync.core.configuration.persistence.entities.SourceSystem;
 import de.unistuttgart.stayinsync.core.configuration.service.SourceSystemService;
 import io.quarkus.logging.Log;
@@ -55,7 +56,12 @@ public class SourceSystemResource {
     @APIResponse(responseCode = "200", description = "The found source system", content = @Content(mediaType = APPLICATION_JSON, schema = @Schema(implementation = SourceSystem.class)))
     @APIResponse(responseCode = "404", description = "Source system not found")
     public Response getSsById(@Parameter(name = "id", required = true) @PathParam("id") Long id) {
-        var found = ssService.findSourceSystemById(id);
+        SourceSystem found = ssService.findSourceSystemById(id)
+                .orElseThrow(
+                        () -> new CoreManagementWebException(
+                                Response.Status.NOT_FOUND,
+                                "Source system not found",
+                                "No source system found with id %d", id));
         Log.debugf("Found source system: %s", found);
         return Response.ok(found).build();
     }
@@ -71,18 +77,24 @@ public class SourceSystemResource {
         var builder = uriInfo.getAbsolutePathBuilder().path(Long.toString(input.id));
         Log.debugf("New source system created with URI %s", builder.build().toString());
         return Response.created(builder.build()).build();
+        // TODO: Throw Exception in case of invalid source system: we need to know how
+        // the source system looks like first(final model)
     }
 
     @PUT
     @Path("/{id}")
-    @Operation(summary = "Updates an existing source system")
+    @Operation(summary = "Fully updates an existing source system")
     @APIResponse(responseCode = "200", description = "The updated source system", content = @Content(mediaType = APPLICATION_JSON, schema = @Schema(implementation = SourceSystem.class)))
     @APIResponse(responseCode = "404", description = "Source system not found")
     public Response updateSs(@Parameter(name = "id", required = true) @PathParam("id") Long id,
             @Valid @NotNull SourceSystem input) {
         input.id = id;
-        ssService.updateSourceSystem(input);
-        return Response.ok(input).build();
+        return ssService.updateSourceSystem(input)
+                .map(updated -> Response.ok(updated).build())
+                .orElseThrow(() -> new CoreManagementWebException(
+                        Response.Status.NOT_FOUND,
+                        "Source system not found",
+                        "No source system found with id %d", id));
     }
 
     @DELETE
@@ -91,7 +103,12 @@ public class SourceSystemResource {
     @APIResponse(responseCode = "204", description = "Source system deleted")
     @APIResponse(responseCode = "404", description = "Source system not found")
     public Response deleteSs(@Parameter(name = "id", required = true) @PathParam("id") Long id) {
-        ssService.deleteSourceSystemById(id);
+        if (!ssService.deleteSourceSystemById(id)) {
+            throw new CoreManagementWebException(
+                    Response.Status.NOT_FOUND,
+                    "Source system not found",
+                    "No source system found with id %d", id);
+        }
         return Response.noContent().build();
     }
 }

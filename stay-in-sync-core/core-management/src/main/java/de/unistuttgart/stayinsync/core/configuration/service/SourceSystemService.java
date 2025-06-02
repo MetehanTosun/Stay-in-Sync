@@ -1,28 +1,28 @@
 package de.unistuttgart.stayinsync.core.configuration.service;
 
 import java.util.List;
+import java.util.Optional;
 
-import de.unistuttgart.stayinsync.core.configuration.exception.CoreManagementWebException;
+import de.unistuttgart.stayinsync.core.configuration.mapping.SourceSystemFullUpdateMapper;
 import de.unistuttgart.stayinsync.core.configuration.persistence.entities.SourceSystem;
+import io.quarkus.logging.Log;
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
-import jakarta.ws.rs.core.Response;
 
 @ApplicationScoped
 public class SourceSystemService {
+    @Inject
+    SourceSystemFullUpdateMapper mapper;
 
     public List<SourceSystem> findAllSourceSystems() {
+        Log.debug("Fetching all source systems");
         return SourceSystem.listAll(); // Panache
     }
 
-    public SourceSystem findSourceSystemById(Long id) {
-        SourceSystem existingSs = SourceSystem.findById(id);
-        if (existingSs == null) {
-            throw new CoreManagementWebException(Response.Status.NOT_FOUND, "Source system not found",
-                    "No source system found with id %d", id);
-        }
-
-        return SourceSystem.findById(id); // Panache
+    public Optional<SourceSystem> findSourceSystemById(Long id) {
+        Log.debugf("Fetching source system with ID: %d", id);
+        return SourceSystem.findByIdOptional(id);
     }
 
     @Transactional
@@ -31,30 +31,25 @@ public class SourceSystemService {
          * TODO: Validation logic, as soon as we know how the final Model of a
          * SourceSystem looks like.
          */
+        Log.debugf("Creating new source system with name: %s", ss.name);
         ss.persist(); // Panache
     }
 
     @Transactional
-    public void updateSourceSystem(SourceSystem ss) {
+    public Optional<SourceSystem> updateSourceSystem(SourceSystem ss) {
+        Log.debugf("Updating source system with ID: %d", ss.id);
         SourceSystem existingSs = SourceSystem.findById(ss.id);
-        if (existingSs == null) {
-            throw new CoreManagementWebException(Response.Status.NOT_FOUND, "Source system not found",
-                    "No source system found with id %d", ss.id);
+        if (existingSs != null) {
+            mapper.mapFullUpdate(ss, existingSs);
         }
-        existingSs.name = ss.name;
-        existingSs.description = ss.description;
-        existingSs.endpointUrl = ss.endpointUrl;
+        return Optional.ofNullable(existingSs);
     }
 
     @Transactional
-    public void deleteSourceSystemById(Long id) {
-        SourceSystem existingSs = SourceSystem.findById(id);
-        if (existingSs == null) {
-            throw new CoreManagementWebException(
-                    Response.Status.NOT_FOUND,
-                    "Source system not found",
-                    "No source system found with id %d", id);
-        }
-        existingSs.delete();
+    public boolean deleteSourceSystemById(Long id) {
+        Log.debugf("Deleting source system with ID: %d", id);
+        boolean deleted = SourceSystem.deleteById(id);
+        return deleted;
+
     }
 }

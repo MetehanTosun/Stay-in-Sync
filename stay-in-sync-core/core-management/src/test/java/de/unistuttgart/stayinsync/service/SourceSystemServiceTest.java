@@ -3,11 +3,11 @@ package de.unistuttgart.stayinsync.service;
 import static org.junit.jupiter.api.Assertions.*;
 
 import java.util.List;
+import java.util.Optional;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import de.unistuttgart.stayinsync.core.configuration.exception.CoreManagementWebException;
 import de.unistuttgart.stayinsync.core.configuration.persistence.entities.SourceSystem;
 import de.unistuttgart.stayinsync.core.configuration.service.SourceSystemService;
 import io.quarkus.test.junit.QuarkusTest;
@@ -33,10 +33,11 @@ public class SourceSystemServiceTest {
         sourceSystem.endpointUrl = "http://localhost/test";
         sourceSystemService.createSourceSystem(sourceSystem);
 
-        SourceSystem found = sourceSystemService.findSourceSystemById(sourceSystem.id);
-        assertNotNull(found, "SourceSystem should be found after creation");
-        assertEquals(sourceSystem.id, found.id);
-        assertEquals(sourceSystem.name, found.name);
+        Optional<SourceSystem> found = sourceSystemService.findSourceSystemById(sourceSystem.id);
+        assertTrue(found.isPresent(), "SourceSystem should be found after creation");
+        SourceSystem actual = found.get();
+        assertEquals(sourceSystem.id, actual.id);
+        assertEquals(sourceSystem.name, actual.name);
     }
 
     @Test
@@ -64,9 +65,9 @@ public class SourceSystemServiceTest {
         sourceSystem.name = "edited";
         sourceSystemService.updateSourceSystem(sourceSystem);
 
-        SourceSystem updated = sourceSystemService.findSourceSystemById(sourceSystem.id);
-        assertNotNull(updated, "Updated SourceSystem should be found");
-        assertEquals("edited", updated.name, "Name should be updated");
+        Optional<SourceSystem> updated = sourceSystemService.findSourceSystemById(sourceSystem.id);
+        assertNotNull(updated.isPresent(), "Updated SourceSystem should be found");
+        assertEquals("edited", updated.get().name, "Name should be updated");
     }
 
     @Test
@@ -86,18 +87,16 @@ public class SourceSystemServiceTest {
     }
 
     @Test
-    public void testDeleteNonExistentIdThrows() {
+    public void testDeleteNonExistentIdReturnsFalse() {
         Long nonExistentId = 9999L;
-        assertThrows(CoreManagementWebException.class, () -> {
-            sourceSystemService.deleteSourceSystemById(nonExistentId);
-        });
+        boolean result = sourceSystemService.deleteSourceSystemById(nonExistentId);
+        assertFalse(result, "Deleting non-existent ID should return false");
     }
 
     @Test
-    public void testFindByIdNotFoundThrows() {
+    public void testFindByIdNotFoundReturnsEmpty() {
         Long nonExistentId = 9999L;
-        assertThrows(CoreManagementWebException.class, () -> {
-            sourceSystemService.findSourceSystemById(nonExistentId);
-        });
+        Optional<SourceSystem> result = sourceSystemService.findSourceSystemById(nonExistentId);
+        assertTrue(result.isEmpty(), "Should return empty Optional for non-existent ID");
     }
 }
