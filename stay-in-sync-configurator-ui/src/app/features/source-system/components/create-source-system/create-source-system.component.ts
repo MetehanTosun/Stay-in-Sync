@@ -77,6 +77,7 @@ export class CreateSourceSystemComponent implements OnInit {
   isInferringSchema: boolean = false;
   inferredSchema: any = null;
   schemaInferenceError: string | null = null;
+  schemaInferenceSuccess: boolean = false; 
   // === Ende Eigenschaften für REST_SAMPLE ===
 
   constructor(private aasService: AasService, private http: HttpClient) {}
@@ -123,6 +124,7 @@ export class CreateSourceSystemComponent implements OnInit {
     this.isInferringSchema = false;
     this.inferredSchema = null;
     this.schemaInferenceError = null;
+    this.schemaInferenceSuccess = false;
   }
 
   private loadAasList(): void {
@@ -268,6 +270,7 @@ export class CreateSourceSystemComponent implements OnInit {
     this.isInferringSchema = true;
     this.schemaInferenceError = null;
     this.inferredSchema = null;
+    this.schemaInferenceSuccess = false; // Reset success state
 
     try {
       const url = this.buildSampleUrl();
@@ -300,9 +303,12 @@ export class CreateSourceSystemComponent implements OnInit {
       const data = await response.json();
       this.inferredSchema = this.inferJsonSchema(data);
       
+      
     } catch (err: any) {
       console.error('Error inferring schema:', err);
       this.schemaInferenceError = `Failed to infer schema: ${err.message || 'Unknown error'}`;
+    
+      this.schemaInferenceSuccess = false; // Reset success state
     } finally {
       this.isInferringSchema = false;
     }
@@ -409,7 +415,7 @@ export class CreateSourceSystemComponent implements OnInit {
           this.schemaInferenceError = 'Base URL is required.';
           return;
         }
-        if (!this.inferredSchema) {
+      if (!this.inferredSchema ) {
           this.schemaInferenceError = 'Schema must be inferred before saving.';
           return;
         }
