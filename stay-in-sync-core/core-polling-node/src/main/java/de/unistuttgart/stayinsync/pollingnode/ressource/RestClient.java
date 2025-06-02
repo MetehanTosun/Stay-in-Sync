@@ -1,6 +1,5 @@
 package de.unistuttgart.stayinsync.pollingnode.ressource;
 
-
 import de.unistuttgart.stayinsync.pollingnode.entities.ApiAddress;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.ws.rs.GET;
@@ -14,6 +13,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import io.quarkus.logging.Log;
 
 @ApplicationScoped
 public class RestClient {
@@ -39,49 +39,49 @@ public class RestClient {
      * @return json as String as CompletableFuture
      */
     @GET
-    public CompletableFuture<String> getJsonDataOf(ApiAddress apiAddress) {
-        HttpRequest request;
+    public CompletableFuture<String> getJsonDataOfSourceSystem(final ApiAddress apiAddress) {
         try {
-            request = createHttpRequest(apiAddress);
+            HttpRequest request = createHttpRequest(apiAddress);
+
+            return httpClient.sendAsync(request, HttpResponse.BodyHandlers.ofString())
+                    .orTimeout(5, TimeUnit.SECONDS)
+                    .thenCompose(this::handleResponse);
+
         } catch (IllegalArgumentException e) {
-            System.err.println("Invalid URI in ApiAddress: " + apiAddress.getString());
-            CompletableFuture<String> failed = new CompletableFuture<>();
-            failed.completeExceptionally(e);
-            return failed;
+            Log.warn("Invalid URI in ApiAddress: {}", apiAddress.getString(), e);
+            return CompletableFuture.failedFuture(e);
         }
-        return httpClient.sendAsync(request, HttpResponse.BodyHandlers.ofString())
-                .orTimeout(300, TimeUnit.MILLISECONDS)
-                .thenApply(HttpResponse::body);
     }
 
-    /*
-    * Creates HttpRequest out of ApiAddress
-    * @param apiAddress contains single String with address
+    /**
+     * Creates HttpRequest out of ApiAddress
+     * @param apiAddress contains single String with address
+     * @return configured HttpRequest
+     * @throws IllegalArgumentException if URI is invalid
      */
     private HttpRequest createHttpRequest(final ApiAddress apiAddress) throws IllegalArgumentException {
-            return HttpRequest.newBuilder()
-                    .uri(URI.create(apiAddress.getString()))
-                    .timeout(Duration.ofMillis(10))
-                    .GET()
-                    .build();
+        return HttpRequest.newBuilder()
+                .uri(URI.create(apiAddress.getString()))
+                .timeout(Duration.ofSeconds(30)) // Realistischeres Timeout
+                .GET()
+                .build();
     }
 
-    /*
-     * Converts received json into a simpler format for later processes.
+    /**
+     * Handles HTTP response with proper error handling
+     * @param response HTTP response to process
+     * @return CompletableFuture with response body or failed future
      */
-    private void handleReceivedJson(final ApiAddress apiAddress, final String json) {
-        // Beispiel: Weiterleiten oder Parsen
-        System.out.println("Received JSON from " + apiAddress.getString() + ": " + json);
-        // TODO: Event weitergeben, an zentrale Klasse melden, verarbeiten etc.
+    private CompletableFuture<String> handleResponse(final HttpResponse<String> response) {
+        int statusCode = response.statusCode();
+
+        if (statusCode >= 200 && statusCode < 300) {
+            Log.info(String.format("Successful poll with status code %d for URI: %s", statusCode, response.uri()));
+            return CompletableFuture.completedFuture(response.body());
+        } else {
+            String errorMessage = String.format("HTTP error %d for URI: %s", statusCode, response.uri());
+            Log.error(errorMessage);
+            return CompletableFuture.failedFuture(new RuntimeException(errorMessage));
+        }
     }
-
-    /*
-     * Exception handling for unsuccessful requests.
-     */
-    private void handleRequestFailure(ApiAddress address, Throwable ex) {
-        System.err.println("Request to " + address.getString() + " failed: " + ex.getMessage());
-        // TODO: Retry, Monitoring, Logging, Blacklisting etc.
-    }
-
-
 }
