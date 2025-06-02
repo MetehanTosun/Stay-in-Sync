@@ -5,14 +5,8 @@
     <button (click)="activeTab = 'assets'" [class.active]="activeTab === 'assets'">Data Assets & Policies</button>
   </div>
   <div class="content">
-    <div *ngIf="activeTab === 'instances'">
-      <p>Content for Tab 1</p>
-    </div>
-    <div *ngIf="activeTab === 'partners'">
-      <p>Content for Tab 2</p>
-    </div>
-    <div *ngIf="activeTab === 'assets'">
-      <p>Content for Tab 3</p>
-    </div>
+    <app-edc-instances *ngIf="activeTab === 'instances'"></app-edc-instances>
+    <app-edc-partners *ngIf="activeTab === 'partners'"></app-edc-partners>
+    <app-edc-assets *ngIf="activeTab === 'assets'"></app-edc-assets>
   </div>
 </div>
