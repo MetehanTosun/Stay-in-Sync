@@ -1,12 +1,17 @@
 .close-button {
-  background: none !important; /* Entfernt die grüne Hintergrundfarbe */
-  color: inherit; /* Verwendet die Standard-Schriftfarbe */
-  border: none; /* Entfernt jegliche Rahmen */
+  background: none !important;
+  color: inherit;
+  border: none;
   font-size: 1.2rem;
   cursor: pointer;
-  padding: 0; /* Entfernt unnötige Innenabstände */
+  padding: 0;
+  transition: color 0.2s, background 0.2s;
 }
 
+.close-button:hover {
+  color: #007ad9;
+  background: #f0f0f0;
+}
 .nav-list {
   list-style: none;
   padding: 0;
