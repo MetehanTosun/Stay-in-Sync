@@ -1,6 +1,7 @@
 import {Component, EventEmitter, Output} from '@angular/core';
 import { RouterLink, RouterLinkActive } from '@angular/router';
 import {NgIf} from '@angular/common';
+import {MyPreset} from '../../mypreset';
 
 @Component({
   selector: 'app-sidebar-menu',
@@ -42,6 +43,7 @@ export class SidebarMenuComponent {
     this.sidebarVisible = true;
 
   }
+
 
 
 }

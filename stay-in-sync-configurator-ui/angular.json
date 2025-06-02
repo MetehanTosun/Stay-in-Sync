@@ -27,9 +27,10 @@
               }
             ],
             "styles": [
+              "node_modules/primeicons/primeicons.css",
               "src/styles.css",
               "../Shared_Styles/tokens.css"
-            
+
             ],
             "scripts": []
           },
@@ -92,8 +93,6 @@
             "styles": [
               "src/styles.css",
               "Shared_Styles/tokens.css",
-              "node_modules/primeng/resources/themes/saga-blue/theme.css",
-              "node_modules/primeng/resources/primeng.min.css",
               "node_modules/primeicons/primeicons.css"
             ],
             "scripts": []

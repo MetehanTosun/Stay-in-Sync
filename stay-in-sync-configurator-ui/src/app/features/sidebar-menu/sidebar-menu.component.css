@@ -9,7 +9,7 @@
 }
 
 .close-button:hover {
-  color: #007ad9;
+  color: var(--p-primary-color);
   background: #f0f0f0;
 }
 .nav-list {
@@ -29,11 +29,11 @@
 
   .nav-list a:hover {
   background: #f0f0f0;
-  color: #007ad9;
+  color: var(--p-primary-color);
 }
 
 .active-link {
-  background: #007ad9;
+  background: var(--p-primary-color);
   color: #fff !important;
 }
 
@@ -43,7 +43,7 @@
   left: -300px; /* Start außerhalb des Bildschirms */
   width: 300px;
   height: 100%;
-  background: #fff;
+  background: var(--p-surface-color);
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
   z-index: 10000;
 }

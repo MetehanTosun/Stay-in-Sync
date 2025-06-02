@@ -13,6 +13,7 @@
 
   <!-- Hauptinhalt -->
   <div [class.flex-1]="!sidebarVisible" [class.w-full]="sidebarVisible" class="p-5">
+    <p-button label="Toggle Dark Mode" (onClick)="toggleDarkMode()"/>
     <router-outlet></router-outlet>
   </div>
 </div>

@@ -3,13 +3,14 @@ import { RouterOutlet } from '@angular/router';
 import {SidebarMenuComponent} from './features/sidebar-menu/sidebar-menu.component';
 import {ToastModule} from 'primeng/toast';
 import {NgIf} from '@angular/common';
+import {Button} from 'primeng/button';
 
 
 @Component({
   selector: 'app-root',
-  imports: [RouterOutlet, SidebarMenuComponent, ToastModule, NgIf],
+  imports: [RouterOutlet, SidebarMenuComponent, ToastModule, NgIf, Button],
   templateUrl: './app.component.html',
-  styleUrl: './app.component.css'
+  styleUrl: './app.component.css',
 })
 
 export class AppComponent {
@@ -18,5 +19,12 @@ export class AppComponent {
 
   onSidebarToggle(visible: boolean): void {
     this.sidebarVisible = visible;
+  }
+
+  toggleDarkMode() {
+    const element = document.querySelector('html');
+    if (element) {
+      element.classList.toggle('my-app-dark');
+    }
   }
 }

@@ -1,4 +1,47 @@
 /* Please use tokens.css for design tokens */
 @import "primeicons/primeicons.css";
+:root {
+  /* Farb-Palette */
+  --color-primary:       #66b2ff;  /* helles Blau */
+  --color-success:       #28a745;  /* Akzeptanz/Erfolg – Grün */
+  --color-error:         #dc3545;  /* Fehler – Rot */
+  --color-background:    #ffffff;  /* reines Weiß als Hintergrund */
+  --color-surface:       #ffffff;
+  --color-text-primary:  #212529;
+  --color-text-secondary:#495057;
 
+  /* Abstände */
+  --spacing-xs: 4px;
+  --spacing-sm: 8px;
+  --spacing-md: 16px;
+  --spacing-lg: 24px;
+  --spacing-xl: 32px;
 
+  /* Typografie */
+  --font-family-base:     'Inter', sans-serif;
+  --font-size-base:       16px;
+  --font-size-sm:         14px;
+  --font-size-lg:         18px;
+  --line-height-base:     1.5;
+  --font-weight-normal:   400;
+  --font-weight-bold:     600;
+}
+
+/* 2. Global Reset / Base Styles */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html, body, #root, app-root {
+  width: 100%;
+  height: 100%;
+  font-family: var(--font-family-base);
+  font-size: var(--font-size-base);
+  line-height: var(--line-height-base);
+  background-color: var(--color-background);
+  color: var(--color-text-primary);
+}
