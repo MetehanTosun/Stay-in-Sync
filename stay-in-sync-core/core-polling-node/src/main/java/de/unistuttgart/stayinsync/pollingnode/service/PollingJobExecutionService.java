@@ -3,7 +3,7 @@ package de.unistuttgart.stayinsync.pollingnode.service;
 import de.unistuttgart.stayinsync.pollingnode.configuration.PollingJobConfigurator;
 import de.unistuttgart.stayinsync.pollingnode.entities.ApiAddress;
 import de.unistuttgart.stayinsync.pollingnode.entities.PollingJob;
-import de.unistuttgart.stayinsync.pollingnode.ressource.RestRessource;
+import de.unistuttgart.stayinsync.pollingnode.ressource.RestClient;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.json.Json;
 
@@ -14,12 +14,12 @@ import java.util.Map;
 @ApplicationScoped
 public class PollingJobExecutionService {
     private final PollingJobConfigurator pollingJobConfigurator;
-    private final RestRessource restRessource;
+    private final RestClient restRessource;
     private final Map<ApiAddress, Json> cachedJsonValues;
     private final Map<ApiAddress, List<PollingJob>> pollingNodesThatUseApiAddress;
 
 
-    public PollingJobExecutionService(PollingJobConfigurator pollingJobConfigurator, RestRessource restRessource){
+    public PollingJobExecutionService(PollingJobConfigurator pollingJobConfigurator, RestClient restRessource){
         super();
         this.pollingJobConfigurator = pollingJobConfigurator;
         this.restRessource = restRessource;
