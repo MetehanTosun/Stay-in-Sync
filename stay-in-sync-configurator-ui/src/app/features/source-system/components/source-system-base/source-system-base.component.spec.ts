@@ -1,19 +1,19 @@
 // biome-ignore lint/style/useImportType: <explanation>
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
-import { AasBaseComponent } from './aas-base.component';
+import { SourceSystemBaseComponent } from './source-system-base.component';
 
-describe('AssBaseComponent', () => {
-  let component: AasBaseComponent;
-  let fixture: ComponentFixture<AasBaseComponent>;
+describe('SourceSystemBaseComponent', () => {
+  let component: SourceSystemBaseComponent;
+  let fixture: ComponentFixture<SourceSystemBaseComponent>;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [AasBaseComponent]
+      imports: [SourceSystemBaseComponent]
     })
     .compileComponents();
 
-    fixture = TestBed.createComponent(AasBaseComponent);
+    fixture = TestBed.createComponent(SourceSystemBaseComponent);
     component = fixture.componentInstance;
     fixture.detectChanges();
   });
