@@ -1,21 +1,21 @@
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
-  <modelVersion>4.0.0</modelVersion>
-  <groupId>de.unistuttgart</groupId>
-  <artifactId>stay-in-sync</artifactId>
-  <packaging>pom</packaging>
-  <version>1.0.0-SNAPSHOT</version>
-  <name>stay-in-sync</name>
-  <url>http://maven.apache.org</url>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <groupId>de.unistuttgart</groupId>
+    <artifactId>stay-in-sync</artifactId>
+    <packaging>pom</packaging>
+    <version>1.0.0-SNAPSHOT</version>
+    <name>stay-in-sync</name>
 
-  <modules>
-    <module>stay-in-sync-core</module>
-    <module>stay-in-sync-monitoring/monitoring-backend</module>
-  </modules>
+    <modules>
+        <module>stay-in-sync-core</module>
+        <module>stay-in-sync-monitoring/monitoring-backend</module>
+    </modules>
 
-  <properties>
-    <maven.compiler.source>21</maven.compiler.source>
-    <maven.compiler.target>21</maven.compiler.target>
-    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-  </properties>
+    <properties>
+        <maven.compiler.source>21</maven.compiler.source>
+        <maven.compiler.target>21</maven.compiler.target>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    </properties>
 </project>
