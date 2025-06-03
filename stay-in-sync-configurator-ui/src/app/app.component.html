@@ -13,7 +13,9 @@
 
   <!-- Hauptinhalt -->
   <div [class.flex-1]="!sidebarVisible" [class.w-full]="sidebarVisible" class="p-5">
-    <p-button label="Toggle Dark Mode" (onClick)="toggleDarkMode()"/>
+    <div class="toggle-switch-top-right">
+      <p-toggleswitch [(ngModel)]="darkModeEnabled" (onChange)="toggleDarkMode()" />
+    </div>
     <router-outlet></router-outlet>
   </div>
 </div>

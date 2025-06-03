@@ -7,6 +7,10 @@ import {providePrimeNG} from "primeng/config";
 import { provideHttpClient } from '@angular/common/http';
 import {MessageService} from 'primeng/api';
 import {MyPreset} from './mypreset';
+import Material from '@primeng/themes/material';
+import Aura from '@primeng/themes/aura';
+import Lara from '@primeng/themes/lara';
+import Nora from  '@primeng/themes/nora';
 
 export const appConfig: ApplicationConfig = {
   providers: [
