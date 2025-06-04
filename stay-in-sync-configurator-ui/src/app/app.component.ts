@@ -4,11 +4,13 @@ import {SidebarMenuComponent} from './features/sidebar-menu/sidebar-menu.compone
 import {ToastModule} from 'primeng/toast';
 import {NgIf} from '@angular/common';
 import {Button} from 'primeng/button';
+import {ToggleSwitch} from 'primeng/toggleswitch';
+import {FormsModule} from '@angular/forms';
 
 
 @Component({
   selector: 'app-root',
-  imports: [RouterOutlet, SidebarMenuComponent, ToastModule, NgIf, Button],
+  imports: [RouterOutlet, SidebarMenuComponent, ToastModule, NgIf, Button, ToggleSwitch, FormsModule],
   templateUrl: './app.component.html',
   styleUrl: './app.component.css',
 })
@@ -16,6 +18,7 @@ import {Button} from 'primeng/button';
 export class AppComponent {
 
   sidebarVisible = true;
+  darkModeEnabled: boolean = false;
 
   onSidebarToggle(visible: boolean): void {
     this.sidebarVisible = visible;
