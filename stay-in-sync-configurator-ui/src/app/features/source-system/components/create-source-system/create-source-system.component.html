@@ -1,0 +1,45 @@
+<!-- src/app/features/source-system/components/create-source-system/create-source-system.component.html -->
+
+<p-dialog 
+    header="New Source System"
+    [(visible)]="visible"
+    (onHide)="cancel()"
+    [modal]="true"
+    [style]="{ width: '50vw', maxWidth: '90vw' , minHeight: '25vw' }"
+    [baseZIndex]="10000"
+    class="big-dialog">
+
+  <form (ngSubmit)="save()">
+    <div class="p-field">
+      <label for="type">Source Type</label>
+      <p-dropdown
+        [options]="sourceTypeOptions"
+        [(ngModel)]="sourceType"
+        name="type"
+        (onChange)="onTypeChange(sourceType)">
+      </p-dropdown>
+    </div>
+
+    <div class="p-field" *ngIf="sourceType === 'AAS'">
+      <label for="aas">Choose AAS</label>
+      <p-dropdown
+        [options]="(aasList$ | async) ?? []"
+        [(ngModel)]="source.aasId"
+        name="aas"
+        filter="true"
+        showClear="true"
+        placeholder="Select an AAS">
+      </p-dropdown>
+    </div>
+
+    <div class="p-field" *ngIf="sourceType === 'REST'">
+      <label for="endpoint">Endpoint URL</label>
+      <input pInputText [(ngModel)]="source.endpoint" name="endpoint" id="endpoint"/>
+    </div>
+
+    <p-footer>
+      <button pButton label="Save" type="submit"></button>
+      <button pButton label="Cancel" type="button" (click)="cancel()"></button>
+    </p-footer>
+  </form>
+</p-dialog>
