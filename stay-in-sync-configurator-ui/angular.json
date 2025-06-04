@@ -28,8 +28,7 @@
             ],
             "styles": [
               "node_modules/primeicons/primeicons.css",
-              "src/styles.css",
-              "../Shared_Styles/tokens.css"
+              "src/styles.css"
 
             ],
             "scripts": []

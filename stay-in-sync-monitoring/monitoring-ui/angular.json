@@ -26,11 +26,11 @@
                 "input": "public"
               }
             ],
-   
+
          "styles": [
           "src/styles.css",
-          "../../Shared_Styles/tokens.css",
-        
+          "../../configurator-ui/src/styles.css"
+
 
 
         ],

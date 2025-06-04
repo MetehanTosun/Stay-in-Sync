@@ -4,11 +4,12 @@ import { SyncRulesComponent } from './features/sync-rules/components/sync-rules.
 import { ConfigBaseComponent } from './features/configuration/config-base/config-base.component';
 import { ConfigurationscriptsBaseComponent } from './features/configuration/configurationscripts-base/configurationscripts-base.component';
 // neu (relativ zu src/app/app.routes.ts)
-import { AasBaseComponent } from './features/source-system/components/aas-base/aas-base.component';
-import { EdcBaseComponent } from './features/edc/components/edc-base/edc-base.component';
+import { SourceSystemBaseComponent } from
+    './features/source-system/components/source-system-base/source-system-base.component';
 import { CreateSourceSystemComponent } from
     './features/source-system/components/create-source-system/create-source-system.component';
-import {HelpPageComponent} from './features/help-page/help-page.component';
+import { EdcBaseComponent } from './features/edc/components/edc-base/edc-base.component';
+
 
 
 export const routes: Routes = [
@@ -21,28 +22,26 @@ export const routes: Routes = [
   // Route für Transformation Scripts
   { path: 'transformation-scripts', component: ConfigurationscriptsBaseComponent },
 
-  // Route für Asset Administration Shell (AAS)
+  // Route für Source System
   {
-    path: 'aas',
-    component: AasBaseComponent,
+    path: 'source-system',
+    component: SourceSystemBaseComponent,
     children: [
       {
-        path: 'create-source-system',
+        path: 'create',
         component: CreateSourceSystemComponent
       }
     ]
   },
+  { path: '', redirectTo: 'source-system', pathMatch: 'full' },
+  { path: '**', redirectTo: 'source-system' },
 
   // Route für EDC
   { path: 'edc', component: EdcBaseComponent },
-  //Route für help
-  {path: 'help', component:HelpPageComponent},
 
   // Standard-Redirect (optional, falls keine Route passt)
   { path: '', redirectTo: '/sync-rules', pathMatch: 'full' },
 
   // Fallback-Route für nicht gefundene Seiten
   { path: '**', redirectTo: '/sync-rules' }
-
-
 ];
