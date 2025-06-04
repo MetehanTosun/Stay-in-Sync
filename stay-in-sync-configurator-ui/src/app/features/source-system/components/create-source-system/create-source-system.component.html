@@ -1,125 +1,113 @@
+<!-- 
+  CreateSourceSystemComponent Template
+  
+  A comprehensive dialog for configuring source systems with support for:
+  - AAS Registry integration
+  - REST API configuration via OpenAPI specs
+  - Dynamic parameter input forms
+  - JSON request body editing with validation
+  - Real-time preview of API requests
+  
+  The template uses PrimeNG components and Bootstrap classes for styling.
+  All form controls are bound to Angular Signals for reactive updates.
+-->
+
+<!-- Dialog wrapper with responsive sizing -->
 <p-dialog
-  header="New Source System"
-  [(visible)]="visible"
+  [header]="'New Source System'"
+  [visible]="visible"
   (onHide)="cancel()"
   [modal]="true"
   [style]="{ width: '65vw', maxWidth: '95vw', minHeight: '75vh' }"
-  [baseZIndex]="10000"
-  class="big-dialog create-source-system-dialog">
+  [baseZIndex]="10000">
 
-  <form (ngSubmit)="save()" #sourceForm="ngForm">
-    <!-- 1) Name (überall Pflichtfeld) -->
+  <div>
+    <!-- 
+      Section 1: Basic Information
+      Required fields for all source system types
+    -->
     <div class="p-field mb-4">
       <label for="name" class="form-label fw-semibold">Source System Name*</label>
       <input
         id="name"
         type="text"
         pInputText
-        [(ngModel)]="source.name"
-        name="name"
-        required
+        [value]="sourceName()"
+        (input)="sourceName.set($any($event.target).value)"
         class="form-control"
         placeholder="e.g., My Production Line API"
       />
-      <small
-        *ngIf="sourceForm.controls['name']?.invalid && (sourceForm.controls['name']?.dirty || sourceForm.controls['name']?.touched || sourceForm.submitted)"
-        class="p-error mt-1 d-block"
-      >
-        <span *ngIf="sourceForm.controls['name']?.errors?.['required']">Name is required.</span>
+      <!-- Real-time validation feedback -->
+      <small *ngIf="!sourceName().trim()" class="p-error mt-1 d-block">
+        Name is required.
       </small>
     </div>
 
-    <!-- 2) Source Type Dropdown -->
+    <!-- 
+      Section 2: Source Type Selection
+      Determines which configuration section is shown
+    -->
     <div class="p-field mb-4">
-      <label for="type" class="form-label fw-semibold">Source Type*</label>
+      <label class="form-label fw-semibold">Source Type*</label>
       <p-dropdown
-        [options]="sourceTypeOptions"
-        [(ngModel)]="sourceType"
-        name="type"
+        [options]="sourceTypeOptions()"
+        [ngModel]="sourceType()"
+        (ngModelChange)="sourceType.set($event)"
+        [ngModelOptions]="{standalone: true}"
         optionLabel="label"
         optionValue="value"
-        (onChange)="onTypeChange($event.value)"
-        required
         class="form-select w-100"
-        placeholder="Select a source type"
-      >
+        placeholder="Select a source type">
       </p-dropdown>
     </div>
 
-    <!-- ===== 3) AAS‐Felder ===== -->
-    <div *ngIf="sourceType === 'AAS'" class="type-specific-section card p-3 mb-3">
+    <!-- 
+      Section 3: AAS Configuration
+      Shown only when AAS type is selected
+      Loads available instances from registry
+    -->
+    <div *ngIf="isAasType()" class="type-specific-section card p-3 mb-3">
       <h5 class="mb-3">AAS Configuration</h5>
       <div class="p-field mb-3">
-        <label for="aas" class="form-label">Choose AAS Instance*</label>
+        <label class="form-label">Choose AAS Instance*</label>
         <p-dropdown
-          [options]="(aasList$ | async) ?? []"
-          [(ngModel)]="source.aasId"
-          name="aas"
+          [options]="aasList()"
+          [ngModel]="selectedAasId()"
+          (ngModelChange)="selectedAasId.set($event)"
+          [ngModelOptions]="{standalone: true}"
           optionLabel="name"
           optionValue="id"
-          filter="true"
+          [filter]="true"
           [showClear]="true"
           placeholder="Select an AAS Instance"
-          [required]="sourceType === 'AAS'"
-          class="form-select w-100"
-        >
-          <ng-template pTemplate="empty">
-            <div *ngIf="isLoadingAas" class="p-p-1 text-muted">Loading AAS instances...</div>
-            <div *ngIf="!isLoadingAas && !((aasList$ | async)?.length)" class="p-p-1 text-muted">No AAS instances found.</div>
-          </ng-template>
+          [loading]="isLoadingAas()"
+          class="form-select w-100">
         </p-dropdown>
-        <small
-          *ngIf="sourceForm.controls['aas']?.invalid && (sourceForm.controls['aas']?.dirty || sourceForm.controls['aas']?.touched || sourceForm.submitted)"
-          class="p-error mt-1 d-block"
-        >
-          <span *ngIf="sourceForm.controls['aas']?.errors?.['required']">AAS Instance is required.</span>
+        <small *ngIf="isAasType() && !selectedAasId()" class="p-error mt-1 d-block">
+          AAS Instance is required.
         </small>
       </div>
     </div>
-    <!-- ===== Ende AAS ===== -->
 
-    <!-- ===== 4) REST (einfach)‐Felder (ENTFERNT) ===== -->
-    <!--
-    <div *ngIf="sourceType === 'REST'" class="type-specific-section card p-3 mb-3">
-      <h5 class="mb-3">REST Configuration</h5>
-      <div class="p-field mb-3">
-        <label for="endpoint" class="form-label">Endpoint URL*</label>
-        <input
-          id="endpoint"
-          type="url"
-          pInputText
-          [(ngModel)]="source.endpoint"
-          name="endpoint"
-          [required]="sourceType === 'REST'"
-          class="form-control"
-          placeholder="https://api.example.com/data"
-        />
-        <small
-          *ngIf="sourceForm.controls['endpoint']?.invalid && (sourceForm.controls['endpoint']?.dirty || sourceForm.controls['endpoint']?.touched || sourceForm.submitted)"
-          class="p-error mt-1 d-block"
-        >
-          <span *ngIf="sourceForm.controls['endpoint']?.errors?.['required']">Endpoint URL is required.</span>
-        </small>
-      </div>
-    </div>
+    <!-- 
+      Section 4: REST OpenAPI Configuration
+      Complex multi-step configuration for REST APIs
     -->
-    <!-- ===== Ende REST (einfach) (ENTFERNT) ===== -->
-
-    <!-- ===== 5) REST_OPENAPI‐Felder ===== -->
-    <div *ngIf="sourceType === 'REST_OPENAPI'" class="type-specific-section card p-3 mb-3">
+    <div *ngIf="isRestOpenApiType()" class="type-specific-section card p-3 mb-3">
       <h5 class="mb-3">REST Configuration (from OpenAPI)</h5>
 
-      <!-- 5.1) OpenAPI Spec URL + Button -->
+      <!-- 
+        Step 4.1: OpenAPI Specification URL Input
+        Fetches and parses OpenAPI/Swagger specifications
+      -->
       <div class="p-field mb-3">
-        <label for="openApiSpecUrl" class="form-label">OpenAPI Spec URL*</label>
+        <label class="form-label">OpenAPI Spec URL*</label>
         <div class="p-inputgroup">
           <input
-            id="openApiSpecUrl"
             type="url"
             pInputText
-            [(ngModel)]="openApiSpecUrl"
-            name="openApiSpecUrl"
-            [required]="sourceType === 'REST_OPENAPI'"
+            [value]="openApiSpecUrl()"
+            (input)="openApiSpecUrl.set($any($event.target).value)"
             class="form-control"
             placeholder="https://petstore3.swagger.io/api/v3/openapi.json"
           />
@@ -129,33 +117,36 @@
             label="Load Spec"
             icon="pi pi-download"
             (click)="loadAndParseOpenApiSpec()"
-            [loading]="isLoadingOpenApiSpec"
-            [disabled]="!openApiSpecUrl || isLoadingOpenApiSpec"
-          ></button>
+            [loading]="isLoadingOpenApiSpec()"
+            [disabled]="!openApiSpecUrl() || isLoadingOpenApiSpec()">
+          </button>
         </div>
-        <small
-          *ngIf="sourceForm.controls['openApiSpecUrl']?.invalid && (sourceForm.controls['openApiSpecUrl']?.dirty || sourceForm.controls['openApiSpecUrl']?.touched || sourceForm.submitted)"
-          class="p-error mt-1 d-block"
-        >
-          <span *ngIf="sourceForm.controls['openApiSpecUrl']?.errors?.['required']">OpenAPI Spec URL is required.</span>
+        <!-- Error display with user-friendly messages -->
+        <small *ngIf="openApiSpecError()" class="p-error mt-1 d-block">
+          {{ openApiSpecError() }}
         </small>
-        <small *ngIf="openApiSpecError" class="p-error mt-1 d-block">{{ openApiSpecError }}</small>
       </div>
 
-      <!-- 5.2) Liste der verfügbaren Endpunkte (wenn geladen) -->
-      <ng-container *ngIf="!isLoadingOpenApiSpec">
-        <div *ngIf="availableApiEndpoints.length > 0" class="openapi-section mt-4">
-          <label class="form-label fw-semibold">Available Endpoints (Select one):</label>
-          <div class="endpoint-list mb-3" style="max-height: 250px; overflow-y: auto; border: 1px solid #dee2e6; border-radius: 6px; padding: 0.5rem;">
-            <div
-              *ngFor="let ep of availableApiEndpoints"
-              class="endpoint-item p-2 mb-1"
-              [class.bg-primary]="ep === selectedApiEndpoint"
-              [class.text-white]="ep === selectedApiEndpoint"
-              [class.border-bottom]="ep !== availableApiEndpoints[availableApiEndpoints.length -1]"
-              (click)="selectApiEndpoint(ep)"
-              style="cursor: pointer; border-radius: 4px; transition: background-color 0.2s ease;"
-            >
+      <!-- 
+        Step 4.2: Available Endpoints List
+        Displays all endpoints found in the OpenAPI spec
+        Allows selection with visual feedback
+      -->
+      <div *ngIf="availableApiEndpoints().length > 0" class="mt-4">
+        <label class="form-label fw-semibold">Available Endpoints:</label>
+        <!-- Scrollable list with color-coded HTTP methods -->
+        <div class="endpoint-list" style="max-height: 300px; overflow-y: auto; border: 1px solid #dee2e6; border-radius: 6px; padding: 0.5rem;">
+          <div
+            *ngFor="let ep of availableApiEndpoints()"
+            class="endpoint-item p-2 mb-1"
+            [class.bg-primary]="ep === selectedApiEndpoint()"
+            [class.text-white]="ep === selectedApiEndpoint()"
+            [class.border-primary]="ep === selectedApiEndpoint()"
+            (click)="selectedApiEndpoint.set(ep)"
+            style="cursor: pointer; border-radius: 4px; border: 2px solid transparent; transition: all 0.2s ease;">
+            
+            <div class="d-flex align-items-center">
+              <!-- Color-coded HTTP method badges -->
               <span class="font-monospace me-2 fw-bold"
                     [ngClass]="{
                       'badge bg-success': ep.method === 'GET',
@@ -163,99 +154,191 @@
                       'badge bg-warning text-dark': ep.method === 'PUT',
                       'badge bg-danger': ep.method === 'DELETE',
                       'badge bg-secondary': !['GET','POST','PUT','DELETE'].includes(ep.method)
-                    }"
-              >
+                    }">
                 {{ ep.method }}
               </span>
-              <span class="font-monospace">{{ ep.path }}</span>
-              <small class="d-block text-muted mt-1" [class.text-white-50]="ep === selectedApiEndpoint">
-                {{ ep.operation?.summary || ep.operation?.operationId || 'No summary' }}
+              <span class="font-monospace me-2">{{ ep.path }}</span>
+              
+              <!-- Selection indicator -->
+              <span *ngIf="ep === selectedApiEndpoint()" class="ms-auto">
+                <i class="pi pi-check text-white"></i>
+              </span>
+            </div>
+            <!-- Endpoint description/summary -->
+            <small class="d-block text-muted mt-1" [class.text-white-50]="ep === selectedApiEndpoint()">
+              {{ ep.summary || ep.description || 'No summary available' }}
+            </small>
+          </div>
+        </div>
+
+        <!-- 
+          Step 4.3: Parameter Input Section
+          Dynamic form generation based on endpoint parameters
+          Supports both path and query parameters
+        -->
+        <div *ngIf="selectedApiEndpoint() && selectedEndpointParams().length > 0" class="mt-4">
+          <h6 class="mb-3">Endpoint Parameters:</h6>
+          
+          <div class="card p-3">
+            <!-- Selected endpoint confirmation -->
+            <div class="row">
+              <div class="col-12 mb-2">
+                <small class="text-muted">
+                  <strong>Selected:</strong> 
+                  <span class="badge bg-primary">{{ selectedApiEndpoint()?.method }}</span>
+                  {{ selectedApiEndpoint()?.path }}
+                </small>
+              </div>
+            </div>
+            
+            <!-- Dynamic parameter input fields -->
+            <div *ngFor="let param of selectedEndpointParams()" class="mb-3">
+              <label [for]="'param-' + param.name" class="form-label">
+                {{ param.name }}
+                <span *ngIf="param.required" class="text-danger">*</span>
+                <small class="text-muted ms-1">({{ param.in }})</small>
+              </label>
+              
+              <input
+                [id]="'param-' + param.name"
+                type="text"
+                pInputText
+                [value]="endpointParameters()[param.name] || ''"
+                (input)="setEndpointParameter(param.name, $any($event.target).value)"
+                class="form-control"
+                [placeholder]="param.description || 'Enter ' + param.name"
+                [required]="param.required"
+              />
+              
+              <!-- Parameter description -->
+              <small *ngIf="param.description" class="text-muted d-block mt-1">
+                {{ param.description }}
+              </small>
+              
+              <!-- Required field validation -->
+              <small *ngIf="param.required && (!endpointParameters()[param.name] || !endpointParameters()[param.name].trim())" 
+                     class="p-error mt-1 d-block">
+                {{ param.name }} is required.
               </small>
             </div>
           </div>
-          <small *ngIf="sourceForm.submitted && sourceType === 'REST_OPENAPI' && !selectedApiEndpoint" class="p-error mt-1 d-block">
-            An API endpoint must be selected.
+        </div>
+
+        <!-- 
+          Step 4.4: Request Body Section
+          JSON editor for POST/PUT/PATCH requests
+          Includes validation and example generation
+        -->
+        <div *ngIf="selectedEndpointRequiresBody()" class="mt-4">
+          <h6 class="mb-3">Request Body 
+            <span *ngIf="selectedApiEndpoint()?.operation?.requestBody?.required" class="text-danger">*</span>
+          </h6>
+          
+          <div class="card p-3">
+            <div class="mb-3">
+              <label class="form-label">JSON Body Content:</label>
+              
+              <!-- Monospace textarea for JSON editing -->
+              <textarea
+                pInputTextarea
+                [value]="requestBody()"
+                (input)="setRequestBody($any($event.target).value)"
+                class="form-control"
+                [class.is-invalid]="requestBodyError()"
+                rows="8"
+                placeholder="Enter JSON body content..."
+                style="font-family: 'Courier New', monospace; font-size: 13px;">
+              </textarea>
+              
+              <!-- JSON validation error display -->
+              <small *ngIf="requestBodyError()" class="p-error mt-1 d-block">
+                {{ requestBodyError() }}
+              </small>
+              
+              <!-- Required field validation -->
+              <small *ngIf="selectedApiEndpoint()?.operation?.requestBody?.required && !requestBody().trim()" 
+                     class="p-error mt-1 d-block">
+                Request body is required for this endpoint.
+              </small>
+            </div>
+            
+            <!-- Example generation button -->
+            <div class="mb-3">
+              <button
+                pButton
+                type="button"
+                label="Generate Example"
+                icon="pi pi-code"
+                class="p-button-sm p-button-outlined"
+                (click)="requestBody.set(generateRequestBodyExample())">
+              </button>
+              <small class="text-muted ms-2">
+                Generate example JSON based on API schema
+              </small>
+            </div>
+            
+            <!-- Schema information display -->
+            <div *ngIf="requestBodySchema()" class="mb-3 p-2 bg-light rounded">
+              <small class="text-muted">
+                <strong>Expected Schema Type:</strong> {{ requestBodySchema()?.type || 'object' }}<br>
+                <span *ngIf="requestBodySchema()?.description">
+                  <strong>Description:</strong> {{ requestBodySchema().description }}
+                </span>
+              </small>
+            </div>
+          </div>
+        </div>
+
+        <!-- 
+          Step 4.5: Request Preview
+          Shows complete HTTP request with all parameters and body
+        -->
+        <div class="mt-3 p-2 bg-light rounded">
+          <small class="text-muted">
+            <strong>Example Request:</strong><br>
+            <code>{{ selectedApiEndpoint()?.method }} {{ buildExampleUrl() }}</code>
+            
+            <!-- Request body preview for POST/PUT/PATCH -->
+            <div *ngIf="selectedEndpointRequiresBody() && requestBody().trim()" class="mt-2">
+              <strong>Body:</strong><br>
+              <pre class="bg-white p-2 rounded border" style="font-size: 11px; max-height: 100px; overflow-y: auto;"><code>{{ requestBody() }}</code></pre>
+            </div>
           </small>
         </div>
 
-        <!-- 5.3) Dynamische Formularfelder für Parameter / Request Body -->
-        <div *ngIf="selectedApiEndpoint" class="openapi-section mt-4">
-          <h6 class="mb-3">Configure: <span class="font-monospace fw-bold">{{ selectedApiEndpoint.method }} {{ selectedApiEndpoint.path }}</span></h6>
-
-          <!-- 5.3.1) Parameter (falls vorhanden) -->
-          <div *ngIf="dynamicEndpointParameters.length > 0">
-            <label class="form-label fw-semibold mb-2">Parameters:</label>
-            <div *ngFor="let param of dynamicEndpointParameters; let i = index" class="p-field mb-3 ms-2">
-              <label [for]="'param_' + param.name + i" class="form-label">
-                {{ param.name }} <span class="text-muted small">({{ param.in }})</span>
-                <span *ngIf="param.required" class="text-danger">*</span>
-              </label>
-              <input
-                [id]="'param_' + param.name + i"
-                pInputText
-                [(ngModel)]="param.value"
-                [name]="'param_' + param.name + i"
-                [required]="param.required"
-                [placeholder]="param.description || (param.schema?.example ? 'Example: ' + param.schema.example : param.name)"
-                class="form-control form-control-sm"
-              />
-              <!-- Eindeutiger Name für ngModel in ngFor -->
-              <small *ngIf="param.description" class="form-text text-muted d-block mt-1">{{ param.description }}</small>
-              <small *ngIf="sourceForm.controls['param_' + param.name + i]?.invalid && (sourceForm.controls['param_' + param.name + i]?.dirty || sourceForm.controls['param_' + param.name + i]?.touched || sourceForm.submitted)" class="p-error mt-1 d-block">
-                <span *ngIf="sourceForm.controls['param_' + param.name + i]?.errors?.['required']">Parameter {{ param.name }} is required.</span>
-              </small>
-            </div>
-          </div>
-          <div *ngIf="!dynamicEndpointParameters || dynamicEndpointParameters.length === 0" class="text-muted ms-2 mb-3"> <!-- Anpassung für Klarheit, falls keine Parameter -->
-            <small *ngIf="selectedApiEndpoint.operation?.parameters?.length === 0">This endpoint has no configurable parameters.</small>
-            <small *ngIf="!selectedApiEndpoint.operation?.parameters">Parameter information not available.</small>
-          </div>
-
-
-          <!-- 5.3.2) Request Body (falls vorhanden) -->
-          <div *ngIf="selectedApiEndpoint.operation?.requestBody?.content?.['application/json']" class="p-field mb-3">
-            <label for="requestBody" class="form-label fw-semibold">Request Body (JSON)
-              <span *ngIf="selectedApiEndpoint.operation?.requestBody?.required" class="text-danger">*</span>
-            </label>
-            <textarea
-              id="requestBody"
-              pInputTextarea
-              [(ngModel)]="requestBodyValue"
-              name="requestBody"
-              rows="6"
-              class="form-control font-monospace"
-              placeholder="Enter JSON body..."
-            ></textarea>
-            <small *ngIf="selectedApiEndpoint.operation?.requestBody?.description" class="form-text text-muted d-block mt-1">
-              {{ selectedApiEndpoint.operation?.requestBody?.description }}
-            </small>
-            <small *ngIf="sourceForm.submitted && selectedApiEndpoint.operation?.requestBody?.required && (!requestBodyValue || requestBodyValue.trim() === '')" class="p-error mt-1 d-block">
-              Request body is required.
-            </small>
-          </div>
-          <!-- 5.3.3) (Optional) Authentifizierungs‐Felder können hier ergänzt werden -->
+        <!-- 
+          Fallback: Simple selection confirmation
+          For endpoints without parameters or request body
+        -->
+        <div *ngIf="selectedApiEndpoint() && selectedEndpointParams().length === 0 && !selectedEndpointRequiresBody()" class="mt-3 p-2 bg-light rounded">
+          <small class="text-muted">
+            <strong>Selected:</strong> 
+            <span class="badge bg-primary">{{ selectedApiEndpoint()?.method }}</span>
+            {{ selectedApiEndpoint()?.path }}
+          </small>
         </div>
-      </ng-container>
+        
+        <!-- Endpoint selection validation -->
+        <small *ngIf="isRestOpenApiType() && !selectedApiEndpoint()" class="p-error mt-1 d-block">
+          Please select an endpoint.
+        </small>
+      </div>
     </div>
-    <!-- ===== Ende REST_OPENAPI ===== -->
 
-    
-
-    <!-- 6) Footer: Cancel und Save Buttons -->
-    <div class="p-dialog-footer mt-5 d-flex justify-content-end">
+    <!-- 
+      Dialog Footer: Action Buttons
+      Save button is disabled until form is valid
+    -->
+    <div class="p-dialog-footer mt-4 d-flex justify-content-end">
       <button pButton type="button" label="Cancel" icon="pi pi-times" (click)="cancel()" class="p-button-text me-2"></button>
       <button
         pButton
-        type="submit"
+        type="button"
         label="Save"
         icon="pi pi-check"
-        [disabled]="
-          sourceForm.invalid ||
-          !source.name.trim() ||
-          (sourceType === 'AAS' && !source.aasId) ||
-          (sourceType === 'REST_OPENAPI' && (!openApiSpecUrl.trim() || !selectedApiEndpoint || isLoadingOpenApiSpec))
-        "
-      ></button>
+        (click)="save()"
+        [disabled]="!isFormValid()">
+      </button>
     </div>
-  </form>
+  </div>
 </p-dialog>
