@@ -196,11 +196,12 @@ export class GraphPanelComponent implements AfterViewInit {
     this.addDragBehavior(nodeGroup, simulation, link);
 
     nodeGroup.on('click', (event, d) => {
+      event.stopPropagation();
       this.nodeSelected.emit(d.id);
       console.log(`Node ${d.id} selected`);
     });
 
-    container.on('click', (event: MouseEvent) => {
+    d3.select('svg').on('click', (event: MouseEvent) => {
       if ((event.target as SVGElement).tagName === 'svg') {
         this.nodeSelected.emit(null);
       }
