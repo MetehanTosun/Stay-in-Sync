@@ -1,0 +1,20 @@
+markdown h1 {
+  font-size: 2rem;
+  margin-top: 1rem;
+  border-bottom: 1px solid #ccc;
+}
+
+markdown h2 {
+  font-size: 1.5rem;
+  margin-top: 1rem;
+}
+
+markdown p {
+  line-height: 1.6;
+}
+
+markdown code {
+  background-color: #f5f5f5;
+  padding: 0.2rem 0.4rem;
+  border-radius: 4px;
+}
