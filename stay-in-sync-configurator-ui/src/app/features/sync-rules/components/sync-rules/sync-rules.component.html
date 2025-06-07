@@ -46,7 +46,7 @@
               <button>
                 <span class="material-symbols-rounded">
                   delete
-                </span> 
+                </span>
               </button>
             </td>
           </tr>
@@ -56,15 +56,11 @@
   </div>
 
   <div *ngIf="showCreationPopup" class="popup">
-    <app-create-rule-popup (closed)="showCreationPopup = false" (created)="addRule($event)">
-    </app-create-rule-popup>
-  </div>
-  <div *ngIf="showScriptPopup" class="popup">
-    <app-edit-rule-script-popup (closed)="showScriptPopup = false">
-    </app-edit-rule-script-popup>
+    <app-create-rule (closed)="showCreationPopup = false" (created)="addRule($event)">
+    </app-create-rule>
   </div>
   <div *ngIf="showSettingsPopup" class="popup">
-    <app-edit-rule-settings-popup (closed)="showSettingsPopup = false">
-    </app-edit-rule-settings-popup>
+    <app-edit-rule-settings (closed)="showSettingsPopup = false">
+    </app-edit-rule-settings>
   </div>
 </main>

@@ -1,9 +1,8 @@
 import { Component } from '@angular/core';
 import { Router } from '@angular/router';
 import { CommonModule } from '@angular/common';
-import { CreateRulePopup } from '../../popups/create-rule-popup/create-rule-popup';
-import { EditRuleScriptPopup } from '../../popups/edit-rule-script-popup/edit-rule-script-popup';
-import { EditRuleSettingsPopup } from '../../popups/edit-rule-settings-popup/edit-rule-settings-popup';
+import { CreateRulePopup } from '../../popups/create-rule/create-rule.popup';
+import { EditRuleSettingsPopup } from '../../popups/edit-rule-settings/edit-rule-settings.popup';
 
 interface Rule {
   name: string
@@ -13,8 +12,8 @@ interface Rule {
 }
 
 @Component({
-  selector: 'sync-rule.component',
-  imports: [CommonModule, CreateRulePopup, EditRuleScriptPopup, EditRuleSettingsPopup],
+  selector: 'sync-rules',
+  imports: [CommonModule, CreateRulePopup, EditRuleSettingsPopup],
   templateUrl: './sync-rules.component.html',
   styleUrl: './sync-rules.component.css'
 })
@@ -22,7 +21,6 @@ interface Rule {
 export class SyncRulesComponent {
   protected title = 'stay-in-sync-polling-logic-ui';
   showCreationPopup = false;
-  showScriptPopup = false;
   showSettingsPopup = false;
   rules: Rule[] = [];
 
@@ -36,9 +34,6 @@ export class SyncRulesComponent {
     switch (rule.type) {
       case "Graph":
         this.router.navigate(['/edit', rule.name], {state: ( rule )});
-        break;
-      case "Script":
-        this.showScriptPopup = true;
         break;
       case "Time":
         this.showSettingsPopup = true;

@@ -2,10 +2,10 @@ import { Component, EventEmitter, Output } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 
 @Component({
-  selector: 'app-create-rule-popup',
+  selector: 'app-create-rule',
   imports: [FormsModule],
-  templateUrl: './create-rule-popup.html',
-  styleUrls: ['./create-rule-popup.css', '../_popup.css']
+  templateUrl: './create-rule.popup.html',
+  styleUrls: ['./create-rule.popup.css', '../_popup.css']
 })
 export class CreateRulePopup {
   ruleName = '';

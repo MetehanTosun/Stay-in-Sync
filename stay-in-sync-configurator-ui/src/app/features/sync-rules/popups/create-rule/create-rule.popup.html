@@ -7,10 +7,9 @@
     <label for="type">Type:</label>
     <select id="type" [(ngModel)]="ruleType">
         <option value="Graph">Graph</option>
-        <option value="Script">Script</option>
         <option value="Time">Time</option>
     </select>
-    
+
     <label for="pollingRate">Polling Rate:</label>
     <input id="pollingRate" type="number" min="1" [(ngModel)]="rulePollingRate">
     <select id="rulePollingRate" [(ngModel)]="rulePollingRateUnit">
@@ -18,7 +17,7 @@
         <option value="Hours">Hours</option>
         <option value="Minutes">Minutes</option>
     </select>
-    
+
     <button (click)="create()">Create</button>
     <button (click)="close()">Cancel</button>
 </main>

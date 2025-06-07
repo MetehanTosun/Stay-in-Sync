@@ -1,18 +1,18 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
-import { CreateRulePopup } from './create-rule-popup';
+import { EditRuleComponent } from './edit-rule.component';
 
-describe('CreateRulePopup', () => {
-  let component: CreateRulePopup;
-  let fixture: ComponentFixture<CreateRulePopup>;
+describe('EditRuleComponent', () => {
+  let component: EditRuleComponent;
+  let fixture: ComponentFixture<EditRuleComponent>;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [CreateRulePopup]
+      imports: [EditRuleComponent]
     })
     .compileComponents();
 
-    fixture = TestBed.createComponent(CreateRulePopup);
+    fixture = TestBed.createComponent(EditRuleComponent);
     component = fixture.componentInstance;
     fixture.detectChanges();
   });
