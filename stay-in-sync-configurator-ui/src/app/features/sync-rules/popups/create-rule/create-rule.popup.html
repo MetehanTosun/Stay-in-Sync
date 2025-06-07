@@ -2,20 +2,20 @@
     <h2>Create new Rule</h2>
 
     <label for="ruleName">Name:</label>
-    <input id="ruleName" type="text" [(ngModel)]="ruleName">
+    <input id="ruleName" type="text" [(ngModel)]="name">
 
-    <label for="type">Type:</label>
-    <select id="type" [(ngModel)]="ruleType">
+    <label for="ruleType">Type:</label>
+    <select id="ruleType" [(ngModel)]="type">
         <option value="Graph">Graph</option>
         <option value="Time">Time</option>
     </select>
 
     <label for="pollingRate">Polling Rate:</label>
-    <input id="pollingRate" type="number" min="1" [(ngModel)]="rulePollingRate">
-    <select id="rulePollingRate" [(ngModel)]="rulePollingRateUnit">
-        <option value="Days">Days</option>
-        <option value="Hours">Hours</option>
-        <option value="Minutes">Minutes</option>
+    <input id="pollingRate" type="number" min="1" [(ngModel)]="pollingRate">
+    <select id="pollingRateUnit" [(ngModel)]="pollingRateUnit">
+        <option value="days">days</option>
+        <option value="hours">hours</option>
+        <option value="minutes">minutes</option>
     </select>
 
     <button (click)="create()">Create</button>
