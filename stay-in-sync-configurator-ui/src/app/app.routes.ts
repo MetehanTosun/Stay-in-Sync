@@ -9,12 +9,27 @@ import { SourceSystemBaseComponent } from
 import { CreateSourceSystemComponent } from
   './features/source-system/components/create-source-system/create-source-system.component';
 import { EdcBaseComponent } from './features/edc/components/edc-base/edc-base.component';
+import { EditRuleComponent } from './features/sync-rules/pages/edit-rule/edit-rule.component';
+import { RulesDashboardComponent } from './features/sync-rules/pages/rules-dashboard/rules-dashboard.component';
 
 
 
 export const routes: Routes = [
   // Route für Sync Rules
-  { path: 'sync-rules', component: SyncRulesComponent },
+  {
+    path: 'sync-rules',
+    component: SyncRulesComponent,
+    children: [
+      {
+        path: '',
+        component: RulesDashboardComponent
+      },
+      {
+        path: 'edit/:name',
+        component: EditRuleComponent
+      }
+    ]
+  },
 
   // Route für Configurations
   { path: 'configs', component: ConfigBaseComponent },

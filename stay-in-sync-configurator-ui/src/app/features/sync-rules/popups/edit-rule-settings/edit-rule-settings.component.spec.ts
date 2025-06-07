@@ -1,18 +1,18 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
-import { EditRuleSettingsPopup } from './edit-rule-settings.popup';
+import { EditRuleSettingsComponent } from './edit-rule-settings.component';
 
 describe('EditRuleSettingsPopup', () => {
-  let component: EditRuleSettingsPopup;
-  let fixture: ComponentFixture<EditRuleSettingsPopup>;
+  let component: EditRuleSettingsComponent;
+  let fixture: ComponentFixture<EditRuleSettingsComponent>;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [EditRuleSettingsPopup]
+      imports: [EditRuleSettingsComponent]
     })
     .compileComponents();
 
-    fixture = TestBed.createComponent(EditRuleSettingsPopup);
+    fixture = TestBed.createComponent(EditRuleSettingsComponent);
     component = fixture.componentInstance;
     fixture.detectChanges();
   });

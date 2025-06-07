@@ -4,10 +4,10 @@ import { FormsModule } from '@angular/forms';
 @Component({
   selector: 'app-edit-rule-settings',
   imports: [FormsModule],
-  templateUrl: './edit-rule-settings.popup.html',
-  styleUrls: ['./edit-rule-settings.popup.css', '../_popup.css']
+  templateUrl: './edit-rule-settings.component.html',
+  styleUrls: ['./edit-rule-settings.component.css', '../_popup.css']
 })
-export class EditRuleSettingsPopup {
+export class EditRuleSettingsComponent {
   ruleName = '';
   ruleType = '';
   rulePollingRate = '';

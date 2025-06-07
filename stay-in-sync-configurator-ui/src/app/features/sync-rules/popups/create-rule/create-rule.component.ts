@@ -4,10 +4,10 @@ import { FormsModule } from '@angular/forms';
 @Component({
   selector: 'app-create-rule',
   imports: [FormsModule],
-  templateUrl: './create-rule.popup.html',
-  styleUrls: ['./create-rule.popup.css', '../_popup.css']
+  templateUrl: './create-rule.component.html',
+  styleUrls: ['./create-rule.component.css', '../_popup.css']
 })
-export class CreateRulePopup {
+export class CreateRuleComponent {
   name = '';
   type = '';
   pollingRate = 1;
@@ -39,7 +39,7 @@ export class CreateRulePopup {
       alert('Invalid rule type. Please select either "Graph" or "Time".');
       return;
     }
-    if (!['seconds', 'minutes', 'hours'].includes(this.pollingRateUnit)) {
+    if (!['minutes', 'hours', 'days'].includes(this.pollingRateUnit)) {
       alert('Invalid polling rate unit. Please select either "seconds", "minutes", or "hours".');
       return;
     }
