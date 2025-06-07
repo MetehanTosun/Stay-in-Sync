@@ -1,12 +1,12 @@
 // biome-ignore lint/style/useImportType: <explanation>
 import { Routes } from '@angular/router';
-import { SyncRulesComponent } from './features/sync-rules/components/sync-rules.component';
+import { SyncRulesComponent } from './features/sync-rules/components/sync-rules/sync-rules.component';
 import { ConfigBaseComponent } from './features/configuration/config-base/config-base.component';
 import { ConfigurationscriptsBaseComponent } from './features/configuration/configurationscripts-base/configurationscripts-base.component';
 // neu (relativ zu src/app/app.routes.ts)
-import { SourceSystemBaseComponent } from 
+import { SourceSystemBaseComponent } from
   './features/source-system/components/source-system-base/source-system-base.component';
-import { CreateSourceSystemComponent } from 
+import { CreateSourceSystemComponent } from
   './features/source-system/components/create-source-system/create-source-system.component';
 import { EdcBaseComponent } from './features/edc/components/edc-base/edc-base.component';
 

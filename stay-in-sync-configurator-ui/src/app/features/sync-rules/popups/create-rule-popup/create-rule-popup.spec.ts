@@ -1,18 +1,18 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
-import { SyncRulesComponent } from './sync-rules.component';
+import { CreateRulePopup } from './create-rule-popup';
 
-describe('SyncRulesComponent', () => {
-  let component: SyncRulesComponent;
-  let fixture: ComponentFixture<SyncRulesComponent>;
+describe('CreateRulePopup', () => {
+  let component: CreateRulePopup;
+  let fixture: ComponentFixture<CreateRulePopup>;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [SyncRulesComponent]
+      imports: [CreateRulePopup]
     })
     .compileComponents();
 
-    fixture = TestBed.createComponent(SyncRulesComponent);
+    fixture = TestBed.createComponent(CreateRulePopup);
     component = fixture.componentInstance;
     fixture.detectChanges();
   });
