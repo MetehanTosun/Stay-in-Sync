@@ -14,6 +14,11 @@ public class SourceSystemVariable extends PanacheEntity {
 
     public String name;
 
+    public String jsonObjectKey;
+
+    @ManyToOne
+    public SourceSystemEndpoint sourceSystemEndpoint; // /description
+
     @ManyToOne
     public SourceSystem sourceSystem;
 

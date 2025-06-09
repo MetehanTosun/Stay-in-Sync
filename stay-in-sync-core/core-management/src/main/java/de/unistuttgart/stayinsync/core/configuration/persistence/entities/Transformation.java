@@ -30,8 +30,8 @@ public class Transformation extends PanacheEntity {
             joinColumns = @JoinColumn(name = "transformation_id"),
             inverseJoinColumns = @JoinColumn(name = "input_variable_id")
     )
-    public Set<OutputSystemVariable> outputSystemVariables = new HashSet<>();
-    ;
+    public Set<TargetSystemVariable> targetSystemVariables = new HashSet<>();
 
-
+    @ManyToOne
+    public TargetSystem targetSystem;
 }

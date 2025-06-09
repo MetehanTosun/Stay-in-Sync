@@ -1,17 +1,16 @@
 package de.unistuttgart.stayinsync.service;
 
-import static org.junit.jupiter.api.Assertions.*;
-
-import java.util.List;
-import java.util.Optional;
-
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-
 import de.unistuttgart.stayinsync.core.configuration.persistence.entities.SourceSystem;
 import de.unistuttgart.stayinsync.core.configuration.service.SourceSystemService;
 import io.quarkus.test.junit.QuarkusTest;
 import jakarta.inject.Inject;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
+import java.util.List;
+import java.util.Optional;
+
+import static org.junit.jupiter.api.Assertions.*;
 
 @QuarkusTest
 public class SourceSystemServiceTest {
@@ -30,7 +29,7 @@ public class SourceSystemServiceTest {
     public void testCreateAndFindById() {
         SourceSystem sourceSystem = new SourceSystem();
         sourceSystem.name = "TestSensor";
-        sourceSystem.endpointUrl = "http://localhost/test";
+        sourceSystem.apiUrl = "http://localhost/test";
         sourceSystemService.createSourceSystem(sourceSystem);
 
         Optional<SourceSystem> found = sourceSystemService.findSourceSystemById(sourceSystem.id);

@@ -8,17 +8,18 @@ import jakarta.persistence.OneToOne;
 import java.util.Set;
 
 @Entity
-public class SourceSystem extends PanacheEntity {
+public class TargetSystem extends PanacheEntity {
 
     public String name;
-    public String apiUrl; //http://localhost:8081/
-    public String description;
-    public String sourceSystemType; // REST, AAS
-    public String openAPI;
 
-    @OneToMany(mappedBy = "sourceSystem")
-    public Set<SourceSystemEndpoint> sourceSystemEndpoint;
+    public String description;
+
+    public String apiURL;
 
     @OneToOne
-    public SourceSystemAuthDetails authDetails;
+    TargetSystemAuthDetails authDetails;
+
+    @OneToMany(mappedBy = "targetSystem")
+    public Set<Transformation> transformations;
+
 }
