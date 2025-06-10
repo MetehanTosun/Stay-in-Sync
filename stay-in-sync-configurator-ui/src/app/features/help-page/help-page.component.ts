@@ -1,12 +1,12 @@
 import {Component, OnInit} from '@angular/core';
-import {ActivatedRoute, NavigationEnd, Router} from '@angular/router';
-import {filter} from 'rxjs/operators';
+import {ActivatedRoute, Router} from '@angular/router';
 import {MenuItem} from 'primeng/api';
 import {PanelMenu} from 'primeng/panelmenu';
 import {MarkdownComponent} from 'ngx-markdown';
-import {NgForOf, NgIf} from '@angular/common';
 import {Button} from 'primeng/button';
 import {HttpClient} from '@angular/common/http';
+import {Listbox, ListboxChangeEvent} from 'primeng/listbox';
+import {NgIf, NgStyle} from '@angular/common';
 
 @Component({
   selector: 'app-help-page',
@@ -16,7 +16,8 @@ import {HttpClient} from '@angular/common/http';
     MarkdownComponent,
     NgIf,
     Button,
-    NgForOf
+    Listbox,
+    NgStyle
   ],
   styleUrl: './help-page.component.css'
 })
@@ -48,7 +49,36 @@ export class HelpPageComponent implements OnInit {
         }
       }
       console.log(`Headings loaded from ${path}:`, this.headings);
+
+      // Warte, bis die `markdown`-Komponente vollständig gerendert ist
+      setTimeout(() => {
+        this.headings.forEach(heading => {
+          const element = Array.from(document.querySelectorAll('markdown h2')).find(
+            el => el.textContent?.trim() === heading.text
+          );
+          if (element) {
+            element.id = heading.id; // Setze das `id`-Attribut
+            console.log(`ID ${heading.id} erfolgreich zugewiesen.`);
+          } else {
+            console.warn(`Element für Heading ${heading.text} nicht gefunden.`);
+          }
+        });
+      }, 500); // Wartezeit für das Rendern
     });
+  }
+
+  onHeadingSelect($event: ListboxChangeEvent) {
+    const selectedHeading = $event.value;
+    if (selectedHeading) {
+      console.log(`Selected heading: ${selectedHeading.text} with id: ${selectedHeading.id}`);
+      const element = document.getElementById(selectedHeading.id);
+      if (element) {
+        console.log(`Scrolling to heading: ${selectedHeading.text} with id: ${selectedHeading.id}`);
+        element.scrollIntoView({ behavior: 'smooth' });
+      } else {
+        console.warn(`Element with id ${selectedHeading.id} not found in DOM.`);
+      }
+    }
   }
 
 
@@ -89,13 +119,12 @@ export class HelpPageComponent implements OnInit {
             command: () => { this.router.navigate(['/help', 'features']); }
           },
           {
-            label: 'Advanced Usage',
-            command: () => { this.router.navigate(['/help', 'advanced-usage']); }
+            label: 'Authentication',
+            command: () => { this.router.navigate(['/help', 'auth-guide']); }
           }
         ]
       }
     ];
   }
-
 
 }

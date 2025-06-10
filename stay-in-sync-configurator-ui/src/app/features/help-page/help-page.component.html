@@ -2,14 +2,14 @@
   <p-panelMenu [model]="items"></p-panelMenu>
 </aside>
 
-<main *ngIf="markdownPath" class="flex-1 p-6 overflow-auto prose max-w-none">
-  <p-button label="Back" (click)="goBack()"></p-button>
-  <markdown [src]="markdownPath"></markdown>
-  <aside class="w-64 border-l p-6 overflow-y-auto bg-gray-50">
-    <nav class="space-y-2 text-sm">
-      <a *ngFor="let h of headings" [href]="'#' + h.id" class="block text-gray-700 hover:underline">
-        {{ h.text }}
-      </a>
-    </nav>
-  </aside>
+<main *ngIf="markdownPath" class="main-content-flex flex-1 p-6 overflow-auto prose max-w-none">
+    <div style="flex:1;">
+      <p-button label="Back" (click)="goBack()"></p-button>
+      <markdown [src]="markdownPath"></markdown>
+    </div>
+    <aside class="headings-aside">
+      <p-listbox [options]="headings" optionLabel="text"
+                 (onChange)="onHeadingSelect($event)" class="w-full md:w-56">
+      </p-listbox>
+    </aside>
 </main>

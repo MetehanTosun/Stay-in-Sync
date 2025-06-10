@@ -18,3 +18,18 @@ markdown code {
   padding: 0.2rem 0.4rem;
   border-radius: 4px;
 }
+
+.headings-aside{
+  position: sticky;
+  top: 1rem;
+  max-height: calc(100vh - 2rem);
+  overflow-y: auto;
+  padding-right: 1rem;
+}
+
+.main-content-flex {
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+}
+
