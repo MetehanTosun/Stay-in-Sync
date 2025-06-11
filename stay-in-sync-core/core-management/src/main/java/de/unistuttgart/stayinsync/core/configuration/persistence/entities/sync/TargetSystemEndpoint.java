@@ -3,6 +3,7 @@ package de.unistuttgart.stayinsync.core.configuration.persistence.entities.sync;
 import de.unistuttgart.stayinsync.core.configuration.persistence.entities.edc.EDCAsset;
 import io.quarkus.hibernate.orm.panache.PanacheEntity;
 import jakarta.persistence.Entity;
+import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.OneToOne;
 
@@ -29,6 +30,9 @@ public class TargetSystemEndpoint extends PanacheEntity {
 
     @OneToMany(mappedBy = "targetSystemEndpoint")
     public Set<TargetSystemVariable> targetSystemVariable;
+
+    @ManyToOne
+    public TargetSystem targetSystem;
 
     @OneToOne
     public EDCAsset asset;

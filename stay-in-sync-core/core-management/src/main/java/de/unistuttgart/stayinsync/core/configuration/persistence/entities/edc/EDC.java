@@ -15,6 +15,6 @@ public class EDC extends PanacheEntity {
 
     public String apiKey;
 
-    @OneToMany
+    @OneToMany(mappedBy = "targetEDC")
     public Set<EDCAsset> edcAssets;
 }

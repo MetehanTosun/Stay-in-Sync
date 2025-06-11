@@ -9,7 +9,8 @@ import java.util.Set;
 
 @Entity
 public class EDCAccessPolicy extends PanacheEntity {
-    @OneToMany
+
+    @OneToMany(mappedBy = "edcAccessPolicy")
     public Set<EDCAccessPolicyPermission> accessPolicyPermissions;
 
     @ManyToOne

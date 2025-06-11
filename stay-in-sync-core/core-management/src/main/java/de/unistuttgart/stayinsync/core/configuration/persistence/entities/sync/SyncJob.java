@@ -20,7 +20,7 @@ public class SyncJob extends PanacheEntity {
 
     public String syncNodeIdentifier;
 
-    @OneToMany
+    @OneToMany(mappedBy = "syncJob")
     public Set<Transformation> transformations = new HashSet<>();
 
 
