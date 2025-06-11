@@ -1,10 +1,10 @@
-package de.unistuttgart.stayinsync.core.configuration.persistence.entities;
+package de.unistuttgart.stayinsync.core.configuration.persistence.entities.sync;
 
 import jakarta.persistence.Entity;
 import jakarta.persistence.ManyToOne;
 
 @Entity
-public class SourceSystemApiRequestHeader extends ApiRequestHeader {
+public class SourceSystemApiQueryParam extends ApiQueryParam {
 
     @ManyToOne
     public SourceSystemEndpoint sourceSystemEndpoint;

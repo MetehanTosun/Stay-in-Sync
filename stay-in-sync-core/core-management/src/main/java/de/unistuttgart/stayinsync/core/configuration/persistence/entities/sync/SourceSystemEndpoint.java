@@ -1,7 +1,8 @@
-package de.unistuttgart.stayinsync.core.configuration.persistence.entities;
+package de.unistuttgart.stayinsync.core.configuration.persistence.entities.sync;
 
 import io.quarkus.hibernate.orm.panache.PanacheEntity;
 import jakarta.persistence.Entity;
+import jakarta.persistence.ManyToMany;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
 
@@ -19,6 +20,9 @@ public class SourceSystemEndpoint extends PanacheEntity {
 
     @OneToMany(mappedBy = "sourceSystemEndpoint")
     public Set<SourceSystemApiRequestHeader> apiRequestHeaders;
+
+    @ManyToMany(mappedBy = "sourceSystemEndpoints")
+    public Set<Transformation> transformations;
 
     public String jsonSchema;
 

@@ -1,5 +1,6 @@
-package de.unistuttgart.stayinsync.core.configuration.persistence.entities;
+package de.unistuttgart.stayinsync.core.configuration.persistence.entities.sync;
 
+import de.unistuttgart.stayinsync.core.configuration.persistence.entities.edc.EDCAsset;
 import io.quarkus.hibernate.orm.panache.PanacheEntity;
 import jakarta.persistence.Entity;
 import jakarta.persistence.OneToMany;
@@ -13,6 +14,8 @@ public class TargetSystemEndpoint extends PanacheEntity {
     public String endpointPath;
 
     public String jsonSchema;
+
+    public String description;
 
     public int pollingRateInMs;
 

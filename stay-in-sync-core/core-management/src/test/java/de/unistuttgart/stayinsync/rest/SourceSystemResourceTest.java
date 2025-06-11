@@ -1,12 +1,12 @@
 package de.unistuttgart.stayinsync.rest;
 
-import static io.restassured.RestAssured.*;
-import static org.hamcrest.Matchers.*;
-
-import org.junit.jupiter.api.Test;
-
 import io.quarkus.test.junit.QuarkusTest;
 import io.restassured.http.ContentType;
+import org.junit.jupiter.api.Test;
+
+import static io.restassured.RestAssured.given;
+import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.is;
 
 @QuarkusTest
 public class SourceSystemResourceTest {
@@ -32,7 +32,7 @@ public class SourceSystemResourceTest {
                 {
                     "name": "TestSensor",
                     "description": "Test Description",
-                    "endpointUrl": "http://localhost:1234"
+                    "apiUrl": "http://localhost:1234"
                 }
                 """;
 
@@ -57,7 +57,7 @@ public class SourceSystemResourceTest {
                 .statusCode(200)
                 .body("name", equalTo("TestSensor"))
                 .body("description", equalTo("Test Description"))
-                .body("endpointUrl", equalTo("http://localhost:1234"));
+                .body("apiUrl", equalTo("http://localhost:1234"));
     }
 
     /**
@@ -69,7 +69,7 @@ public class SourceSystemResourceTest {
                 {
                     "name": "SensorBeforeUpdate",
                     "description": "Description before update",
-                    "endpointUrl": "http://localhost:1111"
+                    "apiUrl": "http://localhost:1111"
                 }
                 """;
 
@@ -90,7 +90,7 @@ public class SourceSystemResourceTest {
                 {
                     "name": "SensorAfterUpdate",
                     "description": "Description after update",
-                    "endpointUrl": "http://localhost:2222"
+                    "apiUrl": "http://localhost:2222"
                 }
                 """;
 
@@ -103,7 +103,7 @@ public class SourceSystemResourceTest {
                 .statusCode(200)
                 .body("name", equalTo("SensorAfterUpdate"))
                 .body("description", equalTo("Description after update"))
-                .body("endpointUrl", equalTo("http://localhost:2222"));
+                .body("apiUrl", equalTo("http://localhost:2222"));
     }
 
     /**
@@ -115,7 +115,7 @@ public class SourceSystemResourceTest {
                 {
                     "name": "ToDelete",
                     "description": "Will be deleted",
-                    "endpointUrl": "http://localhost/delete"
+                    "apiUrl": "http://localhost/delete"
                 }
                 """;
 

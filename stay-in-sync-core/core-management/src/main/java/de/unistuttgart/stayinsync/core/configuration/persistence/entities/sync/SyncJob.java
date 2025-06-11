@@ -1,9 +1,8 @@
-package de.unistuttgart.stayinsync.core.configuration.persistence.entities;
+package de.unistuttgart.stayinsync.core.configuration.persistence.entities.sync;
 
 import io.quarkus.hibernate.orm.panache.PanacheEntity;
 import jakarta.persistence.Entity;
 import jakarta.persistence.OneToMany;
-import jakarta.persistence.OneToOne;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 
@@ -24,8 +23,6 @@ public class SyncJob extends PanacheEntity {
     @OneToMany
     public Set<Transformation> transformations = new HashSet<>();
 
-    @OneToOne
-    public SyncJobRule syncJobRule;
 
     public static List<SyncJob> listAllWhereNameLike(String name) {
         return (name != null) ?
