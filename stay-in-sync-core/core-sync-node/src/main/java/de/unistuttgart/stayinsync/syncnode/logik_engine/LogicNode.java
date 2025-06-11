@@ -17,13 +17,13 @@ public class LogicNode {
     // An alternative could be a system-generated ID (long/UUID) if name management becomes an issue.
     private final  String nodeName;
     private final LogicOperator operator;
-    private List<InputProvider> inputProviders;
+    private List<InputNode> inputProviders;
 
     @Setter
     private Object calculatedResult;
 
 
-    public LogicNode(String nodeName, LogicOperator operator, InputProvider... providers) {
+    public LogicNode(String nodeName, LogicOperator operator, InputNode... providers) {
         this.nodeName = nodeName;
         this.operator = operator;
         this.inputProviders = Arrays.asList(providers);

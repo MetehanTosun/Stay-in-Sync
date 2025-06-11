@@ -4,7 +4,7 @@ package de.unistuttgart.stayinsync.syncnode.logik_engine;
  * Represents an input provider that sources its value from the calculated result
  * of another {@link LogicNode} (referred to as the parent node).
  */
-public class NodeInput implements InputProvider {
+public class ParentNode implements InputNode {
     private final LogicNode parentNode; // The LogicNode from which this input is sourced.
 
     /**
@@ -14,18 +14,30 @@ public class NodeInput implements InputProvider {
      *                   Must not be null.
      * @throws IllegalArgumentException if parentNode is null.
      */
-    public NodeInput(LogicNode parentNode) {
+    public ParentNode(LogicNode parentNode) {
         if (parentNode == null) {
             throw new IllegalArgumentException("ParentNode in NodeInput cannot be null.");
         }
         this.parentNode = parentNode;
     }
 
+    @Override
+    public Object getValue() {
+
+        Object result = this.parentNode.getCalculatedResult();
+        if (result == null) {
+
+            throw new IllegalStateException("Result for parent node '" + this.parentNode.getNodeName() + "' is null. " +
+                    "This indicates it was not evaluated before being accessed by a child node.");
+        }
+        return result;
+    }
+
     /**
      * @return true, as this provider is sourced from another LogicNode.
      */
     @Override
-    public boolean isNodeSource() {
+    public boolean isParentNode() {
         return true;
     }
 
@@ -33,7 +45,7 @@ public class NodeInput implements InputProvider {
      * @return false, as this provider is not sourced from an external JSON path.
      */
     @Override
-    public boolean isExternalSource() {
+    public boolean isJsonNode() {
         return false;
     }
 
@@ -41,7 +53,7 @@ public class NodeInput implements InputProvider {
      * @return false, as this provider is not sourced from a UI element.
      */
     @Override
-    public boolean isUISource() {
+    public boolean isConstantNode() {
         return false;
     }
 
@@ -53,21 +65,4 @@ public class NodeInput implements InputProvider {
         return this.parentNode;
     }
 
-    /**
-     * This operation is not supported for NodeInput.
-     * @throws UnsupportedOperationException always.
-     */
-    @Override
-    public String getExternalJsonPath() {
-        throw new UnsupportedOperationException("NodeInput does not provide an external JSON path.");
-    }
-
-    /**
-     * This operation is not supported for NodeInput.
-     * @throws UnsupportedOperationException always.
-     */
-    @Override
-    public String getUiElementName() {
-        throw new UnsupportedOperationException("NodeInput does not provide a UI element name.");
-    }
 }
