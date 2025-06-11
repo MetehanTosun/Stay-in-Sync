@@ -8,7 +8,7 @@ public class ParentNode implements InputNode {
     private final LogicNode parentNode; // The LogicNode from which this input is sourced.
 
     /**
-     * Constructs a NodeInput.
+     * Constructs a ParentNode.
      *
      * @param parentNode The {@link LogicNode} whose result will be used as the input.
      *                   Must not be null.
@@ -21,6 +21,12 @@ public class ParentNode implements InputNode {
         this.parentNode = parentNode;
     }
 
+    /**
+     * Retrieves the calculated result from the linked parent LogicNode.
+     *
+     * @return The calculated result of the parent LogicNode.
+     * @throws IllegalStateException if the parent node's result is null (indicating it wasn't evaluated).
+     */
     @Override
     public Object getValue() {
 
@@ -42,7 +48,7 @@ public class ParentNode implements InputNode {
     }
 
     /**
-     * @return false, as this provider is not sourced from an external JSON path.
+     * @return false, as this provider is not sourced from a JsonNode.
      */
     @Override
     public boolean isJsonNode() {
@@ -50,7 +56,7 @@ public class ParentNode implements InputNode {
     }
 
     /**
-     * @return false, as this provider is not sourced from a UI element.
+     * @return false, as this provider is not sourced from a ConstantNode.
      */
     @Override
     public boolean isConstantNode() {

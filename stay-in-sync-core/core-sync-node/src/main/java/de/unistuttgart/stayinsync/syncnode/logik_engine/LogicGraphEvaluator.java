@@ -1,4 +1,3 @@
-// Datei: LogicGraphEvaluator.java
 package de.unistuttgart.stayinsync.syncnode.logik_engine;
 
 import java.util.ArrayList;
@@ -6,7 +5,6 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-// Optional wird weiterhin vom jsonValueExtractor verwendet, aber wir rufen .get() direkter auf unter Annahme der Existenz
 import java.util.Queue;
 
 public class LogicGraphEvaluator {
@@ -17,7 +15,19 @@ public class LogicGraphEvaluator {
         this.calculator = new OperationCalculator();
     }
 
-
+    /**
+     * Evaluates the given list of {@link LogicNode}s, which form a logic graph.
+     * This method assumes the graph has been pre-validated according to specific criteria:
+     * - It must be a Directed Acyclic Graph (DAG).
+     * - All {@link LogicOperator}s must have their inputs correctly defined regarding type and arity.
+     * - All {@link InputNode}s (like {@link JsonNode}, {@link ConstantNode}) must be able to provide their values.
+     * - There must be exactly one target node (a node with no children/outgoing dependencies to other LogicNodes).
+     * - This single target node must produce a {@link Boolean} result.
+     *
+     * @param allNodesInGraph A list containing all {@link LogicNode}s that constitute the graph to be evaluated.
+     * @return {@code true} or {@code false} representing the final evaluated boolean state of the graph.
+     * @throws IllegalArgumentException If {@code allNodesInGraph} is null or empty.
+     */
     public boolean evaluateGraph(List<LogicNode> allNodesInGraph) throws IllegalArgumentException, IllegalStateException {
 
         if (allNodesInGraph == null || allNodesInGraph.isEmpty()) {
@@ -73,13 +83,7 @@ public class LogicGraphEvaluator {
 
             if (nodeToEvaluate.getInputProviders() != null) {
                 for (InputNode provider : nodeToEvaluate.getInputProviders()) {
-                    if (provider instanceof JsonNode) {
-                        valuesForOperation.add(((JsonNode) provider).getValue());
-                    } else if (provider instanceof ParentNode) {
-                        valuesForOperation.add(((ParentNode) provider).getValue());
-                    } else if (provider instanceof ConstantNode) {
-                        valuesForOperation.add(((ConstantNode) provider).getValue());
-                    }
+                    valuesForOperation.add(provider.getValue());
                 }
             }
 
