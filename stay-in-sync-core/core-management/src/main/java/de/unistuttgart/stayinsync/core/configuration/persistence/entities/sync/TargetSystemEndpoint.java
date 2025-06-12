@@ -18,8 +18,6 @@ public class TargetSystemEndpoint extends PanacheEntity {
 
     public String description;
 
-    public int pollingRateInMs;
-
     public String httpRequestType;
 
     @OneToMany(mappedBy = "targetSystemEndpoint")

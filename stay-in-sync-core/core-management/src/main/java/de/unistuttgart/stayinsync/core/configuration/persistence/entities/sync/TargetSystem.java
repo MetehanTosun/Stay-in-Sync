@@ -1,16 +1,14 @@
 package de.unistuttgart.stayinsync.core.configuration.persistence.entities.sync;
 
+import jakarta.persistence.DiscriminatorValue;
 import jakarta.persistence.Entity;
 import jakarta.persistence.OneToMany;
-import jakarta.persistence.OneToOne;
 
 import java.util.Set;
 
 @Entity
+@DiscriminatorValue("TARGET_SYSTEM")
 public class TargetSystem extends SyncSystem {
-
-    @OneToOne
-    TargetSystemAuthDetails authDetails;
 
     @OneToMany(mappedBy = "targetSystem")
     public Set<TargetSystemEndpoint> targetSystemEndpoints;
