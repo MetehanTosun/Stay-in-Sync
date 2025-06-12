@@ -53,6 +53,5 @@ This documentation is intended for:
 
 ## 📌 Next Steps
 
-If you're new here, start with the [Getting Started](/help/getting-started) guide.  
-Want to understand how to define rules? Check the [Sync Rules](/help/sync-rules) section.  
-Need help with deployments? Visit the [Deployment Options](/help/deployment) chapter.
+If you're new here, start with the [Getting Started](/help/guides%2Fgetting-started) guide.  
+...
