@@ -9,4 +9,3 @@ Willkommen! In diesem Guide lernst du, wie du die App nutzt.
 
 ## Nächste Schritte
 
-[Zurück zur Übersicht](index.md)

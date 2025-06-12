@@ -5,7 +5,7 @@
 <main *ngIf="markdownPath" class="main-content-flex flex-1 p-6 overflow-auto prose max-w-none">
     <div style="flex:1;">
       <p-button label="Back" (click)="goBack()"></p-button>
-      <markdown [src]="markdownPath"></markdown>
+      <div class="markdown-content"><markdown [src]="markdownPath"></markdown></div>
     </div>
     <aside class="headings-aside">
       <p-listbox [options]="headings" optionLabel="text"
