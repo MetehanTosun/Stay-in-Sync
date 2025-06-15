@@ -1,133 +1,217 @@
-<!-- Optional: If you want the ThemeSwitcher, you'd place its selector here -->
+
 <!-- <theme-switcher /> -->
 
 <div class="card">
   <p-table
     #dt2
-  [value]="edcInstances"
-  dataKey="id"
-  [rows]="10"
-  [rowsPerPageOptions]="[10, 25, 50]"
-  [loading]="loading"
-  [paginator]="true"
-  [globalFilterFields]="['name', 'url', 'status']"
-  [tableStyle]="{ 'min-width': '75rem' }"
-  styleClass="p-datatable-striped p-datatable-gridlines"
-  responsiveLayout="scroll"
+    [value]="edcInstances"
+    dataKey="id"
+    [rows]="10"
+    [rowsPerPageOptions]="[10, 25, 50]"
+    [loading]="loading"
+    [paginator]="true"
+    [globalFilterFields]="['name', 'url', 'status']"
+    [tableStyle]="{ 'min-width': '75rem' }"
+    styleClass="p-datatable-striped p-datatable-gridlines"
+    responsiveLayout="scroll"
   >
-  <ng-template pTemplate="caption">
-    <div class="flex align-items-center justify-content-between">
-      <h5 class="m-0">Manage EDC Instances</h5>
-      <div class="flex">
-        <p-iconfield iconPosition="left" class="ml-auto">
-          <p-inputicon>
-            <i class="pi pi-search"></i>
-          </p-inputicon>
-          <input
-            pInputText
-            type="text"
-            (input)="onGlobalFilter($event)"
-          placeholder="Search keyword"
-          class="w-full"
-          />
-        </p-iconfield>
-        <!-- You could add a "New Instance" button here -->
-        <!-- <button pButton label="New Instance" icon="pi pi-plus" class="p-button-success ml-2"></button> -->
+    <ng-template pTemplate="caption">
+      <div class="flex align-items-center justify-content-between">
+        <h5 class="m-0">Manage EDC Instances</h5>
+        <div class="flex align-items-center">
+          <p-iconfield iconPosition="left" class="mr-2">
+            <p-inputicon>
+              <i class="pi pi-search"></i>
+            </p-inputicon>
+            <input
+              pInputText
+              type="text"
+              (input)="onGlobalFilter($event)"
+              placeholder="Search keyword"
+              class="w-full"
+            />
+          </p-iconfield>
+          <button
+            pButton
+            pRipple
+            label="New Instance"
+            icon="pi pi-plus"
+            class="p-button-success"
+            (click)="openNewInstanceDialog()"
+            pTooltip="Add a new EDC instance"
+            tooltipPosition="bottom"
+          ></button>
+        </div>
       </div>
-    </div>
-  </ng-template>
+    </ng-template>
 
-  <ng-template pTemplate="header">
-    <tr>
-      <th style="width: 25%" pSortableColumn="name">Name <p-sortIcon field="name"></p-sortIcon></th>
-      <th style="width: 30%" pSortableColumn="url">URL <p-sortIcon field="url"></p-sortIcon></th>
-      <th style="width: 20%" pSortableColumn="status">Status <p-sortIcon field="status"></p-sortIcon></th>
-      <th style="width: 15%">Actions</th> <!-- Header for action buttons -->
-    </tr>
-    <tr>
-      <th>
-        <p-columnFilter
-          type="text"
-          field="name"
-          placeholder="Search by Name"
-          ariaLabel="Filter by Name"
-        ></p-columnFilter>
-      </th>
-      <th>
-        <p-columnFilter
-          type="text"
-          field="url"
-          placeholder="Search by URL"
-          ariaLabel="Filter by URL"
-        ></p-columnFilter>
-      </th>
-      <th>
-        <p-columnFilter field="status" matchMode="equals" [showMenu]="false">
-          <ng-template pTemplate="filter" let-value let-filter="filterCallback">
-            <p-select
-              [ngModel]="value"
-            [options]="statuses"
-            (onChange)="filter($event.value)"
-            placeholder="Select Status"
-            [showClear]="true"
-            styleClass="p-column-filter"
-            appendTo="body"
-            >
-            <!-- Optional: Custom template for dropdown items if needed -->
-            <!-- <ng-template let-option pTemplate="item">
-              <p-tag [value]="option.label" [severity]="getSeverity(option.value)"></p-tag>
-            </ng-template> -->
-            </p-select>
-          </ng-template>
-        </p-columnFilter>
-      </th>
-      <th>
-        <!-- Placeholder for global actions filter clear, etc. -->
-      </th>
-    </tr>
-  </ng-template>
+    <ng-template pTemplate="header">
+      <tr>
+        <th style="width: 25%" pSortableColumn="name">Name <p-sortIcon field="name"></p-sortIcon></th>
+        <th style="width: 30%" pSortableColumn="url">URL <p-sortIcon field="url"></p-sortIcon></th>
+        <th style="width: 20%" pSortableColumn="status">Status <p-sortIcon field="status"></p-sortIcon></th>
+        <th style="width: 15%">Actions</th>
+      </tr>
+      <tr>
+        <th>
+          <p-columnFilter
+            type="text"
+            field="name"
+            placeholder="Search by Name"
+            ariaLabel="Filter by Name"
+          ></p-columnFilter>
+        </th>
+        <th>
+          <p-columnFilter
+            type="text"
+            field="url"
+            placeholder="Search by URL"
+            ariaLabel="Filter by URL"
+          ></p-columnFilter>
+        </th>
+        <th>
+          <p-columnFilter field="status" matchMode="equals" [showMenu]="false">
+            <ng-template pTemplate="filter" let-value let-filter="filterCallback">
+              <p-select
+                [ngModel]="value"
+                [options]="statuses"
+                (onChange)="filter($event.value)"
+                placeholder="Select Status"
+                [showClear]="true"
+                styleClass="p-column-filter"
+                appendTo="body"
+              >
+              </p-select>
+            </ng-template>
+          </p-columnFilter>
+        </th>
+        <th>
 
-  <ng-template pTemplate="body" let-instance> <!-- Changed from 'customer' to 'instance' -->
-    <tr>
-      <td>{{ instance.name }}</td>
-      <td>{{ instance.url }}</td>
-      <td>
-        <p-tag
-          [value]="instance.status"
-          [severity]="getSeverity(instance.status)"
-        ></p-tag>
-      </td>
-      <td>
-        <button
-          pButton
-          pRipple
-          type="button"
-          icon="pi pi-pencil"
-          class="p-button-rounded p-button-text p-button-info mr-2"
-          (click)="editInstance(instance)"
-          pTooltip="Edit Instance"
-          tooltipPosition="top"
-        ></button>
-        <button
-          pButton
-          pRipple
-          type="button"
-          icon="pi pi-trash"
-          class="p-button-rounded p-button-text p-button-danger"
-          (click)="deleteInstance(instance)"
-          pTooltip="Delete Instance"
-          tooltipPosition="top"
-        ></button>
-      </td>
-    </tr>
-  </ng-template>
+        </th>
+      </tr>
+    </ng-template>
 
-  <ng-template pTemplate="emptymessage">
-    <tr>
-      <td [attr.colspan]="4"> <!-- Adjust colspan if you change number of columns -->
-        No EDC instances found.
-      </td>
-    </tr>
-  </ng-template>
+    <ng-template pTemplate="body" let-instance>
+      <tr>
+        <td>{{ instance.name }}</td>
+        <td>{{ instance.url }}</td>
+        <td>
+          <p-tag
+            [value]="instance.status"
+            [severity]="getSeverity(instance.status)"
+          ></p-tag>
+        </td>
+        <td>
+          <button
+            pButton
+            pRipple
+            type="button"
+            icon="pi pi-pencil"
+            class="p-button-rounded p-button-text p-button-info mr-2"
+            (click)="editInstance(instance)"
+            pTooltip="Edit Instance"
+            tooltipPosition="top"
+          ></button>
+          <button
+            pButton
+            pRipple
+            type="button"
+            icon="pi pi-trash"
+            class="p-button-rounded p-button-text p-button-danger"
+            (click)="deleteInstance(instance)"
+            pTooltip="Delete Instance"
+            tooltipPosition="top"
+          ></button>
+        </td>
+      </tr>
+    </ng-template>
+
+    <ng-template pTemplate="emptymessage">
+      <tr>
+        <td [attr.colspan]="4">
+          No EDC instances found.
+        </td>
+      </tr>
+    </ng-template>
   </p-table>
 </div>
+
+<p-dialog
+  header="Create New EDC Instance"
+  [(visible)]="displayNewInstanceDialog"
+  [modal]="true"
+  [style]="{ width: '450px' }"
+  (onHide)="hideNewInstanceDialog()"
+  [draggable]="false"
+  [resizable]="false"
+>
+  <div class="p-fluid">
+    <div class="p-field mb-3">
+      <label for="name">Name</label>
+      <input id="name" type="text" pInputText [(ngModel)]="newInstance.name" required autofocus />
+    </div>
+    <div class="p-field mb-3">
+      <label for="url">URL</label>
+      <input id="url" type="text" pInputText [(ngModel)]="newInstance.url" required />
+    </div>
+    <div class="p-field mb-3">
+      <label for="status">Status</label>
+      <p-dropdown
+        id="status"
+        [options]="newInstanceStatuses"
+        [(ngModel)]="newInstance.status"
+        placeholder="Select a Status"
+        optionLabel="label"
+        optionValue="value"
+        appendTo="body"
+      ></p-dropdown>
+    </div>
+  </div>
+  <ng-template pTemplate="footer">
+    <button pButton pRipple label="Cancel" icon="pi pi-times" class="p-button-text" (click)="hideNewInstanceDialog()"></button>
+    <button pButton pRipple label="Save" icon="pi pi-check" class="p-button-text" (click)="saveNewInstance()"></button>
+  </ng-template>
+</p-dialog>
+
+<!-- Edit Instance Dialog -->
+<p-dialog
+  header="Edit EDC Instance"
+  [(visible)]="displayEditInstanceDialog"
+  [modal]="true"
+  [style]="{ width: '450px' }"
+  (onHide)="hideEditInstanceDialog()"
+  [draggable]="false"
+  [resizable]="false"
+>
+  <!-- Only render the form if instanceToEdit is not null -->
+  <ng-container *ngIf="instanceToEdit">
+    <div class="p-fluid">
+      <div class="p-field mb-3">
+        <label for="editName">Name</label>
+        <input id="editName" type="text" pInputText [(ngModel)]="instanceToEdit.name" required autofocus />
+      </div>
+      <div class="p-field mb-3">
+        <label for="editUrl">URL</label>
+        <input id="editUrl" type="text" pInputText [(ngModel)]="instanceToEdit.url" required />
+      </div>
+      <div class="p-field mb-3">
+        <label for="editStatus">Status</label>
+        <p-dropdown
+          id="editStatus"
+          [options]="newInstanceStatuses"
+          [(ngModel)]="instanceToEdit.status"
+          placeholder="Select a Status"
+          optionLabel="label"
+          optionValue="value"
+          appendTo="body"
+        ></p-dropdown>
+      </div>
+    </div>
+  </ng-container>
+  <ng-template pTemplate="footer">
+    <button pButton pRipple label="Cancel" icon="pi pi-times" class="p-button-text" (click)="hideEditInstanceDialog()"></button>
+    <button pButton pRipple label="Save Changes" icon="pi pi-check" class="p-button-text" (click)="saveEditedInstance()"></button>
+  </ng-template>
+</p-dialog>
+
+<p-confirmDialog [style]="{width: '450px'}"></p-confirmDialog>

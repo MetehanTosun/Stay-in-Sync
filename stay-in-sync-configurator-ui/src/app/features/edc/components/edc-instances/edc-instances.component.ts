@@ -1,3 +1,4 @@
+
 import { Component, OnInit, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms'; // For ngModel
@@ -10,21 +11,24 @@ import { TagModule } from 'primeng/tag';
 import { ButtonModule } from 'primeng/button';
 import { IconFieldModule } from 'primeng/iconfield';
 import { InputIconModule } from 'primeng/inputicon';
-import { RippleModule } from 'primeng/ripple'; // <-- ADD THIS
-import { TooltipModule } from 'primeng/tooltip'; // <-- ADD THIS
-// If you use <theme-switcher /> directly, you'd import it here.
-// import { ThemeSwitcher } from './themeswitcher'; // Adjust path if you use it
+import { RippleModule } from 'primeng/ripple';
+import { TooltipModule } from 'primeng/tooltip';
+import { DialogModule } from 'primeng/dialog';
+import { ConfirmDialogModule } from 'primeng/confirmdialog';
+import { ConfirmationService } from 'primeng/api';
+import {DropdownModule} from 'primeng/dropdown';
+// import { ThemeSwitcher } from './themeswitcher';
 
-// Your application-specific imports
 import { EdcInstance } from './models/edc-instance.model';
 import { EdcInstanceService } from './services/edc-instance.service';
+
 
 @Component({
   selector: 'app-edc-instances',
   standalone: true,
   imports: [
     CommonModule,
-    FormsModule, // For ngModel in p-select filter
+    FormsModule,
     TableModule,
     InputTextModule,
     SelectModule,
@@ -34,11 +38,16 @@ import { EdcInstanceService } from './services/edc-instance.service';
     InputIconModule,
     RippleModule,
     TooltipModule,
-   // ThemeSwitcher,
+    DialogModule,
+    DropdownModule,
+    DialogModule,
+    ConfirmDialogModule,
+    // ThemeSwitcher,
   ],
   templateUrl: './edc-instances.component.html',
   styleUrl: './edc-instances.component.css',
-  // providers: [EdcInstanceService] // EdcInstanceService is already providedIn: 'root'
+  providers: [ConfirmationService, EdcInstanceService],
+  // providers: [EdcInstanceService]
 })
 export class EdcInstancesComponent implements OnInit {
   @ViewChild('dt2') dt2: Table | undefined; // For accessing table methods like filterGlobal
@@ -47,7 +56,25 @@ export class EdcInstancesComponent implements OnInit {
   statuses: { label: string, value: string }[] = [];
   loading: boolean = true;
 
-  constructor(private edcInstanceService: EdcInstanceService) {}
+  // Dialog related properties
+  displayNewInstanceDialog: boolean = false;
+  newInstance: EdcInstance = this.createEmptyInstance(); // To hold form data
+
+
+  // Edit Instance Dialog properties
+  displayEditInstanceDialog: boolean = false;
+  instanceToEdit: EdcInstance | null = null; // Instance being edited
+
+  // Available statuses for the new instance dropdown
+  newInstanceStatuses: { label: string, value: EdcInstance['status'] }[] = [
+    { label: 'Active', value: 'Active' },
+    { label: 'Inactive', value: 'Inactive' },
+  ];
+
+  constructor(
+    private edcInstanceService: EdcInstanceService,
+    private confirmationService: ConfirmationService // <-- Inject ConfirmationService
+  ) {}
 
   ngOnInit(): void {
     this.edcInstanceService.getEdcInstancesLarge().then((data) => {
@@ -58,8 +85,16 @@ export class EdcInstancesComponent implements OnInit {
     this.statuses = [
       { label: 'Active', value: 'Active' },
       { label: 'Inactive', value: 'Inactive' },
-      { label: 'Pending', value: 'Pending' },
     ];
+  }
+
+  private createEmptyInstance(): EdcInstance {
+    return {
+      id: '',
+      name: '',
+      url: '',
+      status: 'Active',
+    };
   }
 
   onGlobalFilter(event: Event): void {
@@ -79,18 +114,78 @@ export class EdcInstancesComponent implements OnInit {
         return 'danger';
       case 'active':
         return 'success';
-      case 'pending':
-        return 'warning';
       default:
         return 'info';
     }
   }
 
+
+
+  openNewInstanceDialog(): void {
+    this.newInstance = this.createEmptyInstance();
+    this.displayNewInstanceDialog = true;
+    console.log('New instance dialog is opened');
+  }
+
+  hideNewInstanceDialog(): void {
+    this.displayNewInstanceDialog = false;
+  }
+
+  saveNewInstance(): void {
+    console.log('Saving new instance:', this.newInstance);
+    if (this.newInstance.name && this.newInstance.url) {
+      this.newInstance.id = 'temp_' + Math.random().toString(36).substring(2, 9);
+      this.edcInstances = [...this.edcInstances, this.newInstance];
+      this.hideNewInstanceDialog();
+    } else {
+      console.error('Name and URL are required.');
+    }
+  }
+
   editInstance(instance: EdcInstance): void {
-    console.log('Edit instance:', instance);
+    // Create a copy of the instance to edit, so changes aren't reflected in the table immediately
+    this.instanceToEdit = { ...instance };
+    this.displayEditInstanceDialog = true;
+  }
+
+  hideEditInstanceDialog(): void {
+    this.displayEditInstanceDialog = false;
+    this.instanceToEdit = null; // Clear the instance being edited
+  }
+
+  saveEditedInstance(): void {
+    if (this.instanceToEdit && this.instanceToEdit.name && this.instanceToEdit.url) {
+      const index = this.edcInstances.findIndex(i => i.id === this.instanceToEdit!.id);
+      if (index !== -1) {
+        // Update the instance in the array
+        this.edcInstances[index] = { ...this.instanceToEdit };
+        // Create a new array reference to trigger change detection for the table
+        this.edcInstances = [...this.edcInstances];
+      }
+      this.hideEditInstanceDialog();
+    } else {
+      console.error('Name and URL are required for edited instance.');
+      // Optionally, show a message to the user
+    }
   }
 
   deleteInstance(instance: EdcInstance): void {
-    console.log('Delete instance:', instance);
+    this.confirmationService.confirm({
+      message: `Are you sure you want to delete the instance "${instance.name}"?`,
+      header: 'Confirm Deletion',
+      icon: 'pi pi-exclamation-triangle',
+      acceptButtonStyleClass: 'p-button-danger',
+      rejectButtonStyleClass: 'p-button-text',
+      accept: () => {
+        console.log('Deleting instance:', instance);
+        // Actual deletion logic
+        this.edcInstances = this.edcInstances.filter(i => i.id !== instance.id);
+        // In a real app, you would call your service here:
+        // this.edcInstanceService.delete(instance.id).subscribe(...);
+      },
+      reject: () => {
+        console.log('Deletion rejected for instance:', instance);
+      }
+    });
   }
 }
