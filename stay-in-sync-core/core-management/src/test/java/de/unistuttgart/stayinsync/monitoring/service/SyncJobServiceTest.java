@@ -1,7 +1,7 @@
-package de.unistuttgart.stayinsync.monitoring.service;
+package de.unistuttgart.stayinsync.service;
 
-import de.unistuttgart.stayinsync.monitoring.core.configuration.persistence.entities.SyncJob;
-import de.unistuttgart.stayinsync.monitoring.core.configuration.service.SyncJobService;
+import de.unistuttgart.stayinsync.core.configuration.persistence.entities.sync.SyncJob;
+import de.unistuttgart.stayinsync.core.configuration.service.SyncJobService;
 import io.quarkus.panache.mock.PanacheMock;
 import io.quarkus.test.junit.QuarkusTest;
 import jakarta.inject.Inject;

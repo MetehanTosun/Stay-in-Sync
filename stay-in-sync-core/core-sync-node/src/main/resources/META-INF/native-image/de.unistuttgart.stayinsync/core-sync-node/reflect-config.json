@@ -1,0 +1,12 @@
+[
+  {
+    "name": "de.unistuttgart.stayinsync.scriptengine.ScriptApi",
+    "methods": [
+      { "name": "getInput", "parameterTypes": [] },
+      { "name": "setOutput", "parameterTypes": ["java.lang.Object"] },
+      { "name": "log", "parameterTypes": ["java.lang.String", "java.lang.String"] },
+      { "name": "<init>", "parameterTypes": ["java.lang.Object", "java.lang.String"] }
+    ],
+    "allPublicMethods": true
+  }
+]

@@ -1,0 +1,36 @@
+<div class="custom-sidebar" [class.visible]="sidebarVisible">
+  <div class="sidebar-header">
+    <h3>Configurator</h3>
+    <button class="close-button" (click)="sidebarVisible = false">X</button>
+  </div>
+  <div class="sidebar-content">
+    <nav>
+      <ul class="nav-list">
+        <li>
+          <a routerLink="/configs" routerLinkActive="active-link" (click)="keepSidebarOpen()"><i class="pi pi-file"></i>Configs</a>
+        </li>
+        <li>
+          <a routerLink="/sync-rules" routerLinkActive="active-link" (click)="keepSidebarOpen()"><i class="pi pi-sync"></i>Sync Rules</a>
+        </li>
+        <li>
+          <a routerLink="/transformation-scripts" routerLinkActive="active-link" (click)="keepSidebarOpen()"><i class="pi pi-wrench"></i>Transformation Scripts</a>
+        </li>
+      </ul>
+      <ul class="nav-list bottom-links">
+        <li>
+          <strong>AAS &amp; EDC</strong>
+        </li>
+        <li>
+          <a routerLink="/source-system" routerLinkActive="active-link" (click)="keepSidebarOpen()"><i class="pi pi-cog"></i>Source-System-Management</a>
+        </li>
+        <li>
+          <a routerLink="/edc" routerLinkActive="active-link" (click)="keepSidebarOpen()"><i class="pi pi-unlock"></i>EDC-Management</a>
+        </li>
+        <li>
+          <a routerLink="/help" routerLinkActive="active-link" (click)="keepSidebarOpen()"><i class="pi pi-question-circle"></i>Help</a>
+        </li>
+      </ul>
+    </nav>
+  </div>
+</div>
+<div class="overlay" *ngIf="sidebarVisible" (click)="keepSidebarOpen()"></div>

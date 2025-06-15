@@ -1,6 +1,6 @@
-package de.unistuttgart.stayinsync.monitoring.core.configuration.mapping;
+package de.unistuttgart.stayinsync.core.configuration.mapping;
 
-import de.unistuttgart.stayinsync.monitoring.core.configuration.persistence.entities.SyncJob;
+import de.unistuttgart.stayinsync.core.configuration.persistence.entities.sync.SyncJob;
 import org.mapstruct.Mapper;
 import org.mapstruct.MappingConstants;
 import org.mapstruct.MappingTarget;
