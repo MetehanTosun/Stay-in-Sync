@@ -32,8 +32,9 @@ public class SyncJobService {
 
     public SyncJob persistSyncJob(@NotNull @Valid SyncJob syncJob) {
         Log.debugf("Persisting sync-job: %s", syncJob);
+
         syncJob.persist();
-        syncJobProducer.queueSyncJob(syncJob);
+        syncJobProducer.deploySyncJob(syncJob);
         return syncJob;
     }
 
@@ -70,6 +71,7 @@ public class SyncJobService {
                 .map(SyncJob.class::cast) // Only here for type erasure within the IDE
                 .map(targetSyncJob -> {
                     this.syncJobFullUpdateMapper.mapFullUpdate(syncJob, targetSyncJob);
+                    this.syncJobProducer.reconfigureDeployedSyncJob(syncJob);
                     return targetSyncJob;
                 });
     }

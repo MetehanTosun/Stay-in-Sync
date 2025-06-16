@@ -22,6 +22,8 @@ public class SyncJob extends PanacheEntity {
 
     public int pollingRate;
 
+    public boolean deployed;
+
     @OneToMany
     public Set<Transformation> transformations = new HashSet<>();
 
