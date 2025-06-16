@@ -28,3 +28,28 @@ html, body, #root, app-root {
   background-color: var(--p-surface);
   color: var(--p-text-color);
 }
+/* Markdown-Inhalt */
+.markdown-content {
+  margin: 0 auto;
+  padding: 2rem;
+  border-radius: 8px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+/* Überschriften */
+.markdown-content h1 {
+  font-size: 3rem;
+  margin-bottom: 1rem;
+}
+
+.markdown-content h2 {
+  font-size: 2rem;
+  margin-top: 1.5rem;
+  margin-bottom: 0.8rem;
+}
+
+.markdown-content h3 {
+  font-size: 1.5rem;
+  margin-bottom: 0.6rem;
+  margin-top: 1rem;
+}

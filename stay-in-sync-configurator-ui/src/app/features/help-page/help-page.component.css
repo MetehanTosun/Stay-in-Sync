@@ -1,0 +1,17 @@
+.headings-aside{
+  position: sticky;
+  top: 1rem;
+  max-height: calc(100vh - 2rem);
+  overflow-y: auto;
+  padding-right: 1rem;
+}
+
+.main-content-flex {
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+}
+
+.markdown-content {
+  line-height: 1.8; /* Erhöht den Zeilenabstand allgemein */
+}

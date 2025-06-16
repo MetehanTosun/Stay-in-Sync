@@ -1,1 +1,15 @@
-<p>help-page works!</p>
+<aside *ngIf="!markdownPath" class="w-64 p-4 border-r">
+  <p-panelMenu [model]="items"></p-panelMenu>
+</aside>
+
+<main *ngIf="markdownPath" class="main-content-flex flex-1 p-6 overflow-auto prose max-w-none">
+    <div style="flex:1;">
+      <p-button label="Back" (click)="goBack()"></p-button>
+      <div class="markdown-content"><markdown [src]="markdownPath"></markdown></div>
+    </div>
+    <aside class="headings-aside">
+      <p-listbox [options]="headings" optionLabel="text"
+                 (onChange)="onHeadingSelect($event)" class="w-full md:w-56">
+      </p-listbox>
+    </aside>
+</main>
