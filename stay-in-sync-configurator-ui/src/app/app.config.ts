@@ -11,6 +11,8 @@ import Material from '@primeng/themes/material';
 import Aura from '@primeng/themes/aura';
 import Lara from '@primeng/themes/lara';
 import Nora from  '@primeng/themes/nora';
+import { provideMarkdown } from 'ngx-markdown';
+
 
 export const appConfig: ApplicationConfig = {
   providers: [
@@ -19,6 +21,7 @@ export const appConfig: ApplicationConfig = {
     provideRouter(routes),
     provideAnimationsAsync(),
     MessageService,
+    provideMarkdown(),
     providePrimeNG({
     theme: {
       preset: MyPreset,
