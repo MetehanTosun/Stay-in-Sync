@@ -73,7 +73,7 @@ export class EdcInstancesComponent implements OnInit {
 
   constructor(
     private edcInstanceService: EdcInstanceService,
-    private confirmationService: ConfirmationService // <-- Inject ConfirmationService
+    private confirmationService: ConfirmationService
   ) {}
 
   ngOnInit(): void {
@@ -143,7 +143,7 @@ export class EdcInstancesComponent implements OnInit {
   }
 
   editInstance(instance: EdcInstance): void {
-    // Create a copy of the instance to edit, so changes aren't reflected in the table immediately
+
     this.instanceToEdit = { ...instance };
     this.displayEditInstanceDialog = true;
   }
@@ -165,7 +165,6 @@ export class EdcInstancesComponent implements OnInit {
       this.hideEditInstanceDialog();
     } else {
       console.error('Name and URL are required for edited instance.');
-      // Optionally, show a message to the user
     }
   }
 
@@ -180,8 +179,7 @@ export class EdcInstancesComponent implements OnInit {
         console.log('Deleting instance:', instance);
         // Actual deletion logic
         this.edcInstances = this.edcInstances.filter(i => i.id !== instance.id);
-        // In a real app, you would call your service here:
-        // this.edcInstanceService.delete(instance.id).subscribe(...);
+
       },
       reject: () => {
         console.log('Deletion rejected for instance:', instance);
