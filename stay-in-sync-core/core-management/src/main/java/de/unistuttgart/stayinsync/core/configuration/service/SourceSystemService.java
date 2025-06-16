@@ -1,14 +1,14 @@
 package de.unistuttgart.stayinsync.core.configuration.service;
 
-import java.util.List;
-import java.util.Optional;
-
 import de.unistuttgart.stayinsync.core.configuration.mapping.SourceSystemFullUpdateMapper;
-import de.unistuttgart.stayinsync.core.configuration.persistence.entities.SourceSystem;
+import de.unistuttgart.stayinsync.core.configuration.persistence.entities.sync.SourceSystem;
 import io.quarkus.logging.Log;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
+
+import java.util.List;
+import java.util.Optional;
 
 @ApplicationScoped
 public class SourceSystemService {

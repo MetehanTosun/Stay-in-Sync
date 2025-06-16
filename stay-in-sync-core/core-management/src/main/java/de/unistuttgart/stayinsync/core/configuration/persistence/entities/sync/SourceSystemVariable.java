@@ -1,4 +1,4 @@
-package de.unistuttgart.stayinsync.core.configuration.persistence.entities;
+package de.unistuttgart.stayinsync.core.configuration.persistence.entities.sync;
 
 import io.quarkus.hibernate.orm.panache.PanacheEntity;
 import jakarta.persistence.Entity;
@@ -13,6 +13,11 @@ import java.util.Set;
 public class SourceSystemVariable extends PanacheEntity {
 
     public String name;
+
+    public String jsonObjectKey;
+
+    @ManyToOne
+    public SourceSystemEndpoint sourceSystemEndpoint; // /description
 
     @ManyToOne
     public SourceSystem sourceSystem;

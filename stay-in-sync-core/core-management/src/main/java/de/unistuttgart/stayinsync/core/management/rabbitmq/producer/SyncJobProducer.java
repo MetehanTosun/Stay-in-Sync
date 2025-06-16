@@ -1,6 +1,6 @@
 package de.unistuttgart.stayinsync.core.management.rabbitmq.producer;
 
-import de.unistuttgart.stayinsync.core.configuration.persistence.entities.SyncJob;
+import de.unistuttgart.stayinsync.core.configuration.persistence.entities.sync.SyncJob;
 import io.quarkus.logging.Log;
 import io.smallrye.reactive.messaging.rabbitmq.OutgoingRabbitMQMetadata;
 import org.eclipse.microprofile.reactive.messaging.Channel;

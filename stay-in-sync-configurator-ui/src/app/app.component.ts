@@ -2,7 +2,7 @@ import {Component} from '@angular/core';
 import { RouterOutlet } from '@angular/router';
 import {SidebarMenuComponent} from './features/sidebar-menu/sidebar-menu.component';
 import {ToastModule} from 'primeng/toast';
-import {NgIf} from '@angular/common';
+import {NgIf, NgStyle} from '@angular/common';
 import {Button} from 'primeng/button';
 import {ToggleSwitch} from 'primeng/toggleswitch';
 import {FormsModule} from '@angular/forms';
@@ -10,7 +10,7 @@ import {FormsModule} from '@angular/forms';
 
 @Component({
   selector: 'app-root',
-  imports: [RouterOutlet, SidebarMenuComponent, ToastModule, NgIf, Button, ToggleSwitch, FormsModule],
+  imports: [RouterOutlet, SidebarMenuComponent, ToastModule, NgIf, Button, ToggleSwitch, FormsModule, NgStyle],
   templateUrl: './app.component.html',
   styleUrl: './app.component.css',
 })

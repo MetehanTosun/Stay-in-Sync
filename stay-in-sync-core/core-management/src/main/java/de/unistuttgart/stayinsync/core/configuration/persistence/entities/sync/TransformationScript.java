@@ -1,4 +1,4 @@
-package de.unistuttgart.stayinsync.core.configuration.persistence.entities;
+package de.unistuttgart.stayinsync.core.configuration.persistence.entities.sync;
 
 import io.quarkus.hibernate.orm.panache.PanacheEntity;
 import jakarta.persistence.Entity;
@@ -10,11 +10,11 @@ public class TransformationScript extends PanacheEntity {
 
     public String name;
 
-    String scriptCode;
+    public String scriptCode;
 
-    String hash;
+    public String hash;
 
     @OneToOne
-    Transformation transformation;
+    public Transformation transformation;
 
 }
