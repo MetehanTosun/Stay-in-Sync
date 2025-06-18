@@ -1,20 +1,17 @@
 package de.unistuttgart.stayinsync.syncnode.logik_engine;
 
+import jakarta.json.JsonObject;
 import lombok.Getter;
+
+import java.util.Map;
 
 /**
  * Represents an input node that provides a constant value.
  * This value is defined at the time the ConstantNode is created.
  * The provided value for a constant cannot be null.
  */
+@Getter
 public class ConstantNode implements InputNode {
-    /**
-     * -- GETTER --
-     *  Returns the descriptive name assigned to this constant node.
-     *  This name was provided during construction and is useful for debugging or identification.
-     *
-     * @return The name of this constant.
-     */
     @Getter
     private final  String elementName;
     private final Object value;
@@ -47,7 +44,7 @@ public class ConstantNode implements InputNode {
      * @return The pre-defined, non-null constant object.
      */
     @Override
-    public Object getValue() {
+    public Object getValue(Map<String, JsonObject> context) {
         return value;
     }
 

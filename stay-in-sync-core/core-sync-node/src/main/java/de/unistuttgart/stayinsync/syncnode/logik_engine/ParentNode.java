@@ -1,5 +1,9 @@
 package de.unistuttgart.stayinsync.syncnode.logik_engine;
 
+import jakarta.json.JsonObject;
+
+import java.util.Map;
+
 /**
  * Represents an input provider that sources its value from the calculated result
  * of another {@link LogicNode} (referred to as the parent node).
@@ -28,7 +32,7 @@ public class ParentNode implements InputNode {
      * @throws IllegalStateException if the parent node's result is null (indicating it wasn't evaluated).
      */
     @Override
-    public Object getValue() {
+    public Object getValue(Map<String, JsonObject> context) {
 
         Object result = this.parentNode.getCalculatedResult();
         if (result == null) {

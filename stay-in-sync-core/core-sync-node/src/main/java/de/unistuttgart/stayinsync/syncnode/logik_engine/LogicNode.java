@@ -3,6 +3,7 @@ package de.unistuttgart.stayinsync.syncnode.logik_engine;
 import lombok.Getter;
 import lombok.Setter;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
@@ -18,8 +19,6 @@ public class LogicNode {
     private final  String nodeName;
     private final LogicOperator operator;
     private List<InputNode> inputProviders;
-
-    @Setter
     private Object calculatedResult;
 
 
@@ -29,6 +28,25 @@ public class LogicNode {
         this.inputProviders = Arrays.asList(providers);
     }
 
+
+    /**
+     * Constructor used by mappers during the first phase of graph deserialization.
+     * It creates a node instance without its connections (inputs).
+     *
+     * @param nodeName A unique name for the node within the graph.
+     * @param operator The logical operation this node performs.
+     */
+    public LogicNode(String nodeName, LogicOperator operator) {
+        if (nodeName == null || nodeName.trim().isEmpty()) {
+            throw new IllegalArgumentException("Node name cannot be null or empty.");
+        }
+        if (operator == null) {
+            throw new IllegalArgumentException("Operator cannot be null.");
+        }
+        this.nodeName = nodeName;
+        this.operator = operator;
+        this.inputProviders = new ArrayList<>(); // Initialize with an empty list to avoid NullPointerExceptions
+    }
 
     /**
      * Indicates whether some other object is "equal to" this one.

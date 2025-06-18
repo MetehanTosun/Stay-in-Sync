@@ -1,6 +1,10 @@
 package de.unistuttgart.stayinsync.syncnode.logik_engine;
 
 import jakarta.json.JsonObject;
+import lombok.Getter;
+import lombok.Setter;
+
+import java.util.Map;
 import java.util.Optional;
 
 /**
@@ -8,26 +12,32 @@ import java.util.Optional;
  * within an external JSON object (typically representing AAS data).
  * The source JsonObject and path are defined at creation.
  */
+@Getter
+@Setter
 public class JsonNode implements InputNode {
     private final String jsonPath;
-    private final JsonObject sourceJsonObject;
+    private final String sourceName;
+    private final JsonObjectValueExtractor valueExtractor = new JsonObjectValueExtractor();
 
     /**
-     * Constructs a new JsonNode.
+     * Constructs a new JsonNode, which acts as a placeholder for a value to be retrieved
+     * from a named JSON data source at runtime.
      *
-     * @param source The JsonObject acting as the data source. Cannot be null.
+     * @param sourceName The logical name of the data source (e.g., "anlageAAS", "wetterAPI").
+     *                   This name is used at evaluation time to look up the correct {@link JsonObject}
+     *                   from the provided data context map. Cannot be null or empty.
      * @param path   The dot-separated path to the value within the source JsonObject.
      *               Cannot be null or empty.
      * @throws IllegalArgumentException if source is null, or if path is null or empty.
      */
-    public JsonNode(JsonObject source, String path) {
-        if (source == null) {
-            throw new IllegalArgumentException("Source JsonObject for JsonNode (for path: '" + path + "') cannot be null.");
+    public JsonNode(String sourceName, String path) {
+        if (sourceName == null || sourceName.trim().isEmpty()) {
+            throw new IllegalArgumentException("Source name for JsonNode cannot be null or empty.");
         }
         if (path == null || path.trim().isEmpty()) {
             throw new IllegalArgumentException("JSON path for JsonNode cannot be null or empty.");
         }
-        this.sourceJsonObject = source;
+        this.sourceName = sourceName;
         this.jsonPath = path;
     }
 
@@ -38,15 +48,22 @@ public class JsonNode implements InputNode {
      * @throws IllegalStateException if the path does not resolve to a value or if the value is JSON null.
      */
     @Override
-    public Object getValue() {
-        // JsonObjectValueExtractor is used internally to perform the extraction.
-        JsonObjectValueExtractor extractor = new JsonObjectValueExtractor();
-        Optional<Object> extractedOptional = extractor.extractValue(this.sourceJsonObject, this.jsonPath);
+    public Object getValue(Map<String, JsonObject> context) {
+        if (context == null) {
+            throw new IllegalStateException("Data context is null, but JsonNode requires it to resolve a value.");
+        }
 
-        // If the Optional is empty (path not found or value was JSON null), throw an exception.
-        return extractedOptional.orElseThrow(() ->
-                new IllegalStateException("Value for path '" + jsonPath + "' not found or was null in the provided JsonObject.")
-        );
+        JsonObject sourceObject = context.get(this.sourceName);
+        if (sourceObject == null) {
+            throw new IllegalStateException(
+                    "Data source '" + this.sourceName + "' required by JsonNode was not provided in the runtime data context."
+            );
+        }
+
+        return valueExtractor.extractValue(sourceObject, this.jsonPath)
+                .orElseThrow(() -> new IllegalStateException(
+                        "Value for path '" + this.jsonPath + "' not found in data source '" + this.sourceName + "'."
+                ));
     }
 
     /**

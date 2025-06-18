@@ -1,5 +1,7 @@
 package de.unistuttgart.stayinsync.syncnode.logik_engine;
 
+import jakarta.json.JsonObject;
+
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedList;
@@ -25,10 +27,16 @@ public class LogicGraphEvaluator {
      * - This single target node must produce a {@link Boolean} result.
      *
      * @param allNodesInGraph A list containing all {@link LogicNode}s that constitute the graph to be evaluated.
+     * @param dataContext     A map containing the runtime data sources required by {@link JsonNode}s within the graph.
+     *                        The map's key is the {@code sourceName} defined in a {@code JsonNode}, and the value
+     *                        is the corresponding {@link JsonObject} to be queried. Can be an empty map if no
+     *                        JsonNodes are used.
      * @return {@code true} or {@code false} representing the final evaluated boolean state of the graph.
      * @throws IllegalArgumentException If {@code allNodesInGraph} is null or empty.
+     * @throws IllegalStateException    if the graph processing fails, e.g., a required data source is missing
+     *                                  from the context or a JSON path is not found.
      */
-    public boolean evaluateGraph(List<LogicNode> allNodesInGraph) throws IllegalArgumentException, IllegalStateException {
+    public boolean evaluateGraph(List<LogicNode> allNodesInGraph,  Map<String, JsonObject> dataContext) throws IllegalArgumentException, IllegalStateException {
 
         if (allNodesInGraph == null || allNodesInGraph.isEmpty()) {
             throw new IllegalArgumentException("The list of graph nodes cannot be null or empty");
@@ -37,7 +45,6 @@ public class LogicGraphEvaluator {
         // Step 1: Initialize helper data structures
         Map<LogicNode, Integer> nodeInDegree = new HashMap<>();
         Map<LogicNode, List<LogicNode>> childrenList = new HashMap<>();
-        Map<LogicNode, Object> computedNodeResults = new HashMap<>();
         Queue<LogicNode> readyToEvaluateQueue = new LinkedList<>();
 
         // Step 1a: Prepare maps for each node and reset results
@@ -83,7 +90,7 @@ public class LogicGraphEvaluator {
 
             if (nodeToEvaluate.getInputProviders() != null) {
                 for (InputNode provider : nodeToEvaluate.getInputProviders()) {
-                    valuesForOperation.add(provider.getValue());
+                    valuesForOperation.add(provider.getValue(dataContext));
                 }
             }
 
@@ -92,7 +99,6 @@ public class LogicGraphEvaluator {
 
             // Step 3c: Store the result
             nodeToEvaluate.setCalculatedResult(result);
-            computedNodeResults.put(nodeToEvaluate, result);
 
             // Step 3d: Update in-degree of children and add to queue if ready
             List<LogicNode> children = childrenList.get(nodeToEvaluate);
@@ -117,7 +123,7 @@ public class LogicGraphEvaluator {
             }
         }
 
-        return (boolean) computedNodeResults.get(finalTargetNode);
+        return (boolean) finalTargetNode.getCalculatedResult();
 
     }
 }
