@@ -1,4 +1,5 @@
-package de.unistuttgart.stayinsync.core.configuration.persistence.entities;
+package de.unistuttgart.stayinsync.core.configuration.persistence.entities.sync;
+
 
 import io.quarkus.hibernate.orm.panache.PanacheEntity;
 import jakarta.persistence.Entity;
@@ -20,10 +21,11 @@ public class SyncJob extends PanacheEntity {
 
     public String syncNodeIdentifier;
 
+    public boolean deployed;
+
     @OneToMany(mappedBy = "syncJob")
     public Set<Transformation> transformations = new HashSet<>();
-
-
+    
     public static List<SyncJob> listAllWhereNameLike(String name) {
         return (name != null) ?
                 list("LOWER(name) LIKE CONCAT('%', ?1, '%')", name.toLowerCase()) :

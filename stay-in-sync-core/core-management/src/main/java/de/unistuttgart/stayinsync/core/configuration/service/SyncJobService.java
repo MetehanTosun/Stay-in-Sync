@@ -1,5 +1,6 @@
 package de.unistuttgart.stayinsync.core.configuration.service;
 
+import de.unistuttgart.stayinsync.core.configuration.exception.CoreManagementException;
 import de.unistuttgart.stayinsync.core.configuration.mapping.SyncJobFullUpdateMapper;
 import de.unistuttgart.stayinsync.core.configuration.persistence.entities.sync.SyncJob;
 import de.unistuttgart.stayinsync.core.management.rabbitmq.producer.SyncJobProducer;
@@ -34,7 +35,11 @@ public class SyncJobService {
         Log.debugf("Persisting sync-job: %s", syncJob);
 
         syncJob.persist();
-        syncJobProducer.deploySyncJob(syncJob);
+        try {
+            syncJobProducer.publishSyncJob(syncJob);
+        } catch (CoreManagementException e) {
+            Log.warn("TEST");
+        }
         return syncJob;
     }
 
