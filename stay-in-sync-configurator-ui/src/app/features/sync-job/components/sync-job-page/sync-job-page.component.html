@@ -1,1 +1,7 @@
 <p>sync-job-page works!</p>
+<p-button (click)="openCreateDialog()" >
+  Create Sync Job
+</p-button>
+<app-sync-job-creation
+  [(visible)]="showCreateDialog">
+</app-sync-job-creation>

@@ -11,6 +11,7 @@ import { CreateSourceSystemComponent } from
 import { EdcBaseComponent } from './features/edc/components/edc-base/edc-base.component';
 import {HelpPageComponent} from './features/help-page/help-page.component';
 import {SyncJobPageComponent} from './features/sync-job/components/sync-job-page/sync-job-page.component';
+import {SyncJobCreationComponent} from './features/sync-job/components/sync-job-creation/sync-job-creation.component';
 
 
 
@@ -37,7 +38,13 @@ export const routes: Routes = [
   },
 
   //Route für Sync Jobs
-  {path: 'sync-jobs', component: SyncJobPageComponent},
+  {path: 'sync-jobs', component: SyncJobPageComponent,
+  children: [
+    {
+      path: 'create',
+      component: SyncJobCreationComponent
+  }]
+  },
 
   // Route für Help mit Children
   {
