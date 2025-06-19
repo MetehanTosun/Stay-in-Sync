@@ -8,7 +8,7 @@
 class="big-dialog">
   <p-stepper [value]="1" class="basis-[50rem]">
     <p-step-list>
-      <p-step [value]="1">Header I</p-step>
+      <p-step [value]="1">Step I</p-step>
       <p-step [value]="2">Header II</p-step>
       <p-step [value]="3">Header II</p-step>
     </p-step-list>
@@ -19,7 +19,36 @@ class="big-dialog">
             <div
               class="border-2 border-dashed border-surface-200 dark:border-surface-700 rounded bg-surface-50 dark:bg-surface-950 flex-auto flex justify-center items-center font-medium"
             >
-              Content I
+              <input
+                type="text"
+                pInputText
+                placeholder="Name"
+                [(ngModel)]="syncJobName"
+                class="mb-2"
+              />
+              <input
+                type="text"
+                pInputText
+                placeholder="Description"
+                [(ngModel)]="syncJobDescription"
+              />
+              <select
+                [(ngModel)]="selectedSourceSystem"
+                required
+                class="mb-2 p-inputtext"
+              >
+                <option [ngValue]="null" disabled selected>Quellsystem auswählen</option>
+                <option *ngFor="let system of sourceSystems" [ngValue]="system">{{ system.name }}</option>
+              </select>
+              <div class="mb-2 flex items-center">
+                              <label for="simulationSwitch" class="mr-2">Simulation</label>
+                              <p-inputSwitch
+                                id="simulationSwitch"
+                                [(ngModel)]="isSimulation"
+                                [trueValue]="true"
+                                [falseValue]="false"
+                              ></p-inputSwitch>
+              </div>
             </div>
             <div class="flex pt-6 justify-end">
               <p-button label="Next" icon="pi pi-arrow-right" iconPos="right" (onClick)="activateCallback(2)" />
