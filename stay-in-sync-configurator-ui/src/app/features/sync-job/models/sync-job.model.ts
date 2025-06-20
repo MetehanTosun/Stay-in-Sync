@@ -9,4 +9,5 @@ export interface SyncJob {
   endpoints?: (NgIterable<unknown> & NgIterable<any>) | undefined | null;
   variables?: (NgIterable<unknown> & NgIterable<any>) | undefined | null;
   transformations?: (NgIterable<unknown> & NgIterable<any>) | undefined | null;
+  isSimulation?: boolean;
 }

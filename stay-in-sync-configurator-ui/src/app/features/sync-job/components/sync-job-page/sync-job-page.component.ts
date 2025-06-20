@@ -4,12 +4,27 @@ import {HttpErrorService} from '../../../../core/services/http-error.service';
 import {Router} from '@angular/router';
 import {Button} from 'primeng/button';
 import {SyncJobCreationComponent} from '../sync-job-creation/sync-job-creation.component';
+import {TableModule} from 'primeng/table';
+import {SyncJob} from '../../models/sync-job.model';
+import {IconField} from 'primeng/iconfield';
+import {InputIcon} from 'primeng/inputicon';
+import {InputText} from 'primeng/inputtext';
+import {Select} from 'primeng/select';
+import {Tag} from 'primeng/tag';
+import {FormsModule} from '@angular/forms';
 
 @Component({
   selector: 'app-sync-job-page',
   imports: [
     Button,
-    SyncJobCreationComponent
+    SyncJobCreationComponent,
+    TableModule,
+    IconField,
+    InputIcon,
+    InputText,
+    Select,
+    Tag,
+    FormsModule
   ],
   templateUrl: './sync-job-page.component.html',
   standalone: true,
@@ -17,6 +32,29 @@ import {SyncJobCreationComponent} from '../sync-job-creation/sync-job-creation.c
 })
 export class SyncJobPageComponent{
   showCreateDialog: boolean = false;
+  public selectedStatus: any = null; // Ensure this is mutable
+  items: SyncJob[] = [
+    {
+      name: 'Beispiel-Sync-Job',
+      description: 'Dies ist ein Beispiel-Sync-Job.',
+      isSimulation: false,
+    },
+    {
+      name: 'Test-Sync-Job',
+      description: 'Dies ist ein Test-Sync-Job.',
+      isSimulation: true,
+    }
+  ];
+  loading: boolean = false;
+
+statuses = [
+  { label: 'Active', value: false }, // false für "active"
+  { label: 'In Simulation', value: true } // true für "In Simulation"
+];
+
+getSeverity(isSimulation: boolean): string {
+  return isSimulation ? 'warning' : 'success'; // Gelb für Simulation, Grün für Active
+}
 
 
   openCreateDialog() {
@@ -46,6 +84,4 @@ export class SyncJobPageComponent{
       }
     })
   }
-
-
 }
