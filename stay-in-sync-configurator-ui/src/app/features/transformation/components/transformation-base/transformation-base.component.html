@@ -1,0 +1,27 @@
+<p-table [value]="transformations" [paginator]="true" [rows]="10" [responsiveLayout]="'scroll'">
+  <ng-template pTemplate="header">
+    <tr>
+      <th>Name</th>
+      <th>Transformation Rule</th>
+      <th>Transformation Script</th>
+      <th>Actions</th>
+    </tr>
+  </ng-template>
+  <ng-template pTemplate="body" let-rowData>
+    <tr>
+      <td>{{ rowData.name }}</td>
+      <td>{{ rowData.transformationRule }}</td>
+      <td>{{ rowData.transformationScript }}</td>
+      <td>
+        <p-button icon="pi pi-pencil" class="p-button-rounded p-button-text" (click)="edit(rowData)" styleClass="p-button-rounded p-button-text"></p-button>
+        <p-button icon="pi pi-trash" class="p-button-rounded p-button-danger p-button-text" (click)="delete(rowData)" styleClass="p-button-rounded p-button-danger p-button-text"></p-button>
+        <p-button
+          [label]="rowData.added ? 'Remove' : 'Add'"
+          [class]="rowData.added ? 'p-button-rounded p-button-text  w-24' : 'p-button-rounded p-button-text w-24'"
+          [style]="{'width': '8rem'}"
+          (click)="rowData.added ? remove(rowData) : add(rowData)">
+        </p-button>
+      </td>
+    </tr>
+  </ng-template>
+</p-table>
