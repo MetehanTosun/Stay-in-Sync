@@ -22,9 +22,7 @@ public interface SyncJobFullUpdateMapper {
     @Mapping(target = "id", ignore = true)
     void mapFullUpdate(SyncJob input, @MappingTarget SyncJob target);
 
-    @Mapping(target = "id", ignore = true)
     SyncJobDTO mapToDTO(SyncJob input);
 
-    @Mapping(target = "id", ignore = true)
     SyncJob mapToEntity(SyncJobDTO input);
 }

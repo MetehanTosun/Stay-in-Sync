@@ -158,6 +158,9 @@ public class SyncJobResource {
                                                )
                                        )
                                        @PathParam("id") Long id, @Valid @NotNull SyncJobDTO syncJobDTO) {
+        if (id != syncJobDTO.id()) {
+            throw new CoreManagementWebException(Response.Status.BAD_REQUEST, "Id missmatch", "Make sure that the request body entity id matches the request parameter");
+        }
 
         return this.syncJobService.replaceSyncJob(fullUpdateMapper.mapToEntity(syncJobDTO))
                 .map(updatedSyncJob -> {
