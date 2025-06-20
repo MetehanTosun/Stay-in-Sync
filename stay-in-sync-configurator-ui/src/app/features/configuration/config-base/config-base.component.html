@@ -1,1 +1,101 @@
-<p>config-base works!</p>
+<p-table
+  #dt1
+  [value]="customers"
+  [globalFilterFields]="['name', 'country.name', 'representative.name', 'status']"
+  selectionMode="single"
+  [(selection)]="selectedCustomers"
+  dataKey="id"
+  [tableStyle]="{ width: '100%' }"
+  [rows]="5"
+  [paginator]="true"
+  stateStorage="session"
+  stateKey="statedemo-session"
+
+>
+  <ng-template #caption>
+    <p-iconfield iconPosition="left">
+      <p-inputicon>
+        <i class="pi pi-search"></i>
+      </p-inputicon>
+      <input
+        pInputText
+        type="text"
+        placeholder="Global Search"
+      />
+    </p-iconfield>
+  </ng-template>
+  <ng-template #header>
+    <tr>
+      <th pSortableColumn="name" style="width:25%">Name <p-sortIcon field="name" /></th>
+      <th pSortableColumn="country.name" style="width:25%">
+        Country <p-sortIcon field="country.name" />
+      </th>
+      <th pSortableColumn="created Date" style="width:25%">
+        created Date <p-sortIcon field="created Date" />
+      </th>
+      <th pSortableColumn="status" style="width:25%">Status <p-sortIcon field="status" /></th>
+      <th>Buttons</th>
+    </tr>
+  </ng-template>
+  <ng-template #body let-customer>
+    <tr [pSelectableRow]="customer">
+      <td>
+        {{ customer.name }}
+      </td>
+      <td>
+        <div class="flex items-center gap-2">
+          <img ngSrc="https://primefaces.org/cdn/primeng/images/demo/flag/flag_placeholder.png" [class]="'flag flag-' + customer.country.code" style="width: 20px" />
+          <span class="ml-1 align-middle">{{ customer.country.name }}</span>
+        </div>
+      </td>
+      <td>
+        <div class="flex items-center gap-2">
+          <img [alt]="customer.representative.name" src="https://primefaces.org/cdn/primeng/images/demo/avatar/{{ customer.representative.image }}" width="32" style="vertical-align: middle" />
+          <span class="ml-1 align-middle">{{ customer.representative.name }}</span>
+        </div>
+      </td>
+      <td>
+        <p-tag [value]="customer.status" [severity]="getSeverity(customer.status)" />
+      </td>
+      <td>
+        <button pButton type="button" icon="pi pi-pencil" class="p-button-rounded p-button-text" (click)="editConfig(customer)"></button>
+        <button pButton type="button" icon="pi pi-trash" class="p-button-rounded p-button-text" (click)="activateConfig(customer)"></button>
+        <button pButton type="button" icon="pi pi-check" class="p-button-rounded p-button-text" (click)="dryRun(customer)"></button>
+      </td>
+    </tr>
+  </ng-template>
+  <ng-template #body let-customer>
+    <tr [pSelectableRow]="customer">
+      <td>
+        {{ customer.name }}
+      </td>
+      <td>
+        <img
+          src="https://primefaces.org/cdn/primeng/images/demo/flag/flag_placeholder.png"
+          [class]="'flag flag-' + customer.country.code"
+          style="width: 20px"
+        />
+        <span class="ml-1 align-middle">{{ customer.country.name }}</span>
+      </td>
+      <td>
+        <img
+          [alt]="customer.representative.name"
+          src="https://primefaces.org/cdn/primeng/images/demo/avatar/{{
+                        customer.representative.image
+                    }}"
+          width="32"
+          style="vertical-align: middle"
+        />
+        <span class="ml-1 align-middle">{{ customer.representative.name }}</span>
+      </td>
+      <td>
+        <p-tag [value]="customer.status" [severity]="getSeverity(customer.status)" />
+      </td>
+    </tr>
+  </ng-template>
+  <ng-template emptymessage>
+    <tr>
+      <td colspan="4">No customers found.</td>
+    </tr>
+  </ng-template>
+</p-table>

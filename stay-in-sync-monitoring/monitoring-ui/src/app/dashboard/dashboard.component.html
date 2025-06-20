@@ -1,0 +1,25 @@
+<p-splitter [panelSizes]="[50, 50]" [style]="{ height: '100vh' }" styleClass="mb-8">
+  <ng-template pTemplate="panel">
+    <div class="sidebar">
+      <div class="sidebar-header">
+        <h1>Monitoring</h1>
+        <app-search-bar (search)="onSearch($event)"></app-search-bar>
+      </div>
+      <app-graph-panel (nodeSelected)="onNodeSelected($event)" [searchTerm]="searchTerm"></app-graph-panel>
+    </div>
+  </ng-template>
+  <ng-template pTemplate="panel">
+    <p-splitter layout="vertical" [panelSizes]="[50, 50]">
+      <ng-template pTemplate="panel">
+        <div class="top-right">
+          <app-metrics-panel></app-metrics-panel>
+        </div>
+      </ng-template>
+      <ng-template pTemplate="panel">
+        <div class="bottom-right">
+          <app-logs-panel [selectedNodeId]="selectedNodeId"></app-logs-panel>
+        </div>
+      </ng-template>
+    </p-splitter>
+  </ng-template>
+</p-splitter>
