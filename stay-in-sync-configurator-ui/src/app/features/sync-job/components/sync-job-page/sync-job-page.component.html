@@ -11,9 +11,10 @@
 >
   <ng-template #header>
     <tr>
-      <th style="width:33%">Name</th>
-      <th style="width:33%">Description</th>
-      <th style="width:33%">Status</th>
+      <th style="width:25%">Name</th>
+      <th style="width:35%">Description</th>
+      <th style="width:20%">Status</th>
+      <th style="width:20%">Actions</th>
     </tr>
     <tr>
       <th>
@@ -37,6 +38,7 @@
           </ng-template>
         </p-columnFilter>
       </th>
+      <th></th>
     </tr>
   </ng-template>
   <ng-template #body let-item>
@@ -50,6 +52,9 @@
       <td>
         <p-tag [value]="item.isSimulation ? 'In Simulation' : 'active'" [severity]="getSeverity(item.isSimulation)" />
       </td>
+      <td>
+        <p-button icon="pi pi-pencil" class="p-button-rounded p-button-text" (click)="edit(item)" styleClass="p-button-rounded p-button-text"></p-button>
+        <p-button icon="pi pi-trash" class="p-button-rounded p-button-danger p-button-text" (click)="delete(item)" styleClass="p-button-rounded p-button-danger p-button-text"></p-button>
     </tr>
   </ng-template>
   <ng-template #emptymessage>

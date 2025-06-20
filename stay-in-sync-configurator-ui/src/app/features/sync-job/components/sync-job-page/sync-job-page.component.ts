@@ -6,9 +6,6 @@ import {Button} from 'primeng/button';
 import {SyncJobCreationComponent} from '../sync-job-creation/sync-job-creation.component';
 import {TableModule} from 'primeng/table';
 import {SyncJob} from '../../models/sync-job.model';
-import {IconField} from 'primeng/iconfield';
-import {InputIcon} from 'primeng/inputicon';
-import {InputText} from 'primeng/inputtext';
 import {Select} from 'primeng/select';
 import {Tag} from 'primeng/tag';
 import {FormsModule} from '@angular/forms';
@@ -19,9 +16,6 @@ import {FormsModule} from '@angular/forms';
     Button,
     SyncJobCreationComponent,
     TableModule,
-    IconField,
-    InputIcon,
-    InputText,
     Select,
     Tag,
     FormsModule
@@ -41,7 +35,7 @@ export class SyncJobPageComponent{
     },
     {
       name: 'Test-Sync-Job',
-      description: 'Dies ist ein Test-Sync-Job.',
+      description: 'Dies ist ein Test-Sync-Job. Er läuft in Simulation. Es werden keine Daten ins Zielsystem geschrieben',
       isSimulation: true,
     }
   ];
@@ -83,5 +77,13 @@ getSeverity(isSimulation: boolean): string {
         this.httpErrorService.handleError(err)
       }
     })
+  }
+
+  edit(item: any) {
+    //TODO: Implement edit functionality
+  }
+
+  delete(item: any) {
+    //TODO: Implement delete functionality
   }
 }
