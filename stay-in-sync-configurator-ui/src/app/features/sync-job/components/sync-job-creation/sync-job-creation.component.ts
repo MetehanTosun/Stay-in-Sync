@@ -7,7 +7,6 @@ import {FormsModule} from '@angular/forms';
 import {InputText} from 'primeng/inputtext';
 import {NgForOf} from '@angular/common';
 import {SourceSystem} from '../../../source-system/models/source-system.model';
-import {InputSwitch} from 'primeng/inputswitch';
 import {AasService} from "../../../source-system/services/aas.service";
 import {ToggleSwitch} from "primeng/toggleswitch";
 import {FloatLabel} from "primeng/floatlabel";
@@ -15,6 +14,7 @@ import {Textarea} from "primeng/textarea";
 import {
   TransformationBaseComponent
 } from "../../../transformation/components/transformation-base/transformation-base.component";
+import {SyncJobOverviewComponent} from '../sync-job-overview/sync-job-overview.component';
 
 @Component({
   selector: 'app-sync-job-creation',
@@ -32,7 +32,8 @@ import {
     ToggleSwitch,
     FloatLabel,
     Textarea,
-    TransformationBaseComponent
+    TransformationBaseComponent,
+    SyncJobOverviewComponent
   ],
   templateUrl: './sync-job-creation.component.html',
   styleUrl: './sync-job-creation.component.css'
@@ -69,5 +70,10 @@ export class SyncJobCreationComponent {
         console.error(err);
       }
     });
+  }
+
+  createSyncJob() {
+    //TODO: Implement the logic to create a sync job
+    this.cancel();
   }
 }

@@ -17,11 +17,12 @@
         <p-button icon="pi pi-trash" class="p-button-rounded p-button-danger p-button-text" (click)="delete(rowData)" styleClass="p-button-rounded p-button-danger p-button-text"></p-button>
         <p-button
           [label]="rowData.added ? 'Remove' : 'Add'"
-          [class]="rowData.added ? 'p-button-rounded p-button-text  w-24' : 'p-button-rounded p-button-text w-24'"
-          [style]="{'width': '8rem'}"
+          [class]="rowData.added ? 'p-button-rounded p-button-text w-24' : 'p-button-rounded p-button-text w-24'"
+          [style]="rowData.added ? {'width': '8rem', 'background-color': '#d32f2f', 'border': '#d32f2f' } : {'width': '8rem'}"
           (click)="rowData.added ? remove(rowData) : add(rowData)">
         </p-button>
       </td>
     </tr>
   </ng-template>
 </p-table>
+<p-button>Create new Transformation</p-button>

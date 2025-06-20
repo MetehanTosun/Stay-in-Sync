@@ -21,7 +21,7 @@ export class TransformationBaseComponent {
   transformations: Transformation[] = [{
     name: 'Beispieltransformation',
     transformationRule: 'Rule1',
-    transformationsScript: 'Script1'
+    transformationScript: 'Script1',
   }];
   checked: boolean = false;
 

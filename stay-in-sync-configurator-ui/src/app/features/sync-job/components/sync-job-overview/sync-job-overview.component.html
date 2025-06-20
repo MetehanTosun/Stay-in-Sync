@@ -1,0 +1,20 @@
+<div class="sync-job-overview">
+  <h2>Sync Job Overview</h2>
+  <div class="sync-job-details">
+    <p><strong>Name:</strong> {{ syncJob.name }}</p>
+    <p><strong>Description:</strong> {{ syncJob.description }}</p>
+    <p><strong>SourceSystem:</strong> {{ syncJob.sourceSystem }}</p>
+    <p><strong>Used Endpoints:</strong></p>
+    <ul>
+      <li *ngFor="let endpoint of syncJob.endpoints">{{ endpoint }}</li>
+    </ul>
+    <p><strong>Variables:</strong></p>
+    <ul>
+      <li *ngFor="let variable of syncJob.variables">{{ variable }}</li>
+    </ul>
+    <p><strong>Transformations:</strong></p>
+    <ul>
+      <li *ngFor="let transformation of syncJob.transformations">{{ transformation }}</li>
+    </ul>
+  </div>
+</div>
