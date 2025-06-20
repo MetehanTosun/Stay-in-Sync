@@ -1,6 +1,6 @@
 package de.unistuttgart.stayinsync.rest;
 
-import de.unistuttgart.stayinsync.core.configuration.persistence.entities.sync.SyncJob;
+import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.SyncJob;
 import de.unistuttgart.stayinsync.core.configuration.service.SyncJobService;
 import io.quarkus.test.InjectMock;
 import io.quarkus.test.junit.QuarkusTest;

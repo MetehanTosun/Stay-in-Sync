@@ -1,9 +1,10 @@
 package de.unistuttgart.stayinsync.core.configuration.exception;
 
 /**
- * This class is supposed to be used for errors within the application business layer
+ * This class is supposed to be used for unrecoverable errors
+ * within the application business layer
  */
-public class CoreManagementException extends Exception {
+public class CoreManagementException extends RuntimeException {
 
     private final String title;
 

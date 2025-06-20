@@ -1,12 +1,14 @@
 package de.unistuttgart.stayinsync.core.configuration.service;
 
-import de.unistuttgart.stayinsync.core.configuration.exception.CoreManagementException;
+import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.SyncJob;
+import de.unistuttgart.stayinsync.core.configuration.domain.events.sync.SyncJobPersistedEvent;
+import de.unistuttgart.stayinsync.core.configuration.domain.events.sync.SyncJobUpdatedEvent;
 import de.unistuttgart.stayinsync.core.configuration.mapping.SyncJobFullUpdateMapper;
-import de.unistuttgart.stayinsync.core.configuration.persistence.entities.sync.SyncJob;
-import de.unistuttgart.stayinsync.core.management.rabbitmq.producer.SyncJobProducer;
+import de.unistuttgart.stayinsync.core.management.rabbitmq.producer.SyncJobMessageProducer;
 import io.quarkus.logging.Log;
 import io.smallrye.common.constraint.NotNull;
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.event.Event;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
 import jakarta.validation.Valid;
@@ -26,20 +28,26 @@ public class SyncJobService {
     Validator validator;
 
     @Inject
-    SyncJobProducer syncJobProducer;
+    SyncJobMessageProducer syncJobMessageProducer;
+
+    @Inject
+    SourceSystemEndpointService sourceSystemEndpointService;
 
     @Inject
     SyncJobFullUpdateMapper syncJobFullUpdateMapper;
+
+    @Inject
+    Event<SyncJobPersistedEvent> syncJobPersistedEvent;
+
+    @Inject
+    Event<SyncJobUpdatedEvent> syncJobUpdatedEventEvent;
 
     public SyncJob persistSyncJob(@NotNull @Valid SyncJob syncJob) {
         Log.debugf("Persisting sync-job: %s", syncJob);
 
         syncJob.persist();
-        try {
-            syncJobProducer.publishSyncJob(syncJob);
-        } catch (CoreManagementException e) {
-            Log.warn("TEST");
-        }
+        syncJobPersistedEvent.fire(new SyncJobPersistedEvent(syncJob));
+        
         return syncJob;
     }
 
@@ -72,13 +80,16 @@ public class SyncJobService {
     public Optional<SyncJob> replaceSyncJob(@NotNull @Valid SyncJob syncJob) {
         Log.debugf("Replacing sync-job: %s", syncJob);
 
-        return SyncJob.findByIdOptional(syncJob.id)
+        Optional<SyncJob> updatedSyncJob = SyncJob.findByIdOptional(syncJob.id)
                 .map(SyncJob.class::cast) // Only here for type erasure within the IDE
                 .map(targetSyncJob -> {
                     this.syncJobFullUpdateMapper.mapFullUpdate(syncJob, targetSyncJob);
-                    this.syncJobProducer.reconfigureDeployedSyncJob(syncJob);
                     return targetSyncJob;
                 });
+
+        updatedSyncJob.ifPresent(updatedEntity -> syncJobUpdatedEventEvent.fire(new SyncJobUpdatedEvent(updatedEntity, syncJob)));
+
+        return updatedSyncJob;
     }
 
 
