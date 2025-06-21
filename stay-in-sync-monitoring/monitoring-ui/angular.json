@@ -26,14 +26,11 @@
                 "input": "public"
               }
             ],
-   
-         "styles": [
-          "src/styles.css",
-          "../../Shared_Styles/tokens.css",
-        
+            "styles": [
 
+              "../../stay-in-sync-configurator-ui/src/styles.css"
 
-        ],
+            ],
             "scripts": []
           },
           "configurations": {
@@ -50,7 +47,6 @@
                   "maximumError": "8kB"
                 }
               ],
-
               "outputHashing": "all"
             },
             "development": {
@@ -91,7 +87,7 @@
               }
             ],
             "styles": [
-              "src/styles.css"
+              "../../stay-in-sync-configurator-ui/src/styles.css"
             ],
             "scripts": []
           }
@@ -100,6 +96,6 @@
     }
   },
   "cli": {
-    "analytics": "b87e6124-1692-4382-96b6-364a6ff9f203"
+    "analytics": "0b402b27-45b7-415a-b28f-99bb690cab93"
   }
 }

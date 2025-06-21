@@ -1,0 +1,15 @@
+.node-active {
+  fill: #4caf50;
+}
+
+.node-inactive {
+  fill: #f44336;
+}
+.graph-center {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  height: calc(100% - 3.5rem);
+  margin-left: -50vw;
+  margin-right: auto;
+}

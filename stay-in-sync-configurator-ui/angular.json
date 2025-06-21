@@ -24,12 +24,13 @@
               {
                 "glob": "**/*",
                 "input": "public"
-              }
+              },
+              "src/assets"
             ],
             "styles": [
-              "src/styles.css",
-              "../Shared_Styles/tokens.css"
-            
+              "node_modules/primeicons/primeicons.css",
+              "src/styles.css"
+
             ],
             "scripts": []
           },
@@ -39,7 +40,7 @@
                 {
                   "type": "initial",
                   "maximumWarning": "500kB",
-                  "maximumError": "1.2MB"
+                  "maximumError": "1.5MB"
                 },
                 {
                   "type": "anyComponentStyle",
@@ -67,9 +68,6 @@
               "buildTarget": "configurator-ui:build:development"
             }
           },
-          "options": {
-            "proxyConfig": "proxy.conf.json"
-          },
           "defaultConfiguration": "development"
         },
         "extract-i18n": {
@@ -88,13 +86,12 @@
               {
                 "glob": "**/*",
                 "input": "public"
-              }
+              },
+              "src/assets"
             ],
             "styles": [
               "src/styles.css",
               "Shared_Styles/tokens.css",
-              "node_modules/primeng/resources/themes/saga-blue/theme.css",
-              "node_modules/primeng/resources/primeng.min.css",
               "node_modules/primeicons/primeicons.css"
             ],
             "scripts": []

@@ -1,7 +1,7 @@
 package de.unistuttgart.stayinsync.core.configuration.service;
 
 import de.unistuttgart.stayinsync.core.configuration.mapping.SyncJobFullUpdateMapper;
-import de.unistuttgart.stayinsync.core.configuration.persistence.entities.SyncJob;
+import de.unistuttgart.stayinsync.core.configuration.persistence.entities.sync.SyncJob;
 import de.unistuttgart.stayinsync.core.management.rabbitmq.producer.SyncJobProducer;
 import io.quarkus.logging.Log;
 import io.smallrye.common.constraint.NotNull;

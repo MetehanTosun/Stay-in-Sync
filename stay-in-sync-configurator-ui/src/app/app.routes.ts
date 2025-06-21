@@ -4,11 +4,13 @@ import { SyncRulesComponent } from './features/sync-rules/components/sync-rules.
 import { ConfigBaseComponent } from './features/configuration/config-base/config-base.component';
 import { ConfigurationscriptsBaseComponent } from './features/configuration/configurationscripts-base/configurationscripts-base.component';
 // neu (relativ zu src/app/app.routes.ts)
-import { SourceSystemBaseComponent } from 
-  './features/source-system/components/source-system-base/source-system-base.component';
-import { CreateSourceSystemComponent } from 
-  './features/source-system/components/create-source-system/create-source-system.component';
+import { SourceSystemBaseComponent } from
+    './features/source-system/components/source-system-base/source-system-base.component';
+import { CreateSourceSystemComponent } from
+    './features/source-system/components/create-source-system/create-source-system.component';
 import { EdcBaseComponent } from './features/edc/components/edc-base/edc-base.component';
+import {HelpPageComponent} from './features/help-page/help-page.component';
+import {SyncJobPageComponent} from './features/sync-job/components/sync-job-page/sync-job-page.component';
 
 
 
@@ -33,15 +35,26 @@ export const routes: Routes = [
       }
     ]
   },
-  { path: '', redirectTo: 'source-system', pathMatch: 'full' },
-  { path: '**', redirectTo: 'source-system' },
+
+  //Route für Sync Jobs
+  {path: 'sync-jobs', component: SyncJobPageComponent},
+
+  // Route für Help mit Children
+  {
+    path: 'help',
+    component: HelpPageComponent
+  },
+  {
+    path: 'help/:topic',
+    component: HelpPageComponent
+  },
 
   // Route für EDC
   { path: 'edc', component: EdcBaseComponent },
 
-  // Standard-Redirect (optional, falls keine Route passt)
+  // Standard-Redirect
   { path: '', redirectTo: '/sync-rules', pathMatch: 'full' },
 
-  // Fallback-Route für nicht gefundene Seiten
+  // Fallback-Route
   { path: '**', redirectTo: '/sync-rules' }
 ];
