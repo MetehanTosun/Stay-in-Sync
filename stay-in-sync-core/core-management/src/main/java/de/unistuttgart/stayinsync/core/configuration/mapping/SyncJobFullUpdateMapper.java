@@ -1,6 +1,6 @@
 package de.unistuttgart.stayinsync.core.configuration.mapping;
 
-import de.unistuttgart.stayinsync.core.configuration.persistence.entities.sync.SyncJob;
+import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.SyncJob;
 import de.unistuttgart.stayinsync.core.configuration.rest.dtos.SyncJobDTO;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
