@@ -1,6 +1,5 @@
 package de.unistuttgart.stayinsync.core.configuration.rest;
 
-import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.SyncJob;
 import de.unistuttgart.stayinsync.core.configuration.exception.CoreManagementWebException;
 import de.unistuttgart.stayinsync.core.configuration.mapping.SyncJobFullUpdateMapper;
 import de.unistuttgart.stayinsync.core.configuration.rest.dtos.SyncJobDTO;
@@ -27,7 +26,6 @@ import org.eclipse.microprofile.openapi.annotations.responses.APIResponse;
 import java.net.URI;
 import java.util.List;
 import java.util.Optional;
-import java.util.stream.Collectors;
 
 import static jakarta.ws.rs.core.MediaType.APPLICATION_JSON;
 
@@ -88,7 +86,7 @@ public class SyncJobResource {
 
         Log.debugf("Total number of sync-jobs: %d", syncJobs.size());
 
-        return syncJobs.stream().map(this.fullUpdateMapper::mapToDTO).collect(Collectors.toList());
+        return fullUpdateMapper.mapToDTOList(syncJobs);
     }
 
 

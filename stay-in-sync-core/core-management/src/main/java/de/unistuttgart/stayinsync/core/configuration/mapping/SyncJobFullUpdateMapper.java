@@ -7,6 +7,8 @@ import org.mapstruct.Mapping;
 import org.mapstruct.MappingConstants;
 import org.mapstruct.MappingTarget;
 
+import java.util.List;
+
 /**
  * Mapper to map all fields on an input {@link SyncJob} onto a target {@link SyncJob}.
  */
@@ -24,5 +26,9 @@ public interface SyncJobFullUpdateMapper {
 
     SyncJobDTO mapToDTO(SyncJob input);
 
+    List<SyncJobDTO> mapToDTOList(List<SyncJob> input);
+
     SyncJob mapToEntity(SyncJobDTO input);
+
+    List<SyncJob> mapToEntityList(List<SyncJobDTO> input);
 }
