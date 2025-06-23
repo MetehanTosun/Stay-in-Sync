@@ -2,6 +2,8 @@ package de.unistuttgart.stayinsync.core.configuration.rest;
 
 import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.SyncJob;
 import de.unistuttgart.stayinsync.core.configuration.exception.CoreManagementWebException;
+import de.unistuttgart.stayinsync.core.configuration.mapping.SyncJobFullUpdateMapper;
+import de.unistuttgart.stayinsync.core.configuration.rest.dtos.SyncJobDTO;
 import de.unistuttgart.stayinsync.core.configuration.service.SyncJobService;
 import io.quarkus.logging.Log;
 import jakarta.inject.Inject;
@@ -25,6 +27,7 @@ import org.eclipse.microprofile.openapi.annotations.responses.APIResponse;
 import java.net.URI;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 import static jakarta.ws.rs.core.MediaType.APPLICATION_JSON;
 
@@ -33,6 +36,9 @@ import static jakarta.ws.rs.core.MediaType.APPLICATION_JSON;
 public class SyncJobResource {
     @Inject
     SyncJobService syncJobService;
+
+    @Inject
+    SyncJobFullUpdateMapper fullUpdateMapper;
 
     @POST
     @Consumes(APPLICATION_JSON)
@@ -52,13 +58,13 @@ public class SyncJobResource {
                     required = true,
                     content = @Content(
                             mediaType = APPLICATION_JSON,
-                            schema = @Schema(implementation = SyncJob.class),
+                            schema = @Schema(implementation = SyncJobDTO.class),
                             examples = @ExampleObject(name = "valid_sync_job", value = Examples.VALID_EXAMPLE_SYNCJOB_TO_CREATE)
                     )
             )
-            @Valid @NotNull SyncJob syncJob,
+            @Valid @NotNull SyncJobDTO syncJobDTO,
             @Context UriInfo uriInfo) {
-        var persistedSyncJob = this.syncJobService.persistSyncJob(syncJob);
+        var persistedSyncJob = this.syncJobService.persistSyncJob(fullUpdateMapper.mapToEntity(syncJobDTO));
         var builder = uriInfo.getAbsolutePathBuilder().path(Long.toString(persistedSyncJob.id));
         Log.debugf("New sync-job created with URI  %s", builder.build().toString());
 
@@ -72,17 +78,17 @@ public class SyncJobResource {
             description = "Gets all sync-jobs",
             content = @Content(
                     mediaType = APPLICATION_JSON,
-                    schema = @Schema(implementation = SyncJob.class, type = SchemaType.ARRAY)
+                    schema = @Schema(implementation = SyncJobDTO.class, type = SchemaType.ARRAY)
             )
     )
-    public List<SyncJob> getAllSyncJobs(@Parameter(name = "name_filter", description = "An optional filter parameter to filter results by name") @QueryParam("name_filter") Optional<String> nameFilter) {
+    public List<SyncJobDTO> getAllSyncJobs(@Parameter(name = "name_filter", description = "An optional filter parameter to filter results by name") @QueryParam("name_filter") Optional<String> nameFilter) {
         var syncJobs = nameFilter
                 .map(this.syncJobService::findAllSyncJobsHavingName)
                 .orElseGet(this.syncJobService::findAllSyncJobs);
 
         Log.debugf("Total number of sync-jobs: %d", syncJobs.size());
 
-        return syncJobs;
+        return syncJobs.stream().map(this.fullUpdateMapper::mapToDTO).collect(Collectors.toList());
     }
 
 
@@ -94,7 +100,7 @@ public class SyncJobResource {
             description = "Gets a sync-job for a given id",
             content = @Content(
                     mediaType = APPLICATION_JSON,
-                    schema = @Schema(implementation = SyncJob.class),
+                    schema = @Schema(implementation = SyncJobDTO.class),
                     examples = @ExampleObject(name = "sync-job", value = Examples.VALID_EXAMPLE_SYNCJOB)
             )
     )
@@ -106,7 +112,7 @@ public class SyncJobResource {
         return this.syncJobService.findSyncJobById(id)
                 .map(syncJob -> {
                     Log.debugf("Found sync-job: %s", syncJob);
-                    return Response.ok(syncJob).build();
+                    return Response.ok(fullUpdateMapper.mapToDTO(syncJob)).build();
                 })
                 .orElseThrow(() -> {
                     Log.warnf("No sync-job found using id %d", id);
@@ -148,22 +154,22 @@ public class SyncJobResource {
                                                required = true,
                                                content = @Content(
                                                        mediaType = APPLICATION_JSON,
-                                                       schema = @Schema(implementation = SyncJob.class),
+                                                       schema = @Schema(implementation = SyncJobDTO.class),
                                                        examples = @ExampleObject(name = "valid_sync_job", value = Examples.VALID_EXAMPLE_SYNCJOB)
                                                )
                                        )
-                                       @PathParam("id") Long id, @Valid @NotNull SyncJob syncJob) {
-        if (syncJob.id == null) {
-            syncJob.id = id;
+                                       @PathParam("id") Long id, @Valid @NotNull SyncJobDTO syncJobDTO) {
+        if (id != syncJobDTO.id()) {
+            throw new CoreManagementWebException(Response.Status.BAD_REQUEST, "Id missmatch", "Make sure that the request body entity id matches the request parameter");
         }
 
-        return this.syncJobService.replaceSyncJob(syncJob)
+        return this.syncJobService.replaceSyncJob(fullUpdateMapper.mapToEntity(syncJobDTO))
                 .map(updatedSyncJob -> {
                     Log.debugf("Sync-job replaced with new values %s", updatedSyncJob);
                     return Response.noContent().build();
                 })
                 .orElseGet(() -> {
-                    Log.debugf("No sync-job found with id %d", syncJob.id);
+                    Log.debugf("No sync-job found with id %d", id);
                     return Response.status(Response.Status.NOT_FOUND).build();
                 });
     }
