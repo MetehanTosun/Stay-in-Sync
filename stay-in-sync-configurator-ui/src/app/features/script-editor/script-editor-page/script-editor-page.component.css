@@ -25,3 +25,17 @@
   filter: blur(2px);
   pointer-events: none;
 }
+
+:host ::ng-deep .editor-panel .p-panel-content {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    padding: 0;
+}
+
+.monaco-wrapper {
+    flex: 1 0 auto;
+    height: 550px;
+    min-width: 1200px;
+    padding: 0.5rem 1rem;
+}

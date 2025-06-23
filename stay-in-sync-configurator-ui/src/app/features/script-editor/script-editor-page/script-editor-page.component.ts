@@ -1,22 +1,41 @@
-import { Component, OnDestroy, ChangeDetectorRef, Input, OnChanges, SimpleChanges, OnInit } from '@angular/core';
+import {
+  Component,
+  OnDestroy,
+  ChangeDetectorRef,
+  Input,
+  OnChanges,
+  SimpleChanges,
+  OnInit,
+  AfterViewInit,
+  ViewChild,
+} from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { CommonModule } from '@angular/common';
-import { HttpClient } from '@angular/common/http';
-import type { editor, languages, IDisposable } from 'monaco-editor';
+import type { editor, IDisposable } from 'monaco-editor';
 import * as ts from 'typescript';
+import {
+  ScriptEditorService,
+  ScriptPayload,
+} from '../../../core/services/script-editor.service';
+import { MessagesModule } from 'primeng/messages';
+import { MessageService } from 'primeng/api';
+import { catchError, finalize, forkJoin, of, Subscription, tap } from 'rxjs';
 
 // PrimeNG Modules
 import { PanelModule } from 'primeng/panel';
 import { ButtonModule } from 'primeng/button';
 import { SplitterModule } from 'primeng/splitter';
 import { AccordionModule } from 'primeng/accordion';
-import { MessagesModule } from 'primeng/messages';
 import { ProgressSpinnerModule } from 'primeng/progressspinner';
+import { ToastModule } from 'primeng/toast';
 
 // Monaco Editor Module
 import { MonacoEditorModule } from 'ngx-monaco-editor-v2';
 
-import { SyncJobContextPanelComponent, SyncJobContextData } from '../sync-job-context-panel/sync-job-context-panel.component';
+import {
+  SyncJobContextPanelComponent,
+  SyncJobContextData,
+} from '../sync-job-context-panel/sync-job-context-panel.component';
 
 interface MonacoExtraLib {
   uri: String;
@@ -46,7 +65,8 @@ interface Message {
     MessagesModule,
     ProgressSpinnerModule,
     SyncJobContextPanelComponent,
-  ]
+    ToastModule,
+  ],
 })
 export class ScriptEditorPageComponent implements OnInit, OnChanges, OnDestroy {
   @Input() syncJobId: string | null = null;
@@ -55,310 +75,287 @@ export class ScriptEditorPageComponent implements OnInit, OnChanges, OnDestroy {
     theme: 'vs-dark',
     language: 'typescript',
     automaticLayout: true,
-    minimap: { enabled: true }
+    minimap: { enabled: true },
   };
-  code: string = `// Script editor will initialize once a SyncJob context is loaded.`;
 
   private monaco!: typeof import('monaco-editor');
   private monacoInstance: editor.IStandaloneCodeEditor | undefined;
   private currentExtraLibs: MonacoExtraLib[] = [];
-  
+  private subscriptions = new Subscription();
+
   executionResult: any = null;
   executionError: any = null;
   analysisMessages: Message[] = [];
   analysisResults: string[] = [];
 
   isLoading: boolean = false;
+  isSaving: boolean = false;
+  loadingMessage = 'Initializing...';
+  code: string = `// Script editor will initialize once a SyncJob context is loaded.`;
   currentSyncJobContextData: SyncJobContextData | null = null;
 
   constructor(
     private cdr: ChangeDetectorRef,
+    private scriptEditorService: ScriptEditorService,
+    private messageService: MessageService
   ) {}
 
   ngOnInit(): void {
-    if(this.syncJobId){
+    this.syncJobId = 'activeJob123';
+    if (this.syncJobId) {
       this.loadContextForSyncJob(this.syncJobId);
-    } else {
-      this.code = "// Please ensure a SyncJob is active to use the script editor."
     }
   }
 
   ngOnChanges(changes: SimpleChanges): void {
-    if(changes['syncJobId'] && changes['syncJobId'].currentValue){
-      const newJobId = changes['syncJobId'].currentValue;
-      const oldJobId = changes['syncJobId'].previousValue;
-      if(newJobId !== oldJobId){
-        this.loadContextForSyncJob(newJobId);
-      }
-    } else if (changes['syncJobId'] && !changes['syncJobId'].currentValue){
+    if (changes['syncJobId'] && changes['syncJobId'].currentValue) {
+      this.loadContextForSyncJob(changes['syncJobId'].currentValue);
+    } else if (changes['syncJobId'] && !changes['syncJobId'].currentValue) {
       this.resetEditorState();
     }
   }
 
-  async onEditorInit(editorInstance: editor.IStandaloneCodeEditor, monaco = (window as any).monaco): Promise<void> {
+  async onEditorInit(
+    editorInstance: editor.IStandaloneCodeEditor,
+    monaco = (window as any).monaco
+  ): Promise<void> {
     this.monacoInstance = editorInstance;
     this.monaco = monaco;
     console.log('Monaco editor instance initialized', editorInstance);
 
-    monaco.languages.typescript.typescriptDefaults.setCompilerOptions({})
-  }
+    monaco.languages.typescript.typescriptDefaults.setCompilerOptions({
+      target: monaco.languages.typescript.ScriptTarget.ESNext,
+      allowNonTsExtensions: true,
+      moduleResolution: monaco.languages.typescript.ModuleResolutionKind.NodeJs,
+      module: monaco.languages.typescript.ModuleKind.CommonJS,
+      noEmit: true,
+      esModuleInterop: true,
+      // Add essential libs
+      lib: ['es2020', 'dom'],
+    });
 
-  private resetEditorState(): void {
-    this.currentExtraLibs.forEach(lib => lib.disposable.dispose());
-    this.currentExtraLibs = [];
+    monaco.languages.typescript.typescriptDefaults.setDiagnosticsOptions({
+      noSemanticValidation: false,
+      noSyntaxValidation: false,
+    });
+
     this.addGlobalApiDefinitions();
-    this.code = "// No active SyncJob. Please configure a SyncJob to proceed.";
-    this.currentSyncJobContextData = null;
-    this.executionResult = null;
-    this.executionError = null;
-    this.analysisMessages = [];
-    this.analysisResults = [];
-    this.cdr.detectChanges();
-  }
-
-  private addGlobalApiDefinitions(): void {
-    if (!this.monaco) return;
-    const stayinsyncApiDts = `
-        declare const stayinsync: {
-            log: (message: string, logLevel?: 'INFO' | 'WARN' | 'ERROR' | 'DEBUG' | 'TRACE') => void;
-            setOutput: (outputData: any) => void;
-        };
-    `;
-    const uri = 'file:///global-stayinsync-api.d.ts'; // to be implemented
-    if (!this.currentExtraLibs.find(lib => lib.uri === uri)) {
-        const libDisposable = this.monaco.languages.typescript.typescriptDefaults.addExtraLib(stayinsyncApiDts, uri);
-        this.currentExtraLibs.push({ uri: uri, disposable: libDisposable });
+    if(this.syncJobId){
+      this.loadContextForSyncJob('activeJob123');
     }
+    setTimeout(()=>{
+        this.monacoInstance?.layout();
+      }, 100);
   }
 
-  async loadContextForSyncJob(jobId: string): Promise<void> {
+  private loadContextForSyncJob(jobId: string): void {
     if (!jobId || !this.monaco) {
-      console.warn('Cannot load context: No Job ID or Monaco not ready.');
-      this.resetEditorState();
       return;
     }
 
     this.isLoading = true;
-    this.executionError = null; 
-    this.executionResult = null;
-    this.analysisMessages = [];
-    this.analysisResults = [];
-    this.currentSyncJobContextData = null;
-    this.cdr.detectChanges();
+    this.loadingMessage = `Loading context for SyncJob: ${jobId}...`;
+    this.resetEditorState(true); // Soft reset, keeps global libs
 
-    const libsToRemove = this.currentExtraLibs.filter(lib => !lib.uri.includes('global-'));
-    libsToRemove.forEach(lib => lib.disposable.dispose());
+    const jobLoader$ = forkJoin({
+      context: this.scriptEditorService.getSyncJobContext(jobId),
+      typeDefs: this.scriptEditorService.getTypeDefinitions(jobId),
+      savedScript: this.scriptEditorService.getSavedScript(jobId),
+    }).pipe(
+      tap(({ context, typeDefs, savedScript }) => {
+        // 1. Set context data for the side panel
+        this.currentSyncJobContextData = context;
 
-    this.currentExtraLibs = this.currentExtraLibs.filter(lib => lib.uri.includes('global-'));
+        // 2. Add the dynamic type definitions for this job
+        this.addExtraLib(typeDefs, `file:///syncjob-${jobId}-sources.d.ts`);
 
+        // 3. Set the editor code
+        this.code = savedScript
+          ? savedScript.typescriptCode
+          : this.generateDefaultScriptTemplate(context);
+        
+        this.messageService.add({ severity: 'success', summary: 'Context Loaded', detail: `Successfully loaded context for ${context.syncJobName}.` });
+      }),
+      catchError(error => {
+        console.error(`Error loading context for SyncJob ${jobId}:`, error);
+        this.code = `// ERROR: Failed to load context for SyncJob ${jobId}.\n// Check browser console for details.`;
+        this.messageService.add({ severity: 'error', summary: 'Load Failed', detail: error.message || 'Could not load SyncJob context.' });
+        return of(null);
+      }),
+      finalize(() => {
+        this.isLoading = false;
+        this.cdr.detectChanges();
+      })
+    );
+    
+    this.subscriptions.add(jobLoader$.subscribe());
+  }
+
+  async saveScript(): Promise<void> {
+    if (!this.syncJobId || this.isSaving) {
+        return;
+    }
+
+    // Step 1: Client-side validation using Monaco's diagnostics
+    const hasErrors = await this.hasValidationErrors();
+    if (hasErrors) {
+        this.messageService.add({ severity: 'error', summary: 'Validation Failed', detail: 'Please fix the TypeScript errors before saving.' });
+        return;
+    }
+
+    this.isSaving = true;
     try {
-      const dtsContent = await this.fetchMockDtsForJob(jobId); // MOCK
-
-      if (dtsContent) {
-        const jobSpecificUri = `file:///syncjob-${jobId}-sources.d.ts`; // to be implemented
-        if (!this.currentExtraLibs.find(lib => lib.uri === jobSpecificUri)) {
-            const libDisposable = this.monaco.languages.typescript.typescriptDefaults.addExtraLib(dtsContent, jobSpecificUri);
-            this.currentExtraLibs.push({ uri: jobSpecificUri, disposable: libDisposable });
-            console.log(`Loaded .d.ts for SyncJob ${jobId} with URI: ${jobSpecificUri}`);
-        } else {
-            console.log(`.d.ts for SyncJob ${jobId} already loaded.`);
-        }
-      }
-
-      // Fetch detailed context data for the right-hand panel
-      // this.currentSyncJobContextData = await this.syncJobService.getContextDetailsForJob(jobId).toPromise();
-      this.currentSyncJobContextData = await this.fetchMockSyncJobContextData(jobId); // MOCK
-
-      this.code = `// SyncJob: ${this.currentSyncJobContextData?.syncJobName || jobId}
-// Type definitions loaded. Access source data via 'sourceData.yourAlias'.
-// Use 'stayinsync.log(...)' and 'stayinsync.setOutput(...)'.
-
-async function transformData() {
-    stayinsync.log('Starting transformation for job ${jobId}', 'INFO');
-
-    // Example: Access data based on your SyncJob's configuration
-    // if (sourceData.crmCustomer && sourceData.crmCustomer.isActive) {
-    //   const output = { ...sourceData.crmCustomer, processed: true };
-    //   stayinsync.setOutput(output);
-    // } else {
-    //   stayinsync.log('Customer not active or not found.', 'WARN');
-    //   stayinsync.setOutput(null);
-    // }
-    stayinsync.setOutput({ greeting: "Hello from " + sourceData.systemA_customer.name }); // Adjust based on mock
-}
-
-transformData();
-`;
-    } catch (error) {
-      console.error(`Error loading context for SyncJob ${jobId}:`, error);
-      this.executionError = { message: `Failed to load context for SyncJob ${jobId}.` };
-      this.code = `// Error loading context for SyncJob ${jobId}. Check console.`;
-    } finally {
-      this.isLoading = false;
-      this.cdr.detectChanges();
-    }
-  }
-
-  // MOCK: Replace with actual service call
-  async fetchMockDtsForJob(jobId: string): Promise<string> {
-    await new Promise(resolve => setTimeout(resolve, 500));
-    if (jobId === 'activeJob123') {
-        return `
-            // Specific types for Job 'activeJob123'
-            declare namespace CrmSystemTypes {
-                interface Customer { id: string; name: string; email?: string; lastContactDate: string; isActive: boolean; }
-            }
-            declare namespace ErpSystemTypes {
-                interface Product { sku: string; description: string; stockLevel: number; }
-            }
-            declare const sourceData: {
-                crmCustomer: CrmSystemTypes.Customer;
-                erpProducts: ErpSystemTypes.Product[];
-            };
-        `;
-    } else if (jobId === 'anotherJob789') {
-         return `
-            declare namespace LegacySystem {
-                interface DataRecord { key: string; value: any; timestamp: number; }
-            }
-             declare const sourceData: {
-                legacyRecords: LegacySystem.DataRecord[];
-            };
-         `;
-    }
-    return `// No types found for ${jobId}`;
-  }
-
-  // MOCK: Replace with actual service call
-  async fetchMockSyncJobContextData(jobId: string): Promise<SyncJobContextData | null> {
-      await new Promise(resolve => setTimeout(resolve, 400));
-      if (jobId === 'activeJob123') {
-          return {
-              syncJobId: jobId,
-              syncJobName: 'Customer & Product Sync (Active)',
-              syncJobDescription: 'Synchronizes active customer data from CRM and product stock from ERP.',
-              sourceSystems: [
-                  {
-                      id: 'crm',
-                      name: 'Main CRM Platform',
-                      type: 'REST_OPENAPI',
-                      dataEntities: [
-                          {
-                              aliasInScript: 'crmCustomer',
-                              entityName: 'Active Customer Profile',
-                              schemaSummary: { type: 'object', title: 'Customer', properties: { id: {type: 'string'}, name: {type: 'string'}, email: {type: 'string'}, lastContactDate: {type: 'string', format: 'date-time'}, isActive: { type: 'boolean'} }, required: ['id', 'name', 'isActive'] }
-                          }
-                      ]
-                  },
-                  {
-                      id: 'erp',
-                      name: 'Central ERP System',
-                      type: 'AAS',
-                      dataEntities: [
-                          {
-                              aliasInScript: 'erpProducts',
-                              entityName: 'Stocked Products List',
-                              schemaSummary: { type: 'array', title: 'Products', items: { type: 'object', properties: { sku: {type: 'string'}, description: {type: 'string'}, stockLevel: {type: 'number'} }, required: ['sku', 'stockLevel'] } }
-                          }
-                      ]
-                  }
-              ],
-              destinationSystem: {
-                  id: 'dataMart',
-                  name: 'Sales Data Mart',
-                  targetEntity: 'AggregatedCustomerProductView'
-              }
-          };
-      }
-      return null;
-  }
-
-
-  checkScript(): void {
-    this.analysisMessages = [];
-    this.analysisResults = [];
-    this.executionError = null;
-
-    if (!this.code) {
-        this.analysisMessages.push({ severity: 'warn', summary: 'No script', detail: 'There is no script content to check.' });
-        return;
-    }
-    if (!this.monacoInstance || !this.monaco) {
-        this.analysisMessages.push({ severity: 'error', summary: 'Editor Error', detail: 'Monaco editor is not initialized.' });
-        return;
-    }
-    if (!this.syncJobId) {
-        this.analysisMessages.push({ severity: 'warn', summary: 'No Context', detail: 'No SyncJob context loaded for script analysis.' });
-        return;
-    }
-
-
-    this.monaco.languages.typescript.getTypeScriptWorker().then(worker => {
-        worker(this.monacoInstance!.getModel()!.uri).then(client => {
-            Promise.all([
-                client.getSyntacticDiagnostics(this.monacoInstance!.getModel()!.uri.toString()),
-                client.getSemanticDiagnostics(this.monacoInstance!.getModel()!.uri.toString())
-            ]).then(([syntacticDiags, semanticDiags]) => {
-                const allDiagnostics = [...syntacticDiags, ...semanticDiags];
-                if (allDiagnostics.length > 0) {
-                    this.analysisMessages = allDiagnostics.map(d => ({
-                        severity: d.category === ts.DiagnosticCategory.Error ? 'error' : (d.category === ts.DiagnosticCategory.Warning ? 'warn' : 'info'),
-                        summary: `Line ${d.start ? this.monacoInstance!.getModel()!.getPositionAt(d.start).lineNumber : 'N/A'}: ${ts.DiagnosticCategory[d.category]} (TS${d.code})`,
-                        detail: typeof d.messageText === 'string' ? d.messageText : ts.flattenDiagnosticMessageText(d.messageText, '\n')
-                    }));
-                } else {
-                    this.analysisMessages.push({ severity: 'success', summary: 'TypeScript Valid', detail: 'No TypeScript errors or warnings found by Monaco.' });
-                }
-                this.cdr.detectChanges();
-            });
+        // Step 2: Transpile TypeScript to JavaScript
+        const transpileOutput = ts.transpileModule(this.code, {
+            compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ESNext },
         });
-    });
-  }
 
-  runScript(): void {
-    this.executionResult = null;
-    this.executionError = null;
+        // Step 3: Generate a hash (placeholder for a real hashing function)
+        const jsHash = await this.generateHash(transpileOutput.outputText);
 
-    if (!this.code) {
-      this.executionError = 'No script to run.';
-      return;
-    }
-
-    try {
-      const transpileOutput = ts.transpileModule(this.code, {
-        compilerOptions: {
-          module: ts.ModuleKind.CommonJS,
-          target: ts.ScriptTarget.ESNext,
-          esModuleInterop: true,
-        }
-      });
-
-      if (transpileOutput.diagnostics && transpileOutput.diagnostics.length > 0) {
-        console.error('Transpilation errors:', transpileOutput.diagnostics);
-        this.executionError = {
-          message: 'Transpilation failed. Check console for details.',
-          diagnostics: transpileOutput.diagnostics.map(d => ({
-            message: typeof d.messageText === 'string' ? d.messageText : ts.flattenDiagnosticMessageText(d.messageText, '\n'),
-            category: ts.DiagnosticCategory[d.category],
-            code: d.code
-          }))
+        const payload: ScriptPayload = {
+            typescriptCode: this.code,
+            javascriptCode: transpileOutput.outputText,
+            hash: jsHash,
         };
-        return;
-      }
 
-      const javascriptCode = transpileOutput.outputText;
-      console.log('Transpiled JavaScript:', javascriptCode);
-
-      // API call here for script saving
+        // Step 4: Call the service to save the script
+        this.scriptEditorService.saveScript(this.syncJobId, payload).subscribe({
+            next: () => {
+                this.messageService.add({ severity: 'success', summary: 'Saved!', detail: 'Script has been saved successfully.' });
+                this.isSaving = false;
+                this.cdr.detectChanges();
+            },
+            error: (err) => {
+                this.messageService.add({ severity: 'error', summary: 'Save Failed', detail: 'Could not save the script to the server.' });
+                console.error('Save script error:', err);
+                this.isSaving = false;
+                this.cdr.detectChanges();
+            }
+        });
 
     } catch (e) {
-      this.executionError = { message: 'Error during transpilation or sending.', details: e };
-      console.error('Error in runScript:', e);
+        this.messageService.add({ severity: 'error', summary: 'Transpilation Error', detail: 'An error occurred during script transpilation.' });
+        console.error('Error in saveScript:', e);
+        this.isSaving = false;
     }
+  }
+
+  // --- Helper & Private Methods ---
+
+  private resetEditorState(isChangingJob = false): void {
+    // Dispose only job-specific libs, not global ones
+    const libsToRemove = this.currentExtraLibs.filter(lib => !lib.uri.includes('global-'));
+    libsToRemove.forEach(lib => lib.disposable.dispose());
+    this.currentExtraLibs = this.currentExtraLibs.filter(lib => lib.uri.includes('global-'));
+
+    this.currentSyncJobContextData = null;
+    this.code = isChangingJob ? '// Loading new context...' : '// Please select a SyncJob to begin.';
+    this.cdr.detectChanges();
+  }
+
+  private addExtraLib(content: string, uri: string): void {
+    if (!this.monaco || this.currentExtraLibs.find(lib => lib.uri === uri)) {
+      return;
+    }
+    const disposable = this.monaco.languages.typescript.typescriptDefaults.addExtraLib(content, uri);
+    this.currentExtraLibs.push({ uri, disposable });
+  }
+
+  private addGlobalApiDefinitions(): void {
+    const stayinsyncApiDts = `
+      /** Provides logging and output capabilities for your script. */
+      declare const stayinsync: {
+          /**
+           * Logs a message to the SyncJob's execution history.
+           * @param message The message to log.
+           * @param logLevel The severity of the log. Defaults to 'INFO'.
+           */
+          log: (message: any, logLevel?: 'INFO' | 'WARN' | 'ERROR' | 'DEBUG') => void;
+          /**
+           * Sets the final output of the transformation script.
+           * This data will be passed to the destination system.
+           * @param outputData The resulting JSON object or array. Can be null.
+           */
+          setOutput: (outputData: any) => void;
+      };
+    `;
+    this.addExtraLib(stayinsyncApiDts, 'file:///global-stayinsync-api.d.ts');
+  }
+
+  private generateDefaultScriptTemplate(context: SyncJobContextData): string {
+    const sourceAliases = context.sourceSystems.flatMap(s => s.dataEntities.map(e => e.aliasInScript));
+    return `/**
+ * Transformation Script for SyncJob: ${context.syncJobName}
+ * 
+ * Available source data objects:
+ * ${sourceAliases.map(alias => ` *  - sourceData.${alias}`).join('\n')}
+ * 
+ * Available API functions:
+ *  - stayinsync.log('Your message', 'INFO' | 'WARN' | 'ERROR')
+ *  - stayinsync.setOutput({ ... your final JSON object ... })
+ */
+async function transformData() {
+    stayinsync.log('Starting transformation for job: ${context.syncJobName}');
+
+    // --- YOUR TRANSFORMATION LOGIC STARTS HERE ---
+    
+    // Example: Accessing data from a source system.
+    // Replace 'crmCustomer' with an alias from your context.
+    // const customer = sourceData.crmCustomer;
+
+    // if (customer) {
+    //   const output = {
+    //      id: customer.id,
+    //      fullName: customer.name,
+    //      isContactable: customer.isActive && customer.email,
+    //   };
+    //   stayinsync.setOutput(output);
+    // } else {
+    //   stayinsync.log('Source data not found or invalid.', 'WARN');
+    //   stayinsync.setOutput(null); // Explicitly set output to null
+    // }
+
+    // --- YOUR TRANSFORMATION LOGIC ENDS HERE ---
+
+    // Don't forget to call setOutput!
+    stayinsync.setOutput({ message: "Transformation complete. Replace this with your actual output." });
+}
+
+// Execute the transformation function.
+transformData();
+`;
+  }
+
+  private async hasValidationErrors(): Promise<boolean> {
+    if (!this.monacoInstance || !this.monaco) return true;
+
+    const model = this.monacoInstance.getModel();
+    if (!model) return true;
+
+    const worker = await this.monaco.languages.typescript.getTypeScriptWorker();
+    const client = await worker(model.uri);
+    const diagnostics = await Promise.all([
+        client.getSyntacticDiagnostics(model.uri.toString()),
+        client.getSemanticDiagnostics(model.uri.toString()),
+    ]).then(([syntactic, semantic]) => [...syntactic, ...semantic]);
+
+    // Filter only for errors. Warnings are acceptable.
+    const errors = diagnostics.filter(d => d.category === ts.DiagnosticCategory.Error);
+    return errors.length > 0;
+  }
+
+  private async generateHash(data: string): Promise<string> {
+    // In a real app, use a proper crypto library like `crypto-js` or the browser's SubtleCrypto API.
+    // This is a simple placeholder.
+    const buffer = new TextEncoder().encode(data);
+    const hashBuffer = await crypto.subtle.digest('SHA-256', buffer);
+    const hashArray = Array.from(new Uint8Array(hashBuffer));
+    return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
   }
 
   ngOnDestroy(): void {
+    this.subscriptions.unsubscribe();
     this.currentExtraLibs.forEach(lib => lib.disposable.dispose());
-    this.currentExtraLibs = [];
   }
 }

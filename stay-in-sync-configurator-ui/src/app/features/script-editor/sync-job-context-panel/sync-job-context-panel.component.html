@@ -1,43 +1,78 @@
 <p-panel header="SyncJob Context" [toggleable]="true" styleClass="h-full">
-    <ng-container *ngIf="syncJobData; else noData">
-        <p-scrollPanel [style]="{width: '100%', height: 'calc(70vh - 100px)'}">
-            <p-card [header]="syncJobData.syncJobName" [subheader]="syncJobData.syncJobId" styleClass="p-mb-3">
-                <p *ngIf="syncJobData.syncJobDescription">{{ syncJobData.syncJobDescription }}</p>
-                <p *ngIf="!syncJobData.syncJobDescription" class="p-text-italic">No description provided for this SyncJob.</p>
-            </p-card>
+  <ng-container *ngIf="viewModel; else noData">
+    <p-scrollPanel [style]="{ width: '100%', height: '100%' }">
+      <p-card
+        [header]="viewModel.syncJobName"
+        [subheader]="viewModel.syncJobId"
+        styleClass="p-mb-3"
+      >
+        <p>
+          {{ viewModel.syncJobDescription || "No description provided." }}
+        </p>
+      </p-card>
 
-            <p-fieldset legend="Source Systems & Data" [toggleable]="true" [collapsed]="false" styleClass="p-mb-3">
-                <div *ngIf="!syncJobData.sourceSystems || syncJobData.sourceSystems.length === 0" class="p-text-center p-p-3">
-                    No source systems configured for this job.
-                </div>
-                <p-accordion [multiple]="true" *ngIf="syncJobData.sourceSystems && syncJobData.sourceSystems.length > 0">
-                    <p-accordionTab *ngFor="let system of syncJobData.sourceSystems; let i = index"
-                                    [header]="system.name + ' (' + system.type + ')'" [selected]="i === 0">
-                        <div *ngFor="let entity of system.dataEntities" class="p-mb-2 entity-container">
-                            <p-tag severity="info" value="Available as: sourceData.{{entity.aliasInScript}}"></p-tag>
-                            <p-tree [value]="findTreeNodesForEntity(system.id, entity.aliasInScript)"
-                                    selectionMode="single"
-                                    scrollHeight="flex"
-                                    styleClass="p-mt-1 schema-tree"></p-tree>
-                        </div>
-                        <div *ngIf="!system.dataEntities || system.dataEntities.length === 0" class="p-text-italic">
-                            No specific data entities defined for scripting from this source.
-                        </div>
-                    </p-accordionTab>
-                </p-accordion>
-            </p-fieldset>
-
-            <p-fieldset *ngIf="syncJobData.destinationSystem" legend="Destination System" [toggleable]="true" [collapsed]="true">
-                <p><strong>Name:</strong> {{ syncJobData.destinationSystem.name }}</p>
-                <p><strong>Target Entity/Type:</strong> {{ syncJobData.destinationSystem.targetEntity }}</p>
-            </p-fieldset>
-        </p-scrollPanel>
-    </ng-container>
-
-    <ng-template #noData>
-        <div class="p-text-center p-p-3">
-            <i class="pi pi-info-circle p-mr-2"></i>
-            No SyncJob context loaded. Please ensure a SyncJob is active in the parent workflow.
+      <p-fieldset
+        legend="Source Systems & Data"
+        [toggleable]="true"
+        [collapsed]="false"
+      >
+        <div
+          *ngIf="!viewModel.sourceSystems?.length"
+          class="p-text-center p-p-3"
+        >
+          No source systems configured for this job.
         </div>
-    </ng-template>
+
+        <p-accordion
+          [multiple]="true"
+          *ngIf="viewModel.sourceSystems?.length"
+        >
+          <p-accordionTab
+            *ngFor="let system of viewModel.sourceSystems; let i = index"
+            [header]="system.name + ' (' + system.type + ')'"
+            [selected]="i === 0"
+          >
+            <div
+              *ngFor="let entity of system.dataEntities"
+              class="p-mb-2 entity-container"
+            >
+              <p-tag
+                severity="info"
+                value="Available as: sourceData.{{ entity.aliasInScript }}"
+              ></p-tag>
+
+              <p-tree
+                [value]="entity.treeNodes"
+                selectionMode="single"
+                scrollHeight="flex"
+                styleClass="p-mt-1 schema-tree"
+              >
+              </p-tree>
+            </div>
+          </p-accordionTab>
+        </p-accordion>
+      </p-fieldset>
+
+      <p-fieldset
+        *ngIf="viewModel.destinationSystem"
+        legend="Destination System"
+        [toggleable]="true"
+        [collapsed]="true"
+      >
+        <p><strong>Name:</strong> {{ viewModel.destinationSystem.name }}</p>
+        <p>
+          <strong>Target Entity/Type:</strong>
+          {{ viewModel.destinationSystem.targetEntity }}
+        </p>
+      </p-fieldset>
+    </p-scrollPanel>
+  </ng-container>
+
+  <ng-template #noData>
+    <div class="p-text-center p-p-3">
+      <i class="pi pi-info-circle p-mr-2"></i>
+      No SyncJob context loaded. Please ensure a SyncJob is active in the parent
+      workflow.
+    </div>
+  </ng-template>
 </p-panel>
