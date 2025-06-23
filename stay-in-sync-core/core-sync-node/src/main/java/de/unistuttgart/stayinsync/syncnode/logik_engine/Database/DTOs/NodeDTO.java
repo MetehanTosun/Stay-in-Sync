@@ -1,5 +1,7 @@
 package de.unistuttgart.stayinsync.syncnode.logik_engine.Database.DTOs;
 
+import de.unistuttgart.stayinsync.syncnode.logik_engine.LogicOperator.LogicOperator;
+
 import java.util.List;
 
 /**
@@ -15,7 +17,7 @@ public class NodeDTO {
 
     /**
      * The string representation of the operator (e.g., "ADD", "GREATER_THAN").
-     * This corresponds to the name of the {@link de.unistuttgart.stayinsync.syncnode.logik_engine.LogicOperator} enum constant.
+     * This corresponds to the name of the {@link LogicOperator} enum constant.
      */
     public String operator;
 

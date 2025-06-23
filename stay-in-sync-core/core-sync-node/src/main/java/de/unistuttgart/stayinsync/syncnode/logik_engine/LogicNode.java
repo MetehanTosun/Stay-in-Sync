@@ -1,12 +1,13 @@
 package de.unistuttgart.stayinsync.syncnode.logik_engine;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import de.unistuttgart.stayinsync.syncnode.logik_engine.LogicOperator.LogicOperator;
+import de.unistuttgart.stayinsync.syncnode.logik_engine.LogicOperator.Operation;
+import jakarta.json.JsonObject;
 import lombok.Getter;
 import lombok.Setter;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
 
 @Getter
 @Setter
@@ -46,6 +47,35 @@ public class LogicNode {
         this.nodeName = nodeName;
         this.operator = operator;
         this.inputProviders = new ArrayList<>(); // Initialize with an empty list to avoid NullPointerExceptions
+    }
+
+
+    /**
+     * Triggers the evaluation of this node and stores the result internally.
+     * <p>
+     * This method is the primary entry point for the node's self-evaluation.
+     * It uses the Strategy Pattern to delegate the
+     * specific validation and execution logic to the appropriate {@link Operation}
+     * implementation defined by this node's operator.
+     * <p>
+     * If the node is not configured correctly for its operator, the validation
+     * step will throw an {@link IllegalArgumentException}.
+     *
+     * @param dataContext The runtime data context, required for operations that
+     *                    interact with external JSON data sources.
+     */
+    public void calculate(Map<String, JsonNode> dataContext) {
+        // 1. Retrieve the specific strategy implementation from the operator.
+        Operation strategy = this.operator.getOperationStrategy();
+
+        // 2. The node hands itself over to the strategy for configuration validation.
+        strategy.validate(this);
+
+        // 3. Delegate the actual execution to the strategy, passing itself and the context.
+        Object result = strategy.execute(this, dataContext);
+
+        // 4. Store the computed result internally, making it available for child nodes.
+        this.setCalculatedResult(result);
     }
 
     /**

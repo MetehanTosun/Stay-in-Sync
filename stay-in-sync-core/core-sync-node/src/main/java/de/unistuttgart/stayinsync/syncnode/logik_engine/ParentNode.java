@@ -1,5 +1,6 @@
 package de.unistuttgart.stayinsync.syncnode.logik_engine;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import jakarta.json.JsonObject;
 
 import java.util.Map;
@@ -32,7 +33,7 @@ public class ParentNode implements InputNode {
      * @throws IllegalStateException if the parent node's result is null (indicating it wasn't evaluated).
      */
     @Override
-    public Object getValue(Map<String, JsonObject> context) {
+    public Object getValue(Map<String, JsonNode> context) {
 
         Object result = this.parentNode.getCalculatedResult();
         if (result == null) {
@@ -52,10 +53,10 @@ public class ParentNode implements InputNode {
     }
 
     /**
-     * @return false, as this provider is not sourced from a JsonNode.
+     * @return false, as this provider is not sourced from a JsonInputNode.
      */
     @Override
-    public boolean isJsonNode() {
+    public boolean isJsonInputNode() {
         return false;
     }
 

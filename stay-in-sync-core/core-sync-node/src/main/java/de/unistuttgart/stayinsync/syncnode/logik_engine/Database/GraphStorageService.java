@@ -24,6 +24,9 @@ public class GraphStorageService {
     @Inject
     ObjectMapper jsonObjectMapper;
 
+    @Inject
+    GraphCompilerService graphCompilerService;
+
     /**
      * Saves a new logic graph to the database. The graph name must be unique.
      * If a graph with the same name already exists, an exception will be thrown.
@@ -56,10 +59,13 @@ public class GraphStorageService {
     }
 
     /**
-     * Loads a logic graph from the database by its unique name.
+     * Loads a logic graph from the database by its name and prepares it for execution.
+     * <p>
+     * The returned graph is fully "hydrated", meaning runtime objects like
+     * compiled JSON schemas are created from their string representations.
      *
      * @param name The name of the graph to load.
-     * @return An {@link Optional} containing the list of {@link LogicNode}s if found, otherwise empty.
+     * @return An {@link Optional} containing the executable list of {@link LogicNode}s if found.
      */
     public Optional<List<LogicNode>> loadGraph(String name) {
         // Find the graph in database
@@ -76,11 +82,13 @@ public class GraphStorageService {
         try {
             // Convert JSON back to DTO
             GraphDefinitionDTO dto = jsonObjectMapper.readValue(entity.graphDefinitionJson, GraphDefinitionDTO.class);
+            List<LogicNode> rawGraph = mapper.toLogicNode(dto);
 
-            // Convert DTO back to LogicNodes
-            List<LogicNode> nodes = mapper.toLogicNode(dto);
+            // Step 2: HIDE THE COMPLEXITY. Compile the raw graph into an executable one.
+            List<LogicNode> executableGraph = graphCompilerService.compile(rawGraph);
 
-            return Optional.of(nodes);
+            // Step 3: Return the fully prepared, ready-to-run graph.
+            return Optional.of(executableGraph);
 
         } catch (IOException e) {
             throw new RuntimeException("Failed to deserialize graph '" + name + "' from JSON.", e);

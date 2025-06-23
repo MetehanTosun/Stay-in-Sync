@@ -4,6 +4,7 @@ import de.unistuttgart.stayinsync.syncnode.logik_engine.Database.DTOs.GraphDefin
 import de.unistuttgart.stayinsync.syncnode.logik_engine.Database.DTOs.InputDTO;
 import de.unistuttgart.stayinsync.syncnode.logik_engine.Database.DTOs.NodeDTO;
 import de.unistuttgart.stayinsync.syncnode.logik_engine.*;
+import de.unistuttgart.stayinsync.syncnode.logik_engine.LogicOperator.LogicOperator;
 import jakarta.enterprise.context.ApplicationScoped;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -56,8 +57,8 @@ public class GraphMapper {
             dto.type = "CONSTANT";
             dto.elementName = ((ConstantNode) input).getElementName();
             dto.value = ((ConstantNode) input).getValue();
-        } else if (input.isJsonNode()) {
-            JsonNode jsonNode = (JsonNode) input;
+        } else if (input.isJsonInputNode()) {
+            JsonInputNode jsonNode = (JsonInputNode) input;
             dto.type = "JSON";
             dto.sourceName = jsonNode.getSourceName();
             dto.path = jsonNode.getJsonPath();
@@ -107,7 +108,7 @@ public class GraphMapper {
             case "CONSTANT":
                 return new ConstantNode(dto.elementName, dto.value);
             case "JSON":
-                return new JsonNode(dto.sourceName, dto.path);
+                return new JsonInputNode(dto.sourceName, dto.path);
             case "PARENT":
                 LogicNode parentNode = createdNodes.get(dto.parentNodeName);
                 if (parentNode == null) {

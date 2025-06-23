@@ -3,6 +3,7 @@ package de.unistuttgart.stayinsync.syncnode.logik_engine;
 
 import de.unistuttgart.stayinsync.syncnode.logik_engine.Database.GraphStorageService;
 import de.unistuttgart.stayinsync.syncnode.logik_engine.Database.LogicGraphEntity;
+import de.unistuttgart.stayinsync.syncnode.logik_engine.LogicOperator.LogicOperator;
 import io.quarkus.test.junit.QuarkusTest;
 import jakarta.inject.Inject;
 import jakarta.json.Json;
@@ -49,9 +50,9 @@ public class GraphPersistenceTest {
         final String graphName = "FullIntegrationTestGraph";
 
         // Define all necessary input nodes
-        JsonNode aasTemp = new JsonNode("anlageAAS", "sensorData.currentTemperature");
+        JsonInputNode aasTemp = new JsonInputNode("anlageAAS", "sensorData.currentTemperature");
         ConstantNode tempOffset = new ConstantNode("TempOffset", -2.0);
-        JsonNode aasMaxTemp = new JsonNode("anlageAAS", "thresholds.maxAllowedTemp");
+        JsonInputNode aasMaxTemp = new JsonInputNode("anlageAAS", "thresholds.maxAllowedTemp");
         ConstantNode systemEnabled = new ConstantNode("SystemEnabledFlag", true);
 
         // Build the graph structure by connecting the nodes

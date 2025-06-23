@@ -1,5 +1,6 @@
 package de.unistuttgart.stayinsync.syncnode.logik_engine;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import jakarta.json.JsonObject;
 import lombok.Getter;
 
@@ -44,7 +45,7 @@ public class ConstantNode implements InputNode {
      * @return The pre-defined, non-null constant object.
      */
     @Override
-    public Object getValue(Map<String, JsonObject> context) {
+    public Object getValue(Map<String, JsonNode> context) {
         return value;
     }
 
@@ -57,10 +58,10 @@ public class ConstantNode implements InputNode {
     }
 
     /**
-     * @return false, as this provider is not sourced from a JsonNode.
+     * @return false, as this provider is not sourced from a JsonInputNode.
      */
     @Override
-    public boolean isJsonNode() {
+    public boolean isJsonInputNode() {
         return false;
     }
 
