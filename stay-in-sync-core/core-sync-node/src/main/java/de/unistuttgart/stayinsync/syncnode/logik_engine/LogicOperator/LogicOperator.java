@@ -1,5 +1,6 @@
 package de.unistuttgart.stayinsync.syncnode.logik_engine.LogicOperator;
 
+import de.unistuttgart.stayinsync.syncnode.logik_engine.LogicOperator.array_predicates.*;
 import de.unistuttgart.stayinsync.syncnode.logik_engine.LogicOperator.generell_predicates.*;
 import de.unistuttgart.stayinsync.syncnode.logik_engine.LogicOperator.number_predicates.*;
 
@@ -31,6 +32,23 @@ public enum LogicOperator {
     LESS_OR_EQUAL("lessOrEqual", new LessOrEqualOperator()),
     BETWEEN("between", new BetweenOperator()),
     NOT_BETWEEN("notBetween", new NotBetweenOperator()),
+
+    // Array/List predicates
+    LENGTH_EQUALS("lengthEquals", new LengthEqualsOperator()),
+    LENGTH_GT("lengthGt", new LengthGtOperator()),
+    LENGTH_LT("lengthLt", new LengthLtOperator()),
+    NOT_EMPTY("notEmpty", new NotEmptyOperator()),
+    CONTAINS_ELEMENT("containsElement", new ContainsElementOperator()),
+    NOT_CONTAINS_ELEMENT("notContainsElement", new NotContainsElementOperator()),
+    CONTAINS_ALL("containsAll", new ContainsAllOperator()),
+    CONTAINS_ANY("containsAny", new ContainsAnyOperator()),
+    CONTAINS_NONE("containsNone", new ContainsNoneOperator()),
+
+    // Aggregate predicates
+    SUM("sum", new SumOperator()),
+    AVG("avg", new AvgOperator()),
+    MIN("min", new MinOperator()),
+    MAX("max", new MaxOperator()),
 
 
 
