@@ -1,6 +1,8 @@
 package de.unistuttgart.stayinsync.syncnode.logik_engine.LogicOperator;
 
 import de.unistuttgart.stayinsync.syncnode.logik_engine.LogicOperator.generell_predicates.*;
+import de.unistuttgart.stayinsync.syncnode.logik_engine.LogicOperator.number_predicates.*;
+
 
 public enum LogicOperator {
     // Generall predicates
@@ -22,20 +24,14 @@ public enum LogicOperator {
     NOT("not", new NotOperator()),
     MATCHES_SCHEMA("matschesSchema", new MatchesSchemaOperator()),
 
+    // Number predicates
+    GREATER_THAN("greaterThan", new GreaterThanOperator()),
+    LESS_THAN("lessThan", new LessThanOperator()),
+    GREATER_OR_EQUAL("greaterOrEqual", new GreaterOrEqualOperator()),
+    LESS_OR_EQUAL("lessOrEqual", new LessOrEqualOperator()),
+    BETWEEN("between", new BetweenOperator()),
+    NOT_BETWEEN("notBetween", new NotBetweenOperator()),
 
-
-
-
-
-
-    // Arithmetic Operators
-    ADD("+"),
-    SUBTRACT("-"),
-    MULTIPLY("*"),
-    DIVIDE("/"),
-    MODULO("%"),
-
-    // Relational Operators
 
 
     private final String symbol;
