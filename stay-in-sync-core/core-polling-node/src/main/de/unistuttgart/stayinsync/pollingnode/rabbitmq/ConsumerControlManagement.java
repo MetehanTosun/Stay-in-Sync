@@ -2,11 +2,12 @@ package de.unistuttgart.stayinsync.pollingnode.rabbitmq;
 
 import de.unistuttgart.stayinsync.pollingnode.entities.SyncJob;
 import de.unistuttgart.stayinsync.pollingnode.exceptions.FaultySyncJobException;
-import de.unistuttgart.stayinsync.pollingnode.usercontrol.management.PollingNodeManagement;
+import de.unistuttgart.stayinsync.pollingnode.usercontrol.management.PollingJobManagement;
 import io.quarkus.logging.Log;
 import jakarta.enterprise.context.ApplicationScoped;
 import org.eclipse.microprofile.reactive.messaging.Incoming;
 import org.eclipse.microprofile.reactive.messaging.Message;
+
 import java.util.concurrent.CompletionStage;
 import java.util.function.Consumer;
 
@@ -17,13 +18,13 @@ import java.util.function.Consumer;
 @ApplicationScoped
 public class ConsumerControlManagement {
 
-    private final PollingNodeManagement pollingNodeManagement;
+    private final PollingJobManagement pollingNodeManagement;
 
     /**
      * Constructs the ConsumerControlManagement
      * @param pollingNodeManagement is applicationScoped and the entryPoint for the message processing.
      */
-    public ConsumerControlManagement(final PollingNodeManagement pollingNodeManagement){
+    public ConsumerControlManagement(final PollingJobManagement pollingNodeManagement){
         this.pollingNodeManagement = pollingNodeManagement;
     }
 
@@ -39,16 +40,6 @@ public class ConsumerControlManagement {
         return handleSyncJobMessage(syncJobMessage, pollingNodeManagement::beginSupportOfSyncJob);
     }
 
-    /**
-     * Awaits messages in syncJobCreated channel and passes them with the right consumable for the right method call on pollingNodeManagement along.
-     *
-     * @param syncJobMessage is sent to handleSyncJobMessage to be used there
-     * @return accepted message if syncJob was valid or not accepted message if syncJob was invalid.
-     */
-    @Incoming("syncJobEdited")
-    CompletionStage<Void> supportedSyncJobUpdateChannel(final Message<SyncJob> syncJobMessage) {
-        return handleSyncJobMessage(syncJobMessage, pollingNodeManagement::editSupportedSyncJob);
-    }
 
     /**
      * Awaits messages in syncJobCreated channel and passes them with the right consumable for the right method call on pollingNodeManagement along.
@@ -60,6 +51,7 @@ public class ConsumerControlManagement {
     CompletionStage<Void> supportedSyncJobDeletionChannel(final Message<SyncJob> syncJobMessage) {
         return handleSyncJobMessage(syncJobMessage, pollingNodeManagement::endSupportOfSyncJob);
     }
+
 
     /**
      * Calls pollingNodeManagement method by using Consumer parameter if SyncJob is valid.
@@ -85,23 +77,13 @@ public class ConsumerControlManagement {
     /**
      * Throws a FaultySyncJobException if the SyncJob has any invalid fields of obvious reason.
      * @param syncJob is the checked object.
-     * @throws FaultySyncJobException if any field is null, numbers are negative or the SourceSystemSet is Empty.
+     * @throws FaultySyncJobException if any field is null or empty.
      */
     private void throwFaultySyncJobExceptionIfInvalid(final SyncJob syncJob) throws FaultySyncJobException{
-        if(syncJob.getId() == null || syncJob.getId() <= -1){
-            throw new FaultySyncJobException("Sent SyncJob lacked a positive id");
-        }
-        if(syncJob.getApiAddresses() == null || syncJob.getApiAddresses().isEmpty()){
-            throw new FaultySyncJobException("Sent SyncJob lacked a List of SourceSystems");
-        }
-        if(syncJob.getTimingInMs() == null || syncJob.getTimingInMs() <= -1){
-            throw new FaultySyncJobException("Sent SyncJob lacked a positive timing in milliseconds");
-        }
-        if(syncJob.getScript() == null){
-            throw new FaultySyncJobException("Sent SyncJob lacked a transformation script");
-        }
-        if(syncJob.isActive() == null){
-            throw new FaultySyncJobException("Sent SyncJobs active state was undefined");
+        if(syncJob.getApiAddress() == null || syncJob.getApiAddress().isEmpty()){
+            final String errorMessage = "ApiAddress of sent SyncJob was empty";
+            Log.error(errorMessage);
+            throw new FaultySyncJobException(errorMessage);
         }
     }
 }
