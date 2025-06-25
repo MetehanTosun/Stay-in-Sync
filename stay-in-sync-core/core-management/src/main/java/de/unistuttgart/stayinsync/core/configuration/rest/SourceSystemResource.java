@@ -3,6 +3,11 @@ package de.unistuttgart.stayinsync.core.configuration.rest;
 import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.SourceSystem;
 import de.unistuttgart.stayinsync.core.configuration.exception.CoreManagementWebException;
 import de.unistuttgart.stayinsync.core.configuration.service.SourceSystemService;
+import de.unistuttgart.stayinsync.core.configuration.service.SourceSystemEndpointService;
+import de.unistuttgart.stayinsync.core.configuration.mapping.SourceSystemEndpointMapper;
+import de.unistuttgart.stayinsync.core.configuration.rest.dtos.SourceSystemEndpointDto;
+import java.util.List;
+import java.util.stream.Collectors;
 import io.quarkus.logging.Log;
 import jakarta.inject.Inject;
 import jakarta.validation.Valid;
@@ -27,13 +32,19 @@ import java.util.List;
 
 import static jakarta.ws.rs.core.MediaType.APPLICATION_JSON;
 
-@Path("api/aas")
+@Path("/api/source-systems")
 @Produces(APPLICATION_JSON)
 @Consumes(APPLICATION_JSON)
 public class SourceSystemResource {
 
     @Inject
     SourceSystemService ssService;
+
+    @Inject
+    SourceSystemEndpointService endpointService;
+
+    @Inject
+    SourceSystemEndpointMapper endpointMapper;
 
     @GET
     @Operation(summary = "Returns all source systems")
@@ -102,5 +113,27 @@ public class SourceSystemResource {
                     "No source system found with id %d", id);
         }
         return Response.noContent().build();
+    }
+
+    @GET
+    @Path("/{id}/endpoints")
+    @Operation(summary = "List all endpoints for a source system")
+    @APIResponse(responseCode = "200", description = "List of endpoints", content = @Content(mediaType = APPLICATION_JSON, schema = @Schema(type = SchemaType.ARRAY, implementation = SourceSystemEndpointDto.class)))
+    public List<SourceSystemEndpointDto> listEndpoints(
+            @Parameter(name = "id", required = true) @PathParam("id") Long sourceId) {
+        return endpointService.listBySourceId(sourceId).stream()
+                .map(endpointMapper::toDto)
+                .collect(Collectors.toList());
+    }
+
+    @POST
+    @Path("/{id}/endpoints/{eid}/extract")
+    @Operation(summary = "Generate JSON schema for one endpoint")
+    @APIResponse(responseCode = "200", description = "Updated endpoint with schema", content = @Content(mediaType = APPLICATION_JSON, schema = @Schema(implementation = SourceSystemEndpointDto.class)))
+    public SourceSystemEndpointDto extractSchema(
+            @Parameter(name = "id", required = true) @PathParam("id") Long sourceId,
+            @Parameter(name = "eid", required = true) @PathParam("eid") Long endpointId) {
+        var updated = endpointService.extractSchema(endpointId);
+        return endpointMapper.toDto(updated);
     }
 }

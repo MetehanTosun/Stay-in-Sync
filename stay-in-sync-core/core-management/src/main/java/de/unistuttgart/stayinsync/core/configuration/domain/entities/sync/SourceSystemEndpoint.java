@@ -5,6 +5,7 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.ManyToMany;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
+import jakarta.persistence.Column;
 
 import java.util.List;
 import java.util.Set;
@@ -27,7 +28,17 @@ public class SourceSystemEndpoint extends PanacheEntity {
     @ManyToMany(mappedBy = "sourceSystemEndpoints")
     public Set<Transformation> transformations;
 
+    /**
+     * JSON-Schema für diesen Endpoint, automatisch per Extractor generiert.
+     */
+    @Column(columnDefinition = "TEXT")
     public String jsonSchema;
+
+    /**
+     * Modus der Schema-Erstellung: "auto" (Extractor) oder "manual" (Editor).
+     */
+    @Column(length = 20)
+    public String schemaMode;
 
     public int pollingRateInMs;
 
