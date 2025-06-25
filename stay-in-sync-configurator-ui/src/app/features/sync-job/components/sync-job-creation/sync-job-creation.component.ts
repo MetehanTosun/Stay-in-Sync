@@ -15,6 +15,8 @@ import {
   TransformationBaseComponent
 } from "../../../transformation/components/transformation-base/transformation-base.component";
 import {SyncJobOverviewComponent} from '../sync-job-overview/sync-job-overview.component';
+import {Transformation} from '../../../transformation/models/transformation.model';
+import {SyncJobService} from '../../services/sync-job.service';
 
 @Component({
   selector: 'app-sync-job-creation',
@@ -41,14 +43,15 @@ import {SyncJobOverviewComponent} from '../sync-job-overview/sync-job-overview.c
 export class SyncJobCreationComponent {
   @Input() visible = false;
   @Output() visibleChange = new EventEmitter<boolean>();
-  syncJobName: String = '';
-  syncJobDescription: String= '';
+  syncJobName: string = '';
+  syncJobDescription: string= '';
   selectedSourceSystem: any;
   sourceSystems: (NgIterable<SourceSystem>) | undefined | null;
   isSimulation: boolean = false;
+  transformations: Transformation[] = [];
 
 
-  constructor(private router: Router, private aas: AasService) {
+  constructor(private router: Router, private aas: AasService, readonly syncJobService: SyncJobService) {
   }
 
   cancel() {
@@ -73,7 +76,31 @@ export class SyncJobCreationComponent {
   }
 
   createSyncJob() {
-    //TODO: Implement the logic to create a sync job
-    this.cancel();
+    // if (!this.syncJobName || !this.selectedSourceSystem || !this.transformations.length) {
+    //   console.error("Please fill in all required fields.");
+    //   return;
+    // }
+    const syncJob = {
+      name: this.syncJobName,
+      description: this.syncJobDescription,
+      //sourceSystemId: this.selectedSourceSystem.id,
+      isSimulation: this.isSimulation,
+      transformations: this.transformations
+    };
+    console.log("Creating Sync Job:", syncJob);
+    this.syncJobService.create(syncJob).subscribe({
+      next: (createdJob) => {
+        console.log("Sync Job created successfully:", createdJob);
+        this.cancel();
+      },
+      error: (err) => {
+        console.error("Error creating Sync Job:", err);
+      }
+    })
+  }
+
+  onTransformationsChanged($event: Transformation[]) {
+    this.transformations = $event;
+    console.log("Transformations changed:", this.transformations);
   }
 }

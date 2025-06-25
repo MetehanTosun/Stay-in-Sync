@@ -14,4 +14,12 @@ export class SyncJobService {
   getAll(): Observable<SyncJob[]> {
     return this.httpClient.get<SyncJob[]>(`/api/config/sync-job`);
   }
+
+  delete(syncJob: SyncJob): Observable<void> {
+    return this.httpClient.delete<void>(`/api/config/sync-job/${syncJob.id}`);
+  }
+
+  create(syncJob: SyncJob): Observable<SyncJob> {
+    return this.httpClient.post<SyncJob>(`/api/config/sync-job`, syncJob);
+  }
 }

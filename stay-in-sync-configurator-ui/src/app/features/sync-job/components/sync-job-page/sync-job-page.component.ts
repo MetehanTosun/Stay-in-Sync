@@ -70,7 +70,8 @@ getSeverity(isSimulation: boolean): string {
     console.log("GET ALL")
     this.syncJobService.getAll().subscribe({
       next: data => {
-        console.log("data")
+        console.log(data)
+        this.items = data;
       },
       error: err => {
         console.log(err)
@@ -83,7 +84,15 @@ getSeverity(isSimulation: boolean): string {
     //TODO: Implement edit functionality
   }
 
-  delete(item: any) {
-    //TODO: Implement delete functionality
+  delete(item: SyncJob) {
+    this.syncJobService.delete(item).subscribe({
+      next: () => {
+        this.getAll();
+      },
+      error: err => {
+        console.error(err);
+        this.httpErrorService.handleError(err);
+      }
+    });
   }
 }
