@@ -25,7 +25,10 @@ services:
     environment:
       - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
       - xpack.security.enabled=false
-      - xpack.fleet.registryUrl=https://epr.elastic.co
+      - xpack.fleet.enabled=false
+      - xpack.encryptedSavedObjects.encryptionKey=a7a6311933d3503b89bc2dbc36572c33a6c10925682e591bffcab6911c06786d
+      - server.csp.strict=false
+      - server.host=0.0.0.0
     ports:
       - "5601:5601"
     depends_on:
