@@ -1,7 +1,7 @@
 package de.unistuttgart.stayinsync.core.configuration.service;
 
+import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.SourceSystem;
 import de.unistuttgart.stayinsync.core.configuration.mapping.SourceSystemFullUpdateMapper;
-import de.unistuttgart.stayinsync.core.configuration.persistence.entities.sync.SourceSystem;
 import io.quarkus.logging.Log;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;

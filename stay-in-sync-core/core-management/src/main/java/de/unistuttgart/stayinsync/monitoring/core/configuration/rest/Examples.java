@@ -14,7 +14,8 @@ final class Examples {
 
     static final String VALID_EXAMPLE_SYNCJOB_TO_CREATE = """
             {
-              "name": "Sync Produktion A"
+              "name": "Sync Produktion A",
+              "deployed": true
             }
             """;
 
