@@ -108,6 +108,7 @@ export class SyncJobCreationComponent {
 
 
   constructor(private router: Router, private aas: AasService, readonly syncJobService: SyncJobService) {
+    this.loadSystems();
   }
 
   activeStep = 1;
@@ -123,9 +124,6 @@ export class SyncJobCreationComponent {
     this.router.navigate(['sync-jobs']);
   }
 
-  ngOnInit() {
-    this.loadSystems();
-  }
 
   private loadSystems() {
     this.aas.getAll().subscribe({
@@ -146,7 +144,7 @@ export class SyncJobCreationComponent {
     const syncJob = {
       name: this.syncJobName,
       description: this.syncJobDescription,
-      //sourceSystemId: this.selectedSourceSystem.id,
+      sourceSystemId: this.selectedSourceSystem.id,
       isSimulation: this.isSimulation,
       transformations: this.transformations
     };

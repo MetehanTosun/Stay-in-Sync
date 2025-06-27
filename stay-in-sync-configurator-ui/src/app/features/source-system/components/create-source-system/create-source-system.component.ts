@@ -9,6 +9,7 @@ import { DropdownModule }  from 'primeng/dropdown';         // ← hier
 import { AasService }      from '../../services/aas.service';
 import { Observable, of }  from 'rxjs';
 import { tap, catchError } from 'rxjs/operators';
+import {SourceSystem} from '../../models/source-system.model';
 
 type SourceType = 'AAS' | 'REST';
 
@@ -37,7 +38,7 @@ export class CreateSourceSystemComponent implements OnInit {
 
   source = { name: '', aasId: '', endpoint: '' };
 
-  aasList$: Observable<{ id: string; name: string }[]> = of([]);
+  aasList$: Observable<SourceSystem[]> = of([]);
 
   constructor(private aasService: AasService) {}
 

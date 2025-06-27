@@ -7,7 +7,8 @@ import { TableModule }                  from 'primeng/table';
 import { CreateSourceSystemComponent }  from '../create-source-system/create-source-system.component';
 import { AasService }                   from '../../services/aas.service';
 import { MessageModule } from 'primeng/message';
-import { ProgressSpinnerModule } from 'primeng/progressspinner'; 
+import { ProgressSpinnerModule } from 'primeng/progressspinner';
+import {SourceSystem} from '../../models/source-system.model';
 
 interface AasInstance { id: string; name: string; }
 
@@ -27,7 +28,7 @@ interface AasInstance { id: string; name: string; }
   styleUrls: ['./source-system-base.component.css']
 })
 export class SourceSystemBaseComponent implements OnInit {
-  availableSystems: AasInstance[] = [];
+  availableSystems: SourceSystem[] = [];
   loading  = true;
   errorMsg = '';
   showCreateDialog = false;

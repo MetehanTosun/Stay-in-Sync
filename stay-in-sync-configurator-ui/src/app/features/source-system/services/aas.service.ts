@@ -3,6 +3,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
+import {SourceSystem} from '../models/source-system.model';
 
 export interface AasInstance {
   id: string;
@@ -11,11 +12,10 @@ export interface AasInstance {
 
 @Injectable({ providedIn: 'root' })
 export class AasService {
-  private baseUrl = '/aasServer';
 
   constructor(private http: HttpClient) {}
 
-  getAll(): Observable<AasInstance[]> {
-    return this.http.get<AasInstance[]>(`${this.baseUrl}/shells`);
+  getAll(): Observable<SourceSystem[]> {
+    return this.http.get<SourceSystem[]>(`/api/aas`);
   }
 }
