@@ -1,45 +1,93 @@
-<!-- src/app/features/source-system/components/create-source-system/create-source-system.component.html -->
+<p-dialog
+  header="Neues Source System"
+  [(visible)]="visible"
+  [modal]="true"
+  [closable]="false"
+  [style]="{ width: '800px', minHeight: '1000px' }"
+  (onHide)="cancel()"
+>
+<p-steps [model]="steps" [activeIndex]="currentStep - 1" [readonly]="true"></p-steps>
 
-<p-dialog 
-    header="New Source System"
-    [(visible)]="visible"
-    (onHide)="cancel()"
-    [modal]="true"
-    [style]="{ width: '50vw', maxWidth: '90vw' , minHeight: '25vw' }"
-    [baseZIndex]="10000"
-    class="big-dialog">
+<form [formGroup]="form" class="p-fluid" style="margin-top:1rem">
+    <!-- STEP 1: Metadaten -->
+    <div *ngIf="currentStep === 1">
+      <div class="p-field">
+        <label for="name">Name *</label>
+        <input id="name" pInputText formControlName="name" />
+        <small *ngIf="form.get('name')!.invalid && form.get('name')!.touched" class="p-error">
+          Name ist erforderlich.
+        </small>
+      </div>
 
-  <form (ngSubmit)="save()">
-    <div class="p-field">
-      <label for="type">Source Type</label>
-      <p-dropdown
-        [options]="sourceTypeOptions"
-        [(ngModel)]="sourceType"
-        name="type"
-        (onChange)="onTypeChange(sourceType)">
-      </p-dropdown>
+      <div class="p-field">
+        <label for="description">Beschreibung</label>
+        <textarea id="description" pInputTextarea formControlName="description" rows="2"></textarea>
+      </div>
+
+      <div class="p-field">
+        <label for="type">Typ *</label>
+        <p-dropdown
+          id="type"
+          [options]="typeOptions"
+          optionLabel="label"
+          optionValue="value"
+          formControlName="type"
+          placeholder="Typ wählen"
+        ></p-dropdown>
+        <small *ngIf="form.get('type')!.invalid && form.get('type')!.touched" class="p-error">
+          Typ ist erforderlich.
+        </small>
+      </div>
+
+      <ng-container *ngIf="form.get('type')!.value !== 'REST_OPENAPI'">
+        <div class="p-field">
+          <label for="apiUrl">API URL *</label>
+          <input id="apiUrl" pInputText formControlName="apiUrl" placeholder="https://api.example.com" />
+          <small *ngIf="form.get('apiUrl')!.invalid && form.get('apiUrl')!.touched" class="p-error">
+            Gültige URL ist erforderlich.
+          </small>
+        </div>
+      </ng-container>
+
+      <ng-container *ngIf="form.get('type')!.value === 'REST_OPENAPI'">
+        <h3>OpenAPI Specification</h3>
+        <div class="p-field">
+          <label for="openApiSpec">Spec URL oder Datei</label>
+          <div class="p-inputgroup">
+            <input id="openApiSpec" pInputText formControlName="openApiSpec" placeholder="https://example.com/openapi.json" />
+            <span class="p-inputgroup-addon">— oder —</span>
+            <input id="file" type="file" (change)="onFileSelected($event)" />
+          </div>
+          <small *ngIf="form.get('openApiSpec')!.invalid && form.get('openApiSpec')!.touched && !fileSelected" class="p-error">
+            Entweder eine gültige URL oder eine Datei muss angegeben werden.
+          </small>
+          <div *ngIf="fileSelected" class="p-mt-2">
+            Datei ausgewählt: {{ selectedFile?.name }}
+          </div>
+        </div>
+      </ng-container>
     </div>
 
-    <div class="p-field" *ngIf="sourceType === 'AAS'">
-      <label for="aas">Choose AAS</label>
-      <p-dropdown
-        [options]="(aasList$ | async) ?? []"
-        [(ngModel)]="source.aasId"
-        name="aas"
-        filter="true"
-        showClear="true"
-        placeholder="Select an AAS">
-      </p-dropdown>
-    </div>
-
-    <div class="p-field" *ngIf="sourceType === 'REST'">
-      <label for="endpoint">Endpoint URL</label>
-      <input pInputText [(ngModel)]="source.endpoint" name="endpoint" id="endpoint"/>
-    </div>
-
-    <p-footer>
-      <button pButton label="Save" type="submit"></button>
-      <button pButton label="Cancel" type="button" (click)="cancel()"></button>
-    </p-footer>
   </form>
+
+  <div class="p-d-flex p-jc-end p-mt-4">
+    <button
+      pButton
+      label="Abbrechen"
+      class="p-button-text"
+      (click)="cancel()"
+    ></button>
+    <button
+      pButton
+      label="Weiter"
+      class="p-button-sm"
+      (click)="next()"
+      [disabled]="
+        currentStep === 1
+          ? form.invalid ||
+            (form.value.type === 'REST_OPENAPI' && !(form.value.openApiSpec || fileSelected))
+          : false
+      "
+    ></button>
+  </div>
 </p-dialog>

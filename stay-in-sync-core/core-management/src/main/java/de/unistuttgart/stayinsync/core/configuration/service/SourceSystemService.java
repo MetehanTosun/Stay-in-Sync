@@ -10,6 +10,9 @@ import jakarta.transaction.Transactional;
 import java.util.List;
 import java.util.Optional;
 
+import de.unistuttgart.stayinsync.core.configuration.exception.CoreManagementWebException;
+import jakarta.ws.rs.core.Response;
+
 @ApplicationScoped
 public class SourceSystemService {
     @Inject
@@ -52,4 +55,38 @@ public class SourceSystemService {
         return deleted;
 
     }
-}
+
+    /**
+     * Update the stored OpenAPI specification for a given source system.
+     *
+     * @param sourceId the ID of the SourceSystem to update
+     * @param spec     the OpenAPI spec content as a UTF-8 string
+     * @throws CoreManagementWebException if the SourceSystem is not found
+     */
+    @Transactional
+    public void updateOpenApiSpec(Long sourceId, String spec) {
+        SourceSystem existing = SourceSystem.findById(sourceId);
+        if (existing == null) {
+            throw new CoreManagementWebException(
+                Response.Status.NOT_FOUND,
+                "Source system not found",
+                "No source system found with id %d", sourceId);
+        }
+        existing.setOpenApi(spec);
+
+
+    }
+    @Transactional
+    public void updateOpenApiSpecUrl(Long sourceId, String specUrl) {
+        SourceSystem existing = SourceSystem.findById(sourceId);
+        if (existing == null) {
+            throw new CoreManagementWebException(
+                Response.Status.NOT_FOUND,
+                "Source system not found",
+                "No source system found with id %d", sourceId);
+        }
+        existing.setOpenApiSpecUrl(specUrl);
+
+
+    }
+    }

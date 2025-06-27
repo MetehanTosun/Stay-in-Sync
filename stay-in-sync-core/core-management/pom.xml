@@ -120,6 +120,7 @@
             <artifactId>mapstruct-processor</artifactId>
             <version>1.6.3</version>
         </dependency>
+        
         <dependency>
             <groupId>de.unistuttgart</groupId>
             <artifactId>stay-in-sync-shared</artifactId>
