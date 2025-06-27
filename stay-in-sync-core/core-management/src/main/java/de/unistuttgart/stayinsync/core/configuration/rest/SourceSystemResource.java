@@ -1,7 +1,7 @@
 package de.unistuttgart.stayinsync.core.configuration.rest;
 
+import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.SourceSystem;
 import de.unistuttgart.stayinsync.core.configuration.exception.CoreManagementWebException;
-import de.unistuttgart.stayinsync.core.configuration.persistence.entities.sync.SourceSystem;
 import de.unistuttgart.stayinsync.core.configuration.service.SourceSystemService;
 import io.quarkus.logging.Log;
 import jakarta.inject.Inject;
