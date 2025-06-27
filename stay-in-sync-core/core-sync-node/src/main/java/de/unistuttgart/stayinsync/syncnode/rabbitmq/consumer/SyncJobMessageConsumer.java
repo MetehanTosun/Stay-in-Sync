@@ -6,9 +6,9 @@ import com.rabbitmq.client.CancelCallback;
 import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.DeliverCallback;
 import com.rabbitmq.client.Delivery;
-import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.SyncJob;
 import de.unistuttgart.stayinsync.exception.SyncNodeException;
 import de.unistuttgart.stayinsync.syncnode.syncjob.SyncJobScheduler;
+import de.unistuttgart.stayinsync.transport.dto.SyncJobMessageDTO;
 import io.quarkiverse.rabbitmqclient.RabbitMQClient;
 import io.quarkus.logging.Log;
 import io.quarkus.runtime.StartupEvent;
@@ -80,8 +80,8 @@ public class SyncJobMessageConsumer {
     private DeliverCallback deploySyncJobCallback() {
         return (consumerTag, delivery) -> {
             try {
-                SyncJob syncJob = getSyncJob(delivery);
-                Log.infof("Received new sync-job %s", syncJob.name);
+                SyncJobMessageDTO syncJob = getSyncJob(delivery);
+                Log.infof("Received new sync-job %s", syncJob.name());
                 syncJobScheduler.deploySyncJobExecution(syncJob);
                 channel.basicAck(delivery.getEnvelope().getDeliveryTag(), false);
             } catch (SyncNodeException e) {
@@ -100,12 +100,12 @@ public class SyncJobMessageConsumer {
      * @throws UnsupportedEncodingException
      * @throws JsonProcessingException
      */
-    private SyncJob getSyncJob(Delivery delivery) throws SyncNodeException {
+    private SyncJobMessageDTO getSyncJob(Delivery delivery) throws SyncNodeException {
 
         try {
             Log.info("Extracting sync-job from consumed message");
             String message = new String(delivery.getBody(), "UTF-8");
-            return objectMapper.readValue(message, SyncJob.class);
+            return objectMapper.readValue(message, SyncJobMessageDTO.class);
         } catch (JsonProcessingException | UnsupportedEncodingException e) {
             throw new SyncNodeException("RabbitMQ error", "Unable to extract sync-job from message body");
         }
@@ -130,8 +130,8 @@ public class SyncJobMessageConsumer {
     private DeliverCallback updateDeployedSyncJobCallback() {
         return (consumerTag, delivery) -> {
             try {
-                SyncJob syncJob = getSyncJob(delivery);
-                Log.infof("Received update for sync-job %s", syncJob.name);
+                SyncJobMessageDTO syncJob = getSyncJob(delivery);
+                Log.infof("Received update for sync-job %s", syncJob.name());
                 syncJobScheduler.reconfigureSyncJobExecution(syncJob);
                 channel.basicAck(delivery.getEnvelope().getDeliveryTag(), false);
             } catch (SyncNodeException e) {
@@ -148,9 +148,9 @@ public class SyncJobMessageConsumer {
      * @param syncJob
      * @throws SyncNodeException
      */
-    public void bindExisitingSyncJobQueue(SyncJob syncJob) throws SyncNodeException {
+    public void bindExisitingSyncJobQueue(SyncJobMessageDTO syncJob) throws SyncNodeException {
         try {
-            String routingKey = "sync-job-" + syncJob.id;
+            String routingKey = "sync-job-" + syncJob.id();
             Log.infof("Binding queue %s with routing key %s", syncNodeQueueName, routingKey);
             channel.queueBind(syncNodeQueueName, "syncjob-exchange", routingKey);
             channel.basicConsume(syncNodeQueueName, false, updateDeployedSyncJobCallback(), cancelSyncJobDeploymentCallback(syncNodeQueueName));
@@ -165,9 +165,9 @@ public class SyncJobMessageConsumer {
      * @param syncJob
      * @throws SyncNodeException
      */
-    public void unbindExisitingSyncJobQueue(SyncJob syncJob) throws SyncNodeException {
+    public void unbindExisitingSyncJobQueue(SyncJobMessageDTO syncJob) throws SyncNodeException {
         try {
-            String routingKey = "sync-job-" + syncJob.id;
+            String routingKey = "sync-job-" + syncJob.id();
             Log.infof("Unbinding queue %s with routing key %s", syncNodeQueueName, routingKey);
             channel.queueUnbind(syncNodeQueueName, "syncjob-exchange", routingKey);
         } catch (IOException e) {
