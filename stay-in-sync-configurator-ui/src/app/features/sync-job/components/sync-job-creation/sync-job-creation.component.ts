@@ -5,7 +5,7 @@ import {Step, StepList, StepPanel, StepPanels, Stepper} from 'primeng/stepper';
 import {Router} from '@angular/router';
 import {FormsModule} from '@angular/forms';
 import {InputText} from 'primeng/inputtext';
-import {NgForOf} from '@angular/common';
+import {NgForOf, NgSwitch, NgSwitchCase} from '@angular/common';
 import {SourceSystem} from '../../../source-system/models/source-system.model';
 import {AasService} from "../../../source-system/services/aas.service";
 import {ToggleSwitch} from "primeng/toggleswitch";
@@ -17,6 +17,7 @@ import {
 import {SyncJobOverviewComponent} from '../sync-job-overview/sync-job-overview.component';
 import {Transformation} from '../../../transformation/models/transformation.model';
 import {SyncJobService} from '../../services/sync-job.service';
+import {SyncJob} from '../../models/sync-job.model';
 
 @Component({
   selector: 'app-sync-job-creation',
@@ -35,7 +36,9 @@ import {SyncJobService} from '../../services/sync-job.service';
     FloatLabel,
     Textarea,
     TransformationBaseComponent,
-    SyncJobOverviewComponent
+    SyncJobOverviewComponent,
+    NgSwitch,
+    NgSwitchCase
   ],
   templateUrl: './sync-job-creation.component.html',
   styleUrl: './sync-job-creation.component.css'
@@ -43,16 +46,76 @@ import {SyncJobService} from '../../services/sync-job.service';
 export class SyncJobCreationComponent {
   @Input() visible = false;
   @Output() visibleChange = new EventEmitter<boolean>();
-  syncJobName: string = '';
-  syncJobDescription: string= '';
-  selectedSourceSystem: any;
+
+  mySyncJob: SyncJob = {};
+
+  private _syncJobName: string = '';
+  get syncJobName(): string {
+    return this._syncJobName;
+  }
+  set syncJobName(value: string) {
+    this._syncJobName = value;
+    this.updateMySyncJob();
+  }
+
+  private _syncJobDescription: string = '';
+  get syncJobDescription(): string {
+    return this._syncJobDescription;
+  }
+  set syncJobDescription(value: string) {
+    this._syncJobDescription = value;
+    this.updateMySyncJob();
+  }
+
+  private _selectedSourceSystem: any;
+  get selectedSourceSystem(): any {
+    return this._selectedSourceSystem;
+  }
+  set selectedSourceSystem(value: any) {
+    this._selectedSourceSystem = value;
+    this.updateMySyncJob();
+  }
+
   sourceSystems: (NgIterable<SourceSystem>) | undefined | null;
-  isSimulation: boolean = false;
-  transformations: Transformation[] = [];
+  private _isSimulation: boolean = false;
+  get isSimulation(): boolean {
+    return this._isSimulation;
+  }
+  set isSimulation(value: boolean) {
+    this._isSimulation = value;
+    this.updateMySyncJob();
+  }
+
+  private _transformations: Transformation[] = [];
+  get transformations(): Transformation[] {
+    return this._transformations;
+  }
+  set transformations(value: Transformation[]) {
+    this._transformations = value;
+    this.updateMySyncJob();
+  }
+
+  private updateMySyncJob() {
+    this.mySyncJob = {
+      name: this._syncJobName,
+      description: this._syncJobDescription,
+      sourceSystemId: this._selectedSourceSystem?.id,
+      isSimulation: this._isSimulation,
+      transformations: this._transformations
+    } as SyncJob;
+  }
+
 
 
   constructor(private router: Router, private aas: AasService, readonly syncJobService: SyncJobService) {
   }
+
+  activeStep = 1;
+
+  goToStep(step: number) {
+    this.activeStep = step;
+  }
+
 
   cancel() {
     this.visible = false;

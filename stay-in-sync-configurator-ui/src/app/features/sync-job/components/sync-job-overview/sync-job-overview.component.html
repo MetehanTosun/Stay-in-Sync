@@ -14,7 +14,7 @@
     </ul>
     <p><strong>Transformations:</strong></p>
     <ul>
-      <li *ngFor="let transformation of syncJob.transformations">{{ transformation }}</li>
+      <li *ngFor="let transformation of syncJob.transformations">{{ transformation.name }}: {{ transformation.transformationRule }}</li>
     </ul>
   </div>
 </div>

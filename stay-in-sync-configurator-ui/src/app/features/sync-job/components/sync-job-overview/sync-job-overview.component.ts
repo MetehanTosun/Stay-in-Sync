@@ -1,6 +1,7 @@
-import { Component } from '@angular/core';
+import {Component, Input} from '@angular/core';
 import {NgForOf} from '@angular/common';
 import {SyncJob} from '../../models/sync-job.model';
+import {Transformation} from '../../../transformation/models/transformation.model';
 
 @Component({
   selector: 'app-sync-job-overview',
@@ -11,6 +12,7 @@ import {SyncJob} from '../../models/sync-job.model';
   styleUrl: './sync-job-overview.component.css'
 })
 export class SyncJobOverviewComponent {
-  syncJob: SyncJob = {};
+  @Input() syncJob!: SyncJob;
+  transformation : Transformation = {};
 
 }
