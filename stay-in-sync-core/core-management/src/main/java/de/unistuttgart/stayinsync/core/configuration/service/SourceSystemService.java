@@ -50,6 +50,5 @@ public class SourceSystemService {
         Log.debugf("Deleting source system with ID: %d", id);
         boolean deleted = SourceSystem.deleteById(id);
         return deleted;
-
     }
 }

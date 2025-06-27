@@ -11,14 +11,16 @@ import java.util.Set;
 @DiscriminatorColumn(name = "sync_system_type", discriminatorType = DiscriminatorType.STRING)
 public abstract class ApiRequestConfiguration extends PanacheEntity {
 
+    public boolean active;
+
     @OneToOne
-    SourceSystemEndpoint sourceSystemEndpoint;
+    public SyncSystemEndpoint sourceSystemEndpoint;
 
     @OneToMany(mappedBy = "apiRequestConfiguration")
-    public Set<SyncSystemApiQueryParam> apiQueryParams;
+    public Set<ApiRequestQueryParam> apiQueryParams;
 
     @OneToMany(mappedBy = "apiRequestConfiguration")
-    public Set<SyncSystemApiRequestHeader> apiRequestHeaders;
+    public Set<ApiRequestHeader> apiRequestHeaders;
 
     public static List<ApiRequestConfiguration> findByEndpointId(Long endpointId) {
         return find("sourceSystemEndpoint.id", endpointId).list();

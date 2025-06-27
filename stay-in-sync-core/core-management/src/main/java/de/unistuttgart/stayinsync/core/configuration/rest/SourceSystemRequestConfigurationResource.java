@@ -30,11 +30,10 @@ import java.util.Optional;
 
 import static jakarta.ws.rs.core.MediaType.APPLICATION_JSON;
 
-@Path("api/source-system/{sourceSystemId}/endpoint")
+@Path("api/source-system/{sourceSystemId}/request-configuration")
 @Produces(APPLICATION_JSON)
 @Consumes(APPLICATION_JSON)
-public class SourceSystemEndpointResource {
-
+public class SourceSystemRequestConfigurationResource {
     @Inject
     SourceSystemEndpointService sourceSystemEndpointService;
 
@@ -182,5 +181,4 @@ public class SourceSystemEndpointResource {
                     return Response.status(Response.Status.NOT_FOUND).build();
                 });
     }
-
 }

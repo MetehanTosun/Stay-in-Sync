@@ -9,8 +9,8 @@ import java.util.Set;
 @Entity
 @DiscriminatorValue("SOURCE_SYSTEM")
 public class SourceSystem extends SyncSystem {
-    
+
     @OneToMany(mappedBy = "sourceSystem")
-    public Set<SourceSystemEndpoint> sourceSystemEndpoint;
+    public Set<SourceSystemEndpoint> sourceSystemEndpoints;
 
 }

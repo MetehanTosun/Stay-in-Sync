@@ -1,6 +1,6 @@
 package de.unistuttgart.stayinsync.core.configuration.rest;
 
-import de.unistuttgart.stayinsync.core.configuration.exception.CoreManagementWebException;
+import de.unistuttgart.stayinsync.core.configuration.exception.CoreManagementException;
 import de.unistuttgart.stayinsync.core.configuration.mapping.SyncJobFullUpdateMapper;
 import de.unistuttgart.stayinsync.core.configuration.rest.dtos.SyncJobDTO;
 import de.unistuttgart.stayinsync.core.configuration.service.SyncJobService;
@@ -114,7 +114,7 @@ public class SyncJobResource {
                 })
                 .orElseThrow(() -> {
                     Log.warnf("No sync-job found using id %d", id);
-                    return new CoreManagementWebException(Response.Status.NOT_FOUND, "Unable to find sync-job", "No sync-job found using id %d", id);
+                    return new CoreManagementException(Response.Status.NOT_FOUND, "Unable to find sync-job", "No sync-job found using id %d", id);
                 });
     }
 
@@ -158,7 +158,7 @@ public class SyncJobResource {
                                        )
                                        @PathParam("id") Long id, @Valid @NotNull SyncJobDTO syncJobDTO) {
         if (id != syncJobDTO.id()) {
-            throw new CoreManagementWebException(Response.Status.BAD_REQUEST, "Id missmatch", "Make sure that the request body entity id matches the request parameter");
+            throw new CoreManagementException(Response.Status.BAD_REQUEST, "Id missmatch", "Make sure that the request body entity id matches the request parameter");
         }
 
         return this.syncJobService.replaceSyncJob(fullUpdateMapper.mapToEntity(syncJobDTO))

@@ -1,13 +1,20 @@
 package de.unistuttgart.stayinsync.core.configuration.rest;
 
 import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.SourceSystem;
-import de.unistuttgart.stayinsync.core.configuration.exception.CoreManagementWebException;
+import de.unistuttgart.stayinsync.core.configuration.exception.CoreManagementException;
 import de.unistuttgart.stayinsync.core.configuration.service.SourceSystemService;
 import io.quarkus.logging.Log;
 import jakarta.inject.Inject;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
-import jakarta.ws.rs.*;
+import jakarta.ws.rs.Consumes;
+import jakarta.ws.rs.DELETE;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.POST;
+import jakarta.ws.rs.PUT;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.PathParam;
+import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.core.Context;
 import jakarta.ws.rs.core.HttpHeaders;
 import jakarta.ws.rs.core.Response;
@@ -50,7 +57,7 @@ public class SourceSystemResource {
     public Response getSsById(@Parameter(name = "id", required = true) @PathParam("id") Long id) {
         SourceSystem found = ssService.findSourceSystemById(id)
                 .orElseThrow(
-                        () -> new CoreManagementWebException(
+                        () -> new CoreManagementException(
                                 Response.Status.NOT_FOUND,
                                 "Source system not found",
                                 "No source system found with id %d", id));
@@ -83,7 +90,7 @@ public class SourceSystemResource {
         input.id = id;
         return ssService.updateSourceSystem(input)
                 .map(updated -> Response.ok(updated).build())
-                .orElseThrow(() -> new CoreManagementWebException(
+                .orElseThrow(() -> new CoreManagementException(
                         Response.Status.NOT_FOUND,
                         "Source system not found",
                         "No source system found with id %d", id));
@@ -96,7 +103,7 @@ public class SourceSystemResource {
     @APIResponse(responseCode = "404", description = "Source system not found")
     public Response deleteSs(@Parameter(name = "id", required = true) @PathParam("id") Long id) {
         if (!ssService.deleteSourceSystemById(id)) {
-            throw new CoreManagementWebException(
+            throw new CoreManagementException(
                     Response.Status.NOT_FOUND,
                     "Source system not found",
                     "No source system found with id %d", id);

@@ -1,5 +1,6 @@
 package de.unistuttgart.stayinsync.core.configuration.service;
 
+import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.SourceSystem;
 import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.SourceSystemEndpoint;
 import de.unistuttgart.stayinsync.core.configuration.mapping.SourceSystemEndpointFullUpdateMapper;
 import io.quarkus.logging.Log;
@@ -27,12 +28,15 @@ public class SourceSystemEndpointService {
     SourceSystemEndpointService sourceSystemEndpointService;
 
     @Inject
+    SourceSystemService sourceSystemService;
+
+    @Inject
     SourceSystemEndpointFullUpdateMapper sourceSystemEndpointFullMapper;
 
-    public SourceSystemEndpoint persistSourceSystemEndpoint(@NotNull @Valid SourceSystemEndpoint sourceSystemEndpoint) {
-        Log.debugf("Persisting source-system-endpoint: %s", sourceSystemEndpoint);
+    public SourceSystemEndpoint persistSourceSystemEndpoint(@NotNull @Valid SourceSystemEndpoint sourceSystemEndpoint, Long sourceSystemId) {
+        Log.debugf("Persisting source-system-endpoint: %s, for source-system with id: %s", sourceSystemEndpoint, sourceSystemId);
 
-        sourceSystemEndpoint.persist();
+        Optional<SourceSystem> sourceSystemById = sourceSystemService.findSourceSystemById(sourceSystemId);
 
         return sourceSystemEndpoint;
     }

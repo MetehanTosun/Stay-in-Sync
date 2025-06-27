@@ -5,8 +5,13 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.ManyToOne;
 
 @Entity
-public class SyncSystemApiQueryParam extends PanacheEntity {
+public class ApiRequestQueryParam extends PanacheEntity {
 
     @ManyToOne
-    public ApiRequestConfiguration apiRequestConfiguration;
+    ApiRequestConfiguration apiRequestConfiguration;
+
+    public String paramName;
+    
+    public String paramValue;
+
 }

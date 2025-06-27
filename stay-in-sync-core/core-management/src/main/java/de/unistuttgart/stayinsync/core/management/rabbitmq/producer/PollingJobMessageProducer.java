@@ -3,8 +3,8 @@ package de.unistuttgart.stayinsync.core.management.rabbitmq.producer;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.rabbitmq.client.AMQP;
 import com.rabbitmq.client.Channel;
-import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.SourceSystemEndpoint;
 import de.unistuttgart.stayinsync.core.configuration.exception.CoreManagementException;
+import de.unistuttgart.stayinsync.transport.dto.ApiRequestConfigurationMessageDTO;
 import io.quarkiverse.rabbitmqclient.RabbitMQClient;
 import io.quarkus.logging.Log;
 import io.quarkus.runtime.StartupEvent;
@@ -45,10 +45,11 @@ public class PollingJobMessageProducer {
         }
     }
 
-    public void publishPollingJob(SourceSystemEndpoint sourceSystemEndpoint) throws CoreManagementException {
+    public void publishPollingJob(ApiRequestConfigurationMessageDTO apiRequestConfiguration) throws CoreManagementException {
         try {
-            Log.infof("Publishing polling-job for %s, polling at %s (id: %s)", sourceSystemEndpoint.sourceSystem.apiUrl, sourceSystemEndpoint.endpointPath, sourceSystemEndpoint.id);
-            String messageBody = objectMapper.writeValueAsString(sourceSystemEndpoint);
+            Log.infof("Publishing polling-job for %s, polling at %s (id: %s)", apiRequestConfiguration.sourceSystemMessageDTO().apiUrl(),
+                    apiRequestConfiguration.endpoint().endpointPath(), apiRequestConfiguration.id());
+            String messageBody = objectMapper.writeValueAsString(apiRequestConfiguration);
             AMQP.BasicProperties properties = new AMQP.BasicProperties.Builder()
                     .contentType("application/json")
                     .deliveryMode(2) // persistent
@@ -64,18 +65,19 @@ public class PollingJobMessageProducer {
     /**
      * Sends message to a sync node that has bound its queue with the deployed entities routing key
      *
-     * @param sourceSystemEndpoint
+     * @param apiRequestConfiguration
      */
-    public void reconfigureDeployedPollingJob(SourceSystemEndpoint sourceSystemEndpoint) {
+    public void reconfigureDeployedPollingJob(ApiRequestConfigurationMessageDTO apiRequestConfiguration) {
         try {
-            Log.infof("Publishing polling-job for %s, polling at %s (id: %s)", sourceSystemEndpoint.sourceSystem.apiUrl, sourceSystemEndpoint.endpointPath, sourceSystemEndpoint.id);
-            String messageBody = objectMapper.writeValueAsString(sourceSystemEndpoint);
+            Log.infof("Publishing polling-job for %s, polling at %s (id: %s)", apiRequestConfiguration.sourceSystemMessageDTO().apiUrl(),
+                    apiRequestConfiguration.endpoint().endpointPath(), apiRequestConfiguration);
+            String messageBody = objectMapper.writeValueAsString(apiRequestConfiguration);
             AMQP.BasicProperties properties = new AMQP.BasicProperties.Builder()
                     .contentType("application/json")
                     .deliveryMode(2) // persistent
                     .build();
 
-            channel.basicPublish("pollingjob-exchange", "polling-job-" + sourceSystemEndpoint.id, properties,
+            channel.basicPublish("pollingjob-exchange", "polling-job-" + apiRequestConfiguration.id(), properties,
                     messageBody.getBytes(StandardCharsets.UTF_8));
         } catch (IOException e) {
             throw new CoreManagementException("Unable to publish Job", "Object JSON-serialization failed", e);
