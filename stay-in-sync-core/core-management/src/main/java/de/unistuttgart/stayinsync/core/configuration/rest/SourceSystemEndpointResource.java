@@ -128,7 +128,7 @@ public class SourceSystemEndpointResource {
     )
     @Path("/{id}")
     public void deleteSourceSystemEndpoint(@Parameter(name = "id", required = true) @PathParam("id") Long id) {
-        this.sourceSystemEndpointService.deleteSourceSystemEndpoint(id);
+        this.sourceSystemEndpointService.deleteSourceSystemEndpointById(id);
         Log.debugf("source-system-endpoint with id %d deleted ", id);
     }
 

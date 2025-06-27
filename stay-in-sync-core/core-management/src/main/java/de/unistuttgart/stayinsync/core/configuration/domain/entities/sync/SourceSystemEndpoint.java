@@ -1,29 +1,22 @@
 package de.unistuttgart.stayinsync.core.configuration.domain.entities.sync;
 
-import io.quarkus.hibernate.orm.panache.PanacheEntity;
-import jakarta.persistence.Entity;
-import jakarta.persistence.ManyToMany;
-import jakarta.persistence.ManyToOne;
-import jakarta.persistence.OneToMany;
+import jakarta.persistence.*;
 
 import java.util.List;
 import java.util.Set;
 
 @Entity
-public class SourceSystemEndpoint extends PanacheEntity {
+@DiscriminatorValue("SOURCE_SYSTEM")
+public class SourceSystemEndpoint extends SyncSystemEndpoint {
 
     public String endpointPath;
 
     public String httpRequestType;
 
-    public boolean pollingActive;
-
     @ManyToMany(mappedBy = "sourceSystemEndpoints")
     public Set<Transformation> transformations;
 
     public String jsonSchema;
-
-    public int pollingRateInMs;
 
     @ManyToOne
     public SourceSystem sourceSystem;
