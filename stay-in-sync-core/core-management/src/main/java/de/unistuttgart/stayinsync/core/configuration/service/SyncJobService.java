@@ -4,7 +4,6 @@ import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.SyncJo
 import de.unistuttgart.stayinsync.core.configuration.domain.events.sync.SyncJobPersistedEvent;
 import de.unistuttgart.stayinsync.core.configuration.domain.events.sync.SyncJobUpdatedEvent;
 import de.unistuttgart.stayinsync.core.configuration.mapping.SyncJobFullUpdateMapper;
-import de.unistuttgart.stayinsync.core.management.rabbitmq.producer.SyncJobMessageProducer;
 import io.quarkus.logging.Log;
 import io.smallrye.common.constraint.NotNull;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -28,12 +27,6 @@ public class SyncJobService {
     Validator validator;
 
     @Inject
-    SyncJobMessageProducer syncJobMessageProducer;
-
-    @Inject
-    SourceSystemEndpointService sourceSystemEndpointService;
-
-    @Inject
     SyncJobFullUpdateMapper syncJobFullUpdateMapper;
 
     @Inject
@@ -47,7 +40,7 @@ public class SyncJobService {
 
         syncJob.persist();
         syncJobPersistedEvent.fire(new SyncJobPersistedEvent(syncJob));
-        
+
         return syncJob;
     }
 

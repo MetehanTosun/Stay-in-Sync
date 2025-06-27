@@ -18,12 +18,6 @@ public class SourceSystemEndpoint extends PanacheEntity {
 
     public boolean pollingActive;
 
-    @OneToMany(mappedBy = "sourceSystemEndpoint")
-    public Set<SourceSystemApiQueryParam> apiQueryParams;
-
-    @OneToMany(mappedBy = "sourceSystemEndpoint")
-    public Set<SourceSystemApiRequestHeader> apiRequestHeaders;
-
     @ManyToMany(mappedBy = "sourceSystemEndpoints")
     public Set<Transformation> transformations;
 
@@ -47,5 +41,9 @@ public class SourceSystemEndpoint extends PanacheEntity {
                 ")";
 
         return list(query);
+    }
+
+    public static List<SourceSystemEndpoint> findBySourceSystemId(Long sourceSystemId) {
+        return find("sourceSystem.id", sourceSystemId).list();
     }
 }
