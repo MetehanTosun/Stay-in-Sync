@@ -8,6 +8,13 @@
   <name>stay-in-sync-core</name>
   <url>http://maven.apache.org</url>
 
+    <parent>
+        <artifactId>stay-in-sync</artifactId>
+        <groupId>de.unistuttgart</groupId>
+        <version>1.0.0-SNAPSHOT</version>
+        <relativePath>../pom.xml</relativePath>
+    </parent>
+
   <modules>
     <module>core-management</module>
     <module>core-sync-node</module>
