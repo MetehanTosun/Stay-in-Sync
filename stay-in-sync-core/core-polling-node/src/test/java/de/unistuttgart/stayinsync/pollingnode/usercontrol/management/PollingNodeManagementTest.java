@@ -1,12 +1,12 @@
-package java.de.unistuttgart.stayinsync.pollingnode.usercontrol.management;
+package de.unistuttgart.stayinsync.pollingnode.usercontrol.management;
 
-import java.de.unistuttgart.stayinsync.pollingnode.entities.PollingJob;
-import java.de.unistuttgart.stayinsync.pollingnode.entities.SyncJob;
-import java.de.unistuttgart.stayinsync.pollingnode.exceptions.FaultySyncJobException;
-import java.de.unistuttgart.stayinsync.pollingnode.exceptions.PollingJobNotFoundException;
-import java.de.unistuttgart.stayinsync.pollingnode.execution.controller.PollingJobExecutionController;
-import java.de.unistuttgart.stayinsync.pollingnode.usercontrol.configuration.PollingJobConfigurator;
-import java.de.unistuttgart.stayinsync.pollingnode.usercontrol.management.PollingJobManagement;
+import de.unistuttgart.stayinsync.pollingnode.entities.PollingJob;
+import de.unistuttgart.stayinsync.pollingnode.entities.SyncJob;
+import de.unistuttgart.stayinsync.pollingnode.exceptions.FaultySyncJobException;
+import de.unistuttgart.stayinsync.pollingnode.exceptions.PollingJobNotFoundException;
+import de.unistuttgart.stayinsync.pollingnode.execution.controller.PollingJobExecutionController;
+import de.unistuttgart.stayinsync.pollingnode.usercontrol.configuration.PollingJobConfigurator;
+import de.unistuttgart.stayinsync.pollingnode.usercontrol.management.PollingJobManagement;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

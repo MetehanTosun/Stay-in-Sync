@@ -1,8 +1,8 @@
-package java.de.unistuttgart.stayinsync.pollingnode.usercontrol.configuration;
+package de.unistuttgart.stayinsync.pollingnode.usercontrol.configuration;
 
-import java.de.unistuttgart.stayinsync.pollingnode.entities.PollingJob;
-import java.de.unistuttgart.stayinsync.pollingnode.entities.SyncJob;
-import java.de.unistuttgart.stayinsync.pollingnode.exceptions.FaultySyncJobException;
+import de.unistuttgart.stayinsync.pollingnode.entities.PollingJob;
+import de.unistuttgart.stayinsync.pollingnode.entities.SyncJob;
+import de.unistuttgart.stayinsync.pollingnode.exceptions.FaultySyncJobException;
 
 import jakarta.enterprise.context.ApplicationScoped;
 

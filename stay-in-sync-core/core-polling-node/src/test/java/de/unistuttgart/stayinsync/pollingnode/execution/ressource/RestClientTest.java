@@ -1,4 +1,4 @@
-package java.de.unistuttgart.stayinsync.pollingnode.execution.ressource;
+package de.unistuttgart.stayinsync.pollingnode.execution.ressource;
 
 import io.smallrye.mutiny.Uni;
 import io.vertx.core.json.JsonObject;
@@ -10,7 +10,7 @@ import io.vertx.mutiny.ext.web.client.WebClient;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import java.de.unistuttgart.stayinsync.pollingnode.execution.ressource.RestClient;
+import de.unistuttgart.stayinsync.pollingnode.execution.ressource.RestClient;
 
 import static org.mockito.Mockito.*;
 import static org.junit.jupiter.api.Assertions.*;

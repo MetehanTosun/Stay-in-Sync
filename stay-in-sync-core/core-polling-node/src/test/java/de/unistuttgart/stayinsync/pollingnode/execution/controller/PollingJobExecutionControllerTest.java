@@ -1,9 +1,9 @@
-package java.de.unistuttgart.stayinsync.pollingnode.execution.controller;
+package de.unistuttgart.stayinsync.pollingnode.execution.controller;
 
-import java.de.unistuttgart.stayinsync.pollingnode.entities.PollingJob;
-import java.de.unistuttgart.stayinsync.pollingnode.execution.controller.PollingJobExecutionController;
-import java.de.unistuttgart.stayinsync.pollingnode.execution.service.PollingJobPollingService;
-import java.de.unistuttgart.stayinsync.pollingnode.rabbitmq.ProducerSendPolledData;
+import de.unistuttgart.stayinsync.pollingnode.entities.PollingJob;
+import de.unistuttgart.stayinsync.pollingnode.execution.controller.PollingJobExecutionController;
+import de.unistuttgart.stayinsync.pollingnode.execution.service.PollingJobPollingService;
+import de.unistuttgart.stayinsync.pollingnode.rabbitmq.ProducerSendPolledData;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

@@ -1,12 +1,12 @@
-package java.de.unistuttgart.stayinsync.pollingnode.usercontrol.configuration;
+package de.unistuttgart.stayinsync.pollingnode.usercontrol.configuration;
 
 import io.quarkus.test.junit.QuarkusTest;
 import org.junit.jupiter.api.Test;
 
-import java.de.unistuttgart.stayinsync.pollingnode.entities.PollingJob;
-import java.de.unistuttgart.stayinsync.pollingnode.entities.SyncJob;
-import java.de.unistuttgart.stayinsync.pollingnode.exceptions.FaultySyncJobException;
-import java.de.unistuttgart.stayinsync.pollingnode.usercontrol.configuration.PollingJobConfigurator;
+import de.unistuttgart.stayinsync.pollingnode.entities.PollingJob;
+import de.unistuttgart.stayinsync.pollingnode.entities.SyncJob;
+import de.unistuttgart.stayinsync.pollingnode.exceptions.FaultySyncJobException;
+import de.unistuttgart.stayinsync.pollingnode.usercontrol.configuration.PollingJobConfigurator;
 
 import static io.smallrye.common.constraint.Assert.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertEquals;

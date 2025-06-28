@@ -1,6 +1,6 @@
-package java.de.unistuttgart.stayinsync.pollingnode.execution.service;
+package de.unistuttgart.stayinsync.pollingnode.execution.service;
 
-import java.de.unistuttgart.stayinsync.pollingnode.execution.ressource.RestClient;
+import de.unistuttgart.stayinsync.pollingnode.execution.ressource.RestClient;
 import io.quarkus.logging.Log;
 
 import io.vertx.core.json.JsonObject;

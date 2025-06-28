@@ -1,11 +1,11 @@
-package java.de.unistuttgart.stayinsync.pollingnode.execution.service;
+package de.unistuttgart.stayinsync.pollingnode.execution.service;
 
-import java.de.unistuttgart.stayinsync.pollingnode.execution.ressource.RestClient;
+import de.unistuttgart.stayinsync.pollingnode.execution.ressource.RestClient;
 import io.vertx.core.json.JsonObject;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import java.de.unistuttgart.stayinsync.pollingnode.execution.service.PollingJobPollingService;
+import de.unistuttgart.stayinsync.pollingnode.execution.service.PollingJobPollingService;
 import java.util.Map;
 import java.util.Optional;
 

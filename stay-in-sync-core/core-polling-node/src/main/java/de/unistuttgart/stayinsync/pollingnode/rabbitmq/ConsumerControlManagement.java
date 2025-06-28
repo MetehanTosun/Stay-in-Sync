@@ -1,8 +1,8 @@
-package java.de.unistuttgart.stayinsync.pollingnode.rabbitmq;
+package de.unistuttgart.stayinsync.pollingnode.rabbitmq;
 
-import java.de.unistuttgart.stayinsync.pollingnode.entities.SyncJob;
-import java.de.unistuttgart.stayinsync.pollingnode.exceptions.FaultySyncJobException;
-import java.de.unistuttgart.stayinsync.pollingnode.usercontrol.management.PollingJobManagement;
+import de.unistuttgart.stayinsync.pollingnode.entities.SyncJob;
+import de.unistuttgart.stayinsync.pollingnode.exceptions.FaultySyncJobException;
+import de.unistuttgart.stayinsync.pollingnode.usercontrol.management.PollingJobManagement;
 import io.quarkus.logging.Log;
 import jakarta.enterprise.context.ApplicationScoped;
 import org.eclipse.microprofile.reactive.messaging.Incoming;

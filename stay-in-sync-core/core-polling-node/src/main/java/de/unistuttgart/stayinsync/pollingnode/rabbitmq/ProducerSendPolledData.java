@@ -1,4 +1,4 @@
-package java.de.unistuttgart.stayinsync.pollingnode.rabbitmq;
+package de.unistuttgart.stayinsync.pollingnode.rabbitmq;
 
 
 import io.quarkus.logging.Log;

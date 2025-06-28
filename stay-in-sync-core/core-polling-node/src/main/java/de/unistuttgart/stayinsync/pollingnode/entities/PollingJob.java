@@ -1,4 +1,4 @@
-package java.de.unistuttgart.stayinsync.pollingnode.entities;
+package de.unistuttgart.stayinsync.pollingnode.entities;
 
 public class PollingJob {
 

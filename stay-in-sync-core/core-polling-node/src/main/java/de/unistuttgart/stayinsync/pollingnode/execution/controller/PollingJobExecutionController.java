@@ -1,11 +1,11 @@
-package java.de.unistuttgart.stayinsync.pollingnode.execution.controller;
+package de.unistuttgart.stayinsync.pollingnode.execution.controller;
 
-import java.de.unistuttgart.stayinsync.pollingnode.entities.PollingJob;
-import java.de.unistuttgart.stayinsync.pollingnode.execution.service.PollingJobPollingService;
+import de.unistuttgart.stayinsync.pollingnode.entities.PollingJob;
+import de.unistuttgart.stayinsync.pollingnode.execution.service.PollingJobPollingService;
 
 import jakarta.enterprise.context.ApplicationScoped;
 
-import java.de.unistuttgart.stayinsync.pollingnode.rabbitmq.ProducerSendPolledData;
+import de.unistuttgart.stayinsync.pollingnode.rabbitmq.ProducerSendPolledData;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.Executors;

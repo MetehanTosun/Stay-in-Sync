@@ -1,4 +1,4 @@
-package java.de.unistuttgart.stayinsync.pollingnode;
+package de.unistuttgart.stayinsync.pollingnode;
 
 import io.quarkus.runtime.Quarkus;
 import io.quarkus.runtime.annotations.QuarkusMain;

@@ -1,4 +1,4 @@
-package java.de.unistuttgart.stayinsync.pollingnode.execution.ressource;
+package de.unistuttgart.stayinsync.pollingnode.execution.ressource;
 
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.unchecked.Unchecked;
