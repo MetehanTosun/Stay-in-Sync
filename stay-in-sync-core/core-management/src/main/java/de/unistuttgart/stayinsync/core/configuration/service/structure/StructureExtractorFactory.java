@@ -24,4 +24,8 @@ public class StructureExtractorFactory {
                          .orElseThrow(() -> new StructureExtractionException(
                              "Kein geeigneter Extractor für Endpoint " + endpoint.id));
     }
+
+    
+
+
 }

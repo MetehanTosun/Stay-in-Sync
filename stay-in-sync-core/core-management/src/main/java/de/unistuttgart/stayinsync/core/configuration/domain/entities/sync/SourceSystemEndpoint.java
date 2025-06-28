@@ -59,4 +59,70 @@ public class SourceSystemEndpoint extends PanacheEntity {
 
         return list(query);
     }
+
+    public static List<SourceSystemEndpoint> listBySourceSystemId(Long sourceSystemId) {
+        return list("sourceSystem.id", sourceSystemId);
+    }
+
+    public String getJsonSchema() {
+        return jsonSchema;
+    }
+
+    public void setJsonSchema(String jsonSchema) {
+        this.jsonSchema = jsonSchema;
+    }
+    public String getSchemaMode() {
+        return schemaMode;
+    }
+    public void setSchemaMode(String schemaMode) {
+        this.schemaMode = schemaMode;
+    }
+    public String getEndpointPath() {
+        return endpointPath;
+    }
+    public void setEndpointPath(String endpointPath) {
+        this.endpointPath = endpointPath;
+    }
+    public String getHttpRequestType() {
+        return httpRequestType;
+    }
+    public void setHttpRequestType(String httpRequestType) {
+        this.httpRequestType = httpRequestType;
+    }
+    public boolean isPollingActive() {
+        return pollingActive;
+    }
+    public void setPollingActive(boolean pollingActive) {
+        this.pollingActive = pollingActive;
+    }
+    public int getPollingRateInMs() {
+        return pollingRateInMs;
+    }
+    public void setPollingRateInMs(int pollingRateInMs) {
+        this.pollingRateInMs = pollingRateInMs;
+    }
+    public Set<SourceSystemApiQueryParam> getApiQueryParams() {
+        return apiQueryParams;
+    }
+    public void setApiQueryParams(Set<SourceSystemApiQueryParam> apiQueryParams) {
+        this.apiQueryParams = apiQueryParams;
+    }
+    public Set<SourceSystemApiRequestHeader> getApiRequestHeaders() {
+        return apiRequestHeaders;
+    }
+    public void setApiRequestHeaders(Set<SourceSystemApiRequestHeader> apiRequestHeaders) {
+        this.apiRequestHeaders = apiRequestHeaders;
+    }
+    public Set<SourceSystemVariable> getSourceSystemVariable() {
+        return sourceSystemVariable;
+    }
+    public void setSourceSystemVariable(Set<SourceSystemVariable> sourceSystemVariable) {
+        this.sourceSystemVariable = sourceSystemVariable;
+    }
+    public SourceSystem getSourceSystem() {
+        return sourceSystem;
+    }
+    public void setSourceSystem(SourceSystem sourceSystem) {
+        this.sourceSystem = sourceSystem;
+    }
 }

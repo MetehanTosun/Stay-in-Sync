@@ -1,16 +1,22 @@
 package de.unistuttgart.stayinsync.core.configuration.rest;
 
+import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.SourceSystem;
 import de.unistuttgart.stayinsync.core.configuration.exception.CoreManagementWebException;
 import de.unistuttgart.stayinsync.core.configuration.service.SourceSystemService;
 import de.unistuttgart.stayinsync.core.configuration.service.SourceSystemEndpointService;
 import de.unistuttgart.stayinsync.core.configuration.mapping.SourceSystemEndpointMapper;
 import de.unistuttgart.stayinsync.core.configuration.mapping.SourceSystemMapper;
+import de.unistuttgart.stayinsync.core.configuration.rest.dtos.CreateSourceSystemForm;
+import de.unistuttgart.stayinsync.core.configuration.rest.dtos.CreateSourceSystemJsonDTO;
 import de.unistuttgart.stayinsync.core.configuration.rest.dtos.SourceSystemDto;
 import de.unistuttgart.stayinsync.core.configuration.rest.dtos.SourceSystemEndpointDto;
+import de.unistuttgart.stayinsync.core.configuration.rest.dtos.SourceSystemType;
+
 import java.util.List;
 import java.util.stream.Collectors;
 import io.quarkus.logging.Log;
 import jakarta.inject.Inject;
+import jakarta.transaction.Transactional;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 import jakarta.ws.rs.*;
@@ -27,10 +33,18 @@ import org.eclipse.microprofile.openapi.annotations.media.Schema;
 import org.eclipse.microprofile.openapi.annotations.parameters.Parameter;
 import org.eclipse.microprofile.openapi.annotations.parameters.RequestBody;
 import org.eclipse.microprofile.openapi.annotations.responses.APIResponse;
+import org.jboss.resteasy.reactive.RestForm;
+import org.jboss.resteasy.reactive.RestPath;
+import org.jboss.resteasy.reactive.RestQuery;
+import org.jboss.resteasy.reactive.multipart.FileUpload;
+
+import jakarta.ws.rs.core.MediaType;
+
+
 
 import java.net.URI;
+import java.nio.charset.StandardCharsets;
 
-import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.core.MediaType;
 import org.jboss.resteasy.reactive.MultipartForm;
 import java.io.IOException;
@@ -80,22 +94,72 @@ public class SourceSystemResource {
         return Response.ok(dto).build();
     }
 
+
+
+    // --- Variante A: JSON only ---------------------------------------------
+
     @POST
-    @Operation(summary = "Creates a new source system")
-    @APIResponse(responseCode = "201", description = "The URI of the created source system", headers = @Header(name = HttpHeaders.LOCATION, schema = @Schema(implementation = URI.class)))
-    @APIResponse(responseCode = "400", description = "Invalid source system passed in")
-    public Response createSs(
-            @RequestBody(name = "source-system", required = true, content = @Content(mediaType = APPLICATION_JSON, schema = @Schema(implementation = SourceSystemDto.class), examples = @ExampleObject(name = "valid_source_system", value = "{\"name\":\"Sensor A\",\"description\":\"Raumtemperatur\",\"endpointUrl\":\"http://localhost:8080\"}"))) @Valid @NotNull SourceSystemDto inputDto,
-            @Context UriInfo uriInfo) {
-        var entity = sourceSystemMapper.toEntity(inputDto);
+    @Consumes(APPLICATION_JSON)
+    @Operation(summary = "Creates a new source system (JSON only)")
+    @APIResponse(responseCode = "201", description = "Source system created",
+        headers = @Header(name = HttpHeaders.LOCATION, schema = @Schema(implementation = URI.class)))
+    public Response createJson(
+        @Valid CreateSourceSystemJsonDTO createDto,
+        @Context UriInfo uriInfo
+    ) {
+        // 1) DTO → Entity
+        SourceSystem entity = sourceSystemMapper.toEntity(createDto);
         ssService.createSourceSystem(entity);
-        SourceSystemDto result = sourceSystemMapper.toDto(entity);
-        var builder = uriInfo.getAbsolutePathBuilder().path(Long.toString(result.id()));
-        Log.debugf("New source system created with URI %s", builder.build().toString());
-        return Response.created(builder.build()).entity(result).build();
-        // TODO: Throw Exception in case of invalid source system: we need to know how
-        // the source system looks like first(final model)
+        // 2) Entity → REST-DTO
+        SourceSystemDto resultDto = sourceSystemMapper.toDto(entity);
+        // 3) Location-Header
+        URI location = uriInfo.getAbsolutePathBuilder()
+                              .path(resultDto.id().toString())
+                              .build();
+        return Response.created(location)
+                       .entity(resultDto)
+                       .build();
     }
+
+    // --- Variante B: Multipart/Form-Data + optional OpenAPI-Spec ----------
+
+    @POST
+    @Consumes(MediaType.MULTIPART_FORM_DATA)
+    @Transactional
+    @Operation(summary = "Creates a new source system (multipart/form-data + optional OpenAPI)")
+    @APIResponse(responseCode = "201", description = "Source system created",
+        headers = @Header(name = HttpHeaders.LOCATION, schema = @Schema(implementation = URI.class)))
+    public Response createMultipart(
+        @MultipartForm CreateSourceSystemForm form,
+        @Context UriInfo uriInfo
+    ) throws IOException {
+        // 1) Form → Entity
+        SourceSystem entity = sourceSystemMapper.toEntity(form);
+        ssService.createSourceSystem(entity);
+
+        // 2) OpenAPI-Spec nachreichen, falls gewünscht
+        if (SourceSystemType.REST_OPENAPI.equals(form.type)) {
+            if (form.openApiSpecUrl != null && !form.openApiSpecUrl.isBlank()) {
+                ssService.updateOpenApiSpecUrl(entity.id, form.openApiSpecUrl);
+            } else if (form.file != null) {
+                String spec = new String(form.uploadedFileBytes(), StandardCharsets.UTF_8);
+                ssService.updateOpenApiSpec(entity.id, spec);
+            }
+        }
+
+        // 3) Entity → REST-DTO
+        SourceSystemDto resultDto = sourceSystemMapper.toDto(entity);
+        // 4) Location-Header
+        URI location = uriInfo.getAbsolutePathBuilder()
+                              .path(resultDto.id().toString())
+                              .build();
+        return Response.created(location)
+                       .entity(resultDto)
+                       .build();
+    }
+
+    // … weitere Endpunkte (GET, PUT, DELETE) unverändert …
+
 
     @PUT
     @Path("/{id}")

@@ -1,28 +1,29 @@
 package de.unistuttgart.stayinsync.core.configuration.rest.dtos;
 
-import java.util.List;
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
+import java.util.List;
 
+@Schema(name = "SourceSystemEndpoint", description = "DTO for a source system endpoint")
 public record SourceSystemEndpointDto(
-    @Schema(description = "Unique identifier of the endpoint")
+    @Schema(description = "Unique identifier", example = "123")
     Long id,
 
-    @Schema(description = "Path of the endpoint, e.g. /users/{id}")
+    @Schema(description = "Path of the endpoint", example = "/api/data")
     String endpointPath,
 
-    @Schema(description = "HTTP method to call (GET, POST, etc.)")
+    @Schema(description = "HTTP method", example = "GET")
     String httpRequestType,
 
-    @Schema(description = "Indicates if polling is active for this endpoint")
+    @Schema(description = "Polling active flag")
     boolean pollingActive,
 
-    @Schema(description = "Polling rate in milliseconds")
+    @Schema(description = "Polling interval in milliseconds", example = "60000")
     Integer pollingRateInMs,
 
-    @Schema(description = "JSON schema generated or provided for this endpoint")
+    @Schema(description = "Generated JSON schema for this endpoint")
     String jsonSchema,
 
-    @Schema(description = "Mode of schema creation: 'auto' or 'manual'")
+    @Schema(description = "Mode of the schema: auto/manual", example = "auto")
     String schemaMode,
 
     @Schema(description = "List of request headers for the endpoint")

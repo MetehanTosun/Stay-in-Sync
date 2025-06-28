@@ -3,27 +3,32 @@ package de.unistuttgart.stayinsync.core.configuration.service.structure;
 import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.SourceSystemEndpoint;
 import de.unistuttgart.stayinsync.core.configuration.service.structure.StructureExtractionException;
 
-
-
 /**
- * Interface für die Extraktion eines JSON-Schemas aus einem SourceSystemEndpoint.
- */
+
+Interface for extracting JSON Schemas from source system endpoints.
+*/
 public interface StructureExtractor {
 
-    /**
-     * Erstellt ein JSON-Schema für den übergebenen Endpoint.
-     *
-     * @param endpoint das zu verarbeitende Endpoint-Objekt
-     * @return JSON-Schema als String
-     * @throws StructureExtractionException bei Extraktionsfehlern
-     */
-    String extractSchema(SourceSystemEndpoint endpoint) throws StructureExtractionException;
+/**
 
-    /**
-     * Liefert true, wenn dieser Extractor für den gegebenen Endpoint-Typ geeignet ist.
-     *
-     * @param endpoint das Endpoint-Objekt
-     * @return true, wenn unterstützt
-     */
-    boolean supports(SourceSystemEndpoint endpoint);
+Indicates whether this extractor supports the given endpoint type.
+
+@param endpoint the source system endpoint to check
+
+@return true if supported, false otherwise
+*/
+boolean supports(SourceSystemEndpoint endpoint);
+
+/**
+
+Extracts a JSON Schema for the given endpoint configuration.
+
+@param endpoint the source system endpoint
+
+@return a JSON Schema string
+
+@throws StructureExtractionException on failure
+*/
+String extractSchema(SourceSystemEndpoint endpoint) throws StructureExtractionException;
 }
+

@@ -32,6 +32,10 @@ public class CoreManagementWebException extends WebApplicationException {
         super(buildResponse(title, message, status, args));
     }
 
+    public CoreManagementWebException(int i, String string, String string2, Long endpointId) {
+        //TODO Auto-generated constructor stub
+    }
+
     /**
      * Used to build response body
      */
