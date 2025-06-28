@@ -10,7 +10,7 @@ import java.util.Collections;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-@Mapper(componentModel = MappingConstants.ComponentModel.JAKARTA_CDI, uses = { TransformationScriptMapper.class })
+@Mapper(componentModel = MappingConstants.ComponentModel.JAKARTA_CDI, uses = {TransformationScriptMapper.class})
 public interface TransformationMapper {
 
     // TODO: Add TransformationRule mappings

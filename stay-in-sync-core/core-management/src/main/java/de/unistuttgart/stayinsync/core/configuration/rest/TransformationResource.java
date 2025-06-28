@@ -37,7 +37,7 @@ public class TransformationResource {
     @Operation(summary = "Creates a new transformation shell",
             description = "Creates the initial transformation object with basic info like name and description. Returns the created object with its new ID.")
     public Response createTransformationShell(TransformationShellDTO dto, @Context UriInfo uriInfo) {
-        var persisted = service.createShell(dto);
+        var persisted = service.createTransformation(dto);
         var builder = uriInfo.getAbsolutePathBuilder().path(Long.toString(persisted.id));
         Log.debugf("New transformation shell created with URI %s", builder.build().toString());
 
@@ -56,7 +56,7 @@ public class TransformationResource {
                     "The ID in the path (%d) does not match the ID in the request body (%d).", id, dto.id());
         }
 
-        var updated = service.assemble(id, dto);
+        var updated = service.updateTransformation(id, dto);
         Log.debugf("Transformation with id %d was assembled.", id);
         return Response.ok(mapper.mapToDetailsDTO(updated)).build();
     }

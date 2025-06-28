@@ -61,7 +61,7 @@ public class TransformationResourceTest {
         persistedShell.name = DEFAULT_NAME;
         persistedShell.description = DEFAULT_DESCRIPTION;
 
-        when(transformationService.createShell(any(TransformationShellDTO.class))).thenReturn(persistedShell);
+        when(transformationService.createTransformation(any(TransformationShellDTO.class))).thenReturn(persistedShell);
 
         // Act & Assert
         var createdDto = given()
@@ -82,7 +82,7 @@ public class TransformationResourceTest {
         assertThat(createdDto.script()).isNull();
 
         var dtoCaptor = ArgumentCaptor.forClass(TransformationShellDTO.class);
-        verify(transformationService).createShell(dtoCaptor.capture());
+        verify(transformationService).createTransformation(dtoCaptor.capture());
         assertThat(dtoCaptor.getValue()).isEqualTo(shellDto);
     }
 
@@ -96,7 +96,7 @@ public class TransformationResourceTest {
                 DEFAULT_SOURCE_ENDPOINT_IDS, DEFAULT_TARGET_ENDPOINT_ID, DEFAULT_RULE_ID, DEFAULT_SCRIPT_ID);
 
         var fullyAssembledEntity = createFullyAssembledMockEntity();
-        when(transformationService.assemble(eq(DEFAULT_TRANSFORMATION_ID), any(TransformationAssemblyDTO.class)))
+        when(transformationService.updateTransformation(eq(DEFAULT_TRANSFORMATION_ID), any(TransformationAssemblyDTO.class)))
                 .thenReturn(fullyAssembledEntity);
 
         // Act & Assert
@@ -117,7 +117,7 @@ public class TransformationResourceTest {
         assertThat(resultingDto.sourceSystemEndpointIds()).containsExactlyInAnyOrderElementsOf(DEFAULT_SOURCE_ENDPOINT_IDS);
 
         var dtoCaptor = ArgumentCaptor.forClass(TransformationAssemblyDTO.class);
-        verify(transformationService).assemble(eq(DEFAULT_TRANSFORMATION_ID), dtoCaptor.capture());
+        verify(transformationService).updateTransformation(eq(DEFAULT_TRANSFORMATION_ID), dtoCaptor.capture());
         assertThat(dtoCaptor.getValue()).isEqualTo(assemblyDto);
     }
 

@@ -32,7 +32,7 @@ public class TransformationScriptResource {
                     Log.debugf("Found transformation script: %s", script);
                     return Response.ok(mapper.mapToDTO(script)).build();
                 })
-                .orElseThrow(()-> new CoreManagementWebException(Response.Status.NOT_FOUND, "Unable to find script", "No transformation script found using id %d", id));
+                .orElseThrow(() -> new CoreManagementWebException(Response.Status.NOT_FOUND, "Unable to find script", "No transformation script found using id %d", id));
     }
 
     @PUT

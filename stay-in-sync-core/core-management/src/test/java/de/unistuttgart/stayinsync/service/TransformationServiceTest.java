@@ -56,7 +56,7 @@ public class TransformationServiceTest {
         }).when(mapper).updateFromShellDTO(any(), any());
 
         // Act
-        Transformation result = service.createShell(shellDto);
+        Transformation result = service.createTransformation(shellDto);
 
         // Assert
         assertThat(result).isNotNull();
@@ -92,7 +92,7 @@ public class TransformationServiceTest {
                 rule.id, script.id);
 
         // Act
-        Transformation assembled = service.assemble(shell.id, assemblyDto);
+        Transformation assembled = service.updateTransformation(shell.id, assemblyDto);
 
         // Assert
         assertThat(assembled.id).isEqualTo(shell.id);
@@ -111,7 +111,7 @@ public class TransformationServiceTest {
         var assemblyDto = new TransformationAssemblyDTO(nonExistentId, null, Set.of(), null, 1L, 1L);
 
         // Act & Assert
-        assertThatThrownBy(() -> service.assemble(nonExistentId, assemblyDto))
+        assertThatThrownBy(() -> service.updateTransformation(nonExistentId, assemblyDto))
                 .isInstanceOf(CoreManagementWebException.class)
                 .satisfies(ex -> {
                     var webEx = (CoreManagementWebException) ex;
@@ -138,7 +138,7 @@ public class TransformationServiceTest {
         var assemblyDto = new TransformationAssemblyDTO(shell.id, null, Set.of(), null, rule.id, nonExistentScriptId);
 
         // Act & Assert
-        assertThatThrownBy(() -> service.assemble(shell.id, assemblyDto))
+        assertThatThrownBy(() -> service.updateTransformation(shell.id, assemblyDto))
                 .isInstanceOf(CoreManagementWebException.class)
                 .satisfies(ex -> {
                     var webEx = (CoreManagementWebException) ex;

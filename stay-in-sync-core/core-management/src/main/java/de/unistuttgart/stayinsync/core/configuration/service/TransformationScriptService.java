@@ -25,7 +25,7 @@ public class TransformationScriptService {
         return TransformationScript.findByIdOptional(id);
     }
 
-    public Optional<TransformationScript> update(Long id, TransformationScript scriptFromDTO){
+    public Optional<TransformationScript> update(Long id, TransformationScript scriptFromDTO) {
         Log.debugf("Updating transformation script with id: %s", id);
         return TransformationScript.<TransformationScript>findByIdOptional(id)
                 .map(targetScript -> {

@@ -26,7 +26,7 @@ public class TransformationService {
     @Inject
     TransformationMapper mapper;
 
-    public Transformation createShell(TransformationShellDTO dto) {
+    public Transformation createTransformation(TransformationShellDTO dto) {
         Log.debugf("Creating new transformation shell with name: %s", dto.name());
         Transformation transformation = new Transformation();
         mapper.updateFromShellDTO(dto, transformation);
@@ -34,7 +34,7 @@ public class TransformationService {
         return transformation;
     }
 
-    public Transformation assemble(Long transformationId, TransformationAssemblyDTO dto) {
+    public Transformation updateTransformation(Long transformationId, TransformationAssemblyDTO dto) {
         Log.debugf("Assembling transformation with id %d", transformationId);
 
         Transformation transformation = Transformation.<Transformation>findByIdOptional(transformationId)
@@ -61,23 +61,20 @@ public class TransformationService {
     }
 
     @Transactional(SUPPORTS)
-    public Optional<Transformation> findById(Long id){
+    public Optional<Transformation> findById(Long id) {
         Log.debugf("Finding transformation with id %d", id);
         return Transformation.findByIdOptional(id);
     }
 
     @Transactional(SUPPORTS)
-    public List<Transformation> findAll(){
+    public List<Transformation> findAll() {
         Log.debug("Getting all transformations.");
         return Transformation.listAll();
     }
 
     @Transactional(SUPPORTS)
-    public void delete(Long id){
+    public boolean delete(Long id) {
         Log.debugf("Deleting transformation with id %d", id);
-        boolean deleted = Transformation.deleteById(id);
-        if(!deleted){
-            throw new CoreManagementWebException(Response.Status.NOT_FOUND, "Transformation not found", "Transformation with id %d could not be found for deletion.", id);
-        }
+        return Transformation.deleteById(id);
     }
 }
