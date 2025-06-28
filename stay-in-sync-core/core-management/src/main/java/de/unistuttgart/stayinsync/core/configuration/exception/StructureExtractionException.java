@@ -1,4 +1,4 @@
-package de.unistuttgart.stayinsync.core.configuration.service.structure;
+package de.unistuttgart.stayinsync.core.configuration.exception;
 
 /**
  * Exception thrown when JSON schema extraction fails for a SourceSystemEndpoint.

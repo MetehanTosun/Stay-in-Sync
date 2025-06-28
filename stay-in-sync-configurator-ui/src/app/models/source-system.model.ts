@@ -5,6 +5,10 @@ export interface SourceSystemDto {
   description?: string;
   type: 'AAS' | 'REST_OPENAPI';
   apiUrl: string;
+  authType: 'BASIC' | 'API_KEY';
+  username?: string;
+  password?: string;
+  apiKey?: string;
   openApiSpecUrl?: string;
   openApiSpec?: string;
 }

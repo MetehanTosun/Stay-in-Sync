@@ -3,6 +3,7 @@ package de.unistuttgart.stayinsync.core.configuration.exception;
 import jakarta.ws.rs.WebApplicationException;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
+import jakarta.ws.rs.core.Response.Status;
 
 /**
  * This Class is supposed to be used for handling errors upon web requests
@@ -66,6 +67,11 @@ public class CoreManagementWebException extends WebApplicationException {
                 .entity(new ErrorResponse(title, message)) //
                 .type(MediaType.APPLICATION_JSON) //
                 .build();
+    }
+
+    public Status getStatus() {
+        // TODO Auto-generated method stub
+        throw new UnsupportedOperationException("Unimplemented method 'getStatus'");
     }
 
 

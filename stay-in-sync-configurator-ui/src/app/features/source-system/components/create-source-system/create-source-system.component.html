@@ -1,5 +1,5 @@
 <p-dialog
-  header="Neues Source System"
+  header="New Source System"
   [(visible)]="visible"
   [modal]="true"
   [closable]="false"
@@ -20,22 +20,22 @@
       </div>
 
       <div class="p-field">
-        <label for="description">Beschreibung</label>
+        <label for="description">Description</label>
         <textarea id="description" pInputTextarea formControlName="description" rows="2"></textarea>
       </div>
 
       <div class="p-field">
-        <label for="type">Typ *</label>
+        <label for="type">Type *</label>
         <p-dropdown
           id="type"
           [options]="typeOptions"
           optionLabel="label"
           optionValue="value"
           formControlName="type"
-          placeholder="Typ wählen"
+          placeholder="Select type"
         ></p-dropdown>
         <small *ngIf="form.get('type')!.invalid && form.get('type')!.touched" class="p-error">
-          Typ ist erforderlich.
+          Type is required.
         </small>
       </div>
 
@@ -44,25 +44,64 @@
           <label for="apiUrl">API URL *</label>
           <input id="apiUrl" pInputText formControlName="apiUrl" placeholder="https://api.example.com" />
           <small *ngIf="form.get('apiUrl')!.invalid && form.get('apiUrl')!.touched" class="p-error">
-            Gültige URL ist erforderlich.
+            A valid URL is required.
           </small>
         </div>
       </ng-container>
 
+      <!-- Auth-Details -->
+      <div class="p-field">
+        <label for="authType">Authentication *</label>
+        <p-dropdown
+          id="authType"
+          [options]="authTypeOptions"
+          optionLabel="label"
+          optionValue="value"
+          formControlName="authType"
+          placeholder="Select auth type"
+        ></p-dropdown>
+        <small *ngIf="form.get('authType')!.invalid && form.get('authType')!.touched" class="p-error">
+          Authentication type is required.
+        </small>
+      </div>
+
+      <!-- Username/Password for BASIC -->
+      <div *ngIf="form.get('authType')!.value === 'BASIC'" class="p-field">
+        <label for="username">Username *</label>
+        <input id="username" pInputText formControlName="username" />
+        <small *ngIf="form.get('username')!.invalid && form.get('username')!.touched" class="p-error">
+          Username is required.
+        </small>
+        <label for="password" class="p-mt-2">Password *</label>
+        <input id="password" type="password" pInputText formControlName="password" />
+        <small *ngIf="form.get('password')!.invalid && form.get('password')!.touched" class="p-error">
+          Password is required.
+        </small>
+      </div>
+
+      <!-- API-Key for API_KEY -->
+      <div *ngIf="form.get('authType')!.value === 'API_KEY'" class="p-field">
+        <label for="apiKey">API-Key *</label>
+        <input id="apiKey" pInputText formControlName="apiKey" />
+        <small *ngIf="form.get('apiKey')!.invalid && form.get('apiKey')!.touched" class="p-error">
+          API key is required.
+        </small>
+      </div>
+
       <ng-container *ngIf="form.get('type')!.value === 'REST_OPENAPI'">
         <h3>OpenAPI Specification</h3>
         <div class="p-field">
-          <label for="openApiSpec">Spec URL oder Datei</label>
+          <label for="openApiSpec">Spec URL or File</label>
           <div class="p-inputgroup">
             <input id="openApiSpec" pInputText formControlName="openApiSpec" placeholder="https://example.com/openapi.json" />
             <span class="p-inputgroup-addon">— oder —</span>
             <input id="file" type="file" (change)="onFileSelected($event)" />
           </div>
           <small *ngIf="form.get('openApiSpec')!.invalid && form.get('openApiSpec')!.touched && !fileSelected" class="p-error">
-            Entweder eine gültige URL oder eine Datei muss angegeben werden.
+            Either a valid URL or a file must be provided.
           </small>
           <div *ngIf="fileSelected" class="p-mt-2">
-            Datei ausgewählt: {{ selectedFile?.name }}
+            File selected: {{ selectedFile?.name }}
           </div>
         </div>
       </ng-container>
@@ -73,13 +112,13 @@
   <div class="p-d-flex p-jc-end p-mt-4">
     <button
       pButton
-      label="Abbrechen"
+      label="Cancel"
       class="p-button-text"
       (click)="cancel()"
     ></button>
     <button
       pButton
-      label="Weiter"
+      label="Next"
       class="p-button-sm"
       (click)="next()"
       [disabled]="
@@ -90,4 +129,32 @@
       "
     ></button>
   </div>
+    <!-- STEP 2: Endpoints -->
+    <div *ngIf="currentStep === 2">
+      <h3>Endpoints</h3>
+      <p-table [value]="endpoints">
+        <ng-template pTemplate="header">
+          <tr><th>Name</th><th>Actions</th></tr>
+        </ng-template>
+        <ng-template pTemplate="body" let-endp>
+          <tr>
+            <td>{{ endp.name }}</td>
+            <td>
+              <button pButton type="button" label="Extract Schema"
+                (click)="onExtract(endp)"></button>
+            </td>
+          </tr>
+        </ng-template>
+      </p-table>
+
+      <div class="p-field p-grid p-ai-center p-mt-3">
+        <div class="p-col">
+          <input pInputText placeholder="New endpoint name"
+            [(ngModel)]="newEndpointName" name="newEndpoint" />
+        </div>
+        <div class="p-col-fixed">
+          <button pButton type="button" label="Add" (click)="addEndpoint()"></button>
+        </div>
+      </div>
+    </div>
 </p-dialog>

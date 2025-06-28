@@ -1,7 +1,7 @@
 package de.unistuttgart.stayinsync.core.configuration.service.structure;
 
 import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.SourceSystemEndpoint;
-import de.unistuttgart.stayinsync.core.configuration.service.structure.StructureExtractionException;
+import de.unistuttgart.stayinsync.core.configuration.exception.StructureExtractionException;
 
 /**
 

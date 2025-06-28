@@ -7,6 +7,7 @@ import jakarta.persistence.Column;
 
 import java.util.Set;
 
+import de.unistuttgart.stayinsync.core.configuration.rest.dtos.AuthType;
 import de.unistuttgart.stayinsync.core.configuration.rest.dtos.SourceSystemType;
 
 @Entity
@@ -41,8 +42,8 @@ public class SourceSystem extends SyncSystem {
         return authType;
     }
 
-    public void setAuthType(String authType) {
-        this.authType = authType;
+    public void setAuthType(AuthType apiKey2) {
+        this.authType = apiKey;
     }
 
     public String getUsername() {
@@ -65,9 +66,7 @@ public class SourceSystem extends SyncSystem {
         return apiKey;
     }
 
-    public void setApiKey(String apiKey) {
-        this.apiKey = apiKey;
-    }
+
 
     /**
      * Type of this source system (AAS or REST_OPENAPI).
@@ -113,4 +112,15 @@ public class SourceSystem extends SyncSystem {
     public void setOpenApiSpecUrl(String openApiSpecUrl) {
         this.openApiSpecUrl = openApiSpecUrl;
     }
+
+    public void setApiKey(String apiKey) {
+        this.apiKey = apiKey;
+    }
+
+    public void setApiUrl(String string) {
+        this.apiUrl = string;
+
+        
+    }
+
 }

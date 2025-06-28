@@ -2,7 +2,7 @@ package de.unistuttgart.stayinsync.core.configuration.service.structure.impl;
 
 import jakarta.enterprise.context.ApplicationScoped;
 import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.SourceSystemEndpoint;
-import de.unistuttgart.stayinsync.core.configuration.service.structure.StructureExtractionException;
+import de.unistuttgart.stayinsync.core.configuration.exception.StructureExtractionException;
 import de.unistuttgart.stayinsync.core.configuration.service.structure.StructureExtractor;
 
 /**

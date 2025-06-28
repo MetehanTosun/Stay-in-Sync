@@ -7,9 +7,15 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
 
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+import java.net.http.HttpResponse.BodyHandlers;
 import java.util.List;
 import java.util.Optional;
-
+import java.io.IOException;
+import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.SourceSystem;
 import de.unistuttgart.stayinsync.core.configuration.exception.CoreManagementWebException;
 import jakarta.ws.rs.core.Response;
 
@@ -76,6 +82,16 @@ public class SourceSystemService {
 
 
     }
+   
+
+
+    /**
+     * Update the stored OpenAPI specification for a given source system by URL.
+     *
+     * @param sourceId the ID of the SourceSystem to update
+     * @param specUrl  the URL to fetch the OpenAPI spec from
+     * @throws CoreManagementWebException if the SourceSystem is not found or the fetch fails
+     */
     @Transactional
     public void updateOpenApiSpecUrl(Long sourceId, String specUrl) {
         SourceSystem existing = SourceSystem.findById(sourceId);
@@ -85,8 +101,34 @@ public class SourceSystemService {
                 "Source system not found",
                 "No source system found with id %d", sourceId);
         }
+
+        // 1) speichere zuerst die URL
         existing.setOpenApiSpecUrl(specUrl);
 
+        // 2) jetzt die Spec per HTTP holen
+        try {
+            HttpClient client = HttpClient.newHttpClient();
+            HttpRequest request = HttpRequest.newBuilder()
+                .uri(URI.create(specUrl))
+                .GET()
+                .build();
+            HttpResponse<String> response = client.send(request,
+                BodyHandlers.ofString());
 
+            if (response.statusCode() >= 200 && response.statusCode() < 300) {
+                existing.setOpenApi(response.body());
+            } else {
+                throw new CoreManagementWebException(
+                    Response.Status.BAD_GATEWAY,
+                    "Failed to fetch OpenAPI spec",
+                    "Remote server returned HTTP %d", response.statusCode());
+            }
+        } catch (IOException | InterruptedException e) {
+            throw new CoreManagementWebException(
+                Response.Status.BAD_GATEWAY,
+                "Failed to fetch OpenAPI spec",
+                e.getMessage(),
+                e);
+        }
     }
-    }
+}
