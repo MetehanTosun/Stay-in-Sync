@@ -8,6 +8,7 @@ import de.unistuttgart.stayinsync.core.configuration.repository.SourceSystemRepo
 import de.unistuttgart.stayinsync.core.configuration.rest.dtos.DiscoveredEndpoint;
 import de.unistuttgart.stayinsync.core.configuration.service.structure.StructureExtractorFactory;
 import io.swagger.v3.parser.OpenAPIV3Parser;
+import io.swagger.v3.parser.core.models.SwaggerParseResult;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
@@ -99,16 +100,22 @@ public class SourceSystemEndpointService {
                 "Source system not found",
                 "No source system with id %d", sourceSystemId));
 
-        // 2) parse the raw OpenAPI (JSON/YAML) the user stored
-        String spec = system.getOpenApi();              // assuming you saved the raw spec here
-        OpenAPI api = new OpenAPIV3Parser()
-            .readContents(spec, null, null)
-            .getOpenAPI();
+        // 2) parse the OpenAPI spec (either from URL or raw text)
+        SwaggerParseResult parseResult;
+        if (system.getOpenApiSpecUrl() != null && !system.getOpenApiSpecUrl().isBlank()) {
+            parseResult = new OpenAPIV3Parser()
+                .readLocation(system.getOpenApiSpecUrl(), null, null);
+        } else {
+            String spec = system.getOpenApi();
+            parseResult = new OpenAPIV3Parser()
+                .readContents(spec, null, null);
+        }
+        OpenAPI api = parseResult.getOpenAPI();
         if (api == null || api.getPaths() == null) {
             throw new CoreManagementWebException(
                 400,
                 "Invalid OpenAPI spec",
-                "The OpenAPI specification for source system %d is invalid or empty", sourceSystemId
+                "Failed to parse OpenAPI spec for source system %d: %s", sourceSystemId
             );
         }
 

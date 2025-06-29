@@ -99,6 +99,7 @@ public class SourceSystem extends SyncSystem {
         this.openApi = openApi;
     }
 
+  
     /**
      * URL to the OpenAPI specification of this SourceSystem.
      */

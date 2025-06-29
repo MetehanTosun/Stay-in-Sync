@@ -3,7 +3,7 @@ import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { SourceSystemDto } from '../models/source-system.model';
 import { SourceSystemEndpointDto } from '../models/source-system-endpoint.model';
-
+import { DiscoveredEndpointDto } from '../models/discovered-endpoint.model';
 
 
 
@@ -16,6 +16,13 @@ export class SourceSystemApiService {
   // JSON-Only Create (schickt ein reines SourceSystemDto)
   create(dto: SourceSystemDto): Observable<SourceSystemDto> {
     return this.http.post<SourceSystemDto>(this.baseUrl, dto);
+  }
+
+  /**
+   * Create a source system via multipart/form-data, including file upload.
+   */
+  createFormData(formData: FormData): Observable<SourceSystemDto> {
+    return this.http.post<SourceSystemDto>(this.baseUrl, formData);
   }
 
   getAll(): Observable<SourceSystemDto[]> {
@@ -53,8 +60,8 @@ export class SourceSystemApiService {
   }
 
   // Schritte 2+3 …
-  listEndpoints(sourceId: number): Observable<any[]> {
-    return this.http.get<any[]>(`${this.baseUrl}/${sourceId}/endpoints`);
+  listEndpoints(sourceId: number): Observable<SourceSystemEndpointDto[]> {
+    return this.http.get<SourceSystemEndpointDto[]>(`${this.baseUrl}/${sourceId}/endpoints`);
   }
   
 
@@ -70,5 +77,12 @@ export class SourceSystemApiService {
       `${this.baseUrl}/${sourceId}/endpoints`,
       endpoint
     );
+  }
+
+  /**
+   * Discover available endpoints from the stored OpenAPI spec.
+   */
+  discoverEndpoints(sourceId: number): Observable<DiscoveredEndpointDto[]> {
+    return this.http.get<DiscoveredEndpointDto[]>(`${this.baseUrl}/${sourceId}/discover`);
   }
 }

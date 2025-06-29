@@ -5,7 +5,7 @@
       type="button"
       label="Create Source System"
       icon="pi pi-plus"
-      (click)="openCreate()"
+      (click)="createDlg.open()"
     ></button>
   </div>
 </p-toolbar>
@@ -25,11 +25,7 @@
   </ng-template>
 </p-table>
 
-<app-create-source-system
-  [visible]="showCreateDialog"
-  (visibleChange)="showCreateDialog = $event"
-  (created)="loadSystems()"
-></app-create-source-system>
+<app-create-source-system #createDlg></app-create-source-system>
 
 <p-message
   *ngIf="errorMsg"

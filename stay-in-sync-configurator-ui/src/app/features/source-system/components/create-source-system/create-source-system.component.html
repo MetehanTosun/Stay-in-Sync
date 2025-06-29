@@ -3,34 +3,42 @@
   [(visible)]="visible"
   [modal]="true"
   [closable]="false"
-  [style]="{ width: '800px', minHeight: '1000px' }"
+  [style]="{ width: '800px', minHeight: '600px' }"
   (onHide)="cancel()"
 >
-<p-steps [model]="steps" [activeIndex]="currentStep - 1" [readonly]="true"></p-steps>
+  <p-steps [model]="steps" [activeIndex]="currentStep - 1" [readonly]="true"></p-steps>
 
-<form [formGroup]="form" class="p-fluid" style="margin-top:1rem">
-    <!-- STEP 1: Metadaten -->
+  <form [formGroup]="form" class="p-fluid p-mt-4">
+    <!-- STEP 1 -->
     <div *ngIf="currentStep === 1">
+      <!-- Name -->
       <div class="p-field">
         <label for="name">Name *</label>
         <input id="name" pInputText formControlName="name" />
         <small *ngIf="form.get('name')!.invalid && form.get('name')!.touched" class="p-error">
-          Name ist erforderlich.
+          Name is required.
         </small>
       </div>
 
+      <!-- Description -->
       <div class="p-field">
         <label for="description">Description</label>
-        <textarea id="description" pInputTextarea formControlName="description" rows="2"></textarea>
+        <textarea
+        id="description"
+        pInputTextarea
+        formControlName="description"
+        rows="4"
+        autoResize
+        style="min-height: 80px; max-height: 200px; width: 100%;"
+      ></textarea>
       </div>
 
+      <!-- Type -->
       <div class="p-field">
         <label for="type">Type *</label>
         <p-dropdown
           id="type"
           [options]="typeOptions"
-          optionLabel="label"
-          optionValue="value"
           formControlName="type"
           placeholder="Select type"
         ></p-dropdown>
@@ -39,24 +47,21 @@
         </small>
       </div>
 
-      <ng-container *ngIf="form.get('type')!.value !== 'REST_OPENAPI'">
-        <div class="p-field">
-          <label for="apiUrl">API URL *</label>
-          <input id="apiUrl" pInputText formControlName="apiUrl" placeholder="https://api.example.com" />
-          <small *ngIf="form.get('apiUrl')!.invalid && form.get('apiUrl')!.touched" class="p-error">
-            A valid URL is required.
-          </small>
-        </div>
-      </ng-container>
+      <!-- API URL -->
+      <div class="p-field">
+        <label for="apiUrl">API URL *</label>
+        <input id="apiUrl" pInputText formControlName="apiUrl" placeholder="https://api.example.com" />
+        <small *ngIf="form.get('apiUrl')!.invalid && form.get('apiUrl')!.touched" class="p-error">
+          A valid URL is required.
+        </small>
+      </div>
 
-      <!-- Auth-Details -->
+      <!-- Auth Type -->
       <div class="p-field">
         <label for="authType">Authentication *</label>
         <p-dropdown
           id="authType"
           [options]="authTypeOptions"
-          optionLabel="label"
-          optionValue="value"
           formControlName="authType"
           placeholder="Select auth type"
         ></p-dropdown>
@@ -65,7 +70,7 @@
         </small>
       </div>
 
-      <!-- Username/Password for BASIC -->
+      <!-- Basic creds -->
       <div *ngIf="form.get('authType')!.value === 'BASIC'" class="p-field">
         <label for="username">Username *</label>
         <input id="username" pInputText formControlName="username" />
@@ -79,82 +84,150 @@
         </small>
       </div>
 
-      <!-- API-Key for API_KEY -->
+      <!-- API Key -->
       <div *ngIf="form.get('authType')!.value === 'API_KEY'" class="p-field">
-        <label for="apiKey">API-Key *</label>
+        <label for="apiKey">API Key *</label>
         <input id="apiKey" pInputText formControlName="apiKey" />
         <small *ngIf="form.get('apiKey')!.invalid && form.get('apiKey')!.touched" class="p-error">
           API key is required.
         </small>
       </div>
 
-      <ng-container *ngIf="form.get('type')!.value === 'REST_OPENAPI'">
-        <h3>OpenAPI Specification</h3>
-        <div class="p-field">
-          <label for="openApiSpec">Spec URL or File</label>
-          <div class="p-inputgroup">
-            <input id="openApiSpec" pInputText formControlName="openApiSpec" placeholder="https://example.com/openapi.json" />
-            <span class="p-inputgroup-addon">— oder —</span>
-            <input id="file" type="file" (change)="onFileSelected($event)" />
-          </div>
-          <small *ngIf="form.get('openApiSpec')!.invalid && form.get('openApiSpec')!.touched && !fileSelected" class="p-error">
-            Either a valid URL or a file must be provided.
-          </small>
-          <div *ngIf="fileSelected" class="p-mt-2">
-            File selected: {{ selectedFile?.name }}
-          </div>
+      <!-- OpenAPI Spec URL or File -->
+      <div *ngIf="form.get('type')!.value === 'REST_OPENAPI'" class="p-field">
+        <label for="openApiSpecUrl">Spec URL or File *</label>
+        <div class="p-inputgroup">
+          <input
+            id="openApiSpecUrl"
+            pInputText
+            formControlName="openApiSpecUrl"
+            placeholder="https://example.com/openapi.json"
+          />
+          <span class="p-inputgroup-addon">— or —</span>
+          <input id="file" type="file" (change)="onFileSelected($event)" />
         </div>
-      </ng-container>
+        <small
+          *ngIf="form.get('openApiSpecUrl')!.invalid && form.get('openApiSpecUrl')!.touched && !fileSelected"
+          class="p-error"
+        >
+          Either a valid URL or a file must be provided.
+        </small>
+        <div *ngIf="fileSelected" class="p-mt-2">
+          File selected: {{ selectedFile?.name }}
+        </div>
+      </div>
     </div>
-
   </form>
 
+  <!-- Footer -->
   <div class="p-d-flex p-jc-end p-mt-4">
-    <button
-      pButton
-      label="Cancel"
-      class="p-button-text"
-      (click)="cancel()"
-    ></button>
+    <button pButton label="Cancel" class="p-button-text" (click)="cancel()"></button>
     <button
       pButton
       label="Next"
       class="p-button-sm"
       (click)="next()"
-      [disabled]="
-        currentStep === 1
-          ? form.invalid ||
-            (form.value.type === 'REST_OPENAPI' && !(form.value.openApiSpec || fileSelected))
-          : false
-      "
+      [disabled]="currentStep === 1 && !(form.value.openApiSpecUrl || fileSelected)"
     ></button>
   </div>
-    <!-- STEP 2: Endpoints -->
-    <div *ngIf="currentStep === 2">
-      <h3>Endpoints</h3>
-      <p-table [value]="endpoints">
-        <ng-template pTemplate="header">
-          <tr><th>Name</th><th>Actions</th></tr>
-        </ng-template>
-        <ng-template pTemplate="body" let-endp>
-          <tr>
-            <td>{{ endp.name }}</td>
-            <td>
-              <button pButton type="button" label="Extract Schema"
-                (click)="onExtract(endp)"></button>
-            </td>
-          </tr>
-        </ng-template>
-      </p-table>
 
-      <div class="p-field p-grid p-ai-center p-mt-3">
-        <div class="p-col">
-          <input pInputText placeholder="New endpoint name"
-            [(ngModel)]="newEndpointName" name="newEndpoint" />
-        </div>
-        <div class="p-col-fixed">
-          <button pButton type="button" label="Add" (click)="addEndpoint()"></button>
-        </div>
+  <!-- STEP 2 -->
+  <div *ngIf="currentStep === 2" class="p-mt-4">
+    <h3>Endpoints</h3>
+    <!-- Discover from spec -->
+    <div class="p-mb-3">
+      <button pButton type="button" label="Discover Endpoints" (click)="discoverEndpoints()"></button>
+    </div>
+    <p-table [value]="discoveredEndpoints" *ngIf="discoveredEndpoints.length">
+      <ng-template pTemplate="header">
+        <tr>
+          <th>Path</th>
+          <th>Method</th>
+          
+        </tr>
+      </ng-template>
+      <ng-template pTemplate="body" let-ep>
+        <tr>
+          <td>{{ ep.path }}</td>
+          <td>{{ ep.method }}</td>
+          <td>
+          
+          </td>
+        </tr>
+      </ng-template>
+    </p-table>
+
+    <!-- Manual endpoints list -->
+    <div class="p-mb-3">
+      <button pButton type="button" label="Add Endpoint" (click)="openEndpointDialog()"></button>
+    </div>
+    <p-table [value]="manualEndpoints">
+      <ng-template pTemplate="header">
+        <tr>
+          <th>Path</th>
+          <th>Method</th>
+          <th>Polling Rate (ms)</th>
+          <th>Schema Mode</th>
+          <th>Actions</th>
+        </tr>
+      </ng-template>
+      <ng-template pTemplate="body" let-ep let-i="rowIndex">
+        <tr>
+          <td>{{ ep.path }}</td>
+          <td>{{ ep.method }}</td>
+          <td>{{ ep.pollingRate }}</td>
+          <td>{{ ep.schemaMode === 'AUTO' ? 'Auto-generated' : 'Manual' }}</td>
+          <td>
+            <button pButton icon="pi pi-pencil" type="button" (click)="openEndpointDialog(i)"></button>
+            <button pButton icon="pi pi-trash" type="button" (click)="manualEndpoints.splice(i,1)"></button>
+          </td>
+        </tr>
+      </ng-template>
+    </p-table>
+  </div>
+</p-dialog>
+
+<!-- Endpoint Add/Edit Dialog -->
+<p-dialog
+  header="Endpoint Details"
+  [(visible)]="showEndpointDialog"
+  [modal]="true"
+  (onHide)="showEndpointDialog=false"
+>
+  <form [formGroup]="endpointForm" class="p-fluid">
+    <div class="p-field">
+      <label>Path</label>
+      <input pInputText formControlName="path" />
+    </div>
+    <div class="p-field">
+      <label>Method</label>
+      <p-dropdown [options]="methodOptions" formControlName="method"></p-dropdown>
+    </div>
+    <div class="p-field">
+      <label>Polling Rate (ms)</label>
+      <input type="number" pInputText formControlName="pollingRate" />
+    </div>
+    <div class="p-field">
+      <label>Schema Mode</label>
+      <div *ngFor="let m of schemaModes" class="p-field-radiobutton">
+        <p-radioButton
+          [value]="m"
+          formControlName="schemaMode"
+          [inputId]="'schemaMode-' + m"
+        ></p-radioButton>
+        <label [for]="'schemaMode-' + m">{{ m }}</label>
       </div>
     </div>
+    <div *ngIf="endpointForm.value.schemaMode==='AUTO'" class="p-field">
+      <p>Schema will be generated automatically from OpenAPI Spec.</p>
+    </div>
+    <div *ngIf="endpointForm.value.schemaMode==='MANUAL'" class="p-field">
+      <label>Manual JSON Schema</label>
+      <textarea rows="10" pInputTextarea formControlName="manualSchema"></textarea>
+    </div>
+  </form>
+  <ng-template pTemplate="footer">
+    <button pButton label="Cancel" (click)="showEndpointDialog=false"></button>
+    <button pButton label="Fertig" (click)="saveEndpoint()"></button>
+  </ng-template>
 </p-dialog>

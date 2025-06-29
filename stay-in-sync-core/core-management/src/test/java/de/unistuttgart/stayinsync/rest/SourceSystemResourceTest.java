@@ -2,6 +2,7 @@ package de.unistuttgart.stayinsync.rest;
 
 import static io.restassured.RestAssured.given;
 import static org.hamcrest.CoreMatchers.*;
+import static org.hamcrest.Matchers.hasSize;
 import static org.mockito.Mockito.*;
 
 import java.net.URI;
@@ -20,13 +21,13 @@ import jakarta.ws.rs.core.MediaType;
 
 import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.SourceSystem;
 import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.SourceSystemEndpoint;
-import de.unistuttgart.stayinsync.core.configuration.rest.dtos.AuthType;
 import de.unistuttgart.stayinsync.core.configuration.exception.CoreManagementWebException;
 import de.unistuttgart.stayinsync.core.configuration.mapping.SourceSystemEndpointMapper;
 import de.unistuttgart.stayinsync.core.configuration.mapping.SourceSystemMapper;
 import de.unistuttgart.stayinsync.core.configuration.rest.dtos.*;
 import de.unistuttgart.stayinsync.core.configuration.service.SourceSystemEndpointService;
 import de.unistuttgart.stayinsync.core.configuration.service.SourceSystemService;
+import jakarta.ws.rs.core.Response;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.mockito.InjectMock;
 
@@ -180,6 +181,19 @@ public class SourceSystemResourceTest {
                  .body("[0].path", is("/pets"))
                  .body("[0].method", is("GET"));
         }
+
+        @Test
+        public void testDiscoverEndpointsEmpty() {
+            // Simulate no endpoints discovered
+            when(endpointService.discoverAllEndpoints(42L)).thenReturn(List.of());
+
+            given()
+              .when().get("/api/source-systems/42/discover")
+              .then()
+                 .statusCode(200)
+                 .body("", hasSize(0));
+        }
+
     
         @Test
         public void testCreateEndpoint() {
