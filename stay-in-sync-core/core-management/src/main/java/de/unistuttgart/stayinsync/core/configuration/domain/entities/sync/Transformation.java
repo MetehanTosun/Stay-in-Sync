@@ -10,6 +10,10 @@ import java.util.Set;
 @Entity
 public class Transformation extends PanacheEntity {
 
+    public String name;
+
+    public String description;
+
     @ManyToOne
     public SyncJob syncJob;
 
