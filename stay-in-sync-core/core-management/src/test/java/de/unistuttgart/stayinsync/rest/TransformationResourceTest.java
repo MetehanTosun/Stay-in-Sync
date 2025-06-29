@@ -165,18 +165,36 @@ public class TransformationResourceTest {
     }
 
     @Test
-    void testDeleteTransformation() {
-        // No change needed here, it works as is.
-        doNothing().when(transformationService).delete(eq(DEFAULT_TRANSFORMATION_ID));
+    void testDeleteTransformation_Success() {
+        // Arrange
+        long transformationIdToDelete = 1L;
+        when(transformationService.delete(eq(transformationIdToDelete))).thenReturn(true);
 
+        // Act & Assert
         given()
                 .when()
-                .delete("/api/config/transformation/{id}", DEFAULT_TRANSFORMATION_ID)
+                .delete("/api/config/transformation/{id}", transformationIdToDelete)
                 .then()
                 .statusCode(NO_CONTENT.getStatusCode())
                 .body(blankOrNullString());
 
-        verify(transformationService).delete(DEFAULT_TRANSFORMATION_ID);
+        verify(transformationService).delete(transformationIdToDelete);
+    }
+
+    @Test
+    void testDeleteTransformation_NotFound() {
+        // Arrange
+        long nonExistentId = 999L;
+        when(transformationService.delete(eq(nonExistentId))).thenReturn(false);
+
+        // Act & Assert
+        given()
+                .when()
+                .delete("/api/config/transformation/{id}", nonExistentId)
+                .then()
+                .statusCode(NOT_FOUND.getStatusCode());
+
+        verify(transformationService).delete(nonExistentId);
     }
 
     // --- Helper Method to create a fully populated mock entity for service responses ---

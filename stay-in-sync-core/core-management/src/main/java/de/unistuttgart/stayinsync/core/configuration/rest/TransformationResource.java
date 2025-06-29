@@ -87,8 +87,16 @@ public class TransformationResource {
     @Path("/{id}")
     @Operation(summary = "Deletes an existing transformation")
     public Response deleteTransformation(@Parameter(name = "id", required = true) @PathParam("id") Long id) {
-        service.delete(id);
-        Log.debugf("Transformation with id %d deleted", id);
-        return Response.noContent().build();
+        boolean deleted = service.delete(id);
+
+        if (deleted) {
+            Log.debugf("Transformation with id %d deleted", id);
+            return Response.noContent().build();
+        } else {
+            Log.warnf("Attempted to delete non-existent transformation with id %d", id);
+            throw new CoreManagementWebException(Response.Status.NOT_FOUND,
+                    "Transformation not found",
+                    "Transformation with id %d could not be found for deletion.", id);
+        }
     }
 }

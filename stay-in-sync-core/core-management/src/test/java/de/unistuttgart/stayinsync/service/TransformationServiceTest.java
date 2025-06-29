@@ -20,6 +20,7 @@ import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doAnswer;
@@ -203,22 +204,11 @@ public class TransformationServiceTest {
     }
 
     @Test
-    void delete_shouldThrowExceptionWhenNotFound() {
+    void delete_shouldRemoveFalseWhenNotFound() {
         // Arrange
         long nonExistentId = 999L;
 
         // Act & Assert
-        assertThatThrownBy(() -> service.delete(nonExistentId))
-                .isInstanceOf(CoreManagementWebException.class)
-                .satisfies(ex -> {
-                    var webEx = (CoreManagementWebException) ex;
-                    Response response = webEx.getResponse();
-
-                    assertThat(response.getStatusInfo()).isEqualTo(Response.Status.NOT_FOUND);
-
-                    assertThat(response.getEntity())
-                            .extracting("errorMessage")
-                            .isEqualTo("Transformation with id 999 could not be found for deletion.");
-                });
+        assertFalse(service.delete(nonExistentId));
     }
 }
