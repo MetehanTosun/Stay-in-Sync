@@ -4,7 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.rabbitmq.client.AMQP;
 import com.rabbitmq.client.Channel;
 import de.unistuttgart.stayinsync.core.configuration.exception.CoreManagementException;
-import de.unistuttgart.stayinsync.transport.dto.ApiRequestConfigurationMessageDTO;
+import de.unistuttgart.stayinsync.transport.dto.SourceSystemApiRequestConfigurationMessageDTO;
 import io.quarkiverse.rabbitmqclient.RabbitMQClient;
 import io.quarkus.logging.Log;
 import io.quarkus.runtime.StartupEvent;
@@ -45,7 +45,7 @@ public class PollingJobMessageProducer {
         }
     }
 
-    public void publishPollingJob(ApiRequestConfigurationMessageDTO apiRequestConfiguration) throws CoreManagementException {
+    public void publishPollingJob(SourceSystemApiRequestConfigurationMessageDTO apiRequestConfiguration) throws CoreManagementException {
         try {
             Log.infof("Publishing polling-job for %s, polling at %s (id: %s)", apiRequestConfiguration.sourceSystemMessageDTO().apiUrl(),
                     apiRequestConfiguration.endpoint().endpointPath(), apiRequestConfiguration.id());
@@ -67,7 +67,7 @@ public class PollingJobMessageProducer {
      *
      * @param apiRequestConfiguration
      */
-    public void reconfigureDeployedPollingJob(ApiRequestConfigurationMessageDTO apiRequestConfiguration) {
+    public void reconfigureDeployedPollingJob(SourceSystemApiRequestConfigurationMessageDTO apiRequestConfiguration) {
         try {
             Log.infof("Publishing polling-job for %s, polling at %s (id: %s)", apiRequestConfiguration.sourceSystemMessageDTO().apiUrl(),
                     apiRequestConfiguration.endpoint().endpointPath(), apiRequestConfiguration);

@@ -2,7 +2,9 @@ package de.unistuttgart.stayinsync.core.configuration.service;
 
 import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.SourceSystem;
 import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.SourceSystemEndpoint;
+import de.unistuttgart.stayinsync.core.configuration.exception.CoreManagementException;
 import de.unistuttgart.stayinsync.core.configuration.mapping.SourceSystemEndpointFullUpdateMapper;
+import de.unistuttgart.stayinsync.core.configuration.rest.dtos.SourceSystemEndpointDTO;
 import io.quarkus.logging.Log;
 import io.smallrye.common.constraint.NotNull;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -33,10 +35,16 @@ public class SourceSystemEndpointService {
     @Inject
     SourceSystemEndpointFullUpdateMapper sourceSystemEndpointFullMapper;
 
-    public SourceSystemEndpoint persistSourceSystemEndpoint(@NotNull @Valid SourceSystemEndpoint sourceSystemEndpoint, Long sourceSystemId) {
-        Log.debugf("Persisting source-system-endpoint: %s, for source-system with id: %s", sourceSystemEndpoint, sourceSystemId);
+    public SourceSystemEndpoint persistSourceSystemEndpoint(@NotNull @Valid SourceSystemEndpointDTO sourceSystemEndpointDTO, Long sourceSystemId) {
+        Log.debugf("Persisting source-system-endpoint: %s, for source-system with id: %s", sourceSystemEndpointDTO, sourceSystemId);
 
-        Optional<SourceSystem> sourceSystemById = sourceSystemService.findSourceSystemById(sourceSystemId);
+        SourceSystemEndpoint sourceSystemEndpoint = sourceSystemEndpointFullMapper.mapToEntity(sourceSystemEndpointDTO);
+
+        SourceSystem sourceSystem = sourceSystemService.findSourceSystemById(sourceSystemId).orElseThrow(() -> {
+            return new CoreManagementException("Unable to find Source System", "There is no source-system with id %s", sourceSystemId);
+        });
+        sourceSystemEndpoint.sourceSystem = sourceSystem;
+        sourceSystemEndpoint.persist();
 
         return sourceSystemEndpoint;
     }
@@ -63,12 +71,12 @@ public class SourceSystemEndpointService {
     }
 
     public void deleteSourceSystemEndpointById(Long id) {
-        Log.debugf("Deleting sync-job by id = %d", id);
+        Log.debugf("Deleting endpoint by id = %d", id);
         SourceSystemEndpoint.deleteById(id);
     }
 
     public Optional<SourceSystemEndpoint> replaceSourceSystemEndpoint(@NotNull @Valid SourceSystemEndpoint sourceSystemEndpoint) {
-        Log.debugf("Replacing sync-job: %s", sourceSystemEndpoint);
+        Log.debugf("Replacing endpoint: %s", sourceSystemEndpoint);
 
         Optional<SourceSystemEndpoint> updatedSourceSystemEndpoint = SourceSystemEndpoint.findByIdOptional(sourceSystemEndpoint.id)
                 .map(SourceSystemEndpoint.class::cast) // Only here for type erasure within the IDE

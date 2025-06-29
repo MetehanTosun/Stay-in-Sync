@@ -73,7 +73,7 @@ public class SourceSystemEndpointResource {
 //        {
 //            return new CoreManagementException(Response.Status.NOT_FOUND, "Unable to find source-system", "Could not find source-system for id %s", sourceSystemId);
 //        });
-        var persistedSourceSystemEndpoint = this.sourceSystemEndpointService.persistSourceSystemEndpoint(fullUpdateMapper.mapToEntity(SourceSystemEndpointDTO), sourceSystemId);
+        var persistedSourceSystemEndpoint = this.sourceSystemEndpointService.persistSourceSystemEndpoint(SourceSystemEndpointDTO, sourceSystemId);
         var builder = uriInfo.getAbsolutePathBuilder().path(Long.toString(persistedSourceSystemEndpoint.id));
         Log.debugf("New source-system-endpoint created with URI  %s", builder.build().toString());
 

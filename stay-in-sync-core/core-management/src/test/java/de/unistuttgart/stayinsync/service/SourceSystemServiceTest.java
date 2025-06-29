@@ -1,6 +1,7 @@
 package de.unistuttgart.stayinsync.service;
 
 import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.SourceSystem;
+import de.unistuttgart.stayinsync.core.configuration.mapping.SourceSystemFullUpdateMapper;
 import de.unistuttgart.stayinsync.core.configuration.service.SourceSystemService;
 import io.quarkus.test.junit.QuarkusTest;
 import jakarta.inject.Inject;
@@ -18,6 +19,9 @@ public class SourceSystemServiceTest {
     @Inject
     SourceSystemService sourceSystemService;
 
+    @Inject
+    SourceSystemFullUpdateMapper mapper;
+
     @BeforeEach
     public void cleanup() {
         // Lösche alle SourceSystems vor jedem Test für Isolation
@@ -30,7 +34,7 @@ public class SourceSystemServiceTest {
         SourceSystem sourceSystem = new SourceSystem();
         sourceSystem.name = "TestSensor";
         sourceSystem.apiUrl = "http://localhost/test";
-        sourceSystemService.createSourceSystem(sourceSystem);
+        sourceSystemService.createSourceSystem(mapper.mapToDTO(sourceSystem));
 
         Optional<SourceSystem> found = sourceSystemService.findSourceSystemById(sourceSystem.id);
         assertTrue(found.isPresent(), "SourceSystem should be found after creation");
@@ -45,11 +49,11 @@ public class SourceSystemServiceTest {
 
         SourceSystem ss1 = new SourceSystem();
         ss1.name = "Sensor1";
-        sourceSystemService.createSourceSystem(ss1);
+        sourceSystemService.createSourceSystem(mapper.mapToDTO(ss1));
 
         SourceSystem ss2 = new SourceSystem();
         ss2.name = "Sensor2";
-        sourceSystemService.createSourceSystem(ss2);
+        sourceSystemService.createSourceSystem(mapper.mapToDTO(ss2));
 
         List<SourceSystem> all = sourceSystemService.findAllSourceSystems();
         assertEquals(2, all.size(), "Should find 2 source systems");
@@ -59,10 +63,10 @@ public class SourceSystemServiceTest {
     public void testUpdateSs() {
         SourceSystem sourceSystem = new SourceSystem();
         sourceSystem.name = "toEdit";
-        sourceSystemService.createSourceSystem(sourceSystem);
+        sourceSystemService.createSourceSystem(mapper.mapToDTO(sourceSystem));
 
         sourceSystem.name = "edited";
-        sourceSystemService.updateSourceSystem(sourceSystem);
+        sourceSystemService.updateSourceSystem(mapper.mapToDTO(sourceSystem));
 
         Optional<SourceSystem> updated = sourceSystemService.findSourceSystemById(sourceSystem.id);
         assertNotNull(updated.isPresent(), "Updated SourceSystem should be found");
@@ -73,7 +77,7 @@ public class SourceSystemServiceTest {
     public void testDeleteSs() {
         SourceSystem sourceSystem = new SourceSystem();
         sourceSystem.name = "toDelete";
-        sourceSystemService.createSourceSystem(sourceSystem);
+        sourceSystemService.createSourceSystem(mapper.mapToDTO(sourceSystem));
 
         // Verify that the object exists before deleting
         assertNotNull(sourceSystemService.findSourceSystemById(sourceSystem.id),

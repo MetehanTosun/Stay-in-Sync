@@ -1,6 +1,7 @@
 package de.unistuttgart.stayinsync.service;
 
 import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.SyncJob;
+import de.unistuttgart.stayinsync.core.configuration.mapping.SyncJobFullUpdateMapper;
 import de.unistuttgart.stayinsync.core.configuration.service.SyncJobService;
 import io.quarkus.panache.mock.PanacheMock;
 import io.quarkus.test.junit.QuarkusTest;
@@ -24,6 +25,9 @@ public class SyncJobServiceTest {
 
     @Inject
     SyncJobService syncJobService;
+
+    @Inject
+    SyncJobFullUpdateMapper mapper;
 
     @Test
     void findAllSyncJobsByIdNotFound() {
@@ -55,7 +59,7 @@ public class SyncJobServiceTest {
         var syncJob = createDefaultSyncJob();
         syncJob.name = "a";
 
-        var cve = catchThrowableOfType(ConstraintViolationException.class, () -> this.syncJobService.persistSyncJob(syncJob));
+        var cve = catchThrowableOfType(ConstraintViolationException.class, () -> this.syncJobService.persistSyncJob(mapper.mapToDTO(syncJob)));
 
         assertThat(cve)
                 .isNotNull();

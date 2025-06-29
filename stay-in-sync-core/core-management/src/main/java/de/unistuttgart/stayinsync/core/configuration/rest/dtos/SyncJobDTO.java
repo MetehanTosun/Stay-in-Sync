@@ -1,8 +1,10 @@
 package de.unistuttgart.stayinsync.core.configuration.rest.dtos;
 
+import jakarta.validation.constraints.NotNull;
+
 public record SyncJobDTO(
         Long id,
-        String name,
+        @NotNull String name,
         boolean deployed
 ) {
 }

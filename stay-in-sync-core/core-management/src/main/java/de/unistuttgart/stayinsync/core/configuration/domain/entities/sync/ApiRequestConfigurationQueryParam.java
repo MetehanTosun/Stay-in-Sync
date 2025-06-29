@@ -5,14 +5,13 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.ManyToOne;
 
 @Entity
-public class ApiRequestHeader extends PanacheEntity {
-
+public class ApiRequestConfigurationQueryParam extends PanacheEntity {
 
     @ManyToOne
-    public ApiRequestConfiguration apiRequestConfiguration;
-    
-    public String headerName;
+    public ApiRequestConfiguration requestConfiguration;
 
-    public String headerValue;
+    @ManyToOne
+    public ApiEndpointQueryParam queryParam;
 
+    public String selectedValue;
 }

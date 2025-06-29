@@ -4,7 +4,7 @@ import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.Source
 import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.SyncJob;
 import de.unistuttgart.stayinsync.core.configuration.domain.events.sync.SyncJobPersistedEvent;
 import de.unistuttgart.stayinsync.core.configuration.domain.events.sync.SyncJobUpdatedEvent;
-import de.unistuttgart.stayinsync.core.configuration.mapping.ApiRequestConfigurationFullUpdateMapper;
+import de.unistuttgart.stayinsync.core.configuration.mapping.SourceSystemApiRequestConfigurationFullUpdateMapper;
 import de.unistuttgart.stayinsync.core.management.rabbitmq.producer.PollingJobMessageProducer;
 import de.unistuttgart.stayinsync.core.management.rabbitmq.producer.SyncJobMessageProducer;
 import io.quarkus.logging.Log;
@@ -29,7 +29,7 @@ public class SyncJobEventHandler {
     PollingJobMessageProducer pollingJobMessageProducer;
 
     @Inject
-    ApiRequestConfigurationFullUpdateMapper apiRequestConfigurationFullUpdateMapper;
+    SourceSystemApiRequestConfigurationFullUpdateMapper apiRequestConfigurationFullUpdateMapper;
 
     public void onSyncJobPersistedEvent(@Observes SyncJobPersistedEvent event) {
         deploySyncJob(event.newSyncJob);

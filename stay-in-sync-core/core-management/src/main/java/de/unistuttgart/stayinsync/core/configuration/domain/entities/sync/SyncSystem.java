@@ -1,8 +1,11 @@
 package de.unistuttgart.stayinsync.core.configuration.domain.entities.sync;
 
 import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.authconfig.SyncSystemAuthConfig;
+import de.unistuttgart.stayinsync.transport.domain.ApiAuthType;
 import io.quarkus.hibernate.orm.panache.PanacheEntity;
 import jakarta.persistence.*;
+
+import java.util.Set;
 
 /**
  * Superclass that serves the purpose of describing Target and Source system involved in a sync process
@@ -16,7 +19,18 @@ public abstract class SyncSystem extends PanacheEntity {
     public String apiUrl;
     public String description;
     public String apiType; // REST, AAS
-    public String openAPI;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "api_auth_type")
+    public ApiAuthType apiAuthType;
+    @Lob
+    public byte[] openApiSpec;
+
+    @OneToMany(mappedBy = "syncSystem")
+    Set<SyncSystemEndpoint> syncSystemEndpoints;
+
+    @OneToMany(mappedBy = "syncSystem")
+    Set<ApiHeader> apiRequestHeaders;
 
     @OneToOne
     SyncSystemAuthConfig systemAuthConfig;

@@ -21,10 +21,12 @@ public interface SourceSystemEndpointFullUpdateMapper {
     @Mapping(target = "id", ignore = true)
     void mapFullUpdate(SourceSystemEndpoint input, @MappingTarget SourceSystemEndpoint target);
 
+    @Mapping(source = "sourceSystem.id", target = "sourceSystemId")
     SourceSystemEndpointDTO mapToDTO(SourceSystemEndpoint input);
 
     List<SourceSystemEndpointDTO> mapToDTOList(List<SourceSystemEndpoint> input);
 
+    @Mapping(target = "id", ignore = true)
     SourceSystemEndpoint mapToEntity(SourceSystemEndpointDTO input);
 
     List<SourceSystemEndpoint> mapToEntityList(List<SourceSystemEndpointDTO> input);
