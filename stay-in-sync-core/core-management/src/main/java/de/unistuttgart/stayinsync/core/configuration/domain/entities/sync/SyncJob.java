@@ -24,6 +24,10 @@ public class SyncJob extends PanacheEntity {
 
     public boolean deployed;
 
+    public String description;
+
+    public boolean isSimulation;
+
     @OneToMany(mappedBy = "syncJob", cascade = CascadeType.ALL)
     public Set<Transformation> transformations = new HashSet<>();
 

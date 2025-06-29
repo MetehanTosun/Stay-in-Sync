@@ -144,7 +144,6 @@ export class SyncJobCreationComponent {
     const syncJob = {
       name: this.syncJobName,
       description: this.syncJobDescription,
-      sourceSystemId: this.selectedSourceSystem.id,
       isSimulation: this.isSimulation,
       transformations: this.transformations
     };
@@ -152,6 +151,7 @@ export class SyncJobCreationComponent {
     this.syncJobService.create(syncJob).subscribe({
       next: (createdJob) => {
         console.log("Sync Job created successfully:", createdJob);
+        this.resetStepperData();
         this.cancel();
       },
       error: (err) => {
@@ -163,5 +163,14 @@ export class SyncJobCreationComponent {
   onTransformationsChanged($event: Transformation[]) {
     this.transformations = $event;
     console.log("Transformations changed:", this.transformations);
+  }
+
+  resetStepperData() {
+    this.syncJobName = '';
+    this.syncJobDescription = '';
+    this.selectedSourceSystem = null;
+    this.isSimulation = false;
+    this.transformations = [];
+    this.activeStep = 1; // Optional: Zurück zum ersten Schritt
   }
 }
