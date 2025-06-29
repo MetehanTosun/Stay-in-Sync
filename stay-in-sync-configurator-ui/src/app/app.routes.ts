@@ -43,7 +43,12 @@ export const routes: Routes = [
     {
       path: 'create',
       component: SyncJobCreationComponent
-  }]
+    },
+    {
+      path: 'edit/:id',
+      component: SyncJobCreationComponent
+    }
+  ]
   },
 
   // Route für Help mit Children

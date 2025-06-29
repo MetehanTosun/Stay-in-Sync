@@ -1,4 +1,4 @@
-import {Component, EventEmitter, Input, NgIterable, Output} from '@angular/core';
+import {Component, EventEmitter, Input, NgIterable, OnInit, Output} from '@angular/core';
 import {Dialog} from 'primeng/dialog';
 import {Button} from 'primeng/button';
 import {Step, StepList, StepPanel, StepPanels, Stepper} from 'primeng/stepper';
@@ -43,9 +43,11 @@ import {SyncJob} from '../../models/sync-job.model';
   templateUrl: './sync-job-creation.component.html',
   styleUrl: './sync-job-creation.component.css'
 })
-export class SyncJobCreationComponent {
+export class SyncJobCreationComponent implements OnInit {
   @Input() visible = false;
+  @Input() selectedSyncJobId: number | undefined;
   @Output() visibleChange = new EventEmitter<boolean>();
+  @Output() selectedSyncJobIdChange = new EventEmitter<SyncJob>();
 
   mySyncJob: SyncJob = {};
 
@@ -107,7 +109,26 @@ export class SyncJobCreationComponent {
 
 
 
-  constructor(private router: Router, private aas: AasService, readonly syncJobService: SyncJobService) {
+  constructor(private router: Router, private aas: AasService, readonly syncJobService: SyncJobService) {}
+
+  ngOnInit() {
+    console.log("Sync Job Creation Component Initialized");
+    if (this.selectedSyncJobId) {
+      console.log("Loading Sync Job with ID:", this.selectedSyncJobId);
+      this.syncJobService.getById(this.selectedSyncJobId).subscribe({
+        next: (job) => {
+          this.mySyncJob = job;
+          this.syncJobName = job.name || '';
+          this.syncJobDescription = job.description || '';
+          this.selectedSourceSystem = { name: job.sourceSystem ? job.sourceSystem.name : '', id: job.sourceSystem ? job.sourceSystem.id : null };
+          this.isSimulation = job.isSimulation || false;
+          this.transformations = Array.from(job.transformations || []);
+        },
+        error: (err) => {
+          console.error("Error loading Sync Job:", err);
+        }
+      });
+    }
     this.loadSystems();
   }
 
@@ -137,10 +158,6 @@ export class SyncJobCreationComponent {
   }
 
   createSyncJob() {
-    // if (!this.syncJobName || !this.selectedSourceSystem || !this.transformations.length) {
-    //   console.error("Please fill in all required fields.");
-    //   return;
-    // }
     const syncJob = {
       name: this.syncJobName,
       description: this.syncJobDescription,
@@ -171,6 +188,6 @@ export class SyncJobCreationComponent {
     this.selectedSourceSystem = null;
     this.isSimulation = false;
     this.transformations = [];
-    this.activeStep = 1; // Optional: Zurück zum ersten Schritt
+    this.activeStep = 1;
   }
 }

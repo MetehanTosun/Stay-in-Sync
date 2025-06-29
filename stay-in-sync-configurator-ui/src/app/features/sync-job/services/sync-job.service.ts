@@ -22,4 +22,8 @@ export class SyncJobService {
   create(syncJob: SyncJob): Observable<SyncJob> {
     return this.httpClient.post<SyncJob>(`/api/config/sync-job`, syncJob);
   }
+
+  getById(selectedSyncJobId: number) {
+    return this.httpClient.get<SyncJob>(`/api/config/sync-job/${selectedSyncJobId}`);
+  }
 }

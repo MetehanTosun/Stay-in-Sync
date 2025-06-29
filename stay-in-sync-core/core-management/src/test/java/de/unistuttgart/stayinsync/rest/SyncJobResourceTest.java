@@ -30,6 +30,7 @@ public class SyncJobResourceTest {
     private static final String DEFAULT_NAME = "Sync Produktion A";
     private static final String UPDATED_NAME = DEFAULT_NAME + " (updated)";
     private static final long DEFAULT_ID = 1;
+    private static final String DEFAULT_DESCRIPTION = "Sync Produktion A";
 
     @InjectMock
     SyncJobService syncJobService;
@@ -96,13 +97,13 @@ public class SyncJobResourceTest {
     }
 
     public static SyncJobDTO createFullyUpdatedSyncJob() {
-        var syncJob = new SyncJobDTO(DEFAULT_ID, UPDATED_NAME, false);
+        var syncJob = new SyncJobDTO(DEFAULT_ID, UPDATED_NAME, false, DEFAULT_DESCRIPTION, true);
 
         return syncJob;
     }
 
     private static SyncJobDTO createDefaultSyncJob() {
-        var syncJob = new SyncJobDTO(DEFAULT_ID, DEFAULT_NAME, false);
+        var syncJob = new SyncJobDTO(DEFAULT_ID, DEFAULT_NAME, false, DEFAULT_DESCRIPTION, false);
 
         return syncJob;
     }

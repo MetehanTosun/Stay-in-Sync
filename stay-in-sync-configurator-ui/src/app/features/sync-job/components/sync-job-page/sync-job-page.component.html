@@ -66,4 +66,9 @@
 <p-button (click)="openCreateDialog()">
   Create Sync Job
 </p-button>
-<app-sync-job-creation [(visible)]="showCreateDialog"></app-sync-job-creation>
+<app-sync-job-creation
+  *ngIf="showCreateDialog"
+  [(visible)]="showCreateDialog"
+  [(selectedSyncJobId)]="selectedSyncJobId">
+</app-sync-job-creation>
+
