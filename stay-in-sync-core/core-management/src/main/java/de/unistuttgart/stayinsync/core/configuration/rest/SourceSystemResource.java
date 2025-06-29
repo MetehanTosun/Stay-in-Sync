@@ -51,6 +51,10 @@ import jakarta.ws.rs.core.UriInfo;
 @Path("/api/source-systems")
 @Produces(APPLICATION_JSON)
 @Consumes(APPLICATION_JSON)
+/**
+ * REST resource for managing Source Systems and their endpoints.
+ * Provides CRUD operations and OpenAPI-based endpoint discovery.
+ */
 public class SourceSystemResource {
 
     @Inject SourceSystemService ssService;
@@ -63,6 +67,11 @@ public class SourceSystemResource {
     @APIResponse(responseCode = "200", description = "List of all source systems",
       content = @Content(mediaType = APPLICATION_JSON,
                          schema = @Schema(type = SchemaType.ARRAY, implementation = SourceSystemDto.class)))
+    /**
+     * Retrieves all source systems.
+     *
+     * @return a list of SourceSystemDto representing all configured systems
+     */
     public List<SourceSystemDto> getAllSs() {
         return ssService.findAllSourceSystems().stream()
                         .map(sourceSystemMapper::toDto)
@@ -75,6 +84,12 @@ public class SourceSystemResource {
     @APIResponse(responseCode = "200", description = "The found source system",
       content = @Content(mediaType = APPLICATION_JSON, schema = @Schema(implementation = SourceSystemDto.class)))
     @APIResponse(responseCode = "404", description = "Source system not found")
+    /**
+     * Retrieves a single source system by its ID.
+     *
+     * @param id the ID of the source system
+     * @return HTTP 200 with the system DTO, or 404 if not found
+     */
     public Response getSsById(@PathParam("id") Long id) {
         var entity = ssService.findSourceSystemById(id)
             .orElseThrow(() -> new CoreManagementWebException(
@@ -91,6 +106,14 @@ public class SourceSystemResource {
     @Operation(summary = "Creates a new source system (JSON only)")
     @APIResponse(responseCode = "201", description = "Source system created",
       headers = @Header(name = HttpHeaders.LOCATION, schema = @Schema(implementation = URI.class)))
+    /**
+     * Creates a new source system using JSON payload.
+     * Handles optional OpenAPI spec in the request body or via URL.
+     *
+     * @param createDto the DTO containing new system data
+     * @param uriInfo context for generating Location header
+     * @return HTTP 201 with created system DTO and Location header
+     */
     public Response createJson(
         @Valid @NotNull CreateSourceSystemJsonDTO createDto,
         @Context UriInfo uriInfo
@@ -122,6 +145,14 @@ public class SourceSystemResource {
     @Operation(summary = "Creates a new source system (multipart/form-data + optional OpenAPI)")
     @APIResponse(responseCode = "201", description = "Source system created",
         headers = @Header(name = HttpHeaders.LOCATION, schema = @Schema(implementation = URI.class)))
+    /**
+     * Creates a new source system using multipart/form-data.
+     * Supports file upload or URL for OpenAPI spec.
+     *
+     * @param form the form data including file or URL
+     * @param uriInfo context for generating Location header
+     * @return HTTP 201 with created system DTO and Location header
+     */
     public Response createMultipart(
         @MultipartForm CreateSourceSystemForm form,
         @Context UriInfo uriInfo
@@ -159,6 +190,13 @@ public class SourceSystemResource {
     @APIResponse(responseCode = "200", description = "The updated source system",
       content = @Content(mediaType = APPLICATION_JSON, schema = @Schema(implementation = SourceSystemDto.class)))
     @APIResponse(responseCode = "404", description = "Source system not found")
+    /**
+     * Fully updates an existing source system by ID.
+     *
+     * @param id the ID of the system to update
+     * @param dto the DTO with updated system data
+     * @return HTTP 200 with the updated system DTO, or 404 if not found
+     */
     public Response updateSs(@PathParam("id") Long id, @Valid @NotNull SourceSystemDto dto) {
         var entity = sourceSystemMapper.toEntity(dto);
         entity.id = id;
@@ -175,6 +213,12 @@ public class SourceSystemResource {
     @Operation(summary = "Deletes a source system by its ID")
     @APIResponse(responseCode = "204", description = "Source system deleted")
     @APIResponse(responseCode = "404", description = "Source system not found")
+    /**
+     * Deletes a source system by its ID.
+     *
+     * @param id the ID of the system to delete
+     * @return HTTP 204 if deleted, or 404 if the system was not found
+     */
     public Response deleteSs(@PathParam("id") Long id) {
         if (!ssService.deleteSourceSystemById(id)) {
             throw new CoreManagementWebException(
@@ -191,6 +235,12 @@ public class SourceSystemResource {
     @APIResponse(responseCode = "200", description = "List of endpoints",
       content = @Content(mediaType = APPLICATION_JSON,
                          schema = @Schema(type = SchemaType.ARRAY, implementation = SourceSystemEndpointDto.class)))
+    /**
+     * Lists all endpoints configured for a given source system.
+     *
+     * @param sourceId the ID of the source system
+     * @return list of endpoint DTOs for the system
+     */
     public List<SourceSystemEndpointDto> listEndpoints(@PathParam("id") Long sourceId) {
         return endpointService.listBySourceId(sourceId)
                               .stream()
@@ -205,6 +255,14 @@ public class SourceSystemResource {
     @Operation(summary = "Create a new endpoint for a source system")
     @APIResponse(responseCode = "201", description = "Endpoint created",
       headers = @Header(name = HttpHeaders.LOCATION, schema = @Schema(implementation = URI.class)))
+    /**
+     * Creates a new endpoint for a given source system.
+     *
+     * @param sourceId the ID of the system
+     * @param input the DTO with endpoint path and HTTP method
+     * @param uriInfo context for generating Location header
+     * @return HTTP 201 with created endpoint DTO and Location header
+     */
     public Response createEndpoint(
         @PathParam("id") Long sourceId,
         @Valid @NotNull SourceSystemEndpointDto input,
@@ -226,6 +284,12 @@ public class SourceSystemResource {
       content = @Content(mediaType = APPLICATION_JSON,
                          schema = @Schema(type = SchemaType.ARRAY, implementation = DiscoveredEndpoint.class)))
     @APIResponse(responseCode = "404", description = "Source system not found")
+    /**
+     * Discovers endpoints from the stored OpenAPI specification for a source system.
+     *
+     * @param sourceId the ID of the system
+     * @return HTTP 200 with list of discovered endpoints, or 404 if system not found
+     */
     public Response discoverEndpoints(@PathParam("id") Long sourceId) {
         var list = endpointService.discoverAllEndpoints(sourceId);
         return Response.ok(list).build();

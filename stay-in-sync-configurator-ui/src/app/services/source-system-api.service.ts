@@ -32,7 +32,7 @@ export class SourceSystemApiService {
   // Multipart-Upload der OpenAPI-Spec-Datei
   uploadSpecFile(id: number, file: File): Observable<void> {
     const fd = new FormData();
-    fd.append('file', file);                // entspricht @RestForm("file")
+    fd.append('file', file);               
     return this.http.post<void>(
       `${this.baseUrl}/${id}/upload-openapi`,
       fd
@@ -42,14 +42,13 @@ export class SourceSystemApiService {
   // OpenAPI-Spec per URL setzen
   setSpecUrl(id: number, url: string): Observable<void> {
     const fd = new FormData();
-    fd.append('openApiSpecUrl', url);       // entspricht @RestForm("openApiSpecUrl")
+    fd.append('openApiSpecUrl', url);       
     return this.http.post<void>(
       `${this.baseUrl}/${id}/upload-openapi`,
       fd
     );
   }
 
-  // AAS-Link (falls ihr das später noch nutzt, feldname ggf. wieder "apiUrl" o.ä. anpassen)
   setSubmodelLink(id: number, link: string): Observable<void> {
     const fd = new FormData();
     fd.append('openApiSpecUrl', link);

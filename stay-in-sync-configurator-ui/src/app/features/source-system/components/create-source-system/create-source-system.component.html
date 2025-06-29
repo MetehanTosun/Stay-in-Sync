@@ -8,6 +8,7 @@
 >
   <p-steps [model]="steps" [activeIndex]="currentStep - 1" [readonly]="true"></p-steps>
 
+  <!-- Step 1: Metadata form for creating a source system -->
   <form [formGroup]="form" class="p-fluid p-mt-4">
     <!-- STEP 1 -->
     <div *ngIf="currentStep === 1">
@@ -20,6 +21,7 @@
         </small>
       </div>
 
+      <!-- Description field: multiline textarea for system description -->
       <!-- Description -->
       <div class="p-field">
         <label for="description">Description</label>
@@ -33,6 +35,7 @@
       ></textarea>
       </div>
 
+      <!-- Type field: select the Source System type -->
       <!-- Type -->
       <div class="p-field">
         <label for="type">Type *</label>
@@ -47,6 +50,7 @@
         </small>
       </div>
 
+      <!-- API URL field: base URL for the source system's API -->
       <!-- API URL -->
       <div class="p-field">
         <label for="apiUrl">API URL *</label>
@@ -56,6 +60,7 @@
         </small>
       </div>
 
+      <!-- Authentication field: choose authentication method -->
       <!-- Auth Type -->
       <div class="p-field">
         <label for="authType">Authentication *</label>
@@ -93,6 +98,7 @@
         </small>
       </div>
 
+      <!-- OpenAPI Spec: enter a URL or upload a file for the API specification -->
       <!-- OpenAPI Spec URL or File -->
       <div *ngIf="form.get('type')!.value === 'REST_OPENAPI'" class="p-field">
         <label for="openApiSpecUrl">Spec URL or File *</label>
@@ -119,6 +125,7 @@
     </div>
   </form>
 
+  <!-- Wizard navigation buttons: Cancel or proceed to Next step -->
   <!-- Footer -->
   <div class="p-d-flex p-jc-end p-mt-4">
     <button pButton label="Cancel" class="p-button-text" (click)="cancel()"></button>
@@ -131,13 +138,16 @@
     ></button>
   </div>
 
+  <!-- Step 2: Endpoint discovery and manual endpoint configuration -->
   <!-- STEP 2 -->
   <div *ngIf="currentStep === 2" class="p-mt-4">
     <h3>Endpoints</h3>
+    <!-- Button to trigger automatic discovery of endpoints from Spec -->
     <!-- Discover from spec -->
     <div class="p-mb-3">
       <button pButton type="button" label="Discover Endpoints" (click)="discoverEndpoints()"></button>
     </div>
+    <!-- Table of endpoints discovered automatically -->
     <p-table [value]="discoveredEndpoints" *ngIf="discoveredEndpoints.length">
       <ng-template pTemplate="header">
         <tr>
@@ -157,6 +167,7 @@
       </ng-template>
     </p-table>
 
+    <!-- Manual Endpoints: add, edit, or remove custom endpoints -->
     <!-- Manual endpoints list -->
     <div class="p-mb-3">
       <button pButton type="button" label="Add Endpoint" (click)="openEndpointDialog()"></button>
@@ -187,6 +198,7 @@
   </div>
 </p-dialog>
 
+<!-- Dialog for adding or editing a single endpoint's details -->
 <!-- Endpoint Add/Edit Dialog -->
 <p-dialog
   header="Endpoint Details"

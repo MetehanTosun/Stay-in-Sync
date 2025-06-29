@@ -19,23 +19,41 @@ import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.Source
 import de.unistuttgart.stayinsync.core.configuration.exception.CoreManagementWebException;
 import jakarta.ws.rs.core.Response;
 
+/**
+ * Service for managing SourceSystem entities, including CRUD operations
+ * and OpenAPI specification updates.
+ */
 @ApplicationScoped
 public class SourceSystemService {
     @Inject
     SourceSystemFullUpdateMapper mapper;
 
+    /**
+     * Retrieve all source systems from the database.
+     *
+     * @return list of all SourceSystem entities
+     */
     public List<SourceSystem> findAllSourceSystems() {
         Log.debug("Fetching all source systems");
         return SourceSystem.listAll(); // Panache
     }
 
+    /**
+     * Find a source system by its ID.
+     *
+     * @param id the unique identifier of the source system
+     * @return Optional containing the SourceSystem if found, or empty otherwise
+     */
     public Optional<SourceSystem> findSourceSystemById(Long id) {
         Log.debugf("Fetching source system with ID: %d", id);
         return SourceSystem.findByIdOptional(id);
     }
 
-    
-
+    /**
+     * Persist a new source system to the database.
+     *
+     * @param ss the SourceSystem entity to create
+     */
     @Transactional
     public void createSourceSystem(SourceSystem ss) {
         /*
@@ -46,6 +64,12 @@ public class SourceSystemService {
         ss.persist(); // Panache
     }
 
+    /**
+     * Update an existing source system with new values.
+     *
+     * @param ss the SourceSystem entity containing updated fields (must include id)
+     * @return Optional containing the updated entity, or empty if not found
+     */
     @Transactional
     public Optional<SourceSystem> updateSourceSystem(SourceSystem ss) {
         Log.debugf("Updating source system with ID: %d", ss.id);
@@ -56,6 +80,12 @@ public class SourceSystemService {
         return Optional.ofNullable(existingSs);
     }
 
+    /**
+     * Delete a source system by its ID.
+     *
+     * @param id the ID of the source system to delete
+     * @return true if deletion was successful, false otherwise
+     */
     @Transactional
     public boolean deleteSourceSystemById(Long id) {
         Log.debugf("Deleting source system with ID: %d", id);
@@ -65,11 +95,11 @@ public class SourceSystemService {
     }
 
     /**
-     * Update the stored OpenAPI specification for a given source system.
+     * Update the stored raw OpenAPI specification for a source system.
      *
-     * @param sourceId the ID of the SourceSystem to update
-     * @param spec     the OpenAPI spec content as a UTF-8 string
-     * @throws CoreManagementWebException if the SourceSystem is not found
+     * @param sourceId the ID of the source system
+     * @param spec the OpenAPI specification content (JSON/YAML)
+     * @throws CoreManagementWebException if the source system does not exist
      */
     @Transactional
     public void updateOpenApiSpec(Long sourceId, String spec) {
@@ -88,11 +118,11 @@ public class SourceSystemService {
 
 
     /**
-     * Update the stored OpenAPI specification for a given source system by URL.
+     * Update the OpenAPI specification URL and fetch the spec content.
      *
-     * @param sourceId the ID of the SourceSystem to update
-     * @param specUrl  the URL to fetch the OpenAPI spec from
-     * @throws CoreManagementWebException if the SourceSystem is not found or the fetch fails
+     * @param sourceId the ID of the source system
+     * @param specUrl URL pointing to the OpenAPI spec
+     * @throws CoreManagementWebException if the source system does not exist or fetch fails
      */
     @Transactional
     public void updateOpenApiSpecUrl(Long sourceId, String specUrl) {

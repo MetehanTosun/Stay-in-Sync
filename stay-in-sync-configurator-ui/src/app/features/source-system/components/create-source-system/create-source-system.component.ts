@@ -13,7 +13,7 @@ import { InputGroupModule } from 'primeng/inputgroup';
 import { TableModule } from 'primeng/table';
 import {HttpClientModule } from '@angular/common/http';
 
-// Services und DTOs
+
 import { SourceSystemApiService } from '../../../../services/source-system-api.service';
 import { DiscoveredEndpointDto } from '../../../../models/discovered-endpoint.model';
 
@@ -43,39 +43,43 @@ interface Step {
   ]
 })
 export class CreateSourceSystemComponent implements OnInit {
-  /** Controls dialog visibility */
+  /** Whether the create dialog is currently visible */
   visible = false;
 
-  /** Wizard steps */
+  /** Labels and order for each step in the wizard */
   steps: Step[] = [
     { label: 'Metadata' },
     { label: 'Endpoints' },
     { label: 'Specification' }
   ];
 
-  /** Dropdown options */
+  /** Options for selecting the source system type */
   typeOptions = [
     { label: 'AAS', value: 'AAS' },
     { label: 'REST-OpenAPI', value: 'REST_OPENAPI' }
   ];
+  /** Options for selecting the authentication type */
   authTypeOptions = [
     { label: 'Basic', value: 'BASIC' },
     { label: 'API Key', value: 'API_KEY' }
   ];
 
-  /** Forms */
+  /** FormGroup for the metadata step */
   form!: FormGroup;
+  /** FormGroup for the endpoint creation step */
   step2Form!: FormGroup;
 
-  /** Wizard state */
+  /** Tracks the current step number in the wizard (1-based) */
   currentStep = 1;
+  /** ID of the created source system, once saved in backend */
   createdSourceId: number | null = null;
 
-  /** Step-2 state */
+  /** Endpoints discovered automatically from the OpenAPI spec */
   discoveredEndpoints: DiscoveredEndpointDto[] = [];
+  /** HTTP methods available for manual endpoint creation */
   methodOptions = ['GET','POST','PUT','DELETE'];
 
-  /** Manually added endpoints with optional polling and schema settings */
+  /** Manually added or edited endpoints before saving */
   manualEndpoints: {
     path: string;
     method: string;
@@ -84,14 +88,18 @@ export class CreateSourceSystemComponent implements OnInit {
     schema?: string;
   }[] = [];
 
-  /** Dialog state for adding/editing endpoints */
+  /** Controls visibility of the endpoint add/edit dialog */
   showEndpointDialog = false;
+  /** Index of the endpoint currently being edited, or null for a new one */
   editingEndpointIndex: number | null = null;
+  /** FormGroup for the add/edit endpoint dialog */
   endpointForm!: FormGroup;
+  /** Available modes for schema generation */
   schemaModes = ['AUTO', 'MANUAL'];
 
-  /** File upload */
+  /** Currently selected specification file, if any */
   selectedFile: File | null = null;
+  /** True if a file has been chosen in the form */
   fileSelected = false;
 
   constructor(
@@ -142,10 +150,18 @@ export class CreateSourceSystemComponent implements OnInit {
     });
   }
 
+  /**
+   * Opens the create source system dialog.
+   * @returns void
+   */
   open(): void {
     this.visible = true;
   }
 
+  /**
+   * Cancels and resets the dialog and form state.
+   * @returns void
+   */
   cancel(): void {
     this.visible = false;
     this.currentStep = 1;
@@ -160,6 +176,11 @@ export class CreateSourceSystemComponent implements OnInit {
     this.createdSourceId = null;
   }
 
+  /**
+   * Handles file selection from the file input.
+   * @param evt The file input change event
+   * @returns void
+   */
   onFileSelected(evt: Event): void {
     const inp = evt.target as HTMLInputElement;
     if (inp.files && inp.files.length) {
@@ -169,6 +190,10 @@ export class CreateSourceSystemComponent implements OnInit {
     }
   }
 
+  /**
+   * Proceeds to the next step in the wizard, saving data as needed.
+   * @returns void
+   */
   next(): void {
     if (this.currentStep === 1) {
       // CREATE SourceSystem
@@ -204,12 +229,20 @@ export class CreateSourceSystemComponent implements OnInit {
     this.cancel();
   }
 
+  /**
+   * Loads the list of endpoints for the created source system.
+   * @returns void
+   */
   private loadEndpoints(): void {
     if (!this.createdSourceId) return;
     this.api.listEndpoints(this.createdSourceId)
       .subscribe();
   }
 
+  /**
+   * Discovers endpoints automatically from the OpenAPI specification.
+   * @returns void
+   */
   discoverEndpoints(): void {
     console.log('▶ Discovering endpoints for sourceId=', this.createdSourceId);
     if (!this.createdSourceId) { return; }
@@ -224,6 +257,11 @@ export class CreateSourceSystemComponent implements OnInit {
     });
   }
 
+  /**
+   * Adds an endpoint discovered automatically to the backend.
+   * @param endpoint The discovered endpoint to add
+   * @returns void
+   */
   addDiscoveredEndpoint(endpoint: DiscoveredEndpointDto): void {
     if (!this.createdSourceId) {
       return;
@@ -236,6 +274,10 @@ export class CreateSourceSystemComponent implements OnInit {
       .subscribe(() => this.loadEndpoints());
   }
 
+  /**
+   * Adds a manually specified endpoint to the backend.
+   * @returns void
+   */
   addManualEndpoint(): void {
     if (!this.createdSourceId) return;
     if (this.step2Form.invalid) {
@@ -251,8 +293,9 @@ export class CreateSourceSystemComponent implements OnInit {
   }
 
   /**
-   * Open the Add/Edit Endpoint dialog.
+   * Opens the Add/Edit Endpoint dialog.
    * @param index index of endpoint to edit, or null to add new.
+   * @returns void
    */
   openEndpointDialog(index: number | null = null): void {
     this.editingEndpointIndex = index;
@@ -272,7 +315,8 @@ export class CreateSourceSystemComponent implements OnInit {
   }
 
   /**
-   * Save the endpoint from the dialog into the list.
+   * Saves the endpoint from the dialog into the manual endpoints list.
+   * @returns void
    */
   saveEndpoint(): void {
     if (this.endpointForm.invalid) {
