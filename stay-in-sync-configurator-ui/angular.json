@@ -29,10 +29,13 @@
                 "glob": "**/*",
                 "input": "node_modules/monaco-editor/min",
                 "output": "assets/monaco/"
-              }
+              },
+              "src/assets"
             ],
             "styles": [
+              "node_modules/primeicons/primeicons.css",
               "src/styles.css"
+
             ],
             "scripts": []
           },
@@ -42,7 +45,7 @@
                 {
                   "type": "initial",
                   "maximumWarning": "500kB",
-                  "maximumError": "1MB"
+                  "maximumError": "1.5MB"
                 },
                 {
                   "type": "anyComponentStyle",
@@ -70,9 +73,6 @@
               "buildTarget": "configurator-ui:build:development"
             }
           },
-          "options": {
-            "proxyConfig": "proxy.conf.json"
-          },
           "defaultConfiguration": "development"
         },
         "extract-i18n": {
@@ -81,6 +81,7 @@
         "test": {
           "builder": "@angular-devkit/build-angular:karma",
           "options": {
+            "proxyConfig": "src/proxy.conf.json" ,
             "polyfills": [
               "zone.js",
               "zone.js/testing"
@@ -90,12 +91,12 @@
               {
                 "glob": "**/*",
                 "input": "public"
-              }
+              },
+              "src/assets"
             ],
             "styles": [
               "src/styles.css",
-              "node_modules/primeng/resources/themes/saga-blue/theme.css",
-              "node_modules/primeng/resources/primeng.min.css",
+              "Shared_Styles/tokens.css",
               "node_modules/primeicons/primeicons.css"
             ],
             "scripts": []

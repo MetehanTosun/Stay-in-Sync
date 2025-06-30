@@ -1,59 +1,45 @@
-<form #f="ngForm" (ngSubmit)="save()">
-  <!-- 1) Name -->
-  <label for="name">Name:</label>
-  <input
-    id="name"
-    name="name"
-    [(ngModel)]="source.name"
-    required
-    placeholder="e.g. My Source System"
-  />
+<!-- src/app/features/source-system/components/create-source-system/create-source-system.component.html -->
 
-  <!-- 2) Typ-Auswahl -->
-  <label for="type">Source Type:</label>
-  <select
-    id="type"
-    name="type"
-    [(ngModel)]="sourceType"
-    (ngModelChange)="onTypeChange($event)"
-    required
-  >
-    <option value="AAS">AAS Instance</option>
-    <option value="REST">Generic REST API</option>
-  </select>
+<p-dialog 
+    header="New Source System"
+    [(visible)]="visible"
+    (onHide)="cancel()"
+    [modal]="true"
+    [style]="{ width: '50vw', maxWidth: '90vw' , minHeight: '25vw' }"
+    [baseZIndex]="10000"
+    class="big-dialog">
 
-  <!-- 3a) AAS-Dropdown, nur wenn sourceType==='AAS' -->
-  <div *ngIf="sourceType === 'AAS'">
-    <label for="aas">Choose AAS:</label>
-    <select
-      id="aas"
-      name="aasId"
-      [(ngModel)]="source.aasId"
-      required
-    >
-      <option value="" disabled selected>-- choose AAS --</option>
-      <ng-container *ngIf="aasList$ | async as aasList">
-        <option *ngFor="let aas of aasList" [value]="aas.id">
-          {{ aas.name }}
-        </option>
-      </ng-container>
-    </select>
-  </div>
+  <form (ngSubmit)="save()">
+    <div class="p-field">
+      <label for="type">Source Type</label>
+      <p-dropdown
+        [options]="sourceTypeOptions"
+        [(ngModel)]="sourceType"
+        name="type"
+        (onChange)="onTypeChange(sourceType)">
+      </p-dropdown>
+    </div>
 
-  <!-- 3b) Endpoint-Feld, nur wenn sourceType==='REST' -->
-  <div *ngIf="sourceType === 'REST'">
-    <label for="endpoint">Endpoint URL:</label>
-    <input
-      id="endpoint"
-      name="endpoint"
-      [(ngModel)]="source.endpoint"
-      required
-      placeholder="https://example.com/api"
-    />
-  </div>
+    <div class="p-field" *ngIf="sourceType === 'AAS'">
+      <label for="aas">Choose AAS</label>
+      <p-dropdown
+        [options]="(aasList$ | async) ?? []"
+        [(ngModel)]="source.aasId"
+        name="aas"
+        filter="true"
+        showClear="true"
+        placeholder="Select an AAS">
+      </p-dropdown>
+    </div>
 
-  <!-- 4) Submit -->
-  <button type="submit" [disabled]="f.invalid">
-    Create Source System
-  </button>
-</form>
+    <div class="p-field" *ngIf="sourceType === 'REST'">
+      <label for="endpoint">Endpoint URL</label>
+      <input pInputText [(ngModel)]="source.endpoint" name="endpoint" id="endpoint"/>
+    </div>
+
+    <p-footer>
+      <button pButton label="Save" type="submit"></button>
+      <button pButton label="Cancel" type="button" (click)="cancel()"></button>
+    </p-footer>
+  </form>
+</p-dialog>

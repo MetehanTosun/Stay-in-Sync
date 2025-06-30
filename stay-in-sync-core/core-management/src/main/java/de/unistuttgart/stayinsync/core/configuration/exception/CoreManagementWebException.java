@@ -10,7 +10,7 @@ import jakarta.ws.rs.core.Response;
 public class CoreManagementWebException extends WebApplicationException {
 
     /**
-     * Constucts an CoreManagementWebException
+     * Constructs an {@link CoreManagementWebException]
      *
      * @param status  {@link Response.Status} of current request
      * @param title   short and descriptive title of the occurred error
@@ -21,12 +21,12 @@ public class CoreManagementWebException extends WebApplicationException {
     }
 
     /**
-     * Constucts an CoreManagementWebException
+     * Constucts an {@link CoreManagementWebException]
      *
      * @param status  {@link Response.Status} of current request
      * @param title   short and descriptive title of the occurred error
      * @param message preferably user-friendly message containing more detailed information on the error
-     * @param args message params
+     * @param args    message params
      */
     public CoreManagementWebException(Response.Status status, String title, String message, Object... args) {
         super(buildResponse(title, message, status, args));

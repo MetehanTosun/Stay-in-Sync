@@ -1,0 +1,24 @@
+<!-- src/app/features/source-system/components/source-system-base/source-system-base.component.html -->
+
+<div class="header">
+  <h2>Source Systems</h2>
+  <button pButton label="Create" icon="pi pi-plus" (click)="showCreateDialog = true"></button>
+</div>
+
+<p-table 
+    [value]="availableSystems" 
+    *ngIf="!loading && !errorMsg">
+  <ng-template pTemplate="header">
+    <tr><th>ID</th><th>Name</th></tr>
+  </ng-template>
+  <ng-template pTemplate="body" let-sys>
+    <tr><td>{{ sys.id }}</td><td>{{ sys.name }}</td></tr>
+  </ng-template>
+</p-table>
+
+<p-progressSpinner *ngIf="loading"></p-progressSpinner>
+<p-message *ngIf="errorMsg" severity="error" text="{{ errorMsg }}"></p-message>
+
+<app-create-source-system 
+  [(visible)]="showCreateDialog">
+</app-create-source-system>

@@ -27,7 +27,9 @@
               }
             ],
             "styles": [
-              "src/styles.css"
+
+              "../../stay-in-sync-configurator-ui/src/styles.css"
+
             ],
             "scripts": []
           },
@@ -85,12 +87,15 @@
               }
             ],
             "styles": [
-              "src/styles.css"
+              "../../stay-in-sync-configurator-ui/src/styles.css"
             ],
             "scripts": []
           }
         }
       }
     }
+  },
+  "cli": {
+    "analytics": "0b402b27-45b7-415a-b28f-99bb690cab93"
   }
 }

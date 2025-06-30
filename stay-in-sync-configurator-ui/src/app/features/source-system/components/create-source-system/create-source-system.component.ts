@@ -1,84 +1,79 @@
-// src/app/aas/aas-base/create-source-system/create-source-system.component.ts
+// src/app/features/source-system/components/create-source-system/create-source-system.component.ts
 
-// biome-ignore lint/style/useImportType: <explanation>
-import { Component, OnInit } from '@angular/core';
-import { CommonModule } from '@angular/common';
-import { FormsModule } from '@angular/forms';
-import { Observable, of } from 'rxjs';
-// biome-ignore lint/style/useImportType: <explanation>
-import { AasService } from '../../services/aas.service';
+import { Component, OnInit, Input, Output, EventEmitter } from '@angular/core';
+import { CommonModule }    from '@angular/common';
+import { FormsModule }     from '@angular/forms';
+import { ButtonModule }    from 'primeng/button';
+import { DialogModule }    from 'primeng/dialog';
+import { DropdownModule }  from 'primeng/dropdown';         // ← hier
+import { AasService }      from '../../services/aas.service';
+import { Observable, of }  from 'rxjs';
+import { tap, catchError } from 'rxjs/operators';
 
 type SourceType = 'AAS' | 'REST';
 
 @Component({
   selector: 'app-create-source-system',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [
+    CommonModule,
+    FormsModule,
+    ButtonModule,
+    DialogModule,
+    DropdownModule                           // ← hier
+  ],
   templateUrl: './create-source-system.component.html',
-  styleUrls: ['./create-source-system.component.css'],
+  styleUrls: ['./create-source-system.component.css']
 })
 export class CreateSourceSystemComponent implements OnInit {
-  /** Welcher Typ von Source System soll angelegt werden? */
+  @Input() visible = false;
+  @Output() visibleChange = new EventEmitter<boolean>();
+
   sourceType: SourceType = 'AAS';
+  sourceTypeOptions = [
+    { label: 'AAS',  value: 'AAS'  },
+    { label: 'REST', value: 'REST' }
+  ];
 
-  /** Datenmodell für das neue Quell-System */
-  source = {
-    name: '',
-    /** AAS-Instanz-ID (falls AAS) */
-    aasId: '',
-    /** Endpoint URL (falls REST-API) */
-    endpoint: '',
-  };
+  source = { name: '', aasId: '', endpoint: '' };
 
-  /** Liste aller AAS-Instanzen für das Dropdown */
   aasList$: Observable<{ id: string; name: string }[]> = of([]);
 
   constructor(private aasService: AasService) {}
 
   ngOnInit(): void {
-    // Initial laden, falls Default-Typ AAS ist
-    if (this.sourceType === 'AAS') {
-      this.loadAasList();
-    }
+    this.loadAasList();
   }
 
-  /** Wird aufgerufen, wenn der Nutzer den Typ wechselt */
   onTypeChange(type: SourceType) {
     this.sourceType = type;
-    // AAS-Liste ggf. (neu) laden oder leeren
-    this.aasList$ = type === 'AAS'
-      ? this.aasService.getAll()
-      : of([]);
-    // Eingabefelder zurücksetzen
-    this.source.aasId = '';
-    this.source.endpoint = '';
+    this.loadAasList();
   }
 
   private loadAasList() {
-    this.aasList$ = this.aasService.getAll();
+    if (this.sourceType === 'AAS') {
+      this.aasList$ = this.aasService.getAll().pipe(
+        tap(list => console.log('AAS geladen:', list)),
+        catchError(err => { console.error(err); return of([]); })
+      );
+    } else {
+      this.aasList$ = of([]);
+    }
   }
 
-  /** Speichern-Handler */
-  save(): void {
-    // Einfache Validierung
-    if (!this.source.name) {
-      console.warn('Name is required');
-      return;
-    }
-    if (this.sourceType === 'AAS' && !this.source.aasId) {
-      console.warn('AAS ID is required');
-      return;
-    }
-    if (this.sourceType === 'REST' && !this.source.endpoint) {
-      console.warn('Endpoint URL is required');
-      return;
-    }
+  open() {
+    this.visible = true;
+    this.visibleChange.emit(true);
+  }
 
-    // Hier würde man den Backend-Call implementieren:
-    console.log('Creating Source System:', {
-      type: this.sourceType,
-      ...this.source
-    });
-    // z.B. this.aasService.create(this.source).subscribe(...)
+  cancel() {
+    this.visible = false;
+    this.visibleChange.emit(false);
+  }
+
+  save() {
+    console.log('Speichern:', this.source);
+    // TODO: Save-Logik
+    this.cancel();
   }
 }
