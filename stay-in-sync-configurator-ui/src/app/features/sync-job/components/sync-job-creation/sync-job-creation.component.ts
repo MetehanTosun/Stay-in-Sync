@@ -128,6 +128,8 @@ export class SyncJobCreationComponent implements OnInit {
           console.error("Error loading Sync Job:", err);
         }
       });
+    } else {
+      this.resetStepperData();
     }
     this.loadSystems();
   }
@@ -143,6 +145,7 @@ export class SyncJobCreationComponent implements OnInit {
     this.visible = false;
     this.visibleChange.emit(false);
     this.router.navigate(['sync-jobs']);
+    this.resetStepperData();
   }
 
 
@@ -159,22 +162,37 @@ export class SyncJobCreationComponent implements OnInit {
 
   createSyncJob() {
     const syncJob = {
+      id: this.selectedSyncJobId,
       name: this.syncJobName,
       description: this.syncJobDescription,
       isSimulation: this.isSimulation,
       transformations: this.transformations
     };
-    console.log("Creating Sync Job:", syncJob);
-    this.syncJobService.create(syncJob).subscribe({
-      next: (createdJob) => {
-        console.log("Sync Job created successfully:", createdJob);
-        this.resetStepperData();
-        this.cancel();
-      },
-      error: (err) => {
-        console.error("Error creating Sync Job:", err);
-      }
-    })
+
+    if (this.selectedSyncJobId) {
+      // Update (PUT)
+      this.syncJobService.update(this.selectedSyncJobId, syncJob).subscribe({
+        next: (updatedJob) => {
+          console.log("Sync Job erfolgreich aktualisiert:", updatedJob);
+          this.cancel();
+        },
+        error: (err) => {
+          console.error("Fehler beim Aktualisieren des Sync Jobs:", err);
+        }
+      });
+    } else {
+      // Create (POST)
+      console.log("Creating Sync Job:", syncJob);
+      this.syncJobService.create(syncJob).subscribe({
+        next: (createdJob) => {
+          console.log("Sync Job erfolgreich erstellt:", createdJob);
+          this.cancel();
+        },
+        error: (err) => {
+          console.error("Fehler beim Erstellen des Sync Jobs:", err);
+        }
+      });
+    }
   }
 
   onTransformationsChanged($event: Transformation[]) {
@@ -189,5 +207,6 @@ export class SyncJobCreationComponent implements OnInit {
     this.isSimulation = false;
     this.transformations = [];
     this.activeStep = 1;
+    this.selectedSyncJobId = undefined;
   }
 }

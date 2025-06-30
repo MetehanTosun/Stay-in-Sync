@@ -61,6 +61,7 @@ ngOnInit() {
   this.router.events.subscribe(event => {
     if (event instanceof NavigationEnd && event.url === '/sync-jobs') {
       this.getAll();
+      this.selectedSyncJobId = undefined;
     }
   });
   }

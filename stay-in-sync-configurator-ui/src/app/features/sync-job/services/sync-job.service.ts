@@ -26,4 +26,8 @@ export class SyncJobService {
   getById(selectedSyncJobId: number) {
     return this.httpClient.get<SyncJob>(`/api/config/sync-job/${selectedSyncJobId}`);
   }
+
+  update(selectedSyncJobId: number,syncJob: SyncJob): Observable<SyncJob> {
+    return this.httpClient.put<SyncJob>(`/api/config/sync-job/${selectedSyncJobId}`, syncJob);
+  }
 }

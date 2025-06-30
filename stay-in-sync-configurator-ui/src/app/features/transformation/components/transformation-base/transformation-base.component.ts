@@ -2,10 +2,14 @@ import {Component, EventEmitter, OnInit, Output} from '@angular/core';
 import {TableModule} from 'primeng/table';
 import {Transformation} from '../../models/transformation.model';
 import {Button} from 'primeng/button';
-import {FormsModule} from '@angular/forms';
+import {FormsModule, ReactiveFormsModule} from '@angular/forms';
 import { ToggleButtonModule } from 'primeng/togglebutton';
 import {min} from 'rxjs';
 import {TransformationStateService} from '../../services/ransformation.state.service';
+import {TransformationService} from '../../services/transformation.service';
+import {Dialog} from 'primeng/dialog';
+import {InputText} from 'primeng/inputtext';
+import {NgIf} from '@angular/common';
 
 @Component({
   selector: 'app-transformation-base',
@@ -13,7 +17,11 @@ import {TransformationStateService} from '../../services/ransformation.state.ser
     TableModule,
     Button,
     FormsModule,
-    ToggleButtonModule
+    ToggleButtonModule,
+    Dialog,
+    ReactiveFormsModule,
+    InputText,
+    NgIf
   ],
   templateUrl: './transformation-base.component.html',
   styleUrl: './transformation-base.component.css'
@@ -29,23 +37,15 @@ export class TransformationBaseComponent implements OnInit {
 
   addedTransformations: Transformation[] = [];
 
-  constructor(private stateService: TransformationStateService) {}
+  displayCreateDialog: boolean = false;
+
+  newTransformation: Transformation = {};
+
+  constructor(private stateService: TransformationStateService, private transformationService : TransformationService) {}
 
   ngOnInit() {
     const loaded = this.stateService.transformations;
     this.transformations = loaded && loaded.length > 0 ? loaded : [
-      { name: 'Beispieltransformation 1', transformationRule: 'Rule1', transformationScript: 'Script1' },
-      { name: 'Beispieltransformation 2', transformationRule: 'Rule2', transformationScript: 'Script2' },
-      { name: 'Beispieltransformation 3', transformationRule: 'Rule3', transformationScript: 'Script3' },
-      { name: 'Beispieltransformation 4', transformationRule: 'Rule4', transformationScript: 'Script4' },
-      { name: 'Beispieltransformation 5', transformationRule: 'Rule5', transformationScript: 'Script5' },
-      { name: 'Beispieltransformation 6', transformationRule: 'Rule6', transformationScript: 'Script6' },
-      { name: 'Beispieltransformation 7', transformationRule: 'Rule7', transformationScript: 'Script7' },
-      { name: 'Beispieltransformation 8', transformationRule: 'Rule8', transformationScript: 'Script8' },
-      { name: 'Beispieltransformation 9', transformationRule: 'Rule9', transformationScript: 'Script9' },
-      { name: 'Beispieltransformation 10', transformationRule: 'Rule10', transformationScript: 'Script10' },
-      { name: 'Beispieltransformation 11', transformationRule: 'Rule11', transformationScript: 'Script11' },
-      { name: 'Beispieltransformation 12', transformationRule: 'Rule12', transformationScript: 'Script12' }
     ];
   }
 
@@ -56,8 +56,7 @@ export class TransformationBaseComponent implements OnInit {
   }
 
   delete(rowData: any) {
-    // Implement delete functionality here
-    //TODO:backend
+    this.transformationService.delete(rowData).subscribe();
     console.log('Delete transformation:', rowData);
   }
 
@@ -85,4 +84,38 @@ export class TransformationBaseComponent implements OnInit {
   }
 
   protected readonly min = min;
+
+  createTransformationShell() {
+    console.log('Creating new transformation shell');
+    this.transformationService.create(this.newTransformation).subscribe({
+      next: (transformation: Transformation) => {
+        this.transformations.push(transformation);
+        this.newTransformation = {};
+        this.displayCreateDialog = false
+    }
+      , error: (error: any) => {
+        console.error('Fehler beim Erstellen der Transformation:', error);
+      }
+    });
+  }
+
+  openCreateDialog() {
+    this.displayCreateDialog = true;
+  }
+
+  cancel() {
+    this.displayCreateDialog = false;
+  }
+
+  addRule(rowData: any) {
+
+  }
+
+  addScript(rowData: any) {
+
+  }
+
+  showMissingFieldsMessage() {
+    alert('Bitte füllen Sie alle erforderlichen Felder aus.');
+  }
 }
