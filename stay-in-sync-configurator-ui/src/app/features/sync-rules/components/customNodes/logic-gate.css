@@ -1,0 +1,27 @@
+.logic-gate {
+  width: 100px;
+  height: 60px;
+  border: 2px solid #4a90e2;
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  /* background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white; */
+  background: aliceblue;/* tmporary line */
+  font-weight: bold;
+  z-index: 10001;
+}
+
+.gate-symbol {
+  font-size: 24px;
+  font-weight: bold;
+  line-height: 1;
+}
+
+.gate-label {
+  font-size: 10px;
+  margin-top: 2px;
+  opacity: 0.8;
+}
