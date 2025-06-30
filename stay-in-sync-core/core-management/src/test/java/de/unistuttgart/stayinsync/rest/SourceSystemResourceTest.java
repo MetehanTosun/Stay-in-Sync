@@ -27,7 +27,6 @@ import de.unistuttgart.stayinsync.core.configuration.mapping.SourceSystemMapper;
 import de.unistuttgart.stayinsync.core.configuration.rest.dtos.*;
 import de.unistuttgart.stayinsync.core.configuration.service.SourceSystemEndpointService;
 import de.unistuttgart.stayinsync.core.configuration.service.SourceSystemService;
-import jakarta.ws.rs.core.Response;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.mockito.InjectMock;
 
