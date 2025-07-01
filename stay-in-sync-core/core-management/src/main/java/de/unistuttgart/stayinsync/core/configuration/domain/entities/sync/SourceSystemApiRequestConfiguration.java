@@ -39,7 +39,7 @@ public class SourceSystemApiRequestConfiguration extends ApiRequestConfiguration
         return find("sourceSystem.id", sourceSystemId).list();
     }
 
-    public static List<SourceSystemApiRequestConfiguration> findByendpointId(Long endpointId) {
+    public static List<SourceSystemApiRequestConfiguration> findByEndpointId(Long endpointId) {
         return find("sourceSystemEndpoint.id", endpointId).list();
     }
 

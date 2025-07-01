@@ -72,7 +72,6 @@ public class SyncJobResourceTest {
                 .thenReturn(List.of(mapper.mapToEntity(createDefaultSyncJob())));
 
         var defaultSyncJob = new SyncJob();
-        defaultSyncJob.id = DEFAULT_ID;
         defaultSyncJob.name = DEFAULT_NAME;
 
         var syncJobs = given()

@@ -59,7 +59,7 @@ public class SourceSystemApiRequestConfigurationService {
     @Transactional(SUPPORTS)
     public List<SourceSystemApiRequestConfiguration> findAllRequestConfigurationsByEndpointId(Long endpointId) {
         Log.debugf("Finding all request-configurations of endpoint with id = %s", endpointId);
-        return Optional.ofNullable(SourceSystemApiRequestConfiguration.findByendpointId(endpointId))
+        return Optional.ofNullable(SourceSystemApiRequestConfiguration.findByEndpointId(endpointId))
                 .orElseGet(List::of);
     }
 
