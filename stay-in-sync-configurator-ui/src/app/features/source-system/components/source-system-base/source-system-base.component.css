@@ -1,0 +1,12 @@
+/* src/app/features/source-system/components/source-system-base/source-system-base.component.css */
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.error {
+  color: #c00;
+}

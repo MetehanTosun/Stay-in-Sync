@@ -1,10 +1,13 @@
 package de.unistuttgart.stayinsync.rest;
 
-import de.unistuttgart.stayinsync.core.configuration.persistence.entities.SyncJob;
+import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.SyncJob;
+import de.unistuttgart.stayinsync.core.configuration.mapping.SyncJobFullUpdateMapper;
+import de.unistuttgart.stayinsync.core.configuration.rest.dtos.SyncJobDTO;
 import de.unistuttgart.stayinsync.core.configuration.service.SyncJobService;
 import io.quarkus.test.InjectMock;
 import io.quarkus.test.junit.QuarkusTest;
 import io.restassured.RestAssured;
+import jakarta.inject.Inject;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentMatcher;
@@ -31,6 +34,9 @@ public class SyncJobResourceTest {
     @InjectMock
     SyncJobService syncJobService;
 
+    @Inject
+    SyncJobFullUpdateMapper mapper;
+
     @BeforeAll
     static void beforeAll() {
         RestAssured.enableLoggingOfRequestAndResponseIfValidationFails();
@@ -44,14 +50,14 @@ public class SyncJobResourceTest {
                         v.name.equals(UPDATED_NAME);
 
         when(this.syncJobService.replaceSyncJob(argThat(syncJobArgumentMatcher)))
-                .thenReturn(Optional.of(syncJob));
+                .thenReturn(Optional.of(mapper.mapToEntity(syncJob)));
 
         given()
                 .when()
                 .body(syncJob)
                 .contentType(JSON)
                 .accept(JSON)
-                .put("/api/config/sync-job/{id}", syncJob.id)
+                .put("/api/config/sync-job/{id}", syncJob.id())
                 .then()
                 .statusCode(NO_CONTENT.getStatusCode())
                 .body(blankOrNullString());
@@ -63,7 +69,7 @@ public class SyncJobResourceTest {
     @Test
     void shouldGetItemsWithNameFilter() {
         when(this.syncJobService.findAllSyncJobsHavingName("Sync Produktion A"))
-                .thenReturn(List.of(createDefaultSyncJob()));
+                .thenReturn(List.of(mapper.mapToEntity(createDefaultSyncJob())));
 
         var defaultSyncJob = new SyncJob();
         defaultSyncJob.id = DEFAULT_ID;
@@ -77,29 +83,26 @@ public class SyncJobResourceTest {
                 .statusCode(OK.getStatusCode())
                 .contentType(JSON)
                 .extract().body()
-                .jsonPath().getList(".", SyncJob.class);
+                .jsonPath().getList(".", SyncJobDTO.class);
 
         assertThat(syncJobs)
                 .singleElement()
                 .usingRecursiveComparison()
                 .ignoringFieldsMatchingRegexes(".*_hibernate_.*")
-                .isEqualTo(defaultSyncJob);
+                .isEqualTo(mapper.mapToDTO(defaultSyncJob));
 
         verify(this.syncJobService).findAllSyncJobsHavingName("Sync Produktion A");
         verifyNoMoreInteractions(this.syncJobService);
     }
 
-    public static SyncJob createFullyUpdatedSyncJob() {
-        var syncJob = createDefaultSyncJob();
-        syncJob.name = UPDATED_NAME;
+    public static SyncJobDTO createFullyUpdatedSyncJob() {
+        var syncJob = new SyncJobDTO(DEFAULT_ID, UPDATED_NAME, false);
 
         return syncJob;
     }
 
-    private static SyncJob createDefaultSyncJob() {
-        var syncJob = new SyncJob();
-        syncJob.id = DEFAULT_ID;
-        syncJob.name = DEFAULT_NAME;
+    private static SyncJobDTO createDefaultSyncJob() {
+        var syncJob = new SyncJobDTO(DEFAULT_ID, DEFAULT_NAME, false);
 
         return syncJob;
     }
