@@ -1,10 +1,8 @@
 package de.unistuttgart.stayinsync.core.configuration.mapping;
 
 import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.ApiHeader;
-import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.ApiRequestConfigurationHeader;
-import de.unistuttgart.stayinsync.core.configuration.rest.dtos.ApiRequestHeaderDTO;
-import de.unistuttgart.stayinsync.core.configuration.rest.dtos.HeaderRequestConfigurationDTO;
-import de.unistuttgart.stayinsync.transport.dto.ApiRequestHeaderMessageDTO;
+import de.unistuttgart.stayinsync.core.configuration.rest.dtos.ApiHeaderDTO;
+import de.unistuttgart.stayinsync.core.configuration.rest.dtos.CreateApiHeaderDTO;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.MappingConstants;
@@ -15,26 +13,16 @@ import java.util.List;
 @Mapper(componentModel = MappingConstants.ComponentModel.JAKARTA_CDI)
 public interface ApiHeaderFullUpdateMapper {
 
-    @Mapping(target = "id", ignore = true)
-    void mapFullUpdate(ApiRequestConfigurationHeader input, @MappingTarget ApiRequestConfigurationHeader target);
-
-    @Mapping(source = "apiHeader.headerName", target = "headerName")
-    @Mapping(source = "selectedValue", target = "headerValue")
-    ApiRequestHeaderMessageDTO mapToMessageDTO(ApiRequestConfigurationHeader input);
-
     @Mapping(target = "syncSystem", ignore = true)
-    ApiHeader mapToEntity(ApiRequestHeaderDTO apiRequestHeaderDTO);
+    ApiHeader mapToEntity(ApiHeaderDTO apiRequestHeaderDTO);
 
-    List<ApiRequestHeaderDTO> mapToDTOList(List<ApiHeader> apiRequestHeaders);
+    List<ApiHeaderDTO> mapToDTOList(List<ApiHeader> apiRequestHeaders);
 
-    ApiRequestHeaderDTO mapToDTO(ApiHeader apiRequestHeader);
+    ApiHeaderDTO mapToDTO(ApiHeader apiRequestHeader);
 
-    @Mapping(target = "id", ignore = true)
-    @Mapping(target = "selectedValue", source = "headerValue")
-    @Mapping(target = "requestConfiguration", ignore = true)
-    @Mapping(target = "apiHeader", ignore = true)
-    ApiRequestConfigurationHeader mapToEntity(HeaderRequestConfigurationDTO headerRequestConfigurationDTO);
 
     @Mapping(target = "id", ignore = true)
     void mapFullUpdate(ApiHeader apiEndpointQueryParam, @MappingTarget ApiHeader targetSouceSystemEndpoint);
+
+    ApiHeader mapToEntity(CreateApiHeaderDTO apiEndpointQueryParamDTO);
 }

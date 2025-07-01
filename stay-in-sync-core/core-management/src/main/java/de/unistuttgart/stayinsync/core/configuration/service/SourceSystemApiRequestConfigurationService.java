@@ -4,7 +4,7 @@ import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.Source
 import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.SourceSystemEndpoint;
 import de.unistuttgart.stayinsync.core.configuration.exception.CoreManagementException;
 import de.unistuttgart.stayinsync.core.configuration.mapping.SourceSystemApiRequestConfigurationFullUpdateMapper;
-import de.unistuttgart.stayinsync.core.configuration.rest.dtos.SourceSystemApiRequestConfigurationDTO;
+import de.unistuttgart.stayinsync.core.configuration.rest.dtos.CreateRequestConfigurationDTO;
 import io.quarkus.logging.Log;
 import io.smallrye.common.constraint.NotNull;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -31,7 +31,7 @@ public class SourceSystemApiRequestConfigurationService {
     @Inject
     SourceSystemApiRequestConfigurationFullUpdateMapper mapper;
 
-    public SourceSystemApiRequestConfiguration persistApiRequestConfiguration(@NotNull @Valid SourceSystemApiRequestConfigurationDTO sourceSystemApiRequestConfigurationDTO, Long endpointId) {
+    public SourceSystemApiRequestConfiguration persistApiRequestConfiguration(@NotNull @Valid CreateRequestConfigurationDTO sourceSystemApiRequestConfigurationDTO, Long endpointId) {
         SourceSystemApiRequestConfiguration sourceSystemApiRequestConfiguration = mapper.mapToEntity(sourceSystemApiRequestConfigurationDTO);
 
         Log.debugf("Persisting request-configurations: %s, for endpoint with id: %s", sourceSystemApiRequestConfiguration, endpointId);
@@ -82,7 +82,7 @@ public class SourceSystemApiRequestConfigurationService {
         SourceSystemApiRequestConfiguration.deleteById(id);
     }
 
-    public Optional<SourceSystemApiRequestConfiguration> replaceApiRequestConfiguration(@NotNull @Valid SourceSystemApiRequestConfigurationDTO sourceSystemApiRequestConfigurationDTO) {
+    public Optional<SourceSystemApiRequestConfiguration> replaceApiRequestConfiguration(@NotNull @Valid CreateRequestConfigurationDTO sourceSystemApiRequestConfigurationDTO) {
         SourceSystemApiRequestConfiguration sourceSystemApiRequestConfiguration = mapper.mapToEntity(sourceSystemApiRequestConfigurationDTO);
         Log.debugf("Replacing request-configurations: %s", sourceSystemApiRequestConfiguration);
 

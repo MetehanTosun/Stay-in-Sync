@@ -4,7 +4,33 @@ final class Examples {
 
     public static final String VALID_ENDPOINT_PARAM_POST = """
             """;
-    public static final String VALID_API_REQUEST_HEADER_POST = """
+    public static final String VALID_API_HEADER_POST = """
+            {
+              "name": "getUserA", 
+              "used": "false", 
+              "pollingIntervallInMs: "3"
+            }
+            """;
+    public static final String VALID_API_HEADER_VALUE = """
+            """;
+    public static final String VALID_ENDPOINT_PARAM_VALUE_POST = """
+            """;
+    public static final String VALID_EXAMPLE_REQUEST_CONFIGURATION_CREATE = """
+             {
+              "name": "getUserA", 
+              "used": "false", 
+              "pollingIntervallInMs: "3"
+            }
+            """;
+    public static final String VALID_EXAMPLE_ENDPOINT_CREATE = """
+            [{
+              "endpointPath": "/test/user", 
+              "httpRequestType": "GET"
+            },
+            {
+              "endpointPath": "/test/car", 
+              "httpRequestType": "POST"
+            }]
             """;
 
     private Examples() {

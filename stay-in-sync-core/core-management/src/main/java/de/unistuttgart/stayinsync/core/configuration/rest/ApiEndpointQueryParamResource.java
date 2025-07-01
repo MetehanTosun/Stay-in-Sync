@@ -3,6 +3,7 @@ package de.unistuttgart.stayinsync.core.configuration.rest;
 import de.unistuttgart.stayinsync.core.configuration.exception.CoreManagementException;
 import de.unistuttgart.stayinsync.core.configuration.mapping.ApiEndpointQueryParamMapper;
 import de.unistuttgart.stayinsync.core.configuration.rest.dtos.ApiEndpointQueryParamDTO;
+import de.unistuttgart.stayinsync.core.configuration.rest.dtos.ApiHeaderDTO;
 import de.unistuttgart.stayinsync.core.configuration.service.ApiEndpointQueryParamService;
 import io.quarkus.logging.Log;
 import jakarta.inject.Inject;
@@ -29,7 +30,7 @@ import java.util.List;
 import static jakarta.ws.rs.core.MediaType.APPLICATION_JSON;
 
 @Path("/api/config/endpoint/")
-public class QueryParamResource {
+public class ApiEndpointQueryParamResource {
 
     @Inject
     ApiEndpointQueryParamService apiEndpointQueryParamService;
@@ -37,7 +38,7 @@ public class QueryParamResource {
     @Inject
     ApiEndpointQueryParamMapper fullUpdateMapper;
 
-    @Path("/endpoint/{endpointId}/query-param")
+    @Path("/{endpointId}/query-param")
     @POST
     @Consumes(APPLICATION_JSON)
     @Operation(summary = "Creates a valid query-param for the specified endpoint")
@@ -50,49 +51,49 @@ public class QueryParamResource {
             responseCode = "400",
             description = "Invalid query-param passed in (or no request body found)"
     )
-    public Response createEndpointQueryParam(
+    public Response createApiRequestHeader(
             @RequestBody(
                     name = "query-param",
                     required = true,
                     content = @Content(
                             mediaType = APPLICATION_JSON,
-                            schema = @Schema(implementation = ApiEndpointQueryParamDTO.class),
-                            examples = @ExampleObject(name = "valid_endpoint_param", value = Examples.VALID_ENDPOINT_PARAM_POST)
+                            schema = @Schema(implementation = ApiHeaderDTO.class),
+                            examples = @ExampleObject(name = "valid_source_api_request_header", value = Examples.VALID_API_HEADER_POST)
                     )
             )
             @PathParam("endpointId") Long endpointId,
             @Valid @NotNull ApiEndpointQueryParamDTO apiEndpointQueryParamDTO,
             @Context UriInfo uriInfo) {
 
-        var persistedEndpointQueryParam = this.apiEndpointQueryParamService.persistApiQueryParam(apiEndpointQueryParamDTO, endpointId);
-        var builder = uriInfo.getAbsolutePathBuilder().path(Long.toString(persistedEndpointQueryParam.id));
+        var persistedSourceSystemEndpoint = this.apiEndpointQueryParamService.persistApiQueryParam(apiEndpointQueryParamDTO, endpointId);
+        var builder = uriInfo.getAbsolutePathBuilder().path(Long.toString(persistedSourceSystemEndpoint.id));
         Log.debugf("New query-param created with URI  %s", builder.build().toString());
 
         return Response.created(builder.build()).build();
     }
 
     @GET
-    @Operation(summary = "Returns all the query-params for the specified endpoint id from the database")
+    @Operation(summary = "Returns all the source-system-endpoints for the specified source-system from the database")
     @APIResponse(
             responseCode = "200",
-            description = "Gets all query params",
+            description = "Gets all source-system-endpoints",
             content = @Content(
                     mediaType = APPLICATION_JSON,
                     schema = @Schema(implementation = ApiEndpointQueryParamDTO.class, type = SchemaType.ARRAY)
             )
     )
-    @Path("/endpoint/{endpointId}/query-param")
-    public List<ApiEndpointQueryParamDTO> getAllQueryParamsForEndpoint(@Parameter(name = "endpoint", description = "Id of the associated endpoint") @PathParam("endpointId") Long endpointId) {
-        var allQueryParamsByEndpointId = this.apiEndpointQueryParamService.findAllQueryParamsByEndpointId(endpointId);
+    @Path("/{endpointId}/query-param")
+    public List<ApiEndpointQueryParamDTO> getAllQueryParams(@Parameter(name = "source_system_filter", description = "An optional filter parameter to filter results by endpoint id") @PathParam("endpointId") Long endpointId) {
+        var apiRequestHeaders = this.apiEndpointQueryParamService.findAllQueryParamsByEndpointId(endpointId);
 
-        Log.debugf("Total number of api-query-params by id: %d", allQueryParamsByEndpointId.size());
+        Log.debugf("Total number of source-system-endpoints: %d", apiRequestHeaders.size());
 
-        return fullUpdateMapper.mapToDTOList(allQueryParamsByEndpointId);
+        return fullUpdateMapper.mapToDTOList(apiRequestHeaders);
     }
 
 
     @GET
-    @Path("/endpoint/query-param/{id}")
+    @Path("/query-param/{id}")
     @Operation(summary = "Returns a query-param for a given identifier")
     @APIResponse(
             responseCode = "200",
@@ -107,11 +108,11 @@ public class QueryParamResource {
             responseCode = "404",
             description = "The query-param is not found for a given identifier"
     )
-    public Response getQueryParamById(@Parameter(name = "id", required = true) @PathParam("id") Long id) {
+    public Response getApiRequestHeaderById(@Parameter(name = "id", required = true) @PathParam("id") Long id) {
         return this.apiEndpointQueryParamService.findQueryParamById(id)
-                .map(apiEndpointQueryParam -> {
-                    Log.debugf("Found query-param: %s", apiEndpointQueryParam);
-                    return Response.ok(fullUpdateMapper.mapToDTO(apiEndpointQueryParam)).build();
+                .map(apiRequestHeader -> {
+                    Log.debugf("Found query-param: %s", apiRequestHeader);
+                    return Response.ok(fullUpdateMapper.mapToDTO(apiRequestHeader)).build();
                 })
                 .orElseThrow(() -> {
                     Log.warnf("No query-param found using id %d", id);
@@ -125,14 +126,14 @@ public class QueryParamResource {
             responseCode = "204",
             description = "Delete a query-param"
     )
-    @Path("/endpoint/query-param/{id}")
-    public void deleteEndpointQueryParam(@Parameter(name = "id", required = true) @PathParam("id") Long id) {
+    @Path("/query-param/{id}")
+    public void deleteSourceSystemEndpoint(@Parameter(name = "id", required = true) @PathParam("id") Long id) {
         this.apiEndpointQueryParamService.deleteQueryParamById(id);
         Log.debugf("query-param with id %d deleted ", id);
     }
 
     @PUT
-    @Path("/endpoint/query-param/{id}")
+    @Path("/query-param/{id}")
     @Consumes(APPLICATION_JSON)
     @Operation(summary = "Completely updates an exiting query-param by replacing it with the passed-in query-param")
     @APIResponse(
@@ -147,24 +148,21 @@ public class QueryParamResource {
             responseCode = "404",
             description = "No query-param found"
     )
-    public Response fullyUpdateEndpointQueryParam(@Parameter(name = "id", required = true)
-                                                  @RequestBody(
-                                                          name = "query-param",
-                                                          required = true,
-                                                          content = @Content(
-                                                                  mediaType = APPLICATION_JSON,
-                                                                  schema = @Schema(implementation = ApiEndpointQueryParamDTO.class),
-                                                                  examples = @ExampleObject(name = "valid_sync_job", value = Examples.VALID_EXAMPLE_SYNCJOB)
-                                                          )
+    public Response fullyUpdateQueryParam(@Parameter(name = "id", required = true)
+                                          @RequestBody(
+                                                  name = "query-param",
+                                                  required = true,
+                                                  content = @Content(
+                                                          mediaType = APPLICATION_JSON,
+                                                          schema = @Schema(implementation = ApiEndpointQueryParamDTO.class),
+                                                          examples = @ExampleObject(name = "valid_query_param", value = Examples.VALID_EXAMPLE_SYNCJOB)
                                                   )
-                                                  @PathParam("id") Long id, @Valid @NotNull ApiEndpointQueryParamDTO apiEndpointQueryParamDTO) {
-        if (id != apiEndpointQueryParamDTO.id()) {
-            throw new CoreManagementException(Response.Status.BAD_REQUEST, "Id missmatch", "Make sure that the request body entity id matches the request parameter");
-        }
+                                          )
+                                          @PathParam("id") Long id, @Valid @NotNull ApiEndpointQueryParamDTO apiRequestHeaderDTO) {
 
-        return this.apiEndpointQueryParamService.replaceQueryParamById(apiEndpointQueryParamDTO)
-                .map(updatedEndpointQueryParam -> {
-                    Log.debugf("query-param replaced with new values %s", updatedEndpointQueryParam);
+        return this.apiEndpointQueryParamService.replaceQueryParam(apiRequestHeaderDTO)
+                .map(updatedSourceSystemEndpoint -> {
+                    Log.debugf("query-param replaced with new values %s", updatedSourceSystemEndpoint);
                     return Response.noContent().build();
                 })
                 .orElseGet(() -> {

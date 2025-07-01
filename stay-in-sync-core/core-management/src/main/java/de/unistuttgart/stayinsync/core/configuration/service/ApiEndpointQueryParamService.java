@@ -64,7 +64,7 @@ public class ApiEndpointQueryParamService {
         ApiEndpointQueryParam.deleteById(id);
     }
 
-    public Optional<ApiEndpointQueryParam> replaceQueryParamById(@NotNull @Valid ApiEndpointQueryParamDTO apiEndpointQueryParamDTO) {
+    public Optional<ApiEndpointQueryParam> replaceQueryParam(@NotNull @Valid ApiEndpointQueryParamDTO apiEndpointQueryParamDTO) {
         ApiEndpointQueryParam apiEndpointQueryParam = mapper.mapToEntity(apiEndpointQueryParamDTO);
         Log.debugf("Replacing endpoint: %s", apiEndpointQueryParam);
 

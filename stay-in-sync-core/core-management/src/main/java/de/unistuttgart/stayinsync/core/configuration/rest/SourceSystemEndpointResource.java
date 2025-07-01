@@ -2,6 +2,7 @@ package de.unistuttgart.stayinsync.core.configuration.rest;
 
 import de.unistuttgart.stayinsync.core.configuration.exception.CoreManagementException;
 import de.unistuttgart.stayinsync.core.configuration.mapping.SourceSystemEndpointFullUpdateMapper;
+import de.unistuttgart.stayinsync.core.configuration.rest.dtos.CreateSourceSystemEndpointDTO;
 import de.unistuttgart.stayinsync.core.configuration.rest.dtos.SourceSystemEndpointDTO;
 import de.unistuttgart.stayinsync.core.configuration.service.SourceSystemEndpointService;
 import de.unistuttgart.stayinsync.core.configuration.service.SourceSystemService;
@@ -26,11 +27,10 @@ import org.eclipse.microprofile.openapi.annotations.responses.APIResponse;
 
 import java.net.URI;
 import java.util.List;
-import java.util.Optional;
 
 import static jakarta.ws.rs.core.MediaType.APPLICATION_JSON;
 
-@Path("api/source-system/{sourceSystemId}/endpoint")
+@Path("api/source-system/")
 @Produces(APPLICATION_JSON)
 @Consumes(APPLICATION_JSON)
 public class SourceSystemEndpointResource {
@@ -45,6 +45,7 @@ public class SourceSystemEndpointResource {
     SourceSystemEndpointFullUpdateMapper fullUpdateMapper;
 
     @POST
+    @Path("{sourceSystemId}/endpoint")
     @Consumes(APPLICATION_JSON)
     @Operation(summary = "Creates a valid source-system-endpoint")
     @APIResponse(
@@ -62,38 +63,32 @@ public class SourceSystemEndpointResource {
                     required = true,
                     content = @Content(
                             mediaType = APPLICATION_JSON,
-                            schema = @Schema(implementation = SourceSystemEndpointDTO.class),
-                            examples = @ExampleObject(name = "valid_sync_job", value = Examples.VALID_EXAMPLE_SYNCJOB_TO_CREATE)
+                            schema = @Schema(type = SchemaType.ARRAY, implementation = CreateSourceSystemEndpointDTO.class),
+                            examples = @ExampleObject(name = "valid_sync_job", value = Examples.VALID_EXAMPLE_ENDPOINT_CREATE)
                     )
             )
             @PathParam("sourceSystemId") Long sourceSystemId,
-            @Valid @NotNull SourceSystemEndpointDTO SourceSystemEndpointDTO,
+            @Valid @NotNull List<CreateSourceSystemEndpointDTO> sourceSystemEndpointDTO,
             @Context UriInfo uriInfo) {
-//        SourceSystem sourceSystem = this.sourceSystemService.findSourceSystemById(sourceSystemId).orElseThrow(() ->
-//        {
-//            return new CoreManagementException(Response.Status.NOT_FOUND, "Unable to find source-system", "Could not find source-system for id %s", sourceSystemId);
-//        });
-        var persistedSourceSystemEndpoint = this.sourceSystemEndpointService.persistSourceSystemEndpoint(SourceSystemEndpointDTO, sourceSystemId);
-        var builder = uriInfo.getAbsolutePathBuilder().path(Long.toString(persistedSourceSystemEndpoint.id));
-        Log.debugf("New source-system-endpoint created with URI  %s", builder.build().toString());
+        var persistedSourceSystemEndpoints = this.sourceSystemEndpointService.persistSourceSystemEndpointList(sourceSystemEndpointDTO, sourceSystemId);
+        Log.debugf("New source-system-endpoints created for source system %d", sourceSystemId.toString());
 
-        return Response.created(builder.build()).build();
+        return Response.status(Response.Status.CREATED).entity(fullUpdateMapper.mapToDTOList(persistedSourceSystemEndpoints)).build();
     }
 
     @GET
-    @Operation(summary = "Returns all the source-system-endpoints from the database")
+    @Path("{sourceSystemId}/endpoint")
+    @Operation(summary = "Returns all the source-system-endpoints for a specified system from the database")
     @APIResponse(
             responseCode = "200",
-            description = "Gets all source-system-endpoints",
+            description = "Gets all source-system-endpoints for specified system",
             content = @Content(
                     mediaType = APPLICATION_JSON,
                     schema = @Schema(implementation = SourceSystemEndpointDTO.class, type = SchemaType.ARRAY)
             )
     )
-    public List<SourceSystemEndpointDTO> getAllSourceSystemEndpoints(@Parameter(name = "source_system_filter", description = "An optional filter parameter to filter results by source system id") @QueryParam("source_system_id") Optional<Long> sourceSystemFilter) {
-        var sourceSystemEndpoints = sourceSystemFilter
-                .map(this.sourceSystemEndpointService::findAllEndpointsWithSourceSystemIdLike)
-                .orElseGet(this.sourceSystemEndpointService::findAllSourceSystemEndpoints);
+    public List<SourceSystemEndpointDTO> getAllSourceSystemEndpoints(@Parameter(name = "source system", description = "The id of the associated source system") @PathParam("sourceSystemId") Long sourceSystemid) {
+        var sourceSystemEndpoints = this.sourceSystemEndpointService.findAllEndpointsWithSourceSystemIdLike(sourceSystemid);
 
         Log.debugf("Total number of source-system-endpoints: %d", sourceSystemEndpoints.size());
 
@@ -102,7 +97,7 @@ public class SourceSystemEndpointResource {
 
 
     @GET
-    @Path("/{id}")
+    @Path("/endpoint/{id}")
     @Operation(summary = "Returns a source-system-endpoint for a given identifier")
     @APIResponse(
             responseCode = "200",
@@ -135,14 +130,14 @@ public class SourceSystemEndpointResource {
             responseCode = "204",
             description = "Delete a source-system-endpoint"
     )
-    @Path("/{id}")
+    @Path("/endpoint/{id}")
     public void deleteSourceSystemEndpoint(@Parameter(name = "id", required = true) @PathParam("id") Long id) {
         this.sourceSystemEndpointService.deleteSourceSystemEndpointById(id);
         Log.debugf("source-system-endpoint with id %d deleted ", id);
     }
 
     @PUT
-    @Path("/{id}")
+    @Path("/endpoint/{id}")
     @Consumes(APPLICATION_JSON)
     @Operation(summary = "Completely updates an exiting source-system-endpoint by replacing it with the passed-in source-system-endpoint")
     @APIResponse(
@@ -164,15 +159,12 @@ public class SourceSystemEndpointResource {
                                                             content = @Content(
                                                                     mediaType = APPLICATION_JSON,
                                                                     schema = @Schema(implementation = SourceSystemEndpointDTO.class),
-                                                                    examples = @ExampleObject(name = "valid_sync_job", value = Examples.VALID_EXAMPLE_SYNCJOB)
+                                                                    examples = @ExampleObject(name = "valid endpoint", value = Examples.VALID_SOURCE_SYSTEM_ENDPOINT_POST)
                                                             )
                                                     )
-                                                    @PathParam("id") Long id, @Valid @NotNull SourceSystemEndpointDTO SourceSystemEndpointDTO) {
-        if (id != SourceSystemEndpointDTO.id()) {
-            throw new CoreManagementException(Response.Status.BAD_REQUEST, "Id missmatch", "Make sure that the request body entity id matches the request parameter");
-        }
+                                                    @PathParam("id") Long id, @Valid @NotNull CreateSourceSystemEndpointDTO sourceSystemEndpointDTO) {
 
-        return this.sourceSystemEndpointService.replaceSourceSystemEndpoint(fullUpdateMapper.mapToEntity(SourceSystemEndpointDTO))
+        return this.sourceSystemEndpointService.replaceSourceSystemEndpoint(fullUpdateMapper.mapToEntity(sourceSystemEndpointDTO))
                 .map(updatedSourceSystemEndpoint -> {
                     Log.debugf("source-system-endpoint replaced with new values %s", updatedSourceSystemEndpoint);
                     return Response.noContent().build();

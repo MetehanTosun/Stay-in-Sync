@@ -1,7 +1,8 @@
 package de.unistuttgart.stayinsync.core.configuration.mapping;
 
 import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.SourceSystemApiRequestConfiguration;
-import de.unistuttgart.stayinsync.core.configuration.rest.dtos.SourceSystemApiRequestConfigurationDTO;
+import de.unistuttgart.stayinsync.core.configuration.rest.dtos.CreateRequestConfigurationDTO;
+import de.unistuttgart.stayinsync.core.configuration.rest.dtos.GetRequestConfigurationDTO;
 import de.unistuttgart.stayinsync.transport.dto.SourceSystemApiRequestConfigurationMessageDTO;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
@@ -16,12 +17,12 @@ public interface SourceSystemApiRequestConfigurationFullUpdateMapper {
     @Mapping(target = "id", ignore = true)
     void mapFullUpdate(SourceSystemApiRequestConfiguration input, @MappingTarget SourceSystemApiRequestConfiguration target);
 
-    SourceSystemApiRequestConfigurationDTO mapToDTO(SourceSystemApiRequestConfiguration input);
+    CreateRequestConfigurationDTO mapToDTO(SourceSystemApiRequestConfiguration input);
 
     SourceSystemApiRequestConfigurationMessageDTO mapToMessageDTO(SourceSystemApiRequestConfiguration input);
-    
-    SourceSystemApiRequestConfiguration mapToEntity(SourceSystemApiRequestConfigurationDTO input);
 
-    List<SourceSystemApiRequestConfigurationDTO> mapToDTOList(List<SourceSystemApiRequestConfiguration> input);
+    SourceSystemApiRequestConfiguration mapToEntity(CreateRequestConfigurationDTO input);
+    
+    List<GetRequestConfigurationDTO> mapToDTOList(List<SourceSystemApiRequestConfiguration> input);
 
 }

@@ -6,9 +6,10 @@ import com.rabbitmq.client.CancelCallback;
 import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.DeliverCallback;
 import com.rabbitmq.client.Delivery;
-import de.unistuttgart.stayinsync.core.configuration.rest.dtos.SourceSystemApiRequestConfigurationDTO;
+import de.unistuttgart.stayinsync.core.configuration.rest.dtos.CreateRequestConfigurationDTO;
 import de.unistuttgart.stayinsync.polling.PollingJobScheduler;
 import de.unistuttgart.stayinsync.polling.exception.PollingNodeException;
+import de.unistuttgart.stayinsync.transport.dto.SourceSystemApiRequestConfigurationMessageDTO;
 import io.quarkiverse.rabbitmqclient.RabbitMQClient;
 import io.quarkus.logging.Log;
 import io.quarkus.runtime.StartupEvent;
@@ -80,7 +81,7 @@ public class PollingJobMessageConsumer {
     private DeliverCallback deployPollingJobCallback() {
         return (consumerTag, delivery) -> {
             try {
-                SourceSystemApiRequestConfigurationDTO apiRequestConfigurationMessageDTO = getPollingJob(delivery);
+                SourceSystemApiRequestConfigurationMessageDTO apiRequestConfigurationMessageDTO = getPollingJob(delivery);
                 Log.infof("Received new request configuration for api: %s", apiRequestConfigurationMessageDTO.sourceSystem().apiUrl());
                 pollingJobScheduler.deployPollingJobExecution(apiRequestConfigurationMessageDTO);
                 channel.basicAck(delivery.getEnvelope().getDeliveryTag(), false);
@@ -93,19 +94,19 @@ public class PollingJobMessageConsumer {
     }
 
     /**
-     * Serializes message body to {@link SourceSystemApiRequestConfigurationDTO} object
+     * Serializes message body to {@link CreateRequestConfigurationDTO} object
      *
      * @param delivery
      * @return
      * @throws UnsupportedEncodingException
      * @throws JsonProcessingException
      */
-    private SourceSystemApiRequestConfigurationDTO getPollingJob(Delivery delivery) throws PollingNodeException {
+    private SourceSystemApiRequestConfigurationMessageDTO getPollingJob(Delivery delivery) throws PollingNodeException {
 
         try {
             Log.info("Extracting polling-job from consumed message");
             String message = new String(delivery.getBody(), "UTF-8");
-            return objectMapper.readValue(message, SourceSystemApiRequestConfigurationDTO.class);
+            return objectMapper.readValue(message, SourceSystemApiRequestConfigurationMessageDTO.class);
         } catch (JsonProcessingException | UnsupportedEncodingException e) {
             throw new PollingNodeException("RabbitMQ error", "Unable to extract polling-job from message body");
         }
@@ -130,7 +131,7 @@ public class PollingJobMessageConsumer {
     private DeliverCallback updateDeployedPollingJobCallback() {
         return (consumerTag, delivery) -> {
             try {
-                SourceSystemApiRequestConfigurationDTO apiRequestConfig = getPollingJob(delivery);
+                SourceSystemApiRequestConfigurationMessageDTO apiRequestConfig = getPollingJob(delivery);
                 Log.infof("Received update for polling-job %s", apiRequestConfig.sourceSystem().apiUrl());
                 pollingJobScheduler.reconfigureSyncJobExecution(apiRequestConfig);
                 channel.basicAck(delivery.getEnvelope().getDeliveryTag(), false);
@@ -148,7 +149,7 @@ public class PollingJobMessageConsumer {
      * @param apiRequestConfigurationMessageDTO
      * @throws PollingNodeException
      */
-    public void bindExisitingPollingJobQueue(SourceSystemApiRequestConfigurationDTO apiRequestConfigurationMessageDTO) throws PollingNodeException {
+    public void bindExisitingPollingJobQueue(SourceSystemApiRequestConfigurationMessageDTO apiRequestConfigurationMessageDTO) throws PollingNodeException {
         try {
             String routingKey = "polling-job" + apiRequestConfigurationMessageDTO.id();
             Log.infof("Binding queue %s with routing key %s", pollingNodeQueueName, routingKey);
@@ -165,7 +166,7 @@ public class PollingJobMessageConsumer {
      * @param apiRequestConfigurationMessageDTO
      * @throws PollingNodeException
      */
-    public void unbindExisitingPollingJobQueue(SourceSystemApiRequestConfigurationDTO apiRequestConfigurationMessageDTO) throws PollingNodeException {
+    public void unbindExisitingPollingJobQueue(SourceSystemApiRequestConfigurationMessageDTO apiRequestConfigurationMessageDTO) throws PollingNodeException {
         try {
             String routingKey = "polling-job" + apiRequestConfigurationMessageDTO.id();
             Log.infof("Unbinding queue %s with routing key %s", pollingNodeQueueName, routingKey);

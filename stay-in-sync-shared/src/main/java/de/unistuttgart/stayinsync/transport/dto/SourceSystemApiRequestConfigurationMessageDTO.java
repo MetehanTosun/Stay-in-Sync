@@ -2,8 +2,8 @@ package de.unistuttgart.stayinsync.transport.dto;
 
 import java.util.Set;
 
-public record SourceSystemApiRequestConfigurationMessageDTO(Long id, SourceSystemMessageDTO sourceSystemMessageDTO,
+public record SourceSystemApiRequestConfigurationMessageDTO(Long id, SourceSystemMessageDTO sourceSystem,
                                                             SourceSystemEndpointMessageDTO endpoint, boolean active,
-                                                            Set<ApiRequestParameterMessageDTO> requestParameterMessages,
-                                                            Set<ApiRequestHeaderMessageDTO> requestHeaderMessages) {
+                                                            Set<ApiRequestParameterMessageDTO> requestParameters,
+                                                            Set<ApiRequestHeaderMessageDTO> requestHeader) {
 }

@@ -2,7 +2,8 @@ package de.unistuttgart.stayinsync.core.configuration.rest;
 
 import de.unistuttgart.stayinsync.core.configuration.exception.CoreManagementException;
 import de.unistuttgart.stayinsync.core.configuration.mapping.SourceSystemApiRequestConfigurationFullUpdateMapper;
-import de.unistuttgart.stayinsync.core.configuration.rest.dtos.SourceSystemApiRequestConfigurationDTO;
+import de.unistuttgart.stayinsync.core.configuration.rest.dtos.CreateRequestConfigurationDTO;
+import de.unistuttgart.stayinsync.core.configuration.rest.dtos.GetRequestConfigurationDTO;
 import de.unistuttgart.stayinsync.core.configuration.service.SourceSystemApiRequestConfigurationService;
 import io.quarkus.logging.Log;
 import jakarta.inject.Inject;
@@ -57,14 +58,14 @@ public class RequestConfigurationResource {
                     required = true,
                     content = @Content(
                             mediaType = APPLICATION_JSON,
-                            schema = @Schema(implementation = SourceSystemApiRequestConfigurationDTO.class),
-                            examples = @ExampleObject(name = "valid_sync_job", value = Examples.VALID_EXAMPLE_SYNCJOB_TO_CREATE)
+                            schema = @Schema(implementation = CreateRequestConfigurationDTO.class),
+                            examples = @ExampleObject(name = "valid_sync_job", value = Examples.VALID_EXAMPLE_REQUEST_CONFIGURATION_CREATE)
                     )
             )
             @PathParam("endpointId") Long sourceSystemId,
-            @Valid @NotNull SourceSystemApiRequestConfigurationDTO SourceSystemApiRequestConfigurationDTO,
+            @Valid @NotNull CreateRequestConfigurationDTO sourceSystemApiRequestConfigurationDTO,
             @Context UriInfo uriInfo) {
-        var persistedApiRequestConfiguration = this.sourceSystemApiRequestConfigurationService.persistApiRequestConfiguration(SourceSystemApiRequestConfigurationDTO, sourceSystemId);
+        var persistedApiRequestConfiguration = this.sourceSystemApiRequestConfigurationService.persistApiRequestConfiguration(sourceSystemApiRequestConfigurationDTO, sourceSystemId);
         var builder = uriInfo.getAbsolutePathBuilder().path(Long.toString(persistedApiRequestConfiguration.id));
         Log.debugf("New api-request-configuration created with URI  %s", builder.build().toString());
 
@@ -79,10 +80,10 @@ public class RequestConfigurationResource {
             description = "Gets all api-request-configurations for the specified source-system",
             content = @Content(
                     mediaType = APPLICATION_JSON,
-                    schema = @Schema(implementation = SourceSystemApiRequestConfigurationDTO.class, type = SchemaType.ARRAY)
+                    schema = @Schema(implementation = CreateRequestConfigurationDTO.class, type = SchemaType.ARRAY)
             )
     )
-    public List<SourceSystemApiRequestConfigurationDTO> getAllSourceSystemRequestConfigurationsByEndpointId(@Parameter(name = "source_system_filter", description = "An optional filter parameter to filter results by source system id") @PathParam("endpointId") Long endpointId) {
+    public List<GetRequestConfigurationDTO> getAllSourceSystemRequestConfigurationsByEndpointId(@Parameter(name = "source_system_filter", description = "An optional filter parameter to filter results by source system id") @PathParam("endpointId") Long endpointId) {
         var apiRequestConfigurations = sourceSystemApiRequestConfigurationService.findAllRequestConfigurationsByEndpointId(endpointId);
 
         Log.debugf("Total number of api request configurations by endpoint: %d", apiRequestConfigurations.size());
@@ -98,10 +99,10 @@ public class RequestConfigurationResource {
             description = "Gets all api-request-configurations for the specified source-system",
             content = @Content(
                     mediaType = APPLICATION_JSON,
-                    schema = @Schema(implementation = SourceSystemApiRequestConfigurationDTO.class, type = SchemaType.ARRAY)
+                    schema = @Schema(implementation = GetRequestConfigurationDTO.class, type = SchemaType.ARRAY)
             )
     )
-    public List<SourceSystemApiRequestConfigurationDTO> getAllSourceSystemRequestConfigurationsBySourceSystemId(@Parameter(name = "source_system_filter", description = "An optional filter parameter to filter results by source system id") @PathParam("sourceSystemId") Long sourceSystemId) {
+    public List<GetRequestConfigurationDTO> getAllSourceSystemRequestConfigurationsBySourceSystemId(@Parameter(name = "source_system_filter", description = "An optional filter parameter to filter results by source system id") @PathParam("sourceSystemId") Long sourceSystemId) {
         var apiRequestConfigurations = sourceSystemApiRequestConfigurationService.findAllRequestConfigurationsWithSourceSystemIdLike(sourceSystemId);
 
         Log.debugf("Total number of api request configurations by source-system: %d", apiRequestConfigurations.size());
@@ -118,7 +119,7 @@ public class RequestConfigurationResource {
             description = "Gets a api-request-configuration for a given id",
             content = @Content(
                     mediaType = APPLICATION_JSON,
-                    schema = @Schema(implementation = SourceSystemApiRequestConfigurationDTO.class),
+                    schema = @Schema(implementation = CreateRequestConfigurationDTO.class),
                     examples = @ExampleObject(name = "api-request-configuration", value = Examples.VALID_EXAMPLE_SYNCJOB)
             )
     )
@@ -172,14 +173,11 @@ public class RequestConfigurationResource {
                                                             required = true,
                                                             content = @Content(
                                                                     mediaType = APPLICATION_JSON,
-                                                                    schema = @Schema(implementation = SourceSystemApiRequestConfigurationDTO.class),
+                                                                    schema = @Schema(implementation = CreateRequestConfigurationDTO.class),
                                                                     examples = @ExampleObject(name = "valid_sync_job", value = Examples.VALID_EXAMPLE_SYNCJOB)
                                                             )
                                                     )
-                                                    @PathParam("id") Long id, @Valid @NotNull SourceSystemApiRequestConfigurationDTO SourceSystemApiRequestConfigurationDTO) {
-        if (id != SourceSystemApiRequestConfigurationDTO.id()) {
-            throw new CoreManagementException(Response.Status.BAD_REQUEST, "Id missmatch", "Make sure that the request body entity id matches the request parameter");
-        }
+                                                    @PathParam("id") Long id, @Valid @NotNull CreateRequestConfigurationDTO SourceSystemApiRequestConfigurationDTO) {
 
         return this.sourceSystemApiRequestConfigurationService.replaceApiRequestConfiguration(SourceSystemApiRequestConfigurationDTO)
                 .map(updatedSourceSystemEndpoint -> {

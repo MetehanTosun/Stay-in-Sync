@@ -8,3 +8,5 @@ public record SourceSystemDTO(Long id, @NotNull String name, @NotNull String api
                               ApiAuthType apiAuthType,
                               byte[] openApiSpec) {
 }
+
+

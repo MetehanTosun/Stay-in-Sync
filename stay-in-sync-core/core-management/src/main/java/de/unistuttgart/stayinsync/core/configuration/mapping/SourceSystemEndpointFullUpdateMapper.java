@@ -1,6 +1,7 @@
 package de.unistuttgart.stayinsync.core.configuration.mapping;
 
 import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.SourceSystemEndpoint;
+import de.unistuttgart.stayinsync.core.configuration.rest.dtos.CreateSourceSystemEndpointDTO;
 import de.unistuttgart.stayinsync.core.configuration.rest.dtos.SourceSystemEndpointDTO;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
@@ -30,4 +31,6 @@ public interface SourceSystemEndpointFullUpdateMapper {
     SourceSystemEndpoint mapToEntity(SourceSystemEndpointDTO input);
 
     List<SourceSystemEndpoint> mapToEntityList(List<SourceSystemEndpointDTO> input);
+
+    SourceSystemEndpoint mapToEntity(CreateSourceSystemEndpointDTO sourceSystemEndpointDTO);
 }

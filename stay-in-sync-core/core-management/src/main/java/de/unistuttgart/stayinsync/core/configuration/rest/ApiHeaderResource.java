@@ -2,8 +2,9 @@ package de.unistuttgart.stayinsync.core.configuration.rest;
 
 import de.unistuttgart.stayinsync.core.configuration.exception.CoreManagementException;
 import de.unistuttgart.stayinsync.core.configuration.mapping.ApiHeaderFullUpdateMapper;
-import de.unistuttgart.stayinsync.core.configuration.rest.dtos.ApiRequestHeaderDTO;
-import de.unistuttgart.stayinsync.core.configuration.service.ApiRequestHeaderService;
+import de.unistuttgart.stayinsync.core.configuration.rest.dtos.ApiHeaderDTO;
+import de.unistuttgart.stayinsync.core.configuration.rest.dtos.CreateApiHeaderDTO;
+import de.unistuttgart.stayinsync.core.configuration.service.ApiHeaderService;
 import io.quarkus.logging.Log;
 import jakarta.inject.Inject;
 import jakarta.validation.Valid;
@@ -32,7 +33,7 @@ import static jakarta.ws.rs.core.MediaType.APPLICATION_JSON;
 public class ApiHeaderResource {
 
     @Inject
-    ApiRequestHeaderService apiRequestHeaderService;
+    ApiHeaderService apiRequestHeaderService;
 
     @Inject
     ApiHeaderFullUpdateMapper fullUpdateMapper;
@@ -56,12 +57,12 @@ public class ApiHeaderResource {
                     required = true,
                     content = @Content(
                             mediaType = APPLICATION_JSON,
-                            schema = @Schema(implementation = ApiRequestHeaderDTO.class),
-                            examples = @ExampleObject(name = "valid_source_api_request_header", value = Examples.VALID_API_REQUEST_HEADER_POST)
+                            schema = @Schema(implementation = CreateApiHeaderDTO.class),
+                            examples = @ExampleObject(name = "valid_source_api_request_header", value = Examples.VALID_API_HEADER_POST)
                     )
             )
             @PathParam("syncSystemId") Long sourceSystemId,
-            @Valid @NotNull ApiRequestHeaderDTO apiRequestHeaderDTO,
+            @Valid @NotNull CreateApiHeaderDTO apiRequestHeaderDTO,
             @Context UriInfo uriInfo) {
 
         var persistedSourceSystemEndpoint = this.apiRequestHeaderService.persistRequestHeader(apiRequestHeaderDTO, sourceSystemId);
@@ -78,11 +79,11 @@ public class ApiHeaderResource {
             description = "Gets all source-system-endpoints",
             content = @Content(
                     mediaType = APPLICATION_JSON,
-                    schema = @Schema(implementation = ApiRequestHeaderDTO.class, type = SchemaType.ARRAY)
+                    schema = @Schema(implementation = ApiHeaderDTO.class, type = SchemaType.ARRAY)
             )
     )
     @Path("/{syncSystemId}/request-header")
-    public List<ApiRequestHeaderDTO> getAllSourceSystemEndpoints(@Parameter(name = "source_system_filter", description = "An optional filter parameter to filter results by source system id") @PathParam("syncSystemId") Long syncSystemId) {
+    public List<ApiHeaderDTO> getAllSourceSystemEndpoints(@Parameter(name = "source_system_filter", description = "An optional filter parameter to filter results by source system id") @PathParam("syncSystemId") Long syncSystemId) {
         var apiRequestHeaders = this.apiRequestHeaderService.findAllHeadersBySyncSystemId(syncSystemId);
 
         Log.debugf("Total number of source-system-endpoints: %d", apiRequestHeaders.size());
@@ -99,8 +100,8 @@ public class ApiHeaderResource {
             description = "Gets a api-request-header for a given id",
             content = @Content(
                     mediaType = APPLICATION_JSON,
-                    schema = @Schema(implementation = ApiRequestHeaderDTO.class),
-                    examples = @ExampleObject(name = "api-request-header", value = Examples.VALID_EXAMPLE_SYNCJOB)
+                    schema = @Schema(implementation = ApiHeaderDTO.class),
+                    examples = @ExampleObject(name = "api-request-header", value = Examples.VALID_API_HEADER_POST)
             )
     )
     @APIResponse(
@@ -153,11 +154,11 @@ public class ApiHeaderResource {
                                                             required = true,
                                                             content = @Content(
                                                                     mediaType = APPLICATION_JSON,
-                                                                    schema = @Schema(implementation = ApiRequestHeaderDTO.class),
+                                                                    schema = @Schema(implementation = ApiHeaderDTO.class),
                                                                     examples = @ExampleObject(name = "valid_sync_job", value = Examples.VALID_EXAMPLE_SYNCJOB)
                                                             )
                                                     )
-                                                    @PathParam("id") Long id, @Valid @NotNull ApiRequestHeaderDTO apiRequestHeaderDTO) {
+                                                    @PathParam("id") Long id, @Valid @NotNull ApiHeaderDTO apiRequestHeaderDTO) {
         if (id != apiRequestHeaderDTO.id()) {
             throw new CoreManagementException(Response.Status.BAD_REQUEST, "Id missmatch", "Make sure that the request body entity id matches the request parameter");
         }

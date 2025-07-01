@@ -4,7 +4,8 @@ import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.ApiHea
 import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.SyncSystem;
 import de.unistuttgart.stayinsync.core.configuration.exception.CoreManagementException;
 import de.unistuttgart.stayinsync.core.configuration.mapping.ApiHeaderFullUpdateMapper;
-import de.unistuttgart.stayinsync.core.configuration.rest.dtos.ApiRequestHeaderDTO;
+import de.unistuttgart.stayinsync.core.configuration.rest.dtos.ApiHeaderDTO;
+import de.unistuttgart.stayinsync.core.configuration.rest.dtos.CreateApiHeaderDTO;
 import io.quarkus.logging.Log;
 import io.smallrye.common.constraint.NotNull;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -21,7 +22,7 @@ import static jakarta.transaction.Transactional.TxType.SUPPORTS;
 
 @ApplicationScoped
 @Transactional(REQUIRED)
-public class ApiRequestHeaderService {
+public class ApiHeaderService {
 
     @Inject
     Validator validator;
@@ -32,8 +33,8 @@ public class ApiRequestHeaderService {
     @Inject
     ApiHeaderFullUpdateMapper mapper;
 
-    public ApiHeader persistRequestHeader(@NotNull @Valid ApiRequestHeaderDTO apiEndpointQueryParamDTO, Long endpointId) {
-        Log.debugf("Persisting api-endpoint-query-param: %s, for source-system with id: %s", apiEndpointQueryParamDTO, endpointId);
+    public ApiHeader persistRequestHeader(@NotNull @Valid CreateApiHeaderDTO apiEndpointQueryParamDTO, Long endpointId) {
+        Log.debugf("Persisting api-endpoint-query-param: %s, for sync-syste, with id: %s", apiEndpointQueryParamDTO, endpointId);
 
         ApiHeader apiRequestHeader = mapper.mapToEntity(apiEndpointQueryParamDTO);
 
@@ -48,7 +49,7 @@ public class ApiRequestHeaderService {
 
     @Transactional(SUPPORTS)
     public List<ApiHeader> findAllHeadersBySyncSystemId(Long syncSystemId) {
-        Log.debugf("Finding all endpoints of source system with id = %s", syncSystemId);
+        Log.debugf("Finding all endpoints of sync-syste, with id = %s", syncSystemId);
         return Optional.ofNullable(ApiHeader.findBySyncSystemId(syncSystemId))
                 .orElseGet(List::of);
     }
@@ -64,7 +65,7 @@ public class ApiRequestHeaderService {
         ApiHeader.deleteById(id);
     }
 
-    public Optional<ApiHeader> replaceRequestHeader(@NotNull @Valid ApiRequestHeaderDTO apiEndpointQueryParamDTO) {
+    public Optional<ApiHeader> replaceRequestHeader(@NotNull @Valid ApiHeaderDTO apiEndpointQueryParamDTO) {
         ApiHeader apiEndpointQueryParam = mapper.mapToEntity(apiEndpointQueryParamDTO);
         Log.debugf("Replacing endpoint: %s", apiEndpointQueryParam);
 

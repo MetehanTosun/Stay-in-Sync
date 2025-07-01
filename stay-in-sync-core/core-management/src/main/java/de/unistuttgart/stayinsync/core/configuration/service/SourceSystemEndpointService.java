@@ -4,7 +4,7 @@ import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.Source
 import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.SourceSystemEndpoint;
 import de.unistuttgart.stayinsync.core.configuration.exception.CoreManagementException;
 import de.unistuttgart.stayinsync.core.configuration.mapping.SourceSystemEndpointFullUpdateMapper;
-import de.unistuttgart.stayinsync.core.configuration.rest.dtos.SourceSystemEndpointDTO;
+import de.unistuttgart.stayinsync.core.configuration.rest.dtos.CreateSourceSystemEndpointDTO;
 import io.quarkus.logging.Log;
 import io.smallrye.common.constraint.NotNull;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -12,9 +12,11 @@ import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
 import jakarta.validation.Valid;
 import jakarta.validation.Validator;
+import jakarta.ws.rs.core.Response;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 import static jakarta.transaction.Transactional.TxType.REQUIRED;
 import static jakarta.transaction.Transactional.TxType.SUPPORTS;
@@ -35,18 +37,23 @@ public class SourceSystemEndpointService {
     @Inject
     SourceSystemEndpointFullUpdateMapper sourceSystemEndpointFullMapper;
 
-    public SourceSystemEndpoint persistSourceSystemEndpoint(@NotNull @Valid SourceSystemEndpointDTO sourceSystemEndpointDTO, Long sourceSystemId) {
+    public SourceSystemEndpoint persistSourceSystemEndpoint(@NotNull @Valid CreateSourceSystemEndpointDTO sourceSystemEndpointDTO, Long sourceSystemId) {
         Log.debugf("Persisting source-system-endpoint: %s, for source-system with id: %s", sourceSystemEndpointDTO, sourceSystemId);
 
         SourceSystemEndpoint sourceSystemEndpoint = sourceSystemEndpointFullMapper.mapToEntity(sourceSystemEndpointDTO);
 
         SourceSystem sourceSystem = sourceSystemService.findSourceSystemById(sourceSystemId).orElseThrow(() -> {
-            return new CoreManagementException("Unable to find Source System", "There is no source-system with id %s", sourceSystemId);
+            return new CoreManagementException(Response.Status.NOT_FOUND, "Unable to find Source System", "There is no source-system with id %s", sourceSystemId);
         });
         sourceSystemEndpoint.sourceSystem = sourceSystem;
         sourceSystemEndpoint.persist();
 
         return sourceSystemEndpoint;
+    }
+
+    public List<SourceSystemEndpoint> persistSourceSystemEndpointList(@NotNull @Valid List<CreateSourceSystemEndpointDTO> endpoints, Long sourceSystemId) {
+        Log.debugf("Persisting source-system-endpoints: %s, for source-system with id: %s", sourceSystemId);
+        return endpoints.stream().map(endpointDTO -> this.persistSourceSystemEndpoint(endpointDTO, sourceSystemId)).collect(Collectors.toList());
     }
 
     @Transactional(SUPPORTS)
