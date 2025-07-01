@@ -1,8 +1,11 @@
 package de.unistuttgart.stayinsync.syncnode.logik_engine;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import de.unistuttgart.stayinsync.syncnode.logik_engine.LogicOperator.LogicOperator;
-import jakarta.json.JsonObject;
+import de.unistuttgart.stayinsync.syncnode.logik_engine.logic_operator.LogicOperator;
+import de.unistuttgart.stayinsync.syncnode.logik_engine.nodes.LogicNode;
+import de.unistuttgart.stayinsync.syncnode.logik_engine.nodes.inputNodes.ConstantNode;
+import de.unistuttgart.stayinsync.syncnode.logik_engine.nodes.inputNodes.InputNode;
+import de.unistuttgart.stayinsync.syncnode.logik_engine.nodes.inputNodes.JsonInputNode;
 
 import java.util.ArrayList;
 import java.util.HashMap;

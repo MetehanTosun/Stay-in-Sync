@@ -1,9 +1,14 @@
 package de.unistuttgart.stayinsync.syncnode.logik_engine;
 
 
-import de.unistuttgart.stayinsync.syncnode.logik_engine.Database.GraphStorageService;
-import de.unistuttgart.stayinsync.syncnode.logik_engine.Database.LogicGraphEntity;
-import de.unistuttgart.stayinsync.syncnode.logik_engine.LogicOperator.LogicOperator;
+import de.unistuttgart.stayinsync.syncnode.logik_engine.database.GraphStorageService;
+import de.unistuttgart.stayinsync.syncnode.logik_engine.database.LogicGraphEntity;
+import de.unistuttgart.stayinsync.syncnode.logik_engine.logic_operator.LogicOperator;
+import de.unistuttgart.stayinsync.syncnode.logik_engine.nodes.LogicNode;
+import de.unistuttgart.stayinsync.syncnode.logik_engine.nodes.inputNodes.ConstantNode;
+import de.unistuttgart.stayinsync.syncnode.logik_engine.nodes.inputNodes.InputNode;
+import de.unistuttgart.stayinsync.syncnode.logik_engine.nodes.inputNodes.JsonInputNode;
+import de.unistuttgart.stayinsync.syncnode.logik_engine.nodes.inputNodes.ParentNode;
 import io.quarkus.test.junit.QuarkusTest;
 import jakarta.inject.Inject;
 import jakarta.json.Json;
