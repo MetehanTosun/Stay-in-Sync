@@ -2,7 +2,7 @@ package de.unistuttgart.stayinsync.core.configuration.service;
 
 import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.SourceSystem;
 import de.unistuttgart.stayinsync.core.configuration.mapping.SourceSystemFullUpdateMapper;
-import de.unistuttgart.stayinsync.core.configuration.rest.dtos.SourceSystemDTO;
+import de.unistuttgart.stayinsync.core.configuration.rest.dtos.CreateSourceSystemDTO;
 import io.quarkus.logging.Log;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
@@ -27,7 +27,7 @@ public class SourceSystemService {
     }
 
     @Transactional
-    public SourceSystem createSourceSystem(SourceSystemDTO sourceSystemDTO) {
+    public SourceSystem createSourceSystem(CreateSourceSystemDTO sourceSystemDTO) {
         /*
          * TODO: Validation logic, as soon as we know how the final Model of a
          * SourceSystem looks like.
@@ -39,7 +39,7 @@ public class SourceSystemService {
     }
 
     @Transactional
-    public Optional<SourceSystem> updateSourceSystem(SourceSystemDTO sourceSystemDTO) {
+    public Optional<SourceSystem> updateSourceSystem(CreateSourceSystemDTO sourceSystemDTO) {
         Log.debugf("Updating source system with ID: %d", sourceSystemDTO.id());
         SourceSystem existingSs = SourceSystem.findById(sourceSystemDTO.id());
         if (existingSs != null) {

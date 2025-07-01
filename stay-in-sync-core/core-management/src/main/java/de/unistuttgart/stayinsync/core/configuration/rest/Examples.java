@@ -64,7 +64,7 @@ final class Examples {
             """;
 
     static final String VALID_SOURCE_SYSTEM_CREATE = """
-            {"name": "Sync Produktion A","apiUrl": "http://localhost:4200", "description": "this is my simple api", "apiType": "REST"}
+            {"name": "Sync Produktion B","apiUrl": "http://localhost:4200", "description": "this is my simple api", "apiType": "REST",  "authConfig": {"authType": "BASIC","username": "admin","password": "secretpassword123"}}
             """;
 
     static final String VALID_SOURCE_SYSTEM_ENDPOINT_POST = """

@@ -4,6 +4,7 @@ import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.Source
 import de.unistuttgart.stayinsync.core.configuration.exception.CoreManagementException;
 import de.unistuttgart.stayinsync.core.configuration.mapping.SourceSystemEndpointFullUpdateMapper;
 import de.unistuttgart.stayinsync.core.configuration.mapping.SourceSystemFullUpdateMapper;
+import de.unistuttgart.stayinsync.core.configuration.rest.dtos.CreateSourceSystemDTO;
 import de.unistuttgart.stayinsync.core.configuration.rest.dtos.SourceSystemDTO;
 import de.unistuttgart.stayinsync.core.configuration.service.SourceSystemEndpointService;
 import de.unistuttgart.stayinsync.core.configuration.service.SourceSystemService;
@@ -76,7 +77,7 @@ public class SourceSystemResource {
     @APIResponse(responseCode = "201", description = "The URI of the created source system", headers = @Header(name = HttpHeaders.LOCATION, schema = @Schema(implementation = URI.class)))
     @APIResponse(responseCode = "400", description = "Invalid source system passed in")
     public Response createSs(
-            @RequestBody(name = "source-system", required = true, content = @Content(mediaType = APPLICATION_JSON, schema = @Schema(implementation = SourceSystemDTO.class), examples = @ExampleObject(name = "valid_source_system_create", value = Examples.VALID_SOURCE_SYSTEM_CREATE))) @Valid @NotNull SourceSystemDTO sourceSystemDTO,
+            @RequestBody(name = "source-system", required = true, content = @Content(mediaType = APPLICATION_JSON, schema = @Schema(implementation = CreateSourceSystemDTO.class), examples = @ExampleObject(name = "valid_source_system_create", value = Examples.VALID_SOURCE_SYSTEM_CREATE))) @Valid @NotNull CreateSourceSystemDTO sourceSystemDTO,
             @Context UriInfo uriInfo) {
         SourceSystem sourceSystem = sourceSystemService.createSourceSystem(sourceSystemDTO);
         var builder = uriInfo.getAbsolutePathBuilder().path(Long.toString(sourceSystem.id));
@@ -89,10 +90,10 @@ public class SourceSystemResource {
     @PUT
     @Path("/{id}")
     @Operation(summary = "Fully updates an existing source system")
-    @APIResponse(responseCode = "200", description = "The updated source system", content = @Content(mediaType = APPLICATION_JSON, schema = @Schema(implementation = SourceSystem.class)))
+    @APIResponse(responseCode = "200", description = "The updated source system", content = @Content(mediaType = APPLICATION_JSON, schema = @Schema(implementation = CreateSourceSystemDTO.class), examples = @ExampleObject(name = "valid_source_system_create", value = Examples.VALID_SOURCE_SYSTEM_CREATE)))
     @APIResponse(responseCode = "404", description = "Source system not found")
     public Response updateSs(@Parameter(name = "id", required = true) @PathParam("id") Long id,
-                             @Valid @NotNull SourceSystemDTO sourceSystemDTO) {
+                             @Valid @NotNull CreateSourceSystemDTO sourceSystemDTO) {
 //        sourceSystemDTO.id() = id;
         return sourceSystemService.updateSourceSystem(sourceSystemDTO)
                 .map(updated -> Response.ok(sourceSystemFullUpdateMapper.mapToDTO(updated)).build())
