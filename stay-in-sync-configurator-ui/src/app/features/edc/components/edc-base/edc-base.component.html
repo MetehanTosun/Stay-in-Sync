@@ -1,12 +1,10 @@
 <div class="sidebar-container">
   <div class="sidebar">
     <button (click)="activeTab = 'instances'" [class.active]="activeTab === 'instances'">EDC Instances</button>
-    <button (click)="activeTab = 'partners'" [class.active]="activeTab === 'partners'">Partner Networks</button>
-    <button (click)="activeTab = 'assets'" [class.active]="activeTab === 'assets'">Data Assets & Policies</button>
+    <button (click)="activeTab = 'assets and policies'" [class.active]="activeTab === 'assets and policies'">Data Assets & Policies</button>
   </div>
   <div class="content">
     <app-edc-instances *ngIf="activeTab === 'instances'"></app-edc-instances>
-    <app-edc-partners *ngIf="activeTab === 'partners'"></app-edc-partners>
-    <app-edc-assets *ngIf="activeTab === 'assets'"></app-edc-assets>
+    <app-edc-assets *ngIf="activeTab === 'assets and policies'"></app-edc-assets>
   </div>
 </div>

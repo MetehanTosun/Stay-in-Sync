@@ -1,13 +1,12 @@
 import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { EdcInstancesComponent } from '../edc-instances/edc-instances.component';
-import { EdcPartnersComponent } from '../edc-partners/edc-partners.component';
-import { EdcAssetsComponent } from '../edc-assets/edc-assets.component';
+import { EdcAssetsAndPoliciesComponent } from '../edc-assets-and-policies/edc-assets-and-policies.component';
 
 @Component({
   selector: 'app-edc-base',
   standalone: true,
-  imports: [CommonModule, EdcInstancesComponent, EdcPartnersComponent, EdcAssetsComponent],
+  imports: [CommonModule, EdcInstancesComponent, EdcAssetsAndPoliciesComponent],
   templateUrl: './edc-base.component.html',
   styleUrls: ['./edc-base.component.css']
 })
