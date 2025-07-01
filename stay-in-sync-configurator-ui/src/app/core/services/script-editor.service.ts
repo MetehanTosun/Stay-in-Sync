@@ -10,6 +10,7 @@ import {
   ArcTestCallRequest, 
   ArcTestCallResponse 
 } from '../../features/script-editor/models/arc.models';
+import { SourceSystem, SourceSystemEndpoint } from '../../features/source-system/models/source-system.models';
 
 export interface ScriptPayload {
   typescriptCode: string;
@@ -58,21 +59,49 @@ export class ScriptEditorService {
    * @param systemId The ID of the source system.
    * @returns An observable array of ARCs.
    */
-  getArcsForSourceSystem(systemId: string): Observable<ApiRequestConfiguration[]> {
+  getArcsForSourceSystem(systemId: number): Observable<ApiRequestConfiguration[]> {
     // --- MOCK IMPLEMENTATION ---
     // In a real app, this would be an HTTP call:
     // return this.http.get<ApiRequestConfiguration[]>(`${this.API_URL}/source-systems/${systemId}/arcs`);
     
     // For demonstration, returning mock data.
-    if (systemId === 'sys-crm-01') {
+    if (systemId === 1) {
       return of([
-        { id: 'arc-1', alias: 'activeCustomers', sourceSystemId: 'sys-crm-01', endpointId: 'ep-1', endpointPath: '/customers', httpMethod: 'GET', responseDts: 'interface ActiveCustomersType { id: string; name: string; status: "active" | "inactive"; }' },
-        { id: 'arc-2', alias: 'customerById', sourceSystemId: 'sys-crm-01', endpointId: 'ep-2', endpointPath: '/customers/{id}', httpMethod: 'GET', responseDts: 'interface CustomerByIdType { id: string; name: string; email: string; address: { street: string; city: string; }; }' }
+        { id: 1, alias: 'activeCustomers', sourceSystemId: 1, endpointId: 1, endpointPath: '/customers', httpMethod: 'GET', responseDts: 'interface ActiveCustomersType { id: number; name: string; status: "active" | "inactive"; }' },
+        { id: 2, alias: 'customerById', sourceSystemId: 1, endpointId: 2, endpointPath: '/customers/{id}', httpMethod: 'GET', responseDts: 'interface CustomerByIdType { id: number; name: string; email: string; address: { street: string; city: string; }; }' }
       ]);
     }
     return of([]);
     // --- END MOCK ---
   }
+
+  /**
+   * Fetches a list of all available source systems.
+   */
+  getSourceSystems(): Observable<SourceSystem[]> { // Assuming you create a SourceSystem model
+    // MOCK IMPLEMENTATION
+    return of([
+      { id: 1, name: 'Main CRM Platform', apiType: 'REST_OPENAPI', apiUrl: 'crm', description: 'something', apiAuthType: "BASIC", openApiSpec: 'nothing' },
+      { id: 2, name: 'Central ERP', apiType: 'AAS', apiUrl: 'erp', description: 'other', apiAuthType: "BASIC", openApiSpec: 'nothing' },
+    ]);
+    // REAL IMPLEMENTATION: return this.http.get<SourceSystem[]>(`${this.API_URL}/source-systems`);
+  }
+
+  /**
+   * Fetches all endpoints for a specific source system.
+   * @param systemId The ID of the source system.
+   */
+  getEndpointsForSourceSystem(systemId: number): Observable<SourceSystemEndpoint[]> { // Assuming you create a SyncSystemEndpoint model
+    // MOCK IMPLEMENTATION
+    if (systemId === 1) {
+      return of([
+        { id: 1, sourceSystemId: 1, endpointPath: '/customers', httpRequestType: 'GET' },
+        { id: 2, sourceSystemId: 1, endpointPath: '/customers/{id}', httpRequestType: 'GET' },
+      ]);
+    }
+    return of([]);
+    // REAL IMPLEMENTATION: return this.http.get<SyncSystemEndpoint[]>(`${this.API_URL}/source-systems/${systemId}/endpoints`);
+}
 
   getSyncJobContext(jobId: string): Observable<SyncJobContextData> {
     // TODO: Replace mock with your actual API endpoint.

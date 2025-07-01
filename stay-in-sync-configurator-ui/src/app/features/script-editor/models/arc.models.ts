@@ -4,10 +4,10 @@
  * The payload sent to the backend to test an API call in the ARC wizard.
  */
 export interface ArcTestCallRequest {
-  sourceSystemId: string;
-  endpointId: string;
-  pathParameters: Record<string, string>;
-  queryParameterValues: Record<string, string>;
+  sourceSystemId: number;
+  endpointId: number;
+  pathParameters: Record<string, string | number>;
+  queryParameterValues: Record<string, string | number>;
   headerValues: Record<string, string>;
 }
 
@@ -27,10 +27,10 @@ export interface ArcTestCallResponse {
  * This should match the structure returned by your backend list endpoints.
  */
 export interface ApiRequestConfiguration {
-  id: string;
+  id: number;
   alias: string;
-  sourceSystemId: string;
-  endpointId: string;
+  sourceSystemId: number;
+  endpointId: number;
   endpointPath: string;
   httpMethod: string;
   responseDts: string;
@@ -41,10 +41,10 @@ export interface ApiRequestConfiguration {
  * The payload sent to the backend to create or update an ARC.
  */
 export interface ArcSaveRequest {
-  id?: string;
+  id?: number;
   alias: string;
-  sourceSystemId: string;
-  endpointId: string;
+  sourceSystemId: number;
+  endpointId: number;
   pathParameters: Record<string, string>;
   queryParameterValues: Record<string, string>;
   headerValues: Record<string, string>;

@@ -8,9 +8,9 @@ import { ScriptEditorService } from "./script-editor.service";
 
 // Defines the shape of the state managed by this service.
 interface ArcState {
-    arcsBySystem: Map<string, ApiRequestConfiguration[]>;
+    arcsBySystem: Map<number, ApiRequestConfiguration[]>;
     loadedLibs: Map<string, IDisposable>;
-    loadingSystems: Set<string>;
+    loadingSystems: Set<number>;
 }
 
 @Injectable({
@@ -25,7 +25,7 @@ export class ArcStateService {
         loadingSystems: new Set()
     });
 
-    public readonly arcBySystem$ = this.state.asObservable().pipe(
+    public readonly arcsBySystem$ = this.state.asObservable().pipe(
         map(s => s.arcsBySystem)
     );
 
@@ -45,7 +45,7 @@ export class ArcStateService {
    * It is idempotent and prevents re-fetching data that is already loaded or loading.
    * @param systemId The ID of the source system to load.
    */
-  public loadTypesForSourceSystem(systemId: string): Observable<void> {
+  public loadTypesForSourceSystem(systemId: number): Observable<void> {
     const currentState = this.state.getValue();
     if (currentState.arcsBySystem.has(systemId) || currentState.loadingSystems.has(systemId)) {
       return of(undefined);
@@ -121,7 +121,7 @@ export class ArcStateService {
     for (const [systemId, arcs] of currentState.arcsBySystem.entries()) {
       // Find a system name from one of the ARCs, or use the ID.
       // TODO: fetch system details separately.
-      const systemName = `system_${systemId.replace(/-/g, '_')}`; // Make a valid JS identifier
+      const systemName = `system_${systemId/**.replace(/-/g, '_')*/}`; // TODO: STRING Make a valid JS identifier
       
       dts += `  ${systemName}: {\n`;
       for (const arc of arcs) {

@@ -19,7 +19,7 @@ import {
 } from '../../../core/services/script-editor.service';
 import { MessagesModule } from 'primeng/messages';
 import { MessageService } from 'primeng/api';
-import { catchError, finalize, forkJoin, of, Subscription, tap } from 'rxjs';
+import { catchError, debounceTime, finalize, forkJoin, of, Subject, Subscription, tap } from 'rxjs';
 
 // PrimeNG Modules
 import { PanelModule } from 'primeng/panel';
@@ -33,9 +33,13 @@ import { ToastModule } from 'primeng/toast';
 import { MonacoEditorModule } from 'ngx-monaco-editor-v2';
 
 import {
-  SyncJobContextPanelComponent,
   SyncJobContextData,
 } from '../sync-job-context-panel/sync-job-context-panel.component';
+import { ApiRequestConfiguration } from '../models/arc.models';
+import { ArcStateService } from '../../../core/services/arc-state.service';
+import { SourceSystem, SourceSystemEndpoint } from '../../source-system/models/source-system.models';
+import { ArcManagementPanelComponent } from '../arc-management-panel/arc-management-panel.component';
+import { ArcWizardComponent } from '../arc-wizard/arc-wizard.component';
 
 interface MonacoExtraLib {
   uri: String;
@@ -64,7 +68,8 @@ interface Message {
     AccordionModule,
     MessagesModule,
     ProgressSpinnerModule,
-    SyncJobContextPanelComponent,
+    ArcManagementPanelComponent,
+    ArcWizardComponent,
     ToastModule,
   ],
 })
@@ -94,11 +99,21 @@ export class ScriptEditorPageComponent implements OnInit, OnChanges, OnDestroy {
   code: string = `// Script editor will initialize once a SyncJob context is loaded.`;
   currentSyncJobContextData: SyncJobContextData | null = null;
 
+  isWizardVisible = false;
+  wizardContext: { system: SourceSystem; endpoint: SourceSystemEndpoint; arcToClone?: ApiRequestConfiguration} | null | undefined = null;
+
+  private onModelChange = new Subject<void>();
+
   constructor(
     private cdr: ChangeDetectorRef,
     private scriptEditorService: ScriptEditorService,
-    private messageService: MessageService
-  ) {}
+    private messageService: MessageService,
+    private arcStateService: ArcStateService
+  ) {
+    this.subscriptions.add(
+      this.onModelChange.pipe(debounceTime(750)).subscribe(() => this.analyzeEditorContentForTypes())
+    );
+  }
 
   ngOnInit(): void {
     this.syncJobId = 'activeJob123';
@@ -143,9 +158,30 @@ export class ScriptEditorPageComponent implements OnInit, OnChanges, OnDestroy {
     if(this.syncJobId){
       this.loadContextForSyncJob('activeJob123');
     }
+
+    this.arcStateService.initializeMonaco(monaco);
+    this.monacoInstance?.onDidChangeModelContent(() => this.onModelChange.next());
+
     setTimeout(()=>{
         this.monacoInstance?.layout();
-      }, 100);
+      }, 100); // Monaco editor needs to expand to fit inside its component layout in the DOM
+  }
+
+  handleCreateArc(context: { system: SourceSystem; endpoint: SourceSystemEndpoint }): void {
+    this.wizardContext = context;
+    this.isWizardVisible = true;
+  }
+  
+  handleCloneArc(context: { arc: ApiRequestConfiguration }): void {
+    // You would need to fetch the system and endpoint details for the cloned arc
+    // and then open the wizard.
+    // this.wizardContext = { ... };
+    // this.isWizardVisible = true;
+  }
+
+  handleArcSave(savedArc: ApiRequestConfiguration): void {
+    this.arcStateService.addOrUpdateArc(savedArc);
+    this.messageService.add({ severity: 'success', summary: 'ARC Saved', detail: `Configuration '${savedArc.alias}' is now available.` });
   }
 
   private loadContextForSyncJob(jobId: string): void {
@@ -252,6 +288,19 @@ export class ScriptEditorPageComponent implements OnInit, OnChanges, OnDestroy {
     this.currentSyncJobContextData = null;
     this.code = isChangingJob ? '// Loading new context...' : '// Please select a SyncJob to begin.';
     this.cdr.detectChanges();
+  }
+
+  private analyzeEditorContentForTypes(): void {
+    const code = this.monacoInstance?.getValue() || '';
+    const matches = code.matchAll(/source\.([a-zA-Z0-9_-]+)\./g);
+    const systemIdsToLoad = new Set<number>();
+    for (const match of matches) {
+      // This is a simplification for demo purposes. You'd need a map of systemName -> systemId
+      // TODO: ADD name to ID mapping, maybe from backend as hashmap.
+      systemIdsToLoad.add(1);
+    }
+    
+    systemIdsToLoad.forEach(id => this.arcStateService.loadTypesForSourceSystem(id));
   }
 
   private addExtraLib(content: string, uri: string): void {

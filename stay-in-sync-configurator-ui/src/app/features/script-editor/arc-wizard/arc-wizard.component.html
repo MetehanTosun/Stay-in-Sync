@@ -1,0 +1,74 @@
+<p-dialog 
+  header="API Request Configuration (ARC)" 
+  [(visible)]="visible" 
+  (onHide)="closeDialog()" 
+  [modal]="true" 
+  [style]="{width: '60vw'}"
+  [draggable]="false"
+  [resizable]="false">
+
+  <ng-container *ngIf="context">
+    <form [formGroup]="arcForm" novalidate>
+      <div class="p-fluid">
+        <div class="field">
+          <label for="arc-alias">Alias</label>
+          <input 
+            id="arc-alias"
+            type="text" 
+            pInputText 
+            placeholder="e.g., activeUsers, customerById"
+            formControlName="alias" />
+          
+          <small 
+            *ngIf="alias?.invalid && (alias?.dirty || alias?.touched)" 
+            class="p-error block mt-1">
+            Alias is a required field.
+          </small>
+        </div>
+        
+        <!-- 
+          TODO: add more complex fields here
+          for path parameters, query parameters, and headers.
+          They will all follow the `formControlName` pattern.
+        -->
+
+      </div>
+    </form>
+
+    <p-divider></p-divider>
+    
+    <!-- Section for testing the API call -->
+    <div class="flex justify-content-between align-items-center mb-3">
+      <h5 class="m-0">Test & Review Response</h5>
+      <p-button 
+        label="Test Call" 
+        icon="pi pi-cloud-upload" 
+        (click)="onTestCall()" 
+        [loading]="isTesting"
+        [disabled]="arcForm.invalid">
+      </p-button>
+    </div>
+
+    <app-schema-viewer 
+      [jsonData]="testResult?.responsePayload" 
+      [dtsCode]="testResult?.generatedDts">
+    </app-schema-viewer>
+  </ng-container>
+
+  <ng-template pTemplate="footer">
+    <p-button 
+      label="Cancel" 
+      icon="pi pi-times" 
+      styleClass="p-button-text" 
+      (click)="closeDialog()">
+    </p-button>
+    <p-button 
+      label="Save ARC" 
+      icon="pi pi-check" 
+      (click)="onSaveArc()" 
+      [loading]="isSaving"
+      [disabled]="arcForm.invalid || !testResult?.isSuccess">
+    </p-button>
+  </ng-template>
+
+</p-dialog>
