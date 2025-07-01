@@ -30,7 +30,7 @@ import java.util.List;
 
 import static jakarta.ws.rs.core.MediaType.APPLICATION_JSON;
 
-@Path("api/source-system/")
+@Path("api/config/source-system/")
 @Produces(APPLICATION_JSON)
 @Consumes(APPLICATION_JSON)
 public class SourceSystemEndpointResource {

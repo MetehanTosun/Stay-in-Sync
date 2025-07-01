@@ -13,6 +13,7 @@ import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
 import jakarta.validation.Valid;
 
+import java.util.List;
 import java.util.Optional;
 
 import static jakarta.transaction.Transactional.TxType.REQUIRED;
@@ -28,37 +29,46 @@ public class ApiEndpointQueryParamValueService {
     @Inject
     ApiRequestConfigurationService apiRequestConfigurationService;
 
-    public ApiEndpointQueryParamValue persistConfiguration(@NotNull @Valid ApiEndpoindQueryParamValueDTO queryParamConfigurationDTO, Long requestConfigurationId) {
+    public ApiEndpointQueryParamValue persistValue(@NotNull @Valid ApiEndpoindQueryParamValueDTO queryParamConfigurationDTO, Long requestConfigurationId) {
         Log.debugf("Persisting api-endpoint-query-param: %s, for source-system with id: %s", queryParamConfigurationDTO, requestConfigurationId);
 
-        de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.ApiEndpointQueryParamValue apiEndpointQueryParam = mapper.mapToEntity(queryParamConfigurationDTO);
+        ApiEndpointQueryParam queryParam = ApiEndpointQueryParam.findById(queryParamConfigurationDTO.queryParamId());
+        ApiEndpointQueryParamValue paramValue = mapper.mapToEntity(queryParamConfigurationDTO);
 
         ApiRequestConfiguration requestConfiguration = apiRequestConfigurationService.findApiRequestConfigurationById(requestConfigurationId).orElseThrow(() -> {
             return new CoreManagementException("Unable to find Endpoint", "There is no endpoint with id %s", requestConfigurationId);
         });
-        apiEndpointQueryParam.requestConfiguration = requestConfiguration;
-        apiEndpointQueryParam.persist();
 
-        return apiEndpointQueryParam;
+        paramValue.requestConfiguration = requestConfiguration;
+        paramValue.persist();
+        queryParam.values.add(paramValue.selectedValue);
+
+        return paramValue;
+    }
+
+    @Transactional(SUPPORTS)
+    public List<ApiEndpointQueryParamValue> findQueryParamValueByRequestConfig(Long requestConfigId) {
+        Log.debugf("Finding api-endpoint-query-param by request config id = %d", requestConfigId);
+        return ApiEndpointQueryParamValue.findRequestHeadersByConfigurationId(requestConfigId);
     }
 
 
     @Transactional(SUPPORTS)
-    public Optional<ApiEndpointQueryParam> findQueryParamValueById(Long id) {
+    public Optional<ApiEndpointQueryParamValue> findQueryParamValueById(Long id) {
         Log.debugf("Finding api-endpoint-query-param by id = %d", id);
-        return ApiEndpointQueryParam.findByIdOptional(id);
+        return ApiEndpointQueryParamValue.findByIdOptional(id);
     }
 
     public void deleteQueryParamValue(Long id) {
         Log.debugf("Deleting endpoint by id = %d", id);
-        ApiEndpointQueryParam.deleteById(id);
+        ApiEndpointQueryParamValue.deleteById(id);
     }
 
-    public Optional<de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.ApiEndpointQueryParamValue> replaceConfiguration(@NotNull @Valid ApiEndpoindQueryParamValueDTO queryParamConfiguration) {
+    public Optional<ApiEndpointQueryParamValue> replaceConfiguration(@NotNull @Valid ApiEndpoindQueryParamValueDTO queryParamConfiguration) {
         de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.ApiEndpointQueryParamValue apiEndpointQueryParam = mapper.mapToEntity(queryParamConfiguration);
         Log.debugf("Replacing endpoint: %s", apiEndpointQueryParam);
 
-        Optional<de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.ApiEndpointQueryParamValue> updatedSourceSystemEndpoint = apiEndpointQueryParam.findByIdOptional(apiEndpointQueryParam.id)
+        Optional<ApiEndpointQueryParamValue> updatedSourceSystemEndpoint = apiEndpointQueryParam.findByIdOptional(apiEndpointQueryParam.id)
                 .map(de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.ApiEndpointQueryParamValue.class::cast) // Only here for type erasure within the IDE
                 .map(targetSouceSystemEndpoint -> {
                     this.mapper.mapFullUpdate(apiEndpointQueryParam, targetSouceSystemEndpoint);

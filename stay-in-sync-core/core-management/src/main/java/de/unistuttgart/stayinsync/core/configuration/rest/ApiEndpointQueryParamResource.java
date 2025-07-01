@@ -3,7 +3,6 @@ package de.unistuttgart.stayinsync.core.configuration.rest;
 import de.unistuttgart.stayinsync.core.configuration.exception.CoreManagementException;
 import de.unistuttgart.stayinsync.core.configuration.mapping.ApiEndpointQueryParamMapper;
 import de.unistuttgart.stayinsync.core.configuration.rest.dtos.ApiEndpointQueryParamDTO;
-import de.unistuttgart.stayinsync.core.configuration.rest.dtos.ApiHeaderDTO;
 import de.unistuttgart.stayinsync.core.configuration.service.ApiEndpointQueryParamService;
 import io.quarkus.logging.Log;
 import jakarta.inject.Inject;
@@ -30,6 +29,8 @@ import java.util.List;
 import static jakarta.ws.rs.core.MediaType.APPLICATION_JSON;
 
 @Path("/api/config/endpoint/")
+@Produces(APPLICATION_JSON)
+@Consumes(APPLICATION_JSON)
 public class ApiEndpointQueryParamResource {
 
     @Inject
@@ -51,14 +52,14 @@ public class ApiEndpointQueryParamResource {
             responseCode = "400",
             description = "Invalid query-param passed in (or no request body found)"
     )
-    public Response createApiRequestHeader(
+    public Response createQueryParam(
             @RequestBody(
                     name = "query-param",
                     required = true,
                     content = @Content(
                             mediaType = APPLICATION_JSON,
-                            schema = @Schema(implementation = ApiHeaderDTO.class),
-                            examples = @ExampleObject(name = "valid_source_api_request_header", value = Examples.VALID_API_HEADER_POST)
+                            schema = @Schema(implementation = ApiEndpointQueryParamDTO.class),
+                            examples = @ExampleObject(name = "valid_query_param", value = Examples.VALID_QUERY_PARAM_CREATE)
                     )
             )
             @PathParam("endpointId") Long endpointId,
@@ -84,11 +85,11 @@ public class ApiEndpointQueryParamResource {
     )
     @Path("/{endpointId}/query-param")
     public List<ApiEndpointQueryParamDTO> getAllQueryParams(@Parameter(name = "source_system_filter", description = "An optional filter parameter to filter results by endpoint id") @PathParam("endpointId") Long endpointId) {
-        var apiRequestHeaders = this.apiEndpointQueryParamService.findAllQueryParamsByEndpointId(endpointId);
+        var endpointQueryParams = this.apiEndpointQueryParamService.findAllQueryParamsByEndpointId(endpointId);
 
-        Log.debugf("Total number of source-system-endpoints: %d", apiRequestHeaders.size());
+        Log.debugf("Total number of source-system-endpoints: %d", endpointQueryParams.size());
 
-        return fullUpdateMapper.mapToDTOList(apiRequestHeaders);
+        return fullUpdateMapper.mapToDTOList(endpointQueryParams);
     }
 
 

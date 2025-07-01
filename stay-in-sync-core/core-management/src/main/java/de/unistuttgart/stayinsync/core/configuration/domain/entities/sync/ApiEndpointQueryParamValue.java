@@ -18,8 +18,8 @@ public class ApiEndpointQueryParamValue extends PanacheEntity {
     public String selectedValue;
 
 
-    public static List<ApiHeaderValue> findRequestHeadersByConfigurationId(Long requestConfigurationId) {
-        return ApiHeaderValue.list("requestConfiguration.id", requestConfigurationId);
+    public static List<ApiEndpointQueryParamValue> findRequestHeadersByConfigurationId(Long requestConfigurationId) {
+        return ApiEndpointQueryParamValue.list("requestConfiguration.id", requestConfigurationId);
     }
 
 }

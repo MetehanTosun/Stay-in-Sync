@@ -29,9 +29,7 @@ import java.util.List;
 
 import static jakarta.ws.rs.core.MediaType.APPLICATION_JSON;
 
-@Path("api/config/")
-@Produces(APPLICATION_JSON)
-@Consumes(APPLICATION_JSON)
+@Path("/api/config/source-system/")
 public class RequestConfigurationResource {
     @Inject
     SourceSystemApiRequestConfigurationService sourceSystemApiRequestConfigurationService;
@@ -51,21 +49,21 @@ public class RequestConfigurationResource {
             responseCode = "400",
             description = "Invalid api request configuration passed in (or no request body found)"
     )
-    @Path("source-system/endpoint/{endpointId}/request-configuration/")
+    @Path("endpoint/{endpointId}/request-configuration/")
     public Response createRequestConfiguration(
+            @PathParam("endpointId") Long endpointId,
             @RequestBody(
                     name = "api-request-configuration",
                     required = true,
                     content = @Content(
                             mediaType = APPLICATION_JSON,
                             schema = @Schema(implementation = CreateRequestConfigurationDTO.class),
-                            examples = @ExampleObject(name = "valid_sync_job", value = Examples.VALID_EXAMPLE_REQUEST_CONFIGURATION_CREATE)
+                            examples = @ExampleObject(name = "valid request config", value = Examples.VALID_EXAMPLE_REQUEST_CONFIGURATION_CREATE)
                     )
             )
-            @PathParam("endpointId") Long sourceSystemId,
             @Valid @NotNull CreateRequestConfigurationDTO sourceSystemApiRequestConfigurationDTO,
             @Context UriInfo uriInfo) {
-        var persistedApiRequestConfiguration = this.sourceSystemApiRequestConfigurationService.persistApiRequestConfiguration(sourceSystemApiRequestConfigurationDTO, sourceSystemId);
+        var persistedApiRequestConfiguration = this.sourceSystemApiRequestConfigurationService.persistApiRequestConfiguration(sourceSystemApiRequestConfigurationDTO, endpointId);
         var builder = uriInfo.getAbsolutePathBuilder().path(Long.toString(persistedApiRequestConfiguration.id));
         Log.debugf("New api-request-configuration created with URI  %s", builder.build().toString());
 
@@ -73,7 +71,7 @@ public class RequestConfigurationResource {
     }
 
     @GET
-    @Path("source-system/endpoint/{endpointId}/request-configuration/")
+    @Path("/endpoint/{endpointId}/request-configuration/")
     @Operation(summary = "Returns the api-request-configurations for the specified endpoint from the database")
     @APIResponse(
             responseCode = "200",
@@ -92,7 +90,7 @@ public class RequestConfigurationResource {
     }
 
     @GET
-    @Path("source-system/{sourceSystemId}/request-configuration/")
+    @Path("{sourceSystemId}/request-configuration/")
     @Operation(summary = "Returns all the api-request-configurations for the specified source-system from the database")
     @APIResponse(
             responseCode = "200",
@@ -112,7 +110,7 @@ public class RequestConfigurationResource {
 
 
     @GET
-    @Path("source-system/endpoint/request-configuration/{id}")
+    @Path("endpoint/request-configuration/{id}")
     @Operation(summary = "Returns a api-request-configuration for a given identifier")
     @APIResponse(
             responseCode = "200",
@@ -145,14 +143,14 @@ public class RequestConfigurationResource {
             responseCode = "204",
             description = "Delete a api-request-configuration"
     )
-    @Path("source-system/endpoint/request-configuration/{id}")
+    @Path("endpoint/request-configuration/{id}")
     public void deleteRequestConfigurationById(@Parameter(name = "id", required = true) @PathParam("id") Long id) {
         this.sourceSystemApiRequestConfigurationService.deleteApiRequestConfigurationById(id);
         Log.debugf("api-request-configuration with id %d deleted ", id);
     }
 
     @PUT
-    @Path("source-system/endpoint/request-configuration/{id}")
+    @Path("endpoint/request-configuration/{id}")
     @Consumes(APPLICATION_JSON)
     @Operation(summary = "Completely updates an existing api-request-configuration by replacing it with the passed-in api-request-configuration")
     @APIResponse(

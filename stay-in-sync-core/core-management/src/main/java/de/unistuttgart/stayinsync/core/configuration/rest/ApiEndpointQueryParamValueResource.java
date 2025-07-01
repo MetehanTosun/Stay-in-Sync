@@ -1,7 +1,7 @@
 package de.unistuttgart.stayinsync.core.configuration.rest;
 
 import de.unistuttgart.stayinsync.core.configuration.exception.CoreManagementException;
-import de.unistuttgart.stayinsync.core.configuration.mapping.ApiEndpointQueryParamMapper;
+import de.unistuttgart.stayinsync.core.configuration.mapping.ApiEndpointQueryParamValueMapper;
 import de.unistuttgart.stayinsync.core.configuration.rest.dtos.ApiEndpoindQueryParamValueDTO;
 import de.unistuttgart.stayinsync.core.configuration.rest.dtos.ApiEndpointQueryParamDTO;
 import de.unistuttgart.stayinsync.core.configuration.service.ApiEndpointQueryParamValueService;
@@ -15,6 +15,7 @@ import jakarta.ws.rs.core.HttpHeaders;
 import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.core.UriInfo;
 import org.eclipse.microprofile.openapi.annotations.Operation;
+import org.eclipse.microprofile.openapi.annotations.enums.SchemaType;
 import org.eclipse.microprofile.openapi.annotations.headers.Header;
 import org.eclipse.microprofile.openapi.annotations.media.Content;
 import org.eclipse.microprofile.openapi.annotations.media.ExampleObject;
@@ -24,22 +25,25 @@ import org.eclipse.microprofile.openapi.annotations.parameters.RequestBody;
 import org.eclipse.microprofile.openapi.annotations.responses.APIResponse;
 
 import java.net.URI;
+import java.util.List;
 
 import static jakarta.ws.rs.core.MediaType.APPLICATION_JSON;
 
 @Path("/api/config/request-configuration/")
+@Produces(APPLICATION_JSON)
+@Consumes(APPLICATION_JSON)
 public class ApiEndpointQueryParamValueResource {
 
     @Inject
     ApiEndpointQueryParamValueService apiEndpointQueryParamValueService;
 
     @Inject
-    ApiEndpointQueryParamMapper fullUpdateMapper;
+    ApiEndpointQueryParamValueMapper fullUpdateMapper;
 
     @Path("/{requestConfigId}/query-param-value")
     @POST
     @Consumes(APPLICATION_JSON)
-    @Operation(summary = "Creates a valid query-param for the specified endpoint")
+    @Operation(summary = "Creates a valid query-param-value for the specified endpoint")
     @APIResponse(
             responseCode = "201",
             description = "The URI of the created query-param",
@@ -60,14 +64,33 @@ public class ApiEndpointQueryParamValueResource {
                     )
             )
             @PathParam("requestConfigId") Long requestConfigId,
-            @Valid @NotNull ApiEndpoindQueryParamValueDTO apiEndpoindQueryParamValueDTO,
+            @Valid @NotNull ApiEndpoindQueryParamValueDTO paramValueDTO,
             @Context UriInfo uriInfo) {
 
-        var persistedEndpointQueryParam = this.apiEndpointQueryParamValueService.persistConfiguration(apiEndpoindQueryParamValueDTO, requestConfigId);
+        var persistedEndpointQueryParam = this.apiEndpointQueryParamValueService.persistValue(paramValueDTO, requestConfigId);
         var builder = uriInfo.getAbsolutePathBuilder().path(Long.toString(persistedEndpointQueryParam.id));
         Log.debugf("New query-param-value created with URI  %s", builder.build().toString());
 
         return Response.created(builder.build()).build();
+    }
+
+    @GET
+    @Path("/{requestConfigId}/query-param-value")
+    @Operation(summary = "Returns all the query-parameter-values for the specified source-system from the database")
+    @APIResponse(
+            responseCode = "200",
+            description = "Gets all query parameter values",
+            content = @Content(
+                    mediaType = APPLICATION_JSON,
+                    schema = @Schema(implementation = ApiEndpointQueryParamDTO.class, type = SchemaType.ARRAY)
+            )
+    )
+    public List<ApiEndpoindQueryParamValueDTO> getAllQueryParams(@Parameter(name = "request config", description = "Associated request config") @PathParam("requestConfigId") Long requestConfigId) {
+        var apiRequestHeaders = this.apiEndpointQueryParamValueService.findQueryParamValueByRequestConfig(requestConfigId);
+
+        Log.debugf("Total number of query-parameter-values: %d", apiRequestHeaders.size());
+
+        return fullUpdateMapper.mapToDTOList(apiRequestHeaders);
     }
 
 

@@ -3,12 +3,17 @@ package de.unistuttgart.stayinsync.core.configuration.rest;
 final class Examples {
 
     public static final String VALID_ENDPOINT_PARAM_POST = """
-            """;
+            {
+              "paramName": "userId",
+              "queryParamType": "QUERY",
+              "values": ["123", "456", "789"]
+            }
+                """;
     public static final String VALID_API_HEADER_POST = """
             {
               "name": "getUserA", 
               "used": "false", 
-              "pollingIntervallInMs: "3"
+              "pollingIntervallInMs": "3"
             }
             """;
     public static final String VALID_API_HEADER_VALUE = """
@@ -19,7 +24,7 @@ final class Examples {
              {
               "name": "getUserA", 
               "used": "false", 
-              "pollingIntervallInMs: "3"
+              "pollingIntervallInMs": "3"
             }
             """;
     public static final String VALID_EXAMPLE_ENDPOINT_CREATE = """
@@ -32,6 +37,12 @@ final class Examples {
               "httpRequestType": "POST"
             }]
             """;
+    public static final String VALID_QUERY_PARAM_CREATE = """
+            {
+              "paramName": "userId",
+              "queryParamType": "QUERY",
+              "values": ["123", "456", "789"]
+            }""";
 
     private Examples() {
 

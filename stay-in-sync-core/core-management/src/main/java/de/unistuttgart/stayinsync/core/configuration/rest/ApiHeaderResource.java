@@ -30,6 +30,8 @@ import java.util.List;
 import static jakarta.ws.rs.core.MediaType.APPLICATION_JSON;
 
 @Path("/api/config/sync-system/")
+@Produces(APPLICATION_JSON)
+@Consumes(APPLICATION_JSON)
 public class ApiHeaderResource {
 
     @Inject

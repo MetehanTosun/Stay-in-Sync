@@ -19,9 +19,7 @@ public interface ApiEndpointQueryParamMapper {
     @Mapping(ignore = true, target = "syncSystemEndpoint")
     ApiEndpointQueryParam mapToEntity(ApiEndpointQueryParamDTO inputDTO);
 
-    List<ApiEndpointQueryParamDTO> mapToDTOList(List<ApiEndpointQueryParam> allQueryParamsByEndpointId);
-
     ApiEndpointQueryParamDTO mapToDTO(ApiEndpointQueryParam sourceSystemEndpoint);
 
-
+    List<ApiEndpointQueryParamDTO> mapToDTOList(List<ApiEndpointQueryParam> apiRequestHeaders);
 }
