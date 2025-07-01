@@ -4,14 +4,15 @@ import de.unistuttgart.stayinsync.syncnode.logik_engine.logic_operator.array_pre
 import de.unistuttgart.stayinsync.syncnode.logik_engine.logic_operator.generell_predicates.*;
 import de.unistuttgart.stayinsync.syncnode.logik_engine.logic_operator.number_predicates.*;
 import de.unistuttgart.stayinsync.syncnode.logik_engine.logic_operator.object_predicates.*;
+import de.unistuttgart.stayinsync.syncnode.logik_engine.logic_operator.string_predicates.*;
 
 
 public enum LogicOperator {
-    // Generall predicates
+    // General predicates
     EXISTS("exists", new ExistsOperator()),
     NOT_EXISTS("notExists", new NotExistsOperator()),
     IS_NULL("isNull", new IsNull()),
-    ISNOT_NULL("isNotNull", new IsNotNull()),
+    IS_NOT_NULL("isNotNull", new IsNotNull()),
     TYPE_IS("typeIs", new TypeIsOperator()),
     EQUALS("equals", new EqualsOperator()),
     NOT_EQUALS("notEquals", new NotEqualsOperator()),
@@ -33,6 +34,19 @@ public enum LogicOperator {
     LESS_OR_EQUAL("lessOrEqual", new LessOrEqualOperator()),
     BETWEEN("between", new BetweenOperator()),
     NOT_BETWEEN("notBetween", new NotBetweenOperator()),
+
+    // String predicates
+    EQUALS_CASE_SENSITIVE("equalsCaseSensitive", new EqualsCaseSensitiveOperator()),
+    EQUALS_IGNORE_CASE("equalsIgnoreCase", new EqualsIgnoreCaseOperator()),
+    STRING_CONTAINS("contains", new StringContainsOperator()),
+    STRING_NOT_CONTAINS("notContains", new StringNotContainsOperator()),
+    STRING_STARTS_WITH("startsWith", new StringStartsWithOperator()),
+    STRING_ENDS_WITH("endsWith", new StringEndsWithOperator()),
+    REGEX_MATCH("regexMatch", new RegexMatchOperator()),
+    STRING_LENGTH_EQUALS("lengthEquals", new StringLengthEqualsOperator()),
+    STRING_LENGTH_GT("lengthGt", new StringLengthGtOperator()),
+    STRING_LENGTH_LT("lengthLt", new StringLengthLtOperator()),
+    STRING_LENGTH_BETWEEN("lengthBetween", new StringLengthBetweenOperator()),
 
     // Array/List predicates
     LENGTH_EQUALS("lengthEquals", new LengthEqualsOperator()),
