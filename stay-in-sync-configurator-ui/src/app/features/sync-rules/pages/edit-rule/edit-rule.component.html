@@ -1,22 +1,20 @@
 <main>
   <div class="sidebar">
     @for (category of nodeCategories; track category.title) {
-      <div class="category">
-        <h3>{{ category.title }}</h3>
-        @for (node of category.nodes; track node.type) {
-          <div
-            dndDraggable
-            [dndDraggable]="{ type: node.type }"
-            [class]="node.type + '-node custom-node_draggable'"
-            class="custom-node_draggable">
-            <button class="custom-node__button">{{ node.label }}</button>
-          </div>
-        }
+    <div class="category">
+      <h3>{{ category.title }}</h3>
+      @for (node of category.nodes; track node.type) {
+      <div dndDraggable [dndDraggable]="{ type: node.type }" [class]="node.type + '-node custom-node_draggable'"
+        class="custom-node_draggable">
+        <button class="custom-node__button" [style.pointer-events]="'none'">{{ node.label }}</button>
       </div>
+      }
+    </div>
     }
   </div>
 
-  <vflow dndDropzone view="auto" [nodes]="store.nodes()" [edges]="store.edges()" (dndDrop)="createNode($event)" (onConnect)="createEdge($event)">
+  <vflow dndDropzone view="auto" [nodes]="store.nodes()" [edges]="store.edges()" (dndDrop)="createNode($event)"
+    (onConnect)="createEdge($event)">
     <mini-map [scaleOnHover]="true" />
   </vflow>
 
