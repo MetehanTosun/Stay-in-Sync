@@ -1,1 +1,141 @@
-<p>edc-assets-and-policies works!</p>
+<div class="card">
+  <p-table
+    #dtAssets
+    [value]="assets"
+    dataKey="id"
+    [rows]="10"
+    [rowsPerPageOptions]="[10, 25, 50]"
+    [loading]="loading"
+    [paginator]="true"
+    [globalFilterFields]="['id', 'name', 'url', 'type', 'contentType', 'description']"
+    [tableStyle]="{ 'min-width': '75rem' }"
+    styleClass="p-datatable-striped p-datatable-gridlines"
+    responsiveLayout="scroll"
+  >
+    <ng-template pTemplate="caption">
+      <div class="flex align-items-center justify-content-between">
+        <h5 class="m-0">Manage Assets</h5>
+        <div class="flex align-items-center">
+          <p-iconfield iconPosition="left" class="mr-2">
+            <p-inputicon><i class="pi pi-search"></i></p-inputicon>
+            <input pInputText type="text" (input)="onGlobalFilter($event)" placeholder="Search keyword" class="w-full"/>
+          </p-iconfield>
+          <button pButton pRipple label="New Asset" icon="pi pi-plus" class="p-button-success" (click)="openNewAssetDialog()"></button>
+        </div>
+      </div>
+    </ng-template>
+
+    <ng-template pTemplate="header">
+      <!-- Main header row with sorting -->
+      <tr>
+        <th style="width: 15%" pSortableColumn="id">ID <p-sortIcon field="id"></p-sortIcon></th>
+        <th style="width: 40%" pSortableColumn="name">Name <p-sortIcon field="name"></p-sortIcon></th>
+        <th style="width: 10%" pSortableColumn="type">Type <p-sortIcon field="type"></p-sortIcon></th>
+        <th style="width: 20%" pSortableColumn="contentType">Content Type <p-sortIcon field="contentType"></p-sortIcon></th>
+        <th style="width: 15%">Actions</th>
+      </tr>
+      <!-- Filter row -->
+      <tr>
+        <th>
+          <p-columnFilter type="text" field="id" placeholder="Search by ID" ariaLabel="Filter by ID"></p-columnFilter>
+        </th>
+        <th>
+          <p-columnFilter type="text" field="name" placeholder="Search by Name" ariaLabel="Filter by Name"></p-columnFilter>
+        </th>
+        <th>
+          <p-columnFilter type="text" field="type" placeholder="Search by Type" ariaLabel="Filter by Type"></p-columnFilter>
+        </th>
+        <th>
+          <p-columnFilter type="text" field="contentType" placeholder="Search by Content Type" ariaLabel="Filter by Content Type"></p-columnFilter>
+        </th>
+        <th>
+          <!-- Placeholder for actions column filter -->
+        </th>
+      </tr>
+    </ng-template>
+
+    <ng-template pTemplate="body" let-asset>
+      <tr [pTooltip]="asset.description" tooltipPosition="top">
+        <td>{{ asset.id }}</td>
+        <td>{{ asset.name }}</td>
+        <td><p-tag [value]="asset.type"></p-tag></td>
+        <td>{{ asset.contentType }}</td>
+        <td>
+          <button pButton pRipple type="button" icon="pi pi-pencil" class="p-button-rounded p-button-text p-button-info mr-2" (click)="editAsset(asset)" pTooltip="Edit Asset"></button>
+          <button pButton pRipple type="button" icon="pi pi-trash" class="p-button-rounded p-button-text p-button-danger" (click)="deleteAsset(asset)" pTooltip="Delete Asset"></button>
+        </td>
+      </tr>
+    </ng-template>
+
+    <ng-template pTemplate="emptymessage">
+      <tr>
+        <td [attr.colspan]="5">No assets found.</td>
+      </tr>
+    </ng-template>
+  </p-table>
+</div>
+
+<!-- New Asset Dialog -->
+<p-dialog header="Create New Asset" [(visible)]="displayNewAssetDialog" [modal]="true" [style]="{ width: '450px' }" (onHide)="hideNewAssetDialog()" [draggable]="false" [resizable]="false">
+  <div class="p-fluid">
+    <div class="p-field mb-3">
+      <label for="assetName">Name</label>
+      <input id="assetName" type="text" pInputText [(ngModel)]="newAsset.name" required autofocus />
+    </div>
+    <div class="p-field mb-3">
+      <label for="assetUrl">URL</label>
+      <input id="assetUrl" type="text" pInputText [(ngModel)]="newAsset.url" required />
+    </div>
+    <div class="p-field mb-3">
+      <label for="assetType">Type</label>
+      <input id="assetType" type="text" pInputText [(ngModel)]="newAsset.type" required />
+    </div>
+    <div class="p-field mb-3">
+      <label for="assetContentType">Content Type</label>
+      <input id="assetContentType" type="text" pInputText [(ngModel)]="newAsset.contentType" required />
+    </div>
+    <div class="p-field mb-3">
+      <label for="assetDescription">Description</label>
+      <textarea id="assetDescription" pInputTextarea [(ngModel)]="newAsset.description" rows="3"></textarea>
+    </div>
+  </div>
+  <ng-template pTemplate="footer">
+    <button pButton pRipple label="Cancel" icon="pi pi-times" class="p-button-text" (click)="hideNewAssetDialog()"></button>
+    <button pButton pRipple label="Save" icon="pi pi-check" class="p-button-text" (click)="saveNewAsset()"></button>
+  </ng-template>
+</p-dialog>
+
+<!-- Edit Asset Dialog -->
+<p-dialog header="Edit Asset" [(visible)]="displayEditAssetDialog" [modal]="true" [style]="{ width: '450px' }" (onHide)="hideEditAssetDialog()" [draggable]="false" [resizable]="false">
+  <ng-container *ngIf="assetToEdit">
+    <div class="p-fluid">
+      <div class="p-field mb-3">
+        <label for="editAssetName">Name</label>
+        <input id="editAssetName" type="text" pInputText [(ngModel)]="assetToEdit.name" required autofocus />
+      </div>
+      <div class="p-field mb-3">
+        <label for="editAssetUrl">URL</label>
+        <input id="editAssetUrl" type="text" pInputText [(ngModel)]="assetToEdit.url" required />
+      </div>
+      <div class="p-field mb-3">
+        <label for="editAssetType">Type</label>
+        <input id="editAssetType" type="text" pInputText [(ngModel)]="assetToEdit.type" required />
+      </div>
+      <div class="p-field mb-3">
+        <label for="editAssetContentType">Content Type</label>
+        <input id="editAssetContentType" type="text" pInputText [(ngModel)]="assetToEdit.contentType" required />
+      </div>
+      <div class="p-field mb-3">
+        <label for="editAssetDescription">Description</label>
+        <textarea id="editAssetDescription" pInputTextarea [(ngModel)]="assetToEdit.description" rows="3"></textarea>
+      </div>
+    </div>
+  </ng-container>
+  <ng-template pTemplate="footer">
+    <button pButton pRipple label="Cancel" icon="pi pi-times" class="p-button-text" (click)="hideEditAssetDialog()"></button>
+    <button pButton pRipple label="Save Changes" icon="pi pi-check" class="p-button-text" (click)="saveEditedAsset()"></button>
+  </ng-template>
+</p-dialog>
+
+<!-- Confirmation Dialog for Deletion -->
+<p-confirmDialog [style]="{width: '450px'}"></p-confirmDialog>
