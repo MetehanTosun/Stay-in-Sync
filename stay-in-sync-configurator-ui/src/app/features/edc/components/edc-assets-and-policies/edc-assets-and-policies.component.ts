@@ -16,10 +16,11 @@ import { InputIconModule } from 'primeng/inputicon';
 import { RippleModule } from 'primeng/ripple';
 import { ConfirmationService } from 'primeng/api';
 
-
 // Application-specific imports
 import { Asset } from './models/asset.model';
+import { AccessPolicy, ContractPolicy } from './models/policy.model';
 import { AssetService } from './services/asset.service';
+import { PolicyService } from './services/policy.service';
 
 @Component({
   selector: 'app-edc-assets-and-policies',
@@ -45,44 +46,64 @@ import { AssetService } from './services/asset.service';
 })
 export class EdcAssetsAndPoliciesComponent implements OnInit {
   @ViewChild('dtAssets') dtAssets: Table | undefined;
+  @ViewChild('dtPolicies') dtPolicies: Table | undefined;
 
+  // Asset properties
   assets: Asset[] = [];
-  loading: boolean = true;
-
-  // Dialog properties
+  assetLoading: boolean = true;
   displayNewAssetDialog: boolean = false;
   newAsset: Asset = this.createEmptyAsset();
   displayEditAssetDialog: boolean = false;
   assetToEdit: Asset | null = null;
 
+  // Policy properties
+  accessPolicies: AccessPolicy[] = [];
+  policyLoading: boolean = true;
+  manuallyExpandedRows: Set<string> = new Set<string>();
+
+  //dialog properties for Policies
+  displayNewAccessPolicyDialog: boolean = false;
+  newAccessPolicy: AccessPolicy = this.createEmptyAccessPolicy();
+
+  displayNewContractPolicyDialog: boolean = false;
+  newContractPolicy: ContractPolicy = this.createEmptyContractPolicy();
+  targetAccessPolicy: AccessPolicy | null = null; // To know which access policy to add a contract to
+
   constructor(
     private assetService: AssetService,
+    private policyService: PolicyService,
     private confirmationService: ConfirmationService
   ) {}
 
   ngOnInit(): void {
-    this.assetService.getAssets().then((data) => {
-      this.assets = data;
-      this.loading = false;
+    this.assetLoading = true;
+    this.policyLoading = true;
+
+    Promise.all([
+      this.assetService.getAssets(),
+      this.policyService.getAccessPolicies()
+    ]).then(([assetsData, policiesData]) => {
+      this.assets = assetsData;
+      this.accessPolicies = policiesData;
+    }).catch(error => {
+      console.error('Failed to load data', error);
+    }).finally(() => {
+      this.assetLoading = false;
+      this.policyLoading = false;
     });
   }
 
-  private createEmptyAsset(): Asset {
-    return {
-      id: '',
-      name: '',
-      url: '',
-      type: 'HttpData', // A sensible default
-      description: '',
-      contentType: 'application/json' // A sensible default
-    };
+  //global filter methods
+  onGlobalFilter(event: Event, table: Table | undefined) {
+    const inputElement = event.target as HTMLInputElement;
+    if (table) {
+      table.filterGlobal(inputElement.value, 'contains');
+    }
   }
 
-  onGlobalFilter(event: Event) {
-    const inputElement = event.target as HTMLInputElement;
-    if (this.dtAssets) {
-      this.dtAssets.filterGlobal(inputElement.value, 'contains');
-    }
+  //Asset methods
+  private createEmptyAsset(): Asset {
+    return { id: '', name: '', url: '', type: 'HttpData', description: '', contentType: 'application/json' };
   }
 
   openNewAssetDialog() {
@@ -102,7 +123,6 @@ export class EdcAssetsAndPoliciesComponent implements OnInit {
     }
   }
 
-  // --- Edit Asset Methods ---
   editAsset(asset: Asset) {
     this.assetToEdit = { ...asset };
     this.displayEditAssetDialog = true;
@@ -115,7 +135,7 @@ export class EdcAssetsAndPoliciesComponent implements OnInit {
 
   saveEditedAsset() {
     if (this.assetToEdit) {
-      const index = this.assets.findIndex(a => a.id === this.assetToEdit!.id);
+      const index = this.assets.findIndex((a) => a.id === this.assetToEdit!.id);
       if (index !== -1) {
         this.assets[index] = this.assetToEdit;
         this.assets = [...this.assets];
@@ -124,17 +144,79 @@ export class EdcAssetsAndPoliciesComponent implements OnInit {
     }
   }
 
-  // --- Delete Asset Method ---
   deleteAsset(asset: Asset) {
     this.confirmationService.confirm({
       message: `Are you sure you want to delete the asset "${asset.name}"?`,
       header: 'Confirm Deletion',
       icon: 'pi pi-exclamation-triangle',
-      acceptButtonStyleClass: 'p-button-danger',
-      rejectButtonStyleClass: 'p-button-text',
       accept: () => {
-        this.assets = this.assets.filter(a => a.id !== asset.id);
+        this.assets = this.assets.filter((a) => a.id !== asset.id);
       },
     });
+  }
+
+  //policy row expansion
+  togglePolicyRow(policyId: string): void {
+    if (this.manuallyExpandedRows.has(policyId)) {
+      this.manuallyExpandedRows.delete(policyId);
+    } else {
+      this.manuallyExpandedRows.add(policyId);
+    }
+  }
+
+  isPolicyRowExpanded(policyId: string): boolean {
+    return this.manuallyExpandedRows.has(policyId);
+  }
+
+
+  private createEmptyAccessPolicy(): AccessPolicy {
+    return { id: '', bpn: '', description: '', contractPolicies: [] };
+  }
+
+
+  openNewAccessPolicyDialog() {
+    this.newAccessPolicy = this.createEmptyAccessPolicy();
+    this.displayNewAccessPolicyDialog = true;
+  }
+
+  hideNewAccessPolicyDialog() {
+    this.displayNewAccessPolicyDialog = false;
+  }
+
+  saveNewAccessPolicy() {
+    if (this.newAccessPolicy.bpn) {
+      this.newAccessPolicy.id = 'ap-' + Math.random().toString(36).substring(2, 9);
+      this.accessPolicies = [...this.accessPolicies, this.newAccessPolicy];
+      this.hideNewAccessPolicyDialog();
+    }
+  }
+
+
+  private createEmptyContractPolicy(): ContractPolicy {
+    return { id: '', assetId: '' };
+  }
+
+  openNewContractPolicyDialog(accessPolicy: AccessPolicy) {
+    this.targetAccessPolicy = accessPolicy;
+    this.newContractPolicy = this.createEmptyContractPolicy();
+    this.displayNewContractPolicyDialog = true;
+  }
+
+  hideNewContractPolicyDialog() {
+    this.displayNewContractPolicyDialog = false;
+    this.targetAccessPolicy = null;
+  }
+
+  saveNewContractPolicy() {
+
+    if (this.newContractPolicy.assetId && this.targetAccessPolicy) {
+      this.newContractPolicy.id = 'cp-' + Math.random().toString(36).substring(2, 9);
+      const policyIndex = this.accessPolicies.findIndex(p => p.id === this.targetAccessPolicy!.id);
+      if (policyIndex !== -1) {
+        this.accessPolicies[policyIndex].contractPolicies.push(this.newContractPolicy);
+        this.accessPolicies = [...this.accessPolicies];
+      }
+      this.hideNewContractPolicyDialog();
+    }
   }
 }

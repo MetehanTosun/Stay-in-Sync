@@ -5,7 +5,7 @@
     dataKey="id"
     [rows]="10"
     [rowsPerPageOptions]="[10, 25, 50]"
-    [loading]="loading"
+    [loading]="assetLoading"
     [paginator]="true"
     [globalFilterFields]="['id', 'name', 'url', 'type', 'contentType', 'description']"
     [tableStyle]="{ 'min-width': '75rem' }"
@@ -18,7 +18,7 @@
         <div class="flex align-items-center">
           <p-iconfield iconPosition="left" class="mr-2">
             <p-inputicon><i class="pi pi-search"></i></p-inputicon>
-            <input pInputText type="text" (input)="onGlobalFilter($event)" placeholder="Search keyword" class="w-full"/>
+            <input pInputText type="text" (input)="onGlobalFilter($event, dtAssets)" placeholder="Search keyword" class="w-full"/>
           </p-iconfield>
           <button pButton pRipple label="New Asset" icon="pi pi-plus" class="p-button-success" (click)="openNewAssetDialog()"></button>
         </div>
@@ -26,7 +26,6 @@
     </ng-template>
 
     <ng-template pTemplate="header">
-      <!-- Main header row with sorting -->
       <tr>
         <th style="width: 15%" pSortableColumn="id">ID <p-sortIcon field="id"></p-sortIcon></th>
         <th style="width: 40%" pSortableColumn="name">Name <p-sortIcon field="name"></p-sortIcon></th>
@@ -34,23 +33,12 @@
         <th style="width: 20%" pSortableColumn="contentType">Content Type <p-sortIcon field="contentType"></p-sortIcon></th>
         <th style="width: 15%">Actions</th>
       </tr>
-      <!-- Filter row -->
       <tr>
-        <th>
-          <p-columnFilter type="text" field="id" placeholder="Search by ID" ariaLabel="Filter by ID"></p-columnFilter>
-        </th>
-        <th>
-          <p-columnFilter type="text" field="name" placeholder="Search by Name" ariaLabel="Filter by Name"></p-columnFilter>
-        </th>
-        <th>
-          <p-columnFilter type="text" field="type" placeholder="Search by Type" ariaLabel="Filter by Type"></p-columnFilter>
-        </th>
-        <th>
-          <p-columnFilter type="text" field="contentType" placeholder="Search by Content Type" ariaLabel="Filter by Content Type"></p-columnFilter>
-        </th>
-        <th>
-          <!-- Placeholder for actions column filter -->
-        </th>
+        <th><p-columnFilter type="text" field="id" placeholder="Filter by ID"></p-columnFilter></th>
+        <th><p-columnFilter type="text" field="name" placeholder="Filter by Name"></p-columnFilter></th>
+        <th><p-columnFilter type="text" field="type" placeholder="Filter by Type"></p-columnFilter></th>
+        <th><p-columnFilter type="text" field="contentType" placeholder="Filter by Content Type"></p-columnFilter></th>
+        <th></th>
       </tr>
     </ng-template>
 
@@ -68,36 +56,121 @@
     </ng-template>
 
     <ng-template pTemplate="emptymessage">
-      <tr>
-        <td [attr.colspan]="5">No assets found.</td>
-      </tr>
+      <tr><td [attr.colspan]="5">No assets found.</td></tr>
     </ng-template>
   </p-table>
 </div>
 
-<!-- New Asset Dialog -->
+<!-- Policies Table -->
+<div class="card mt-4">
+  <p-table
+    #dtPolicies
+    [value]="accessPolicies"
+    dataKey="id"
+    [loading]="policyLoading"
+    [globalFilterFields]="['id', 'bpn', 'description']"
+    [tableStyle]="{ 'min-width': '75rem' }"
+    styleClass="p-datatable-striped p-datatable-gridlines"
+  >
+    <ng-template pTemplate="caption">
+      <div class="flex align-items-center justify-content-between">
+        <h5 class="m-0">Manage Policies</h5>
+        <div class="flex align-items-center">
+          <p-iconfield iconPosition="left" class="mr-2">
+            <p-inputicon><i class="pi pi-search"></i></p-inputicon>
+            <input pInputText type="text" (input)="onGlobalFilter($event, dtPolicies)" placeholder="Search keyword" class="w-full"/>
+          </p-iconfield>
+          <button pButton pRipple label="New Access Policy" icon="pi pi-plus" class="p-button-success" (click)="openNewAccessPolicyDialog()"></button>
+        </div>
+      </div>
+    </ng-template>
+
+    <ng-template pTemplate="header">
+      <tr>
+        <th style="width: 4rem"></th>
+        <th style="width: 25%" pSortableColumn="id">ID <p-sortIcon field="id"></p-sortIcon></th>
+        <th style="width: 20%" pSortableColumn="bpn">BPN <p-sortIcon field="bpn"></p-sortIcon></th>
+        <th pSortableColumn="description">Name/Description <p-sortIcon field="description"></p-sortIcon></th>
+        <th style="width: 15%">Actions</th>
+      </tr>
+      <tr>
+        <th></th>
+        <th><p-columnFilter type="text" field="id" placeholder="Filter by ID"></p-columnFilter></th>
+        <th><p-columnFilter type="text" field="bpn" placeholder="Filter by BPN"></p-columnFilter></th>
+        <th><p-columnFilter type="text" field="description" placeholder="Filter by Description"></p-columnFilter></th>
+        <th></th>
+      </tr>
+    </ng-template>
+
+    <ng-template pTemplate="body" let-policy>
+      <tr>
+        <td>
+          <button type="button" pButton pRipple (click)="togglePolicyRow(policy.id)" class="p-button-text p-button-rounded p-button-plain" [icon]="isPolicyRowExpanded(policy.id) ? 'pi pi-chevron-down' : 'pi pi-chevron-right'"></button>
+        </td>
+        <td>{{ policy.id }}</td>
+        <td>{{ policy.bpn }}</td>
+        <td>{{ policy.description }}</td>
+        <td>
+          <button pButton pRipple type="button" icon="pi pi-pencil" class="p-button-rounded p-button-text p-button-info mr-2" pTooltip="Edit Access Policy"></button>
+          <button pButton pRipple type="button" icon="pi pi-trash" class="p-button-rounded p-button-text p-button-danger" pTooltip="Delete Access Policy"></button>
+        </td>
+      </tr>
+      <tr *ngIf="isPolicyRowExpanded(policy.id)">
+        <td [attr.colspan]="5">
+          <div class="p-3">
+            <div class="flex align-items-center justify-content-between mb-3">
+              <h5 class="m-0">Contract Definitions for {{ policy.bpn }}</h5>
+              <button pButton pRipple label="New Contract Policy" icon="pi pi-plus" class="p-button-sm p-button-success" (click)="openNewContractPolicyDialog(policy)"></button>
+            </div>
+            <!-- UPDATED NESTED TABLE -->
+            <p-table [value]="policy.contractPolicies" dataKey="id">
+              <ng-template pTemplate="header">
+                <tr>
+                  <th style="width: 45%" pSortableColumn="id">ID <p-sortIcon field="id"></p-sortIcon></th>
+                  <th style="width: 40%" pSortableColumn="assetId">Asset ID <p-sortIcon field="assetId"></p-sortIcon></th>
+                  <th style="width: 15%">Actions</th>
+                </tr>
+                <tr>
+                  <th><p-columnFilter type="text" field="id" placeholder="Filter by ID"></p-columnFilter></th>
+                  <th><p-columnFilter type="text" field="assetId" placeholder="Filter by Asset ID"></p-columnFilter></th>
+                  <th></th>
+                </tr>
+              </ng-template>
+              <ng-template pTemplate="body" let-contractPolicy>
+                <tr>
+                  <td>{{ contractPolicy.id }}</td>
+                  <td>{{ contractPolicy.assetId }}</td>
+                  <td>
+                    <button pButton pRipple type="button" icon="pi pi-pencil" class="p-button-rounded p-button-text p-button-info mr-2" pTooltip="Edit Contract Policy"></button>
+                    <button pButton pRipple type="button" icon="pi pi-trash" class="p-button-rounded p-button-text p-button-danger" pTooltip="Delete Contract Policy"></button>
+                  </td>
+                </tr>
+              </ng-template>
+              <ng-template pTemplate="emptymessage">
+                <tr><td [attr.colspan]="3">No contract policies found. Click "New Contract Policy" to add one.</td></tr>
+              </ng-template>
+            </p-table>
+          </div>
+        </td>
+      </tr>
+    </ng-template>
+
+    <ng-template pTemplate="emptymessage">
+      <tr><td [attr.colspan]="5">No policies found.</td></tr>
+    </ng-template>
+  </p-table>
+</div>
+
+<!-- DIALOGS -->
+
+<!-- Asset Dialogs -->
 <p-dialog header="Create New Asset" [(visible)]="displayNewAssetDialog" [modal]="true" [style]="{ width: '450px' }" (onHide)="hideNewAssetDialog()" [draggable]="false" [resizable]="false">
   <div class="p-fluid">
-    <div class="p-field mb-3">
-      <label for="assetName">Name</label>
-      <input id="assetName" type="text" pInputText [(ngModel)]="newAsset.name" required autofocus />
-    </div>
-    <div class="p-field mb-3">
-      <label for="assetUrl">URL</label>
-      <input id="assetUrl" type="text" pInputText [(ngModel)]="newAsset.url" required />
-    </div>
-    <div class="p-field mb-3">
-      <label for="assetType">Type</label>
-      <input id="assetType" type="text" pInputText [(ngModel)]="newAsset.type" required />
-    </div>
-    <div class="p-field mb-3">
-      <label for="assetContentType">Content Type</label>
-      <input id="assetContentType" type="text" pInputText [(ngModel)]="newAsset.contentType" required />
-    </div>
-    <div class="p-field mb-3">
-      <label for="assetDescription">Description</label>
-      <textarea id="assetDescription" pInputTextarea [(ngModel)]="newAsset.description" rows="3"></textarea>
-    </div>
+    <div class="field mb-3"><label for="assetName">Name</label><input id="assetName" type="text" pInputText [(ngModel)]="newAsset.name" required autofocus /></div>
+    <div class="field mb-3"><label for="assetUrl">URL</label><input id="assetUrl" type="text" pInputText [(ngModel)]="newAsset.url" required /></div>
+    <div class="field mb-3"><label for="assetType">Type</label><input id="assetType" type="text" pInputText [(ngModel)]="newAsset.type" required /></div>
+    <div class="field mb-3"><label for="assetContentType">Content Type</label><input id="assetContentType" type="text" pInputText [(ngModel)]="newAsset.contentType" required /></div>
+    <div class="field mb-3"><label for="assetDescription">Description</label><textarea id="assetDescription" pInputTextarea [(ngModel)]="newAsset.description" rows="3"></textarea></div>
   </div>
   <ng-template pTemplate="footer">
     <button pButton pRipple label="Cancel" icon="pi pi-times" class="p-button-text" (click)="hideNewAssetDialog()"></button>
@@ -105,30 +178,14 @@
   </ng-template>
 </p-dialog>
 
-<!-- Edit Asset Dialog -->
 <p-dialog header="Edit Asset" [(visible)]="displayEditAssetDialog" [modal]="true" [style]="{ width: '450px' }" (onHide)="hideEditAssetDialog()" [draggable]="false" [resizable]="false">
   <ng-container *ngIf="assetToEdit">
     <div class="p-fluid">
-      <div class="p-field mb-3">
-        <label for="editAssetName">Name</label>
-        <input id="editAssetName" type="text" pInputText [(ngModel)]="assetToEdit.name" required autofocus />
-      </div>
-      <div class="p-field mb-3">
-        <label for="editAssetUrl">URL</label>
-        <input id="editAssetUrl" type="text" pInputText [(ngModel)]="assetToEdit.url" required />
-      </div>
-      <div class="p-field mb-3">
-        <label for="editAssetType">Type</label>
-        <input id="editAssetType" type="text" pInputText [(ngModel)]="assetToEdit.type" required />
-      </div>
-      <div class="p-field mb-3">
-        <label for="editAssetContentType">Content Type</label>
-        <input id="editAssetContentType" type="text" pInputText [(ngModel)]="assetToEdit.contentType" required />
-      </div>
-      <div class="p-field mb-3">
-        <label for="editAssetDescription">Description</label>
-        <textarea id="editAssetDescription" pInputTextarea [(ngModel)]="assetToEdit.description" rows="3"></textarea>
-      </div>
+      <div class="field mb-3"><label for="editAssetName">Name</label><input id="editAssetName" type="text" pInputText [(ngModel)]="assetToEdit.name" required autofocus /></div>
+      <div class="field mb-3"><label for="editAssetUrl">URL</label><input id="editAssetUrl" type="text" pInputText [(ngModel)]="assetToEdit.url" required /></div>
+      <div class="field mb-3"><label for="editAssetType">Type</label><input id="editAssetType" type="text" pInputText [(ngModel)]="assetToEdit.type" required /></div>
+      <div class="field mb-3"><label for="editAssetContentType">Content Type</label><input id="editAssetContentType" type="text" pInputText [(ngModel)]="assetToEdit.contentType" required /></div>
+      <div class="field mb-3"><label for="editAssetDescription">Description</label><textarea id="editAssetDescription" pInputTextarea [(ngModel)]="assetToEdit.description" rows="3"></textarea></div>
     </div>
   </ng-container>
   <ng-template pTemplate="footer">
@@ -137,5 +194,37 @@
   </ng-template>
 </p-dialog>
 
-<!-- Confirmation Dialog for Deletion -->
-<p-confirmDialog [style]="{width: '450px'}"></p-confirmDialog>
+<!-- Policy Dialogs -->
+<p-dialog header="Create New Access Policy" [(visible)]="displayNewAccessPolicyDialog" [modal]="true" [style]="{ width: '450px' }" (onHide)="hideNewAccessPolicyDialog()" [draggable]="false" [resizable]="false">
+  <div class="p-fluid">
+    <div class="field mb-3">
+      <label for="apBpn">BPN</label>
+      <input id="apBpn" type="text" pInputText [(ngModel)]="newAccessPolicy.bpn" required autofocus />
+    </div>
+    <div class="field mb-3">
+      <label for="apDesc">Name/Description</label>
+      <textarea id="apDesc" pInputTextarea [(ngModel)]="newAccessPolicy.description" rows="3"></textarea>
+    </div>
+  </div>
+  <ng-template pTemplate="footer">
+    <button pButton pRipple label="Cancel" icon="pi pi-times" class="p-button-text" (click)="hideNewAccessPolicyDialog()"></button>
+    <button pButton pRipple label="Save" icon="pi pi-check" class="p-button-text" (click)="saveNewAccessPolicy()"></button>
+  </ng-template>
+</p-dialog>
+
+
+<p-dialog header="Create New Contract Policy" [(visible)]="displayNewContractPolicyDialog" [modal]="true" [style]="{ width: '450px' }" (onHide)="hideNewContractPolicyDialog()" [draggable]="false" [resizable]="false">
+  <div class="p-fluid">
+    <div class="field mb-3">
+      <label for="cpAssetId">Asset ID</label>
+      <input id="cpAssetId" type="text" pInputText [(ngModel)]="newContractPolicy.assetId" required autofocus />
+    </div>
+  </div>
+  <ng-template pTemplate="footer">
+    <button pButton pRipple label="Cancel" icon="pi pi-times" class="p-button-text" (click)="hideNewContractPolicyDialog()"></button>
+    <button pButton pRipple label="Save" icon="pi pi-check" class="p-button-text" (click)="saveNewContractPolicy()"></button>
+  </ng-template>
+</p-dialog>
+
+<!-- Confirmation Dialog (reused for all deletions) -->
+<p-confirmDialog [style]="{width: '450px'}" acceptButtonStyleClass="p-button-danger"></p-confirmDialog>
