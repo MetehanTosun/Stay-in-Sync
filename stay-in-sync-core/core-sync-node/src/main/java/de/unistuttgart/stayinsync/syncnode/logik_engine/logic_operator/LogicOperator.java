@@ -1,6 +1,8 @@
 package de.unistuttgart.stayinsync.syncnode.logik_engine.logic_operator;
 
 import de.unistuttgart.stayinsync.syncnode.logik_engine.logic_operator.array_predicates.*;
+import de.unistuttgart.stayinsync.syncnode.logik_engine.logic_operator.boolean_predicates.*;
+import de.unistuttgart.stayinsync.syncnode.logik_engine.logic_operator.datetime_predicates.*;
 import de.unistuttgart.stayinsync.syncnode.logik_engine.logic_operator.generell_predicates.*;
 import de.unistuttgart.stayinsync.syncnode.logik_engine.logic_operator.number_predicates.*;
 import de.unistuttgart.stayinsync.syncnode.logik_engine.logic_operator.object_predicates.*;
@@ -48,6 +50,10 @@ public enum LogicOperator {
     STRING_LENGTH_LT("lengthLt", new StringLengthLtOperator()),
     STRING_LENGTH_BETWEEN("lengthBetween", new StringLengthBetweenOperator()),
 
+    // Boolean predicates (NEU)
+    IS_TRUE("isTrue", new IsTrueOperator()),
+    IS_FALSE("isFalse", new IsFalseOperator()),
+
     // Array/List predicates
     LENGTH_EQUALS("lengthEquals", new LengthEqualsOperator()),
     LENGTH_GT("lengthGt", new LengthGtOperator()),
@@ -72,9 +78,20 @@ public enum LogicOperator {
     HAS_ANY_KEY("hasAnyKey", new HasAnyKeyOperator()),
     HAS_NO_KEYS("hasNoKeys", new HasNoKeysOperator()),
 
-
-
-
+    // Date/Time predicates
+    BEFORE("before", new BeforeOperator()),
+    AFTER("after", new AfterOperator()),
+    BETWEEN_DATES("betweenDates", new BetweenDatesOperator()),
+    SAME_DAY("sameDay", new SameDayOperator()),
+    SAME_MONTH("sameMonth", new SameMonthOperator()),
+    SAME_YEAR("sameYear", new SameYearOperator()),
+    WEEKDAY_IS("weekdayIs", new WeekdayIsOperator()),
+    MONTH_IS("monthIs", new MonthIsOperator()),
+    AGE_GREATER_THAN("ageGreaterThan", new AgeGreaterThanOperator()),
+    WITHIN_LAST("withinLast", new WithinLastOperator()),
+    WITHIN_NEXT("withinNext", new WithinNextOperator()),
+    TIMEZONE_OFFSET_EQUALS("timezoneOffsetEquals", new TimezoneOffsetEqualsOperator());
+    
     private final String symbol;
     private final Operation operationStrategy;
 
