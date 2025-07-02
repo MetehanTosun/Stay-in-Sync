@@ -1,9 +1,9 @@
 import { Injectable, signal } from "@angular/core";
-import { ExistsNodeComponent } from "./nodes/exists-node.component";
 import { DynamicNode, Edge } from "ngx-vflow";
-import { ConstantNodeComponent } from "./nodes/constant-node.component";
-import { NotExistsNodeComponent } from "./nodes/not-exists-node.component";
+import { ConstantNodeComponent } from "./nodes/IO/constant-node.component";
 import { OutputNodeComponent } from "./nodes/IO/output-node.component";
+import { ExistsNodeComponent } from "./nodes/general/exists-node.component";
+import { NotExistsNodeComponent } from "./nodes/general/not-exists-node.component";
 
 @Injectable()
 export class FlowStoreService {
