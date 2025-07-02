@@ -4,7 +4,7 @@ import { ArcStateService } from '../../../core/services/arc-state.service';
 import { ApiRequestConfiguration } from '../models/arc.models';
 import { SourceSystem, SourceSystemEndpoint } from '../../source-system/models/source-system.models';
 import { CommonModule } from '@angular/common';
-import { AccordionModule } from 'primeng/accordion';
+import { AccordionModule, AccordionTabOpenEvent } from 'primeng/accordion';
 import { ButtonModule } from 'primeng/button';
 import { PanelModule } from 'primeng/panel';
 import { ProgressSpinnerModule } from 'primeng/progressspinner';
@@ -49,7 +49,10 @@ export class ArcManagementPanelComponent implements OnInit {
       });
   }
 
-  onSystemExpand(system: any): void {
+  onSystemExpand(event: AccordionTabOpenEvent): void {
+    const system = this.sourceSystems[event.index];
+    console.log("Expanding system:", system.name);
+
     if (system.endpoints.length > 0 || system.isLoadingEndpoints) return;
 
     system.isLoadingEndpoints = true;

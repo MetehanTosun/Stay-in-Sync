@@ -1,21 +1,47 @@
 <p-panel header="Data Sources (ARCs)" [toggleable]="true" styleClass="h-full">
-  <p-accordion [multiple]="true">
-    <p-accordionTab *ngFor="let system of sourceSystems" [header]="system.name" (onOpen)="onSystemExpand(system)">
+  <p-accordion [multiple]="true" (onOpen)="onSystemExpand($event)">
+    <p-accordionTab
+      *ngFor="let system of sourceSystems; let i = index"
+      [header]="system.name"
+      #tab{{i}}
+    >
       <div *ngIf="system.isLoadingEndpoints" class="p-text-center p-p-2">
         <p-progressSpinner styleClass="w-2rem h-2rem"></p-progressSpinner>
       </div>
-      <div *ngFor="let endpoint of system.endpoints" class="p-mb-3 endpoint-group">
+      <div *ngIf="system.endpoints.length === 0">
+        <span class="font-bold">There are no endpoints defined for this source system. Please register some inside Source Systems tab!</span>
+      </div>
+      <div
+        *ngFor="let endpoint of system.endpoints"
+        class="p-mb-3 endpoint-group"
+      >
         <div class="endpoint-header">
-          <span class="font-bold">{{ endpoint.name }}</span>
-          <small class="text-muted p-ml-2">{{ endpoint.path }}</small>
+          <span class="font-bold">{{ endpoint.httpRequestType }} {{ endpoint.endpointPath }}</span>
+          <small class="text-muted p-ml-2"></small>
         </div>
-        <p-button label="Create New ARC" icon="pi pi-plus" styleClass="p-button-sm p-button-text" (click)="onCreateArc(system, endpoint)"></p-button>
-        
+        <p-button
+          label="Create New ARC"
+          icon="pi pi-plus"
+          styleClass="p-button-sm p-button-text"
+          (click)="onCreateArc(system, endpoint)"
+        ></p-button>
+
         <!-- List existing ARCs for this endpoint -->
-        <div *ngFor="let arc of (arcsBySystem$ | async)?.get(system.id) | filterByEndpoint:endpoint.id" class="arc-item">
+        <div
+          *ngFor="
+            let arc of (arcsBySystem$ | async)?.get(system.id)
+              | filterByEndpoint : endpoint.id
+          "
+          class="arc-item"
+        >
           <span class="p-ml-2">{{ arc.alias }}</span>
           <div class="arc-actions">
-            <p-button icon="pi pi-clone" styleClass="p-button-rounded p-button-text" (click)="onCloneArc(arc)" pTooltip="Clone & Edit"></p-button>
+            <p-button
+              icon="pi pi-clone"
+              styleClass="p-button-rounded p-button-text"
+              (click)="onCloneArc(arc)"
+              pTooltip="Clone & Edit"
+            ></p-button>
           </div>
         </div>
       </div>
