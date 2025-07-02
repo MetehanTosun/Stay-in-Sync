@@ -71,13 +71,13 @@ public class ApiHeaderValueService {
         ApiHeaderValue updatedHeaderRequestConfiguration = mapper.mapToEntity(apiHeaderValueDTO);
         Log.debugf("Replacing endpoint: %s", updatedHeaderRequestConfiguration);
 
-        Optional<ApiHeaderValue> updatedRequestHeaderConfiguration = ApiHeaderValue.findByIdOptional(updatedHeaderRequestConfiguration.id)
+        Optional<ApiHeaderValue> updatedHeaderValue = ApiHeaderValue.findByIdOptional(updatedHeaderRequestConfiguration.id)
                 .map(ApiHeaderValue.class::cast) // Only here for type erasure within the IDE
-                .map(targetSouceSystemEndpoint -> {
-                    this.mapper.mapFullUpdate(updatedHeaderRequestConfiguration, targetSouceSystemEndpoint);
-                    return targetSouceSystemEndpoint;
+                .map(targetApiHeaderValue -> {
+                    this.mapper.mapFullUpdate(updatedHeaderRequestConfiguration, targetApiHeaderValue);
+                    return targetApiHeaderValue;
                 });
 
-        return updatedRequestHeaderConfiguration;
+        return updatedHeaderValue;
     }
 }

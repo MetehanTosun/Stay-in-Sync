@@ -68,13 +68,13 @@ public class ApiEndpointQueryParamValueService {
         de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.ApiEndpointQueryParamValue apiEndpointQueryParam = mapper.mapToEntity(queryParamConfiguration);
         Log.debugf("Replacing endpoint: %s", apiEndpointQueryParam);
 
-        Optional<ApiEndpointQueryParamValue> updatedSourceSystemEndpoint = apiEndpointQueryParam.findByIdOptional(apiEndpointQueryParam.id)
-                .map(de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.ApiEndpointQueryParamValue.class::cast) // Only here for type erasure within the IDE
-                .map(targetSouceSystemEndpoint -> {
-                    this.mapper.mapFullUpdate(apiEndpointQueryParam, targetSouceSystemEndpoint);
-                    return targetSouceSystemEndpoint;
+        Optional<ApiEndpointQueryParamValue> updatedQueryParamValue = apiEndpointQueryParam.findByIdOptional(apiEndpointQueryParam.id)
+                .map(ApiEndpointQueryParamValue.class::cast) // Only here for type erasure within the IDE
+                .map(targetQueryParamValue -> {
+                    this.mapper.mapFullUpdate(apiEndpointQueryParam, targetQueryParamValue);
+                    return targetQueryParamValue;
                 });
 
-        return updatedSourceSystemEndpoint;
+        return updatedQueryParamValue;
     }
 }
