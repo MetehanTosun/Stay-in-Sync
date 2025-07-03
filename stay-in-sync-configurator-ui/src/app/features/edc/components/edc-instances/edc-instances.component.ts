@@ -1,9 +1,8 @@
-
 import { Component, OnInit, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms'; // For ngModel
 
-// PrimeNG Modules needed for the table features
+// PrimeNG
 import { Table, TableModule } from 'primeng/table';
 import { InputTextModule } from 'primeng/inputtext';
 import { SelectModule } from 'primeng/select'; // For p-select
@@ -17,6 +16,7 @@ import { DialogModule } from 'primeng/dialog';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { ConfirmationService } from 'primeng/api';
 import {DropdownModule} from 'primeng/dropdown';
+import { PasswordModule } from 'primeng/password';
 // import { ThemeSwitcher } from './themeswitcher';
 
 import { EdcInstance } from './models/edc-instance.model';
@@ -42,6 +42,7 @@ import { EdcInstanceService } from './services/edc-instance.service';
     DropdownModule,
     DialogModule,
     ConfirmDialogModule,
+    PasswordModule,
     // ThemeSwitcher,
   ],
   templateUrl: './edc-instances.component.html',
@@ -50,7 +51,7 @@ import { EdcInstanceService } from './services/edc-instance.service';
   // providers: [EdcInstanceService]
 })
 export class EdcInstancesComponent implements OnInit {
-  @ViewChild('dt2') dt2: Table | undefined; // For accessing table methods like filterGlobal
+  @ViewChild('dt2') dt2: Table | undefined;
 
   edcInstances: EdcInstance[] = [];
   statuses: { label: string, value: string }[] = [];
@@ -61,7 +62,7 @@ export class EdcInstancesComponent implements OnInit {
   newInstance: EdcInstance = this.createEmptyInstance(); // To hold form data
 
 
-  // Edit Instance Dialog properties
+  // Edit instance dialog properties
   displayEditInstanceDialog: boolean = false;
   instanceToEdit: EdcInstance | null = null; // Instance being edited
 
@@ -94,6 +95,7 @@ export class EdcInstancesComponent implements OnInit {
       name: '',
       url: '',
       status: 'Active',
+      apiKey: '',
     };
   }
 
@@ -124,7 +126,6 @@ export class EdcInstancesComponent implements OnInit {
   openNewInstanceDialog(): void {
     this.newInstance = this.createEmptyInstance();
     this.displayNewInstanceDialog = true;
-    console.log('New instance dialog is opened');
   }
 
   hideNewInstanceDialog(): void {
@@ -159,7 +160,7 @@ export class EdcInstancesComponent implements OnInit {
       if (index !== -1) {
         // Update the instance in the array
         this.edcInstances[index] = { ...this.instanceToEdit };
-        // Create a new array reference to trigger change detection for the table
+        // create new array reference to trigger change detection for the table
         this.edcInstances = [...this.edcInstances];
       }
       this.hideEditInstanceDialog();

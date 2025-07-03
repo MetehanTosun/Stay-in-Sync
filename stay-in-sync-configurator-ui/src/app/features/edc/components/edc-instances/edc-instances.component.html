@@ -136,35 +136,35 @@
   </p-table>
 </div>
 
-<p-dialog
-  header="Create New EDC Instance"
-  [(visible)]="displayNewInstanceDialog"
-  [modal]="true"
-  [style]="{ width: '450px' }"
-  (onHide)="hideNewInstanceDialog()"
-  [draggable]="false"
-  [resizable]="false"
->
-  <div class="p-fluid">
-    <div class="p-field mb-3">
-      <label for="name">Name</label>
-      <input id="name" type="text" pInputText [(ngModel)]="newInstance.name" required autofocus />
-    </div>
-    <div class="p-field mb-3">
-      <label for="url">URL</label>
-      <input id="url" type="text" pInputText [(ngModel)]="newInstance.url" required />
-    </div>
-    <div class="p-field mb-3">
-      <label for="status">Status</label>
-      <p-dropdown
-        id="status"
-        [options]="newInstanceStatuses"
-        [(ngModel)]="newInstance.status"
-        placeholder="Select a Status"
-        optionLabel="label"
-        optionValue="value"
-        appendTo="body"
-      ></p-dropdown>
+<!-- New EDC Instance Dialog -->
+<p-dialog header="Add New EDC Instance" [(visible)]="displayNewInstanceDialog" [modal]="true" [style]="{ width: '500px' }" (onHide)="hideNewInstanceDialog()" [draggable]="false" [resizable]="false">
+  <div class="p-fluid pt-3">
+    <div class="px-4">
+
+      <!-- Instance Name -->
+      <div class="field grid align-items-center mb-3">
+        <label for="instanceName" class="col-4">Instance Name</label>
+        <div class="col-8">
+          <input id="instanceName" type="text" pInputText [(ngModel)]="newInstance.name" required autofocus class="w-full" />
+        </div>
+      </div>
+
+      <!-- Management API URL -->
+      <div class="field grid align-items-center mb-3">
+        <label for="instanceUrl" class="col-4">Management URL</label>
+        <div class="col-8">
+          <input id="instanceUrl" type="text" pInputText [(ngModel)]="newInstance.url" required class="w-full" placeholder="e.g., http://localhost:19193" />
+        </div>
+      </div>
+
+      <!-- API Key -->
+      <div class="field grid align-items-center mb-3">
+        <label for="instanceApiKey" class="col-4">API Key</label>
+        <div class="col-8">
+          <p-password id="instanceApiKey" [(ngModel)]="newInstance.apiKey" [toggleMask]="true" [feedback]="false" styleClass="w-full" inputStyleClass="w-full"></p-password>
+        </div>
+      </div>
+
     </div>
   </div>
   <ng-template pTemplate="footer">
@@ -178,33 +178,54 @@
   header="Edit EDC Instance"
   [(visible)]="displayEditInstanceDialog"
   [modal]="true"
-  [style]="{ width: '450px' }"
+  [style]="{ width: '500px' }"
   (onHide)="hideEditInstanceDialog()"
   [draggable]="false"
   [resizable]="false"
 >
-  <!-- Only render the form if instanceToEdit is not null -->
   <ng-container *ngIf="instanceToEdit">
-    <div class="p-fluid">
-      <div class="p-field mb-3">
-        <label for="editName">Name</label>
-        <input id="editName" type="text" pInputText [(ngModel)]="instanceToEdit.name" required autofocus />
-      </div>
-      <div class="p-field mb-3">
-        <label for="editUrl">URL</label>
-        <input id="editUrl" type="text" pInputText [(ngModel)]="instanceToEdit.url" required />
-      </div>
-      <div class="p-field mb-3">
-        <label for="editStatus">Status</label>
-        <p-dropdown
-          id="editStatus"
-          [options]="newInstanceStatuses"
-          [(ngModel)]="instanceToEdit.status"
-          placeholder="Select a Status"
-          optionLabel="label"
-          optionValue="value"
-          appendTo="body"
-        ></p-dropdown>
+    <div class="p-fluid pt-3">
+      <div class="px-4">
+
+        <!-- Instance Name -->
+        <div class="field grid align-items-center mb-3">
+          <label for="editName" class="col-4">Instance Name</label>
+          <div class="col-8">
+            <input id="editName" type="text" pInputText [(ngModel)]="instanceToEdit.name" required autofocus class="w-full" />
+          </div>
+        </div>
+
+        <!-- Management API URL -->
+        <div class="field grid align-items-center mb-3">
+          <label for="editUrl" class="col-4">Management URL</label>
+          <div class="col-8">
+            <input id="editUrl" type="text" pInputText [(ngModel)]="instanceToEdit.url" required class="w-full" />
+          </div>
+        </div>
+
+        <!-- API Key -->
+        <div class="field grid align-items-center mb-3">
+          <label for="editApiKey" class="col-4">API Key</label>
+          <div class="col-8">
+            <p-password id="editApiKey" [(ngModel)]="instanceToEdit.apiKey" [toggleMask]="true" [feedback]="false" styleClass="w-full" inputStyleClass="w-full"></p-password>
+          </div>
+        </div>
+
+
+        <!-- Status -->
+        <div class="field grid align-items-center mb-3">
+          <label for="editStatus" class="col-4">Status</label>
+          <div class="col-8">
+            <p-dropdown
+              id="editStatus"
+              [options]="newInstanceStatuses"
+              [(ngModel)]="instanceToEdit.status"
+              placeholder="Select a Status"
+              appendTo="body"
+            ></p-dropdown>
+          </div>
+        </div>
+
       </div>
     </div>
   </ng-container>

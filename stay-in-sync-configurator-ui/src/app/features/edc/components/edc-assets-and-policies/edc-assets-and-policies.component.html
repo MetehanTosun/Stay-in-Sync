@@ -65,7 +65,10 @@
   </p-table>
 </div>
 
+
 <input #fileInput type="file" (change)="onFileSelect($event)" hidden accept=".json" />
+<input #policyFileInput type="file" (change)="onPolicyFileSelect($event)" hidden accept=".json" />
+<input #contractDefFileInput type="file" (change)="onContractDefFileSelect($event)" hidden accept=".json" />
 
 <!-- Policies Table -->
 <div class="card mt-4">
@@ -73,8 +76,11 @@
     #dtPolicies
     [value]="accessPolicies"
     dataKey="id"
+    [rows]="10"
+    [rowsPerPageOptions]="[10, 25, 50]"
+    [paginator]="true"
     [loading]="policyLoading"
-    [globalFilterFields]="['id', 'bpn', 'description']"
+    [globalFilterFields]="['id', 'bpn']"
     [tableStyle]="{ 'min-width': '75rem' }"
     styleClass="p-datatable-striped p-datatable-gridlines"
   >
@@ -94,16 +100,14 @@
     <ng-template pTemplate="header">
       <tr>
         <th style="width: 4rem"></th>
-        <th style="width: 25%" pSortableColumn="id">ID <p-sortIcon field="id"></p-sortIcon></th>
-        <th style="width: 20%" pSortableColumn="bpn">BPN <p-sortIcon field="bpn"></p-sortIcon></th>
-        <th pSortableColumn="description">Name/Description <p-sortIcon field="description"></p-sortIcon></th>
+        <th style="width: 40%" pSortableColumn="id">ID <p-sortIcon field="id"></p-sortIcon></th>
+        <th style="width: 45%" pSortableColumn="bpn">BPN <p-sortIcon field="bpn"></p-sortIcon></th>
         <th style="width: 15%">Actions</th>
       </tr>
       <tr>
         <th></th>
         <th><p-columnFilter type="text" field="id" placeholder="Filter by ID"></p-columnFilter></th>
         <th><p-columnFilter type="text" field="bpn" placeholder="Filter by BPN"></p-columnFilter></th>
-        <th><p-columnFilter type="text" field="description" placeholder="Filter by Description"></p-columnFilter></th>
         <th></th>
       </tr>
     </ng-template>
@@ -115,14 +119,13 @@
         </td>
         <td>{{ policy.id }}</td>
         <td>{{ policy.bpn }}</td>
-        <td>{{ policy.description }}</td>
         <td>
           <button pButton pRipple type="button" icon="pi pi-pencil" class="p-button-rounded p-button-text p-button-info mr-2" pTooltip="Edit Access Policy"></button>
           <button pButton pRipple type="button" icon="pi pi-trash" class="p-button-rounded p-button-text p-button-danger" pTooltip="Delete Access Policy"></button>
         </td>
       </tr>
       <tr *ngIf="isPolicyRowExpanded(policy.id)">
-        <td [attr.colspan]="5">
+        <td [attr.colspan]="4">
           <div class="p-3">
             <div class="flex align-items-center justify-content-between mb-3">
               <h5 class="m-0">Contract Definitions for {{ policy.bpn }}</h5>
@@ -162,7 +165,7 @@
     </ng-template>
 
     <ng-template pTemplate="emptymessage">
-      <tr><td [attr.colspan]="5">No policies found.</td></tr>
+      <tr><td [attr.colspan]="4">No policies found.</td></tr>
     </ng-template>
   </p-table>
 </div>
@@ -184,34 +187,36 @@
 
     <h6 class="text-center">Enter Details Manually</h6>
 
-    <div class="field grid align-items-center mb-3">
-      <label for="assetName" class="col-4">Name</label>
-      <div class="col-8">
-        <input id="assetName" type="text" pInputText [(ngModel)]="newAsset.name" required autofocus class="w-full" />
+    <div class="px-4">
+      <div class="field grid align-items-center mb-3">
+        <label for="assetName" class="col-4">Name</label>
+        <div class="col-8">
+          <input id="assetName" type="text" pInputText [(ngModel)]="newAsset.name" required autofocus class="w-full" />
+        </div>
       </div>
-    </div>
-    <div class="field grid align-items-center mb-3">
-      <label for="assetUrl" class="col-4">URL</label>
-      <div class="col-8">
-        <input id="assetUrl" type="text" pInputText [(ngModel)]="newAsset.url" required class="w-full" />
+      <div class="field grid align-items-center mb-3">
+        <label for="assetUrl" class="col-4">URL</label>
+        <div class="col-8">
+          <input id="assetUrl" type="text" pInputText [(ngModel)]="newAsset.url" required class="w-full" />
+        </div>
       </div>
-    </div>
-    <div class="field grid align-items-center mb-3">
-      <label for="assetType" class="col-4">Type</label>
-      <div class="col-8">
-        <input id="assetType" type="text" pInputText [(ngModel)]="newAsset.type" required class="w-full" />
+      <div class="field grid align-items-center mb-3">
+        <label for="assetType" class="col-4">Type</label>
+        <div class="col-8">
+          <input id="assetType" type="text" pInputText [(ngModel)]="newAsset.type" required class="w-full" />
+        </div>
       </div>
-    </div>
-    <div class="field grid align-items-center mb-3">
-      <label for="assetContentType" class="col-4">Content Type</label>
-      <div class="col-8">
-        <input id="assetContentType" type="text" pInputText [(ngModel)]="newAsset.contentType" required class="w-full" />
+      <div class="field grid align-items-center mb-3">
+        <label for="assetContentType" class="col-4">Content Type</label>
+        <div class="col-8">
+          <input id="assetContentType" type="text" pInputText [(ngModel)]="newAsset.contentType" required class="w-full" />
+        </div>
       </div>
-    </div>
-    <div class="field grid align-items-center mb-3">
-      <label for="assetDescription" class="col-4">Description</label>
-      <div class="col-8">
-        <textarea id="assetDescription" pInputTextarea [(ngModel)]="newAsset.description" rows="3" class="w-full"></textarea>
+      <div class="field grid align-items-center mb-3">
+        <label for="assetDescription" class="col-4">Description</label>
+        <div class="col-8">
+          <textarea id="assetDescription" pInputTextarea [(ngModel)]="newAsset.description" rows="3" class="w-full"></textarea>
+        </div>
       </div>
     </div>
   </div>
@@ -225,34 +230,36 @@
   <ng-container *ngIf="assetToEdit">
     <div class="p-fluid">
 
-      <div class="field grid align-items-center mb-3">
-        <label for="editAssetName" class="col-4">Name</label>
-        <div class="col-8">
-          <input id="editAssetName" type="text" pInputText [(ngModel)]="assetToEdit.name" required autofocus class="w-full" />
+      <div class="px-4">
+        <div class="field grid align-items-center mb-3">
+          <label for="editAssetName" class="col-4">Name</label>
+          <div class="col-8">
+            <input id="editAssetName" type="text" pInputText [(ngModel)]="assetToEdit.name" required autofocus class="w-full" />
+          </div>
         </div>
-      </div>
-      <div class="field grid align-items-center mb-3">
-        <label for="editAssetUrl" class="col-4">URL</label>
-        <div class="col-8">
-          <input id="editAssetUrl" type="text" pInputText [(ngModel)]="assetToEdit.url" required class="w-full" />
+        <div class="field grid align-items-center mb-3">
+          <label for="editAssetUrl" class="col-4">URL</label>
+          <div class="col-8">
+            <input id="editAssetUrl" type="text" pInputText [(ngModel)]="assetToEdit.url" required class="w-full" />
+          </div>
         </div>
-      </div>
-      <div class="field grid align-items-center mb-3">
-        <label for="editAssetType" class="col-4">Type</label>
-        <div class="col-8">
-          <input id="editAssetType" type="text" pInputText [(ngModel)]="assetToEdit.type" required class="w-full" />
+        <div class="field grid align-items-center mb-3">
+          <label for="editAssetType" class="col-4">Type</label>
+          <div class="col-8">
+            <input id="editAssetType" type="text" pInputText [(ngModel)]="assetToEdit.type" required class="w-full" />
+          </div>
         </div>
-      </div>
-      <div class="field grid align-items-center mb-3">
-        <label for="editAssetContentType" class="col-4">Content Type</label>
-        <div class="col-8">
-          <input id="editAssetContentType" type="text" pInputText [(ngModel)]="assetToEdit.contentType" required class="w-full" />
+        <div class="field grid align-items-center mb-3">
+          <label for="editAssetContentType" class="col-4">Content Type</label>
+          <div class="col-8">
+            <input id="editAssetContentType" type="text" pInputText [(ngModel)]="assetToEdit.contentType" required class="w-full" />
+          </div>
         </div>
-      </div>
-      <div class="field grid align-items-center mb-3">
-        <label for="editAssetDescription" class="col-4">Description</label>
-        <div class="col-8">
-          <textarea id="editAssetDescription" pInputTextarea [(ngModel)]="assetToEdit.description" rows="3" class="w-full"></textarea>
+        <div class="field grid align-items-center mb-3">
+          <label for="editAssetDescription" class="col-4">Description</label>
+          <div class="col-8">
+            <textarea id="editAssetDescription" pInputTextarea [(ngModel)]="assetToEdit.description" rows="3" class="w-full"></textarea>
+          </div>
         </div>
       </div>
     </div>
@@ -267,16 +274,33 @@
 <p-dialog header="Create New Access Policy" [(visible)]="displayNewAccessPolicyDialog" [modal]="true" [style]="{ width: '450px' }" (onHide)="hideNewAccessPolicyDialog()" [draggable]="false" [resizable]="false">
   <div class="p-fluid">
 
-    <div class="field grid align-items-center mb-3">
-      <label for="apBpn" class="col-4">BPN</label>
-      <div class="col-8">
-        <input id="apBpn" type="text" pInputText [(ngModel)]="newAccessPolicy.bpn" required autofocus class="w-full" />
-      </div>
+    <div class="text-center mb-3">
+      <button pButton pRipple type="button" label="Upload JSON File" icon="pi pi-upload" class="p-button-secondary" (click)="policyFileInput.click()"></button>
     </div>
-    <div class="field grid align-items-center mb-3">
-      <label for="apDesc" class="col-4">Name/Description</label>
-      <div class="col-8">
-        <textarea id="apDesc" pInputTextarea [(ngModel)]="newAccessPolicy.description" rows="3" class="w-full"></textarea>
+
+    <p-divider align="center" type="dashed" styleClass="my-4">
+      <b>OR</b>
+    </p-divider>
+
+    <h6 class="text-center">Enter Details Manually</h6>
+    <div class="px-4">
+      <div class="field grid align-items-center mb-3">
+        <label for="apBpn" class="col-4">BPN</label>
+        <div class="col-8">
+          <input id="apBpn" type="text" pInputText [(ngModel)]="newAccessPolicy.bpn" required autofocus class="w-full" />
+        </div>
+      </div>
+      <div class="field grid align-items-center mb-3">
+        <label for="apAction" class="col-4">Action</label>
+        <div class="col-8">
+          <p-dropdown id="apAction" [options]="actionOptions" [(ngModel)]="newAccessPolicy.action" styleClass="w-full" [appendTo]="'body'"></p-dropdown>
+        </div>
+      </div>
+      <div class="field grid align-items-center mb-3">
+        <label for="apOperator" class="col-4">Operator</label>
+        <div class="col-8">
+          <p-dropdown id="apOperator" [options]="operatorOptions" [(ngModel)]="newAccessPolicy.operator" styleClass="w-full" [appendTo]="'body'"></p-dropdown>
+        </div>
       </div>
     </div>
   </div>
@@ -287,13 +311,24 @@
 </p-dialog>
 
 
-<p-dialog header="Create New Contract Policy" [(visible)]="displayNewContractPolicyDialog" [modal]="true" [style]="{ width: '450px' }" (onHide)="hideNewContractPolicyDialog()" [draggable]="false" [resizable]="false">
+<p-dialog header="Create New Contract Definition" [(visible)]="displayNewContractPolicyDialog" [modal]="true" [style]="{ width: '450px' }" (onHide)="hideNewContractPolicyDialog()" [draggable]="false" [resizable]="false">
   <div class="p-fluid">
+    <!-- Upload Section -->
+    <div class="text-center mb-3">
+      <button pButton pRipple type="button" label="Upload JSON File" icon="pi pi-upload" class="p-button-secondary" (click)="contractDefFileInput.click()"></button>
+    </div>
 
-    <div class="field grid align-items-center mb-3">
-      <label for="cpAssetId" class="col-4">Asset ID</label>
-      <div class="col-8">
-        <input id="cpAssetId" type="text" pInputText [(ngModel)]="newContractPolicy.assetId" required autofocus class="w-full" />
+    <p-divider align="center" type="dashed" styleClass="my-4">
+      <b>OR</b>
+    </p-divider>
+
+    <h6 class="text-center">Enter Details Manually</h6>
+    <div class="px-4">
+      <div class="field grid align-items-center mb-3">
+        <label for="cpAssetId" class="col-4">Asset ID</label>
+        <div class="col-8">
+          <input id="cpAssetId" type="text" pInputText [(ngModel)]="newContractPolicy.assetId" required autofocus class="w-full" />
+        </div>
       </div>
     </div>
   </div>
@@ -303,5 +338,5 @@
   </ng-template>
 </p-dialog>
 
-<!-- Confirmation Dialog (reused for all deletions) -->
+<!-- Confirmation Dialog -->
 <p-confirmDialog [style]="{width: '450px'}" acceptButtonStyleClass="p-button-danger"></p-confirmDialog>
