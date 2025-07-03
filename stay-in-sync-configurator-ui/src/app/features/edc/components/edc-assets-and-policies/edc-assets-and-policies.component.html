@@ -1,3 +1,5 @@
+<p-toast></p-toast>
+
 <!-- assets Table -->
 <div class="card">
   <p-table
@@ -65,10 +67,10 @@
   </p-table>
 </div>
 
-
-<input #fileInput type="file" (change)="onFileSelect($event)" hidden accept=".json" />
-<input #policyFileInput type="file" (change)="onPolicyFileSelect($event)" hidden accept=".json" />
-<input #contractDefFileInput type="file" (change)="onContractDefFileSelect($event)" hidden accept=".json" />
+<!-- Hidden File Inputs -->
+<input #fileInput type="file" (change)="onFileSelect($event)" hidden accept=".json" multiple />
+<input #policyFileInput type="file" (change)="onPolicyFileSelect($event)" hidden accept=".json" multiple />
+<input #contractDefFileInput type="file" (change)="onContractDefFileSelect($event)" hidden accept=".json" multiple />
 
 <!-- Policies Table -->
 <div class="card mt-4">
@@ -191,31 +193,31 @@
       <div class="field grid align-items-center mb-3">
         <label for="assetName" class="col-4">Name</label>
         <div class="col-8">
-          <input id="assetName" type="text" pInputText [(ngModel)]="newAsset.name" required autofocus class="w-full" />
+          <input id="assetName" type="text" pInputText [(ngModel)]="newAsset.name" required autofocus class="w-full" placeholder="e.g., Weather Data" />
         </div>
       </div>
       <div class="field grid align-items-center mb-3">
         <label for="assetUrl" class="col-4">URL</label>
         <div class="col-8">
-          <input id="assetUrl" type="text" pInputText [(ngModel)]="newAsset.url" required class="w-full" />
+          <input id="assetUrl" type="text" pInputText [(ngModel)]="newAsset.url" required class="w-full" placeholder="e.g., https://my-api.com/data" />
         </div>
       </div>
       <div class="field grid align-items-center mb-3">
         <label for="assetType" class="col-4">Type</label>
         <div class="col-8">
-          <input id="assetType" type="text" pInputText [(ngModel)]="newAsset.type" required class="w-full" />
+          <input id="assetType" type="text" pInputText [(ngModel)]="newAsset.type" required class="w-full" placeholder="e.g., HttpData" />
         </div>
       </div>
       <div class="field grid align-items-center mb-3">
         <label for="assetContentType" class="col-4">Content Type</label>
         <div class="col-8">
-          <input id="assetContentType" type="text" pInputText [(ngModel)]="newAsset.contentType" required class="w-full" />
+          <input id="assetContentType" type="text" pInputText [(ngModel)]="newAsset.contentType" required class="w-full" placeholder="e.g., application/json" />
         </div>
       </div>
       <div class="field grid align-items-center mb-3">
         <label for="assetDescription" class="col-4">Description</label>
         <div class="col-8">
-          <textarea id="assetDescription" pInputTextarea [(ngModel)]="newAsset.description" rows="3" class="w-full"></textarea>
+          <textarea id="assetDescription" pInputTextarea [(ngModel)]="newAsset.description" rows="3" class="w-full" placeholder="Optional description of the asset."></textarea>
         </div>
       </div>
     </div>

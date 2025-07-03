@@ -14,9 +14,10 @@ import { TooltipModule } from 'primeng/tooltip';
 import { IconFieldModule } from 'primeng/iconfield';
 import { InputIconModule } from 'primeng/inputicon';
 import { RippleModule } from 'primeng/ripple';
-import { ConfirmationService } from 'primeng/api';
+import {ConfirmationService, MessageService} from 'primeng/api';
 import { DividerModule } from 'primeng/divider';
 import { DropdownModule } from 'primeng/dropdown';
+import { ToastModule } from 'primeng/toast';
 
 // App imports
 import { Asset } from './models/asset.model';
@@ -43,10 +44,11 @@ import { PolicyService } from './services/policy.service';
     RippleModule,
     DividerModule,
     DropdownModule,
+    ToastModule,
   ],
   templateUrl: './edc-assets-and-policies.component.html',
   styleUrls: ['./edc-assets-and-policies.component.css'],
-  providers: [ConfirmationService],
+  providers: [ConfirmationService, MessageService],
 })
 export class EdcAssetsAndPoliciesComponent implements OnInit {
   @ViewChild('dtAssets') dtAssets: Table | undefined;
@@ -76,7 +78,9 @@ export class EdcAssetsAndPoliciesComponent implements OnInit {
   constructor(
     private assetService: AssetService,
     private policyService: PolicyService,
-    private confirmationService: ConfirmationService
+    private confirmationService: ConfirmationService,
+    private messageService: MessageService
+
   ) {
     // initialize dropdown options
     this.operatorOptions = [
@@ -101,7 +105,10 @@ export class EdcAssetsAndPoliciesComponent implements OnInit {
     this.assetService
       .getAssets()
       .then((data) => (this.assets = data))
-      .catch((error) => console.error('Failed to load assets:', error))
+      .catch((error) => {
+        console.error('Failed to load assets:', error);
+        this.messageService.add({severity: 'error', summary: 'Error', detail: 'Could not load assets.'});
+      })
       .finally(() => (this.assetLoading = false));
   }
 
@@ -110,7 +117,10 @@ export class EdcAssetsAndPoliciesComponent implements OnInit {
     this.policyService
       .getAccessPolicies()
       .then((data) => (this.accessPolicies = data))
-      .catch((error) => console.error('Failed to load policies:', error))
+      .catch((error) => {
+        console.error('Failed to load policies:', error);
+        this.messageService.add({severity: 'error', summary: 'Error', detail: 'Could not load policies.'});
+      })
       .finally(() => (this.policyLoading = false));
   }
 
@@ -123,7 +133,8 @@ export class EdcAssetsAndPoliciesComponent implements OnInit {
 
   // Asset methods
   private createEmptyAsset(): Asset {
-    return { id: '', name: '', url: '', type: 'HttpData', description: '', contentType: 'application/json' };
+    // Initialize with empty strings to allow for placeholder text
+    return { id: '', name: '', url: '', type: '', description: '', contentType: '' };
   }
 
   openNewAssetDialog() {
@@ -137,37 +148,98 @@ export class EdcAssetsAndPoliciesComponent implements OnInit {
 
   async saveNewAsset() {
     if (!this.newAsset.name || !this.newAsset.url) {
-      console.error('Asset name and URL are required.');
+      this.messageService.add({
+        severity: 'warn',
+        summary: 'Validation Error',
+        detail: 'Asset Name and URL are required.',
+      });
       return;
     }
     try {
       await this.assetService.createAsset(this.newAsset);
+      this.messageService.add({
+        severity: 'success',
+        summary: 'Success',
+        detail: 'Asset created successfully.',
+      });
       this.loadAssets();
       this.hideNewAssetDialog();
     } catch (error) {
+      this.messageService.add({
+        severity: 'error',
+        summary: 'Error',
+        detail: 'Failed to create asset.',
+      });
       console.error('Failed to create asset:', error);
     }
   }
 
+  /**
+   * Handles multiple asset file uploads parallel.
+   */
   async onFileSelect(event: Event) {
     const element = event.currentTarget as HTMLInputElement;
     const fileList: FileList | null = element.files;
-    if (fileList && fileList.length > 0) {
-      const file = fileList[0];
-      const fileContent = await file.text();
-      try {
-        const assetJson = JSON.parse(fileContent);
-        if (!assetJson['@id'] || !assetJson.properties || !assetJson.dataAddress) {
-          throw new Error('Invalid asset JSON format.');
-        }
-        await this.assetService.uploadAsset(assetJson);
-        this.loadAssets();
-        this.hideNewAssetDialog();
-      } catch (error) {
-        console.error('Failed to upload and create asset from file:', error);
-      }
-      element.value = '';
+
+    if (!fileList || fileList.length === 0) {
+      return;
     }
+
+    const uploadPromises: Promise<void>[] = [];
+    const successfulUploads: string[] = [];
+    const failedUploads: { name: string; reason: string }[] = [];
+
+    // Loop through all selected files and create a processing promise for each
+    for (const file of Array.from(fileList)) {
+      const promise = (async () => {
+        try {
+          const fileContent = await file.text();
+          const assetJson = JSON.parse(fileContent);
+
+          // Validate the structure
+          if (!assetJson['@id'] || !assetJson.properties || !assetJson.dataAddress) {
+            throw new Error('Invalid format: Missing required EDC properties.');
+          }
+
+          await this.assetService.uploadAsset(assetJson);
+          successfulUploads.push(file.name);
+        } catch (error: any) {
+          failedUploads.push({ name: file.name, reason: error.message || 'Could not process file.' });
+        }
+      })();
+      uploadPromises.push(promise);
+    }
+
+    // Wait for all files to be processed
+    await Promise.all(uploadPromises);
+
+    // Provide a summary of the results to the user
+    if (successfulUploads.length > 0) {
+      this.messageService.add({
+        severity: 'success',
+        summary: 'Upload Complete',
+        detail: `${successfulUploads.length} asset(s) uploaded successfully.`,
+      });
+    }
+
+    if (failedUploads.length > 0) {
+      this.messageService.add({
+        severity: 'error',
+        summary: `${failedUploads.length} Upload(s) Failed`,
+        detail: 'See browser console for details on failed files.',
+        life: 5000,
+      });
+      console.error('Failed uploads:', failedUploads);
+    }
+
+    // If at least one upload was successful, refresh the list and close the dialog
+    if (successfulUploads.length > 0) {
+      this.loadAssets();
+      this.hideNewAssetDialog();
+    }
+
+    // Always reset the file input to allow selecting the same files again
+    element.value = '';
   }
 
   editAsset(asset: Asset) {
@@ -237,14 +309,16 @@ export class EdcAssetsAndPoliciesComponent implements OnInit {
 
   async saveNewAccessPolicy() {
     if (!this.newAccessPolicy.bpn) {
-      console.error('BPN is required for manual creation.');
+      this.messageService.add({severity: 'warn', summary: 'Validation Error', detail: 'BPN is required for manual creation.'});
       return;
     }
     try {
       await this.policyService.createAccessPolicy(this.newAccessPolicy);
+      this.messageService.add({severity: 'success', summary: 'Success', detail: 'Access Policy created successfully.'});
       this.loadPolicies();
       this.hideNewAccessPolicyDialog();
     } catch (error) {
+      this.messageService.add({severity: 'error', summary: 'Error', detail: 'Failed to create access policy.'});
       console.error('Failed to create access policy:', error);
     }
   }
@@ -257,22 +331,66 @@ export class EdcAssetsAndPoliciesComponent implements OnInit {
   async onPolicyFileSelect(event: Event) {
     const element = event.currentTarget as HTMLInputElement;
     const fileList: FileList | null = element.files;
-    if (fileList && fileList.length > 0) {
-      const file = fileList[0];
-      const fileContent = await file.text();
-      try {
-        const policyJson: OdrlPolicyDefinition = JSON.parse(fileContent);
-        if (!policyJson['@id'] || !policyJson.policy) {
-          throw new Error('Invalid policy definition JSON format.');
-        }
-        await this.policyService.uploadPolicyDefinition(policyJson);
-        this.loadPolicies();
-        this.hideNewAccessPolicyDialog(); // Close dialog on success
-      } catch (error) {
-        console.error('Failed to upload and create policy from file:', error);
-      }
-      element.value = '';
+
+    if (!fileList || fileList.length === 0) {
+      return;
     }
+
+    const uploadPromises: Promise<void>[] = [];
+    const successfulUploads: string[] = [];
+    const failedUploads: { name: string; reason: string }[] = [];
+
+    // Loop through all selected files and create a processing promise for each
+    for (const file of Array.from(fileList)) {
+      const promise = (async () => {
+        try {
+          const fileContent = await file.text();
+          const policyJson: OdrlPolicyDefinition = JSON.parse(fileContent);
+
+          // Validate the structure
+          if (!policyJson['@id'] || !policyJson.policy) {
+            throw new Error('Invalid format: Missing required EDC properties.');
+          }
+
+          await this.policyService.uploadPolicyDefinition(policyJson);
+          successfulUploads.push(file.name);
+        } catch (error: any) {
+          failedUploads.push({ name: file.name, reason: error.message || 'Could not process file.' });
+        }
+      })();
+      uploadPromises.push(promise);
+    }
+
+    // Wait for all files to be processed
+    await Promise.all(uploadPromises);
+
+    // Provide a summary of the results to the user
+    if (successfulUploads.length > 0) {
+      this.messageService.add({
+        severity: 'success',
+        summary: 'Upload Complete',
+        detail: `${successfulUploads.length} polic(y/ies) uploaded successfully.`,
+      });
+    }
+
+    if (failedUploads.length > 0) {
+      this.messageService.add({
+        severity: 'error',
+        summary: `${failedUploads.length} Upload(s) Failed`,
+        detail: 'See browser console for details on failed files.',
+        life: 5000,
+      });
+      console.error('Failed policy uploads:', failedUploads);
+    }
+
+    // If at least one upload was successful, refresh the list and close the dialog
+    if (successfulUploads.length > 0) {
+      this.loadPolicies();
+      this.hideNewAccessPolicyDialog();
+    }
+
+    // Always reset the file input to allow selecting the same files again
+    element.value = '';
   }
 
 
@@ -298,59 +416,120 @@ export class EdcAssetsAndPoliciesComponent implements OnInit {
 
     // Ensure we have a target access policy context from the expanded row
     if (!this.targetAccessPolicy) {
-      console.error('Cannot upload a contract definition without a selected access policy context.');
-
+      this.messageService.add({
+        severity: 'warn',
+        summary: 'Action Blocked',
+        detail: 'You must expand an Access Policy row before adding a contract definition.',
+        life: 5000,
+      });
       return;
     }
 
-    if (fileList && fileList.length > 0) {
-      const file = fileList[0];
-      const fileContent = await file.text();
-      try {
-        const contractDefJson: OdrlContractDefinition = JSON.parse(fileContent);
+    // Capture the non-null policy in a local constant
+    const currentTargetPolicy = this.targetAccessPolicy;
 
-        // Basic validation of the templates structure
-        if (!contractDefJson['@id'] || !contractDefJson.assetsSelector) {
-          throw new Error('Invalid contract definition JSON format. It must contain at least an @id and an assetsSelector.');
-        }
-
-        //We use the access policy the user is currently working with, rather than a potentially incorrect one from the file.
-        contractDefJson.accessPolicyId = this.targetAccessPolicy.id;
-        contractDefJson.contractPolicyId = this.targetAccessPolicy.id;
-
-        // Call the service to create the definition
-        await this.policyService.createContractDefinition(contractDefJson);
-
-        // Update the UI locally for immediate feedback
-        const newUiContractPolicy: ContractPolicy = {
-          id: contractDefJson['@id'],
-          assetId: contractDefJson.assetsSelector[0]?.operandRight || ''
-        };
-        const policyIndex = this.accessPolicies.findIndex(p => p.id === this.targetAccessPolicy!.id);
-        if (policyIndex !== -1) {
-          this.accessPolicies[policyIndex].contractPolicies.push(newUiContractPolicy);
-          this.accessPolicies = [...this.accessPolicies]; // Trigger change detection
-        }
-
-        this.hideNewContractPolicyDialog(); // Close dialog on success
-      } catch (error) {
-        console.error('Failed to upload and create contract definition from file:', error);
-      }
-      // Reset the file input to allow selecting the same file again
-      element.value = '';
+    if (!fileList || fileList.length === 0) {
+      return;
     }
+
+    const uploadPromises: Promise<ContractPolicy>[] = [];
+    const failedUploads: { name: string; reason: string }[] = [];
+
+    // Loop through all selected files and create a processing promise for each
+    for (const file of Array.from(fileList)) {
+      const promise = (async (): Promise<ContractPolicy> => {
+        try {
+          const fileContent = await file.text();
+          const contractDefJson: OdrlContractDefinition = JSON.parse(fileContent);
+
+          // Validate the structure of the template
+          if (!contractDefJson['@id'] || !contractDefJson.assetsSelector) {
+            throw new Error('Invalid format: Missing @id or assetsSelector.');
+          }
+
+          // --- NEW: Strict Validation ---
+          // Check if the file specifies an access policy ID and if it mismatches the current context.
+          if (contractDefJson.accessPolicyId && contractDefJson.accessPolicyId !== currentTargetPolicy.id) {
+            throw new Error(`ID Mismatch: File is for policy "${contractDefJson.accessPolicyId}", not "${currentTargetPolicy.id}".`);
+          }
+          // --- End of Strict Validation ---
+
+          // ENFORCE CONTEXT: Ensure the correct IDs are set before sending to the backend.
+          // This handles cases where the file might not have the ID set at all.
+          contractDefJson.accessPolicyId = currentTargetPolicy.id;
+          contractDefJson.contractPolicyId = currentTargetPolicy.id;
+
+          await this.policyService.createContractDefinition(contractDefJson);
+
+          return {
+            id: contractDefJson['@id'],
+            assetId: contractDefJson.assetsSelector[0]?.operandRight || 'Unknown',
+          };
+        } catch (error: any) {
+          failedUploads.push({ name: file.name, reason: error.message || 'Could not process file.' });
+          // Reject the promise for this file
+          return Promise.reject(error);
+        }
+      })();
+      uploadPromises.push(promise);
+    }
+
+    // Wait for all files to be processed and collect results
+    const results = await Promise.allSettled(uploadPromises);
+    const successfulContractPolicies = results
+      .filter((r): r is PromiseFulfilledResult<ContractPolicy> => r.status === 'fulfilled')
+      .map(r => r.value);
+
+    // Provide a summary of the results to the user
+    if (successfulContractPolicies.length > 0) {
+      this.messageService.add({
+        severity: 'success',
+        summary: 'Upload Complete',
+        detail: `${successfulContractPolicies.length} contract definition(s) uploaded successfully.`,
+      });
+
+      // Update the UI in one go
+      const policyIndex = this.accessPolicies.findIndex(p => p.id === currentTargetPolicy.id);
+      if (policyIndex !== -1) {
+        this.accessPolicies[policyIndex].contractPolicies.push(...successfulContractPolicies);
+        this.accessPolicies = [...this.accessPolicies]; // Trigger change detection
+      }
+    }
+
+    if (failedUploads.length > 0) {
+      this.messageService.add({
+        severity: 'error',
+        summary: `${failedUploads.length} Upload(s) Failed`,
+        detail: 'See browser console for details on failed files.',
+        life: 5000,
+      });
+      console.error('Failed contract definition uploads:', failedUploads);
+    }
+
+    // Close the dialog if at least one upload was successful
+    if (successfulContractPolicies.length > 0) {
+      this.hideNewContractPolicyDialog();
+    }
+
+    // Always reset the file input
+    element.value = '';
   }
 
   async saveNewContractPolicy() {
-    if (this.newContractPolicy.assetId && this.targetAccessPolicy) {
+    // Capture the target policy at the start to ensure it's not changed during execution.
+    const currentTargetPolicy = this.targetAccessPolicy;
 
-      const contractDefId = `contract-def-${this.newContractPolicy.assetId}-for-${this.targetAccessPolicy.id}`;
+    // Use the captured constant for all checks and operations.
+    if (this.newContractPolicy.assetId && currentTargetPolicy) {
+
+      const contractDefId = `contract-def-${this.newContractPolicy.assetId}-for-${currentTargetPolicy.id}`;
 
       const payload: OdrlContractDefinition = {
         '@context': { edc: 'https://w3id.org/edc/v0.0.1/ns/' },
         '@id': contractDefId,
-        accessPolicyId: this.targetAccessPolicy.id,
-        contractPolicyId: this.targetAccessPolicy.id, // Per your example, these are the same
+        // Use the non-null constant here, ensuring the correct ID is always used
+        accessPolicyId: currentTargetPolicy.id,
+        contractPolicyId: currentTargetPolicy.id,
         assetsSelector: [
           {
             operandLeft: 'https://w3id.org/edc/v0.0.1/ns/id',
@@ -361,14 +540,15 @@ export class EdcAssetsAndPoliciesComponent implements OnInit {
       };
 
       try {
-
         await this.policyService.createContractDefinition(payload);
+        this.messageService.add({severity: 'success', summary: 'Success', detail: 'Contract Definition created successfully.'});
 
         const newUiContractPolicy: ContractPolicy = {
           id: contractDefId,
           assetId: this.newContractPolicy.assetId
         };
-        const policyIndex = this.accessPolicies.findIndex(p => p.id === this.targetAccessPolicy!.id);
+
+        const policyIndex = this.accessPolicies.findIndex(p => p.id === currentTargetPolicy.id);
         if (policyIndex !== -1) {
           this.accessPolicies[policyIndex].contractPolicies.push(newUiContractPolicy);
           this.accessPolicies = [...this.accessPolicies]; // Trigger change detection
@@ -376,11 +556,9 @@ export class EdcAssetsAndPoliciesComponent implements OnInit {
 
         this.hideNewContractPolicyDialog();
       } catch (error) {
+        this.messageService.add({severity: 'error', summary: 'Error', detail: 'Failed to create contract definition.'});
         console.error('Failed to create contract definition:', error);
-
       }
     }
   }
-
-
 }
