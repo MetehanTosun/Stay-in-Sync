@@ -17,7 +17,7 @@ public class SourceSystemResourceTest {
     @Test
     public void testGetAllEmpty() {
         given()
-                .when().get("/api/aas")
+                .when().get("/api/config/source-system")
                 .then()
                 .statusCode(200)
                 .body("$.size()", is(0));
@@ -32,6 +32,7 @@ public class SourceSystemResourceTest {
                 {
                     "name": "TestSensor",
                     "description": "Test Description",
+                    "apiType": "REST",
                     "apiUrl": "http://localhost:1234"
                 }
                 """;
@@ -41,7 +42,7 @@ public class SourceSystemResourceTest {
                 .contentType(ContentType.JSON)
                 .body(jsonBody)
                 .when()
-                .post("/api/aas")
+                .post("/api/config/source-system")
                 .then()
                 .statusCode(201)
                 .extract()
@@ -52,7 +53,7 @@ public class SourceSystemResourceTest {
 
         // Retrieve the created SourceSystem by ID and verify fields
         given()
-                .when().get("/api/aas/" + id)
+                .when().get("/api/config/source-system/" + id)
                 .then()
                 .statusCode(200)
                 .body("name", equalTo("TestSensor"))
@@ -69,6 +70,7 @@ public class SourceSystemResourceTest {
                 {
                     "name": "SensorBeforeUpdate",
                     "description": "Description before update",
+                    "apiType": "REST",
                     "apiUrl": "http://localhost:1111"
                 }
                 """;
@@ -78,7 +80,7 @@ public class SourceSystemResourceTest {
                 .contentType(ContentType.JSON)
                 .body(jsonBodyCreate)
                 .when()
-                .post("/api/aas")
+                .post("/api/config/source-system")
                 .then()
                 .statusCode(201)
                 .extract()
@@ -88,21 +90,24 @@ public class SourceSystemResourceTest {
 
         String jsonBodyUpdate = """
                 {
+                    "id": %s, 
                     "name": "SensorAfterUpdate",
                     "description": "Description after update",
+                    "apiType": "REST",
                     "apiUrl": "http://localhost:2222"
                 }
-                """;
+                """.formatted(id);
 
         // Update the SourceSystem via PUT
         given()
                 .contentType(ContentType.JSON)
                 .body(jsonBodyUpdate)
-                .when().put("/api/aas/" + id)
+                .when().put("/api/config/source-system/" + id)
                 .then()
                 .statusCode(200)
                 .body("name", equalTo("SensorAfterUpdate"))
                 .body("description", equalTo("Description after update"))
+                .body("apiType", equalTo("REST"))
                 .body("apiUrl", equalTo("http://localhost:2222"));
     }
 
@@ -115,6 +120,7 @@ public class SourceSystemResourceTest {
                 {
                     "name": "ToDelete",
                     "description": "Will be deleted",
+                    "apiType": "REST",
                     "apiUrl": "http://localhost/delete"
                 }
                 """;
@@ -124,7 +130,7 @@ public class SourceSystemResourceTest {
                 .contentType(ContentType.JSON)
                 .body(jsonBody)
                 .when()
-                .post("/api/aas")
+                .post("/api/config/source-system")
                 .then()
                 .statusCode(201)
                 .extract()
@@ -134,13 +140,13 @@ public class SourceSystemResourceTest {
 
         // Delete the SourceSystem
         given()
-                .when().delete("/api/aas/" + id)
+                .when().delete("/api/config/source-system/" + id)
                 .then()
                 .statusCode(204);
 
         // Verify it no longer exists
         given()
-                .when().get("/api/aas/" + id)
+                .when().get("/api/config/source-system/" + id)
                 .then()
                 .statusCode(404);
     }
@@ -151,7 +157,7 @@ public class SourceSystemResourceTest {
     @Test
     public void testGetByIdNotFound() {
         given()
-                .when().get("/api/aas/9999999")
+                .when().get("/api/config/source-system/9999999")
                 .then()
                 .statusCode(404);
     }
@@ -162,7 +168,7 @@ public class SourceSystemResourceTest {
     @Test
     public void testDeleteNotFound() {
         given()
-                .when().delete("/api/aas/9999999")
+                .when().delete("/api/config/source-system/9999999")
                 .then()
                 .statusCode(404);
     }
