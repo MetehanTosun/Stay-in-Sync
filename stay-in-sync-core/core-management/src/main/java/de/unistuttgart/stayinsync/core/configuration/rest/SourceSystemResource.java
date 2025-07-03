@@ -20,15 +20,11 @@ import org.jboss.resteasy.reactive.MultipartForm;
 import jakarta.ws.rs.core.MediaType;
 
 import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.SourceSystem;
-import de.unistuttgart.stayinsync.core.configuration.exception.CoreManagementWebException;
-import de.unistuttgart.stayinsync.core.configuration.mapping.SourceSystemEndpointMapper;
-import de.unistuttgart.stayinsync.core.configuration.mapping.SourceSystemMapper;
-import de.unistuttgart.stayinsync.core.configuration.rest.dtos.CreateSourceSystemForm;
-import de.unistuttgart.stayinsync.core.configuration.rest.dtos.CreateSourceSystemJsonDTO;
-import de.unistuttgart.stayinsync.core.configuration.rest.dtos.DiscoveredEndpoint;
-import de.unistuttgart.stayinsync.core.configuration.rest.dtos.SourceSystemDto;
-import de.unistuttgart.stayinsync.core.configuration.rest.dtos.SourceSystemEndpointDto;
-import de.unistuttgart.stayinsync.core.configuration.rest.dtos.SourceSystemType;
+import de.unistuttgart.stayinsync.core.configuration.exception.CoreManagementException;
+import de.unistuttgart.stayinsync.core.configuration.mapping.SourceSystemEndpointFullUpdateMapper;
+import de.unistuttgart.stayinsync.core.configuration.mapping.SourceSystemFullUpdateMapper;
+import de.unistuttgart.stayinsync.core.configuration.rest.dtos.CreateSourceSystemDTO;
+import de.unistuttgart.stayinsync.core.configuration.rest.dtos.SourceSystemDTO;
 import de.unistuttgart.stayinsync.core.configuration.service.SourceSystemEndpointService;
 import de.unistuttgart.stayinsync.core.configuration.service.SourceSystemService;
 import jakarta.inject.Inject;
@@ -47,8 +43,22 @@ import jakarta.ws.rs.core.Context;
 import jakarta.ws.rs.core.HttpHeaders;
 import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.core.UriInfo;
+import org.eclipse.microprofile.openapi.annotations.Operation;
+import org.eclipse.microprofile.openapi.annotations.enums.SchemaType;
+import org.eclipse.microprofile.openapi.annotations.headers.Header;
+import org.eclipse.microprofile.openapi.annotations.media.Content;
+import org.eclipse.microprofile.openapi.annotations.media.ExampleObject;
+import org.eclipse.microprofile.openapi.annotations.media.Schema;
+import org.eclipse.microprofile.openapi.annotations.parameters.Parameter;
+import org.eclipse.microprofile.openapi.annotations.parameters.RequestBody;
+import org.eclipse.microprofile.openapi.annotations.responses.APIResponse;
 
-@Path("/api/source-systems")
+import java.net.URI;
+import java.util.List;
+
+import static jakarta.ws.rs.core.MediaType.APPLICATION_JSON;
+
+@Path("api/config/source-system")
 @Produces(APPLICATION_JSON)
 @Consumes(APPLICATION_JSON)
 /**
@@ -57,155 +67,70 @@ import jakarta.ws.rs.core.UriInfo;
  */
 public class SourceSystemResource {
 
-    @Inject SourceSystemService ssService;
-    @Inject SourceSystemEndpointService endpointService;
-    @Inject SourceSystemEndpointMapper endpointMapper;
-    @Inject SourceSystemMapper sourceSystemMapper;
+    @Inject
+    SourceSystemService sourceSystemService;
+
+    @Inject
+    SourceSystemFullUpdateMapper sourceSystemFullUpdateMapper;
+
+    @Inject
+    SourceSystemEndpointService sourceSystemEndpointService;
+
+    @Inject
+    SourceSystemEndpointFullUpdateMapper endpointMapper;
 
     @GET
     @Operation(summary = "Returns all source systems")
-    @APIResponse(responseCode = "200", description = "List of all source systems",
-      content = @Content(mediaType = APPLICATION_JSON,
-                         schema = @Schema(type = SchemaType.ARRAY, implementation = SourceSystemDto.class)))
-    /**
-     * Retrieves all source systems.
-     *
-     * @return a list of SourceSystemDto representing all configured systems
-     */
-    public List<SourceSystemDto> getAllSs() {
-        return ssService.findAllSourceSystems().stream()
-                        .map(sourceSystemMapper::toDto)
-                        .collect(Collectors.toList());
+    @APIResponse(responseCode = "200", description = "List of all source systems", content = @Content(mediaType = APPLICATION_JSON, schema = @Schema(type = SchemaType.ARRAY, implementation = SourceSystem.class)))
+    public List<SourceSystemDTO> getAllSs() {
+        return sourceSystemFullUpdateMapper.mapToDTOList(sourceSystemService.findAllSourceSystems());
     }
 
     @GET
     @Path("/{id}")
     @Operation(summary = "Returns a source system by its ID")
-    @APIResponse(responseCode = "200", description = "The found source system",
-      content = @Content(mediaType = APPLICATION_JSON, schema = @Schema(implementation = SourceSystemDto.class)))
+    @APIResponse(responseCode = "200", description = "The found source system", content = @Content(mediaType = APPLICATION_JSON, schema = @Schema(implementation = SourceSystemDTO.class)))
     @APIResponse(responseCode = "404", description = "Source system not found")
-    /**
-     * Retrieves a single source system by its ID.
-     *
-     * @param id the ID of the source system
-     * @return HTTP 200 with the system DTO, or 404 if not found
-     */
-    public Response getSsById(@PathParam("id") Long id) {
-        var entity = ssService.findSourceSystemById(id)
-            .orElseThrow(() -> new CoreManagementWebException(
-                Response.Status.NOT_FOUND,
-                "Source system not found",
-                "No source system found with id %d", id));
-        return Response.ok(sourceSystemMapper.toDto(entity)).build();
-    }
-
-    // JSON-only create
-    @POST
-    @Produces(APPLICATION_JSON)
-    @Consumes(APPLICATION_JSON)
-    @Operation(summary = "Creates a new source system (JSON only)")
-    @APIResponse(responseCode = "201", description = "Source system created",
-      headers = @Header(name = HttpHeaders.LOCATION, schema = @Schema(implementation = URI.class)))
-    /**
-     * Creates a new source system using JSON payload.
-     * Handles optional OpenAPI spec in the request body or via URL.
-     *
-     * @param createDto the DTO containing new system data
-     * @param uriInfo context for generating Location header
-     * @return HTTP 201 with created system DTO and Location header
-     */
-    public Response createJson(
-        @Valid @NotNull CreateSourceSystemJsonDTO createDto,
-        @Context UriInfo uriInfo
-    ) {
-        // 1) REST-DTO → Entity
-        var entity = sourceSystemMapper.toEntity(createDto);
-        ssService.createSourceSystem(entity);
-
-        // 2) Optional: OpenAPI-Spec
-        if (entity.getType() == SourceSystemType.REST_OPENAPI) {
-            if (createDto.openApiSpec() != null && !createDto.openApiSpec().isBlank()) {
-                ssService.updateOpenApiSpec(entity.id, createDto.openApiSpec());
-            } else if (createDto.openApiSpecUrl() != null && !createDto.openApiSpecUrl().isBlank()) {
-                ssService.updateOpenApiSpecUrl(entity.id, createDto.openApiSpecUrl());
-            }
-        }
-
-        // 3) Entity → REST-DTO + Location
-        var result = sourceSystemMapper.toDto(entity);
-        URI location = uriInfo.getAbsolutePathBuilder()
-                              .path(String.valueOf(result.id()))
-                              .build();
-        return Response.created(location).entity(result).type(MediaType.APPLICATION_JSON).build();
+    public Response getSsById(@Parameter(name = "id", required = true) @PathParam("id") Long id) {
+        SourceSystem found = sourceSystemService.findSourceSystemById(id)
+                .orElseThrow(
+                        () -> new CoreManagementException(
+                                Response.Status.NOT_FOUND,
+                                "Source system not found",
+                                "No source system found with id %d", id));
+        Log.debugf("Found source system: %s", found);
+        return Response.ok(sourceSystemFullUpdateMapper.mapToDTO(found)).build();
     }
     // Multipart create
     @POST
-    @Consumes(MediaType.MULTIPART_FORM_DATA)
-    @Transactional
-    @Operation(summary = "Creates a new source system (multipart/form-data + optional OpenAPI)")
-    @APIResponse(responseCode = "201", description = "Source system created",
-        headers = @Header(name = HttpHeaders.LOCATION, schema = @Schema(implementation = URI.class)))
-    /**
-     * Creates a new source system using multipart/form-data.
-     * Supports file upload or URL for OpenAPI spec.
-     *
-     * @param form the form data including file or URL
-     * @param uriInfo context for generating Location header
-     * @return HTTP 201 with created system DTO and Location header
-     */
-    public Response createMultipart(
-        @MultipartForm CreateSourceSystemForm form,
-        @Context UriInfo uriInfo
-    ) throws IOException {
-        // 1) Form → Entity
-        SourceSystem entity = sourceSystemMapper.toEntity(form);
-        ssService.createSourceSystem(entity);
-
-        // 2) OpenAPI-Spec nachreichen, falls gewünscht
-        if (SourceSystemType.REST_OPENAPI.equals(form.type)) {
-            if (form.openApiSpecUrl != null && !form.openApiSpecUrl.isBlank()) {
-                ssService.updateOpenApiSpecUrl(entity.id, form.openApiSpecUrl);
-            } else if (form.file != null) {
-                String spec = new String(form.uploadedFileBytes(), StandardCharsets.UTF_8);
-                ssService.updateOpenApiSpec(entity.id, spec);
-            }
-        }
-
-        // 3) Entity → REST-DTO
-        SourceSystemDto resultDto = sourceSystemMapper.toDto(entity);
-        // 4) Location-Header
-        URI location = uriInfo.getAbsolutePathBuilder()
-                              .path(resultDto.id().toString())
-                              .build();
-        return Response.created(location)
-                       .entity(resultDto)
-                       .build();
+    @Operation(summary = "Creates a new source system")
+    @APIResponse(responseCode = "201", description = "The URI of the created source system", headers = @Header(name = HttpHeaders.LOCATION, schema = @Schema(implementation = URI.class)))
+    @APIResponse(responseCode = "400", description = "Invalid source system passed in")
+    public Response createSs(
+            @RequestBody(name = "source-system", required = true, content = @Content(mediaType = APPLICATION_JSON, schema = @Schema(implementation = CreateSourceSystemDTO.class), examples = @ExampleObject(name = "valid_source_system_create", value = Examples.VALID_SOURCE_SYSTEM_CREATE))) @Valid @NotNull CreateSourceSystemDTO sourceSystemDTO,
+            @Context UriInfo uriInfo) {
+        SourceSystem sourceSystem = sourceSystemService.createSourceSystem(sourceSystemDTO);
+        var builder = uriInfo.getAbsolutePathBuilder().path(Long.toString(sourceSystem.id));
+        Log.debugf("New source system created with URI %s", builder.build().toString());
+        return Response.created(builder.build()).build();
+        // TODO: Throw Exception in case of invalid source system: we need to know how
+        // the source system looks like first(final model)
     }
-
-
 
     @PUT
     @Path("/{id}")
     @Operation(summary = "Fully updates an existing source system")
-    @APIResponse(responseCode = "200", description = "The updated source system",
-      content = @Content(mediaType = APPLICATION_JSON, schema = @Schema(implementation = SourceSystemDto.class)))
+    @APIResponse(responseCode = "200", description = "The updated source system", content = @Content(mediaType = APPLICATION_JSON, schema = @Schema(implementation = CreateSourceSystemDTO.class), examples = @ExampleObject(name = "valid_source_system_create", value = Examples.VALID_SOURCE_SYSTEM_CREATE)))
     @APIResponse(responseCode = "404", description = "Source system not found")
-    /**
-     * Fully updates an existing source system by ID.
-     *
-     * @param id the ID of the system to update
-     * @param dto the DTO with updated system data
-     * @return HTTP 200 with the updated system DTO, or 404 if not found
-     */
-    public Response updateSs(@PathParam("id") Long id, @Valid @NotNull SourceSystemDto dto) {
-        var entity = sourceSystemMapper.toEntity(dto);
-        entity.id = id;
-        var updated = ssService.updateSourceSystem(entity)
-            .orElseThrow(() -> new CoreManagementWebException(
-                Response.Status.NOT_FOUND,
-                "Source system not found",
-                "No source system found with id %d", id));
-        return Response.ok(sourceSystemMapper.toDto(updated)).build();
+    public Response updateSs(@Parameter(name = "id", required = true) @PathParam("id") Long id,
+                             @Valid @NotNull CreateSourceSystemDTO sourceSystemDTO) {
+//        sourceSystemDTO.id() = id;
+        return sourceSystemService.updateSourceSystem(sourceSystemDTO)
+                .map(updated -> Response.ok(sourceSystemFullUpdateMapper.mapToDTO(updated)).build())
+                .orElseThrow(() -> new CoreManagementException(
+                        Response.Status.NOT_FOUND,
+                        "Source system not found",
+                        "No source system found with id %d", id));
     }
 
     @DELETE
@@ -213,18 +138,12 @@ public class SourceSystemResource {
     @Operation(summary = "Deletes a source system by its ID")
     @APIResponse(responseCode = "204", description = "Source system deleted")
     @APIResponse(responseCode = "404", description = "Source system not found")
-    /**
-     * Deletes a source system by its ID.
-     *
-     * @param id the ID of the system to delete
-     * @return HTTP 204 if deleted, or 404 if the system was not found
-     */
-    public Response deleteSs(@PathParam("id") Long id) {
-        if (!ssService.deleteSourceSystemById(id)) {
-            throw new CoreManagementWebException(
-                Response.Status.NOT_FOUND,
-                "Source system not found",
-                "No source system found with id %d", id);
+    public Response deleteSs(@Parameter(name = "id", required = true) @PathParam("id") Long id) {
+        if (!sourceSystemService.deleteSourceSystemById(id)) {
+            throw new CoreManagementException(
+                    Response.Status.NOT_FOUND,
+                    "Source system not found",
+                    "No source system found with id %d", id);
         }
         return Response.noContent().build();
     }

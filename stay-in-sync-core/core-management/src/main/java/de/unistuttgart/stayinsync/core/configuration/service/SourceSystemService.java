@@ -2,6 +2,7 @@ package de.unistuttgart.stayinsync.core.configuration.service;
 
 import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.SourceSystem;
 import de.unistuttgart.stayinsync.core.configuration.mapping.SourceSystemFullUpdateMapper;
+import de.unistuttgart.stayinsync.core.configuration.rest.dtos.CreateSourceSystemDTO;
 import io.quarkus.logging.Log;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
@@ -55,13 +56,15 @@ public class SourceSystemService {
      * @param ss the SourceSystem entity to create
      */
     @Transactional
-    public void createSourceSystem(SourceSystem ss) {
+    public SourceSystem createSourceSystem(CreateSourceSystemDTO sourceSystemDTO) {
         /*
          * TODO: Validation logic, as soon as we know how the final Model of a
          * SourceSystem looks like.
          */
-        Log.debugf("Creating new source system with name: %s", ss.name);
-        ss.persist(); // Panache
+        Log.debugf("Creating new source system with name: %s", sourceSystemDTO.name());
+        SourceSystem sourceSystem = mapper.mapToEntity(sourceSystemDTO);
+        sourceSystem.persist();
+        return sourceSystem;
     }
 
     /**
@@ -71,11 +74,11 @@ public class SourceSystemService {
      * @return Optional containing the updated entity, or empty if not found
      */
     @Transactional
-    public Optional<SourceSystem> updateSourceSystem(SourceSystem ss) {
-        Log.debugf("Updating source system with ID: %d", ss.id);
-        SourceSystem existingSs = SourceSystem.findById(ss.id);
+    public Optional<SourceSystem> updateSourceSystem(CreateSourceSystemDTO sourceSystemDTO) {
+        Log.debugf("Updating source system with ID: %d", sourceSystemDTO.id());
+        SourceSystem existingSs = SourceSystem.findById(sourceSystemDTO.id());
         if (existingSs != null) {
-            mapper.mapFullUpdate(ss, existingSs);
+            mapper.mapFullUpdate(mapper.mapToEntity(sourceSystemDTO), existingSs);
         }
         return Optional.ofNullable(existingSs);
     }
@@ -91,7 +94,6 @@ public class SourceSystemService {
         Log.debugf("Deleting source system with ID: %d", id);
         boolean deleted = SourceSystem.deleteById(id);
         return deleted;
-
     }
 
     /**
