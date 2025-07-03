@@ -1,36 +1,121 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
+import { lastValueFrom, map } from 'rxjs';
 import { Asset } from '../models/asset.model';
-import { Observable, of } from 'rxjs';
 
 @Injectable({
   providedIn: 'root'
 })
 export class AssetService {
-
-
-  private mockAssets: Asset[] = [
-    //{ id: 'asset-001', name: 'test', url: 'https://test.com/v1/images', type: 'HttpData', description: 'This is a description test', contentType: 'application/json' },
-
-  ];
+  private managementApiUrl = '/api/management/v2';
 
   constructor(private http: HttpClient) {}
 
   /**
-   * Fetches the list of assets.
-   * @returns A Promise that resolves with an array of Assets.
+   * Fetches all assets and transforms them from ODRL to the simple Asset model.
    */
   getAssets(): Promise<Asset[]> {
-    // For now, we return the mock data wrapped in a resolved Promise.
-    return Promise.resolve([...this.mockAssets]); // Return a copy
+    const url = `${this.managementApiUrl}/assets`;
+
+    // Example of an API call returning ODRL data.
+    const mockOdrlApiResponse = [
+      {
+        "@id": "asset-newsum-01",
+        "properties": {
+          "asset:prop:name": "Aggregierte Summe (Live)",
+          "asset:prop:description": "Summe der Zahlen aus System A, B und C.",
+          "asset:prop:contenttype": "application/json"
+        },
+        "dataAddress": {
+          "type": "HttpData",
+          "baseUrl": "http://mein-interner-datenservice:8080/current-sum"
+        }
+      },
+      {
+        "@id": "asset-weather-data-02",
+        "properties": {
+          "asset:prop:name": "Weather Data Feed",
+          "asset:prop:description": "Live weather data for major cities.",
+          "asset:prop:contenttype": "application/xml"
+        },
+        "dataAddress": {
+          "type": "HttpData",
+          "baseUrl": "http://weather-service/api/v1/data"
+        }
+      }
+    ];
+
+    // transformOdrlToAsset function will map and insert the info to our simple model.
+    const assets = mockOdrlApiResponse.map(this.transformOdrlToAsset);
+    return Promise.resolve(assets);
+
+    /*
+    // REAL IMPLEMENTATION FOR BACKEND
+    return lastValueFrom(
+      this.http.get<any[]>(url).pipe(
+        map(odrlAssets => odrlAssets.map(this.transformOdrlToAsset))
+      )
+    );
+    */
   }
 
   /**
-   * An alternative way to fetch assets using Observables.
-   * @returns An Observable that emits an array of Assets.
+   * Creates a new asset by building the ODRL structure from the ui.
+   * @param asset The simple asset object from the UI form.
    */
-  getAssetsObservable(): Observable<Asset[]> {
-    // return this.http.get<Asset[]>('/api/assets');
-    return of([...this.mockAssets]);
+  createAsset(asset: Asset): Promise<any> {
+    const odrlAssetPayload = this.transformAssetToOdrl(asset);
+    return this.uploadAsset(odrlAssetPayload);
+  }
+
+  /**
+   * Uploads a pre-formatted ODRL asset JSON file.
+   * This will be used by both manual creation and file upload.
+   * @param odrlAsset The complete ODRL asset object.
+   */
+  uploadAsset(odrlAsset: any): Promise<any> {
+    const url = `${this.managementApiUrl}/assets`;
+    console.log("Posting to API:", JSON.stringify(odrlAsset, null, 2));
+    // return lastValueFrom(this.http.post(url, odrlAsset));
+    return Promise.resolve({ message: 'Asset created successfully!' }); // Mocking success
+  }
+
+  //Helpers
+
+  /**
+   * Maps a complex ODRL asset object to our simple flat Asset model for UI display.
+   */
+  private transformOdrlToAsset(odrlAsset: any): Asset {
+    return {
+      id: odrlAsset['@id'] || '',
+      name: odrlAsset.properties?.['asset:prop:name'] || '',
+      description: odrlAsset.properties?.['asset:prop:description'] || '',
+      contentType: odrlAsset.properties?.['asset:prop:contenttype'] || '',
+      type: odrlAsset.dataAddress?.type || '',
+      url: odrlAsset.dataAddress?.baseUrl || ''
+    };
+  }
+
+  /**
+   * Builds the required ODRL JSON structure from our UI.
+   */
+  private transformAssetToOdrl(asset: Asset): any {
+    // Generate a unique ID if one isn't provided
+    const assetId = asset.id || 'asset-' + Math.random().toString(36).substring(2, 11);
+
+    return {
+      '@context': { "edc": "https://w3id.org/edc/v0.0.1/ns/" },
+      '@id': assetId,
+      'properties': {
+        'asset:prop:name': asset.name,
+        'asset:prop:description': asset.description,
+        'asset:prop:contenttype': asset.contentType
+      },
+      'dataAddress': {
+        'type': asset.type,
+        'baseUrl': asset.url,
+        'proxyPath': 'true'
+      }
+    };
   }
 }

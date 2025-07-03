@@ -15,6 +15,7 @@ import { IconFieldModule } from 'primeng/iconfield';
 import { InputIconModule } from 'primeng/inputicon';
 import { RippleModule } from 'primeng/ripple';
 import { ConfirmationService } from 'primeng/api';
+import { DividerModule } from 'primeng/divider';
 
 // Application-specific imports
 import { Asset } from './models/asset.model';
@@ -39,6 +40,7 @@ import { PolicyService } from './services/policy.service';
     IconFieldModule,
     InputIconModule,
     RippleModule,
+    DividerModule,
   ],
   templateUrl: './edc-assets-and-policies.component.html',
   styleUrls: ['./edc-assets-and-policies.component.css'],
@@ -76,6 +78,7 @@ export class EdcAssetsAndPoliciesComponent implements OnInit {
   ) {}
 
   ngOnInit(): void {
+    this.loadAssets();
     this.assetLoading = true;
     this.policyLoading = true;
 
@@ -115,13 +118,63 @@ export class EdcAssetsAndPoliciesComponent implements OnInit {
     this.displayNewAssetDialog = false;
   }
 
-  saveNewAsset() {
-    if (this.newAsset.name && this.newAsset.url) {
-      this.newAsset.id = 'asset-' + Math.random().toString(36).substring(2, 9);
-      this.assets = [...this.assets, this.newAsset];
+  async saveNewAsset() {
+    if (!this.newAsset.name || !this.newAsset.url) {
+      console.error('Asset name and URL are required.');
+      return;
+    }
+
+    try {
+      await this.assetService.createAsset(this.newAsset);
+      // Great success! Refresh the list and close the dialog
+      this.loadAssets(); // Assuming you have a method to reload assets
       this.hideNewAssetDialog();
+    } catch (error) {
+      console.error('Failed to create asset:', error);
     }
   }
+
+  /**
+   * Handles the selection of a JSON file for upload.
+   */
+  async onFileSelect(event: Event) {
+    const element = event.currentTarget as HTMLInputElement;
+    const fileList: FileList | null = element.files;
+
+    if (fileList && fileList.length > 0) {
+      const file = fileList[0];
+      const fileContent = await file.text();
+
+      try {
+        const assetJson = JSON.parse(fileContent);
+        if (!assetJson['@id'] || !assetJson.properties || !assetJson.dataAddress) {
+          throw new Error('Invalid asset JSON format.');
+        }
+
+        await this.assetService.uploadAsset(assetJson);
+
+        // Refresh the list and close the dialog
+        this.loadAssets();
+        this.hideNewAssetDialog();
+
+      } catch (error) {
+        console.error('Failed to upload and create asset from file:', error);
+      }
+
+      // Reset the file input
+      element.value = '';
+    }
+  }
+
+
+  private loadAssets(): void {
+    this.assetLoading = true;
+    this.assetService.getAssets()
+      .then(data => this.assets = data)
+      .catch(error => console.error('Failed to load assets:', error))
+      .finally(() => this.assetLoading = false);
+  }
+
 
   editAsset(asset: Asset) {
     this.assetToEdit = { ...asset };
