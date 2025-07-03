@@ -28,6 +28,7 @@ public interface SyncJobFullUpdateMapper {
 
     List<SyncJobDTO> mapToDTOList(List<SyncJob> input);
 
+    @Mapping(target = "id", ignore = true)
     SyncJob mapToEntity(SyncJobDTO input);
 
     List<SyncJob> mapToEntityList(List<SyncJobDTO> input);

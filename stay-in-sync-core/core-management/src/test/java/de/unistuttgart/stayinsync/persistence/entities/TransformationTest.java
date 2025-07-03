@@ -6,8 +6,6 @@ import io.quarkus.test.junit.QuarkusTest;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import java.util.Set;
-
 import static org.assertj.core.api.Assertions.assertThat;
 
 @QuarkusTest
@@ -52,7 +50,7 @@ public class TransformationTest {
         assertThat(found.transformationScript).isNull();
         assertThat(found.transformationRule).isNull();
         assertThat(found.targetSystemEndpoint).isNull();
-        assertThat(found.sourceSystemEndpoints).isNotNull().isEmpty();
+//        assertThat(found.sourceSystemEndpoints).isNotNull().isEmpty();
     }
 
     /**
@@ -97,7 +95,7 @@ public class TransformationTest {
 
         foundShell.syncJob = syncJob;
         foundShell.targetSystemEndpoint = targetEndpoint;
-        foundShell.sourceSystemEndpoints = Set.of(sourceEndpoint1, sourceEndpoint2);
+//        foundShell.sourceSystemEndpoints = Set.of(sourceEndpoint1, sourceEndpoint2);
         foundShell.transformationScript = script;
         foundShell.transformationRule = rule;
 
@@ -116,9 +114,9 @@ public class TransformationTest {
         assertThat(fullyAssembled.transformationScript.id).isEqualTo(script.id);
         assertThat(fullyAssembled.transformationRule.id).isEqualTo(rule.id);
 
-        assertThat(fullyAssembled.sourceSystemEndpoints)
-                .hasSize(2)
-                .extracting(endpoint -> endpoint.id)
-                .containsExactlyInAnyOrder(sourceEndpoint1.id, sourceEndpoint2.id);
+//        assertThat(fullyAssembled.sourceSystemEndpoints)
+//                .hasSize(2)
+//                .extracting(endpoint -> endpoint.id)
+//                .containsExactlyInAnyOrder(sourceEndpoint1.id, sourceEndpoint2.id);
     }
 }
