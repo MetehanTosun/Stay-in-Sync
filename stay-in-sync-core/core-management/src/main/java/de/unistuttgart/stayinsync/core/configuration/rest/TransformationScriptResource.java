@@ -1,6 +1,6 @@
 package de.unistuttgart.stayinsync.core.configuration.rest;
 
-import de.unistuttgart.stayinsync.core.configuration.exception.CoreManagementWebException;
+import de.unistuttgart.stayinsync.core.configuration.exception.CoreManagementException;
 import de.unistuttgart.stayinsync.core.configuration.mapping.TransformationScriptMapper;
 import de.unistuttgart.stayinsync.core.configuration.rest.dtos.TransformationScriptDTO;
 import de.unistuttgart.stayinsync.core.configuration.service.TransformationScriptService;
@@ -32,7 +32,7 @@ public class TransformationScriptResource {
                     Log.debugf("Found transformation script: %s", script);
                     return Response.ok(mapper.mapToDTO(script)).build();
                 })
-                .orElseThrow(() -> new CoreManagementWebException(Response.Status.NOT_FOUND, "Unable to find script", "No transformation script found using id %d", id));
+                .orElseThrow(() -> new CoreManagementException(Response.Status.NOT_FOUND, "Unable to find script", "No transformation script found using id %d", id));
     }
 
     @PUT
@@ -42,7 +42,7 @@ public class TransformationScriptResource {
     public Response updateScript(@Parameter(name = "id", required = true) @PathParam("id") Long id,
                                  TransformationScriptDTO dto) {
         if (!id.equals(dto.id())) {
-            throw new CoreManagementWebException(Response.Status.BAD_REQUEST, "ID mismatch", "The ID in the path does not match the ID in the request body.");
+            throw new CoreManagementException(Response.Status.BAD_REQUEST, "ID mismatch", "The ID in the path does not match the ID in the request body.");
         }
 
         return service.update(id, mapper.mapToEntity(dto))
@@ -50,6 +50,6 @@ public class TransformationScriptResource {
                     Log.debugf("Script with id %d was updated.", id);
                     return Response.ok(mapper.mapToDTO(updatedScript)).build();
                 })
-                .orElseThrow(() -> new CoreManagementWebException(Response.Status.NOT_FOUND, "Unable to find script", "No transformation script found for update with id %d", id));
+                .orElseThrow(() -> new CoreManagementException(Response.Status.NOT_FOUND, "Unable to find script", "No transformation script found for update with id %d", id));
     }
 }

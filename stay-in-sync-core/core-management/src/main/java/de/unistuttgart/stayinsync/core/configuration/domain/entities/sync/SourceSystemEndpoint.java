@@ -1,8 +1,7 @@
 package de.unistuttgart.stayinsync.core.configuration.domain.entities.sync;
 
-import io.quarkus.hibernate.orm.panache.PanacheEntity;
+import jakarta.persistence.DiscriminatorValue;
 import jakarta.persistence.Entity;
-import jakarta.persistence.ManyToMany;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
 
@@ -10,42 +9,23 @@ import java.util.List;
 import java.util.Set;
 
 @Entity
-public class SourceSystemEndpoint extends PanacheEntity {
-
-    public String endpointPath;
-
-    public String httpRequestType;
-
-    public boolean pollingActive;
-
-    @OneToMany(mappedBy = "sourceSystemEndpoint")
-    public Set<SourceSystemApiQueryParam> apiQueryParams;
-
-    @OneToMany(mappedBy = "sourceSystemEndpoint")
-    public Set<SourceSystemApiRequestHeader> apiRequestHeaders;
-
-    @ManyToMany(mappedBy = "sourceSystemEndpoints")
-    public Set<Transformation> transformations;
-
-    public String jsonSchema;
-
-    public int pollingRateInMs;
+@DiscriminatorValue("SOURCE_SYSTEM")
+public class SourceSystemEndpoint extends SyncSystemEndpoint {
 
     @ManyToOne
     public SourceSystem sourceSystem;
 
     @OneToMany(mappedBy = "sourceSystemEndpoint")
+    public Set<SourceSystemApiRequestConfiguration> apiRequestConfigurations;
+
+    @OneToMany(mappedBy = "sourceSystemEndpoint")
     public Set<SourceSystemVariable> sourceSystemVariable;
 
-    public static List<SourceSystemEndpoint> listAllWherePollingIsActiveAndUnused() {
-        String query = "SELECT sse FROM SourceSystemEndpoint sse " +
-                "WHERE sse.pollingActive = true " +
-                "AND NOT EXISTS (" +
-                "    SELECT 1 FROM Transformation t " +
-                "    WHERE sse MEMBER OF t.sourceSystemEndpoints " +
-                "    AND t.syncJob.deployed = true" +
-                ")";
+    public static List<SourceSystemEndpoint> findBySourceSystemId(Long sourceSystemId) {
+        return find("sourceSystem.id", sourceSystemId).list();
+    }
 
-        return list(query);
+    public static List<SourceSystemApiRequestConfiguration> findByEndpointId(Long endpointId) {
+        return find("sourceSystemEndpoint.id", endpointId).list();
     }
 }

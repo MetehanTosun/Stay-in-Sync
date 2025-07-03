@@ -46,9 +46,9 @@ public class SyncJobResourceTest {
     @Test
     void shouldFullyUpdateAnItem() {
         var syncJob = createFullyUpdatedSyncJob();
-        ArgumentMatcher<SyncJob> syncJobArgumentMatcher = v ->
-                (v.id == DEFAULT_ID) &&
-                        v.name.equals(UPDATED_NAME);
+        ArgumentMatcher<SyncJobDTO> syncJobArgumentMatcher = v ->
+                (v.id() == DEFAULT_ID) &&
+                        v.name().equals(UPDATED_NAME);
 
         when(this.syncJobService.replaceSyncJob(argThat(syncJobArgumentMatcher)))
                 .thenReturn(Optional.of(mapper.mapToEntity(syncJob)));
@@ -73,7 +73,6 @@ public class SyncJobResourceTest {
                 .thenReturn(List.of(mapper.mapToEntity(createDefaultSyncJob())));
 
         var defaultSyncJob = new SyncJob();
-        defaultSyncJob.id = DEFAULT_ID;
         defaultSyncJob.name = DEFAULT_NAME;
 
         var syncJobs = given()
