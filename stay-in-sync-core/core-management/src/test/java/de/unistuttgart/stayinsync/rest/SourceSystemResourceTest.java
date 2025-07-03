@@ -1,34 +1,12 @@
 package de.unistuttgart.stayinsync.rest;
 
-import static io.restassured.RestAssured.given;
-import static org.hamcrest.CoreMatchers.*;
-import static org.hamcrest.Matchers.hasSize;
-import static org.mockito.Mockito.*;
-
-import java.net.URI;
-import java.util.List;
-import java.util.Optional;
-
-
-
-import org.eclipse.microprofile.config.inject.ConfigProperty;
-import org.junit.jupiter.api.BeforeEach;
+import io.quarkus.test.junit.QuarkusTest;
+import io.restassured.http.ContentType;
 import org.junit.jupiter.api.Test;
 
-import com.rabbitmq.client.RpcClient.Response;
-
-import jakarta.ws.rs.core.MediaType;
-
-import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.SourceSystem;
-import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.SourceSystemEndpoint;
-import de.unistuttgart.stayinsync.core.configuration.exception.CoreManagementWebException;
-import de.unistuttgart.stayinsync.core.configuration.mapping.SourceSystemEndpointMapper;
-import de.unistuttgart.stayinsync.core.configuration.mapping.SourceSystemMapper;
-import de.unistuttgart.stayinsync.core.configuration.rest.dtos.*;
-import de.unistuttgart.stayinsync.core.configuration.service.SourceSystemEndpointService;
-import de.unistuttgart.stayinsync.core.configuration.service.SourceSystemService;
-import io.quarkus.test.junit.QuarkusTest;
-import io.quarkus.test.junit.mockito.InjectMock;
+import static io.restassured.RestAssured.given;
+import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.is;
 
 @QuarkusTest
 public class SourceSystemResourceTest {
