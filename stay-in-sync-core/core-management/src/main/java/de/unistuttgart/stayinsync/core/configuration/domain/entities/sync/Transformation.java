@@ -25,11 +25,11 @@ public class Transformation extends PanacheEntity {
 
     @ManyToMany(cascade = CascadeType.ALL)
     @JoinTable(
-            name = "transformation_sourceEndpoint",
+            name = "transformation_sourceApiRequestConfiguration",
             joinColumns = @JoinColumn(name = "transformation_id"),
-            inverseJoinColumns = @JoinColumn(name = "source_system_endpoint_id")
+            inverseJoinColumns = @JoinColumn(name = "source_system_api_request_configuration_id")
     )
-    public Set<SourceSystemEndpoint> sourceSystemEndpoints = new HashSet<>();
+    public Set<SourceSystemApiRequestConfiguration> sourceSystemApiRequestConfigrations = new HashSet<>();
 
 
     @ManyToMany

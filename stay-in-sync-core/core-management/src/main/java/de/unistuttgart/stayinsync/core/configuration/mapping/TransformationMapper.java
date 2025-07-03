@@ -23,8 +23,8 @@ public interface TransformationMapper {
     @Mapping(source = "syncJob.id", target = "syncJobId")
     @Mapping(source = "targetSystemEndpoint.id", target = "targetSystemEndpointId")
     @Mapping(source = "transformationRule.id", target = "transformationRuleId")
-    @Mapping(source = "transformationScript", target = "script") // Delegates to TransformationScriptMapper
-    @Mapping(source = "sourceSystemEndpoints", target = "sourceSystemEndpointIds", qualifiedByName = "mapEndpointsToIds")
+    @Mapping(source = "transformationScript", target = "script")
+    // Delegates to TransformationScriptMapper
     TransformationDetailsDTO mapToDetailsDTO(Transformation transformation);
 
     /**
@@ -37,7 +37,6 @@ public interface TransformationMapper {
     @Mapping(target = "targetSystemEndpoint", ignore = true)
     @Mapping(target = "transformationRule", ignore = true)
     @Mapping(target = "transformationScript", ignore = true)
-    @Mapping(target = "sourceSystemEndpoints", ignore = true)
     @Mapping(target = "sourceSystemVariables", ignore = true)
     void updateFromShellDTO(TransformationShellDTO dto, @MappingTarget Transformation transformation);
 

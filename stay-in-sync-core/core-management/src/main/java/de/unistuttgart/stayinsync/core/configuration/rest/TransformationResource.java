@@ -1,6 +1,6 @@
 package de.unistuttgart.stayinsync.core.configuration.rest;
 
-import de.unistuttgart.stayinsync.core.configuration.exception.CoreManagementWebException;
+import de.unistuttgart.stayinsync.core.configuration.exception.CoreManagementException;
 import de.unistuttgart.stayinsync.core.configuration.mapping.TransformationMapper;
 import de.unistuttgart.stayinsync.core.configuration.rest.dtos.TransformationAssemblyDTO;
 import de.unistuttgart.stayinsync.core.configuration.rest.dtos.TransformationDetailsDTO;
@@ -52,7 +52,7 @@ public class TransformationResource {
             description = "Updates an existing transformation shell by linking it to a script, rule, and endpoints using their IDs.")
     public Response assembleTransformation(@Parameter(name = "id", required = true) @PathParam("id") Long id, TransformationAssemblyDTO dto) {
         if (!id.equals(dto.id())) {
-            throw new CoreManagementWebException(Response.Status.BAD_REQUEST, "ID Mismatch",
+            throw new CoreManagementException(Response.Status.BAD_REQUEST, "ID Mismatch",
                     "The ID in the path (%d) does not match the ID in the request body (%d).", id, dto.id());
         }
 
@@ -70,7 +70,7 @@ public class TransformationResource {
                     Log.debugf("Found transformation: %s", transformation);
                     return Response.ok(mapper.mapToDetailsDTO(transformation)).build();
                 })
-                .orElseThrow(() -> new CoreManagementWebException(Response.Status.NOT_FOUND, "Unable to find transformation", "No transformation found using id %d", id));
+                .orElseThrow(() -> new CoreManagementException(Response.Status.NOT_FOUND, "Unable to find transformation", "No transformation found using id %d", id));
     }
 
     @GET
@@ -94,7 +94,7 @@ public class TransformationResource {
             return Response.noContent().build();
         } else {
             Log.warnf("Attempted to delete non-existent transformation with id %d", id);
-            throw new CoreManagementWebException(Response.Status.NOT_FOUND,
+            throw new CoreManagementException(Response.Status.NOT_FOUND,
                     "Transformation not found",
                     "Transformation with id %d could not be found for deletion.", id);
         }

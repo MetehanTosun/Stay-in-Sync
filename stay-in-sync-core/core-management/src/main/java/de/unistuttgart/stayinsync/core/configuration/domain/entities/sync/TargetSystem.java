@@ -12,4 +12,5 @@ public class TargetSystem extends SyncSystem {
 
     @OneToMany(mappedBy = "targetSystem")
     public Set<TargetSystemEndpoint> targetSystemEndpoints;
+
 }
