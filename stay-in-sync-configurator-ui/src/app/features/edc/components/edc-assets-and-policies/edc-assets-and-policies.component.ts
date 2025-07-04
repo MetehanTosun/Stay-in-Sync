@@ -147,15 +147,25 @@ export class EdcAssetsAndPoliciesComponent implements OnInit {
   }
 
   async saveNewAsset() {
-    if (!this.newAsset.name || !this.newAsset.url) {
+
+    if (
+      !this.newAsset.name ||
+      !this.newAsset.url ||
+      !this.newAsset.type ||
+      !this.newAsset.contentType
+    ) {
+
       this.messageService.add({
         severity: 'warn',
         summary: 'Validation Error',
-        detail: 'Asset Name and URL are required.',
+        detail: 'Name, URL, Type, and Content Type are required.',
+        life: 4000
       });
       return;
     }
+
     try {
+
       await this.assetService.createAsset(this.newAsset);
       this.messageService.add({
         severity: 'success',
@@ -175,7 +185,7 @@ export class EdcAssetsAndPoliciesComponent implements OnInit {
   }
 
   /**
-   * Handles multiple asset file uploads parallel.
+   * Handles asset file uploads with validation.
    */
   async onFileSelect(event: Event) {
     const element = event.currentTarget as HTMLInputElement;
@@ -196,9 +206,40 @@ export class EdcAssetsAndPoliciesComponent implements OnInit {
           const fileContent = await file.text();
           const assetJson = JSON.parse(fileContent);
 
-          // Validate the structure
-          if (!assetJson['@id'] || !assetJson.properties || !assetJson.dataAddress) {
-            throw new Error('Invalid format: Missing required EDC properties.');
+
+          if (!assetJson['@id']) {
+            throw new Error("Validation failed: The '@id' field is missing or empty.");
+          }
+          if (!assetJson['@context'] || !assetJson['@context'].edc) {
+            throw new Error("Validation failed: The '@context' with a non-empty 'edc' property is required.");
+          }
+          if (!assetJson.properties) {
+            throw new Error("Validation failed: The 'properties' object is missing.");
+          }
+          if (!assetJson.dataAddress) {
+            throw new Error("Validation failed: The 'dataAddress' object is missing.");
+          }
+
+          const props = assetJson.properties;
+          const dataAddr = assetJson.dataAddress;
+
+          // These fields must exist and not be empty
+          if (!props['asset:prop:name']) {
+            throw new Error("Validation failed: Missing 'asset:prop:name' in properties.");
+          }
+          if (!props['asset:prop:contenttype']) {
+            throw new Error("Validation failed: Missing 'asset:prop:contenttype' in properties.");
+          }
+          if (!dataAddr.baseUrl) {
+            throw new Error("Validation failed: Missing 'baseUrl' in dataAddress.");
+          }
+          if (!dataAddr.type) {
+            throw new Error("Validation failed: Missing 'type' in dataAddress.");
+          }
+
+          // description must exist, but can be empty
+          if (!('asset:prop:description' in props)) {
+            throw new Error("Validation failed: Missing 'asset:prop:description' in properties.");
           }
 
           await this.assetService.uploadAsset(assetJson);

@@ -45,7 +45,7 @@ export class AssetService {
       }
     ];
 
-    // transformOdrlToAsset function will map and insert the info to our simple model.
+    // transformOdrlToAsset function will map and insert the info to our model.
     const assets = mockOdrlApiResponse.map(this.transformOdrlToAsset);
     return Promise.resolve(assets);
 
@@ -83,7 +83,7 @@ export class AssetService {
   //Helpers
 
   /**
-   * Maps a complex ODRL asset object to our simple flat Asset model for UI display.
+   * Maps an ODRL to our Asset model for UI display.
    */
   private transformOdrlToAsset(odrlAsset: any): Asset {
     return {
@@ -100,7 +100,7 @@ export class AssetService {
    * Builds the required ODRL JSON structure from our UI.
    */
   private transformAssetToOdrl(asset: Asset): any {
-    // Generate a unique ID if one isn't provided
+    // Generate a unique ID if one isn't provided - TO CHANGE LATER
     const assetId = asset.id || 'asset-' + Math.random().toString(36).substring(2, 11);
 
     return {

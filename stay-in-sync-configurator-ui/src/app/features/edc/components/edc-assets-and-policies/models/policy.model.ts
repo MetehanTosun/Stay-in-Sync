@@ -1,16 +1,16 @@
 /**
- * Represents an Access Policy for the UI.
+ * Access Policy
  */
 export interface AccessPolicy {
   id: string;
   bpn: string;
   contractPolicies: ContractPolicy[];
-  action?: string;
-  operator?: string;
+  action: string;
+  operator: string;
 }
 
 /**
- * Represents a Contract Policy for the UI.
+ * Contract Policy
  */
 export interface ContractPolicy {
   id:string;
