@@ -52,12 +52,51 @@ export class PolicyService {
     },
   ];
 
+
+  private mockOdrlContractDefinitions: OdrlContractDefinition[] = [
+    {
+
+      '@context': { edc: 'https://w3id.org/edc/v0.0.1/ns/' },
+      '@id': 'contract-def-asset-newsum-01',
+      accessPolicyId: 'policy-BPNL000000000001',
+      contractPolicyId: 'policy-BPNL000000000001',
+      assetsSelector: [
+        {
+          operandLeft: 'https://w3id.org/edc/v0.0.1/ns/id',
+          operator: '=',
+          operandRight: 'asset-newsum-01',
+        },
+      ],
+    },
+    {
+
+      '@context': { edc: 'https://w3id.org/edc/v0.0.1/ns/' },
+      '@id': 'contract-def-asset-weather-data-02',
+      accessPolicyId: 'policy-BPNL000000000001', // Belongs to the first policy
+      contractPolicyId: 'policy-BPNL000000000001',
+      assetsSelector: [
+        {
+          operandLeft: 'https://w3id.org/edc/v0.0.1/ns/id',
+          operator: '=',
+          operandRight: 'asset-weather-data-02',
+        },
+      ],
+    },
+  ];
+
+
   constructor(private http: HttpClient) {}
 
   getAccessPolicies(): Promise<AccessPolicy[]> {
     const policies = this.mockOdrlPolicies.map(this.transformOdrlToAccessPolicy);
     return Promise.resolve(policies);
   }
+
+
+  getContractDefinitions(): Promise<OdrlContractDefinition[]> {
+    return Promise.resolve(this.mockOdrlContractDefinitions);
+  }
+
 
   createAccessPolicy(accessPolicy: AccessPolicy): Promise<any> {
     const odrlPayload = this.transformAccessPolicyToOdrl(accessPolicy);
@@ -78,31 +117,44 @@ export class PolicyService {
   }
 
 
-  /**
-   * Creates a new contract definition by posting an ODRL-formatted JSON object.
-   * @param odrlContractDef The complete ODRL contract definition object.
-   */
   createContractDefinition(odrlContractDef: OdrlContractDefinition): Promise<any> {
-    const url = `${this.managementApiUrl}/contractdefinitions`;
     console.log('Posting Contract Definition:', JSON.stringify(odrlContractDef, null, 2));
-
-    // For now, we just simulate a successful API call.
+    const index = this.mockOdrlContractDefinitions.findIndex(cd => cd['@id'] === odrlContractDef['@id']);
+    if (index !== -1) {
+      this.mockOdrlContractDefinitions[index] = odrlContractDef; // Update if exists
+    } else {
+      this.mockOdrlContractDefinitions.unshift(odrlContractDef); // Add if new
+    }
     return Promise.resolve({ message: 'Contract definition created successfully!' });
-
-    /*
-    // REAL IMPLEMENTATION
-    return lastValueFrom(this.http.post(url, odrlContractDef));
-    */
   }
 
-  /**
-   * Updates an existing access policy by modifying the underlying ODRL model.
-   * In a real backend, this would be an HTTP PUT request.
-   */
+  updateContractDefinition(odrlContractDef: OdrlContractDefinition): Promise<void> {
+    console.log('Mock Service: Simulating update of contract definition:', JSON.stringify(odrlContractDef, null, 2));
+    const index = this.mockOdrlContractDefinitions.findIndex(cd => cd['@id'] === odrlContractDef['@id']);
+    if (index !== -1) {
+      this.mockOdrlContractDefinitions[index] = odrlContractDef;
+      return Promise.resolve();
+    } else {
+      return Promise.reject('Contract definition not found');
+    }
+  }
+
+  deleteContractDefinition(contractDefId: string): Promise<void> {
+    console.log('Mock Service: Simulating deletion of contract definition with id', contractDefId);
+    const initialLength = this.mockOdrlContractDefinitions.length;
+    this.mockOdrlContractDefinitions = this.mockOdrlContractDefinitions.filter(cd => cd['@id'] !== contractDefId);
+
+    if (this.mockOdrlContractDefinitions.length < initialLength) {
+      return Promise.resolve();
+    } else {
+      return Promise.reject('Contract definition ID not provided');
+    }
+  }
+
+
   updateAccessPolicy(policyToUpdate: AccessPolicy): Promise<void> {
     const index = this.mockOdrlPolicies.findIndex(p => p['@id'] === policyToUpdate.id);
     if (index !== -1) {
-      // Find the policy in our mock database and update its properties
       const odrlPolicy = this.mockOdrlPolicies[index];
       const permission = odrlPolicy.policy.permission[0];
       const constraint = permission.constraint[0];
@@ -119,10 +171,6 @@ export class PolicyService {
     }
   }
 
-  /**
-   * Deletes an entire access policy from the mock ODRL list.
-   * In a real backend, this would be an HTTP DELETE request.
-   */
   deleteAccessPolicy(policyId: string): Promise<void> {
     const initialLength = this.mockOdrlPolicies.length;
     this.mockOdrlPolicies = this.mockOdrlPolicies.filter(p => p['@id'] !== policyId);
@@ -136,42 +184,7 @@ export class PolicyService {
     }
   }
 
-  /**
-   * In backend, this should be an HTTP PUT request.
-   */
-  updateContractDefinition(odrlContractDef: OdrlContractDefinition): Promise<void> {
-    // This mock service doesn't maintain a separate list of contract definitions.
-    // We just log the action and simulate a successful response. The component's
-    // UI update logic is what provides the user feedback.
-    console.log('Mock Service: Simulating update of contract definition:', JSON.stringify(odrlContractDef, null, 2));
-
-    if (odrlContractDef['@id']) {
-      return Promise.resolve(); // Simulate success
-    } else {
-      return Promise.reject('Contract definition ID is missing');
-    }
-  }
-
-
-
-  /**
-   * Deletes a single contract definition.
-   * this should be an HTTP DELETE request.
-   */
-  deleteContractDefinition(contractDefId: string): Promise<void> {
-    // Since this mock service doesn't maintain a list of contract definitions,
-    // we just log the action and simulate a successful response. The UI handles the removal.
-    console.log('Mock Service: Simulating deletion of contract definition with id', contractDefId);
-
-    if (contractDefId) {
-      return Promise.resolve(); // Simulate success
-    } else {
-      return Promise.reject('Contract definition ID not provided');
-    }
-  }
-
-  //helper
-
+  // Helper methods are unchanged
   private transformOdrlToAccessPolicy(odrlDef: OdrlPolicyDefinition): AccessPolicy {
     const permission = odrlDef.policy?.permission?.[0];
     const constraint = permission?.constraint?.[0];
@@ -181,7 +194,7 @@ export class PolicyService {
       bpn: constraint?.rightOperand || '',
       action: permission?.action || 'use',
       operator: constraint?.operator || 'eq',
-      contractPolicies: [],
+      contractPolicies: [], // This will be populated by the component
     };
   }
 

@@ -67,7 +67,7 @@
   </p-table>
 </div>
 
-<!-- Hidden File Inputs -->
+
 <input #fileInput type="file" (change)="onFileSelect($event)" hidden accept=".json" multiple />
 <input #policyFileInput type="file" (change)="onPolicyFileSelect($event)" hidden accept=".json" multiple />
 <input #contractDefFileInput type="file" (change)="onContractDefFileSelect($event)" hidden accept=".json" multiple />
@@ -76,7 +76,7 @@
 <div class="card mt-4">
   <p-table
     #dtPolicies
-    [value]="accessPolicies"
+    [value]="filteredAccessPolicies"
     dataKey="id"
     [rows]="10"
     [rowsPerPageOptions]="[10, 25, 50]"
@@ -86,15 +86,25 @@
     [tableStyle]="{ 'min-width': '75rem' }"
     styleClass="p-datatable-striped p-datatable-gridlines"
   >
+
     <ng-template pTemplate="caption">
-      <div class="flex align-items-center justify-content-between">
-        <h5 class="m-0">Manage Policies</h5>
+      <div class="flex justify-content-between align-items-center">
+        <h5 class="m-0">Access Policies</h5>
+
         <div class="flex align-items-center">
-          <p-iconfield iconPosition="left" class="mr-2">
+
+          <p-iconfield iconPosition="left" style="margin-right: 0.5rem;">
             <p-inputicon><i class="pi pi-search"></i></p-inputicon>
-            <input pInputText type="text" (input)="onGlobalFilter($event, dtPolicies)" placeholder="Search keyword" class="w-full"/>
+            <input pInputText type="text"
+                   (input)="onGlobalPolicySearch($event)"
+                   placeholder="Search keyword" />
           </p-iconfield>
-          <button pButton pRipple label="New Access Policy" icon="pi pi-plus" class="p-button-success" (click)="openNewAccessPolicyDialog()"></button>
+
+          <button pButton pRipple
+                  label="New Access Policy"
+                  icon="pi pi-plus"
+                  class="p-button-success"
+                  (click)="openNewAccessPolicyDialog()"></button>
         </div>
       </div>
     </ng-template>
@@ -134,7 +144,8 @@
               <button pButton pRipple label="New Contract Policy" icon="pi pi-plus" class="p-button-sm p-button-success" (click)="openNewContractPolicyDialog(policy)"></button>
             </div>
 
-            <p-table [value]="policy.contractPolicies" dataKey="id">
+
+            <p-table [value]="policy.contractPolicies" dataKey="id" styleClass="nested-table p-datatable-sm p-datatable-striped">
               <ng-template pTemplate="header">
                 <tr>
                   <th style="width: 45%" pSortableColumn="id">ID <p-sortIcon field="id"></p-sortIcon></th>
