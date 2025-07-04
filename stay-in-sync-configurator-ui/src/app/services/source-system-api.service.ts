@@ -2,7 +2,7 @@ import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { SourceSystemDto } from '../models/source-system.model';
-import { SourceSystemEndpointDto } from '../models/source-system-endpoint.model';
+import { SourceSystemEndpointDto } from '../models/source-system-endpoint.dto';
 import { DiscoveredEndpointDto } from '../models/discovered-endpoint.model';
 
 
