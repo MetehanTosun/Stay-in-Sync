@@ -1,47 +1,29 @@
-/*
-  ::ng-deep is used here to pierce the style encapsulation of the child
-  PrimeNG components. This allows us to customize their internal look and feel
-  from the parent component's stylesheet.
-*/
 
-/*
-  UPDATED: Using semi-transparent colors to create a theme-agnostic style.
-  A transparent black overlay will appear as light grey on a light background,
-  and a darker grey on a dark background, adapting automatically.
-*/
-
-/* NEW: Add a border around the entire nested table wrapper to frame it */
 :host ::ng-deep .nested-table .p-datatable-wrapper {
   border: 1px solid rgba(0, 0, 0, 0.1);
-  border-radius: 6px; /* Match PrimeNG's default border-radius */
-  overflow: hidden; /* Ensures the inner table corners respect the radius */
+  border-radius: 6px;
+  overflow: hidden;
 }
 
-/* Differentiate the nested table's header for better visual separation */
 :host ::ng-deep .nested-table .p-datatable-thead > tr > th {
-  background-color: rgba(0, 0, 0, 0.05); /* A subtle, transparent black */
+  background-color: rgba(0, 0, 0, 0.05);
 }
 
-/*
-  This creates a more pronounced striped effect that works in both themes.
-  We target the 'p-datatable-striped' class we added to the table.
-*/
+
 :host ::ng-deep .nested-table.p-datatable-striped .p-datatable-tbody > tr:nth-child(even) {
   background-color: rgba(0, 0, 0, 0.03);
 }
 
-/* Use a slightly more opaque transparent color for the hover effect */
+
 :host ::ng-deep .nested-table .p-datatable-tbody > tr:hover {
   background-color: rgba(0, 0, 0, 0.07) !important;
 }
 
-/* NEW: Add a subtle bottom border to all cells to create horizontal rule lines */
 :host ::ng-deep .nested-table .p-datatable-tbody > tr > td,
 :host ::ng-deep .nested-table .p-datatable-thead > tr > th {
   border-bottom: 1px solid rgba(0, 0, 0, 0.08);
 }
 
-/* NEW: Remove the bottom border from the very last row to keep it clean */
 :host ::ng-deep .nested-table .p-datatable-tbody > tr:last-child > td {
   border-bottom: 0;
 }

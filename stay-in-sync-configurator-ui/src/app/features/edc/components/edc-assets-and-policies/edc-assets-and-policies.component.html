@@ -306,13 +306,13 @@
       <div class="field grid align-items-center mb-3">
         <label for="apAction" class="col-4">Action</label>
         <div class="col-8">
-          <p-dropdown id="apAction" [options]="actionOptions" [(ngModel)]="newAccessPolicy.action" styleClass="w-full" [appendTo]="'body'"></p-dropdown>
+          <p-select id="apAction" [options]="actionOptions" [(ngModel)]="newAccessPolicy.action" styleClass="w-full" [appendTo]="'body'"></p-select>
         </div>
       </div>
       <div class="field grid align-items-center mb-3">
         <label for="apOperator" class="col-4">Operator</label>
         <div class="col-8">
-          <p-dropdown id="apOperator" [options]="operatorOptions" [(ngModel)]="newAccessPolicy.operator" styleClass="w-full" [appendTo]="'body'"></p-dropdown>
+          <p-select id="apOperator" [options]="operatorOptions" [(ngModel)]="newAccessPolicy.operator" styleClass="w-full" [appendTo]="'body'"></p-select>
         </div>
       </div>
     </div>
@@ -363,18 +363,30 @@
       <div class="field grid align-items-center mb-3">
         <label for="cdOperator" class="col-3">Operator</label>
         <div class="col-9">
-          <p-dropdown id="cdOperator"
+          <p-select id="cdOperator"
                       [options]="assetSelectorOperatorOptions"
                       [(ngModel)]="newContractPolicy.operator"
                       styleClass="w-full"
-                      [appendTo]="'body'"></p-dropdown>
+                      [appendTo]="'body'"></p-select>
         </div>
       </div>
+
 
       <div class="field grid align-items-center mb-3">
         <label for="cdAssetId" class="col-3">Asset ID (Operand Right)</label>
         <div class="col-9">
-          <input id="cdAssetId" type="text" pInputText [(ngModel)]="newContractPolicy.assetId" required autofocus class="w-full" />
+          <p-autoComplete
+            id="cdAssetId"
+            [(ngModel)]="newContractPolicy.assetId"
+            [suggestions]="assetIdSuggestions"
+            (completeMethod)="searchAssets($event)"
+            field="id"
+            [forceSelection]="true"
+            placeholder="Type to search for an Asset"
+            styleClass="w-full"
+            inputStyleClass="w-full"
+            [appendTo]="'body'">
+          </p-autoComplete>
         </div>
       </div>
     </div>
@@ -402,9 +414,20 @@
     <div class="px-4">
       <!-- EDC ID (operandLeft) Input -->
       <div class="field grid align-items-center mb-3">
-        <label for="editCdOperandLeft" class="col-4">EDC ID (Operand Left)</label>
+        <label for="editCdAssetId" class="col-4">Asset ID (Operand Right)</label>
         <div class="col-8">
-          <input id="editCdOperandLeft" type="text" pInputText [(ngModel)]="contractPolicyToEdit.operandLeft" required class="w-full" />
+          <p-autoComplete
+            id="editCdAssetId"
+            [(ngModel)]="contractPolicyToEdit.assetId"
+            [suggestions]="assetIdSuggestions"
+            (completeMethod)="searchAssets($event)"
+            field="id"
+            [forceSelection]="true"
+            placeholder="Type to search for an Asset"
+            styleClass="w-full"
+            inputStyleClass="w-full"
+            [appendTo]="'body'">
+          </p-autoComplete>
         </div>
       </div>
 
@@ -412,11 +435,11 @@
       <div class="field grid align-items-center mb-3">
         <label for="editCdOperator" class="col-4">Operator</label>
         <div class="col-8">
-          <p-dropdown id="editCdOperator"
+          <p-select id="editCdOperator"
                       [options]="assetSelectorOperatorOptions"
                       [(ngModel)]="contractPolicyToEdit.operator"
                       styleClass="w-full"
-                      [appendTo]="'body'"></p-dropdown>
+                      [appendTo]="'body'"></p-select>
         </div>
       </div>
 

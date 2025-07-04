@@ -16,8 +16,11 @@ import { InputIconModule } from 'primeng/inputicon';
 import { RippleModule } from 'primeng/ripple';
 import {ConfirmationService, MessageService} from 'primeng/api';
 import { DividerModule } from 'primeng/divider';
-import { DropdownModule } from 'primeng/dropdown';
+//import { DropdownModule } from 'primeng/dropdown';
+import { SelectModule } from 'primeng/select';
 import { ToastModule } from 'primeng/toast';
+import { AutoCompleteModule } from 'primeng/autocomplete';
+
 
 // App imports
 import { Asset } from './models/asset.model';
@@ -43,8 +46,10 @@ import { PolicyService } from './services/policy.service';
     InputIconModule,
     RippleModule,
     DividerModule,
-    DropdownModule,
+    //DropdownModule,
+    SelectModule,
     ToastModule,
+    AutoCompleteModule,
   ],
   templateUrl: './edc-assets-and-policies.component.html',
   styleUrls: ['./edc-assets-and-policies.component.css'],
@@ -95,6 +100,7 @@ export class EdcAssetsAndPoliciesComponent implements OnInit {
   allAccessPolicies: AccessPolicy[] = [];
   filteredAccessPolicies: AccessPolicy[] = [];
 
+  assetIdSuggestions: Asset[] = [];
 
   constructor(
     private assetService: AssetService,
@@ -122,6 +128,19 @@ export class EdcAssetsAndPoliciesComponent implements OnInit {
   ngOnInit(): void {
     this.loadAssets();
     this.loadPolicies();
+  }
+
+  /**
+   * Filters assets based on user input for the autocomplete component.
+   * It searches by both Asset ID and asset's name
+   * @param event The autocomplete event containing the user's query.
+   */
+  searchAssets(event: { query: string }) {
+    const query = event.query.toLowerCase();
+    this.assetIdSuggestions = this.assets.filter(asset =>
+      asset.id.toLowerCase().includes(query) ||
+      asset.name.toLowerCase().includes(query)
+    );
   }
 
   private loadAssets(): void {
@@ -822,7 +841,6 @@ export class EdcAssetsAndPoliciesComponent implements OnInit {
           const fileContent = await file.text();
           const contractDefJson: OdrlContractDefinition = JSON.parse(fileContent);
 
-
           if (!contractDefJson['@id']?.trim()) {
             throw new Error("Validation failed: The '@id' field is missing or empty.");
           }
@@ -832,7 +850,6 @@ export class EdcAssetsAndPoliciesComponent implements OnInit {
           if (!contractDefJson.accessPolicyId?.trim()) {
             throw new Error("Validation failed: The 'accessPolicyId' field is missing or empty.");
           }
-
           if (contractDefJson.accessPolicyId !== this.targetAccessPolicy!.id) {
             throw new Error(`Validation failed: 'accessPolicyId' in file does not match the selected policy ('${this.targetAccessPolicy!.id}').`);
           }
@@ -841,32 +858,32 @@ export class EdcAssetsAndPoliciesComponent implements OnInit {
           }
 
           const selector = contractDefJson.assetsSelector[0];
-
-
           const validAssetSelectorOperators = ['=', 'in'];
-
 
           if (!selector?.operandLeft?.trim()) {
             throw new Error("Validation failed: 'operandLeft' in assetsSelector is missing or empty.");
           }
-
           if (selector.operandLeft !== 'https://w3id.org/edc/v0.0.1/ns/id') {
             throw new Error(`Validation failed: Invalid 'operandLeft' value. Expected 'https://w3id.org/edc/v0.0.1/ns/id'.`);
           }
-
-
           if (!selector?.operator?.trim()) {
             throw new Error("Validation failed: 'operator' in assetsSelector is missing or empty.");
           }
           if (!validAssetSelectorOperators.includes(selector.operator)) {
             throw new Error(`Validation failed: Invalid 'operator' in assetsSelector. Must be one of: ${validAssetSelectorOperators.join(', ')}.`);
           }
-
-
           if (!selector?.operandRight?.trim()) {
             throw new Error("Validation failed: 'operandRight' (the Asset ID) in assetsSelector is missing or empty.");
           }
 
+
+          // Check if the asset ID from the file exists in our current assets list
+          const assetIdFromFile = selector.operandRight.trim();
+          const assetExists = this.assets.some(asset => asset.id === assetIdFromFile);
+
+          if (!assetExists) {
+            throw new Error(`Validation failed: Asset with ID '${assetIdFromFile}' does not exist.`);
+          }
 
 
           await this.policyService.createContractDefinition(contractDefJson);

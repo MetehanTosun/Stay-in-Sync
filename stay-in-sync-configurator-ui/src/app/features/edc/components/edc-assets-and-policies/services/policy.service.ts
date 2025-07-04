@@ -129,7 +129,7 @@ export class PolicyService {
   }
 
   updateContractDefinition(odrlContractDef: OdrlContractDefinition): Promise<void> {
-    console.log('Mock Service: Simulating update of contract definition:', JSON.stringify(odrlContractDef, null, 2));
+    //console.log('Mock Service: Simulating update of contract definition:', JSON.stringify(odrlContractDef, null, 2));
     const index = this.mockOdrlContractDefinitions.findIndex(cd => cd['@id'] === odrlContractDef['@id']);
     if (index !== -1) {
       this.mockOdrlContractDefinitions[index] = odrlContractDef;

@@ -88,7 +88,7 @@ export class AssetService {
 
   /**
    * Updates an existing asset in the mock database.
-   * In a real backend, this would be an HTTP PUT request.
+   * In a "real" backend, this would be an HTTP PUT request.
    */
   updateAsset(assetToUpdate: Asset): Promise<void> {
     const index = this.mockOdrlAssets.findIndex(a => a['@id'] === assetToUpdate.id);
@@ -104,8 +104,8 @@ export class AssetService {
   }
 
   /**
-   * Deletes an asset from the mock database.
-   * In a real backend, this would be an HTTP DELETE request.
+   * Deletes an asset from the mock database
+   * this would be an HTTP DELETE request
    */
   deleteAsset(assetId: string): Promise<void> {
     const initialLength = this.mockOdrlAssets.length;
