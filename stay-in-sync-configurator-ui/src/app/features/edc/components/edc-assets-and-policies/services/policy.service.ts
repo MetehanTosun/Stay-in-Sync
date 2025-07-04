@@ -95,6 +95,63 @@ export class PolicyService {
     */
   }
 
+  /**
+   * Updates an existing access policy by modifying the underlying ODRL model.
+   * In a real backend, this would be an HTTP PUT request.
+   */
+  updateAccessPolicy(policyToUpdate: AccessPolicy): Promise<void> {
+    const index = this.mockOdrlPolicies.findIndex(p => p['@id'] === policyToUpdate.id);
+    if (index !== -1) {
+      // Find the policy in our mock database and update its properties
+      const odrlPolicy = this.mockOdrlPolicies[index];
+      const permission = odrlPolicy.policy.permission[0];
+      const constraint = permission.constraint[0];
+
+      permission.action = policyToUpdate.action;
+      constraint.operator = policyToUpdate.operator;
+      constraint.rightOperand = policyToUpdate.bpn;
+
+      console.log('Mock Service: Updated access policy', this.mockOdrlPolicies[index]);
+      return Promise.resolve();
+    } else {
+      console.error('Mock Service: Access policy not found for update', policyToUpdate);
+      return Promise.reject('Access policy not found');
+    }
+  }
+
+  /**
+   * Deletes an entire access policy from the mock ODRL list.
+   * In a real backend, this would be an HTTP DELETE request.
+   */
+  deleteAccessPolicy(policyId: string): Promise<void> {
+    const initialLength = this.mockOdrlPolicies.length;
+    this.mockOdrlPolicies = this.mockOdrlPolicies.filter(p => p['@id'] !== policyId);
+
+    if (this.mockOdrlPolicies.length < initialLength) {
+      console.log('Mock Service: Deleted access policy with id', policyId);
+      return Promise.resolve();
+    } else {
+      console.error('Mock Service: Access policy not found for deletion', policyId);
+      return Promise.reject('Access policy not found');
+    }
+  }
+
+  /**
+   * Deletes a single contract definition.
+   * In a real backend, this would be an HTTP DELETE request.
+   */
+  deleteContractDefinition(contractDefId: string): Promise<void> {
+    // Since this mock service doesn't maintain a list of contract definitions,
+    // we just log the action and simulate a successful response. The UI handles the removal.
+    console.log('Mock Service: Simulating deletion of contract definition with id', contractDefId);
+
+    if (contractDefId) {
+      return Promise.resolve(); // Simulate success
+    } else {
+      return Promise.reject('Contract definition ID not provided');
+    }
+  }
+
   //helper
 
   private transformOdrlToAccessPolicy(odrlDef: OdrlPolicyDefinition): AccessPolicy {
@@ -132,9 +189,4 @@ export class PolicyService {
       },
     };
   }
-
-
-
-
-
 }

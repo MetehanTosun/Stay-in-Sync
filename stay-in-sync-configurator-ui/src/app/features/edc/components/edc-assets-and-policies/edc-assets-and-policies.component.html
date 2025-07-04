@@ -122,8 +122,8 @@
         <td>{{ policy.id }}</td>
         <td>{{ policy.bpn }}</td>
         <td>
-          <button pButton pRipple type="button" icon="pi pi-pencil" class="p-button-rounded p-button-text p-button-info mr-2" pTooltip="Edit Access Policy"></button>
-          <button pButton pRipple type="button" icon="pi pi-trash" class="p-button-rounded p-button-text p-button-danger" pTooltip="Delete Access Policy"></button>
+          <button pButton pRipple type="button" icon="pi pi-pencil" class="p-button-rounded p-button-text p-button-info mr-2" pTooltip="Edit Access Policy" (click)="editAccessPolicy(policy)" ></button>
+          <button pButton pRipple type="button" icon="pi pi-trash" class="p-button-rounded p-button-text p-button-danger" pTooltip="Delete Access Policy" (click)="deleteAccessPolicy(policy)"></button>
         </td>
       </tr>
       <tr *ngIf="isPolicyRowExpanded(policy.id)">
@@ -337,6 +337,54 @@
   <ng-template pTemplate="footer">
     <button pButton pRipple label="Cancel" icon="pi pi-times" class="p-button-text" (click)="hideNewContractPolicyDialog()"></button>
     <button pButton pRipple label="Save" icon="pi pi-check" class="p-button-text" (click)="saveNewContractPolicy()"></button>
+  </ng-template>
+</p-dialog>
+
+<!-- Edit Access Policy Dialog -->
+<p-dialog [(visible)]="displayEditAccessPolicyDialog"
+          [style]="{width: '450px'}"
+          header="Edit Access Policy Details"
+          [modal]="true"
+          class="p-fluid"
+          (onHide)="hideEditAccessPolicyDialog()"
+          [draggable]="false"
+          [resizable]="false">
+
+  <!-- This container ensures the form only shows when a policy is being edited -->
+  <ng-container *ngIf="policyToEdit">
+    <div class="px-4">
+      <!-- BPN Input -->
+      <div class="field grid align-items-center mb-3">
+        <label for="editApBpn" class="col-4">BPN</label>
+        <div class="col-8">
+          <input id="editApBpn" type="text" pInputText [(ngModel)]="policyToEdit.bpn" required autofocus class="w-full" />
+        </div>
+      </div>
+
+      <!-- Action Dropdown -->
+      <div class="field grid align-items-center mb-3">
+        <label for="editApAction" class="col-4">Action</label>
+        <div class="col-8">
+          <p-dropdown id="editApAction" [options]="actionOptions" [(ngModel)]="policyToEdit.action" styleClass="w-full" [appendTo]="'body'"></p-dropdown>
+        </div>
+      </div>
+
+      <!-- Operator Dropdown -->
+      <div class="field grid align-items-center mb-3">
+        <label for="editApOperator" class="col-4">Operator</label>
+        <div class="col-8">
+          <p-dropdown id="editApOperator" [options]="operatorOptions" [(ngModel)]="policyToEdit.operator" styleClass="w-full" [appendTo]="'body'"></p-dropdown>
+        </div>
+      </div>
+    </div>
+  </ng-container>
+
+  <ng-template pTemplate="footer">
+    <button pButton pRipple label="Cancel" icon="pi pi-times"
+            class="p-button-text" (click)="hideEditAccessPolicyDialog()"></button>
+    <!-- The save button calls the existing saveEditedAccessPolicy() method -->
+    <button pButton pRipple label="Save Changes" icon="pi pi-check"
+            class="p-button-text" (click)="saveEditedAccessPolicy()"></button>
   </ng-template>
 </p-dialog>
 

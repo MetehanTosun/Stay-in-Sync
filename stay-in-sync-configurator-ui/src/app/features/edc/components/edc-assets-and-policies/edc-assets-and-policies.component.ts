@@ -72,6 +72,9 @@ export class EdcAssetsAndPoliciesComponent implements OnInit {
   newContractPolicy: ContractPolicy = this.createEmptyContractPolicy();
   targetAccessPolicy: AccessPolicy | null = null;
 
+  displayEditAccessPolicyDialog: boolean = false;
+  policyToEdit: AccessPolicy | null = null;
+
   operatorOptions: { label: string; value: string; }[];
   actionOptions: { label: string; value: string; }[];
 
@@ -293,14 +296,52 @@ export class EdcAssetsAndPoliciesComponent implements OnInit {
     this.assetToEdit = null;
   }
 
-  saveEditedAsset() {
-    if (this.assetToEdit) {
+  async saveEditedAsset() {
+    if (!this.assetToEdit) {
+      return;
+    }
+
+    // Add validation to ensure required fields are not empty
+    if (
+      !this.assetToEdit.name ||
+      !this.assetToEdit.url ||
+      !this.assetToEdit.type ||
+      !this.assetToEdit.contentType
+    ) {
+      this.messageService.add({
+        severity: 'warn',
+        summary: 'Validation Error',
+        detail: 'Name, URL, Type, and Content Type are required.',
+        life: 4000
+      });
+      return;
+    }
+
+    try {
+      // Call the service to change
+      await this.assetService.updateAsset(this.assetToEdit);
+
+      // On success, update the UI
       const index = this.assets.findIndex((a) => a.id === this.assetToEdit!.id);
       if (index !== -1) {
         this.assets[index] = this.assetToEdit;
-        this.assets = [...this.assets];
+        this.assets = [...this.assets]; // Trigger change detection
       }
+
+      this.messageService.add({
+        severity: 'success',
+        summary: 'Success',
+        detail: 'Asset updated successfully.',
+      });
+
       this.hideEditAssetDialog();
+    } catch (error) {
+      this.messageService.add({
+        severity: 'error',
+        summary: 'Error',
+        detail: 'Failed to update asset.',
+      });
+      console.error('Failed to update asset:', error);
     }
   }
 
@@ -309,8 +350,27 @@ export class EdcAssetsAndPoliciesComponent implements OnInit {
       message: `Are you sure you want to delete the asset "${asset.name}"?`,
       header: 'Confirm Deletion',
       icon: 'pi pi-exclamation-triangle',
-      accept: () => {
-        this.assets = this.assets.filter((a) => a.id !== asset.id);
+      // Make the accept callback async to handle the service call
+      accept: async () => {
+        try {
+          // Call the service to delete the asset
+          await this.assetService.deleteAsset(asset.id);
+
+          // if success, update the UI
+          this.assets = this.assets.filter((a) => a.id !== asset.id);
+          this.messageService.add({
+            severity: 'success',
+            summary: 'Success',
+            detail: 'Asset deleted successfully.',
+          });
+        } catch (error) {
+          this.messageService.add({
+            severity: 'error',
+            summary: 'Error',
+            detail: 'Failed to delete asset.',
+          });
+          console.error('Failed to delete asset:', error);
+        }
       },
     });
   }
@@ -364,10 +424,88 @@ export class EdcAssetsAndPoliciesComponent implements OnInit {
     }
   }
 
+  editAccessPolicy(policy: AccessPolicy) {
+    // using a deep copy to avoid modifying the original object while editing
+    this.policyToEdit = JSON.parse(JSON.stringify(policy));
+    this.displayEditAccessPolicyDialog = true;
+  }
 
+  hideEditAccessPolicyDialog() {
+    this.displayEditAccessPolicyDialog = false;
+    this.policyToEdit = null;
+  }
+
+  async saveEditedAccessPolicy() {
+    if (!this.policyToEdit || !this.policyToEdit.bpn) {
+      this.messageService.add({ severity: 'warn', summary: 'Validation Error', detail: 'BPN is required.' });
+      return;
+    }
+
+    try {
+      // call the service to persist the change
+      await this.policyService.updateAccessPolicy(this.policyToEdit);
+
+      const index = this.accessPolicies.findIndex(p => p.id === this.policyToEdit!.id);
+      if (index !== -1) {
+        // IMPORTANT: Preserve the nested contract policies from the original object, as the edit dialog doesn't manage them.
+        this.policyToEdit.contractPolicies = this.accessPolicies[index].contractPolicies;
+        this.accessPolicies[index] = this.policyToEdit;
+        this.accessPolicies = [...this.accessPolicies]; // Trigger change detection
+      }
+
+      this.messageService.add({ severity: 'success', summary: 'Success', detail: 'Access Policy updated successfully.' });
+      this.hideEditAccessPolicyDialog();
+    } catch (error) {
+      this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Failed to update access policy.' });
+      console.error('Failed to update access policy:', error);
+    }
+  }
+
+  deleteAccessPolicy(policy: AccessPolicy) {
+    this.confirmationService.confirm({
+      message: `Are you sure you want to delete the policy for BPN "${policy.bpn}"? This will also delete all associated contract definitions.`,
+      header: 'Confirm Deletion',
+      icon: 'pi pi-exclamation-triangle',
+      accept: async () => {
+        try {
+          await this.policyService.deleteAccessPolicy(policy.id);
+          this.accessPolicies = this.accessPolicies.filter(p => p.id !== policy.id);
+          this.messageService.add({ severity: 'success', summary: 'Success', detail: 'Access Policy deleted successfully.' });
+        } catch (error) {
+          this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Failed to delete access policy.' });
+          console.error('Failed to delete access policy:', error);
+        }
+      },
+    });
+  }
+
+  deleteContractPolicy(contractPolicy: ContractPolicy, parentAccessPolicy: AccessPolicy) {
+    this.confirmationService.confirm({
+      message: `Are you sure you want to delete the contract definition for asset "${contractPolicy.assetId}"?`,
+      header: 'Confirm Deletion',
+      icon: 'pi pi-exclamation-triangle',
+      accept: async () => {
+        try {
+          await this.policyService.deleteContractDefinition(contractPolicy.id);
+
+          // Update the UI by removing the item from the nested array
+          const parentIndex = this.accessPolicies.findIndex(p => p.id === parentAccessPolicy.id);
+          if (parentIndex !== -1) {
+            this.accessPolicies[parentIndex].contractPolicies = this.accessPolicies[parentIndex].contractPolicies.filter(cp => cp.id !== contractPolicy.id);
+            this.accessPolicies = [...this.accessPolicies]; // Trigger change detection
+          }
+
+          this.messageService.add({ severity: 'success', summary: 'Success', detail: 'Contract Definition deleted successfully.' });
+        } catch (error) {
+          this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Failed to delete contract definition.' });
+          console.error('Failed to delete contract definition:', error);
+        }
+      },
+    });
+  }
 
   /**
-   * reads the file, uploads it, and closes the dialog.
+   * Handles policy file uploads and with validation.
    */
   async onPolicyFileSelect(event: Event) {
     const element = event.currentTarget as HTMLInputElement;
@@ -381,17 +519,75 @@ export class EdcAssetsAndPoliciesComponent implements OnInit {
     const successfulUploads: string[] = [];
     const failedUploads: { name: string; reason: string }[] = [];
 
-    // Loop through all selected files and create a processing promise for each
+    // Get the list of valid values from the component's options
+    const validActions = this.actionOptions.map(opt => opt.value);
+    const validOperators = this.operatorOptions.map(opt => opt.value);
+
+
     for (const file of Array.from(fileList)) {
       const promise = (async () => {
         try {
           const fileContent = await file.text();
           const policyJson: OdrlPolicyDefinition = JSON.parse(fileContent);
 
-          // Validate the structure
-          if (!policyJson['@id'] || !policyJson.policy) {
-            throw new Error('Invalid format: Missing required EDC properties.');
+
+          if (!policyJson['@context'] || !policyJson['@context'].edc) {
+            throw new Error("Validation failed: The '@context' with a non-empty 'edc' property is required.");
           }
+          if (!policyJson['@id']) {
+            throw new Error("Validation failed: The '@id' field is missing or empty.");
+          }
+          if (!policyJson.policy) {
+            throw new Error("Validation failed: The 'policy' object is missing.");
+          }
+
+
+          const policy = policyJson.policy;
+
+          if (!policy.permission || !Array.isArray(policy.permission) || policy.permission.length === 0) {
+            throw new Error("Validation failed: The 'policy.permission' array is missing or empty.");
+          }
+
+
+
+          const permission = policy.permission[0];
+          if (!permission) {
+            throw new Error("Validation failed: The first permission rule is invalid or missing.");
+          }
+
+
+          if (!permission.action) {
+            throw new Error("Validation failed: 'permission.action' is missing or empty.");
+          }
+          if (!validActions.includes(permission.action)) {
+            throw new Error(`Validation failed: Invalid action '${permission.action}'. Must be one of: ${validActions.join(', ')}.`);
+          }
+
+
+
+          if (!permission.constraint || !Array.isArray(permission.constraint) || permission.constraint.length === 0) {
+            throw new Error("Validation failed: 'permission.constraint' array is missing or empty.");
+          }
+
+          const constraint = permission.constraint[0];
+
+
+
+          if (!constraint.leftOperand) {
+            throw new Error("Validation failed: 'constraint.leftOperand' is missing or empty.");
+          }
+          if (!constraint.rightOperand) {
+            throw new Error("Validation failed: 'constraint.rightOperand' (the BPN) is missing or empty.");
+          }
+
+
+          if (!constraint.operator) {
+            throw new Error("Validation failed: 'constraint.operator' is missing or empty.");
+          }
+          if (!validOperators.includes(constraint.operator)) {
+            throw new Error(`Validation failed: Invalid operator '${constraint.operator}'. Must be one of: ${validOperators.join(', ')}.`);
+          }
+
 
           await this.policyService.uploadPolicyDefinition(policyJson);
           successfulUploads.push(file.name);
@@ -488,15 +684,14 @@ export class EdcAssetsAndPoliciesComponent implements OnInit {
             throw new Error('Invalid format: Missing @id or assetsSelector.');
           }
 
-          // --- NEW: Strict Validation ---
           // Check if the file specifies an access policy ID and if it mismatches the current context.
           if (contractDefJson.accessPolicyId && contractDefJson.accessPolicyId !== currentTargetPolicy.id) {
             throw new Error(`ID Mismatch: File is for policy "${contractDefJson.accessPolicyId}", not "${currentTargetPolicy.id}".`);
           }
-          // --- End of Strict Validation ---
 
-          // ENFORCE CONTEXT: Ensure the correct IDs are set before sending to the backend.
-          // This handles cases where the file might not have the ID set at all.
+
+          // check the correct IDs are set before sending to the backend.
+
           contractDefJson.accessPolicyId = currentTargetPolicy.id;
           contractDefJson.contractPolicyId = currentTargetPolicy.id;
 
