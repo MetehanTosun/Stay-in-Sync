@@ -6,9 +6,10 @@ import com.rabbitmq.client.CancelCallback;
 import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.DeliverCallback;
 import com.rabbitmq.client.Delivery;
+import de.unistuttgart.stayinsync.core.configuration.rest.dtos.CreateRequestConfigurationDTO;
 import de.unistuttgart.stayinsync.polling.PollingJobScheduler;
 import de.unistuttgart.stayinsync.polling.exception.PollingNodeException;
-import de.unistuttgart.stayinsync.transport.dto.SourceSystemEndpointMessageDTO;
+import de.unistuttgart.stayinsync.transport.dto.SourceSystemApiRequestConfigurationMessageDTO;
 import io.quarkiverse.rabbitmqclient.RabbitMQClient;
 import io.quarkus.logging.Log;
 import io.quarkus.runtime.StartupEvent;
@@ -80,9 +81,9 @@ public class PollingJobMessageConsumer {
     private DeliverCallback deployPollingJobCallback() {
         return (consumerTag, delivery) -> {
             try {
-                SourceSystemEndpointMessageDTO sourceSystemEndpoint = getPollingJob(delivery);
-                Log.infof("Received new endpoint for url %s", sourceSystemEndpoint.sourceSystem().apiUrl());
-                pollingJobScheduler.deployPollingJobExecution(sourceSystemEndpoint);
+                SourceSystemApiRequestConfigurationMessageDTO apiRequestConfigurationMessageDTO = getPollingJob(delivery);
+                Log.infof("Received new request configuration for api: %s", apiRequestConfigurationMessageDTO.sourceSystem().apiUrl());
+                pollingJobScheduler.deployPollingJobExecution(apiRequestConfigurationMessageDTO);
                 channel.basicAck(delivery.getEnvelope().getDeliveryTag(), false);
             } catch (PollingNodeException e) {
                 Log.error("Failed to process polling-job deployment message");
@@ -93,19 +94,19 @@ public class PollingJobMessageConsumer {
     }
 
     /**
-     * Serializes message body to SourceSystemEndpoint object
+     * Serializes message body to {@link CreateRequestConfigurationDTO} object
      *
      * @param delivery
      * @return
      * @throws UnsupportedEncodingException
      * @throws JsonProcessingException
      */
-    private SourceSystemEndpointMessageDTO getPollingJob(Delivery delivery) throws PollingNodeException {
+    private SourceSystemApiRequestConfigurationMessageDTO getPollingJob(Delivery delivery) throws PollingNodeException {
 
         try {
             Log.info("Extracting polling-job from consumed message");
             String message = new String(delivery.getBody(), "UTF-8");
-            return objectMapper.readValue(message, SourceSystemEndpointMessageDTO.class);
+            return objectMapper.readValue(message, SourceSystemApiRequestConfigurationMessageDTO.class);
         } catch (JsonProcessingException | UnsupportedEncodingException e) {
             throw new PollingNodeException("RabbitMQ error", "Unable to extract polling-job from message body");
         }
@@ -130,9 +131,9 @@ public class PollingJobMessageConsumer {
     private DeliverCallback updateDeployedPollingJobCallback() {
         return (consumerTag, delivery) -> {
             try {
-                SourceSystemEndpointMessageDTO sourceSystemEndpoint = getPollingJob(delivery);
-                Log.infof("Received update for polling-job %s", sourceSystemEndpoint.sourceSystem().apiUrl());
-                pollingJobScheduler.reconfigureSyncJobExecution(sourceSystemEndpoint);
+                SourceSystemApiRequestConfigurationMessageDTO apiRequestConfig = getPollingJob(delivery);
+                Log.infof("Received update for polling-job %s", apiRequestConfig.sourceSystem().apiUrl());
+                pollingJobScheduler.reconfigureSyncJobExecution(apiRequestConfig);
                 channel.basicAck(delivery.getEnvelope().getDeliveryTag(), false);
             } catch (PollingNodeException e) {
                 Log.errorf("Failed to process polling-job configuration update message", e);
@@ -145,12 +146,12 @@ public class PollingJobMessageConsumer {
     /**
      * Adds binding that enables the node to receive information on jobs that are deployed on it
      *
-     * @param sourceSystemEndpoint
+     * @param apiRequestConfigurationMessageDTO
      * @throws PollingNodeException
      */
-    public void bindExisitingPollingJobQueue(SourceSystemEndpointMessageDTO sourceSystemEndpoint) throws PollingNodeException {
+    public void bindExisitingPollingJobQueue(SourceSystemApiRequestConfigurationMessageDTO apiRequestConfigurationMessageDTO) throws PollingNodeException {
         try {
-            String routingKey = "polling-job" + sourceSystemEndpoint.id();
+            String routingKey = "polling-job" + apiRequestConfigurationMessageDTO.id();
             Log.infof("Binding queue %s with routing key %s", pollingNodeQueueName, routingKey);
             channel.queueBind(pollingNodeQueueName, "pollingjob-exchange", routingKey);
             channel.basicConsume(pollingNodeQueueName, false, updateDeployedPollingJobCallback(), cancelSyncJobDeploymentCallback(pollingNodeQueueName));
@@ -162,12 +163,12 @@ public class PollingJobMessageConsumer {
     /**
      * Unbinds routing key in order to stop listening for updates of a certain job
      *
-     * @param sourceSystemEndpoint
+     * @param apiRequestConfigurationMessageDTO
      * @throws PollingNodeException
      */
-    public void unbindExisitingPollingJobQueue(SourceSystemEndpointMessageDTO sourceSystemEndpoint) throws PollingNodeException {
+    public void unbindExisitingPollingJobQueue(SourceSystemApiRequestConfigurationMessageDTO apiRequestConfigurationMessageDTO) throws PollingNodeException {
         try {
-            String routingKey = "polling-job" + sourceSystemEndpoint.id();
+            String routingKey = "polling-job" + apiRequestConfigurationMessageDTO.id();
             Log.infof("Unbinding queue %s with routing key %s", pollingNodeQueueName, routingKey);
             channel.queueUnbind(pollingNodeQueueName, "pollingjob-exchange", routingKey);
         } catch (IOException e) {

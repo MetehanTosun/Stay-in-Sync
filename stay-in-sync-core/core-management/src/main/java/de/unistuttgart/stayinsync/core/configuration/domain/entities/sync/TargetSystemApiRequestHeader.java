@@ -4,7 +4,7 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.ManyToOne;
 
 @Entity
-public class TargetSystemApiRequestHeader extends ApiRequestHeader {
+public class TargetSystemApiRequestHeader extends ApiHeader {
 
     @ManyToOne
     public TargetSystemEndpoint targetSystemEndpoint;

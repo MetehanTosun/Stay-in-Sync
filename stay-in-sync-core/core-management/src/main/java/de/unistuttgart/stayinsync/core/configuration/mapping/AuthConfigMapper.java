@@ -3,21 +3,34 @@ package de.unistuttgart.stayinsync.core.configuration.mapping;
 import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.authconfig.ApiKeyAuthConfig;
 import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.authconfig.BasicAuthConfig;
 import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.authconfig.SyncSystemAuthConfig;
-import de.unistuttgart.stayinsync.transport.dto.ApiKeyAuthConfigMessageDTO;
-import de.unistuttgart.stayinsync.transport.dto.BasicAuthConfigMessageDTO;
-import de.unistuttgart.stayinsync.transport.dto.SyncSystemAuthConfigMessageDTO;
+import de.unistuttgart.stayinsync.core.configuration.rest.dtos.ApiAuthConfigurationDTO;
+import de.unistuttgart.stayinsync.core.configuration.rest.dtos.ApiKeyAuthDTO;
+import de.unistuttgart.stayinsync.core.configuration.rest.dtos.BasicAuthDTO;
 import org.mapstruct.Mapper;
+import org.mapstruct.Mapping;
 import org.mapstruct.MappingConstants;
-import org.mapstruct.SubclassMapping;
+import org.mapstruct.Named;
 
 @Mapper(componentModel = MappingConstants.ComponentModel.JAKARTA_CDI)
 public interface AuthConfigMapper {
+    @Named("mapAuthConfigToEntity")
+    default SyncSystemAuthConfig mapToEntity(ApiAuthConfigurationDTO dto) {
+        if (dto == null) {
+            return null;
+        }
+        return switch (dto.getAuthType()) {
+            case BASIC -> mapBasicAuth((BasicAuthDTO) dto);
+            case API_KEY -> mapApiKeyAuth((ApiKeyAuthDTO) dto);
+        };
+    }
 
-    @SubclassMapping(source = ApiKeyAuthConfig.class, target = ApiKeyAuthConfigMessageDTO.class)
-    @SubclassMapping(source = BasicAuthConfig.class, target = BasicAuthConfigMessageDTO.class)
-    SyncSystemAuthConfigMessageDTO toDto(SyncSystemAuthConfig entity);
+    @Mapping(target = "id", ignore = true)
+    @Mapping(target = "syncSystem", ignore = true)
+    @Mapping(target = "authType", constant = "BASIC")
+    BasicAuthConfig mapBasicAuth(BasicAuthDTO dto);
 
-    BasicAuthConfigMessageDTO toBasicDto(BasicAuthConfig entity);
-
-    ApiKeyAuthConfigMessageDTO toApiKeyDto(ApiKeyAuthConfig entity);
+    @Mapping(target = "id", ignore = true)
+    @Mapping(target = "syncSystem", ignore = true)
+    @Mapping(target = "authType", constant = "API_KEY")
+    ApiKeyAuthConfig mapApiKeyAuth(ApiKeyAuthDTO dto);
 }

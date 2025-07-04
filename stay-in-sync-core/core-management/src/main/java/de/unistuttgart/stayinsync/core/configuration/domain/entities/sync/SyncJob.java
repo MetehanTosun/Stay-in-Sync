@@ -17,7 +17,7 @@ import java.util.Set;
 public class SyncJob extends PanacheEntity {
 
     @NotNull
-    @Size(min = 2, max = 50)
+    @Size(min = 2, max = 50, message = "size must be between {min} and {max}")
     public String name;
 
     public String syncNodeIdentifier;
