@@ -1,87 +1,61 @@
 import { Injectable } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpResponse } from '@angular/common/http';
 import { Observable } from 'rxjs';
-import { SourceSystemDto } from '../models/source-system.model';
-import { SourceSystemEndpointDto } from '../models/source-system-endpoint.dto';
-import { DiscoveredEndpointDto } from '../models/discovered-endpoint.model';
-
-
+import { CreateSourceSystemDTO }   from '../models/create-source-system.dto';
+import { SourceSystemDTO }         from '../models/source-system.dto';
 
 @Injectable({ providedIn: 'root' })
-export class SourceSystemApiService {
-  private readonly baseUrl = '/api/source-systems';
+export class SourceSystemService {
+  private readonly baseUrl = '/api/config/source-system';
 
   constructor(private http: HttpClient) {}
 
-  // JSON-Only Create (schickt ein reines SourceSystemDto)
-  create(dto: SourceSystemDto): Observable<SourceSystemDto> {
-    return this.http.post<SourceSystemDto>(this.baseUrl, dto);
+  /**
+   * GET /api/config/source-system
+   * Returns all source systems
+   */
+  getAll(): Observable<SourceSystemDTO[]> {
+    return this.http.get<SourceSystemDTO[]>(this.baseUrl);
   }
 
   /**
-   * Create a source system via multipart/form-data, including file upload.
+   * GET /api/config/source-system/{id}
+   * Returns one source system by ID (404 if not found)
    */
-  createFormData(formData: FormData): Observable<SourceSystemDto> {
-    return this.http.post<SourceSystemDto>(this.baseUrl, formData);
+  getById(id: number): Observable<SourceSystemDTO> {
+    return this.http.get<SourceSystemDTO>(`${this.baseUrl}/${id}`);
   }
 
-  getAll(): Observable<SourceSystemDto[]> {
-    return this.http.get<SourceSystemDto[]>(this.baseUrl);
-  }
-
-  // Multipart-Upload der OpenAPI-Spec-Datei
-  uploadSpecFile(id: number, file: File): Observable<void> {
-    const fd = new FormData();
-    fd.append('file', file);               
+  /**
+   * POST /api/config/source-system
+   * Creates a new source system.
+   * Returns the full HttpResponse so you can read the Location header.
+   */
+  create(dto: CreateSourceSystemDTO): Observable<HttpResponse<void>> {
     return this.http.post<void>(
-      `${this.baseUrl}/${id}/upload-openapi`,
-      fd
-    );
-  }
-
-  // OpenAPI-Spec per URL setzen
-  setSpecUrl(id: number, url: string): Observable<void> {
-    const fd = new FormData();
-    fd.append('openApiSpecUrl', url);       
-    return this.http.post<void>(
-      `${this.baseUrl}/${id}/upload-openapi`,
-      fd
-    );
-  }
-
-  setSubmodelLink(id: number, link: string): Observable<void> {
-    const fd = new FormData();
-    fd.append('openApiSpecUrl', link);
-    return this.http.post<void>(
-      `${this.baseUrl}/${id}/upload-openapi`,
-      fd
-    );
-  }
-
-  // Schritte 2+3 …
-  listEndpoints(sourceId: number): Observable<SourceSystemEndpointDto[]> {
-    return this.http.get<SourceSystemEndpointDto[]>(`${this.baseUrl}/${sourceId}/endpoints`);
-  }
-  
-
-  extractEndpointSchema(sourceId: number, endpointId: number): Observable<any> {
-    return this.http.post<any>(
-      `${this.baseUrl}/${sourceId}/endpoints/${endpointId}/extract`,
-      {}
-    );
-  }
-
-  createEndpoint(sourceId: number, endpoint: any): Observable<SourceSystemEndpointDto> {
-    return this.http.post<SourceSystemEndpointDto>(
-      `${this.baseUrl}/${sourceId}/endpoints`,
-      endpoint
+      this.baseUrl,
+      dto,
+      { observe: 'response' }
     );
   }
 
   /**
-   * Discover available endpoints from the stored OpenAPI spec.
+   * PUT /api/config/source-system/{id}
+   * Fully replaces an existing source system (404 if not found).
+   * Returns the updated SourceSystemDto.
    */
-  discoverEndpoints(sourceId: number): Observable<DiscoveredEndpointDto[]> {
-    return this.http.get<DiscoveredEndpointDto[]>(`${this.baseUrl}/${sourceId}/discover`);
+  update(id: number, dto: CreateSourceSystemDTO): Observable<SourceSystemDTO> {
+    return this.http.put<SourceSystemDTO>(
+      `${this.baseUrl}/${id}`,
+      dto
+    );
+  }
+
+  /**
+   * DELETE /api/config/source-system/{id}
+   * Deletes a source system by ID (404 if not found).
+   */
+  delete(id: number): Observable<void> {
+    return this.http.delete<void>(`${this.baseUrl}/${id}`);
   }
 }
