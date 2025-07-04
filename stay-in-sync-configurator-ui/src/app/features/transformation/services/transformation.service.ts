@@ -22,5 +22,9 @@ export class TransformationService {
     return this.httpClient.delete<void>(`/api/config/transformation/${transformation.id}`);
   }
 
+  update(transformation: Transformation): Observable<Transformation> {
+    return this.httpClient.put<Transformation>(`/api/config/transformation/${transformation.id}`, transformation);
+  }
+
 
 }

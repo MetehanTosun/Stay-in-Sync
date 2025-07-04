@@ -47,7 +47,7 @@
 <p-dialog
   header="New Transformation"
   [(visible)]="displayCreateDialog"
-  (onHide)="cancel()"
+  (onHide)="cancelCreateTransformationDialog()"
   [modal]="true"
   [style]="{ width: '50vw', maxWidth: '20vw', minHeight: '20vw' }">
 <div class="p-fluid">
@@ -62,3 +62,25 @@
   <p-button label="Create" (click)="createTransformationShell()"></p-button>
   </div>
 </p-dialog>
+
+<p-dialog
+  header="Select Rule"
+  [(visible)]="displayRuleSelectionDialog"
+  (onHide)="cancelRuleSelectionDialog()"
+  [modal]="true"
+  [style]="{ width: '50vw', maxWidth: '50vw', minHeight: '40vw' }"
+>
+  <app-transformation-rule-selection (closeDialog)="displayScriptSelectionDialog = false" (useItemEvent)="onUseRuleEvent($event)"></app-transformation-rule-selection>
+</p-dialog>
+
+<p-dialog
+  header="Select Script"
+  [(visible)]="displayScriptSelectionDialog"
+  (onHide)="cancelScriptSelectionDialog()"
+  [modal]="true"
+  [style]="{ width: '50vw', maxWidth: '50vw', minHeight: '40vw' }"
+>
+  <app-transformation-script-selection (closeDialog)="displayScriptSelectionDialog = false"></app-transformation-script-selection>
+</p-dialog>
+
+

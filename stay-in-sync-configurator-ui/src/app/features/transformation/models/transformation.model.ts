@@ -4,4 +4,5 @@ export interface Transformation{
   description?: string;
   transformationRule?: string;
   transformationScript?: string;
+  syncJobId?: number;
 }

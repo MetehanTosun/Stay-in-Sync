@@ -10,6 +10,13 @@ import {TransformationService} from '../../services/transformation.service';
 import {Dialog} from 'primeng/dialog';
 import {InputText} from 'primeng/inputtext';
 import {NgIf} from '@angular/common';
+import {Router} from '@angular/router';
+import {
+  TransformationScriptSelectionComponent
+} from '../transformation-script-selection/transformation-script-selection.component';
+import {
+  TransformationRuleSelectionComponent
+} from '../transformation-rule-selection/transformation-rule-selection.component';
 
 @Component({
   selector: 'app-transformation-base',
@@ -21,7 +28,9 @@ import {NgIf} from '@angular/common';
     Dialog,
     ReactiveFormsModule,
     InputText,
-    NgIf
+    NgIf,
+    TransformationScriptSelectionComponent,
+    TransformationRuleSelectionComponent
   ],
   templateUrl: './transformation-base.component.html',
   styleUrl: './transformation-base.component.css'
@@ -36,17 +45,33 @@ export class TransformationBaseComponent implements OnInit {
   }];
 
   addedTransformations: Transformation[] = [];
+  selectedTransformation: Transformation ={};
 
   displayCreateDialog: boolean = false;
+  displayRuleSelectionDialog: boolean = false;
+  displayScriptSelectionDialog: boolean = false;
 
   newTransformation: Transformation = {};
 
-  constructor(private stateService: TransformationStateService, private transformationService : TransformationService) {}
+  constructor(private stateService: TransformationStateService, private transformationService : TransformationService, private router: Router) {}
 
   ngOnInit() {
     const loaded = this.stateService.transformations;
-    this.transformations = loaded && loaded.length > 0 ? loaded : [
-    ];
+    this.transformations = loaded && loaded.length > 0 ? loaded : [];
+    this.loadTransformationsFromBackend();
+  }
+
+  loadTransformationsFromBackend() {
+    this.transformationService.getAll().subscribe(
+        (transformations: Transformation[]) => {
+            this.transformations = transformations;
+            console.log('Transformations from backend loaded:', this.transformations);
+        },
+        (error: any) => {
+            console.error('Error loading transformations from backend:', error);
+        }
+    )
+
   }
 
   edit(rowData: any) {
@@ -85,6 +110,9 @@ export class TransformationBaseComponent implements OnInit {
 
   protected readonly min = min;
 
+
+
+
   createTransformationShell() {
     console.log('Creating new transformation shell');
     this.transformationService.create(this.newTransformation).subscribe({
@@ -103,19 +131,35 @@ export class TransformationBaseComponent implements OnInit {
     this.displayCreateDialog = true;
   }
 
-  cancel() {
-    this.displayCreateDialog = false;
-  }
+  selectedRule: any; // Typ ggf. anpassen
 
   addRule(rowData: any) {
+    this.selectedTransformation = rowData;
+    this.displayRuleSelectionDialog = true;
+  }
 
+  onUseRuleEvent(event: any) {
+    this.selectedRule = event;
+    // Weitere Logik nach Bedarf
   }
 
   addScript(rowData: any) {
-
+    this.selectedTransformation = rowData;
+    this.displayScriptSelectionDialog = true;
   }
 
   showMissingFieldsMessage() {
     alert('Bitte füllen Sie alle erforderlichen Felder aus.');
+  }
+
+  cancelRuleSelectionDialog() {
+    this.displayRuleSelectionDialog = false;
+  }
+  cancelCreateTransformationDialog() {
+    this.displayCreateDialog = false;
+  }
+
+  cancelScriptSelectionDialog() {
+    this.displayScriptSelectionDialog = false;
   }
 }
