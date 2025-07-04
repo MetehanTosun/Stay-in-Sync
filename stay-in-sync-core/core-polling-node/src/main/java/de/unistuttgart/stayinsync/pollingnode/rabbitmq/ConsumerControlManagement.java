@@ -1,7 +1,7 @@
 package de.unistuttgart.stayinsync.pollingnode.rabbitmq;
 
 import de.unistuttgart.stayinsync.pollingnode.entities.SyncJob;
-import de.unistuttgart.stayinsync.pollingnode.exceptions.FaultySyncJobException;
+import de.unistuttgart.stayinsync.pollingnode.exceptions.FaultySourceSystemApiRequestMessageDtoException;
 import de.unistuttgart.stayinsync.pollingnode.usercontrol.management.PollingJobManagement;
 import io.quarkus.logging.Log;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -70,22 +70,22 @@ public class ConsumerControlManagement {
             syncJobHandler.accept(syncJob);
             Log.info("Sent SyncJob was valid. Message accepted");
             return syncJobMessage.ack();
-        } catch (FaultySyncJobException e) {
+        } catch (FaultySourceSystemApiRequestMessageDtoException e) {
             Log.error(e.getMessage());
-            return syncJobMessage.nack(new FaultySyncJobException(e.getMessage()));
+            return syncJobMessage.nack(new FaultySourceSystemApiRequestMessageDtoException(e.getMessage()));
         }
     }
 
     /**
      * Throws a FaultySyncJobException if the SyncJob has any invalid fields of obvious reason.
      * @param syncJob is the checked object.
-     * @throws FaultySyncJobException if any field is null or empty.
+     * @throws FaultySourceSystemApiRequestMessageDtoException if any field is null or empty.
      */
-    private void throwFaultySyncJobExceptionIfInvalid(final SyncJob syncJob) throws FaultySyncJobException{
+    private void throwFaultySyncJobExceptionIfInvalid(final SyncJob syncJob) throws FaultySourceSystemApiRequestMessageDtoException {
         if(syncJob.getApiAddress() == null || syncJob.getApiAddress().isEmpty()){
             final String errorMessage = "ApiAddress of sent SyncJob was empty";
             Log.error(errorMessage);
-            throw new FaultySyncJobException(errorMessage);
+            throw new FaultySourceSystemApiRequestMessageDtoException(errorMessage);
         }
     }
 }

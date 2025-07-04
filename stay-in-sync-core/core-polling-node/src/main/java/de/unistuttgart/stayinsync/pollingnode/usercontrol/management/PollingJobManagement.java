@@ -1,7 +1,7 @@
 package de.unistuttgart.stayinsync.pollingnode.usercontrol.management;
 
 import de.unistuttgart.stayinsync.pollingnode.entities.SyncJob;
-import de.unistuttgart.stayinsync.pollingnode.exceptions.FaultySyncJobException;
+import de.unistuttgart.stayinsync.pollingnode.exceptions.FaultySourceSystemApiRequestMessageDtoException;
 import de.unistuttgart.stayinsync.pollingnode.exceptions.PollingJobNotFoundException;
 import de.unistuttgart.stayinsync.pollingnode.execution.controller.PollingJobExecutionController;
 import de.unistuttgart.stayinsync.pollingnode.usercontrol.configuration.PollingJobConfigurator;
@@ -38,7 +38,7 @@ public class PollingJobManagement {
             Log.info("PollingJob for the source system" + createdPollingJob.getApiAddress() + " was created successfully.");
             pollingJobExecutionController.startPollingJobExecution(createdPollingJob);
             Log.info("PollingJob was successfully integrated into the polling process.");
-        }catch(FaultySyncJobException e){
+        }catch(FaultySourceSystemApiRequestMessageDtoException e){
             Log.error("Faulty SyncJob: " + e + ". No PollingJob was created");
         }
     }

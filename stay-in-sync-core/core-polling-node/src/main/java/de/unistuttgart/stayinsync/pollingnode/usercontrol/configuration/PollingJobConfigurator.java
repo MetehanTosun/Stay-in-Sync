@@ -2,7 +2,7 @@ package de.unistuttgart.stayinsync.pollingnode.usercontrol.configuration;
 
 import de.unistuttgart.stayinsync.pollingnode.entities.PollingJob;
 import de.unistuttgart.stayinsync.pollingnode.entities.SyncJob;
-import de.unistuttgart.stayinsync.pollingnode.exceptions.FaultySyncJobException;
+import de.unistuttgart.stayinsync.pollingnode.exceptions.FaultySourceSystemApiRequestMessageDtoException;
 
 import jakarta.enterprise.context.ApplicationScoped;
 
@@ -21,10 +21,10 @@ public class PollingJobConfigurator {
      * Creates PollingJob based on information of SyncJob
      * @param syncJob used to get important initialisation information
      */
-    public PollingJob createPollingJob(final SyncJob syncJob) throws FaultySyncJobException{
+    public PollingJob createPollingJob(final SyncJob syncJob) throws FaultySourceSystemApiRequestMessageDtoException {
         final String apiAddress = syncJob.getApiAddress();
          if(apiAddress == null || apiAddress.isEmpty()){
-             throw new FaultySyncJobException("SyncJob did not have defined source systems.");
+             throw new FaultySourceSystemApiRequestMessageDtoException("SyncJob did not have defined source systems.");
         }
         return new PollingJob(apiAddress);
     }
