@@ -1,6 +1,6 @@
 package de.unistuttgart.stayinsync.core.configuration.rest;
 
-import de.unistuttgart.stayinsync.core.configuration.exception.CoreManagementWebException;
+import de.unistuttgart.stayinsync.core.configuration.exception.CoreManagementException;
 import de.unistuttgart.stayinsync.core.configuration.mapping.SyncJobFullUpdateMapper;
 import de.unistuttgart.stayinsync.core.configuration.rest.dtos.SyncJobDTO;
 import de.unistuttgart.stayinsync.core.configuration.service.SyncJobService;
@@ -62,7 +62,7 @@ public class SyncJobResource {
             )
             @Valid @NotNull SyncJobDTO syncJobDTO,
             @Context UriInfo uriInfo) {
-        var persistedSyncJob = this.syncJobService.persistSyncJob(fullUpdateMapper.mapToEntity(syncJobDTO));
+        var persistedSyncJob = this.syncJobService.persistSyncJob(syncJobDTO);
         var builder = uriInfo.getAbsolutePathBuilder().path(Long.toString(persistedSyncJob.id));
         Log.debugf("New sync-job created with URI  %s", builder.build().toString());
 
@@ -114,7 +114,7 @@ public class SyncJobResource {
                 })
                 .orElseThrow(() -> {
                     Log.warnf("No sync-job found using id %d", id);
-                    return new CoreManagementWebException(Response.Status.NOT_FOUND, "Unable to find sync-job", "No sync-job found using id %d", id);
+                    return new CoreManagementException(Response.Status.NOT_FOUND, "Unable to find sync-job", "No sync-job found using id %d", id);
                 });
     }
 
@@ -158,10 +158,10 @@ public class SyncJobResource {
                                        )
                                        @PathParam("id") Long id, @Valid @NotNull SyncJobDTO syncJobDTO) {
         if (id != syncJobDTO.id()) {
-            throw new CoreManagementWebException(Response.Status.BAD_REQUEST, "Id missmatch", "Make sure that the request body entity id matches the request parameter");
+            throw new CoreManagementException(Response.Status.BAD_REQUEST, "Id missmatch", "Make sure that the request body entity id matches the request parameter");
         }
 
-        return this.syncJobService.replaceSyncJob(fullUpdateMapper.mapToEntity(syncJobDTO))
+        return this.syncJobService.replaceSyncJob(syncJobDTO)
                 .map(updatedSyncJob -> {
                     Log.debugf("Sync-job replaced with new values %s", updatedSyncJob);
                     return Response.noContent().build();

@@ -1,6 +1,7 @@
 package de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.authconfig;
 
 import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.SyncSystem;
+import de.unistuttgart.stayinsync.transport.domain.ApiAuthType;
 import io.quarkus.hibernate.orm.panache.PanacheEntity;
 import jakarta.persistence.*;
 
@@ -12,7 +13,9 @@ import jakarta.persistence.*;
 @DiscriminatorColumn(name = "auth_type", discriminatorType = DiscriminatorType.STRING)
 public abstract class SyncSystemAuthConfig extends PanacheEntity {
 
-    public String authType;
+    @Enumerated(EnumType.STRING)
+    @Column(name = "api_auth_type")
+    public ApiAuthType authType;
 
     @OneToOne
     public SyncSystem syncSystem;

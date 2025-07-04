@@ -4,7 +4,7 @@ import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.SyncJo
 import de.unistuttgart.stayinsync.core.configuration.domain.events.sync.SyncJobPersistedEvent;
 import de.unistuttgart.stayinsync.core.configuration.domain.events.sync.SyncJobUpdatedEvent;
 import de.unistuttgart.stayinsync.core.configuration.mapping.SyncJobFullUpdateMapper;
-import de.unistuttgart.stayinsync.core.management.rabbitmq.producer.SyncJobMessageProducer;
+import de.unistuttgart.stayinsync.core.configuration.rest.dtos.SyncJobDTO;
 import io.quarkus.logging.Log;
 import io.smallrye.common.constraint.NotNull;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -28,12 +28,6 @@ public class SyncJobService {
     Validator validator;
 
     @Inject
-    SyncJobMessageProducer syncJobMessageProducer;
-
-    @Inject
-    SourceSystemEndpointService sourceSystemEndpointService;
-
-    @Inject
     SyncJobFullUpdateMapper syncJobFullUpdateMapper;
 
     @Inject
@@ -42,12 +36,14 @@ public class SyncJobService {
     @Inject
     Event<SyncJobUpdatedEvent> syncJobUpdatedEventEvent;
 
-    public SyncJob persistSyncJob(@NotNull @Valid SyncJob syncJob) {
+    public SyncJob persistSyncJob(@NotNull @Valid SyncJobDTO syncJobDTO) {
+        SyncJob syncJob = syncJobFullUpdateMapper.mapToEntity(syncJobDTO);
+
         Log.debugf("Persisting sync-job: %s", syncJob);
 
         syncJob.persist();
         syncJobPersistedEvent.fire(new SyncJobPersistedEvent(syncJob));
-        
+
         return syncJob;
     }
 
@@ -77,7 +73,9 @@ public class SyncJobService {
         SyncJob.deleteById(id);
     }
 
-    public Optional<SyncJob> replaceSyncJob(@NotNull @Valid SyncJob syncJob) {
+    public Optional<SyncJob> replaceSyncJob(@NotNull @Valid SyncJobDTO syncJobDTO) {
+        SyncJob syncJob = syncJobFullUpdateMapper.mapToEntity(syncJobDTO);
+
         Log.debugf("Replacing sync-job: %s", syncJob);
 
         Optional<SyncJob> updatedSyncJob = SyncJob.findByIdOptional(syncJob.id)
