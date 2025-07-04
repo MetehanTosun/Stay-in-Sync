@@ -137,8 +137,26 @@ export class PolicyService {
   }
 
   /**
+   * In backend, this should be an HTTP PUT request.
+   */
+  updateContractDefinition(odrlContractDef: OdrlContractDefinition): Promise<void> {
+    // This mock service doesn't maintain a separate list of contract definitions.
+    // We just log the action and simulate a successful response. The component's
+    // UI update logic is what provides the user feedback.
+    console.log('Mock Service: Simulating update of contract definition:', JSON.stringify(odrlContractDef, null, 2));
+
+    if (odrlContractDef['@id']) {
+      return Promise.resolve(); // Simulate success
+    } else {
+      return Promise.reject('Contract definition ID is missing');
+    }
+  }
+
+
+
+  /**
    * Deletes a single contract definition.
-   * In a real backend, this would be an HTTP DELETE request.
+   * this should be an HTTP DELETE request.
    */
   deleteContractDefinition(contractDefId: string): Promise<void> {
     // Since this mock service doesn't maintain a list of contract definitions,

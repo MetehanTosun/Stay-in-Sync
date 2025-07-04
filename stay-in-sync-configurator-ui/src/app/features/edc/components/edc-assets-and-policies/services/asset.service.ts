@@ -74,7 +74,7 @@ export class AssetService {
   uploadAsset(odrlAsset: any): Promise<any> {
     console.log("Posting to API:", JSON.stringify(odrlAsset, null, 2));
 
-    // This now modifies the class property, making the change persistent.
+    // modifies the class property, making the change persistent.
     const index = this.mockOdrlAssets.findIndex(a => a['@id'] === odrlAsset['@id']);
     if (index !== -1) {
       this.mockOdrlAssets[index] = odrlAsset; // Update if exists

@@ -1,6 +1,6 @@
 <p-toast></p-toast>
 
-<!-- assets Table -->
+<!-- assets table -->
 <div class="card">
   <p-table
     #dtAssets
@@ -19,13 +19,13 @@
       <div class="flex align-items-center justify-content-between">
         <h5 class="m-0">Manage Assets</h5>
         <div class="flex align-items-center">
-          <!-- Search Input -->
+          <!-- Search input -->
           <p-iconfield iconPosition="left" class="mr-2">
             <p-inputicon><i class="pi pi-search"></i></p-inputicon>
             <input pInputText type="text" (input)="onGlobalFilter($event, dtAssets)" placeholder="Search keyword" class="w-full"/>
           </p-iconfield>
 
-          <!-- New Asset -->
+          <!-- New asset -->
           <button pButton pRipple label="New Asset" icon="pi pi-plus" class="p-button-success" (click)="openNewAssetDialog()"></button>
         </div>
       </div>
@@ -152,8 +152,8 @@
                   <td>{{ contractPolicy.id }}</td>
                   <td>{{ contractPolicy.assetId }}</td>
                   <td>
-                    <button pButton pRipple type="button" icon="pi pi-pencil" class="p-button-rounded p-button-text p-button-info mr-2" pTooltip="Edit Contract Policy"></button>
-                    <button pButton pRipple type="button" icon="pi pi-trash" class="p-button-rounded p-button-text p-button-danger" pTooltip="Delete Contract Policy"></button>
+                    <button pButton pRipple type="button" icon="pi pi-pencil" class="p-button-rounded p-button-text p-button-info mr-2" pTooltip="Edit Contract Policy" (click)="editContractPolicy(contractPolicy, policy)" ></button>
+                    <button pButton pRipple type="button" icon="pi pi-trash" class="p-button-rounded p-button-text p-button-danger" pTooltip="Delete Contract Policy" (click)="deleteContractPolicy(contractPolicy, policy)"></button>
                   </td>
                 </tr>
               </ng-template>
@@ -313,78 +313,115 @@
 </p-dialog>
 
 
-<p-dialog header="Create New Contract Definition" [(visible)]="displayNewContractPolicyDialog" [modal]="true" [style]="{ width: '450px' }" (onHide)="hideNewContractPolicyDialog()" [draggable]="false" [resizable]="false">
+<!-- new contract definition dialog -->
+<p-dialog [(visible)]="displayNewContractPolicyDialog"
+          [style]="{width: '500px'}"
+          header="Create New Contract Definition"
+          [modal]="true"
+          class="p-fluid"
+          (onHide)="hideNewContractPolicyDialog()"
+          [draggable]="false"
+          [resizable]="false">
+
   <div class="p-fluid">
-    <!-- Upload Section -->
+
     <div class="text-center mb-3">
-      <button pButton pRipple type="button" label="Upload JSON File" icon="pi pi-upload" class="p-button-secondary" (click)="contractDefFileInput.click()"></button>
+      <button pButton pRipple
+              type="button"
+              label="Upload JSON File"
+              icon="pi pi-upload"
+              class="p-button-secondary"
+              (click)="contractDefFileInput.click()"></button>
     </div>
+
 
     <p-divider align="center" type="dashed" styleClass="my-4">
       <b>OR</b>
     </p-divider>
 
+
     <h6 class="text-center">Enter Details Manually</h6>
     <div class="px-4">
       <div class="field grid align-items-center mb-3">
-        <label for="cpAssetId" class="col-4">Asset ID</label>
-        <div class="col-8">
-          <input id="cpAssetId" type="text" pInputText [(ngModel)]="newContractPolicy.assetId" required autofocus class="w-full" />
+        <label for="cdOperandLeft" class="col-3">EDC ID (Operand Left)</label>
+        <div class="col-9">
+          <input id="cdOperandLeft" type="text" pInputText [(ngModel)]="newContractPolicy.operandLeft" required class="w-full" />
+        </div>
+      </div>
+
+      <div class="field grid align-items-center mb-3">
+        <label for="cdOperator" class="col-3">Operator</label>
+        <div class="col-9">
+          <p-dropdown id="cdOperator"
+                      [options]="assetSelectorOperatorOptions"
+                      [(ngModel)]="newContractPolicy.operator"
+                      styleClass="w-full"
+                      [appendTo]="'body'"></p-dropdown>
+        </div>
+      </div>
+
+      <div class="field grid align-items-center mb-3">
+        <label for="cdAssetId" class="col-3">Asset ID (Operand Right)</label>
+        <div class="col-9">
+          <input id="cdAssetId" type="text" pInputText [(ngModel)]="newContractPolicy.assetId" required autofocus class="w-full" />
         </div>
       </div>
     </div>
   </div>
+
+
   <ng-template pTemplate="footer">
     <button pButton pRipple label="Cancel" icon="pi pi-times" class="p-button-text" (click)="hideNewContractPolicyDialog()"></button>
     <button pButton pRipple label="Save" icon="pi pi-check" class="p-button-text" (click)="saveNewContractPolicy()"></button>
   </ng-template>
 </p-dialog>
 
-<!-- Edit Access Policy Dialog -->
-<p-dialog [(visible)]="displayEditAccessPolicyDialog"
-          [style]="{width: '450px'}"
-          header="Edit Access Policy Details"
+<!-- Edit contract definition dialog -->
+<p-dialog [(visible)]="displayEditContractPolicyDialog"
+          [style]="{width: '500px'}"
+          header="Edit Contract Definition"
           [modal]="true"
           class="p-fluid"
-          (onHide)="hideEditAccessPolicyDialog()"
+          (onHide)="hideEditContractPolicyDialog()"
           [draggable]="false"
           [resizable]="false">
 
-  <!-- This container ensures the form only shows when a policy is being edited -->
-  <ng-container *ngIf="policyToEdit">
-    <div class="px-4">
-      <!-- BPN Input -->
-      <div class="field grid align-items-center mb-3">
-        <label for="editApBpn" class="col-4">BPN</label>
-        <div class="col-8">
-          <input id="editApBpn" type="text" pInputText [(ngModel)]="policyToEdit.bpn" required autofocus class="w-full" />
-        </div>
-      </div>
 
-      <!-- Action Dropdown -->
+  <ng-container *ngIf="contractPolicyToEdit">
+    <div class="px-4">
+      <!-- EDC ID (operandLeft) Input -->
       <div class="field grid align-items-center mb-3">
-        <label for="editApAction" class="col-4">Action</label>
+        <label for="editCdOperandLeft" class="col-4">EDC ID (Operand Left)</label>
         <div class="col-8">
-          <p-dropdown id="editApAction" [options]="actionOptions" [(ngModel)]="policyToEdit.action" styleClass="w-full" [appendTo]="'body'"></p-dropdown>
+          <input id="editCdOperandLeft" type="text" pInputText [(ngModel)]="contractPolicyToEdit.operandLeft" required class="w-full" />
         </div>
       </div>
 
       <!-- Operator Dropdown -->
       <div class="field grid align-items-center mb-3">
-        <label for="editApOperator" class="col-4">Operator</label>
+        <label for="editCdOperator" class="col-4">Operator</label>
         <div class="col-8">
-          <p-dropdown id="editApOperator" [options]="operatorOptions" [(ngModel)]="policyToEdit.operator" styleClass="w-full" [appendTo]="'body'"></p-dropdown>
+          <p-dropdown id="editCdOperator"
+                      [options]="assetSelectorOperatorOptions"
+                      [(ngModel)]="contractPolicyToEdit.operator"
+                      styleClass="w-full"
+                      [appendTo]="'body'"></p-dropdown>
+        </div>
+      </div>
+
+      <!-- Asset ID (operandRight) Input -->
+      <div class="field grid align-items-center mb-3">
+        <label for="editCdAssetId" class="col-4">Asset ID (Operand Right)</label>
+        <div class="col-8">
+          <input id="editCdAssetId" type="text" pInputText [(ngModel)]="contractPolicyToEdit.assetId" required autofocus class="w-full" />
         </div>
       </div>
     </div>
   </ng-container>
 
   <ng-template pTemplate="footer">
-    <button pButton pRipple label="Cancel" icon="pi pi-times"
-            class="p-button-text" (click)="hideEditAccessPolicyDialog()"></button>
-    <!-- The save button calls the existing saveEditedAccessPolicy() method -->
-    <button pButton pRipple label="Save Changes" icon="pi pi-check"
-            class="p-button-text" (click)="saveEditedAccessPolicy()"></button>
+    <button pButton pRipple label="Cancel" icon="pi pi-times" class="p-button-text" (click)="hideEditContractPolicyDialog()"></button>
+    <button pButton pRipple label="Save Changes" icon="pi pi-check" class="p-button-text" (click)="saveEditedContractPolicy()"></button>
   </ng-template>
 </p-dialog>
 
