@@ -13,7 +13,6 @@ type EdcTab = 'instances' | 'assets and policies';
   styleUrls: ['./edc-base.component.css'],
 })
 export class EdcBaseComponent {
-
   activeTab: EdcTab = 'instances';
 
   setActiveTab(tab: EdcTab): void {
