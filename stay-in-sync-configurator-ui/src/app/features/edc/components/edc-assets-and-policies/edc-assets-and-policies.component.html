@@ -324,6 +324,83 @@
 </p-dialog>
 
 
+<p-dialog
+  header="Edit Access Policy"
+  [(visible)]="displayEditAccessPolicyDialog"
+  [modal]="true"
+  [style]="{ width: '450px' }"
+  (onHide)="hideEditAccessPolicyDialog()"
+  [draggable]="false"
+  [resizable]="false"
+>
+
+  <ng-container *ngIf="policyToEdit">
+    <div class="p-fluid">
+      <div class="px-4">
+        <div class="field grid align-items-center mb-3">
+          <label for="editApBpn" class="col-4">BPN</label>
+          <div class="col-8">
+            <input
+              id="editApBpn"
+              type="text"
+              pInputText
+              [(ngModel)]="policyToEdit.bpn"
+              required
+              autofocus
+              class="w-full"
+            />
+          </div>
+        </div>
+        <div class="field grid align-items-center mb-3">
+          <label for="editApAction" class="col-4">Action</label>
+          <div class="col-8">
+            <p-select
+              id="editApAction"
+              [options]="actionOptions"
+              [(ngModel)]="policyToEdit.action"
+              styleClass="w-full"
+              [appendTo]="'body'"
+            ></p-select>
+          </div>
+        </div>
+        <div class="field grid align-items-center mb-3">
+          <label for="editApOperator" class="col-4">Operator</label>
+          <div class="col-8">
+            <p-select
+              id="editApOperator"
+              [options]="operatorOptions"
+              [(ngModel)]="policyToEdit.operator"
+              styleClass="w-full"
+              [appendTo]="'body'"
+            ></p-select>
+          </div>
+        </div>
+      </div>
+    </div>
+  </ng-container>
+
+  <ng-template pTemplate="footer">
+
+    <button
+      pButton
+      pRipple
+      label="Cancel"
+      icon="pi pi-times"
+      class="p-button-text"
+      (click)="hideEditAccessPolicyDialog()"
+    ></button>
+    <button
+      pButton
+      pRipple
+      label="Save Changes"
+      icon="pi pi-check"
+      class="p-button-text"
+      (click)="saveEditedAccessPolicy()"
+    ></button>
+  </ng-template>
+</p-dialog>
+
+
 <!-- new contract definition dialog -->
 <p-dialog [(visible)]="displayNewContractPolicyDialog"
           [style]="{width: '500px'}"
