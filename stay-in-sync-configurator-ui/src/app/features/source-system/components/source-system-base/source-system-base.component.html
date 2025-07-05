@@ -1,56 +1,40 @@
-<!-- src/app/features/source-system/components/source-system-base/source-system-base.component.html -->
+<p-card>
+  <p-toolbar>
+    <div class="p-toolbar-group-left">
+      <h3>Source Systems</h3>
+    </div>
+    <div class="p-toolbar-group-right">
+      <button pButton type="button" label="Create Source System" icon="pi pi-plus" (click)="openCreate()"></button>
+    </div>
+  </p-toolbar>
 
-<p-toolbar>
-  <div class="p-toolbar-group-left">
-    <button
-      pButton
-      type="button"
-      icon="pi pi-plus"
-      label="New Source System"
-      (click)="openCreate()"
-    ></button>
-  </div>
-</p-toolbar>
+  <p-table [value]="systems" [loading]="loading" [paginator]="true" [rows]="10" [responsiveLayout]="'scroll'">
+    <ng-template pTemplate="header">
+      <tr>
+        <th>Name</th>
+        <th>API URL</th>
+        <th>Description</th>
+        <th>Actions</th>
+      </tr>
+    </ng-template>
+    <ng-template pTemplate="body" let-system>
+      <tr>
+        <td>{{ system.name }}</td>
+        <td>{{ system.apiUrl }}</td>
+        <td>{{ system.description }}</td>
+        <td>
+          <button pButton type="button" icon="pi pi-pencil" class="p-button-text"></button>
+          <button pButton type="button" icon="pi pi-trash" class="p-button-text"></button>
+        </td>
+      </tr>
+    </ng-template>
+  </p-table>
 
-<p-message
-  *ngIf="errorMsg"
-  severity="error"
-  text="{{ errorMsg }}"
-></p-message>
+  <p-message *ngIf="errorMsg" severity="error" text="{{ errorMsg }}"></p-message>
+</p-card>
 
-<p-table [value]="systems" [loading]="loading">
-  <ng-template pTemplate="header">
-    <tr>
-      <th>Name</th>
-      <th>API URL</th>
-      <th>Type</th>
-      <th>Description</th>
-    </tr>
-  </ng-template>
-  <ng-template pTemplate="body" let-sys>
-    <tr>
-      <td>{{ sys.name }}</td>
-      <td>{{ sys.apiUrl }}</td>
-      <td>{{ sys.apiType }}</td>
-      <td>{{ sys.description }}</td>
-    </tr>
-  </ng-template>
-</p-table>
-
-<p-dialog
-  header="Create Source System"
-  [(visible)]="showCreateDialog"
-  [modal]="true"
-  [closable]="false"
-  [style]="{ width: '600px' }"
-  (onHide)="onCreateDialogClose(false)"
->
-  <!--
-    Hier binden wir die Sichtbarkeit auch ans Kind,
-    damit die Create-Komponente ihr eigenes Dialog-Overlay
-    über den Input/Output `visible`/`visibleChange` steuern kann.
-  -->
-  <app-create-source-system
-    [(visible)]="showCreateDialog"
-  ></app-create-source-system>
-</p-dialog>
+<!-- Create Source System Dialog -->
+<app-create-source-system
+  [visible]="showCreateDialog"
+  (visibleChange)="onCreateDialogClose($event)"
+></app-create-source-system>

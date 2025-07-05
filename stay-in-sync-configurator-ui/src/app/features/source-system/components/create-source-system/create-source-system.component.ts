@@ -1,40 +1,20 @@
 import { Component, OnInit, Input, Output, EventEmitter } from '@angular/core';
-import { FormBuilder, FormGroup, Validators } from '@angular/forms';
+import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { CommonModule } from '@angular/common';
-import { ReactiveFormsModule } from '@angular/forms';
+
+// PrimeNG
 import { DialogModule } from 'primeng/dialog';
-import { StepsModule } from 'primeng/steps';
 import { DropdownModule } from 'primeng/dropdown';
-import { ButtonModule } from 'primeng/button';
 import { InputTextModule } from 'primeng/inputtext';
-import { InputTextarea } from 'primeng/inputtextarea';
-import { RadioButtonModule } from 'primeng/radiobutton';
-import { InputGroupModule } from 'primeng/inputgroup';
-import { TableModule } from 'primeng/table';
-import { FileUploadModule } from 'primeng/fileupload';
+import { ButtonModule } from 'primeng/button';
+import { TextareaModule } from 'primeng/textarea';
 
-import { CreateSourceSystemDTO } from '../../../../models/create-source-system.dto';
-import { SourceSystemEndpointDTO } from '../../../../models/source-system-endpoint.dto';
-import { CreateSourceSystemEndpointDTO } from '../../../../models/create-source-system-endpoint.dto';
-import { ApiHeaderDto } from '../../../../models/api-header.dto';
-import { CreateApiHeaderDto } from '../../../../models/create-api-header.dto';
-import { ApiEndpointQueryParamDTO } from '../../../../models/api-endpoint-query-param.dto';
-import { CreateRequestConfigurationDto } from '../../../../models/create-request-configuration.dto';
-import { GetRequestConfigurationDto } from '../../../../models/get-request-configuration.dto';
-
-interface Step {
-  label: string;
-}
-
-interface ManualEndpoint {
-  path: string;
-  method: string;
-}
-
-interface DiscoveredEndpointDto {
-  path: string;
-  method: string;
-}
+// Services und DTOs
+import { SourceSystemResourceService } from '../../../../generated/api/sourceSystemResource.service';
+import { CreateSourceSystemDTO } from '../../../../generated/model/createSourceSystemDTO';
+import { ApiAuthType } from '../../../../generated/model/apiAuthType';
+import { BasicAuthDTO } from '../../../../generated/model/basicAuthDTO';
+import { ApiKeyAuthDTO } from '../../../../generated/model/apiKeyAuthDTO';
 
 @Component({
   standalone: true,
@@ -45,275 +25,137 @@ interface DiscoveredEndpointDto {
     CommonModule,
     ReactiveFormsModule,
     DialogModule,
-    StepsModule,
     DropdownModule,
+    InputTextModule,
     ButtonModule,
-    InputTextModule,
-    InputTextModule,
-    RadioButtonModule,
-    InputGroupModule,
-    TableModule,
-    FileUploadModule,
+    TextareaModule
   ]
 })
 export class CreateSourceSystemComponent implements OnInit {
-  @Input() visible = false;
-  @Output() visibleChange = new EventEmitter<boolean>();
-  @Output() sourceSaved = new EventEmitter<void>();
-
-  steps: Step[] = [
-    { label: 'Metadata' },
-    { label: 'Endpoints' },
-    { label: 'Headers' },
-    { label: 'Query Params' },
-    { label: 'Request Config' },
-    { label: 'Specification' },
-  ];
-  currentStep = 1;
-
-  typeOptions = [
-    { label: 'AAS', value: 'AAS' },
-    { label: 'REST-OpenAPI', value: 'REST_OPENAPI' }
-  ];
-  authTypeOptions = [
-    { label: 'None', value: 'NONE' },
-    { label: 'Basic', value: 'BASIC' },
-    { label: 'API Key', value: 'API_KEY' }
-  ];
+  @Input() visible = false; // Steuert die Sichtbarkeit des Dialogs
+  @Output() visibleChange = new EventEmitter<boolean>(); // Meldet Änderungen der Sichtbarkeit zurück
+  @Output() nextStep = new EventEmitter<number>(); // Gibt die sourceSystemId zurück, um zum nächsten Schritt zu wechseln
 
   form!: FormGroup;
-  endpointForm!: FormGroup;
-  headerForm!: FormGroup;
-  queryParamForm!: FormGroup;
-  requestConfigForm!: FormGroup;
-
-  discoveredEndpoints: DiscoveredEndpointDto[] = [];
-  manualEndpoints: ManualEndpoint[] = [];
-
-  manualHeaders: ApiHeaderDto[] = [];
-  manualQueryParams: ApiEndpointQueryParamDTO[] = [];
-  manualRequestConfigs: CreateRequestConfigurationDto[] = [];
-
   selectedFile: File | null = null;
   fileSelected = false;
 
-  constructor(private fb: FormBuilder) {}
+  typeOptions = [
+    { label: 'REST-OpenAPI', value: 'REST_OPENAPI' },
+    { label: 'AAS', value: 'AAS' }
+  ];
+
+  authTypeOptions = [
+    { label: 'None', value: 'NONE' },
+    { label: 'Basic', value: ApiAuthType.Basic },
+    { label: 'API Key', value: ApiAuthType.ApiKey }
+  ];
+
+  constructor(private fb: FormBuilder, private sourceSystemService: SourceSystemResourceService) {}
 
   ngOnInit(): void {
-    this.initializeForms();
+    this.form = this.fb.group({
+      name: ['', Validators.required],
+      apiUrl: ['', [Validators.required, Validators.pattern('https?://.+')]],
+      description: [''],
+      apiType: ['REST_OPENAPI', Validators.required],
+      apiAuthType: ['NONE'],
+      authConfig: this.fb.group({
+        username: [''],
+        password: [''],
+        apiKey: [''],
+        headerName: ['']
+      }),
+      openApiSpec: [null]
+    });
+
     this.setupAuthTypeValidators();
   }
 
-  private initializeForms(): void {
-    // Step 1 form
-    this.form = this.fb.group({
-      name: ['', Validators.required],
-      description: [''],
-      type: ['REST_OPENAPI', Validators.required],
-      apiUrl: ['', [Validators.required, Validators.pattern('https?://.+')]],
-      authType: ['NONE', Validators.required],
-      username: [''],
-      password: [''],
-      apiKey: [''],
-      openApiSpecUrl: ['', Validators.pattern('https?://.+')],
-    });
-
-    // Step 2 dialog form
-    this.endpointForm = this.fb.group({
-      path: ['', Validators.required],
-      method: ['', Validators.required],
-    });
-
-    // Step 3 dialog form
-    this.headerForm = this.fb.group({
-      headerType: ['API_KEY', Validators.required],
-      headerName: ['', Validators.required],
-      values: ['', Validators.required], // comma-separated
-    });
-
-    // Step 4 dialog form
-    this.queryParamForm = this.fb.group({
-      paramName: ['', Validators.required],
-      queryParamType: ['QUERY', Validators.required],
-      values: ['', Validators.required],
-    });
-
-    // Step 5 dialog form
-    this.requestConfigForm = this.fb.group({
-      name: ['', Validators.required],
-      active: [true],
-      pollingIntervalTimeInMs: [1000, [Validators.required, Validators.min(0)]],
-    });
-  }
-
   private setupAuthTypeValidators(): void {
-    this.form.get('authType')!.valueChanges.subscribe(type => {
-      const usernameControl = this.form.get('username')!;
-      const passwordControl = this.form.get('password')!;
-      const apiKeyControl = this.form.get('apiKey')!;
+    this.form.get('apiAuthType')!.valueChanges.subscribe((authType) => {
+      const authConfigGroup = this.form.get('authConfig') as FormGroup;
+      authConfigGroup.get('username')!.clearValidators();
+      authConfigGroup.get('password')!.clearValidators();
+      authConfigGroup.get('apiKey')!.clearValidators();
+      authConfigGroup.get('headerName')!.clearValidators();
 
-      usernameControl.clearValidators();
-      passwordControl.clearValidators();
-      apiKeyControl.clearValidators();
-
-      if (type === 'BASIC') {
-        usernameControl.setValidators([Validators.required]);
-        passwordControl.setValidators([Validators.required]);
-      } else if (type === 'API_KEY') {
-        apiKeyControl.setValidators([Validators.required]);
+      if (authType === ApiAuthType.Basic) {
+        authConfigGroup.get('username')!.setValidators(Validators.required);
+        authConfigGroup.get('password')!.setValidators(Validators.required);
+      } else if (authType === ApiAuthType.ApiKey) {
+        authConfigGroup.get('apiKey')!.setValidators(Validators.required);
+        authConfigGroup.get('headerName')!.setValidators(Validators.required);
       }
 
-      usernameControl.updateValueAndValidity();
-      passwordControl.updateValueAndValidity();
-      apiKeyControl.updateValueAndValidity();
+      authConfigGroup.get('username')!.updateValueAndValidity();
+      authConfigGroup.get('password')!.updateValueAndValidity();
+      authConfigGroup.get('apiKey')!.updateValueAndValidity();
+      authConfigGroup.get('headerName')!.updateValueAndValidity();
     });
   }
 
-  open(): void {
-    this.visible = true;
+  onFileSelected(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    if (input.files && input.files.length) {
+      this.selectedFile = input.files[0];
+      this.fileSelected = true;
+      this.form.get('openApiSpec')?.reset();
+    }
   }
 
   cancel(): void {
     this.visible = false;
-    this.currentStep = 1;
-    this.form.reset({ type: 'REST_OPENAPI', authType: 'NONE' });
+    this.visibleChange.emit(this.visible);
+    this.form.reset({ apiType: 'REST_OPENAPI', apiAuthType: 'NONE' });
     this.selectedFile = null;
     this.fileSelected = false;
-    this.discoveredEndpoints = [];
-    this.manualEndpoints = [];
-    this.manualHeaders = [];
-    this.manualQueryParams = [];
-    this.manualRequestConfigs = [];
   }
 
-  next(): void {
-    if (this.currentStep < this.steps.length) {
-      this.currentStep++;
-      if (this.currentStep === 2) {
-        this.onCreateSourceSystem();
+  save(): void {
+    if (this.form.valid) {
+      const dto: CreateSourceSystemDTO = this.form.value;
+
+      if (this.selectedFile) {
+        // Datei in Base64 umwandeln
+        const reader = new FileReader();
+        reader.onload = () => {
+          const base64File = reader.result as string;
+
+          // Base64-String in Blob umwandeln
+          const blobFile = new Blob([base64File], { type: 'application/octet-stream' });
+
+          // JSON-Objekt mit Blob-Datei erstellen
+          const jsonDto = {
+            ...dto,
+            openApiSpec: blobFile // Blob der Datei
+          };
+
+          // JSON-Upload
+          this.sourceSystemService.apiConfigSourceSystemPost(jsonDto).subscribe({
+            next: (sourceSystemId: number) => {
+              console.log('Source System created with ID:', sourceSystemId);
+              this.nextStep.emit(sourceSystemId);
+            },
+            error: (err) => {
+              console.error('Failed to create Source System:', err);
+            }
+          });
+        };
+
+        reader.readAsDataURL(this.selectedFile); // Datei lesen und Base64-String erzeugen
+      } else {
+        // JSON-Upload ohne Datei
+        this.sourceSystemService.apiConfigSourceSystemPost(dto).subscribe({
+          next: (sourceSystemId: number) => {
+            console.log('Source System created with ID:', sourceSystemId);
+            this.nextStep.emit(sourceSystemId);
+          },
+          error: (err) => {
+            console.error('Failed to create Source System:', err);
+          }
+        });
       }
-    } else {
-      this.cancel();
-    }
-  }
-
-  private onCreateSourceSystem(): void {
-    const fakeId = Math.floor(Math.random() * 10000);
-    this.discoverEndpoints();
-  }
-
-  discoverEndpoints(): void {
-    if (this.selectedFile) {
-      const reader = new FileReader();
-      reader.onload = () => {
-        try {
-          const spec = JSON.parse(reader.result as string);
-          this.discoveredEndpoints = Object.entries(spec.paths || {}).flatMap(
-            ([path, methods]: any) =>
-              Object.keys(methods).map(m => ({ path, method: m.toUpperCase() }))
-          );
-        } catch (e) {
-          console.error('Spec parse error', e);
-        }
-      };
-      reader.readAsText(this.selectedFile);
-    } else if (this.form.value.openApiSpecUrl) {
-      fetch(this.form.value.openApiSpecUrl)
-        .then(res => res.json())
-        .then(spec => {
-          this.discoveredEndpoints = Object.entries(spec.paths || {}).flatMap(
-            ([path, methods]: any) =>
-              Object.keys(methods).map(m => ({ path, method: m.toUpperCase() }))
-          );
-        })
-        .catch(err => console.error('Fetch spec error', err));
-    }
-  }
-
-  openEndpointDialog(index: number | null = null): void {
-    if (index !== null) {
-      const ep = this.manualEndpoints[index];
-      this.endpointForm.setValue({ path: ep.path, method: ep.method });
-    } else {
-      this.endpointForm.reset();
-    }
-    this.visible = true;
-  }
-
-  saveEndpoint(): void {
-    const { path, method } = this.endpointForm.value;
-    this.manualEndpoints.push({ path, method });
-    this.visible = false;
-  }
-
-  openHeaderDialog(index: number | null = null): void {
-    if (index !== null) {
-      const h = this.manualHeaders[index];
-      this.headerForm.setValue({
-        headerType: h.headerType,
-        headerName: h.headerName,
-        values: h.values.join(','),
-      });
-    } else {
-      this.headerForm.reset();
-    }
-    this.visible = true;
-  }
-
-  saveHeader(): void {
-    const { headerType, headerName, values } = this.headerForm.value;
-    const vals = values.split(',').map((s: string) => s.trim());
-    this.manualHeaders.push({ id: 0, headerType, headerName, values: vals });
-    this.visible = false;
-  }
-
-  openQueryParamDialog(index: number | null = null): void {
-    if (index !== null) {
-      const q = this.manualQueryParams[index];
-      this.queryParamForm.setValue({
-        paramName: q.paramName,
-        queryParamType: q.queryParamType,
-        values: q.values.join(','),
-      });
-    } else {
-      this.queryParamForm.reset();
-    }
-    this.visible = true;
-  }
-
-  saveQueryParam(): void {
-    const { paramName, queryParamType, values } = this.queryParamForm.value;
-    const vals = values.split(',').map((s: string) => s.trim());
-    this.manualQueryParams.push({ paramName, queryParamType, id: 0, values: vals });
-    this.visible = false;
-  }
-
-  openRequestConfigDialog(index: number | null = null): void {
-    if (index !== null) {
-      const c = this.manualRequestConfigs[index];
-      this.requestConfigForm.setValue({
-        name: c.name,
-        active: c.active,
-        pollingIntervalTimeInMs: c.pollingIntervalTimeInMs,
-      });
-    } else {
-      this.requestConfigForm.reset();
-    }
-    this.visible = true;
-  }
-
-  saveRequestConfig(): void {
-    const cfg = this.requestConfigForm.value as CreateRequestConfigurationDto;
-    this.manualRequestConfigs.push(cfg);
-    this.visible = false;
-  }
-
-  onFileSelected(evt: any): void {
-    const file = evt.files ? evt.files[0] : evt.target.files[0];
-    if (file) {
-      this.selectedFile = file;
-      this.fileSelected = true;
-      this.form.patchValue({ openApiSpecUrl: '' });
     }
   }
 }

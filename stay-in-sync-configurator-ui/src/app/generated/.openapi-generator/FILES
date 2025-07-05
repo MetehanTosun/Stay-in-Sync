@@ -1,5 +1,4 @@
 .gitignore
-.openapi-generator-ignore
 README.md
 api.base.service.ts
 api.module.ts
@@ -29,9 +28,11 @@ model/apiHeader.ts
 model/apiHeaderDTO.ts
 model/apiHeaderValue.ts
 model/apiHeaderValueDTO.ts
+model/apiKeyAuthDTO.ts
 model/apiRequestConfiguration.ts
 model/apiRequestHeaderType.ts
 model/apiRequestParameterMessageDTO.ts
+model/basicAuthDTO.ts
 model/createApiHeaderDTO.ts
 model/createRequestConfigurationDTO.ts
 model/createSourceSystemDTO.ts

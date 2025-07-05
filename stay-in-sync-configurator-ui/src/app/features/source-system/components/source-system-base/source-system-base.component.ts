@@ -9,12 +9,13 @@ import { ToolbarModule } from 'primeng/toolbar';
 import { MessageModule } from 'primeng/message';
 import { CardModule } from 'primeng/card';
 
-// Dein Service + Models
-import { SourceSystemService } from '../../../../services/source-system-api.service';
-import { SourceSystemDTO } from '../../../../models/source-system.dto';
-
 // Create-Dialog-Komponente
 import { CreateSourceSystemComponent } from '../create-source-system/create-source-system.component';
+
+// Service und DTOs aus dem `generated`-Ordner
+import { SourceSystemResourceService } from '../../../../generated/api/sourceSystemResource.service';
+import { SourceSystemDTO } from '../../../../generated/model/sourceSystemDTO';
+import { SourceSystem } from '../../../../generated';
 
 @Component({
   standalone: true,
@@ -40,7 +41,7 @@ export class SourceSystemBaseComponent implements OnInit {
   /** Steuerung, ob der Create-Dialog angezeigt wird */
   showCreateDialog = false;
 
-  constructor(private api: SourceSystemService) {}
+  constructor(private api: SourceSystemResourceService) {}
 
   ngOnInit(): void {
     this.loadSystems();
@@ -49,9 +50,17 @@ export class SourceSystemBaseComponent implements OnInit {
   /** Lade alle Quellsysteme vom Backend */
   loadSystems(): void {
     this.loading = true;
-    this.api.getAll().subscribe({
-      next: list => {
-        this.systems = list;
+    this.api.apiConfigSourceSystemGet().subscribe({
+      next: (list: SourceSystem[]) => {
+        // Transformiere die Daten, um sie mit SourceSystemDTO kompatibel zu machen
+        this.systems = list.map(system => ({
+          id: system.id,
+          name: system.name || '', // Fallback für undefined
+          apiUrl: system.apiUrl || '', // Fallback für undefined
+          description: system.description || '', // Fallback für undefined
+          apiType: system.apiType || '', // Fallback für undefined
+          openApiSpec: undefined // Entferne Blob-Daten, falls nicht benötigt
+        } as SourceSystemDTO));
         this.loading = false;
       },
       error: err => {
@@ -61,7 +70,6 @@ export class SourceSystemBaseComponent implements OnInit {
       }
     });
   }
-
   /** Öffnet das Create-Dialog */
   openCreate(): void {
     this.showCreateDialog = true;

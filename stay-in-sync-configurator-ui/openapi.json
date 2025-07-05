@@ -178,6 +178,22 @@
           }
         }
       },
+      "ApiKeyAuthDTO" : {
+        "type" : "object",
+        "required" : [ "apiKey", "headerName" ],
+        "description" : "API-Key auth payload (apiKey + headerName)",
+        "properties" : {
+          "apiKey" : {
+            "type" : "string"
+          },
+          "headerName" : {
+            "type" : "string"
+          },
+          "authType" : {
+            "$ref" : "#/components/schemas/ApiAuthType"
+          }
+        }
+      },
       "ApiRequestConfiguration" : {
         "type" : "object",
         "properties" : {
@@ -222,6 +238,22 @@
           },
           "paramValue" : {
             "type" : "string"
+          }
+        }
+      },
+      "BasicAuthDTO" : {
+        "type" : "object",
+        "required" : [ "username", "password" ],
+        "description" : "BASIC auth payload",
+        "properties" : {
+          "username" : {
+            "type" : "string"
+          },
+          "password" : {
+            "type" : "string"
+          },
+          "authType" : {
+            "$ref" : "#/components/schemas/ApiAuthType"
           }
         }
       },
