@@ -3,30 +3,42 @@
 }
 
 .edc-base-container {
+
   display: flex;
-  height: 100vh;
-  background-color: transparent;
 }
 
 .sidebar {
+
+  position: fixed;
+  top: 0;
+  height: 100vh;
+
+
   width: 220px;
   flex-shrink: 0;
   display: flex;
   flex-direction: column;
   padding: 1rem;
-
   background-color: var(--p-surface-color);
   color: var(--p-text-color);
-  border-right: 1px solid var(--p-surface-d, #dee2e6); /* A standard variable for borders */
-
-
+  border-right: 1px solid var(--p-surface-d, #dee2e6);
   transition: background-color 0.2s ease-in-out, color 0.2s ease-in-out, border-color 0.2s ease-in-out;
+  overflow-y: hidden;
+}
+
+.content {
+  margin-left: 220px;
+
+  flex: 1;
+  padding: 2rem;
+
+  overflow-y: auto;
+  color: inherit;
 }
 
 .sidebar-header {
   padding: 0.5rem;
   margin-bottom: 1rem;
-
   font-size: 1.15rem;
   font-weight: 600;
   color: var(--p-text-color);
@@ -49,7 +61,6 @@
   transition: background-color 0.2s ease-in-out, color 0.2s ease-in-out;
 }
 
-
 .sidebar-nav a:hover {
   background-color: color-mix(in srgb, var(--p-text-color) 10%, transparent);
   color: var(--p-text-color);
@@ -61,9 +72,3 @@
   font-weight: 600;
 }
 
-.content {
-  flex: 1;
-  padding: 2rem;
-  overflow-y: auto;
-  color: inherit;
-}
