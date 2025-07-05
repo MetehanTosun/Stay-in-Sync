@@ -32,9 +32,9 @@ import { ApiKeyAuthDTO } from '../../../../generated/model/apiKeyAuthDTO';
   ]
 })
 export class CreateSourceSystemComponent implements OnInit {
-  @Input() visible = false; // Steuert die Sichtbarkeit des Dialogs
-  @Output() visibleChange = new EventEmitter<boolean>(); // Meldet Änderungen der Sichtbarkeit zurück
-  @Output() nextStep = new EventEmitter<number>(); // Gibt die sourceSystemId zurück, um zum nächsten Schritt zu wechseln
+  @Input() visible = false;
+  @Output() visibleChange = new EventEmitter<boolean>();
+  @Output() nextStep = new EventEmitter<number>();
 
   form!: FormGroup;
   selectedFile: File | null = null;
@@ -51,20 +51,24 @@ export class CreateSourceSystemComponent implements OnInit {
     { label: 'API Key', value: ApiAuthType.ApiKey }
   ];
 
-  constructor(private fb: FormBuilder, private sourceSystemService: SourceSystemResourceService) {}
+  constructor(
+    private fb: FormBuilder,
+    private sourceSystemService: SourceSystemResourceService
+  ) {}
 
   ngOnInit(): void {
+    // Schritt 1: FormGroup inkl. authConfig-Gruppe
     this.form = this.fb.group({
       name: ['', Validators.required],
       apiUrl: ['', [Validators.required, Validators.pattern('https?://.+')]],
       description: [''],
       apiType: ['REST_OPENAPI', Validators.required],
-      apiAuthType: ['NONE'],
+      apiAuthType: ['NONE', Validators.required],
       authConfig: this.fb.group({
         username: [''],
         password: [''],
         apiKey: [''],
-        headerName: ['']
+        headerName: [''],
       }),
       openApiSpec: [null]
     });
@@ -73,89 +77,114 @@ export class CreateSourceSystemComponent implements OnInit {
   }
 
   private setupAuthTypeValidators(): void {
-    this.form.get('apiAuthType')!.valueChanges.subscribe((authType) => {
-      const authConfigGroup = this.form.get('authConfig') as FormGroup;
-      authConfigGroup.get('username')!.clearValidators();
-      authConfigGroup.get('password')!.clearValidators();
-      authConfigGroup.get('apiKey')!.clearValidators();
-      authConfigGroup.get('headerName')!.clearValidators();
+    const authConfigGroup = this.form.get('authConfig') as FormGroup;
+    this.form.get('apiAuthType')!.valueChanges.subscribe((authType: ApiAuthType) => {
+      // alle vorherigen Validatoren löschen
+      ['username','password','apiKey','headerName'].forEach(key =>
+        authConfigGroup.get(key)!.clearValidators()
+      );
 
+      // neue Validatoren setzen
       if (authType === ApiAuthType.Basic) {
-        authConfigGroup.get('username')!.setValidators(Validators.required);
-        authConfigGroup.get('password')!.setValidators(Validators.required);
+        authConfigGroup.get('username')!.setValidators([Validators.required]);
+        authConfigGroup.get('password')!.setValidators([Validators.required]);
       } else if (authType === ApiAuthType.ApiKey) {
-        authConfigGroup.get('apiKey')!.setValidators(Validators.required);
-        authConfigGroup.get('headerName')!.setValidators(Validators.required);
+        authConfigGroup.get('apiKey')!.setValidators([Validators.required]);
+        authConfigGroup.get('headerName')!.setValidators([Validators.required]);
       }
 
-      authConfigGroup.get('username')!.updateValueAndValidity();
-      authConfigGroup.get('password')!.updateValueAndValidity();
-      authConfigGroup.get('apiKey')!.updateValueAndValidity();
-      authConfigGroup.get('headerName')!.updateValueAndValidity();
+      // Validierung neu berechnen
+      ['username','password','apiKey','headerName'].forEach(key =>
+        authConfigGroup.get(key)!.updateValueAndValidity()
+      );
     });
   }
 
   onFileSelected(event: Event): void {
     const input = event.target as HTMLInputElement;
-    if (input.files && input.files.length) {
+    if (input.files && input.files.length > 0) {
       this.selectedFile = input.files[0];
       this.fileSelected = true;
-      this.form.get('openApiSpec')?.reset();
+      // falls URL-Feld da war, zurücksetzen
+      this.form.get('openApiSpec')!.reset();
     }
   }
 
   cancel(): void {
     this.visible = false;
     this.visibleChange.emit(this.visible);
-    this.form.reset({ apiType: 'REST_OPENAPI', apiAuthType: 'NONE' });
+    // Form zurücksetzen auf Default-Werte
+    this.form.reset({
+      apiType: 'REST_OPENAPI',
+      apiAuthType: 'NONE'
+    });
     this.selectedFile = null;
     this.fileSelected = false;
   }
 
   save(): void {
-    if (this.form.valid) {
-      const dto: CreateSourceSystemDTO = this.form.value;
-
-      if (this.selectedFile) {
-        // Datei in Base64 umwandeln
-        const reader = new FileReader();
-        reader.onload = () => {
-          const base64File = reader.result as string;
-
-          // Base64-String in Blob umwandeln
-          const blobFile = new Blob([base64File], { type: 'application/octet-stream' });
-
-          // JSON-Objekt mit Blob-Datei erstellen
-          const jsonDto = {
-            ...dto,
-            openApiSpec: blobFile // Blob der Datei
-          };
-
-          // JSON-Upload
-          this.sourceSystemService.apiConfigSourceSystemPost(jsonDto).subscribe({
-            next: (sourceSystemId: number) => {
-              console.log('Source System created with ID:', sourceSystemId);
-              this.nextStep.emit(sourceSystemId);
-            },
-            error: (err) => {
-              console.error('Failed to create Source System:', err);
-            }
-          });
-        };
-
-        reader.readAsDataURL(this.selectedFile); // Datei lesen und Base64-String erzeugen
-      } else {
-        // JSON-Upload ohne Datei
-        this.sourceSystemService.apiConfigSourceSystemPost(dto).subscribe({
-          next: (sourceSystemId: number) => {
-            console.log('Source System created with ID:', sourceSystemId);
-            this.nextStep.emit(sourceSystemId);
-          },
-          error: (err) => {
-            console.error('Failed to create Source System:', err);
-          }
-        });
-      }
+    if (this.form.invalid) {
+      this.form.markAllAsTouched();
+      return;
     }
+
+    // Basispayload aus dem FormGroup holen (hat aktuell noch das verschachtelte authConfig-Objekt)
+    const dto: CreateSourceSystemDTO = {
+      ...this.form.value,
+      authConfig: undefined,   // setzen wir gleich manuell
+      openApiSpec: undefined   // ebenfalls manuell je nach Datei
+    };
+
+    // authConfig je nach Typ
+    const authConfigGroup = this.form.get('authConfig') as FormGroup;
+    const authType = this.form.get('apiAuthType')!.value as ApiAuthType;
+    if (authType === ApiAuthType.Basic) {
+      dto.authConfig = {
+        authType: ApiAuthType.Basic,
+        username: authConfigGroup.get('username')!.value,
+        password: authConfigGroup.get('password')!.value
+      } as BasicAuthDTO;
+    } else if (authType === ApiAuthType.ApiKey) {
+      dto.authConfig = {
+        authType: ApiAuthType.ApiKey,
+        apiKey: authConfigGroup.get('apiKey')!.value,
+        headerName: authConfigGroup.get('headerName')!.value
+      } as ApiKeyAuthDTO;
+    }
+
+    // Datei-Upload oder reines JSON
+    if (this.selectedFile) {
+      const reader = new FileReader();
+      reader.onload = () => {
+        // reader.result enthält DataURL, splitten wir ab
+        const base64 = (reader.result as string).split(',')[1];
+        // hier nehmen wir einfach die Base64-String direkt
+        const byteCharacters = atob(base64);
+        const byteNumbers = Array.from(byteCharacters).map(char => char.charCodeAt(0));
+        const byteArray = new Uint8Array(byteNumbers);
+        dto.openApiSpec = new Blob([byteArray], { type: 'application/octet-stream' });
+        this.postDto(dto);
+      };
+      reader.readAsDataURL(this.selectedFile);
+    } else {
+      this.postDto(dto);
+    }
+  }
+
+  private postDto(dto: CreateSourceSystemDTO) {
+    this.sourceSystemService
+      .apiConfigSourceSystemPost(dto, 'body', false)
+      .subscribe({
+        next: (res) => {
+          // wenn der Service die neue ID zurückliefert, emitten wir sie
+          const newId = typeof res === 'number' ? res : undefined;
+          if (newId) {
+            this.nextStep.emit(newId);
+          }
+        },
+        error: (err) => {
+          console.error('Failed to create Source System:', err);
+        }
+      });
   }
 }

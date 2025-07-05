@@ -1,90 +1,95 @@
 <p-dialog
-  header="Create Source System"
-  [visible]="visible"
-  [modal]="true"
-  [style]="{ width: '50vw' }"
-  (onHide)="cancel()"
+header="Create Source System"
+[visible]="visible"
+[modal]="true"
+[style]="{ width: '50vw' }"
+(onHide)="cancel()"
 >
-  <form [formGroup]="form" class="p-fluid">
-    <!-- Name -->
-    <div class="p-field">
-      <label for="name">Name*</label>
-      <input id="name" type="text" pInputText formControlName="name" />
-    </div>
+<form [formGroup]="form" class="p-fluid">
+  <!-- Name -->
+  <div class="p-field">
+    <label for="name">Name*</label>
+    <input id="name" type="text" pInputText formControlName="name" />
+  </div>
 
-    <!-- Basis-URL -->
-    <div class="p-field">
-      <label for="apiUrl">Basis-URL*</label>
-      <input id="apiUrl" type="text" pInputText formControlName="apiUrl" />
-    </div>
+  <!-- Basis-URL -->
+  <div class="p-field">
+    <label for="apiUrl">Base URL*</label>
+    <input id="apiUrl" type="text" pInputText formControlName="apiUrl" />
+  </div>
 
-    <!-- Beschreibung -->
-    <div class="p-field">
-      <label for="description">Beschreibung</label>
-      <textarea id="description" rows="3" pInputTextarea formControlName="description"></textarea>
-    </div>
+  <!-- Beschreibung -->
+  <div class="p-field">
+    <label for="description">Description</label>
+    <textarea id="description" rows="3" pInputTextarea formControlName="description"></textarea>
+  </div>
 
-    <!-- Typ -->
-    <div class="p-field">
-      <label for="apiType">Typ*</label>
-      <p-dropdown
-        id="apiType"
-        [options]="typeOptions"
-        formControlName="apiType"
-        placeholder="Select Type"
-      ></p-dropdown>
-    </div>
+  <!-- Typ -->
+  <div class="p-field">
+    <label for="apiType">Type*</label>
+    <p-dropdown
+      id="apiType"
+      [options]="typeOptions"
+      formControlName="apiType"
+      placeholder="Select Type"
+    ></p-dropdown>
+  </div>
 
-    <!-- Authentifizierung -->
-    <div class="p-field">
-      <label for="apiAuthType">Authentifizierung*</label>
-      <p-dropdown
-        id="apiAuthType"
-        [options]="authTypeOptions"
-        formControlName="apiAuthType"
-        placeholder="Select Auth Type"
-      ></p-dropdown>
-    </div>
+  <!-- Authentifizierung -->
+  <div class="p-field">
+    <label for="apiAuthType">Authentication*</label>
+    <p-dropdown
+      id="apiAuthType"
+      [options]="authTypeOptions"
+      formControlName="apiAuthType"
+      placeholder="Select Auth Type"
+    ></p-dropdown>
+  </div>
 
-    <!-- Authentifizierungs-Konfiguration -->
-    <div class="p-field" *ngIf="form.get('apiAuthType')?.value === 'BASIC'">
-      <label for="username">Benutzername*</label>
-      <input id="username" type="text" pInputText formControlName="authConfig.username" />
-    </div>
-    <div class="p-field" *ngIf="form.get('apiAuthType')?.value === 'BASIC'">
-      <label for="password">Passwort*</label>
-      <input id="password" type="password" pInputText formControlName="authConfig.password" />
-    </div>
-    <div class="p-field" *ngIf="form.get('apiAuthType')?.value === 'API_KEY'">
-      <label for="apiKey">API Key*</label>
-      <input id="apiKey" type="text" pInputText formControlName="authConfig.apiKey" />
-    </div>
-    <div class="p-field" *ngIf="form.get('apiAuthType')?.value === 'API_KEY'">
-      <label for="headerName">Header Name*</label>
-      <input id="headerName" type="text" pInputText formControlName="authConfig.headerName" />
-    </div>
+  <div formGroupName="authConfig">
+    <ng-container *ngIf="form.get('apiAuthType')?.value === 'BASIC'">
+      <div class="p-field">
+        <label for="username">Username*</label>
+        <input id="username" type="text" pInputText formControlName="username" />
+      </div>
+      <div class="p-field">
+        <label for="password">Password*</label>
+        <input id="password" type="password" pInputText formControlName="password" />
+      </div>
+    </ng-container>
+    <ng-container *ngIf="form.get('apiAuthType')?.value === 'API_KEY'">
+      <div class="p-field">
+        <label for="apiKey">API Key*</label>
+        <input id="apiKey" type="text" pInputText formControlName="apiKey" />
+      </div>
+      <div class="p-field">
+        <label for="headerName">Header Name*</label>
+        <input id="headerName" type="text" pInputText formControlName="headerName" />
+      </div>
+    </ng-container>
+  </div>
 
-    <!-- Spec-Upload/URL -->
-    <div class="p-field">
-      <label for="openApiSpec">OpenAPI Spec URL</label>
-      <input
-        id="openApiSpec"
-        type="text"
-        pInputText
-        formControlName="openApiSpec"
-        placeholder="https://..."
-        [disabled]="fileSelected"
-      />
-    </div>
-    <div class="p-field">
-      <label>ODER Datei hochladen</label>
-      <input type="file" (change)="onFileSelected($event)" accept=".json,.yaml,.yml" />
-      <small *ngIf="selectedFile">{{ selectedFile.name }}</small>
-    </div>
-  </form>
+  <!-- Spec-Upload/URL -->
+  <div class="p-field">
+    <label for="openApiSpec">OpenAPI Spec URL</label>
+    <input
+      id="openApiSpec"
+      type="text"
+      pInputText
+      formControlName="openApiSpec"
+      placeholder="https://..."
+      [disabled]="fileSelected"
+    />
+  </div>
+  <div class="p-field">
+    <label>OR Upload File</label>
+    <input type="file" (change)="onFileSelected($event)" accept=".json,.yaml,.yml" />
+    <small *ngIf="selectedFile">{{ selectedFile.name }}</small>
+  </div>
+</form>
 
-  <ng-template pTemplate="footer">
-    <button pButton type="button" label="Abbrechen" (click)="cancel()" class="p-button-text"></button>
-    <button pButton type="button" label="Weiter" (click)="save()" [disabled]="form.invalid"></button>
-  </ng-template>
+<ng-template pTemplate="footer">
+  <button pButton type="button" label="Cancel" (click)="cancel()" class="p-button-text"></button>
+  <button pButton type="button" label="Next" (click)="save()" [disabled]="form.invalid"></button>
+</ng-template>
 </p-dialog>
