@@ -1,22 +1,11 @@
 // Mirrors the ApiAuthType enum in the backend
-export type ApiAuthType = 'BASIC' | 'API_KEY';
 
-// Payload for BASIC auth (username + password)
-export interface BasicAuthDTO {
-  authType: 'BASIC';
-  username: string;
-  password: string;
-}
+import { ApiAuthConfigurationDTO } from './api-auth-configuration.dto';
+import { ApiAuthConfigurationBase } from './api-auth-configuration-base';
 
-// Payload for API_KEY auth (apiKey + headerName)
-export interface ApiKeyAuthDTO {
-  authType: 'API_KEY';
-  apiKey: string;
-  headerName: string;
-}
 
-// Union type for polymorphic authConfig
-export type ApiAuthConfigurationDTO = BasicAuthDTO | ApiKeyAuthDTO;
+export type ApiAuthType = 'NONE' | 'BASIC' | 'API_KEY';
+
 
 /**
  * DTO for creating a new SourceSystem.
@@ -34,3 +23,4 @@ export interface CreateSourceSystemDTO {
   /** For file uploads: a File object or a Base64-encoded string */
   openApiSpec?: File | string;
 }
+

@@ -6,3 +6,5 @@ public record SourceSystemDTO(Long id, @NotNull String name, @NotNull String api
                               @NotNull String apiType,
                               byte[] openApiSpec) {
 }
+
+
