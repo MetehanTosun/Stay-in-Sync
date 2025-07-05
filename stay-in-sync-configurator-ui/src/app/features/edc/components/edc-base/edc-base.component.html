@@ -1,8 +1,19 @@
-<div class="sidebar-container">
+<div class="edc-base-container">
   <div class="sidebar">
-    <button (click)="activeTab = 'instances'" [class.active]="activeTab === 'instances'">EDC Instances</button>
-    <button (click)="activeTab = 'assets and policies'" [class.active]="activeTab === 'assets and policies'">Data Assets & Policies</button>
+    <div class="sidebar-header">
+      <h4>EDC-Management</h4>
+    </div>
+
+    <nav class="sidebar-nav">
+      <a (click)="setActiveTab('instances')" [class.active]="activeTab === 'instances'">
+        EDC Instances
+      </a>
+      <a (click)="setActiveTab('assets and policies')" [class.active]="activeTab === 'assets and policies'">
+        Assets and Policies
+      </a>
+    </nav>
   </div>
+
   <div class="content">
     <app-edc-instances *ngIf="activeTab === 'instances'"></app-edc-instances>
     <app-edc-assets-and-policies *ngIf="activeTab === 'assets and policies'"></app-edc-assets-and-policies>

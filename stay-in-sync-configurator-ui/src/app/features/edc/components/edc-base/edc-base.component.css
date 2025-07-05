@@ -1,30 +1,69 @@
-.sidebar-container {
+
+:host {
+  --sidebar-bg: #2d3748; /* A deep, neutral slate color */
+  --sidebar-text: #e2e8f0; /* A soft, off-white for text */
+  --button-bg: transparent; /* Buttons are transparent by default */
+  --button-hover-bg: #4a5568; /* A lighter slate for hover */
+  --button-active-bg: #1a202c; /* A darker, inset color for active */
+  --button-active-text: #ffffff; /* Bright white for the active link */
+}
+
+.edc-base-container {
   display: flex;
   height: 100vh;
+
+  background-color: transparent;
 }
 
 .sidebar {
-  width: 200px;
-  background-color: #333;
-  color: white;
+
+  width: 10rem;
+  flex-shrink: 0;
+  background-color: var(--sidebar-bg);
+  color: var(--sidebar-text);
   display: flex;
   flex-direction: column;
+  padding: 1rem;
 }
 
-.sidebar button {
-  background-color: #444;
-  color: white;
+.sidebar-header {
+  padding: 0.5rem;
+  margin-bottom: 1rem;
+  font-size: 1.25rem;
+  font-weight: 600;
+  border-bottom: 1px solid #4a5568;
+}
+
+.sidebar-nav a {
+  display: block;
+  background-color: var(--button-bg);
+  color: var(--sidebar-text);
   border: none;
-  padding: 10px;
+  padding: 0.75rem 1rem;
+  margin-bottom: 0.5rem;
   text-align: left;
   cursor: pointer;
+  border-radius: 6px;
+  font-weight: 500;
+  text-decoration: none;
+
+  transition: background-color 0.2s ease-in-out, color 0.2s ease-in-out;
 }
 
-.sidebar button.active {
-  background-color: #555;
+.sidebar-nav a:hover {
+  background-color: var(--button-hover-bg);
+}
+
+.sidebar-nav a.active {
+  background-color: var(--button-active-bg);
+  color: var(--button-active-text);
+  font-weight: 600;
 }
 
 .content {
   flex: 1;
-  padding: 20px;
+  padding: 2rem;
+  overflow-y: auto;
+
+  color: inherit;
 }
