@@ -1,12 +1,19 @@
 import { CommonModule } from '@angular/common';
 import { Component, OnInit } from '@angular/core';
+
+// PrimeNG
 import { TableModule } from 'primeng/table';
 import { ButtonModule } from 'primeng/button';
-import { CardModule } from 'primeng/card';
+import { DialogModule } from 'primeng/dialog';
 import { ToolbarModule } from 'primeng/toolbar';
 import { MessageModule } from 'primeng/message';
-import { SourceSystemApiService } from '../../../../services/source-system-api.service';
-import { SourceSystemDto } from '../../../../models/source-system.model';
+import { CardModule } from 'primeng/card';
+
+// Dein Service + Models
+import { SourceSystemService } from '../../../../services/source-system-api.service';
+import { SourceSystemDTO } from '../../../../models/source-system.dto';
+
+// Create-Dialog-Komponente
 import { CreateSourceSystemComponent } from '../create-source-system/create-source-system.component';
 
 @Component({
@@ -18,46 +25,51 @@ import { CreateSourceSystemComponent } from '../create-source-system/create-sour
     CommonModule,
     TableModule,
     ButtonModule,
-    CardModule,
-    MessageModule,
+    DialogModule,
     ToolbarModule,
+    MessageModule,
+    CardModule,
     CreateSourceSystemComponent
   ]
 })
 export class SourceSystemBaseComponent implements OnInit {
-  availableSystems: { id: number; name: string }[] = [];
-  loading = true;
+  systems: SourceSystemDTO[] = [];
+  loading = false;
   errorMsg?: string;
+
+  /** Steuerung, ob der Create-Dialog angezeigt wird */
   showCreateDialog = false;
 
-  constructor(private api: SourceSystemApiService) {}
+  constructor(private api: SourceSystemService) {}
 
   ngOnInit(): void {
     this.loadSystems();
   }
 
+  /** Lade alle Quellsysteme vom Backend */
   loadSystems(): void {
     this.loading = true;
     this.api.getAll().subscribe({
-      next: (list: SourceSystemDto[]) => {
-        this.availableSystems = list.map(s => ({ id: s.id!, name: s.name }));
+      next: list => {
+        this.systems = list;
         this.loading = false;
       },
       error: err => {
-        console.error(err);
-        this.errorMsg = 'Laden fehlgeschlagen.';
+        console.error('Failed to load source systems', err);
+        this.errorMsg = 'Failed to load source systems';
         this.loading = false;
       }
     });
   }
 
+  /** Öffnet das Create-Dialog */
   openCreate(): void {
     this.showCreateDialog = true;
   }
 
   /**
-   * Wird aufgerufen, sobald das CreateComponent auf `visibleChange(false)` feuert.
-   * Schließt den Dialog und lädt die Liste neu.
+   * Wird vom <app-create-source-system> emittet, wenn der Dialog geschlossen wird.
+   * Lädt dann die Liste neu.
    */
   onCreateDialogClose(visible: boolean): void {
     this.showCreateDialog = visible;

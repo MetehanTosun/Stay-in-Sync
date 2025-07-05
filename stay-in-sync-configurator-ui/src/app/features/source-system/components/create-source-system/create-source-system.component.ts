@@ -7,25 +7,40 @@ import { StepsModule } from 'primeng/steps';
 import { DropdownModule } from 'primeng/dropdown';
 import { ButtonModule } from 'primeng/button';
 import { InputTextModule } from 'primeng/inputtext';
-import { InputTextarea } from 'primeng/inputtextarea'; 
+import { InputTextarea } from 'primeng/inputtextarea';
 import { RadioButtonModule } from 'primeng/radiobutton';
 import { InputGroupModule } from 'primeng/inputgroup';
 import { TableModule } from 'primeng/table';
-import {HttpClientModule } from '@angular/common/http';
+import { FileUploadModule } from 'primeng/fileupload';
 
-
-import { SourceSystemApiService } from '../../../../services/source-system-api.service';
-import { DiscoveredEndpointDto } from '../../../../models/discovered-endpoint.model';
+import { CreateSourceSystemDTO } from '../../../../models/create-source-system.dto';
+import { SourceSystemEndpointDTO } from '../../../../models/source-system-endpoint.dto';
+import { CreateSourceSystemEndpointDTO } from '../../../../models/create-source-system-endpoint.dto';
+import { ApiHeaderDto } from '../../../../models/api-header.dto';
+import { CreateApiHeaderDto } from '../../../../models/create-api-header.dto';
+import { ApiEndpointQueryParamDTO } from '../../../../models/api-endpoint-query-param.dto';
+import { CreateRequestConfigurationDto } from '../../../../models/create-request-configuration.dto';
+import { GetRequestConfigurationDto } from '../../../../models/get-request-configuration.dto';
 
 interface Step {
   label: string;
 }
 
+interface ManualEndpoint {
+  path: string;
+  method: string;
+}
+
+interface DiscoveredEndpointDto {
+  path: string;
+  method: string;
+}
+
 @Component({
+  standalone: true,
   selector: 'app-create-source-system',
   templateUrl: './create-source-system.component.html',
   styleUrls: ['./create-source-system.component.css'],
-  standalone: true,
   imports: [
     CommonModule,
     ReactiveFormsModule,
@@ -34,308 +49,271 @@ interface Step {
     DropdownModule,
     ButtonModule,
     InputTextModule,
-    InputTextModule, 
+    InputTextModule,
     RadioButtonModule,
     InputGroupModule,
     TableModule,
-  
-    HttpClientModule,
+    FileUploadModule,
   ]
 })
 export class CreateSourceSystemComponent implements OnInit {
-  /** Whether the create dialog is currently visible */
-  visible = false;
+  @Input() visible = false;
+  @Output() visibleChange = new EventEmitter<boolean>();
+  @Output() sourceSaved = new EventEmitter<void>();
 
-  /** Labels and order for each step in the wizard */
   steps: Step[] = [
     { label: 'Metadata' },
     { label: 'Endpoints' },
-    { label: 'Specification' }
+    { label: 'Headers' },
+    { label: 'Query Params' },
+    { label: 'Request Config' },
+    { label: 'Specification' },
   ];
+  currentStep = 1;
 
-  /** Options for selecting the source system type */
   typeOptions = [
     { label: 'AAS', value: 'AAS' },
     { label: 'REST-OpenAPI', value: 'REST_OPENAPI' }
   ];
-  /** Options for selecting the authentication type */
   authTypeOptions = [
+    { label: 'None', value: 'NONE' },
     { label: 'Basic', value: 'BASIC' },
     { label: 'API Key', value: 'API_KEY' }
   ];
 
-  /** FormGroup for the metadata step */
   form!: FormGroup;
-  /** FormGroup for the endpoint creation step */
-  step2Form!: FormGroup;
-
-  /** Tracks the current step number in the wizard (1-based) */
-  currentStep = 1;
-  /** ID of the created source system, once saved in backend */
-  createdSourceId: number | null = null;
-
-  /** Endpoints discovered automatically from the OpenAPI spec */
-  discoveredEndpoints: DiscoveredEndpointDto[] = [];
-  /** HTTP methods available for manual endpoint creation */
-  methodOptions = ['GET','POST','PUT','DELETE'];
-
-  /** Manually added or edited endpoints before saving */
-  manualEndpoints: {
-    path: string;
-    method: string;
-    pollingRate?: number;
-    schemaMode?: 'AUTO' | 'MANUAL';
-    schema?: string;
-  }[] = [];
-
-  /** Controls visibility of the endpoint add/edit dialog */
-  showEndpointDialog = false;
-  /** Index of the endpoint currently being edited, or null for a new one */
-  editingEndpointIndex: number | null = null;
-  /** FormGroup for the add/edit endpoint dialog */
   endpointForm!: FormGroup;
-  /** Available modes for schema generation */
-  schemaModes = ['AUTO', 'MANUAL'];
+  headerForm!: FormGroup;
+  queryParamForm!: FormGroup;
+  requestConfigForm!: FormGroup;
 
-  /** Currently selected specification file, if any */
+  discoveredEndpoints: DiscoveredEndpointDto[] = [];
+  manualEndpoints: ManualEndpoint[] = [];
+
+  manualHeaders: ApiHeaderDto[] = [];
+  manualQueryParams: ApiEndpointQueryParamDTO[] = [];
+  manualRequestConfigs: CreateRequestConfigurationDto[] = [];
+
   selectedFile: File | null = null;
-  /** True if a file has been chosen in the form */
   fileSelected = false;
 
-  constructor(
-    private fb: FormBuilder,
-    private api: SourceSystemApiService
-  ) {}
+  constructor(private fb: FormBuilder) {}
 
   ngOnInit(): void {
+    this.initializeForms();
+    this.setupAuthTypeValidators();
+  }
+
+  private initializeForms(): void {
+    // Step 1 form
     this.form = this.fb.group({
-      name:           ['', Validators.required],
-      description:    [''],
-      type:           ['REST_OPENAPI', Validators.required],
-      apiUrl:         ['', Validators.required],
-      authType:       ['NONE', Validators.required],
-      username:       [''],
-      password:       [''],
-      apiKey:         [''],
-      openApiSpecUrl: ['', [Validators.required, Validators.pattern('https?://.+')]],
+      name: ['', Validators.required],
+      description: [''],
+      type: ['REST_OPENAPI', Validators.required],
+      apiUrl: ['', [Validators.required, Validators.pattern('https?://.+')]],
+      authType: ['NONE', Validators.required],
+      username: [''],
+      password: [''],
+      apiKey: [''],
+      openApiSpecUrl: ['', Validators.pattern('https?://.+')],
     });
 
-    this.step2Form = this.fb.group({
-      path:   ['', Validators.required],
-      method: ['', Validators.required]
-    });
-
-    // Form for Add/Edit Endpoint dialog
+    // Step 2 dialog form
     this.endpointForm = this.fb.group({
       path: ['', Validators.required],
       method: ['', Validators.required],
-      pollingRate: [1000, [Validators.required, Validators.min(0)]],
-      schemaMode: ['AUTO', Validators.required],
-      manualSchema: ['']
     });
 
-    // Require credentials only when needed
-    this.form.get('authType')!.valueChanges.subscribe(type => {
-      const u = this.form.get('username')!, p = this.form.get('password')!, k = this.form.get('apiKey')!;
-      u.clearValidators(); p.clearValidators(); k.clearValidators();
-      if (type === 'BASIC') {
-        u.setValidators([Validators.required]);
-        p.setValidators([Validators.required]);
-      } else if (type === 'API_KEY') {
-        k.setValidators([Validators.required]);
-      }
-      u.updateValueAndValidity();
-      p.updateValueAndValidity();
-      k.updateValueAndValidity();
+    // Step 3 dialog form
+    this.headerForm = this.fb.group({
+      headerType: ['API_KEY', Validators.required],
+      headerName: ['', Validators.required],
+      values: ['', Validators.required], // comma-separated
+    });
+
+    // Step 4 dialog form
+    this.queryParamForm = this.fb.group({
+      paramName: ['', Validators.required],
+      queryParamType: ['QUERY', Validators.required],
+      values: ['', Validators.required],
+    });
+
+    // Step 5 dialog form
+    this.requestConfigForm = this.fb.group({
+      name: ['', Validators.required],
+      active: [true],
+      pollingIntervalTimeInMs: [1000, [Validators.required, Validators.min(0)]],
     });
   }
 
-  /**
-   * Opens the create source system dialog.
-   * @returns void
-   */
+  private setupAuthTypeValidators(): void {
+    this.form.get('authType')!.valueChanges.subscribe(type => {
+      const usernameControl = this.form.get('username')!;
+      const passwordControl = this.form.get('password')!;
+      const apiKeyControl = this.form.get('apiKey')!;
+
+      usernameControl.clearValidators();
+      passwordControl.clearValidators();
+      apiKeyControl.clearValidators();
+
+      if (type === 'BASIC') {
+        usernameControl.setValidators([Validators.required]);
+        passwordControl.setValidators([Validators.required]);
+      } else if (type === 'API_KEY') {
+        apiKeyControl.setValidators([Validators.required]);
+      }
+
+      usernameControl.updateValueAndValidity();
+      passwordControl.updateValueAndValidity();
+      apiKeyControl.updateValueAndValidity();
+    });
+  }
+
   open(): void {
     this.visible = true;
   }
 
-  /**
-   * Cancels and resets the dialog and form state.
-   * @returns void
-   */
   cancel(): void {
     this.visible = false;
     this.currentStep = 1;
-    this.form.reset({
-      type: 'REST_OPENAPI',
-      authType: 'NONE'
-    });
-    this.step2Form.reset();
+    this.form.reset({ type: 'REST_OPENAPI', authType: 'NONE' });
     this.selectedFile = null;
     this.fileSelected = false;
     this.discoveredEndpoints = [];
-    this.createdSourceId = null;
+    this.manualEndpoints = [];
+    this.manualHeaders = [];
+    this.manualQueryParams = [];
+    this.manualRequestConfigs = [];
   }
 
-  /**
-   * Handles file selection from the file input.
-   * @param evt The file input change event
-   * @returns void
-   */
-  onFileSelected(evt: Event): void {
-    const inp = evt.target as HTMLInputElement;
-    if (inp.files && inp.files.length) {
-      this.selectedFile = inp.files[0];
+  next(): void {
+    if (this.currentStep < this.steps.length) {
+      this.currentStep++;
+      if (this.currentStep === 2) {
+        this.onCreateSourceSystem();
+      }
+    } else {
+      this.cancel();
+    }
+  }
+
+  private onCreateSourceSystem(): void {
+    const fakeId = Math.floor(Math.random() * 10000);
+    this.discoverEndpoints();
+  }
+
+  discoverEndpoints(): void {
+    if (this.selectedFile) {
+      const reader = new FileReader();
+      reader.onload = () => {
+        try {
+          const spec = JSON.parse(reader.result as string);
+          this.discoveredEndpoints = Object.entries(spec.paths || {}).flatMap(
+            ([path, methods]: any) =>
+              Object.keys(methods).map(m => ({ path, method: m.toUpperCase() }))
+          );
+        } catch (e) {
+          console.error('Spec parse error', e);
+        }
+      };
+      reader.readAsText(this.selectedFile);
+    } else if (this.form.value.openApiSpecUrl) {
+      fetch(this.form.value.openApiSpecUrl)
+        .then(res => res.json())
+        .then(spec => {
+          this.discoveredEndpoints = Object.entries(spec.paths || {}).flatMap(
+            ([path, methods]: any) =>
+              Object.keys(methods).map(m => ({ path, method: m.toUpperCase() }))
+          );
+        })
+        .catch(err => console.error('Fetch spec error', err));
+    }
+  }
+
+  openEndpointDialog(index: number | null = null): void {
+    if (index !== null) {
+      const ep = this.manualEndpoints[index];
+      this.endpointForm.setValue({ path: ep.path, method: ep.method });
+    } else {
+      this.endpointForm.reset();
+    }
+    this.visible = true;
+  }
+
+  saveEndpoint(): void {
+    const { path, method } = this.endpointForm.value;
+    this.manualEndpoints.push({ path, method });
+    this.visible = false;
+  }
+
+  openHeaderDialog(index: number | null = null): void {
+    if (index !== null) {
+      const h = this.manualHeaders[index];
+      this.headerForm.setValue({
+        headerType: h.headerType,
+        headerName: h.headerName,
+        values: h.values.join(','),
+      });
+    } else {
+      this.headerForm.reset();
+    }
+    this.visible = true;
+  }
+
+  saveHeader(): void {
+    const { headerType, headerName, values } = this.headerForm.value;
+    const vals = values.split(',').map((s: string) => s.trim());
+    this.manualHeaders.push({ id: 0, headerType, headerName, values: vals });
+    this.visible = false;
+  }
+
+  openQueryParamDialog(index: number | null = null): void {
+    if (index !== null) {
+      const q = this.manualQueryParams[index];
+      this.queryParamForm.setValue({
+        paramName: q.paramName,
+        queryParamType: q.queryParamType,
+        values: q.values.join(','),
+      });
+    } else {
+      this.queryParamForm.reset();
+    }
+    this.visible = true;
+  }
+
+  saveQueryParam(): void {
+    const { paramName, queryParamType, values } = this.queryParamForm.value;
+    const vals = values.split(',').map((s: string) => s.trim());
+    this.manualQueryParams.push({ paramName, queryParamType, id: 0, values: vals });
+    this.visible = false;
+  }
+
+  openRequestConfigDialog(index: number | null = null): void {
+    if (index !== null) {
+      const c = this.manualRequestConfigs[index];
+      this.requestConfigForm.setValue({
+        name: c.name,
+        active: c.active,
+        pollingIntervalTimeInMs: c.pollingIntervalTimeInMs,
+      });
+    } else {
+      this.requestConfigForm.reset();
+    }
+    this.visible = true;
+  }
+
+  saveRequestConfig(): void {
+    const cfg = this.requestConfigForm.value as CreateRequestConfigurationDto;
+    this.manualRequestConfigs.push(cfg);
+    this.visible = false;
+  }
+
+  onFileSelected(evt: any): void {
+    const file = evt.files ? evt.files[0] : evt.target.files[0];
+    if (file) {
+      this.selectedFile = file;
       this.fileSelected = true;
       this.form.patchValue({ openApiSpecUrl: '' });
     }
-  }
-
-  /**
-   * Proceeds to the next step in the wizard, saving data as needed.
-   * @returns void
-   */
-  next(): void {
-    if (this.currentStep === 1) {
-      // CREATE SourceSystem
-      if (this.fileSelected && this.selectedFile) {
-        const fd = new FormData();
-        fd.append('file', this.selectedFile);
-        ['name','description','type','apiUrl','authType','username','password','apiKey']
-          .forEach(k => fd.append(k, (this.form.value as any)[k] || ''));
-        this.api.createFormData(fd).subscribe(res => {
-          this.createdSourceId = res.id ?? null;
-          this.loadEndpoints();
-          this.discoverEndpoints();
-          this.currentStep = 2;
-        });
-      } else {
-        const dto = { ...this.form.value, openApiSpec: null };
-        this.api.create(dto).subscribe(res => {
-          this.createdSourceId = res.id ?? null;
-          this.loadEndpoints();
-          this.discoverEndpoints();
-          this.currentStep = 2;
-        });
-      }
-      return;
-    }
-
-    if (this.currentStep === 2) {
-      this.currentStep = 3;
-      return;
-    }
-
-    // final step
-    this.cancel();
-  }
-
-  /**
-   * Loads the list of endpoints for the created source system.
-   * @returns void
-   */
-  private loadEndpoints(): void {
-    if (!this.createdSourceId) return;
-    this.api.listEndpoints(this.createdSourceId)
-      .subscribe();
-  }
-
-  /**
-   * Discovers endpoints automatically from the OpenAPI specification.
-   * @returns void
-   */
-  discoverEndpoints(): void {
-    console.log('▶ Discovering endpoints for sourceId=', this.createdSourceId);
-    if (!this.createdSourceId) { return; }
-    this.api.discoverEndpoints(this.createdSourceId).subscribe({
-      next: list => {
-        console.log('◀ Discovered:', list);
-        this.discoveredEndpoints = list;
-      },
-      error: err => {
-        console.error('✖ Discover error:', err);
-      }
-    });
-  }
-
-  /**
-   * Adds an endpoint discovered automatically to the backend.
-   * @param endpoint The discovered endpoint to add
-   * @returns void
-   */
-  addDiscoveredEndpoint(endpoint: DiscoveredEndpointDto): void {
-    if (!this.createdSourceId) {
-      return;
-    }
-    this.api
-      .createEndpoint(this.createdSourceId, {
-        path: endpoint.path,
-        method: endpoint.method
-      })
-      .subscribe(() => this.loadEndpoints());
-  }
-
-  /**
-   * Adds a manually specified endpoint to the backend.
-   * @returns void
-   */
-  addManualEndpoint(): void {
-    if (!this.createdSourceId) return;
-    if (this.step2Form.invalid) {
-      this.step2Form.markAllAsTouched();
-      return;
-    }
-    const { path, method } = this.step2Form.value;
-    this.api.createEndpoint(this.createdSourceId, { path, method })
-      .subscribe(() => {
-        this.step2Form.reset();
-        this.loadEndpoints();
-      });
-  }
-
-  /**
-   * Opens the Add/Edit Endpoint dialog.
-   * @param index index of endpoint to edit, or null to add new.
-   * @returns void
-   */
-  openEndpointDialog(index: number | null = null): void {
-    this.editingEndpointIndex = index;
-    if (index !== null && this.manualEndpoints[index]) {
-      const ep = this.manualEndpoints[index];
-      this.endpointForm.setValue({
-        path: ep.path,
-        method: ep.method,
-        pollingRate: ep.pollingRate ?? 1000,
-        schemaMode: ep.schemaMode ?? 'AUTO',
-        manualSchema: ep.schema ?? ''
-      });
-    } else {
-      this.endpointForm.reset({ pollingRate: 1000, schemaMode: 'AUTO', path: '', method: '', manualSchema: '' });
-    }
-    this.showEndpointDialog = true;
-  }
-
-  /**
-   * Saves the endpoint from the dialog into the manual endpoints list.
-   * @returns void
-   */
-  saveEndpoint(): void {
-    if (this.endpointForm.invalid) {
-      this.endpointForm.markAllAsTouched();
-      return;
-    }
-    const val = this.endpointForm.value;
-    const newEp = {
-      path: val.path,
-      method: val.method,
-      pollingRate: val.pollingRate,
-      schemaMode: val.schemaMode,
-      schema: val.schemaMode === 'MANUAL' ? val.manualSchema : undefined
-    };
-    if (this.editingEndpointIndex !== null) {
-      this.manualEndpoints[this.editingEndpointIndex] = newEp;
-    } else {
-      this.manualEndpoints.push(newEp);
-    }
-    this.showEndpointDialog = false;
   }
 }

@@ -1,34 +1,56 @@
+<!-- src/app/features/source-system/components/source-system-base/source-system-base.component.html -->
+
 <p-toolbar>
   <div class="p-toolbar-group-left">
     <button
       pButton
       type="button"
-      label="Create Source System"
       icon="pi pi-plus"
-      (click)="createDlg.open()"
+      label="New Source System"
+      (click)="openCreate()"
     ></button>
   </div>
 </p-toolbar>
-
-<p-table [value]="availableSystems" [loading]="loading">
-  <ng-template pTemplate="header">
-    <tr>
-      <th>ID</th>
-      <th>Name</th>
-    </tr>
-  </ng-template>
-  <ng-template pTemplate="body" let-system>
-    <tr>
-      <td>{{ system.id }}</td>
-      <td>{{ system.name }}</td>
-    </tr>
-  </ng-template>
-</p-table>
-
-<app-create-source-system #createDlg></app-create-source-system>
 
 <p-message
   *ngIf="errorMsg"
   severity="error"
   text="{{ errorMsg }}"
 ></p-message>
+
+<p-table [value]="systems" [loading]="loading">
+  <ng-template pTemplate="header">
+    <tr>
+      <th>Name</th>
+      <th>API URL</th>
+      <th>Type</th>
+      <th>Description</th>
+    </tr>
+  </ng-template>
+  <ng-template pTemplate="body" let-sys>
+    <tr>
+      <td>{{ sys.name }}</td>
+      <td>{{ sys.apiUrl }}</td>
+      <td>{{ sys.apiType }}</td>
+      <td>{{ sys.description }}</td>
+    </tr>
+  </ng-template>
+</p-table>
+
+<p-dialog
+  header="Create Source System"
+  [(visible)]="showCreateDialog"
+  [modal]="true"
+  [closable]="false"
+  [style]="{ width: '600px' }"
+  (onHide)="onCreateDialogClose(false)"
+>
+  <!--
+    Hier binden wir die Sichtbarkeit auch ans Kind,
+    damit die Create-Komponente ihr eigenes Dialog-Overlay
+    über den Input/Output `visible`/`visibleChange` steuern kann.
+  -->
+  <app-create-source-system
+    [(visible)]="showCreateDialog"
+  ></app-create-source-system>
+</p-dialog>
