@@ -4,6 +4,7 @@ import { CommonModule } from '@angular/common';
 
 // PrimeNG
 import { DialogModule } from 'primeng/dialog';
+import { StepsModule } from 'primeng/steps';
 import { DropdownModule } from 'primeng/dropdown';
 import { InputTextModule } from 'primeng/inputtext';
 import { ButtonModule } from 'primeng/button';
@@ -15,6 +16,8 @@ import { CreateSourceSystemDTO } from '../../../../generated/model/createSourceS
 import { ApiAuthType } from '../../../../generated/model/apiAuthType';
 import { BasicAuthDTO } from '../../../../generated/model/basicAuthDTO';
 import { ApiKeyAuthDTO } from '../../../../generated/model/apiKeyAuthDTO';
+import { ManageEndpointsComponent } from '../manage-endpoints/manage-endpoints.component';
+import { HttpResponse } from '@angular/common/http';
 
 @Component({
   standalone: true,
@@ -25,16 +28,24 @@ import { ApiKeyAuthDTO } from '../../../../generated/model/apiKeyAuthDTO';
     CommonModule,
     ReactiveFormsModule,
     DialogModule,
+    StepsModule,
     DropdownModule,
     InputTextModule,
     ButtonModule,
-    TextareaModule
+    TextareaModule,
+    ManageEndpointsComponent
   ]
 })
 export class CreateSourceSystemComponent implements OnInit {
   @Input() visible = false;
   @Output() visibleChange = new EventEmitter<boolean>();
-  @Output() nextStep = new EventEmitter<number>();
+
+  steps = [
+    { label: 'Create Source System' },
+    { label: 'Manage Endpoints' }
+  ];
+  currentStep = 0; // Start bei Schritt 0 (Metadaten)
+  createdSourceSystemId!: number;
 
   form!: FormGroup;
   selectedFile: File | null = null;
@@ -44,9 +55,7 @@ export class CreateSourceSystemComponent implements OnInit {
     { label: 'REST-OpenAPI', value: 'REST_OPENAPI' },
     { label: 'AAS', value: 'AAS' }
   ];
-
   authTypeOptions = [
-    { label: 'None', value: 'NONE' },
     { label: 'Basic', value: ApiAuthType.Basic },
     { label: 'API Key', value: ApiAuthType.ApiKey }
   ];
@@ -57,69 +66,59 @@ export class CreateSourceSystemComponent implements OnInit {
   ) {}
 
   ngOnInit(): void {
-    // Schritt 1: FormGroup inkl. authConfig-Gruppe
     this.form = this.fb.group({
       name: ['', Validators.required],
       apiUrl: ['', [Validators.required, Validators.pattern('https?://.+')]],
       description: [''],
       apiType: ['REST_OPENAPI', Validators.required],
-      apiAuthType: ['NONE', Validators.required],
+      apiAuthType: [null],
       authConfig: this.fb.group({
         username: [''],
         password: [''],
         apiKey: [''],
-        headerName: [''],
+        headerName: ['']
       }),
-      openApiSpec: [null]
+      openApiSpec: [{ value: null, disabled: false }]
     });
 
-    this.setupAuthTypeValidators();
-  }
-
-  private setupAuthTypeValidators(): void {
-    const authConfigGroup = this.form.get('authConfig') as FormGroup;
     this.form.get('apiAuthType')!.valueChanges.subscribe((authType: ApiAuthType) => {
-      // alle vorherigen Validatoren löschen
-      ['username','password','apiKey','headerName'].forEach(key =>
-        authConfigGroup.get(key)!.clearValidators()
-      );
-
-      // neue Validatoren setzen
+      const grp = this.form.get('authConfig') as FormGroup;
+      // reset
+      ['username', 'password', 'apiKey', 'headerName'].forEach(k => {
+        grp.get(k)!.clearValidators();
+        grp.get(k)!.updateValueAndValidity();
+      });
       if (authType === ApiAuthType.Basic) {
-        authConfigGroup.get('username')!.setValidators([Validators.required]);
-        authConfigGroup.get('password')!.setValidators([Validators.required]);
+        grp.get('username')!.setValidators([Validators.required]);
+        grp.get('password')!.setValidators([Validators.required]);
       } else if (authType === ApiAuthType.ApiKey) {
-        authConfigGroup.get('apiKey')!.setValidators([Validators.required]);
-        authConfigGroup.get('headerName')!.setValidators([Validators.required]);
+        grp.get('apiKey')!.setValidators([Validators.required]);
+        grp.get('headerName')!.setValidators([Validators.required]);
       }
-
-      // Validierung neu berechnen
-      ['username','password','apiKey','headerName'].forEach(key =>
-        authConfigGroup.get(key)!.updateValueAndValidity()
-      );
+      ['username', 'password', 'apiKey', 'headerName'].forEach(k => grp.get(k)!.updateValueAndValidity());
     });
   }
 
-  onFileSelected(event: Event): void {
-    const input = event.target as HTMLInputElement;
-    if (input.files && input.files.length > 0) {
+  onFileSelected(ev: Event): void {
+    const input = ev.target as HTMLInputElement;
+    if (input.files?.length) {
       this.selectedFile = input.files[0];
       this.fileSelected = true;
-      // falls URL-Feld da war, zurücksetzen
-      this.form.get('openApiSpec')!.reset();
+      this.form.get('openApiSpec')!.disable();
     }
   }
 
   cancel(): void {
     this.visible = false;
-    this.visibleChange.emit(this.visible);
-    // Form zurücksetzen auf Default-Werte
+    this.visibleChange.emit(false);
     this.form.reset({
       apiType: 'REST_OPENAPI',
-      apiAuthType: 'NONE'
+      apiAuthType: null
     });
     this.selectedFile = null;
     this.fileSelected = false;
+    this.form.get('openApiSpec')!.enable();
+    this.currentStep = 0; // Zurücksetzen auf Schritt 0
   }
 
   save(): void {
@@ -128,59 +127,56 @@ export class CreateSourceSystemComponent implements OnInit {
       return;
     }
 
-    // Basispayload aus dem FormGroup holen (hat aktuell noch das verschachtelte authConfig-Objekt)
-    const dto: CreateSourceSystemDTO = {
-      ...this.form.value,
-      authConfig: undefined,   // setzen wir gleich manuell
-      openApiSpec: undefined   // ebenfalls manuell je nach Datei
-    };
+    const base = { ...this.form.getRawValue() } as CreateSourceSystemDTO;
+    delete base.authConfig;
+    delete base.openApiSpec;
 
-    // authConfig je nach Typ
-    const authConfigGroup = this.form.get('authConfig') as FormGroup;
     const authType = this.form.get('apiAuthType')!.value as ApiAuthType;
+    const cfg = this.form.get('authConfig')!.value;
     if (authType === ApiAuthType.Basic) {
-      dto.authConfig = {
-        authType: ApiAuthType.Basic,
-        username: authConfigGroup.get('username')!.value,
-        password: authConfigGroup.get('password')!.value
-      } as BasicAuthDTO;
+      base.authConfig = { authType, username: cfg.username, password: cfg.password } as BasicAuthDTO;
     } else if (authType === ApiAuthType.ApiKey) {
-      dto.authConfig = {
-        authType: ApiAuthType.ApiKey,
-        apiKey: authConfigGroup.get('apiKey')!.value,
-        headerName: authConfigGroup.get('headerName')!.value
-      } as ApiKeyAuthDTO;
+      base.authConfig = { authType, apiKey: cfg.apiKey, headerName: cfg.headerName } as ApiKeyAuthDTO;
     }
 
-    // Datei-Upload oder reines JSON
+    const post = () => {
+      this.postDto(base);
+    };
+
     if (this.selectedFile) {
       const reader = new FileReader();
       reader.onload = () => {
-        // reader.result enthält DataURL, splitten wir ab
-        const base64 = (reader.result as string).split(',')[1];
-        // hier nehmen wir einfach die Base64-String direkt
-        const byteCharacters = atob(base64);
-        const byteNumbers = Array.from(byteCharacters).map(char => char.charCodeAt(0));
-        const byteArray = new Uint8Array(byteNumbers);
-        dto.openApiSpec = new Blob([byteArray], { type: 'application/octet-stream' });
-        this.postDto(dto);
+        const b64 = (reader.result as string).split(',')[1];
+        const bytes = atob(b64);
+        const arr = new Uint8Array(bytes.length);
+        for (let i = 0; i < bytes.length; i++) arr[i] = bytes.charCodeAt(i);
+        base.openApiSpec = new Blob([arr], { type: 'application/octet-stream' });
+        post();
       };
       reader.readAsDataURL(this.selectedFile);
     } else {
-      this.postDto(dto);
+      post();
     }
   }
 
-  private postDto(dto: CreateSourceSystemDTO) {
+  private postDto(dto: CreateSourceSystemDTO): void {
     this.sourceSystemService
-      .apiConfigSourceSystemPost(dto, 'body', false)
+      .apiConfigSourceSystemPost(dto, 'response', false)
       .subscribe({
-        next: (res) => {
-          // wenn der Service die neue ID zurückliefert, emitten wir sie
-          const newId = typeof res === 'number' ? res : undefined;
-          if (newId) {
-            this.nextStep.emit(newId);
+        next: (resp: HttpResponse<void>) => {
+          const location = resp.headers.get('Location');
+          if (!location) {
+            console.error('No Location header returned');
+            return;
           }
+          const parts = location.split('/');
+          const id = Number(parts[parts.length - 1]);
+          if (isNaN(id)) {
+            console.error('Cannot parse ID from Location header:', location);
+            return;
+          }
+          this.createdSourceSystemId = id;
+          this.currentStep = 1; // Wechsel zu Schritt 1 (Manage Endpoints)
         },
         error: (err) => {
           console.error('Failed to create Source System:', err);

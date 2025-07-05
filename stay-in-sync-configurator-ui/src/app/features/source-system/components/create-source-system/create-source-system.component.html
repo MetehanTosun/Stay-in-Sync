@@ -1,95 +1,76 @@
-<p-dialog
-header="Create Source System"
-[visible]="visible"
-[modal]="true"
-[style]="{ width: '50vw' }"
-(onHide)="cancel()"
->
-<form [formGroup]="form" class="p-fluid">
-  <!-- Name -->
-  <div class="p-field">
-    <label for="name">Name*</label>
-    <input id="name" type="text" pInputText formControlName="name" />
-  </div>
+<p-steps [model]="steps" [activeIndex]="currentStep" class="p-mb-4"></p-steps>
 
-  <!-- Basis-URL -->
-  <div class="p-field">
-    <label for="apiUrl">Base URL*</label>
-    <input id="apiUrl" type="text" pInputText formControlName="apiUrl" />
-  </div>
-
-  <!-- Beschreibung -->
-  <div class="p-field">
-    <label for="description">Description</label>
-    <textarea id="description" rows="3" pInputTextarea formControlName="description"></textarea>
-  </div>
-
-  <!-- Typ -->
-  <div class="p-field">
-    <label for="apiType">Type*</label>
-    <p-dropdown
-      id="apiType"
-      [options]="typeOptions"
-      formControlName="apiType"
-      placeholder="Select Type"
-    ></p-dropdown>
-  </div>
-
-  <!-- Authentifizierung -->
-  <div class="p-field">
-    <label for="apiAuthType">Authentication*</label>
-    <p-dropdown
-      id="apiAuthType"
-      [options]="authTypeOptions"
-      formControlName="apiAuthType"
-      placeholder="Select Auth Type"
-    ></p-dropdown>
-  </div>
-
-  <div formGroupName="authConfig">
-    <ng-container *ngIf="form.get('apiAuthType')?.value === 'BASIC'">
+<ng-container *ngIf="currentStep === 0">
+  <p-dialog
+    header="Create Source System"
+    [(visible)]="visible"
+    modal="true"
+    [style]="{ width: '50vw' }"
+    (onHide)="cancel()"
+  >
+    <form [formGroup]="form" class="p-fluid">
+      <!-- Metadaten-Formular -->
       <div class="p-field">
-        <label for="username">Username*</label>
-        <input id="username" type="text" pInputText formControlName="username" />
+        <label for="name">Name*</label>
+        <input id="name" type="text" pInputText formControlName="name" />
       </div>
       <div class="p-field">
-        <label for="password">Password*</label>
-        <input id="password" type="password" pInputText formControlName="password" />
-      </div>
-    </ng-container>
-    <ng-container *ngIf="form.get('apiAuthType')?.value === 'API_KEY'">
-      <div class="p-field">
-        <label for="apiKey">API Key*</label>
-        <input id="apiKey" type="text" pInputText formControlName="apiKey" />
+        <label for="apiUrl">Base URL*</label>
+        <input id="apiUrl" type="text" pInputText formControlName="apiUrl" />
       </div>
       <div class="p-field">
-        <label for="headerName">Header Name*</label>
-        <input id="headerName" type="text" pInputText formControlName="headerName" />
+        <label for="description">Description</label>
+        <textarea id="description" rows="3" pInputTextarea formControlName="description"></textarea>
       </div>
-    </ng-container>
-  </div>
+      <div class="p-field">
+        <label for="apiType">Type*</label>
+        <p-dropdown id="apiType" [options]="typeOptions" formControlName="apiType"></p-dropdown>
+      </div>
+      <div class="p-field">
+        <label for="apiAuthType">Authentication</label>
+        <p-dropdown id="apiAuthType" [options]="authTypeOptions" formControlName="apiAuthType"></p-dropdown>
+      </div>
+      <div formGroupName="authConfig">
+        <ng-container *ngIf="form.get('apiAuthType')?.value === 'BASIC'">
+          <div class="p-field">
+            <label for="username">Username*</label>
+            <input id="username" type="text" pInputText formControlName="username" />
+          </div>
+          <div class="p-field">
+            <label for="password">Password*</label>
+            <input id="password" type="password" pInputText formControlName="password" />
+          </div>
+        </ng-container>
+        <ng-container *ngIf="form.get('apiAuthType')?.value === 'API_KEY'">
+          <div class="p-field">
+            <label for="apiKey">API Key*</label>
+            <input id="apiKey" type="text" pInputText formControlName="apiKey" />
+          </div>
+          <div class="p-field">
+            <label for="headerName">Header Name*</label>
+            <input id="headerName" type="text" pInputText formControlName="headerName" />
+          </div>
+        </ng-container>
+      </div>
+      <div class="p-field">
+        <label for="openApiSpec">OpenAPI Spec URL</label>
+        <input id="openApiSpec" type="text" pInputText formControlName="openApiSpec" placeholder="https://..." />
+      </div>
+      <div class="p-field">
+        <label>OR Upload File</label>
+        <input type="file" (change)="onFileSelected($event)" accept=".json,.yaml,.yml" />
+        <small *ngIf="selectedFile">{{ selectedFile.name }}</small>
+      </div>
+    </form>
+    <ng-template pTemplate="footer">
+      <button pButton type="button" label="Cancel" (click)="cancel()" class="p-button-text"></button>
+      <button pButton type="button" label="Create & Continue" (click)="save()" [disabled]="form.invalid"></button>
+    </ng-template>
+  </p-dialog>
+</ng-container>
 
-  <!-- Spec-Upload/URL -->
-  <div class="p-field">
-    <label for="openApiSpec">OpenAPI Spec URL</label>
-    <input
-      id="openApiSpec"
-      type="text"
-      pInputText
-      formControlName="openApiSpec"
-      placeholder="https://..."
-      [disabled]="fileSelected"
-    />
-  </div>
-  <div class="p-field">
-    <label>OR Upload File</label>
-    <input type="file" (change)="onFileSelected($event)" accept=".json,.yaml,.yml" />
-    <small *ngIf="selectedFile">{{ selectedFile.name }}</small>
-  </div>
-</form>
-
-<ng-template pTemplate="footer">
-  <button pButton type="button" label="Cancel" (click)="cancel()" class="p-button-text"></button>
-  <button pButton type="button" label="Next" (click)="save()" [disabled]="form.invalid"></button>
-</ng-template>
-</p-dialog>
+<ng-container *ngIf="currentStep === 1">
+  <app-manage-endpoints
+    [sourceSystemId]="createdSourceSystemId"
+  ></app-manage-endpoints>
+</ng-container>

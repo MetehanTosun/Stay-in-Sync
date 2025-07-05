@@ -1,0 +1,67 @@
+<!-- src/app/features/source-system/components/manage-endpoints/manage-endpoints.component.html -->
+
+<!-- Optional: Stepper im Child anzeigen -->
+<p-steps [model]="steps" [activeIndex]="activeIndex" styleClass="mb-4"></p-steps>
+
+<p-card>
+  <h3>Manage Endpoints</h3>
+
+  <p-table
+    [value]="endpoints"
+    [loading]="loading"
+    [paginator]="true"
+    [rows]="10"
+    [responsiveLayout]="'scroll'"
+  >
+    <ng-template pTemplate="header">
+      <tr>
+        <th>Path</th>
+        <th>HTTP Method</th>
+        <th>Actions</th>
+      </tr>
+    </ng-template>
+    <ng-template pTemplate="body" let-endpoint>
+      <tr>
+        <td>{{ endpoint.endpointPath }}</td>
+        <td>{{ endpoint.httpRequestType }}</td>
+        <td>
+          <button
+            pButton
+            type="button"
+            icon="pi pi-trash"
+            class="p-button-text"
+            (click)="deleteEndpoint(endpoint.id!)"
+          ></button>
+        </td>
+      </tr>
+    </ng-template>
+  </p-table>
+
+  <form [formGroup]="endpointForm" class="p-fluid mt-4">
+    <div class="p-field">
+      <label for="endpointPath">Endpoint Path*</label>
+      <input
+        id="endpointPath"
+        type="text"
+        pInputText
+        formControlName="endpointPath"
+      />
+    </div>
+    <div class="p-field">
+      <label for="httpRequestType">HTTP Method*</label>
+      <p-dropdown
+        id="httpRequestType"
+        [options]="httpRequestTypes"
+        formControlName="httpRequestType"
+        placeholder="Select HTTP Method"
+      ></p-dropdown>
+    </div>
+    <button
+      pButton
+      type="button"
+      label="Add Endpoint"
+      [disabled]="endpointForm.invalid"
+      (click)="addEndpoint()"
+    ></button>
+  </form>
+</p-card>
