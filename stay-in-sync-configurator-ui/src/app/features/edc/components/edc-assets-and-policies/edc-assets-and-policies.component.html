@@ -145,7 +145,10 @@
             </div>
 
 
-            <p-table [value]="policy.contractPolicies" dataKey="id" styleClass="nested-table p-datatable-sm p-datatable-striped">
+            <p-table [value]="policy.contractPolicies"
+                     dataKey="id"
+                     styleClass="nested-table p-datatable-sm p-datatable-striped"
+                      [tableStyle]="{'max-width': '50rem'}">
               <ng-template pTemplate="header">
                 <tr>
                   <th style="width: 45%" pSortableColumn="id">ID <p-sortIcon field="id"></p-sortIcon></th>
