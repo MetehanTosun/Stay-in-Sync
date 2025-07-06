@@ -13,14 +13,11 @@ import { DialogModule }   from 'primeng/dialog';
 import { ProgressSpinnerModule } from 'primeng/progressspinner';
 
 import { SourceSystemEndpointResourceService } from '../../../../generated/api/sourceSystemEndpointResource.service';
-import { RequestConfigurationResourceService }  from '../../../../generated/api/requestConfigurationResource.service';
 import { HttpClient } from '@angular/common/http';
 import { SourceSystemResourceService } from '../../../../generated/api/sourceSystemResource.service';
 
 import { SourceSystemEndpointDTO }       from '../../../../generated';
 import { CreateSourceSystemEndpointDTO } from '../../../../generated';
-import { CreateRequestConfigurationDTO } from '../../../../generated';
-import { GetRequestConfigurationDTO }    from '../../../../generated';
 
 @Component({
   standalone: true,
@@ -53,11 +50,6 @@ export class ManageEndpointsComponent implements OnInit {
   // Selected Endpoint
   selectedEndpoint: SourceSystemEndpointDTO | null = null;
 
-  // Request Configurations
-  requestConfigurations: GetRequestConfigurationDTO[] = [];
-  requestConfigurationForm!: FormGroup;
-  loadingConfigs = false;
-
   // HTTP methods dropdown
   httpRequestTypes = [
     { label: 'GET',    value: 'GET'    },
@@ -73,7 +65,6 @@ export class ManageEndpointsComponent implements OnInit {
   constructor(
     private fb: FormBuilder,
     private endpointSvc: SourceSystemEndpointResourceService,
-    private configSvc:   RequestConfigurationResourceService,
     private sourceSystemService: SourceSystemResourceService,
     private http: HttpClient,
   ) {}
@@ -83,13 +74,6 @@ export class ManageEndpointsComponent implements OnInit {
     this.endpointForm = this.fb.group({
       endpointPath:    ['', Validators.required],
       httpRequestType: ['GET', Validators.required]
-    });
-
-    // Request-Config form
-    this.requestConfigurationForm = this.fb.group({
-      name:                    ['', Validators.required],
-      pollingIntervallTimeInMs:[1000, [Validators.required, Validators.min(1)]],
-      used:                    [false]
     });
 
     this.loadEndpoints();
@@ -150,48 +134,6 @@ export class ManageEndpointsComponent implements OnInit {
   manage(endpoint: SourceSystemEndpointDTO) {
     console.log('Managing endpoint', endpoint);
     this.selectedEndpoint = endpoint;
-    this.loadRequestConfigs();
-  }
-
-  // --- Request-Configs CRUD ---
-  loadRequestConfigs() {
-    if (!this.sourceSystemId) return;
-    this.loadingConfigs = true;
-    this.configSvc
-      .apiConfigSourceSystemSourceSystemIdRequestConfigurationGet(this.sourceSystemId)
-      .subscribe({
-        next: configs => {
-          this.requestConfigurations = configs;
-          this.loadingConfigs = false;
-        },
-        error: err => {
-          console.error(err);
-          this.loadingConfigs = false;
-        }
-      });
-  }
-
-  addRequestConfig() {
-    if (!this.selectedEndpoint || this.requestConfigurationForm.invalid) return;
-    const dto = this.requestConfigurationForm.value as CreateRequestConfigurationDTO;
-    this.configSvc
-      .apiConfigSourceSystemEndpointEndpointIdRequestConfigurationPost(this.selectedEndpoint.id!, dto)
-      .subscribe({
-        next: () => {
-          this.requestConfigurationForm.reset({ used: false, pollingIntervallTimeInMs: 1000 });
-          this.loadRequestConfigs();
-        },
-        error: console.error
-      });
-  }
-
-  deleteRequestConfig(id: number) {
-    this.configSvc
-      .apiConfigSourceSystemEndpointRequestConfigurationIdDelete(id)
-      .subscribe({
-        next: () => this.requestConfigurations = this.requestConfigurations.filter(c => c.id !== id),
-        error: console.error
-      });
   }
 
   /** Opens the edit dialog for a given endpoint */

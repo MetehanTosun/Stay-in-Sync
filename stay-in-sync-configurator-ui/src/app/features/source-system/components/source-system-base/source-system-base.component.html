@@ -51,19 +51,19 @@
     <!-- Metadata edit form -->
     <h4>Metadata</h4>
     <form [formGroup]="metadataForm" class="p-fluid p-formgrid p-grid p-mb-3 p-p-2">
-      <div class="p-col-12 p-md-4">
+      <div class="p-col-12 p-md-3">
         <label for="metaName">Name</label>
         <input id="metaName" pInputText formControlName="name" />
       </div>
-      <div class="p-col-12 p-md-4">
+      <div class="p-col-12 p-md-3">
         <label for="metaUrl">API URL</label>
         <input id="metaUrl" pInputText formControlName="apiUrl" />
       </div>
-      <div class="p-col-12 p-md-4">
+      <div class="p-col-12 p-md-3">
         <label for="metaDesc">Description</label>
         <textarea id="metaDesc" pInputTextarea formControlName="description" rows="1"></textarea>
       </div>
-      <div class="p-col-12 p-d-flex p-jc-end">
+      <div class="p-col-12 p-md-3 p-d-flex p-ai-end p-jc-end">
         <button pButton type="button" label="Save Metadata" (click)="saveMetadata()" [disabled]="metadataForm.invalid"></button>
       </div>
     </form>

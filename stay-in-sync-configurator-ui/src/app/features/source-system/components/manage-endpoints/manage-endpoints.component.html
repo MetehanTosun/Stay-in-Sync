@@ -55,7 +55,7 @@
         <td>{{ e.endpointPath }}</td>
         <td>{{ e.httpRequestType }}</td>
         <td>
-          <button pButton type="button" label="Manage" (click)="manage(e)"></button>
+          
           <button pButton type="button" icon="pi pi-pencil" class="p-button-text"
                   (click)="openEditDialog(e)"></button>
           <button pButton type="button" icon="pi pi-trash" class="p-button-text"
@@ -65,50 +65,5 @@
     </ng-template>
   </p-table>
 
-  <div class="p-d-flex p-jc-end" style="margin-top: 2rem;">
-    <button pButton type="button" class="p-button-text" label="Back" (click)="onBack()"></button>
-    <button pButton type="button" label="Finish" (click)="onFinish()"></button>
-  </div>
-</p-card>
-
-<!-- Request Configurations pane -->
-<p-card *ngIf="selectedEndpoint" styleClass="p-p-4">
-  <h3>Request Configs for “{{ selectedEndpoint.endpointPath }}”</h3>
-  <p-table class="p-mt-4" [style]="{ 'margin': '1.5rem 0' }" [value]="requestConfigurations" [loading]="loadingConfigs" [paginator]="true" [rows]="5">
-    <ng-template pTemplate="header">
-      <tr>
-        <th>Name</th>
-        <th>Poll (ms)</th>
-        <th>Used</th>
-        <th>Actions</th>
-      </tr>
-    </ng-template>
-    <ng-template pTemplate="body" let-c>
-      <tr>
-        <td>{{ c.name }}</td>
-        <td>{{ c.pollingIntervallTimeInMs }}</td>
-        <td>{{ c.used ? '✓' : '—' }}</td>
-        <td>
-          <button pButton type="button" icon="pi pi-trash" class="p-button-text"
-                  (click)="deleteRequestConfig(c.id)"></button>
-        </td>
-      </tr>
-    </ng-template>
-  </p-table>
-
-  <form [formGroup]="requestConfigurationForm" class="p-fluid mt-4">
-    <div class="p-field">
-      <label for="name">Name*</label>
-      <input id="name" pInputText formControlName="name" />
-    </div>
-    <div class="p-field">
-      <label for="pollingIntervallTimeInMs">Interval (ms)*</label>
-      <input id="pollingIntervallTimeInMs" type="number" pInputText formControlName="pollingIntervallTimeInMs" />
-    </div>
-    <div class="p-field-checkbox">
-      <p-checkbox formControlName="used" binary="true" label="Used"></p-checkbox>
-    </div>
-    <button pButton type="button" label="Add Config" [disabled]="requestConfigurationForm.invalid"
-            (click)="addRequestConfig()"></button>
-  </form>
+  
 </p-card>
