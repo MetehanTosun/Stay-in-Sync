@@ -1,5 +1,6 @@
 import { CommonModule } from '@angular/common';
 import { Component, OnInit } from '@angular/core';
+import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 
 // PrimeNG
 import { TableModule } from 'primeng/table';
@@ -8,9 +9,15 @@ import { DialogModule } from 'primeng/dialog';
 import { ToolbarModule } from 'primeng/toolbar';
 import { MessageModule } from 'primeng/message';
 import { CardModule } from 'primeng/card';
+import { TabViewModule } from 'primeng/tabview';
+import { DropdownModule } from 'primeng/dropdown';
+import { InputTextModule } from 'primeng/inputtext';
+import { TextareaModule } from 'primeng/textarea';
 
 // Create-Dialog-Komponente
 import { CreateSourceSystemComponent } from '../create-source-system/create-source-system.component';
+import { ManageApiHeadersComponent } from '../manage-api-headers/manage-api-headers.component';
+import { ManageEndpointsComponent }   from '../manage-endpoints/manage-endpoints.component';
 
 // Service und DTOs aus dem `generated`-Ordner
 import { SourceSystemResourceService } from '../../../../generated/api/sourceSystemResource.service';
@@ -30,7 +37,14 @@ import { SourceSystem } from '../../../../generated';
     ToolbarModule,
     MessageModule,
     CardModule,
-    CreateSourceSystemComponent
+    TabViewModule,
+    DropdownModule,
+    InputTextModule,
+    TextareaModule,
+    ReactiveFormsModule,
+    CreateSourceSystemComponent,
+    ManageApiHeadersComponent,
+    ManageEndpointsComponent
   ]
 })
 export class SourceSystemBaseComponent implements OnInit {
@@ -41,13 +55,23 @@ export class SourceSystemBaseComponent implements OnInit {
   /** Steuerung, ob der Create-Dialog angezeigt wird */
   showCreateDialog = false;
 
-  /** Temporarily holds a system for editing */
-  selectedSystem: SourceSystemDTO | null = null;
+  /** Steuerung, ob der Detail-Dialog angezeigt wird */
+  showDetailDialog = false;
 
-  constructor(private api: SourceSystemResourceService) {}
+  /** Temporarily holds a system for editing or viewing */
+  selectedSystem: SourceSystemDTO | null = null;
+  metadataForm!: FormGroup;
+
+  constructor(private api: SourceSystemResourceService, private fb: FormBuilder) {}
 
   ngOnInit(): void {
     this.loadSystems();
+    // Initialize metadata form
+    this.metadataForm = this.fb.group({
+      name: ['', Validators.required],
+      apiUrl: ['', [Validators.required, Validators.pattern('https?://.+')]],
+      description: ['']
+    });
   }
 
   /** Lade alle Quellsysteme vom Backend */
@@ -108,5 +132,56 @@ export class SourceSystemBaseComponent implements OnInit {
   editSourceSystem(system: SourceSystemDTO): void {
     this.selectedSystem = system;
     this.showCreateDialog = true;
+  }
+
+  /**
+   * Öffnet den Create/Edit-Wizard im Manage-Modus für ein bestehendes System
+   */
+  manageSourceSystem(system: SourceSystemDTO): void {
+    this.selectedSystem = system;
+    // Öffnet den Create-Component als Edit-Dialog
+    this.showCreateDialog = true;
+  }
+
+  /** Öffnet den Detail-Dialog, um Header und Endpoints eines Systems zu verwalten */
+  viewSourceSystem(system: SourceSystemDTO): void {
+    this.selectedSystem = system;
+    this.showDetailDialog = true;
+    // Load metadata into form
+    this.metadataForm.patchValue({
+      name: system.name,
+      apiUrl: system.apiUrl,
+      description: system.description
+    });
+  }
+
+  /** Schließt den Detail-Dialog und lädt bei Bedarf neu */
+  closeDetailDialog(): void {
+    this.showDetailDialog = false;
+    this.selectedSystem = null;
+    this.loadSystems();
+  }
+
+  /**
+   * Speichert die bearbeiteten Metadaten des ausgewählten Systems
+   */
+  saveMetadata(): void {
+    if (!this.selectedSystem || this.metadataForm.invalid) {
+      return;
+    }
+    const updated: SourceSystemDTO = {
+      ...this.selectedSystem,
+      ...this.metadataForm.value
+    };
+    this.api
+      .apiConfigSourceSystemIdPut(this.selectedSystem.id!, updated)
+      .subscribe({
+        next: () => {
+          // Nach dem Speichern die Liste neu laden und die Ansicht aktualisieren
+          this.selectedSystem = updated;
+          this.loadSystems();
+        },
+        error: err => console.error('Failed to save metadata', err)
+      });
   }
 }

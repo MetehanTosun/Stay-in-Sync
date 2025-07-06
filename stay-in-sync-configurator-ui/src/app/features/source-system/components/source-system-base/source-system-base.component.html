@@ -8,6 +8,9 @@
     </div>
   </p-toolbar>
 
+  
+    
+
   <p-table [value]="systems" [loading]="loading" [paginator]="true" [rows]="10" [responsiveLayout]="'scroll'">
     <ng-template pTemplate="header">
       <tr>
@@ -23,7 +26,9 @@
         <td>{{ system.apiUrl }}</td>
         <td>{{ system.description }}</td>
         <td>
-          <button pButton type="button" icon="pi pi-pencil" class="p-button-text" (click)="editSourceSystem(system)"></button>
+          <!-- Manage Source System -->
+          <button pButton type="button" label="Manage" class="p-button-text" (click)="viewSourceSystem(system)"></button>
+          <!-- Delete Source System -->
           <button pButton type="button" icon="pi pi-trash" class="p-button-text" (click)="deleteSourceSystem(system)"></button>
         </td>
       </tr>
@@ -35,7 +40,46 @@
 
 <!-- Create / Edit Source System Dialog -->
 <app-create-source-system
-  [visible]="showCreateDialog"
+  [(visible)]="showCreateDialog"
   [sourceSystem]="selectedSystem"
-  (visibleChange)="onCreateDialogClose($event)"
-></app-create-source-system>
+  (visibleChange)="onCreateDialogClose($event)">
+</app-create-source-system>
+
+<!-- Manage / View Detail Dialog -->
+<p-dialog header="Manage Source System" [(visible)]="showDetailDialog" [modal]="true" [style]="{ width: '80vw', height: '80vh' }" (onHide)="closeDetailDialog()">
+  <ng-container *ngIf="selectedSystem">
+    <!-- Metadata edit form -->
+    <h4>Metadata</h4>
+    <form [formGroup]="metadataForm" class="p-fluid p-formgrid p-grid p-mb-3 p-p-2">
+      <div class="p-col-12 p-md-4">
+        <label for="metaName">Name</label>
+        <input id="metaName" pInputText formControlName="name" />
+      </div>
+      <div class="p-col-12 p-md-4">
+        <label for="metaUrl">API URL</label>
+        <input id="metaUrl" pInputText formControlName="apiUrl" />
+      </div>
+      <div class="p-col-12 p-md-4">
+        <label for="metaDesc">Description</label>
+        <textarea id="metaDesc" pInputTextarea formControlName="description" rows="1"></textarea>
+      </div>
+      <div class="p-col-12 p-d-flex p-jc-end">
+        <button pButton type="button" label="Save Metadata" (click)="saveMetadata()" [disabled]="metadataForm.invalid"></button>
+      </div>
+    </form>
+    <div class="p-grid p-m-2">
+      <div class="p-col-12 p-md-6">
+        <p-card>
+          <h4>API Headers</h4>
+          <app-manage-api-headers [syncSystemId]="selectedSystem!.id!"></app-manage-api-headers>
+        </p-card>
+      </div>
+      <div class="p-col-12 p-md-6">
+        <p-card>
+          <h4>Endpoints</h4>
+          <app-manage-endpoints [sourceSystemId]="selectedSystem!.id!"></app-manage-endpoints>
+        </p-card>
+      </div>
+    </div>
+  </ng-container>
+</p-dialog>
