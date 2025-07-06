@@ -1,4 +1,3 @@
-<!-- src/app/features/source-system/components/create-source-system/create-source-system.component.html -->
 <p-dialog
   header="Create Source System"
   [(visible)]="visible"
@@ -66,8 +65,15 @@
     </form>
   </ng-container>
 
-  <!-- Schritt 2: Endpoints -->
+  <!-- Schritt 2: API Headers -->
   <ng-container *ngIf="currentStep === 1">
+    <app-manage-api-headers
+      [syncSystemId]="createdSourceSystemId">
+    </app-manage-api-headers>
+  </ng-container>
+
+  <!-- Schritt 3: Endpoints -->
+  <ng-container *ngIf="currentStep === 2">
     <app-manage-endpoints
       [sourceSystemId]="createdSourceSystemId">
     </app-manage-endpoints>
@@ -88,15 +94,15 @@
 
       <!-- Next oder Finish -->
       <button
-        *ngIf="currentStep === 0"
+        *ngIf="currentStep === 0 || currentStep === 1"
         pButton
         type="button"
         label="Next"
         (click)="goNext()"
-        [disabled]="form.invalid">
+        [disabled]="currentStep === 0 ? form.invalid : false">
       </button>
       <button
-        *ngIf="currentStep === 1"
+        *ngIf="currentStep === 2"
         pButton
         type="button"
         label="Finish"

@@ -1,0 +1,56 @@
+<!-- src/app/features/source-system/components/manage-api-headers/manage-api-headers.component.html -->
+<p-card styleClass="p-p-4">
+  <h3>Manage API Headers</h3>
+
+  <form [formGroup]="form" class="p-fluid p-formgrid p-grid p-mb-4 p-p-4">
+    <div class="p-field p-col-8">
+      <label for="headerName">Header Name</label>
+      <input id="headerName" pInputText formControlName="headerName" />
+    </div>
+    <div class="p-field p-col-4">
+      <label for="headerType">Type</label>
+      <p-dropdown
+        id="headerType"
+        [options]="headerTypes"
+        optionLabel="label"
+        optionValue="value"
+        placeholder="Select type"
+        formControlName="headerType">
+      </p-dropdown>
+    </div>
+    <div class="p-field p-col-12 p-mt-4">
+      <button
+        pButton
+        type="button"
+        label="Add Header"
+        [disabled]="form.invalid"
+        (click)="addHeader()">
+      </button>
+    </div>
+  </form>
+
+  <p-table [value]="headers" [loading]="loading" [paginator]="true" [rows]="5" class="p-mt-4">
+    <ng-template pTemplate="header">
+      <tr>
+        <th>Name</th>
+        <th>Type</th>
+        <th>Actions</th>
+      </tr>
+    </ng-template>
+    <ng-template pTemplate="body" let-h>
+      <tr>
+        <td>{{ h.headerName }}</td>
+        <td>{{ h.headerType }}</td>
+        <td>
+          <button
+            pButton
+            type="button"
+            icon="pi pi-trash"
+            class="p-button-text"
+            (click)="deleteHeader(h.id!)">
+          </button>
+        </td>
+      </tr>
+    </ng-template>
+  </p-table>
+</p-card>

@@ -18,6 +18,7 @@ import { ApiAuthType } from '../../../../generated/model/apiAuthType';
 import { BasicAuthDTO } from '../../../../generated/model/basicAuthDTO';
 import { ApiKeyAuthDTO } from '../../../../generated/model/apiKeyAuthDTO';
 import { ManageEndpointsComponent } from '../manage-endpoints/manage-endpoints.component';
+import { ManageApiHeadersComponent } from '../manage-api-headers/manage-api-headers.component';
 import { HttpResponse } from '@angular/common/http';
 
 @Component({
@@ -33,6 +34,7 @@ import { HttpResponse } from '@angular/common/http';
     InputTextModule,
     ButtonModule,
     TextareaModule,
+    ManageApiHeadersComponent,
     ManageEndpointsComponent,
     StepsModule,
   ]
@@ -45,7 +47,8 @@ export class CreateSourceSystemComponent implements OnInit, OnChanges {
   // Reduziertes Step-Model: nur Metadaten und Endpoints
   steps = [
     { label: 'Metadaten' },
-    { label: 'Endpoints' }
+    { label : 'Api Header' },
+    { label: 'Endpoints' },
   ];
   currentStep = 0; // Start bei Schritt 0 (Metadaten)
   createdSourceSystemId!: number;
@@ -190,7 +193,7 @@ export class CreateSourceSystemComponent implements OnInit, OnChanges {
             return;
           }
           this.createdSourceSystemId = id;
-          this.currentStep = 1; // Wechsel zu Schritt 1 (Manage Endpoints)
+          this.currentStep = 1; // Wechsel zu Schritt 1 (Manage API Headers)
         },
         error: (err) => {
           console.error('Failed to create Source System:', err);
@@ -200,16 +203,20 @@ export class CreateSourceSystemComponent implements OnInit, OnChanges {
 
   /** Proceeds to the next step: either create or advance */
   goNext(): void {
-    // if on first step, create the source system
     if (this.currentStep === 0) {
-      this.save();
+      this.save();            // erzeugt SourceSystem, springt auf Step 1 (API Headers)
+    } else if (this.currentStep === 1) {
+      // keine Persistenz hier, einfach auf Endpoints weiter
+      this.currentStep = 2;
     }
   }
+  
 
   /** Returns to the previous step */
   goBack(): void {
     if (this.currentStep > 0) {
-      this.currentStep = 0;
+      this.currentStep -= 1;
     }
   }
+
 }

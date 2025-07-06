@@ -195,6 +195,7 @@ export class ManageEndpointsComponent implements OnInit {
   }
 
   /** Opens the edit dialog for a given endpoint */
+  // does not work
   openEditDialog(endpoint: SourceSystemEndpointDTO) {
     console.log('Opening edit dialog for endpoint', endpoint);
     this.editingEndpoint = endpoint;
