@@ -8,6 +8,7 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
 
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Optional;
 
@@ -15,6 +16,9 @@ import java.util.Optional;
 public class SourceSystemService {
     @Inject
     SourceSystemFullUpdateMapper mapper;
+
+    @Inject
+    OpenApiSpecificationParserService openApiSpecificationParserService;
 
     public List<SourceSystem> findAllSourceSystems() {
         Log.debug("Fetching all source systems");
@@ -34,7 +38,14 @@ public class SourceSystemService {
          */
         Log.debugf("Creating new source system with name: %s", sourceSystemDTO.name());
         SourceSystem sourceSystem = mapper.mapToEntity(sourceSystemDTO);
+
+        if (sourceSystemDTO.openApiSpec() != null && !sourceSystemDTO.openApiSpec().isBlank()) {
+            byte[] specAsBytes = sourceSystemDTO.openApiSpec().getBytes(StandardCharsets.UTF_8);
+            sourceSystem.openApiSpec = specAsBytes;
+        }
+
         sourceSystem.persist();
+        openApiSpecificationParserService.synchronizeFromSpec(sourceSystem);
         return sourceSystem;
     }
 
@@ -44,6 +55,7 @@ public class SourceSystemService {
         SourceSystem existingSs = SourceSystem.findById(sourceSystemDTO.id());
         if (existingSs != null) {
             mapper.mapFullUpdate(mapper.mapToEntity(sourceSystemDTO), existingSs);
+            openApiSpecificationParserService.synchronizeFromSpec(existingSs);
         }
         return Optional.ofNullable(existingSs);
     }

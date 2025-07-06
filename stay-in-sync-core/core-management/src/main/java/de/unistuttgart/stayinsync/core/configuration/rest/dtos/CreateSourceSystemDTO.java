@@ -14,5 +14,5 @@ public record CreateSourceSystemDTO(Long id, @NotNull String name, @NotNull Stri
                                             @JsonSubTypes.Type(value = ApiKeyAuthDTO.class, name = "API_KEY")
                                     })
                                     ApiAuthConfigurationDTO authConfig,
-                                    byte[] openApiSpec) {
+                                    String openApiSpec) {
 }
