@@ -25,5 +25,6 @@ public abstract class SyncSystemEndpoint extends PanacheEntity {
     public Set<ApiRequestConfiguration> apiRequestConfiguration;
 
     @ManyToOne
+    @JoinColumn(name = "sync_system_id")
     public SyncSystem syncSystem;
 }

@@ -46,6 +46,7 @@ public class SourceSystemEndpointService {
             return new CoreManagementException(Response.Status.NOT_FOUND, "Unable to find Source System", "There is no source-system with id %s", sourceSystemId);
         });
         sourceSystemEndpoint.sourceSystem = sourceSystem;
+        sourceSystemEndpoint.syncSystem = sourceSystem;
         sourceSystemEndpoint.persist();
 
         return sourceSystemEndpoint;
