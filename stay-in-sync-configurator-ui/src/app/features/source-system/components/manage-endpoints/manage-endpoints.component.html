@@ -1,5 +1,16 @@
 <p-card styleClass="p-p-4">
   <h3>Endpoints</h3>
+  <div class="p-mb-3">
+    <button
+      pButton
+      type="button"
+      icon="pi pi-cloud-download"
+      label="Import Endpoints"
+      [disabled]="!apiUrl || importing"
+      (click)="importEndpoints()">
+    </button>
+    <p-progressSpinner *ngIf="importing" styleClass="p-ml-2" strokeWidth="4"></p-progressSpinner>
+  </div>
   <form [formGroup]="endpointForm" class="p-fluid p-formgrid p-grid" style="margin: 1.5rem 0; padding: 1rem;">
     <div class="p-field p-col-12" style="margin-bottom: 1rem;">
       <label for="endpointPath">Path*</label>

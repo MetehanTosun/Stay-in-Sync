@@ -10,9 +10,12 @@ import { DropdownModule } from 'primeng/dropdown';
 import { CardModule } from 'primeng/card';
 import { CheckboxModule } from 'primeng/checkbox';
 import { DialogModule }   from 'primeng/dialog';
+import { ProgressSpinnerModule } from 'primeng/progressspinner';
 
 import { SourceSystemEndpointResourceService } from '../../../../generated/api/sourceSystemEndpointResource.service';
 import { RequestConfigurationResourceService }  from '../../../../generated/api/requestConfigurationResource.service';
+import { HttpClient } from '@angular/common/http';
+import { SourceSystemResourceService } from '../../../../generated/api/sourceSystemResource.service';
 
 import { SourceSystemEndpointDTO }       from '../../../../generated';
 import { CreateSourceSystemEndpointDTO } from '../../../../generated';
@@ -31,7 +34,8 @@ import { GetRequestConfigurationDTO }    from '../../../../generated';
     DropdownModule,
     CardModule,
     CheckboxModule,
-    DialogModule
+    DialogModule,
+    ProgressSpinnerModule
   ],
   templateUrl: './manage-endpoints.component.html',
   styleUrls: ['./manage-endpoints.component.css']
@@ -62,10 +66,16 @@ export class ManageEndpointsComponent implements OnInit {
     { label: 'DELETE', value: 'DELETE' }
   ];
 
+  // Importing endpoints from the external API
+  apiUrl: string | null = null;
+  importing = false;
+
   constructor(
     private fb: FormBuilder,
     private endpointSvc: SourceSystemEndpointResourceService,
-    private configSvc:   RequestConfigurationResourceService
+    private configSvc:   RequestConfigurationResourceService,
+    private sourceSystemService: SourceSystemResourceService,
+    private http: HttpClient,
   ) {}
 
   ngOnInit(): void {
@@ -83,6 +93,11 @@ export class ManageEndpointsComponent implements OnInit {
     });
 
     this.loadEndpoints();
+    // Load the Source System base URL
+    this.sourceSystemService
+      .apiConfigSourceSystemIdGet(this.sourceSystemId, 'body')
+      .subscribe(ss => this.apiUrl = ss.apiUrl);
+
     // setup edit form
     this.editForm = this.fb.group({
       endpointPath:    ['', Validators.required],
@@ -227,4 +242,51 @@ export class ManageEndpointsComponent implements OnInit {
   editDialog: boolean = false;
   editingEndpoint: SourceSystemEndpointDTO | null = null;
   editForm!: FormGroup;
+
+  /**
+   * Imports endpoints from the configured source system's OpenAPI spec
+   */
+  importEndpoints() {
+    if (!this.apiUrl) return;
+    this.importing = true;
+    const tryLoad = (url: string) => this.http.get<any>(url).toPromise();
+    const paths = [
+      '/v2/swagger.json',
+      '/v2/openapi.json',
+      '/openapi.json',
+      '/swagger.json',
+      '/v3/api-docs',
+      '/v3/api-docs.json',
+      '/v3/openapi.json',
+      '/v3/swagger.json',
+      '/api/v3/openapi.json',
+    ];
+    (async () => {
+      let spec: any = null;
+      for (const p of paths) {
+        try {
+          spec = await tryLoad(`${this.apiUrl}${p}`);
+          console.log('Loaded spec from', p);
+          break;
+        } catch (_) {}
+      }
+      if (!spec) {
+        this.importing = false;
+        console.error('Failed to load any OpenAPI spec');
+        return;
+      }
+      const dtos: CreateSourceSystemEndpointDTO[] = [];
+      for (const [path, methods] of Object.entries(spec.paths || {})) {
+        for (const m of Object.keys(methods as object)) {
+          dtos.push({ endpointPath: path, httpRequestType: m.toUpperCase() });
+        }
+      }
+      this.endpointSvc
+        .apiConfigSourceSystemSourceSystemIdEndpointPost(this.sourceSystemId, dtos)
+        .subscribe({
+          next: () => { this.importing = false; this.loadEndpoints(); },
+          error: err => { console.error('Import failed', err); this.importing = false; }
+        });
+    })();
+  }
 }
