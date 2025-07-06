@@ -8,11 +8,11 @@ final class Examples {
               "queryParamType": "PATH",
               "values": ["123", "456", "789"]
             }
-                """;
+            """;
     public static final String VALID_API_HEADER_POST = """
             {
-              "name": "getUserA", 
-              "used": "false", 
+              "name": "getUserA",
+              "used": "false",
               "pollingIntervallInMs": "3"
             }
             """;
@@ -37,11 +37,11 @@ final class Examples {
             """;
     public static final String VALID_EXAMPLE_ENDPOINT_CREATE = """
             [{
-              "endpointPath": "/test/user", 
+              "endpointPath": "/test/user",
               "httpRequestType": "GET"
             },
             {
-              "endpointPath": "/test/car", 
+              "endpointPath": "/test/car",
               "httpRequestType": "POST"
             }]
             """;
@@ -59,7 +59,7 @@ final class Examples {
     static final String VALID_EXAMPLE_SYNCJOB = """
             {
               "id": "1",
-              "name": "Basyx sync job", 
+              "name": "Basyx sync job",
               "deployed": false
             }
             """;

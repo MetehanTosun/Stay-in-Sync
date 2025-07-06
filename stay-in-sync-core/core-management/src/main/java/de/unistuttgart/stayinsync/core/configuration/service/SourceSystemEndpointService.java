@@ -42,9 +42,8 @@ public class SourceSystemEndpointService {
 
         SourceSystemEndpoint sourceSystemEndpoint = sourceSystemEndpointFullMapper.mapToEntity(sourceSystemEndpointDTO);
 
-        SourceSystem sourceSystem = sourceSystemService.findSourceSystemById(sourceSystemId).orElseThrow(() -> {
-            return new CoreManagementException(Response.Status.NOT_FOUND, "Unable to find Source System", "There is no source-system with id %s", sourceSystemId);
-        });
+        SourceSystem sourceSystem = sourceSystemService.findSourceSystemById(sourceSystemId).orElseThrow(() ->
+                new CoreManagementException(Response.Status.NOT_FOUND, "Unable to find Source System", "There is no source-system with id %s", sourceSystemId));
         sourceSystemEndpoint.sourceSystem = sourceSystem;
         sourceSystemEndpoint.syncSystem = sourceSystem;
         sourceSystemEndpoint.persist();
@@ -86,14 +85,12 @@ public class SourceSystemEndpointService {
     public Optional<SourceSystemEndpoint> replaceSourceSystemEndpoint(@NotNull @Valid SourceSystemEndpoint sourceSystemEndpoint) {
         Log.debugf("Replacing endpoint: %s", sourceSystemEndpoint);
 
-        Optional<SourceSystemEndpoint> updatedSourceSystemEndpoint = SourceSystemEndpoint.findByIdOptional(sourceSystemEndpoint.id)
+        return SourceSystemEndpoint.findByIdOptional(sourceSystemEndpoint.id)
                 .map(SourceSystemEndpoint.class::cast) // Only here for type erasure within the IDE
                 .map(targetSouceSystemEndpoint -> {
                     this.sourceSystemEndpointFullMapper.mapFullUpdate(sourceSystemEndpoint, targetSouceSystemEndpoint);
                     return targetSouceSystemEndpoint;
                 });
-
-        return updatedSourceSystemEndpoint;
     }
 
 }

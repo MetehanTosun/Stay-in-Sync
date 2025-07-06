@@ -40,8 +40,7 @@ public class SourceSystemService {
         SourceSystem sourceSystem = mapper.mapToEntity(sourceSystemDTO);
 
         if (sourceSystemDTO.openApiSpec() != null && !sourceSystemDTO.openApiSpec().isBlank()) {
-            byte[] specAsBytes = sourceSystemDTO.openApiSpec().getBytes(StandardCharsets.UTF_8);
-            sourceSystem.openApiSpec = specAsBytes;
+            sourceSystem.openApiSpec = sourceSystemDTO.openApiSpec().getBytes(StandardCharsets.UTF_8);
         }
 
         sourceSystem.persist();
@@ -63,7 +62,6 @@ public class SourceSystemService {
     @Transactional
     public boolean deleteSourceSystemById(Long id) {
         Log.debugf("Deleting source system with ID: %d", id);
-        boolean deleted = SourceSystem.deleteById(id);
-        return deleted;
+        return SourceSystem.deleteById(id);
     }
 }

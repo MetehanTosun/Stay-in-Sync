@@ -40,14 +40,14 @@ public class SourceSystemApiRequestConfigurationService {
     @Inject
     SourceSystemApiRequestConfigurationFullUpdateMapper mapper;
 
+    // TODO: Evaluate if method is necessary since ARC creation has cascading effects
     public SourceSystemApiRequestConfiguration persistApiRequestConfiguration(@NotNull @Valid CreateRequestConfigurationDTO sourceSystemApiRequestConfigurationDTO, Long endpointId) {
         SourceSystemApiRequestConfiguration sourceSystemApiRequestConfiguration = mapper.mapToEntity(sourceSystemApiRequestConfigurationDTO);
 
         Log.debugf("Persisting request-configurations: %s, for endpoint with id: %s", sourceSystemApiRequestConfiguration, endpointId);
 
-        SourceSystemEndpoint sourceSystemEndpoint = sourceSystemEndpointService.findSourceSystemEndpointById(endpointId).orElseThrow(() -> {
-            return new CoreManagementException("Unable to find Source System", "There is no source-system with id %s", endpointId);
-        });
+        SourceSystemEndpoint sourceSystemEndpoint = sourceSystemEndpointService.findSourceSystemEndpointById(endpointId).orElseThrow(() ->
+                new CoreManagementException("Unable to find Source System", "There is no source-system with id %s", endpointId));
 
         sourceSystemApiRequestConfiguration.sourceSystem = sourceSystemEndpoint.sourceSystem;
         sourceSystemApiRequestConfiguration.sourceSystemEndpoint = sourceSystemEndpoint;
@@ -96,14 +96,12 @@ public class SourceSystemApiRequestConfigurationService {
         SourceSystemApiRequestConfiguration sourceSystemApiRequestConfiguration = mapper.mapToEntity(sourceSystemApiRequestConfigurationDTO);
         Log.debugf("Replacing request-configurations: %s", sourceSystemApiRequestConfiguration);
 
-        Optional<SourceSystemApiRequestConfiguration> updatedApiRequestConfiguration = SourceSystemApiRequestConfiguration.findByIdOptional(sourceSystemApiRequestConfiguration.id)
+        return SourceSystemApiRequestConfiguration.findByIdOptional(sourceSystemApiRequestConfiguration.id)
                 .map(SourceSystemApiRequestConfiguration.class::cast) // Only here for type erasure within the IDE
                 .map(targetRequestConfiguration -> {
                     this.mapper.mapFullUpdate(sourceSystemApiRequestConfiguration, targetRequestConfiguration);
                     return targetRequestConfiguration;
                 });
-
-        return updatedApiRequestConfiguration;
     }
 
     @Transactional

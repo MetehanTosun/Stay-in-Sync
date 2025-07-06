@@ -32,9 +32,6 @@ import { ToastModule } from 'primeng/toast';
 // Monaco Editor Module
 import { MonacoEditorModule } from 'ngx-monaco-editor-v2';
 
-import {
-  SyncJobContextData,
-} from '../sync-job-context-panel/sync-job-context-panel.component';
 import { ApiRequestConfiguration } from '../models/arc.models';
 import { ArcStateService } from '../../../core/services/arc-state.service';
 import { SourceSystem, SourceSystemEndpoint } from '../../source-system/models/source-system.models';
@@ -123,7 +120,7 @@ export class ScriptEditorPageComponent implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     this.currentTransformationId = this.route.snapshot.paramMap.get('transformationId');
-    
+
     if (!this.currentTransformationId) {
       this.isLoading = false;
       this.code = '// ERROR: No Transformation ID found in URL. Cannot load context.';
@@ -171,7 +168,7 @@ export class ScriptEditorPageComponent implements OnInit, OnDestroy {
     this.wizardContext = context;
     this.isWizardVisible = true;
   }
-  
+
   handleCloneArc(context: { arc: ApiRequestConfiguration }): void {
     // TODO: Implement proper arc fetch and inject for selected arc inside arc wizard with the same data, but new entity
     // this.wizardContext = { ... };
@@ -309,7 +306,7 @@ export class ScriptEditorPageComponent implements OnInit, OnDestroy {
   private generateDefaultScriptTemplate(scriptName: string | undefined): string {
     return `/**
  * Transformation Script for SyncJob: ${scriptName}
- * 
+ *
  * Available API functions:
  *  - stayinsync.log('Your message', 'INFO' | 'WARN' | 'ERROR')
  *  - stayinsync.setOutput({ ... your final JSON object ... })
@@ -318,7 +315,7 @@ async function transformData() {
     stayinsync.log('Starting transformation for job: ${scriptName}');
 
     // --- YOUR TRANSFORMATION LOGIC STARTS HERE ---
-    
+
     // Example: Accessing data from a source system.
     // Replace 'crmCustomer' with an alias from your context.
     // const customer = sourceData.crmCustomer;
