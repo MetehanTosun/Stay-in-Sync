@@ -5,11 +5,11 @@ import { SourceSystemDTO } from '../../../../generated/model/sourceSystemDTO';
 
 // PrimeNG
 import { DialogModule } from 'primeng/dialog';
-import { StepsModule } from 'primeng/steps';
 import { DropdownModule } from 'primeng/dropdown';
 import { InputTextModule } from 'primeng/inputtext';
 import { ButtonModule } from 'primeng/button';
 import { TextareaModule } from 'primeng/textarea';
+import { StepsModule } from 'primeng/steps';  
 
 // Services und DTOs
 import { SourceSystemResourceService } from '../../../../generated/api/sourceSystemResource.service';
@@ -29,12 +29,12 @@ import { HttpResponse } from '@angular/common/http';
     CommonModule,
     ReactiveFormsModule,
     DialogModule,
-    StepsModule,
     DropdownModule,
     InputTextModule,
     ButtonModule,
     TextareaModule,
-    ManageEndpointsComponent
+    ManageEndpointsComponent,
+    StepsModule,
   ]
 })
 export class CreateSourceSystemComponent implements OnInit, OnChanges {
@@ -42,10 +42,9 @@ export class CreateSourceSystemComponent implements OnInit, OnChanges {
   @Input() sourceSystem: SourceSystemDTO | null = null;
   @Output() visibleChange = new EventEmitter<boolean>();
 
-  // Reduziertes Step-Model: nur Metadaten, Header und Endpoints
+  // Reduziertes Step-Model: nur Metadaten und Endpoints
   steps = [
     { label: 'Metadaten' },
-    { label: 'Header' },
     { label: 'Endpoints' }
   ];
   currentStep = 0; // Start bei Schritt 0 (Metadaten)
@@ -63,6 +62,7 @@ export class CreateSourceSystemComponent implements OnInit, OnChanges {
     { label: 'Basic', value: ApiAuthType.Basic },
     { label: 'API Key', value: ApiAuthType.ApiKey }
   ];
+  public readonly ApiAuthType = ApiAuthType;
 
   constructor(
     private fb: FormBuilder,

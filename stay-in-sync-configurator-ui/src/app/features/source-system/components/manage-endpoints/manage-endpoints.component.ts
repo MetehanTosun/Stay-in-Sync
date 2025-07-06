@@ -1,111 +1,110 @@
+// src/app/features/source-system/components/manage-endpoints/manage-endpoints.component.ts
 import { Component, OnInit, Input, Output, EventEmitter } from '@angular/core';
-import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
 import { CommonModule } from '@angular/common';
+import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
+
 import { TableModule } from 'primeng/table';
 import { ButtonModule } from 'primeng/button';
 import { InputTextModule } from 'primeng/inputtext';
 import { DropdownModule } from 'primeng/dropdown';
 import { CardModule } from 'primeng/card';
-import { StepsModule } from 'primeng/steps';
 import { CheckboxModule } from 'primeng/checkbox';
-import { MenuItem } from 'primeng/api';
+import { DialogModule }   from 'primeng/dialog';
 
 import { SourceSystemEndpointResourceService } from '../../../../generated/api/sourceSystemEndpointResource.service';
-import { RequestConfigurationResourceService } from '../../../../generated/api/requestConfigurationResource.service';
-import { SourceSystemEndpointDTO } from '../../../../generated/model/sourceSystemEndpointDTO';
-import { CreateSourceSystemEndpointDTO } from '../../../../generated/model/createSourceSystemEndpointDTO';
-import { CreateRequestConfigurationDTO } from '../../../../generated/model/createRequestConfigurationDTO';
-import { GetRequestConfigurationDTO } from '../../../../generated/model/getRequestConfigurationDTO';
+import { RequestConfigurationResourceService }  from '../../../../generated/api/requestConfigurationResource.service';
+
+import { SourceSystemEndpointDTO }       from '../../../../generated';
+import { CreateSourceSystemEndpointDTO } from '../../../../generated';
+import { CreateRequestConfigurationDTO } from '../../../../generated';
+import { GetRequestConfigurationDTO }    from '../../../../generated';
 
 @Component({
   standalone: true,
   selector: 'app-manage-endpoints',
-  templateUrl: './manage-endpoints.component.html',
-  styleUrls: ['./manage-endpoints.component.css'],
   imports: [
     CommonModule,
+    ReactiveFormsModule,
     TableModule,
     ButtonModule,
     InputTextModule,
     DropdownModule,
     CardModule,
-    StepsModule,
     CheckboxModule,
-    ReactiveFormsModule,
-  ]
+    DialogModule
+  ],
+  templateUrl: './manage-endpoints.component.html',
+  styleUrls: ['./manage-endpoints.component.css']
 })
 export class ManageEndpointsComponent implements OnInit {
   @Input() sourceSystemId!: number;
   @Output() backStep = new EventEmitter<void>();
-  @Output() finish = new EventEmitter<void>();
+  @Output() finish   = new EventEmitter<void>();
 
-  // endpoints
+  // Endpoints
   endpoints: SourceSystemEndpointDTO[] = [];
   endpointForm!: FormGroup;
   loading = false;
 
-  // selected endpoint
+  // Selected Endpoint
   selectedEndpoint: SourceSystemEndpointDTO | null = null;
 
-  // request-configs
+  // Request Configurations
   requestConfigurations: GetRequestConfigurationDTO[] = [];
   requestConfigurationForm!: FormGroup;
   loadingConfigs = false;
 
-  // stepper
-  steps: MenuItem[] = [
-    { label: 'Metadata' },
-    { label: 'Endpoints' },
-    { label: 'Headers' },
-    { label: 'Query Params' },
-    { label: 'Request Config' },
-    { label: 'Specification' },
-  ];
-  activeIndex = 1;
-
+  // HTTP methods dropdown
   httpRequestTypes = [
-    { label: 'GET', value: 'GET' },
-    { label: 'POST', value: 'POST' },
-    { label: 'PUT', value: 'PUT' },
-    { label: 'DELETE', value: 'DELETE' },
+    { label: 'GET',    value: 'GET'    },
+    { label: 'POST',   value: 'POST'   },
+    { label: 'PUT',    value: 'PUT'    },
+    { label: 'DELETE', value: 'DELETE' }
   ];
 
   constructor(
     private fb: FormBuilder,
     private endpointSvc: SourceSystemEndpointResourceService,
-    private configSvc: RequestConfigurationResourceService
+    private configSvc:   RequestConfigurationResourceService
   ) {}
 
   ngOnInit(): void {
-    // endpoint form
+    // Endpoint form
     this.endpointForm = this.fb.group({
-      endpointPath: ['', Validators.required],
-      httpRequestType: ['GET', Validators.required],
+      endpointPath:    ['', Validators.required],
+      httpRequestType: ['GET', Validators.required]
     });
-    // config form
+
+    // Request-Config form
     this.requestConfigurationForm = this.fb.group({
-      name: ['', Validators.required],
-      pollingIntervallTimeInMs: [1000, [Validators.required, Validators.min(1)]],
-      used: [false],
+      name:                    ['', Validators.required],
+      pollingIntervallTimeInMs:[1000, [Validators.required, Validators.min(1)]],
+      used:                    [false]
     });
+
     this.loadEndpoints();
+    // setup edit form
+    this.editForm = this.fb.group({
+      endpointPath:    ['', Validators.required],
+      httpRequestType: ['GET', Validators.required]
+    });
   }
 
-  // --- endpoints CRUD ---
+  // --- Endpoints CRUD ---
   loadEndpoints() {
     if (!this.sourceSystemId) return;
     this.loading = true;
     this.endpointSvc
       .apiConfigSourceSystemSourceSystemIdEndpointGet(this.sourceSystemId)
       .subscribe({
-        next: eps => {
+        next: (eps: SourceSystemEndpointDTO[]) => {
           this.endpoints = eps;
           this.loading = false;
         },
-        error: err => {
+        error: (err: any) => {
           console.error(err);
           this.loading = false;
-        },
+        }
       });
   }
 
@@ -119,7 +118,7 @@ export class ManageEndpointsComponent implements OnInit {
           this.endpointForm.reset({ httpRequestType: 'GET' });
           this.loadEndpoints();
         },
-        error: console.error,
+        error: console.error
       });
   }
 
@@ -128,32 +127,32 @@ export class ManageEndpointsComponent implements OnInit {
       .apiConfigSourceSystemEndpointIdDelete(id)
       .subscribe({
         next: () => this.endpoints = this.endpoints.filter(e => e.id !== id),
-        error: console.error,
+        error: console.error
       });
   }
 
-  // when user clicks “Manage” on a row:
+  // Switch to Request-Config pane
   manage(endpoint: SourceSystemEndpointDTO) {
-    this.selectedEndpoint = endpoint;
     console.log('Managing endpoint', endpoint);
-    this.activeIndex = 4;           // go to request-config step
+    this.selectedEndpoint = endpoint;
     this.loadRequestConfigs();
   }
 
-  // --- request‐configs CRUD ---
+  // --- Request-Configs CRUD ---
   loadRequestConfigs() {
+    if (!this.sourceSystemId) return;
     this.loadingConfigs = true;
     this.configSvc
       .apiConfigSourceSystemSourceSystemIdRequestConfigurationGet(this.sourceSystemId)
       .subscribe({
-        next: (configs: GetRequestConfigurationDTO[]) => {
+        next: configs => {
           this.requestConfigurations = configs;
           this.loadingConfigs = false;
         },
         error: err => {
           console.error(err);
           this.loadingConfigs = false;
-        },
+        }
       });
   }
 
@@ -167,7 +166,7 @@ export class ManageEndpointsComponent implements OnInit {
           this.requestConfigurationForm.reset({ used: false, pollingIntervallTimeInMs: 1000 });
           this.loadRequestConfigs();
         },
-        error: console.error,
+        error: console.error
       });
   }
 
@@ -176,10 +175,56 @@ export class ManageEndpointsComponent implements OnInit {
       .apiConfigSourceSystemEndpointRequestConfigurationIdDelete(id)
       .subscribe({
         next: () => this.requestConfigurations = this.requestConfigurations.filter(c => c.id !== id),
-        error: console.error,
+        error: console.error
       });
   }
 
-  onBack() { this.backStep.emit(); }
-  onFinish() { this.finish.emit(); }
+  /** Opens the edit dialog for a given endpoint */
+  openEditDialog(endpoint: SourceSystemEndpointDTO) {
+    console.log('Opening edit dialog for endpoint', endpoint);
+    this.editingEndpoint = endpoint;
+    this.editForm.patchValue({
+      endpointPath: endpoint.endpointPath,
+      httpRequestType: endpoint.httpRequestType
+    });
+    this.editDialog = true;
+  }
+
+  /** Saves the edited endpoint via PUT */
+  // Does not work
+  saveEdit() {
+    if (!this.editingEndpoint || this.editForm.invalid) {
+      return;
+    }
+    console.log('saveEdit called, editingEndpoint:', this.editingEndpoint);
+    // Construct full SourceSystemEndpointDTO with required fields
+    const dto: SourceSystemEndpointDTO = {
+      id: this.editingEndpoint.id!,
+      sourceSystemId: this.sourceSystemId,
+      endpointPath: this.editForm.value.endpointPath,
+      httpRequestType: this.editForm.value.httpRequestType
+    };
+    console.log('saveEdit DTO to send:', dto);
+    this.endpointSvc
+      .apiConfigSourceSystemEndpointIdPut(this.editingEndpoint.id!, dto, 'body')
+      .subscribe({
+        next: () => {
+          console.log('saveEdit success for id', this.editingEndpoint?.id);
+          this.editDialog = false;
+          this.loadEndpoints();
+        },
+        error: err => {
+          console.error('saveEdit error', err);
+        }
+      });
+  }
+
+  // Navigation handlers
+  onBack()   { this.backStep.emit();   }
+  onFinish(){ this.finish.emit();     }
+
+  // Editing endpoints
+  editDialog: boolean = false;
+  editingEndpoint: SourceSystemEndpointDTO | null = null;
+  editForm!: FormGroup;
 }

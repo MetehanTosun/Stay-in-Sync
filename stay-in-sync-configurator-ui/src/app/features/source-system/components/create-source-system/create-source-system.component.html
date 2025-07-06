@@ -1,15 +1,17 @@
-
-
+<!-- src/app/features/source-system/components/create-source-system/create-source-system.component.html -->
 <p-dialog
   header="Create Source System"
   [(visible)]="visible"
-  modal="true"
-  [style]="{ width: '50vw' }"
+  [modal]="true"
+  [style]="{ width: '60vw', height: '60vh' }"
   (onHide)="cancel()"
 >
+  <!-- Stepper -->
+  <p-steps [model]="steps" [activeIndex]="currentStep" class="mb-4"></p-steps>
+
+  <!-- Schritt 1: Metadaten-Form -->
   <ng-container *ngIf="currentStep === 0">
     <form [formGroup]="form" class="p-fluid">
-      <!-- Metadaten-Formular -->
       <div class="p-field">
         <label for="name">Name*</label>
         <input id="name" type="text" pInputText formControlName="name" />
@@ -31,7 +33,7 @@
         <p-dropdown id="apiAuthType" [options]="authTypeOptions" formControlName="apiAuthType"></p-dropdown>
       </div>
       <div formGroupName="authConfig">
-        <ng-container *ngIf="form.get('apiAuthType')?.value === 'BASIC'">
+        <ng-container *ngIf="form.get('apiAuthType')?.value === ApiAuthType.Basic">
           <div class="p-field">
             <label for="username">Username*</label>
             <input id="username" type="text" pInputText formControlName="username" />
@@ -41,7 +43,7 @@
             <input id="password" type="password" pInputText formControlName="password" />
           </div>
         </ng-container>
-        <ng-container *ngIf="form.get('apiAuthType')?.value === 'API_KEY'">
+        <ng-container *ngIf="form.get('apiAuthType')?.value === ApiAuthType.ApiKey">
           <div class="p-field">
             <label for="apiKey">API Key*</label>
             <input id="apiKey" type="text" pInputText formControlName="apiKey" />
@@ -62,19 +64,44 @@
         <small *ngIf="selectedFile">{{ selectedFile.name }}</small>
       </div>
     </form>
-    <ng-template pTemplate="footer">
-      <button pButton type="button" label="Cancel" (click)="cancel()" class="p-button-text"></button>
-      <button pButton type="button" label="Next" (click)="goNext()" [disabled]="form.invalid"></button>
-    </ng-template>
   </ng-container>
 
+  <!-- Schritt 2: Endpoints -->
   <ng-container *ngIf="currentStep === 1">
     <app-manage-endpoints
-      [sourceSystemId]="createdSourceSystemId"
-    ></app-manage-endpoints>
-    <ng-template pTemplate="footer">
-      <button pButton type="button" label="Back" class="p-button-text" (click)="goBack()"></button>
-      <button pButton type="button" label="Finish" (click)="cancel()" ></button>
-    </ng-template>
+      [sourceSystemId]="createdSourceSystemId">
+    </app-manage-endpoints>
   </ng-container>
+
+  <!-- Gemeinsamer Footer -->
+  <ng-template pTemplate="footer">
+    <div class="p-d-flex p-jc-between">
+      <!-- Back-Button -->
+      <button
+        pButton
+        type="button"
+        label="Back"
+        class="p-button-text"
+        (click)="goBack()"
+        [disabled]="currentStep === 0">
+      </button>
+
+      <!-- Next oder Finish -->
+      <button
+        *ngIf="currentStep === 0"
+        pButton
+        type="button"
+        label="Next"
+        (click)="goNext()"
+        [disabled]="form.invalid">
+      </button>
+      <button
+        *ngIf="currentStep === 1"
+        pButton
+        type="button"
+        label="Finish"
+        (click)="cancel()">
+      </button>
+    </div>
+  </ng-template>
 </p-dialog>

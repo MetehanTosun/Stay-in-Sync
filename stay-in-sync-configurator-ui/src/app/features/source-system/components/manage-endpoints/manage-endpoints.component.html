@@ -1,8 +1,37 @@
-<p-steps [model]="steps" [(activeIndex)]="activeIndex" styleClass="mb-4"></p-steps>
-
-<p-card>
+<p-card styleClass="p-p-4">
   <h3>Endpoints</h3>
-  <p-table [value]="endpoints" [loading]="loading" [paginator]="true" [rows]="10">
+  <form [formGroup]="endpointForm" class="p-fluid p-formgrid p-grid" style="margin: 1.5rem 0; padding: 1rem;">
+    <div class="p-field p-col-12" style="margin-bottom: 1rem;">
+      <label for="endpointPath">Path*</label>
+      <input id="endpointPath" pInputText formControlName="endpointPath" />
+    </div>
+    <div class="p-field p-col-12" style="margin-bottom: 1rem;">
+      <label for="httpRequestType">Method*</label>
+      <p-dropdown id="httpRequestType" [options]="httpRequestTypes" formControlName="httpRequestType"></p-dropdown>
+    </div>
+    <div class="p-col-12" style="margin: 2rem 0;">
+      <button pButton type="button" label="Add Endpoint" [disabled]="endpointForm.invalid" (click)="addEndpoint()"></button>
+    </div>
+  </form>
+
+<p-dialog header="Edit Endpoint" [(visible)]="editDialog" modal="true" [style]="{ width: '400px' }">
+  <form [formGroup]="editForm" class="p-fluid p-formgrid p-grid">
+    <div class="p-field p-col-12">
+      <label>Path</label>
+      <input pInputText formControlName="endpointPath" />
+    </div>
+    <div class="p-field p-col-12">
+      <label>Method</label>
+      <p-dropdown [options]="httpRequestTypes" formControlName="httpRequestType"></p-dropdown>
+    </div>
+  </form>
+  <ng-template pTemplate="footer">
+    <button pButton type="button" label="Cancel" class="p-button-text" (click)="editDialog=false"></button>
+    <button pButton type="button" label="Save" (click)="saveEdit()" [disabled]="editForm.invalid"></button>
+  </ng-template>
+</p-dialog>
+
+  <p-table [style]="{ 'margin': '1.5rem 0' }" [value]="endpoints" [loading]="loading" [paginator]="true" [rows]="10">
     <ng-template pTemplate="header">
       <tr>
         <th>Path</th>
@@ -16,6 +45,8 @@
         <td>{{ e.httpRequestType }}</td>
         <td>
           <button pButton type="button" label="Manage" (click)="manage(e)"></button>
+          <button pButton type="button" icon="pi pi-pencil" class="p-button-text"
+                  (click)="openEditDialog(e)"></button>
           <button pButton type="button" icon="pi pi-trash" class="p-button-text"
                   (click)="deleteEndpoint(e.id!)"></button>
         </td>
@@ -23,28 +54,16 @@
     </ng-template>
   </p-table>
 
-  <form [formGroup]="endpointForm" class="p-fluid mt-4">
-    <div class="p-field">
-      <label for="endpointPath">Path*</label>
-      <input id="endpointPath" pInputText formControlName="endpointPath" />
-    </div>
-    <div class="p-field">
-      <label for="httpRequestType">Method*</label>
-      <p-dropdown id="httpRequestType" [options]="httpRequestTypes" formControlName="httpRequestType"></p-dropdown>
-    </div>
-    <button pButton type="button" label="Add Endpoint" [disabled]="endpointForm.invalid" (click)="addEndpoint()"></button>
-  </form>
-
-  <div class="p-d-flex p-jc-end p-mt-3">
+  <div class="p-d-flex p-jc-end" style="margin-top: 2rem;">
     <button pButton type="button" class="p-button-text" label="Back" (click)="onBack()"></button>
     <button pButton type="button" label="Finish" (click)="onFinish()"></button>
   </div>
 </p-card>
 
 <!-- Request Configurations pane -->
-<p-card *ngIf="selectedEndpoint">
+<p-card *ngIf="selectedEndpoint" styleClass="p-p-4">
   <h3>Request Configs for “{{ selectedEndpoint.endpointPath }}”</h3>
-  <p-table [value]="requestConfigurations" [loading]="loadingConfigs" [paginator]="true" [rows]="5">
+  <p-table class="p-mt-4" [style]="{ 'margin': '1.5rem 0' }" [value]="requestConfigurations" [loading]="loadingConfigs" [paginator]="true" [rows]="5">
     <ng-template pTemplate="header">
       <tr>
         <th>Name</th>
