@@ -26,7 +26,7 @@ export const routes: Routes = [
   { path: 'transformation-scripts', component: ConfigurationscriptsBaseComponent },
 
   // Route für Script Editor
-  { path: 'script-editor', component: ScriptEditorPageComponent},
+  { path: 'script-editor/:transformationId', component: ScriptEditorPageComponent},
 
   // Route für Source System
   {
