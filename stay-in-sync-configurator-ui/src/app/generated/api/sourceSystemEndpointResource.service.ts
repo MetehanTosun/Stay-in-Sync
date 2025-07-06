@@ -32,6 +32,9 @@ import { BaseService } from '../api.base.service';
   providedIn: 'root'
 })
 export class SourceSystemEndpointResourceService extends BaseService {
+    apiConfigSourceSystemSourceSystemIdRequestConfigurationDelete(configId: number) {
+      throw new Error('Method not implemented.');
+    }
 
     constructor(protected httpClient: HttpClient, @Optional() @Inject(BASE_PATH) basePath: string|string[], @Optional() configuration?: Configuration) {
         super(basePath, configuration);

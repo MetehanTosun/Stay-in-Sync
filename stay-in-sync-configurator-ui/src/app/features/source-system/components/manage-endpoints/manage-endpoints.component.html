@@ -1,37 +1,23 @@
-<!-- src/app/features/source-system/components/manage-endpoints/manage-endpoints.component.html -->
-
-<!-- Optional: Stepper im Child anzeigen -->
-<p-steps [model]="steps" [activeIndex]="activeIndex" styleClass="mb-4"></p-steps>
+<p-steps [model]="steps" [(activeIndex)]="activeIndex" styleClass="mb-4"></p-steps>
 
 <p-card>
-  <h3>Manage Endpoints</h3>
-
-  <p-table
-    [value]="endpoints"
-    [loading]="loading"
-    [paginator]="true"
-    [rows]="10"
-    [responsiveLayout]="'scroll'"
-  >
+  <h3>Endpoints</h3>
+  <p-table [value]="endpoints" [loading]="loading" [paginator]="true" [rows]="10">
     <ng-template pTemplate="header">
       <tr>
         <th>Path</th>
-        <th>HTTP Method</th>
+        <th>Method</th>
         <th>Actions</th>
       </tr>
     </ng-template>
-    <ng-template pTemplate="body" let-endpoint>
+    <ng-template pTemplate="body" let-e>
       <tr>
-        <td>{{ endpoint.endpointPath }}</td>
-        <td>{{ endpoint.httpRequestType }}</td>
+        <td>{{ e.endpointPath }}</td>
+        <td>{{ e.httpRequestType }}</td>
         <td>
-          <button
-            pButton
-            type="button"
-            icon="pi pi-trash"
-            class="p-button-text"
-            (click)="deleteEndpoint(endpoint.id!)"
-          ></button>
+          <button pButton type="button" label="Manage" (click)="manage(e)"></button>
+          <button pButton type="button" icon="pi pi-trash" class="p-button-text"
+                  (click)="deleteEndpoint(e.id!)"></button>
         </td>
       </tr>
     </ng-template>
@@ -39,29 +25,60 @@
 
   <form [formGroup]="endpointForm" class="p-fluid mt-4">
     <div class="p-field">
-      <label for="endpointPath">Endpoint Path*</label>
-      <input
-        id="endpointPath"
-        type="text"
-        pInputText
-        formControlName="endpointPath"
-      />
+      <label for="endpointPath">Path*</label>
+      <input id="endpointPath" pInputText formControlName="endpointPath" />
     </div>
     <div class="p-field">
-      <label for="httpRequestType">HTTP Method*</label>
-      <p-dropdown
-        id="httpRequestType"
-        [options]="httpRequestTypes"
-        formControlName="httpRequestType"
-        placeholder="Select HTTP Method"
-      ></p-dropdown>
+      <label for="httpRequestType">Method*</label>
+      <p-dropdown id="httpRequestType" [options]="httpRequestTypes" formControlName="httpRequestType"></p-dropdown>
     </div>
-    <button
-      pButton
-      type="button"
-      label="Add Endpoint"
-      [disabled]="endpointForm.invalid"
-      (click)="addEndpoint()"
-    ></button>
+    <button pButton type="button" label="Add Endpoint" [disabled]="endpointForm.invalid" (click)="addEndpoint()"></button>
+  </form>
+
+  <div class="p-d-flex p-jc-end p-mt-3">
+    <button pButton type="button" class="p-button-text" label="Back" (click)="onBack()"></button>
+    <button pButton type="button" label="Finish" (click)="onFinish()"></button>
+  </div>
+</p-card>
+
+<!-- Request Configurations pane -->
+<p-card *ngIf="selectedEndpoint">
+  <h3>Request Configs for “{{ selectedEndpoint.endpointPath }}”</h3>
+  <p-table [value]="requestConfigurations" [loading]="loadingConfigs" [paginator]="true" [rows]="5">
+    <ng-template pTemplate="header">
+      <tr>
+        <th>Name</th>
+        <th>Poll (ms)</th>
+        <th>Used</th>
+        <th>Actions</th>
+      </tr>
+    </ng-template>
+    <ng-template pTemplate="body" let-c>
+      <tr>
+        <td>{{ c.name }}</td>
+        <td>{{ c.pollingIntervallTimeInMs }}</td>
+        <td>{{ c.used ? '✓' : '—' }}</td>
+        <td>
+          <button pButton type="button" icon="pi pi-trash" class="p-button-text"
+                  (click)="deleteRequestConfig(c.id)"></button>
+        </td>
+      </tr>
+    </ng-template>
+  </p-table>
+
+  <form [formGroup]="requestConfigurationForm" class="p-fluid mt-4">
+    <div class="p-field">
+      <label for="name">Name*</label>
+      <input id="name" pInputText formControlName="name" />
+    </div>
+    <div class="p-field">
+      <label for="pollingIntervallTimeInMs">Interval (ms)*</label>
+      <input id="pollingIntervallTimeInMs" type="number" pInputText formControlName="pollingIntervallTimeInMs" />
+    </div>
+    <div class="p-field-checkbox">
+      <p-checkbox formControlName="used" binary="true" label="Used"></p-checkbox>
+    </div>
+    <button pButton type="button" label="Add Config" [disabled]="requestConfigurationForm.invalid"
+            (click)="addRequestConfig()"></button>
   </form>
 </p-card>

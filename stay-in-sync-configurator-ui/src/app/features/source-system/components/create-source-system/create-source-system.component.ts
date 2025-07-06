@@ -111,14 +111,12 @@ export class CreateSourceSystemComponent implements OnInit {
   cancel(): void {
     this.visible = false;
     this.visibleChange.emit(false);
-    this.form.reset({
-      apiType: 'REST_OPENAPI',
-      apiAuthType: null
-    });
+    // reset form and state
+    this.form.reset({ apiType: 'REST_OPENAPI', apiAuthType: null });
     this.selectedFile = null;
     this.fileSelected = false;
     this.form.get('openApiSpec')!.enable();
-    this.currentStep = 0; // Zurücksetzen auf Schritt 0
+    this.currentStep = 0;
   }
 
   save(): void {
@@ -182,5 +180,20 @@ export class CreateSourceSystemComponent implements OnInit {
           console.error('Failed to create Source System:', err);
         }
       });
+  }
+
+  /** Proceeds to the next step: either create or advance */
+  goNext(): void {
+    // if on first step, create the source system
+    if (this.currentStep === 0) {
+      this.save();
+    }
+  }
+
+  /** Returns to the previous step */
+  goBack(): void {
+    if (this.currentStep > 0) {
+      this.currentStep = 0;
+    }
   }
 }

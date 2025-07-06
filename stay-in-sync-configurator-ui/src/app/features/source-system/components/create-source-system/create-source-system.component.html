@@ -1,13 +1,13 @@
 <p-steps [model]="steps" [activeIndex]="currentStep" class="p-mb-4"></p-steps>
 
-<ng-container *ngIf="currentStep === 0">
-  <p-dialog
-    header="Create Source System"
-    [(visible)]="visible"
-    modal="true"
-    [style]="{ width: '50vw' }"
-    (onHide)="cancel()"
-  >
+<p-dialog
+  header="Create Source System"
+  [(visible)]="visible"
+  modal="true"
+  [style]="{ width: '50vw' }"
+  (onHide)="cancel()"
+>
+  <ng-container *ngIf="currentStep === 0">
     <form [formGroup]="form" class="p-fluid">
       <!-- Metadaten-Formular -->
       <div class="p-field">
@@ -64,13 +64,17 @@
     </form>
     <ng-template pTemplate="footer">
       <button pButton type="button" label="Cancel" (click)="cancel()" class="p-button-text"></button>
-      <button pButton type="button" label="Create & Continue" (click)="save()" [disabled]="form.invalid"></button>
+      <button pButton type="button" label="Next" (click)="goNext()" [disabled]="form.invalid"></button>
     </ng-template>
-  </p-dialog>
-</ng-container>
+  </ng-container>
 
-<ng-container *ngIf="currentStep === 1">
-  <app-manage-endpoints
-    [sourceSystemId]="createdSourceSystemId"
-  ></app-manage-endpoints>
-</ng-container>
+  <ng-container *ngIf="currentStep === 1">
+    <app-manage-endpoints
+      [sourceSystemId]="createdSourceSystemId"
+    ></app-manage-endpoints>
+    <ng-template pTemplate="footer">
+      <button pButton type="button" label="Back" class="p-button-text" (click)="goBack()"></button>
+      <button pButton type="button" label="Finish" (click)="cancel()" ></button>
+    </ng-template>
+  </ng-container>
+</p-dialog>

@@ -11,7 +11,8 @@ import { ApiRequestParameterMessageDTO } from './apiRequestParameterMessageDTO';
 import { ApiHeaderDTO } from './apiHeaderDTO';
 
 
-export interface GetRequestConfigurationDTO { 
+export interface GetRequestConfigurationDTO {
+    id: number; 
     name: string;
     used?: boolean;
     pollingIntervallTimeInMs?: number;
