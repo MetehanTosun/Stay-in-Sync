@@ -33,7 +33,7 @@
                 icon="pi pi-save"
                 (click)="saveScript()"
                 [loading]="isSaving"
-                [disabled]="isLoading || isSaving || !syncJobId"
+                [disabled]="isLoading || isSaving || !currentTransformationId"
               ></p-button>
             </div>
           </ng-template>

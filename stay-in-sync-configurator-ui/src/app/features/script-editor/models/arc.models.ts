@@ -29,13 +29,15 @@ export interface ArcTestCallResponse {
 export interface ApiRequestConfiguration {
   id: number;
   alias: string;
-  sourceSystemId: number;
+  sourceSystemName: string;
   endpointId: number;
   endpointPath: string;
-  httpMethod: string;
+  httpMethod: 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH';
   responseDts: string;
   // TODO: Include other relevant fields as needed for display or cloning.
 }
+
+export type ArcMap = Record<string, ApiRequestConfiguration[]>;
 
 /**
  * The payload sent to the backend to create or update an ARC.
@@ -45,8 +47,20 @@ export interface ArcSaveRequest {
   alias: string;
   sourceSystemId: number;
   endpointId: number;
-  pathParameters: Record<string, string>;
+  pathParameterValues: Record<string, string>;
   queryParameterValues: Record<string, string>;
   headerValues: Record<string, string>;
-  responseDts: string;
+  responseDts: Record<string, any>;
+  pollingIntervallTimeInMs: number;
+}
+
+/**
+ * Represents one mapping of an endpoint param to its value.
+ */
+export interface EndpointParameterDefinition {
+  name: string;
+  in: 'path' | 'query' | 'header';
+  description: string;
+  required: boolean;
+  options: string[];
 }

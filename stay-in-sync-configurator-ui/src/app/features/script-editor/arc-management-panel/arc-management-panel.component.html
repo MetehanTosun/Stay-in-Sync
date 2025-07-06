@@ -1,24 +1,48 @@
 <p-panel header="Data Sources (ARCs)" [toggleable]="true" styleClass="h-full">
-  <p-accordion [multiple]="true" (onOpen)="onSystemExpand($event)">
+  <p-tabView>
+    <!-- Tab 1: All Data Sources -->
+    <p-tabPanel header="All Data Sources">
+      <ng-container
+        *ngTemplateOutlet="systemListTemplate; context: { systems: allSourceSystems$ | async }">
+      </ng-container>
+    </p-tabPanel>
+
+    <!-- Tab 2: Active in Script -->
+    <p-tabPanel header="Active in Script">
+      <ng-container
+        *ngTemplateOutlet="systemListTemplate; context: { systems: activeSystems$ | async }">
+      </ng-container>
+      <div *ngIf="!(activeSystems$ | async)?.length" class="p-3 text-center text-muted">
+        <i class="pi pi-info-circle p-mr-2"></i>
+        <span>No source systems are currently active in the script.</span>
+        <span>Type 'source.system-name.' to load its ARCs.</span>
+      </div>
+    </p-tabPanel>
+  </p-tabView>
+</p-panel>
+
+<ng-template #systemListTemplate let-systems="systems">
+  <p-accordion [multiple]="true" *ngIf="systems?.length" (onOpen)="onSystemExpand(systems[$event.index])">
     <p-accordionTab
-      *ngFor="let system of sourceSystems; let i = index"
+      *ngFor="let system of systems"
       [header]="system.name"
-      #tab{{i}}
     >
-      <div *ngIf="system.isLoadingEndpoints" class="p-text-center p-p-2">
+      <div *ngIf="system.isLoadingEndpoints" class="text-center p-2">
         <p-progressSpinner styleClass="w-2rem h-2rem"></p-progressSpinner>
       </div>
-      <div *ngIf="system.endpoints.length === 0">
-        <span class="font-bold">There are no endpoints defined for this source system. Please register some inside Source Systems tab!</span>
+
+      <div *ngIf="!system.isLoadingEndpoints && system.endpoints.length === 0" class="p-2 text-muted">
+        <span>No endpoints are defined for this source system.</span>
       </div>
+
       <div
         *ngFor="let endpoint of system.endpoints"
-        class="p-mb-3 endpoint-group"
+        class="endpoint-group mb-3"
       >
         <div class="endpoint-header">
           <span class="font-bold">{{ endpoint.httpRequestType }} {{ endpoint.endpointPath }}</span>
-          <small class="text-muted p-ml-2"></small>
         </div>
+
         <p-button
           label="Create New ARC"
           icon="pi pi-plus"
@@ -26,27 +50,24 @@
           (click)="onCreateArc(system, endpoint)"
         ></p-button>
 
-        <!-- List existing ARCs for this endpoint -->
-        <div
-          *ngFor="
-            let arc of (arcsBySystem$ | async)?.get(system.id)
-              | filterByEndpoint : endpoint.id
-          "
-          class="arc-item"
-        >
-          <span class="p-ml-2">{{ arc.alias }}</span>
-          <div class="arc-actions">
-            <p-button
-              icon="pi pi-clone"
-              styleClass="p-button-rounded p-button-text"
-              (click)="onCloneArc(arc)"
-              pTooltip="Clone & Edit"
-            ></p-button>
+        <div *ngIf="(arcsBySystem$ | async)?.get(system.name) as arcsForSystem">
+          <div
+            *ngFor="let arc of arcsForSystem | filterByEndpoint: endpoint.id"
+            class="arc-item"
+          >
+            <span class="ml-2">{{ arc.alias }}</span>
+            <div class="arc-actions">
+              <p-button
+                icon="pi pi-clone"
+                styleClass="p-button-rounded p-button-text p-button-sm"
+                (click)="onCloneArc(arc)"
+                pTooltip="Clone & Edit"
+              ></p-button>
+            </div>
           </div>
         </div>
+
       </div>
     </p-accordionTab>
   </p-accordion>
-</p-panel>
-
-<!-- TODO: create a simple 'filterByEndpoint' pipe -->
+</ng-template>

@@ -1,44 +1,54 @@
 import { HttpClient } from '@angular/common/http';
-import { Injectable } from '@angular/core';
-import { Observable, of, throwError } from 'rxjs';
-import { delay, map} from 'rxjs/operators';
+import { inject, Injectable } from '@angular/core';
+import { Observable } from 'rxjs';
 import { SyncJobContextData } from '../../features/script-editor/sync-job-context-panel/sync-job-context-panel.component';
 
-import { 
-  ApiRequestConfiguration, 
-  ArcSaveRequest, 
-  ArcTestCallRequest, 
-  ArcTestCallResponse 
+import {
+  ApiRequestConfiguration,
+  ArcSaveRequest,
+  ArcTestCallRequest,
+  ArcTestCallResponse,
+  EndpointParameterDefinition,
 } from '../../features/script-editor/models/arc.models';
-import { SourceSystem, SourceSystemEndpoint } from '../../features/source-system/models/source-system.models';
+import {
+  SourceSystem,
+  SourceSystemEndpoint,
+} from '../../features/source-system/models/source-system.models';
 
 export interface ScriptPayload {
+  id?: string;
+  name: string | null | undefined;
   typescriptCode: string;
-  javascriptCode: string;
+  javascriptCode?: string;
   hash: string;
 }
 
-export interface SavedScript {
-  typescriptCode: string;
-}
-
 @Injectable({
-  providedIn: 'root'
+  providedIn: 'root',
 })
 export class ScriptEditorService {
-
   //TODO placeholder api endpoint baseurl
   private readonly API_URL = '/api';
+  private http = inject(HttpClient);
 
-  constructor(private http: HttpClient) {}
+  constructor() {}
+
+  getSourceSystemNames(): Observable<string[]> {
+    return this.http.get<string[]>(`${this.API_URL}/config/source-system/systemNames`);
+  }
 
   /**
    * Sends a temporary ARC configuration to the backend for a live test call.
    * @param request The configuration to test.
    * @returns An observable of the test call result.
    */
-  testArcConfiguration(request: ArcTestCallRequest): Observable<ArcTestCallResponse> {
-    return this.http.post<ArcTestCallResponse>(`${this.API_URL}/arc/test-call`, request); // TODO: Bind resource endpoint
+  testArcConfiguration(
+    request: ArcTestCallRequest
+  ): Observable<ArcTestCallResponse> {
+    return this.http.post<ArcTestCallResponse>(
+      `${this.API_URL}/arc/test-call`,
+      request
+    ); // TODO: Bind resource endpoint
   }
 
   /**
@@ -46,11 +56,19 @@ export class ScriptEditorService {
    * @param request The ARC data to save.
    * @returns An observable of the saved ARC, including its new ID if created.
    */
-  saveArcConfiguration(request: ArcSaveRequest): Observable<ApiRequestConfiguration> {
+  saveArcConfiguration(
+    request: ArcSaveRequest
+  ): Observable<ApiRequestConfiguration> {
     if (request.id) {
-      return this.http.put<ApiRequestConfiguration>(`${this.API_URL}/arcs/${request.id}`, request);
+      return this.http.put<ApiRequestConfiguration>(
+        `${this.API_URL}/config/source-system/endpoint/request-configuration/${request.id}`,
+        request
+      );
     }
-    return this.http.post<ApiRequestConfiguration>(`${this.API_URL}/arcs`, request);
+    return this.http.post<ApiRequestConfiguration>(
+      `${this.API_URL}/config/source-system/endpoint/${request.endpointId}/request-configuration/`,
+      request
+    );
   }
 
   /**
@@ -59,177 +77,61 @@ export class ScriptEditorService {
    * @param systemId The ID of the source system.
    * @returns An observable array of ARCs.
    */
-  getArcsForSourceSystem(systemId: number): Observable<ApiRequestConfiguration[]> {
-    // --- MOCK IMPLEMENTATION ---
-    // In a real app, this would be an HTTP call:
-    // return this.http.get<ApiRequestConfiguration[]>(`${this.API_URL}/source-systems/${systemId}/arcs`);
-    
-    // For demonstration, returning mock data.
-    if (systemId === 1) {
-      return of([
-        { id: 1, alias: 'activeCustomers', sourceSystemId: 1, endpointId: 1, endpointPath: '/customers', httpMethod: 'GET', responseDts: 'interface ActiveCustomersType { id: number; name: string; status: "active" | "inactive"; }' },
-        { id: 2, alias: 'customerById', sourceSystemId: 1, endpointId: 2, endpointPath: '/customers/{id}', httpMethod: 'GET', responseDts: 'interface CustomerByIdType { id: number; name: string; email: string; address: { street: string; city: string; }; }' }
-      ]);
-    }
-    return of([]);
-    // --- END MOCK ---
+  getArcsForSourceSystem(
+    systemId: number
+  ): Observable<ApiRequestConfiguration[]> {
+    return this.http.get<ApiRequestConfiguration[]>(
+      `${this.API_URL}/config/source-system/${systemId}/request-configuration/`
+    );
   }
 
   /**
    * Fetches a list of all available source systems.
    */
-  getSourceSystems(): Observable<SourceSystem[]> { // Assuming you create a SourceSystem model
-    // MOCK IMPLEMENTATION
-    return of([
-      { id: 1, name: 'Main CRM Platform', apiType: 'REST_OPENAPI', apiUrl: 'crm', description: 'something', apiAuthType: "BASIC", openApiSpec: 'nothing' },
-      { id: 2, name: 'Central ERP', apiType: 'AAS', apiUrl: 'erp', description: 'other', apiAuthType: "BASIC", openApiSpec: 'nothing' },
-    ]);
-    // REAL IMPLEMENTATION: return this.http.get<SourceSystem[]>(`${this.API_URL}/source-systems`);
+  getSourceSystems(): Observable<SourceSystem[]> {
+    return this.http.get<SourceSystem[]>(
+      `${this.API_URL}/config/source-system`
+    );
   }
 
   /**
    * Fetches all endpoints for a specific source system.
    * @param systemId The ID of the source system.
    */
-  getEndpointsForSourceSystem(systemId: number): Observable<SourceSystemEndpoint[]> { // Assuming you create a SyncSystemEndpoint model
-    // MOCK IMPLEMENTATION
-    if (systemId === 1) {
-      return of([
-        { id: 1, sourceSystemId: 1, endpointPath: '/customers', httpRequestType: 'GET' },
-        { id: 2, sourceSystemId: 1, endpointPath: '/customers/{id}', httpRequestType: 'GET' },
-      ]);
-    }
-    return of([]);
-    // REAL IMPLEMENTATION: return this.http.get<SyncSystemEndpoint[]>(`${this.API_URL}/source-systems/${systemId}/endpoints`);
-}
+  getEndpointsForSourceSystem(
+    systemId: number
+  ): Observable<SourceSystemEndpoint[]> {
+    return this.http.get<SourceSystemEndpoint[]>(
+      `${this.API_URL}/config/source-system/${systemId}/endpoint`
+    );
+  }
 
   getSyncJobContext(jobId: string): Observable<SyncJobContextData> {
-    // TODO: Replace mock with your actual API endpoint.
-    // return this.http.get<SyncJobContextData>(`${this.API_URL}/sync-jobs/${jobId}/context`);
-
-    return this.fetchMockSyncJobContextData(jobId);
+    return this.http.get<SyncJobContextData>(
+      `${this.API_URL}/config/sync-job/${jobId}/`
+    );
   }
 
-  getTypeDefinitions(jobId: string): Observable<string> {
-    // TODO: Replace mock with your actual API endpoint.
-    // return this.http.get(`${this.API_URL}/sync-jobs/${jobId}/type-definitions`, { responseType: 'text' });
-
-    return this.fetchMockDtsForJob(jobId);
+  getEndpointParameterDefinitions(
+    endpointId: number
+  ): Observable<EndpointParameterDefinition[]> {
+    return this.http.get<EndpointParameterDefinition[]>(
+      `${this.API_URL}/config/source-system/endpoint/${endpointId}/request-configuration`
+    );
   }
 
-  getSavedScript(jobId: string): Observable<SavedScript | null>{
-    // TODO: Replace mock with your actual API endpoint.
-    // This endpoint should return a 404 or an empty object if no script exists.
-    // return this.http.get<SavedScript>(`${this.API_URL}/sync-jobs/${jobId}/script`);
-
-    if (jobId === 'anotherJob789'){
-      return of({ typescriptCode: `// This is a previously saved script for ${jobId}\nstayinsync.log('Hello from a saved script!');`}).pipe(delay(200));
-    }
-    return of(null).pipe(delay(200));
+  // TODO: Properly lazyload existing script
+  getSavedScript(transformationId: string): Observable<ScriptPayload | null> {
+    return this.http.get<ScriptPayload>(
+      `${this.API_URL}/config/transformation/${transformationId}/transformation-script`
+    );
   }
 
-  saveScript(jobId: string, payload: ScriptPayload): Observable<void> {
-    // TODO: Implement your actual API call.
-    // return this.http.post<void>(`${this.API_URL}/sync-jobs/${jobId}/script`, payload);
-
-    console.log(`SAVING SCRIPT for ${jobId}`, payload);
-    return of(undefined).pipe(delay(500));
+  saveScript(payload: ScriptPayload): Observable<ScriptPayload> {
+    return this.http.post<ScriptPayload>(
+      `${this.API_URL}/config/transformation-script`,
+      payload
+    );
   }
-
-  private fetchMockDtsForJob(jobId: string): Observable<string> {
-    let dtsContent = `// No types found for ${jobId}`;
-    if(jobId == 'activeJob123'){
-      dtsContent = `
-          // Types for Job 'Customer & Product Sync'
-          declare namespace CrmSystemTypes {
-              interface Customer { id: string; name: string; email?: string; lastContactDate: string; isActive: boolean; }
-          }
-          declare namespace ErpSystemTypes {
-              interface Product { sku: string; description: string; stockLevel: number; }
-          }
-          // 'sourceData' is the global variable your script will use.
-          declare const sourceData: {
-              crmCustomer: CrmSystemTypes.Customer;
-              erpProducts: ErpSystemTypes.Product[];
-          };
-      `;
-    } else if(jobId === 'anotherJob789'){
-      dtsContent = `
-          declare namespace LegacySystem {
-              interface DataRecord { key: string; value: any; timestamp: number; }
-          }
-          declare const sourceData: {
-              legacyRecords: LegacySystem.DataRecord[];
-          };
-      `;
-    }
-    return of(dtsContent).pipe(delay(300));
-  }
-
-  private fetchMockSyncJobContextData(jobId: string): Observable<SyncJobContextData> {
-    if(jobId === 'activeJob123'){
-      const data: SyncJobContextData = {
-        syncJobId: jobId,
-        syncJobName: 'Customer & Product Sync (Active)',
-        syncJobDescription:
-          'Synchronizes active customer data from CRM and product stock from ERP.',
-        sourceSystems: [
-          {
-            id: 'crm',
-            name: 'Main CRM Platform',
-            type: 'REST_OPENAPI',
-            dataEntities: [
-              {
-                aliasInScript: 'crmCustomer',
-                entityName: 'Active Customer Profile',
-                schemaSummary: {
-                  type: 'object',
-                  title: 'Customer',
-                  properties: {
-                    id: { type: 'string' },
-                    name: { type: 'string' },
-                    email: { type: 'string' },
-                    lastContactDate: { type: 'string', format: 'date-time' },
-                    isActive: { type: 'boolean' },
-                  },
-                  required: ['id', 'name', 'isActive'],
-                },
-              },
-            ],
-          },
-          {
-            id: 'erp',
-            name: 'Central ERP System',
-            type: 'AAS',
-            dataEntities: [
-              {
-                aliasInScript: 'erpProducts',
-                entityName: 'Stocked Products List',
-                schemaSummary: {
-                  type: 'array',
-                  title: 'Products',
-                  items: {
-                    type: 'object',
-                    properties: {
-                      sku: { type: 'string' },
-                      description: { type: 'string' },
-                      stockLevel: { type: 'number' },
-                    },
-                    required: ['sku', 'stockLevel'],
-                  },
-                },
-              },
-            ],
-          },
-        ],
-        destinationSystem: {
-          id: 'dataMart',
-          name: 'Sales Data Mart',
-          targetEntity: 'AggregatedCustomerProductView',
-        },
-      };
-      return of(data).pipe(delay(400));
-    }
-    return throwError(()=> new Error('SyncJob not found.'));
-  }
+  
 }

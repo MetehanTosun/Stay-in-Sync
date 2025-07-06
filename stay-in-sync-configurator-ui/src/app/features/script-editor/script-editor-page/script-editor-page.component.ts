@@ -2,12 +2,8 @@ import {
   Component,
   OnDestroy,
   ChangeDetectorRef,
-  Input,
-  OnChanges,
-  SimpleChanges,
   OnInit,
-  AfterViewInit,
-  ViewChild,
+  inject,
 } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { CommonModule } from '@angular/common';
@@ -19,7 +15,11 @@ import {
 } from '../../../core/services/script-editor.service';
 import { MessagesModule } from 'primeng/messages';
 import { MessageService } from 'primeng/api';
-import { catchError, debounceTime, finalize, forkJoin, of, Subject, Subscription, tap } from 'rxjs';
+
+import { ActivatedRoute, Router } from '@angular/router';
+import { ScriptEditorData } from '../script-editor-navigation.service';
+
+import { catchError, debounceTime, finalize, of, Subject, Subscription, tap, throwError } from 'rxjs';
 
 // PrimeNG Modules
 import { PanelModule } from 'primeng/panel';
@@ -54,7 +54,7 @@ interface Message {
 }
 
 @Component({
-  selector: 'app-script-editor-step',
+  selector: 'app-script-editor-step', // might be without step
   templateUrl: './script-editor-page.component.html',
   styleUrls: ['./script-editor-page.component.css'],
   standalone: true,
@@ -73,8 +73,10 @@ interface Message {
     ToastModule,
   ],
 })
-export class ScriptEditorPageComponent implements OnInit, OnChanges, OnDestroy {
-  @Input() syncJobId: string | null = null;
+export class ScriptEditorPageComponent implements OnInit, OnDestroy {
+
+  currentTransformationId: string | null = null;
+  preloadedData?: ScriptEditorData;
 
   editorOptions = {
     theme: 'vs-dark',
@@ -88,45 +90,44 @@ export class ScriptEditorPageComponent implements OnInit, OnChanges, OnDestroy {
   private currentExtraLibs: MonacoExtraLib[] = [];
   private subscriptions = new Subscription();
 
-  executionResult: any = null;
-  executionError: any = null;
-  analysisMessages: Message[] = [];
-  analysisResults: string[] = [];
-
   isLoading: boolean = false;
   isSaving: boolean = false;
   loadingMessage = 'Initializing...';
   code: string = `// Script editor will initialize once a SyncJob context is loaded.`;
-  currentSyncJobContextData: SyncJobContextData | null = null;
 
   isWizardVisible = false;
   wizardContext: { system: SourceSystem; endpoint: SourceSystemEndpoint; arcToClone?: ApiRequestConfiguration} | null | undefined = null;
 
   private onModelChange = new Subject<void>();
 
-  constructor(
-    private cdr: ChangeDetectorRef,
-    private scriptEditorService: ScriptEditorService,
-    private messageService: MessageService,
-    private arcStateService: ArcStateService
-  ) {
+  private cdr =  inject(ChangeDetectorRef);
+  private scriptEditorService = inject(ScriptEditorService);
+  private messageService = inject(MessageService);
+  private arcStateService = inject(ArcStateService);
+  private route = inject(ActivatedRoute);
+  private router = inject(Router);
+
+  constructor() {
+    const navigation = this.router.getCurrentNavigation();
+    this.preloadedData = navigation?.extras?.state?.['scriptData'];
+    console.log('Preloaded data from state: ', this.preloadedData);
+
+    if (this.preloadedData?.scriptName) {
+      this.loadingMessage = `Loading ${this.preloadedData.scriptName}...`;
+    }
+
     this.subscriptions.add(
-      this.onModelChange.pipe(debounceTime(750)).subscribe(() => this.analyzeEditorContentForTypes())
+      this.onModelChange.pipe(debounceTime(1000)).subscribe(() => this.analyzeEditorContentForTypes())
     );
   }
 
   ngOnInit(): void {
-    this.syncJobId = 'activeJob123';
-    if (this.syncJobId) {
-      this.loadContextForSyncJob(this.syncJobId);
-    }
-  }
-
-  ngOnChanges(changes: SimpleChanges): void {
-    if (changes['syncJobId'] && changes['syncJobId'].currentValue) {
-      this.loadContextForSyncJob(changes['syncJobId'].currentValue);
-    } else if (changes['syncJobId'] && !changes['syncJobId'].currentValue) {
-      this.resetEditorState();
+    this.currentTransformationId = this.route.snapshot.paramMap.get('transformationId');
+    
+    if (!this.currentTransformationId) {
+      this.isLoading = false;
+      this.code = '// ERROR: No Transformation ID found in URL. Cannot load context.';
+      this.messageService.add({ severity: 'error', summary: 'Error', detail: 'No Transformation ID provided in the URL.' });
     }
   }
 
@@ -155,16 +156,15 @@ export class ScriptEditorPageComponent implements OnInit, OnChanges, OnDestroy {
     });
 
     this.addGlobalApiDefinitions();
-    if(this.syncJobId){
-      this.loadContextForSyncJob('activeJob123');
-    }
-
     this.arcStateService.initializeMonaco(monaco);
     this.monacoInstance?.onDidChangeModelContent(() => this.onModelChange.next());
 
-    setTimeout(()=>{
-        this.monacoInstance?.layout();
-      }, 100); // Monaco editor needs to expand to fit inside its component layout in the DOM
+    this.arcStateService.initializeGlobalSourceType().subscribe();
+
+    if (this.currentTransformationId) {
+      console.log(`Editor is ready. Loading context for Transformation ID: ${this.currentTransformationId}`);
+      this.loadContextForScript(this.currentTransformationId).subscribe();
+    }
   }
 
   handleCreateArc(context: { system: SourceSystem; endpoint: SourceSystemEndpoint }): void {
@@ -173,8 +173,7 @@ export class ScriptEditorPageComponent implements OnInit, OnChanges, OnDestroy {
   }
   
   handleCloneArc(context: { arc: ApiRequestConfiguration }): void {
-    // You would need to fetch the system and endpoint details for the cloned arc
-    // and then open the wizard.
+    // TODO: Implement proper arc fetch and inject for selected arc inside arc wizard with the same data, but new entity
     // this.wizardContext = { ... };
     // this.isWizardVisible = true;
   }
@@ -184,55 +183,38 @@ export class ScriptEditorPageComponent implements OnInit, OnChanges, OnDestroy {
     this.messageService.add({ severity: 'success', summary: 'ARC Saved', detail: `Configuration '${savedArc.alias}' is now available.` });
   }
 
-  private loadContextForSyncJob(jobId: string): void {
-    if (!jobId || !this.monaco) {
-      return;
+  private loadContextForScript(transformationId: string) {
+    if (!transformationId) {
+      return of(null);
     }
 
     this.isLoading = true;
-    this.loadingMessage = `Loading context for SyncJob: ${jobId}...`;
-    this.resetEditorState(true); // Soft reset, keeps global libs
+    this.loadingMessage = `Loading context for Transformation with ID: ${transformationId}...`;
 
-    const jobLoader$ = forkJoin({
-      context: this.scriptEditorService.getSyncJobContext(jobId),
-      typeDefs: this.scriptEditorService.getTypeDefinitions(jobId),
-      savedScript: this.scriptEditorService.getSavedScript(jobId),
-    }).pipe(
-      tap(({ context, typeDefs, savedScript }) => {
-        // 1. Set context data for the side panel
-        this.currentSyncJobContextData = context;
-
-        // 2. Add the dynamic type definitions for this job
-        this.addExtraLib(typeDefs, `file:///syncjob-${jobId}-sources.d.ts`);
-
-        // 3. Set the editor code
-        this.code = savedScript
-          ? savedScript.typescriptCode
-          : this.generateDefaultScriptTemplate(context);
-        
-        this.messageService.add({ severity: 'success', summary: 'Context Loaded', detail: `Successfully loaded context for ${context.syncJobName}.` });
-      }),
+    return this.scriptEditorService.getSavedScript(transformationId).pipe(
       catchError(error => {
-        console.error(`Error loading context for SyncJob ${jobId}:`, error);
-        this.code = `// ERROR: Failed to load context for SyncJob ${jobId}.\n// Check browser console for details.`;
-        this.messageService.add({ severity: 'error', summary: 'Load Failed', detail: error.message || 'Could not load SyncJob context.' });
-        return of(null);
+        if (error.status === 404) return of(null);
+        return throwError(() => error);
       }),
-      finalize(() => {
-        this.isLoading = false;
-        this.cdr.detectChanges();
-      })
+      tap(savedScript => {
+        const scriptName = this.preloadedData?.scriptName;
+        if (savedScript?.typescriptCode){
+          this.code = savedScript.typescriptCode;
+          this.analyzeEditorContentForTypes();
+        } else {
+          this.code = this.generateDefaultScriptTemplate(scriptName);
+        }
+      }),
+      finalize(() => this.isLoading = false)
     );
-    
-    this.subscriptions.add(jobLoader$.subscribe());
   }
 
   async saveScript(): Promise<void> {
-    if (!this.syncJobId || this.isSaving) {
+    if (!this.currentTransformationId  || this.isSaving) {
         return;
     }
 
-    // Step 1: Client-side validation using Monaco's diagnostics
+    // Static Analysis
     const hasErrors = await this.hasValidationErrors();
     if (hasErrors) {
         this.messageService.add({ severity: 'error', summary: 'Validation Failed', detail: 'Please fix the TypeScript errors before saving.' });
@@ -241,22 +223,23 @@ export class ScriptEditorPageComponent implements OnInit, OnChanges, OnDestroy {
 
     this.isSaving = true;
     try {
-        // Step 2: Transpile TypeScript to JavaScript
+        // Transpile
         const transpileOutput = ts.transpileModule(this.code, {
             compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ESNext },
         });
 
-        // Step 3: Generate a hash (placeholder for a real hashing function)
+        // Hash
         const jsHash = await this.generateHash(transpileOutput.outputText);
 
         const payload: ScriptPayload = {
+            name: this.preloadedData?.scriptName,
             typescriptCode: this.code,
             javascriptCode: transpileOutput.outputText,
             hash: jsHash,
         };
 
-        // Step 4: Call the service to save the script
-        this.scriptEditorService.saveScript(this.syncJobId, payload).subscribe({
+        // Save
+        this.scriptEditorService.saveScript(payload).subscribe({
             next: () => {
                 this.messageService.add({ severity: 'success', summary: 'Saved!', detail: 'Script has been saved successfully.' });
                 this.isSaving = false;
@@ -279,28 +262,19 @@ export class ScriptEditorPageComponent implements OnInit, OnChanges, OnDestroy {
 
   // --- Helper & Private Methods ---
 
-  private resetEditorState(isChangingJob = false): void {
-    // Dispose only job-specific libs, not global ones
-    const libsToRemove = this.currentExtraLibs.filter(lib => !lib.uri.includes('global-'));
-    libsToRemove.forEach(lib => lib.disposable.dispose());
-    this.currentExtraLibs = this.currentExtraLibs.filter(lib => lib.uri.includes('global-'));
-
-    this.currentSyncJobContextData = null;
-    this.code = isChangingJob ? '// Loading new context...' : '// Please select a SyncJob to begin.';
-    this.cdr.detectChanges();
-  }
-
   private analyzeEditorContentForTypes(): void {
     const code = this.monacoInstance?.getValue() || '';
-    const matches = code.matchAll(/source\.([a-zA-Z0-9_-]+)\./g);
-    const systemIdsToLoad = new Set<number>();
+    const matches = code.matchAll(/\bsource\.([a-zA-Z0-9_-]+)\b/g);
+
+    const systemNamesInEditor = new Set<string>();
     for (const match of matches) {
-      // This is a simplification for demo purposes. You'd need a map of systemName -> systemId
-      // TODO: ADD name to ID mapping, maybe from backend as hashmap.
-      systemIdsToLoad.add(1);
+      // TODO: control for js sanitization of identifier names. Requires proper naming convention for Types
+      systemNamesInEditor.add(match[1]);
     }
-    
-    systemIdsToLoad.forEach(id => this.arcStateService.loadTypesForSourceSystem(id));
+
+    if (systemNamesInEditor.size > 0) {
+      this.arcStateService.loadTypesForSourceSystemNames(Array.from(systemNamesInEditor)).subscribe();
+    }
   }
 
   private addExtraLib(content: string, uri: string): void {
@@ -332,20 +306,16 @@ export class ScriptEditorPageComponent implements OnInit, OnChanges, OnDestroy {
     this.addExtraLib(stayinsyncApiDts, 'file:///global-stayinsync-api.d.ts');
   }
 
-  private generateDefaultScriptTemplate(context: SyncJobContextData): string {
-    const sourceAliases = context.sourceSystems.flatMap(s => s.dataEntities.map(e => e.aliasInScript));
+  private generateDefaultScriptTemplate(scriptName: string | undefined): string {
     return `/**
- * Transformation Script for SyncJob: ${context.syncJobName}
- * 
- * Available source data objects:
- * ${sourceAliases.map(alias => ` *  - sourceData.${alias}`).join('\n')}
+ * Transformation Script for SyncJob: ${scriptName}
  * 
  * Available API functions:
  *  - stayinsync.log('Your message', 'INFO' | 'WARN' | 'ERROR')
  *  - stayinsync.setOutput({ ... your final JSON object ... })
  */
 async function transformData() {
-    stayinsync.log('Starting transformation for job: ${context.syncJobName}');
+    stayinsync.log('Starting transformation for job: ${scriptName}');
 
     // --- YOUR TRANSFORMATION LOGIC STARTS HERE ---
     
@@ -389,14 +359,12 @@ transformData();
         client.getSemanticDiagnostics(model.uri.toString()),
     ]).then(([syntactic, semantic]) => [...syntactic, ...semantic]);
 
-    // Filter only for errors. Warnings are acceptable.
     const errors = diagnostics.filter(d => d.category === ts.DiagnosticCategory.Error);
     return errors.length > 0;
   }
 
   private async generateHash(data: string): Promise<string> {
-    // In a real app, use a proper crypto library like `crypto-js` or the browser's SubtleCrypto API.
-    // This is a simple placeholder.
+    // Placeholder, switching to crypto library like `crypto-js` or the browser's SubtleCrypto API.
     const buffer = new TextEncoder().encode(data);
     const hashBuffer = await crypto.subtle.digest('SHA-256', buffer);
     const hashArray = Array.from(new Uint8Array(hashBuffer));
