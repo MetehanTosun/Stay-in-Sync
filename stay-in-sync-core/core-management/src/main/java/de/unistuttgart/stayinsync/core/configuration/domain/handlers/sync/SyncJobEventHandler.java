@@ -60,7 +60,7 @@ public class SyncJobEventHandler {
 
     private void deployNecessaryApiRequestConfigurations(SyncJob syncJob) {
         Set<SourceSystemApiRequestConfiguration> requieredApiRequestConfigurations = syncJob.transformations.stream().flatMap(transformation -> transformation.sourceSystemApiRequestConfigrations.stream()).collect(Collectors.toSet());
-        Set<SourceSystemApiRequestConfiguration> inactiveConfiguration = requieredApiRequestConfigurations.stream().filter(apiRequestConfiguration -> !apiRequestConfiguration.used).collect(Collectors.toSet());
+        Set<SourceSystemApiRequestConfiguration> inactiveConfiguration = requieredApiRequestConfigurations.stream().filter(apiRequestConfiguration -> !apiRequestConfiguration.active).collect(Collectors.toSet());
         inactiveConfiguration.stream().forEach(sourceSystemEndpoint -> deployPollingJob(sourceSystemEndpoint));
     }
 
@@ -73,7 +73,7 @@ public class SyncJobEventHandler {
         List<SourceSystemApiRequestConfiguration> unusedButPolledEndpoints = SourceSystemApiRequestConfiguration.listAllWherePollingIsActiveAndUnused();
         unusedButPolledEndpoints.stream().forEach(apiRequestConfiguration -> {
             pollingJobMessageProducer.reconfigureDeployedPollingJob(apiRequestConfigurationFullUpdateMapper.mapToMessageDTO(apiRequestConfiguration));
-            apiRequestConfiguration.used = false;
+            apiRequestConfiguration.active = false;
             apiRequestConfiguration.persist();
         });
     }
