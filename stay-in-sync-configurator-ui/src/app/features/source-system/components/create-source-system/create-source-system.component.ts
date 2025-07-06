@@ -1,6 +1,7 @@
-import { Component, OnInit, Input, Output, EventEmitter } from '@angular/core';
+import { Component, OnInit, OnChanges, Input, Output, EventEmitter, SimpleChanges } from '@angular/core';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { CommonModule } from '@angular/common';
+import { SourceSystemDTO } from '../../../../generated/model/sourceSystemDTO';
 
 // PrimeNG
 import { DialogModule } from 'primeng/dialog';
@@ -36,13 +37,16 @@ import { HttpResponse } from '@angular/common/http';
     ManageEndpointsComponent
   ]
 })
-export class CreateSourceSystemComponent implements OnInit {
+export class CreateSourceSystemComponent implements OnInit, OnChanges {
   @Input() visible = false;
+  @Input() sourceSystem: SourceSystemDTO | null = null;
   @Output() visibleChange = new EventEmitter<boolean>();
 
+  // Reduziertes Step-Model: nur Metadaten, Header und Endpoints
   steps = [
-    { label: 'Create Source System' },
-    { label: 'Manage Endpoints' }
+    { label: 'Metadaten' },
+    { label: 'Header' },
+    { label: 'Endpoints' }
   ];
   currentStep = 0; // Start bei Schritt 0 (Metadaten)
   createdSourceSystemId!: number;
@@ -97,6 +101,18 @@ export class CreateSourceSystemComponent implements OnInit {
       }
       ['username', 'password', 'apiKey', 'headerName'].forEach(k => grp.get(k)!.updateValueAndValidity());
     });
+  }
+
+  ngOnChanges(changes: SimpleChanges): void {
+    if (changes['sourceSystem'] && this.sourceSystem) {
+      this.form.patchValue({
+        name: this.sourceSystem.name,
+        apiUrl: this.sourceSystem.apiUrl,
+        description: this.sourceSystem.description,
+        apiType: this.sourceSystem.apiType
+      });
+      this.currentStep = 0;
+    }
   }
 
   onFileSelected(ev: Event): void {

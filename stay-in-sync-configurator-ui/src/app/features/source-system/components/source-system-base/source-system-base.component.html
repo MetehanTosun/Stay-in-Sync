@@ -23,8 +23,8 @@
         <td>{{ system.apiUrl }}</td>
         <td>{{ system.description }}</td>
         <td>
-          <button pButton type="button" icon="pi pi-pencil" class="p-button-text"></button>
-          <button pButton type="button" icon="pi pi-trash" class="p-button-text"></button>
+          <button pButton type="button" icon="pi pi-pencil" class="p-button-text" (click)="editSourceSystem(system)"></button>
+          <button pButton type="button" icon="pi pi-trash" class="p-button-text" (click)="deleteSourceSystem(system)"></button>
         </td>
       </tr>
     </ng-template>
@@ -33,8 +33,9 @@
   <p-message *ngIf="errorMsg" severity="error" text="{{ errorMsg }}"></p-message>
 </p-card>
 
-<!-- Create Source System Dialog -->
+<!-- Create / Edit Source System Dialog -->
 <app-create-source-system
   [visible]="showCreateDialog"
+  [sourceSystem]="selectedSystem"
   (visibleChange)="onCreateDialogClose($event)"
 ></app-create-source-system>

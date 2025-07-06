@@ -75,6 +75,8 @@ export class SourceSystemBaseComponent implements OnInit {
   }
   /** Öffnet das Create-Dialog */
   openCreate(): void {
+    // Reset selection when creating new
+    this.selectedSystem = null;
     this.showCreateDialog = true;
   }
 
@@ -86,6 +88,7 @@ export class SourceSystemBaseComponent implements OnInit {
     this.showCreateDialog = visible;
     if (!visible) {
       this.loadSystems();
+      this.selectedSystem = null;
     }
   }
 
