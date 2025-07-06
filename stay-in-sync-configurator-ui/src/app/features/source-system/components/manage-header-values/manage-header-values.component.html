@@ -1,0 +1,26 @@
+
+<h4>Values for "{{headerName}}"</h4>
+
+<p-table [value]="values" [paginator]="true" [rows]="10">
+  <ng-template pTemplate="header">
+    <tr><th>Value</th><th>Actions</th></tr>
+  </ng-template>
+  <ng-template pTemplate="body" let-v>
+    <tr>
+      <td>{{v.headerValue}}</td>
+      <td>
+        <button pButton icon="pi pi-trash" (click)="deleteValue(v)"></button>
+      </td>
+    </tr>
+  </ng-template>
+</p-table>
+
+<form [formGroup]="form" (ngSubmit)="addValue()" class="p-fluid p-formgrid p-grid">
+  <div class="p-field p-col-8">
+    <label for="headerValue">Value</label>
+    <input id="headerValue" pInputText formControlName="headerValue" />
+  </div>
+  <div class="p-field p-col-4" style="display:flex; align-items:flex-end;">
+    <button pButton type="submit" label="Add Value"></button>
+  </div>
+</form>

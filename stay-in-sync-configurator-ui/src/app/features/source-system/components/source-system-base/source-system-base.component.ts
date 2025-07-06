@@ -41,6 +41,9 @@ export class SourceSystemBaseComponent implements OnInit {
   /** Steuerung, ob der Create-Dialog angezeigt wird */
   showCreateDialog = false;
 
+  /** Temporarily holds a system for editing */
+  selectedSystem: SourceSystemDTO | null = null;
+
   constructor(private api: SourceSystemResourceService) {}
 
   ngOnInit(): void {
@@ -84,5 +87,23 @@ export class SourceSystemBaseComponent implements OnInit {
     if (!visible) {
       this.loadSystems();
     }
+  }
+
+  /** Löscht ein Quellsystem und lädt die Liste neu */
+  deleteSourceSystem(system: SourceSystemDTO): void {
+    if (!system.id) {
+      console.warn('Keine ID vorhanden, Löschen übersprungen');
+      return;
+    }
+    this.api.apiConfigSourceSystemIdDelete(system.id).subscribe({
+      next: () => this.loadSystems(),
+      error: err => console.error('Löschen des Source System fehlgeschlagen', err)
+    });
+  }
+
+  /** Öffnet den Dialog zum Bearbeiten eines bestehenden Quellsystems */
+  editSourceSystem(system: SourceSystemDTO): void {
+    this.selectedSystem = system;
+    this.showCreateDialog = true;
   }
 }
