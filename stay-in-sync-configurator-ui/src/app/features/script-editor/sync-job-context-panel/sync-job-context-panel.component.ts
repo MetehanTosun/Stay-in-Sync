@@ -26,8 +26,8 @@ interface SourceSystemInfo {
 }
 
 export interface SyncJobContextData {
-  syncJobId: string;
-  syncJobName: string;
+  id: string;
+  name: string;
   syncJobDescription?: string;
   sourceSystems: SourceSystemInfo[];
   destinationSystem?: any;
