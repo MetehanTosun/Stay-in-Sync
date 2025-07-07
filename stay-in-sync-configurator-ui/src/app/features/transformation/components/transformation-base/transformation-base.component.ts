@@ -81,7 +81,10 @@ export class TransformationBaseComponent implements OnInit {
   }
 
   delete(rowData: any) {
-    this.transformationService.delete(rowData).subscribe();
+    this.transformationService.delete(rowData).subscribe({
+      next: () => this.loadTransformationsFromBackend(),
+      error: (error: any) => console.error('Error deleting transformation:', error)
+    });
     console.log('Delete transformation:', rowData);
   }
 
@@ -132,15 +135,30 @@ export class TransformationBaseComponent implements OnInit {
   }
 
   selectedRule: any; // Typ ggf. anpassen
+  private _transformationId: number | null = null;
+
+  get transformationId(): number | null {
+    return this._transformationId;
+  }
+
+  set transformationId(value: number | null) {
+    this._transformationId = value;
+  }
+
+
 
   addRule(rowData: any) {
     this.selectedTransformation = rowData;
     this.displayRuleSelectionDialog = true;
+    this.router.navigate([`/sync-jobs/create/rule/${rowData.id}`]);
+    console.log('Selected transformation for rule:', rowData.id);
+    this.transformationId = rowData.id;
   }
 
   onUseRuleEvent(event: any) {
+    console.log('Selected rule:', event);
     this.selectedRule = event;
-    // Weitere Logik nach Bedarf
+    //this.transformationService.update()
   }
 
   addScript(rowData: any) {
@@ -154,6 +172,7 @@ export class TransformationBaseComponent implements OnInit {
 
   cancelRuleSelectionDialog() {
     this.displayRuleSelectionDialog = false;
+    this.router.navigate([`/sync-jobs/create`]);
   }
   cancelCreateTransformationDialog() {
     this.displayCreateDialog = false;

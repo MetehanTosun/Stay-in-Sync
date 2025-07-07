@@ -26,5 +26,9 @@ export class TransformationService {
     return this.httpClient.put<Transformation>(`/api/config/transformation/${transformation.id}`, transformation);
   }
 
+  getById(id: number): Observable<Transformation> {
+    return this.httpClient.get<Transformation>(`/api/config/transformation/${id}`);
+  }
+
 
 }

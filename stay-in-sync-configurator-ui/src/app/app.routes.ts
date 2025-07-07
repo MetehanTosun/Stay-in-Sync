@@ -12,6 +12,9 @@ import { EdcBaseComponent } from './features/edc/components/edc-base/edc-base.co
 import {HelpPageComponent} from './features/help-page/help-page.component';
 import {SyncJobPageComponent} from './features/sync-job/components/sync-job-page/sync-job-page.component';
 import {SyncJobCreationComponent} from './features/sync-job/components/sync-job-creation/sync-job-creation.component';
+import {
+  TransformationRuleSelectionComponent
+} from './features/transformation/components/transformation-rule-selection/transformation-rule-selection.component';
 
 
 
@@ -47,6 +50,10 @@ export const routes: Routes = [
     {
       path: 'edit/:id',
       component: SyncJobCreationComponent
+    },
+    {
+      path: 'create/rule/:transformationId',
+      component: TransformationRuleSelectionComponent
     }
   ]
   },

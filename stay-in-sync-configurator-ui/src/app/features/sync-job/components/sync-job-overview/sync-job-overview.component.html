@@ -1,20 +1,60 @@
-<div class="sync-job-overview">
-  <h2>Sync Job Overview</h2>
-  <div class="sync-job-details">
-    <p><strong>Name:</strong> {{ syncJob.name }}</p>
-    <p><strong>Description:</strong> {{ syncJob.description }}</p>
-    <p><strong>SourceSystem:</strong> {{ syncJob.sourceSystem }}</p>
-    <p><strong>Used Endpoints:</strong></p>
-    <ul>
-      <li *ngFor="let endpoint of syncJob.endpoints">{{ endpoint }}</li>
-    </ul>
-    <p><strong>Variables:</strong></p>
-    <ul>
-      <li *ngFor="let variable of syncJob.variables">{{ variable }}</li>
-    </ul>
-    <p><strong>Transformations:</strong></p>
-    <ul>
-      <li *ngFor="let transformation of syncJob.transformations">{{ transformation.name }}: {{ transformation.transformationRule }}</li>
-    </ul>
+<p-card header="Sync Job Overview" class="sync-job-card" [style.width.%]="100">
+  <div class="p-fluid">
+    <div class="p-field">
+      <label for="name"><strong>Name:</strong></label>
+      <p>{{ syncJob.name }}</p>
+    </div>
+
+    <div class="p-field">
+      <label for="description"><strong>Description:</strong></label>
+      <p>{{ syncJob.description }}</p>
+    </div>
+
+    <div class="p-field">
+      <label><strong>Source Systems:</strong></label>
+      <ul class="p-list">
+        <li *ngFor="let sourceSystem of syncJob.sourceSystems">{{ sourceSystem.name }}</li>
+      </ul>
+    </div>
+
+    <div class="p-field">
+      <label><strong>Used Endpoints:</strong></label>
+      <ul class="p-list">
+        <li *ngFor="let endpoint of syncJob.endpoints">{{ endpoint }}</li>
+      </ul>
+    </div>
+
+    <div class="p-field">
+      <label><strong>Variables:</strong></label>
+      <ul class="p-list">
+        <li *ngFor="let variable of syncJob.variables">{{ variable }}</li>
+      </ul>
+    </div>
+
+    <div class="p-field">
+      <label><strong>Transformations:</strong></label>
+      <ul class="p-list">
+        <li *ngFor="let transformation of syncJob.transformations">
+          <strong>{{ transformation.name }}:</strong> {{ transformation.transformationRule }}
+        </li>
+      </ul>
+    </div>
+
+    <div class="p-field">
+      <label><strong>Simulation Mode:</strong></label>
+      <p>
+        <p-tag [value]="syncJob.isSimulation ? 'Enabled' : 'Disabled'"
+               [severity]="syncJob.isSimulation ? 'info' : 'success'">
+        </p-tag>
+      </p>
+    </div>
+
+    <div class="p-field">
+      <label><strong>Used ARCs:</strong></label>
+      <ul class="p-list">
+        <!-- <li *ngFor="let arc of syncJob.arcs">{{ arc }}</li> -->
+      </ul>
+    </div>
   </div>
-</div>
+</p-card>
+

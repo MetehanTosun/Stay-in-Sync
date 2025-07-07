@@ -6,7 +6,7 @@ export interface SyncJob {
   id?: number;
   name?: string;
   description?: string;
-  sourceSystem?: SourceSystem;
+  sourceSystems?: SourceSystem[];
   endpoints?: (NgIterable<unknown> & NgIterable<any>) | undefined | null;
   variables?: (NgIterable<unknown> & NgIterable<any>) | undefined | null;
   transformations?: (NgIterable<Transformation>);

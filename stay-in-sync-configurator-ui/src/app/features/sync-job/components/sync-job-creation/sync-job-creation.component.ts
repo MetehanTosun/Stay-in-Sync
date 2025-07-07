@@ -1,13 +1,12 @@
-import {Component, EventEmitter, Input, NgIterable, OnInit, Output} from '@angular/core';
+import {Component, EventEmitter, Input, OnInit, Output} from '@angular/core';
 import {Dialog} from 'primeng/dialog';
 import {Button} from 'primeng/button';
 import {Step, StepList, StepPanel, StepPanels, Stepper} from 'primeng/stepper';
 import {Router} from '@angular/router';
 import {FormsModule} from '@angular/forms';
 import {InputText} from 'primeng/inputtext';
-import {NgForOf, NgSwitch, NgSwitchCase} from '@angular/common';
+import {NgSwitch, NgSwitchCase} from '@angular/common';
 import {SourceSystem} from '../../../source-system/models/source-system.model';
-import {AasService} from "../../../source-system/services/aas.service";
 import {ToggleSwitch} from "primeng/toggleswitch";
 import {FloatLabel} from "primeng/floatlabel";
 import {Textarea} from "primeng/textarea";
@@ -18,6 +17,8 @@ import {SyncJobOverviewComponent} from '../sync-job-overview/sync-job-overview.c
 import {Transformation} from '../../../transformation/models/transformation.model';
 import {SyncJobService} from '../../services/sync-job.service';
 import {SyncJob} from '../../models/sync-job.model';
+import {SourceSystemService} from '../../../source-system/services/source-system.service';
+import {MultiSelect} from 'primeng/multiselect';
 
 @Component({
   selector: 'app-sync-job-creation',
@@ -31,14 +32,14 @@ import {SyncJob} from '../../models/sync-job.model';
     StepPanels,
     FormsModule,
     InputText,
-    NgForOf,
     ToggleSwitch,
     FloatLabel,
     Textarea,
     TransformationBaseComponent,
     SyncJobOverviewComponent,
     NgSwitch,
-    NgSwitchCase
+    NgSwitchCase,
+    MultiSelect
   ],
   templateUrl: './sync-job-creation.component.html',
   styleUrl: './sync-job-creation.component.css'
@@ -69,16 +70,17 @@ export class SyncJobCreationComponent implements OnInit {
     this.updateMySyncJob();
   }
 
-  private _selectedSourceSystem: any;
-  get selectedSourceSystem(): any {
-    return this._selectedSourceSystem;
+  private _selectedSourceSystems: SourceSystem[] = [];
+  get selectedSourceSystems(): SourceSystem[] {
+    return this._selectedSourceSystems;
   }
-  set selectedSourceSystem(value: any) {
-    this._selectedSourceSystem = value;
+  set selectedSourceSystems(value: SourceSystem[]) {
+    this._selectedSourceSystems = value;
     this.updateMySyncJob();
   }
 
-  sourceSystems: (NgIterable<SourceSystem>) | undefined | null;
+
+  sourceSystems: SourceSystem[] = [];
   private _isSimulation: boolean = false;
   get isSimulation(): boolean {
     return this._isSimulation;
@@ -101,15 +103,16 @@ export class SyncJobCreationComponent implements OnInit {
     this.mySyncJob = {
       name: this._syncJobName,
       description: this._syncJobDescription,
-      sourceSystemId: this._selectedSourceSystem?.id,
+      sourceSystems: this._selectedSourceSystems,
       isSimulation: this._isSimulation,
       transformations: this._transformations
     } as SyncJob;
+    console.log("Updated Sync Job:", this.mySyncJob);
   }
 
 
 
-  constructor(private router: Router, private aas: AasService, readonly syncJobService: SyncJobService) {}
+  constructor(private router: Router, private sourceSystemService: SourceSystemService, readonly syncJobService: SyncJobService) {}
 
   ngOnInit() {
     console.log("Sync Job Creation Component Initialized");
@@ -120,7 +123,7 @@ export class SyncJobCreationComponent implements OnInit {
           this.mySyncJob = job;
           this.syncJobName = job.name || '';
           this.syncJobDescription = job.description || '';
-          this.selectedSourceSystem = { name: job.sourceSystem ? job.sourceSystem.name : '', id: job.sourceSystem ? job.sourceSystem.id : null };
+          this.selectedSourceSystems = job.sourceSystems || [];
           this.isSimulation = job.isSimulation || false;
           this.transformations = Array.from(job.transformations || []);
         },
@@ -150,7 +153,7 @@ export class SyncJobCreationComponent implements OnInit {
 
 
   private loadSystems() {
-    this.aas.getAll().subscribe({
+    this.sourceSystemService.getAll().subscribe({
       next: list => {
         this.sourceSystems = list.map(s => ({ id: s.id, name: s.name}));
       },
@@ -203,7 +206,7 @@ export class SyncJobCreationComponent implements OnInit {
   resetStepperData() {
     this.syncJobName = '';
     this.syncJobDescription = '';
-    this.selectedSourceSystem = null;
+    this.selectedSourceSystems = [];
     this.isSimulation = false;
     this.transformations = [];
     this.activeStep = 1;
