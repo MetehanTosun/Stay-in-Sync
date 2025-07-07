@@ -8,7 +8,7 @@ import org.eclipse.microprofile.openapi.annotations.Operation;
 import org.eclipse.microprofile.openapi.annotations.parameters.Parameter;
 import org.eclipse.microprofile.openapi.annotations.tags.Tag;
 
-import de.unistuttgart.stayinsync.core.configuration.exception.CoreManagementWebException;
+import de.unistuttgart.stayinsync.core.configuration.exception.CoreManagementException;
 import de.unistuttgart.stayinsync.core.configuration.mapping.TargetSystemMapper;
 import de.unistuttgart.stayinsync.core.configuration.rest.dtos.TargetSystemDTO;
 import de.unistuttgart.stayinsync.core.configuration.service.TargetSystemService;
@@ -54,7 +54,7 @@ public class TargetSystemResource {
     public Response updateTargetSystem(@Parameter(name = "id", required = true) @PathParam("id") Long id,
             TargetSystemDTO dto) {
         if (!id.equals(dto.id())) {
-            throw new CoreManagementWebException(Response.Status.BAD_REQUEST, "ID Mismatch",
+            throw new CoreManagementException(Response.Status.BAD_REQUEST, "ID Mismatch",
                     "The ID in the path (%d) does not match the ID in the request body (%d).", id, dto.id());
         }
 
@@ -72,7 +72,7 @@ public class TargetSystemResource {
                     Log.debugf("Found TargetSystem: %s", entity);
                     return Response.ok(mapper.toDto(entity)).build();
                 })
-                .orElseThrow(() -> new CoreManagementWebException(Response.Status.NOT_FOUND, "TargetSystem not found",
+                .orElseThrow(() -> new CoreManagementException(Response.Status.NOT_FOUND, "TargetSystem not found",
                         "No TargetSystem found using id %d", id));
     }
 
@@ -95,7 +95,7 @@ public class TargetSystemResource {
             return Response.noContent().build();
         } else {
             Log.warnf("Attempted to delete non-existent TargetSystem with id %d", id);
-            throw new CoreManagementWebException(Response.Status.NOT_FOUND,
+            throw new CoreManagementException(Response.Status.NOT_FOUND,
                     "TargetSystem not found",
                     "TargetSystem with id %d could not be found for deletion.", id);
         }
