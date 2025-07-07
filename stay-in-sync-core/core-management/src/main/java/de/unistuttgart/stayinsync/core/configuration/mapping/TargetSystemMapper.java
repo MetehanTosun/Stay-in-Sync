@@ -13,7 +13,6 @@ public interface TargetSystemMapper {
 
     TargetSystem toEntity(TargetSystemDTO dto);
 
-    @Mapping(target = "id", source = "id")
     TargetSystemDTO toDto(TargetSystem entity);
 
     @Mapping(target = "id", ignore = true)
