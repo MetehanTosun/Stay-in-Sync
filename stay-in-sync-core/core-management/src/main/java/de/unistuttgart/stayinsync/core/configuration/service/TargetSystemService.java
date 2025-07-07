@@ -6,7 +6,7 @@ import java.util.List;
 import java.util.Optional;
 
 import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.TargetSystem;
-import de.unistuttgart.stayinsync.core.configuration.exception.CoreManagementWebException;
+import de.unistuttgart.stayinsync.core.configuration.exception.CoreManagementException;
 import de.unistuttgart.stayinsync.core.configuration.mapping.TargetSystemMapper;
 import de.unistuttgart.stayinsync.core.configuration.rest.dtos.TargetSystemDTO;
 import io.quarkus.logging.Log;
@@ -33,7 +33,7 @@ public class TargetSystemService {
         Log.debugf("Updating TargetSystem with id %d", id);
 
         TargetSystem entity = TargetSystem.<TargetSystem>findByIdOptional(id)
-                .orElseThrow(() -> new CoreManagementWebException(
+                .orElseThrow(() -> new CoreManagementException(
                         Response.Status.NOT_FOUND,
                         "TargetSystem not found",
                         "TargetSystem with id %d not found.", id));
