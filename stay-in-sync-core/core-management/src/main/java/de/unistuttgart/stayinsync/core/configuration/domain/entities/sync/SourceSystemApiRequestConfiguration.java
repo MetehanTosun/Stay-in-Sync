@@ -1,10 +1,8 @@
 package de.unistuttgart.stayinsync.core.configuration.domain.entities.sync;
 
-import jakarta.persistence.DiscriminatorValue;
-import jakarta.persistence.Entity;
-import jakarta.persistence.ManyToMany;
-import jakarta.persistence.ManyToOne;
+import jakarta.persistence.*;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 
@@ -20,6 +18,9 @@ public class SourceSystemApiRequestConfiguration extends ApiRequestConfiguration
 
     @ManyToOne
     public SourceSystemEndpoint sourceSystemEndpoint;
+
+    @Lob
+    public String responseDts;
 
     public int pollingIntervallTimeInMs;
 
@@ -41,6 +42,31 @@ public class SourceSystemApiRequestConfiguration extends ApiRequestConfiguration
 
     public static List<SourceSystemApiRequestConfiguration> findByEndpointId(Long endpointId) {
         return find("sourceSystemEndpoint.id", endpointId).list();
+    }
+
+    /**
+     * Finds all SourceSystemApiRequestConfigurations linked to SourceSystems by their names,
+     * using the Panache Active Record pattern.
+     * <p>
+     * This method uses a single, efficient JOIN query and returns a list of object arrays,
+     * where each array contains:
+     * [0]: The name of the SourceSystem (String)
+     * [1]: The associated SourceSystemApiRequestConfiguration entity
+     *
+     * @param names A set of source system names.
+     * @return A list of [String, SourceSystemApiRequestConfiguration] pairs.
+     */
+    public static List<Object[]> findArcsGroupedBySourceSystemName(Set<String> names) {
+        if (names == null || names.isEmpty()) {
+            return Collections.emptyList();
+        }
+
+        return getEntityManager().createQuery(
+                        "SELECT arc.sourceSystem.name, arc " +
+                                "FROM SourceSystemApiRequestConfiguration arc " +
+                                "WHERE arc.sourceSystem.name IN :names", Object[].class)
+                .setParameter("names", names)
+                .getResultList();
     }
 
 }
