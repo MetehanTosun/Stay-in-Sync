@@ -42,7 +42,7 @@ public class SyncDataProducer {
         }
     }
 
-    public void setupRequestConfigurationStream(SourceSystemApiRequestConfigurationMessageDTO requestConfiguration) {
+    public void setupRequestConfigurationStream(SourceSystemApiRequestConfigurationMessageDTO requestConfiguration) throws PollingNodeException {
         try {
             Map<String, Object> queueArgs = new HashMap<>();
             queueArgs.put("x-queue-type", "stream");
@@ -51,7 +51,7 @@ public class SyncDataProducer {
             channel.queueBind("request-config-" + requestConfiguration.id(), "sync-data-exchange", "request-config-" + requestConfiguration.id());
 
         } catch (IOException e) {
-            throw new RuntimeException(e);
+            throw new PollingNodeException("Unable to setup stream", "Failed to setup stream for request config with id: " + requestConfiguration.id(), e);
         }
     }
 

@@ -26,7 +26,7 @@ public class SyncJobScheduler {
 
     public void deploySyncJobExecution(SyncJobMessageDTO syncJob) throws SyncNodeException {
         Log.infof("Deploying sync-job %s (id: %s)", syncJob.name(), syncJob.id());
-        syncJobMessageConsumer.bindExisitingSyncJobQueue(syncJob);
+        syncJobMessageConsumer.bindSyncJobReconfigurationQueue(syncJob);
         consumeJobSyncData(syncJob);
 
         runningJobs.add(syncJob);
@@ -47,7 +47,10 @@ public class SyncJobScheduler {
         Set<SourceSystemApiRequestConfigurationMessageDTO> requestConfigurations = syncJobMessageDTO.transformations().stream() //
                 .flatMap(transformationMessageDTO -> transformationMessageDTO.requestConfigurationMessageDTOS().stream()) //
                 .collect(Collectors.toSet());
-        requestConfigurations.forEach(requestConfig -> syncDataMessageConsumer.startConsumingSyncData(requestConfig));
+        requestConfigurations.forEach(requestConfig -> {
+            Log.infof("Starting to consume data for %s", requestConfig.id());
+            syncDataMessageConsumer.startConsumingSyncData(requestConfig);
+        });
     }
 
     //TODO implement this method

@@ -148,7 +148,7 @@ public class SyncJobMessageConsumer {
      * @param syncJob
      * @throws SyncNodeException
      */
-    public void bindExisitingSyncJobQueue(SyncJobMessageDTO syncJob) throws SyncNodeException {
+    public void bindSyncJobReconfigurationQueue(SyncJobMessageDTO syncJob) throws SyncNodeException {
         try {
             String routingKey = "sync-job-" + syncJob.id();
             Log.infof("Binding queue %s with routing key %s", syncNodeQueueName, routingKey);

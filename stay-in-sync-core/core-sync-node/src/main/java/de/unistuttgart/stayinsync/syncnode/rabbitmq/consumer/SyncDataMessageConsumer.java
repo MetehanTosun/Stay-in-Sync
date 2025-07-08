@@ -7,7 +7,6 @@ import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.DeliverCallback;
 import com.rabbitmq.client.Delivery;
 import de.unistuttgart.stayinsync.exception.SyncNodeException;
-import de.unistuttgart.stayinsync.syncnode.syncjob.SyncJobScheduler;
 import de.unistuttgart.stayinsync.transport.dto.SourceSystemApiRequestConfigurationMessageDTO;
 import de.unistuttgart.stayinsync.transport.dto.SyncDataMessageDTO;
 import io.quarkiverse.rabbitmqclient.RabbitMQClient;
@@ -30,14 +29,9 @@ public class SyncDataMessageConsumer {
     RabbitMQClient rabbitMQClient;
 
     @Inject
-    SyncJobScheduler syncJobScheduler;
-
-    @Inject
     ObjectMapper objectMapper;
 
     private Channel channel;
-
-    private String syncNodeQueueName;
 
     /**
      * On application startup the consumer to bind queues to the domain specific exchange in order to
@@ -84,9 +78,9 @@ public class SyncDataMessageConsumer {
      *
      * @return
      */
-    private CancelCallback cancelSyncDataConsumptionCallback(String queue) {
+    private CancelCallback cancelSyncDataConsumptionCallback() {
         return consumerTag -> {
-            Log.warnf("Consumer %s was stopped consuming sync data messages from queue %s", consumerTag, queue);
+            Log.warnf("Consumer %s was stopped consuming sync data messages from queue", consumerTag);
         };
     }
 
@@ -117,7 +111,7 @@ public class SyncDataMessageConsumer {
             queueArgs.put("x-queue-type", "stream");
             queueArgs.put("x-max-age", "1m");
             channel.queueDeclare("request-config-" + requestConfigurationMessageDTO.id(), true, false, false, Collections.singletonMap("x-queue-type", "stream"));
-            channel.basicConsume("request-config-" + requestConfigurationMessageDTO.id(), false, receiveSyncDataCallback(), cancelSyncDataConsumptionCallback(syncNodeQueueName));
+            channel.basicConsume("request-config-" + requestConfigurationMessageDTO.id(), false, receiveSyncDataCallback(), cancelSyncDataConsumptionCallback());
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
