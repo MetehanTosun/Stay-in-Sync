@@ -121,8 +121,8 @@
             <version>1.6.3</version>
         </dependency>
         <dependency>
-            <groupId>de.unistuttgart</groupId>
-            <artifactId>stay-in-sync-shared</artifactId>
+            <groupId>de.unistuttgart.stayinsync</groupId>
+            <artifactId>shared</artifactId>
             <version>1.0.0-SNAPSHOT</version>
         </dependency>
     </dependencies>
@@ -150,6 +150,13 @@
                 <version>${compiler-plugin.version}</version>
                 <configuration>
                     <parameters>true</parameters>
+                    <annotationProcessorPaths>
+                        <path>
+                            <groupId>org.mapstruct</groupId>
+                            <artifactId>mapstruct-processor</artifactId>
+                            <version>1.6.3</version>
+                        </path>
+                    </annotationProcessorPaths>
                 </configuration>
             </plugin>
             <plugin>
