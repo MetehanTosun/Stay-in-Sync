@@ -1,6 +1,9 @@
 package de.unistuttgart.stayinsync.pollingnode.execution.ressource;
 
 import de.unistuttgart.stayinsync.pollingnode.entities.ApiConnectionDetails;
+import de.unistuttgart.stayinsync.pollingnode.exceptions.FaultySourceSystemApiRequestMessageDtoException;
+import de.unistuttgart.stayinsync.pollingnode.exceptions.HttpRequestConfigurationException;
+import de.unistuttgart.stayinsync.transport.dto.SourceSystemApiRequestConfigurationMessageDTO;
 import de.unistuttgart.stayinsync.transport.dto.SourceSystemMessageDTO;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.unchecked.Unchecked;
@@ -14,8 +17,6 @@ import jakarta.enterprise.context.ApplicationScoped;
 import io.quarkus.logging.Log;
 
 import java.time.Duration;
-import java.util.Objects;
-import java.util.Optional;
 
 /**
  * Offers methods to build CRUD requests excluding DELETE, as well as the method executeRequest(HttpRequest<Buffer> request),
@@ -45,53 +46,30 @@ public class RestClient {
     }
 
     /**
-     *
-     * @param connectionDetails
-     * @return
+     * Returns a configured HttpRequest for the ApiConnectionDetails.
+     * @param connectionDetails contains important info for request build.
+     * @return fully configured and parameterised HttpRequest
+     * @throws FaultySourceSystemApiRequestMessageDtoException if configuration didn´t work because of some fields.
      */
-    public Optional<HttpRequest<Buffer>> configureGetRequest(final ApiConnectionDetails connectionDetails) {
-        if (connectionDetails.allFieldsInCorrectFormat() && Objects.equals(connectionDetails.endpoint().httpRequestType(), "GET")) {
+    public HttpRequest<Buffer> configureRequest(final SourceSystemApiRequestConfigurationMessageDTO connectionDetails) throws FaultySourceSystemApiRequestMessageDtoException {
+        try {
             final String apiCallPath = concatPaths(connectionDetails.sourceSystem().apiUrl(), connectionDetails.endpoint().endpointPath());
             this.logSourceSystemDetails(connectionDetails.sourceSystem(), apiCallPath);
-            final HttpRequest<Buffer> request = webClient.getAbs(apiCallPath);
+            HttpRequest<Buffer> request = buildRequestWithSpecificRequestType(connectionDetails.endpoint().httpRequestType(), apiCallPath);
             this.applyRequestConfiguration(connectionDetails, request);
-            Log.debugf("GET request successfully built", request);
-            return Optional.of(request);
-        } else {
-            Log.warnf("The connectionDetails that were obtained from the SourceSystemApiRequestConfiguration had some null fields or apiURL or endpointPath were empty.", connectionDetails);
-            return Optional.empty();
-        }
-
-    }
-
-    public Optional<HttpRequest<Buffer>> configurePostRequest(final ApiConnectionDetails connectionDetails) {
-        if (connectionDetails.allFieldsInCorrectFormat() && Objects.equals(connectionDetails.endpoint().httpRequestType(), "POST")) {
-            final String apiCallPath = concatPaths(connectionDetails.sourceSystem().apiUrl(), connectionDetails.endpoint().endpointPath());
-            this.logSourceSystemDetails(connectionDetails.sourceSystem(), apiCallPath);
-            final HttpRequest<Buffer> request = webClient.postAbs(apiCallPath);
-            this.applyRequestConfiguration(connectionDetails, request);
-            Log.debugf("POST request successfully built", request);
-            return Optional.of(request);
-        } else {
-            Log.warnf("The connectionDetails that were obtained from the SourceSystemApiRequestConfiguration had some null fields or apiURL or endpointPath were empty.\"", connectionDetails);
-            return Optional.empty();
+            Log.debugf("Request successfully built", request);
+            return request;
+        } catch (Exception e) {
+            throw new FaultySourceSystemApiRequestMessageDtoException("Request configuration failed for " + connectionDetails.sourceSystem().toString());
         }
     }
 
-    public Optional<HttpRequest<Buffer>> configurePutRequest(final ApiConnectionDetails connectionDetails) {
-        if (connectionDetails.allFieldsInCorrectFormat() && Objects.equals(connectionDetails.endpoint().httpRequestType(), "PUT")) {
-            final String apiCallPath = concatPaths(connectionDetails.sourceSystem().apiUrl(), connectionDetails.endpoint().endpointPath());
-            this.logSourceSystemDetails(connectionDetails.sourceSystem(), apiCallPath);
-            final HttpRequest<Buffer> request = webClient.putAbs(apiCallPath);
-            this.applyRequestConfiguration(connectionDetails, request);
-            Log.debugf("PUT request successfully built", request);
-            return Optional.of(request);
-        } else {
-            Log.warnf("The connectionDetails that were obtained from the SourceSystemApiRequestConfiguration had some null fields or apiURL or endpointPath were empty.\"", connectionDetails);
-            return Optional.empty();
-        }
-    }
-
+    /**
+     * Executes a prebuilt request and returns a JsonObject when poll is done.
+     *
+     * @param request is the prebuild parameterised HttpRequest that is executed
+     * @return Uni<JsonObject> form which the JsonObject can be retrieved
+     */
     public Uni<JsonObject> executeRequest(final HttpRequest<Buffer> request) {
         return request.send()
                 .onItem().transform(Unchecked.function(response -> {
@@ -115,18 +93,57 @@ public class RestClient {
                 );
     }
 
-    private void applyRequestConfiguration(ApiConnectionDetails connectionDetails, HttpRequest<Buffer> request) {
+    /*
+     * Builds request with one of these types: GET, POST, PUT.
+     * DELETE is not supported.
+     *
+     * @param httpRequestType is used to determine the requestType for the build
+     * @param apiCallPath Used to build the request
+     * @return built request
+     * @throws FaultySourceSystemApiRequestMessageDtoException if the httpRequestType was in wrong format.
+     */
+    private HttpRequest<Buffer> buildRequestWithSpecificRequestType(final String httpRequestType, String apiCallPath) throws FaultySourceSystemApiRequestMessageDtoException {
+        HttpRequest<Buffer> request;
+        switch (httpRequestType) {
+            case "GET" -> request = webClient.getAbs(apiCallPath);
+            case "POST" -> request = webClient.postAbs(apiCallPath);
+            case "PUT" -> request = webClient.putAbs(apiCallPath);
+            default ->
+                    throw new FaultySourceSystemApiRequestMessageDtoException("The apiRequestType was not 'GET', 'POST', 'PUT'");
+        }
+        return request;
+    }
+
+    /*
+     * Parameterises an already built HttpRequest with the information of the ApiConnectionDetails.
+     */
+    private void applyRequestConfiguration(SourceSystemApiRequestConfigurationMessageDTO connectionDetails, HttpRequest<Buffer> request) {
         request.putHeader(connectionDetails.sourceSystem().authDetails().headerName(), connectionDetails.sourceSystem().authDetails().apiKey());
         connectionDetails.requestHeader().forEach(header -> request.putHeader(header.headerName(), header.headerValue()));
         connectionDetails.requestParameters().forEach(parameter -> request.addQueryParam(parameter.paramName(), parameter.paramValue()));
     }
 
-    private String concatPaths(final String baseUrl, final String endpointPath) {
-        final String cleanedBase = baseUrl.endsWith("/") ? baseUrl.substring(0, baseUrl.length() - 1) : baseUrl;
-        final String cleanedEndpoint = endpointPath.startsWith("/") ? endpointPath : "/" + endpointPath;
-        return cleanedBase + cleanedEndpoint;
+    /*
+     * Applies second to first path. Changes all "\" to "/" and makes sure, that there are no additional or missing "/" between the seems.
+     */
+    private String concatPaths(final String baseUrl, final String endpointPath) throws FaultySourceSystemApiRequestMessageDtoException {
+        if (baseUrl == null || endpointPath == null) {
+            throw new IllegalArgumentException("BaseURL and endpointPath must not be null");
+        }
+        String base = baseUrl.replace("\\", "/").replaceAll("/+$", "");
+        String endpoint = endpointPath.replace("\\", "/").replaceAll("^/+", "");
+        if (base.isEmpty()) {
+            return endpoint;
+        }
+        if (endpoint.isEmpty()) {
+            return base;
+        }
+        return base + "/" + endpoint;
     }
 
+    /*
+     * Logs SourceSystem Details for debugging.
+     */
     private void logSourceSystemDetails(final SourceSystemMessageDTO sourceSystem, final String apiCallPath) {
         Log.debugf("""
                 GET called on SourceSystem with these details:
