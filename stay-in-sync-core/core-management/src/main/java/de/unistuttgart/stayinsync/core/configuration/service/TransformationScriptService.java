@@ -1,12 +1,15 @@
 package de.unistuttgart.stayinsync.core.configuration.service;
 
+import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.Transformation;
 import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.TransformationScript;
+import de.unistuttgart.stayinsync.core.configuration.exception.CoreManagementException;
 import de.unistuttgart.stayinsync.core.configuration.mapping.TransformationScriptMapper;
 import de.unistuttgart.stayinsync.core.configuration.rest.dtos.TransformationScriptDTO;
 import io.quarkus.logging.Log;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
+import jakarta.ws.rs.core.Response;
 
 import java.util.List;
 import java.util.Optional;
@@ -23,8 +26,7 @@ public class TransformationScriptService {
 
     public TransformationScript create(TransformationScriptDTO dto) {
         Log.debugf("Creating new transformation script with name: %s", dto.name());
-        TransformationScript transformationScript = new TransformationScript();
-        mapper.mapToEntity(dto);
+        TransformationScript transformationScript = mapper.mapToEntity(dto);
         transformationScript.persist();
         return transformationScript;
     }
@@ -36,6 +38,42 @@ public class TransformationScriptService {
                     mapper.mapFullUpdate(scriptFromDTO, targetScript);
                     return targetScript;
                 });
+    }
+
+    @Transactional
+    public Optional<TransformationScript> findByTransformationId(Long transformationId) {
+        return Transformation.<Transformation>findByIdOptional(transformationId)
+                .map(transformation -> transformation.transformationScript);
+    }
+
+    @Transactional
+    public TransformationScript saveOrUpdateForTransformation(Long transformationId, TransformationScriptDTO dto) {
+        Transformation transformation = Transformation.<Transformation>findByIdOptional(transformationId)
+                .orElseThrow(() -> new CoreManagementException(Response.Status.NOT_FOUND,
+                        "Transformation not found",
+                        "Cannot save script for non-existent transformation with id %d", transformationId));
+
+        TransformationScript script = transformation.transformationScript;
+
+        if (script == null) {
+            Log.infof("No existing script found for transformation %d. Creating a new one.", transformationId);
+            script = new TransformationScript();
+            script.transformation = transformation;
+            transformation.transformationScript = script;
+        } else {
+            Log.infof("Existing script %d found for transformation %d. Updating.", script.id, transformationId);
+        }
+
+        script.name = dto.name();
+        script.typescriptCode = dto.typescriptCode();
+        script.javascriptCode = dto.javascriptCode();
+        script.hash = dto.hash();
+
+        script.persist();
+
+        transformation.persist();
+
+        return script;
     }
 
     @Transactional(SUPPORTS)

@@ -188,7 +188,7 @@ export class ScriptEditorPageComponent implements OnInit, OnDestroy {
     this.isLoading = true;
     this.loadingMessage = `Loading context for Transformation with ID: ${transformationId}...`;
 
-    return this.scriptEditorService.getSavedScript(transformationId).pipe(
+    return this.scriptEditorService.getScriptForTransformation(Number(transformationId)).pipe(
       catchError(error => {
         if (error.status === 404) return of(null);
         return throwError(() => error);
@@ -207,25 +207,25 @@ export class ScriptEditorPageComponent implements OnInit, OnDestroy {
   }
 
   async saveScript(): Promise<void> {
-    if (!this.currentTransformationId  || this.isSaving) {
+    if (!this.currentTransformationId) {
+        this.messageService.add({ severity: 'error', summary: 'Error', detail: 'No transformation context found. Cannot save.' });
+        return;
+    }
+    if (this.isSaving) {
         return;
     }
 
-    // Static Analysis
     const hasErrors = await this.hasValidationErrors();
     if (hasErrors) {
         this.messageService.add({ severity: 'error', summary: 'Validation Failed', detail: 'Please fix the TypeScript errors before saving.' });
         return;
     }
 
-    this.isSaving = true;
     try {
-        // Transpile
         const transpileOutput = ts.transpileModule(this.code, {
             compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ESNext },
         });
 
-        // Hash
         const jsHash = await this.generateHash(transpileOutput.outputText);
 
         const payload: ScriptPayload = {
@@ -235,20 +235,26 @@ export class ScriptEditorPageComponent implements OnInit, OnDestroy {
             hash: jsHash,
         };
 
-        // Save
-        this.scriptEditorService.saveScript(payload).subscribe({
-            next: () => {
-                this.messageService.add({ severity: 'success', summary: 'Saved!', detail: 'Script has been saved successfully.' });
-                this.isSaving = false;
-                this.cdr.detectChanges();
-            },
-            error: (err) => {
-                this.messageService.add({ severity: 'error', summary: 'Save Failed', detail: 'Could not save the script to the server.' });
-                console.error('Save script error:', err);
-                this.isSaving = false;
-                this.cdr.detectChanges();
+        this.isSaving = true;
+
+        this.scriptEditorService.saveScriptForTransformation(Number(this.currentTransformationId), payload).subscribe({
+        next: (savedScript) => {
+            this.messageService.add({ severity: 'success', summary: 'Saved!', detail: 'Script has been saved successfully.' });
+            
+            if(this.preloadedData){
+              this.preloadedData.id = savedScript.id; 
             }
-        });
+
+            this.isSaving = false;
+            this.cdr.detectChanges();
+        },
+        error: (err) => {
+            this.messageService.add({ severity: 'error', summary: 'Save Failed', detail: 'Could not save the script to the server.' });
+            console.error('Save script error:', err);
+            this.isSaving = false;
+            this.cdr.detectChanges();
+        }
+    });
 
     } catch (e) {
         this.messageService.add({ severity: 'error', summary: 'Transpilation Error', detail: 'An error occurred during script transpilation.' });
