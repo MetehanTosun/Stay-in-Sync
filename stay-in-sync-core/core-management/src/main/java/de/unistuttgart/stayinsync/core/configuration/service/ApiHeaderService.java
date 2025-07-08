@@ -34,7 +34,7 @@ public class ApiHeaderService {
     ApiHeaderFullUpdateMapper mapper;
 
     public ApiHeader persistRequestHeader(@NotNull @Valid CreateApiHeaderDTO apiEndpointQueryParamDTO, Long endpointId) {
-        Log.debugf("Persisting api-endpoint-query-param: %s, for sync-syste, with id: %s", apiEndpointQueryParamDTO, endpointId);
+        Log.infof("Persisting api-endpoint-query-param: %s, for sync-syste, with id: %s", apiEndpointQueryParamDTO, endpointId);
 
         ApiHeader apiRequestHeader = mapper.mapToEntity(apiEndpointQueryParamDTO);
 
@@ -49,25 +49,25 @@ public class ApiHeaderService {
 
     @Transactional(SUPPORTS)
     public List<ApiHeader> findAllHeadersBySyncSystemId(Long syncSystemId) {
-        Log.debugf("Finding all endpoints of sync-syste, with id = %s", syncSystemId);
+        Log.infof("Finding all endpoints of sync-syste, with id = %s", syncSystemId);
         return Optional.ofNullable(ApiHeader.findBySyncSystemId(syncSystemId))
                 .orElseGet(List::of);
     }
 
     @Transactional(SUPPORTS)
     public Optional<ApiHeader> findRequestHeaderById(Long id) {
-        Log.debugf("Finding api-endpoint-query-param by id = %d", id);
+        Log.infof("Finding api-endpoint-query-param by id = %d", id);
         return ApiHeader.findByIdOptional(id);
     }
 
     public void deleteRequestHeaderById(Long id) {
-        Log.debugf("Deleting endpoint by id = %d", id);
+        Log.infof("Deleting endpoint by id = %d", id);
         ApiHeader.deleteById(id);
     }
 
     public Optional<ApiHeader> replaceRequestHeader(@NotNull @Valid ApiHeaderDTO apiEndpointQueryParamDTO) {
         ApiHeader apiEndpointQueryParam = mapper.mapToEntity(apiEndpointQueryParamDTO);
-        Log.debugf("Replacing endpoint: %s", apiEndpointQueryParam);
+        Log.infof("Replacing endpoint: %s", apiEndpointQueryParam);
 
         Optional<ApiHeader> updatedSourceSystemEndpoint = ApiHeader.findByIdOptional(apiEndpointQueryParam.id)
                 .map(ApiHeader.class::cast) // Only here for type erasure within the IDE

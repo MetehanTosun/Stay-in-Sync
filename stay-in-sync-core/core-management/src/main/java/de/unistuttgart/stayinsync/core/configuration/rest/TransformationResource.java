@@ -39,7 +39,7 @@ public class TransformationResource {
     public Response createTransformationShell(TransformationShellDTO dto, @Context UriInfo uriInfo) {
         var persisted = service.createTransformation(dto);
         var builder = uriInfo.getAbsolutePathBuilder().path(Long.toString(persisted.id));
-        Log.debugf("New transformation shell created with URI %s", builder.build().toString());
+        Log.infof("New transformation shell created with URI %s", builder.build().toString());
 
         // Return the full details DTO so the frontend has the initial state
         return Response.created(builder.build()).entity(mapper.mapToDetailsDTO(persisted)).build();
@@ -57,7 +57,7 @@ public class TransformationResource {
         }
 
         var updated = service.updateTransformation(id, dto);
-        Log.debugf("Transformation with id %d was assembled.", id);
+        Log.infof("Transformation with id %d was assembled.", id);
         return Response.ok(mapper.mapToDetailsDTO(updated)).build();
     }
 
@@ -67,7 +67,7 @@ public class TransformationResource {
     public Response getTransformation(@Parameter(name = "id", required = true) @PathParam("id") Long id) {
         return service.findById(id)
                 .map(transformation -> {
-                    Log.debugf("Found transformation: %s", transformation);
+                    Log.infof("Found transformation: %s", transformation);
                     return Response.ok(mapper.mapToDetailsDTO(transformation)).build();
                 })
                 .orElseThrow(() -> new CoreManagementException(Response.Status.NOT_FOUND, "Unable to find transformation", "No transformation found using id %d", id));
@@ -77,7 +77,7 @@ public class TransformationResource {
     @Operation(summary = "Returns all transformations")
     public List<TransformationDetailsDTO> getAllTransformations() {
         var transformations = service.findAll();
-        Log.debugf("Total number of transformations: %d", transformations.size());
+        Log.infof("Total number of transformations: %d", transformations.size());
         return transformations.stream()
                 .map(mapper::mapToDetailsDTO)
                 .collect(Collectors.toList());
@@ -90,7 +90,7 @@ public class TransformationResource {
         boolean deleted = service.delete(id);
 
         if (deleted) {
-            Log.debugf("Transformation with id %d deleted", id);
+            Log.infof("Transformation with id %d deleted", id);
             return Response.noContent().build();
         } else {
             Log.warnf("Attempted to delete non-existent transformation with id %d", id);

@@ -16,7 +16,7 @@ public class ApiRequestConfigurationService {
 
     @Transactional(SUPPORTS)
     public Optional<ApiRequestConfiguration> findApiRequestConfigurationById(Long id) {
-        Log.debugf("Finding request-configurations by id = %d", id);
+        Log.infof("Finding request-configurations by id = %d", id);
         return ApiRequestConfiguration.findByIdOptional(id);
     }
 

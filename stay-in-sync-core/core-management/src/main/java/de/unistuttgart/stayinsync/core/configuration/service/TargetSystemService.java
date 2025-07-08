@@ -23,14 +23,14 @@ public class TargetSystemService {
     TargetSystemMapper mapper;
 
     public TargetSystemDTO createTargetSystem(TargetSystemDTO dto) {
-        Log.debugf("Creating new TargetSystem with id: %d", dto.id());
+        Log.infof("Creating new TargetSystem with id: %d", dto.id());
         TargetSystem entity = mapper.toEntity(dto);
         entity.persist();
         return mapper.toDto(entity);
     }
 
     public TargetSystemDTO updateTargetSystem(Long id, TargetSystemDTO dto) {
-        Log.debugf("Updating TargetSystem with id %d", id);
+        Log.infof("Updating TargetSystem with id %d", id);
 
         TargetSystem entity = TargetSystem.<TargetSystem>findByIdOptional(id)
                 .orElseThrow(() -> new CoreManagementException(
@@ -44,13 +44,13 @@ public class TargetSystemService {
 
     @Transactional(SUPPORTS)
     public Optional<TargetSystem> findById(Long id) {
-        Log.debugf("Finding TargetSystem with id %d", id);
+        Log.infof("Finding TargetSystem with id %d", id);
         return TargetSystem.findByIdOptional(id);
     }
 
     @Transactional(SUPPORTS)
     public List<TargetSystemDTO> findAll() {
-        Log.debug("Getting all TargetSystems.");
+        Log.info("Getting all TargetSystems.");
         return TargetSystem.<TargetSystem>listAll()
                 .stream()
                 .map(mapper::toDto)
@@ -58,7 +58,7 @@ public class TargetSystemService {
     }
 
     public boolean delete(Long id) {
-        Log.debugf("Deleting TargetSystem with id %d", id);
+        Log.infof("Deleting TargetSystem with id %d", id);
         return TargetSystem.deleteById(id);
     }
 }

@@ -65,7 +65,7 @@ public class RequestConfigurationResource {
             @Context UriInfo uriInfo) {
         var persistedApiRequestConfiguration = this.sourceSystemApiRequestConfigurationService.persistApiRequestConfiguration(sourceSystemApiRequestConfigurationDTO, endpointId);
         var builder = uriInfo.getAbsolutePathBuilder().path(Long.toString(persistedApiRequestConfiguration.id));
-        Log.debugf("New api-request-configuration created with URI  %s", builder.build().toString());
+        Log.infof("New api-request-configuration created with URI  %s", builder.build().toString());
 
         return Response.created(builder.build()).build();
     }
@@ -84,7 +84,7 @@ public class RequestConfigurationResource {
     public List<GetRequestConfigurationDTO> getAllSourceSystemRequestConfigurationsByEndpointId(@Parameter(name = "source_system_filter", description = "An optional filter parameter to filter results by source system id") @PathParam("endpointId") Long endpointId) {
         var apiRequestConfigurations = sourceSystemApiRequestConfigurationService.findAllRequestConfigurationsByEndpointId(endpointId);
 
-        Log.debugf("Total number of api request configurations by endpoint: %d", apiRequestConfigurations.size());
+        Log.infof("Total number of api request configurations by endpoint: %d", apiRequestConfigurations.size());
 
         return fullUpdateMapper.mapToDTOList(apiRequestConfigurations);
     }
@@ -103,7 +103,7 @@ public class RequestConfigurationResource {
     public List<GetRequestConfigurationDTO> getAllSourceSystemRequestConfigurationsBySourceSystemId(@Parameter(name = "source_system_filter", description = "An optional filter parameter to filter results by source system id") @PathParam("sourceSystemId") Long sourceSystemId) {
         var apiRequestConfigurations = sourceSystemApiRequestConfigurationService.findAllRequestConfigurationsWithSourceSystemIdLike(sourceSystemId);
 
-        Log.debugf("Total number of api request configurations by source-system: %d", apiRequestConfigurations.size());
+        Log.infof("Total number of api request configurations by source-system: %d", apiRequestConfigurations.size());
 
         return fullUpdateMapper.mapToDTOList(apiRequestConfigurations);
     }
@@ -128,7 +128,7 @@ public class RequestConfigurationResource {
     public Response getSourceSystemEndpoint(@Parameter(name = "id", required = true) @PathParam("id") Long id) {
         return this.sourceSystemApiRequestConfigurationService.findApiRequestConfigurationById(id)
                 .map(sourceSystemApiRequestConfiguration -> {
-                    Log.debugf("Found api-request-configuration: %s", sourceSystemApiRequestConfiguration);
+                    Log.infof("Found api-request-configuration: %s", sourceSystemApiRequestConfiguration);
                     return Response.ok(fullUpdateMapper.mapToDTO(sourceSystemApiRequestConfiguration)).build();
                 })
                 .orElseThrow(() -> {
@@ -146,7 +146,7 @@ public class RequestConfigurationResource {
     @Path("endpoint/request-configuration/{id}")
     public void deleteRequestConfigurationById(@Parameter(name = "id", required = true) @PathParam("id") Long id) {
         this.sourceSystemApiRequestConfigurationService.deleteApiRequestConfigurationById(id);
-        Log.debugf("api-request-configuration with id %d deleted ", id);
+        Log.infof("api-request-configuration with id %d deleted ", id);
     }
 
     @PUT
@@ -179,11 +179,11 @@ public class RequestConfigurationResource {
 
         return this.sourceSystemApiRequestConfigurationService.replaceApiRequestConfiguration(SourceSystemApiRequestConfigurationDTO)
                 .map(updatedSourceSystemEndpoint -> {
-                    Log.debugf("api-request-configuration replaced with new values %s", updatedSourceSystemEndpoint);
+                    Log.infof("api-request-configuration replaced with new values %s", updatedSourceSystemEndpoint);
                     return Response.noContent().build();
                 })
                 .orElseGet(() -> {
-                    Log.debugf("No api-request-configuration found with id %d", id);
+                    Log.infof("No api-request-configuration found with id %d", id);
                     return Response.status(Response.Status.NOT_FOUND).build();
                 });
     }

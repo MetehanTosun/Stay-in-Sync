@@ -38,7 +38,7 @@ public class SourceSystemEndpointService {
     SourceSystemEndpointFullUpdateMapper sourceSystemEndpointFullMapper;
 
     public SourceSystemEndpoint persistSourceSystemEndpoint(@NotNull @Valid CreateSourceSystemEndpointDTO sourceSystemEndpointDTO, Long sourceSystemId) {
-        Log.debugf("Persisting source-system-endpoint: %s, for source-system with id: %s", sourceSystemEndpointDTO, sourceSystemId);
+        Log.infof("Persisting source-system-endpoint: %s, for source-system with id: %s", sourceSystemEndpointDTO, sourceSystemId);
 
         SourceSystemEndpoint sourceSystemEndpoint = sourceSystemEndpointFullMapper.mapToEntity(sourceSystemEndpointDTO);
 
@@ -52,20 +52,20 @@ public class SourceSystemEndpointService {
     }
 
     public List<SourceSystemEndpoint> persistSourceSystemEndpointList(@NotNull @Valid List<CreateSourceSystemEndpointDTO> endpoints, Long sourceSystemId) {
-        Log.debugf("Persisting source-system-endpoints: %s, for source-system with id: %s", sourceSystemId);
+        Log.infof("Persisting source-system-endpoints: %s, for source-system with id: %s", sourceSystemId);
         return endpoints.stream().map(endpointDTO -> this.persistSourceSystemEndpoint(endpointDTO, sourceSystemId)).collect(Collectors.toList());
     }
 
     @Transactional(SUPPORTS)
     public List<SourceSystemEndpoint> findAllEndpointsWithSourceSystemIdLike(Long sourceSystemId) {
-        Log.debugf("Finding all endpoints of source system with id = %s", sourceSystemId);
+        Log.infof("Finding all endpoints of source system with id = %s", sourceSystemId);
         return Optional.ofNullable(SourceSystemEndpoint.findBySourceSystemId(sourceSystemId))
                 .orElseGet(List::of);
     }
 
     @Transactional(SUPPORTS)
     public List<SourceSystemEndpoint> findAllSourceSystemEndpoints() {
-        Log.debug("Getting all source-system-endpoints");
+        Log.info("Getting all source-system-endpoints");
         return Optional.ofNullable(SourceSystemEndpoint.<SourceSystemEndpoint>listAll())
                 .orElseGet(List::of);
     }
@@ -73,17 +73,17 @@ public class SourceSystemEndpointService {
 
     @Transactional(SUPPORTS)
     public Optional<SourceSystemEndpoint> findSourceSystemEndpointById(Long id) {
-        Log.debugf("Finding source-system-endpoint by id = %d", id);
+        Log.infof("Finding source-system-endpoint by id = %d", id);
         return SourceSystemEndpoint.findByIdOptional(id);
     }
 
     public void deleteSourceSystemEndpointById(Long id) {
-        Log.debugf("Deleting endpoint by id = %d", id);
+        Log.infof("Deleting endpoint by id = %d", id);
         SourceSystemEndpoint.deleteById(id);
     }
 
     public Optional<SourceSystemEndpoint> replaceSourceSystemEndpoint(@NotNull @Valid SourceSystemEndpoint sourceSystemEndpoint) {
-        Log.debugf("Replacing endpoint: %s", sourceSystemEndpoint);
+        Log.infof("Replacing endpoint: %s", sourceSystemEndpoint);
 
         Optional<SourceSystemEndpoint> updatedSourceSystemEndpoint = SourceSystemEndpoint.findByIdOptional(sourceSystemEndpoint.id)
                 .map(SourceSystemEndpoint.class::cast) // Only here for type erasure within the IDE

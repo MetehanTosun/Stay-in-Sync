@@ -29,7 +29,7 @@ public class TransformationScriptResource {
     public Response getScript(@Parameter(name = "id", required = true) @PathParam("id") Long id) {
         return service.findById(id)
                 .map(script -> {
-                    Log.debugf("Found transformation script: %s", script);
+                    Log.infof("Found transformation script: %s", script);
                     return Response.ok(mapper.mapToDTO(script)).build();
                 })
                 .orElseThrow(() -> new CoreManagementException(Response.Status.NOT_FOUND, "Unable to find script", "No transformation script found using id %d", id));
@@ -47,7 +47,7 @@ public class TransformationScriptResource {
 
         return service.update(id, mapper.mapToEntity(dto))
                 .map(updatedScript -> {
-                    Log.debugf("Script with id %d was updated.", id);
+                    Log.infof("Script with id %d was updated.", id);
                     return Response.ok(mapper.mapToDTO(updatedScript)).build();
                 })
                 .orElseThrow(() -> new CoreManagementException(Response.Status.NOT_FOUND, "Unable to find script", "No transformation script found for update with id %d", id));

@@ -21,12 +21,12 @@ public class TransformationScriptService {
 
     @Transactional(SUPPORTS)
     public Optional<TransformationScript> findById(Long id) {
-        Log.debugf("Finding transformation script by id: %s", id);
+        Log.infof("Finding transformation script by id: %s", id);
         return TransformationScript.findByIdOptional(id);
     }
 
     public Optional<TransformationScript> update(Long id, TransformationScript scriptFromDTO) {
-        Log.debugf("Updating transformation script with id: %s", id);
+        Log.infof("Updating transformation script with id: %s", id);
         return TransformationScript.<TransformationScript>findByIdOptional(id)
                 .map(targetScript -> {
                     mapper.mapFullUpdate(scriptFromDTO, targetScript);

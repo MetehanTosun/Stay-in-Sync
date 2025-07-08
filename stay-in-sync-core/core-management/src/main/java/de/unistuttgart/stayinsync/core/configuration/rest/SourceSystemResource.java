@@ -68,7 +68,7 @@ public class SourceSystemResource {
                                 Response.Status.NOT_FOUND,
                                 "Source system not found",
                                 "No source system found with id %d", id));
-        Log.debugf("Found source system: %s", found);
+        Log.infof("Found source system: %s", found);
         return Response.ok(sourceSystemFullUpdateMapper.mapToDTO(found)).build();
     }
 
@@ -81,7 +81,7 @@ public class SourceSystemResource {
             @Context UriInfo uriInfo) {
         SourceSystem sourceSystem = sourceSystemService.createSourceSystem(sourceSystemDTO);
         var builder = uriInfo.getAbsolutePathBuilder().path(Long.toString(sourceSystem.id));
-        Log.debugf("New source system created with URI %s", builder.build().toString());
+        Log.infof("New source system created with URI %s", builder.build().toString());
         return Response.created(builder.build()).build();
         // TODO: Throw Exception in case of invalid source system: we need to know how
         // the source system looks like first(final model)

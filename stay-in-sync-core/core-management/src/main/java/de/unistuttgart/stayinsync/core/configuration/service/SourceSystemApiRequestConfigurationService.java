@@ -34,7 +34,7 @@ public class SourceSystemApiRequestConfigurationService {
     public SourceSystemApiRequestConfiguration persistApiRequestConfiguration(@NotNull @Valid CreateRequestConfigurationDTO sourceSystemApiRequestConfigurationDTO, Long endpointId) {
         SourceSystemApiRequestConfiguration sourceSystemApiRequestConfiguration = mapper.mapToEntity(sourceSystemApiRequestConfigurationDTO);
 
-        Log.debugf("Persisting request-configurations: %s, for endpoint with id: %s", sourceSystemApiRequestConfiguration, endpointId);
+        Log.infof("Persisting request-configurations: %s, for endpoint with id: %s", sourceSystemApiRequestConfiguration, endpointId);
 
         SourceSystemEndpoint sourceSystemEndpoint = sourceSystemEndpointService.findSourceSystemEndpointById(endpointId).orElseThrow(() -> {
             return new CoreManagementException("Unable to find Source System", "There is no source-system with id %s", endpointId);
@@ -51,21 +51,21 @@ public class SourceSystemApiRequestConfigurationService {
 
     @Transactional(SUPPORTS)
     public List<SourceSystemApiRequestConfiguration> findAllRequestConfigurationsWithSourceSystemIdLike(Long sourceSystemId) {
-        Log.debugf("Finding all request-configurations of source system with id = %s", sourceSystemId);
+        Log.infof("Finding all request-configurations of source system with id = %s", sourceSystemId);
         return Optional.ofNullable(SourceSystemApiRequestConfiguration.findBySourceSystemId(sourceSystemId))
                 .orElseGet(List::of);
     }
 
     @Transactional(SUPPORTS)
     public List<SourceSystemApiRequestConfiguration> findAllRequestConfigurationsByEndpointId(Long endpointId) {
-        Log.debugf("Finding all request-configurations of endpoint with id = %s", endpointId);
+        Log.infof("Finding all request-configurations of endpoint with id = %s", endpointId);
         return Optional.ofNullable(SourceSystemApiRequestConfiguration.findByEndpointId(endpointId))
                 .orElseGet(List::of);
     }
 
     @Transactional(SUPPORTS)
     public List<SourceSystemApiRequestConfiguration> findAllApiRequestConfigurations() {
-        Log.debug("Getting all request-configurations");
+        Log.info("Getting all request-configurations");
         return Optional.ofNullable(SourceSystemApiRequestConfiguration.<SourceSystemApiRequestConfiguration>listAll())
                 .orElseGet(List::of);
     }
@@ -73,18 +73,18 @@ public class SourceSystemApiRequestConfigurationService {
 
     @Transactional(SUPPORTS)
     public Optional<SourceSystemApiRequestConfiguration> findApiRequestConfigurationById(Long id) {
-        Log.debugf("Finding request-configurations by id = %d", id);
+        Log.infof("Finding request-configurations by id = %d", id);
         return SourceSystemApiRequestConfiguration.findByIdOptional(id);
     }
 
     public void deleteApiRequestConfigurationById(Long id) {
-        Log.debugf("Deleting request-configurations by id = %d", id);
+        Log.infof("Deleting request-configurations by id = %d", id);
         SourceSystemApiRequestConfiguration.deleteById(id);
     }
 
     public Optional<SourceSystemApiRequestConfiguration> replaceApiRequestConfiguration(@NotNull @Valid CreateRequestConfigurationDTO sourceSystemApiRequestConfigurationDTO) {
         SourceSystemApiRequestConfiguration sourceSystemApiRequestConfiguration = mapper.mapToEntity(sourceSystemApiRequestConfigurationDTO);
-        Log.debugf("Replacing request-configurations: %s", sourceSystemApiRequestConfiguration);
+        Log.infof("Replacing request-configurations: %s", sourceSystemApiRequestConfiguration);
 
         Optional<SourceSystemApiRequestConfiguration> updatedApiRequestConfiguration = SourceSystemApiRequestConfiguration.findByIdOptional(sourceSystemApiRequestConfiguration.id)
                 .map(SourceSystemApiRequestConfiguration.class::cast) // Only here for type erasure within the IDE

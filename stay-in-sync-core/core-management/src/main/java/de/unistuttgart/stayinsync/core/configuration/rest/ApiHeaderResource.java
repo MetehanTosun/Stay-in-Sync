@@ -69,7 +69,7 @@ public class ApiHeaderResource {
 
         var persistedSourceSystemEndpoint = this.apiRequestHeaderService.persistRequestHeader(apiRequestHeaderDTO, sourceSystemId);
         var builder = uriInfo.getAbsolutePathBuilder().path(Long.toString(persistedSourceSystemEndpoint.id));
-        Log.debugf("New api-request-header created with URI  %s", builder.build().toString());
+        Log.infof("New api-request-header created with URI  %s", builder.build().toString());
 
         return Response.created(builder.build()).build();
     }
@@ -88,7 +88,7 @@ public class ApiHeaderResource {
     public List<ApiHeaderDTO> getAllSourceSystemEndpoints(@Parameter(name = "source_system_filter", description = "An optional filter parameter to filter results by source system id") @PathParam("syncSystemId") Long syncSystemId) {
         var apiRequestHeaders = this.apiRequestHeaderService.findAllHeadersBySyncSystemId(syncSystemId);
 
-        Log.debugf("Total number of source-system-endpoints: %d", apiRequestHeaders.size());
+        Log.infof("Total number of source-system-endpoints: %d", apiRequestHeaders.size());
 
         return fullUpdateMapper.mapToDTOList(apiRequestHeaders);
     }
@@ -113,7 +113,7 @@ public class ApiHeaderResource {
     public Response getApiRequestHeaderById(@Parameter(name = "id", required = true) @PathParam("id") Long id) {
         return this.apiRequestHeaderService.findRequestHeaderById(id)
                 .map(apiRequestHeader -> {
-                    Log.debugf("Found api-request-header: %s", apiRequestHeader);
+                    Log.infof("Found api-request-header: %s", apiRequestHeader);
                     return Response.ok(fullUpdateMapper.mapToDTO(apiRequestHeader)).build();
                 })
                 .orElseThrow(() -> {
@@ -131,7 +131,7 @@ public class ApiHeaderResource {
     @Path("/request-header/{id}")
     public void deleteSourceSystemEndpoint(@Parameter(name = "id", required = true) @PathParam("id") Long id) {
         this.apiRequestHeaderService.deleteRequestHeaderById(id);
-        Log.debugf("api-request-header with id %d deleted ", id);
+        Log.infof("api-request-header with id %d deleted ", id);
     }
 
     @PUT
@@ -167,11 +167,11 @@ public class ApiHeaderResource {
 
         return this.apiRequestHeaderService.replaceRequestHeader(apiRequestHeaderDTO)
                 .map(updatedSourceSystemEndpoint -> {
-                    Log.debugf("api-request-header replaced with new values %s", updatedSourceSystemEndpoint);
+                    Log.infof("api-request-header replaced with new values %s", updatedSourceSystemEndpoint);
                     return Response.noContent().build();
                 })
                 .orElseGet(() -> {
-                    Log.debugf("No api-request-header found with id %d", id);
+                    Log.infof("No api-request-header found with id %d", id);
                     return Response.status(Response.Status.NOT_FOUND).build();
                 });
     }

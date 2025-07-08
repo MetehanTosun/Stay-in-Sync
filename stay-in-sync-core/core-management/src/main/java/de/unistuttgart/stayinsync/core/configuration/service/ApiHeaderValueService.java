@@ -36,7 +36,7 @@ public class ApiHeaderValueService {
     ApiHeaderValueMapper mapper;
 
     public ApiHeaderValue persistHeaderValue(@NotNull @Valid ApiHeaderValueDTO apiHeaderValueDTO, Long requestConfigurationId) {
-        Log.debugf("Persisting api-endpoint-query-param: %s, for source-system with id: %s", apiHeaderValueDTO, requestConfigurationId);
+        Log.infof("Persisting api-endpoint-query-param: %s, for source-system with id: %s", apiHeaderValueDTO, requestConfigurationId);
 
         ApiHeaderValue apiHeaderValue = mapper.mapToEntity(apiHeaderValueDTO);
 
@@ -51,25 +51,25 @@ public class ApiHeaderValueService {
 
     @Transactional(SUPPORTS)
     public List<ApiHeaderValue> findByRequestConfigurationId(Long endpointId) {
-        Log.debugf("Finding all endpoints of source system with id = %s", endpointId);
+        Log.infof("Finding all endpoints of source system with id = %s", endpointId);
         return Optional.ofNullable(ApiHeaderValue.findRequestHeadersByConfigurationId(endpointId))
                 .orElseGet(List::of);
     }
 
     @Transactional(SUPPORTS)
     public Optional<ApiHeaderValue> findHeaderValueById(Long id) {
-        Log.debugf("Finding api-header-value by id = %d", id);
+        Log.infof("Finding api-header-value by id = %d", id);
         return ApiHeaderValue.findByIdOptional(id);
     }
 
     public void deleteApiHeaderValueById(Long id) {
-        Log.debugf("Deleting endpoint by id = %d", id);
+        Log.infof("Deleting endpoint by id = %d", id);
         ApiHeaderValue.deleteById(id);
     }
 
     public Optional<ApiHeaderValue> replaceHeaderValue(@NotNull @Valid ApiHeaderValueDTO apiHeaderValueDTO) {
         ApiHeaderValue updatedHeaderRequestConfiguration = mapper.mapToEntity(apiHeaderValueDTO);
-        Log.debugf("Replacing endpoint: %s", updatedHeaderRequestConfiguration);
+        Log.infof("Replacing endpoint: %s", updatedHeaderRequestConfiguration);
 
         Optional<ApiHeaderValue> updatedHeaderValue = ApiHeaderValue.findByIdOptional(updatedHeaderRequestConfiguration.id)
                 .map(ApiHeaderValue.class::cast) // Only here for type erasure within the IDE

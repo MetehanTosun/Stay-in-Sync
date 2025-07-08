@@ -68,7 +68,7 @@ public class ApiEndpointQueryParamResource {
 
         var persistedSourceSystemEndpoint = this.apiEndpointQueryParamService.persistApiQueryParam(apiEndpointQueryParamDTO, endpointId);
         var builder = uriInfo.getAbsolutePathBuilder().path(Long.toString(persistedSourceSystemEndpoint.id));
-        Log.debugf("New query-param created with URI  %s", builder.build().toString());
+        Log.infof("New query-param created with URI  %s", builder.build().toString());
 
         return Response.created(builder.build()).build();
     }
@@ -87,7 +87,7 @@ public class ApiEndpointQueryParamResource {
     public List<ApiEndpointQueryParamDTO> getAllQueryParams(@Parameter(name = "source_system_filter", description = "An optional filter parameter to filter results by endpoint id") @PathParam("endpointId") Long endpointId) {
         var endpointQueryParams = this.apiEndpointQueryParamService.findAllQueryParamsByEndpointId(endpointId);
 
-        Log.debugf("Total number of source-system-endpoints: %d", endpointQueryParams.size());
+        Log.infof("Total number of source-system-endpoints: %d", endpointQueryParams.size());
 
         return fullUpdateMapper.mapToDTOList(endpointQueryParams);
     }
@@ -112,7 +112,7 @@ public class ApiEndpointQueryParamResource {
     public Response getApiRequestHeaderById(@Parameter(name = "id", required = true) @PathParam("id") Long id) {
         return this.apiEndpointQueryParamService.findQueryParamById(id)
                 .map(apiRequestHeader -> {
-                    Log.debugf("Found query-param: %s", apiRequestHeader);
+                    Log.infof("Found query-param: %s", apiRequestHeader);
                     return Response.ok(fullUpdateMapper.mapToDTO(apiRequestHeader)).build();
                 })
                 .orElseThrow(() -> {
@@ -130,7 +130,7 @@ public class ApiEndpointQueryParamResource {
     @Path("/query-param/{id}")
     public void deleteSourceSystemEndpoint(@Parameter(name = "id", required = true) @PathParam("id") Long id) {
         this.apiEndpointQueryParamService.deleteQueryParamById(id);
-        Log.debugf("query-param with id %d deleted ", id);
+        Log.infof("query-param with id %d deleted ", id);
     }
 
     @PUT
@@ -163,11 +163,11 @@ public class ApiEndpointQueryParamResource {
 
         return this.apiEndpointQueryParamService.replaceQueryParam(apiRequestHeaderDTO)
                 .map(updatedSourceSystemEndpoint -> {
-                    Log.debugf("query-param replaced with new values %s", updatedSourceSystemEndpoint);
+                    Log.infof("query-param replaced with new values %s", updatedSourceSystemEndpoint);
                     return Response.noContent().build();
                 })
                 .orElseGet(() -> {
-                    Log.debugf("No query-param found with id %d", id);
+                    Log.infof("No query-param found with id %d", id);
                     return Response.status(Response.Status.NOT_FOUND).build();
                 });
     }

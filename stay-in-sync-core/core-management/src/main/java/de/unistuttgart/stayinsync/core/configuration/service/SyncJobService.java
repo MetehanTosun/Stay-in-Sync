@@ -39,7 +39,7 @@ public class SyncJobService {
     public SyncJob persistSyncJob(@NotNull @Valid SyncJobDTO syncJobDTO) {
         SyncJob syncJob = syncJobFullUpdateMapper.mapToEntity(syncJobDTO);
 
-        Log.debugf("Persisting sync-job: %s", syncJob);
+        Log.infof("Persisting sync-job: %s", syncJob);
 
         syncJob.persist();
         syncJobPersistedEvent.fire(new SyncJobPersistedEvent(syncJob));
@@ -49,14 +49,14 @@ public class SyncJobService {
 
     @Transactional(SUPPORTS)
     public List<SyncJob> findAllSyncJobsHavingName(String name) {
-        Log.debugf("Finding all sync-job having name = %s", name);
+        Log.infof("Finding all sync-job having name = %s", name);
         return Optional.ofNullable(SyncJob.listAllWhereNameLike(name))
                 .orElseGet(List::of);
     }
 
     @Transactional(SUPPORTS)
     public List<SyncJob> findAllSyncJobs() {
-        Log.debug("Getting all sync-jobs");
+        Log.info("Getting all sync-jobs");
         return Optional.ofNullable(SyncJob.<SyncJob>listAll())
                 .orElseGet(List::of);
     }
@@ -64,19 +64,19 @@ public class SyncJobService {
 
     @Transactional(SUPPORTS)
     public Optional<SyncJob> findSyncJobById(Long id) {
-        Log.debugf("Finding sync-job by id = %d", id);
+        Log.infof("Finding sync-job by id = %d", id);
         return SyncJob.findByIdOptional(id);
     }
 
     public void deleteSyncJob(Long id) {
-        Log.debugf("Deleting sync-job by id = %d", id);
+        Log.infof("Deleting sync-job by id = %d", id);
         SyncJob.deleteById(id);
     }
 
     public Optional<SyncJob> replaceSyncJob(@NotNull @Valid SyncJobDTO syncJobDTO) {
         SyncJob syncJob = syncJobFullUpdateMapper.mapToEntity(syncJobDTO);
 
-        Log.debugf("Replacing sync-job: %s", syncJob);
+        Log.infof("Replacing sync-job: %s", syncJob);
 
         Optional<SyncJob> updatedSyncJob = SyncJob.findByIdOptional(syncJob.id)
                 .map(SyncJob.class::cast) // Only here for type erasure within the IDE

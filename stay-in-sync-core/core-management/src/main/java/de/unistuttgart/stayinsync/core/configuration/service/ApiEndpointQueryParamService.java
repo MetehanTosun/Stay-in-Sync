@@ -33,7 +33,7 @@ public class ApiEndpointQueryParamService {
     ApiEndpointQueryParamMapper mapper;
 
     public ApiEndpointQueryParam persistApiQueryParam(@NotNull @Valid ApiEndpointQueryParamDTO apiEndpointQueryParamDTO, Long endpointId) {
-        Log.debugf("Persisting api-endpoint-query-param: %s, for source-system with id: %s", apiEndpointQueryParamDTO, endpointId);
+        Log.infof("Persisting api-endpoint-query-param: %s, for source-system with id: %s", apiEndpointQueryParamDTO, endpointId);
 
         ApiEndpointQueryParam apiEndpointQueryParam = mapper.mapToEntity(apiEndpointQueryParamDTO);
 
@@ -48,25 +48,25 @@ public class ApiEndpointQueryParamService {
 
     @Transactional(SUPPORTS)
     public List<ApiEndpointQueryParam> findAllQueryParamsByEndpointId(Long endpointId) {
-        Log.debugf("Finding all endpoints of source system with id = %s", endpointId);
+        Log.infof("Finding all endpoints of source system with id = %s", endpointId);
         return Optional.ofNullable(ApiEndpointQueryParam.findByEndpointId(endpointId))
                 .orElseGet(List::of);
     }
 
     @Transactional(SUPPORTS)
     public Optional<ApiEndpointQueryParam> findQueryParamById(Long id) {
-        Log.debugf("Finding api-endpoint-query-param by id = %d", id);
+        Log.infof("Finding api-endpoint-query-param by id = %d", id);
         return ApiEndpointQueryParam.findByIdOptional(id);
     }
 
     public void deleteQueryParamById(Long id) {
-        Log.debugf("Deleting endpoint by id = %d", id);
+        Log.infof("Deleting endpoint by id = %d", id);
         ApiEndpointQueryParam.deleteById(id);
     }
 
     public Optional<ApiEndpointQueryParam> replaceQueryParam(@NotNull @Valid ApiEndpointQueryParamDTO apiEndpointQueryParamDTO) {
         ApiEndpointQueryParam apiEndpointQueryParam = mapper.mapToEntity(apiEndpointQueryParamDTO);
-        Log.debugf("Replacing endpoint: %s", apiEndpointQueryParam);
+        Log.infof("Replacing endpoint: %s", apiEndpointQueryParam);
 
         Optional<ApiEndpointQueryParam> updatedSourceSystemEndpoint = apiEndpointQueryParam.findByIdOptional(apiEndpointQueryParam.id)
                 .map(ApiEndpointQueryParam.class::cast) // Only here for type erasure within the IDE

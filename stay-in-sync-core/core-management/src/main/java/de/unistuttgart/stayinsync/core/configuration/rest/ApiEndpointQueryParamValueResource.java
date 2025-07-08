@@ -69,7 +69,7 @@ public class ApiEndpointQueryParamValueResource {
 
         var persistedEndpointQueryParam = this.apiEndpointQueryParamValueService.persistValue(paramValueDTO, requestConfigId);
         var builder = uriInfo.getAbsolutePathBuilder().path(Long.toString(persistedEndpointQueryParam.id));
-        Log.debugf("New query-param-value created with URI  %s", builder.build().toString());
+        Log.infof("New query-param-value created with URI  %s", builder.build().toString());
 
         return Response.created(builder.build()).build();
     }
@@ -88,7 +88,7 @@ public class ApiEndpointQueryParamValueResource {
     public List<ApiEndpoindQueryParamValueDTO> getAllQueryParams(@Parameter(name = "request config", description = "Associated request config") @PathParam("requestConfigId") Long requestConfigId) {
         var apiRequestHeaders = this.apiEndpointQueryParamValueService.findQueryParamValueByRequestConfig(requestConfigId);
 
-        Log.debugf("Total number of query-parameter-values: %d", apiRequestHeaders.size());
+        Log.infof("Total number of query-parameter-values: %d", apiRequestHeaders.size());
 
         return fullUpdateMapper.mapToDTOList(apiRequestHeaders);
     }
@@ -103,7 +103,7 @@ public class ApiEndpointQueryParamValueResource {
     @Path("/query-param-value/{id}")
     public void deleteEndpointQueryParam(@Parameter(name = "id", required = true) @PathParam("id") Long id) {
         this.apiEndpointQueryParamValueService.deleteQueryParamValue(id);
-        Log.debugf("query-param-value with id %d deleted ", id);
+        Log.infof("query-param-value with id %d deleted ", id);
     }
 
     @PUT
@@ -139,11 +139,11 @@ public class ApiEndpointQueryParamValueResource {
 
         return this.apiEndpointQueryParamValueService.replaceConfiguration(queryParamValue)
                 .map(updatedEndpointQueryParam -> {
-                    Log.debugf("query-param-value replaced with new values %s", updatedEndpointQueryParam);
+                    Log.infof("query-param-value replaced with new values %s", updatedEndpointQueryParam);
                     return Response.noContent().build();
                 })
                 .orElseGet(() -> {
-                    Log.debugf("No query-param-value found with id %d", id);
+                    Log.infof("No query-param-value found with id %d", id);
                     return Response.status(Response.Status.NOT_FOUND).build();
                 });
     }

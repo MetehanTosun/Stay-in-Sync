@@ -64,7 +64,7 @@ public class SyncJobResource {
             @Context UriInfo uriInfo) {
         var persistedSyncJob = this.syncJobService.persistSyncJob(syncJobDTO);
         var builder = uriInfo.getAbsolutePathBuilder().path(Long.toString(persistedSyncJob.id));
-        Log.debugf("New sync-job created with URI  %s", builder.build().toString());
+        Log.infof("New sync-job created with URI  %s", builder.build().toString());
 
         return Response.created(builder.build()).build();
     }
@@ -84,7 +84,7 @@ public class SyncJobResource {
                 .map(this.syncJobService::findAllSyncJobsHavingName)
                 .orElseGet(this.syncJobService::findAllSyncJobs);
 
-        Log.debugf("Total number of sync-jobs: %d", syncJobs.size());
+        Log.infof("Total number of sync-jobs: %d", syncJobs.size());
 
         return fullUpdateMapper.mapToDTOList(syncJobs);
     }
@@ -109,7 +109,7 @@ public class SyncJobResource {
     public Response getSyncJob(@Parameter(name = "id", required = true) @PathParam("id") Long id) {
         return this.syncJobService.findSyncJobById(id)
                 .map(syncJob -> {
-                    Log.debugf("Found sync-job: %s", syncJob);
+                    Log.infof("Found sync-job: %s", syncJob);
                     return Response.ok(fullUpdateMapper.mapToDTO(syncJob)).build();
                 })
                 .orElseThrow(() -> {
@@ -127,7 +127,7 @@ public class SyncJobResource {
     @Path("/{id}")
     public void deleteSyncJob(@Parameter(name = "id", required = true) @PathParam("id") Long id) {
         this.syncJobService.deleteSyncJob(id);
-        Log.debugf("Sync-job with id %d deleted ", id);
+        Log.infof("Sync-job with id %d deleted ", id);
     }
 
     @PUT
@@ -163,11 +163,11 @@ public class SyncJobResource {
 
         return this.syncJobService.replaceSyncJob(syncJobDTO)
                 .map(updatedSyncJob -> {
-                    Log.debugf("Sync-job replaced with new values %s", updatedSyncJob);
+                    Log.infof("Sync-job replaced with new values %s", updatedSyncJob);
                     return Response.noContent().build();
                 })
                 .orElseGet(() -> {
-                    Log.debugf("No sync-job found with id %d", id);
+                    Log.infof("No sync-job found with id %d", id);
                     return Response.status(Response.Status.NOT_FOUND).build();
                 });
     }

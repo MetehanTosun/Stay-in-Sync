@@ -71,7 +71,7 @@ public class SourceSystemEndpointResource {
             @Valid @NotNull List<CreateSourceSystemEndpointDTO> sourceSystemEndpointDTO,
             @Context UriInfo uriInfo) {
         var persistedSourceSystemEndpoints = this.sourceSystemEndpointService.persistSourceSystemEndpointList(sourceSystemEndpointDTO, sourceSystemId);
-        Log.debugf("New source-system-endpoints created for source system %d", sourceSystemId.toString());
+        Log.infof("New source-system-endpoints created for source system %d", sourceSystemId.toString());
 
         return Response.status(Response.Status.CREATED).entity(fullUpdateMapper.mapToDTOList(persistedSourceSystemEndpoints)).build();
     }
@@ -90,7 +90,7 @@ public class SourceSystemEndpointResource {
     public List<SourceSystemEndpointDTO> getAllSourceSystemEndpoints(@Parameter(name = "source system", description = "The id of the associated source system") @PathParam("sourceSystemId") Long sourceSystemid) {
         var sourceSystemEndpoints = this.sourceSystemEndpointService.findAllEndpointsWithSourceSystemIdLike(sourceSystemid);
 
-        Log.debugf("Total number of source-system-endpoints: %d", sourceSystemEndpoints.size());
+        Log.infof("Total number of source-system-endpoints: %d", sourceSystemEndpoints.size());
 
         return fullUpdateMapper.mapToDTOList(sourceSystemEndpoints);
     }
@@ -115,7 +115,7 @@ public class SourceSystemEndpointResource {
     public Response getSourceSystemEndpoint(@Parameter(name = "id", required = true) @PathParam("id") Long id) {
         return this.sourceSystemEndpointService.findSourceSystemEndpointById(id)
                 .map(sourceSystemEndpoint -> {
-                    Log.debugf("Found source-system-endpoint: %s", sourceSystemEndpoint);
+                    Log.infof("Found source-system-endpoint: %s", sourceSystemEndpoint);
                     return Response.ok(fullUpdateMapper.mapToDTO(sourceSystemEndpoint)).build();
                 })
                 .orElseThrow(() -> {
@@ -133,7 +133,7 @@ public class SourceSystemEndpointResource {
     @Path("/endpoint/{id}")
     public void deleteSourceSystemEndpoint(@Parameter(name = "id", required = true) @PathParam("id") Long id) {
         this.sourceSystemEndpointService.deleteSourceSystemEndpointById(id);
-        Log.debugf("source-system-endpoint with id %d deleted ", id);
+        Log.infof("source-system-endpoint with id %d deleted ", id);
     }
 
     @PUT
@@ -166,11 +166,11 @@ public class SourceSystemEndpointResource {
 
         return this.sourceSystemEndpointService.replaceSourceSystemEndpoint(fullUpdateMapper.mapToEntity(sourceSystemEndpointDTO))
                 .map(updatedSourceSystemEndpoint -> {
-                    Log.debugf("source-system-endpoint replaced with new values %s", updatedSourceSystemEndpoint);
+                    Log.infof("source-system-endpoint replaced with new values %s", updatedSourceSystemEndpoint);
                     return Response.noContent().build();
                 })
                 .orElseGet(() -> {
-                    Log.debugf("No source-system-endpoint found with id %d", id);
+                    Log.infof("No source-system-endpoint found with id %d", id);
                     return Response.status(Response.Status.NOT_FOUND).build();
                 });
     }

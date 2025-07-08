@@ -30,7 +30,7 @@ public class TransformationService {
     TransformationMapper mapper;
 
     public Transformation createTransformation(TransformationShellDTO dto) {
-        Log.debugf("Creating new transformation shell with name: %s", dto.name());
+        Log.infof("Creating new transformation shell with name: %s", dto.name());
         Transformation transformation = new Transformation();
         mapper.updateFromShellDTO(dto, transformation);
         transformation.persist();
@@ -38,7 +38,7 @@ public class TransformationService {
     }
 
     public Transformation updateTransformation(Long transformationId, TransformationAssemblyDTO dto) {
-        Log.debugf("Assembling transformation with id %d", transformationId);
+        Log.infof("Assembling transformation with id %d", transformationId);
 
         Transformation transformation = Transformation.<Transformation>findByIdOptional(transformationId)
                 .orElseThrow(() -> new CoreManagementException(Response.Status.NOT_FOUND, "Transformation not found", "Transformation with id %d not found.", transformationId));
@@ -66,19 +66,19 @@ public class TransformationService {
 
     @Transactional(SUPPORTS)
     public Optional<Transformation> findById(Long id) {
-        Log.debugf("Finding transformation with id %d", id);
+        Log.infof("Finding transformation with id %d", id);
         return Transformation.findByIdOptional(id);
     }
 
     @Transactional(SUPPORTS)
     public List<Transformation> findAll() {
-        Log.debug("Getting all transformations.");
+        Log.info("Getting all transformations.");
         return Transformation.listAll();
     }
 
     @Transactional(SUPPORTS)
     public boolean delete(Long id) {
-        Log.debugf("Deleting transformation with id %d", id);
+        Log.infof("Deleting transformation with id %d", id);
         return Transformation.deleteById(id);
     }
 }

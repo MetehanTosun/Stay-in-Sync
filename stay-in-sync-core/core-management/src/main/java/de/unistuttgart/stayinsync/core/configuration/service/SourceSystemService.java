@@ -17,12 +17,12 @@ public class SourceSystemService {
     SourceSystemFullUpdateMapper mapper;
 
     public List<SourceSystem> findAllSourceSystems() {
-        Log.debug("Fetching all source systems");
+        Log.info("Fetching all source systems");
         return SourceSystem.listAll(); // Panache
     }
 
     public Optional<SourceSystem> findSourceSystemById(Long id) {
-        Log.debugf("Fetching source system with ID: %d", id);
+        Log.infof("Fetching source system with ID: %d", id);
         return SourceSystem.findByIdOptional(id);
     }
 
@@ -32,7 +32,7 @@ public class SourceSystemService {
          * TODO: Validation logic, as soon as we know how the final Model of a
          * SourceSystem looks like.
          */
-        Log.debugf("Creating new source system with name: %s", sourceSystemDTO.name());
+        Log.infof("Creating new source system with name: %s", sourceSystemDTO.name());
         SourceSystem sourceSystem = mapper.mapToEntity(sourceSystemDTO);
         sourceSystem.persist();
         return sourceSystem;
@@ -40,7 +40,7 @@ public class SourceSystemService {
 
     @Transactional
     public Optional<SourceSystem> updateSourceSystem(CreateSourceSystemDTO sourceSystemDTO) {
-        Log.debugf("Updating source system with ID: %d", sourceSystemDTO.id());
+        Log.infof("Updating source system with ID: %d", sourceSystemDTO.id());
         SourceSystem existingSs = SourceSystem.findById(sourceSystemDTO.id());
         if (existingSs != null) {
             mapper.mapFullUpdate(mapper.mapToEntity(sourceSystemDTO), existingSs);
@@ -50,7 +50,7 @@ public class SourceSystemService {
 
     @Transactional
     public boolean deleteSourceSystemById(Long id) {
-        Log.debugf("Deleting source system with ID: %d", id);
+        Log.infof("Deleting source system with ID: %d", id);
         boolean deleted = SourceSystem.deleteById(id);
         return deleted;
     }

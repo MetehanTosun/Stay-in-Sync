@@ -30,7 +30,7 @@ public class ApiEndpointQueryParamValueService {
     ApiRequestConfigurationService apiRequestConfigurationService;
 
     public ApiEndpointQueryParamValue persistValue(@NotNull @Valid ApiEndpoindQueryParamValueDTO queryParamConfigurationDTO, Long requestConfigurationId) {
-        Log.debugf("Persisting api-endpoint-query-param: %s, for source-system with id: %s", queryParamConfigurationDTO, requestConfigurationId);
+        Log.infof("Persisting api-endpoint-query-param: %s, for source-system with id: %s", queryParamConfigurationDTO, requestConfigurationId);
 
         ApiEndpointQueryParam queryParam = ApiEndpointQueryParam.findById(queryParamConfigurationDTO.queryParamId());
         ApiEndpointQueryParamValue paramValue = mapper.mapToEntity(queryParamConfigurationDTO);
@@ -48,25 +48,25 @@ public class ApiEndpointQueryParamValueService {
 
     @Transactional(SUPPORTS)
     public List<ApiEndpointQueryParamValue> findQueryParamValueByRequestConfig(Long requestConfigId) {
-        Log.debugf("Finding api-endpoint-query-param by request config id = %d", requestConfigId);
+        Log.infof("Finding api-endpoint-query-param by request config id = %d", requestConfigId);
         return ApiEndpointQueryParamValue.findRequestHeadersByConfigurationId(requestConfigId);
     }
 
 
     @Transactional(SUPPORTS)
     public Optional<ApiEndpointQueryParamValue> findQueryParamValueById(Long id) {
-        Log.debugf("Finding api-endpoint-query-param by id = %d", id);
+        Log.infof("Finding api-endpoint-query-param by id = %d", id);
         return ApiEndpointQueryParamValue.findByIdOptional(id);
     }
 
     public void deleteQueryParamValue(Long id) {
-        Log.debugf("Deleting endpoint by id = %d", id);
+        Log.infof("Deleting endpoint by id = %d", id);
         ApiEndpointQueryParamValue.deleteById(id);
     }
 
     public Optional<ApiEndpointQueryParamValue> replaceConfiguration(@NotNull @Valid ApiEndpoindQueryParamValueDTO queryParamConfiguration) {
         de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.ApiEndpointQueryParamValue apiEndpointQueryParam = mapper.mapToEntity(queryParamConfiguration);
-        Log.debugf("Replacing endpoint: %s", apiEndpointQueryParam);
+        Log.infof("Replacing endpoint: %s", apiEndpointQueryParam);
 
         Optional<ApiEndpointQueryParamValue> updatedQueryParamValue = apiEndpointQueryParam.findByIdOptional(apiEndpointQueryParam.id)
                 .map(ApiEndpointQueryParamValue.class::cast) // Only here for type erasure within the IDE
