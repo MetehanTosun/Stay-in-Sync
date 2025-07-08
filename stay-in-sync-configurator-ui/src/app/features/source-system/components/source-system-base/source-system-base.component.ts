@@ -24,6 +24,9 @@ import { SourceSystemResourceService } from '../../../../generated/api/sourceSys
 import { SourceSystemDTO } from '../../../../generated/model/sourceSystemDTO';
 import { SourceSystem } from '../../../../generated';
 
+/**
+ * Base component for displaying, creating, and managing source systems.
+ */
 @Component({
   standalone: true,
   selector: 'app-source-system-base',
@@ -48,25 +51,49 @@ import { SourceSystem } from '../../../../generated';
   ]
 })
 export class SourceSystemBaseComponent implements OnInit {
+  /**
+   * List of source systems to display in the table.
+   */
   systems: SourceSystemDTO[] = [];
+  /**
+   * Flag indicating whether data is currently loading.
+   */
   loading = false;
+  /**
+   * Holds any error message encountered during operations.
+   */
   errorMsg?: string;
 
-  /** Steuerung, ob der Create-Dialog angezeigt wird */
+  /**
+   * Controls visibility of the create/edit dialog.
+   */
   showCreateDialog = false;
 
-  /** Steuerung, ob der Detail-Dialog angezeigt wird */
+  /**
+   * Controls visibility of the detail/manage dialog.
+   */
   showDetailDialog = false;
 
-  /** Temporarily holds a system for editing or viewing */
+  /**
+   * Currently selected system for viewing or editing.
+   */
   selectedSystem: SourceSystemDTO | null = null;
+  /**
+   * Reactive form for editing system metadata.
+   */
   metadataForm!: FormGroup;
 
+  /**
+   * Injects the source system service and form builder.
+   */
   constructor(private api: SourceSystemResourceService, private fb: FormBuilder) {}
 
+  /**
+   * Component initialization lifecycle hook.
+   */
   ngOnInit(): void {
     this.loadSystems();
-    // Initialize metadata form
+  
     this.metadataForm = this.fb.group({
       name: ['', Validators.required],
       apiUrl: ['', [Validators.required, Validators.pattern('https?://.+')]],
@@ -74,19 +101,21 @@ export class SourceSystemBaseComponent implements OnInit {
     });
   }
 
-  /** Lade alle Quellsysteme vom Backend */
+  /**
+   * Load all source systems from the backend and populate the table.
+   */
   loadSystems(): void {
     this.loading = true;
     this.api.apiConfigSourceSystemGet().subscribe({
       next: (list: SourceSystem[]) => {
-        // Transformiere die Daten, um sie mit SourceSystemDTO kompatibel zu machen
+        
         this.systems = list.map(system => ({
           id: system.id,
-          name: system.name || '', // Fallback für undefined
-          apiUrl: system.apiUrl || '', // Fallback für undefined
-          description: system.description || '', // Fallback für undefined
-          apiType: system.apiType || '', // Fallback für undefined
-          openApiSpec: undefined // Entferne Blob-Daten, falls nicht benötigt
+          name: system.name || '', 
+          apiUrl: system.apiUrl || '', 
+          description: system.description || '',
+          apiType: system.apiType || '', 
+          openApiSpec: undefined 
         } as SourceSystemDTO));
         this.loading = false;
       },
@@ -97,7 +126,9 @@ export class SourceSystemBaseComponent implements OnInit {
       }
     });
   }
-  /** Öffnet das Create-Dialog */
+  /**
+   * Open the create new system dialog.
+   */
   openCreate(): void {
     // Reset selection when creating new
     this.selectedSystem = null;
@@ -105,8 +136,8 @@ export class SourceSystemBaseComponent implements OnInit {
   }
 
   /**
-   * Wird vom <app-create-source-system> emittet, wenn der Dialog geschlossen wird.
-   * Lädt dann die Liste neu.
+   * Handler for when the create/edit dialog is closed; reloads systems if necessary.
+   * @param visible true if the dialog remains visible after closure.
    */
   onCreateDialogClose(visible: boolean): void {
     this.showCreateDialog = visible;
@@ -116,7 +147,10 @@ export class SourceSystemBaseComponent implements OnInit {
     }
   }
 
-  /** Löscht ein Quellsystem und lädt die Liste neu */
+  /**
+   * Delete a source system and refresh the list.
+   * @param system the system to delete.
+   */
   deleteSourceSystem(system: SourceSystemDTO): void {
     if (!system.id) {
       console.warn('Keine ID vorhanden, Löschen übersprungen');
@@ -128,26 +162,33 @@ export class SourceSystemBaseComponent implements OnInit {
     });
   }
 
-  /** Öffnet den Dialog zum Bearbeiten eines bestehenden Quellsystems */
+  /**
+   * Open the create dialog pre-filled to edit an existing system.
+   * @param system the system to edit.
+   */
   editSourceSystem(system: SourceSystemDTO): void {
     this.selectedSystem = system;
     this.showCreateDialog = true;
   }
 
   /**
-   * Öffnet den Create/Edit-Wizard im Manage-Modus für ein bestehendes System
+   * Open the create/edit wizard in manage mode for the selected system.
+   * @param system the system to manage.
    */
   manageSourceSystem(system: SourceSystemDTO): void {
     this.selectedSystem = system;
-    // Öffnet den Create-Component als Edit-Dialog
+    
     this.showCreateDialog = true;
   }
 
-  /** Öffnet den Detail-Dialog, um Header und Endpoints eines Systems zu verwalten */
+  /**
+   * Open the detail dialog to manage headers and endpoints for a system.
+   * @param system the system to view details of.
+   */
   viewSourceSystem(system: SourceSystemDTO): void {
     this.selectedSystem = system;
     this.showDetailDialog = true;
-    // Load metadata into form
+    
     this.metadataForm.patchValue({
       name: system.name,
       apiUrl: system.apiUrl,
@@ -155,7 +196,9 @@ export class SourceSystemBaseComponent implements OnInit {
     });
   }
 
-  /** Schließt den Detail-Dialog und lädt bei Bedarf neu */
+  /**
+   * Close the detail dialog and optionally reload systems.
+   */
   closeDetailDialog(): void {
     this.showDetailDialog = false;
     this.selectedSystem = null;
@@ -163,7 +206,7 @@ export class SourceSystemBaseComponent implements OnInit {
   }
 
   /**
-   * Speichert die bearbeiteten Metadaten des ausgewählten Systems
+   * Save metadata changes of the selected system to the backend.
    */
   saveMetadata(): void {
     if (!this.selectedSystem || this.metadataForm.invalid) {
@@ -177,7 +220,7 @@ export class SourceSystemBaseComponent implements OnInit {
       .apiConfigSourceSystemIdPut(this.selectedSystem.id!, updated)
       .subscribe({
         next: () => {
-          // Nach dem Speichern die Liste neu laden und die Ansicht aktualisieren
+         
           this.selectedSystem = updated;
           this.loadSystems();
         },

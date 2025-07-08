@@ -1,4 +1,3 @@
-// src/app/features/source-system/components/manage-endpoints/manage-endpoints.component.ts
 import { Component, OnInit, Input, Output, EventEmitter } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
@@ -19,6 +18,9 @@ import { SourceSystemResourceService } from '../../../../generated/api/sourceSys
 import { SourceSystemEndpointDTO }       from '../../../../generated';
 import { CreateSourceSystemEndpointDTO } from '../../../../generated';
 
+/**
+ * Component for managing endpoints of a source system: list, create, edit, delete, and import.
+ */
 @Component({
   standalone: true,
   selector: 'app-manage-endpoints',
@@ -38,19 +40,34 @@ import { CreateSourceSystemEndpointDTO } from '../../../../generated';
   styleUrls: ['./manage-endpoints.component.css']
 })
 export class ManageEndpointsComponent implements OnInit {
+  /**
+   * ID of the source system whose endpoints are managed.
+   */
   @Input() sourceSystemId!: number;
   @Output() backStep = new EventEmitter<void>();
   @Output() finish   = new EventEmitter<void>();
 
-  // Endpoints
+  /**
+   * List of endpoints fetched from the backend.
+   */
   endpoints: SourceSystemEndpointDTO[] = [];
+  /**
+   * Reactive form for creating new endpoints.
+   */
   endpointForm!: FormGroup;
+  /**
+   * Indicator whether endpoints are currently loading.
+   */
   loading = false;
 
-  // Selected Endpoint
+  /**
+   * Currently selected endpoint for detail management or editing.
+   */
   selectedEndpoint: SourceSystemEndpointDTO | null = null;
 
-  // HTTP methods dropdown
+  /**
+   * Available HTTP methods for endpoints.
+   */
   httpRequestTypes = [
     { label: 'GET',    value: 'GET'    },
     { label: 'POST',   value: 'POST'   },
@@ -58,10 +75,31 @@ export class ManageEndpointsComponent implements OnInit {
     { label: 'DELETE', value: 'DELETE' }
   ];
 
-  // Importing endpoints from the external API
+  /**
+   * Base API URL of the source system, used for importing endpoints.
+   */
   apiUrl: string | null = null;
+  /**
+   * Flag indicating whether an import of endpoints is in progress.
+   */
   importing = false;
 
+  /**
+   * Controls visibility of the edit endpoint dialog.
+   */
+  editDialog: boolean = false;
+  /**
+   * Endpoint currently being edited.
+   */
+  editingEndpoint: SourceSystemEndpointDTO | null = null;
+  /**
+   * Reactive form for editing an existing endpoint.
+   */
+  editForm!: FormGroup;
+
+  /**
+   * Injects FormBuilder, endpoint and source system services, and HttpClient.
+   */
   constructor(
     private fb: FormBuilder,
     private endpointSvc: SourceSystemEndpointResourceService,
@@ -69,27 +107,29 @@ export class ManageEndpointsComponent implements OnInit {
     private http: HttpClient,
   ) {}
 
+  /**
+   * Initialize forms and load endpoints and source system API URL.
+   */
   ngOnInit(): void {
-    // Endpoint form
     this.endpointForm = this.fb.group({
       endpointPath:    ['', Validators.required],
       httpRequestType: ['GET', Validators.required]
     });
 
     this.loadEndpoints();
-    // Load the Source System base URL
     this.sourceSystemService
       .apiConfigSourceSystemIdGet(this.sourceSystemId, 'body')
       .subscribe(ss => this.apiUrl = ss.apiUrl);
 
-    // setup edit form
     this.editForm = this.fb.group({
       endpointPath:    ['', Validators.required],
       httpRequestType: ['GET', Validators.required]
     });
   }
 
-  // --- Endpoints CRUD ---
+  /**
+   * Load endpoints for the current source system from the backend.
+   */
   loadEndpoints() {
     if (!this.sourceSystemId) return;
     this.loading = true;
@@ -107,6 +147,9 @@ export class ManageEndpointsComponent implements OnInit {
       });
   }
 
+  /**
+   * Create a new endpoint using form data and refresh list upon success.
+   */
   addEndpoint() {
     if (this.endpointForm.invalid) return;
     const dto = this.endpointForm.value as CreateSourceSystemEndpointDTO;
@@ -121,6 +164,10 @@ export class ManageEndpointsComponent implements OnInit {
       });
   }
 
+  /**
+   * Delete an endpoint by its ID and remove it from the list.
+   * @param id ID of the endpoint to delete.
+   */
   deleteEndpoint(id: number) {
     this.endpointSvc
       .apiConfigSourceSystemEndpointIdDelete(id)
@@ -130,14 +177,19 @@ export class ManageEndpointsComponent implements OnInit {
       });
   }
 
-  // Switch to Request-Config pane
+  /**
+   * Select an endpoint for detail management.
+   * @param endpoint Endpoint to manage.
+   */
   manage(endpoint: SourceSystemEndpointDTO) {
     console.log('Managing endpoint', endpoint);
     this.selectedEndpoint = endpoint;
   }
 
-  /** Opens the edit dialog for a given endpoint */
-  // does not work
+  /**
+   * Open the edit dialog pre-filled with endpoint data.
+   * @param endpoint Endpoint to edit.
+   */
   openEditDialog(endpoint: SourceSystemEndpointDTO) {
     console.log('Opening edit dialog for endpoint', endpoint);
     this.editingEndpoint = endpoint;
@@ -148,14 +200,14 @@ export class ManageEndpointsComponent implements OnInit {
     this.editDialog = true;
   }
 
-  /** Saves the edited endpoint via PUT */
-  // Does not work
+  /**
+   * Save changes made to the editing endpoint and refresh list.
+   */
   saveEdit() {
     if (!this.editingEndpoint || this.editForm.invalid) {
       return;
     }
     console.log('saveEdit called, editingEndpoint:', this.editingEndpoint);
-    // Construct full SourceSystemEndpointDTO with required fields
     const dto: SourceSystemEndpointDTO = {
       id: this.editingEndpoint.id!,
       sourceSystemId: this.sourceSystemId,
@@ -177,17 +229,17 @@ export class ManageEndpointsComponent implements OnInit {
       });
   }
 
-  // Navigation handlers
+  /**
+   * Navigate back to the previous wizard step.
+   */
   onBack()   { this.backStep.emit();   }
+  /**
+   * Finish the wizard and emit completion event.
+   */
   onFinish(){ this.finish.emit();     }
 
-  // Editing endpoints
-  editDialog: boolean = false;
-  editingEndpoint: SourceSystemEndpointDTO | null = null;
-  editForm!: FormGroup;
-
   /**
-   * Imports endpoints from the configured source system's OpenAPI spec
+   * Attempt to import endpoints by fetching an OpenAPI spec and pushing to backend.
    */
   importEndpoints() {
     if (!this.apiUrl) return;

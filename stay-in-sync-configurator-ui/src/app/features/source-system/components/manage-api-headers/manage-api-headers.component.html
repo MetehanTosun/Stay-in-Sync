@@ -1,13 +1,12 @@
-<!-- src/app/features/source-system/components/manage-api-headers/manage-api-headers.component.html -->
 <p-card styleClass="p-p-4">
-  <h3>Manage API Headers</h3>
+  <h3 style="margin-bottom: 2rem;">Manage API Headers</h3> <!-- Überschrift mit Abstand -->
 
   <form [formGroup]="form" class="p-fluid p-formgrid p-grid p-mb-4 p-p-4">
-    <div class="p-field p-col-8">
+    <div class="p-field p-col-8" style="margin-bottom: 1.5rem;"> <!-- Abstand zwischen den Eingabefeldern -->
       <label for="headerName">Header Name</label>
       <input id="headerName" pInputText formControlName="headerName" />
     </div>
-    <div class="p-field p-col-4">
+    <div class="p-field p-col-4" style="margin-bottom: 1.5rem;"> <!-- Abstand zwischen den Eingabefeldern -->
       <label for="headerType">Type</label>
       <p-dropdown
         id="headerType"
@@ -29,11 +28,11 @@
     </div>
   </form>
 
-  <p-table [value]="headers" [loading]="loading" [paginator]="true" [rows]="5" class="p-mt-4">
+  <p-table [value]="headers" [paginator]="true" [rows]="10" [responsiveLayout]="'scroll'">
     <ng-template pTemplate="header">
       <tr>
-        <th>Name</th>
-        <th>Type</th>
+        <th>Header Name</th>
+        <th>Header Type</th>
         <th>Actions</th>
       </tr>
     </ng-template>

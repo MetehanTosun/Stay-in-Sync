@@ -21,8 +21,15 @@
       </div>
       <div class="p-field">
         <label for="description">Description</label>
-        <textarea id="description" rows="3" pInputTextarea formControlName="description"></textarea>
+        <textarea 
+          id="description" 
+          rows="3" 
+          pInputTextarea 
+          formControlName="description" 
+          style="width: 100%;"
+        ></textarea>
       </div>
+      
       <div class="p-field">
         <label for="apiType">Type*</label>
         <p-dropdown id="apiType" [options]="typeOptions" formControlName="apiType"></p-dropdown>
