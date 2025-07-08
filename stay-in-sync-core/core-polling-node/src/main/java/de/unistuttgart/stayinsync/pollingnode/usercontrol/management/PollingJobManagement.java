@@ -1,11 +1,9 @@
 package de.unistuttgart.stayinsync.pollingnode.usercontrol.management;
 
-import de.unistuttgart.stayinsync.pollingnode.entities.SyncJob;
 import de.unistuttgart.stayinsync.pollingnode.exceptions.FaultySourceSystemApiRequestMessageDtoException;
 import de.unistuttgart.stayinsync.pollingnode.exceptions.PollingJobNotFoundException;
 import de.unistuttgart.stayinsync.pollingnode.execution.controller.PollingJobExecutionController;
-import de.unistuttgart.stayinsync.pollingnode.usercontrol.configuration.PollingJobConfigurator;
-import de.unistuttgart.stayinsync.pollingnode.entities.PollingJob;
+import de.unistuttgart.stayinsync.transport.dto.SourceSystemApiRequestConfigurationMessageDTO;
 import io.quarkus.logging.Log;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
@@ -17,44 +15,44 @@ import jakarta.inject.Inject;
 @ApplicationScoped
 public class PollingJobManagement {
 
-    private final PollingJobConfigurator pollingJobConfigurator;
     private final PollingJobExecutionController pollingJobExecutionController;
 
     @Inject
-    public PollingJobManagement(final PollingJobConfigurator pollingJobConfigurator, final PollingJobExecutionController pollingJobExecutionController) {
+    public PollingJobManagement(final PollingJobExecutionController pollingJobExecutionController) {
         super();
-        this.pollingJobConfigurator = pollingJobConfigurator;
         this.pollingJobExecutionController = pollingJobExecutionController;
     }
 
 
     /**
-     * Starts creation Process of a PollingJob and then updates the PollingJobExecutionController with that data
-     * @param syncJob contains information needed to create a PollingJob
+     * Starts SyncJobSupport and handles any unhandled exceptions thrown in the PollingProcess
      */
-    public void beginSupportOfSyncJob(final SyncJob syncJob){
+    public void beginSupportOfSyncJob(final SourceSystemApiRequestConfigurationMessageDTO apiRequestConfigurationMessage){
         try {
-            PollingJob createdPollingJob = pollingJobConfigurator.createPollingJob(syncJob);
-            Log.info("PollingJob for the source system" + createdPollingJob.getApiAddress() + " was created successfully.");
-            pollingJobExecutionController.startPollingJobExecution(createdPollingJob);
-            Log.info("PollingJob was successfully integrated into the polling process.");
+            if(pollingJobExecutionController.pollingJobExists(apiRequestConfigurationMessage.id())){
+                throw new FaultySourceSystemApiRequestMessageDtoException("There already is a open Thread for the given id.");
+            }
+            pollingJobExecutionController.startPollingJobExecution(apiRequestConfigurationMessage);
+            Log.info("PollingJob was created successfully.");
         }catch(FaultySourceSystemApiRequestMessageDtoException e){
-            Log.error("Faulty SyncJob: " + e + ". No PollingJob was created");
+            if(pollingJobExecutionController.pollingJobExists(apiRequestConfigurationMessage.id())){
+                Log.error("Faulty ApiRequestConfigurationMessage obtained from Core: " + e + ". An unpredictable thread for the given id was created and therefore immediate removed");
+            }
+            Log.error("Faulty ApiRequestConfigurationMessage obtained from Core: " + e + ". The thread activation was canceled");
         }
     }
 
     /**
      * Calls PollingJobExecutionController which deletes the PollingJob of the given ApiAddress
-     * @param syncJob contains apiAddress that needs to be deleted
+     * @param apiRequestConfigurationMessage contains information for pollingJobDeletion
      */
-    public void endSupportOfSyncJob(final SyncJob syncJob){
-        final String apiAddressOfSyncJob = syncJob.getApiAddress();
+    public void endSupportOfSyncJob(final SourceSystemApiRequestConfigurationMessageDTO apiRequestConfigurationMessage){
         try {
-            if (pollingJobExecutionController.pollingJobExists(apiAddressOfSyncJob)){
-                pollingJobExecutionController.stopPollingJobExecution(apiAddressOfSyncJob);
-                Log.info("PollingJob for the source system " + apiAddressOfSyncJob + " was successfully deleted");
+            if (pollingJobExecutionController.pollingJobExists(apiRequestConfigurationMessage.id())){
+                pollingJobExecutionController.stopPollingJobExecution(apiRequestConfigurationMessage.id());
+                Log.info("PollingJob for the source system " + apiRequestConfigurationMessage.sourceSystem() + " with the " + apiRequestConfigurationMessage.endpoint().endpointPath() + " was successfully deleted");
             } else {
-                throw new PollingJobNotFoundException("PollingJob for the source system " + apiAddressOfSyncJob + " that should be deleted does not exist");
+                throw new PollingJobNotFoundException("PollingJob for the source system " + apiRequestConfigurationMessage.sourceSystem() + " with the " + apiRequestConfigurationMessage.endpoint().endpointPath() + " that should be deleted does not exist");
             }
         } catch(PollingJobNotFoundException e){
             Log.error(e);

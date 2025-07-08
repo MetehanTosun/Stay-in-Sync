@@ -1,8 +1,8 @@
 package de.unistuttgart.stayinsync.pollingnode.rabbitmq;
 
-import de.unistuttgart.stayinsync.pollingnode.entities.SyncJob;
 import de.unistuttgart.stayinsync.pollingnode.exceptions.FaultySourceSystemApiRequestMessageDtoException;
 import de.unistuttgart.stayinsync.pollingnode.usercontrol.management.PollingJobManagement;
+import de.unistuttgart.stayinsync.transport.dto.SourceSystemApiRequestConfigurationMessageDTO;
 import io.quarkus.logging.Log;
 import jakarta.enterprise.context.ApplicationScoped;
 import org.eclipse.microprofile.reactive.messaging.Incoming;
@@ -22,9 +22,10 @@ public class ConsumerControlManagement {
 
     /**
      * Constructs the ConsumerControlManagement
+     *
      * @param pollingNodeManagement is applicationScoped and the entryPoint for the message processing.
      */
-    public ConsumerControlManagement(final PollingJobManagement pollingNodeManagement){
+    public ConsumerControlManagement(final PollingJobManagement pollingNodeManagement) {
         this.pollingNodeManagement = pollingNodeManagement;
     }
 
@@ -32,60 +33,42 @@ public class ConsumerControlManagement {
     /**
      * Awaits messages in syncJobCreated channel and passes them with the right consumable for the right method call on pollingNodeManagement along.
      *
-     * @param syncJobMessage is sent to handleSyncJobMessage to be used there
+     * @param apiRequestConfigurationMessageDTOMessageMessage is sent to handleSyncJobMessage to be used there
      * @return accepted message if syncJob was valid or not accepted message if syncJob was invalid.
      */
     @Incoming("syncJobCreated")
-    CompletionStage<Void> startSyncJobSupport(final Message<SyncJob> syncJobMessage) {
-        return handleSyncJobMessage(syncJobMessage, pollingNodeManagement::beginSupportOfSyncJob);
+    CompletionStage<Void> startSyncJobSupport(final Message<SourceSystemApiRequestConfigurationMessageDTO> apiRequestConfigurationMessageDTOMessageMessage) {
+        Log.info("Message to startSourceSystemSupport was received.");
+        return handleSyncJobMessage(apiRequestConfigurationMessageDTOMessageMessage, pollingNodeManagement::beginSupportOfSyncJob);
     }
 
 
     /**
      * Awaits messages in syncJobCreated channel and passes them with the right consumable for the right method call on pollingNodeManagement along.
      *
-     * @param syncJobMessage is sent to handleSyncJobMessage to be used there
+     * @param apiRequestConfigurationMessageDTOMessageMessage is sent to handleSyncJobMessage to be used there
      * @return accepted message if syncJob was valid or not accepted message if syncJob was invalid.
      */
     @Incoming("syncJobDeleted")
-    CompletionStage<Void> supportedSyncJobDeletionChannel(final Message<SyncJob> syncJobMessage) {
-        return handleSyncJobMessage(syncJobMessage, pollingNodeManagement::endSupportOfSyncJob);
+    CompletionStage<Void> supportedSyncJobDeletionChannel(final Message<SourceSystemApiRequestConfigurationMessageDTO> apiRequestConfigurationMessageDTOMessageMessage) {
+        Log.info("Message to startSourceSystemSupport was received.");
+        return handleSyncJobMessage(apiRequestConfigurationMessageDTOMessageMessage, pollingNodeManagement::endSupportOfSyncJob);
     }
-
-
 
 
     /**
      * Calls pollingNodeManagement method by using Consumer parameter if SyncJob is valid.
      *
-     * @param syncJobMessage message the channel received, that contains a unchecked syncJob.
-     * @param syncJobHandler contains the method call of the calling channel handler.
+     * @param apiRequestConfigurationMessageDTOMessage message the channel received, that contains a unchecked syncJob.
+     * @param apiRequestConfigurationMessageDTOHandler contains the method call of the calling channel handler.
      * @return accepted message if syncJob was valid or not accepted message if syncJob was invalid.
      */
-    private CompletionStage<Void> handleSyncJobMessage(final Message<SyncJob> syncJobMessage,
-                                                       final Consumer<SyncJob> syncJobHandler) {
-        final SyncJob syncJob = syncJobMessage.getPayload();
-        try {
-            throwFaultySyncJobExceptionIfInvalid(syncJob);
-            syncJobHandler.accept(syncJob);
-            Log.info("Sent SyncJob was valid. Message accepted");
-            return syncJobMessage.ack();
-        } catch (FaultySourceSystemApiRequestMessageDtoException e) {
-            Log.error(e.getMessage());
-            return syncJobMessage.nack(new FaultySourceSystemApiRequestMessageDtoException(e.getMessage()));
-        }
+    private CompletionStage<Void> handleSyncJobMessage(final Message<SourceSystemApiRequestConfigurationMessageDTO> apiRequestConfigurationMessageDTOMessage, final Consumer<SourceSystemApiRequestConfigurationMessageDTO> apiRequestConfigurationMessageDTOHandler) {
+        final SourceSystemApiRequestConfigurationMessageDTO apiRequestConfigurationMessageDTOMessagePayload = apiRequestConfigurationMessageDTOMessage.getPayload();
+        apiRequestConfigurationMessageDTOHandler.accept(apiRequestConfigurationMessageDTOMessagePayload);
+        Log.info("Sent SyncJob was valid. Message accepted");
+        return apiRequestConfigurationMessageDTOMessage.ack();
     }
 
-    /**
-     * Throws a FaultySyncJobException if the SyncJob has any invalid fields of obvious reason.
-     * @param syncJob is the checked object.
-     * @throws FaultySourceSystemApiRequestMessageDtoException if any field is null or empty.
-     */
-    private void throwFaultySyncJobExceptionIfInvalid(final SyncJob syncJob) throws FaultySourceSystemApiRequestMessageDtoException {
-        if(syncJob.getApiAddress() == null || syncJob.getApiAddress().isEmpty()){
-            final String errorMessage = "ApiAddress of sent SyncJob was empty";
-            Log.error(errorMessage);
-            throw new FaultySourceSystemApiRequestMessageDtoException(errorMessage);
-        }
-    }
+
 }
