@@ -5,7 +5,9 @@ import {Button} from 'primeng/button';
 import {FormsModule, ReactiveFormsModule} from '@angular/forms';
 import { ToggleButtonModule } from 'primeng/togglebutton';
 import {min} from 'rxjs';
-import {TransformationStateService} from '../../services/ransformation.state.service';
+import {
+  TransformationTempStoreService
+} from '../../services/transformation.tempstore.service';
 import {TransformationService} from '../../services/transformation.service';
 import {Dialog} from 'primeng/dialog';
 import {InputText} from 'primeng/inputtext';
@@ -53,11 +55,9 @@ export class TransformationBaseComponent implements OnInit {
 
   newTransformation: Transformation = {};
 
-  constructor(private stateService: TransformationStateService, private transformationService : TransformationService, private router: Router) {}
+  constructor(private transformationService : TransformationService, private router: Router, private tempStore: TransformationTempStoreService) {}
 
   ngOnInit() {
-    const loaded = this.stateService.transformations;
-    this.transformations = loaded && loaded.length > 0 ? loaded : [];
     this.loadTransformationsFromBackend();
   }
 
@@ -90,15 +90,15 @@ export class TransformationBaseComponent implements OnInit {
 
   add(rowData: any) {
     rowData.added = true;
-    if (!this.addedTransformations.some(t => t.name === rowData.name)) {
-      this.addedTransformations.push(rowData);
-    }
+    this.tempStore.addTransformation(rowData);
+    this.addedTransformations = this.tempStore.getTransformations();
     this.transformationChanged();
   }
 
   remove(rowData: any) {
     rowData.added = false;
-    this.addedTransformations = this.addedTransformations.filter(t => t.name !== rowData.name);
+    this.tempStore.removeTransformation(rowData);
+    this.addedTransformations = this.tempStore.getTransformations();
     this.transformationChanged();
   }
 
@@ -106,8 +106,6 @@ export class TransformationBaseComponent implements OnInit {
    * Sendet ein Event an die Parent-Komponente, um Änderungen mitzuteilen.
    */
   transformationChanged() {
-    this.stateService.transformations = this.transformations;
-    console.log('Transformationen geändert:', this.addedTransformations);
     this.transformationsChanged.emit(this.addedTransformations);
   }
 
@@ -164,6 +162,8 @@ export class TransformationBaseComponent implements OnInit {
   addScript(rowData: any) {
     this.selectedTransformation = rowData;
     this.displayScriptSelectionDialog = true;
+    this.router.navigate([`/sync-jobs/create/script/${rowData.id}`]);
+    this.transformationId = rowData.id;
   }
 
   showMissingFieldsMessage() {
@@ -180,5 +180,6 @@ export class TransformationBaseComponent implements OnInit {
 
   cancelScriptSelectionDialog() {
     this.displayScriptSelectionDialog = false;
+    this.router.navigate([`/sync-jobs/create`]);
   }
 }

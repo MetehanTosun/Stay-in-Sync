@@ -17,6 +17,9 @@ import {
 } from './features/transformation/components/transformation-rule-selection/transformation-rule-selection.component';
 
 import { ScriptEditorPageComponent } from './features/script-editor/script-editor-page/script-editor-page.component';
+import {
+  TransformationScriptSelectionComponent
+} from './features/transformation/components/transformation-script-selection/transformation-script-selection.component';
 
 
 export const routes: Routes = [
@@ -58,6 +61,10 @@ export const routes: Routes = [
     {
       path: 'create/rule/:transformationId',
       component: TransformationRuleSelectionComponent
+    },
+    {
+      path: 'create/script/:transformationId',
+      component: TransformationScriptSelectionComponent
     }
   ]
   },

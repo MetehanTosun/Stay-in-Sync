@@ -80,7 +80,7 @@
   [modal]="true"
   [style]="{ width: '50vw', maxWidth: '50vw', minHeight: '40vw' }"
 >
-  <app-transformation-script-selection (closeDialog)="displayScriptSelectionDialog = false"></app-transformation-script-selection>
+  <app-transformation-script-selection (closeDialog)="displayScriptSelectionDialog = false" [transformationId]="transformationId" ></app-transformation-script-selection>
 </p-dialog>
 
 
