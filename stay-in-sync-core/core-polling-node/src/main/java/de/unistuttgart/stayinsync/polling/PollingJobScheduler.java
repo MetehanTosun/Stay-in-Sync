@@ -1,8 +1,9 @@
 package de.unistuttgart.stayinsync.polling;
 
-import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.SourceSystemEndpoint;
 import de.unistuttgart.stayinsync.polling.exception.PollingNodeException;
 import de.unistuttgart.stayinsync.polling.rabbitmq.PollingJobMessageConsumer;
+import de.unistuttgart.stayinsync.polling.rabbitmq.SyncDataProducer;
+import de.unistuttgart.stayinsync.transport.dto.SourceSystemApiRequestConfigurationMessageDTO;
 import io.quarkus.logging.Log;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
@@ -13,9 +14,13 @@ public class PollingJobScheduler {
     @Inject
     PollingJobMessageConsumer pollingJobConsumer;
 
+    @Inject
+    SyncDataProducer syncDataProducer;
+
     public void deployPollingJobExecution(SourceSystemApiRequestConfigurationMessageDTO apiRequestConfigurationMessageDTO) throws PollingNodeException {
         Log.infof("Deploying polling for %s at path %s with id %s", apiRequestConfigurationMessageDTO.sourceSystem().apiUrl(), apiRequestConfigurationMessageDTO.endpoint().endpointPath(), apiRequestConfigurationMessageDTO.id());
         pollingJobConsumer.bindExisitingPollingJobQueue(apiRequestConfigurationMessageDTO);
+        syncDataProducer.setupRequestConfigurationStream(apiRequestConfigurationMessageDTO);
     }
 
     public void reconfigureSyncJobExecution(SourceSystemApiRequestConfigurationMessageDTO apiRequestConfigurationMessageDTO) throws PollingNodeException {

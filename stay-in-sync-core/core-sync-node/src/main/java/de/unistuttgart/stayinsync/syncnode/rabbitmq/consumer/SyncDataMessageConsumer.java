@@ -8,7 +8,7 @@ import com.rabbitmq.client.DeliverCallback;
 import com.rabbitmq.client.Delivery;
 import de.unistuttgart.stayinsync.exception.SyncNodeException;
 import de.unistuttgart.stayinsync.syncnode.syncjob.SyncJobScheduler;
-import de.unistuttgart.stayinsync.transport.dto.SourceSystemEndpointMessageDTO;
+import de.unistuttgart.stayinsync.transport.dto.SourceSystemApiRequestConfigurationMessageDTO;
 import de.unistuttgart.stayinsync.transport.dto.SyncDataMessageDTO;
 import io.quarkiverse.rabbitmqclient.RabbitMQClient;
 import io.quarkus.logging.Log;
@@ -19,6 +19,9 @@ import jakarta.inject.Inject;
 
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
 
 @ApplicationScoped
 public class SyncDataMessageConsumer {
@@ -48,6 +51,8 @@ public class SyncDataMessageConsumer {
             Log.info("Opening rabbitMQ channel");
             channel = rabbitMQClient.connect().openChannel().orElseThrow(() -> new RuntimeException("Unable to establish connection to rabbitMQ"));
             channel.exchangeDeclare("sync-data-exchange", "direct", true);
+            channel.basicQos(1);
+
         } catch (IOException e) {
             Log.errorf("Error initialising rabbitMQ queues", e);
             throw new RuntimeException(e);
@@ -94,7 +99,7 @@ public class SyncDataMessageConsumer {
         return (consumerTag, delivery) -> {
             try {
                 SyncDataMessageDTO syncData = getSyncDataMessageDTO(delivery);
-                Log.infof("Received syncData for endpoint with id: %s", syncData.endpointId());
+                Log.infof("Received syncData for request config with id: %s", syncData.requestConfigId());
                 channel.basicAck(delivery.getEnvelope().getDeliveryTag(), false);
             } catch (SyncNodeException e) {
                 Log.errorf("Failed to process sync-data message", e);
@@ -105,9 +110,14 @@ public class SyncDataMessageConsumer {
     }
 
 
-    public void startConsumingSyncData(SourceSystemEndpointMessageDTO endpointMessageDTO) {
+    public void startConsumingSyncData(SourceSystemApiRequestConfigurationMessageDTO requestConfigurationMessageDTO) {
         try {
-            channel.basicConsume("endpoint-" + endpointMessageDTO.id(), false, receiveSyncDataCallback(), cancelSyncDataConsumptionCallback(syncNodeQueueName));
+            //TODO: Check if and how it would be possible to not declare queue in both services
+            Map<String, Object> queueArgs = new HashMap<>();
+            queueArgs.put("x-queue-type", "stream");
+            queueArgs.put("x-max-age", "1m");
+            channel.queueDeclare("request-config-" + requestConfigurationMessageDTO.id(), true, false, false, Collections.singletonMap("x-queue-type", "stream"));
+            channel.basicConsume("request-config-" + requestConfigurationMessageDTO.id(), false, receiveSyncDataCallback(), cancelSyncDataConsumptionCallback(syncNodeQueueName));
         } catch (IOException e) {
             throw new RuntimeException(e);
         }

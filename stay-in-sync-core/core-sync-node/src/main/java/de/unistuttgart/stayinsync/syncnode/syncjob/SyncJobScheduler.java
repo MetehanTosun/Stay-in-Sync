@@ -3,7 +3,7 @@ package de.unistuttgart.stayinsync.syncnode.syncjob;
 import de.unistuttgart.stayinsync.exception.SyncNodeException;
 import de.unistuttgart.stayinsync.syncnode.rabbitmq.consumer.SyncDataMessageConsumer;
 import de.unistuttgart.stayinsync.syncnode.rabbitmq.consumer.SyncJobMessageConsumer;
-import de.unistuttgart.stayinsync.transport.dto.SourceSystemEndpointMessageDTO;
+import de.unistuttgart.stayinsync.transport.dto.SourceSystemApiRequestConfigurationMessageDTO;
 import de.unistuttgart.stayinsync.transport.dto.SyncJobMessageDTO;
 import io.quarkus.logging.Log;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -35,7 +35,7 @@ public class SyncJobScheduler {
     public void reconfigureSyncJobExecution(SyncJobMessageDTO syncJob) throws SyncNodeException {
         if (!syncJob.deployed()) {
             Log.infof("Undeploy sync-job %s with id %s", syncJob.name(), syncJob.id());
-            stopConsumingFromUnusedEndpoints();
+            stopConsumingFromUnusedRequestConfigurations();
             syncJobMessageConsumer.unbindExisitingSyncJobQueue(syncJob);
             runningJobs.remove(syncJob);
         } else {
@@ -44,14 +44,14 @@ public class SyncJobScheduler {
     }
 
     private void consumeJobSyncData(SyncJobMessageDTO syncJobMessageDTO) {
-        Set<SourceSystemEndpointMessageDTO> endpoints = syncJobMessageDTO.transformations().stream() //
-                .flatMap(transformationMessageDTO -> transformationMessageDTO.endpoints().stream()) //
+        Set<SourceSystemApiRequestConfigurationMessageDTO> requestConfigurations = syncJobMessageDTO.transformations().stream() //
+                .flatMap(transformationMessageDTO -> transformationMessageDTO.requestConfigurationMessageDTOS().stream()) //
                 .collect(Collectors.toSet());
-        endpoints.forEach(endpoint -> syncDataMessageConsumer.startConsumingSyncData(endpoint));
+        requestConfigurations.forEach(requestConfig -> syncDataMessageConsumer.startConsumingSyncData(requestConfig));
     }
 
     //TODO implement this method
-    private void stopConsumingFromUnusedEndpoints() {
+    private void stopConsumingFromUnusedRequestConfigurations() {
 
     }
 }

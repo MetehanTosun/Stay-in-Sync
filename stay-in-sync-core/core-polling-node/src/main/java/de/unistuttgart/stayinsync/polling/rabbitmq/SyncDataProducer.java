@@ -4,7 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.rabbitmq.client.AMQP;
 import com.rabbitmq.client.Channel;
 import de.unistuttgart.stayinsync.polling.exception.PollingNodeException;
-import de.unistuttgart.stayinsync.transport.dto.SourceSystemEndpointMessageDTO;
+import de.unistuttgart.stayinsync.transport.dto.SourceSystemApiRequestConfigurationMessageDTO;
 import de.unistuttgart.stayinsync.transport.dto.SyncDataMessageDTO;
 import io.quarkiverse.rabbitmqclient.RabbitMQClient;
 import io.quarkus.logging.Log;
@@ -42,13 +42,13 @@ public class SyncDataProducer {
         }
     }
 
-    void onNewPollingJob(SourceSystemEndpointMessageDTO endpoint) {
+    public void setupRequestConfigurationStream(SourceSystemApiRequestConfigurationMessageDTO requestConfiguration) {
         try {
             Map<String, Object> queueArgs = new HashMap<>();
             queueArgs.put("x-queue-type", "stream");
             queueArgs.put("x-max-age", "1m");
-            channel.queueDeclare("endpoint-" + endpoint.id() + "-stream", true, false, true, Collections.singletonMap("x-queue-type", "stream"));
-            channel.queueBind("endpoint-" + endpoint.id(), "sync-data-exchange", "endpoint-" + endpoint.id());
+            channel.queueDeclare("request-config-" + requestConfiguration.id(), true, false, false, Collections.singletonMap("x-queue-type", "stream"));
+            channel.queueBind("request-config-" + requestConfiguration.id(), "sync-data-exchange", "request-config-" + requestConfiguration.id());
 
         } catch (IOException e) {
             throw new RuntimeException(e);
@@ -57,14 +57,14 @@ public class SyncDataProducer {
 
     public void publishSyncData(SyncDataMessageDTO syncDataMessageDTO) throws PollingNodeException {
         try {
-            Log.infof("Publishing data for endpoint (id: %s)", syncDataMessageDTO.endpointId());
+            Log.infof("Publishing data for request-config (id: %s)", syncDataMessageDTO.requestConfigId());
             String messageBody = objectMapper.writeValueAsString(syncDataMessageDTO);
             AMQP.BasicProperties properties = new AMQP.BasicProperties.Builder()
                     .contentType("application/json")
                     .deliveryMode(2) // persistent
                     .build();
 
-            channel.basicPublish("sync-data-exchange", "endpoint-" + syncDataMessageDTO.endpointId(), properties,
+            channel.basicPublish("sync-data-exchange", "request-config-" + syncDataMessageDTO.requestConfigId(), properties,
                     messageBody.getBytes(StandardCharsets.UTF_8));
         } catch (IOException e) {
             throw new PollingNodeException("Unable to publish Job", "Object JSON-serialization failed", e);
