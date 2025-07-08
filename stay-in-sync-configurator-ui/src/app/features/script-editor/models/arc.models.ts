@@ -64,3 +64,24 @@ export interface EndpointParameterDefinition {
   required: boolean;
   options: string[];
 }
+
+export interface ApiHeaderDefinition {
+  id: number;
+  headerName: string;
+  values: string[];
+}
+
+export interface ArcWizardContextData {
+  pathParams: EndpointParameterDefinition[];
+  queryParamDefinitions: EndpointParameterDefinition[];
+  headerDefinitions: ApiHeaderDefinition[];
+}
+
+export interface ApiEndpointParamDTO {
+  paramName: string;
+  queryParamType: 'PATH' | 'QUERY';
+  id: number;
+  description?: string;
+  required?: boolean;
+  values: string[];
+}
