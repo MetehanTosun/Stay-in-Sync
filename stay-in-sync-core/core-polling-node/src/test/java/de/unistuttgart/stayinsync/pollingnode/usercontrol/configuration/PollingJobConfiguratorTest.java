@@ -4,9 +4,7 @@ import io.quarkus.test.junit.QuarkusTest;
 import org.junit.jupiter.api.Test;
 
 import de.unistuttgart.stayinsync.pollingnode.entities.PollingJob;
-import de.unistuttgart.stayinsync.pollingnode.entities.SyncJob;
-import de.unistuttgart.stayinsync.pollingnode.exceptions.FaultySyncJobException;
-import de.unistuttgart.stayinsync.pollingnode.usercontrol.configuration.PollingJobConfigurator;
+import de.unistuttgart.stayinsync.pollingnode.exceptions.FaultySourceSystemApiRequestMessageDtoException;
 
 import static io.smallrye.common.constraint.Assert.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -20,7 +18,7 @@ public class PollingJobConfiguratorTest {
         private final PollingJobConfigurator configurator = new PollingJobConfigurator();
 
         @Test
-        void testCreatePollingJobWithValidSyncJob() throws FaultySyncJobException {
+        void testCreatePollingJobWithValidSyncJob() throws FaultySourceSystemApiRequestMessageDtoException {
             SyncJob syncJob = mock(SyncJob.class);
             when(syncJob.getApiAddress()).thenReturn("https://example.com");
 
@@ -35,7 +33,7 @@ public class PollingJobConfiguratorTest {
             SyncJob syncJob = mock(SyncJob.class);
             when(syncJob.getApiAddress()).thenReturn(null);
 
-            assertThrows(FaultySyncJobException.class, () -> configurator.createPollingJob(syncJob));
+            assertThrows(FaultySourceSystemApiRequestMessageDtoException.class, () -> configurator.createPollingJob(syncJob));
         }
 
         @Test
@@ -43,7 +41,7 @@ public class PollingJobConfiguratorTest {
             SyncJob syncJob = mock(SyncJob.class);
             when(syncJob.getApiAddress()).thenReturn("");
 
-            assertThrows(FaultySyncJobException.class, () -> configurator.createPollingJob(syncJob));
+            assertThrows(FaultySourceSystemApiRequestMessageDtoException.class, () -> configurator.createPollingJob(syncJob));
         }
 }
 

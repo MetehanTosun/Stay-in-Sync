@@ -1,6 +1,5 @@
 package de.unistuttgart.stayinsync.pollingnode.rabbitmq;
 
-import de.unistuttgart.stayinsync.pollingnode.entities.SyncJob;
 import de.unistuttgart.stayinsync.pollingnode.usercontrol.management.PollingJobManagement;
 
 import io.quarkus.test.InjectMock;
