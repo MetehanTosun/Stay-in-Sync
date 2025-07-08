@@ -1,0 +1,28 @@
+log_level = "info"
+
+http {
+  listen_address = "0.0.0.0:1234"
+}
+
+local.file_match "logs" {
+  path_targets = [
+    {
+      path = "/logs/*.log",
+      labels = {
+        job = "quarkus"
+        env = "dev"
+      }
+    }
+  ]
+}
+
+loki.write "default" {
+  endpoint {
+    url = "http://host.docker.internal:3100/loki/api/v1/push"
+  }
+}
+
+logscrape "default" {
+  targets = local.file_match.logs.targets
+  forward_to = [loki.write.default.receiver]
+}

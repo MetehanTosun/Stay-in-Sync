@@ -15,11 +15,6 @@ services:
       - elasticsearch_data:/usr/share/elasticsearch/data
     networks:
       - elk
-    healthcheck:
-      test: ["CMD-SHELL", "curl -f http://localhost:9200/_cluster/health || exit 1"]
-      interval: 30s
-      timeout: 10s
-      retries: 5
 
   grafana:
     image: grafana/grafana:10.1.5
@@ -32,8 +27,8 @@ services:
     volumes:
       - grafana_data:/var/lib/grafana
     depends_on:
-      elasticsearch:
-        condition: service_healthy
+      - elasticsearch
+      - loki
     networks:
       - elk
 
@@ -43,29 +38,18 @@ services:
     environment:
       - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
       - xpack.security.enabled=false
-      - xpack.fleet.enabled=false
-      - xpack.encryptedSavedObjects.encryptionKey=a7a6311933d3503b89bc2dbc36572c33a6c10925682e591bffcab6911c06786d
-      - server.csp.strict=false
-      - server.host=0.0.0.0
     ports:
       - "5601:5601"
     depends_on:
-      elasticsearch:
-        condition: service_healthy
+      - elasticsearch
     networks:
       - elk
-    healthcheck:
-      test: ["CMD-SHELL", "curl -f http://localhost:5601/api/status || exit 1"]
-      interval: 30s
-      timeout: 10s
-      retries: 5
 
   logstash:
     image: docker.elastic.co/logstash/logstash:8.13.4
     container_name: logstash
     volumes:
-        - ./logstash.conf:/usr/share/logstash/pipeline/logstash.conf:ro
-
+      - ./logstash.conf:/usr/share/logstash/pipeline/logstash.conf:ro
     ports:
       - "5044:5044"
       - "5001:5000"
@@ -73,8 +57,7 @@ services:
     environment:
       - "LS_JAVA_OPTS=-Xmx256m -Xms256m"
     depends_on:
-      elasticsearch:
-        condition: service_healthy
+      - elasticsearch
     networks:
       - elk
 
@@ -91,11 +74,6 @@ services:
       - rabbitmq_data:/var/lib/rabbitmq
     networks:
       - elk
-    healthcheck:
-      test: ["CMD", "rabbitmq-diagnostics", "ping"]
-      interval: 30s
-      timeout: 10s
-      retries: 5
 
   metricbeat:
     image: docker.elastic.co/beats/metricbeat:8.13.4
@@ -111,13 +89,29 @@ services:
       - ELASTICSEARCH_HOST=elasticsearch:9200
       - KIBANA_HOST=kibana:5601
     depends_on:
-      elasticsearch:
-        condition: service_healthy
-      rabbitmq:
-        condition: service_healthy
+      - elasticsearch
+      - rabbitmq
     networks:
       - elk
     command: metricbeat -e -strict.perms=false
+
+  loki:
+    image: grafana/loki:2.9.4
+    container_name: loki
+    ports:
+      - "3100:3100"
+    command: -config.file=/etc/loki/local-config.yaml
+    networks:
+      - elk
+
+  alloy:
+    image: grafana/alloy:latest
+    ports:
+      - "1234:1234"
+    volumes:
+      - ./config.alloy:/etc/alloy/config.alloy
+      - ./logs:/logs
+    restart: unless-stopped
 
 volumes:
   elasticsearch_data:
