@@ -23,7 +23,7 @@ public class LogicGraphEntity extends PanacheEntity {
 
     /**
      * The complete graph definition, stored as a JSON string in a TEXT or CLOB column.
-     * This field contains the serialized version of a {@link de.unistuttgart.stayinsync.syncnode.logik_engine.database.DTOs.GraphDefinitionDTO}.
+     * This field contains the serialized version of a {@link de.unistuttgart.stayinsync.syncnode.logik_engine.database.DTOs.GraphDTO}.
      */
     @Lob
     @Column(name = "graph_definition_json", columnDefinition = "TEXT", nullable = false)
