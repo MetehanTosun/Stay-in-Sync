@@ -3,8 +3,6 @@ package de.unistuttgart.stayinsync.syncnode.logik_engine.database;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import de.unistuttgart.stayinsync.syncnode.logik_engine.database.DTOs.GraphDTO;
-import de.unistuttgart.stayinsync.syncnode.logik_engine.database.DTOs.GraphDefinitionDTO;
-import de.unistuttgart.stayinsync.syncnode.logik_engine.nodes.LogicNode;
 import de.unistuttgart.stayinsync.syncnode.logik_engine.nodes.Node;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;

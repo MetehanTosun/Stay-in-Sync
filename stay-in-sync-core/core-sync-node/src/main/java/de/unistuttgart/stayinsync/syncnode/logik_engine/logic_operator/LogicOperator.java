@@ -14,7 +14,7 @@ public enum LogicOperator {
     EXISTS("exists", new ExistsOperator()),
     NOT_EXISTS("notExists", new NotExistsOperator()),
     IS_NULL("isNull", new IsNullOperator()),
-    IS_NOT_NULL("isNotNull", new IsNotNull()),
+    IS_NOT_NULL("isNotNull", new IsNotNullOperator()),
     TYPE_IS("typeIs", new TypeIsOperator()),
     EQUALS("equals", new EqualsOperator()),
     NOT_EQUALS("notEquals", new NotEqualsOperator()),
@@ -36,6 +36,7 @@ public enum LogicOperator {
     LESS_OR_EQUAL("lessOrEqual", new LessOrEqualOperator()),
     BETWEEN("between", new BetweenOperator()),
     NOT_BETWEEN("notBetween", new NotBetweenOperator()),
+    ADD("add", new AddOperator()),
 
     // String predicates
     EQUALS_CASE_SENSITIVE("equalsCaseSensitive", new EqualsCaseSensitiveOperator()),

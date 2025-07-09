@@ -5,6 +5,7 @@ import de.unistuttgart.stayinsync.syncnode.logik_engine.logic_operator.Operation
 import jakarta.enterprise.context.ApplicationScoped;
 import java.util.Arrays;
 
+/**
 @ApplicationScoped
 public class CreateLogicNode {
 
@@ -17,7 +18,7 @@ public class CreateLogicNode {
      * @param providers The input providers for this node.
      * @return A validated, ready-to-use LogicNode.
      * @throws IllegalArgumentException if the provided inputs are not valid for the given operator.
-     */
+     *
     public LogicNode createNode(String nodeName, LogicOperator operator, InputNode... providers) {
         // Step 1: Create the "dumb" LogicNode with the constructor.
         LogicNode node = new LogicNode(nodeName, operator);
@@ -37,3 +38,5 @@ public class CreateLogicNode {
         return node;
     }
 }
+ */
+
