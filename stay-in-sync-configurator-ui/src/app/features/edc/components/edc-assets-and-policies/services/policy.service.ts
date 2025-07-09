@@ -72,7 +72,7 @@ export class PolicyService {
 
       '@context': { edc: 'https://w3id.org/edc/v0.0.1/ns/' },
       '@id': 'contract-def-asset-weather-data-02',
-      accessPolicyId: 'policy-BPNL000000000001', // Belongs to the first policy
+      accessPolicyId: 'policy-BPNL000000000001',
       contractPolicyId: 'policy-BPNL000000000001',
       assetsSelector: [
         {
@@ -118,6 +118,12 @@ export class PolicyService {
 
 
   createContractDefinition(odrlContractDef: OdrlContractDefinition): Promise<any> {
+    if (!this.validateContractDefinitionOperator(odrlContractDef)) {
+      const errorMessage = 'Invalid Contract Definition: The operator for all asset selectors must be "=".';
+      console.error(errorMessage, odrlContractDef);
+      return Promise.reject(new Error(errorMessage));
+    }
+
     console.log('Posting Contract Definition:', JSON.stringify(odrlContractDef, null, 2));
     const index = this.mockOdrlContractDefinitions.findIndex(cd => cd['@id'] === odrlContractDef['@id']);
     if (index !== -1) {
@@ -129,7 +135,12 @@ export class PolicyService {
   }
 
   updateContractDefinition(odrlContractDef: OdrlContractDefinition): Promise<void> {
-    //console.log('Mock Service: Simulating update of contract definition:', JSON.stringify(odrlContractDef, null, 2));
+    if (!this.validateContractDefinitionOperator(odrlContractDef)) {
+      const errorMessage = 'Invalid Contract Definition: The operator for all asset selectors must be "=".';
+      console.error(errorMessage, odrlContractDef);
+      return Promise.reject(new Error(errorMessage));
+    }
+
     const index = this.mockOdrlContractDefinitions.findIndex(cd => cd['@id'] === odrlContractDef['@id']);
     if (index !== -1) {
       this.mockOdrlContractDefinitions[index] = odrlContractDef;
@@ -184,7 +195,7 @@ export class PolicyService {
     }
   }
 
-  // Helper methods are unchanged
+  // Helper methods
   private transformOdrlToAccessPolicy(odrlDef: OdrlPolicyDefinition): AccessPolicy {
     const permission = odrlDef.policy?.permission?.[0];
     const constraint = permission?.constraint?.[0];
@@ -194,7 +205,7 @@ export class PolicyService {
       bpn: constraint?.rightOperand || '',
       action: permission?.action || 'use',
       operator: constraint?.operator || 'eq',
-      contractPolicies: [], // This will be populated by the component
+      contractPolicies: [],
     };
   }
 
@@ -219,5 +230,17 @@ export class PolicyService {
         ],
       },
     };
+  }
+
+  /**
+   * Validates that contract definition use the '=' operator.
+   * @param contractDef The contract definition to validate.
+   * @returns True if valid, false otherwise.
+   */
+  private validateContractDefinitionOperator(contractDef: OdrlContractDefinition): boolean {
+    if (!contractDef.assetsSelector || contractDef.assetsSelector.length === 0) {
+      return true;
+    }
+    return contractDef.assetsSelector.every(selector => selector.operator === '=');
   }
 }

@@ -89,7 +89,6 @@ export class EdcAssetsAndPoliciesComponent implements OnInit {
     operator: string;
   } | null = null;
 
-  assetSelectorOperatorOptions: { label: string; value: string; }[];
   targetAccessPolicy: AccessPolicy | null = null;
   displayEditAccessPolicyDialog: boolean = false;
   policyToEdit: AccessPolicy | null = null;
@@ -119,10 +118,7 @@ export class EdcAssetsAndPoliciesComponent implements OnInit {
       { label: 'Read', value: 'read' },
       { label: 'Write', value: 'write' },
     ];
-    this.assetSelectorOperatorOptions = [
-      { label: 'Equals', value: '=' },
-      { label: 'Is In', value: 'in' },
-    ];
+
   }
 
   ngOnInit(): void {
@@ -858,7 +854,6 @@ export class EdcAssetsAndPoliciesComponent implements OnInit {
           }
 
           const selector = contractDefJson.assetsSelector[0];
-          const validAssetSelectorOperators = ['=', 'in'];
 
           if (!selector?.operandLeft?.trim()) {
             throw new Error("Validation failed: 'operandLeft' in assetsSelector is missing or empty.");
@@ -869,8 +864,8 @@ export class EdcAssetsAndPoliciesComponent implements OnInit {
           if (!selector?.operator?.trim()) {
             throw new Error("Validation failed: 'operator' in assetsSelector is missing or empty.");
           }
-          if (!validAssetSelectorOperators.includes(selector.operator)) {
-            throw new Error(`Validation failed: Invalid 'operator' in assetsSelector. Must be one of: ${validAssetSelectorOperators.join(', ')}.`);
+          if (selector.operator !== '=') {
+            throw new Error("Validation failed: Invalid 'operator' in contract definition. Must be =");
           }
           if (!selector?.operandRight?.trim()) {
             throw new Error("Validation failed: 'operandRight' (the Asset ID) in assetsSelector is missing or empty.");

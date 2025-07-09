@@ -440,17 +440,6 @@
         </div>
       </div>
 
-      <div class="field grid align-items-center mb-3">
-        <label for="cdOperator" class="col-3">Operator</label>
-        <div class="col-9">
-          <p-select id="cdOperator"
-                      [options]="assetSelectorOperatorOptions"
-                      [(ngModel)]="newContractPolicy.operator"
-                      styleClass="w-full"
-                      [appendTo]="'body'"></p-select>
-        </div>
-      </div>
-
 
       <div class="field grid align-items-center mb-3">
         <label for="cdAssetId" class="col-3">Asset ID (Operand Right)</label>
@@ -492,7 +481,15 @@
 
   <ng-container *ngIf="contractPolicyToEdit">
     <div class="px-4">
-      <!-- EDC ID (operandLeft) Input -->
+
+      <div class="field grid align-items-center mb-3">
+        <label for="editCdOperandLeft" class="col-4">EDC ID (Operand Left)</label>
+        <div class="col-8">
+          <input id="editCdOperandLeft" type="text" pInputText [(ngModel)]="contractPolicyToEdit.operandLeft" required class="w-full" />
+        </div>
+      </div>
+
+
       <div class="field grid align-items-center mb-3">
         <label for="editCdAssetId" class="col-4">Asset ID (Operand Right)</label>
         <div class="col-8">
@@ -508,26 +505,6 @@
             inputStyleClass="w-full"
             [appendTo]="'body'">
           </p-autoComplete>
-        </div>
-      </div>
-
-      <!-- Operator Dropdown -->
-      <div class="field grid align-items-center mb-3">
-        <label for="editCdOperator" class="col-4">Operator</label>
-        <div class="col-8">
-          <p-select id="editCdOperator"
-                      [options]="assetSelectorOperatorOptions"
-                      [(ngModel)]="contractPolicyToEdit.operator"
-                      styleClass="w-full"
-                      [appendTo]="'body'"></p-select>
-        </div>
-      </div>
-
-      <!-- Asset ID (operandRight) Input -->
-      <div class="field grid align-items-center mb-3">
-        <label for="editCdAssetId" class="col-4">Asset ID (Operand Right)</label>
-        <div class="col-8">
-          <input id="editCdAssetId" type="text" pInputText [(ngModel)]="contractPolicyToEdit.assetId" required autofocus class="w-full" />
         </div>
       </div>
     </div>
