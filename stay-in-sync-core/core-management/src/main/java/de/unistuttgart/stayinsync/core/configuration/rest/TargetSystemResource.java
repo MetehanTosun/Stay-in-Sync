@@ -43,7 +43,7 @@ public class TargetSystemResource {
     public Response createTargetSystem(TargetSystemDTO dto, @Context UriInfo uriInfo) {
         var created = service.createTargetSystem(dto);
         var builder = uriInfo.getAbsolutePathBuilder().path(Long.toString(created.id()));
-        Log.debugf("New TargetSystem created with URI %s", builder.build().toString());
+        Log.infof("New TargetSystem created with URI %s", builder.build().toString());
 
         return Response.created(builder.build()).entity(created).build();
     }
@@ -54,12 +54,13 @@ public class TargetSystemResource {
     public Response updateTargetSystem(@Parameter(name = "id", required = true) @PathParam("id") Long id,
             TargetSystemDTO dto) {
         if (!id.equals(dto.id())) {
+            Log.warnf("Update failed: ID in path (%d) does not match body (%d)", id, dto.id());
             throw new CoreManagementException(Response.Status.BAD_REQUEST, "ID Mismatch",
                     "The ID in the path (%d) does not match the ID in the request body (%d).", id, dto.id());
         }
 
         var updated = service.updateTargetSystem(id, dto);
-        Log.debugf("TargetSystem with id %d updated", id);
+        Log.infof("TargetSystem with id %d updated", id);
         return Response.ok(updated).build();
     }
 
@@ -69,7 +70,6 @@ public class TargetSystemResource {
     public Response getTargetSystem(@Parameter(name = "id", required = true) @PathParam("id") Long id) {
         return service.findById(id)
                 .map(entity -> {
-                    Log.debugf("Found TargetSystem: %s", entity);
                     return Response.ok(mapper.toDto(entity)).build();
                 })
                 .orElseThrow(() -> new CoreManagementException(Response.Status.NOT_FOUND, "TargetSystem not found",
@@ -80,7 +80,6 @@ public class TargetSystemResource {
     @Operation(summary = "Returns all TargetSystems")
     public List<TargetSystemDTO> getAllTargetSystems() {
         var all = service.findAll();
-        Log.debugf("Total number of TargetSystems: %d", all.size());
         return all;
     }
 
@@ -91,10 +90,8 @@ public class TargetSystemResource {
         boolean deleted = service.delete(id);
 
         if (deleted) {
-            Log.debugf("TargetSystem with id %d deleted", id);
             return Response.noContent().build();
         } else {
-            Log.warnf("Attempted to delete non-existent TargetSystem with id %d", id);
             throw new CoreManagementException(Response.Status.NOT_FOUND,
                     "TargetSystem not found",
                     "TargetSystem with id %d could not be found for deletion.", id);

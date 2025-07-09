@@ -23,20 +23,23 @@ public class TargetSystemService {
     TargetSystemMapper mapper;
 
     public TargetSystemDTO createTargetSystem(TargetSystemDTO dto) {
-        Log.debugf("Creating new TargetSystem with id: %d", dto.id());
         TargetSystem entity = mapper.toEntity(dto);
         entity.persist();
+        Log.infof("Created TargetSystem with id: %d", entity.id);
         return mapper.toDto(entity);
     }
 
     public TargetSystemDTO updateTargetSystem(Long id, TargetSystemDTO dto) {
-        Log.debugf("Updating TargetSystem with id %d", id);
+        Log.infof("Attempting update of TargetSystem with id %d", id);
 
         TargetSystem entity = TargetSystem.<TargetSystem>findByIdOptional(id)
-                .orElseThrow(() -> new CoreManagementException(
-                        Response.Status.NOT_FOUND,
-                        "TargetSystem not found",
-                        "TargetSystem with id %d not found.", id));
+                .orElseThrow(() -> {
+                    Log.warnf("Update failed: TargetSystem with id %d not found", id);
+                    return new CoreManagementException(
+                            Response.Status.NOT_FOUND,
+                            "TargetSystem not found",
+                            "TargetSystem with id %d not found.", id);
+                });
 
         mapper.updateFromDto(dto, entity);
         return mapper.toDto(entity);
@@ -44,21 +47,41 @@ public class TargetSystemService {
 
     @Transactional(SUPPORTS)
     public Optional<TargetSystem> findById(Long id) {
-        Log.debugf("Finding TargetSystem with id %d", id);
-        return TargetSystem.findByIdOptional(id);
+
+        Log.debugf("Attempting to find TargetSystem with id %d", id);
+
+        Optional<TargetSystem> result = TargetSystem.findByIdOptional(id);
+
+        if (result.isEmpty()) {
+            Log.infof("TargetSystem with id %d not found", id);
+        } else {
+            Log.debugf("Found TargetSystem with id %d", id);
+        }
+        return result;
     }
 
     @Transactional(SUPPORTS)
     public List<TargetSystemDTO> findAll() {
-        Log.debug("Getting all TargetSystems.");
-        return TargetSystem.<TargetSystem>listAll()
-                .stream()
+        Log.debug("Retrieving all TargetSystems from database.");
+
+        List<TargetSystem> list = TargetSystem.listAll();
+        Log.infof("Retrieved %d TargetSystems.", list.size());
+
+        return list.stream()
                 .map(mapper::toDto)
                 .toList();
     }
 
     public boolean delete(Long id) {
         Log.debugf("Deleting TargetSystem with id %d", id);
-        return TargetSystem.deleteById(id);
+        boolean deleted = TargetSystem.deleteById(id);
+
+        if (deleted) {
+            Log.infof("Successfully deleted TargetSystem with id %d", id);
+        } else {
+            Log.warnf("Failed to delete TargetSystem with id %d: not found", id);
+        }
+
+        return deleted;
     }
 }
