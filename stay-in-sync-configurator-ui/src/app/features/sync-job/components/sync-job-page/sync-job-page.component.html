@@ -53,8 +53,36 @@
         <p-tag [value]="item.isSimulation ? 'In Simulation' : 'active'" [severity]="getSeverity(item.isSimulation)" />
       </td>
       <td>
-        <p-button icon="pi pi-pencil" class="p-button-rounded p-button-text" (click)="edit(item)" styleClass="p-button-rounded p-button-text"></p-button>
-        <p-button icon="pi pi-trash" class="p-button-rounded p-button-danger p-button-text" (click)="delete(item)" styleClass="p-button-rounded p-button-danger p-button-text"></p-button>
+        <p-button
+          *ngIf="!item.deployed"
+          icon="pi pi-pencil"
+          class="p-button-rounded p-button-text"
+          (click)="edit(item)"
+          styleClass="p-button-rounded p-button-text">
+        </p-button>
+        <p-button
+          *ngIf="!item.deployed"
+          icon="pi pi-trash"
+          class="p-button-rounded p-button-danger p-button-text"
+          (click)="delete(item)"
+          styleClass="p-button-rounded p-button-danger p-button-text">
+        </p-button>
+        <p-button
+          *ngIf="!item.deployed"
+          icon="pi pi-upload"
+          class="p-button-rounded p-button-success p-button-text"
+          [loading]="deployingId === item.id"
+          (click)="deploy(item)"
+          styleClass="p-button-rounded p-button-success p-button-text">
+        </p-button>
+        <p-button
+          *ngIf="item.deployed"
+          icon="pi pi-times"
+          class="p-button-rounded p-button-danger p-button-text"
+          [loading]="undeployingId === item.id"
+          (click)="undeploy(item)"
+          styleClass="p-button-rounded p-button-danger p-button-text">
+        </p-button>
     </tr>
   </ng-template>
   <ng-template #emptymessage>

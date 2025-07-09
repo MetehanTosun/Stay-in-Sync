@@ -37,6 +37,8 @@ statuses = [
   { label: 'In Simulation', value: true } // true für "In Simulation"
 ];
   selectedSyncJobId: number | undefined = undefined;
+  deployingId: any;
+  undeployingId: any;
 
 getSeverity(isSimulation: boolean): string {
   return isSimulation ? 'warning' : 'success'; // Gelb für Simulation, Grün für Active
@@ -82,14 +84,8 @@ ngOnInit() {
   }
 
   edit(item: SyncJob) {
-    //TODO: Implement edit functionality
     this.selectedSyncJobId = item.id;
-    console.log('Edit Sync Job:', item);
     this.showCreateDialog = true;
-    // SyncJobCreationComponent mit der übergebenen SyncJob-ID öffnen
-    // Annahme: SyncJobCreationComponent akzeptiert eine Input-Property 'syncJobId'
-    // Beispiel: <app-sync-job-creation [syncJobId]="item.id"></app-sync-job-creation>
-    // Hier müsste ggf. eine Property gesetzt werden, die an das Dialog-Template gebunden ist:
     this.router.navigate(['sync-jobs/edit', item.id]);
   }
 
@@ -103,5 +99,25 @@ ngOnInit() {
         this.httpErrorService.handleError(err);
       }
     });
+  }
+
+  deploy(item: any) {
+    this.deployingId = item.id;
+    this.syncJobService.update(item.id, { ...item, deployed: true }).subscribe({});
+    setTimeout(() => {
+      this.deployingId = null;
+      this.getAll();
+    }, 5000); // 5 Sekunden
+
+  }
+
+  undeploy(item: any) {
+    this.undeployingId = item.id;
+    this.syncJobService.update(item.id, { ...item, deployed: false }).subscribe({});
+    setTimeout(() => {
+      this.undeployingId = null;
+      this.getAll();
+    }, 5000); // 5 Sekunden
+
   }
 }

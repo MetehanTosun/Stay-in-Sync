@@ -40,11 +40,7 @@ import {
 export class TransformationBaseComponent implements OnInit {
   @Output() transformationsChanged = new EventEmitter<Transformation[]>();
 
-  transformations: Transformation[] = [{
-    name: 'Beispieltransformation',
-    transformationRule: 'Rule1',
-    transformationScript: 'Script1',
-  }];
+  transformations: Transformation[] = [];
 
   addedTransformations: Transformation[] = [];
   selectedTransformation: Transformation ={};

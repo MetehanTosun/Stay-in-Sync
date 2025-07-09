@@ -53,6 +53,7 @@ export class SyncJobCreationComponent implements OnInit {
   mySyncJob: SyncJob = {};
 
   private _syncJobName: string = '';
+  private deployed: boolean = false;
   get syncJobName(): string {
     return this._syncJobName;
   }
@@ -123,9 +124,16 @@ export class SyncJobCreationComponent implements OnInit {
           this.mySyncJob = job;
           this.syncJobName = job.name || '';
           this.syncJobDescription = job.description || '';
-          this.selectedSourceSystems = job.sourceSystems || [];
+          this.selectedSourceSystems = (job.transformations || [])
+            .map((t: Transformation) => t.sourceSystemApiRequestConfiguration ? [t.sourceSystemApiRequestConfiguration.sourceSystem] : [])
+            .reduce((acc: SourceSystem[], val: SourceSystem[]) => acc.concat(val), [])
+            .filter((s: SourceSystem | undefined, i: number, arr: (SourceSystem | undefined)[]) =>
+              s !== undefined && arr.findIndex((ss) => ss && s && ss.id === s.id) === i
+            ) as SourceSystem[];
+          console.log("Selected Source Systems:", this.selectedSourceSystems);
           this.isSimulation = job.isSimulation || false;
           this.transformations = Array.from(job.transformations || []);
+          this.deployed = job.deployed || false;
         },
         error: (err) => {
           console.error("Error loading Sync Job:", err);
@@ -169,7 +177,8 @@ export class SyncJobCreationComponent implements OnInit {
       name: this.syncJobName,
       description: this.syncJobDescription,
       isSimulation: this.isSimulation,
-      transformations: this.transformations
+      transformations: this.transformations,
+      deployed: this.deployed
     };
 
     if (this.selectedSyncJobId) {

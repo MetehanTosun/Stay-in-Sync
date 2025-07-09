@@ -17,7 +17,7 @@ import {Tag} from 'primeng/tag';
 })
 export class SyncJobOverviewComponent implements OnInit {
   @Input() syncJob!: SyncJob;
-  transformation : Transformation = {};
+
 
   ngOnInit() {
     console.log(this.syncJob.sourceSystems)

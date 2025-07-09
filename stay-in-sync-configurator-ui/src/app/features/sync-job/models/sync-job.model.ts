@@ -9,6 +9,7 @@ export interface SyncJob {
   sourceSystems?: SourceSystem[];
   endpoints?: (NgIterable<unknown> & NgIterable<any>) | undefined | null;
   variables?: (NgIterable<unknown> & NgIterable<any>) | undefined | null;
-  transformations?: (NgIterable<Transformation>);
+  transformations?: Transformation[];
   isSimulation?: boolean;
+  deployed?: boolean;
 }

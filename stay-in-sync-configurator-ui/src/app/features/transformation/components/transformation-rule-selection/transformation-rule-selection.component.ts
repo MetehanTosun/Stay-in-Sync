@@ -1,4 +1,4 @@
-import {Component, EventEmitter, Input, numberAttribute, OnInit, Output} from '@angular/core';
+import {Component, EventEmitter, Input, numberAttribute, Output} from '@angular/core';
 import {Button} from "primeng/button";
 import {PrimeTemplate} from "primeng/api";
 import {TableModule} from "primeng/table";
@@ -23,7 +23,7 @@ export class TransformationRuleSelectionComponent {
   selectedTransformation: Transformation = {};
 
 
-  constructor(private transformationService: TransformationService, private route: ActivatedRoute) {
+  constructor(private transformationService: TransformationService) {
   }
 
 viewDetails(item: any) {
