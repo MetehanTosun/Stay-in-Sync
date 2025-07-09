@@ -9,8 +9,8 @@ import { InputTextModule } from 'primeng/inputtext';
 import { DropdownModule } from 'primeng/dropdown';
 import { CardModule } from 'primeng/card';
 
-import { ApiHeaderResourceService } from '../../../../generated/api/apiHeaderResource.service';
-import { CreateApiHeaderDTO, ApiHeaderDTO, ApiRequestHeaderType } from '../../../../generated';
+import { ApiHeaderResourceService } from '../../generated/api/apiHeaderResource.service';
+import { CreateApiHeaderDTO, ApiHeaderDTO, ApiRequestHeaderType } from '../../generated';
 
 @Component({
   standalone: true,

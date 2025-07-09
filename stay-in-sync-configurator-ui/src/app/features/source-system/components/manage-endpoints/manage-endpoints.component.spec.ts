@@ -6,9 +6,9 @@ import { HttpClientTestingModule } from '@angular/common/http/testing';
 import { RouterTestingModule } from '@angular/router/testing';
 
 import { ManageEndpointsComponent } from './manage-endpoints.component';
-import { SourceSystemEndpointResourceService } from '../../../../generated/api/sourceSystemEndpointResource.service';
-import { CreateSourceSystemEndpointDTO } from '../../../../generated/model/createSourceSystemEndpointDTO';
-import { SourceSystemEndpointDTO } from '../../../../generated';
+import { SourceSystemEndpointResourceService } from '../../generated/api/sourceSystemEndpointResource.service';
+import { CreateSourceSystemEndpointDTO } from '../../generated/model/createSourceSystemEndpointDTO';
+import { SourceSystemEndpointDTO } from '../../generated';
 import { HttpEvent } from '@angular/common/http';
 
 describe('ManageEndpointsComponent', () => {

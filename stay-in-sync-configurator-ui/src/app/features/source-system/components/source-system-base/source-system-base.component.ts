@@ -20,9 +20,9 @@ import { ManageApiHeadersComponent } from '../manage-api-headers/manage-api-head
 import { ManageEndpointsComponent }   from '../manage-endpoints/manage-endpoints.component';
 
 // Service und DTOs aus dem `generated`-Ordner
-import { SourceSystemResourceService } from '../../../../generated/api/sourceSystemResource.service';
-import { SourceSystemDTO } from '../../../../generated/model/sourceSystemDTO';
-import { SourceSystem } from '../../../../generated';
+import { SourceSystemResourceService } from '../../generated/api/sourceSystemResource.service';
+import { SourceSystemDTO } from '../../generated/model/sourceSystemDTO';
+import { SourceSystem } from '../../generated';
 
 /**
  * Base component for displaying, creating, and managing source systems.

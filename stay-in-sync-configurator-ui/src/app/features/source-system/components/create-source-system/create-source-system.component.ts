@@ -1,7 +1,7 @@
 import { Component, OnInit, OnChanges, Input, Output, EventEmitter, SimpleChanges } from '@angular/core';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { CommonModule } from '@angular/common';
-import { SourceSystemDTO } from '../../../../generated/model/sourceSystemDTO';
+import { SourceSystemDTO } from '../../generated/model/sourceSystemDTO';
 
 // PrimeNG
 import { DialogModule } from 'primeng/dialog';
@@ -12,11 +12,11 @@ import { TextareaModule } from 'primeng/textarea';
 import { StepsModule } from 'primeng/steps';  
 
 // Services und DTOs
-import { SourceSystemResourceService } from '../../../../generated/api/sourceSystemResource.service';
-import { CreateSourceSystemDTO } from '../../../../generated/model/createSourceSystemDTO';
-import { ApiAuthType } from '../../../../generated/model/apiAuthType';
-import { BasicAuthDTO } from '../../../../generated/model/basicAuthDTO';
-import { ApiKeyAuthDTO } from '../../../../generated/model/apiKeyAuthDTO';
+import { SourceSystemResourceService } from '../../generated/api/sourceSystemResource.service';
+import { CreateSourceSystemDTO } from '../../generated/model/createSourceSystemDTO';
+import { ApiAuthType } from '../../generated/model/apiAuthType';
+import { BasicAuthDTO } from '../../generated/model/basicAuthDTO';
+import { ApiKeyAuthDTO } from '../../generated/model/apiKeyAuthDTO';
 import { ManageEndpointsComponent } from '../manage-endpoints/manage-endpoints.component';
 import { ManageApiHeadersComponent } from '../manage-api-headers/manage-api-headers.component';
 import { HttpResponse } from '@angular/common/http';

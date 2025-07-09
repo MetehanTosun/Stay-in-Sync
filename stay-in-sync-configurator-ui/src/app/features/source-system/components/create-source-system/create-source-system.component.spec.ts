@@ -8,7 +8,7 @@ import { InputTextModule } from 'primeng/inputtext';
 import { ButtonModule } from 'primeng/button';
 import { TextareaModule } from 'primeng/textarea';
 import { of, throwError } from 'rxjs';
-import { SourceSystemResourceService } from '../../../../generated/api/sourceSystemResource.service';
+import { SourceSystemResourceService } from '../../generated/api/sourceSystemResource.service';
 import { HttpHeaders, HttpResponse } from '@angular/common/http';
 
 describe('CreateSourceSystemComponent', () => {

@@ -11,15 +11,15 @@ import { CheckboxModule } from 'primeng/checkbox';
 import { DialogModule }   from 'primeng/dialog';
 import { ProgressSpinnerModule } from 'primeng/progressspinner';
 
-import { SourceSystemEndpointResourceService } from '../../../../generated/api/sourceSystemEndpointResource.service';
+import { SourceSystemEndpointResourceService } from '../../generated/api/sourceSystemEndpointResource.service';
 import { HttpClient } from '@angular/common/http';
-import { SourceSystemResourceService } from '../../../../generated/api/sourceSystemResource.service';
+import { SourceSystemResourceService } from '../../generated/api/sourceSystemResource.service';
 
-import { SourceSystemEndpointDTO }       from '../../../../generated';
-import { CreateSourceSystemEndpointDTO } from '../../../../generated';
-import { ApiEndpointQueryParamDTO } from '../../../../generated/model/apiEndpointQueryParamDTO'; // Importieren
-import { ApiEndpointQueryParamType } from '../../../../generated/model/apiEndpointQueryParamType'; // Importieren
-import { ApiEndpointQueryParamResourceService } from '../../../../generated/api/apiEndpointQueryParamResource.service';
+import { SourceSystemEndpointDTO }       from '../../generated';
+import { CreateSourceSystemEndpointDTO } from '../../generated';
+import { ApiEndpointQueryParamDTO } from '../../generated/model/apiEndpointQueryParamDTO'; // Importieren
+import { ApiEndpointQueryParamType } from '../../generated/model/apiEndpointQueryParamType'; // Importieren
+import { ApiEndpointQueryParamResourceService } from '../../generated/api/apiEndpointQueryParamResource.service';
 
 
 /**

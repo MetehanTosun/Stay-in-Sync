@@ -15,7 +15,7 @@ import Nora from '@primeng/themes/nora';
 import { provideMarkdown } from 'ngx-markdown';
 
 // Importiere BASE_PATH aus deinem generated-Ordner:
-import { BASE_PATH } from './generated/variables';
+import { BASE_PATH } from './features/source-system/generated/variables';
 
 export const appConfig: ApplicationConfig = {
   providers: [
