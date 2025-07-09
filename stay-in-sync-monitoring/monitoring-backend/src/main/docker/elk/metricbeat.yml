@@ -3,47 +3,48 @@ metricbeat.config.modules:
   reload.enabled: false
 
 metricbeat.modules:
-# System metrics
-- module: system
-  metricsets:
-    - cpu
-    - load
-    - memory
-    - network
-    - process
-    - process_summary
-    - filesystem
-  enabled: true
-  period: 10s
-  processes: ['.*']
+  # System metrics
+  - module: system
+    metricsets:
+      - cpu
+      - load
+      - memory
+      - network
+      - process
+      - process_summary
+      - filesystem
+    enabled: true
+    period: 10s
+    processes: ['.*']
 
-#RabbitMQ metrics
-- module: rabbitmq
-  metricsets:
-    - connection
-    - exchange
-    - node
-    - queue
-  period: 10s
-  hosts: ["http://admin:admin123@rabbitmq:15672"]
-  enabled: true
+  # RabbitMQ metrics
+  - module: rabbitmq
+    metricsets:
+      - connection
+      - exchange
+      - node
+      - queue
+    enabled: true
+    period: 10s
+    hosts: ["http://admin:admin123@rabbitmq:15672"]
 
-# Elasticsearch output
 output.elasticsearch:
   hosts: ["elasticsearch:9200"]
   index: "metricbeat-%{+yyyy.MM.dd}"
 
-# Index template settings
+setup.template.name: "metricbeat"
+setup.template.pattern: "metricbeat-*"
+output.elasticsearch.index: "my-metricbeat-%{[agent.version]}-%{+yyyy.MM.dd}"
+
+
 setup.template.settings:
   index.number_of_shards: 1
   index.codec: best_compression
 
-# Kibana setup
 setup.kibana:
   host: "kibana:5601"
 
-# Dashboard setup
 setup.dashboards.enabled: true
 
-# Logging
 logging.level: info
+

@@ -104,14 +104,18 @@ services:
     networks:
       - elk
 
-  alloy:
-    image: grafana/alloy:latest
-    ports:
-      - "1234:1234"
+  fluent-bit:
+    image: fluent/fluent-bit:2.2.3
+    container_name: fluent-bit
     volumes:
-      - ./config.alloy:/etc/alloy/config.alloy
-      - ./logs:/logs
-    restart: unless-stopped
+      - ./fluent-bit/fluent-bit.conf:/fluent-bit/etc/fluent-bit.conf:ro
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+      - /var/log:/var/log:ro
+    depends_on:
+      - loki
+    networks:
+      - elk
+
 
 volumes:
   elasticsearch_data:
@@ -121,3 +125,4 @@ volumes:
 networks:
   elk:
     driver: bridge
+
