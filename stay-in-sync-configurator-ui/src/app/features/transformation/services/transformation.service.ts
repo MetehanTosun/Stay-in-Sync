@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import {Observable} from 'rxjs/internal/Observable';
 import {HttpClient} from '@angular/common/http';
-import {Transformation} from '../models/transformation.model';
+import {Transformation, UpdateTransformationRequest} from '../models/transformation.model';
 
 @Injectable({
   providedIn: 'root'
@@ -22,9 +22,10 @@ export class TransformationService {
     return this.httpClient.delete<void>(`/api/config/transformation/${transformation.id}`);
   }
 
-  update(transformation: Transformation): Observable<Transformation> {
+  update(transformation: UpdateTransformationRequest): Observable<Transformation> {
     return this.httpClient.put<Transformation>(`/api/config/transformation/${transformation.id}`, transformation);
   }
+
 
   getById(id: number): Observable<Transformation> {
     return this.httpClient.get<Transformation>(`/api/config/transformation/${id}`);

@@ -1,7 +1,6 @@
 import {Component, Input, OnInit} from '@angular/core';
 import {NgForOf} from '@angular/common';
 import {SyncJob} from '../../models/sync-job.model';
-import {Transformation} from '../../../transformation/models/transformation.model';
 import {Card} from 'primeng/card';
 import {Tag} from 'primeng/tag';
 

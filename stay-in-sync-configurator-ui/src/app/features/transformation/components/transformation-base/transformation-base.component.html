@@ -21,9 +21,10 @@
           <p-button label="addRule" (click)="addRule(rowData)"></p-button>
         </ng-template>
       </td>
-      <td>
-        <ng-container *ngIf="rowData.transformationScript; else addScriptBtn">
-          {{ rowData.transformationScript }}
+     <td>
+        <ng-container *ngIf="rowData.script; else addScriptBtn">
+          {{ rowData.script.name }}
+          <p-button label="RemoveScript" [style]="{'width': '8rem', 'background-color': '#d32f2f', 'border': '#d32f2f' }" (click)="removeScript(rowData)"></p-button>
         </ng-container>
         <ng-template #addScriptBtn>
           <p-button label="addScript" (click)="addScript(rowData)"></p-button>
@@ -80,7 +81,7 @@
   [modal]="true"
   [style]="{ width: '50vw', maxWidth: '50vw', minHeight: '40vw' }"
 >
-  <app-transformation-script-selection (closeDialog)="displayScriptSelectionDialog = false" [transformationId]="transformationId" ></app-transformation-script-selection>
+  <app-transformation-script-selection (closeDialog)="displayScriptSelectionDialog = false" [transformationId]="transformationId" (transformationUpdated)="loadTransformationsFromBackend()" ></app-transformation-script-selection>
 </p-dialog>
 
 

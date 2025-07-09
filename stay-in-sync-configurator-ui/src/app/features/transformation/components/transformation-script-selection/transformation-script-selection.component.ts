@@ -3,7 +3,7 @@ import {Button} from "primeng/button";
 import {PrimeTemplate} from "primeng/api";
 import {TableModule} from "primeng/table";
 import {TransformationService} from '../../services/transformation.service';
-import {Transformation} from '../../models/transformation.model';
+import {Transformation, UpdateTransformationRequest} from '../../models/transformation.model';
 import {Router} from '@angular/router';
 import {ScriptEditorNavigationService} from '../../../script-editor/script-editor-navigation.service';
 import {TransformationScript} from '../../models/transformation-script.model';
@@ -21,9 +21,9 @@ import {TransformationScriptService} from '../../services/transformation-script.
 })
 export class TransformationScriptSelectionComponent {
   @Output() closeDialog = new EventEmitter<void>();
+  @Output() transformationUpdated = new EventEmitter<void>();
   @Input({transform: numberAttribute}) transformationId: number | null = null;
   items: TransformationScript[] = [];
-  private selectedTransformation: Transformation = {};
 
   constructor(private transformationService: TransformationService, private router: Router, private scriptEditorNavigationService: ScriptEditorNavigationService, private transformationScriptService: TransformationScriptService) {
     this.loadScripts();
@@ -37,13 +37,25 @@ export class TransformationScriptSelectionComponent {
     console.log('Using item:', item);
     if (this.transformationId !== null) {
       this.transformationService.getById(this.transformationId).subscribe(transformation => {
-        this.selectedTransformation = transformation;
-        this.selectedTransformation.transformationScript = item;
-        this.transformationService.update(transformation);
-        this.closeDialog.emit();
+        const updateRequest: UpdateTransformationRequest = {
+          id: transformation.id,
+          syncJobId: transformation.syncJobId ?? null,
+          sourceSystemEndpointIds: [], // oder transformation.sourceSystemEndpointIds ?? []
+          targetSystemEndpointId: transformation.targetSystemEndpointId ?? null,
+          transformationRuleId: transformation.transformationRuleId ?? null,
+          transformationScriptId: item.id
+        };
+        console.log('UpdateTransformationRequest:', updateRequest);
+        this.transformationService.update(updateRequest).subscribe(updated => {
+          console.log('Update Response:', updated);
+          this.closeDialog.emit();
+          this.closeDialog.emit();
+          this.transformationUpdated.emit();
+        });
       });
     }
   }
+
 
   createNewScript() {
     //this.scriptEditorNavigationService.navigateToScriptEditor(this.transformationId)

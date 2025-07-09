@@ -1,6 +1,6 @@
 import {Component, EventEmitter, OnInit, Output} from '@angular/core';
 import {TableModule} from 'primeng/table';
-import {Transformation} from '../../models/transformation.model';
+import {Transformation, UpdateTransformationRequest} from '../../models/transformation.model';
 import {Button} from 'primeng/button';
 import {FormsModule, ReactiveFormsModule} from '@angular/forms';
 import { ToggleButtonModule } from 'primeng/togglebutton';
@@ -177,5 +177,25 @@ export class TransformationBaseComponent implements OnInit {
   cancelScriptSelectionDialog() {
     this.displayScriptSelectionDialog = false;
     this.router.navigate([`/sync-jobs/create`]);
+  }
+
+  removeScript(rowData: any) {
+    if (rowData.id !== null) {
+      this.transformationService.getById(rowData.id).subscribe(transformation => {
+        const updateRequest: UpdateTransformationRequest = {
+          id: transformation.id,
+          syncJobId: transformation.syncJobId ?? null,
+          sourceSystemEndpointIds: [], // oder transformation.sourceSystemEndpointIds ?? []
+          targetSystemEndpointId: transformation.targetSystemEndpointId ?? null,
+          transformationRuleId: transformation.transformationRuleId ?? null,
+          transformationScriptId: null
+        };
+        console.log('UpdateTransformationRequest:', updateRequest);
+        this.transformationService.update(updateRequest).subscribe(updated => {
+          console.log('Update Response:', updated);
+          this.loadTransformationsFromBackend();
+        });
+      });
+    }
   }
 }

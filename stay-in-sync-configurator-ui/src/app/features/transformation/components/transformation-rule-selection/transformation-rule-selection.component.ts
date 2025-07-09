@@ -4,7 +4,6 @@ import {PrimeTemplate} from "primeng/api";
 import {TableModule} from "primeng/table";
 import {TransformationService} from '../../services/transformation.service';
 import {Transformation} from '../../models/transformation.model';
-import {ActivatedRoute} from '@angular/router';
 
 @Component({
   selector: 'app-transformation-rule-selection',
