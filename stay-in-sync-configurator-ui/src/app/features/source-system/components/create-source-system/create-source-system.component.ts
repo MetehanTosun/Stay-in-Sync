@@ -21,6 +21,10 @@ import { ManageEndpointsComponent } from '../manage-endpoints/manage-endpoints.c
 import { ManageApiHeadersComponent } from '../manage-api-headers/manage-api-headers.component';
 import { HttpResponse } from '@angular/common/http';
 
+/**
+ * Component for creating or editing a Source System.
+ * Provides a stepper UI for metadata, API headers, and endpoints configuration.
+ */
 @Component({
   standalone: true,
   selector: 'app-create-source-system',
@@ -67,11 +71,19 @@ export class CreateSourceSystemComponent implements OnInit, OnChanges {
   ];
   public readonly ApiAuthType = ApiAuthType;
 
+  /**
+   * @param fb FormBuilder for reactive form creation.
+   * @param sourceSystemService Service to communicate with the SourceSystem backend API.
+   */
   constructor(
     private fb: FormBuilder,
     private sourceSystemService: SourceSystemResourceService
   ) {}
 
+  /**
+   * Initialize reactive form with metadata fields and validators.
+   * Subscribes to authentication type changes to adjust validators dynamically.
+   */
   ngOnInit(): void {
     this.form = this.fb.group({
       name: ['', Validators.required],
@@ -106,6 +118,12 @@ export class CreateSourceSystemComponent implements OnInit, OnChanges {
     });
   }
 
+  /**
+   * Reacts to incoming changes of the sourceSystem Input.
+   * If editing an existing system, patches form values and resets to first step.
+   *
+   * @param changes Object containing changed @Input properties.
+   */
   ngOnChanges(changes: SimpleChanges): void {
     if (changes['sourceSystem'] && this.sourceSystem) {
       this.form.patchValue({
@@ -118,6 +136,12 @@ export class CreateSourceSystemComponent implements OnInit, OnChanges {
     }
   }
 
+  /**
+   * Handles file selection for OpenAPI spec upload.
+   * Disables the URL input when a file is chosen.
+   *
+   * @param ev File input change event.
+   */
   onFileSelected(ev: Event): void {
     const input = ev.target as HTMLInputElement;
     if (input.files?.length) {
@@ -127,6 +151,9 @@ export class CreateSourceSystemComponent implements OnInit, OnChanges {
     }
   }
 
+  /**
+   * Cancels creation/edit, resets form and component state, and closes the dialog.
+   */
   cancel(): void {
     this.visible = false;
     this.visibleChange.emit(false);
@@ -138,6 +165,10 @@ export class CreateSourceSystemComponent implements OnInit, OnChanges {
     this.currentStep = 0;
   }
 
+  /**
+   * Validates form, constructs DTO including authConfig and optional file blob,
+   * and triggers POST to create the Source System.
+   */
   save(): void {
     if (this.form.invalid) {
       this.form.markAllAsTouched();
@@ -176,6 +207,11 @@ export class CreateSourceSystemComponent implements OnInit, OnChanges {
     }
   }
 
+  /**
+   * Performs HTTP POST to persist the Source System and handles Location header parsing.
+   *
+   * @param dto Prepared DTO for creation.
+   */
   private postDto(dto: CreateSourceSystemDTO): void {
     this.sourceSystemService
       .apiConfigSourceSystemPost(dto, 'response', false)
@@ -201,7 +237,10 @@ export class CreateSourceSystemComponent implements OnInit, OnChanges {
       });
   }
 
-  /** Proceeds to the next step: either create or advance */
+  /**
+   * Advances the stepper to the next step.
+   * If on first step, saves the Source System before proceeding.
+   */
   goNext(): void {
     if (this.currentStep === 0) {
       this.save();            // erzeugt SourceSystem, springt auf Step 1 (API Headers)
@@ -212,7 +251,9 @@ export class CreateSourceSystemComponent implements OnInit, OnChanges {
   }
   
 
-  /** Returns to the previous step */
+  /**
+   * Moves the stepper to the previous step.
+   */
   goBack(): void {
     if (this.currentStep > 0) {
       this.currentStep -= 1;

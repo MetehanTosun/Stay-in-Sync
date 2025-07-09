@@ -1,6 +1,9 @@
+<!-- Component: Manage API Headers -->
+<!-- Allows creating, listing, and deleting API header templates for a source system -->
 <p-card styleClass="p-p-4">
   <h3 style="margin-bottom: 2rem;">Manage API Headers</h3> <!-- Überschrift mit Abstand -->
 
+  <!-- Form: Add new API header -->
   <form [formGroup]="form" class="p-fluid p-formgrid p-grid p-mb-4 p-p-4">
     <div class="p-field p-col-8" style="margin-bottom: 1.5rem;"> <!-- Abstand zwischen den Eingabefeldern -->
       <label for="headerName">Header Name</label>
@@ -28,6 +31,7 @@
     </div>
   </form>
 
+  <!-- Table: Display existing API headers -->
   <p-table [value]="headers" [paginator]="true" [rows]="10" [responsiveLayout]="'scroll'">
     <ng-template pTemplate="header">
       <tr>

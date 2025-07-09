@@ -1,5 +1,3 @@
-// src/app/features/source-system/components/manage-api-headers/manage-api-headers.component.ts
-
 import { Component, OnInit, Input, Output, EventEmitter } from '@angular/core';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
 import { CommonModule } from '@angular/common';
@@ -12,6 +10,10 @@ import { CardModule } from 'primeng/card';
 import { ApiHeaderResourceService } from '../../generated/api/apiHeaderResource.service';
 import { CreateApiHeaderDTO, ApiHeaderDTO, ApiRequestHeaderType } from '../../generated';
 
+/**
+ * Component for managing API header templates for a given system.
+ * Allows viewing, creating, and deleting header definitions.
+ */
 @Component({
   standalone: true,
   selector: 'app-manage-api-headers',
@@ -49,6 +51,9 @@ export class ManageApiHeadersComponent implements OnInit {
     private hdrSvc: ApiHeaderResourceService
   ) {}
 
+  /**
+   * Initializes the header management form and loads existing headers.
+   */
   ngOnInit() {
     this.form = this.fb.group({
       headerName: ['', Validators.required],
@@ -57,6 +62,9 @@ export class ManageApiHeadersComponent implements OnInit {
     this.loadHeaders();
   }
 
+  /**
+   * Fetches the list of headers for the current system and updates UI state.
+   */
   loadHeaders() {
     this.loading = true;
     this.hdrSvc
@@ -67,6 +75,9 @@ export class ManageApiHeadersComponent implements OnInit {
       });
   }
 
+  /**
+   * Creates a new API header using form values and reloads the header list.
+   */
   addHeader() {
     if (this.form.invalid) return;
     const dto: CreateApiHeaderDTO = this.form.value;
@@ -82,6 +93,11 @@ export class ManageApiHeadersComponent implements OnInit {
       });
   }
 
+  /**
+   * Deletes an existing API header by its identifier and updates the list.
+   *
+   * @param id The identifier of the header to delete.
+   */
   deleteHeader(id: number) {
     this.hdrSvc
       .apiConfigSyncSystemRequestHeaderIdDelete(id)

@@ -8,7 +8,7 @@
   <!-- Stepper -->
   <p-steps [model]="steps" [activeIndex]="currentStep" class="mb-4"></p-steps>
 
-  <!-- Schritt 1: Metadaten-Form -->
+  <!-- Step 1: Metadata Form -->
   <ng-container *ngIf="currentStep === 0">
     <form [formGroup]="form" class="p-fluid">
       <div class="p-field">
@@ -72,24 +72,24 @@
     </form>
   </ng-container>
 
-  <!-- Schritt 2: API Headers -->
+  <!-- Step 2: API Headers -->
   <ng-container *ngIf="currentStep === 1">
     <app-manage-api-headers
       [syncSystemId]="createdSourceSystemId">
     </app-manage-api-headers>
   </ng-container>
 
-  <!-- Schritt 3: Endpoints -->
+  <!-- Step 3: Endpoints -->
   <ng-container *ngIf="currentStep === 2">
     <app-manage-endpoints
       [sourceSystemId]="createdSourceSystemId">
     </app-manage-endpoints>
   </ng-container>
 
-  <!-- Gemeinsamer Footer -->
+  <!-- Common Footer -->
   <ng-template pTemplate="footer">
     <div class="p-d-flex p-jc-between">
-      <!-- Back-Button -->
+      <!-- Back Button -->
       <button
         pButton
         type="button"
@@ -99,7 +99,7 @@
         [disabled]="currentStep === 0">
       </button>
 
-      <!-- Next oder Finish -->
+      <!-- Next or Finish -->
       <button
         *ngIf="currentStep === 0 || currentStep === 1"
         pButton
