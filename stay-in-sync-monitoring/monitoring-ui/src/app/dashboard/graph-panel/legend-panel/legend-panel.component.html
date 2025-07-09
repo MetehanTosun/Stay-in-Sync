@@ -1,0 +1,18 @@
+<p-sidebar
+  [(visible)]="visibleSidebar"
+  position="left"
+  [baseZIndex]="10000"
+  [modal]="false"
+  [styleClass]="'custom-sidebar'"
+  [showCloseIcon]="false">
+  <div class="sidebar-header">
+    <h3>Legende</h3>
+    <button class="close-button" (click)="visibleSidebar = false">X</button>
+  </div>
+<p>Hier ist deine Legende oder Zusatzinfo.</p>
+</p-sidebar>
+
+>
+<div class="sidebar-toggle-btn">
+  <p-button (onClick)="visibleSidebar = true" icon="pi pi-angle-double-right"></p-button>
+</div>

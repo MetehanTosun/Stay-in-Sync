@@ -1,0 +1,30 @@
+.flex {
+  display: flex;
+}
+
+.w-60 {
+  width: 300px; /* Breite der Sidebar */
+}
+
+.w-full {
+  width: calc(100% - 300px); /* Dynamische Breite des Hauptinhalts */
+}
+
+.p-5 {
+  padding: 1.25rem;
+}
+.fixed-home-button {
+  position: fixed;
+  top: 1rem; /* Abstand vom oberen Rand */
+  left: 1rem; /* Abstand vom linken Rand */
+  width: 50px; /* Feste Breite */
+  height: 50px; /* Feste Höhe */
+  display: flex;
+  justify-content: center;
+}
+.toggle-switch-top-right {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  z-index: 10;
+}
