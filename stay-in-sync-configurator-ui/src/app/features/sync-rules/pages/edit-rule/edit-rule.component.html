@@ -1,5 +1,6 @@
 <main>
-  <div class="sidebar">
+  <!--#region old implementation sTODO -->
+  <!-- <div class="sidebar">
     @for (category of nodeCategories; track category.title) {
     <div class="category">
       <h3>{{ category.title }}</h3>
@@ -21,5 +22,24 @@
   <button class="returnButton" (click)="return()">
     <span class="material-symbols-rounded">arrow_back</span>
     Return
-  </button>
+  </button> -->
+  <!--#endregion-->
+  <!--#region new implementation -->
+
+  <!-- Show at Loading State -->
+  <ng-container *ngIf="isLoading">
+    <div class="loading-indicator">
+      <mat-spinner diameter="40"></mat-spinner>
+      Loading graph...
+    </div>
+  </ng-container>
+
+  <ng-container *ngIf="!isLoading">
+    <div class="vflow-container">
+      <vflow [nodes]="vflowNodes" [edges]="vflowEdges">
+        <mini-map [scaleOnHover]="true" />
+      </vflow>
+    </div>
+  </ng-container>
+  <!--#endregion-->
 </main>

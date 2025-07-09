@@ -25,7 +25,7 @@ export class CreateRuleComponent {
     this.closed.emit();
   }
 
-  /* TODO: Assert id (maybe name) is unique*/
+  /* sTODO: Assert id (maybe name) is unique*/
   create() {
     if (!this.name || !this.type ||  (!this.pollingRate && this.pollingRate != 0) || !this.pollingRateUnit) {
       alert('Please fill in all fields.');
