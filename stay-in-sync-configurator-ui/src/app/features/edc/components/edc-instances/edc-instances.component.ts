@@ -5,7 +5,7 @@ import { FormsModule } from '@angular/forms'; // For ngModel
 // PrimeNG
 import { Table, TableModule } from 'primeng/table';
 import { InputTextModule } from 'primeng/inputtext';
-import { SelectModule } from 'primeng/select'; // For p-select
+import { InputTextarea } from 'primeng/inputtextarea';
 import { TagModule } from 'primeng/tag';
 import { ButtonModule } from 'primeng/button';
 import { IconFieldModule } from 'primeng/iconfield';
@@ -15,9 +15,7 @@ import { TooltipModule } from 'primeng/tooltip';
 import { DialogModule } from 'primeng/dialog';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { ConfirmationService } from 'primeng/api';
-import {DropdownModule} from 'primeng/dropdown';
 import { PasswordModule } from 'primeng/password';
-// import { ThemeSwitcher } from './themeswitcher';
 
 import { EdcInstance } from './models/edc-instance.model';
 import { EdcInstanceService } from './services/edc-instance.service';
@@ -31,7 +29,7 @@ import { EdcInstanceService } from './services/edc-instance.service';
     FormsModule,
     TableModule,
     InputTextModule,
-    SelectModule,
+    InputTextarea,
     TagModule,
     ButtonModule,
     IconFieldModule,
@@ -39,38 +37,26 @@ import { EdcInstanceService } from './services/edc-instance.service';
     RippleModule,
     TooltipModule,
     DialogModule,
-    DropdownModule,
-    DialogModule,
     ConfirmDialogModule,
     PasswordModule,
-    // ThemeSwitcher,
   ],
   templateUrl: './edc-instances.component.html',
   styleUrl: './edc-instances.component.css',
   providers: [ConfirmationService, EdcInstanceService],
-  // providers: [EdcInstanceService]
 })
 export class EdcInstancesComponent implements OnInit {
   @ViewChild('dt2') dt2: Table | undefined;
 
   edcInstances: EdcInstance[] = [];
-  statuses: { label: string, value: string }[] = [];
   loading: boolean = true;
 
   // Dialog related properties
   displayNewInstanceDialog: boolean = false;
   newInstance: EdcInstance = this.createEmptyInstance(); // To hold form data
 
-
   // Edit instance dialog properties
   displayEditInstanceDialog: boolean = false;
   instanceToEdit: EdcInstance | null = null; // Instance being edited
-
-  // Available statuses for the new instance dropdown
-  newInstanceStatuses: { label: string, value: EdcInstance['status'] }[] = [
-    { label: 'Active', value: 'Active' },
-    { label: 'Inactive', value: 'Inactive' },
-  ];
 
   constructor(
     private edcInstanceService: EdcInstanceService,
@@ -82,11 +68,6 @@ export class EdcInstancesComponent implements OnInit {
       this.edcInstances = data;
       this.loading = false;
     });
-
-    this.statuses = [
-      { label: 'Active', value: 'Active' },
-      { label: 'Inactive', value: 'Inactive' },
-    ];
   }
 
   private createEmptyInstance(): EdcInstance {
@@ -94,7 +75,9 @@ export class EdcInstancesComponent implements OnInit {
       id: '',
       name: '',
       url: '',
-      status: 'Active',
+      protocolVersion: '',
+      description: '',
+      bpn: '',
       apiKey: '',
     };
   }
@@ -110,19 +93,6 @@ export class EdcInstancesComponent implements OnInit {
     table.clear();
   }
 
-  getSeverity(status: string): string {
-    switch (status?.toLowerCase()) {
-      case 'inactive':
-        return 'danger';
-      case 'active':
-        return 'success';
-      default:
-        return 'info';
-    }
-  }
-
-
-
   openNewInstanceDialog(): void {
     this.newInstance = this.createEmptyInstance();
     this.displayNewInstanceDialog = true;
@@ -133,18 +103,19 @@ export class EdcInstancesComponent implements OnInit {
   }
 
   saveNewInstance(): void {
-    console.log('Saving new instance:', this.newInstance);
-    if (this.newInstance.name && this.newInstance.url) {
+    // Basic validation
+    if (this.newInstance.name && this.newInstance.url && this.newInstance.bpn) {
+      // the ID would be assigned by the backend
       this.newInstance.id = 'temp_' + Math.random().toString(36).substring(2, 9);
       this.edcInstances = [...this.edcInstances, this.newInstance];
       this.hideNewInstanceDialog();
     } else {
-      console.error('Name and URL are required.');
+
+      console.error('Name, URL, and BPN are required.');
     }
   }
 
   editInstance(instance: EdcInstance): void {
-
     this.instanceToEdit = { ...instance };
     this.displayEditInstanceDialog = true;
   }
@@ -155,17 +126,15 @@ export class EdcInstancesComponent implements OnInit {
   }
 
   saveEditedInstance(): void {
-    if (this.instanceToEdit && this.instanceToEdit.name && this.instanceToEdit.url) {
+    if (this.instanceToEdit && this.instanceToEdit.name && this.instanceToEdit.url && this.instanceToEdit.bpn) {
       const index = this.edcInstances.findIndex(i => i.id === this.instanceToEdit!.id);
       if (index !== -1) {
-        // Update the instance in the array
         this.edcInstances[index] = { ...this.instanceToEdit };
-        // create new array reference to trigger change detection for the table
         this.edcInstances = [...this.edcInstances];
       }
       this.hideEditInstanceDialog();
     } else {
-      console.error('Name and URL are required for edited instance.');
+      console.error('Name, URL, and BPN are required for edited instance.');
     }
   }
 
@@ -177,14 +146,8 @@ export class EdcInstancesComponent implements OnInit {
       acceptButtonStyleClass: 'p-button-danger',
       rejectButtonStyleClass: 'p-button-text',
       accept: () => {
-        console.log('Deleting instance:', instance);
-        // Actual deletion logic
         this.edcInstances = this.edcInstances.filter(i => i.id !== instance.id);
-
       },
-      reject: () => {
-        console.log('Deletion rejected for instance:', instance);
-      }
     });
   }
 }
