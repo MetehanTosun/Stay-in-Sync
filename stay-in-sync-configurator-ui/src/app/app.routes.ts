@@ -9,8 +9,8 @@ import { SourceSystemBaseComponent } from
 import { CreateSourceSystemComponent } from
   './features/source-system/components/create-source-system/create-source-system.component';
 import { EdcBaseComponent } from './features/edc/components/edc-base/edc-base.component';
-import { EditRuleComponent } from './features/sync-rules/pages/edit-rule/edit-rule.component';
-import { RulesDashboardComponent } from './features/sync-rules/pages/rules-dashboard/rules-dashboard.component';
+import { RulesOverview } from './features/sync-rules/pages/rules-overview/rules-overview';
+import { EditRule } from './features/sync-rules/pages/edit-rule/edit-rule';
 
 
 
@@ -20,14 +20,8 @@ export const routes: Routes = [
     path: 'sync-rules',
     component: SyncRulesComponent,
     children: [
-      {
-        path: '',
-        component: RulesDashboardComponent
-      },
-      {
-        path: 'edit/:name',
-        component: EditRuleComponent
-      }
+      { path: '', component: RulesOverview },
+      { path: 'edit-rule/:id', component: EditRule },
     ]
   },
 

@@ -1,0 +1,200 @@
+/* Color Variables */
+$primary-color: #2196F3;
+$primary-dark: #1976D2;
+$primary-darker: #1565C0;
+$success-color: #4CAF50;
+$success-dark: #45a049;
+$success-darker: #3e8e41;
+$text-primary: #333;
+$text-secondary: #555;
+$text-muted: #666;
+$border-color: #e0e0e0;
+$border-light: #ddd;
+$background-light: #f8f9fa;
+$background-lighter: #f5f5f5;
+
+/* CSS Variables */
+:root {
+  --primary-color: #{$primary-color};
+  --primary-dark: #{$primary-dark};
+  --primary-darker: #{$primary-darker};
+  --success-color: #{$success-color};
+  --success-dark: #{$success-dark};
+  --success-darker: #{$success-darker};
+  --text-primary: #{$text-primary};
+  --text-secondary: #{$text-secondary};
+  --text-muted: #{$text-muted};
+  --border-color: #{$border-color};
+  --border-light: #{$border-light};
+  --background-light: #{$background-light};
+  --background-lighter: #{$background-lighter};
+}
+
+/* Node Component Styles */
+@mixin node-base {
+  border-radius: 8px;
+  padding: 12px;
+  color: white;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+  position: relative;
+}
+
+@mixin node-header {
+  margin-bottom: 8px;
+  font-size: 12px;
+  font-weight: bold;
+  opacity: 0.9;
+}
+
+@mixin node-content-heading {
+  margin: 0 0 8px 0;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+/* Shared Button Styles */
+@mixin button-base {
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+
+  &:hover:not(:disabled) {
+    box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+    transform: translateY(-1px);
+  }
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none;
+  }
+
+  &:active:not(:disabled) {
+    transform: translateY(0);
+  }
+}
+
+@mixin button-primary {
+  @include button-base;
+  background: linear-gradient(135deg, $primary-color, $primary-dark);
+  color: white;
+  font-size: 14px;
+  padding: 12px 24px;
+
+  &:hover:not(:disabled) {
+    background: linear-gradient(135deg, $primary-dark, $primary-darker);
+  }
+}
+
+@mixin button-success {
+  @include button-base;
+  background: linear-gradient(135deg, $success-color, $success-dark);
+  color: white;
+  font-size: 14px;
+  padding: 10px 20px;
+
+  &:hover:not(:disabled) {
+    background: linear-gradient(135deg, $success-dark, $success-darker);
+  }
+}
+
+@mixin button-secondary {
+  @include button-base;
+  background: $background-lighter;
+  color: $text-muted;
+  font-size: 14px;
+  padding: 10px 20px;
+
+  &:hover:not(:disabled) {
+    background: #e9ecef;
+  }
+}
+
+@mixin action-button {
+  border: none;
+  padding: 8px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: all 0.2s ease;
+}
+
+/* Common Form Styles */
+@mixin form-input {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid $border-light;
+  border-radius: 4px;
+  font-size: 14px;
+  transition: border-color 0.2s ease;
+
+  &:focus {
+    outline: none;
+    border-color: $primary-color;
+  }
+}
+
+@mixin form-select {
+  @include form-input;
+  background: white;
+  cursor: pointer;
+
+  &:disabled {
+    background: $background-lighter;
+    cursor: not-allowed;
+  }
+}
+
+/* Common Dialog Styles */
+@mixin dialog-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+@mixin dialog-content {
+  background: white;
+  border-radius: 8px;
+  padding: 24px;
+  width: 90%;
+  max-width: 500px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+}
+
+/* Common Container Styles */
+@mixin page-container {
+  padding: 20px;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+@mixin header-section {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  flex-shrink: 0;
+}
+
+@mixin loading-spinner {
+  width: 32px;
+  height: 32px;
+  border: 3px solid #f3f3f3;
+  border-top: 3px solid $primary-color;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+
+  @keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+  }
+}

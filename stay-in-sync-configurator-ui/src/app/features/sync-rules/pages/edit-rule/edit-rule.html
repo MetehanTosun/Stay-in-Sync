@@ -1,0 +1,255 @@
+<div class="flow-container">
+  <div class="header-section">
+    <div class="title-section">
+      <button class="back-btn" (click)="goBackToOverview()">
+        ← Back to Rules
+      </button>
+      <h2>Rule Editor - {{ ruleName }}</h2>
+    </div>
+    <div class="toolbar">
+      <button
+        class="save-btn"
+        [disabled]="isSaving"
+        (click)="saveGraph()">
+        @if (!isSaving) {
+          <span>💾 Save Graph</span>
+        }
+        @if (isSaving) {
+          <span>⏳ Saving...</span>
+        }
+      </button>
+      @if (saveMessage) {
+        <div class="save-message" [class.success]="saveMessage.includes('successfully')" [class.error]="saveMessage.includes('Error')">
+          {{ saveMessage }}
+        </div>
+      }
+    </div>
+  </div>
+
+  <div class="main-content">
+    <div class="node-palette">
+      <h3>Node Palette</h3>
+      <div class="palette-instructions">
+        <p>💡 Drag nodes from here to the canvas to build your rule or right click an element to open its context menu</p>
+      </div>
+
+      <div class="palette-section">
+        <h4>📡 Provider Nodes</h4>
+        <div class="palette-node"
+             draggable="true"
+             (dragstart)="onDragStart($event, 'PROVIDER')"
+             data-node-type="PROVIDER">
+          <div class="node-preview provider-preview">
+            <span class="node-icon">📡</span>
+            <span class="node-label">Provider</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="palette-section">
+        <h4>⚙️ Logic Nodes</h4>
+        <div class="palette-node"
+             draggable="true"
+             (dragstart)="onDragStart($event, 'LOGIC')"
+             data-node-type="LOGIC">
+          <div class="node-preview logic-preview">
+            <span class="node-icon">⚙️</span>
+            <span class="node-label">Logic</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="palette-section">
+        <h4>🔢 Constant Nodes</h4>
+        <div class="palette-node"
+             draggable="true"
+             (dragstart)="onDragStart($event, 'CONSTANT')"
+             data-node-type="CONSTANT">
+          <div class="node-preview constant-preview">
+            <span class="node-icon">🔢</span>
+            <span class="node-label">Constant</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="vflow-wrapper"
+         (dragover)="onDragOver($event)"
+         (dragleave)="onDragLeave($event)"
+         (drop)="onDrop($event)"
+         (nodeSelected)="onNodeSelected($event)"
+         (nodeContextMenu)="onNodeContextMenuFromEvent($event)">
+      <vflow
+        [nodes]="nodes"
+        [edges]="edges"
+        [background]="{ type: 'dots' }"
+        (click)="onCanvasClick()"
+        (onConnect)="createEdge($event)"
+        (onEdgesChange.select)="openEdgeContextMenu($event)">
+
+        <!-- sTODO Decide if minimap is worth is (looks bad) -->
+        <mini-map [scaleOnHover]="true" />
+      </vflow>
+    </div>
+  </div>
+
+  <!-- Context Menu -->
+  @if (showContextMenu && selectedNode) {
+    <div class="context-menu"
+         [style.left.px]="contextMenuPosition.x"
+         [style.top.px]="contextMenuPosition.y"
+         (click)="$event.stopPropagation()">
+
+      <div class="context-menu-item" (click)="startEditingNodeName()">
+        <span class="menu-icon">✏️</span>
+        Set Name
+      </div>
+
+      <div class="context-menu-divider"></div>
+
+      @if (getNodeData(selectedNode)?.nodeType === 'PROVIDER') {
+        <div class="context-menu-item" (click)="startEditingJsonPath()">
+          <span class="menu-icon">📝</span>
+          Edit JSON Path
+        </div>
+      }
+
+      @if (getNodeData(selectedNode)?.nodeType === 'LOGIC') {
+        <div class="context-menu-item" (click)="editOperatorType()">
+          <span class="menu-icon">⚙️</span>
+          Change Operator
+        </div>
+      }
+
+      @if (getNodeData(selectedNode)?.nodeType === 'CONSTANT') {
+        <div class="context-menu-item" (click)="editConstantValue()">
+          <span class="menu-icon">🔢</span>
+          Edit Value
+        </div>
+      }
+
+      <div class="context-menu-divider"></div>
+
+      <div class="context-menu-item danger" (click)="deleteSelectedNode()">
+        <span class="menu-icon">🗑️</span>
+        Delete Node
+      </div>
+    </div>
+  }
+
+  <!-- Edge Context Menu -->
+  @if (showEdgeContextMenu && selectedEdge) {
+    <div class="context-menu"
+         [style.left.px]="edgeContextMenuPosition.x"
+         [style.top.px]="edgeContextMenuPosition.y"
+         (click)="$event.stopPropagation()">
+      <div class="context-menu-item danger" (click)="deleteSelectedEdge()">
+        <span class="menu-icon">🗑️</span>
+        Delete Edge
+      </div>
+    </div>
+  }
+
+  <!-- JSON Path Edit Modal -->
+  @if (isEditingJsonPath && selectedNode) {
+    <div class="modal-overlay" (click)="cancelEditJsonPath()">
+      <div class="modal-content" (click)="$event.stopPropagation()">
+        <h3>Edit JSON Path</h3>
+        <div class="form-group">
+          <label for="jsonPath">JSON Path:</label>
+          <input
+            id="jsonPath"
+            type="text"
+            [(ngModel)]="editingJsonPath"
+            class="form-input"
+            placeholder="source.example.path"
+            #jsonPathInput>
+        </div>
+        <div class="modal-actions">
+          <button class="btn-success" (click)="saveJsonPath()">💾 Save</button>
+          <button class="btn-cancel" (click)="cancelEditJsonPath()">❌ Cancel</button>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- Operator Type Edit Modal -->
+  @if (isEditingOperator && selectedNode) {
+    <div class="modal-overlay" (click)="cancelEditOperator()">
+      <div class="modal-content" (click)="$event.stopPropagation()">
+        <h3>Edit Operator Type</h3>
+        <div class="form-group">
+          <label for="operatorType">Operator Type:</label>
+          <select
+            id="operatorType"
+            [(ngModel)]="editingOperator"
+            class="form-input">
+            <option value="AND">AND</option>
+            <option value="OR">OR</option>
+            <option value="NOT">NOT</option>
+            <option value="ADD">ADD</option>
+            <option value="SUBTRACT">SUBTRACT</option>
+            <option value="MULTIPLY">MULTIPLY</option>
+            <option value="DIVIDE">DIVIDE</option>
+            <option value="EQUALS">EQUALS</option>
+            <option value="NOT_EQUALS">NOT_EQUALS</option>
+            <option value="GREATER_THAN">GREATER_THAN</option>
+            <option value="LESS_THAN">LESS_THAN</option>
+            <option value="GREATER_EQUAL">GREATER_EQUAL</option>
+            <option value="LESS_EQUAL">LESS_EQUAL</option>
+          </select>
+        </div>
+        <div class="modal-actions">
+          <button class="btn-success" (click)="saveOperatorType()">💾 Save</button>
+          <button class="btn-cancel" (click)="cancelEditOperator()">❌ Cancel</button>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- Constant Value Edit Modal -->
+  @if (isEditingConstantValue && selectedNode) {
+    <div class="modal-overlay" (click)="cancelEditConstantValue()">
+      <div class="modal-content" (click)="$event.stopPropagation()">
+        <h3>Edit Constant Value</h3>
+        <div class="form-group">
+          <label for="constantValue">Value:</label>
+          <input
+            id="constantValue"
+            type="text"
+            [(ngModel)]="editingConstantValue"
+            class="form-input"
+            placeholder="Enter value (number, string, or boolean)"
+            #constantValueInput>
+        </div>
+        <div class="modal-actions">
+          <button class="btn-success" (click)="saveConstantValue()">💾 Save</button>
+          <button class="btn-cancel" (click)="cancelEditConstantValue()">❌ Cancel</button>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- Node Name Edit Modal -->
+  @if (isEditingNodeName && selectedNode) {
+    <div class="modal-overlay" (click)="cancelEditNodeName()">
+      <div class="modal-content" (click)="$event.stopPropagation()">
+        <h3>Set Node Name</h3>
+        <div class="form-group">
+          <label for="nodeName">Name:</label>
+          <input
+            id="nodeName"
+            type="text"
+            [(ngModel)]="editingNodeName"
+            class="form-input"
+            placeholder="Enter node name"
+            #nodeNameInput>
+        </div>
+        <div class="modal-actions">
+          <button class="btn-success" (click)="saveNodeName()">💾 Save</button>
+          <button class="btn-cancel" (click)="cancelEditNodeName()">❌ Cancel</button>
+        </div>
+      </div>
+    </div>
+  }
+</div>
