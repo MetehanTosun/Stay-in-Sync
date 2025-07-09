@@ -1,114 +1,86 @@
 package de.unistuttgart.stayinsync.syncnode.logik_engine;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import de.unistuttgart.stayinsync.syncnode.logik_engine.logic_operator.LogicOperator;
-import de.unistuttgart.stayinsync.syncnode.logik_engine.nodes.LogicNode;
-import de.unistuttgart.stayinsync.syncnode.logik_engine.nodes.inputNodes.ConstantNode;
-import de.unistuttgart.stayinsync.syncnode.logik_engine.nodes.inputNodes.InputNode;
-import de.unistuttgart.stayinsync.syncnode.logik_engine.nodes.inputNodes.JsonInputNode;
+import de.unistuttgart.stayinsync.syncnode.logik_engine.nodes.Node;
+import java.util.*;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.Queue;
-
+/**
+ * Evaluates a logic graph composed of Node objects.
+ * The evaluation is performed using a topological sort algorithm (Kahn's algorithm).
+ */
 public class LogicGraphEvaluator {
 
     /**
-     * Evaluates the given list of {@link LogicNode}s, which form a logic graph.
-     * This method assumes the graph has been pre-validated according to specific criteria:
-     * - It must be a Directed Acyclic Graph (DAG).
-     * - All {@link LogicOperator}s must have their inputs correctly defined regarding type and arity.
-     * - All {@link InputNode}s (like {@link JsonInputNode}, {@link ConstantNode}) must be able to provide their values.
-     * - There must be exactly one target node (a node with no children/outgoing dependencies to other LogicNodes).
-     * - This single target node must produce a {@link Boolean} result.
+     * Evaluates a given valid, directed acyclic graph (DAG) of {@link Node}s.
+     * <p>
+     * This method calculates the value for each node in a dependency-correct order
+     * and returns the boolean result of the single target node. It presupposes
+     * the graph is valid and contains no cycles.
      *
-     * @param allNodesInGraph A list containing all {@link LogicNode}s that constitute the graph to be evaluated.
-     * @param dataContext     A map containing the runtime data sources required by {@link JsonInputNode}s within the graph.
-     *                        The map's key is the {@code sourceName} defined in a {@code JsonInputNode}, and the value
-     *                        is the corresponding {@link JsonNode} to be queried. Can be an empty map if no
-     *                        JsonNodes are used.
-     * @return {@code true} or {@code false} representing the final evaluated boolean state of the graph.
-     * @throws IllegalArgumentException If {@code allNodesInGraph} is null or empty.
-     * @throws IllegalStateException    if the graph processing fails, e.g., a required data source is missing
-     *                                  from the context or a JSON path is not found.
+     * @param allNodesInGraph A non-empty list containing all {@link Node}s that constitute the graph.
+     * @param dataContext     A map containing the runtime data sources required by ProviderNodes.
+     * @return {@code true} or {@code false} representing the final evaluated state of the graph.
+     * @throws IllegalArgumentException if the provided list of nodes is null or empty.
+     *
      */
-    public boolean evaluateGraph(List<LogicNode> allNodesInGraph,  Map<String, JsonNode> dataContext) throws IllegalArgumentException, IllegalStateException {
+    public boolean evaluateGraph(List<Node> allNodesInGraph, Map<String, JsonNode> dataContext) {
 
         if (allNodesInGraph == null || allNodesInGraph.isEmpty()) {
             throw new IllegalArgumentException("The list of graph nodes cannot be null or empty");
         }
 
-        // Step 1: Initialize helper data structures
-        Map<LogicNode, Integer> nodeInDegree = new HashMap<>();
-        Map<LogicNode, List<LogicNode>> childrenList = new HashMap<>();
-        Queue<LogicNode> readyToEvaluateQueue = new LinkedList<>();
+        // Step 1: Initialize helper data structures.
+        Map<Node, Integer> nodeInDegree = new HashMap<>();
+        Map<Node, List<Node>> childrenList = new HashMap<>();
+        Queue<Node> readyToEvaluateQueue = new LinkedList<>();
 
-        // Step 1a: Prepare maps for each node and reset results
-        for (int i = 0; i < allNodesInGraph.size(); i++) {
-            LogicNode node = allNodesInGraph.get(i);
-            nodeInDegree.put(node, 0); // In-degree will be set correctly in Step 2
-            childrenList.put(node, new ArrayList<LogicNode>()); // Create an empty children list
-            if (node.getCalculatedResult() != null) {
-                node.setCalculatedResult(null); // Reset any old result in the node
-            }
+        // Step 1a: Prepare maps for each node and reset any previous results.
+        for (Node node : allNodesInGraph) {
+            nodeInDegree.put(node, 0);
+            childrenList.put(node, new ArrayList<>());
+            node.setCalculatedResult(null);
         }
 
-        // Step 2: Analyze graph structure - calculate in-degrees and populate children lists
-        // Determines which nodes depend on others and which can start immediately.
-        for (int i = 0; i < allNodesInGraph.size(); i++) {
-            LogicNode currentNode = allNodesInGraph.get(i);
+        // Step 2: Analyze graph structure to calculate in-degrees and populate children lists.
+        for (Node currentNode : allNodesInGraph) {
             int parentNodeDependencies = 0;
-            if (currentNode.getInputProviders() != null) {
-                for (int j = 0; j < currentNode.getInputProviders().size(); j++) {
-                    InputNode provider = currentNode.getInputProviders().get(j);
-                    if (provider.isParentNode()) {
-                        LogicNode parentNode = provider.getParentNode();
-                        parentNodeDependencies++;
-                        childrenList.get(parentNode).add(currentNode);
-                    }
+            if (currentNode.getInputNodes() != null) {
+                for (Node parentNode : currentNode.getInputNodes()) {
+                    parentNodeDependencies++;
+                    childrenList.get(parentNode).add(currentNode);
                 }
             }
-            nodeInDegree.put(currentNode, parentNodeDependencies);  // Store the actual in-degree
+            nodeInDegree.put(currentNode, parentNodeDependencies);
+
             if (parentNodeDependencies == 0) {
                 readyToEvaluateQueue.add(currentNode);
             }
         }
 
-        // --- MAIN EVALUATION LOOP ---
-
-        // Step 3: Evaluate nodes in topological order
-        // Processes nodes from the 'readyToEvaluateQueue' until it's empty.
+        // Step 3: Evaluate nodes in topological order.
         while (!readyToEvaluateQueue.isEmpty()) {
-            LogicNode nodeToEvaluate = readyToEvaluateQueue.poll();
+            Node nodeToEvaluate = readyToEvaluateQueue.poll();
             nodeToEvaluate.calculate(dataContext);
 
-            // Step 3a: Update in-degree of children and add to queue if ready
-            List<LogicNode> children = childrenList.get(nodeToEvaluate);
-            for (LogicNode childNode : children) {
+            for (Node childNode : childrenList.get(nodeToEvaluate)) {
                 int newInDegree = nodeInDegree.get(childNode) - 1;
                 nodeInDegree.put(childNode, newInDegree);
+
                 if (newInDegree == 0) {
                     readyToEvaluateQueue.add(childNode);
                 }
             }
-        } // End of evaluation loop
+        }
 
-        // --- DETERMINE RESULT ---
-
-        // Step 4: Find the implicit target node (node with no children).
-        LogicNode finalTargetNode = null;
-        for (LogicNode node : allNodesInGraph) {
-            List<LogicNode> children = childrenList.get(node);
-            if (children.isEmpty()) {
+        // Step 4: Find the implicit target node (the node with no children).
+        Node finalTargetNode = null;
+        for (Node node : allNodesInGraph) {
+            if (childrenList.get(node).isEmpty()) {
                 finalTargetNode = node;
                 break;
             }
         }
 
         return (boolean) finalTargetNode.getCalculatedResult();
-
     }
 }

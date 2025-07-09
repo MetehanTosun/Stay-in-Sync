@@ -1,8 +1,8 @@
 package de.unistuttgart.stayinsync.syncnode.logik_engine.logic_operator.array_predicates;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import de.unistuttgart.stayinsync.syncnode.logik_engine.nodes.inputNodes.InputNode;
 import de.unistuttgart.stayinsync.syncnode.logik_engine.nodes.LogicNode;
+import de.unistuttgart.stayinsync.syncnode.logik_engine.nodes.Node;
 import de.unistuttgart.stayinsync.syncnode.logik_engine.logic_operator.Operation;
 
 import java.lang.reflect.Array;
@@ -15,7 +15,7 @@ public class MinOperator implements Operation {
     /**
      * Validates that the node is correctly configured for the MIN operation.
      * <p>
-     * This check ensures that the operator has exactly one input provider, which is
+     * This check ensures that the operator has exactly one input node, which is
      * expected to deliver the array or collection of numbers.
      *
      * @param node The LogicNode to validate.
@@ -23,39 +23,33 @@ public class MinOperator implements Operation {
      */
     @Override
     public void validate(LogicNode node) {
-        List<InputNode> inputs = node.getInputProviders();
+        List<Node> inputs = node.getInputNodes();
         if (inputs == null || inputs.size() != 1) {
             throw new IllegalArgumentException(
-                    "MIN operation for node '" + node.getNodeName() + "' requires exactly 1 input."
+                    "MIN operation for node '" + node.getName() + "' requires exactly 1 input."
             );
         }
     }
 
     /**
-     * Executes the minimum-finding logic.
+     * Executes the minimum-finding logic on the pre-calculated result of its input node.
      * <p>
      * It iterates through all elements of the input, considering only those that are
-     * instances of {@link Number}. The internal comparison is done using double values
-     * to handle different numeric types consistently.
+     * instances of {@link Number}. The internal comparison is done using double values.
      *
      * @param node        The LogicNode being evaluated.
      * @param dataContext The runtime data context.
      * @return A {@link Double} representing the minimum value found. If the input is
-     *         missing, not a collection/array, or contains no numeric elements,
-     *         it returns {@code 0.0} as a sensible default.
+     * null, not a collection/array, or contains no numeric elements,
+     * it returns {@code 0.0} as a default value.
      */
     @Override
     public Object execute(LogicNode node, Map<String, JsonNode> dataContext) {
-        List<InputNode> inputs = node.getInputProviders();
-        Object collectionProvider;
+        Node inputNode = node.getInputNodes().get(0);
 
-        try {
-            collectionProvider = inputs.get(0).getValue(dataContext);
-        } catch (IllegalStateException e) {
-            return 0.0;
-        }
+        Object collectionProvider = inputNode.getCalculatedResult();
 
-        if (!(collectionProvider instanceof Collection) && !collectionProvider.getClass().isArray()) {
+        if (collectionProvider == null || (!(collectionProvider instanceof Collection) && !collectionProvider.getClass().isArray())) {
             return 0.0;
         }
 

@@ -3,7 +3,7 @@ package de.unistuttgart.stayinsync.syncnode.logik_engine.logic_operator.datetime
 import com.fasterxml.jackson.databind.JsonNode;
 import de.unistuttgart.stayinsync.syncnode.logik_engine.logic_operator.Operation;
 import de.unistuttgart.stayinsync.syncnode.logik_engine.nodes.LogicNode;
-import de.unistuttgart.stayinsync.syncnode.logik_engine.nodes.inputNodes.InputNode;
+import de.unistuttgart.stayinsync.syncnode.logik_engine.nodes.Node;
 
 import java.time.ZonedDateTime;
 import java.time.temporal.ChronoUnit;
@@ -21,10 +21,10 @@ public class AgeGreaterThanOperator implements Operation {
      */
     @Override
     public void validate(LogicNode node) {
-        List<InputNode> inputs = node.getInputProviders();
+        List<Node> inputs = node.getInputNodes();
         if (inputs == null || inputs.size() != 3) {
             throw new IllegalArgumentException(
-                    "AGE_GREATER_THAN operation requires 3 inputs: a date-time, a numeric value, and a time unit string (e.g., 'DAYS')."
+                    "AGE_GREATER_THAN operation for node '" + node.getName() + "' requires 3 inputs: a date-time, a numeric value, and a time unit string (e.g., 'DAYS')."
             );
         }
     }
@@ -38,11 +38,14 @@ public class AgeGreaterThanOperator implements Operation {
      */
     @Override
     public Object execute(LogicNode node, Map<String, JsonNode> dataContext) {
-        List<InputNode> inputs = node.getInputProviders();
+        List<Node> inputs = node.getInputNodes();
 
-        ZonedDateTime pastTimestamp = DateTimeParserUtil.toZonedDateTime(inputs.get(0).getValue(dataContext));
-        Object thresholdProvider = inputs.get(1).getValue(dataContext);
-        Object unitProvider = inputs.get(2).getValue(dataContext);
+        Object pastTimestampProvider = inputs.get(0).getCalculatedResult();
+        Object thresholdProvider = inputs.get(1).getCalculatedResult();
+        Object unitProvider = inputs.get(2).getCalculatedResult();
+
+        // Use the central utility to parse all provided values into ZonedDateTime objects.
+        ZonedDateTime pastTimestamp = DateTimeParserUtil.toZonedDateTime(pastTimestampProvider);
 
         if (pastTimestamp == null || !(thresholdProvider instanceof Number) || !(unitProvider instanceof String)) {
             return false;
@@ -53,14 +56,15 @@ public class AgeGreaterThanOperator implements Operation {
 
         try {
             ChronoUnit unit = ChronoUnit.valueOf(unitString);
-            ZonedDateTime now = ZonedDateTime.now(pastTimestamp.getZone()); // Calculate "now" in the same timezone for accuracy
+            // Calculate "now" in the same timezone as the input for accuracy.
+            ZonedDateTime now = ZonedDateTime.now(pastTimestamp.getZone());
 
             long age = unit.between(pastTimestamp, now);
 
             return age > thresholdValue;
 
         } catch (IllegalArgumentException e) {
-            // This happens if the unitString is not a valid ChronoUnit enum name (e.g., "WEEKS", "DECADES")
+            // This happens if the unitString is not a valid ChronoUnit enum name.
             return false;
         }
     }

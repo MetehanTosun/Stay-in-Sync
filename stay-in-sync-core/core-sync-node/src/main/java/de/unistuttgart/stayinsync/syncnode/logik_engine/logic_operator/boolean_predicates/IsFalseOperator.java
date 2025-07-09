@@ -1,9 +1,9 @@
 package de.unistuttgart.stayinsync.syncnode.logik_engine.logic_operator.boolean_predicates;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import de.unistuttgart.stayinsync.syncnode.logik_engine.logic_operator.Operation;
 import de.unistuttgart.stayinsync.syncnode.logik_engine.nodes.LogicNode;
-import de.unistuttgart.stayinsync.syncnode.logik_engine.nodes.inputNodes.InputNode;
+import de.unistuttgart.stayinsync.syncnode.logik_engine.nodes.Node;
+import de.unistuttgart.stayinsync.syncnode.logik_engine.logic_operator.Operation;
 
 import java.util.List;
 import java.util.Map;
@@ -17,7 +17,7 @@ public class IsFalseOperator implements Operation {
      */
     @Override
     public void validate(LogicNode node) {
-        List<InputNode> inputs = node.getInputProviders();
+        List<Node> inputs = node.getInputNodes();
         if (inputs == null || inputs.isEmpty()) {
             throw new IllegalArgumentException("IS_FALSE operation requires at least 1 input.");
         }
@@ -28,18 +28,22 @@ public class IsFalseOperator implements Operation {
      * This acts as an AND-conjunction for the isFalse check.
      * @param node        The LogicNode being evaluated.
      * @param dataContext The runtime data context.
-     * @return {@code true} if all inputs evaluate to Boolean.FALSE, {@code false} otherwise.
+     * @return {@code true} if all inputs have a calculated result of Boolean.FALSE, {@code false} otherwise.
      */
     @Override
     public Object execute(LogicNode node, Map<String, JsonNode> dataContext) {
-        List<InputNode> inputs = node.getInputProviders();
-        for (InputNode input : inputs) {
-            Object value = input.getValue(dataContext);
+        List<Node> inputs = node.getInputNodes();
+
+        for (Node inputNode : inputs) {
+            // Get the pre-calculated result from the parent node.
+            Object value = inputNode.getCalculatedResult();
+
             // If any value is NOT Boolean.FALSE, the condition fails.
             if (!Boolean.FALSE.equals(value)) {
                 return false;
             }
         }
+
         // If the loop completes, all values were Boolean.FALSE.
         return true;
     }

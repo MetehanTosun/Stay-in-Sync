@@ -5,10 +5,8 @@ import de.unistuttgart.stayinsync.syncnode.logik_engine.database.GraphStorageSer
 import de.unistuttgart.stayinsync.syncnode.logik_engine.database.LogicGraphEntity;
 import de.unistuttgart.stayinsync.syncnode.logik_engine.logic_operator.LogicOperator;
 import de.unistuttgart.stayinsync.syncnode.logik_engine.nodes.LogicNode;
-import de.unistuttgart.stayinsync.syncnode.logik_engine.nodes.inputNodes.ConstantNode;
-import de.unistuttgart.stayinsync.syncnode.logik_engine.nodes.inputNodes.InputNode;
-import de.unistuttgart.stayinsync.syncnode.logik_engine.nodes.inputNodes.JsonInputNode;
-import de.unistuttgart.stayinsync.syncnode.logik_engine.nodes.inputNodes.ParentNode;
+import de.unistuttgart.stayinsync.syncnode.logik_engine.nodes.ProviderNode;
+import de.unistuttgart.stayinsync.syncnode.logik_engine.nodes.ConstantNode;
 import io.quarkus.test.junit.QuarkusTest;
 import jakarta.inject.Inject;
 import jakarta.json.Json;
@@ -55,9 +53,9 @@ public class GraphPersistenceTest {
         final String graphName = "FullIntegrationTestGraph";
 
         // Define all necessary input nodes
-        JsonInputNode aasTemp = new JsonInputNode("anlageAAS", "sensorData.currentTemperature");
+        ProviderNode aasTemp = new ProviderNode("anlageAAS", "sensorData.currentTemperature");
         ConstantNode tempOffset = new ConstantNode("TempOffset", -2.0);
-        JsonInputNode aasMaxTemp = new JsonInputNode("anlageAAS", "thresholds.maxAllowedTemp");
+        ProviderNode aasMaxTemp = new ProviderNode("anlageAAS", "thresholds.maxAllowedTemp");
         ConstantNode systemEnabled = new ConstantNode("SystemEnabledFlag", true);
 
         // Build the graph structure by connecting the nodes

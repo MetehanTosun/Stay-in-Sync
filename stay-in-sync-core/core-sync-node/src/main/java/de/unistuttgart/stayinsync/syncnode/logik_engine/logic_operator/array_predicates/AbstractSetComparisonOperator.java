@@ -1,8 +1,8 @@
 package de.unistuttgart.stayinsync.syncnode.logik_engine.logic_operator.array_predicates;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import de.unistuttgart.stayinsync.syncnode.logik_engine.nodes.inputNodes.InputNode;
 import de.unistuttgart.stayinsync.syncnode.logik_engine.nodes.LogicNode;
+import de.unistuttgart.stayinsync.syncnode.logik_engine.nodes.Node;
 import de.unistuttgart.stayinsync.syncnode.logik_engine.logic_operator.Operation;
 
 import java.lang.reflect.Array;
@@ -17,20 +17,17 @@ public abstract class AbstractSetComparisonOperator implements Operation {
     /**
      * Validates that the node is correctly configured for a set-based comparison.
      * <p>
-     * This check is purely structural and ensures that the operator is provided with the
-     * correct number of inputs (arity) before execution. It requires exactly two inputs:
-     * a source collection and a reference collection.
+     * This check ensures that the operator is provided with exactly two input nodes.
      *
-     * @param node The LogicNode to validate. It must contain a list of input providers.
-     * @throws IllegalArgumentException if the node does not have exactly two inputs,
-     *                                  which would make a subsequent comparison impossible.
+     * @param node The LogicNode to validate.
+     * @throws IllegalArgumentException if the node does not have exactly two inputs.
      */
     @Override
     public void validate(LogicNode node) {
-        List<InputNode> inputs = node.getInputProviders();
+        List<Node> inputs = node.getInputNodes();
         if (inputs == null || inputs.size() != 2) {
             throw new IllegalArgumentException(
-                    "Set comparison operation for node '" + node.getNodeName() + "' requires exactly 2 inputs: the source collection and the reference collection."
+                    "Set comparison operation for node '" + node.getName() + "' requires exactly 2 inputs: the source collection and the reference collection."
             );
         }
     }
@@ -38,34 +35,32 @@ public abstract class AbstractSetComparisonOperator implements Operation {
     /**
      * Executes the set-based comparison using the Template Method design pattern.
      * <p>
-     * This method orchestrates the entire execution flow:
+     * This method orchestrates the execution flow:
      * <ol>
-     *     <li>It retrieves the values from the two input providers.</li>
-     *     <li>It converts both input values (which can be arrays or collections) into
-     *         standard {@link Collection} objects.</li>
-     *     <li><b>Performance Optimization:</b> It converts the source collection into a {@link java.util.HashSet}
-     *         to enable high-speed lookups with an average time complexity of O(1).</li>
-     *     <li>It then delegates the final, specific comparison logic (e.g., containsAll, containsAny)
-     *         to the {@link #compareSets(Set, Collection)} method, which must be implemented
-     *         by the concrete subclass.</li>
+     * <li>It retrieves the pre-calculated results from its two input nodes.</li>
+     * <li>It converts both results (which can be arrays or collections) into
+     * standard {@link Collection} objects.</li>
+     * <li><b>Performance Optimization:</b> It converts the source collection into a {@link java.util.HashSet}
+     * to enable high-speed lookups with an average time complexity of O(1).</li>
+     * <li>It then delegates the specific comparison logic to the
+     * {@link #compareSets(Set, Collection)} method, which is implemented by the subclass.</li>
      * </ol>
      *
      * @param node        The LogicNode currently being evaluated.
-     * @param dataContext The runtime data context, used to resolve inputs from JSON sources.
+     * @param dataContext The runtime data context.
      * @return A {@code Boolean} representing the result of the comparison. Returns {@code false}
-     *         if any input cannot be retrieved or if the inputs are not collection-like types.
+     * if any input result is null or if the inputs are not collection-like types.
      * @see #compareSets(Set, Collection)
      */
     @Override
     public Object execute(LogicNode node, Map<String, JsonNode> dataContext) {
-        List<InputNode> inputs = node.getInputProviders();
-        Object sourceProvider;
-        Object referenceProvider;
+        List<Node> inputs = node.getInputNodes();
 
-        try {
-            sourceProvider = inputs.get(0).getValue(dataContext);
-            referenceProvider = inputs.get(1).getValue(dataContext);
-        } catch (IllegalStateException e) {
+        Object sourceProvider = inputs.get(0).getCalculatedResult();
+        Object referenceProvider = inputs.get(1).getCalculatedResult();
+
+        // If any upstream node failed to produce a result, the comparison is false.
+        if (sourceProvider == null || referenceProvider == null) {
             return false;
         }
 
@@ -87,10 +82,13 @@ public abstract class AbstractSetComparisonOperator implements Operation {
 
     /**
      * Converts a given object into a {@link Collection} if possible.
+     * This helper method handles both arrays and existing Collection objects.
      */
     private static Collection<?> toCollection(Object obj) {
         if (obj == null) return null;
-        if (obj instanceof Collection) return (Collection<?>) obj;
+        if (obj instanceof Collection) {
+            return (Collection<?>) obj;
+        }
         if (obj.getClass().isArray()) {
             List<Object> list = new ArrayList<>();
             int length = Array.getLength(obj);
@@ -104,6 +102,7 @@ public abstract class AbstractSetComparisonOperator implements Operation {
 
     /**
      * Performs the specific set-based comparison between the source and reference collections.
+     * This method must be implemented by the concrete subclass.
      *
      * @param sourceSet           The source collection, pre-converted to a Set for high-performance lookups.
      * @param referenceCollection The collection containing the elements to check against.

@@ -1,8 +1,8 @@
 package de.unistuttgart.stayinsync.syncnode.logik_engine.logic_operator.array_predicates;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import de.unistuttgart.stayinsync.syncnode.logik_engine.nodes.inputNodes.InputNode;
 import de.unistuttgart.stayinsync.syncnode.logik_engine.nodes.LogicNode;
+import de.unistuttgart.stayinsync.syncnode.logik_engine.nodes.Node;
 import de.unistuttgart.stayinsync.syncnode.logik_engine.logic_operator.Operation;
 
 import java.lang.reflect.Array;
@@ -18,39 +18,37 @@ public class AvgOperator implements Operation {
      * This structural check ensures that the operator is provided with exactly one input,
      * which should be the array or collection for which the average is to be calculated.
      *
-     * @param node The LogicNode to validate. It must contain a list of input providers.
+     * @param node The LogicNode to validate.
      * @throws IllegalArgumentException if the node does not have exactly one input.
      */
     @Override
     public void validate(LogicNode node) {
-        List<InputNode> inputs = node.getInputProviders();
+        List<Node> inputs = node.getInputNodes();
         if (inputs == null || inputs.size() != 1) {
             throw new IllegalArgumentException(
-                    "AVG operation for node '" + node.getNodeName() + "' requires exactly 1 input: the collection of numbers."
+                    "AVG operation for node '" + node.getName() + "' requires exactly 1 input: the collection of numbers."
             );
         }
     }
 
     /**
-     * Executes the average calculation.
+     * Executes the average calculation on the pre-calculated result of its input node.
      *
      * @param node        The LogicNode being evaluated.
      * @param dataContext The runtime data context.
      * @return A {@link Double} representing the average. Returns 0.0 if the input is missing,
-     *         not a collection, or contains no numeric elements.
+     * null, not a collection/array, or contains no numeric elements.
      */
     @Override
     public Object execute(LogicNode node, Map<String, JsonNode> dataContext) {
-        List<InputNode> inputs = node.getInputProviders();
-        Object collectionProvider;
+        // Get the single input node.
+        Node inputNode = node.getInputNodes().get(0);
 
-        try {
-            collectionProvider = inputs.get(0).getValue(dataContext);
-        } catch (IllegalStateException e) {
-            return 0.0;
-        }
+        // Get the pre-calculated result, which should be a collection or an array.
+        Object collectionProvider = inputNode.getCalculatedResult();
 
-        if (!(collectionProvider instanceof Collection) && !collectionProvider.getClass().isArray()) {
+        // If the upstream node failed to produce a result, or it is not a collection/array, the average is 0.0.
+        if (collectionProvider == null || (!(collectionProvider instanceof Collection) && !collectionProvider.getClass().isArray())) {
             return 0.0;
         }
 

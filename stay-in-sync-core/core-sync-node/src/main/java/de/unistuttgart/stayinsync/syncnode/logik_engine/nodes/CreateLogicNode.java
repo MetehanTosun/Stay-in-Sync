@@ -2,7 +2,6 @@ package de.unistuttgart.stayinsync.syncnode.logik_engine.nodes;
 
 import de.unistuttgart.stayinsync.syncnode.logik_engine.logic_operator.LogicOperator;
 import de.unistuttgart.stayinsync.syncnode.logik_engine.logic_operator.Operation;
-import de.unistuttgart.stayinsync.syncnode.logik_engine.nodes.inputNodes.InputNode;
 import jakarta.enterprise.context.ApplicationScoped;
 import java.util.Arrays;
 

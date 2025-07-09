@@ -13,7 +13,7 @@ public enum LogicOperator {
     // General predicates
     EXISTS("exists", new ExistsOperator()),
     NOT_EXISTS("notExists", new NotExistsOperator()),
-    IS_NULL("isNull", new IsNull()),
+    IS_NULL("isNull", new IsNullOperator()),
     IS_NOT_NULL("isNotNull", new IsNotNull()),
     TYPE_IS("typeIs", new TypeIsOperator()),
     EQUALS("equals", new EqualsOperator()),
@@ -91,7 +91,7 @@ public enum LogicOperator {
     WITHIN_LAST("withinLast", new WithinLastOperator()),
     WITHIN_NEXT("withinNext", new WithinNextOperator()),
     TIMEZONE_OFFSET_EQUALS("timezoneOffsetEquals", new TimezoneOffsetEqualsOperator());
-    
+
     private final String symbol;
     private final Operation operationStrategy;
 

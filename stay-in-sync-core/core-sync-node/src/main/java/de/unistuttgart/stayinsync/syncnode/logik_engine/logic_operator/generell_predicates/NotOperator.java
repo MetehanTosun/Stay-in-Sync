@@ -1,9 +1,9 @@
 package de.unistuttgart.stayinsync.syncnode.logik_engine.logic_operator.generell_predicates;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import de.unistuttgart.stayinsync.syncnode.logik_engine.nodes.inputNodes.InputNode;
 import de.unistuttgart.stayinsync.syncnode.logik_engine.nodes.LogicNode;
 import de.unistuttgart.stayinsync.syncnode.logik_engine.logic_operator.Operation;
+import de.unistuttgart.stayinsync.syncnode.logik_engine.nodes.Node;
 
 import java.util.List;
 import java.util.Map;
@@ -20,10 +20,10 @@ public class NotOperator implements Operation {
      */
     @Override
     public void validate(LogicNode node) {
-        List<InputNode> inputs = node.getInputProviders();
+        List<Node> inputs = node.getInputNodes();
         if (inputs == null || inputs.size() != 1) {
             throw new IllegalArgumentException(
-                    "NOT operation for node '" + node.getNodeName() + "' requires exactly 1 input, but got " + (inputs == null ? 0 : inputs.size())
+                    "NOT operation for node '" + node.getName() + "' requires exactly 1 input, but got " + (inputs == null ? 0 : inputs.size())
             );
         }
     }
@@ -38,24 +38,16 @@ public class NotOperator implements Operation {
      */
     @Override
     public Object execute(LogicNode node, Map<String, JsonNode> dataContext) {
-        InputNode inputProvider = node.getInputProviders().get(0);
+        Node inputNode = node.getInputNodes().get(0);
 
-        Object value;
-        try {
-            value = inputProvider.getValue(dataContext);
-        } catch (IllegalStateException e) {
-            throw new IllegalStateException(
-                    "Failed to resolve the input value for NOT operation in node '" + node.getNodeName() + "'.", e
-            );
-        }
+        Object value = inputNode.getCalculatedResult();
 
-        // Runtime type validation: The Value must be a boolean.
+        // Runtime type validation: The value must be a boolean.
         if (!(value instanceof Boolean)) {
             throw new IllegalArgumentException(
-                    "NOT operation for node '" + node.getNodeName() + "' requires a boolean input, but got a " + (value == null ? "null" : value.getClass().getSimpleName())
+                    "NOT operation for node '" + node.getName() + "' requires a boolean input, but got a " + (value == null ? "null" : value.getClass().getSimpleName())
             );
         }
-
         return !((Boolean) value);
     }
 }

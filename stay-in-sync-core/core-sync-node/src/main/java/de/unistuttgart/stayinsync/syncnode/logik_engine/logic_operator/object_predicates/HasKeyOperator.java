@@ -1,8 +1,8 @@
 package de.unistuttgart.stayinsync.syncnode.logik_engine.logic_operator.object_predicates;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import de.unistuttgart.stayinsync.syncnode.logik_engine.nodes.inputNodes.InputNode;
 import de.unistuttgart.stayinsync.syncnode.logik_engine.nodes.LogicNode;
+import de.unistuttgart.stayinsync.syncnode.logik_engine.nodes.Node;
 import de.unistuttgart.stayinsync.syncnode.logik_engine.logic_operator.Operation;
 
 import java.util.List;
@@ -18,10 +18,10 @@ public class HasKeyOperator implements Operation {
      */
     @Override
     public void validate(LogicNode node) {
-        List<InputNode> inputs = node.getInputProviders();
+        List<Node> inputs = node.getInputNodes();
         if (inputs == null || inputs.size() != 2) {
             throw new IllegalArgumentException(
-                    "HAS_KEY operation for node '" + node.getNodeName() + "' requires exactly 2 inputs: the JSON object and the key (String)."
+                    "HAS_KEY operation for node '" + node.getName() + "' requires exactly 2 inputs: the JSON object and the key (String)."
             );
         }
     }
@@ -32,19 +32,18 @@ public class HasKeyOperator implements Operation {
      * @param node        The LogicNode being evaluated.
      * @param dataContext The runtime data context.
      * @return {@code true} if the first input is a JSON object and has a field matching
-     *         the name provided by the second input. Returns {@code false} otherwise.
+     * the name provided by the second input. Returns {@code false} otherwise.
      */
     @Override
     public Object execute(LogicNode node, Map<String, JsonNode> dataContext) {
-        List<InputNode> inputs = node.getInputProviders();
-        Object objectProvider;
-        Object keyProvider;
+        List<Node> inputs = node.getInputNodes();
 
-        try {
-            objectProvider = inputs.get(0).getValue(dataContext);
-            keyProvider = inputs.get(1).getValue(dataContext);
-        } catch (IllegalStateException e) {
-            return false; // An input is missing.
+        Object objectProvider = inputs.get(0).getCalculatedResult();
+        Object keyProvider = inputs.get(1).getCalculatedResult();
+
+        // If either input value is null, the check cannot succeed.
+        if (objectProvider == null || keyProvider == null) {
+            return false;
         }
 
         // The first input must be a JsonNode representing an object.

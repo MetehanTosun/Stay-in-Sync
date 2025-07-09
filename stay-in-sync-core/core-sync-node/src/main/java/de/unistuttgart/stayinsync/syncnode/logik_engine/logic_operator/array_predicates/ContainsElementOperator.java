@@ -1,8 +1,8 @@
 package de.unistuttgart.stayinsync.syncnode.logik_engine.logic_operator.array_predicates;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import de.unistuttgart.stayinsync.syncnode.logik_engine.nodes.inputNodes.InputNode;
 import de.unistuttgart.stayinsync.syncnode.logik_engine.nodes.LogicNode;
+import de.unistuttgart.stayinsync.syncnode.logik_engine.nodes.Node;
 import de.unistuttgart.stayinsync.syncnode.logik_engine.logic_operator.Operation;
 
 import java.lang.reflect.Array;
@@ -21,10 +21,10 @@ public class ContainsElementOperator implements Operation {
      */
     @Override
     public void validate(LogicNode node) {
-        List<InputNode> inputs = node.getInputProviders();
+        List<Node> inputs = node.getInputNodes();
         if (inputs == null || inputs.size() != 2) {
             throw new IllegalArgumentException(
-                    "CONTAINS_ELEMENT operation for node '" + node.getNodeName() + "' requires exactly 2 inputs: the array/list and the element to search for."
+                    "CONTAINS_ELEMENT operation for node '" + node.getName() + "' requires exactly 2 inputs: the array/list and the element to search for."
             );
         }
     }
@@ -35,33 +35,32 @@ public class ContainsElementOperator implements Operation {
      * @param node        The LogicNode being evaluated.
      * @param dataContext The runtime data context.
      * @return {@code true} if the first input (array/collection) contains the second input (element).
-     *         Returns {@code false} if inputs are missing, the first input is not an array/collection,
-     *         or the element is not found.
+     * Returns {@code false} if the first input is null, not an array/collection,
+     * or the element is not found.
      */
     @Override
     public Object execute(LogicNode node, Map<String, JsonNode> dataContext) {
-        List<InputNode> inputs = node.getInputProviders();
-        Object arrayOrCollectionProvider;
-        Object elementToFind;
+        List<Node> inputs = node.getInputNodes();
 
-        try {
-            arrayOrCollectionProvider = inputs.get(0).getValue(dataContext);
-            elementToFind = inputs.get(1).getValue(dataContext);
-        } catch (IllegalStateException e) {
-            return false; // An input is missing.
+        Object arrayOrCollectionProvider = inputs.get(0).getCalculatedResult();
+        Object elementToFind = inputs.get(1).getCalculatedResult();
+
+        // If the collection/array itself could not be resolved, it cannot contain the element.
+        if (arrayOrCollectionProvider == null) {
+            return false;
         }
 
-        // Handle Collections (e.g., a List from a JSON array)
+        // Handle Collections (e.g., a List from a JSON array).
         if (arrayOrCollectionProvider instanceof Collection) {
             return ((Collection<?>) arrayOrCollectionProvider).contains(elementToFind);
         }
 
-        // Handle native Java arrays
+        // Handle native Java arrays.
         if (arrayOrCollectionProvider.getClass().isArray()) {
             int length = Array.getLength(arrayOrCollectionProvider);
             for (int i = 0; i < length; i++) {
                 Object currentElement = Array.get(arrayOrCollectionProvider, i);
-                // Use Objects.equals for safe comparison (handles nulls correctly)
+                // Use Objects.equals for safe comparison (handles nulls correctly).
                 if (Objects.equals(currentElement, elementToFind)) {
                     return true;
                 }

@@ -1,9 +1,10 @@
 package de.unistuttgart.stayinsync.syncnode.logik_engine.logic_operator.boolean_predicates;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import de.unistuttgart.stayinsync.syncnode.logik_engine.logic_operator.Operation;
 import de.unistuttgart.stayinsync.syncnode.logik_engine.nodes.LogicNode;
-import de.unistuttgart.stayinsync.syncnode.logik_engine.nodes.inputNodes.InputNode;
+import de.unistuttgart.stayinsync.syncnode.logik_engine.nodes.Node;
+import de.unistuttgart.stayinsync.syncnode.logik_engine.logic_operator.Operation;
+
 
 import java.util.List;
 import java.util.Map;
@@ -17,7 +18,7 @@ public class IsTrueOperator implements Operation {
      */
     @Override
     public void validate(LogicNode node) {
-        List<InputNode> inputs = node.getInputProviders();
+        List<Node> inputs = node.getInputNodes();
         if (inputs == null || inputs.isEmpty()) {
             throw new IllegalArgumentException("IS_TRUE operation requires at least 1 input.");
         }
@@ -28,18 +29,22 @@ public class IsTrueOperator implements Operation {
      * This acts as an AND-conjunction for the isTrue check.
      * @param node        The LogicNode being evaluated.
      * @param dataContext The runtime data context.
-     * @return {@code true} if all inputs evaluate to Boolean.TRUE, {@code false} otherwise.
+     * @return {@code true} if all inputs have a calculated result of Boolean.TRUE, {@code false} otherwise.
      */
     @Override
     public Object execute(LogicNode node, Map<String, JsonNode> dataContext) {
-        List<InputNode> inputs = node.getInputProviders();
-        for (InputNode input : inputs) {
-            Object value = input.getValue(dataContext);
+        List<Node> inputs = node.getInputNodes();
+
+        for (Node inputNode : inputs) {
+            // Get the pre-calculated result from the parent node.
+            Object value = inputNode.getCalculatedResult();
+
             // If any value is NOT Boolean.TRUE, the condition fails.
             if (!Boolean.TRUE.equals(value)) {
                 return false;
             }
         }
+
         // If the loop completes, all values were Boolean.TRUE.
         return true;
     }

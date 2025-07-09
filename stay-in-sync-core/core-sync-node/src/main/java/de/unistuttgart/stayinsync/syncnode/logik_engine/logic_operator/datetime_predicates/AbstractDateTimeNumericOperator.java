@@ -1,9 +1,9 @@
 package de.unistuttgart.stayinsync.syncnode.logik_engine.logic_operator.datetime_predicates;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import de.unistuttgart.stayinsync.syncnode.logik_engine.logic_operator.Operation;
 import de.unistuttgart.stayinsync.syncnode.logik_engine.nodes.LogicNode;
-import de.unistuttgart.stayinsync.syncnode.logik_engine.nodes.inputNodes.InputNode;
+import de.unistuttgart.stayinsync.syncnode.logik_engine.nodes.Node;
+import de.unistuttgart.stayinsync.syncnode.logik_engine.logic_operator.Operation;
 
 import java.time.ZonedDateTime;
 import java.util.List;
@@ -21,28 +21,32 @@ public abstract class AbstractDateTimeNumericOperator implements Operation {
      */
     @Override
     public void validate(LogicNode node) {
-        List<InputNode> inputs = node.getInputProviders();
+        List<Node> inputs = node.getInputNodes();
         if (inputs == null || inputs.size() != 2) {
             throw new IllegalArgumentException(
-                    "Date-time to number comparison for node '" + node.getNodeName() + "' requires exactly 2 inputs: a date-time and a number."
+                    "Date-time to number comparison for node '" + node.getName() + "' requires exactly 2 inputs: a date-time and a number."
             );
         }
     }
 
     /**
-     * Orchestrates the execution by parsing the date-time, retrieving the number,
-     * and then delegating the actual comparison logic to the concrete subclass.
+     * Orchestrates the execution by retrieving the pre-calculated results of its inputs,
+     * ensuring they are a valid date-time and a number, and then delegating the actual
+     * comparison logic to the concrete subclass.
      *
      * @param node        The LogicNode being evaluated.
      * @param dataContext The runtime data context.
-     * @return A {@code Boolean} result. Returns {@code false} if inputs are missing or have incorrect types.
+     * @return A {@code Boolean} result. Returns {@code false} if inputs are null or have incorrect types.
      */
     @Override
     public Object execute(LogicNode node, Map<String, JsonNode> dataContext) {
-        List<InputNode> inputs = node.getInputProviders();
+        List<Node> inputs = node.getInputNodes();
 
-        ZonedDateTime dateTime = DateTimeParserUtil.toZonedDateTime(inputs.get(0).getValue(dataContext));
-        Object numberProvider = inputs.get(1).getValue(dataContext);
+        Object dateTimeProvider = inputs.get(0).getCalculatedResult();
+        Object numberProvider = inputs.get(1).getCalculatedResult();
+
+        // The DateTimeParserUtil is used to robustly convert the provided values
+        ZonedDateTime dateTime = DateTimeParserUtil.toZonedDateTime(dateTimeProvider);
 
         if (dateTime == null || !(numberProvider instanceof Number)) {
             return false;
@@ -55,6 +59,8 @@ public abstract class AbstractDateTimeNumericOperator implements Operation {
 
     /**
      * Performs the specific comparison between the date-time's property and the numeric value.
+     * This method must be implemented by the concrete subclass.
+     *
      * @param dateTime The date-time object to extract a value from.
      * @param comparisonValue The numeric value to compare against.
      * @return The boolean result of the comparison.

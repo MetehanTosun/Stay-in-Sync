@@ -5,10 +5,10 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.networknt.schema.JsonSchema;
 import com.networknt.schema.JsonSchemaFactory;
 import com.networknt.schema.SpecVersion.VersionFlag;
-import de.unistuttgart.stayinsync.syncnode.logik_engine.nodes.inputNodes.ConstantNode;
-import de.unistuttgart.stayinsync.syncnode.logik_engine.nodes.inputNodes.InputNode;
+import de.unistuttgart.stayinsync.syncnode.logik_engine.nodes.ConstantNode;
 import de.unistuttgart.stayinsync.syncnode.logik_engine.nodes.LogicNode;
 import de.unistuttgart.stayinsync.syncnode.logik_engine.logic_operator.LogicOperator;
+import de.unistuttgart.stayinsync.syncnode.logik_engine.nodes.Node;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 
@@ -38,36 +38,53 @@ public class GraphCompilerService {
      * @return The same list of LogicNodes, but now "hydrated" and ready for execution.
      * @throws RuntimeException if schema compilation fails.
      */
-    public List<LogicNode> compile(List<LogicNode> rawGraph) {
+    /**
+     * Prepares a raw graph loaded from the database for execution.
+     * This method iterates through the nodes and replaces specific string constants
+     * with compiled runtime objects, such as a {@link JsonSchema}.
+     *
+     * @param rawGraph The list of Nodes as loaded from the database.
+     * @return The same list of Nodes, but now "hydrated" and ready for execution.
+     * @throws RuntimeException if schema compilation fails.
+     */
+    public List<Node> compile(List<Node> rawGraph) {
         // Iterate over each node in the graph to find those that need compilation.
-        for (LogicNode node : rawGraph) {
-            if (node.getOperator() == LogicOperator.MATCHES_SCHEMA) {
-                // By convention, the schema definition is the second input.
-                InputNode schemaInput = node.getInputProviders().get(1);
+        for (Node node : rawGraph) {
+            // Only LogicNodes can have a MATCHES_SCHEMA operator.
+            if (node instanceof LogicNode) {
+                LogicNode logicNode = (LogicNode) node;
 
-                // Only process ConstantNodes that contain a String, which is the expected
-                // format for a stored schema definition.
-                if (schemaInput instanceof ConstantNode && ((ConstantNode) schemaInput).getValue(Collections.emptyMap()) instanceof String) {
+                if (logicNode.getOperator() == LogicOperator.MATCHES_SCHEMA) {
+                    // By convention, the schema definition is the second input.
+                    // We now access the input via the new inputNodes list.
+                    Node schemaInputNode = logicNode.getInputNodes().get(1);
 
-                    ConstantNode schemaStringConstant = (ConstantNode) schemaInput;
-                    String schemaJsonString = (String) schemaStringConstant.getValue(Collections.emptyMap());
+                    // Check if the input is a ConstantNode holding a schema as a String.
+                    if (schemaInputNode instanceof ConstantNode) {
+                        ConstantNode schemaConstant = (ConstantNode) schemaInputNode;
+                        Object schemaValue = schemaConstant.getValue();
 
-                    try {
-                        // Compile the schema string into a performant, executable JsonSchema object.
-                        JsonNode schemaJacksonNode = jacksonMapper.readTree(schemaJsonString);
-                        JsonSchema compiledSchema = schemaFactory.getSchema(schemaJacksonNode);
+                        if (schemaValue instanceof String) {
+                            String schemaJsonString = (String) schemaValue;
+                            try {
+                                // Compile the schema string into a performant, executable JsonSchema object.
+                                JsonNode schemaJacksonNode = jacksonMapper.readTree(schemaJsonString);
+                                JsonSchema compiledSchema = schemaFactory.getSchema(schemaJacksonNode);
 
-                        // Create a new ConstantNode to hold the compiled object.
-                        ConstantNode compiledSchemaConstant = new ConstantNode(
-                                schemaStringConstant.getElementName(),
-                                compiledSchema
-                        );
+                                // Create a new ConstantNode to hold the compiled object.
+                                // We use the new constructor and get the name from the original constant.
+                                ConstantNode compiledSchemaConstant = new ConstantNode(
+                                        schemaConstant.getName(),
+                                        compiledSchema
+                                );
 
-                        // Replace the old string-based constant with the new, compiled one in the graph.
-                        node.getInputProviders().set(1, compiledSchemaConstant);
+                                // Replace the old string-based constant with the new, compiled one in the graph.
+                                logicNode.getInputNodes().set(1, compiledSchemaConstant);
 
-                    } catch (Exception e) {
-                        throw new RuntimeException("Failed to compile JSON schema for node '" + node.getNodeName() + "': " + e.getMessage(), e);
+                            } catch (Exception e) {
+                                throw new RuntimeException("Failed to compile JSON schema for node '" + logicNode.getName() + "': " + e.getMessage(), e);
+                            }
+                        }
                     }
                 }
             }

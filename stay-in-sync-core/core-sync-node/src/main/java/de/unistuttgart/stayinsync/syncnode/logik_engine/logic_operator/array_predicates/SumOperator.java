@@ -1,8 +1,8 @@
 package de.unistuttgart.stayinsync.syncnode.logik_engine.logic_operator.array_predicates;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import de.unistuttgart.stayinsync.syncnode.logik_engine.nodes.inputNodes.InputNode;
 import de.unistuttgart.stayinsync.syncnode.logik_engine.nodes.LogicNode;
+import de.unistuttgart.stayinsync.syncnode.logik_engine.nodes.Node;
 import de.unistuttgart.stayinsync.syncnode.logik_engine.logic_operator.Operation;
 
 import java.lang.reflect.Array;
@@ -15,43 +15,38 @@ public class SumOperator implements Operation {
     /**
      * Validates that the node is correctly configured for the SUM operation.
      * <p>
-     * This structural check ensures that the operator is provided with exactly one input,
-     * which should be the array or collection whose elements are to be summed.
+     * This check ensures that the operator has exactly one input node, which is
+     * expected to deliver the array or collection of numbers.
      *
-     * @param node The LogicNode to validate. It must contain a list of input providers.
+     * @param node The LogicNode to validate.
      * @throws IllegalArgumentException if the node does not have exactly one input.
      */
     @Override
     public void validate(LogicNode node) {
-        List<InputNode> inputs = node.getInputProviders();
+        List<Node> inputs = node.getInputNodes();
         if (inputs == null || inputs.size() != 1) {
             throw new IllegalArgumentException(
-                    "SUM operation for node '" + node.getNodeName() + "' requires exactly 1 input: the collection of numbers to sum up."
+                    "SUM operation for node '" + node.getName() + "' requires exactly 1 input: the collection of numbers to sum up."
             );
         }
     }
 
     /**
-     * Executes the summation.
+     * Executes the summation on the pre-calculated result of its input node.
      *
      * @param node        The LogicNode being evaluated.
      * @param dataContext The runtime data context.
      * @return A {@link Double} representing the sum of all numeric elements. Returns 0.0 if the
-     *         input is missing, not a collection, or contains no numeric elements.
+     * input is null, not a collection/array, or contains no numeric elements.
      */
     @Override
     public Object execute(LogicNode node, Map<String, JsonNode> dataContext) {
-        List<InputNode> inputs = node.getInputProviders();
-        Object collectionProvider;
+        Node inputNode = node.getInputNodes().get(0);
 
-        try {
-            collectionProvider = inputs.get(0).getValue(dataContext);
-        } catch (IllegalStateException e) {
-            return 0.0; // Input is missing.
-        }
+        Object collectionProvider = inputNode.getCalculatedResult();
 
-        // We can't sum what is not a collection or an array.
-        if (!(collectionProvider instanceof Collection) && !collectionProvider.getClass().isArray()) {
+        // If the upstream node failed to produce a result, or it's not a valid type, the sum is 0.0.
+        if (collectionProvider == null || (!(collectionProvider instanceof Collection) && !collectionProvider.getClass().isArray())) {
             return 0.0;
         }
 

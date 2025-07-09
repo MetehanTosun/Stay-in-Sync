@@ -1,9 +1,9 @@
 package de.unistuttgart.stayinsync.syncnode.logik_engine.logic_operator.string_predicates;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import de.unistuttgart.stayinsync.syncnode.logik_engine.logic_operator.Operation;
 import de.unistuttgart.stayinsync.syncnode.logik_engine.nodes.LogicNode;
-import de.unistuttgart.stayinsync.syncnode.logik_engine.nodes.inputNodes.InputNode;
+import de.unistuttgart.stayinsync.syncnode.logik_engine.nodes.Node;
+import de.unistuttgart.stayinsync.syncnode.logik_engine.logic_operator.Operation;
 
 import java.util.List;
 import java.util.Map;
@@ -19,10 +19,10 @@ public class StringLengthBetweenOperator implements Operation {
      */
     @Override
     public void validate(LogicNode node) {
-        List<InputNode> inputs = node.getInputProviders();
+        List<Node> inputs = node.getInputNodes();
         if (inputs == null || inputs.size() != 3) {
             throw new IllegalArgumentException(
-                    "STRING_LENGTH_BETWEEN operation for node '" + node.getNodeName() + "' requires exactly 3 inputs: the string, a lower bound, and an upper bound."
+                    "LENGTH_BETWEEN operation for node '" + node.getName() + "' requires exactly 3 inputs: the string, a lower bound, and an upper bound."
             );
         }
     }
@@ -33,22 +33,15 @@ public class StringLengthBetweenOperator implements Operation {
      * @param node        The LogicNode being evaluated. It expects a string and two numbers as inputs.
      * @param dataContext The runtime data context.
      * @return {@code true} if the string's length is >= lower bound and <= upper bound.
-     * Returns {@code false} if inputs are missing or have incorrect types.
+     * Returns {@code false} if inputs are null or have incorrect types.
      */
     @Override
     public Object execute(LogicNode node, Map<String, JsonNode> dataContext) {
-        List<InputNode> inputs = node.getInputProviders();
-        Object stringProvider;
-        Object lowerBoundProvider;
-        Object upperBoundProvider;
+        List<Node> inputs = node.getInputNodes();
 
-        try {
-            stringProvider = inputs.get(0).getValue(dataContext);
-            lowerBoundProvider = inputs.get(1).getValue(dataContext);
-            upperBoundProvider = inputs.get(2).getValue(dataContext);
-        } catch (IllegalStateException e) {
-            return false;
-        }
+        Object stringProvider = inputs.get(0).getCalculatedResult();
+        Object lowerBoundProvider = inputs.get(1).getCalculatedResult();
+        Object upperBoundProvider = inputs.get(2).getCalculatedResult();
 
         if (!(stringProvider instanceof String) || !(lowerBoundProvider instanceof Number) || !(upperBoundProvider instanceof Number)) {
             return false;

@@ -1,8 +1,8 @@
 package de.unistuttgart.stayinsync.syncnode.logik_engine.logic_operator.array_predicates;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import de.unistuttgart.stayinsync.syncnode.logik_engine.nodes.inputNodes.InputNode;
 import de.unistuttgart.stayinsync.syncnode.logik_engine.nodes.LogicNode;
+import de.unistuttgart.stayinsync.syncnode.logik_engine.nodes.Node;
 import de.unistuttgart.stayinsync.syncnode.logik_engine.logic_operator.Operation;
 
 import java.lang.reflect.Array;
@@ -20,31 +20,31 @@ public class NotEmptyOperator implements Operation {
      */
     @Override
     public void validate(LogicNode node) {
-        List<InputNode> inputs = node.getInputProviders();
+        List<Node> inputs = node.getInputNodes();
         if (inputs == null || inputs.size() != 1) {
             throw new IllegalArgumentException(
-                    "NOT_EMPTY operation for node '" + node.getNodeName() + "' requires exactly 1 input: the array or collection to check."
+                    "NOT_EMPTY operation for node '" + node.getName() + "' requires exactly 1 input: the array or collection to check."
             );
         }
     }
 
     /**
-     * Executes the not-empty check.
+     * Executes the not-empty check on the pre-calculated result of its input node.
      *
      * @param node        The LogicNode being evaluated.
      * @param dataContext The runtime data context.
      * @return {@code true} if the input is an array or collection with at least one element.
-     *         Returns {@code false} if the input is missing, not an array/collection, or is empty.
+     * Returns {@code false} if the input is null, not an array/collection, or is empty.
      */
     @Override
     public Object execute(LogicNode node, Map<String, JsonNode> dataContext) {
-        List<InputNode> inputs = node.getInputProviders();
-        Object arrayOrCollectionProvider;
+        Node inputNode = node.getInputNodes().get(0);
 
-        try {
-            arrayOrCollectionProvider = inputs.get(0).getValue(dataContext);
-        } catch (IllegalStateException e) {
-            return false; // Input is missing, so it can't be "not empty".
+        Object arrayOrCollectionProvider = inputNode.getCalculatedResult();
+
+        // If the upstream node failed to produce a result, it cannot be "not empty".
+        if (arrayOrCollectionProvider == null) {
+            return false;
         }
 
         // Check if the provided object is a Java array.

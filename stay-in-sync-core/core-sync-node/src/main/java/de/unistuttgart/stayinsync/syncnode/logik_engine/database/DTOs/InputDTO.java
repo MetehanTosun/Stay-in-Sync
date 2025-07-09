@@ -1,30 +1,22 @@
 package de.unistuttgart.stayinsync.syncnode.logik_engine.database.DTOs;
 
-import com.fasterxml.jackson.annotation.JsonInclude;
-import de.unistuttgart.stayinsync.syncnode.logik_engine.nodes.inputNodes.InputNode;
+import lombok.Getter;
+import lombok.Setter;
 
 /**
- * Data Transfer Object (DTO) for an {@link InputNode}.
- * This class uses a polymorphic structure to represent different types of inputs.
- * The 'type' field acts as a discriminator.
+ * A Data Transfer Object representing an edge in the graph.
+ * It defines an input for a node by referencing the ID of the parent node.
  */
-@JsonInclude(JsonInclude.Include.NON_NULL)
+@Getter
+@Setter
 public class InputDTO {
+    /**
+     * The unique ID of the node that provides the input.
+     */
+    private int id;
 
     /**
-     * The discriminator field, indicating the type of input.
-     * Expected values: "CONSTANT", "JSON", "PARENT".
+     * The zero-based index specifying the order of this input for the receiving node.
      */
-    public String type;
-
-    // --- Fields for CONSTANT type ---
-    public String elementName;
-    public Object value;
-
-    // --- Fields for JSON type ---
-    public String sourceName;
-    public String path;
-
-    // --- Fields for PARENT type ---
-    public String parentNodeName;
+    private int orderIndex;
 }

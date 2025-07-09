@@ -3,17 +3,15 @@ package de.unistuttgart.stayinsync.syncnode.logik_engine.logic_operator.datetime
 import com.fasterxml.jackson.databind.JsonNode;
 import de.unistuttgart.stayinsync.syncnode.logik_engine.logic_operator.Operation;
 import de.unistuttgart.stayinsync.syncnode.logik_engine.nodes.LogicNode;
-import de.unistuttgart.stayinsync.syncnode.logik_engine.nodes.inputNodes.InputNode;
+import de.unistuttgart.stayinsync.syncnode.logik_engine.nodes.Node;
 
 import java.time.ZonedDateTime;
-import java.time.format.DateTimeParseException;
-import java.time.temporal.TemporalAccessor;
 import java.util.List;
 import java.util.Map;
 
 /**
  * An abstract base class for operations that compare two date-time inputs.
- * It handles the validation, retrieval, and parsing of inputs into ZonedDateTime objects.
+ * It handles the validation, retrieval of pre-calculated results, and parsing of inputs into ZonedDateTime objects.
  */
 public abstract class AbstractTwoDateTimeOperator implements Operation {
 
@@ -24,27 +22,34 @@ public abstract class AbstractTwoDateTimeOperator implements Operation {
      */
     @Override
     public void validate(LogicNode node) {
-        List<InputNode> inputs = node.getInputProviders();
+        // We now access the list of parent Node objects.
+        List<Node> inputs = node.getInputNodes();
         if (inputs == null || inputs.size() != 2) {
             throw new IllegalArgumentException(
-                    "Date-time comparison for node '" + node.getNodeName() + "' requires exactly 2 inputs."
+                    "Date-time comparison for node '" + node.getName() + "' requires exactly 2 inputs."
             );
         }
     }
 
     /**
-     * Orchestrates the execution by parsing two inputs into ZonedDateTime objects
-     * and then delegating the comparison to the concrete subclass.
+     * Orchestrates the execution by retrieving the pre-calculated results of its inputs,
+     * ensuring they can be parsed into ZonedDateTime objects, and then delegating the
+     * actual comparison to the concrete subclass.
      *
      * @param node        The LogicNode being evaluated.
      * @param dataContext The runtime data context.
-     * @return A {@code Boolean} result. Returns {@code false} if inputs cannot be parsed.
+     * @return A {@code Boolean} result. Returns {@code false} if results are null or cannot be parsed.
      */
     @Override
     public Object execute(LogicNode node, Map<String, JsonNode> dataContext) {
-        List<InputNode> inputs = node.getInputProviders();
-        ZonedDateTime dt1 = DateTimeParserUtil.toZonedDateTime(inputs.get(0).getValue(dataContext));
-        ZonedDateTime dt2 = DateTimeParserUtil.toZonedDateTime(inputs.get(1).getValue(dataContext));
+        List<Node> inputs = node.getInputNodes();
+
+        Object dateTimeProvider1 = inputs.get(0).getCalculatedResult();
+        Object dateTimeProvider2 = inputs.get(1).getCalculatedResult();
+
+        // The DateTimeParserUtil is used to robustly convert the provided values
+        ZonedDateTime dt1 = DateTimeParserUtil.toZonedDateTime(dateTimeProvider1);
+        ZonedDateTime dt2 = DateTimeParserUtil.toZonedDateTime(dateTimeProvider2);
 
         if (dt1 == null || dt2 == null) {
             return false;
@@ -53,10 +58,9 @@ public abstract class AbstractTwoDateTimeOperator implements Operation {
         return compareDateTimes(dt1, dt2);
     }
 
-
-
     /**
      * Performs the specific date-time comparison logic.
+     * This method must be implemented by the concrete subclass.
      *
      * @param dt1 The first date-time object.
      * @param dt2 The second date-time object.

@@ -1,8 +1,8 @@
 package de.unistuttgart.stayinsync.syncnode.logik_engine.logic_operator.array_predicates;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import de.unistuttgart.stayinsync.syncnode.logik_engine.nodes.inputNodes.InputNode;
 import de.unistuttgart.stayinsync.syncnode.logik_engine.nodes.LogicNode;
+import de.unistuttgart.stayinsync.syncnode.logik_engine.nodes.Node; // Import the base class
 import de.unistuttgart.stayinsync.syncnode.logik_engine.logic_operator.Operation;
 
 import java.lang.reflect.Array;
@@ -24,10 +24,11 @@ public abstract class AbstractArrayLengthComparisonOperator implements Operation
      */
     @Override
     public void validate(LogicNode node) {
-        List<InputNode> inputs = node.getInputProviders();
+        // We now access the list of parent Node objects.
+        List<Node> inputs = node.getInputNodes();
         if (inputs == null || inputs.size() != 2) {
             throw new IllegalArgumentException(
-                    "Array length comparison for node '" + node.getNodeName() + "' requires exactly 2 inputs: the array/list and the expected length."
+                    "Array length comparison for node '" + node.getName() + "' requires exactly 2 inputs: the array/list and the expected length."
             );
         }
     }
@@ -35,26 +36,25 @@ public abstract class AbstractArrayLengthComparisonOperator implements Operation
     /**
      * Executes the length comparison.
      * <p>
-     * It retrieves the two inputs, determines the length of the first input (if it's an array
-     * or a collection), and then delegates the specific comparison logic to the
+     * It retrieves the pre-calculated results of its two inputs, determines the length
+     * of the first input, and then delegates the specific comparison logic to the
      * abstract {@link #compare(int, int)} method.
      *
      * @param node        The LogicNode being evaluated.
-     * @param dataContext The runtime data context.
-     * @return {@code true} if the comparison is successful. Returns {@code false} if inputs are
-     *         missing, the first input is not an array/collection, or the second is not a number.
+     * @param dataContext The runtime data context (passed down but often not used here).
+     * @return {@code true} if the comparison is successful. Returns {@code false} if results
+     * are null, or if types are incorrect.
      */
     @Override
     public Object execute(LogicNode node, Map<String, JsonNode> dataContext) {
-        List<InputNode> inputs = node.getInputProviders();
-        Object arrayOrCollectionProvider;
-        Object lengthProvider;
+        List<Node> inputs = node.getInputNodes();
 
-        try {
-            arrayOrCollectionProvider = inputs.get(0).getValue(dataContext);
-            lengthProvider = inputs.get(1).getValue(dataContext);
-        } catch (IllegalStateException e) {
-            return false; // An input is missing.
+        Object arrayOrCollectionProvider = inputs.get(0).getCalculatedResult();
+        Object lengthProvider = inputs.get(1).getCalculatedResult();
+
+        // A simple null check replaces the try-catch block.
+        if (arrayOrCollectionProvider == null || lengthProvider == null) {
+            return false;
         }
 
         // The second input must be a number.
@@ -70,11 +70,10 @@ public abstract class AbstractArrayLengthComparisonOperator implements Operation
         } else if (arrayOrCollectionProvider instanceof Collection) {
             actualLength = ((Collection<?>) arrayOrCollectionProvider).size();
         } else {
-            // The provided input is not something we can get a length from.
             return false;
         }
 
-        // Delegate the actual comparison to the concrete implementation.
+        // Delegate the actual comparison to the concrete implementation. This does not change.
         return compare(actualLength, expectedLength);
     }
 

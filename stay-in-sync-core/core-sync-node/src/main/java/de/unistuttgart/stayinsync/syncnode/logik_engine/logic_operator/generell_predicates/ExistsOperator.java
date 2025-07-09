@@ -1,12 +1,13 @@
 package de.unistuttgart.stayinsync.syncnode.logik_engine.logic_operator.generell_predicates;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import de.unistuttgart.stayinsync.syncnode.logik_engine.nodes.inputNodes.InputNode;
-import de.unistuttgart.stayinsync.syncnode.logik_engine.nodes.inputNodes.JsonInputNode;
-import de.unistuttgart.stayinsync.syncnode.logik_engine.nodes.inputNodes.JsonPathValueExtractor;
-import de.unistuttgart.stayinsync.syncnode.logik_engine.nodes.LogicNode;
 import de.unistuttgart.stayinsync.syncnode.logik_engine.logic_operator.Operation;
+import de.unistuttgart.stayinsync.syncnode.logik_engine.nodes.JsonPathValueExtractor;
+import de.unistuttgart.stayinsync.syncnode.logik_engine.nodes.LogicNode;
+import de.unistuttgart.stayinsync.syncnode.logik_engine.nodes.Node;
+import de.unistuttgart.stayinsync.syncnode.logik_engine.nodes.ProviderNode;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
@@ -14,60 +15,45 @@ public class ExistsOperator implements Operation {
 
     private final JsonPathValueExtractor valueExtractor = new JsonPathValueExtractor();
 
-    /**
-     * Validates that the LogicNode is correctly configured for the EXISTS operation.
-     * <p>
-     * This operation requires the node to have one or more input providers, all of which
-     * must be instances of {@link JsonInputNode}.
-     *
-     * @param node The LogicNode to validate.
-     * @throws IllegalArgumentException if the node's configuration is invalid.
-     */
     @Override
     public void validate(LogicNode node) {
-        List<InputNode> inputs = node.getInputProviders();
-
+        // Diese Validierung bleibt gleich und stellt sicher, dass alle Inputs ProviderNodes sind.
+        List<Node> inputs = node.getInputNodes();
         if (inputs == null || inputs.isEmpty()) {
-            throw new IllegalArgumentException(
-                    "EXISTS operation for node '" + node.getNodeName() + "' requires at least 1 input."
-            );
+            throw new IllegalArgumentException("EXISTS operation requires at least 1 input.");
         }
-
-        for (InputNode input : inputs) {
-            if (!(input instanceof JsonInputNode)) {
-                throw new IllegalArgumentException(
-                        "EXISTS operation for node '" + node.getNodeName() + "' requires all its inputs to be of type JsonInputNode, but found " + input.getClass().getSimpleName()
-                );
+        for (Node input : inputs) {
+            if (!(input instanceof ProviderNode)) {
+                throw new IllegalArgumentException("EXISTS operation requires all inputs to be of type ProviderNode.");
             }
         }
     }
 
     /**
-     * Executes the existence check for the EXISTS operation on one or more paths.
-     * <p>
-     * It iterates through all {@link JsonInputNode} inputs. The final result is {@code true}
-     * if and only if **all** specified paths exist in their respective data sources.
+     * Executes the existence check by directly validating the path for each ProviderNode input.
      *
-     * @param node        The LogicNode currently being evaluated.
+     * @param node        The LogicNode being evaluated.
      * @param dataContext The runtime data context.
-     * @return {@code true} if all paths exist, otherwise {@code false}.
+     * @return {@code true} if all paths defined in the input ProviderNodes exist, otherwise {@code false}.
      */
     @Override
     public Object execute(LogicNode node, Map<String, JsonNode> dataContext) {
-        for (InputNode inputProvider : node.getInputProviders()) {
-            JsonInputNode jsonInput = (JsonInputNode) inputProvider;
-            String sourceName = jsonInput.getSourceName();
-            String jsonPath = jsonInput.getJsonPath();
 
-            boolean currentPathExists = false;
-            if (dataContext != null) {
-                JsonNode sourceObject = dataContext.get(sourceName);
-                if (sourceObject != null) {
-                    currentPathExists = valueExtractor.pathExists(sourceObject, jsonPath);
-                }
-            }
+        for (Node inputNode : node.getInputNodes()) {
+            ProviderNode provider = (ProviderNode) inputNode;
 
-            if (!currentPathExists) {
+            String fullPath = provider.getJsonPath();
+            if (fullPath == null || !fullPath.startsWith("source.")) { return false; }
+
+            String[] parts = fullPath.split("\\.");
+            if (parts.length < 2) { return false; }
+
+            String sourceName = parts[1];
+            String internalJsonPath = (parts.length > 2) ? String.join(".", Arrays.copyOfRange(parts, 2, parts.length)) : "";
+
+            JsonNode sourceObject = dataContext.get(sourceName);
+
+            if (!valueExtractor.pathExists(sourceObject, internalJsonPath)) {
                 return false;
             }
         }
@@ -75,4 +61,3 @@ public class ExistsOperator implements Operation {
         return true;
     }
 }
-

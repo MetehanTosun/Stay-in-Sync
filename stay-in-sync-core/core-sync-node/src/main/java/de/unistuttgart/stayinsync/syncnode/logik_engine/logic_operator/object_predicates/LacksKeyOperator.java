@@ -1,8 +1,8 @@
 package de.unistuttgart.stayinsync.syncnode.logik_engine.logic_operator.object_predicates;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import de.unistuttgart.stayinsync.syncnode.logik_engine.nodes.inputNodes.InputNode;
 import de.unistuttgart.stayinsync.syncnode.logik_engine.nodes.LogicNode;
+import de.unistuttgart.stayinsync.syncnode.logik_engine.nodes.Node;
 import de.unistuttgart.stayinsync.syncnode.logik_engine.logic_operator.Operation;
 
 import java.util.List;
@@ -18,10 +18,10 @@ public class LacksKeyOperator implements Operation {
      */
     @Override
     public void validate(LogicNode node) {
-        List<InputNode> inputs = node.getInputProviders();
+        List<Node> inputs = node.getInputNodes();
         if (inputs == null || inputs.size() != 2) {
             throw new IllegalArgumentException(
-                    "LACKS_KEY operation for node '" + node.getNodeName() + "' requires exactly 2 inputs: the JSON object and the key (String)."
+                    "LACKS_KEY operation for node '" + node.getName() + "' requires exactly 2 inputs: the JSON object and the key (String)."
             );
         }
     }
@@ -31,24 +31,19 @@ public class LacksKeyOperator implements Operation {
      *
      * @param node        The LogicNode being evaluated.
      * @param dataContext The runtime data context.
-     * @return {@code true} if the first input is not a JSON object or if it is a
-     *         JSON object that does not have a field matching the name provided by the
-     *         second input. Returns {@code false} if the key is present.
+     * @return {@code true} if the first input value is null, not a JSON object, or if it is one
+     * but does not have a field matching the name provided by the second input.
+     * Returns {@code false} if the key is present.
      */
     @Override
     public Object execute(LogicNode node, Map<String, JsonNode> dataContext) {
-        List<InputNode> inputs = node.getInputProviders();
-        Object objectProvider;
-        Object keyProvider;
+        List<Node> inputs = node.getInputNodes();
 
-        try {
-            objectProvider = inputs.get(0).getValue(dataContext);
-            keyProvider = inputs.get(1).getValue(dataContext);
-        } catch (IllegalStateException e) {
-            // An input is missing. If the object is missing, it "lacks" the key.
-            if (e.getMessage().contains("source '"+inputs.get(0).toString())) {
-                return true;
-            }
+        Object objectProvider = inputs.get(0).getCalculatedResult();
+        Object keyProvider = inputs.get(1).getCalculatedResult();
+
+        // If the key itself is missing, we cannot perform the check, so we fail-safe to false.
+        if (keyProvider == null) {
             return false;
         }
 

@@ -4,10 +4,10 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.networknt.schema.JsonSchema;
 import com.networknt.schema.ValidationMessage;
-import de.unistuttgart.stayinsync.syncnode.logik_engine.nodes.inputNodes.ConstantNode;
-import de.unistuttgart.stayinsync.syncnode.logik_engine.nodes.inputNodes.InputNode;
+import de.unistuttgart.stayinsync.syncnode.logik_engine.nodes.ConstantNode;
 import de.unistuttgart.stayinsync.syncnode.logik_engine.nodes.LogicNode;
 import de.unistuttgart.stayinsync.syncnode.logik_engine.logic_operator.Operation;
+import de.unistuttgart.stayinsync.syncnode.logik_engine.nodes.Node;
 
 import java.util.Collections;
 import java.util.List;
@@ -22,77 +22,70 @@ public class MatchesSchemaOperator implements Operation {
 
     /**
      * Validates that the LogicNode is correctly configured for the MATCHES_SCHEMA operation.
-     * <p>
-     * This operation requires exactly two inputs:
-     * <ol>
-     *     <li>The first input provides the JSON document (as a {@link JsonNode}) to be validated.</li>
-     *     <li>The second input must be a {@link ConstantNode} containing a pre-compiled
-     *     {@link com.networknt.schema.JsonSchema} object.</li>
-     * </ol>
+     * This validation is performed early to ensure the graph is structurally sound
+     * before execution begins.
      *
      * @param node The LogicNode to validate.
      * @throws IllegalArgumentException if the node's configuration is invalid.
      */
     @Override
     public void validate(LogicNode node) {
-        List<InputNode> inputs = node.getInputProviders();
+        List<Node> inputs = node.getInputNodes();
 
         if (inputs == null || inputs.size() != 2) {
             throw new IllegalArgumentException(
-                    "MATCHES_SCHEMA operation for node '" + node.getNodeName() + "' requires exactly 2 inputs: the JSON document and the pre-compiled schema."
+                    "MATCHES_SCHEMA operation for node '" + node.getName() + "' requires exactly 2 inputs."
             );
         }
 
-        if (!(inputs.get(1) instanceof ConstantNode)) {
+        Node schemaInputNode = inputs.get(1);
+        if (!(schemaInputNode instanceof ConstantNode)) {
             throw new IllegalArgumentException(
-                    "MATCHES_SCHEMA operation requires the second input (the schema) to be a ConstantNode."
+                    "MATCHES_SCHEMA operation requires the second input to be a ConstantNode."
             );
         }
 
-        ConstantNode schemaConstant = (ConstantNode) inputs.get(1);
-        Object schemaValue = schemaConstant.getValue(Collections.emptyMap());
+        // This is your original, more robust check, adapted for the new model.
+        // It inspects the configured value of the ConstantNode before execution.
+        ConstantNode schemaConstant = (ConstantNode) schemaInputNode;
+        Object schemaValue = schemaConstant.getValue();
+
+        // The ConstantNode must contain either the schema String (before compilation)
+        // or the compiled JsonSchema object (after compilation).
         if (!(schemaValue instanceof JsonSchema) && !(schemaValue instanceof String)) {
             throw new IllegalArgumentException(
-                    "The ConstantNode for MATCHES_SCHEMA must contain a com.networknt.schema.JsonSchema object."
+                    "The ConstantNode for MATCHES_SCHEMA must contain a JsonSchema object or a schema String."
             );
         }
     }
 
     /**
-     * Executes the JSON Schema validation.
-     * <p>
-     * It retrieves the document to be validated from the first input and the pre-compiled
-     * schema from the second. Since the engine now operates natively with Jackson's
-     * {@link JsonNode}, no type conversion is necessary.
+     * Executes the JSON Schema validation on the pre-calculated values of its inputs.
      *
      * @param node        The LogicNode being evaluated.
-     * @param dataContext The runtime data context, now containing Jackson JsonNodes.
+     * @param dataContext The runtime data context.
      * @return {@code true} if the document is valid against the schema, {@code false} otherwise.
      */
     @Override
     public Object execute(LogicNode node, Map<String, JsonNode> dataContext) {
-        // 1. Get inputs and the pre-compiled schema.
-        InputNode documentProvider = node.getInputProviders().get(0);
-        ConstantNode schemaProvider = (ConstantNode) node.getInputProviders().get(1);
-        JsonSchema schema = (JsonSchema) schemaProvider.getValue(dataContext);
+        // 1. Get the provided values from the input nodes.
+        Object documentToValidate = node.getInputNodes().get(0).getCalculatedResult();
+        Object schemaObject = node.getInputNodes().get(1).getCalculatedResult();
 
-        // 2. Get the Jackson JsonNode to validate.
-        Object documentToValidate;
-        try {
-            documentToValidate = documentProvider.getValue(dataContext);
-        } catch (IllegalStateException e) {
-            return false; // Document not found, so it cannot be valid.
-        }
-
+        // 2. The validate() method has already ensured the types are likely correct,
+        // but we perform a final runtime check for safety.
         if (!(documentToValidate instanceof JsonNode)) {
-            return false; // The value is not a JSON structure.
+            return false;
         }
+        if (!(schemaObject instanceof JsonSchema)) {
+            return false;
+        }
+
         JsonNode jacksonDocument = (JsonNode) documentToValidate;
+        JsonSchema schema = (JsonSchema) schemaObject;
 
         // 3. Perform the validation.
         Set<ValidationMessage> errors = schema.validate(jacksonDocument);
-
-        // 4. The document is valid if there are no validation errors.
         return errors.isEmpty();
     }
 }

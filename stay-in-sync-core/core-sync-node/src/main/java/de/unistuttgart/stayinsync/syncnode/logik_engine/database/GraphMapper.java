@@ -1,126 +1,138 @@
 package de.unistuttgart.stayinsync.syncnode.logik_engine.database;
 
-import de.unistuttgart.stayinsync.syncnode.logik_engine.database.DTOs.GraphDefinitionDTO;
+import de.unistuttgart.stayinsync.syncnode.logik_engine.database.DTOs.GraphDTO;
 import de.unistuttgart.stayinsync.syncnode.logik_engine.database.DTOs.InputDTO;
 import de.unistuttgart.stayinsync.syncnode.logik_engine.database.DTOs.NodeDTO;
 import de.unistuttgart.stayinsync.syncnode.logik_engine.logic_operator.LogicOperator;
+import de.unistuttgart.stayinsync.syncnode.logik_engine.nodes.ConstantNode;
 import de.unistuttgart.stayinsync.syncnode.logik_engine.nodes.LogicNode;
-import de.unistuttgart.stayinsync.syncnode.logik_engine.nodes.inputNodes.ConstantNode;
-import de.unistuttgart.stayinsync.syncnode.logik_engine.nodes.inputNodes.InputNode;
-import de.unistuttgart.stayinsync.syncnode.logik_engine.nodes.inputNodes.JsonInputNode;
-import de.unistuttgart.stayinsync.syncnode.logik_engine.nodes.inputNodes.ParentNode;
+import de.unistuttgart.stayinsync.syncnode.logik_engine.nodes.Node;
+import de.unistuttgart.stayinsync.syncnode.logik_engine.nodes.ProviderNode;
 import jakarta.enterprise.context.ApplicationScoped;
+
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-/**
- * Handles the conversion between the logic engine's domain objects (e.g., {@link LogicNode})
- * and the Data Transfer Objects (DTOs) used for persistence.
- */
 @ApplicationScoped
 public class GraphMapper {
 
-    // =================================================================================
-    // MAPPING: Logic Node  ==>  TO  ==>  DTOs (for saving to DB)
-    // =================================================================================
+    /**
+     * Maps a list of in-memory Node objects to a serializable GraphDTO.
+     */
+    public GraphDTO graphToDto(List<Node> nodes) {
+        GraphDTO graphDto = new GraphDTO();
 
-    public GraphDefinitionDTO graphToDto(List<LogicNode> nodes) {
-        GraphDefinitionDTO graphDto = new GraphDefinitionDTO();
         List<NodeDTO> nodeDtos = new ArrayList<>();
-
-        for (LogicNode node : nodes) {
-            NodeDTO nodeDto = logicNodeToDto(node);
-            nodeDtos.add(nodeDto);
+        for (Node node : nodes) {
+            nodeDtos.add(this.nodeToDto(node));
         }
 
-        graphDto.nodes = nodeDtos;
+        graphDto.setNodes(nodeDtos);
         return graphDto;
     }
 
-    private NodeDTO logicNodeToDto(LogicNode node) {
+    /**
+     * Helper method to map a single Node object to its DTO representation.
+     */
+    private NodeDTO nodeToDto(Node node) {
         NodeDTO dto = new NodeDTO();
-        dto.nodeName = node.getNodeName();
-        dto.operator = node.getOperator().name();
+        dto.setId(node.getId());
+        dto.setName(node.getName());
+        dto.setOffsetX(node.getOffsetX());
+        dto.setOffsetY(node.getOffsetY());
 
-        List<InputDTO> inputDtos = new ArrayList<>();
-        List<InputNode> inputProviders = node.getInputProviders();
-
-        for (InputNode input : inputProviders) {
-            InputDTO inputDto = inputNodeToDto(input);
-            inputDtos.add(inputDto);
+        // Create InputDTOs from the list of parent nodes
+        if (node.getInputNodes() != null) {
+            List<InputDTO> inputDtos = new ArrayList<>();
+            for (int i = 0; i < node.getInputNodes().size(); i++) {
+                Node parentNode = node.getInputNodes().get(i);
+                InputDTO inputDto = new InputDTO();
+                inputDto.setId(parentNode.getId());
+                inputDto.setOrderIndex(i);
+                inputDtos.add(inputDto);
+            }
+            dto.setInputNodes(inputDtos);
         }
-        dto.inputs = inputDtos;
+
+        // Set type-specific properties
+        if (node instanceof ProviderNode) {
+            ProviderNode provider = (ProviderNode) node;
+            dto.setNodeType("PROVIDER");
+            dto.setArcId(provider.getArcId());
+            dto.setJsonPath(provider.getJsonPath());
+        } else if (node instanceof ConstantNode) {
+            ConstantNode constant = (ConstantNode) node;
+            dto.setNodeType("CONSTANT");
+            dto.setValue(constant.getValue());
+        } else if (node instanceof LogicNode) {
+            LogicNode logic = (LogicNode) node;
+            dto.setNodeType("LOGIC");
+            dto.setOperatorType(logic.getOperator().name());
+        }
         return dto;
     }
 
-    private InputDTO inputNodeToDto(InputNode input) {
-        InputDTO dto = new InputDTO();
-        if (input.isConstantNode()) {
-            dto.type = "CONSTANT";
-            dto.elementName = ((ConstantNode) input).getElementName();
-            dto.value = ((ConstantNode) input).getValue();
-        } else if (input.isJsonInputNode()) {
-            JsonInputNode jsonNode = (JsonInputNode) input;
-            dto.type = "JSON";
-            dto.sourceName = jsonNode.getSourceName();
-            dto.path = jsonNode.getJsonPath();
-        } else if (input.isParentNode()) {
-            dto.type = "PARENT";
-            dto.parentNodeName = input.getParentNode().getNodeName();
-        } else {
-            throw new IllegalArgumentException("Unknown InputNode type for serialization: " + input.getClass().getName());
-        }
-        return dto;
-    }
+    /**
+     * Maps a GraphDTO (deserialized from JSON) back to a fully connected
+     * in-memory graph represented by a list of Node objects.
+     * This is a two-pass process.
+     */
+    public List<Node> toNodeGraph(GraphDTO graphDto) {
+        Map<Integer, Node> createdNodes = new HashMap<>();
+        List<Node> allNodesInList = new ArrayList<>();
 
-    // =================================================================================
-    // MAPPING: DTOs (from DB)  ==>  TO  ==>  LogicNode
-    // =================================================================================
+        // --- Pass 1: Create all node instances without their connections ---
+        for (NodeDTO dto : graphDto.getNodes()) {
+            Node node = null;
+            switch (dto.getNodeType()) {
+                case "PROVIDER":
+                    ProviderNode provider = new ProviderNode(dto.getJsonPath());
+                    provider.setArcId(dto.getArcId());
+                    node = provider;
+                    break;
+                case "CONSTANT":
+                    node = new ConstantNode(dto.getName(), dto.getValue());
+                    break;
+                case "LOGIC":
+                    LogicOperator operator = LogicOperator.valueOf(dto.getOperatorType());
+                    node = new LogicNode(dto.getName(), operator);
+                    break;
+                default:
+                    throw new IllegalArgumentException("Unknown nodeType during deserialization: " + dto.getNodeType());
+            }
 
-    public List<LogicNode> toLogicNode(GraphDefinitionDTO graphDto) {
-        Map<String, LogicNode> createdNodes = new HashMap<>();
-        List<LogicNode> allNodesInList = new ArrayList<>();
+            // Set common properties
+            node.setId(dto.getId());
+            if(!"CONSTANT".equals(dto.getNodeType())) node.setName(dto.getName()); // Name for ConstantNode is set via constructor
+            node.setOffsetX(dto.getOffsetX());
+            node.setOffsetY(dto.getOffsetY());
 
-        // Phase 1: Create all node instances (placeholders)
-        for (NodeDTO nodeDto : graphDto.nodes) {
-            LogicOperator operator = LogicOperator.valueOf(nodeDto.operator);
-            LogicNode node = new LogicNode(nodeDto.nodeName, operator); // Uses the "mapper" constructor
-            createdNodes.put(node.getNodeName(), node);
+            createdNodes.put(node.getId(), node);
             allNodesInList.add(node);
         }
 
-        // Phase 2: Create inputs and establish connections
-        for (NodeDTO nodeDto : graphDto.nodes) {
-            LogicNode currentNode = createdNodes.get(nodeDto.nodeName);
-            List<InputNode> resolvedInputs = new ArrayList<>();
+        // --- Pass 2: Establish the connections (edges) between the nodes ---
+        for (NodeDTO dto : graphDto.getNodes()) {
+            Node currentNode = createdNodes.get(dto.getId());
+            List<InputDTO> inputDtos = dto.getInputNodes();
 
-            for (InputDTO inputDto : nodeDto.inputs) {
-                InputNode inputNode = toInputNode(inputDto, createdNodes);
-                resolvedInputs.add(inputNode);
+            if (inputDtos != null && !inputDtos.isEmpty()) {
+                // Prepare a correctly ordered list for the inputs
+                Node[] orderedInputs = new Node[inputDtos.size()];
+                for (InputDTO inputDto : inputDtos) {
+                    Node parentNode = createdNodes.get(inputDto.getId());
+                    if (parentNode == null) {
+                        throw new IllegalStateException("Graph inconsistent: Parent node with ID " + inputDto.getId() + " not found.");
+                    }
+                    orderedInputs[inputDto.getOrderIndex()] = parentNode;
+                }
+                currentNode.setInputNodes(Arrays.asList(orderedInputs));
             }
-
-            currentNode.setInputProviders(resolvedInputs); // Uses the setter
         }
 
         return allNodesInList;
-    }
-
-    private InputNode toInputNode(InputDTO dto, Map<String, LogicNode> createdNodes) {
-        switch (dto.type) {
-            case "CONSTANT":
-                return new ConstantNode(dto.elementName, dto.value);
-            case "JSON":
-                return new JsonInputNode(dto.sourceName, dto.path);
-            case "PARENT":
-                LogicNode parentNode = createdNodes.get(dto.parentNodeName);
-                if (parentNode == null) {
-                    throw new IllegalStateException("Graph inconsistency: Parent node '" + dto.parentNodeName + "' not found during deserialization.");
-                }
-                return new ParentNode(parentNode);
-            default:
-                throw new IllegalArgumentException("Unknown InputDTO type during deserialization: " + dto.type);
-        }
     }
 }

@@ -1,10 +1,10 @@
 package de.unistuttgart.stayinsync.syncnode.logik_engine.logic_operator.generell_predicates;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import de.unistuttgart.stayinsync.syncnode.logik_engine.nodes.inputNodes.ConstantNode;
-import de.unistuttgart.stayinsync.syncnode.logik_engine.nodes.inputNodes.InputNode;
+import de.unistuttgart.stayinsync.syncnode.logik_engine.nodes.ConstantNode;
 import de.unistuttgart.stayinsync.syncnode.logik_engine.nodes.LogicNode;
 import de.unistuttgart.stayinsync.syncnode.logik_engine.logic_operator.Operation;
+import de.unistuttgart.stayinsync.syncnode.logik_engine.nodes.Node;
 
 import java.util.List;
 import java.util.Map;
@@ -27,16 +27,16 @@ public class NotEqualsOperator implements Operation {
      */
     @Override
     public void validate(LogicNode node) {
-        List<InputNode> inputs = node.getInputProviders();
+        List<Node> inputs = node.getInputNodes();
 
         if (inputs == null || inputs.size() < 2) {
             throw new IllegalArgumentException(
-                    "EQUALS operation for node '" + node.getNodeName() + "' requires at least 2 inputs to compare."
+                    "EQUALS operation for node '" + node.getName() + "' requires at least 2 inputs to compare."
             );
         }
 
         int constantNodeCount = 0;
-        for (InputNode input : inputs) {
+        for (Node input : inputs) {
             if (input instanceof ConstantNode) {
                 constantNodeCount++;
             }
@@ -44,7 +44,7 @@ public class NotEqualsOperator implements Operation {
 
         if (constantNodeCount > 1) {
             throw new IllegalArgumentException(
-                    "EQUALS operation for node '" + node.getNodeName() + "' is invalid. A maximum of one ConstantNode is allowed as an input. Found: " + constantNodeCount
+                    "EQUALS operation for node '" + node.getName() + "' is invalid. A maximum of one ConstantNode is allowed as an input. Found: " + constantNodeCount
             );
         }
     }
@@ -63,27 +63,21 @@ public class NotEqualsOperator implements Operation {
      */
     @Override
     public Object execute(LogicNode node, Map<String, JsonNode> dataContext) {
-        List<InputNode> inputs = node.getInputProviders();
-        Object referenceValue;
-        try {
-            referenceValue = inputs.get(0).getValue(dataContext);
-        } catch (IllegalStateException e) {
-            return false;
-        }
+        List<Node> inputs = node.getInputNodes();
+
+        Object referenceValue = inputs.get(0).getCalculatedResult();
 
         for (int i = 1; i < inputs.size(); i++) {
-            Object currentValue;
-            try {
-                currentValue = inputs.get(i).getValue(dataContext);
-            } catch (IllegalStateException e) {
-                return false;
-            }
+            Object currentValue = inputs.get(i).getCalculatedResult();
 
+            // If any value is not equal, the condition is immediately true.
+            // Objects.equals is null-safe and handles all comparisons correctly.
             if (!Objects.equals(referenceValue, currentValue)) {
                 return true;
             }
         }
 
+        // If the loop completes, all values were identical.
         return false;
     }
 }

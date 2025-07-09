@@ -1,9 +1,9 @@
 package de.unistuttgart.stayinsync.syncnode.logik_engine.logic_operator.generell_predicates;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import de.unistuttgart.stayinsync.syncnode.logik_engine.nodes.inputNodes.InputNode;
 import de.unistuttgart.stayinsync.syncnode.logik_engine.nodes.LogicNode;
 import de.unistuttgart.stayinsync.syncnode.logik_engine.logic_operator.Operation;
+import de.unistuttgart.stayinsync.syncnode.logik_engine.nodes.Node;
 
 import java.util.List;
 import java.util.Map;
@@ -20,11 +20,11 @@ public class OrOperator implements Operation {
      * @throws IllegalArgumentException if the node does not have at least two inputs.
      */
     public void validate(LogicNode node) {
-        List<InputNode> inputs = node.getInputProviders();
+        List<Node> inputs = node.getInputNodes();
 
         if (inputs == null || inputs.size() < 2) {
             throw new IllegalArgumentException(
-                    "OR operation for node '" + node.getNodeName() + "' requires at least 2 inputs."
+                    "OR operation for node '" + node.getName() + "' requires at least 2 inputs."
             );
         }
     }
@@ -39,25 +39,12 @@ public class OrOperator implements Operation {
      */
     @Override
     public Object execute(LogicNode node, Map<String, JsonNode> dataContext) {
-        for (InputNode inputProvider : node.getInputProviders()) {
-            Object value;
-            try {
-                value = inputProvider.getValue(dataContext);
-            } catch (IllegalStateException e) {
-                // An unresolvable value cannot be 'true', so it doesn't satisfy the OR
-                // condition. We simply continue to the next input.
-                continue;
-            }
+        for (Node inputProvider : node.getInputNodes()) {
+            Object value = inputProvider.getCalculatedResult();
 
-            // --- RUNTIME TYPE VALIDATION ---
-            // This check must be performed here, inside execute(), and not in validate().
-            // The validate() method only checks the static structure of the graph blueprint.
-            // It cannot know the runtime type of a value that comes from a ParentNode
-            // or a JsonInputNode, as those are only resolved during execution when the
-            // dataContext is available.
             if (!(value instanceof Boolean)) {
                 throw new IllegalArgumentException(
-                        "OR operation for node '" + node.getNodeName() + "' requires boolean inputs, but got a " + (value == null ? "null" : value.getClass().getSimpleName())
+                        "OR operation for node '" + node.getName() + "' requires boolean inputs, but got a " + (value == null ? "null" : value.getClass().getSimpleName())
                 );
             }
 

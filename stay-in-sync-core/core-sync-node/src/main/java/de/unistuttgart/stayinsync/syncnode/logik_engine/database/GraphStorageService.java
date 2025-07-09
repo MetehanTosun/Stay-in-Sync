@@ -2,8 +2,10 @@ package de.unistuttgart.stayinsync.syncnode.logik_engine.database;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import de.unistuttgart.stayinsync.syncnode.logik_engine.database.DTOs.GraphDTO;
 import de.unistuttgart.stayinsync.syncnode.logik_engine.database.DTOs.GraphDefinitionDTO;
 import de.unistuttgart.stayinsync.syncnode.logik_engine.nodes.LogicNode;
+import de.unistuttgart.stayinsync.syncnode.logik_engine.nodes.Node;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
@@ -32,25 +34,23 @@ public class GraphStorageService {
 
     /**
      * Saves a new logic graph to the database. The graph name must be unique.
-     * If a graph with the same name already exists, an exception will be thrown.
      *
      * @param name  The unique name for the graph.
-     * @param nodes The list of {@link LogicNode} objects representing the graph.
+     * @param nodes The list of {@link Node} objects representing the graph.
      * @throws IllegalArgumentException if a graph with the given name already exists.
      */
     @Transactional
-    public void saveGraph(String name, List<LogicNode> nodes) {
-        // Check if graph with this name already exists
-        Optional<LogicGraphEntity> existingEntity = LogicGraphEntity.<LogicGraphEntity>find("name", name).firstResultOptional();
+    public void saveGraph(String name, List<Node> nodes) {
+        Optional<LogicGraphEntity> existingEntity = LogicGraphEntity.find("name", name).firstResultOptional();
         if (existingEntity.isPresent()) {
-            throw new IllegalArgumentException("A graph with the name '" + name + "' already exists. Please choose a different name.");
+            throw new IllegalArgumentException("A graph with the name '" + name + "' already exists.");
         }
 
-        GraphDefinitionDTO graphDto = mapper.graphToDto(nodes);
+        // Use the mapper to convert the list of Node objects to the new GraphDTO
+        GraphDTO graphDto = mapper.graphToDto(nodes);
         try {
             String json = jsonObjectMapper.writeValueAsString(graphDto);
 
-            // Create new entity
             LogicGraphEntity entity = new LogicGraphEntity();
             entity.name = name;
             entity.graphDefinitionJson = json;
@@ -63,36 +63,30 @@ public class GraphStorageService {
 
     /**
      * Loads a logic graph from the database by its name and prepares it for execution.
-     * <p>
-     * The returned graph is fully "hydrated", meaning runtime objects like
-     * compiled JSON schemas are created from their string representations.
      *
      * @param name The name of the graph to load.
-     * @return An {@link Optional} containing the executable list of {@link LogicNode}s if found.
+     * @return An {@link Optional} containing the executable list of {@link Node}s if found.
      */
-    public Optional<List<LogicNode>> loadGraph(String name) {
-        // Find the graph in database
-        Optional<LogicGraphEntity> entityOptional = LogicGraphEntity.<LogicGraphEntity>find("name", name).firstResultOptional();
+    public Optional<List<Node>> loadGraph(String name) {
+        Optional<LogicGraphEntity> entityOptional = LogicGraphEntity.find("name", name).firstResultOptional();
 
-        // If not found, return empty
         if (entityOptional.isEmpty()) {
             return Optional.empty();
         }
 
-        // Get the entity
         LogicGraphEntity entity = entityOptional.get();
 
         try {
-            // Convert JSON back to DTO
-            GraphDefinitionDTO dto = jsonObjectMapper.readValue(entity.graphDefinitionJson, GraphDefinitionDTO.class);
-            List<LogicNode> rawGraph = mapper.toLogicNode(dto);
+            // Deserialize JSON into the new GraphDTO
+            GraphDTO dto = jsonObjectMapper.readValue(entity.graphDefinitionJson, GraphDTO.class);
+            // Use the mapper's new method to get a List<Node>
+            List<Node> rawGraph = mapper.toNodeGraph(dto);
 
-            // Step 2: HIDE THE COMPLEXITY. Compile the raw graph into an executable one.
-            List<LogicNode> executableGraph = graphCompilerService.compile(rawGraph);
-            graphValidator.validateGraph(executableGraph);
+            // The compiler and validator now work with List<Node>
+            List<Node> compiledGraph = graphCompilerService.compile(rawGraph);
+            graphValidator.validateGraph(compiledGraph);
 
-            // Step 3: Return the fully prepared, ready-to-run graph.
-            return Optional.of(executableGraph);
+            return Optional.of(compiledGraph);
 
         } catch (IOException e) {
             throw new RuntimeException("Failed to deserialize graph '" + name + "' from JSON.", e);

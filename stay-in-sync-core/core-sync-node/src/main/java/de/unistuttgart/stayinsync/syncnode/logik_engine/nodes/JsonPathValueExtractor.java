@@ -1,4 +1,4 @@
-package de.unistuttgart.stayinsync.syncnode.logik_engine.nodes.inputNodes;
+package de.unistuttgart.stayinsync.syncnode.logik_engine.nodes;
 
 import com.fasterxml.jackson.databind.JsonNode; // Jackson-Import
 import com.fasterxml.jackson.databind.node.JsonNodeType;

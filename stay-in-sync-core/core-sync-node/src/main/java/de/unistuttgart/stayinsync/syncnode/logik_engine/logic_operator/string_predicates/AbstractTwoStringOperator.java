@@ -1,9 +1,9 @@
 package de.unistuttgart.stayinsync.syncnode.logik_engine.logic_operator.string_predicates;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import de.unistuttgart.stayinsync.syncnode.logik_engine.logic_operator.Operation;
 import de.unistuttgart.stayinsync.syncnode.logik_engine.nodes.LogicNode;
-import de.unistuttgart.stayinsync.syncnode.logik_engine.nodes.inputNodes.InputNode;
+import de.unistuttgart.stayinsync.syncnode.logik_engine.nodes.Node;
+import de.unistuttgart.stayinsync.syncnode.logik_engine.logic_operator.Operation;
 
 import java.util.List;
 import java.util.Map;
@@ -22,10 +22,10 @@ public abstract class AbstractTwoStringOperator implements Operation {
      */
     @Override
     public void validate(LogicNode node) {
-        List<InputNode> inputs = node.getInputProviders();
+        List<Node> inputs = node.getInputNodes();
         if (inputs == null || inputs.size() != 2) {
             throw new IllegalArgumentException(
-                    "String comparison operation for node '" + node.getNodeName() + "' requires exactly 2 inputs."
+                    "String comparison operation for node '" + node.getName() + "' requires exactly 2 inputs."
             );
         }
     }
@@ -36,22 +36,17 @@ public abstract class AbstractTwoStringOperator implements Operation {
      *
      * @param node        The LogicNode being evaluated.
      * @param dataContext The runtime data context.
-     * @return A {@code Boolean} result from the comparison. Returns {@code false} if inputs
-     * are missing or are not both strings.
+     * @return A {@code Boolean} result from the comparison. Returns {@code false} if any
+     * provided value is null or not a string.
      */
     @Override
     public Object execute(LogicNode node, Map<String, JsonNode> dataContext) {
-        List<InputNode> inputs = node.getInputProviders();
-        Object value1;
-        Object value2;
+        List<Node> inputs = node.getInputNodes();
 
-        try {
-            value1 = inputs.get(0).getValue(dataContext);
-            value2 = inputs.get(1).getValue(dataContext);
-        } catch (IllegalStateException e) {
-            return false;
-        }
+        Object value1 = inputs.get(0).getCalculatedResult();
+        Object value2 = inputs.get(1).getCalculatedResult();
 
+        // The comparison is only possible if both provided values are strings.
         if (!(value1 instanceof String) || !(value2 instanceof String)) {
             return false;
         }
