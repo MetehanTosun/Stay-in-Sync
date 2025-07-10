@@ -1,9 +1,8 @@
 package de.unistuttgart.stayinsync.pollingnode.execution.ressource;
 
-import de.unistuttgart.stayinsync.pollingnode.entities.ApiConnectionDetails;
+import de.unistuttgart.stayinsync.pollingnode.HttpRequestExecutionException;
 import de.unistuttgart.stayinsync.pollingnode.exceptions.FaultySourceSystemApiRequestMessageDtoException;
-import de.unistuttgart.stayinsync.pollingnode.exceptions.HttpRequestConfigurationException;
-import de.unistuttgart.stayinsync.transport.dto.SourceSystemApiRequestConfigurationMessageDTO;
+import de.unistuttgart.stayinsync.transport.dto.ApiConnectionDetailsDTO;
 import de.unistuttgart.stayinsync.transport.dto.SourceSystemMessageDTO;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.unchecked.Unchecked;
@@ -51,7 +50,7 @@ public class RestClient {
      * @return fully configured and parameterised HttpRequest
      * @throws FaultySourceSystemApiRequestMessageDtoException if configuration didn´t work because of some fields.
      */
-    public HttpRequest<Buffer> configureRequest(final SourceSystemApiRequestConfigurationMessageDTO connectionDetails) throws FaultySourceSystemApiRequestMessageDtoException {
+    public HttpRequest<Buffer> configureRequest(final ApiConnectionDetailsDTO connectionDetails) throws FaultySourceSystemApiRequestMessageDtoException {
         try {
             final String apiCallPath = concatPaths(connectionDetails.sourceSystem().apiUrl(), connectionDetails.endpoint().endpointPath());
             this.logSourceSystemDetails(connectionDetails.sourceSystem(), apiCallPath);
@@ -76,11 +75,11 @@ public class RestClient {
                     if (response.statusCode() >= 200 && response.statusCode() <= 299) {
                         JsonObject jsonData = response.bodyAsJsonObject();
                         if (jsonData == null) {
-                            throw new RuntimeException("Empty response for this request");
+                            throw new HttpRequestExecutionException("Empty response for this request");
                         }
                         return jsonData;
                     } else {
-                        throw new RuntimeException(String.format(
+                        throw new HttpRequestExecutionException(String.format(
                                 "Http error %d with response status message %s for this request",
                                 response.statusCode(), response.statusMessage()));
                     }
@@ -93,7 +92,7 @@ public class RestClient {
                 );
     }
 
-    /*
+    /**
      * Builds request with one of these types: GET, POST, PUT.
      * DELETE is not supported.
      *
@@ -117,10 +116,17 @@ public class RestClient {
     /*
      * Parameterises an already built HttpRequest with the information of the ApiConnectionDetails.
      */
-    private void applyRequestConfiguration(SourceSystemApiRequestConfigurationMessageDTO connectionDetails, HttpRequest<Buffer> request) {
+    private void applyRequestConfiguration(ApiConnectionDetailsDTO connectionDetails, HttpRequest<Buffer> request) {
         request.putHeader(connectionDetails.sourceSystem().authDetails().headerName(), connectionDetails.sourceSystem().authDetails().apiKey());
         connectionDetails.requestHeader().forEach(header -> request.putHeader(header.headerName(), header.headerValue()));
-        connectionDetails.requestParameters().forEach(parameter -> request.addQueryParam(parameter.paramName(), parameter.paramValue()));
+        connectionDetails.requestParameters().forEach(parameter -> {
+            switch (parameter.type()) {
+                //TODO PathParam richtig einführen
+                case PATH -> request.addPathParam(parameter.paramName(), parameter.paramValue());
+                case QUERY -> request.addQueryParam(parameter.paramName(), parameter.paramValue());
+                default -> throw new IllegalArgumentException("Unsupported parameter type: " + parameter.type());
+            }
+        });
     }
 
     /*
