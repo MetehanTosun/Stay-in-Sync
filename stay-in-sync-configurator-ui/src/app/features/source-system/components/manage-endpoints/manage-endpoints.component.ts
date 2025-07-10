@@ -369,34 +369,23 @@ deleteQueryParam(paramId: number) {
     });
 }
 
-  /**
-   * Validator to ensure a path parameter name appears in the selected endpoint's URL enclosed in braces.
-   */
-  private pathParamInUrlValidator(): ValidatorFn {
-    return (control: AbstractControl): ValidationErrors | null => {
-      const raw = control.value as string;
-      const name = raw.replace(/^\{?(.+?)\}?$/, '$1');
-      const url = this.selectedEndpoint?.endpointPath ?? '';
-      const placeholder = `{${name}}`;
-      console.log('pathParamInUrlValidator:', { raw, name, url, placeholder });
-      if (!name) {
-        return null; // required validator handles empty
-      }
-      return url.includes(placeholder)
-        ? null
-        : { pathParamNotInUrl: { requiredPattern: placeholder } };
-    };
-  }
-
+ 
   /**
    * Validator to ensure path parameter format: starts with { and ends with } with at least one character inside.
    */
   private pathParamFormatValidator(): ValidatorFn {
     return (control: AbstractControl): ValidationErrors | null => {
+
+      const formGroup = control.parent;
+      if (formGroup && formGroup.get('queryParamType')?.value === ApiEndpointQueryParamType.Query) {
+        return null; 
+      }
+
       const val = control.value as string;
       if (typeof val !== 'string') {
         return { invalidPathParamFormat: true };
       }
+
       if (val.length >= 3 && val.startsWith('{') && val.endsWith('}')) {
         const inner = val.substring(1, val.length - 1);
         if (inner.length > 0) {
