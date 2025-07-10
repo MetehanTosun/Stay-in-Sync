@@ -134,10 +134,6 @@
             <artifactId>swagger-parser</artifactId>
             <version>2.1.21</version>
         </dependency>
-        <dependency>
-            <groupId>io.smallrye.reactive</groupId>
-            <artifactId>smallrye-mutiny-vertx-web-client</artifactId>
-        </dependency>
     </dependencies>
 
     <build>

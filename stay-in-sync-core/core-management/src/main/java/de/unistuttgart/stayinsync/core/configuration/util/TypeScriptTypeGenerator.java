@@ -24,7 +24,7 @@ public class TypeScriptTypeGenerator {
             String elementTypeName = generateInterface("RootObject", rootNode.get(0), allInterfaces);
             allInterfaces.append(String.format("export type Root = %s[];\n", elementTypeName));
         } else if(rootNode.isObject()){
-            String rootTypeName = generateInterface("Root", rootNode, allInterfaces);
+            String rootTypeName = generateInterface("Root", rootNode, allInterfaces); // TODO: evaluate if obsolete
         } else {
             return String.format("export type Root = %s;\n", getTsType("Root", rootNode, new StringBuilder()));
         }

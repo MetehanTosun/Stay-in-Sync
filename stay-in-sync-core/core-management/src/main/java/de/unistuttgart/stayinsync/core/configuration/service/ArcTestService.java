@@ -1,6 +1,5 @@
 package de.unistuttgart.stayinsync.core.configuration.service;
 
-import com.fasterxml.jackson.databind.JsonNode;
 import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.SourceSystem;
 import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.SourceSystemEndpoint;
 import de.unistuttgart.stayinsync.core.configuration.exception.CoreManagementException;
@@ -33,7 +32,7 @@ public class ArcTestService {
     }
 
     @Inject
-    TypeScriptTypeGenerator typeGenerator;
+    TypeScriptTypeGenerator typeGenerator; // TODO: Serialize to Type and display as tree in frontend
 
     public Uni<ArcTestResponseDTO> performTestCall(ArcTestRequestDTO requestDTO){
         SourceSystem system = SourceSystem.<SourceSystem>findByIdOptional(requestDTO.sourceSystemId())

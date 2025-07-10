@@ -1,5 +1,4 @@
 import { inject, Injectable } from '@angular/core';
-import { IDisposable } from 'monaco-editor';
 import { BehaviorSubject, Observable, of, throwError } from 'rxjs';
 import { catchError, map, tap } from 'rxjs/operators';
 import {
@@ -232,7 +231,7 @@ setTimeout(() => {
     const allLibs = monaco.languages.typescript.typescriptDefaults.getExtraLibs();
     console.groupCollapsed('%c[VERIFICATION] Checking Monaco\'s loaded libraries...', 'color: #10b981; font-weight: bold;');
     console.log('Total libs found:', Object.keys(allLibs).length);
-    
+
     // The keys of this object are the URIs of the libs
     console.log('All library URIs:', Object.keys(allLibs));
 
