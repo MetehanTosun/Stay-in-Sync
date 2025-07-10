@@ -1,4 +1,7 @@
 package de.unistuttgart.stayinsync.transport.dto;
 
-public record TransformationMessageDTO() {
+import java.util.Set;
+
+public record TransformationMessageDTO(
+        Set<SourceSystemApiRequestConfigurationMessageDTO> requestConfigurationMessageDTOS) {
 }
