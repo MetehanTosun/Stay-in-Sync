@@ -11,6 +11,7 @@ export interface Transformation{
   script?: string;
   syncJobId?: number;
   transformationScriptId?: number;
+  added?: boolean;
 }
 
 export interface UpdateTransformationRequest {

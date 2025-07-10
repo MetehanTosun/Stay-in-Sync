@@ -19,6 +19,7 @@ import {SyncJobService} from '../../services/sync-job.service';
 import {SyncJob} from '../../models/sync-job.model';
 import {SourceSystemService} from '../../../source-system/services/source-system.service';
 import {MultiSelect} from 'primeng/multiselect';
+import {TransformationTempStoreService} from '../../../transformation/services/transformation.tempstore.service';
 
 @Component({
   selector: 'app-sync-job-creation',
@@ -108,12 +109,11 @@ export class SyncJobCreationComponent implements OnInit {
       isSimulation: this._isSimulation,
       transformations: this._transformations
     } as SyncJob;
-    console.log("Updated Sync Job:", this.mySyncJob);
   }
 
 
 
-  constructor(private router: Router, private sourceSystemService: SourceSystemService, readonly syncJobService: SyncJobService) {}
+  constructor(private router: Router, private sourceSystemService: SourceSystemService, readonly syncJobService: SyncJobService, private tempStore: TransformationTempStoreService) {}
 
   ngOnInit() {
     console.log("Sync Job Creation Component Initialized");
@@ -133,6 +133,9 @@ export class SyncJobCreationComponent implements OnInit {
           console.log("Selected Source Systems:", this.selectedSourceSystems);
           this.isSimulation = job.isSimulation || false;
           this.transformations = Array.from(job.transformations || []);
+          console.log("Loaded Transformations:", this.transformations);
+          this.transformations.forEach(t => this.tempStore.addTransformation(t));
+          console.log("Transformations in Temp Store:", this.tempStore.getTransformations());
           this.deployed = job.deployed || false;
         },
         error: (err) => {
@@ -177,9 +180,17 @@ export class SyncJobCreationComponent implements OnInit {
       name: this.syncJobName,
       description: this.syncJobDescription,
       isSimulation: this.isSimulation,
-      transformations: this.transformations,
+
+      transformations: this.transformations.map(t => ({
+        id: t.id,
+        name: t.name,
+        description: t.description,
+        transformationRule: t.transformationRule,
+        transformationScript: t.script,
+      })),
       deployed: this.deployed
     };
+    console.log("Creating Sync Job with data:", syncJob);
 
     if (this.selectedSyncJobId) {
       // Update (PUT)
@@ -194,10 +205,8 @@ export class SyncJobCreationComponent implements OnInit {
       });
     } else {
       // Create (POST)
-      console.log("Creating Sync Job:", syncJob);
       this.syncJobService.create(syncJob).subscribe({
         next: (createdJob) => {
-          console.log("Sync Job erfolgreich erstellt:", createdJob);
           this.cancel();
         },
         error: (err) => {
@@ -220,5 +229,6 @@ export class SyncJobCreationComponent implements OnInit {
     this.transformations = [];
     this.activeStep = 1;
     this.selectedSyncJobId = undefined;
+    this.tempStore.clear();
   }
 }

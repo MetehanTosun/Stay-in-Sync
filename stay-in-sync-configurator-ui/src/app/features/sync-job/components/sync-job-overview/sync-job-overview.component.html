@@ -35,7 +35,7 @@
       <label><strong>Transformations:</strong></label>
       <ul class="p-list">
         <li *ngFor="let transformation of syncJob.transformations">
-          <strong>{{ transformation.name }}:</strong> {{ transformation.transformationRule }}
+          <strong>{{ transformation.name }}:</strong> {{ transformation.transformationRule }}, {{transformation.script}}
         </li>
       </ul>
     </div>

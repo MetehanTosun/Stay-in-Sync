@@ -15,4 +15,8 @@ export class TransformationScriptService {
     return this.httpClient.get<TransformationScript[]>(`/api/config/transformation-script`);
   }
 
+  create(transformationScript: TransformationScript): Observable<TransformationScript> {
+    return this.httpClient.post<TransformationScript>(`/api/config/transformation-script`, transformationScript);
+  }
+
 }

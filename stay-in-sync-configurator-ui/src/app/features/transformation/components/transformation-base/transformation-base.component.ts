@@ -54,20 +54,42 @@ export class TransformationBaseComponent implements OnInit {
   constructor(private transformationService : TransformationService, private router: Router, private tempStore: TransformationTempStoreService) {}
 
   ngOnInit() {
-    this.loadTransformationsFromBackend();
+    this.transformationService.getAll().subscribe(
+      (transformations: Transformation[]) => {
+        this.transformations = transformations;
+        this.addedTransformations = this.tempStore.getTransformations();
+        this.setAddedFlagForIntersection();
+        this.transformationChanged();
+        console.log('Transformations from backend loaded:', this.transformations);
+      },
+      (error: any) => {
+        console.error('Error loading transformations from backend:', error);
+      }
+    )
+  }
+
+  setAddedFlagForIntersection() {
+    const addedIds = this.addedTransformations.map(t => t.id);
+    console.log('Added Transformation IDs:', addedIds);
+    console.log('All Transformations:', this.transformations);
+    this.transformations.forEach(transformation => {
+      transformation.added = addedIds.includes(transformation.id);
+    });
   }
 
   loadTransformationsFromBackend() {
     this.transformationService.getAll().subscribe(
-        (transformations: Transformation[]) => {
-            this.transformations = transformations;
-            console.log('Transformations from backend loaded:', this.transformations);
-        },
-        (error: any) => {
-            console.error('Error loading transformations from backend:', error);
-        }
+      (transformations: Transformation[]) => {
+        this.transformations = transformations;
+        this.addedTransformations = this.tempStore.getTransformations();
+        this.setAddedFlagForIntersection();
+        this.transformationChanged();
+        console.log('Transformations from backend loaded:', this.transformations);
+      },
+      (error: any) => {
+        console.error('Error loading transformations from backend:', error);
+      }
     )
-
   }
 
   edit(rowData: any) {
@@ -85,15 +107,19 @@ export class TransformationBaseComponent implements OnInit {
   }
 
   add(rowData: any) {
+    console.log('Adding transformation:', rowData);
     rowData.added = true;
     this.tempStore.addTransformation(rowData);
+    console.log('Transformations in tempStore:', this.tempStore.getTransformations());
     this.addedTransformations = this.tempStore.getTransformations();
     this.transformationChanged();
   }
 
   remove(rowData: any) {
+    console.log('Removing transformation:', rowData);
     rowData.added = false;
     this.tempStore.removeTransformation(rowData);
+    console.log('Transformations in tempStore after removal:', this.tempStore.getTransformations());
     this.addedTransformations = this.tempStore.getTransformations();
     this.transformationChanged();
   }
@@ -104,10 +130,6 @@ export class TransformationBaseComponent implements OnInit {
   transformationChanged() {
     this.transformationsChanged.emit(this.addedTransformations);
   }
-
-  protected readonly min = min;
-
-
 
 
   createTransformationShell() {
@@ -197,5 +219,9 @@ export class TransformationBaseComponent implements OnInit {
         });
       });
     }
+  }
+
+  isAdded(rowData: any): boolean {
+    return this.addedTransformations.includes(rowData);
   }
 }

@@ -22,14 +22,23 @@
         </ng-template>
       </td>
      <td>
-        <ng-container *ngIf="rowData.script; else addScriptBtn">
-          {{ rowData.script.name }}
-          <p-button label="RemoveScript" [style]="{'width': '8rem', 'background-color': '#d32f2f', 'border': '#d32f2f' }" (click)="removeScript(rowData)"></p-button>
-        </ng-container>
-        <ng-template #addScriptBtn>
-          <p-button label="addScript" (click)="addScript(rowData)"></p-button>
-        </ng-template>
-      </td>
+       <ng-container *ngIf="rowData.script; else addScriptBtn">
+         {{ rowData.script.name }}
+         <p-button
+           label="RemoveScript"
+           [style]="{'width': '8rem', 'background-color': '#d32f2f', 'border': '#d32f2f' }"
+           (click)="removeScript(rowData)"
+           [style.display]="isAdded(rowData) ? 'none' : ''">
+         </p-button>
+       </ng-container>
+       <ng-template #addScriptBtn>
+         <p-button
+           label="addScript"
+           (click)="addScript(rowData)"
+           [disabled]="isAdded(rowData)">
+         </p-button>
+       </ng-template>
+     </td>
       <td>
         <p-button icon="pi pi-pencil" class="p-button-rounded p-button-text" (click)="edit(rowData)" styleClass="p-button-rounded p-button-text"></p-button>
         <p-button icon="pi pi-trash" class="p-button-rounded p-button-danger p-button-text" (click)="delete(rowData)" styleClass="p-button-rounded p-button-danger p-button-text"></p-button>
@@ -37,8 +46,8 @@
           [label]="rowData.added ? 'Remove' : 'Add'"
           [class]="rowData.added ? 'p-button-rounded p-button-text w-24' : 'p-button-rounded p-button-text w-24'"
           [style]="rowData.added ? {'width': '8rem', 'background-color': '#d32f2f', 'border': '#d32f2f' } : {'width': '8rem'}"
-          [disabled]="!rowData.transformationRule || !rowData.transformationScript"
-          (click)="(!rowData.transformationRule || !rowData.transformationScript) ? showMissingFieldsMessage() : (rowData.added ? remove(rowData) : add(rowData))">
+          [disabled]=" !rowData.script"
+          (click)="( !rowData.script) ? showMissingFieldsMessage() : (rowData.added ? remove(rowData) : add(rowData))">
         </p-button>
       </td>
     </tr>
