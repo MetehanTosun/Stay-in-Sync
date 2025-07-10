@@ -13,7 +13,6 @@ import { HttpClient } from '@angular/common/http';
 interface ArcState {
   allSystemNames: string[];
   arcsBySystem: Map<string, ApiRequestConfiguration[]>;
-  loadedLibs: Map<string, IDisposable>;
   loadingSystems: Set<string>;
 }
 
@@ -28,7 +27,6 @@ export class ArcStateService {
   private readonly state = new BehaviorSubject<ArcState>({
     allSystemNames: [],
     arcsBySystem: new Map(),
-    loadedLibs: new Map(),
     loadingSystems: new Set(),
   });
 
@@ -85,6 +83,8 @@ export class ArcStateService {
         !currentState.loadingSystems.has(name)
     );
 
+    console.log(`%c[ArcState] Attemping to load types for:`, 'color: #f97316;', namesToFetch);
+
     if (namesToFetch.length === 0) {
       return of(undefined);
     }
@@ -102,6 +102,10 @@ export class ArcStateService {
       )
       .pipe(
         tap((loadedArcMap) => {
+          console.groupCollapsed(`%c[ArcState] Received data from API for [${namesToFetch.join(', ')}]`, 'color: #22c55e;');
+        console.log('API Response:', loadedArcMap);
+        console.groupEnd();
+
           const newState = this.state.getValue();
           const updatedArcsBySystem = new Map(newState.arcsBySystem);
 
@@ -141,6 +145,7 @@ export class ArcStateService {
    * @param newArc The newly created ARC. It MUST include `sourceSystemName`.
    */
   public addOrUpdateArc(newArc: ApiRequestConfiguration): void {
+    console.log('%c[ArcState] addOrUpdateArc called with:', 'color: #8b5cf6;', newArc);
     if (!newArc.sourceSystemName) {
       console.error(
         'Cannot add ARC to state: sourceSystemName is missing.',
@@ -169,6 +174,7 @@ export class ArcStateService {
    * This central function generates the complete `.d.ts` file for all loaded ARCs.
    */
   private regenerateAllTypeDefinitions(): void {
+    console.groupCollapsed('%c[ArcState] Regenerating All Type Definitions...', 'font-weight: bold; color: #ef4444;');
     const monaco = this.monaco;
     if (!monaco) {
       throwError(
@@ -181,58 +187,68 @@ export class ArcStateService {
     }
 
     const currentState = this.state.getValue();
+    console.log('Current state being used for generation:', currentState);
     const allSystemNames = currentState.allSystemNames;
 
-    if (!allSystemNames || allSystemNames.length === 0) return;
+    if (!allSystemNames || allSystemNames.length === 0) {
+      console.warn('[ArcState] No system names loaded. Aborting DTS generation.');
+      console.groupEnd();
+      return;
+    }
 
-    currentState.loadedLibs.get(this.SOURCE_TYPES_URI)?.dispose();
+    let dts = 'declare const source: {\n';
+    let individualTypeInterfaces = '';
 
-    this.scriptEditorService
-      .getSourceSystemNames()
-      .subscribe((allSystemNames) => {
-        let dts = 'declare const source: {\n';
-        let individualTypeInterfaces = '';
+    for (const systemName of allSystemNames) {
+      const validJsIdentifier = this.sanitizeForJs(systemName);
 
-        for (const systemName of allSystemNames) {
-          const validJsIdentifier = this.sanitizeForJs(systemName);
+      if (currentState.arcsBySystem.has(systemName)) {
+        const arcs = currentState.arcsBySystem.get(systemName)!;
+        dts += `  ${validJsIdentifier}: {\n`;
+        for (const arc of arcs) {
+          const arcNameJs = this.sanitizeForJs(arc.alias);
+          const typeName = `${this.capitalize(validJsIdentifier)}${this.capitalize(arcNameJs)}ResponseType`;
 
-          if (currentState.arcsBySystem.has(systemName)) {
-            const arcs = currentState.arcsBySystem.get(systemName)!;
-            dts += `  ${validJsIdentifier}: {\n`;
-            for (const arc of arcs) {
-              const arcNameJs = this.sanitizeForJs(arc.alias);
-              const typeName = `${this.capitalize(
-                validJsIdentifier
-              )}${this.capitalize(arcNameJs)}ResponseType`;
-
-              dts += `    ${arcNameJs}: ${typeName};\n`;
-              individualTypeInterfaces +=
-                (arc.responseDts || 'interface Root {}').replace(
-                  'interface Root',
-                  `interface ${typeName}`
-                ) + '\n\n';
-            }
-            dts += '  };\n';
-          } else {
-            // In case ARCs were not loaded for this system yet, we set 'any'.
-            dts += `  ${validJsIdentifier}: any;\n`;
-          }
+          dts += `    ${arcNameJs}: ${typeName};\n`;
+          individualTypeInterfaces += (arc.responseDts || `export interface ${typeName} {}`)
+            .replace(/^(export\s+)?(interface|type)\s+Root/, `$1$2 ${typeName}`) + '\n\n';
         }
+        dts += '  };\n';
+      } else {
+        // This system's types haven't been loaded yet. Define it as 'any'.
+        dts += `  ${validJsIdentifier}: any;\n`;
+      }
+    }
 
-        const finalDts = dts + '};\n\n' + individualTypeInterfaces;
+    const finalDts = dts + '};\n\n' + individualTypeInterfaces;
+    console.log('[ArcState] Upserting library content into Monaco...');
 
-        console.log('UPDATING MONACO with types:', finalDts);
+    monaco.languages.typescript.typescriptDefaults.addExtraLib(finalDts,this.SOURCE_TYPES_URI);
+    console.log('[ArcState] Library update call complete.');
 
-        const disposable =
-          monaco.languages.typescript.typescriptDefaults.addExtraLib(
-            finalDts,
-            this.SOURCE_TYPES_URI
-          );
+    // ================== NEW VERIFICATION STEP ==================
+// Use a setTimeout to allow Monaco's event loop to process the update
+setTimeout(() => {
+    const allLibs = monaco.languages.typescript.typescriptDefaults.getExtraLibs();
+    console.groupCollapsed('%c[VERIFICATION] Checking Monaco\'s loaded libraries...', 'color: #10b981; font-weight: bold;');
+    console.log('Total libs found:', Object.keys(allLibs).length);
+    
+    // The keys of this object are the URIs of the libs
+    console.log('All library URIs:', Object.keys(allLibs));
 
-        const updatedLibs = new Map(currentState.loadedLibs);
-        updatedLibs.set(this.SOURCE_TYPES_URI, disposable);
-        this.updateState({ loadedLibs: updatedLibs });
-      });
+    // Let's check the content of OUR specific library
+    const ourLibContent = allLibs[this.SOURCE_TYPES_URI]?.content;
+    if (ourLibContent) {
+        console.log(`%cContent of '${this.SOURCE_TYPES_URI}':`, 'font-weight: bold;');
+        console.log(ourLibContent);
+    } else {
+        console.error(`%cFAILURE: Library '${this.SOURCE_TYPES_URI}' was NOT FOUND in Monaco after update!`, 'color: red;');
+    }
+    console.groupEnd();
+}, 500); // 500ms delay to be safe
+// ==========================================================
+
+    console.groupEnd();
   }
 
   private addGlobalApiDefinitions(): void {
@@ -251,7 +267,19 @@ export class ArcStateService {
   }
 
   private updateState(partialState: Partial<ArcState>): void {
-    this.state.next({ ...this.state.getValue(), ...partialState });
+    const oldState = this.state.getValue();
+    const newState = { ...oldState, ...partialState };
+
+    console.groupCollapsed(`%c[ArcState] State Updated`, 'font-weight: bold; color: #3b82f6;');
+    console.log('%cPartial state applied:', 'font-weight: bold;', partialState);
+    console.log('%cPrevious full state:', 'font-weight: bold;', oldState);
+    console.log('%cNew full state:', 'font-weight: bold;', newState);
+    console.groupEnd();
+
+    this.state.next(newState);
+
+
+    //this.state.next({ ...this.state.getValue(), ...partialState });
   }
 
   private capitalize(s: string): string {

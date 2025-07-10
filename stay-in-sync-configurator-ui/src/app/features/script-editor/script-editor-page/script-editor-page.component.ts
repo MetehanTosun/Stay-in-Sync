@@ -176,6 +176,7 @@ export class ScriptEditorPageComponent implements OnInit, OnDestroy {
   }
 
   handleArcSave(savedArc: ApiRequestConfiguration): void {
+    console.log('%c[Editor] Handling saved ARC:', 'color: #10b981;', savedArc);
     this.arcStateService.addOrUpdateArc(savedArc);
     this.messageService.add({ severity: 'success', summary: 'ARC Saved', detail: `Configuration '${savedArc.alias}' is now available.` });
   }
@@ -276,6 +277,7 @@ export class ScriptEditorPageComponent implements OnInit, OnDestroy {
     }
 
     if (systemNamesInEditor.size > 0) {
+      console.log('%c[Editor] Detected system names:', 'color: #eab308;', Array.from(systemNamesInEditor));
       this.arcStateService.loadTypesForSourceSystemNames(Array.from(systemNamesInEditor)).subscribe();
     }
   }

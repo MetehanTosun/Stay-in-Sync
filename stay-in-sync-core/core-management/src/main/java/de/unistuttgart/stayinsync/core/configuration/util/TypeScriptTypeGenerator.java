@@ -17,11 +17,26 @@ public class TypeScriptTypeGenerator {
         JsonNode rootNode = mapper.readTree(jsonString);
         StringBuilder allInterfaces = new StringBuilder();
 
-        generateInterface("Root", rootNode, allInterfaces);
+        if(rootNode.isArray()){
+            if (rootNode.isEmpty()){
+                return "export type Root = any[];\n";
+            }
+            String elementTypeName = generateInterface("RootObject", rootNode.get(0), allInterfaces);
+            allInterfaces.append(String.format("export type Root = %s[];\n", elementTypeName));
+        } else if(rootNode.isObject()){
+            String rootTypeName = generateInterface("Root", rootNode, allInterfaces);
+        } else {
+            return String.format("export type Root = %s;\n", getTsType("Root", rootNode, new StringBuilder()));
+        }
+
         return allInterfaces.toString();
     }
 
-    private void generateInterface(String interfaceName, JsonNode node, StringBuilder allInterfaces) {
+    private String generateInterface(String interfaceName, JsonNode node, StringBuilder allInterfaces) {
+        if (allInterfaces.toString().contains("interface " + interfaceName + " {")) {
+            return interfaceName;
+        }
+
         StringBuilder currentInterface = new StringBuilder();
         currentInterface.append(String.format("interface %s {\n", interfaceName));
 
@@ -29,13 +44,15 @@ public class TypeScriptTypeGenerator {
         while (fields.hasNext()) {
             Map.Entry<String, JsonNode> field = fields.next();
             String fieldName = field.getKey();
+            String validFieldName = fieldName.matches("^[a-zA-Z_][a-zA-Z0-9_]*$") ? fieldName : String.format("'%s'", fieldName);
             JsonNode fieldNode = field.getValue();
             String type = getTsType(fieldName, fieldNode, allInterfaces);
-            currentInterface.append(String.format(" %s: %s;\n", fieldName, type));
+            currentInterface.append(String.format(" %s: %s;\n", validFieldName, type));
         }
         currentInterface.append("}\n");
-        // Prepending for proper order
+        // Prepending ensures that dependencies are defined before they are used.
         allInterfaces.insert(0, currentInterface);
+        return interfaceName;
     }
 
     private String getTsType(String fieldName, JsonNode fieldNode, StringBuilder allInterfaces) {
@@ -55,8 +72,9 @@ public class TypeScriptTypeGenerator {
                 return "any[]";
             }
             JsonNode firstElement = fieldNode.get(0);
-            String arrayElementType = getTsType(fieldName, firstElement, allInterfaces);
-            return arrayElementType + "[]";
+            String singularFieldName = fieldName.endsWith("s") ? fieldName.substring(0, fieldName.length() - 1) : fieldName;
+            String arrayElementType = getTsType(singularFieldName, firstElement, allInterfaces);
+            return String.format("%s[]", arrayElementType);
         }
 
         return "any";

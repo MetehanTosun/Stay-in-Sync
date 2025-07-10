@@ -6,7 +6,7 @@ import jakarta.validation.constraints.NotNull;
 import java.util.Map;
 
 public record CreateArcDTO (
-        @NotNull String name,
+        @NotNull String alias,
 
         @NotNull
         Long sourceSystemId,

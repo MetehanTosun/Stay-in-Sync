@@ -51,7 +51,7 @@ export class ScriptEditorService {
     request: ArcTestCallRequest
   ): Observable<ArcTestCallResponse> {
     return this.http.post<ArcTestCallResponse>(
-      `${this.API_URL}/arc/test-call`,
+      `${this.API_URL}/config/arc-test-call`,
       request
     ); // TODO: Bind resource endpoint
   }

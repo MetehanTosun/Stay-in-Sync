@@ -304,7 +304,7 @@ export class ArcWizardComponent implements OnChanges {
       pathParameterValues: this.cleanObject(this.pathParametersGroup.value),
       queryParameterValues: queryParameterValues,
       headerValues: headerValues,
-      responseDts: this.testResult.responsePayload,
+      responseDts: JSON.stringify(this.testResult.responsePayload),
       pollingIntervallTimeInMs: 10000, // TODO: Implement in Form
     };
 
