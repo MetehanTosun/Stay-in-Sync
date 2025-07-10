@@ -1,6 +1,6 @@
 import { Component, OnInit, Input, Output, EventEmitter } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
+import { ReactiveFormsModule, FormBuilder, FormGroup, Validators, AbstractControl, ValidationErrors, ValidatorFn } from '@angular/forms';
 
 import { TableModule } from 'primeng/table';
 import { ButtonModule } from 'primeng/button';
@@ -143,7 +143,7 @@ export class ManageEndpointsComponent implements OnInit {
     });
 
     this.queryParamForm = this.fb.group({
-      paramName: ['', Validators.required],
+      paramName: ['', [Validators.required, this.pathParamFormatValidator()]],
       queryParamType: [ApiEndpointQueryParamType.Query, Validators.required]
     });
 
@@ -369,5 +369,42 @@ deleteQueryParam(paramId: number) {
     });
 }
 
+  /**
+   * Validator to ensure a path parameter name appears in the selected endpoint's URL enclosed in braces.
+   */
+  private pathParamInUrlValidator(): ValidatorFn {
+    return (control: AbstractControl): ValidationErrors | null => {
+      const raw = control.value as string;
+      const name = raw.replace(/^\{?(.+?)\}?$/, '$1');
+      const url = this.selectedEndpoint?.endpointPath ?? '';
+      const placeholder = `{${name}}`;
+      console.log('pathParamInUrlValidator:', { raw, name, url, placeholder });
+      if (!name) {
+        return null; // required validator handles empty
+      }
+      return url.includes(placeholder)
+        ? null
+        : { pathParamNotInUrl: { requiredPattern: placeholder } };
+    };
+  }
+
+  /**
+   * Validator to ensure path parameter format: starts with { and ends with } with at least one character inside.
+   */
+  private pathParamFormatValidator(): ValidatorFn {
+    return (control: AbstractControl): ValidationErrors | null => {
+      const val = control.value as string;
+      if (typeof val !== 'string') {
+        return { invalidPathParamFormat: true };
+      }
+      if (val.length >= 3 && val.startsWith('{') && val.endsWith('}')) {
+        const inner = val.substring(1, val.length - 1);
+        if (inner.length > 0) {
+          return null;
+        }
+      }
+      return { invalidPathParamFormat: true };
+    };
+  }
 
 }

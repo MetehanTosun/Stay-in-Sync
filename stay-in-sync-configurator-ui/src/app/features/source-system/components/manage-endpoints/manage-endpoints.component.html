@@ -96,9 +96,12 @@
 
   <!-- Form to Add a New Query Parameter -->
   <form [formGroup]="queryParamForm" (ngSubmit)="addQueryParam()" class="p-fluid p-formgrid p-grid p-mb-4">
-    <div class="p-field p-col-12 p-md-5">
-      <label for="paramName">Parametername</label>
-      <input id="paramName" type="text" pInputText formControlName="paramName">
+    <div class="p-field">
+      <label for="paramName">Parameter Name</label>
+      <input id="paramName" type="text" pInputText formControlName="paramName" />
+      <div *ngIf="queryParamForm.get('paramName')?.touched && queryParamForm.get('paramName')?.hasError('invalidPathParamFormat')" class="p-error">
+        Path parameter must be enclosed in braces, e.g. {{ '{' }}paramName{{ '}' }}.
+      </div>
     </div>
     <div class="p-field p-col-12 p-md-5">
       <label for="paramType">Typ</label>
@@ -148,5 +151,3 @@
 
 </div>
 
-  
-</p-card>
