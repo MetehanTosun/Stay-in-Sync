@@ -110,12 +110,16 @@ services:
       - "5500:5000"
     volumes:
       - ./fluent-bit/fluent-bit.conf:/fluent-bit/etc/fluent-bit.conf:ro
+      - ./fluent-bit/parsers.conf:/fluent-bit/etc/parsers.conf:ro
+      - ./fluent-bit/scripts:/fluent-bit/scripts:ro
       - /var/lib/docker/containers:/var/lib/docker/containers:ro
       - /var/log:/var/log:ro
+
     depends_on:
       - loki
     networks:
       - elk
+
 
 
 volumes:
