@@ -61,19 +61,19 @@ services:
     networks:
       - elk
 
-  rabbitmq:
-    image: rabbitmq:3.13-management
-    container_name: rabbitmq
-    environment:
-      - RABBITMQ_DEFAULT_USER=admin
-      - RABBITMQ_DEFAULT_PASS=admin
-    ports:
-      - "5672:5672"
-      - "15672:15672"
-    volumes:
-      - rabbitmq_data:/var/lib/rabbitmq
-    networks:
-      - elk
+  # rabbitmq:
+  #   image: rabbitmq:3.13-management
+  #   container_name: rabbitmq
+  #   environment:
+  #     - RABBITMQ_DEFAULT_USER=admin
+  #     - RABBITMQ_DEFAULT_PASS=admin
+  #   ports:
+  #     - "5672:5672"
+  #     - "15672:15672"
+  #   volumes:
+  #     - rabbitmq_data:/var/lib/rabbitmq
+  #   networks:
+  #     - elk
 
   metricbeat:
     image: docker.elastic.co/beats/metricbeat:8.13.4
@@ -90,7 +90,6 @@ services:
       - KIBANA_HOST=kibana:5601
     depends_on:
       - elasticsearch
-      - rabbitmq
     networks:
       - elk
     command: metricbeat -e -strict.perms=false
@@ -107,6 +106,8 @@ services:
   fluent-bit:
     image: fluent/fluent-bit:2.2.3
     container_name: fluent-bit
+    ports:
+      - "5500:5000"
     volumes:
       - ./fluent-bit/fluent-bit.conf:/fluent-bit/etc/fluent-bit.conf:ro
       - /var/lib/docker/containers:/var/lib/docker/containers:ro
@@ -119,10 +120,11 @@ services:
 
 volumes:
   elasticsearch_data:
-  rabbitmq_data:
   grafana_data:
+  # rabbitmq_data:
 
 networks:
   elk:
     driver: bridge
+
 
