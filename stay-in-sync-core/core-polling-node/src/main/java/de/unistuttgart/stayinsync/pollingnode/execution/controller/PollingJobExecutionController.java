@@ -1,105 +1,195 @@
 package de.unistuttgart.stayinsync.pollingnode.execution.controller;
 
-import de.unistuttgart.stayinsync.polling.exception.PollingNodeException;
-import de.unistuttgart.stayinsync.pollingnode.entities.ApiConnectionDetails;
-import de.unistuttgart.stayinsync.pollingnode.entities.PollingJob;
 import de.unistuttgart.stayinsync.pollingnode.exceptions.FaultySourceSystemApiRequestMessageDtoException;
-import de.unistuttgart.stayinsync.pollingnode.exceptions.JsonObjectUnthreadingException;
-import de.unistuttgart.stayinsync.pollingnode.execution.ressource.RestClient;
-
+import de.unistuttgart.stayinsync.pollingnode.exceptions.PollingJobAlreadyExistsException;
+import de.unistuttgart.stayinsync.pollingnode.exceptions.PollingJobExecutionException;
+import de.unistuttgart.stayinsync.pollingnode.exceptions.PollingJobNotFoundException;
+import de.unistuttgart.stayinsync.pollingnode.execution.executor.PollingJobQuarzExecutor;
 import de.unistuttgart.stayinsync.transport.dto.SourceSystemApiRequestConfigurationMessageDTO;
 import io.quarkus.logging.Log;
-import io.smallrye.mutiny.Uni;
-import io.vertx.core.json.Json;
-import io.vertx.core.json.JsonObject;
-import io.vertx.mutiny.core.buffer.Buffer;
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.annotation.PostConstruct;
+import jakarta.annotation.PreDestroy;
 
-import de.unistuttgart.stayinsync.pollingnode.rabbitmq.ProducerSendPolledData;
+import de.unistuttgart.stayinsync.pollingnode.execution.ressource.RestClient;
 
-import java.net.http.HttpRequest;
+import org.quartz.*;
+import org.quartz.impl.StdSchedulerFactory;
+
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
-import java.util.concurrent.*;
 
 @ApplicationScoped
 public class PollingJobExecutionController {
 
-    private final ProducerSendPolledData producerSendPolledData;
-    private final RestClient restClient;
-    private final ScheduledExecutorService jobExecutor;
-    private final Map<Long, ScheduledFuture<?>> openPollingJobThreads;
+    private Scheduler scheduler;
+    private final Map<Long, JobKey> supportedJobs;
 
-    public PollingJobExecutionController( final ProducerSendPolledData producerSendPolledData, final RestClient restClient){
+    public PollingJobExecutionController(final RestClient restClient) {
         super();
-        this.producerSendPolledData = producerSendPolledData;
-        this.restClient = restClient;
-        this.openPollingJobThreads= new HashMap<>();
-        this. jobExecutor = Executors.newScheduledThreadPool(10);
-
+        this.supportedJobs = new HashMap<>();
     }
 
-    public void startPollingJobExecution(final SourceSystemApiRequestConfigurationMessageDTO apiRequestConfigurationMessage) throws FaultySourceSystemApiRequestMessageDtoException{
-        timedPollingJobThreadActivation(apiRequestConfigurationMessage);
+    @PostConstruct
+    public void init() throws SchedulerException {
+        SchedulerFactory schedulerFactory = new StdSchedulerFactory();
+        scheduler = schedulerFactory.getScheduler();
+        scheduler.start();
+        Log.info("Quartz Scheduler started successfully");
     }
 
-    public void stopPollingJobExecution(final Long id){
-        timedPollingJobThreadDeletion(id);
-        openPollingJobThreads.remove(id);
-    }
-
-    public boolean pollingJobExists(final Long id){
-        return openPollingJobThreads.containsKey(id);
-    }
-
-    private void timedPollingJobThreadActivation(final SourceSystemApiRequestConfigurationMessageDTO apiRequestConfigurationMessage) throws FaultySourceSystemApiRequestMessageDtoException {
-        if(Objects.equals(apiRequestConfigurationMessage.sourceSystem().apiType(), "No Spec") && !Objects.equals(apiRequestConfigurationMessage.endpoint().httpRequestType(), "GET")){
-            throw new FaultySourceSystemApiRequestMessageDtoException("Use of PUT or POST is not possible on No Spec API´s");
+    @PreDestroy
+    public void shutdown() throws SchedulerException {
+        if (scheduler != null) {
+            scheduler.shutdown();
+            Log.info("Quartz Scheduler shutdown successfully");
         }
-        Runnable task = () -> {
+    }
+
+    /**
+     * Creates PollingJob with the given information.
+     * @param apiRequestConfigurationMessage hold information for creating the PollingJob in future processes
+     * @throws PollingJobAlreadyExistsException if a PollingJob with this id already existed
+     * @throws FaultySourceSystemApiRequestMessageDtoException if Exceptions are thrown in called methods
+     */
+    public void startPollingJobExecution(final SourceSystemApiRequestConfigurationMessageDTO apiRequestConfigurationMessage) throws PollingJobAlreadyExistsException, FaultySourceSystemApiRequestMessageDtoException, PollingJobExecutionException {
+        if(!pollingJobExists(apiRequestConfigurationMessage.id())) {
+            pollingJobCreation(apiRequestConfigurationMessage);
+        } else {
+            throw new PollingJobAlreadyExistsException("PollingJob Creation failed with this id " + apiRequestConfigurationMessage.id() + "already exists. ");
+        }
+    }
+
+    /*@
+    @ ensures supportedJobs.keySet unchanged
+     */
+    /**
+     * Updates specific PollingJobs in activeJobs Map, by activating, deactivating or changing its info.
+     * @param apiRequestConfigurationMessageDTO holds information for updatingProcess
+     * @throws PollingJobNotFoundException if activeJobs does not contain the id.
+     */
+    public void reconfigurePollingJobExecution(final SourceSystemApiRequestConfigurationMessageDTO apiRequestConfigurationMessageDTO) throws PollingJobNotFoundException, PollingJobExecutionException, FaultySourceSystemApiRequestMessageDtoException {
+        if(pollingJobExists(apiRequestConfigurationMessageDTO.id())){
+            pollingJobUpdate(apiRequestConfigurationMessageDTO);
+        } else {
+            throw new PollingJobNotFoundException("PollingJob Update failed: No PollingJob found with this id " + apiRequestConfigurationMessageDTO.id());
+        }
+    }
+
+    /**
+     * Checks if supportedJobs contains key that equals given key
+     * @param id compared to supportedJobs Keys
+     * @return true if supportedJobs contained id as key
+     */
+    public boolean pollingJobExists(final Long id) {
+        return supportedJobs.containsKey(id);
+    }
+
+    /**
+     * Creates new activated or deactivated PollingJob. ID and Created JobKey are added to supportedJobs.
+     * @param apiRequestConfigurationMessage used to create Executable PollingJob
+     * @throws FaultySourceSystemApiRequestMessageDtoException
+     */
+    private void pollingJobCreation(final SourceSystemApiRequestConfigurationMessageDTO apiRequestConfigurationMessage) throws FaultySourceSystemApiRequestMessageDtoException, PollingJobExecutionException {
+        if(!isRequestTypeOnApiTypePossible(apiRequestConfigurationMessage)){
+            throw new FaultySourceSystemApiRequestMessageDtoException("Creation failed for id " +apiRequestConfigurationMessage.id()+ ": Use of PUT or POST is not possible on No Spec API´s");
+        }
+
+        try {
+            final JobDetail job = createJobWithInformation(apiRequestConfigurationMessage);
+            supportedJobs.put(apiRequestConfigurationMessage.id(), job.getKey());
+            activateJobIfNeeded(apiRequestConfigurationMessage, job);
+
+        } catch (SchedulerException e) {
+            Log.error("Failed to schedule polling job for API: " + apiRequestConfigurationMessage.id(), e);
+            throw new PollingJobExecutionException("Failed to schedule polling job: " + e);
+        }
+    }
+
+    /**
+     * Activates an already created Job with a newly created Trigger
+     * @param apiRequestConfigurationMessage used to call Trigger creation
+     * @param job is the pollingJob that fits the apiRequestConfigurationMessage
+     * @throws SchedulerException
+     */
+    private void activateJobIfNeeded(SourceSystemApiRequestConfigurationMessageDTO apiRequestConfigurationMessage, JobDetail job) throws SchedulerException {
+        if(apiRequestConfigurationMessage.active()){
+            final Trigger trigger = createTriggerWithApiRequestConfigurationMessage(apiRequestConfigurationMessage);
+            scheduler.scheduleJob(job, trigger);
+            Log.infof("Polling for Job with id %d was activated with timing %d", apiRequestConfigurationMessage.id(), apiRequestConfigurationMessage.pollingIntervallTimeInMs(), job.getKey());
+        }
+    }
+
+    /**
+     * @param apiRequestConfigurationMessage used to compare the values
+     * @return true if the Api Type supports the Request Type
+     */
+    private boolean isRequestTypeOnApiTypePossible(SourceSystemApiRequestConfigurationMessageDTO apiRequestConfigurationMessage) {
+        return !Objects.equals(apiRequestConfigurationMessage.apiConnectionDetails().sourceSystem().apiType(), "No Spec")
+                || Objects.equals(apiRequestConfigurationMessage.apiConnectionDetails().endpoint().httpRequestType(), "GET");
+    }
+
+    /**
+     * Updates PollingJob in supportedJobs with new information and updates Thread if Job is active or changed to deactive. SupportedJobs.keySet stays unchanged.
+     * @param apiRequestConfigurationMessage contains information to update PollingJob
+     */
+    private void pollingJobUpdate(final SourceSystemApiRequestConfigurationMessageDTO apiRequestConfigurationMessage)throws FaultySourceSystemApiRequestMessageDtoException, PollingJobExecutionException {
+        if (!isRequestTypeOnApiTypePossible(apiRequestConfigurationMessage)) {
+            throw new FaultySourceSystemApiRequestMessageDtoException("Creation failed for id " + apiRequestConfigurationMessage.id() + ": Use of PUT or POST is not possible on No Spec API´s");
+        }
+        try {
+            scheduler.deleteJob(supportedJobs.get(apiRequestConfigurationMessage.id()));
+            final JobDetail job = createJobWithInformation(apiRequestConfigurationMessage);
+            supportedJobs.put(apiRequestConfigurationMessage.id(), job.getKey());
+            activateJobIfNeeded(apiRequestConfigurationMessage, job);
+
+        } catch (SchedulerException e) {
+            Log.error("Failed to schedule polling job for API: " + apiRequestConfigurationMessage.id(), e);
+            throw new PollingJobExecutionException("Failed to schedule polling job: " + e);
+        }
+
+    }
+
+    private JobDetail createJobWithInformation(SourceSystemApiRequestConfigurationMessageDTO apiRequestConfigurationMessage) {
+
+        return JobBuilder.newJob(PollingJobQuarzExecutor.class)
+                .withIdentity("apiPollingJob-" + apiRequestConfigurationMessage.id())
+                .usingJobData("configId", apiRequestConfigurationMessage.id())
+                .build();
+    }
+
+    private Trigger createTriggerWithApiRequestConfigurationMessage(SourceSystemApiRequestConfigurationMessageDTO apiRequestConfigurationMessage) {
+        return TriggerBuilder.newTrigger()
+                .withIdentity("apiPollingTrigger-" + apiRequestConfigurationMessage.id())
+                .startNow()
+                .withSchedule(SimpleScheduleBuilder.simpleSchedule()
+                        .withIntervalInMilliseconds(apiRequestConfigurationMessage.pollingIntervallTimeInMs())
+                        .repeatForever())
+                .build();
+    }
+
+
+
+    /**
+     * Deletes PollingJob in supportedJobs and deactivates the JobKey if it was active.
+     * @param id used to find the pollingJob to delete.
+     */
+    private void pollingJobDeletion(final Long id) {
+        JobKey jobKey = supportedJobs.remove(id);
+        if (jobKey != null) {
             try {
-                JsonObject jsonObject = unpackUniJsonObject(pollUniJsonObject(apiRequestConfigurationMessage));
-                Log.infof("JsonObject polled successfully: %s", jsonObject);
-                //TODO JsonObject wird für noch nichts genutzt
-            }catch(FaultySourceSystemApiRequestMessageDtoException | JsonObjectUnthreadingException e){
-                Log.error(e);
+                boolean deleted = scheduler.deleteJob(jobKey);
+                if (deleted) {
+                    Log.infof("Polling job stopped successfully for API: %s", id);
+                } else {
+                    Log.warnf("Failed to stop polling job for API: %s - Job not found", id);
+                }
+            } catch (SchedulerException e) {
+                Log.error("Failed to stop polling job for API: " + id, e);
             }
-        };
-
-        ScheduledFuture<?> future = jobExecutor.scheduleAtFixedRate(
-                task,
-                0,
-                apiRequestConfigurationMessage.pollingIntervallTimeInMs(),
-                TimeUnit.MILLISECONDS
-        );
-
-        openPollingJobThreads.put(apiRequestConfigurationMessage.id(), future);
-    }
-
-    private void timedPollingJobThreadDeletion(final Long id) {
-        ScheduledFuture<?> future = openPollingJobThreads.remove(id);
-        if (future != null) {
-            future.cancel(true);
+        } else {
+            Log.warnf("No active polling job found for API: %s", id);
         }
     }
-
-    private Uni<JsonObject> pollUniJsonObject(final SourceSystemApiRequestConfigurationMessageDTO apiRequestConfigurationMessage) throws FaultySourceSystemApiRequestMessageDtoException {
-        return restClient.executeRequest(restClient.configureRequest(apiRequestConfigurationMessage));
-    }
-
-    private JsonObject unpackUniJsonObject(final Uni<JsonObject> uniJsonObject) throws JsonObjectUnthreadingException {
-        try{
-            return uniJsonObject
-                    .subscribe().asCompletionStage()
-                    .toCompletableFuture()
-                    .get();
-        } catch(InterruptedException e){
-            throw new JsonObjectUnthreadingException("The unpacking of CompletableFuture to obtain JsonObject was interrupted with this exception message: " + e);
-        } catch(ExecutionException e){
-            throw new JsonObjectUnthreadingException("The unpacking of CompletableFuture to obtain JsonObject was interrupted by an unforseen exception in the api call process: " + e);
-        }
-    }
-
-
 }

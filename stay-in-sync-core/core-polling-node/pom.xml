@@ -74,6 +74,10 @@
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-container-image-docker</artifactId>
         </dependency>
+        <dependency>
+            <groupId>org.quartz-scheduler</groupId>
+            <artifactId>quartz</artifactId>
+        </dependency>
 
         <!-- RabbitMQ Client -->
         <!-- https://mvnrepository.com/artifact/io.quarkus/quarkus-rest -->
