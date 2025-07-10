@@ -18,7 +18,7 @@ public class StringLengthBetweenOperator implements Operation {
      * @throws IllegalArgumentException if the node does not have exactly three inputs.
      */
     @Override
-    public void validate(LogicNode node) {
+    public void validateNode(LogicNode node) {
         List<Node> inputs = node.getInputNodes();
         if (inputs == null || inputs.size() != 3) {
             throw new IllegalArgumentException(
@@ -52,5 +52,10 @@ public class StringLengthBetweenOperator implements Operation {
         int upperBound = ((Number) upperBoundProvider).intValue();
 
         return stringLength >= lowerBound && stringLength <= upperBound;
+    }
+
+    @Override
+    public Class<?> getReturnType(){
+        return Boolean.class;
     }
 }

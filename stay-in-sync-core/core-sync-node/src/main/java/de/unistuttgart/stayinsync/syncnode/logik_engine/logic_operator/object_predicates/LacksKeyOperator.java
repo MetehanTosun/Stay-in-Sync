@@ -17,7 +17,7 @@ public class LacksKeyOperator implements Operation {
      * @throws IllegalArgumentException if the node does not have exactly two inputs.
      */
     @Override
-    public void validate(LogicNode node) {
+    public void validateNode(LogicNode node) {
         List<Node> inputs = node.getInputNodes();
         if (inputs == null || inputs.size() != 2) {
             throw new IllegalArgumentException(
@@ -61,5 +61,10 @@ public class LacksKeyOperator implements Operation {
 
         // Simply negate the result of 'has'. If it has the key, 'lacks' is false.
         return !jsonNode.has(key);
+    }
+
+    @Override
+    public Class<?> getReturnType(){
+        return Boolean.class;
     }
 }

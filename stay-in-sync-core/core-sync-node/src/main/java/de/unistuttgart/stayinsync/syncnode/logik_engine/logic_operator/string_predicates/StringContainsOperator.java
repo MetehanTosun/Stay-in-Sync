@@ -13,4 +13,9 @@ public class StringContainsOperator extends AbstractTwoStringOperator {
 
         return str1.contains(str2);
     }
+
+    @Override
+    public Class<?> getReturnType(){
+        return Boolean.class;
+    }
 }

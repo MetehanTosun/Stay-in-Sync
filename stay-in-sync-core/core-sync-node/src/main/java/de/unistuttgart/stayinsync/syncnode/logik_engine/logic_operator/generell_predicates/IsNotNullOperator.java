@@ -22,7 +22,7 @@ public class IsNotNullOperator implements Operation {
      * @throws IllegalArgumentException if the configuration is invalid.
      */
     @Override
-    public void validate(LogicNode node) {
+    public void validateNode(LogicNode node) {
         List<Node> inputs = node.getInputNodes();
 
         if (inputs == null || inputs.isEmpty()) {
@@ -82,5 +82,10 @@ public class IsNotNullOperator implements Operation {
 
         // If the loop completes, all paths existed and had non-null values.
         return true;
+    }
+
+    @Override
+    public Class<?> getReturnType(){
+        return Boolean.class;
     }
 }

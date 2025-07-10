@@ -18,4 +18,9 @@ public class TimezoneOffsetEqualsOperator extends AbstractDateTimeNumericOperato
 
         return offsetInMinutes == comparisonValue;
     }
+
+    @Override
+    public Class<?> getReturnType(){
+        return Boolean.class;
+    }
 }

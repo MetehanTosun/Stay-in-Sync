@@ -19,4 +19,9 @@ public class ContainsAnyOperator extends AbstractSetComparisonOperator {
         }
         return false;
     }
+
+    @Override
+    public Class<?> getReturnType(){
+        return Boolean.class;
+    }
 }

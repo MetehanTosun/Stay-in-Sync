@@ -39,7 +39,7 @@ public abstract class Node {
 
     /**
      * A list of parent nodes that provide input for this node's calculation.
-     * This list is populated by the GraphMapper during graph creation and
+     * This list is populated by the GraphMapperService during graph creation and
      * represents the incoming edges to this node.
      */
     private List<Node> inputNodes;

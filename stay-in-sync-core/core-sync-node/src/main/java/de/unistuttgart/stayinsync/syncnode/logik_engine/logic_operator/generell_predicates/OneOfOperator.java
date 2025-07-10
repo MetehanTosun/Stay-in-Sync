@@ -19,7 +19,7 @@ public class OneOfOperator implements Operation {
      * @throws IllegalArgumentException if the node has no input nodes configured
      */
     @Override
-    public void validate(LogicNode node) {
+    public void validateNode(LogicNode node) {
         List<Node> inputs = node.getInputNodes();
         if(inputs == null || inputs.isEmpty()){
             throw new IllegalArgumentException("ONE_OF operation is for node" + node.getName() + "requires at least 1 input");
@@ -51,5 +51,10 @@ public class OneOfOperator implements Operation {
 
         }
         return false;
+    }
+
+    @Override
+    public Class<?> getReturnType(){
+        return Boolean.class;
     }
 }

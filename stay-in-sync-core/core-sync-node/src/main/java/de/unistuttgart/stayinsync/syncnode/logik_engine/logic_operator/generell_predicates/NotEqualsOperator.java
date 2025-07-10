@@ -26,7 +26,7 @@ public class NotEqualsOperator implements Operation {
      * @throws IllegalArgumentException if the configuration is invalid.
      */
     @Override
-    public void validate(LogicNode node) {
+    public void validateNode(LogicNode node) {
         List<Node> inputs = node.getInputNodes();
 
         if (inputs == null || inputs.size() < 2) {
@@ -79,5 +79,10 @@ public class NotEqualsOperator implements Operation {
 
         // If the loop completes, all values were identical.
         return false;
+    }
+
+    @Override
+    public Class<?> getReturnType(){
+        return Boolean.class;
     }
 }

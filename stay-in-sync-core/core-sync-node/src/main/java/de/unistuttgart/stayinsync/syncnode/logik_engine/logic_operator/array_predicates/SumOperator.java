@@ -22,7 +22,7 @@ public class SumOperator implements Operation {
      * @throws IllegalArgumentException if the node does not have exactly one input.
      */
     @Override
-    public void validate(LogicNode node) {
+    public void validateNode(LogicNode node) {
         List<Node> inputs = node.getInputNodes();
         if (inputs == null || inputs.size() != 1) {
             throw new IllegalArgumentException(
@@ -72,5 +72,10 @@ public class SumOperator implements Operation {
         }
 
         return sum;
+    }
+
+    @Override
+    public Class<?> getReturnType(){
+        return Double.class;
     }
 }

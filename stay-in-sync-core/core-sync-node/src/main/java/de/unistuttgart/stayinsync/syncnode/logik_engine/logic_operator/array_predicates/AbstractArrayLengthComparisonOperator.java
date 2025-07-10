@@ -23,7 +23,7 @@ public abstract class AbstractArrayLengthComparisonOperator implements Operation
      * @throws IllegalArgumentException if the node does not have exactly two inputs.
      */
     @Override
-    public void validate(LogicNode node) {
+    public void validateNode(LogicNode node) {
         // We now access the list of parent Node objects.
         List<Node> inputs = node.getInputNodes();
         if (inputs == null || inputs.size() != 2) {

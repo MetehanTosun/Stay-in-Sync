@@ -15,4 +15,9 @@ public class SameDayOperator extends AbstractTwoDateTimeOperator {
         // toLocalDate() correctly converts the ZonedDateTime to the calendar date in its timezone.
         return dt1.toLocalDate().equals(dt2.toLocalDate());
     }
+
+    @Override
+    public Class<?> getReturnType(){
+        return Boolean.class;
+    }
 }

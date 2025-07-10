@@ -17,7 +17,7 @@ public class HasKeyOperator implements Operation {
      * @throws IllegalArgumentException if the node does not have exactly two inputs.
      */
     @Override
-    public void validate(LogicNode node) {
+    public void validateNode(LogicNode node) {
         List<Node> inputs = node.getInputNodes();
         if (inputs == null || inputs.size() != 2) {
             throw new IllegalArgumentException(
@@ -66,5 +66,10 @@ public class HasKeyOperator implements Operation {
         // Use Jackson's built-in method to check for the field's existence.
         // .has(key) returns true even if the value is 'null', which is the correct behavior.
         return jsonNode.has(key);
+    }
+
+    @Override
+    public Class<?> getReturnType(){
+        return Boolean.class;
     }
 }

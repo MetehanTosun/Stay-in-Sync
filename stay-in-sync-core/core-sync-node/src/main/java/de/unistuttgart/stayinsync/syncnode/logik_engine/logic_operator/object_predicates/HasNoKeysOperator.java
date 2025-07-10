@@ -19,7 +19,7 @@ public class HasNoKeysOperator implements Operation {
      * @throws IllegalArgumentException if the node does not have exactly two inputs.
      */
     @Override
-    public void validate(LogicNode node) {
+    public void validateNode(LogicNode node) {
         List<Node> inputs = node.getInputNodes();
         if (inputs == null || inputs.size() != 2) {
             throw new IllegalArgumentException(
@@ -74,5 +74,10 @@ public class HasNoKeysOperator implements Operation {
 
         // If the loop completes, none of the specified keys were found.
         return true;
+    }
+
+    @Override
+    public Class<?> getReturnType(){
+        return Boolean.class;
     }
 }

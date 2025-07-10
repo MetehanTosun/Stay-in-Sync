@@ -16,7 +16,7 @@ public class ExistsOperator implements Operation {
     private final JsonPathValueExtractor valueExtractor = new JsonPathValueExtractor();
 
     @Override
-    public void validate(LogicNode node) {
+    public void validateNode(LogicNode node) {
         // Diese Validierung bleibt gleich und stellt sicher, dass alle Inputs ProviderNodes sind.
         List<Node> inputs = node.getInputNodes();
         if (inputs == null || inputs.isEmpty()) {
@@ -59,5 +59,9 @@ public class ExistsOperator implements Operation {
         }
 
         return true;
+    }
+    @Override
+    public Class<?> getReturnType() {
+        return Boolean.class;
     }
 }

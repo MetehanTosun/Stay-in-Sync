@@ -25,7 +25,7 @@ public class NotExistsOperator implements Operation {
      * @throws IllegalArgumentException if the node's configuration is invalid.
      */
     @Override
-    public void validate(LogicNode node) {
+    public void validateNode(LogicNode node) {
         List<Node> inputs = node.getInputNodes();
 
         if (inputs == null || inputs.isEmpty()) {
@@ -81,5 +81,9 @@ public class NotExistsOperator implements Operation {
         }
         // If the loop completes, none of the paths existed.
         return true;
+    }
+    @Override
+    public Class<?> getReturnType(){
+        return Boolean.class;
     }
 }

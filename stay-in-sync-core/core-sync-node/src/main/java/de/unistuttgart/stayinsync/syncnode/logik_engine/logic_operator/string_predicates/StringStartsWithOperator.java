@@ -12,4 +12,9 @@ public class StringStartsWithOperator extends AbstractTwoStringOperator {
     protected boolean compareStrings(String str1, String str2) {
         return str1.startsWith(str2);
     }
+
+    @Override
+    public Class<?> getReturnType(){
+        return Boolean.class;
+    }
 }

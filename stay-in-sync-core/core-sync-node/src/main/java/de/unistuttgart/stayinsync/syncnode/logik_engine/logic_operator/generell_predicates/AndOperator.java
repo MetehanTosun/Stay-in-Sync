@@ -19,7 +19,7 @@ public class AndOperator implements Operation {
      * @throws IllegalArgumentException if the node does not have at least two inputs.
      */
     @Override
-    public void validate(LogicNode node) {
+    public void validateNode(LogicNode node) {
         List<Node> inputs = node.getInputNodes();
         if (inputs == null || inputs.size() < 2) {
             throw new IllegalArgumentException(
@@ -60,5 +60,10 @@ public class AndOperator implements Operation {
 
         // If the loop completes, all inputs were true.
         return true;
+    }
+
+    @Override
+    public Class<?> getReturnType(){
+        return Boolean.class;
     }
 }

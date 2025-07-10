@@ -22,7 +22,7 @@ public class AvgOperator implements Operation {
      * @throws IllegalArgumentException if the node does not have exactly one input.
      */
     @Override
-    public void validate(LogicNode node) {
+    public void validateNode(LogicNode node) {
         List<Node> inputs = node.getInputNodes();
         if (inputs == null || inputs.size() != 1) {
             throw new IllegalArgumentException(
@@ -75,5 +75,10 @@ public class AvgOperator implements Operation {
 
         // Avoid division by zero.
         return (count == 0) ? 0.0 : sum / count;
+    }
+
+    @Override
+    public Class<?> getReturnType(){
+        return Double.class;
     }
 }

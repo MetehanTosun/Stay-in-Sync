@@ -17,7 +17,7 @@ public class BetweenDatesOperator implements Operation {
      * @throws IllegalArgumentException if the node does not have exactly three inputs.
      */
     @Override
-    public void validate(LogicNode node) {
+    public void validateNode(LogicNode node) {
         List<Node> inputs = node.getInputNodes();
         if (inputs == null || inputs.size() != 3) {
             throw new IllegalArgumentException(
@@ -54,5 +54,10 @@ public class BetweenDatesOperator implements Operation {
         boolean isOnOrBeforeEnd = !dateToCheck.isAfter(endDate);
 
         return isOnOrAfterStart && isOnOrBeforeEnd;
+    }
+
+    @Override
+    public Class<?> getReturnType(){
+        return Boolean.class;
     }
 }

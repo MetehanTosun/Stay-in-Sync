@@ -22,7 +22,7 @@ public class EqualsOperator implements Operation {
      * @param node The LogicNode to validate.
      * @throws IllegalArgumentException if the configuration is invalid.
      */
-    public void validate(LogicNode node) {
+    public void validateNode(LogicNode node) {
         List<Node> inputs = node.getInputNodes();
 
         if (inputs == null || inputs.size() < 2) {
@@ -68,5 +68,10 @@ public class EqualsOperator implements Operation {
         }
 
         return true;
+    }
+
+    @Override
+    public Class<?> getReturnType(){
+        return Boolean.class;
     }
 }

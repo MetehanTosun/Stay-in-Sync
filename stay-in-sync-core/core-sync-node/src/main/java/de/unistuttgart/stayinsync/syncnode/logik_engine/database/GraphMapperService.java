@@ -17,7 +17,7 @@ import java.util.List;
 import java.util.Map;
 
 @ApplicationScoped
-public class GraphMapper {
+public class GraphMapperService {
 
     /**
      * Maps a list of in-memory Node objects to a serializable GraphDTO.

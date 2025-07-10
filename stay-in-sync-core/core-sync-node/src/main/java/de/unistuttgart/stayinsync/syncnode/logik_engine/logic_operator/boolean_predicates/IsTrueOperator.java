@@ -17,7 +17,7 @@ public class IsTrueOperator implements Operation {
      * @throws IllegalArgumentException if the node has no inputs.
      */
     @Override
-    public void validate(LogicNode node) {
+    public void validateNode(LogicNode node) {
         List<Node> inputs = node.getInputNodes();
         if (inputs == null || inputs.isEmpty()) {
             throw new IllegalArgumentException("IS_TRUE operation requires at least 1 input.");
@@ -47,5 +47,10 @@ public class IsTrueOperator implements Operation {
 
         // If the loop completes, all values were Boolean.TRUE.
         return true;
+    }
+
+    @Override
+    public Class<?> getReturnType(){
+        return Boolean.class;
     }
 }

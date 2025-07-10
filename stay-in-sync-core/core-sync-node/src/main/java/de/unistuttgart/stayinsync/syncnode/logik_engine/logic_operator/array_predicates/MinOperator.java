@@ -22,7 +22,7 @@ public class MinOperator implements Operation {
      * @throws IllegalArgumentException if the node does not have exactly one input.
      */
     @Override
-    public void validate(LogicNode node) {
+    public void validateNode(LogicNode node) {
         List<Node> inputs = node.getInputNodes();
         if (inputs == null || inputs.size() != 1) {
             throw new IllegalArgumentException(
@@ -82,5 +82,10 @@ public class MinOperator implements Operation {
 
         // If no numbers were found, min is still null. Return 0.0 in that case.
         return (min == null) ? 0.0 : min;
+    }
+
+    @Override
+    public Class<?> getReturnType(){
+        return Double.class;
     }
 }

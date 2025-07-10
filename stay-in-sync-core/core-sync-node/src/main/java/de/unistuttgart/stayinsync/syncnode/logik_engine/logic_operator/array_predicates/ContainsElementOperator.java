@@ -20,7 +20,7 @@ public class ContainsElementOperator implements Operation {
      * @throws IllegalArgumentException if the node does not have exactly two inputs.
      */
     @Override
-    public void validate(LogicNode node) {
+    public void validateNode(LogicNode node) {
         List<Node> inputs = node.getInputNodes();
         if (inputs == null || inputs.size() != 2) {
             throw new IllegalArgumentException(
@@ -70,5 +70,10 @@ public class ContainsElementOperator implements Operation {
 
         // The first input is not a type we can search in.
         return false;
+    }
+
+    @Override
+    public Class<?> getReturnType(){
+        return Boolean.class;
     }
 }

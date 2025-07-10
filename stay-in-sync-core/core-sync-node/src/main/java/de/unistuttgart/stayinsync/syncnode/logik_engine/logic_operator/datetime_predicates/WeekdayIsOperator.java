@@ -16,4 +16,9 @@ public class WeekdayIsOperator extends AbstractDateTimeNumericOperator {
         // ZonedDateTime.getDayOfWeek().getValue() returns an int from 1 (Monday) to 7 (Sunday).
         return dateTime.getDayOfWeek().getValue() == comparisonValue;
     }
+
+    @Override
+    public Class<?> getReturnType(){
+        return Boolean.class;
+    }
 }

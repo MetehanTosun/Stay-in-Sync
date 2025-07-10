@@ -25,7 +25,7 @@ public class NotBetweenOperator implements Operation {
      * @throws IllegalArgumentException if the validation fails.
      */
     @Override
-    public void validate(LogicNode node) {
+    public void validateNode(LogicNode node) {
         List<Node> inputs = node.getInputNodes();
 
         // Rule 1: Must have exactly 3 inputs
@@ -75,5 +75,10 @@ public class NotBetweenOperator implements Operation {
 
         // If types are not all numeric or a value was null, the predicate is false.
         return false;
+    }
+
+    @Override
+    public Class<?> getReturnType(){
+        return Boolean.class;
     }
 }

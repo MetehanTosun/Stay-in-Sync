@@ -11,6 +11,12 @@ public class LessOrEqualOperator extends AbstractNumericComparisonOperator {
      */
     @Override
     protected boolean compare(Number number1, Number number2) {
+
         return number1.doubleValue() <= number2.doubleValue();
+    }
+
+    @Override
+    public Class<?> getReturnType(){
+        return Boolean.class;
     }
 }

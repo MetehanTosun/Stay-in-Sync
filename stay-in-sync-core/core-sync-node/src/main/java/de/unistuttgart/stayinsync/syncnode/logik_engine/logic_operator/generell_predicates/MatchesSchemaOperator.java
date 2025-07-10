@@ -29,7 +29,7 @@ public class MatchesSchemaOperator implements Operation {
      * @throws IllegalArgumentException if the node's configuration is invalid.
      */
     @Override
-    public void validate(LogicNode node) {
+    public void validateNode(LogicNode node) {
         List<Node> inputs = node.getInputNodes();
 
         if (inputs == null || inputs.size() != 2) {
@@ -87,5 +87,10 @@ public class MatchesSchemaOperator implements Operation {
         // 3. Perform the validation.
         Set<ValidationMessage> errors = schema.validate(jacksonDocument);
         return errors.isEmpty();
+    }
+
+    @Override
+    public Class<?> getReturnType(){
+        return Boolean.class;
     }
 }

@@ -20,7 +20,7 @@ public class AgeGreaterThanOperator implements Operation {
      * @throws IllegalArgumentException if the node does not have exactly three inputs.
      */
     @Override
-    public void validate(LogicNode node) {
+    public void validateNode(LogicNode node) {
         List<Node> inputs = node.getInputNodes();
         if (inputs == null || inputs.size() != 3) {
             throw new IllegalArgumentException(
@@ -67,5 +67,10 @@ public class AgeGreaterThanOperator implements Operation {
             // This happens if the unitString is not a valid ChronoUnit enum name.
             return false;
         }
+    }
+
+    @Override
+    public Class<?> getReturnType(){
+        return Boolean.class;
     }
 }

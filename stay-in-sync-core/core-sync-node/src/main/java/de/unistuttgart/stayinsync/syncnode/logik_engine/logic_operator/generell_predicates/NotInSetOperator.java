@@ -24,7 +24,7 @@ public class NotInSetOperator implements Operation {
      * @throws IllegalArgumentException if the node's configuration is invalid.
      */
     @Override
-    public void validate(LogicNode node) {
+    public void validateNode(LogicNode node) {
         List<Node> inputs = node.getInputNodes();
 
         if (inputs == null || inputs.size() != 2) {
@@ -76,5 +76,10 @@ public class NotInSetOperator implements Operation {
 
         // The '!disallowedValuesSet.contains()' logic correctly handles all cases,
         return !disallowedValuesSet.contains(valueToCheck);
+    }
+
+    @Override
+    public Class<?> getReturnType(){
+        return Boolean.class;
     }
 }

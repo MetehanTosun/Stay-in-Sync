@@ -19,7 +19,7 @@ public class NotEmptyOperator implements Operation {
      * @throws IllegalArgumentException if the node does not have exactly one input.
      */
     @Override
-    public void validate(LogicNode node) {
+    public void validateNode(LogicNode node) {
         List<Node> inputs = node.getInputNodes();
         if (inputs == null || inputs.size() != 1) {
             throw new IllegalArgumentException(
@@ -59,5 +59,10 @@ public class NotEmptyOperator implements Operation {
 
         // If the input is of any other type, it's not a collection and the predicate is false.
         return false;
+    }
+
+    @Override
+    public Class<?> getReturnType(){
+        return Boolean.class;
     }
 }

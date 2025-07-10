@@ -15,4 +15,9 @@ public class MonthIsOperator extends AbstractDateTimeNumericOperator {
         // ZonedDateTime.getMonthValue() returns an int from 1 (January) to 12 (December).
         return dateTime.getMonthValue() == comparisonValue;
     }
+
+    @Override
+    public Class<?> getReturnType(){
+        return Boolean.class;
+    }
 }

@@ -19,4 +19,9 @@ public class RegexMatchOperator extends AbstractTwoStringOperator {
             return false;
         }
     }
+
+    @Override
+    public Class<?> getReturnType(){
+        return Boolean.class;
+    }
 }

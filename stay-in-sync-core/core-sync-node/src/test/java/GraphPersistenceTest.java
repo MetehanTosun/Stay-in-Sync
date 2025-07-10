@@ -34,8 +34,9 @@ public class GraphPersistenceTest {
     @Inject
     EntityManager entityManager;
 
-    // The evaluator is stateless, so we can create it directly.
-    LogicGraphEvaluator evaluator = new LogicGraphEvaluator();
+    @Inject
+    LogicGraphEvaluator evaluator;
+
 
     /**
      * Ensures a clean database state before each test.
@@ -47,11 +48,12 @@ public class GraphPersistenceTest {
     }
 
     @Test
+    @Transactional
     public void testSaveLoadAndEvaluateRefactoredGraph() {
         // =================================================================
         // 1. ARRANGE: Create the graph manually in memory using the new architecture
         // =================================================================
-        final String graphName = "RefactoredTemperatureCheck";
+        final String graphName = "TemperatureCheck";
 
         // --- Create all nodes ---
         ProviderNode currentTemp = new ProviderNode("source.anlageAAS.sensorData.currentTemperature");
@@ -87,10 +89,10 @@ public class GraphPersistenceTest {
         // =================================================================
         // 2. ACT: Save the graph and load it back
         // =================================================================
-        assertDoesNotThrow(() -> storageService.saveGraph(graphName, originalGraph));
-        Optional<List<Node>> loadedGraphOptional = storageService.loadGraph(graphName);
+        LogicGraphEntity savedEntity = storageService.persistGraph(graphName, originalGraph);
 
-        entityManager.flush();
+        Optional<List<Node>> loadedGraphOptional = storageService.findGraphById(savedEntity.id);
+
 
         // =================================================================
         // 3. ASSERT: Verify the loaded graph's integrity
@@ -130,12 +132,7 @@ public class GraphPersistenceTest {
 
         assertTrue(evaluationResult, "The evaluation of the loaded graph should result in 'true'.");
 
-        System.out.println("TEST ANGEHALTEN. Drücke Enter im Konsolenfenster, um fortzufahren und den Rollback auszuführen...");
-        try {
-            System.in.read(); // Der Test wartet hier auf eine Eingabe von dir
-        } catch (Exception e) {
-            // Ignorieren
-        }
+
     }
 
 }

@@ -22,7 +22,7 @@ public class TypeIsOperator implements Operation {
      * @throws IllegalArgumentException if the node's configuration is invalid.
      */
     @Override
-    public void validate(LogicNode node) {
+    public void validateNode(LogicNode node) {
         List<Node> inputs = node.getInputNodes();
 
         if (inputs == null || inputs.size() < 2) {
@@ -95,5 +95,10 @@ public class TypeIsOperator implements Operation {
         if (obj instanceof Map<?,?>) return "map";
         if (obj.getClass().isArray() || obj instanceof Collection<?>) return "collection"; // Covers List, Set, Stack, and arrays
         return "unknown";
+    }
+
+    @Override
+    public Class<?> getReturnType(){
+        return Boolean.class;
     }
 }

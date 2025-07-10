@@ -11,6 +11,12 @@ public class LengthEqualsOperator extends AbstractArrayLengthComparisonOperator 
      */
     @Override
     protected boolean compare(int actualLength, int expectedLength) {
+
         return actualLength == expectedLength;
+    }
+
+    @Override
+    public Class<?> getReturnType(){
+        return Boolean.class;
     }
 }

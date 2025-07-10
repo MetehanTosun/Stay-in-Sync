@@ -12,6 +12,12 @@ import java.util.List;
 @Getter
 @Setter
 public class GraphDTO {
+
+    /**
+     * The unique, human-readable name for this graph.
+     */
+    private String name;
+
     /**
      * A list containing all the node definitions that make up this graph.
      */

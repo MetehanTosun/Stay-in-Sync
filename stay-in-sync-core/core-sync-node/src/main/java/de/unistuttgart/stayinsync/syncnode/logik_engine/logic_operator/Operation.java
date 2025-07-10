@@ -26,5 +26,11 @@ public interface Operation {
      * @param node The LogicNode to validate.
      * @throws IllegalArgumentException if the configuration is invalid.
      */
-    void validate(LogicNode node);
+    void validateNode(LogicNode node);
+
+    /**
+     * Returns the Java type of the value that this operation produces.
+     * @return The Class of the return type (e.g., Boolean.class, Double.class).
+     */
+    Class<?> getReturnType();
 }

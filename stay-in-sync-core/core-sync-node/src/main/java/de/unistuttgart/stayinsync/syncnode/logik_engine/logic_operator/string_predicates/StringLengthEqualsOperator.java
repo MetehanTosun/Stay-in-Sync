@@ -12,4 +12,9 @@ public class StringLengthEqualsOperator extends AbstractStringLengthComparisonOp
     protected boolean compareLength(int length, int value) {
         return length == value;
     }
+
+    @Override
+    public Class<?> getReturnType(){
+        return Boolean.class;
+    }
 }

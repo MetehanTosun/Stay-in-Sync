@@ -14,4 +14,9 @@ public class BeforeOperator extends AbstractTwoDateTimeOperator {
     protected boolean compareDateTimes(ZonedDateTime dt1, ZonedDateTime dt2) {
         return dt1.isBefore(dt2);
     }
+
+    @Override
+    public Class<?> getReturnType(){
+        return Boolean.class;
+    }
 }

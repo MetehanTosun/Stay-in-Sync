@@ -9,4 +9,9 @@ public class ContainsAllOperator extends AbstractSetComparisonOperator {
     protected boolean compareSets(Set<?> sourceSet, Collection<?> referenceCollection) {
         return sourceSet.containsAll(referenceCollection);
     }
+
+    @Override
+    public Class<?> getReturnType(){
+        return Boolean.class;
+    }
 }

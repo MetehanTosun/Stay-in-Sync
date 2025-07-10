@@ -19,7 +19,7 @@ public class NotOperator implements Operation {
      * @throws IllegalArgumentException if the node does not have exactly one input.
      */
     @Override
-    public void validate(LogicNode node) {
+    public void validateNode(LogicNode node) {
         List<Node> inputs = node.getInputNodes();
         if (inputs == null || inputs.size() != 1) {
             throw new IllegalArgumentException(
@@ -49,5 +49,10 @@ public class NotOperator implements Operation {
             );
         }
         return !((Boolean) value);
+    }
+
+    @Override
+    public Class<?> getReturnType(){
+        return Boolean.class;
     }
 }

@@ -14,4 +14,9 @@ public class SameMonthOperator extends AbstractTwoDateTimeOperator {
     protected boolean compareDateTimes(ZonedDateTime dt1, ZonedDateTime dt2) {
         return dt1.getYear() == dt2.getYear() && dt1.getMonth() == dt2.getMonth();
     }
+
+    @Override
+    public Class<?> getReturnType(){
+        return Boolean.class;
+    }
 }

@@ -11,7 +11,11 @@ public class GreaterThanOperator extends AbstractNumericComparisonOperator {
      */
     @Override
     protected boolean compare(Number number1, Number number2) {
-        // Using doubleValue() handles comparisons between Long and Double correctly.
         return number1.doubleValue() > number2.doubleValue();
+    }
+
+    @Override
+    public Class<?> getReturnType(){
+        return Boolean.class;
     }
 }

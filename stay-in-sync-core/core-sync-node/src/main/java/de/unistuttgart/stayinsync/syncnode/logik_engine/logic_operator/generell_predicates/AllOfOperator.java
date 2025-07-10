@@ -19,7 +19,7 @@ public class AllOfOperator implements Operation {
      * @throws IllegalArgumentException if the node has no inputs.
      */
     @Override
-    public void validate(LogicNode node) {
+    public void validateNode(LogicNode node) {
         List<Node> inputs = node.getInputNodes();
         if (inputs == null || inputs.isEmpty()) {
             throw new IllegalArgumentException(
@@ -54,5 +54,10 @@ public class AllOfOperator implements Operation {
 
         // If the loop completes, it means all values were exactly Boolean.TRUE.
         return true;
+    }
+
+    @Override
+    public Class<?> getReturnType(){
+        return Boolean.class;
     }
 }

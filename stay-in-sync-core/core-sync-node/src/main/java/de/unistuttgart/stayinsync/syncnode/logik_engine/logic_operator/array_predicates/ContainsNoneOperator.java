@@ -18,4 +18,9 @@ public class ContainsNoneOperator extends AbstractSetComparisonOperator {
         }
         return true;
     }
+
+    @Override
+    public Class<?> getReturnType(){
+        return Boolean.class;
+    }
 }

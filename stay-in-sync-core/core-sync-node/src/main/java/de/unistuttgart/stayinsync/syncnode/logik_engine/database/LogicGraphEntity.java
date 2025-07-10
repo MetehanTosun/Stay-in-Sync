@@ -5,6 +5,8 @@ import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Lob;
 import jakarta.persistence.Table;
+import lombok.Getter;
+import lombok.Setter;
 
 /**
  * Represents a persisted logic graph in the database.
@@ -12,6 +14,8 @@ import jakarta.persistence.Table;
  */
 @Entity
 @Table(name = "logic_graphs")
+@Getter
+@Setter
 public class LogicGraphEntity extends PanacheEntity {
 
     /**
