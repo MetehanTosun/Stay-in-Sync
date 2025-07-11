@@ -53,7 +53,7 @@ export interface ArcSaveRequest {
   pathParameterValues: Record<string, string>;
   queryParameterValues: Record<string, string>;
   headerValues: Record<string, string>;
-  responseDts: Record<string, any>;
+  responseDts: string;
   pollingIntervallTimeInMs: number;
 }
 

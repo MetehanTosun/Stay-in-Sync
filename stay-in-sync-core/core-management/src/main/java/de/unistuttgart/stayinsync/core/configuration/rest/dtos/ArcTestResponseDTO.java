@@ -1,9 +1,9 @@
 package de.unistuttgart.stayinsync.core.configuration.rest.dtos;
 
-public record ArcTestCallResponseDTO(
+public record ArcTestResponseDTO(
         boolean isSuccess,
         int httpStatusCode,
-        Object responsePayload, // TODO: Decide on Jackson's `ObjectNode` or `Map<String, Object>` for the raw JSON
+        io.vertx.core.json.JsonObject responsePayload,
         String generatedDts,
         String errorMessage
 ) {

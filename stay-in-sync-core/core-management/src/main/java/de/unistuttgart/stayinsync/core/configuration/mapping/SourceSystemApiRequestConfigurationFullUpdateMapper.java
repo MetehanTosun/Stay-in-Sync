@@ -26,6 +26,7 @@ public interface SourceSystemApiRequestConfigurationFullUpdateMapper {
     
     List<GetRequestConfigurationDTO> mapToDTOList(List<SourceSystemApiRequestConfiguration> input);
 
+    @Mapping(target = "sourceSystemName", source = "sourceSystem.name")
     GetRequestConfigurationDTO mapToDTOGet(SourceSystemApiRequestConfiguration input);
     /**
      * Maps a CreateArcDTO to a SourceSystemApiRequestConfiguration entity.
