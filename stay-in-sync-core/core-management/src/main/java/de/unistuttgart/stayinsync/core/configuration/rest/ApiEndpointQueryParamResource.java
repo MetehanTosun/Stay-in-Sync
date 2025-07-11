@@ -70,7 +70,7 @@ public class ApiEndpointQueryParamResource {
         var builder = uriInfo.getAbsolutePathBuilder().path(Long.toString(persistedSourceSystemEndpoint.id));
         Log.debugf("New query-param created with URI  %s", builder.build().toString());
 
-        return Response.created(builder.build()).build();
+        return Response.created(builder.build()).entity(fullUpdateMapper.mapToDTO(persistedSourceSystemEndpoint)).build();
     }
 
     @GET

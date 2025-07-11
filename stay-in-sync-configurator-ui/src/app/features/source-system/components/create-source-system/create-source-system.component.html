@@ -2,7 +2,7 @@
   header="Create Source System"
   [(visible)]="visible"
   [modal]="true"
-  [style]="{ width: '60vw', height: '60vh' }"
+  [style]="{ width: '60vw', height: '90vh' }"
   (onHide)="cancel()"
 >
   <!-- Stepper -->
@@ -13,23 +13,23 @@
     <form [formGroup]="form" class="p-fluid">
       <div class="p-field">
         <label for="name">Name*</label>
-        <input id="name" type="text" pInputText formControlName="name" />
+        <input id="name" type="text" pInputText formControlName="name"/>
       </div>
       <div class="p-field">
         <label for="apiUrl">Base URL*</label>
-        <input id="apiUrl" type="text" pInputText formControlName="apiUrl" />
+        <input id="apiUrl" type="text" pInputText formControlName="apiUrl"/>
       </div>
       <div class="p-field">
         <label for="description">Description</label>
-        <textarea 
-          id="description" 
-          rows="3" 
-          pInputTextarea 
-          formControlName="description" 
+        <textarea
+          id="description"
+          rows="3"
+          pInputTextarea
+          formControlName="description"
           style="width: 100%;"
         ></textarea>
       </div>
-      
+
       <div class="p-field">
         <label for="apiType">Type*</label>
         <p-dropdown id="apiType" [options]="typeOptions" formControlName="apiType"></p-dropdown>
@@ -42,31 +42,34 @@
         <ng-container *ngIf="form.get('apiAuthType')?.value === ApiAuthType.Basic">
           <div class="p-field">
             <label for="username">Username*</label>
-            <input id="username" type="text" pInputText formControlName="username" />
+            <input id="username" type="text" pInputText formControlName="username"/>
           </div>
           <div class="p-field">
             <label for="password">Password*</label>
-            <input id="password" type="password" pInputText formControlName="password" />
+            <input id="password" type="password" pInputText formControlName="password"/>
           </div>
         </ng-container>
         <ng-container *ngIf="form.get('apiAuthType')?.value === ApiAuthType.ApiKey">
           <div class="p-field">
             <label for="apiKey">API Key*</label>
-            <input id="apiKey" type="text" pInputText formControlName="apiKey" />
+            <input id="apiKey" type="text" pInputText formControlName="apiKey"/>
           </div>
           <div class="p-field">
             <label for="headerName">Header Name*</label>
-            <input id="headerName" type="text" pInputText formControlName="headerName" />
+            <input id="headerName" type="text" pInputText formControlName="headerName"/>
           </div>
         </ng-container>
       </div>
       <div class="p-field">
         <label for="openApiSpec">OpenAPI Spec URL</label>
-        <input id="openApiSpec" type="text" pInputText formControlName="openApiSpec" placeholder="https://..." />
+        <input id="openApiSpec" type="text" pInputText formControlName="openApiSpec" placeholder="https://..."/>
       </div>
       <div class="p-field">
         <label>OR Upload File</label>
-        <input type="file" (change)="onFileSelected($event)" accept=".json,.yaml,.yml" />
+        <p-fileupload #fu mode="basic" chooseLabel="Choose" chooseIcon="pi pi-upload" name="demo[]"
+                      url="https://www.primefaces.org/cdn/api/upload.php" accept=".json,.yaml,.yml"
+                      (onUpload)="onFileSelected($event)"/>
+
         <small *ngIf="selectedFile">{{ selectedFile.name }}</small>
       </div>
     </form>

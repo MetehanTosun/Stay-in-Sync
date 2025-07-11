@@ -1,28 +1,29 @@
-import { CommonModule } from '@angular/common';
-import { Component, OnInit } from '@angular/core';
-import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
+import {CommonModule} from '@angular/common';
+import {Component, OnInit} from '@angular/core';
+import {FormBuilder, FormGroup, ReactiveFormsModule, Validators} from '@angular/forms';
 
 // PrimeNG
-import { TableModule } from 'primeng/table';
-import { ButtonModule } from 'primeng/button';
-import { DialogModule } from 'primeng/dialog';
-import { ToolbarModule } from 'primeng/toolbar';
-import { MessageModule } from 'primeng/message';
-import { CardModule } from 'primeng/card';
-import { TabViewModule } from 'primeng/tabview';
-import { DropdownModule } from 'primeng/dropdown';
-import { InputTextModule } from 'primeng/inputtext';
-import { TextareaModule } from 'primeng/textarea';
+import {TableModule} from 'primeng/table';
+import {ButtonModule} from 'primeng/button';
+import {DialogModule} from 'primeng/dialog';
+import {ToolbarModule} from 'primeng/toolbar';
+import {MessageModule} from 'primeng/message';
+import {CardModule} from 'primeng/card';
+import {TabViewModule} from 'primeng/tabview';
+import {DropdownModule} from 'primeng/dropdown';
+import {InputTextModule} from 'primeng/inputtext';
+import {TextareaModule} from 'primeng/textarea';
 
 // Create-Dialog-Komponente
-import { CreateSourceSystemComponent } from '../create-source-system/create-source-system.component';
-import { ManageApiHeadersComponent } from '../manage-api-headers/manage-api-headers.component';
-import { ManageEndpointsComponent }   from '../manage-endpoints/manage-endpoints.component';
+import {CreateSourceSystemComponent} from '../create-source-system/create-source-system.component';
+import {ManageApiHeadersComponent} from '../manage-api-headers/manage-api-headers.component';
+import {ManageEndpointsComponent} from '../manage-endpoints/manage-endpoints.component';
 
 // Service und DTOs aus dem `generated`-Ordner
-import { SourceSystemResourceService } from '../../generated/api/sourceSystemResource.service';
-import { SourceSystemDTO } from '../../generated/model/sourceSystemDTO';
-import { SourceSystem } from '../../generated';
+import {SourceSystemResourceService} from '../../service/sourceSystemResource.service';
+import {SourceSystemDTO} from '../../models/sourceSystemDTO';
+import {SourceSystem} from '../../models/sourceSystem';
+import {HttpErrorService} from '../../../../core/services/http-error.service';
 
 /**
  * Base component for displaying, creating, and managing source systems.
@@ -86,14 +87,15 @@ export class SourceSystemBaseComponent implements OnInit {
   /**
    * Injects the source system service and form builder.
    */
-  constructor(private api: SourceSystemResourceService, private fb: FormBuilder) {}
+  constructor(private api: SourceSystemResourceService, private fb: FormBuilder, protected erorrService: HttpErrorService) {
+  }
 
   /**
    * Component initialization lifecycle hook.
    */
   ngOnInit(): void {
     this.loadSystems();
-  
+
     this.metadataForm = this.fb.group({
       name: ['', Validators.required],
       apiUrl: ['', [Validators.required, Validators.pattern('https?://.+')]],
@@ -108,24 +110,26 @@ export class SourceSystemBaseComponent implements OnInit {
     this.loading = true;
     this.api.apiConfigSourceSystemGet().subscribe({
       next: (list: SourceSystem[]) => {
-        
+
         this.systems = list.map(system => ({
           id: system.id,
-          name: system.name || '', 
-          apiUrl: system.apiUrl || '', 
+          name: system.name || '',
+          apiUrl: system.apiUrl || '',
           description: system.description || '',
-          apiType: system.apiType || '', 
-          openApiSpec: undefined 
+          apiType: system.apiType || '',
+          openApiSpec: undefined
         } as SourceSystemDTO));
         this.loading = false;
       },
       error: err => {
         console.error('Failed to load source systems', err);
+        this.erorrService.handleError(err);
         this.errorMsg = 'Failed to load source systems';
         this.loading = false;
       }
     });
   }
+
   /**
    * Open the create new system dialog.
    */
@@ -158,7 +162,10 @@ export class SourceSystemBaseComponent implements OnInit {
     }
     this.api.apiConfigSourceSystemIdDelete(system.id).subscribe({
       next: () => this.loadSystems(),
-      error: err => console.error('Löschen des Source System fehlgeschlagen', err)
+      error: err => {
+        console.error('Löschen des Source System fehlgeschlagen', err)
+        this.erorrService.handleError(err);
+      }
     });
   }
 
@@ -177,7 +184,7 @@ export class SourceSystemBaseComponent implements OnInit {
    */
   manageSourceSystem(system: SourceSystemDTO): void {
     this.selectedSystem = system;
-    
+
     this.showCreateDialog = true;
   }
 
@@ -188,7 +195,7 @@ export class SourceSystemBaseComponent implements OnInit {
   viewSourceSystem(system: SourceSystemDTO): void {
     this.selectedSystem = system;
     this.showDetailDialog = true;
-    
+
     this.metadataForm.patchValue({
       name: system.name,
       apiUrl: system.apiUrl,
@@ -220,11 +227,13 @@ export class SourceSystemBaseComponent implements OnInit {
       .apiConfigSourceSystemIdPut(this.selectedSystem.id!, updated)
       .subscribe({
         next: () => {
-         
           this.selectedSystem = updated;
           this.loadSystems();
         },
-        error: err => console.error('Failed to save metadata', err)
+        error: err => {
+          console.error('Failed to save metadata', err)
+          this.erorrService.handleError(err);
+        }
       });
   }
 }

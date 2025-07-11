@@ -1,25 +1,33 @@
-import { Component, OnInit, Input, Output, EventEmitter } from '@angular/core';
-import { CommonModule } from '@angular/common';
-import { ReactiveFormsModule, FormBuilder, FormGroup, Validators, AbstractControl, ValidationErrors, ValidatorFn } from '@angular/forms';
+import {Component, EventEmitter, Input, OnInit, Output} from '@angular/core';
+import {CommonModule} from '@angular/common';
+import {
+  AbstractControl,
+  FormBuilder,
+  FormGroup,
+  ReactiveFormsModule,
+  ValidationErrors,
+  ValidatorFn,
+  Validators
+} from '@angular/forms';
 
-import { TableModule } from 'primeng/table';
-import { ButtonModule } from 'primeng/button';
-import { InputTextModule } from 'primeng/inputtext';
-import { DropdownModule } from 'primeng/dropdown';
-import { CardModule } from 'primeng/card';
-import { CheckboxModule } from 'primeng/checkbox';
-import { DialogModule }   from 'primeng/dialog';
-import { ProgressSpinnerModule } from 'primeng/progressspinner';
+import {TableModule} from 'primeng/table';
+import {ButtonModule} from 'primeng/button';
+import {InputTextModule} from 'primeng/inputtext';
+import {DropdownModule} from 'primeng/dropdown';
+import {CardModule} from 'primeng/card';
+import {CheckboxModule} from 'primeng/checkbox';
+import {DialogModule} from 'primeng/dialog';
+import {ProgressSpinnerModule} from 'primeng/progressspinner';
 
-import { SourceSystemEndpointResourceService } from '../../generated/api/sourceSystemEndpointResource.service';
-import { HttpClient } from '@angular/common/http';
-import { SourceSystemResourceService } from '../../generated/api/sourceSystemResource.service';
+import {SourceSystemEndpointResourceService} from '../../service/sourceSystemEndpointResource.service';
+import {HttpClient} from '@angular/common/http';
+import {SourceSystemResourceService} from '../../service/sourceSystemResource.service';
 
-import { SourceSystemEndpointDTO }       from '../../generated';
-import { CreateSourceSystemEndpointDTO } from '../../generated';
-import { ApiEndpointQueryParamDTO } from '../../generated/model/apiEndpointQueryParamDTO'; // Importieren
-import { ApiEndpointQueryParamType } from '../../generated/model/apiEndpointQueryParamType'; // Importieren
-import { ApiEndpointQueryParamResourceService } from '../../generated/api/apiEndpointQueryParamResource.service';
+import {ApiEndpointQueryParamResourceService} from '../../service/apiEndpointQueryParamResource.service';
+import {SourceSystemEndpointDTO} from '../../models/sourceSystemEndpointDTO';
+import {ApiEndpointQueryParamDTO} from '../../models/apiEndpointQueryParamDTO';
+import {ApiEndpointQueryParamType} from '../../models/apiEndpointQueryParamType';
+import {CreateSourceSystemEndpointDTO} from '../../models/createSourceSystemEndpointDTO';
 
 
 /**
@@ -49,7 +57,7 @@ export class ManageEndpointsComponent implements OnInit {
    */
   @Input() sourceSystemId!: number;
   @Output() backStep = new EventEmitter<void>();
-  @Output() finish   = new EventEmitter<void>();
+  @Output() finish = new EventEmitter<void>();
 
   /**
    * List of endpoints fetched from the backend.
@@ -73,10 +81,10 @@ export class ManageEndpointsComponent implements OnInit {
    * Available HTTP methods for endpoints.
    */
   httpRequestTypes = [
-    { label: 'GET',    value: 'GET'    },
-    { label: 'POST',   value: 'POST'   },
-    { label: 'PUT',    value: 'PUT'    },
-    { label: 'DELETE', value: 'DELETE' }
+    {label: 'GET', value: 'GET'},
+    {label: 'POST', value: 'POST'},
+    {label: 'PUT', value: 'PUT'},
+    {label: 'DELETE', value: 'DELETE'}
   ];
 
   /**
@@ -101,26 +109,26 @@ export class ManageEndpointsComponent implements OnInit {
    */
   editForm!: FormGroup;
 
-    /**
+  /**
    * Query Parameters for the selected endpoint.
    */
-    queryParams: ApiEndpointQueryParamDTO[] = [];
-    /**
-     * Reactive form for creating new query parameters.
-     */
-    queryParamForm!: FormGroup;
-    /**
-     * Indicator whether query parameters are currently loading.
-     */
-    queryParamsLoading = false;
-    /**
-     * Available types for query parameters.
-     */
-    paramTypes = [
-      { label: 'Query', value: ApiEndpointQueryParamType.Query },
-      { label: 'Path',  value: ApiEndpointQueryParamType.Path  }
-    ];
-  
+  queryParams: ApiEndpointQueryParamDTO[] = [];
+  /**
+   * Reactive form for creating new query parameters.
+   */
+  queryParamForm!: FormGroup;
+  /**
+   * Indicator whether query parameters are currently loading.
+   */
+  queryParamsLoading = false;
+  /**
+   * Available types for query parameters.
+   */
+  paramTypes = [
+    {label: 'Query', value: ApiEndpointQueryParamType.Query},
+    {label: 'Path', value: ApiEndpointQueryParamType.Path}
+  ];
+
 
   /**
    * Injects FormBuilder, endpoint and source system services, and HttpClient.
@@ -131,14 +139,15 @@ export class ManageEndpointsComponent implements OnInit {
     private sourceSystemService: SourceSystemResourceService,
     private http: HttpClient,
     private queryParamSvc: ApiEndpointQueryParamResourceService,
-  ) {}
+  ) {
+  }
 
   /**
    * Initialize forms and load endpoints and source system API URL.
    */
   ngOnInit(): void {
     this.endpointForm = this.fb.group({
-      endpointPath:    ['', Validators.required],
+      endpointPath: ['', Validators.required],
       httpRequestType: ['GET', Validators.required]
     });
 
@@ -153,7 +162,7 @@ export class ManageEndpointsComponent implements OnInit {
       .subscribe(ss => this.apiUrl = ss.apiUrl);
 
     this.editForm = this.fb.group({
-      endpointPath:    ['', Validators.required],
+      endpointPath: ['', Validators.required],
       httpRequestType: ['GET', Validators.required]
     });
   }
@@ -188,7 +197,7 @@ export class ManageEndpointsComponent implements OnInit {
       .apiConfigSourceSystemSourceSystemIdEndpointPost(this.sourceSystemId, [dto])
       .subscribe({
         next: () => {
-          this.endpointForm.reset({ httpRequestType: 'GET' });
+          this.endpointForm.reset({httpRequestType: 'GET'});
           this.loadEndpoints();
         },
         error: console.error
@@ -208,7 +217,6 @@ export class ManageEndpointsComponent implements OnInit {
       });
   }
 
-  
 
   /**
    * Open the edit dialog pre-filled with endpoint data.
@@ -256,11 +264,16 @@ export class ManageEndpointsComponent implements OnInit {
   /**
    * Navigate back to the previous wizard step.
    */
-  onBack()   { this.backStep.emit();   }
+  onBack() {
+    this.backStep.emit();
+  }
+
   /**
    * Finish the wizard and emit completion event.
    */
-  onFinish(){ this.finish.emit();     }
+  onFinish() {
+    this.finish.emit();
+  }
 
   /**
    * Attempt to import endpoints by fetching an OpenAPI spec and pushing to backend.
@@ -287,7 +300,8 @@ export class ManageEndpointsComponent implements OnInit {
           spec = await tryLoad(`${this.apiUrl}${p}`);
           console.log('Loaded spec from', p);
           break;
-        } catch (_) {}
+        } catch (_) {
+        }
       }
       if (!spec) {
         this.importing = false;
@@ -297,79 +311,86 @@ export class ManageEndpointsComponent implements OnInit {
       const dtos: CreateSourceSystemEndpointDTO[] = [];
       for (const [path, methods] of Object.entries(spec.paths || {})) {
         for (const m of Object.keys(methods as object)) {
-          dtos.push({ endpointPath: path, httpRequestType: m.toUpperCase() });
+          dtos.push({endpointPath: path, httpRequestType: m.toUpperCase()});
         }
       }
       this.endpointSvc
         .apiConfigSourceSystemSourceSystemIdEndpointPost(this.sourceSystemId, dtos)
         .subscribe({
-          next: () => { this.importing = false; this.loadEndpoints(); },
-          error: err => { console.error('Import failed', err); this.importing = false; }
+          next: () => {
+            this.importing = false;
+            this.loadEndpoints();
+          },
+          error: err => {
+            console.error('Import failed', err);
+            this.importing = false;
+          }
         });
     })();
   }
 
- /**
+  /**
    * Select an endpoint for detail management.
    * @param endpoint Endpoint to manage.
    */
- manage(endpoint: SourceSystemEndpointDTO) {
-  console.log('Managing endpoint', endpoint);
-  this.selectedEndpoint = endpoint;
-  this.loadQueryParams(endpoint.id!); // Query-Parameter für den ausgewählten Endpunkt laden
-}
+  manage(endpoint: SourceSystemEndpointDTO) {
+    console.log('Managing endpoint', endpoint);
+    this.selectedEndpoint = endpoint;
+    this.loadQueryParams(endpoint.id!); // Query-Parameter für den ausgewählten Endpunkt laden
+  }
 
-/**
+  /**
    * Load query parameters for a given endpoint.
    * @param endpointId The ID of the endpoint.
    */
-loadQueryParams(endpointId: number) {
-  this.queryParamsLoading = true;
-  this.queryParamSvc.apiConfigEndpointEndpointIdQueryParamGet(endpointId)
-    .subscribe({
-      next: (params) => {
-        this.queryParams = params;
-        this.queryParamsLoading = false;
-      },
-      error: (err) => {
-        console.error('Failed to load query params', err);
-        this.queryParamsLoading = false;
-      }
-    });
-}
-/**
+  loadQueryParams(endpointId: number) {
+    this.queryParamsLoading = true;
+    this.queryParamSvc.apiConfigEndpointEndpointIdQueryParamGet(endpointId)
+      .subscribe({
+        next: (params) => {
+          this.queryParams = params;
+          this.queryParamsLoading = false;
+        },
+        error: (err) => {
+          console.error('Failed to load query params', err);
+          this.queryParamsLoading = false;
+        }
+      });
+  }
+
+  /**
    * Add a new query parameter to the selected endpoint.
    */
-addQueryParam() {
-  if (this.queryParamForm.invalid || !this.selectedEndpoint?.id) {
-    return;
+  addQueryParam() {
+    if (this.queryParamForm.invalid || !this.selectedEndpoint?.id) {
+      return;
+    }
+    const dto: ApiEndpointQueryParamDTO = this.queryParamForm.value;
+    this.queryParamSvc.apiConfigEndpointEndpointIdQueryParamPost(this.selectedEndpoint.id, dto)
+      .subscribe({
+        next: () => {
+          this.queryParamForm.reset({queryParamType: ApiEndpointQueryParamType.Query});
+          this.loadQueryParams(this.selectedEndpoint!.id!);
+        },
+        error: (err) => console.error('Failed to add query param', err)
+      });
   }
-  const dto: ApiEndpointQueryParamDTO = this.queryParamForm.value;
-  this.queryParamSvc.apiConfigEndpointEndpointIdQueryParamPost(this.selectedEndpoint.id, dto)
-    .subscribe({
-      next: () => {
-        this.queryParamForm.reset({ queryParamType: ApiEndpointQueryParamType.Query });
-        this.loadQueryParams(this.selectedEndpoint!.id!);
-      },
-      error: (err) => console.error('Failed to add query param', err)
-    });
-}
 
-/**
- * Delete a query parameter by its ID.
- * @param paramId The ID of the query parameter to delete.
- */
-deleteQueryParam(paramId: number) {
-  this.queryParamSvc.apiConfigEndpointQueryParamIdDelete(paramId)
-    .subscribe({
-      next: () => {
-        this.queryParams = this.queryParams.filter(p => p.id !== paramId);
-      },
-      error: (err) => console.error('Failed to delete query param', err)
-    });
-}
+  /**
+   * Delete a query parameter by its ID.
+   * @param paramId The ID of the query parameter to delete.
+   */
+  deleteQueryParam(paramId: number) {
+    this.queryParamSvc.apiConfigEndpointQueryParamIdDelete(paramId)
+      .subscribe({
+        next: () => {
+          this.queryParams = this.queryParams.filter(p => p.id !== paramId);
+        },
+        error: (err) => console.error('Failed to delete query param', err)
+      });
+  }
 
- 
+
   /**
    * Validator to ensure path parameter format: starts with { and ends with } with at least one character inside.
    */
@@ -378,12 +399,12 @@ deleteQueryParam(paramId: number) {
 
       const formGroup = control.parent;
       if (formGroup && formGroup.get('queryParamType')?.value === ApiEndpointQueryParamType.Query) {
-        return null; 
+        return null;
       }
 
       const val = control.value as string;
       if (typeof val !== 'string') {
-        return { invalidPathParamFormat: true };
+        return {invalidPathParamFormat: true};
       }
 
       if (val.length >= 3 && val.startsWith('{') && val.endsWith('}')) {
@@ -392,7 +413,7 @@ deleteQueryParam(paramId: number) {
           return null;
         }
       }
-      return { invalidPathParamFormat: true };
+      return {invalidPathParamFormat: true};
     };
   }
 

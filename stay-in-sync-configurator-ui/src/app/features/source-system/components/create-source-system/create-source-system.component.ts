@@ -1,25 +1,27 @@
-import { Component, OnInit, OnChanges, Input, Output, EventEmitter, SimpleChanges } from '@angular/core';
-import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
-import { CommonModule } from '@angular/common';
-import { SourceSystemDTO } from '../../generated/model/sourceSystemDTO';
+import {Component, EventEmitter, Input, OnChanges, OnInit, Output, SimpleChanges} from '@angular/core';
+import {FormBuilder, FormGroup, ReactiveFormsModule, Validators} from '@angular/forms';
+import {CommonModule} from '@angular/common';
+import {SourceSystemDTO} from '../../models/sourceSystemDTO';
 
 // PrimeNG
-import { DialogModule } from 'primeng/dialog';
-import { DropdownModule } from 'primeng/dropdown';
-import { InputTextModule } from 'primeng/inputtext';
-import { ButtonModule } from 'primeng/button';
-import { TextareaModule } from 'primeng/textarea';
-import { StepsModule } from 'primeng/steps';  
+import {DialogModule} from 'primeng/dialog';
+import {DropdownModule} from 'primeng/dropdown';
+import {InputTextModule} from 'primeng/inputtext';
+import {ButtonModule} from 'primeng/button';
+import {TextareaModule} from 'primeng/textarea';
+import {StepsModule} from 'primeng/steps';
+import {FileUploadEvent, FileUploadModule} from 'primeng/fileupload';
+
 
 // Services und DTOs
-import { SourceSystemResourceService } from '../../generated/api/sourceSystemResource.service';
-import { CreateSourceSystemDTO } from '../../generated/model/createSourceSystemDTO';
-import { ApiAuthType } from '../../generated/model/apiAuthType';
-import { BasicAuthDTO } from '../../generated/model/basicAuthDTO';
-import { ApiKeyAuthDTO } from '../../generated/model/apiKeyAuthDTO';
-import { ManageEndpointsComponent } from '../manage-endpoints/manage-endpoints.component';
-import { ManageApiHeadersComponent } from '../manage-api-headers/manage-api-headers.component';
-import { HttpResponse } from '@angular/common/http';
+import {SourceSystemResourceService} from '../../service/sourceSystemResource.service';
+import {CreateSourceSystemDTO} from '../../models/createSourceSystemDTO';
+import {ApiAuthType} from '../../models/apiAuthType';
+import {BasicAuthDTO} from '../../models/basicAuthDTO';
+import {ApiKeyAuthDTO} from '../../models/apiKeyAuthDTO';
+import {ManageEndpointsComponent} from '../manage-endpoints/manage-endpoints.component';
+import {ManageApiHeadersComponent} from '../manage-api-headers/manage-api-headers.component';
+import {HttpErrorService} from '../../../../core/services/http-error.service';
 
 /**
  * Component for creating or editing a Source System.
@@ -41,6 +43,7 @@ import { HttpResponse } from '@angular/common/http';
     ManageApiHeadersComponent,
     ManageEndpointsComponent,
     StepsModule,
+    FileUploadModule,
   ]
 })
 export class CreateSourceSystemComponent implements OnInit, OnChanges {
@@ -48,11 +51,12 @@ export class CreateSourceSystemComponent implements OnInit, OnChanges {
   @Input() sourceSystem: SourceSystemDTO | null = null;
   @Output() visibleChange = new EventEmitter<boolean>();
 
+
   // Reduziertes Step-Model: nur Metadaten und Endpoints
   steps = [
-    { label: 'Metadaten' },
-    { label : 'Api Header' },
-    { label: 'Endpoints' },
+    {label: 'Metadaten'},
+    {label: 'Api Header'},
+    {label: 'Endpoints'},
   ];
   currentStep = 0; // Start bei Schritt 0 (Metadaten)
   createdSourceSystemId!: number;
@@ -62,12 +66,12 @@ export class CreateSourceSystemComponent implements OnInit, OnChanges {
   fileSelected = false;
 
   typeOptions = [
-    { label: 'REST-OpenAPI', value: 'REST_OPENAPI' },
-    { label: 'AAS', value: 'AAS' }
+    {label: 'REST-OpenAPI', value: 'REST_OPENAPI'},
+    {label: 'AAS', value: 'AAS'}
   ];
   authTypeOptions = [
-    { label: 'Basic', value: ApiAuthType.Basic },
-    { label: 'API Key', value: ApiAuthType.ApiKey }
+    {label: 'Basic', value: ApiAuthType.Basic},
+    {label: 'API Key', value: ApiAuthType.ApiKey}
   ];
   public readonly ApiAuthType = ApiAuthType;
 
@@ -77,8 +81,10 @@ export class CreateSourceSystemComponent implements OnInit, OnChanges {
    */
   constructor(
     private fb: FormBuilder,
-    private sourceSystemService: SourceSystemResourceService
-  ) {}
+    private sourceSystemService: SourceSystemResourceService,
+    protected errorService: HttpErrorService,
+  ) {
+  }
 
   /**
    * Initialize reactive form with metadata fields and validators.
@@ -97,7 +103,7 @@ export class CreateSourceSystemComponent implements OnInit, OnChanges {
         apiKey: [''],
         headerName: ['']
       }),
-      openApiSpec: [{ value: null, disabled: false }]
+      openApiSpec: [{value: null, disabled: false}]
     });
 
     this.form.get('apiAuthType')!.valueChanges.subscribe((authType: ApiAuthType) => {
@@ -142,13 +148,10 @@ export class CreateSourceSystemComponent implements OnInit, OnChanges {
    *
    * @param ev File input change event.
    */
-  onFileSelected(ev: Event): void {
-    const input = ev.target as HTMLInputElement;
-    if (input.files?.length) {
-      this.selectedFile = input.files[0];
-      this.fileSelected = true;
-      this.form.get('openApiSpec')!.disable();
-    }
+  onFileSelected(event: FileUploadEvent): void {
+    this.selectedFile = event.files[0];
+    this.fileSelected = true;
+    this.form.get('openApiSpec')!.disable();
   }
 
   /**
@@ -158,7 +161,7 @@ export class CreateSourceSystemComponent implements OnInit, OnChanges {
     this.visible = false;
     this.visibleChange.emit(false);
     // reset form and state
-    this.form.reset({ apiType: 'REST_OPENAPI', apiAuthType: null });
+    this.form.reset({apiType: 'REST_OPENAPI', apiAuthType: null});
     this.selectedFile = null;
     this.fileSelected = false;
     this.form.get('openApiSpec')!.enable();
@@ -175,16 +178,16 @@ export class CreateSourceSystemComponent implements OnInit, OnChanges {
       return;
     }
 
-    const base = { ...this.form.getRawValue() } as CreateSourceSystemDTO;
+    const base = {...this.form.getRawValue()} as CreateSourceSystemDTO;
     delete base.authConfig;
     delete base.openApiSpec;
 
     const authType = this.form.get('apiAuthType')!.value as ApiAuthType;
     const cfg = this.form.get('authConfig')!.value;
     if (authType === ApiAuthType.Basic) {
-      base.authConfig = { authType, username: cfg.username, password: cfg.password } as BasicAuthDTO;
+      base.authConfig = {authType, username: cfg.username, password: cfg.password} as BasicAuthDTO;
     } else if (authType === ApiAuthType.ApiKey) {
-      base.authConfig = { authType, apiKey: cfg.apiKey, headerName: cfg.headerName } as ApiKeyAuthDTO;
+      base.authConfig = {authType, apiKey: cfg.apiKey, headerName: cfg.headerName} as ApiKeyAuthDTO;
     }
 
     const post = () => {
@@ -198,7 +201,7 @@ export class CreateSourceSystemComponent implements OnInit, OnChanges {
         const bytes = atob(b64);
         const arr = new Uint8Array(bytes.length);
         for (let i = 0; i < bytes.length; i++) arr[i] = bytes.charCodeAt(i);
-        base.openApiSpec = new Blob([arr], { type: 'application/octet-stream' });
+        base.openApiSpec = new Blob([arr], {type: 'application/octet-stream'});
         post();
       };
       reader.readAsDataURL(this.selectedFile);
@@ -214,24 +217,14 @@ export class CreateSourceSystemComponent implements OnInit, OnChanges {
    */
   private postDto(dto: CreateSourceSystemDTO): void {
     this.sourceSystemService
-      .apiConfigSourceSystemPost(dto, 'response', false)
+      .apiConfigSourceSystemPost(dto)
       .subscribe({
-        next: (resp: HttpResponse<void>) => {
-          const location = resp.headers.get('Location');
-          if (!location) {
-            console.error('No Location header returned');
-            return;
-          }
-          const parts = location.split('/');
-          const id = Number(parts[parts.length - 1]);
-          if (isNaN(id)) {
-            console.error('Cannot parse ID from Location header:', location);
-            return;
-          }
-          this.createdSourceSystemId = id;
-          this.currentStep = 1; // Wechsel zu Schritt 1 (Manage API Headers)
+        next: (resp: SourceSystemDTO) => {
+          this.createdSourceSystemId = resp.id!;
+          this.currentStep = 1;
         },
         error: (err) => {
+          this.errorService.handleError(err);
           console.error('Failed to create Source System:', err);
         }
       });
@@ -249,7 +242,7 @@ export class CreateSourceSystemComponent implements OnInit, OnChanges {
       this.currentStep = 2;
     }
   }
-  
+
 
   /**
    * Moves the stepper to the previous step.

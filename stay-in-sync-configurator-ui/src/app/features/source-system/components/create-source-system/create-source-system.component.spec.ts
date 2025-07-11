@@ -1,15 +1,15 @@
-import { ComponentFixture, TestBed, fakeAsync, tick } from '@angular/core/testing';
-import { CreateSourceSystemComponent } from './create-source-system.component';
-import { ReactiveFormsModule } from '@angular/forms';
-import { DialogModule } from 'primeng/dialog';
-import { StepsModule } from 'primeng/steps';
-import { DropdownModule } from 'primeng/dropdown';
-import { InputTextModule } from 'primeng/inputtext';
-import { ButtonModule } from 'primeng/button';
-import { TextareaModule } from 'primeng/textarea';
-import { of, throwError } from 'rxjs';
-import { SourceSystemResourceService } from '../../generated/api/sourceSystemResource.service';
-import { HttpHeaders, HttpResponse } from '@angular/common/http';
+import {ComponentFixture, fakeAsync, TestBed, tick} from '@angular/core/testing';
+import {CreateSourceSystemComponent} from './create-source-system.component';
+import {ReactiveFormsModule} from '@angular/forms';
+import {DialogModule} from 'primeng/dialog';
+import {StepsModule} from 'primeng/steps';
+import {DropdownModule} from 'primeng/dropdown';
+import {InputTextModule} from 'primeng/inputtext';
+import {ButtonModule} from 'primeng/button';
+import {TextareaModule} from 'primeng/textarea';
+import {of} from 'rxjs';
+import {SourceSystemResourceService} from '../../service/sourceSystemResource.service';
+import {HttpHeaders, HttpResponse} from '@angular/common/http';
 
 describe('CreateSourceSystemComponent', () => {
   let component: CreateSourceSystemComponent;
@@ -31,7 +31,7 @@ describe('CreateSourceSystemComponent', () => {
         CreateSourceSystemComponent
       ],
       providers: [
-        { provide: SourceSystemResourceService, useValue: mockService }
+        {provide: SourceSystemResourceService, useValue: mockService}
       ]
     }).compileComponents();
 
@@ -48,16 +48,16 @@ describe('CreateSourceSystemComponent', () => {
   });
 
   it('should not call API if form invalid', () => {
-    component.form.patchValue({ name: '', apiUrl: '' });
+    component.form.patchValue({name: '', apiUrl: ''});
     component.save();
     expect(mockService.apiConfigSourceSystemPost).not.toHaveBeenCalled();
   });
 
   it('should extract ID from Location header and advance step', fakeAsync(() => {
     // valid form
-    component.form.patchValue({ name: 'X', apiUrl: 'http://foo', apiType: 'REST_OPENAPI', apiAuthType: 'NONE' });
-    const headers = new HttpHeaders({ 'Location': 'http://localhost/api/config/source-system/123' });
-    const resp = new HttpResponse<void>({ headers, status: 201 });
+    component.form.patchValue({name: 'X', apiUrl: 'http://foo', apiType: 'REST_OPENAPI', apiAuthType: 'NONE'});
+    const headers = new HttpHeaders({'Location': 'http://localhost/api/config/source-system/123'});
+    const resp = new HttpResponse<void>({headers, status: 201});
     mockService.apiConfigSourceSystemPost.and.returnValue(of(resp));
     component.save();
     // file handling async disabled, so directly tick
@@ -68,8 +68,8 @@ describe('CreateSourceSystemComponent', () => {
 
   it('should log error if no Location header', fakeAsync(() => {
     spyOn(console, 'error');
-    component.form.patchValue({ name: 'X', apiUrl: 'http://foo', apiType: 'REST_OPENAPI', apiAuthType: 'NONE' });
-    const resp = new HttpResponse<void>({ headers: new HttpHeaders(), status: 201 });
+    component.form.patchValue({name: 'X', apiUrl: 'http://foo', apiType: 'REST_OPENAPI', apiAuthType: 'NONE'});
+    const resp = new HttpResponse<void>({headers: new HttpHeaders(), status: 201});
     mockService.apiConfigSourceSystemPost.and.returnValue(of(resp));
     component.save();
     tick();

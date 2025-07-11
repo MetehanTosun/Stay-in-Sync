@@ -1,14 +1,17 @@
-import { Component, OnInit, Input, Output, EventEmitter } from '@angular/core';
-import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
-import { CommonModule } from '@angular/common';
-import { TableModule } from 'primeng/table';
-import { ButtonModule } from 'primeng/button';
-import { InputTextModule } from 'primeng/inputtext';
-import { DropdownModule } from 'primeng/dropdown';
-import { CardModule } from 'primeng/card';
+import {Component, EventEmitter, Input, OnInit, Output} from '@angular/core';
+import {FormBuilder, FormGroup, ReactiveFormsModule, Validators} from '@angular/forms';
+import {CommonModule} from '@angular/common';
+import {TableModule} from 'primeng/table';
+import {ButtonModule} from 'primeng/button';
+import {InputTextModule} from 'primeng/inputtext';
+import {DropdownModule} from 'primeng/dropdown';
+import {CardModule} from 'primeng/card';
 
-import { ApiHeaderResourceService } from '../../generated/api/apiHeaderResource.service';
-import { CreateApiHeaderDTO, ApiHeaderDTO, ApiRequestHeaderType } from '../../generated';
+import {ApiHeaderResourceService} from '../../service/apiHeaderResource.service';
+import {ApiRequestHeaderType} from '../../models/apiRequestHeaderType';
+import {ApiHeaderDTO} from '../../models/apiHeaderDTO';
+import {CreateApiHeaderDTO} from '../../models/createApiHeaderDTO';
+import {HttpErrorService} from '../../../../core/services/http-error.service';
 
 /**
  * Component for managing API header templates for a given system.
@@ -37,19 +40,21 @@ export class ManageApiHeadersComponent implements OnInit {
   loading = false;
 
   headerTypes = [
-    { label: 'Accept',         value: ApiRequestHeaderType.Accept },
-    { label: 'Content-Type',   value: ApiRequestHeaderType.ContentType },
-    { label: 'Authorization',  value: ApiRequestHeaderType.Authorization },
-    { label: 'User-Agent',     value: ApiRequestHeaderType.UserAgent },
-    { label: 'Cache-Control',  value: ApiRequestHeaderType.CacheControl },
-    { label: 'Accept-Charset', value: ApiRequestHeaderType.AcceptCharset },
-    { label: 'Custom',         value: ApiRequestHeaderType.Custom }
+    {label: 'Accept', value: ApiRequestHeaderType.Accept},
+    {label: 'Content-Type', value: ApiRequestHeaderType.ContentType},
+    {label: 'Authorization', value: ApiRequestHeaderType.Authorization},
+    {label: 'User-Agent', value: ApiRequestHeaderType.UserAgent},
+    {label: 'Cache-Control', value: ApiRequestHeaderType.CacheControl},
+    {label: 'Accept-Charset', value: ApiRequestHeaderType.AcceptCharset},
+    {label: 'Custom', value: ApiRequestHeaderType.Custom}
   ];
 
   constructor(
     private fb: FormBuilder,
-    private hdrSvc: ApiHeaderResourceService
-  ) {}
+    private hdrSvc: ApiHeaderResourceService,
+    protected errorSerice: HttpErrorService
+  ) {
+  }
 
   /**
    * Initializes the header management form and loads existing headers.
@@ -70,8 +75,14 @@ export class ManageApiHeadersComponent implements OnInit {
     this.hdrSvc
       .apiConfigSyncSystemSyncSystemIdRequestHeaderGet(this.syncSystemId)
       .subscribe({
-        next: (list) => { this.headers = list; this.loading = false; },
-        error: (err) => { console.error(err); this.loading = false; }
+        next: (list) => {
+          this.headers = list;
+          this.loading = false;
+        },
+        error: (err) => {
+          console.error(err);
+          this.loading = false;
+        }
       });
   }
 
@@ -85,11 +96,14 @@ export class ManageApiHeadersComponent implements OnInit {
       .apiConfigSyncSystemSyncSystemIdRequestHeaderPost(this.syncSystemId, dto)
       .subscribe({
         next: () => {
-          this.form.reset({ headerType: ApiRequestHeaderType.Custom });
+          this.form.reset({headerType: ApiRequestHeaderType.Custom});
           this.loadHeaders();
           this.onCreated.emit();
         },
-        error: console.error
+        error: (err) => {
+          console.log(err);
+          this.errorSerice.handleError(err);
+        }
       });
   }
 
