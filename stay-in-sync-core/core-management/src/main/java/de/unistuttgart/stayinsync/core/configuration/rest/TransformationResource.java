@@ -2,6 +2,7 @@ package de.unistuttgart.stayinsync.core.configuration.rest;
 
 import de.unistuttgart.stayinsync.core.configuration.exception.CoreManagementException;
 import de.unistuttgart.stayinsync.core.configuration.mapping.TransformationMapper;
+import de.unistuttgart.stayinsync.core.configuration.mapping.TransformationScriptMapper;
 import de.unistuttgart.stayinsync.core.configuration.rest.dtos.TransformationAssemblyDTO;
 import de.unistuttgart.stayinsync.core.configuration.rest.dtos.TransformationDetailsDTO;
 import de.unistuttgart.stayinsync.core.configuration.rest.dtos.TransformationShellDTO;
@@ -32,6 +33,9 @@ public class TransformationResource {
     @Inject
     TransformationMapper mapper;
 
+    @Inject
+    TransformationScriptMapper scriptMapper;
+
     @POST
     @Consumes(APPLICATION_JSON)
     @Operation(summary = "Creates a new transformation shell",
@@ -41,7 +45,6 @@ public class TransformationResource {
         var builder = uriInfo.getAbsolutePathBuilder().path(Long.toString(persisted.id));
         Log.debugf("New transformation shell created with URI %s", builder.build().toString());
 
-        // Return the full details DTO so the frontend has the initial state
         return Response.created(builder.build()).entity(mapper.mapToDetailsDTO(persisted)).build();
     }
 
@@ -83,6 +86,18 @@ public class TransformationResource {
                 .collect(Collectors.toList());
     }
 
+    @GET
+    @Path("/{id}/transformation-script")
+    @Operation(summary = "Returns the associated transformation script for this Transformation.")
+    public Response getTransformationScript(@Parameter(name = "id", required = true) @PathParam("id") Long id) {
+        return service.findScriptById(id)
+                .map(script -> {
+                    Log.debugf("Found transformation script: %s", script);
+                    return Response.ok(scriptMapper.mapToDTO(script)).build();
+                })
+                .orElseThrow(() -> new CoreManagementException(Response.Status.NOT_FOUND, "Unable to find transformation script", "No script is assigned to Transformation with id %d", id));
+    }
+
     @DELETE
     @Path("/{id}")
     @Operation(summary = "Deletes an existing transformation")
@@ -93,7 +108,7 @@ public class TransformationResource {
             Log.debugf("Transformation with id %d deleted", id);
             return Response.noContent().build();
         } else {
-            Log.warnf("Attempted to delete non-existent transformation with id %d", id);
+            Log.warnf("Attempted to delete non-existent transformation script with id %d", id);
             throw new CoreManagementException(Response.Status.NOT_FOUND,
                     "Transformation not found",
                     "Transformation with id %d could not be found for deletion.", id);
