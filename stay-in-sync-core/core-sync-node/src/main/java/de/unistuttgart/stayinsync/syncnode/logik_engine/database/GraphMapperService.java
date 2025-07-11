@@ -1,4 +1,4 @@
-package de.unistuttgart.stayinsync.syncnode.logik_engine;
+package de.unistuttgart.stayinsync.syncnode.logik_engine.database;
 
 import de.unistuttgart.stayinsync.syncnode.logik_engine.logic_operator.LogicOperator;
 import de.unistuttgart.stayinsync.syncnode.logik_engine.nodes.ConstantNode;
