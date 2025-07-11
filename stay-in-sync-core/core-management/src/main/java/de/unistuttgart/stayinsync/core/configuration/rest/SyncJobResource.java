@@ -25,6 +25,7 @@ import org.eclipse.microprofile.openapi.annotations.responses.APIResponse;
 
 import java.net.URI;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 
 import static jakarta.ws.rs.core.MediaType.APPLICATION_JSON;
@@ -157,7 +158,7 @@ public class SyncJobResource {
                                                )
                                        )
                                        @PathParam("id") Long id, @Valid @NotNull SyncJobDTO syncJobDTO) {
-        if (id != syncJobDTO.id()) {
+        if (!Objects.equals(id, syncJobDTO.id())) {
             throw new CoreManagementException(Response.Status.BAD_REQUEST, "Id missmatch", "Make sure that the request body entity id matches the request parameter");
         }
 

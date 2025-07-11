@@ -1,0 +1,96 @@
+<p-button label="Create new Transformation" (click)="openCreateDialog()"></p-button>
+<p-table [value]="transformations" [paginator]="true" [rows]="10" [responsiveLayout]="'scroll'" [style]="{'min-height': '500px'}">
+  <ng-template pTemplate="header">
+    <tr>
+      <th>Name</th>
+      <th>Description</th>
+      <th>Transformation Rule</th>
+      <th>Transformation Script</th>
+      <th>Actions</th>
+    </tr>
+  </ng-template>
+  <ng-template pTemplate="body" let-rowData>
+    <tr>
+      <td>{{ rowData.name }}</td>
+      <td>{{ rowData.description }}</td>
+      <td>
+        <ng-container *ngIf="rowData.transformationRule; else addRuleBtn">
+        {{ rowData.transformationRule }}
+        </ng-container>
+        <ng-template #addRuleBtn>
+          <p-button label="addRule" (click)="addRule(rowData)"></p-button>
+        </ng-template>
+      </td>
+     <td>
+       <ng-container *ngIf="rowData.script; else addScriptBtn">
+         {{ rowData.script.name }}
+         <p-button
+           label="RemoveScript"
+           [style]="{'width': '8rem', 'background-color': '#d32f2f', 'border': '#d32f2f' }"
+           (click)="removeScript(rowData)"
+           [style.display]="rowData.added ? 'none' : ''">
+         </p-button>
+       </ng-container>
+       <ng-template #addScriptBtn>
+         <p-button
+           label="addScript"
+           (click)="addScript(rowData)"
+           [disabled]="rowData.added">
+         </p-button>
+       </ng-template>
+     </td>
+      <td>
+        <p-button icon="pi pi-pencil" class="p-button-rounded p-button-text" (click)="edit(rowData)" styleClass="p-button-rounded p-button-text"></p-button>
+        <p-button icon="pi pi-trash" class="p-button-rounded p-button-danger p-button-text" (click)="delete(rowData)" styleClass="p-button-rounded p-button-danger p-button-text"></p-button>
+        <p-button
+          [label]="rowData.added ? 'Remove' : 'Add'"
+          [class]="rowData.added ? 'p-button-rounded p-button-text w-24' : 'p-button-rounded p-button-text w-24'"
+          [style]="rowData.added ? {'width': '8rem', 'background-color': '#d32f2f', 'border': '#d32f2f' } : {'width': '8rem'}"
+          [disabled]=" !rowData.script"
+          (click)="( !rowData.script) ? showMissingFieldsMessage() : (rowData.added ? remove(rowData) : add(rowData))">
+        </p-button>
+      </td>
+    </tr>
+  </ng-template>
+</p-table>
+
+<p-dialog
+  header="New Transformation"
+  [(visible)]="displayCreateDialog"
+  (onHide)="cancelCreateTransformationDialog()"
+  [modal]="true"
+  [style]="{ width: '50vw', maxWidth: '20vw', minHeight: '20vw' }">
+<div class="p-fluid">
+    <div class="p-field">
+      <label for="name">Name</label>
+      <input id="name" type="text" pInputText [(ngModel)]="newTransformation.name" />
+    </div>
+    <div class="p-field">
+      <label for="description">Description</label>
+      <input id="description" type="text" pInputText [(ngModel)]="newTransformation.description" />
+    </div>
+  <p-button label="Create" (click)="createTransformationShell()"></p-button>
+  </div>
+</p-dialog>
+
+<p-dialog
+  header="Select Rule"
+  [(visible)]="displayRuleSelectionDialog"
+  (onHide)="cancelRuleSelectionDialog()"
+  [modal]="true"
+  [style]="{ width: '50vw', maxWidth: '50vw', minHeight: '40vw' }"
+>
+  <app-transformation-rule-selection (closeDialog)="displayRuleSelectionDialog = false" [transformationId]="transformationId"></app-transformation-rule-selection>
+</p-dialog>
+
+<p-dialog
+  header="Select Script"
+  [(visible)]="displayScriptSelectionDialog"
+  (onHide)="cancelScriptSelectionDialog()"
+  [modal]="true"
+  [style]="{ width: '50vw', maxWidth: '50vw', minHeight: '40vw' }"
+>
+  <app-transformation-script-selection (closeDialog)="displayScriptSelectionDialog = false" [transformationId]="transformationId" (transformationUpdated)="loadTransformationsFromBackend()" ></app-transformation-script-selection>
+</p-dialog>
+
+
