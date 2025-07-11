@@ -122,7 +122,7 @@ public class RestClient {
         connectionDetails.requestParameters().forEach(parameter -> {
             switch (parameter.type()) {
                 //TODO PathParam richtig einführen
-                case PATH -> request.addPathParam(parameter.paramName(), parameter.paramValue());
+                //case PATH -> request.addPathParam(parameter.paramName(), parameter.paramValue());
                 case QUERY -> request.addQueryParam(parameter.paramName(), parameter.paramValue());
                 default -> throw new IllegalArgumentException("Unsupported parameter type: " + parameter.type());
             }
