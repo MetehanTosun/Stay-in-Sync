@@ -6,7 +6,6 @@ import com.rabbitmq.client.CancelCallback;
 import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.DeliverCallback;
 import com.rabbitmq.client.Delivery;
-import de.unistuttgart.stayinsync.core.configuration.rest.dtos.CreateRequestConfigurationDTO;
 import de.unistuttgart.stayinsync.polling.PollingJobScheduler;
 import de.unistuttgart.stayinsync.polling.exception.PollingNodeException;
 import de.unistuttgart.stayinsync.transport.dto.SourceSystemApiRequestConfigurationMessageDTO;

@@ -1,0 +1,78 @@
+<p-panel header="SyncJob Context" [toggleable]="true" styleClass="h-full">
+  <ng-container *ngIf="viewModel; else noData">
+    <p-scrollPanel [style]="{ width: '100%', height: '100%' }">
+      <p-card
+        [header]="viewModel.name"
+        [subheader]="viewModel.id"
+        styleClass="p-mb-3"
+      >
+        <p>
+          {{ viewModel.syncJobDescription || "No description provided." }}
+        </p>
+      </p-card>
+
+      <p-fieldset
+        legend="Source Systems & Data"
+        [toggleable]="true"
+        [collapsed]="false"
+      >
+        <div
+          *ngIf="!viewModel.sourceSystems?.length"
+          class="p-text-center p-p-3"
+        >
+          No source systems configured for this job.
+        </div>
+
+        <p-accordion
+          [multiple]="true"
+          *ngIf="viewModel.sourceSystems?.length"
+        >
+          <p-accordionTab
+            *ngFor="let system of viewModel.sourceSystems; let i = index"
+            [header]="system.name + ' (' + system.type + ')'"
+            [selected]="i === 0"
+          >
+            <div
+              *ngFor="let entity of system.dataEntities"
+              class="p-mb-2 entity-container"
+            >
+              <p-tag
+                severity="info"
+                value="Available as: sourceData.{{ entity.aliasInScript }}"
+              ></p-tag>
+
+              <p-tree
+                [value]="entity.treeNodes"
+                selectionMode="single"
+                scrollHeight="flex"
+                styleClass="p-mt-1 schema-tree"
+              >
+              </p-tree>
+            </div>
+          </p-accordionTab>
+        </p-accordion>
+      </p-fieldset>
+
+      <p-fieldset
+        *ngIf="viewModel.destinationSystem"
+        legend="Destination System"
+        [toggleable]="true"
+        [collapsed]="true"
+      >
+        <p><strong>Name:</strong> {{ viewModel.destinationSystem.name }}</p>
+        <p>
+          <strong>Target Entity/Type:</strong>
+          {{ viewModel.destinationSystem.targetEntity }}
+        </p>
+      </p-fieldset>
+    </p-scrollPanel>
+  </ng-container>
+
+  <ng-template #noData>
+    <div class="p-text-center p-p-3">
+      <i class="pi pi-info-circle p-mr-2"></i>
+      No SyncJob context loaded. Please ensure a SyncJob is active in the parent
+      workflow.
+    </div>
+  </ng-template>
+</p-panel>

@@ -25,12 +25,16 @@
                 "glob": "**/*",
                 "input": "public"
               },
+              {
+                "glob": "**/*",
+                "input": "node_modules/monaco-editor/min",
+                "output": "assets/monaco/"
+              },
               "src/assets"
             ],
             "styles": [
               "node_modules/primeicons/primeicons.css",
               "src/styles.css"
-
             ],
             "scripts": []
           },
@@ -40,7 +44,7 @@
                 {
                   "type": "initial",
                   "maximumWarning": "500kB",
-                  "maximumError": "2mb"
+                  "maximumError": "10MB"
                 },
                 {
                   "type": "anyComponentStyle",
@@ -60,9 +64,6 @@
         },
         "serve": {
           "builder": "@angular-devkit/build-angular:dev-server",
-          "options": {
-            "proxyConfig": "src/proxy.conf.json"
-          },
           "configurations": {
             "production": {
               "buildTarget": "configurator-ui:build:production"

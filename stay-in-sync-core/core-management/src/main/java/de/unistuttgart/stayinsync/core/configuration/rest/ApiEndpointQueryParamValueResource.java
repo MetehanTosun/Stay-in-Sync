@@ -2,7 +2,7 @@ package de.unistuttgart.stayinsync.core.configuration.rest;
 
 import de.unistuttgart.stayinsync.core.configuration.exception.CoreManagementException;
 import de.unistuttgart.stayinsync.core.configuration.mapping.ApiEndpointQueryParamValueMapper;
-import de.unistuttgart.stayinsync.core.configuration.rest.dtos.ApiEndpoindQueryParamValueDTO;
+import de.unistuttgart.stayinsync.core.configuration.rest.dtos.ApiEndpointQueryParamValueDTO;
 import de.unistuttgart.stayinsync.core.configuration.rest.dtos.ApiEndpointQueryParamDTO;
 import de.unistuttgart.stayinsync.core.configuration.service.ApiEndpointQueryParamValueService;
 import io.quarkus.logging.Log;
@@ -59,12 +59,12 @@ public class ApiEndpointQueryParamValueResource {
                     required = true,
                     content = @Content(
                             mediaType = APPLICATION_JSON,
-                            schema = @Schema(implementation = ApiEndpoindQueryParamValueDTO.class),
+                            schema = @Schema(implementation = ApiEndpointQueryParamValueDTO.class),
                             examples = @ExampleObject(name = "valid_endpoint_param_value", value = Examples.VALID_ENDPOINT_PARAM_VALUE_POST)
                     )
             )
             @PathParam("requestConfigId") Long requestConfigId,
-            @Valid @NotNull ApiEndpoindQueryParamValueDTO paramValueDTO,
+            @Valid @NotNull ApiEndpointQueryParamValueDTO paramValueDTO,
             @Context UriInfo uriInfo) {
 
         var persistedEndpointQueryParam = this.apiEndpointQueryParamValueService.persistValue(paramValueDTO, requestConfigId);
@@ -85,7 +85,7 @@ public class ApiEndpointQueryParamValueResource {
                     schema = @Schema(implementation = ApiEndpointQueryParamDTO.class, type = SchemaType.ARRAY)
             )
     )
-    public List<ApiEndpoindQueryParamValueDTO> getAllQueryParams(@Parameter(name = "request config", description = "Associated request config") @PathParam("requestConfigId") Long requestConfigId) {
+    public List<ApiEndpointQueryParamValueDTO> getAllQueryParams(@Parameter(name = "request config", description = "Associated request config") @PathParam("requestConfigId") Long requestConfigId) {
         var apiRequestHeaders = this.apiEndpointQueryParamValueService.findQueryParamValueByRequestConfig(requestConfigId);
 
         Log.debugf("Total number of query-parameter-values: %d", apiRequestHeaders.size());
@@ -132,7 +132,7 @@ public class ApiEndpointQueryParamValueResource {
                                                                        examples = @ExampleObject(name = "valid_sync_job", value = Examples.VALID_EXAMPLE_SYNCJOB)
                                                                )
                                                        )
-                                                       @PathParam("id") Long id, @Valid @NotNull ApiEndpoindQueryParamValueDTO queryParamValue) {
+                                                       @PathParam("id") Long id, @Valid @NotNull ApiEndpointQueryParamValueDTO queryParamValue) {
         if (id != queryParamValue.id()) {
             throw new CoreManagementException(Response.Status.BAD_REQUEST, "Id missmatch", "Make sure that the request body entity id matches the request parameter");
         }
