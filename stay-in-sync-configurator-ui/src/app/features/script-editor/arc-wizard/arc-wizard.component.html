@@ -8,7 +8,25 @@
   [resizable]="false"
 >
   <ng-container *ngIf="context">
+    <div class="context-header">
+      <span
+        class="http-method"
+        [ngClass]="context.endpoint.httpRequestType.toLowerCase()"
+      >
+        {{ context.endpoint.httpRequestType }}
+      </span>
+      <span class="endpoint-path font-mono">
+        {{ context.endpoint.endpointPath }}
+      </span>
+    </div>
+
     <p-messages [(value)]="errorMessages" [closable]="true"></p-messages>
+
+    <div *ngIf="isLoadingDefinitions" class="text-center p-4">
+      <i class="pi pi-spin pi-spinner" style="font-size: 2rem"></i>
+      <p>Loading parameter definitions...</p>
+    </div>
+
     <form [formGroup]="arcForm" novalidate *ngIf="!isLoadingDefinitions">
       <div class="p-fluid">
         <div class="field">
@@ -32,11 +50,14 @@
         <!-- Path Parameters -->
         <p-fieldset
           legend="Path Parameters"
-          *ngIf="pathParams.length > 0"
+          *ngIf="pathParamDefinitions.length > 0"
           [formGroupName]="'pathParameters'"
         >
           <div class="p-fluid grid">
-            <div class="field col-12 md:col-6" *ngFor="let param of pathParams">
+            <div
+              class="field col-12 md:col-6"
+              *ngFor="let param of pathParamDefinitions"
+            >
               <label [for]="'path-' + param.name" class="font-bold">
                 {{ param.name }}
                 <span *ngIf="param.required" class="p-error">*</span>
@@ -66,39 +87,109 @@
         <!-- Query Parameters -->
         <p-fieldset
           legend="Query Parameters"
-          *ngIf="queryParams.length > 0"
           class="mt-3"
-          [formGroupName]="'queryParameterValues'"
+          [formArrayName]="'queryParameters'"
         >
-          <div class="p-fluid grid">
-            <div
-              class="field col-12 md:col-6"
-              *ngFor="let param of queryParams"
-            >
-              <label [for]="'query-' + param.name" class="font-bold">
-                {{ param.name }}
-                <span *ngIf="param.required" class="p-error">*</span>
-              </label>
-              <!-- Dropdown for enums/options -->
-              <p-dropdown
-                *ngIf="param.options && param.options.length > 0"
-                [options]="param.options"
-                [formControlName]="param.name"
-                [showClear]="true"
-                placeholder="Select a value"
-                [pTooltip]="param.description"
-              >
-              </p-dropdown>
-              <!-- Text input for others -->
+          <div
+            class="parameter-row grid align-items-center mb-2"
+            *ngFor="let param of queryParameters.controls; let i = index"
+            [formGroupName]="i"
+          >
+            <!-- Key Input -->
+            <div class="field col-5 m-0">
+              <label *ngIf="i === 0">Key</label>
               <input
-                *ngIf="!param.options || param.options.length > 0"
                 type="text"
                 pInputText
-                [formControlName]="param.name"
-                [pTooltip]="param.description"
+                formControlName="key"
+                placeholder="param-key"
               />
             </div>
+            <!-- Value Input -->
+            <div class="field col-5 m-0">
+              <label *ngIf="i === 0">Value</label>
+              <input
+                type="text"
+                pInputText
+                formControlName="value"
+                placeholder="param-value"
+              />
+            </div>
+            <!-- Actions Column -->
+            <div class="col-2 field-actions">
+              <p-button
+                icon="pi pi-trash"
+                styleClass="p-button-danger p-button-text"
+                (click)="removeQueryParam(i)"
+                pTooltip="Remove Parameter"
+                [disabled]="param.get('isRequired')?.value"
+              ></p-button>
+            </div>
           </div>
+
+          <!-- Message for when there are no query params -->
+          <div
+            *ngIf="queryParameters.controls.length === 0"
+            class="text-center text-color-secondary p-3"
+          >
+            No query parameters defined. Add one below.
+          </div>
+
+          <!-- Add Button -->
+          <p-button
+            label="Add Query Parameter"
+            icon="pi pi-plus"
+            styleClass="p-button-sm p-button-outlined mt-2"
+            (click)="addCustomQueryParam()"
+          ></p-button>
+        </p-fieldset>
+        
+        <p-fieldset
+          legend="Headers"
+          class="mt-3"
+          [formArrayName]="'headerParameters'"
+        >
+          <div
+            class="parameter-row grid align-items-center mb-2"
+            *ngFor="let param of headerParameters.controls; let i = index"
+            [formGroupName]="i"
+          >
+            <!-- Key Input -->
+            <div class="field col-5 m-0">
+              <label *ngIf="i === 0">Header Name</label>
+              <input
+                type="text"
+                pInputText
+                formControlName="key"
+                placeholder="Header-Name"
+              />
+            </div>
+            <!-- Value Input -->
+            <div class="field col-5 m-0">
+              <label *ngIf="i === 0">Header Value</label>
+              <input
+                type="text"
+                pInputText
+                formControlName="value"
+                placeholder="header-value"
+              />
+            </div>
+            <!-- Actions Column -->
+            <div class="col-2 field-actions">
+              <p-button
+                icon="pi pi-trash"
+                styleClass="p-button-danger p-button-text"
+                (click)="removeHeader(i)"
+                pTooltip="Remove Header"
+              ></p-button>
+            </div>
+          </div>
+          <p-button
+            label="Add Header"
+            icon="pi pi-plus"
+            styleClass="p-button-sm p-button-outlined mt-2"
+            (click)="addCustomHeader()"
+          ></p-button>
         </p-fieldset>
       </div>
     </form>

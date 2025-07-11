@@ -1,13 +1,16 @@
 import { HttpClient } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
-import { Observable } from 'rxjs';
+import { forkJoin, map, Observable } from 'rxjs';
 import { SyncJobContextData } from '../../features/script-editor/sync-job-context-panel/sync-job-context-panel.component';
 
 import {
+  ApiEndpointParamDTO,
+  ApiHeaderDefinition,
   ApiRequestConfiguration,
   ArcSaveRequest,
   ArcTestCallRequest,
   ArcTestCallResponse,
+  ArcWizardContextData,
   EndpointParameterDefinition,
 } from '../../features/script-editor/models/arc.models';
 import {
@@ -106,17 +109,48 @@ export class ScriptEditorService {
     );
   }
 
-  getSyncJobContext(jobId: string): Observable<SyncJobContextData> {
-    return this.http.get<SyncJobContextData>(
-      `${this.API_URL}/config/sync-job/${jobId}/`
+  getArcWizardContextData(systemId: number, endpointId: number): Observable<ArcWizardContextData> {
+    const params$ = this.http.get<ApiEndpointParamDTO[]>(`${this.API_URL}/config/endpoint/${endpointId}/query-param`); // TODO GET PROPER ENDPOINT
+
+    const headers$ = this.http.get<ApiHeaderDefinition[]>(
+      `${this.API_URL}/config/sync-system/${systemId}/request-header` // TODO STREAMLINE API CONVENTIONS (sync/source)
+    );
+
+    return forkJoin([params$, headers$]).pipe(
+      map(([paramDtos, headerDefs]) => {
+        const pathParams: EndpointParameterDefinition[] = [];
+        const queryParamDefinitions: EndpointParameterDefinition[] = [];
+
+        paramDtos.forEach(dto => {
+          const definition: EndpointParameterDefinition = {
+            name: dto.paramName,
+            in: dto.queryParamType.toLowerCase() as 'path' | 'query',
+            description: dto.description || '',
+            required: dto.required || false,
+            options: dto.values || [],
+          };
+
+          if (definition.in === 'path'){
+            pathParams.push(definition);
+          } else {
+            queryParamDefinitions.push(definition);
+          }
+        });
+
+        const wizardData: ArcWizardContextData = {
+          pathParams: pathParams,
+          queryParamDefinitions: queryParamDefinitions,
+          headerDefinitions: headerDefs,
+        };
+
+        return wizardData;
+      })
     );
   }
 
-  getEndpointParameterDefinitions(
-    endpointId: number
-  ): Observable<EndpointParameterDefinition[]> {
-    return this.http.get<EndpointParameterDefinition[]>(
-      `${this.API_URL}/config/source-system/endpoint/${endpointId}/request-configuration`
+  getSyncJobContext(jobId: string): Observable<SyncJobContextData> {
+    return this.http.get<SyncJobContextData>(
+      `${this.API_URL}/config/sync-job/${jobId}/`
     );
   }
 

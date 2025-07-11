@@ -1,7 +1,5 @@
 // --- Data Transfer Objects (DTOs) for API Communication ---
 
-import {SourceSystem} from '../../source-system/models/source-system.models';
-
 /**
  * The payload sent to the backend to test an API call in the ARC wizard.
  */
@@ -73,4 +71,25 @@ export interface SourceSystemApiRequestConfiguration extends ApiRequestConfigura
   sourceSystemEndpoint: string; // Name oder ID des Endpoints
   responseDts: string;
   pollingIntervallTimeInMs: number;
+}
+
+export interface ApiHeaderDefinition {
+  id: number;
+  headerName: string;
+  values: string[];
+}
+
+export interface ArcWizardContextData {
+  pathParams: EndpointParameterDefinition[];
+  queryParamDefinitions: EndpointParameterDefinition[];
+  headerDefinitions: ApiHeaderDefinition[];
+}
+
+export interface ApiEndpointParamDTO {
+  paramName: string;
+  queryParamType: 'PATH' | 'QUERY';
+  id: number;
+  description?: string;
+  required?: boolean;
+  values: string[];
 }

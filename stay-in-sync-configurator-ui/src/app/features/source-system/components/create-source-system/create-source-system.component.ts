@@ -1,75 +1,171 @@
-// src/app/features/source-system/components/create-source-system/create-source-system.component.ts
+import {Component, EventEmitter, Input, OnChanges, OnInit, Output, SimpleChanges} from '@angular/core';
+import {FormBuilder, FormGroup, ReactiveFormsModule, Validators} from '@angular/forms';
+import {CommonModule} from '@angular/common';
+import {SourceSystemDTO} from '../../models/sourceSystemDTO';
 
-import { Component, OnInit, Input, Output, EventEmitter } from '@angular/core';
-import { CommonModule }    from '@angular/common';
-import { FormsModule }     from '@angular/forms';
-import { ButtonModule }    from 'primeng/button';
-import { DialogModule }    from 'primeng/dialog';
-import { DropdownModule }  from 'primeng/dropdown';         // ← hier
-import { AasService }      from '../../services/aas.service';
-import { Observable, of }  from 'rxjs';
-import { tap, catchError } from 'rxjs/operators';
-import {SourceSystem} from '../../models/source-system.model';
+// PrimeNG
+import {DialogModule} from 'primeng/dialog';
+import {DropdownModule} from 'primeng/dropdown';
+import {InputTextModule} from 'primeng/inputtext';
+import {ButtonModule} from 'primeng/button';
+import {TextareaModule} from 'primeng/textarea';
+import {StepsModule} from 'primeng/steps';
+import {FileUploadEvent, FileUploadModule} from 'primeng/fileupload';
 
-type SourceType = 'AAS' | 'REST';
 
+// Services und DTOs
+import {SourceSystemResourceService} from '../../service/sourceSystemResource.service';
+import {CreateSourceSystemDTO} from '../../models/createSourceSystemDTO';
+import {ApiAuthType} from '../../models/apiAuthType';
+import {BasicAuthDTO} from '../../models/basicAuthDTO';
+import {ApiKeyAuthDTO} from '../../models/apiKeyAuthDTO';
+import {ManageEndpointsComponent} from '../manage-endpoints/manage-endpoints.component';
+import {ManageApiHeadersComponent} from '../manage-api-headers/manage-api-headers.component';
+import {HttpErrorService} from '../../../../core/services/http-error.service';
+
+/**
+ * Component for creating or editing a Source System.
+ * Provides a stepper UI for metadata, API headers, and endpoints configuration.
+ */
 @Component({
-  selector: 'app-create-source-system',
   standalone: true,
+  selector: 'app-create-source-system',
+  templateUrl: './create-source-system.component.html',
+  styleUrls: ['./create-source-system.component.css'],
   imports: [
     CommonModule,
-    FormsModule,
-    ButtonModule,
+    ReactiveFormsModule,
     DialogModule,
-    DropdownModule                           // ← hier
-  ],
-  templateUrl: './create-source-system.component.html',
-  styleUrls: ['./create-source-system.component.css']
+    DropdownModule,
+    InputTextModule,
+    ButtonModule,
+    TextareaModule,
+    ManageApiHeadersComponent,
+    ManageEndpointsComponent,
+    StepsModule,
+    FileUploadModule,
+  ]
 })
-export class CreateSourceSystemComponent implements OnInit {
+export class CreateSourceSystemComponent implements OnInit, OnChanges {
   @Input() visible = false;
+  @Input() sourceSystem: SourceSystemDTO | null = null;
   @Output() visibleChange = new EventEmitter<boolean>();
 
-  sourceType: SourceType = 'AAS';
-  sourceTypeOptions = [
-    { label: 'AAS',  value: 'AAS'  },
-    { label: 'REST', value: 'REST' }
+
+  // Reduziertes Step-Model: nur Metadaten und Endpoints
+  steps = [
+    {label: 'Metadaten'},
+    {label: 'Api Header'},
+    {label: 'Endpoints'},
   ];
+  currentStep = 0; // Start bei Schritt 0 (Metadaten)
+  createdSourceSystemId!: number;
 
-  source = { name: '', aasId: '', endpoint: '' };
+  form!: FormGroup;
+  selectedFile: File | null = null;
+  fileSelected = false;
 
-  aasList$: Observable<SourceSystem[]> = of([]);
+  typeOptions = [
+    {label: 'REST-OpenAPI', value: 'REST_OPENAPI'},
+    {label: 'AAS', value: 'AAS'}
+  ];
+  authTypeOptions = [
+    {label: 'Basic', value: ApiAuthType.Basic},
+    {label: 'API Key', value: ApiAuthType.ApiKey}
+  ];
+  public readonly ApiAuthType = ApiAuthType;
 
-  constructor(private aasService: AasService) {}
+  /**
+   * @param fb FormBuilder for reactive form creation.
+   * @param sourceSystemService Service to communicate with the SourceSystem backend API.
+   */
+  constructor(
+    private fb: FormBuilder,
+    private sourceSystemService: SourceSystemResourceService,
+    protected errorService: HttpErrorService,
+  ) {
+  }
 
+  /**
+   * Initialize reactive form with metadata fields and validators.
+   * Subscribes to authentication type changes to adjust validators dynamically.
+   */
   ngOnInit(): void {
-    this.loadAasList();
+    this.form = this.fb.group({
+      name: ['', Validators.required],
+      apiUrl: ['', [Validators.required, Validators.pattern('https?://.+')]],
+      description: [''],
+      apiType: ['REST_OPENAPI', Validators.required],
+      apiAuthType: [null],
+      authConfig: this.fb.group({
+        username: [''],
+        password: [''],
+        apiKey: [''],
+        headerName: ['']
+      }),
+      openApiSpec: [{value: null, disabled: false}]
+    });
+
+    this.form.get('apiAuthType')!.valueChanges.subscribe((authType: ApiAuthType) => {
+      const grp = this.form.get('authConfig') as FormGroup;
+      // reset
+      ['username', 'password', 'apiKey', 'headerName'].forEach(k => {
+        grp.get(k)!.clearValidators();
+        grp.get(k)!.updateValueAndValidity();
+      });
+      if (authType === ApiAuthType.Basic) {
+        grp.get('username')!.setValidators([Validators.required]);
+        grp.get('password')!.setValidators([Validators.required]);
+      } else if (authType === ApiAuthType.ApiKey) {
+        grp.get('apiKey')!.setValidators([Validators.required]);
+        grp.get('headerName')!.setValidators([Validators.required]);
+      }
+      ['username', 'password', 'apiKey', 'headerName'].forEach(k => grp.get(k)!.updateValueAndValidity());
+    });
   }
 
-  onTypeChange(type: SourceType) {
-    this.sourceType = type;
-    this.loadAasList();
-  }
-
-  private loadAasList() {
-    if (this.sourceType === 'AAS') {
-      this.aasList$ = this.aasService.getAll().pipe(
-        tap(list => console.log('AAS geladen:', list)),
-        catchError(err => { console.error(err); return of([]); })
-      );
-    } else {
-      this.aasList$ = of([]);
+  /**
+   * Reacts to incoming changes of the sourceSystem Input.
+   * If editing an existing system, patches form values and resets to first step.
+   *
+   * @param changes Object containing changed @Input properties.
+   */
+  ngOnChanges(changes: SimpleChanges): void {
+    if (changes['sourceSystem'] && this.sourceSystem) {
+      this.form.patchValue({
+        name: this.sourceSystem.name,
+        apiUrl: this.sourceSystem.apiUrl,
+        description: this.sourceSystem.description,
+        apiType: this.sourceSystem.apiType
+      });
+      this.currentStep = 0;
     }
   }
 
-  open() {
-    this.visible = true;
-    this.visibleChange.emit(true);
+  /**
+   * Handles file selection for OpenAPI spec upload.
+   * Disables the URL input when a file is chosen.
+   *
+   * @param ev File input change event.
+   */
+  onFileSelected(event: FileUploadEvent): void {
+    this.selectedFile = event.files[0];
+    this.fileSelected = true;
+    this.form.get('openApiSpec')!.disable();
   }
 
-  cancel() {
+  /**
+   * Cancels creation/edit, resets form and component state, and closes the dialog.
+   */
+  cancel(): void {
     this.visible = false;
     this.visibleChange.emit(false);
+    // reset form and state
+    this.form.reset({apiType: 'REST_OPENAPI', apiAuthType: null});
+    this.selectedFile = null;
+    this.fileSelected = false;
+    this.form.get('openApiSpec')!.enable();
+    this.currentStep = 0;
   }
 
   save() {

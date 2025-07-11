@@ -1,0 +1,2795 @@
+{
+  "openapi" : "3.1.0",
+  "components" : {
+    "schemas" : {
+      "ApiAuthConfigurationDTO" : {
+        "type" : "object",
+        "properties" : {
+          "authType" : {
+            "$ref" : "#/components/schemas/ApiAuthType"
+          }
+        }
+      },
+      "ApiAuthType" : {
+        "type" : "string",
+        "enum" : [ "BASIC", "API_KEY" ]
+      },
+      "ApiEndpoindQueryParamValueDTO" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "queryParamId" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "paramName" : {
+            "type" : "string"
+          },
+          "paramValue" : {
+            "type" : "string"
+          }
+        }
+      },
+      "ApiEndpointQueryParam" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "syncSystemEndpoint" : {
+            "$ref" : "#/components/schemas/SyncSystemEndpoint"
+          },
+          "queryParamType" : {
+            "$ref" : "#/components/schemas/ApiEndpointQueryParamType"
+          },
+          "paramName" : {
+            "type" : "string"
+          },
+          "values" : {
+            "type" : "array",
+            "uniqueItems" : true,
+            "items" : {
+              "type" : "string"
+            }
+          }
+        }
+      },
+      "ApiEndpointQueryParamDTO" : {
+        "type" : "object",
+        "properties" : {
+          "paramName" : {
+            "type" : "string"
+          },
+          "queryParamType" : {
+            "$ref" : "#/components/schemas/ApiEndpointQueryParamType"
+          },
+          "id" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "values" : {
+            "type" : "array",
+            "uniqueItems" : true,
+            "items" : {
+              "type" : "string"
+            }
+          }
+        }
+      },
+      "ApiEndpointQueryParamType" : {
+        "type" : "string",
+        "enum" : [ "PATH", "QUERY" ]
+      },
+      "ApiEndpointQueryParamValue" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "requestConfiguration" : {
+            "$ref" : "#/components/schemas/ApiRequestConfiguration"
+          },
+          "queryParam" : {
+            "$ref" : "#/components/schemas/ApiEndpointQueryParam"
+          },
+          "selectedValue" : {
+            "type" : "string"
+          }
+        }
+      },
+      "ApiHeader" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "headerName" : {
+            "type" : "string"
+          },
+          "values" : {
+            "type" : "array",
+            "uniqueItems" : true,
+            "items" : {
+              "type" : "string"
+            }
+          },
+          "headerType" : {
+            "$ref" : "#/components/schemas/ApiRequestHeaderType"
+          },
+          "syncSystem" : {
+            "$ref" : "#/components/schemas/SyncSystem"
+          }
+        }
+      },
+      "ApiHeaderDTO" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "headerType" : {
+            "$ref" : "#/components/schemas/ApiRequestHeaderType"
+          },
+          "headerName" : {
+            "type" : "string"
+          },
+          "values" : {
+            "type" : "array",
+            "uniqueItems" : true,
+            "items" : {
+              "type" : "string"
+            }
+          }
+        }
+      },
+      "ApiHeaderValue" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "requestConfiguration" : {
+            "$ref" : "#/components/schemas/ApiRequestConfiguration"
+          },
+          "apiHeader" : {
+            "$ref" : "#/components/schemas/ApiHeader"
+          },
+          "selectedValue" : {
+            "type" : "string"
+          }
+        }
+      },
+      "ApiHeaderValueDTO" : {
+        "type" : "object",
+        "properties" : {
+          "headerValue" : {
+            "type" : "string"
+          },
+          "headerName" : {
+            "type" : "string"
+          }
+        }
+      },
+      "ApiKeyAuthDTO" : {
+        "type" : "object",
+        "required" : [ "apiKey", "headerName" ],
+        "description" : "API-Key auth payload (apiKey + headerName)",
+        "properties" : {
+          "apiKey" : {
+            "type" : "string"
+          },
+          "headerName" : {
+            "type" : "string"
+          },
+          "authType" : {
+            "$ref" : "#/components/schemas/ApiAuthType"
+          }
+        }
+      },
+      "ApiRequestConfiguration" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "name" : {
+            "type" : "string"
+          },
+          "used" : {
+            "type" : "boolean"
+          },
+          "syncSystemEndpoint" : {
+            "$ref" : "#/components/schemas/SyncSystemEndpoint"
+          },
+          "queryParameterValues" : {
+            "type" : "array",
+            "uniqueItems" : true,
+            "items" : {
+              "$ref" : "#/components/schemas/ApiEndpointQueryParamValue"
+            }
+          },
+          "apiRequestHeaders" : {
+            "type" : "array",
+            "uniqueItems" : true,
+            "items" : {
+              "$ref" : "#/components/schemas/ApiHeaderValue"
+            }
+          }
+        }
+      },
+      "ApiRequestHeaderType" : {
+        "type" : "string",
+        "enum" : [ "ACCEPT", "CONTENT_TYPE", "AUTHORIZATION", "USER_AGENT", "CACHE_CONTROL", "ACCEPT_CHARSET", "CUSTOM" ]
+      },
+      "ApiRequestParameterMessageDTO" : {
+        "type" : "object",
+        "properties" : {
+          "paramName" : {
+            "type" : "string"
+          },
+          "paramValue" : {
+            "type" : "string"
+          }
+        }
+      },
+      "BasicAuthDTO" : {
+        "type" : "object",
+        "required" : [ "username", "password" ],
+        "description" : "BASIC auth payload",
+        "properties" : {
+          "username" : {
+            "type" : "string"
+          },
+          "password" : {
+            "type" : "string"
+          },
+          "authType" : {
+            "$ref" : "#/components/schemas/ApiAuthType"
+          }
+        }
+      },
+      "CreateApiHeaderDTO" : {
+        "type" : "object",
+        "properties" : {
+          "headerType" : {
+            "$ref" : "#/components/schemas/ApiRequestHeaderType"
+          },
+          "headerName" : {
+            "type" : "string"
+          }
+        }
+      },
+      "CreateRequestConfigurationDTO" : {
+        "type" : "object",
+        "required" : [ "name" ],
+        "properties" : {
+          "name" : {
+            "type" : "string"
+          },
+          "active" : {
+            "type" : "boolean"
+          },
+          "pollingIntervallTimeInMs" : {
+            "type" : "integer",
+            "format" : "int32"
+          }
+        }
+      },
+      "CreateSourceSystemDTO" : {
+        "type" : "object",
+        "required" : [ "name", "apiUrl", "apiType" ],
+        "properties" : {
+          "id" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "name" : {
+            "type" : "string"
+          },
+          "apiUrl" : {
+            "type" : "string"
+          },
+          "description" : {
+            "type" : "string"
+          },
+          "apiType" : {
+            "type" : "string"
+          },
+          "apiAuthType" : {
+            "$ref" : "#/components/schemas/ApiAuthType"
+          },
+          "authConfig" : {
+            "$ref" : "#/components/schemas/ApiAuthConfigurationDTO"
+          },
+          "openApiSpec" : {
+            "type" : "string",
+            "format" : "binary"
+          }
+        }
+      },
+      "CreateSourceSystemEndpointDTO" : {
+        "type" : "object",
+        "required" : [ "endpointPath", "httpRequestType" ],
+        "properties" : {
+          "endpointPath" : {
+            "type" : "string"
+          },
+          "httpRequestType" : {
+            "type" : "string"
+          }
+        }
+      },
+      "EDC" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "name" : {
+            "type" : "string"
+          },
+          "url" : {
+            "type" : "string"
+          },
+          "apiKey" : {
+            "type" : "string"
+          },
+          "edcAssets" : {
+            "type" : "array",
+            "uniqueItems" : true,
+            "items" : {
+              "$ref" : "#/components/schemas/EDCAsset"
+            }
+          }
+        }
+      },
+      "EDCAccessPolicy" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "accessPolicyPermissions" : {
+            "type" : "array",
+            "uniqueItems" : true,
+            "items" : {
+              "$ref" : "#/components/schemas/EDCAccessPolicyPermission"
+            }
+          },
+          "edcAsset" : {
+            "$ref" : "#/components/schemas/EDCAsset"
+          }
+        }
+      },
+      "EDCAccessPolicyPermission" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "edcAccessPolicy" : {
+            "$ref" : "#/components/schemas/EDCAccessPolicy"
+          },
+          "action" : {
+            "type" : "string"
+          },
+          "constraintLeftOperand" : {
+            "type" : "string"
+          },
+          "constraintOperator" : {
+            "type" : "string"
+          },
+          "constraintRightOperand" : {
+            "type" : "string"
+          }
+        }
+      },
+      "EDCAsset" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "assetId" : {
+            "type" : "string"
+          },
+          "dataAddress" : {
+            "$ref" : "#/components/schemas/EDCDataAddress"
+          },
+          "properties" : {
+            "$ref" : "#/components/schemas/EDCProperty"
+          },
+          "edcAccessPolicies" : {
+            "type" : "array",
+            "uniqueItems" : true,
+            "items" : {
+              "$ref" : "#/components/schemas/EDCAccessPolicy"
+            }
+          },
+          "targetSystemEndpoint" : {
+            "$ref" : "#/components/schemas/TargetSystemEndpoint"
+          },
+          "targetEDC" : {
+            "$ref" : "#/components/schemas/EDC"
+          }
+        }
+      },
+      "EDCDataAddress" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "jsonLDType" : {
+            "type" : "string"
+          },
+          "type" : {
+            "type" : "string"
+          },
+          "baseURL" : {
+            "type" : "string"
+          },
+          "proxyPath" : {
+            "type" : "boolean"
+          },
+          "proxyQueryParams" : {
+            "type" : "boolean"
+          }
+        }
+      },
+      "EDCProperty" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "description" : {
+            "type" : "string"
+          }
+        }
+      },
+      "GetRequestConfigurationDTO" : {
+        "type" : "object",
+        "required" : [ "name" ],
+        "properties" : {
+          "name" : {
+            "type" : "string"
+          },
+          "used" : {
+            "type" : "boolean"
+          },
+          "pollingIntervallTimeInMs" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "apiRequestHeaders" : {
+            "type" : "array",
+            "uniqueItems" : true,
+            "items" : {
+              "$ref" : "#/components/schemas/ApiHeaderDTO"
+            }
+          },
+          "apiRequestParameters" : {
+            "type" : "array",
+            "uniqueItems" : true,
+            "items" : {
+              "$ref" : "#/components/schemas/ApiRequestParameterMessageDTO"
+            }
+          }
+        }
+      },
+      "SourceSystem" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "name" : {
+            "type" : "string"
+          },
+          "apiUrl" : {
+            "type" : "string"
+          },
+          "description" : {
+            "type" : "string"
+          },
+          "apiType" : {
+            "type" : "string"
+          },
+          "openApiSpec" : {
+            "type" : "string",
+            "format" : "binary"
+          },
+          "syncSystemEndpoints" : {
+            "type" : "array",
+            "uniqueItems" : true,
+            "items" : {
+              "$ref" : "#/components/schemas/SyncSystemEndpoint"
+            }
+          },
+          "apiRequestHeaders" : {
+            "type" : "array",
+            "uniqueItems" : true,
+            "items" : {
+              "$ref" : "#/components/schemas/ApiHeader"
+            }
+          },
+          "authConfig" : {
+            "$ref" : "#/components/schemas/SyncSystemAuthConfig"
+          },
+          "sourceSystemEndpoints" : {
+            "type" : "array",
+            "uniqueItems" : true,
+            "items" : {
+              "$ref" : "#/components/schemas/SourceSystemEndpoint"
+            }
+          },
+          "sourceSystemApiRequestConfigurations" : {
+            "type" : "array",
+            "uniqueItems" : true,
+            "items" : {
+              "$ref" : "#/components/schemas/SourceSystemApiRequestConfiguration"
+            }
+          }
+        }
+      },
+      "SourceSystemApiRequestConfiguration" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "name" : {
+            "type" : "string"
+          },
+          "used" : {
+            "type" : "boolean"
+          },
+          "syncSystemEndpoint" : {
+            "$ref" : "#/components/schemas/SyncSystemEndpoint"
+          },
+          "queryParameterValues" : {
+            "type" : "array",
+            "uniqueItems" : true,
+            "items" : {
+              "$ref" : "#/components/schemas/ApiEndpointQueryParamValue"
+            }
+          },
+          "apiRequestHeaders" : {
+            "type" : "array",
+            "uniqueItems" : true,
+            "items" : {
+              "$ref" : "#/components/schemas/ApiHeaderValue"
+            }
+          },
+          "transformations" : {
+            "type" : "array",
+            "uniqueItems" : true,
+            "items" : {
+              "$ref" : "#/components/schemas/Transformation"
+            }
+          },
+          "sourceSystem" : {
+            "$ref" : "#/components/schemas/SourceSystem"
+          },
+          "sourceSystemEndpoint" : {
+            "$ref" : "#/components/schemas/SourceSystemEndpoint"
+          },
+          "pollingIntervallTimeInMs" : {
+            "type" : "integer",
+            "format" : "int32"
+          }
+        }
+      },
+      "SourceSystemDTO" : {
+        "type" : "object",
+        "required" : [ "name", "apiUrl", "apiType" ],
+        "properties" : {
+          "id" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "name" : {
+            "type" : "string"
+          },
+          "apiUrl" : {
+            "type" : "string"
+          },
+          "description" : {
+            "type" : "string"
+          },
+          "apiType" : {
+            "type" : "string"
+          },
+          "openApiSpec" : {
+            "type" : "string",
+            "format" : "binary"
+          }
+        }
+      },
+      "SourceSystemEndpoint" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "endpointPath" : {
+            "type" : "string"
+          },
+          "jsonSchema" : {
+            "type" : "string"
+          },
+          "description" : {
+            "type" : "string"
+          },
+          "httpRequestType" : {
+            "type" : "string"
+          },
+          "queryParams" : {
+            "type" : "array",
+            "uniqueItems" : true,
+            "items" : {
+              "$ref" : "#/components/schemas/ApiEndpointQueryParam"
+            }
+          },
+          "apiRequestConfiguration" : {
+            "type" : "array",
+            "uniqueItems" : true,
+            "items" : {
+              "$ref" : "#/components/schemas/ApiRequestConfiguration"
+            }
+          },
+          "syncSystem" : {
+            "$ref" : "#/components/schemas/SyncSystem"
+          },
+          "sourceSystem" : {
+            "$ref" : "#/components/schemas/SourceSystem"
+          },
+          "apiRequestConfigurations" : {
+            "type" : "array",
+            "uniqueItems" : true,
+            "items" : {
+              "$ref" : "#/components/schemas/SourceSystemApiRequestConfiguration"
+            }
+          },
+          "sourceSystemVariable" : {
+            "type" : "array",
+            "uniqueItems" : true,
+            "items" : {
+              "$ref" : "#/components/schemas/SourceSystemVariable"
+            }
+          }
+        }
+      },
+      "SourceSystemEndpointDTO" : {
+        "type" : "object",
+        "required" : [ "endpointPath", "httpRequestType" ],
+        "properties" : {
+          "id" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "sourceSystemId" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "endpointPath" : {
+            "type" : "string"
+          },
+          "httpRequestType" : {
+            "type" : "string"
+          }
+        }
+      },
+      "SourceSystemVariable" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "name" : {
+            "type" : "string"
+          },
+          "jsonObjectKey" : {
+            "type" : "string"
+          },
+          "sourceSystemEndpoint" : {
+            "$ref" : "#/components/schemas/SourceSystemEndpoint"
+          }
+        }
+      },
+      "SyncJob" : {
+        "type" : "object",
+        "required" : [ "name" ],
+        "properties" : {
+          "id" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "name" : {
+            "type" : "string",
+            "minLength" : 2,
+            "maxLength" : 50
+          },
+          "syncNodeIdentifier" : {
+            "type" : "string"
+          },
+          "deployed" : {
+            "type" : "boolean"
+          },
+          "transformations" : {
+            "type" : "array",
+            "uniqueItems" : true,
+            "items" : {
+              "$ref" : "#/components/schemas/Transformation"
+            }
+          }
+        }
+      },
+      "SyncJobDTO" : {
+        "type" : "object",
+        "required" : [ "name" ],
+        "properties" : {
+          "id" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "name" : {
+            "type" : "string"
+          },
+          "deployed" : {
+            "type" : "boolean"
+          }
+        }
+      },
+      "SyncSystem" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "name" : {
+            "type" : "string"
+          },
+          "apiUrl" : {
+            "type" : "string"
+          },
+          "description" : {
+            "type" : "string"
+          },
+          "apiType" : {
+            "type" : "string"
+          },
+          "openApiSpec" : {
+            "type" : "string",
+            "format" : "binary"
+          },
+          "syncSystemEndpoints" : {
+            "type" : "array",
+            "uniqueItems" : true,
+            "items" : {
+              "$ref" : "#/components/schemas/SyncSystemEndpoint"
+            }
+          },
+          "apiRequestHeaders" : {
+            "type" : "array",
+            "uniqueItems" : true,
+            "items" : {
+              "$ref" : "#/components/schemas/ApiHeader"
+            }
+          },
+          "authConfig" : {
+            "$ref" : "#/components/schemas/SyncSystemAuthConfig"
+          }
+        }
+      },
+      "SyncSystemAuthConfig" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "authType" : {
+            "$ref" : "#/components/schemas/ApiAuthType"
+          },
+          "syncSystem" : {
+            "$ref" : "#/components/schemas/SyncSystem"
+          }
+        }
+      },
+      "SyncSystemEndpoint" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "endpointPath" : {
+            "type" : "string"
+          },
+          "jsonSchema" : {
+            "type" : "string"
+          },
+          "description" : {
+            "type" : "string"
+          },
+          "httpRequestType" : {
+            "type" : "string"
+          },
+          "queryParams" : {
+            "type" : "array",
+            "uniqueItems" : true,
+            "items" : {
+              "$ref" : "#/components/schemas/ApiEndpointQueryParam"
+            }
+          },
+          "apiRequestConfiguration" : {
+            "type" : "array",
+            "uniqueItems" : true,
+            "items" : {
+              "$ref" : "#/components/schemas/ApiRequestConfiguration"
+            }
+          },
+          "syncSystem" : {
+            "$ref" : "#/components/schemas/SyncSystem"
+          }
+        }
+      },
+      "TargetSystem" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "name" : {
+            "type" : "string"
+          },
+          "apiUrl" : {
+            "type" : "string"
+          },
+          "description" : {
+            "type" : "string"
+          },
+          "apiType" : {
+            "type" : "string"
+          },
+          "openApiSpec" : {
+            "type" : "string",
+            "format" : "binary"
+          },
+          "syncSystemEndpoints" : {
+            "type" : "array",
+            "uniqueItems" : true,
+            "items" : {
+              "$ref" : "#/components/schemas/SyncSystemEndpoint"
+            }
+          },
+          "apiRequestHeaders" : {
+            "type" : "array",
+            "uniqueItems" : true,
+            "items" : {
+              "$ref" : "#/components/schemas/ApiHeader"
+            }
+          },
+          "authConfig" : {
+            "$ref" : "#/components/schemas/SyncSystemAuthConfig"
+          },
+          "targetSystemEndpoints" : {
+            "type" : "array",
+            "uniqueItems" : true,
+            "items" : {
+              "$ref" : "#/components/schemas/TargetSystemEndpoint"
+            }
+          }
+        }
+      },
+      "TargetSystemApiQueryParam" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "targetSystemEndpoint" : {
+            "$ref" : "#/components/schemas/TargetSystemEndpoint"
+          }
+        }
+      },
+      "TargetSystemApiRequestHeader" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "headerName" : {
+            "type" : "string"
+          },
+          "values" : {
+            "type" : "array",
+            "uniqueItems" : true,
+            "items" : {
+              "type" : "string"
+            }
+          },
+          "headerType" : {
+            "$ref" : "#/components/schemas/ApiRequestHeaderType"
+          },
+          "syncSystem" : {
+            "$ref" : "#/components/schemas/SyncSystem"
+          },
+          "targetSystemEndpoint" : {
+            "$ref" : "#/components/schemas/TargetSystemEndpoint"
+          }
+        }
+      },
+      "TargetSystemEndpoint" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "queryParams" : {
+            "type" : "array",
+            "uniqueItems" : true,
+            "items" : {
+              "$ref" : "#/components/schemas/ApiEndpointQueryParam"
+            }
+          },
+          "apiRequestConfiguration" : {
+            "type" : "array",
+            "uniqueItems" : true,
+            "items" : {
+              "$ref" : "#/components/schemas/ApiRequestConfiguration"
+            }
+          },
+          "syncSystem" : {
+            "$ref" : "#/components/schemas/SyncSystem"
+          },
+          "endpointPath" : {
+            "type" : "string"
+          },
+          "jsonSchema" : {
+            "type" : "string"
+          },
+          "description" : {
+            "type" : "string"
+          },
+          "httpRequestType" : {
+            "type" : "string"
+          },
+          "apiQueryParams" : {
+            "type" : "array",
+            "uniqueItems" : true,
+            "items" : {
+              "$ref" : "#/components/schemas/TargetSystemApiQueryParam"
+            }
+          },
+          "apiRequestHeaders" : {
+            "type" : "array",
+            "uniqueItems" : true,
+            "items" : {
+              "$ref" : "#/components/schemas/TargetSystemApiRequestHeader"
+            }
+          },
+          "targetSystemVariable" : {
+            "type" : "array",
+            "uniqueItems" : true,
+            "items" : {
+              "$ref" : "#/components/schemas/TargetSystemVariable"
+            }
+          },
+          "targetSystem" : {
+            "$ref" : "#/components/schemas/TargetSystem"
+          },
+          "asset" : {
+            "$ref" : "#/components/schemas/EDCAsset"
+          }
+        }
+      },
+      "TargetSystemVariable" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "name" : {
+            "type" : "string"
+          },
+          "targetSystemVariableId" : {
+            "type" : "string"
+          },
+          "transformation" : {
+            "$ref" : "#/components/schemas/Transformation"
+          },
+          "targetSystemEndpoint" : {
+            "$ref" : "#/components/schemas/TargetSystemEndpoint"
+          }
+        }
+      },
+      "Transformation" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "name" : {
+            "type" : "string"
+          },
+          "description" : {
+            "type" : "string"
+          },
+          "syncJob" : {
+            "$ref" : "#/components/schemas/SyncJob"
+          },
+          "transformationScript" : {
+            "$ref" : "#/components/schemas/TransformationScript"
+          },
+          "transformationRule" : {
+            "$ref" : "#/components/schemas/TransformationRule"
+          },
+          "sourceSystemApiRequestConfigrations" : {
+            "type" : "array",
+            "uniqueItems" : true,
+            "items" : {
+              "$ref" : "#/components/schemas/SourceSystemApiRequestConfiguration"
+            }
+          },
+          "sourceSystemVariables" : {
+            "type" : "array",
+            "uniqueItems" : true,
+            "items" : {
+              "$ref" : "#/components/schemas/SourceSystemVariable"
+            }
+          },
+          "targetSystemEndpoint" : {
+            "$ref" : "#/components/schemas/TargetSystemEndpoint"
+          }
+        }
+      },
+      "TransformationAssemblyDTO" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "syncJobId" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "sourceSystemEndpointIds" : {
+            "type" : "array",
+            "uniqueItems" : true,
+            "items" : {
+              "type" : "integer",
+              "format" : "int64"
+            }
+          },
+          "targetSystemEndpointId" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "transformationRuleId" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "transformationScriptId" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        }
+      },
+      "TransformationDetailsDTO" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "name" : {
+            "type" : "string"
+          },
+          "description" : {
+            "type" : "string"
+          },
+          "syncJobId" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "targetSystemEndpointId" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "transformationRuleId" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "script" : {
+            "$ref" : "#/components/schemas/TransformationScriptDTO"
+          }
+        }
+      },
+      "TransformationRule" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "name" : {
+            "type" : "string"
+          },
+          "transformation" : {
+            "$ref" : "#/components/schemas/Transformation"
+          },
+          "updateIntervall" : {
+            "type" : "integer",
+            "format" : "int32"
+          }
+        }
+      },
+      "TransformationScript" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "name" : {
+            "type" : "string"
+          },
+          "typescriptCode" : {
+            "type" : "string"
+          },
+          "javascriptCode" : {
+            "type" : "string"
+          },
+          "hash" : {
+            "type" : "string"
+          },
+          "transformation" : {
+            "$ref" : "#/components/schemas/Transformation"
+          }
+        }
+      },
+      "TransformationScriptDTO" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "name" : {
+            "type" : "string"
+          },
+          "hash" : {
+            "type" : "string"
+          },
+          "typescriptCode" : {
+            "type" : "string"
+          },
+          "javascriptCode" : {
+            "type" : "string"
+          }
+        }
+      },
+      "TransformationShellDTO" : {
+        "type" : "object",
+        "properties" : {
+          "name" : {
+            "type" : "string"
+          },
+          "description" : {
+            "type" : "string"
+          }
+        }
+      }
+    }
+  },
+  "paths" : {
+    "/api/config/endpoint/query-param/{id}" : {
+      "get" : {
+        "summary" : "Returns a query-param for a given identifier",
+        "parameters" : [ {
+          "name" : "id",
+          "required" : true,
+          "in" : "path",
+          "schema" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "Gets a query-param for a given id",
+            "content" : {
+              "application/json" : {
+                "examples" : {
+                  "query-param" : {
+                    "value" : {
+                      "id" : "1",
+                      "name" : "Basyx sync job",
+                      "deployed" : false
+                    }
+                  }
+                },
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiEndpointQueryParamDTO"
+                }
+              }
+            }
+          },
+          "404" : {
+            "description" : "The query-param is not found for a given identifier"
+          }
+        },
+        "tags" : [ "Api Endpoint Query Param Resource" ]
+      },
+      "put" : {
+        "summary" : "Completely updates an exiting query-param by replacing it with the passed-in query-param",
+        "parameters" : [ {
+          "name" : "id",
+          "required" : true,
+          "in" : "path",
+          "schema" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "examples" : {
+                "valid_query_param" : {
+                  "value" : {
+                    "id" : "1",
+                    "name" : "Basyx sync job",
+                    "deployed" : false
+                  }
+                }
+              },
+              "schema" : {
+                "$ref" : "#/components/schemas/ApiEndpointQueryParamDTO"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "204" : {
+            "description" : "Replaced the query-param"
+          },
+          "400" : {
+            "description" : "Invalid query-param passed in (or no request body found)"
+          },
+          "404" : {
+            "description" : "No query-param found"
+          }
+        },
+        "tags" : [ "Api Endpoint Query Param Resource" ]
+      },
+      "delete" : {
+        "summary" : "Deletes an exiting query-param",
+        "parameters" : [ {
+          "name" : "id",
+          "required" : true,
+          "in" : "path",
+          "schema" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        } ],
+        "responses" : {
+          "204" : {
+            "description" : "Delete a query-param"
+          }
+        },
+        "tags" : [ "Api Endpoint Query Param Resource" ]
+      }
+    },
+    "/api/config/endpoint/{endpointId}/query-param" : {
+      "get" : {
+        "summary" : "Returns all the source-system-endpoints for the specified source-system from the database",
+        "parameters" : [ {
+          "description" : "An optional filter parameter to filter results by endpoint id",
+          "name" : "endpointId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "Gets all source-system-endpoints",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "array",
+                  "items" : {
+                    "$ref" : "#/components/schemas/ApiEndpointQueryParamDTO"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "tags" : [ "Api Endpoint Query Param Resource" ]
+      },
+      "post" : {
+        "summary" : "Creates a valid query-param for the specified endpoint",
+        "parameters" : [ {
+          "name" : "endpointId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "examples" : {
+                "valid_query_param" : {
+                  "value" : {
+                    "paramName" : "userId",
+                    "queryParamType" : "QUERY",
+                    "values" : [ "123", "456", "789" ]
+                  }
+                }
+              },
+              "schema" : {
+                "$ref" : "#/components/schemas/ApiEndpointQueryParamDTO"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "201" : {
+            "description" : "The URI of the created query-param",
+            "headers" : {
+              "Location" : {
+                "schema" : {
+                  "type" : "string",
+                  "format" : "uri"
+                }
+              }
+            }
+          },
+          "400" : {
+            "description" : "Invalid query-param passed in (or no request body found)"
+          }
+        },
+        "tags" : [ "Api Endpoint Query Param Resource" ]
+      }
+    },
+    "/api/config/request-configuration/query-param-value/{id}" : {
+      "put" : {
+        "summary" : "Completely updates an exiting query-param-value by replacing it with the passed-in query-param-value",
+        "parameters" : [ {
+          "name" : "id",
+          "required" : true,
+          "in" : "path",
+          "schema" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "examples" : {
+                "valid_sync_job" : {
+                  "value" : {
+                    "id" : "1",
+                    "name" : "Basyx sync job",
+                    "deployed" : false
+                  }
+                }
+              },
+              "schema" : {
+                "$ref" : "#/components/schemas/ApiEndpointQueryParamDTO"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "204" : {
+            "description" : "Replaced the query-param-value"
+          },
+          "400" : {
+            "description" : "Invalid query-param-value passed in (or no request body found)"
+          },
+          "404" : {
+            "description" : "No query-param-value found"
+          }
+        },
+        "tags" : [ "Api Endpoint Query Param Value Resource" ]
+      },
+      "delete" : {
+        "summary" : "Deletes an exiting query-param",
+        "parameters" : [ {
+          "name" : "id",
+          "required" : true,
+          "in" : "path",
+          "schema" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        } ],
+        "responses" : {
+          "204" : {
+            "description" : "Delete a query-param"
+          }
+        },
+        "tags" : [ "Api Endpoint Query Param Value Resource" ]
+      }
+    },
+    "/api/config/request-configuration/request-header/{id}" : {
+      "get" : {
+        "summary" : "Returns a api-request-header-value for a given identifier",
+        "parameters" : [ {
+          "name" : "id",
+          "required" : true,
+          "in" : "path",
+          "schema" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "Gets a api-request-header-value for a given id",
+            "content" : {
+              "application/json" : {
+                "examples" : {
+                  "api-request-header-value" : {
+                    "value" : {
+                      "id" : "1",
+                      "name" : "Basyx sync job",
+                      "deployed" : false
+                    }
+                  }
+                },
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiHeaderValueDTO"
+                }
+              }
+            }
+          },
+          "404" : {
+            "description" : "The api-request-header-value is not found for a given identifier"
+          }
+        },
+        "tags" : [ "Api Header Value Resource" ]
+      },
+      "put" : {
+        "summary" : "Completely updates an exiting api-request-header-value by replacing it with the passed-in api-request-header-value",
+        "parameters" : [ {
+          "name" : "id",
+          "required" : true,
+          "in" : "path",
+          "schema" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "examples" : {
+                "valid_api_header" : {
+                  "value" : ""
+                }
+              },
+              "schema" : {
+                "$ref" : "#/components/schemas/ApiHeaderValueDTO"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "204" : {
+            "description" : "Replaced the api-request-header-value"
+          },
+          "400" : {
+            "description" : "Invalid api-request-header-value passed in (or no request body found)"
+          },
+          "404" : {
+            "description" : "No api-request-header-value found"
+          }
+        },
+        "tags" : [ "Api Header Value Resource" ]
+      },
+      "delete" : {
+        "summary" : "Deletes an exiting api-request-header-value",
+        "parameters" : [ {
+          "name" : "id",
+          "required" : true,
+          "in" : "path",
+          "schema" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        } ],
+        "responses" : {
+          "204" : {
+            "description" : "Delete a api-request-header-value"
+          }
+        },
+        "tags" : [ "Api Header Value Resource" ]
+      }
+    },
+    "/api/config/request-configuration/{requestConfigId}/query-param-value" : {
+      "get" : {
+        "summary" : "Returns all the query-parameter-values for the specified source-system from the database",
+        "parameters" : [ {
+          "description" : "Associated request config",
+          "name" : "requestConfigId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "Gets all query parameter values",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "array",
+                  "items" : {
+                    "$ref" : "#/components/schemas/ApiEndpointQueryParamDTO"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "tags" : [ "Api Endpoint Query Param Value Resource" ]
+      },
+      "post" : {
+        "summary" : "Creates a valid query-param-value for the specified endpoint",
+        "parameters" : [ {
+          "name" : "requestConfigId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "examples" : {
+                "valid_endpoint_param_value" : {
+                  "value" : ""
+                }
+              },
+              "schema" : {
+                "$ref" : "#/components/schemas/ApiEndpoindQueryParamValueDTO"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "201" : {
+            "description" : "The URI of the created query-param",
+            "headers" : {
+              "Location" : {
+                "schema" : {
+                  "type" : "string",
+                  "format" : "uri"
+                }
+              }
+            }
+          },
+          "400" : {
+            "description" : "Invalid query-param passed in (or no request body found)"
+          }
+        },
+        "tags" : [ "Api Endpoint Query Param Value Resource" ]
+      }
+    },
+    "/api/config/request-configuration/{requestConfigId}/request-header" : {
+      "get" : {
+        "summary" : "Returns all the source-system-endpoints for the specified source-system from the database",
+        "parameters" : [ {
+          "description" : "An optional filter parameter to filter results by source system id",
+          "name" : "requestConfigId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "Gets all source-system-endpoints",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "array",
+                  "items" : {
+                    "$ref" : "#/components/schemas/ApiHeaderValueDTO"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "tags" : [ "Api Header Value Resource" ]
+      },
+      "post" : {
+        "summary" : "Creates a valid api-request-header for the specified source system",
+        "parameters" : [ {
+          "name" : "requestConfigId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "examples" : {
+                "valid_source_api_request_header" : {
+                  "value" : {
+                    "name" : "getUserA",
+                    "used" : "false",
+                    "pollingIntervallInMs" : "3"
+                  }
+                }
+              },
+              "schema" : {
+                "$ref" : "#/components/schemas/ApiHeaderValueDTO"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "201" : {
+            "description" : "The URI of the created api-request-header",
+            "headers" : {
+              "Location" : {
+                "schema" : {
+                  "type" : "string",
+                  "format" : "uri"
+                }
+              }
+            }
+          },
+          "400" : {
+            "description" : "Invalid api-request-header passed in (or no request body found)"
+          }
+        },
+        "tags" : [ "Api Header Value Resource" ]
+      }
+    },
+    "/api/config/source-system" : {
+      "get" : {
+        "summary" : "Returns all source systems",
+        "responses" : {
+          "200" : {
+            "description" : "List of all source systems",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "array",
+                  "items" : {
+                    "$ref" : "#/components/schemas/SourceSystem"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "tags" : [ "Source System Resource" ]
+      },
+      "post" : {
+        "summary" : "Creates a new source system",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "examples" : {
+                "valid_source_system_create" : {
+                  "value" : {
+                    "name" : "Sync Produktion B",
+                    "apiUrl" : "http://localhost:4200",
+                    "description" : "this is my simple api",
+                    "apiType" : "REST",
+                    "authConfig" : {
+                      "authType" : "BASIC",
+                      "username" : "admin",
+                      "password" : "secretpassword123"
+                    }
+                  }
+                }
+              },
+              "schema" : {
+                "$ref" : "#/components/schemas/CreateSourceSystemDTO"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "201" : {
+            "description" : "The URI of the created source system",
+            "headers" : {
+              "Location" : {
+                "schema" : {
+                  "type" : "string",
+                  "format" : "uri"
+                }
+              }
+            }
+          },
+          "400" : {
+            "description" : "Invalid source system passed in"
+          }
+        },
+        "tags" : [ "Source System Resource" ]
+      }
+    },
+    "/api/config/source-system/endpoint/request-configuration/{id}" : {
+      "get" : {
+        "summary" : "Returns a api-request-configuration for a given identifier",
+        "parameters" : [ {
+          "name" : "id",
+          "required" : true,
+          "in" : "path",
+          "schema" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "Gets a api-request-configuration for a given id",
+            "content" : {
+              "application/json" : {
+                "examples" : {
+                  "api-request-configuration" : {
+                    "value" : {
+                      "id" : "1",
+                      "name" : "Basyx sync job",
+                      "deployed" : false
+                    }
+                  }
+                },
+                "schema" : {
+                  "$ref" : "#/components/schemas/CreateRequestConfigurationDTO"
+                }
+              }
+            }
+          },
+          "404" : {
+            "description" : "The api-request-configuration is not found for a given identifier"
+          }
+        },
+        "tags" : [ "Request Configuration Resource" ]
+      },
+      "put" : {
+        "summary" : "Completely updates an existing api-request-configuration by replacing it with the passed-in api-request-configuration",
+        "parameters" : [ {
+          "name" : "id",
+          "required" : true,
+          "in" : "path",
+          "schema" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "examples" : {
+                "valid_sync_job" : {
+                  "value" : {
+                    "id" : "1",
+                    "name" : "Basyx sync job",
+                    "deployed" : false
+                  }
+                }
+              },
+              "schema" : {
+                "$ref" : "#/components/schemas/CreateRequestConfigurationDTO"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "204" : {
+            "description" : "Replaced the api-request-configuration"
+          },
+          "400" : {
+            "description" : "Invalid api-request-configuration passed in (or no request body found)"
+          },
+          "404" : {
+            "description" : "No api-request-configuration found"
+          }
+        },
+        "tags" : [ "Request Configuration Resource" ]
+      },
+      "delete" : {
+        "summary" : "Deletes an existing api-request-configuration",
+        "parameters" : [ {
+          "name" : "id",
+          "required" : true,
+          "in" : "path",
+          "schema" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        } ],
+        "responses" : {
+          "204" : {
+            "description" : "Delete a api-request-configuration"
+          }
+        },
+        "tags" : [ "Request Configuration Resource" ]
+      }
+    },
+    "/api/config/source-system/endpoint/{endpointId}/request-configuration" : {
+      "get" : {
+        "summary" : "Returns the api-request-configurations for the specified endpoint from the database",
+        "parameters" : [ {
+          "description" : "An optional filter parameter to filter results by source system id",
+          "name" : "endpointId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "Gets all api-request-configurations for the specified source-system",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "array",
+                  "items" : {
+                    "$ref" : "#/components/schemas/CreateRequestConfigurationDTO"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "tags" : [ "Request Configuration Resource" ]
+      },
+      "post" : {
+        "summary" : "Creates a valid api request configuration for a specified source system endpoint",
+        "parameters" : [ {
+          "name" : "endpointId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "examples" : {
+                "valid request config" : {
+                  "value" : {
+                    "name" : "getUserA",
+                    "used" : "false",
+                    "pollingIntervallInMs" : "3"
+                  }
+                }
+              },
+              "schema" : {
+                "$ref" : "#/components/schemas/CreateRequestConfigurationDTO"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "201" : {
+            "description" : "The URI of the created api-request-configuration",
+            "headers" : {
+              "Location" : {
+                "schema" : {
+                  "type" : "string",
+                  "format" : "uri"
+                }
+              }
+            }
+          },
+          "400" : {
+            "description" : "Invalid api request configuration passed in (or no request body found)"
+          }
+        },
+        "tags" : [ "Request Configuration Resource" ]
+      }
+    },
+    "/api/config/source-system/endpoint/{id}" : {
+      "get" : {
+        "summary" : "Returns a source-system-endpoint for a given identifier",
+        "parameters" : [ {
+          "name" : "id",
+          "required" : true,
+          "in" : "path",
+          "schema" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "Gets a source-system-endpoint for a given id",
+            "content" : {
+              "application/json" : {
+                "examples" : {
+                  "source-system-endpoint" : {
+                    "value" : {
+                      "id" : "1",
+                      "name" : "Basyx sync job",
+                      "deployed" : false
+                    }
+                  }
+                },
+                "schema" : {
+                  "$ref" : "#/components/schemas/SourceSystemEndpointDTO"
+                }
+              }
+            }
+          },
+          "404" : {
+            "description" : "The source-system-endpoint is not found for a given identifier"
+          }
+        },
+        "tags" : [ "Source System Endpoint Resource" ]
+      },
+      "put" : {
+        "summary" : "Completely updates an exiting source-system-endpoint by replacing it with the passed-in source-system-endpoint",
+        "parameters" : [ {
+          "name" : "id",
+          "required" : true,
+          "in" : "path",
+          "schema" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "examples" : {
+                "valid endpoint" : {
+                  "value" : {
+                    "endpointPath" : "/test",
+                    "httpRequestType" : "GET"
+                  }
+                }
+              },
+              "schema" : {
+                "$ref" : "#/components/schemas/SourceSystemEndpointDTO"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "204" : {
+            "description" : "Replaced the source-system-endpoint"
+          },
+          "400" : {
+            "description" : "Invalid source-system-endpoint passed in (or no request body found)"
+          },
+          "404" : {
+            "description" : "No source-system-endpoint found"
+          }
+        },
+        "tags" : [ "Source System Endpoint Resource" ]
+      },
+      "delete" : {
+        "summary" : "Deletes an exiting source-system-endpoint",
+        "parameters" : [ {
+          "name" : "id",
+          "required" : true,
+          "in" : "path",
+          "schema" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        } ],
+        "responses" : {
+          "204" : {
+            "description" : "Delete a source-system-endpoint"
+          }
+        },
+        "tags" : [ "Source System Endpoint Resource" ]
+      }
+    },
+    "/api/config/source-system/{id}" : {
+      "put" : {
+        "summary" : "Fully updates an existing source system",
+        "parameters" : [ {
+          "name" : "id",
+          "required" : true,
+          "in" : "path",
+          "schema" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/CreateSourceSystemDTO"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "The updated source system",
+            "content" : {
+              "application/json" : {
+                "examples" : {
+                  "valid_source_system_create" : {
+                    "value" : {
+                      "name" : "Sync Produktion B",
+                      "apiUrl" : "http://localhost:4200",
+                      "description" : "this is my simple api",
+                      "apiType" : "REST",
+                      "authConfig" : {
+                        "authType" : "BASIC",
+                        "username" : "admin",
+                        "password" : "secretpassword123"
+                      }
+                    }
+                  }
+                },
+                "schema" : {
+                  "$ref" : "#/components/schemas/CreateSourceSystemDTO"
+                }
+              }
+            }
+          },
+          "404" : {
+            "description" : "Source system not found"
+          },
+          "400" : {
+            "description" : "Bad Request"
+          }
+        },
+        "tags" : [ "Source System Resource" ]
+      },
+      "get" : {
+        "summary" : "Returns a source system by its ID",
+        "parameters" : [ {
+          "name" : "id",
+          "required" : true,
+          "in" : "path",
+          "schema" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "The found source system",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/SourceSystemDTO"
+                }
+              }
+            }
+          },
+          "404" : {
+            "description" : "Source system not found"
+          }
+        },
+        "tags" : [ "Source System Resource" ]
+      },
+      "delete" : {
+        "summary" : "Deletes a source system by its ID",
+        "parameters" : [ {
+          "name" : "id",
+          "required" : true,
+          "in" : "path",
+          "schema" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        } ],
+        "responses" : {
+          "204" : {
+            "description" : "Source system deleted"
+          },
+          "404" : {
+            "description" : "Source system not found"
+          }
+        },
+        "tags" : [ "Source System Resource" ]
+      }
+    },
+    "/api/config/source-system/{sourceSystemId}/endpoint" : {
+      "get" : {
+        "summary" : "Returns all the source-system-endpoints for a specified system from the database",
+        "parameters" : [ {
+          "description" : "The id of the associated source system",
+          "name" : "sourceSystemId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "Gets all source-system-endpoints for specified system",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "array",
+                  "items" : {
+                    "$ref" : "#/components/schemas/SourceSystemEndpointDTO"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "tags" : [ "Source System Endpoint Resource" ]
+      },
+      "post" : {
+        "summary" : "Creates a valid source-system-endpoint",
+        "parameters" : [ {
+          "name" : "sourceSystemId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "examples" : {
+                "valid_sync_job" : {
+                  "value" : [ {
+                    "endpointPath" : "/test/user",
+                    "httpRequestType" : "GET"
+                  }, {
+                    "endpointPath" : "/test/car",
+                    "httpRequestType" : "POST"
+                  } ]
+                }
+              },
+              "schema" : {
+                "type" : "array",
+                "items" : {
+                  "$ref" : "#/components/schemas/CreateSourceSystemEndpointDTO"
+                }
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "201" : {
+            "description" : "The URI of the created source-system-endpoint",
+            "headers" : {
+              "Location" : {
+                "schema" : {
+                  "type" : "string",
+                  "format" : "uri"
+                }
+              }
+            }
+          },
+          "400" : {
+            "description" : "Invalid source-system-endpoint passed in (or no request body found)"
+          }
+        },
+        "tags" : [ "Source System Endpoint Resource" ]
+      }
+    },
+    "/api/config/source-system/{sourceSystemId}/request-configuration" : {
+      "get" : {
+        "summary" : "Returns all the api-request-configurations for the specified source-system from the database",
+        "parameters" : [ {
+          "description" : "An optional filter parameter to filter results by source system id",
+          "name" : "sourceSystemId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "Gets all api-request-configurations for the specified source-system",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "array",
+                  "items" : {
+                    "$ref" : "#/components/schemas/GetRequestConfigurationDTO"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "tags" : [ "Request Configuration Resource" ]
+      }
+    },
+    "/api/config/sync-job" : {
+      "get" : {
+        "summary" : "Returns all the sync-jobs from the database",
+        "parameters" : [ {
+          "description" : "An optional filter parameter to filter results by name",
+          "name" : "name_filter",
+          "in" : "query",
+          "schema" : {
+            "type" : "string"
+          },
+          "required" : false
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "Gets all sync-jobs",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "array",
+                  "items" : {
+                    "$ref" : "#/components/schemas/SyncJobDTO"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "tags" : [ "Sync Job Resource" ]
+      },
+      "post" : {
+        "summary" : "Creates a valid sync-job",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "examples" : {
+                "valid_sync_job" : {
+                  "value" : {
+                    "name" : "Basic Userdata sync",
+                    "deployed" : true
+                  }
+                }
+              },
+              "schema" : {
+                "$ref" : "#/components/schemas/SyncJobDTO"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "201" : {
+            "description" : "The URI of the created sync-job",
+            "headers" : {
+              "Location" : {
+                "schema" : {
+                  "type" : "string",
+                  "format" : "uri"
+                }
+              }
+            }
+          },
+          "400" : {
+            "description" : "Invalid sync-job passed in (or no request body found)"
+          }
+        },
+        "tags" : [ "Sync Job Resource" ]
+      }
+    },
+    "/api/config/sync-job/{id}" : {
+      "get" : {
+        "summary" : "Returns a sync-job for a given identifier",
+        "parameters" : [ {
+          "name" : "id",
+          "required" : true,
+          "in" : "path",
+          "schema" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "Gets a sync-job for a given id",
+            "content" : {
+              "application/json" : {
+                "examples" : {
+                  "sync-job" : {
+                    "value" : {
+                      "id" : "1",
+                      "name" : "Basyx sync job",
+                      "deployed" : false
+                    }
+                  }
+                },
+                "schema" : {
+                  "$ref" : "#/components/schemas/SyncJobDTO"
+                }
+              }
+            }
+          },
+          "404" : {
+            "description" : "The sync-job is not found for a given identifier"
+          }
+        },
+        "tags" : [ "Sync Job Resource" ]
+      },
+      "put" : {
+        "summary" : "Completely updates an exiting sync-job by replacing it with the passed-in sync-job",
+        "parameters" : [ {
+          "name" : "id",
+          "required" : true,
+          "in" : "path",
+          "schema" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "examples" : {
+                "valid_sync_job" : {
+                  "value" : {
+                    "id" : "1",
+                    "name" : "Basyx sync job",
+                    "deployed" : false
+                  }
+                }
+              },
+              "schema" : {
+                "$ref" : "#/components/schemas/SyncJobDTO"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "204" : {
+            "description" : "Replaced the sync-job"
+          },
+          "400" : {
+            "description" : "Invalid sync-job passed in (or no request body found)"
+          },
+          "404" : {
+            "description" : "No sync-job found"
+          }
+        },
+        "tags" : [ "Sync Job Resource" ]
+      },
+      "delete" : {
+        "summary" : "Deletes an exiting sync-job",
+        "parameters" : [ {
+          "name" : "id",
+          "required" : true,
+          "in" : "path",
+          "schema" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        } ],
+        "responses" : {
+          "204" : {
+            "description" : "Delete a sync-job"
+          }
+        },
+        "tags" : [ "Sync Job Resource" ]
+      }
+    },
+    "/api/config/sync-system/request-header/{id}" : {
+      "get" : {
+        "summary" : "Returns a api-request-header for a given identifier",
+        "parameters" : [ {
+          "name" : "id",
+          "required" : true,
+          "in" : "path",
+          "schema" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "Gets a api-request-header for a given id",
+            "content" : {
+              "application/json" : {
+                "examples" : {
+                  "api-request-header" : {
+                    "value" : {
+                      "name" : "getUserA",
+                      "used" : "false",
+                      "pollingIntervallInMs" : "3"
+                    }
+                  }
+                },
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiHeaderDTO"
+                }
+              }
+            }
+          },
+          "404" : {
+            "description" : "The api-request-header is not found for a given identifier"
+          }
+        },
+        "tags" : [ "Api Header Resource" ]
+      },
+      "put" : {
+        "summary" : "Completely updates an exiting api-request-header by replacing it with the passed-in api-request-header",
+        "parameters" : [ {
+          "name" : "id",
+          "required" : true,
+          "in" : "path",
+          "schema" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "examples" : {
+                "valid_sync_job" : {
+                  "value" : {
+                    "id" : "1",
+                    "name" : "Basyx sync job",
+                    "deployed" : false
+                  }
+                }
+              },
+              "schema" : {
+                "$ref" : "#/components/schemas/ApiHeaderDTO"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "204" : {
+            "description" : "Replaced the api-request-header"
+          },
+          "400" : {
+            "description" : "Invalid api-request-header passed in (or no request body found)"
+          },
+          "404" : {
+            "description" : "No api-request-header found"
+          }
+        },
+        "tags" : [ "Api Header Resource" ]
+      },
+      "delete" : {
+        "summary" : "Deletes an exiting api-request-header",
+        "parameters" : [ {
+          "name" : "id",
+          "required" : true,
+          "in" : "path",
+          "schema" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        } ],
+        "responses" : {
+          "204" : {
+            "description" : "Delete a api-request-header"
+          }
+        },
+        "tags" : [ "Api Header Resource" ]
+      }
+    },
+    "/api/config/sync-system/{syncSystemId}/request-header" : {
+      "get" : {
+        "summary" : "Returns all the source-system-endpoints for the specified source-system from the database",
+        "parameters" : [ {
+          "description" : "An optional filter parameter to filter results by source system id",
+          "name" : "syncSystemId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "Gets all source-system-endpoints",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "array",
+                  "items" : {
+                    "$ref" : "#/components/schemas/ApiHeaderDTO"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "tags" : [ "Api Header Resource" ]
+      },
+      "post" : {
+        "summary" : "Creates a valid api-request-header for the specified source system",
+        "parameters" : [ {
+          "name" : "syncSystemId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "examples" : {
+                "valid_source_api_request_header" : {
+                  "value" : {
+                    "name" : "getUserA",
+                    "used" : "false",
+                    "pollingIntervallInMs" : "3"
+                  }
+                }
+              },
+              "schema" : {
+                "$ref" : "#/components/schemas/CreateApiHeaderDTO"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "201" : {
+            "description" : "The URI of the created api-request-header",
+            "headers" : {
+              "Location" : {
+                "schema" : {
+                  "type" : "string",
+                  "format" : "uri"
+                }
+              }
+            }
+          },
+          "400" : {
+            "description" : "Invalid api-request-header passed in (or no request body found)"
+          }
+        },
+        "tags" : [ "Api Header Resource" ]
+      }
+    },
+    "/api/config/transformation" : {
+      "get" : {
+        "summary" : "Returns all transformations",
+        "tags" : [ "Transformation Configuration" ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "array",
+                  "items" : {
+                    "$ref" : "#/components/schemas/TransformationDetailsDTO"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post" : {
+        "summary" : "Creates a new transformation shell",
+        "description" : "Creates the initial transformation object with basic info like name and description. Returns the created object with its new ID.",
+        "tags" : [ "Transformation Configuration" ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/TransformationShellDTO"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK"
+          },
+          "400" : {
+            "description" : "Bad Request"
+          }
+        }
+      }
+    },
+    "/api/config/transformation-script/{id}" : {
+      "put" : {
+        "summary" : "Updates an existing transformation script",
+        "parameters" : [ {
+          "name" : "id",
+          "required" : true,
+          "in" : "path",
+          "schema" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/TransformationScriptDTO"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK"
+          },
+          "400" : {
+            "description" : "Bad Request"
+          }
+        },
+        "tags" : [ "Transformation Script Resource" ]
+      },
+      "get" : {
+        "summary" : "Returns a transformation script for a given identifier",
+        "parameters" : [ {
+          "name" : "id",
+          "required" : true,
+          "in" : "path",
+          "schema" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "Transformation Script Resource" ]
+      }
+    },
+    "/api/config/transformation/{id}" : {
+      "get" : {
+        "summary" : "Returns a transformation for a given identifier",
+        "tags" : [ "Transformation Configuration" ],
+        "parameters" : [ {
+          "name" : "id",
+          "required" : true,
+          "in" : "path",
+          "schema" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK"
+          }
+        }
+      },
+      "delete" : {
+        "summary" : "Deletes an existing transformation",
+        "tags" : [ "Transformation Configuration" ],
+        "parameters" : [ {
+          "name" : "id",
+          "required" : true,
+          "in" : "path",
+          "schema" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK"
+          }
+        }
+      },
+      "put" : {
+        "summary" : "Assembles a transformation with its related components",
+        "description" : "Updates an existing transformation shell by linking it to a script, rule, and endpoints using their IDs.",
+        "tags" : [ "Transformation Configuration" ],
+        "parameters" : [ {
+          "name" : "id",
+          "required" : true,
+          "in" : "path",
+          "schema" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/TransformationAssemblyDTO"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK"
+          },
+          "400" : {
+            "description" : "Bad Request"
+          }
+        }
+      }
+    }
+  },
+  "tags" : [ {
+    "name" : "Transformation Configuration",
+    "description" : "Endpoints for managing transformations"
+  } ],
+  "info" : {
+    "title" : "core-management API",
+    "version" : "1.0.0-SNAPSHOT"
+  }
+}

@@ -48,3 +48,7 @@ Chart.lock
 
 # Helm temporary files
 .helm/
+
+#
+.bloop/
+.metals/

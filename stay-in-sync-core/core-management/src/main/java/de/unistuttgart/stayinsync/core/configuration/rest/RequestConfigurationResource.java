@@ -113,10 +113,8 @@ public class RequestConfigurationResource {
             return Response.ok(Map.of()).build();
         }
 
-        // UPDATED: Call the static method directly on the entity class.
         List<Object[]> results = SourceSystemApiRequestConfiguration.findArcsGroupedBySourceSystemName(sourceSystemNames);
 
-        // The rest of the logic remains exactly the same.
         Map<String, List<GetRequestConfigurationDTO>> groupedArcs = results.stream()
                 .collect(Collectors.groupingBy(
                         row -> (String) row[0],
