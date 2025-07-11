@@ -1,42 +1,35 @@
-import {
-  Component,
-  OnDestroy,
-  ChangeDetectorRef,
-  OnInit,
-  inject,
-} from '@angular/core';
-import { FormsModule } from '@angular/forms';
-import { CommonModule } from '@angular/common';
-import type { editor, IDisposable } from 'monaco-editor';
+import {ChangeDetectorRef, Component, inject, OnDestroy, OnInit,} from '@angular/core';
+import {FormsModule} from '@angular/forms';
+import {CommonModule} from '@angular/common';
+import type {editor, IDisposable} from 'monaco-editor';
 import * as ts from 'typescript';
-import {
-  ScriptEditorService,
-  ScriptPayload,
-} from '../../../core/services/script-editor.service';
-import { MessagesModule } from 'primeng/messages';
-import { MessageService } from 'primeng/api';
+import {ScriptEditorService, ScriptPayload,} from '../../../core/services/script-editor.service';
+import {MessagesModule} from 'primeng/messages';
+import {MessageService} from 'primeng/api';
 
-import { ActivatedRoute, Router } from '@angular/router';
-import { ScriptEditorData } from '../script-editor-navigation.service';
+import {ActivatedRoute, Router} from '@angular/router';
+import {ScriptEditorData} from '../script-editor-navigation.service';
 
-import { catchError, debounceTime, finalize, of, Subject, Subscription, tap, throwError } from 'rxjs';
+import {catchError, debounceTime, finalize, of, Subject, Subscription, tap, throwError} from 'rxjs';
 
 // PrimeNG Modules
-import { PanelModule } from 'primeng/panel';
-import { ButtonModule } from 'primeng/button';
-import { SplitterModule } from 'primeng/splitter';
-import { AccordionModule } from 'primeng/accordion';
-import { ProgressSpinnerModule } from 'primeng/progressspinner';
-import { ToastModule } from 'primeng/toast';
+import {PanelModule} from 'primeng/panel';
+import {ButtonModule} from 'primeng/button';
+import {SplitterModule} from 'primeng/splitter';
+import {AccordionModule} from 'primeng/accordion';
+import {ProgressSpinnerModule} from 'primeng/progressspinner';
+import {ToastModule} from 'primeng/toast';
 
 // Monaco Editor Module
-import { MonacoEditorModule } from 'ngx-monaco-editor-v2';
+import {MonacoEditorModule} from 'ngx-monaco-editor-v2';
 
-import { ApiRequestConfiguration } from '../models/arc.models';
-import { ArcStateService } from '../../../core/services/arc-state.service';
-import { SourceSystem, SourceSystemEndpoint } from '../../source-system/models/source-system.models';
-import { ArcManagementPanelComponent } from '../arc-management-panel/arc-management-panel.component';
-import { ArcWizardComponent } from '../arc-wizard/arc-wizard.component';
+import {ApiRequestConfiguration} from '../models/arc.models';
+import {ArcStateService} from '../../../core/services/arc-state.service';
+import {SourceSystem, SourceSystemEndpoint} from '../../source-system/models/source-system.models';
+import {ArcManagementPanelComponent} from '../arc-management-panel/arc-management-panel.component';
+import {ArcWizardComponent} from '../arc-wizard/arc-wizard.component';
+import {InputTextModule} from 'primeng/inputtext';
+import {FloatLabel} from 'primeng/floatlabel';
 
 interface MonacoExtraLib {
   uri: String;
@@ -68,6 +61,8 @@ interface Message {
     ArcManagementPanelComponent,
     ArcWizardComponent,
     ToastModule,
+    InputTextModule,
+    FloatLabel
   ],
 })
 export class ScriptEditorPageComponent implements OnInit, OnDestroy {
@@ -79,7 +74,7 @@ export class ScriptEditorPageComponent implements OnInit, OnDestroy {
     theme: 'vs-dark',
     language: 'typescript',
     automaticLayout: true,
-    minimap: { enabled: true },
+    minimap: {enabled: true},
   };
 
   private monaco!: typeof import('monaco-editor');
@@ -93,11 +88,15 @@ export class ScriptEditorPageComponent implements OnInit, OnDestroy {
   code: string = `// Script editor will initialize once a SyncJob context is loaded.`;
 
   isWizardVisible = false;
-  wizardContext: { system: SourceSystem; endpoint: SourceSystemEndpoint; arcToClone?: ApiRequestConfiguration} | null | undefined = null;
+  wizardContext: {
+    system: SourceSystem;
+    endpoint: SourceSystemEndpoint;
+    arcToClone?: ApiRequestConfiguration
+  } | null | undefined = null;
 
   private onModelChange = new Subject<void>();
 
-  private cdr =  inject(ChangeDetectorRef);
+  private cdr = inject(ChangeDetectorRef);
   private scriptEditorService = inject(ScriptEditorService);
   private messageService = inject(MessageService);
   private arcStateService = inject(ArcStateService);
@@ -124,7 +123,11 @@ export class ScriptEditorPageComponent implements OnInit, OnDestroy {
     if (!this.currentTransformationId) {
       this.isLoading = false;
       this.code = '// ERROR: No Transformation ID found in URL. Cannot load context.';
-      this.messageService.add({ severity: 'error', summary: 'Error', detail: 'No Transformation ID provided in the URL.' });
+      this.messageService.add({
+        severity: 'error',
+        summary: 'Error',
+        detail: 'No Transformation ID provided in the URL.'
+      });
     }
   }
 
@@ -178,7 +181,11 @@ export class ScriptEditorPageComponent implements OnInit, OnDestroy {
   handleArcSave(savedArc: ApiRequestConfiguration): void {
     console.log('%c[Editor] Handling saved ARC:', 'color: #10b981;', savedArc);
     this.arcStateService.addOrUpdateArc(savedArc);
-    this.messageService.add({ severity: 'success', summary: 'ARC Saved', detail: `Configuration '${savedArc.alias}' is now available.` });
+    this.messageService.add({
+      severity: 'success',
+      summary: 'ARC Saved',
+      detail: `Configuration '${savedArc.alias}' is now available.`
+    });
   }
 
   private loadContextForScript(transformationId: string) {
@@ -196,7 +203,7 @@ export class ScriptEditorPageComponent implements OnInit, OnDestroy {
       }),
       tap(savedScript => {
         const scriptName = this.preloadedData?.scriptName;
-        if (savedScript?.typescriptCode){
+        if (savedScript?.typescriptCode) {
           this.code = savedScript.typescriptCode;
           this.analyzeEditorContentForTypes();
         } else {
@@ -209,58 +216,78 @@ export class ScriptEditorPageComponent implements OnInit, OnDestroy {
 
   async saveScript(): Promise<void> {
     if (!this.currentTransformationId) {
-        this.messageService.add({ severity: 'error', summary: 'Error', detail: 'No transformation context found. Cannot save.' });
-        return;
+      this.messageService.add({
+        severity: 'error',
+        summary: 'Error',
+        detail: 'No transformation context found. Cannot save.'
+      });
+      return;
     }
     if (this.isSaving) {
-        return;
+      return;
     }
 
     const hasErrors = await this.hasValidationErrors();
     if (hasErrors) {
-        this.messageService.add({ severity: 'error', summary: 'Validation Failed', detail: 'Please fix the TypeScript errors before saving.' });
-        return;
+      this.messageService.add({
+        severity: 'error',
+        summary: 'Validation Failed',
+        detail: 'Please fix the TypeScript errors before saving.'
+      });
+      return;
     }
 
     try {
-        const transpileOutput = ts.transpileModule(this.code, {
-            compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ESNext },
-        });
+      const transpileOutput = ts.transpileModule(this.code, {
+        compilerOptions: {module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ESNext},
+      });
 
-        const jsHash = await this.generateHash(transpileOutput.outputText);
+      const jsHash = await this.generateHash(transpileOutput.outputText);
 
-        const payload: ScriptPayload = {
-            name: this.preloadedData?.scriptName,
-            typescriptCode: this.code,
-            javascriptCode: transpileOutput.outputText,
-            hash: jsHash,
-        };
+      const payload: ScriptPayload = {
+        name: this.preloadedData?.scriptName,
+        typescriptCode: this.code,
+        javascriptCode: transpileOutput.outputText,
+        hash: jsHash,
+      };
 
-        this.isSaving = true;
+      this.isSaving = true;
 
-        this.scriptEditorService.saveScriptForTransformation(Number(this.currentTransformationId), payload).subscribe({
+      this.scriptEditorService.saveScriptForTransformation(Number(this.currentTransformationId), payload).subscribe({
         next: (savedScript) => {
-            this.messageService.add({ severity: 'success', summary: 'Saved!', detail: 'Script has been saved successfully.' });
-            
-            if(this.preloadedData){
-              this.preloadedData.id = savedScript.id; 
-            }
+          this.messageService.add({
+            severity: 'success',
+            summary: 'Saved!',
+            detail: 'Script has been saved successfully.'
+          });
 
-            this.isSaving = false;
-            this.cdr.detectChanges();
+          if (this.preloadedData) {
+            this.preloadedData.id = savedScript.id;
+          }
+
+          this.isSaving = false;
+          this.cdr.detectChanges();
         },
         error: (err) => {
-            this.messageService.add({ severity: 'error', summary: 'Save Failed', detail: 'Could not save the script to the server.' });
-            console.error('Save script error:', err);
-            this.isSaving = false;
-            this.cdr.detectChanges();
+          this.messageService.add({
+            severity: 'error',
+            summary: 'Save Failed',
+            detail: 'Could not save the script to the server.'
+          });
+          console.error('Save script error:', err);
+          this.isSaving = false;
+          this.cdr.detectChanges();
         }
-    });
+      });
 
     } catch (e) {
-        this.messageService.add({ severity: 'error', summary: 'Transpilation Error', detail: 'An error occurred during script transpilation.' });
-        console.error('Error in saveScript:', e);
-        this.isSaving = false;
+      this.messageService.add({
+        severity: 'error',
+        summary: 'Transpilation Error',
+        detail: 'An error occurred during script transpilation.'
+      });
+      console.error('Error in saveScript:', e);
+      this.isSaving = false;
     }
   }
 
@@ -287,7 +314,7 @@ export class ScriptEditorPageComponent implements OnInit, OnDestroy {
       return;
     }
     const disposable = this.monaco.languages.typescript.typescriptDefaults.addExtraLib(content, uri);
-    this.currentExtraLibs.push({ uri, disposable });
+    this.currentExtraLibs.push({uri, disposable});
   }
 
   private addGlobalApiDefinitions(): void {
@@ -360,8 +387,8 @@ transformData();
     const worker = await this.monaco.languages.typescript.getTypeScriptWorker();
     const client = await worker(model.uri);
     const diagnostics = await Promise.all([
-        client.getSyntacticDiagnostics(model.uri.toString()),
-        client.getSemanticDiagnostics(model.uri.toString()),
+      client.getSyntacticDiagnostics(model.uri.toString()),
+      client.getSemanticDiagnostics(model.uri.toString()),
     ]).then(([syntactic, semantic]) => [...syntactic, ...semantic]);
 
     const errors = diagnostics.filter(d => d.category === ts.DiagnosticCategory.Error);
