@@ -1,6 +1,7 @@
 package de.unistuttgart.stayinsync.transport.dto;
 
-import de.unistuttgart.stayinsync.transport.dto.transformationrule.GraphDTO;
+import java.util.Set;
 
-public record TransformationMessageDTO(GraphDTO graphDTO) {
+public record TransformationMessageDTO(
+        Set<SourceSystemApiRequestConfigurationMessageDTO> requestConfigurationMessageDTOS) {
 }

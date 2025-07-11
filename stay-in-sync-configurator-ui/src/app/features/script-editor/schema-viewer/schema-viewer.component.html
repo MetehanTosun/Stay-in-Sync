@@ -1,0 +1,19 @@
+<div class="schema-viewer-container">
+  <ng-container *ngIf="jsonData || dtsCode; else noData">
+    <p-tabView>
+      <p-tabPanel header="Payload Tree">
+        <p-tree [value]="treeNodes" selectionMode="single" scrollHeight="flex"></p-tree>
+      </p-tabPanel>
+      <p-tabPanel header="TypeScript Type">
+        <ngx-monaco-editor [options]="editorOptions" [ngModel]="dtsCode"></ngx-monaco-editor>
+      </p-tabPanel>
+    </p-tabView>
+  </ng-container>
+
+  <ng-template #noData>
+    <div class="p-text-center p-p-3 text-muted">
+      <i class="pi pi-info-circle p-mr-2"></i>
+      Perform a "Test Call" to view response data here.
+    </div>
+  </ng-template>
+</div>
