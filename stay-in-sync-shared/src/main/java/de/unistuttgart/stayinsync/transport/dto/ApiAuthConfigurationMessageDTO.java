@@ -1,4 +1,5 @@
 package de.unistuttgart.stayinsync.transport.dto;
 
-public class ApiAuthConfigurationMessageDTO {
+public record ApiAuthConfigurationMessageDTO (String apiKey, String headerName){
+
 }

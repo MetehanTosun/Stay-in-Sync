@@ -1,9 +1,9 @@
-package de.unistuttgart.stayinsync.polling.rabbitmq;
+package de.unistuttgart.stayinsync.pollingnode.rabbitmq;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.rabbitmq.client.AMQP;
 import com.rabbitmq.client.Channel;
-import de.unistuttgart.stayinsync.polling.exception.PollingNodeException;
+import de.unistuttgart.stayinsync.pollingnode.exceptions.PollingNodeException;
 import de.unistuttgart.stayinsync.transport.dto.SourceSystemApiRequestConfigurationMessageDTO;
 import de.unistuttgart.stayinsync.transport.dto.SyncDataMessageDTO;
 import io.quarkiverse.rabbitmqclient.RabbitMQClient;
@@ -51,7 +51,7 @@ public class SyncDataProducer {
             channel.queueBind("request-config-" + requestConfiguration.id(), "sync-data-exchange", "request-config-" + requestConfiguration.id());
 
         } catch (IOException e) {
-            throw new PollingNodeException("Unable to setup stream", "Failed to setup stream for request config with id: " + requestConfiguration.id(), e);
+            throw new PollingNodeException("Unable to setup stream" + "Failed to setup stream for request config with id: " + requestConfiguration.id() + e);
         }
     }
 
@@ -67,7 +67,7 @@ public class SyncDataProducer {
             channel.basicPublish("sync-data-exchange", "request-config-" + syncDataMessageDTO.requestConfigId(), properties,
                     messageBody.getBytes(StandardCharsets.UTF_8));
         } catch (IOException e) {
-            throw new PollingNodeException("Unable to publish Job", "Object JSON-serialization failed", e);
+            throw new PollingNodeException("Unable to publish Job" + "Object JSON-serialization failed" + e);
         }
     }
 

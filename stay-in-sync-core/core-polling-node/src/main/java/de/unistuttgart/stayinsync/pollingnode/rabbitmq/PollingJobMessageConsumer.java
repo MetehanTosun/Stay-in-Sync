@@ -1,4 +1,4 @@
-package de.unistuttgart.stayinsync.polling.rabbitmq;
+package de.unistuttgart.stayinsync.pollingnode.rabbitmq;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -6,8 +6,7 @@ import com.rabbitmq.client.CancelCallback;
 import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.DeliverCallback;
 import com.rabbitmq.client.Delivery;
-import de.unistuttgart.stayinsync.polling.PollingJobScheduler;
-import de.unistuttgart.stayinsync.polling.exception.PollingNodeException;
+import de.unistuttgart.stayinsync.pollingnode.exceptions.PollingNodeException;
 import de.unistuttgart.stayinsync.transport.dto.SourceSystemApiRequestConfigurationMessageDTO;
 import io.quarkiverse.rabbitmqclient.RabbitMQClient;
 import io.quarkus.logging.Log;
@@ -31,7 +30,7 @@ public class PollingJobMessageConsumer {
     ObjectMapper objectMapper;
 
     @Inject
-    PollingJobScheduler pollingJobScheduler;
+    ChannelUpdater pollingJobScheduler;
 
     private Channel channel;
 
@@ -81,7 +80,7 @@ public class PollingJobMessageConsumer {
         return (consumerTag, delivery) -> {
             try {
                 SourceSystemApiRequestConfigurationMessageDTO apiRequestConfigurationMessageDTO = getPollingJob(delivery);
-                Log.infof("Received new request configuration for api: %s", apiRequestConfigurationMessageDTO.sourceSystem().apiUrl());
+                Log.infof("Received new request configuration for api: %s", apiRequestConfigurationMessageDTO.apiConnectionDetails().sourceSystem().apiUrl());
                 pollingJobScheduler.deployPollingJobExecution(apiRequestConfigurationMessageDTO);
                 channel.basicAck(delivery.getEnvelope().getDeliveryTag(), false);
             } catch (PollingNodeException e) {
@@ -93,7 +92,7 @@ public class PollingJobMessageConsumer {
     }
 
     /**
-     * Serializes message body to {@link CreateRequestConfigurationDTO} object
+     * Serializes message body to {@link SourceSystemApiRequestConfigurationMessageDTO} object
      *
      * @param delivery
      * @return
@@ -107,7 +106,7 @@ public class PollingJobMessageConsumer {
             String message = new String(delivery.getBody(), "UTF-8");
             return objectMapper.readValue(message, SourceSystemApiRequestConfigurationMessageDTO.class);
         } catch (JsonProcessingException | UnsupportedEncodingException e) {
-            throw new PollingNodeException("RabbitMQ error", "Unable to extract polling-job from message body");
+            throw new PollingNodeException("RabbitMQ error, Unable to extract polling-job from message body");
         }
     }
 
@@ -131,7 +130,7 @@ public class PollingJobMessageConsumer {
         return (consumerTag, delivery) -> {
             try {
                 SourceSystemApiRequestConfigurationMessageDTO apiRequestConfig = getPollingJob(delivery);
-                Log.infof("Received update for polling-job %s", apiRequestConfig.sourceSystem().apiUrl());
+                Log.infof("Received update for polling-job %s", apiRequestConfig.apiConnectionDetails().sourceSystem().apiUrl());
                 pollingJobScheduler.reconfigureSyncJobExecution(apiRequestConfig);
                 channel.basicAck(delivery.getEnvelope().getDeliveryTag(), false);
             } catch (PollingNodeException e) {
@@ -155,7 +154,7 @@ public class PollingJobMessageConsumer {
             channel.queueBind(pollingNodeQueueName, "pollingjob-exchange", routingKey);
             channel.basicConsume(pollingNodeQueueName, false, updateDeployedPollingJobCallback(), cancelSyncJobDeploymentCallback(pollingNodeQueueName));
         } catch (IOException e) {
-            throw new PollingNodeException("RabbitMQ error", "Failed to bind queue");
+            throw new PollingNodeException("RabbitMQ error, Failed to bind queue");
         }
     }
 
@@ -171,7 +170,7 @@ public class PollingJobMessageConsumer {
             Log.infof("Unbinding queue %s with routing key %s", pollingNodeQueueName, routingKey);
             channel.queueUnbind(pollingNodeQueueName, "pollingjob-exchange", routingKey);
         } catch (IOException e) {
-            throw new PollingNodeException("RabbitMQ error", "Failed to unbind queue");
+            throw new PollingNodeException("RabbitMQ error, Failed to unbind queue");
         }
     }
 
