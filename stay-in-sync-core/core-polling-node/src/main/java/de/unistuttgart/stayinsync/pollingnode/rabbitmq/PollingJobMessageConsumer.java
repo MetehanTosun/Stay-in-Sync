@@ -6,7 +6,6 @@ import com.rabbitmq.client.CancelCallback;
 import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.DeliverCallback;
 import com.rabbitmq.client.Delivery;
-import de.unistuttgart.stayinsync.core.configuration.rest.dtos.CreateRequestConfigurationDTO;
 import de.unistuttgart.stayinsync.pollingnode.exceptions.PollingNodeException;
 import de.unistuttgart.stayinsync.transport.dto.SourceSystemApiRequestConfigurationMessageDTO;
 import io.quarkiverse.rabbitmqclient.RabbitMQClient;
@@ -93,7 +92,7 @@ public class PollingJobMessageConsumer {
     }
 
     /**
-     * Serializes message body to {@link CreateRequestConfigurationDTO} object
+     * Serializes message body to {@link SourceSystemApiRequestConfigurationMessageDTO} object
      *
      * @param delivery
      * @return
