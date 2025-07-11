@@ -67,11 +67,11 @@ public class ApiHeaderResource {
             @Valid @NotNull CreateApiHeaderDTO apiRequestHeaderDTO,
             @Context UriInfo uriInfo) {
 
-        var persistedSourceSystemEndpoint = this.apiRequestHeaderService.persistRequestHeader(apiRequestHeaderDTO, sourceSystemId);
-        var builder = uriInfo.getAbsolutePathBuilder().path(Long.toString(persistedSourceSystemEndpoint.id));
+        var persistedRequestHeader = this.apiRequestHeaderService.persistRequestHeader(apiRequestHeaderDTO, sourceSystemId);
+        var builder = uriInfo.getAbsolutePathBuilder().path(Long.toString(persistedRequestHeader.id));
         Log.debugf("New api-request-header created with URI  %s", builder.build().toString());
 
-        return Response.created(builder.build()).build();
+        return Response.created(builder.build()).entity(fullUpdateMapper.mapToDTO(persistedRequestHeader)).build();
     }
 
     @GET
