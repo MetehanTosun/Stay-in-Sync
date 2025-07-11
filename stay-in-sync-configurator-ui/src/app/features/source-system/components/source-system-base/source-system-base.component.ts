@@ -129,4 +129,111 @@ export class SourceSystemBaseComponent implements OnInit {
       }
     });
   }
+
+  /**
+   * Open the create new system dialog.
+   */
+  openCreate(): void {
+    // Reset selection when creating new
+    this.selectedSystem = null;
+    this.showCreateDialog = true;
+  }
+
+  /**
+   * Handler for when the create/edit dialog is closed; reloads systems if necessary.
+   * @param visible true if the dialog remains visible after closure.
+   */
+  onCreateDialogClose(visible: boolean): void {
+    this.showCreateDialog = visible;
+    if (!visible) {
+      this.loadSystems();
+      this.selectedSystem = null;
+    }
+  }
+
+  /**
+   * Delete a source system and refresh the list.
+   * @param system the system to delete.
+   */
+  deleteSourceSystem(system: SourceSystemDTO): void {
+    if (!system.id) {
+      console.warn('Keine ID vorhanden, Löschen übersprungen');
+      return;
+    }
+    this.api.apiConfigSourceSystemIdDelete(system.id).subscribe({
+      next: () => this.loadSystems(),
+      error: err => {
+        console.error('Löschen des Source System fehlgeschlagen', err)
+        this.erorrService.handleError(err);
+      }
+    });
+  }
+
+  /**
+   * Open the create dialog pre-filled to edit an existing system.
+   * @param system the system to edit.
+   */
+  editSourceSystem(system: SourceSystemDTO): void {
+    this.selectedSystem = system;
+    this.showCreateDialog = true;
+  }
+
+  /**
+   * Open the create/edit wizard in manage mode for the selected system.
+   * @param system the system to manage.
+   */
+  manageSourceSystem(system: SourceSystemDTO): void {
+    this.selectedSystem = system;
+
+    this.showCreateDialog = true;
+  }
+
+  /**
+   * Open the detail dialog to manage headers and endpoints for a system.
+   * @param system the system to view details of.
+   */
+  viewSourceSystem(system: SourceSystemDTO): void {
+    this.selectedSystem = system;
+    this.showDetailDialog = true;
+
+    this.metadataForm.patchValue({
+      name: system.name,
+      apiUrl: system.apiUrl,
+      description: system.description
+    });
+  }
+
+  /**
+   * Close the detail dialog and optionally reload systems.
+   */
+  closeDetailDialog(): void {
+    this.showDetailDialog = false;
+    this.selectedSystem = null;
+    this.loadSystems();
+  }
+
+  /**
+   * Save metadata changes of the selected system to the backend.
+   */
+  saveMetadata(): void {
+    if (!this.selectedSystem || this.metadataForm.invalid) {
+      return;
+    }
+    const updated: SourceSystemDTO = {
+      ...this.selectedSystem,
+      ...this.metadataForm.value
+    };
+    this.api
+      .apiConfigSourceSystemIdPut(this.selectedSystem.id!, updated)
+      .subscribe({
+        next: () => {
+          this.selectedSystem = updated;
+          this.loadSystems();
+        },
+        error: err => {
+          console.error('Failed to save metadata', err)
+          this.erorrService.handleError(err);
+        }
+      });
+  }
 }

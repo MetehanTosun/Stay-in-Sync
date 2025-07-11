@@ -168,9 +168,89 @@ export class CreateSourceSystemComponent implements OnInit, OnChanges {
     this.currentStep = 0;
   }
 
-  save() {
-    console.log('Speichern:', this.source);
-    // TODO: Save-Logik
-    this.cancel();
+  /**
+   * Validates form, constructs DTO including authConfig and optional file blob,
+   * and triggers POST to create the Source System.
+   */
+  save(): void {
+    if (this.form.invalid) {
+      this.form.markAllAsTouched();
+      return;
+    }
+
+    const base = {...this.form.getRawValue()} as CreateSourceSystemDTO;
+    delete base.authConfig;
+    delete base.openApiSpec;
+
+    const authType = this.form.get('apiAuthType')!.value as ApiAuthType;
+    const cfg = this.form.get('authConfig')!.value;
+    if (authType === ApiAuthType.Basic) {
+      base.authConfig = {authType, username: cfg.username, password: cfg.password} as BasicAuthDTO;
+    } else if (authType === ApiAuthType.ApiKey) {
+      base.authConfig = {authType, apiKey: cfg.apiKey, headerName: cfg.headerName} as ApiKeyAuthDTO;
+    }
+
+    const post = () => {
+      this.postDto(base);
+    };
+
+    if (this.selectedFile) {
+      const reader = new FileReader();
+      reader.onload = () => {
+        const b64 = (reader.result as string).split(',')[1];
+        const bytes = atob(b64);
+        const arr = new Uint8Array(bytes.length);
+        for (let i = 0; i < bytes.length; i++) arr[i] = bytes.charCodeAt(i);
+        base.openApiSpec = new Blob([arr], {type: 'application/octet-stream'});
+        post();
+      };
+      reader.readAsDataURL(this.selectedFile);
+    } else {
+      post();
+    }
   }
+
+  /**
+   * Performs HTTP POST to persist the Source System and handles Location header parsing.
+   *
+   * @param dto Prepared DTO for creation.
+   */
+  private postDto(dto: CreateSourceSystemDTO): void {
+    this.sourceSystemService
+      .apiConfigSourceSystemPost(dto)
+      .subscribe({
+        next: (resp: SourceSystemDTO) => {
+          this.createdSourceSystemId = resp.id!;
+          this.currentStep = 1;
+        },
+        error: (err) => {
+          this.errorService.handleError(err);
+          console.error('Failed to create Source System:', err);
+        }
+      });
+  }
+
+  /**
+   * Advances the stepper to the next step.
+   * If on first step, saves the Source System before proceeding.
+   */
+  goNext(): void {
+    if (this.currentStep === 0) {
+      this.save();            // erzeugt SourceSystem, springt auf Step 1 (API Headers)
+    } else if (this.currentStep === 1) {
+      // keine Persistenz hier, einfach auf Endpoints weiter
+      this.currentStep = 2;
+    }
+  }
+
+
+  /**
+   * Moves the stepper to the previous step.
+   */
+  goBack(): void {
+    if (this.currentStep > 0) {
+      this.currentStep -= 1;
+    }
+  }
+
 }

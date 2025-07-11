@@ -1,4 +1,7 @@
+
 // --- Data Transfer Objects (DTOs) for API Communication ---
+
+import {SourceSystem} from "../../source-system/models/sourceSystem";
 
 /**
  * The payload sent to the backend to test an API call in the ARC wizard.
