@@ -2,9 +2,12 @@ package de.unistuttgart.stayinsync.pollingnode.execution.executor;
 
 import de.unistuttgart.stayinsync.pollingnode.exceptions.FaultySourceSystemApiRequestMessageDtoException;
 import de.unistuttgart.stayinsync.pollingnode.exceptions.JsonObjectUnthreadingException;
+import de.unistuttgart.stayinsync.pollingnode.exceptions.PollingNodeException;
 import de.unistuttgart.stayinsync.pollingnode.execution.ressource.RestClient;
+import de.unistuttgart.stayinsync.pollingnode.rabbitmq.SyncDataProducer;
 import de.unistuttgart.stayinsync.transport.dto.ApiConnectionDetailsDTO;
 import de.unistuttgart.stayinsync.transport.dto.SourceSystemApiRequestConfigurationMessageDTO;
+import de.unistuttgart.stayinsync.transport.dto.SyncDataMessageDTO;
 import io.quarkus.logging.Log;
 import io.smallrye.mutiny.Uni;
 import io.vertx.core.json.JsonObject;
@@ -21,12 +24,14 @@ import java.util.concurrent.ExecutionException;
 @ApplicationScoped
 public class PollingJobQuarzExecutor implements Job {
 
-    final Map<Long, SourceSystemApiRequestConfigurationMessageDTO> executionDetails;
+    final ApiDetailsContainerForExecutor apiDetailsContainerForExecutor;
     final RestClient restClient;
+    final SyncDataProducer syncDataProducer;
 
-    public PollingJobQuarzExecutor(final RestClient restClient){
-        this.executionDetails = new HashMap<>();
+    public PollingJobQuarzExecutor(final RestClient restClient, final ApiDetailsContainerForExecutor apiDetailsContainerForExecutor, final SyncDataProducer syncDataProducer){
+        this.apiDetailsContainerForExecutor = apiDetailsContainerForExecutor;
         this.restClient = restClient;
+        this.syncDataProducer = syncDataProducer;
     }
 
     @Override
@@ -34,9 +39,8 @@ public class PollingJobQuarzExecutor implements Job {
         JobDataMap dataMap = context.getJobDetail().getJobDataMap();
         long configId = dataMap.getLong("configId");
 
-        // Konfiguration aus der executionDetails Map laden
         SourceSystemApiRequestConfigurationMessageDTO apiRequestConfigurationMessage =
-                executionDetails.get(configId);
+                apiDetailsContainerForExecutor.getDetailsForSpecificJob(configId);
 
         if (apiRequestConfigurationMessage == null) {
             Log.errorf("No configuration found for configId: %d", configId);
@@ -48,8 +52,9 @@ public class PollingJobQuarzExecutor implements Job {
                     pollUniJsonObject(apiRequestConfigurationMessage.apiConnectionDetails(), restClient)
             );
             Log.infof("JsonObject polled successfully for configId %d: %s", configId, jsonObject);
-            //TODO JsonObject wird für noch nichts genutzt
-        } catch (FaultySourceSystemApiRequestMessageDtoException | JsonObjectUnthreadingException e) {
+            syncDataProducer.setupRequestConfigurationStream(apiRequestConfigurationMessage);
+            syncDataProducer.publishSyncData(this.convertJsonObjectToSyncDataMessageDTO(apiRequestConfigurationMessage, jsonObject));
+        } catch (FaultySourceSystemApiRequestMessageDtoException | PollingNodeException e) {
             Log.errorf("Error during polling execution for configId %d", configId, e);
             throw new JobExecutionException(e);
         }
@@ -83,5 +88,11 @@ public class PollingJobQuarzExecutor implements Job {
         } catch (ExecutionException e) {
             throw new JsonObjectUnthreadingException("The unpacking of CompletableFuture to obtain JsonObject was interrupted by an unforseen exception in the api call process: " + e);
         }
+    }
+
+    private SyncDataMessageDTO convertJsonObjectToSyncDataMessageDTO(final SourceSystemApiRequestConfigurationMessageDTO apiRequestConfiguration, final JsonObject jsonObject){
+        Map<String,Object> map = new HashMap<>();
+        map.put(apiRequestConfiguration.name(), jsonObject.getMap());
+        return new SyncDataMessageDTO(apiRequestConfiguration.id(), map);
     }
 }
