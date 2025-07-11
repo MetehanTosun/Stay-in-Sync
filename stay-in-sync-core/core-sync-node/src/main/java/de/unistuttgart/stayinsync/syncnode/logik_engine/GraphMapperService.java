@@ -1,20 +1,16 @@
-package de.unistuttgart.stayinsync.syncnode.logik_engine.database;
+package de.unistuttgart.stayinsync.syncnode.logik_engine;
 
-import de.unistuttgart.stayinsync.syncnode.logik_engine.database.DTOs.GraphDTO;
-import de.unistuttgart.stayinsync.syncnode.logik_engine.database.DTOs.InputDTO;
-import de.unistuttgart.stayinsync.syncnode.logik_engine.database.DTOs.NodeDTO;
 import de.unistuttgart.stayinsync.syncnode.logik_engine.logic_operator.LogicOperator;
 import de.unistuttgart.stayinsync.syncnode.logik_engine.nodes.ConstantNode;
 import de.unistuttgart.stayinsync.syncnode.logik_engine.nodes.LogicNode;
 import de.unistuttgart.stayinsync.syncnode.logik_engine.nodes.Node;
 import de.unistuttgart.stayinsync.syncnode.logik_engine.nodes.ProviderNode;
+import de.unistuttgart.stayinsync.transport.dto.transformationrule.GraphDTO;
+import de.unistuttgart.stayinsync.transport.dto.transformationrule.InputDTO;
+import de.unistuttgart.stayinsync.transport.dto.transformationrule.NodeDTO;
 import jakarta.enterprise.context.ApplicationScoped;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 @ApplicationScoped
 public class GraphMapperService {
@@ -106,7 +102,8 @@ public class GraphMapperService {
 
             // Set common properties
             node.setId(dto.getId());
-            if(!"CONSTANT".equals(dto.getNodeType())) node.setName(dto.getName()); // Name for ConstantNode is set via constructor
+            if (!"CONSTANT".equals(dto.getNodeType()))
+                node.setName(dto.getName()); // Name for ConstantNode is set via constructor
             node.setOffsetX(dto.getOffsetX());
             node.setOffsetY(dto.getOffsetY());
 

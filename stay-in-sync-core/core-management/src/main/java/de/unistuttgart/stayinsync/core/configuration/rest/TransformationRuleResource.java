@@ -1,10 +1,11 @@
 package de.unistuttgart.stayinsync.core.configuration.rest;
 
 
-import de.unistuttgart.stayinsync.syncnode.logik_engine.database.DTOs.GraphDTO;
-import de.unistuttgart.stayinsync.syncnode.logik_engine.database.GraphMapperService;
-import de.unistuttgart.stayinsync.syncnode.logik_engine.database.GraphStorageService;
-import de.unistuttgart.stayinsync.syncnode.logik_engine.nodes.Node;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.LogicGraphEntity;
+import de.unistuttgart.stayinsync.core.configuration.service.GraphStorageService;
+import de.unistuttgart.stayinsync.transport.dto.transformationrule.GraphDTO;
 import io.quarkus.logging.Log;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
@@ -16,7 +17,6 @@ import org.eclipse.microprofile.openapi.annotations.Operation;
 import org.eclipse.microprofile.openapi.annotations.parameters.Parameter;
 import org.eclipse.microprofile.openapi.annotations.tags.Tag;
 
-import java.util.ArrayList;
 import java.util.List;
 
 import static jakarta.ws.rs.core.MediaType.APPLICATION_JSON;
@@ -31,7 +31,7 @@ public class TransformationRuleResource {
     GraphStorageService graphService;
 
     @Inject
-    GraphMapperService graphMapper;
+    ObjectMapper jsonObjectMapper;
 
     @POST
     @Consumes(APPLICATION_JSON)
@@ -41,10 +41,7 @@ public class TransformationRuleResource {
             throw new BadRequestException("Graph name must not be empty.");
         }
 
-        String graphName = dto.getName();
-
-        List<Node> nodeGraph = graphMapper.toNodeGraph(dto);
-        var persisted = graphService.persistGraph(graphName, nodeGraph);
+        var persisted = graphService.persistGraph(dto);
 
         var location = uriInfo.getAbsolutePathBuilder().path(Long.toString(persisted.id)).build();
         Log.debugf("New TransformationRule created with URI %s", location);
@@ -55,26 +52,21 @@ public class TransformationRuleResource {
     @GET
     @Operation(summary = "Returns all Transformation Rules")
     public List<GraphDTO> getAllTransformationRules() {
-        List<List<Node>> allGraphs = graphService.findAllGraphs();
-        Log.debugf("Found %d total transformation rules.", allGraphs.size());
 
-        List<GraphDTO> allGraphDtos = new ArrayList<>();
-        for (List<Node> graph : allGraphs) {
-            allGraphDtos.add(graphMapper.graphToDto(graph));
-        }
-
-        return allGraphDtos;
+        return List.of();
     }
 
     @GET
     @Path("/{id}")
     @Operation(summary = "Returns a Transformation Rule for a given identifier")
     public GraphDTO getTransformationRule(@Parameter(name = "id", required = true) @PathParam("id") Long id) {
-        List<Node> graph = graphService.findGraphById(id)
-                .orElseThrow(() -> new NotFoundException("TransformationRule with id " + id + " not found."));
+        LogicGraphEntity logicGraphEntity = graphService.findGraphById(id).orElseThrow(() -> new NotFoundException("TransformationRule with id " + id + " not found."));
 
-        Log.debugf("Found TransformationRule with id: %d", id);
-        return graphMapper.graphToDto(graph);
+        try {
+            return jsonObjectMapper.readValue(logicGraphEntity.graphDefinitionJson, GraphDTO.class);
+        } catch (JsonProcessingException e) {
+            throw new InternalServerErrorException(e);
+        }
     }
 
     @PUT
@@ -82,9 +74,7 @@ public class TransformationRuleResource {
     @Consumes(APPLICATION_JSON)
     @Operation(summary = "Updates an existing Transformation Rule")
     public Response updateTransformationRule(@Parameter(name = "id", required = true) @PathParam("id") Long id, GraphDTO dto) {
-        List<Node> nodeGraph = graphMapper.toNodeGraph(dto);
-
-        graphService.updateGraph(id, nodeGraph)
+        graphService.updateGraph(id, dto)
                 .orElseThrow(() -> new NotFoundException("TransformationRule with id " + id + " not found."));
 
         Log.debugf("TransformationRule with id %d was updated.", id);

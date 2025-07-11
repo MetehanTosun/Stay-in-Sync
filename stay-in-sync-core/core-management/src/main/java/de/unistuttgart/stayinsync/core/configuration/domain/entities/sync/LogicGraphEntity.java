@@ -1,5 +1,6 @@
-package de.unistuttgart.stayinsync.syncnode.logik_engine.database;
+package de.unistuttgart.stayinsync.core.configuration.domain.entities.sync;
 
+import de.unistuttgart.stayinsync.transport.dto.transformationrule.GraphDTO;
 import io.quarkus.hibernate.orm.panache.PanacheEntity;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -27,7 +28,7 @@ public class LogicGraphEntity extends PanacheEntity {
 
     /**
      * The complete graph definition, stored as a JSON string in a TEXT or CLOB column.
-     * This field contains the serialized version of a {@link de.unistuttgart.stayinsync.syncnode.logik_engine.database.DTOs.GraphDTO}.
+     * This field contains the serialized version of a {@link GraphDTO}.
      */
     @Lob
     @Column(name = "graph_definition_json", columnDefinition = "TEXT", nullable = false)

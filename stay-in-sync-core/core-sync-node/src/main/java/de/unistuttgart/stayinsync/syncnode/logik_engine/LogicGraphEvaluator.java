@@ -1,8 +1,8 @@
 package de.unistuttgart.stayinsync.syncnode.logik_engine;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import de.unistuttgart.stayinsync.syncnode.logik_engine.nodes.Node;
 import de.unistuttgart.stayinsync.syncnode.logik_engine.database.GraphTopologicalSorterService;
+import de.unistuttgart.stayinsync.syncnode.logik_engine.nodes.Node;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 
@@ -32,7 +32,7 @@ public class LogicGraphEvaluator {
         }
 
         // Reset results before evaluation
-        for(Node node : allNodesInGraph) {
+        for (Node node : allNodesInGraph) {
             node.setCalculatedResult(null);
         }
 

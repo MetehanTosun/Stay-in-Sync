@@ -1,18 +1,17 @@
-package de.unistuttgart.stayinsync.syncnode.logik_engine.database;
+package de.unistuttgart.stayinsync.syncnode.logik_engine;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.networknt.schema.JsonSchema;
 import com.networknt.schema.JsonSchemaFactory;
 import com.networknt.schema.SpecVersion.VersionFlag;
+import de.unistuttgart.stayinsync.syncnode.logik_engine.logic_operator.LogicOperator;
 import de.unistuttgart.stayinsync.syncnode.logik_engine.nodes.ConstantNode;
 import de.unistuttgart.stayinsync.syncnode.logik_engine.nodes.LogicNode;
-import de.unistuttgart.stayinsync.syncnode.logik_engine.logic_operator.LogicOperator;
 import de.unistuttgart.stayinsync.syncnode.logik_engine.nodes.Node;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 
-import java.util.Collections;
 import java.util.List;
 
 /**
