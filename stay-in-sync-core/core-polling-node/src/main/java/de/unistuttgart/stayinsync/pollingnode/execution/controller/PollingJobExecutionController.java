@@ -4,6 +4,7 @@ import de.unistuttgart.stayinsync.pollingnode.exceptions.FaultySourceSystemApiRe
 import de.unistuttgart.stayinsync.pollingnode.exceptions.PollingJobAlreadyExistsException;
 import de.unistuttgart.stayinsync.pollingnode.exceptions.PollingJobExecutionException;
 import de.unistuttgart.stayinsync.pollingnode.exceptions.PollingJobNotFoundException;
+import de.unistuttgart.stayinsync.pollingnode.execution.executor.ApiDetailsContainerForExecutor;
 import de.unistuttgart.stayinsync.pollingnode.execution.executor.PollingJobQuarzExecutor;
 import de.unistuttgart.stayinsync.transport.dto.SourceSystemApiRequestConfigurationMessageDTO;
 import io.quarkus.logging.Log;
@@ -25,10 +26,12 @@ public class PollingJobExecutionController {
 
     private Scheduler scheduler;
     private final Map<Long, JobKey> supportedJobs;
+    private final ApiDetailsContainerForExecutor apiDetailsContainerForExecutor;
 
-    public PollingJobExecutionController(final RestClient restClient) {
+    public PollingJobExecutionController(final ApiDetailsContainerForExecutor apiDetailsContainerForExecutor) {
         super();
         this.supportedJobs = new HashMap<>();
+        this.apiDetailsContainerForExecutor = apiDetailsContainerForExecutor;
     }
 
     @PostConstruct
@@ -99,6 +102,7 @@ public class PollingJobExecutionController {
         try {
             final JobDetail job = createJobWithInformation(apiRequestConfigurationMessage);
             supportedJobs.put(apiRequestConfigurationMessage.id(), job.getKey());
+            apiDetailsContainerForExecutor.putKeyAndElementInMap(apiRequestConfigurationMessage.id(), apiRequestConfigurationMessage);
             activateJobIfNeeded(apiRequestConfigurationMessage, job);
 
         } catch (SchedulerException e) {
@@ -142,7 +146,9 @@ public class PollingJobExecutionController {
             scheduler.deleteJob(supportedJobs.get(apiRequestConfigurationMessage.id()));
             final JobDetail job = createJobWithInformation(apiRequestConfigurationMessage);
             supportedJobs.put(apiRequestConfigurationMessage.id(), job.getKey());
+            apiDetailsContainerForExecutor.putKeyAndElementInMap(apiRequestConfigurationMessage.id(), apiRequestConfigurationMessage);
             activateJobIfNeeded(apiRequestConfigurationMessage, job);
+
 
         } catch (SchedulerException e) {
             Log.error("Failed to schedule polling job for API: " + apiRequestConfigurationMessage.id(), e);
@@ -180,6 +186,8 @@ public class PollingJobExecutionController {
         if (jobKey != null) {
             try {
                 boolean deleted = scheduler.deleteJob(jobKey);
+                apiDetailsContainerForExecutor.removeKeyAndElementInMap(id);
+
                 if (deleted) {
                     Log.infof("Polling job stopped successfully for API: %s", id);
                 } else {
