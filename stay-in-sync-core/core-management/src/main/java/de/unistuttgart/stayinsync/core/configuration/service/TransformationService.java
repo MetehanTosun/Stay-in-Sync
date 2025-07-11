@@ -70,6 +70,17 @@ public class TransformationService {
         return Transformation.findByIdOptional(id);
     }
 
+    public Optional<TransformationScript> findScriptById(Long transformationId) {
+        Log.debugf("Finding script with Transformation id %d", transformationId);
+        Optional<Transformation> transformation = Transformation.findByIdOptional(transformationId);
+
+        if (transformation.isPresent()) {
+            return Optional.ofNullable(transformation.get().transformationScript);
+        } else {
+            throw new CoreManagementException(Response.Status.NOT_FOUND, "Unable to find Transformation", "There is no transformation with id %s", transformationId);
+        }
+    }
+
     @Transactional(SUPPORTS)
     public List<Transformation> findAll() {
         Log.debug("Getting all transformations.");

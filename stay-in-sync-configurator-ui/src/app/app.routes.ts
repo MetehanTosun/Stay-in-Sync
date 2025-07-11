@@ -12,6 +12,7 @@ import { EdcBaseComponent } from './features/edc/components/edc-base/edc-base.co
 import {HelpPageComponent} from './features/help-page/help-page.component';
 import {SyncJobPageComponent} from './features/sync-job/components/sync-job-page/sync-job-page.component';
 
+import { ScriptEditorPageComponent } from './features/script-editor/script-editor-page/script-editor-page.component';
 
 
 export const routes: Routes = [
@@ -23,6 +24,9 @@ export const routes: Routes = [
 
   // Route für Transformation Scripts
   { path: 'transformation-scripts', component: ConfigurationscriptsBaseComponent },
+
+  // Route für Script Editor
+  { path: 'script-editor/:transformationId', component: ScriptEditorPageComponent},
 
   // Route für Source System
   {

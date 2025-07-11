@@ -1,9 +1,6 @@
 package de.unistuttgart.stayinsync.core.configuration.domain.entities.sync;
 
-import jakarta.persistence.DiscriminatorValue;
-import jakarta.persistence.Entity;
-import jakarta.persistence.ManyToOne;
-import jakarta.persistence.OneToMany;
+import jakarta.persistence.*;
 
 import java.util.List;
 import java.util.Set;
@@ -13,6 +10,7 @@ import java.util.Set;
 public class SourceSystemEndpoint extends SyncSystemEndpoint {
 
     @ManyToOne
+    @JoinColumn(name = "sync_system_id", insertable = false, updatable = false)
     public SourceSystem sourceSystem;
 
     @OneToMany(mappedBy = "sourceSystemEndpoint")
