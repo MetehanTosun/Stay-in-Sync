@@ -1,7 +1,7 @@
 package de.unistuttgart.stayinsync.core.configuration.mapping;
 
 import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.ApiEndpointQueryParamValue;
-import de.unistuttgart.stayinsync.core.configuration.rest.dtos.ApiEndpoindQueryParamValueDTO;
+import de.unistuttgart.stayinsync.core.configuration.rest.dtos.ApiEndpointQueryParamValueDTO;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.MappingConstants;
@@ -14,11 +14,11 @@ public interface ApiEndpointQueryParamValueMapper {
     @Mapping(target = "requestConfiguration", ignore = true)
     @Mapping(target = "queryParam", ignore = true)
     @Mapping(source = "paramValue", target = "selectedValue")
-    ApiEndpointQueryParamValue mapToEntity(ApiEndpoindQueryParamValueDTO queryParamConfigurationDTO);
+    ApiEndpointQueryParamValue mapToEntity(ApiEndpointQueryParamValueDTO queryParamConfigurationDTO);
 
     @Mapping(target = "id", ignore = true)
     void mapFullUpdate(ApiEndpointQueryParamValue input, @MappingTarget ApiEndpointQueryParamValue target);
 
-    List<ApiEndpoindQueryParamValueDTO> mapToDTOList(List<ApiEndpointQueryParamValue> apiRequestHeaders);
+    List<ApiEndpointQueryParamValueDTO> mapToDTOList(List<ApiEndpointQueryParamValue> apiRequestHeaders);
 
 }

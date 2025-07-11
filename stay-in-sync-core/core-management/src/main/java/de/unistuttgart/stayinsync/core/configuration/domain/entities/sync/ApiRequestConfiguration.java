@@ -13,7 +13,7 @@ public abstract class ApiRequestConfiguration extends PanacheEntity {
 
     public String name;
 
-    public boolean used;
+    public boolean active;
 
     @ManyToOne
     public SyncSystemEndpoint syncSystemEndpoint;

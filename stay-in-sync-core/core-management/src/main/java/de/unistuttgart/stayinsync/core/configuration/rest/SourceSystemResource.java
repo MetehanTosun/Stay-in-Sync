@@ -72,6 +72,16 @@ public class SourceSystemResource {
         return Response.ok(sourceSystemFullUpdateMapper.mapToDTO(found)).build();
     }
 
+    @GET
+    @Path("/systemNames")
+    public Response getAllSourceSystemNames() {
+        List<String> names = SourceSystem.<SourceSystem>streamAll()
+                .map(system -> system.name)
+                .toList();
+
+        return Response.ok(names).build();
+    }
+
     @POST
     @Operation(summary = "Creates a new source system")
     @APIResponse(responseCode = "201", description = "The URI of the created source system", headers = @Header(name = HttpHeaders.LOCATION, schema = @Schema(implementation = URI.class)))
