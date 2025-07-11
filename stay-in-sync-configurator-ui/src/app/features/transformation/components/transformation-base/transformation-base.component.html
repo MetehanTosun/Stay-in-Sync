@@ -28,14 +28,14 @@
            label="RemoveScript"
            [style]="{'width': '8rem', 'background-color': '#d32f2f', 'border': '#d32f2f' }"
            (click)="removeScript(rowData)"
-           [style.display]="isAdded(rowData) ? 'none' : ''">
+           [style.display]="rowData.added ? 'none' : ''">
          </p-button>
        </ng-container>
        <ng-template #addScriptBtn>
          <p-button
            label="addScript"
            (click)="addScript(rowData)"
-           [disabled]="isAdded(rowData)">
+           [disabled]="rowData.added">
          </p-button>
        </ng-template>
      </td>

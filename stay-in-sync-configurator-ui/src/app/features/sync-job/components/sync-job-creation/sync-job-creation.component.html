@@ -26,9 +26,15 @@
                   id="syncjob_name"
                   placeholder=" "
                   [(ngModel)]="syncJobName"
+                  name="syncJobName"
                   class="w-80"
+                  required
+                  #nameInput="ngModel"
                 />
                 <label for="syncjob_name">Name</label>
+                <div *ngIf="nameInput.invalid && nameInput.touched" class="text-red-500 text-xs mt-1">
+                  name must be given.
+                </div>
               </p-floatlabel>
             </div>
             <div class="border-2 border-dashed border-surface-200 dark:border-surface-700 rounded bg-surface-50 dark:bg-surface-950 flex-auto flex justify-center items-center font-medium">

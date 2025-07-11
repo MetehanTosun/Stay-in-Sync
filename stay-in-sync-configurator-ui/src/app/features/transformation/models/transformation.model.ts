@@ -3,7 +3,9 @@ import {SourceSystemApiRequestConfiguration} from '../../script-editor/models/ar
 export interface Transformation{
   transformationRuleId?: number | null;
   targetSystemEndpointId?: number | null;
-  sourceSystemApiRequestConfiguration?: SourceSystemApiRequestConfiguration;
+  sourceSystemApiRequestConfigurations?: SourceSystemApiRequestConfiguration[];
+  sourceSystemVariables?: any[];
+  targetSystemEndpoint?: any;
   id?: number;
   name?: string;
   description?: string;
