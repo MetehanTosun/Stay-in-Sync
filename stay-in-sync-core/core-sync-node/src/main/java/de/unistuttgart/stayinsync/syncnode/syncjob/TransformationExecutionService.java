@@ -8,18 +8,13 @@ import de.unistuttgart.stayinsync.syncnode.domain.TransformJob;
 import de.unistuttgart.stayinsync.syncnode.logik_engine.LogicGraphEvaluator;
 import de.unistuttgart.stayinsync.syncnode.logik_engine.nodes.Node;
 import io.quarkus.logging.Log;
-import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
-import io.smallrye.mutiny.groups.*;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
-import jakarta.json.JsonObject;
 import org.eclipse.microprofile.context.ManagedExecutor;
 
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.Executor;
-import java.util.function.Predicate;
 
 @ApplicationScoped
 public class TransformationExecutionService {
