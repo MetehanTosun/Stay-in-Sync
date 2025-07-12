@@ -75,121 +75,128 @@ export class SyncJobCreationComponent implements OnInit {
 
   private messageService = inject(MessageService);
 
-/**
- * @property {SyncJob} mySyncJob - Repräsentiert den aktuellen Sync Job, der erstellt oder bearbeitet wird.
- */
-mySyncJob: SyncJob = {};
+  /**
+   * @property {SyncJob} mySyncJob - Repräsentiert den aktuellen Sync Job, der erstellt oder bearbeitet wird.
+   */
+  mySyncJob: SyncJob = {};
 
-private _syncJobName: string = '';
-private deployed: boolean = false;
+  private _syncJobName: string = '';
+  private deployed: boolean = false;
 
-/**
- * @property {string} syncJobName - Name des Sync Jobs.
- */
-get syncJobName(): string {
-  return this._syncJobName;
-}
-set syncJobName(value: string) {
-  this._syncJobName = value;
-  this.updateMySyncJob();
-}
+  /**
+   * @property {string} syncJobName - Name des Sync Jobs.
+   */
+  get syncJobName(): string {
+    return this._syncJobName;
+  }
 
-private _syncJobDescription: string = '';
+  set syncJobName(value: string) {
+    this._syncJobName = value;
+    this.updateMySyncJob();
+  }
 
-/**
- * @property {string} syncJobDescription - Beschreibung des Sync Jobs.
- */
-get syncJobDescription(): string {
-  return this._syncJobDescription;
-}
-set syncJobDescription(value: string) {
-  this._syncJobDescription = value;
-  this.updateMySyncJob();
-}
+  private _syncJobDescription: string = '';
 
-private _selectedSourceSystems: SourceSystem[] = [];
+  /**
+   * @property {string} syncJobDescription - Beschreibung des Sync Jobs.
+   */
+  get syncJobDescription(): string {
+    return this._syncJobDescription;
+  }
 
-/**
- * @property {SourceSystem[]} selectedSourceSystems - Liste der ausgewählten Quellsysteme für den Sync Job.
- */
-get selectedSourceSystems(): SourceSystem[] {
-  return this._selectedSourceSystems;
-}
-set selectedSourceSystems(value: SourceSystem[]) {
-  this._selectedSourceSystems = value;
-  this.updateMySyncJob();
-}
+  set syncJobDescription(value: string) {
+    this._syncJobDescription = value;
+    this.updateMySyncJob();
+  }
 
-/**
- * @property {SourceSystem[]} sourceSystems - Liste aller verfügbaren Quellsysteme.
- */
-sourceSystems: SourceSystem[] = [];
-private _isSimulation: boolean = false;
+  private _selectedSourceSystems: SourceSystem[] = [];
 
-/**
- * @property {boolean} isSimulation - Gibt an, ob der Sync Job im Simulationsmodus ist.
- */
-get isSimulation(): boolean {
-  return this._isSimulation;
-}
-set isSimulation(value: boolean) {
-  this._isSimulation = value;
-  this.updateMySyncJob();
-}
+  /**
+   * @property {SourceSystem[]} selectedSourceSystems - Liste der ausgewählten Quellsysteme für den Sync Job.
+   */
+  get selectedSourceSystems(): SourceSystem[] {
+    return this._selectedSourceSystems;
+  }
 
-private _transformations: Transformation[] = [];
+  set selectedSourceSystems(value: SourceSystem[]) {
+    this._selectedSourceSystems = value;
+    this.updateMySyncJob();
+  }
 
-/**
- * @property {Transformation[]} transformations - Liste der Transformationen für den Sync Job.
- */
-get transformations(): Transformation[] {
-  return this._transformations;
-}
-set transformations(value: Transformation[]) {
-  this._transformations = value;
-  this.updateMySyncJob();
-}
+  /**
+   * @property {SourceSystem[]} sourceSystems - Liste aller verfügbaren Quellsysteme.
+   */
+  sourceSystems: SourceSystem[] = [];
+  private _isSimulation: boolean = false;
+
+  /**
+   * @property {boolean} isSimulation - Gibt an, ob der Sync Job im Simulationsmodus ist.
+   */
+  get isSimulation(): boolean {
+    return this._isSimulation;
+  }
+
+  set isSimulation(value: boolean) {
+    this._isSimulation = value;
+    this.updateMySyncJob();
+  }
+
+  private _transformations: Transformation[] = [];
+
+  /**
+   * @property {Transformation[]} transformations - Liste der Transformationen für den Sync Job.
+   */
+  get transformations(): Transformation[] {
+    return this._transformations;
+  }
+
+  set transformations(value: Transformation[]) {
+    this._transformations = value;
+    this.updateMySyncJob();
+  }
 
 // NEU: arcs und variables
-private _arcs: any[] = [];
-private _variables: any[] = [];
+  private _arcs: any[] = [];
+  private _variables: any[] = [];
 
-/**
- * @property {any[]} arcs - Liste der Arcs für den Sync Job.
- */
-get arcs(): any[] {
-  return this._arcs;
-}
-set arcs(value: any[]) {
-  this._arcs = value;
-  this.updateMySyncJob();
-}
+  /**
+   * @property {any[]} arcs - Liste der Arcs für den Sync Job.
+   */
+  get arcs(): any[] {
+    return this._arcs;
+  }
 
-/**
- * @property {any[]} variables - Liste der Variablen für den Sync Job.
- */
-get variables(): any[] {
-  return this._variables;
-}
-set variables(value: any[]) {
-  this._variables = value;
-  this.updateMySyncJob();
-}
+  set arcs(value: any[]) {
+    this._arcs = value;
+    this.updateMySyncJob();
+  }
 
-/**
- * Aktualisiert das `mySyncJob`-Objekt mit den aktuellen Werten der Komponenten-Properties.
- */
-private updateMySyncJob() {
-  this.mySyncJob = {
-    name: this._syncJobName,
-    description: this._syncJobDescription,
-    sourceSystems: this._selectedSourceSystems,
-    isSimulation: this._isSimulation,
-    transformations: this._transformations,
-    arcs: this._arcs,
-    variables: this._variables
-  } as SyncJob;
-}
+  /**
+   * @property {any[]} variables - Liste der Variablen für den Sync Job.
+   */
+  get variables(): any[] {
+    return this._variables;
+  }
+
+  set variables(value: any[]) {
+    this._variables = value;
+    this.updateMySyncJob();
+  }
+
+  /**
+   * Aktualisiert das `mySyncJob`-Objekt mit den aktuellen Werten der Komponenten-Properties.
+   */
+  private updateMySyncJob() {
+    this.mySyncJob = {
+      name: this._syncJobName,
+      description: this._syncJobDescription,
+      sourceSystems: this._selectedSourceSystems,
+      isSimulation: this._isSimulation,
+      transformations: this._transformations,
+      arcs: this._arcs,
+      variables: this._variables
+    } as SyncJob;
+  }
 
   /**
    * @constructor
@@ -199,7 +206,8 @@ private updateMySyncJob() {
    * @param {TransformationTempStoreService} tempStore - Temporary store for transformations.
    * @param transformationService
    */
-  constructor(private router: Router, private sourceSystemService: SourceSystemService, readonly syncJobService: SyncJobService, private tempStore: TransformationTempStoreService, private transformationService : TransformationService) {}
+  constructor(private router: Router, private sourceSystemService: SourceSystemService, readonly syncJobService: SyncJobService, private tempStore: TransformationTempStoreService, private transformationService: TransformationService) {
+  }
 
   /**
    * Lifecycle hook that is called after the component is initialized.
@@ -213,16 +221,16 @@ private updateMySyncJob() {
           this.mySyncJob = job;
           this.syncJobName = job.name || '';
           this.syncJobDescription = job.description || '';
-         this.selectedSourceSystems = (job.transformations || [])
-           .flatMap((t: Transformation) =>
-             Array.isArray(t.sourceSystemApiRequestConfigurations)
-               ? t.sourceSystemApiRequestConfigurations.map(cfg => cfg.sourceSystem)
-               : []
-           )
-           .filter(
-             (s: SourceSystem | undefined, i: number, arr: (SourceSystem | undefined)[]) =>
-               s !== undefined && arr.findIndex(ss => ss && s && ss.id === s.id) === i
-           ) as SourceSystem[];
+          this.selectedSourceSystems = (job.transformations || [])
+            .flatMap((t: Transformation) =>
+              Array.isArray(t.sourceSystemApiRequestConfigurations)
+                ? t.sourceSystemApiRequestConfigurations.map(cfg => cfg.sourceSystem)
+                : []
+            )
+            .filter(
+              (s: SourceSystem | undefined, i: number, arr: (SourceSystem | undefined)[]) =>
+                s !== undefined && arr.findIndex(ss => ss && s && ss.id === s.id) === i
+            ) as SourceSystem[];
           console.log("Selected Source Systems:", this.selectedSourceSystems);
           this.isSimulation = job.isSimulation || false;
           this.transformations = Array.from(job.transformations || []);
@@ -270,7 +278,7 @@ private updateMySyncJob() {
   private loadSystems() {
     this.sourceSystemService.getAll().subscribe({
       next: list => {
-        this.sourceSystems = list.map(s => ({ id: s.id, name: s.name}));
+        this.sourceSystems = list.map(s => ({id: s.id, name: s.name}));
       },
       error: err => {
         console.error(err);
@@ -287,17 +295,15 @@ private updateMySyncJob() {
       name: this.syncJobName,
       description: this.syncJobDescription,
       isSimulation: this.isSimulation,
-      transformations: this.transformations.map(t => ({
-        id: t.id,
-        name: t.name,
-        description: t.description,
-        transformationRule: t.transformationRule,
-        transformationScript: t.script,
-      })),
+      transformationIds: this.transformations.map(t => t.id),
       deployed: this.deployed
     };
     if (syncJob.name === '' || syncJob.name === null) {
-      this.messageService.add({ severity: 'error', summary: 'Validation Failed', detail: 'Please enter a name before saving.' })
+      this.messageService.add({
+        severity: 'error',
+        summary: 'Validation Failed',
+        detail: 'Please enter a name before saving.'
+      })
       return;
     }
     console.log("Creating Sync Job with data:", syncJob);
@@ -318,7 +324,11 @@ private updateMySyncJob() {
       // Create (POST)
       this.syncJobService.create(syncJob).subscribe({
         next: (createdJob) => {
-          this.messageService.add({ severity: 'success', summary: 'Sync Job Created', detail: `Sync Job "${syncJob.name}" created successfully.` });
+          this.messageService.add({
+            severity: 'success',
+            summary: 'Sync Job Created',
+            detail: `Sync Job "${syncJob.name}" created successfully.`
+          });
           this.cancel();
           this.resetStepperData();
         },
@@ -339,33 +349,33 @@ private updateMySyncJob() {
     console.log("Transformations changed:", this.transformations);
   }
 
- /**
-  * Updates the lists of arcs and variables based on the transformations.
-  * This method iterates over the transformations, extracts `sourceSystemApiRequestConfigurations`
-  * and `sourceSystemVariables`, removes duplicates, and updates the corresponding properties.
-  */
- private updateArcsAndVariables() {
-   // Temporary arrays for all arcs and variables
-   const allArcs: any[] = [];
-   const allVariables: any[] = [];
+  /**
+   * Updates the lists of arcs and variables based on the transformations.
+   * This method iterates over the transformations, extracts `sourceSystemApiRequestConfigurations`
+   * and `sourceSystemVariables`, removes duplicates, and updates the corresponding properties.
+   */
+  private updateArcsAndVariables() {
+    // Temporary arrays for all arcs and variables
+    const allArcs: any[] = [];
+    const allVariables: any[] = [];
 
-   // Iterate over all transformations
-   this._transformations.forEach(t => {
-     // Add `sourceSystemApiRequestConfigurations` to `allArcs` if present
-     if (t.sourceSystemApiRequestConfigurations && Array.isArray(t.sourceSystemApiRequestConfigurations)) {
-       allArcs.push(...t.sourceSystemApiRequestConfigurations);
-     }
-     // Add `sourceSystemVariables` to `allVariables` if present
-     if (t.sourceSystemVariables && Array.isArray(t.sourceSystemVariables)) {
-       allVariables.push(...t.sourceSystemVariables);
-     }
-   });
+    // Iterate over all transformations
+    this._transformations.forEach(t => {
+      // Add `sourceSystemApiRequestConfigurations` to `allArcs` if present
+      if (t.sourceSystemApiRequestConfigurations && Array.isArray(t.sourceSystemApiRequestConfigurations)) {
+        allArcs.push(...t.sourceSystemApiRequestConfigurations);
+      }
+      // Add `sourceSystemVariables` to `allVariables` if present
+      if (t.sourceSystemVariables && Array.isArray(t.sourceSystemVariables)) {
+        allVariables.push(...t.sourceSystemVariables);
+      }
+    });
 
-   // Remove duplicates in `allArcs` and update `_arcs`
-   this._arcs = Array.from(new Set(allArcs.map(a => JSON.stringify(a)))).map(a => JSON.parse(a));
-   // Remove duplicates in `allVariables` and update `_variables`
-   this._variables = Array.from(new Set(allVariables.map(v => JSON.stringify(v)))).map(v => JSON.parse(v));
- }
+    // Remove duplicates in `allArcs` and update `_arcs`
+    this._arcs = Array.from(new Set(allArcs.map(a => JSON.stringify(a)))).map(a => JSON.parse(a));
+    // Remove duplicates in `allVariables` and update `_variables`
+    this._variables = Array.from(new Set(allVariables.map(v => JSON.stringify(v)))).map(v => JSON.parse(v));
+  }
 
   /**
    * Resets the stepper data and clears the component state.

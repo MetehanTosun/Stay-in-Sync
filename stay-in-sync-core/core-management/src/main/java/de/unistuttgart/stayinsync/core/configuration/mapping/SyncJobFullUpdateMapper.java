@@ -1,6 +1,7 @@
 package de.unistuttgart.stayinsync.core.configuration.mapping;
 
 import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.SyncJob;
+import de.unistuttgart.stayinsync.core.configuration.rest.dtos.SyncJobCreationDTO;
 import de.unistuttgart.stayinsync.core.configuration.rest.dtos.SyncJobDTO;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
@@ -33,4 +34,6 @@ public interface SyncJobFullUpdateMapper {
     SyncJob mapToEntity(SyncJobDTO input);
 
     List<SyncJob> mapToEntityList(List<SyncJobDTO> input);
+
+    SyncJob mapToEntity(SyncJobCreationDTO syncJobDTO);
 }
