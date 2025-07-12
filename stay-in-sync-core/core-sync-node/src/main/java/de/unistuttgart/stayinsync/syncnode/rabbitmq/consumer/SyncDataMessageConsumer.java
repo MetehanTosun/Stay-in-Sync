@@ -7,8 +7,10 @@ import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.DeliverCallback;
 import com.rabbitmq.client.Delivery;
 import de.unistuttgart.stayinsync.exception.SyncNodeException;
-import de.unistuttgart.stayinsync.transport.dto.SourceSystemApiRequestConfigurationMessageDTO;
-import de.unistuttgart.stayinsync.transport.dto.SyncDataMessageDTO;
+import de.unistuttgart.stayinsync.syncnode.domain.ExecutionPayload;
+import de.unistuttgart.stayinsync.syncnode.syncjob.DispatcherStateService;
+import de.unistuttgart.stayinsync.syncnode.syncjob.TransformationExecutionService;
+import de.unistuttgart.stayinsync.transport.dto.*;
 import io.quarkiverse.rabbitmqclient.RabbitMQClient;
 import io.quarkus.logging.Log;
 import io.quarkus.runtime.StartupEvent;
@@ -18,9 +20,7 @@ import jakarta.inject.Inject;
 
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 
 @ApplicationScoped
 public class SyncDataMessageConsumer {
@@ -30,6 +30,12 @@ public class SyncDataMessageConsumer {
 
     @Inject
     ObjectMapper objectMapper;
+
+    @Inject
+    DispatcherStateService dispatcherStateService;
+
+    @Inject
+    TransformationExecutionService transformationExecutionService;
 
     private Channel channel;
 
@@ -74,7 +80,7 @@ public class SyncDataMessageConsumer {
     }
 
     /**
-     * Called when the the consumer got canceled from consuming
+     * Called when the consumer got canceled from consuming
      *
      * @return
      */
