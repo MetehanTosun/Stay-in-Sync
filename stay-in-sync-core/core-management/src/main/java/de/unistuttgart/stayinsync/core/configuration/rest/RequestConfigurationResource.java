@@ -67,9 +67,11 @@ public class RequestConfigurationResource {
             @Context UriInfo uriInfo) {
         var persistedApiRequestConfiguration = this.sourceSystemApiRequestConfigurationService.create(arcDto, endpointId);
         var builder = uriInfo.getAbsolutePathBuilder().path(Long.toString(persistedApiRequestConfiguration.id));
+
+        GetRequestConfigurationDTO responseDto = fullUpdateMapper.mapToDTOGet(persistedApiRequestConfiguration);
         Log.debugf("New api-request-configuration created with URI  %s", builder.build().toString());
 
-        return Response.created(builder.build()).build();
+        return Response.created(builder.build()).entity(responseDto).build();
     }
 
     /*@POST

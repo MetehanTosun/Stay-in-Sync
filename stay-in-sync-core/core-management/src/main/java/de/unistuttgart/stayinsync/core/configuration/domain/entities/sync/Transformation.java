@@ -1,5 +1,7 @@
 package de.unistuttgart.stayinsync.core.configuration.domain.entities.sync;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import io.quarkus.hibernate.orm.panache.PanacheEntity;
 import jakarta.persistence.*;
 
@@ -15,10 +17,13 @@ public class Transformation extends PanacheEntity {
     public String description;
 
     @ManyToOne
+    @JsonBackReference("syncJob-back-reference")
     public SyncJob syncJob;
 
-    @OneToOne
+    @OneToOne(cascade = CascadeType.ALL)
+    @JsonManagedReference("transformationScript-reference")
     public TransformationScript transformationScript;
+
 
     @OneToOne
     public TransformationRule transformationRule;
@@ -30,7 +35,6 @@ public class Transformation extends PanacheEntity {
             inverseJoinColumns = @JoinColumn(name = "source_system_api_request_configuration_id")
     )
     public Set<SourceSystemApiRequestConfiguration> sourceSystemApiRequestConfigrations = new HashSet<>();
-
 
     @ManyToMany
     @JoinTable(

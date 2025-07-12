@@ -2,7 +2,7 @@ import { Injectable } from '@angular/core';
 import { Router } from '@angular/router';
 
 export interface ScriptEditorData {
-  id: number | string;
+  id?: number | string;
   transformationId: number | string;
   scriptName?: string;
 }

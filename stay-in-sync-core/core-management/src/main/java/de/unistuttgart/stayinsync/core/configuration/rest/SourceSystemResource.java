@@ -92,7 +92,7 @@ public class SourceSystemResource {
         SourceSystem sourceSystem = sourceSystemService.createSourceSystem(sourceSystemDTO);
         var builder = uriInfo.getAbsolutePathBuilder().path(Long.toString(sourceSystem.id));
         Log.debugf("New source system created with URI %s", builder.build().toString());
-        return Response.created(builder.build()).build();
+        return Response.created(builder.build()).entity(sourceSystemFullUpdateMapper.mapToDTO(sourceSystem)).build();
         // TODO: Throw Exception in case of invalid source system: we need to know how
         // the source system looks like first(final model)
     }

@@ -38,7 +38,7 @@ public class OpenApiSpecificationParserService {
     @Transactional
     public void synchronizeFromSpec(SourceSystem sourceSystem) {
         if (sourceSystem.openApiSpec == null || sourceSystem.openApiSpec.length == 0) {
-            Log.infof("No OpenAPI spec provided for SourceSystem ID %id. Skipping sync.", sourceSystem.id);
+            Log.infof("No OpenAPI spec provided for SourceSystem ID %d. Skipping sync.", sourceSystem.id);
             return;
         }
 
@@ -161,6 +161,7 @@ public class OpenApiSpecificationParserService {
     /**
      * A helper method to map a header name string to your specific enum type.
      * This provides some intelligence to the parsing process.
+     *
      * @param headerName The header name from the OpenAPI spec.
      * @return The corresponding ApiRequestHeaderType enum.
      */

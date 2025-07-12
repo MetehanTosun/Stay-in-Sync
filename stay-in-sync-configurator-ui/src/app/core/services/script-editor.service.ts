@@ -37,7 +37,9 @@ export class ScriptEditorService {
   constructor() {}
 
   getSourceSystemNames(): Observable<string[]> {
-    return this.http.get<string[]>(`${this.API_URL}/config/source-system/systemNames`);
+    return this.http.get<string[]>(
+      `${this.API_URL}/config/source-system/systemNames`
+    );
   }
 
   /**
@@ -49,7 +51,7 @@ export class ScriptEditorService {
     request: ArcTestCallRequest
   ): Observable<ArcTestCallResponse> {
     return this.http.post<ArcTestCallResponse>(
-      `${this.API_URL}/arc/test-call`,
+      `${this.API_URL}/config/arc-test-call`,
       request
     ); // TODO: Bind resource endpoint
   }
@@ -109,8 +111,13 @@ export class ScriptEditorService {
     );
   }
 
-  getArcWizardContextData(systemId: number, endpointId: number): Observable<ArcWizardContextData> {
-    const params$ = this.http.get<ApiEndpointParamDTO[]>(`${this.API_URL}/config/endpoint/${endpointId}/query-param`); // TODO GET PROPER ENDPOINT
+  getArcWizardContextData(
+    systemId: number,
+    endpointId: number
+  ): Observable<ArcWizardContextData> {
+    const params$ = this.http.get<ApiEndpointParamDTO[]>(
+      `${this.API_URL}/config/endpoint/${endpointId}/query-param`
+    ); // TODO GET PROPER ENDPOINT
 
     const headers$ = this.http.get<ApiHeaderDefinition[]>(
       `${this.API_URL}/config/sync-system/${systemId}/request-header` // TODO STREAMLINE API CONVENTIONS (sync/source)
@@ -121,7 +128,7 @@ export class ScriptEditorService {
         const pathParams: EndpointParameterDefinition[] = [];
         const queryParamDefinitions: EndpointParameterDefinition[] = [];
 
-        paramDtos.forEach(dto => {
+        paramDtos.forEach((dto) => {
           const definition: EndpointParameterDefinition = {
             name: dto.paramName,
             in: dto.queryParamType.toLowerCase() as 'path' | 'query',
@@ -130,7 +137,7 @@ export class ScriptEditorService {
             options: dto.values || [],
           };
 
-          if (definition.in === 'path'){
+          if (definition.in === 'path') {
             pathParams.push(definition);
           } else {
             queryParamDefinitions.push(definition);
@@ -161,11 +168,16 @@ export class ScriptEditorService {
     );
   }
 
-  saveScript(payload: ScriptPayload): Observable<ScriptPayload> {
-    return this.http.post<ScriptPayload>(
-      `${this.API_URL}/config/transformation-script`,
-      payload
-    );
+  saveScriptForTransformation(
+    transformationId: number,
+    payload: ScriptPayload
+  ): Observable<ScriptPayload> {
+    return this.http.put<ScriptPayload>(`${this.API_URL}/config/transformation/${transformationId}/script`, payload);
   }
-  
+
+  getScriptForTransformation(
+    transformationId: number
+  ): Observable<ScriptPayload> {
+    return this.http.get<ScriptPayload>(`${this.API_URL}/config/transformation/${transformationId}/script`);
+  }
 }
