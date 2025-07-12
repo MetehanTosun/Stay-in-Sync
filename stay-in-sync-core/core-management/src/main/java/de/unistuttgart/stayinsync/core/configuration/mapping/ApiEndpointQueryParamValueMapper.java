@@ -9,6 +9,7 @@ import org.mapstruct.MappingConstants;
 import org.mapstruct.MappingTarget;
 
 import java.util.List;
+import java.util.Set;
 
 @Mapper(componentModel = MappingConstants.ComponentModel.JAKARTA_CDI)
 public interface ApiEndpointQueryParamValueMapper {
@@ -18,8 +19,11 @@ public interface ApiEndpointQueryParamValueMapper {
     ApiEndpointQueryParamValue mapToEntity(ApiEndpointQueryParamValueDTO queryParamConfigurationDTO);
 
     @Mapping(target = "paramName", source = "queryParam.paramName")
+    @Mapping(target = "type", source = "queryParam.queryParamType")
     @Mapping(target = "paramValue", source = "selectedValue")
     ApiRequestParameterMessageDTO mapToRequestParameterDTO(ApiEndpointQueryParamValue queryParamValue);
+
+    Set<ApiRequestParameterMessageDTO> mapToRequestParameterMessageSet(Set<ApiEndpointQueryParamValue> queryParamValue);
 
     @Mapping(target = "id", ignore = true)
     void mapFullUpdate(ApiEndpointQueryParamValue input, @MappingTarget ApiEndpointQueryParamValue target);

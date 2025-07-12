@@ -10,7 +10,8 @@ import org.mapstruct.*;
 
 import java.util.List;
 
-@Mapper(componentModel = MappingConstants.ComponentModel.JAKARTA_CDI)
+@Mapper(componentModel = MappingConstants.ComponentModel.JAKARTA_CDI,
+        uses = ApiEndpointQueryParamValueMapper.class)
 public interface SourceSystemApiRequestConfigurationFullUpdateMapper {
 
     @Mapping(target = "id", ignore = true)
