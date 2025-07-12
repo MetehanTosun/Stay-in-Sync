@@ -3,6 +3,7 @@ package de.unistuttgart.stayinsync.pollingnode.execution.ressource;
 import de.unistuttgart.stayinsync.pollingnode.HttpRequestExecutionException;
 import de.unistuttgart.stayinsync.pollingnode.exceptions.FaultySourceSystemApiRequestMessageDtoException;
 import de.unistuttgart.stayinsync.transport.dto.ApiConnectionDetailsDTO;
+import de.unistuttgart.stayinsync.transport.dto.ParamType;
 import de.unistuttgart.stayinsync.transport.dto.SourceSystemMessageDTO;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.unchecked.Unchecked;
@@ -120,11 +121,8 @@ public class RestClient {
         request.putHeader(connectionDetails.sourceSystem().authDetails().headerName(), connectionDetails.sourceSystem().authDetails().apiKey());
         connectionDetails.requestHeader().forEach(header -> request.putHeader(header.headerName(), header.headerValue()));
         connectionDetails.requestParameters().forEach(parameter -> {
-            switch (parameter.type()) {
-                //TODO PathParam richtig einführen
-                //case PATH -> request.addPathParam(parameter.paramName(), parameter.paramValue());
-                case QUERY -> request.addQueryParam(parameter.paramName(), parameter.paramValue());
-                default -> throw new IllegalArgumentException("Unsupported parameter type: " + parameter.type());
+            if(parameter.type() == ParamType.QUERY){
+                request.addQueryParam(parameter.paramName(),parameter.paramValue());
             }
         });
     }
