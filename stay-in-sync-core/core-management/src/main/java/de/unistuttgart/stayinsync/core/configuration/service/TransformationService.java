@@ -2,7 +2,6 @@ package de.unistuttgart.stayinsync.core.configuration.service;
 
 import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.SourceSystemEndpoint;
 import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.Transformation;
-import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.TransformationRule;
 import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.TransformationScript;
 import de.unistuttgart.stayinsync.core.configuration.exception.CoreManagementException;
 import de.unistuttgart.stayinsync.core.configuration.mapping.TransformationMapper;
@@ -46,7 +45,7 @@ public class TransformationService {
 
         TransformationScript script = null;
         if (dto.transformationScriptId() != null) {
-             script = TransformationScript.<TransformationScript>findByIdOptional(dto.transformationScriptId())
+            script = TransformationScript.<TransformationScript>findByIdOptional(dto.transformationScriptId())
                     .orElseThrow(() -> new CoreManagementException(Response.Status.BAD_REQUEST, "Invalid Script ID", "TransformationScript with id %d not found.", dto.transformationScriptId()));
         }
 
@@ -63,7 +62,7 @@ public class TransformationService {
         //TODO: replace with api request configs
         //transformation.sourceSystemEndpoints = sourceEndpoints;
 
-        if (script!= null){
+        if (script != null) {
             script.transformation = transformation;
         }
 
@@ -93,7 +92,6 @@ public class TransformationService {
         return Transformation.listAll();
     }
 
-    @Transactional(SUPPORTS)
     public boolean delete(Long id) {
         Log.debugf("Deleting transformation with id %d", id);
         return Transformation.deleteById(id);

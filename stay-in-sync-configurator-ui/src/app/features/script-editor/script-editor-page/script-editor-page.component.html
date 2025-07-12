@@ -13,10 +13,15 @@
   >
     <ng-template pTemplate pTemplateType="panel">
       <div class="col-main-editor p-fluid">
-        <p-panel
-          header="TypeScript Transformation Script"
-          styleClass="h-full editor-panel"
-        >
+        <p-panel styleClass="h-full editor-panel">
+
+          <ng-template pTemplate="header">
+            <p-float-label variant="in">
+              <input pInputText id="script_name" [(ngModel)]="preloadedData!.scriptName" autocomplete="off"/>
+              <label for="script_name">Script Name</label>
+            </p-float-label>
+          </ng-template>
+
           <div class="monaco-wrapper">
             <ngx-monaco-editor
               style="width: 100%; height: 100%"
