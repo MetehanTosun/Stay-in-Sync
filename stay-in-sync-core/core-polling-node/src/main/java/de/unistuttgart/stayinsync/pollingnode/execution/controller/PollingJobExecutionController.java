@@ -4,16 +4,12 @@ import de.unistuttgart.stayinsync.pollingnode.exceptions.FaultySourceSystemApiRe
 import de.unistuttgart.stayinsync.pollingnode.exceptions.PollingJobAlreadyExistsException;
 import de.unistuttgart.stayinsync.pollingnode.exceptions.PollingJobExecutionException;
 import de.unistuttgart.stayinsync.pollingnode.exceptions.PollingJobNotFoundException;
-import de.unistuttgart.stayinsync.pollingnode.execution.executor.ApiDetailsContainerForExecutor;
-import de.unistuttgart.stayinsync.pollingnode.execution.executor.PollingJobQuarzExecutor;
+import de.unistuttgart.stayinsync.pollingnode.execution.executor.PollingJob;
 import de.unistuttgart.stayinsync.transport.dto.SourceSystemApiRequestConfigurationMessageDTO;
 import io.quarkus.logging.Log;
-import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
-
-import de.unistuttgart.stayinsync.pollingnode.execution.ressource.RestClient;
-
+import jakarta.enterprise.context.ApplicationScoped;
 import org.quartz.*;
 import org.quartz.impl.StdSchedulerFactory;
 
@@ -26,12 +22,10 @@ public class PollingJobExecutionController {
 
     private Scheduler scheduler;
     private final Map<Long, JobKey> supportedJobs;
-    private final ApiDetailsContainerForExecutor apiDetailsContainerForExecutor;
 
-    public PollingJobExecutionController(final ApiDetailsContainerForExecutor apiDetailsContainerForExecutor) {
+    public PollingJobExecutionController() {
         super();
         this.supportedJobs = new HashMap<>();
-        this.apiDetailsContainerForExecutor = apiDetailsContainerForExecutor;
     }
 
     @PostConstruct
@@ -52,12 +46,13 @@ public class PollingJobExecutionController {
 
     /**
      * Creates PollingJob with the given information.
+     *
      * @param apiRequestConfigurationMessage hold information for creating the PollingJob in future processes
-     * @throws PollingJobAlreadyExistsException if a PollingJob with this id already existed
+     * @throws PollingJobAlreadyExistsException                if a PollingJob with this id already existed
      * @throws FaultySourceSystemApiRequestMessageDtoException if Exceptions are thrown in called methods
      */
     public void startPollingJobExecution(final SourceSystemApiRequestConfigurationMessageDTO apiRequestConfigurationMessage) throws PollingJobAlreadyExistsException, FaultySourceSystemApiRequestMessageDtoException, PollingJobExecutionException {
-        if(!pollingJobExists(apiRequestConfigurationMessage.id())) {
+        if (!pollingJobExists(apiRequestConfigurationMessage.id())) {
             pollingJobCreation(apiRequestConfigurationMessage);
         } else {
             throw new PollingJobAlreadyExistsException("PollingJob Creation failed with this id " + apiRequestConfigurationMessage.id() + "already exists. ");
@@ -67,14 +62,21 @@ public class PollingJobExecutionController {
     /*@
     @ ensures supportedJobs.keySet unchanged
      */
+
     /**
      * Updates specific PollingJobs in activeJobs Map, by activating, deactivating or changing its info.
+     *
      * @param apiRequestConfigurationMessageDTO holds information for updatingProcess
      * @throws PollingJobNotFoundException if activeJobs does not contain the id.
      */
     public void reconfigurePollingJobExecution(final SourceSystemApiRequestConfigurationMessageDTO apiRequestConfigurationMessageDTO) throws PollingJobNotFoundException, PollingJobExecutionException, FaultySourceSystemApiRequestMessageDtoException {
-        if(pollingJobExists(apiRequestConfigurationMessageDTO.id())){
-            pollingJobUpdate(apiRequestConfigurationMessageDTO);
+        if (pollingJobExists(apiRequestConfigurationMessageDTO.id())) {
+
+            if (apiRequestConfigurationMessageDTO.active()) {
+                pollingJobUpdate(apiRequestConfigurationMessageDTO);
+            } else {
+                pollingJobDeletion(apiRequestConfigurationMessageDTO.id());
+            }
         } else {
             throw new PollingJobNotFoundException("PollingJob Update failed: No PollingJob found with this id " + apiRequestConfigurationMessageDTO.id());
         }
@@ -82,6 +84,7 @@ public class PollingJobExecutionController {
 
     /**
      * Checks if supportedJobs contains key that equals given key
+     *
      * @param id compared to supportedJobs Keys
      * @return true if supportedJobs contained id as key
      */
@@ -91,18 +94,18 @@ public class PollingJobExecutionController {
 
     /**
      * Creates new activated or deactivated PollingJob. ID and Created JobKey are added to supportedJobs.
+     *
      * @param apiRequestConfigurationMessage used to create Executable PollingJob
      * @throws FaultySourceSystemApiRequestMessageDtoException
      */
     private void pollingJobCreation(final SourceSystemApiRequestConfigurationMessageDTO apiRequestConfigurationMessage) throws FaultySourceSystemApiRequestMessageDtoException, PollingJobExecutionException {
-        if(!isRequestTypeOnApiTypePossible(apiRequestConfigurationMessage)){
-            throw new FaultySourceSystemApiRequestMessageDtoException("Creation failed for id " +apiRequestConfigurationMessage.id()+ ": Use of PUT or POST is not possible on No Spec API´s");
+        if (!isRequestTypeOnApiTypePossible(apiRequestConfigurationMessage)) {
+            throw new FaultySourceSystemApiRequestMessageDtoException("Creation failed for id " + apiRequestConfigurationMessage.id() + ": Use of PUT or POST is not possible on No Spec API´s");
         }
 
         try {
             final JobDetail job = createJobWithInformation(apiRequestConfigurationMessage);
             supportedJobs.put(apiRequestConfigurationMessage.id(), job.getKey());
-            apiDetailsContainerForExecutor.putKeyAndElementInMap(apiRequestConfigurationMessage.id(), apiRequestConfigurationMessage);
             activateJobIfNeeded(apiRequestConfigurationMessage, job);
 
         } catch (SchedulerException e) {
@@ -113,12 +116,13 @@ public class PollingJobExecutionController {
 
     /**
      * Activates an already created Job with a newly created Trigger
+     *
      * @param apiRequestConfigurationMessage used to call Trigger creation
-     * @param job is the pollingJob that fits the apiRequestConfigurationMessage
+     * @param job                            is the pollingJob that fits the apiRequestConfigurationMessage
      * @throws SchedulerException
      */
     private void activateJobIfNeeded(SourceSystemApiRequestConfigurationMessageDTO apiRequestConfigurationMessage, JobDetail job) throws SchedulerException {
-        if(apiRequestConfigurationMessage.active()){
+        if (apiRequestConfigurationMessage.active()) {
             final Trigger trigger = createTriggerWithApiRequestConfigurationMessage(apiRequestConfigurationMessage);
             scheduler.scheduleJob(job, trigger);
             Log.infof("Polling for Job with id %d was activated with timing %d", apiRequestConfigurationMessage.id(), apiRequestConfigurationMessage.pollingIntervallTimeInMs(), job.getKey());
@@ -136,9 +140,10 @@ public class PollingJobExecutionController {
 
     /**
      * Updates PollingJob in supportedJobs with new information and updates Thread if Job is active or changed to deactive. SupportedJobs.keySet stays unchanged.
+     *
      * @param apiRequestConfigurationMessage contains information to update PollingJob
      */
-    private void pollingJobUpdate(final SourceSystemApiRequestConfigurationMessageDTO apiRequestConfigurationMessage)throws FaultySourceSystemApiRequestMessageDtoException, PollingJobExecutionException {
+    private void pollingJobUpdate(final SourceSystemApiRequestConfigurationMessageDTO apiRequestConfigurationMessage) throws FaultySourceSystemApiRequestMessageDtoException, PollingJobExecutionException {
         if (!isRequestTypeOnApiTypePossible(apiRequestConfigurationMessage)) {
             throw new FaultySourceSystemApiRequestMessageDtoException("Creation failed for id " + apiRequestConfigurationMessage.id() + ": Use of PUT or POST is not possible on No Spec API´s");
         }
@@ -146,7 +151,6 @@ public class PollingJobExecutionController {
             scheduler.deleteJob(supportedJobs.get(apiRequestConfigurationMessage.id()));
             final JobDetail job = createJobWithInformation(apiRequestConfigurationMessage);
             supportedJobs.put(apiRequestConfigurationMessage.id(), job.getKey());
-            apiDetailsContainerForExecutor.putKeyAndElementInMap(apiRequestConfigurationMessage.id(), apiRequestConfigurationMessage);
             activateJobIfNeeded(apiRequestConfigurationMessage, job);
 
 
@@ -159,9 +163,12 @@ public class PollingJobExecutionController {
 
     private JobDetail createJobWithInformation(SourceSystemApiRequestConfigurationMessageDTO apiRequestConfigurationMessage) {
 
-        return JobBuilder.newJob(PollingJobQuarzExecutor.class)
+        JobDataMap dataMap = new JobDataMap();
+        dataMap.put("requestConfiguration", apiRequestConfigurationMessage);
+
+        return JobBuilder.newJob(PollingJob.class)
                 .withIdentity("apiPollingJob-" + apiRequestConfigurationMessage.id())
-                .usingJobData("configId", apiRequestConfigurationMessage.id())
+                .usingJobData(dataMap)
                 .build();
     }
 
@@ -176,9 +183,9 @@ public class PollingJobExecutionController {
     }
 
 
-
     /**
      * Deletes PollingJob in supportedJobs and deactivates the JobKey if it was active.
+     *
      * @param id used to find the pollingJob to delete.
      */
     private void pollingJobDeletion(final Long id) {
@@ -186,7 +193,6 @@ public class PollingJobExecutionController {
         if (jobKey != null) {
             try {
                 boolean deleted = scheduler.deleteJob(jobKey);
-                apiDetailsContainerForExecutor.removeKeyAndElementInMap(id);
 
                 if (deleted) {
                     Log.infof("Polling job stopped successfully for API: %s", id);

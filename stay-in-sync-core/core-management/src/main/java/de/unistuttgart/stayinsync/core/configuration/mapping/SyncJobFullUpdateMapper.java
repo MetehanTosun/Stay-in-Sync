@@ -1,7 +1,9 @@
 package de.unistuttgart.stayinsync.core.configuration.mapping;
 
 import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.SyncJob;
+import de.unistuttgart.stayinsync.core.configuration.rest.dtos.SyncJobCreationDTO;
 import de.unistuttgart.stayinsync.core.configuration.rest.dtos.SyncJobDTO;
+import de.unistuttgart.stayinsync.transport.dto.SyncJobMessageDTO;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.MappingConstants;
@@ -12,7 +14,7 @@ import java.util.List;
 /**
  * Mapper to map all fields on an input {@link SyncJob} onto a target {@link SyncJob}.
  */
-@Mapper(componentModel = MappingConstants.ComponentModel.JAKARTA_CDI)
+@Mapper(componentModel = MappingConstants.ComponentModel.JAKARTA_CDI, uses = {TransformationMapper.class})
 public interface SyncJobFullUpdateMapper {
 
     /**
@@ -26,6 +28,8 @@ public interface SyncJobFullUpdateMapper {
 
     SyncJobDTO mapToDTO(SyncJob input);
 
+    SyncJobMessageDTO mapToMessageDTO(SyncJob input);
+
     List<SyncJobDTO> mapToDTOList(List<SyncJob> input);
 
     @Mapping(target = "syncNodeIdentifier", ignore = true)
@@ -33,4 +37,6 @@ public interface SyncJobFullUpdateMapper {
     SyncJob mapToEntity(SyncJobDTO input);
 
     List<SyncJob> mapToEntityList(List<SyncJobDTO> input);
+
+    SyncJob mapToEntity(SyncJobCreationDTO syncJobDTO);
 }

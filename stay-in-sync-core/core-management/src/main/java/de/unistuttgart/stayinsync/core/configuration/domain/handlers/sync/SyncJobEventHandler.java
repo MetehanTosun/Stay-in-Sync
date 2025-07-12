@@ -5,15 +5,18 @@ import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.SyncJo
 import de.unistuttgart.stayinsync.core.configuration.domain.events.sync.SyncJobPersistedEvent;
 import de.unistuttgart.stayinsync.core.configuration.domain.events.sync.SyncJobUpdatedEvent;
 import de.unistuttgart.stayinsync.core.configuration.mapping.SourceSystemApiRequestConfigurationFullUpdateMapper;
+import de.unistuttgart.stayinsync.core.configuration.mapping.SyncJobFullUpdateMapper;
+import de.unistuttgart.stayinsync.core.configuration.service.SourceSystemApiRequestConfigurationService;
 import de.unistuttgart.stayinsync.core.management.rabbitmq.producer.PollingJobMessageProducer;
 import de.unistuttgart.stayinsync.core.management.rabbitmq.producer.SyncJobMessageProducer;
+import de.unistuttgart.stayinsync.transport.dto.SourceSystemApiRequestConfigurationMessageDTO;
+import de.unistuttgart.stayinsync.transport.dto.SyncJobMessageDTO;
 import io.quarkus.logging.Log;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.event.Observes;
 import jakarta.inject.Inject;
 
 import java.util.List;
-import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
@@ -29,6 +32,12 @@ public class SyncJobEventHandler {
     PollingJobMessageProducer pollingJobMessageProducer;
 
     @Inject
+    SyncJobFullUpdateMapper mapper;
+
+    @Inject
+    SourceSystemApiRequestConfigurationService sourceSystemApiRequestConfigurationService;
+
+    @Inject
     SourceSystemApiRequestConfigurationFullUpdateMapper apiRequestConfigurationFullUpdateMapper;
 
     public void onSyncJobPersistedEvent(@Observes SyncJobPersistedEvent event) {
@@ -42,8 +51,10 @@ public class SyncJobEventHandler {
     private void deploySyncJob(SyncJob syncJob) {
         Log.infof("Sending deploy message to worker queue for syncjob %s", syncJob.name);
         deployNecessaryApiRequestConfigurations(syncJob);
-
-        syncJobMessageProducer.publishSyncJob(syncJob);
+        //TODO please fix asap
+        syncJob.transformations.stream().forEach(transformation -> transformation.sourceSystemApiRequestConfigrations.addAll(sourceSystemApiRequestConfigurationService.findAllApiRequestConfigurations()));
+        SyncJobMessageDTO syncJobMessageDTO = mapper.mapToMessageDTO(syncJob);
+        syncJobMessageProducer.publishSyncJob(syncJobMessageDTO);
     }
 
 
@@ -54,19 +65,24 @@ public class SyncJobEventHandler {
             deployNecessaryApiRequestConfigurations(updatedSyncJob);
             undeployAllUnusedApiRequestConfigurations();
 
-            syncJobMessageProducer.reconfigureDeployedSyncJob(updatedSyncJob);
+            syncJobMessageProducer.reconfigureDeployedSyncJob(mapper.mapToMessageDTO(updatedSyncJob));
         }
     }
 
     private void deployNecessaryApiRequestConfigurations(SyncJob syncJob) {
-        Set<SourceSystemApiRequestConfiguration> requieredApiRequestConfigurations = syncJob.transformations.stream().flatMap(transformation -> transformation.sourceSystemApiRequestConfigrations.stream()).collect(Collectors.toSet());
-        Set<SourceSystemApiRequestConfiguration> inactiveConfiguration = requieredApiRequestConfigurations.stream().filter(apiRequestConfiguration -> !apiRequestConfiguration.active).collect(Collectors.toSet());
-        inactiveConfiguration.stream().forEach(sourceSystemEndpoint -> deployPollingJob(sourceSystemEndpoint));
+        //removed for demo
+//        Set<SourceSystemApiRequestConfiguration> requieredApiRequestConfigurations = syncJob.transformations.stream().flatMap(transformation -> transformation.sourceSystemApiRequestConfigrations.stream()).collect(Collectors.toSet());
+//        Set<SourceSystemApiRequestConfiguration> inactiveConfiguration = requieredApiRequestConfigurations.stream().filter(apiRequestConfiguration -> !apiRequestConfiguration.active).collect(Collectors.toSet());
+//        inactiveConfiguration.stream().forEach(sourceSystemEndpoint -> deployPollingJob(sourceSystemEndpoint));
+        List<SourceSystemApiRequestConfiguration> allApiRequestConfigurations = sourceSystemApiRequestConfigurationService.findAllApiRequestConfigurations();
+        List<SourceSystemApiRequestConfigurationMessageDTO> messages = allApiRequestConfigurations.stream().map(apiRequestConfiguration -> apiRequestConfigurationFullUpdateMapper.mapToMessageDTO(apiRequestConfiguration)).collect(Collectors.toList());
+
+
+        messages.stream().forEach(sourceSystemEndpoint -> deployPollingJob(sourceSystemEndpoint));
     }
 
-    public void deployPollingJob(SourceSystemApiRequestConfiguration apiRequestConfiguration) {
-
-        pollingJobMessageProducer.publishPollingJob(apiRequestConfigurationFullUpdateMapper.mapToMessageDTO(apiRequestConfiguration));
+    public void deployPollingJob(SourceSystemApiRequestConfigurationMessageDTO apiRequestConfiguration) {
+        pollingJobMessageProducer.publishPollingJob(apiRequestConfiguration);
     }
 
     public void undeployAllUnusedApiRequestConfigurations() {

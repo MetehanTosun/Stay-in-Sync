@@ -75,6 +75,12 @@ public class TransformationService {
         return Transformation.findByIdOptional(id);
     }
 
+    @Transactional(SUPPORTS)
+    public Transformation findByIdDirect(Long id) {
+        Log.debugf("Finding transformation with id %d", id);
+        return Transformation.findById(id);
+    }
+
     public Optional<TransformationScript> findScriptById(Long transformationId) {
         Log.debugf("Finding script with Transformation id %d", transformationId);
         Optional<Transformation> transformation = Transformation.findByIdOptional(transformationId);

@@ -2,6 +2,7 @@ package de.unistuttgart.stayinsync.pollingnode.usercontrol.management;
 
 
 import de.unistuttgart.stayinsync.pollingnode.execution.controller.PollingJobExecutionController;
+import de.unistuttgart.stayinsync.pollingnode.rabbitmq.PollingJobMessageConsumer;
 import de.unistuttgart.stayinsync.transport.dto.SourceSystemApiRequestConfigurationMessageDTO;
 import io.quarkus.logging.Log;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -16,14 +17,22 @@ public class PollingJobManagement {
     @Inject
     PollingJobExecutionController pollingJobExecutionController;
 
+    @Inject
+    PollingJobMessageConsumer pollingJobConsumer;
+
+    @Inject
+    PollingJobManagement pollingJobManagement;
+
     /**
      * Starts SyncJobSupport and handles any unhandled exceptions thrown in the PollingProcess
      */
-    public void beginSupportOfSourceSystem(final SourceSystemApiRequestConfigurationMessageDTO apiRequestConfigurationMessage) {
+    public void beginSupportOfRequestConfiguration(final SourceSystemApiRequestConfigurationMessageDTO apiRequestConfigurationMessage) {
         try {
             if (pollingJobExecutionController.pollingJobExists(apiRequestConfigurationMessage.id())) {
                 Log.errorf("There already existed a PollingJob for SourceSystem %s with the id %d", apiRequestConfigurationMessage.apiConnectionDetails().sourceSystem().name(), apiRequestConfigurationMessage.id());
             }
+            Log.infof("Deploying polling for %s at path %s with id %s", apiRequestConfigurationMessage.apiConnectionDetails().sourceSystem().apiUrl(), apiRequestConfigurationMessage.apiConnectionDetails().endpoint().endpointPath(), apiRequestConfigurationMessage.id());
+            pollingJobConsumer.bindExisitingPollingJobQueue(apiRequestConfigurationMessage);
             pollingJobExecutionController.startPollingJobExecution(apiRequestConfigurationMessage);
             Log.infof("PollingJob for SourceSystem %s with the id %d was successfully created", apiRequestConfigurationMessage.apiConnectionDetails().sourceSystem().name(), apiRequestConfigurationMessage.id());
         } catch (Exception e) {
@@ -37,11 +46,19 @@ public class PollingJobManagement {
      *
      * @param apiRequestConfigurationMessage contains information for pollingJobDeletion
      */
-    public void reconfigureSupportOfSourceSystem(final SourceSystemApiRequestConfigurationMessageDTO apiRequestConfigurationMessage) {
+    public void reconfigureSupportOfRequestConfiguration(final SourceSystemApiRequestConfigurationMessageDTO apiRequestConfigurationMessage) {
         try {
+            Log.infof("Updating polling for %s at path %s with id %s", apiRequestConfigurationMessage.apiConnectionDetails().sourceSystem().apiUrl(), apiRequestConfigurationMessage.apiConnectionDetails().endpoint().endpointPath(), apiRequestConfigurationMessage.id());
             pollingJobExecutionController.reconfigurePollingJobExecution(apiRequestConfigurationMessage);
-            Log.infof("PollingJob for SourceSystem %s with the id %d was successfully reconfigured", apiRequestConfigurationMessage.apiConnectionDetails().sourceSystem().name(), apiRequestConfigurationMessage.id());
-        }catch(Exception e){
+            if (!apiRequestConfigurationMessage.active()) {
+                Log.infof("Undeploying polling for %s at path %s with id %s", apiRequestConfigurationMessage.apiConnectionDetails().sourceSystem().apiUrl(), apiRequestConfigurationMessage.apiConnectionDetails().endpoint().endpointPath(), apiRequestConfigurationMessage.id());
+                pollingJobConsumer.unbindExisitingPollingJobQueue(apiRequestConfigurationMessage);
+            } else {
+                Log.infof("PollingJob for SourceSystem %s with the id %d was successfully reconfigured", apiRequestConfigurationMessage.apiConnectionDetails().sourceSystem().name(), apiRequestConfigurationMessage.id());
+
+            }
+
+        } catch (Exception e) {
             Log.error(e);
         }
     }

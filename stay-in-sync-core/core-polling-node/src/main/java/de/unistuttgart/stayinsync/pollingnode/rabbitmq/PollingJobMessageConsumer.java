@@ -7,6 +7,7 @@ import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.DeliverCallback;
 import com.rabbitmq.client.Delivery;
 import de.unistuttgart.stayinsync.pollingnode.exceptions.PollingNodeException;
+import de.unistuttgart.stayinsync.pollingnode.usercontrol.management.PollingJobManagement;
 import de.unistuttgart.stayinsync.transport.dto.SourceSystemApiRequestConfigurationMessageDTO;
 import io.quarkiverse.rabbitmqclient.RabbitMQClient;
 import io.quarkus.logging.Log;
@@ -30,7 +31,7 @@ public class PollingJobMessageConsumer {
     ObjectMapper objectMapper;
 
     @Inject
-    ChannelUpdater pollingJobScheduler;
+    PollingJobManagement pollingJobManagement;
 
     private Channel channel;
 
@@ -61,7 +62,7 @@ public class PollingJobMessageConsumer {
             //TODO: Consider making queue name, name of pod
             //TODO: Consider different routing key/another queue for dead-letter-exchange
             //Declare queue for a single worker to receive updates on its running jobs
-            pollingNodeQueueName = channel.queueDeclare("polling-node-", false, true, true, queueArgs).getQueue();
+            pollingNodeQueueName = channel.queueDeclare("", false, true, true, queueArgs).getQueue();
 
 
             channel.basicConsume("new-pollingjob-queue", false, deployPollingJobCallback(), cancelSyncJobDeploymentCallback("new-pollingjob-queue"));
@@ -81,7 +82,7 @@ public class PollingJobMessageConsumer {
             try {
                 SourceSystemApiRequestConfigurationMessageDTO apiRequestConfigurationMessageDTO = getPollingJob(delivery);
                 Log.infof("Received new request configuration for api: %s", apiRequestConfigurationMessageDTO.apiConnectionDetails().sourceSystem().apiUrl());
-                pollingJobScheduler.deployPollingJobExecution(apiRequestConfigurationMessageDTO);
+                pollingJobManagement.beginSupportOfRequestConfiguration(apiRequestConfigurationMessageDTO);
                 channel.basicAck(delivery.getEnvelope().getDeliveryTag(), false);
             } catch (PollingNodeException e) {
                 Log.error("Failed to process polling-job deployment message");
@@ -131,7 +132,7 @@ public class PollingJobMessageConsumer {
             try {
                 SourceSystemApiRequestConfigurationMessageDTO apiRequestConfig = getPollingJob(delivery);
                 Log.infof("Received update for polling-job %s", apiRequestConfig.apiConnectionDetails().sourceSystem().apiUrl());
-                pollingJobScheduler.reconfigureSyncJobExecution(apiRequestConfig);
+                pollingJobManagement.reconfigureSupportOfRequestConfiguration(apiRequestConfig);
                 channel.basicAck(delivery.getEnvelope().getDeliveryTag(), false);
             } catch (PollingNodeException e) {
                 Log.errorf("Failed to process polling-job configuration update message", e);

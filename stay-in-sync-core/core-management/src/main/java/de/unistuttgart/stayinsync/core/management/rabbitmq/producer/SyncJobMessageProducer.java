@@ -3,8 +3,8 @@ package de.unistuttgart.stayinsync.core.management.rabbitmq.producer;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.rabbitmq.client.AMQP;
 import com.rabbitmq.client.Channel;
-import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.SyncJob;
 import de.unistuttgart.stayinsync.core.configuration.exception.CoreManagementException;
+import de.unistuttgart.stayinsync.transport.dto.SyncJobMessageDTO;
 import io.quarkiverse.rabbitmqclient.RabbitMQClient;
 import io.quarkus.logging.Log;
 import io.quarkus.runtime.StartupEvent;
@@ -51,9 +51,9 @@ public class SyncJobMessageProducer {
      * @param syncJob user defined sync-job entity
      * @throws CoreManagementException
      */
-    public void publishSyncJob(SyncJob syncJob) throws CoreManagementException {
+    public void publishSyncJob(SyncJobMessageDTO syncJob) throws CoreManagementException {
         try {
-            Log.infof("Publishing sync-job %s (id: %s)", syncJob.name, syncJob.id);
+            Log.infof("Publishing sync-job %s (id: %s)", syncJob.name(), syncJob.id());
             String messageBody = objectMapper.writeValueAsString(syncJob);
             AMQP.BasicProperties properties = new AMQP.BasicProperties.Builder()
                     .contentType("application/json")
@@ -73,16 +73,16 @@ public class SyncJobMessageProducer {
      * @param syncJob user defined sync-job entity
      * @throws CoreManagementException
      */
-    public void reconfigureDeployedSyncJob(SyncJob syncJob) {
+    public void reconfigureDeployedSyncJob(SyncJobMessageDTO syncJob) {
         try {
-            Log.infof("Publishing sync-job %s (id: %s)", syncJob.name, syncJob.id);
+            Log.infof("Publishing sync-job %s (id: %s)", syncJob.name(), syncJob.id());
             String messageBody = objectMapper.writeValueAsString(syncJob);
             AMQP.BasicProperties properties = new AMQP.BasicProperties.Builder()
                     .contentType("application/json")
                     .deliveryMode(2) // persistent
                     .build();
 
-            channel.basicPublish("syncjob-exchange", "sync-job-" + syncJob.id, properties,
+            channel.basicPublish("syncjob-exchange", "sync-job-" + syncJob.id(), properties,
                     messageBody.getBytes(StandardCharsets.UTF_8));
         } catch (IOException e) {
             throw new CoreManagementException("Unable to publish Job", "Object JSON-serialization failed", e);
