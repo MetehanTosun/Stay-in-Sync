@@ -2,6 +2,7 @@ package de.unistuttgart.stayinsync.core.configuration.rest;
 
 import de.unistuttgart.stayinsync.core.configuration.exception.CoreManagementException;
 import de.unistuttgart.stayinsync.core.configuration.mapping.SyncJobFullUpdateMapper;
+import de.unistuttgart.stayinsync.core.configuration.rest.dtos.SyncJobCreationDTO;
 import de.unistuttgart.stayinsync.core.configuration.rest.dtos.SyncJobDTO;
 import de.unistuttgart.stayinsync.core.configuration.service.SyncJobService;
 import io.quarkus.logging.Log;
@@ -57,11 +58,11 @@ public class SyncJobResource {
                     required = true,
                     content = @Content(
                             mediaType = APPLICATION_JSON,
-                            schema = @Schema(implementation = SyncJobDTO.class),
+                            schema = @Schema(implementation = SyncJobCreationDTO.class),
                             examples = @ExampleObject(name = "valid_sync_job", value = Examples.VALID_EXAMPLE_SYNCJOB_TO_CREATE)
                     )
             )
-            @Valid @NotNull SyncJobDTO syncJobDTO,
+            @Valid @NotNull SyncJobCreationDTO syncJobDTO,
             @Context UriInfo uriInfo) {
         var persistedSyncJob = this.syncJobService.persistSyncJob(syncJobDTO);
         var builder = uriInfo.getAbsolutePathBuilder().path(Long.toString(persistedSyncJob.id));
