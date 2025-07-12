@@ -62,7 +62,7 @@ public class SyncJobMessageConsumer {
             //TODO: Consider making queue name, name of pod
             //TODO: Consider different routing key/another queue for dead-letter-exchange
             //Declare queue for a single worker to receive updates on its running jobs
-            syncNodeQueueName = channel.queueDeclare("sync-node-", false, true, true, queueArgs).getQueue();
+            syncNodeQueueName = channel.queueDeclare("", false, true, true, queueArgs).getQueue();
 
 
             channel.basicConsume("new-syncjob-queue", false, deploySyncJobCallback(), cancelSyncJobDeploymentCallback("new-syncjob-queue"));
