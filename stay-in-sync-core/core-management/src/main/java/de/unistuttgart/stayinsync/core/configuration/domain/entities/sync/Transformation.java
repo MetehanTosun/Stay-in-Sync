@@ -20,7 +20,7 @@ public class Transformation extends PanacheEntity {
     @JsonBackReference("syncJob-back-reference")
     public SyncJob syncJob;
 
-    @OneToOne
+    @OneToOne(cascade = CascadeType.ALL)
     @JsonManagedReference("transformationScript-reference")
     public TransformationScript transformationScript;
 
