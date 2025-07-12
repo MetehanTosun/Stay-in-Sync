@@ -93,7 +93,26 @@ public class SyncDataMessageConsumer {
         return (consumerTag, delivery) -> {
             try {
                 SyncDataMessageDTO syncData = getSyncDataMessageDTO(delivery);
-                Log.infof("Received syncData for request config with id: %s", syncData.requestConfigId());
+                Log.infof("Received syncData for ARC alias: %s", syncData.arcAlias());
+
+                List<ExecutionPayload> completedPayloads = dispatcherStateService.processArc(syncData);
+
+                for (ExecutionPayload payload : completedPayloads) {
+                    Log.infof("Dispatching job %s for conditional execution", payload.job().jobId());
+
+                    transformationExecutionService.execute(payload.job(), payload.graphNodes())
+                            .subscribe().with(
+                                    result -> {
+                                        if (result != null) {
+                                            Log.infof("Job %s completed successfully: %s", payload.job().jobId(), result.isValidExecution());
+                                        } else {
+                                            Log.infof("Job %s was skipped by pre-condition and did not run.", payload.job().jobId());
+                                        }
+                                    },
+                                    failure -> Log.errorf(failure, "Job %s failed during execution chain", payload.job().jobId())
+                            );
+                }
+
                 channel.basicAck(delivery.getEnvelope().getDeliveryTag(), false);
             } catch (SyncNodeException e) {
                 Log.errorf("Failed to process sync-data message", e);
