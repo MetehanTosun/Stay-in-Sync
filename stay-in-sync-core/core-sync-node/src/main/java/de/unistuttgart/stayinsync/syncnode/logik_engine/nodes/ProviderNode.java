@@ -65,25 +65,31 @@ public class ProviderNode extends Node {
             throw new IllegalStateException("Invalid jsonPath format on node " + getId() + ": Must start with 'source.'");
         }
 
-        // 1. Split the path into its components.
+        // 1. Get the top-level "source" object first.
+        JsonNode sourceRootNode = dataContext.get("source");
+        if (sourceRootNode == null || !sourceRootNode.isObject()) {
+            throw new IllegalStateException("The 'source' key is missing or not an object in the dataContext.");
+        }
+
+        // 2. Split the path into its components.
         String[] parts = fullPath.split("\\.");
         if (parts.length < 2) {
             throw new IllegalStateException("Invalid jsonPath format on node " + getId() + ": Must contain 'source.{sourceName}'.");
         }
 
-        // 2. The 'sourceName' is always the second element and serves as the key for the context.
+        // 3. The 'sourceName' is always the second element and serves as the key for the context.
         String sourceName = parts[1];
 
-        // 3. The 'internalJsonPath' is everything that follows.
+        // 4. The 'internalJsonPath' is everything that follows.
         String internalJsonPath = (parts.length > 2) ? String.join(".", Arrays.copyOfRange(parts, 2, parts.length)) : "";
 
-        // 4. Get the correct JSON object from the dataContext.
-        JsonNode sourceObject = dataContext.get(sourceName);
+        // 5. Get the correct JSON object from the dataContext.
+        JsonNode sourceObject = sourceRootNode.get(sourceName);
         if (sourceObject == null) {
             throw new IllegalStateException("Data source '" + sourceName + "' for node " + getId() + " not found in dataContext.");
         }
 
-        // 5. Extract the final value.
+        // 6. Extract the final value.
         JsonPathValueExtractor extractor = new JsonPathValueExtractor();
         Object result = extractor.extractValue(sourceObject, internalJsonPath)
                 .orElse(null);

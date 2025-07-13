@@ -1,5 +1,6 @@
 package de.unistuttgart.stayinsync.syncnode.syncjob;
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import de.unistuttgart.stayinsync.scriptengine.ScriptEngineService;
@@ -42,7 +43,8 @@ public class TransformationExecutionService {
     public Uni<TransformationResult> execute(TransformJob job, List<Node> graphNodes){
         return Uni.createFrom().item(()-> {
             Log.infof("Job %s: Evaluating pre-condition logic graph...", job.jobId());
-            Map<String, JsonNode> dataContext = (Map<String, JsonNode>) objectMapper.convertValue(job.sourceData(), Map.class);
+            TypeReference<Map<String, JsonNode>> typeRef = new TypeReference<>() {};
+            Map<String, JsonNode> dataContext = objectMapper.convertValue(job.sourceData(), typeRef);
             return logicGraphEvaluator.evaluateGraph(graphNodes, dataContext);
         }).runSubscriptionOn(managedExecutor).onItem().transformToUni(conditionMet -> {
             if (conditionMet) {

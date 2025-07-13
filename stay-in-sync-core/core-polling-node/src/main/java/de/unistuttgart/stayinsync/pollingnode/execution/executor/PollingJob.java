@@ -105,8 +105,7 @@ public class PollingJob implements Job {
     }
 
     private SyncDataMessageDTO convertJsonObjectToSyncDataMessageDTO(final SourceSystemApiRequestConfigurationMessageDTO apiRequestConfiguration, final JsonObject jsonObject) {
-        Map<String, Object> map = new HashMap<>();
-        map.put(apiRequestConfiguration.name(), jsonObject.getMap());
+        Map<String, Object> map = jsonObject.getMap();
         return new SyncDataMessageDTO(apiRequestConfiguration.name(), apiRequestConfiguration.id(), map);
     }
 }
