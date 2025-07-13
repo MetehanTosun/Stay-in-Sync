@@ -24,6 +24,7 @@ export interface ScriptPayload {
   typescriptCode: string;
   javascriptCode?: string;
   hash: string;
+  requiredArcAliases?: string[];
 }
 
 @Injectable({
@@ -53,7 +54,7 @@ export class ScriptEditorService {
     return this.http.post<ArcTestCallResponse>(
       `${this.API_URL}/config/arc-test-call`,
       request
-    ); // TODO: Bind resource endpoint
+    );
   }
 
   /**
