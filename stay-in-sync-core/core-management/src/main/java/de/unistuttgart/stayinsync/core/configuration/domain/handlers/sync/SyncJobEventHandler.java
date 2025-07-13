@@ -5,10 +5,12 @@ import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.SyncJo
 import de.unistuttgart.stayinsync.core.configuration.domain.events.sync.SyncJobPersistedEvent;
 import de.unistuttgart.stayinsync.core.configuration.domain.events.sync.SyncJobUpdatedEvent;
 import de.unistuttgart.stayinsync.core.configuration.mapping.SourceSystemApiRequestConfigurationFullUpdateMapper;
+import de.unistuttgart.stayinsync.core.configuration.mapping.SyncJobFullUpdateMapper;
 import de.unistuttgart.stayinsync.core.configuration.service.SourceSystemApiRequestConfigurationService;
 import de.unistuttgart.stayinsync.core.management.rabbitmq.producer.PollingJobMessageProducer;
 import de.unistuttgart.stayinsync.core.management.rabbitmq.producer.SyncJobMessageProducer;
 import de.unistuttgart.stayinsync.transport.dto.SourceSystemApiRequestConfigurationMessageDTO;
+import de.unistuttgart.stayinsync.transport.dto.SyncJobMessageDTO;
 import io.quarkus.logging.Log;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.event.Observes;
@@ -30,6 +32,9 @@ public class SyncJobEventHandler {
     PollingJobMessageProducer pollingJobMessageProducer;
 
     @Inject
+    SyncJobFullUpdateMapper mapper;
+
+    @Inject
     SourceSystemApiRequestConfigurationService sourceSystemApiRequestConfigurationService;
 
     @Inject
@@ -46,8 +51,10 @@ public class SyncJobEventHandler {
     private void deploySyncJob(SyncJob syncJob) {
         Log.infof("Sending deploy message to worker queue for syncjob %s", syncJob.name);
         deployNecessaryApiRequestConfigurations(syncJob);
-
-        syncJobMessageProducer.publishSyncJob(syncJob);
+        //TODO please fix asap
+        syncJob.transformations.stream().forEach(transformation -> transformation.sourceSystemApiRequestConfigrations.addAll(sourceSystemApiRequestConfigurationService.findAllApiRequestConfigurations()));
+        SyncJobMessageDTO syncJobMessageDTO = mapper.mapToMessageDTO(syncJob);
+        syncJobMessageProducer.publishSyncJob(syncJobMessageDTO);
     }
 
 
@@ -58,7 +65,7 @@ public class SyncJobEventHandler {
             deployNecessaryApiRequestConfigurations(updatedSyncJob);
             undeployAllUnusedApiRequestConfigurations();
 
-            syncJobMessageProducer.reconfigureDeployedSyncJob(updatedSyncJob);
+            syncJobMessageProducer.reconfigureDeployedSyncJob(mapper.mapToMessageDTO(updatedSyncJob));
         }
     }
 
@@ -69,11 +76,12 @@ public class SyncJobEventHandler {
 //        inactiveConfiguration.stream().forEach(sourceSystemEndpoint -> deployPollingJob(sourceSystemEndpoint));
         List<SourceSystemApiRequestConfiguration> allApiRequestConfigurations = sourceSystemApiRequestConfigurationService.findAllApiRequestConfigurations();
         List<SourceSystemApiRequestConfigurationMessageDTO> messages = allApiRequestConfigurations.stream().map(apiRequestConfiguration -> apiRequestConfigurationFullUpdateMapper.mapToMessageDTO(apiRequestConfiguration)).collect(Collectors.toList());
+
+
         messages.stream().forEach(sourceSystemEndpoint -> deployPollingJob(sourceSystemEndpoint));
     }
 
     public void deployPollingJob(SourceSystemApiRequestConfigurationMessageDTO apiRequestConfiguration) {
-
         pollingJobMessageProducer.publishPollingJob(apiRequestConfiguration);
     }
 

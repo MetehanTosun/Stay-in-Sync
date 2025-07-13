@@ -62,7 +62,7 @@ public class PollingJobMessageConsumer {
             //TODO: Consider making queue name, name of pod
             //TODO: Consider different routing key/another queue for dead-letter-exchange
             //Declare queue for a single worker to receive updates on its running jobs
-            pollingNodeQueueName = channel.queueDeclare("polling-node-", false, true, true, queueArgs).getQueue();
+            pollingNodeQueueName = channel.queueDeclare("", false, true, true, queueArgs).getQueue();
 
 
             channel.basicConsume("new-pollingjob-queue", false, deployPollingJobCallback(), cancelSyncJobDeploymentCallback("new-pollingjob-queue"));

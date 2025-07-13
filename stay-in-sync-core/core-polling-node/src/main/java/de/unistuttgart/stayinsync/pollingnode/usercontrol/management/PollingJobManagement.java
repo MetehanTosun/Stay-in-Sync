@@ -19,7 +19,7 @@ public class PollingJobManagement {
 
     @Inject
     PollingJobMessageConsumer pollingJobConsumer;
-    
+
     @Inject
     PollingJobManagement pollingJobManagement;
 
@@ -33,7 +33,6 @@ public class PollingJobManagement {
             }
             Log.infof("Deploying polling for %s at path %s with id %s", apiRequestConfigurationMessage.apiConnectionDetails().sourceSystem().apiUrl(), apiRequestConfigurationMessage.apiConnectionDetails().endpoint().endpointPath(), apiRequestConfigurationMessage.id());
             pollingJobConsumer.bindExisitingPollingJobQueue(apiRequestConfigurationMessage);
-            pollingJobManagement.beginSupportOfRequestConfiguration(apiRequestConfigurationMessage);
             pollingJobExecutionController.startPollingJobExecution(apiRequestConfigurationMessage);
             Log.infof("PollingJob for SourceSystem %s with the id %d was successfully created", apiRequestConfigurationMessage.apiConnectionDetails().sourceSystem().name(), apiRequestConfigurationMessage.id());
         } catch (Exception e) {
