@@ -1,6 +1,7 @@
 package de.unistuttgart.stayinsync.core.configuration.domain.entities.sync;
 
 
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import io.quarkus.hibernate.orm.panache.PanacheEntity;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Entity;
@@ -24,7 +25,12 @@ public class SyncJob extends PanacheEntity {
 
     public boolean deployed;
 
+    public String description;
+
+    public boolean isSimulation;
+
     @OneToMany(mappedBy = "syncJob", cascade = CascadeType.ALL)
+    @JsonManagedReference("syncJob-back-reference")
     public Set<Transformation> transformations = new HashSet<>();
 
     public static List<SyncJob> listAllWhereNameLike(String name) {

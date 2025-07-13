@@ -2,7 +2,6 @@ package de.unistuttgart.stayinsync.core.configuration.service;
 
 import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.SourceSystemEndpoint;
 import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.Transformation;
-import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.TransformationRule;
 import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.TransformationScript;
 import de.unistuttgart.stayinsync.core.configuration.exception.CoreManagementException;
 import de.unistuttgart.stayinsync.core.configuration.mapping.TransformationMapper;
@@ -43,11 +42,15 @@ public class TransformationService {
         Transformation transformation = Transformation.<Transformation>findByIdOptional(transformationId)
                 .orElseThrow(() -> new CoreManagementException(Response.Status.NOT_FOUND, "Transformation not found", "Transformation with id %d not found.", transformationId));
 
-        TransformationScript script = TransformationScript.<TransformationScript>findByIdOptional(dto.transformationScriptId())
-                .orElseThrow(() -> new CoreManagementException(Response.Status.BAD_REQUEST, "Invalid Script ID", "TransformationScript with id %d not found.", dto.transformationScriptId()));
 
-        TransformationRule rule = TransformationRule.<TransformationRule>findByIdOptional(dto.transformationRuleId())
-                .orElseThrow(() -> new CoreManagementException(Response.Status.BAD_REQUEST, "Invalid Rule ID", "TransformationRule with id %d not found.", dto.transformationRuleId()));
+        TransformationScript script = null;
+        if (dto.transformationScriptId() != null) {
+            script = TransformationScript.<TransformationScript>findByIdOptional(dto.transformationScriptId())
+                    .orElseThrow(() -> new CoreManagementException(Response.Status.BAD_REQUEST, "Invalid Script ID", "TransformationScript with id %d not found.", dto.transformationScriptId()));
+        }
+
+        //TransformationRule rule = TransformationRule.<TransformationRule>findByIdOptional(dto.transformationRuleId())
+        //        .orElseThrow(() -> new CoreManagementException(Response.Status.BAD_REQUEST, "Invalid Rule ID", "TransformationRule with id %d not found.", dto.transformationRuleId()));
 
         Set<SourceSystemEndpoint> sourceEndpoints = dto.sourceSystemEndpointIds().stream()
                 .map(id -> SourceSystemEndpoint.<SourceSystemEndpoint>findByIdOptional(id)
@@ -55,11 +58,13 @@ public class TransformationService {
                 .collect(Collectors.toSet());
 
         transformation.transformationScript = script;
-        transformation.transformationRule = rule;
+        //transformation.transformationRule = rule;
         //TODO: replace with api request configs
         //transformation.sourceSystemEndpoints = sourceEndpoints;
 
-        script.transformation = transformation;
+        if (script != null) {
+            script.transformation = transformation;
+        }
 
         return transformation;
     }
@@ -71,12 +76,28 @@ public class TransformationService {
     }
 
     @Transactional(SUPPORTS)
+    public Transformation findByIdDirect(Long id) {
+        Log.debugf("Finding transformation with id %d", id);
+        return Transformation.findById(id);
+    }
+
+    public Optional<TransformationScript> findScriptById(Long transformationId) {
+        Log.debugf("Finding script with Transformation id %d", transformationId);
+        Optional<Transformation> transformation = Transformation.findByIdOptional(transformationId);
+
+        if (transformation.isPresent()) {
+            return Optional.ofNullable(transformation.get().transformationScript);
+        } else {
+            throw new CoreManagementException(Response.Status.NOT_FOUND, "Unable to find Transformation", "There is no transformation with id %s", transformationId);
+        }
+    }
+
+    @Transactional(SUPPORTS)
     public List<Transformation> findAll() {
         Log.debug("Getting all transformations.");
         return Transformation.listAll();
     }
 
-    @Transactional(SUPPORTS)
     public boolean delete(Long id) {
         Log.debugf("Deleting transformation with id %d", id);
         return Transformation.deleteById(id);

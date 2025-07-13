@@ -2,6 +2,7 @@ package de.unistuttgart.stayinsync.core.configuration.rest;
 
 import de.unistuttgart.stayinsync.core.configuration.exception.CoreManagementException;
 import de.unistuttgart.stayinsync.core.configuration.mapping.SyncJobFullUpdateMapper;
+import de.unistuttgart.stayinsync.core.configuration.rest.dtos.SyncJobCreationDTO;
 import de.unistuttgart.stayinsync.core.configuration.rest.dtos.SyncJobDTO;
 import de.unistuttgart.stayinsync.core.configuration.service.SyncJobService;
 import io.quarkus.logging.Log;
@@ -25,6 +26,7 @@ import org.eclipse.microprofile.openapi.annotations.responses.APIResponse;
 
 import java.net.URI;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 
 import static jakarta.ws.rs.core.MediaType.APPLICATION_JSON;
@@ -56,11 +58,11 @@ public class SyncJobResource {
                     required = true,
                     content = @Content(
                             mediaType = APPLICATION_JSON,
-                            schema = @Schema(implementation = SyncJobDTO.class),
+                            schema = @Schema(implementation = SyncJobCreationDTO.class),
                             examples = @ExampleObject(name = "valid_sync_job", value = Examples.VALID_EXAMPLE_SYNCJOB_TO_CREATE)
                     )
             )
-            @Valid @NotNull SyncJobDTO syncJobDTO,
+            @Valid @NotNull SyncJobCreationDTO syncJobDTO,
             @Context UriInfo uriInfo) {
         var persistedSyncJob = this.syncJobService.persistSyncJob(syncJobDTO);
         var builder = uriInfo.getAbsolutePathBuilder().path(Long.toString(persistedSyncJob.id));
@@ -157,7 +159,7 @@ public class SyncJobResource {
                                                )
                                        )
                                        @PathParam("id") Long id, @Valid @NotNull SyncJobDTO syncJobDTO) {
-        if (id != syncJobDTO.id()) {
+        if (!Objects.equals(id, syncJobDTO.id())) {
             throw new CoreManagementException(Response.Status.BAD_REQUEST, "Id missmatch", "Make sure that the request body entity id matches the request parameter");
         }
 

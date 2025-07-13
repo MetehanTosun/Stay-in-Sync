@@ -5,7 +5,7 @@ import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.ApiEnd
 import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.ApiRequestConfiguration;
 import de.unistuttgart.stayinsync.core.configuration.exception.CoreManagementException;
 import de.unistuttgart.stayinsync.core.configuration.mapping.ApiEndpointQueryParamValueMapper;
-import de.unistuttgart.stayinsync.core.configuration.rest.dtos.ApiEndpoindQueryParamValueDTO;
+import de.unistuttgart.stayinsync.core.configuration.rest.dtos.ApiEndpointQueryParamValueDTO;
 import io.quarkus.logging.Log;
 import io.smallrye.common.constraint.NotNull;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -29,7 +29,7 @@ public class ApiEndpointQueryParamValueService {
     @Inject
     ApiRequestConfigurationService apiRequestConfigurationService;
 
-    public ApiEndpointQueryParamValue persistValue(@NotNull @Valid ApiEndpoindQueryParamValueDTO queryParamConfigurationDTO, Long requestConfigurationId) {
+    public ApiEndpointQueryParamValue persistValue(@NotNull @Valid ApiEndpointQueryParamValueDTO queryParamConfigurationDTO, Long requestConfigurationId) {
         Log.debugf("Persisting api-endpoint-query-param: %s, for source-system with id: %s", queryParamConfigurationDTO, requestConfigurationId);
 
         ApiEndpointQueryParam queryParam = ApiEndpointQueryParam.findById(queryParamConfigurationDTO.queryParamId());
@@ -64,7 +64,7 @@ public class ApiEndpointQueryParamValueService {
         ApiEndpointQueryParamValue.deleteById(id);
     }
 
-    public Optional<ApiEndpointQueryParamValue> replaceConfiguration(@NotNull @Valid ApiEndpoindQueryParamValueDTO queryParamConfiguration) {
+    public Optional<ApiEndpointQueryParamValue> replaceConfiguration(@NotNull @Valid ApiEndpointQueryParamValueDTO queryParamConfiguration) {
         de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.ApiEndpointQueryParamValue apiEndpointQueryParam = mapper.mapToEntity(queryParamConfiguration);
         Log.debugf("Replacing endpoint: %s", apiEndpointQueryParam);
 

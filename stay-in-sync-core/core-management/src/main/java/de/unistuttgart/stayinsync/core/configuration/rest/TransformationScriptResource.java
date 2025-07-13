@@ -10,11 +10,14 @@ import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.Response;
 import org.eclipse.microprofile.openapi.annotations.Operation;
 import org.eclipse.microprofile.openapi.annotations.parameters.Parameter;
+import org.eclipse.microprofile.openapi.annotations.tags.Tag;
 
 import static jakarta.ws.rs.core.MediaType.APPLICATION_JSON;
 
-@Path("/api/config/transformation-script")
+@Path("/api/config/transformation/{transformationId}/script")
 @Produces(APPLICATION_JSON)
+@Consumes(APPLICATION_JSON)
+@Tag(name = "Transformation Script Configuration", description = "Endpoints for managing a transformation's script")
 public class TransformationScriptResource {
 
     @Inject
@@ -24,32 +27,39 @@ public class TransformationScriptResource {
     TransformationScriptMapper mapper;
 
     @GET
-    @Path("/{id}")
-    @Operation(summary = "Returns a transformation script for a given identifier")
-    public Response getScript(@Parameter(name = "id", required = true) @PathParam("id") Long id) {
-        return service.findById(id)
-                .map(script -> {
-                    Log.debugf("Found transformation script: %s", script);
-                    return Response.ok(mapper.mapToDTO(script)).build();
-                })
-                .orElseThrow(() -> new CoreManagementException(Response.Status.NOT_FOUND, "Unable to find script", "No transformation script found using id %d", id));
+    @Operation(summary = "Gets the script for a specific transformation")
+    public Response getScriptForTransformation(
+            @Parameter(name = "transformationId", required = true) @PathParam("transformationId") Long transformationId
+    ){
+        return service.findByTransformationId(transformationId)
+                .map(script -> Response.ok(mapper.mapToDTO(script)).build())
+                .orElse(Response.status(Response.Status.NOT_FOUND).build());
     }
 
     @PUT
-    @Path("/{id}")
-    @Consumes(APPLICATION_JSON)
-    @Operation(summary = "Updates an existing transformation script")
-    public Response updateScript(@Parameter(name = "id", required = true) @PathParam("id") Long id,
-                                 TransformationScriptDTO dto) {
-        if (!id.equals(dto.id())) {
-            throw new CoreManagementException(Response.Status.BAD_REQUEST, "ID mismatch", "The ID in the path does not match the ID in the request body.");
-        }
+    @Operation(summary = "Saves (creates or updates) the script for a specific transformation")
+    public Response saveScriptForTransformation(
+            @Parameter(name = "transformationId", required = true) @PathParam("transformationId") Long transformationId,
+            TransformationScriptDTO dto) {
 
-        return service.update(id, mapper.mapToEntity(dto))
-                .map(updatedScript -> {
-                    Log.debugf("Script with id %d was updated.", id);
-                    return Response.ok(mapper.mapToDTO(updatedScript)).build();
-                })
-                .orElseThrow(() -> new CoreManagementException(Response.Status.NOT_FOUND, "Unable to find script", "No transformation script found for update with id %d", id));
+        var savedScript = service.saveOrUpdateForTransformation(transformationId, dto);
+        return Response.ok(mapper.mapToDTO(savedScript)).build();
+    }
+
+    @DELETE
+    @Path("/{id}")
+    @Operation(summary = "Deletes an existing transformation script")
+    public Response deleteTransformationScript(@Parameter(name = "id", required = true) @PathParam("id") Long id) {
+        boolean deleted = service.delete(id);
+
+        if (deleted) {
+            Log.debugf("Transformation script with id %d deleted", id);
+            return Response.noContent().build();
+        } else {
+            Log.warnf("Attempted to delete non-existent transformation script with id %d", id);
+            throw new CoreManagementException(Response.Status.NOT_FOUND,
+                    "Transformation script not found",
+                    "Transformation script with id %d could not be found for deletion.", id);
+        }
     }
 }

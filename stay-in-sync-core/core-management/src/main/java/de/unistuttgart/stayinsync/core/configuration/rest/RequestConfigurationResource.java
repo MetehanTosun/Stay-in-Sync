@@ -1,7 +1,9 @@
 package de.unistuttgart.stayinsync.core.configuration.rest;
 
+import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.SourceSystemApiRequestConfiguration;
 import de.unistuttgart.stayinsync.core.configuration.exception.CoreManagementException;
 import de.unistuttgart.stayinsync.core.configuration.mapping.SourceSystemApiRequestConfigurationFullUpdateMapper;
+import de.unistuttgart.stayinsync.core.configuration.rest.dtos.CreateArcDTO;
 import de.unistuttgart.stayinsync.core.configuration.rest.dtos.CreateRequestConfigurationDTO;
 import de.unistuttgart.stayinsync.core.configuration.rest.dtos.GetRequestConfigurationDTO;
 import de.unistuttgart.stayinsync.core.configuration.service.SourceSystemApiRequestConfigurationService;
@@ -10,10 +12,7 @@ import jakarta.inject.Inject;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 import jakarta.ws.rs.*;
-import jakarta.ws.rs.core.Context;
-import jakarta.ws.rs.core.HttpHeaders;
-import jakarta.ws.rs.core.Response;
-import jakarta.ws.rs.core.UriInfo;
+import jakarta.ws.rs.core.*;
 import org.eclipse.microprofile.openapi.annotations.Operation;
 import org.eclipse.microprofile.openapi.annotations.enums.SchemaType;
 import org.eclipse.microprofile.openapi.annotations.headers.Header;
@@ -26,6 +25,9 @@ import org.eclipse.microprofile.openapi.annotations.responses.APIResponse;
 
 import java.net.URI;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import static jakarta.ws.rs.core.MediaType.APPLICATION_JSON;
 
@@ -38,6 +40,41 @@ public class RequestConfigurationResource {
     SourceSystemApiRequestConfigurationFullUpdateMapper fullUpdateMapper;
 
     @POST
+    @Consumes(APPLICATION_JSON)
+    @Operation(summary = "Creates a valid api request configuration for a specified source system endpoint")
+    @APIResponse(
+            responseCode = "201",
+            description = "The URI of the created api-request-configuration",
+            headers = @Header(name = HttpHeaders.LOCATION, schema = @Schema(implementation = URI.class))
+    )
+    @APIResponse(
+            responseCode = "400",
+            description = "Invalid api request configuration passed in (or no request body found)"
+    )
+    @Path("endpoint/{endpointId}/request-configuration/")
+    public Response createSourceSystemArc(
+            @PathParam("endpointId") Long endpointId,
+            @RequestBody(
+                    name = "api-request-configuration",
+                    required = true,
+                    content = @Content(
+                            mediaType = APPLICATION_JSON,
+                            schema = @Schema(implementation = CreateArcDTO.class),
+                            examples = @ExampleObject(name = "valid request config", value = Examples.VALID_EXAMPLE_REQUEST_CONFIGURATION_CREATE)
+                    )
+            )
+            @Valid CreateArcDTO arcDto,
+            @Context UriInfo uriInfo) {
+        var persistedApiRequestConfiguration = this.sourceSystemApiRequestConfigurationService.create(arcDto, endpointId);
+        var builder = uriInfo.getAbsolutePathBuilder().path(Long.toString(persistedApiRequestConfiguration.id));
+
+        GetRequestConfigurationDTO responseDto = fullUpdateMapper.mapToDTOGet(persistedApiRequestConfiguration);
+        Log.debugf("New api-request-configuration created with URI  %s", builder.build().toString());
+
+        return Response.created(builder.build()).entity(responseDto).build();
+    }
+
+    /*@POST
     @Consumes(APPLICATION_JSON)
     @Operation(summary = "Creates a valid api request configuration for a specified source system endpoint")
     @APIResponse(
@@ -68,6 +105,30 @@ public class RequestConfigurationResource {
         Log.debugf("New api-request-configuration created with URI  %s", builder.build().toString());
 
         return Response.created(builder.build()).build();
+    }
+*/
+
+    @POST
+    @Path("/request-configuration/by-source-system-names")
+    public Response getArcsBySourceSystemNames(Set<String> sourceSystemNames) {
+        if (sourceSystemNames == null || sourceSystemNames.isEmpty()) {
+            return Response.ok(Map.of()).build();
+        }
+
+        List<Object[]> results = SourceSystemApiRequestConfiguration.findArcsGroupedBySourceSystemName(sourceSystemNames);
+
+        Map<String, List<GetRequestConfigurationDTO>> groupedArcs = results.stream()
+                .collect(Collectors.groupingBy(
+                        row -> (String) row[0],
+                        Collectors.mapping(
+                                row -> fullUpdateMapper.mapToDTOGet((SourceSystemApiRequestConfiguration) row[1]),
+                                Collectors.toList()
+                        )
+                ));
+
+        sourceSystemNames.forEach(name -> groupedArcs.putIfAbsent(name, List.of()));
+
+        return Response.ok(groupedArcs).build();
     }
 
     @GET
