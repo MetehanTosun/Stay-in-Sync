@@ -111,6 +111,7 @@ public class SyncDataMessageConsumer {
                                     result -> {
                                         if (result != null) {
                                             Log.infof("Job %s completed successfully: %s", payload.job().jobId(), result.isValidExecution());
+                                            Log.infof("Script Transformation payload: %s", result.getOutputData());
                                         } else {
                                             Log.infof("Job %s was skipped by pre-condition and did not run.", payload.job().jobId());
                                         }
