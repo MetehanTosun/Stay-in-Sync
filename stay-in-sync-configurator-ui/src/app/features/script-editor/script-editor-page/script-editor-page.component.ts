@@ -237,8 +237,22 @@ export class ScriptEditorPageComponent implements OnInit, OnDestroy {
       return;
     }
 
+    const codeToSave = this.code;
+    const arcPattern = /\bsource\.([a-zA-Z0-9_]+)\.([a-zA-Z0-9_]+)/g;
+    const matches = codeToSave.matchAll(arcPattern);
+
+    const requiredArcSet = new Set<string>();
+    for (const match of matches){
+      const systemName = match[1];
+      const arcName = match[2];
+      requiredArcSet.add(`${systemName}.${arcName}`);
+    }
+
+    const requiredArcAliases = Array.from(requiredArcSet);
+    console.log('%c[Editor] Extracted ARC dependencies:', 'color: #f97316;', requiredArcAliases);
+
     try {
-      const transpileOutput = ts.transpileModule(this.code, {
+      const transpileOutput = ts.transpileModule(codeToSave, {
         compilerOptions: {module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ESNext},
       });
 
@@ -246,10 +260,13 @@ export class ScriptEditorPageComponent implements OnInit, OnDestroy {
 
       const payload: ScriptPayload = {
         name: this.preloadedData?.scriptName,
-        typescriptCode: this.code,
+        typescriptCode: codeToSave,
         javascriptCode: transpileOutput.outputText,
         hash: jsHash,
+        requiredArcAliases: requiredArcAliases
       };
+
+      console.log(payload);
 
       this.isSaving = true;
 
