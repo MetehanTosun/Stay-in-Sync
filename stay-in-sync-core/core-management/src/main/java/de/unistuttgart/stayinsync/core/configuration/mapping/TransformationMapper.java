@@ -1,5 +1,6 @@
 package de.unistuttgart.stayinsync.core.configuration.mapping;
 
+import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.SourceSystemApiRequestConfiguration;
 import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.SourceSystemEndpoint;
 import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.Transformation;
 import de.unistuttgart.stayinsync.core.configuration.rest.dtos.TransformationDetailsDTO;
@@ -8,10 +9,11 @@ import de.unistuttgart.stayinsync.transport.dto.TransformationMessageDTO;
 import org.mapstruct.*;
 
 import java.util.Collections;
+import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-@Mapper(componentModel = MappingConstants.ComponentModel.JAKARTA_CDI, uses = {TransformationScriptMapper.class, SourceSystemApiRequestConfigurationFullUpdateMapper.class})
+@Mapper(componentModel = MappingConstants.ComponentModel.JAKARTA_CDI, uses = {TransformationScriptMapper.class, SourceSystemApiRequestConfigurationFullUpdateMapper.class, TransformationRuleMapper.class})
 public interface TransformationMapper {
 
     // TODO: Add TransformationRule mappings
@@ -28,8 +30,13 @@ public interface TransformationMapper {
     // Delegates to TransformationScriptMapper
     TransformationDetailsDTO mapToDetailsDTO(Transformation transformation);
 
+    /**
+     * Maps the Transformation entity to its deployable Message DTO.
+     */
+    @Mapping(source = "transformationScript", target = "transformationScriptDTO")
+    @Mapping(source = "transformationRule", target = "transformationRuleDTO") // Will use TransformationRuleMapper
     @Mapping(source = "sourceSystemApiRequestConfigrations", target = "requestConfigurationMessageDTOS")
-        // Delegates to TransformationScriptMapper
+    @Mapping(source = "sourceSystemApiRequestConfigrations", target = "arcManifest", qualifiedByName = "buildArcManifest")
     TransformationMessageDTO mapToMessageDTO(Transformation transformation);
 
     /**
@@ -53,5 +60,15 @@ public interface TransformationMapper {
         return endpoints.stream()
                 .map(endpoint -> endpoint.id)
                 .collect(Collectors.toSet());
+    }
+
+    @Named("buildArcManifest")
+    default List<String> buildArcManifest(Set<SourceSystemApiRequestConfiguration> arcs){
+        if (arcs == null || arcs.isEmpty()){
+            return List.of();
+        }
+        return arcs.stream()
+                .map(arc -> arc.alias)
+                .toList();
     }
 }
