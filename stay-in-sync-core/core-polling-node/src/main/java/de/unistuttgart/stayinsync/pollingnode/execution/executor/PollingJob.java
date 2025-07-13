@@ -18,7 +18,6 @@ import jakarta.enterprise.inject.spi.CDI;
 import jakarta.inject.Inject;
 import org.quartz.*;
 
-import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
 
@@ -42,6 +41,7 @@ public class PollingJob implements Job {
 
         SourceSystemApiRequestConfigurationMessageDTO apiRequestConfigurationMessage = (SourceSystemApiRequestConfigurationMessageDTO) dataMap.get("requestConfiguration");
 
+        // TODO: Evaluate another way to give out this log
         if (apiRequestConfigurationMessage == null) {
             Log.errorf("No configuration found for configId: %d", apiRequestConfigurationMessage.id());
             throw new JobExecutionException("Configuration not found for ID: " + apiRequestConfigurationMessage.id());
