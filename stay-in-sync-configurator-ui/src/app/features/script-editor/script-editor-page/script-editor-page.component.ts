@@ -36,13 +36,6 @@ interface MonacoExtraLib {
   disposable: IDisposable;
 }
 
-interface Message {
-  severity?: 'success' | 'info' | 'warn' | 'error';
-  summary?: string;
-  detail?: string;
-  life?: number;
-}
-
 @Component({
   selector: 'app-script-editor-step', // might be without step
   templateUrl: './script-editor-page.component.html',
