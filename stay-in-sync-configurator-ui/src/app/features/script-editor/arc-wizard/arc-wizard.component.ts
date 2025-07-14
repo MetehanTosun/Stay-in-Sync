@@ -6,6 +6,7 @@ import {
   OnChanges,
   Output,
   SimpleChanges,
+  ViewChild,
 } from '@angular/core';
 import {
   ApiHeaderDefinition,
@@ -36,12 +37,14 @@ import { DividerModule } from 'primeng/divider';
 import { SchemaViewerComponent } from '../schema-viewer/schema-viewer.component';
 import { catchError, finalize, of } from 'rxjs';
 import { FieldsetModule } from 'primeng/fieldset';
-import { DropdownModule } from 'primeng/dropdown';
+import { Dropdown, DropdownModule } from 'primeng/dropdown';
 import { TooltipModule } from 'primeng/tooltip';
 import { MessagesModule } from 'primeng/messages';
 
 import { HttpClient } from '@angular/common/http';
 import { ArcStateService } from '../../../core/services/arc-state.service';
+import { InputNumberModule } from 'primeng/inputnumber';
+import { TableModule } from 'primeng/table';
 
 // TEMPORARY: FIX MESSAGING TOASTS AS A PATTERN
 interface Message {
@@ -64,7 +67,9 @@ interface Message {
     DropdownModule,
     ButtonModule,
     DividerModule,
+    TableModule,
     SchemaViewerComponent,
+    InputNumberModule,
     MessagesModule,
   ],
   templateUrl: './arc-wizard.component.html',
@@ -80,6 +85,9 @@ export class ArcWizardComponent implements OnChanges {
   @Output() onHide = new EventEmitter<void>();
   @Output() onSaveSuccess = new EventEmitter<ApiRequestConfiguration>();
 
+  @ViewChild('paramDropdown') paramDropdown: Dropdown | undefined;
+  @ViewChild('headerDropdown') headerDropdown: Dropdown | undefined;
+
   arcForm!: FormGroup;
   isTesting = false;
   isSaving = false;
@@ -90,6 +98,9 @@ export class ArcWizardComponent implements OnChanges {
   pathParamDefinitions: EndpointParameterDefinition[] = [];
   queryParamDefinitions: EndpointParameterDefinition[] = [];
   headerDefinitions: ApiHeaderDefinition[] = [];
+
+  availableQueryParams: EndpointParameterDefinition[] = [];
+  availableHeaders: ApiHeaderDefinition[] = [];
 
   private fb = inject(FormBuilder);
   private scriptEditorService = inject(ScriptEditorService);
@@ -112,6 +123,7 @@ export class ArcWizardComponent implements OnChanges {
   constructor() {
     this.arcForm = this.fb.group({
       alias: ['', Validators.required],
+      pollingRate: [1000, [Validators.required, Validators.min(1)]],
       pathParameters: this.fb.group({}),
       queryParameters: this.fb.array([]),
       headerParameters: this.fb.array([]),
@@ -164,18 +176,19 @@ export class ArcWizardComponent implements OnChanges {
         );
 
         this.queryParameters.clear();
-        data.queryParamDefinitions.forEach((p) => {
-          this.queryParameters.push(
-            this.newParam(p.name, '', true, p.required)
-          );
+        this.queryParamDefinitions = data.queryParamDefinitions;
+
+        const requiredQueryParams = this.queryParamDefinitions.filter(p => p.required);
+        this.availableQueryParams = this.queryParamDefinitions.filter(p => !p.required);
+
+        requiredQueryParams.forEach(p => {
+          this.queryParameters.push(this.newParam(p.name, '', true, true));
         });
 
         this.headerParameters.clear();
-        data.headerDefinitions.forEach((h) => {
-          this.headerParameters.push(
-            this.newParam(h.headerName, '', true, false)
-          );
-        });
+        this.headerDefinitions = data.headerDefinitions;
+
+        this.availableHeaders = [...data.headerDefinitions];
 
         this.isLoadingDefinitions = false;
       });
@@ -196,19 +209,73 @@ export class ArcWizardComponent implements OnChanges {
     });
   }
 
-  addCustomQueryParam(): void {
-    this.queryParameters.push(this.newParam('', '', false, false));
+  addPredefinedQueryParam(param: EndpointParameterDefinition | null): void {
+    if (!param) return;
+    
+    this.queryParameters.push(this.newParam(param.name, '', true, param.required));
+    this.availableQueryParams = this.availableQueryParams.filter(p => p.name !== param.name);
+    
+    setTimeout(() => {
+      this.paramDropdown?.clear();
+    }, 0);
+  }
+  
+  addPredefinedHeader(header: ApiHeaderDefinition | null): void {
+    if (!header) return;
+    
+    this.headerParameters.push(this.newParam(header.headerName, '', true, false));
+    this.availableHeaders = this.availableHeaders.filter(h => h.headerName !== header.headerName);
+
+    setTimeout(() => {
+      this.headerDropdown?.clear();
+    }, 0);
+  }
+
+  addQueryParam(paramToAdd?: EndpointParameterDefinition): void {
+    if (paramToAdd) {
+      this.queryParameters.push(this.newParam(paramToAdd.name, '', true, paramToAdd.required));
+      this.availableQueryParams = this.availableQueryParams.filter(p => p.name !== paramToAdd.name);
+    } else {
+      this.queryParameters.push(this.newParam('', '', false, false));
+    }
   }
 
   removeQueryParam(index: number): void {
+    const removedControl = this.queryParameters.at(index);
+    const paramName = removedControl.get('key')?.value;
+    
+    if (removedControl.get('isDefined')?.value) {
+      const predefinedParam = this.queryParamDefinitions.find(p => p.name === paramName);
+      if (predefinedParam) {
+        this.availableQueryParams.push(predefinedParam);
+        this.availableQueryParams.sort((a, b) => a.name.localeCompare(b.name));
+      }
+    }
+    
     this.queryParameters.removeAt(index);
   }
 
-  addCustomHeader(): void {
-    this.headerParameters.push(this.newParam('', '', false, false));
+  addHeader(headerToAdd?: ApiHeaderDefinition): void {
+    if (headerToAdd) {
+      this.headerParameters.push(this.newParam(headerToAdd.headerName, '', true, false));
+      this.availableHeaders = this.availableHeaders.filter(h => h.headerName !== headerToAdd.headerName);
+    } else {
+      this.headerParameters.push(this.newParam('', '', false, false));
+    }
   }
 
   removeHeader(index: number): void {
+    const removedControl = this.headerParameters.at(index);
+    const headerName = removedControl.get('key')?.value;
+
+    if (removedControl.get('isDefined')?.value) {
+      const predefinedHeader = this.headerDefinitions.find(h => h.headerName === headerName);
+      if (predefinedHeader) {
+        this.availableHeaders.push(predefinedHeader);
+        this.availableHeaders.sort((a, b) => a.headerName.localeCompare(b.headerName));
+      }
+    }
+
     this.headerParameters.removeAt(index);
   }
 
@@ -305,7 +372,7 @@ export class ArcWizardComponent implements OnChanges {
       queryParameterValues: queryParameterValues,
       headerValues: headerValues,
       responseDts: JSON.stringify(this.testResult.responsePayload),
-      pollingIntervallTimeInMs: 10000, // TODO: Implement in Form
+      pollingIntervallTimeInMs: this.arcForm.get('pollingRate')?.value,
     };
 
     this.http

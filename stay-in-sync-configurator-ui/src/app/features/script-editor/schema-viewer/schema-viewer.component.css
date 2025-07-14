@@ -1,0 +1,10 @@
+.raw-text-box {
+    background-color: var(--surface-b);
+    border: var(--surface-d);
+    border-radius: 6px;
+    padding: 1rem;
+    max-height: 400px;
+    overflow: auto;
+    white-space: pre-wrap;
+    word-break: break-all;
+}
