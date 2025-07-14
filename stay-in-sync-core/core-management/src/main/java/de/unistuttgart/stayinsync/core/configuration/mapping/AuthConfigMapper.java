@@ -6,6 +6,7 @@ import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.authco
 import de.unistuttgart.stayinsync.core.configuration.rest.dtos.ApiAuthConfigurationDTO;
 import de.unistuttgart.stayinsync.core.configuration.rest.dtos.ApiKeyAuthDTO;
 import de.unistuttgart.stayinsync.core.configuration.rest.dtos.BasicAuthDTO;
+import de.unistuttgart.stayinsync.transport.dto.ApiAuthConfigurationMessageDTO;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.MappingConstants;
@@ -33,4 +34,18 @@ public interface AuthConfigMapper {
     @Mapping(target = "syncSystem", ignore = true)
     @Mapping(target = "authType", constant = "API_KEY")
     ApiKeyAuthConfig mapApiKeyAuth(ApiKeyAuthDTO dto);
+
+    @Named("mapAuthConfigToDTO")
+    default ApiAuthConfigurationMessageDTO mapToDTO(SyncSystemAuthConfig entity) {
+        if (entity == null) {
+            return null;
+        }
+        if (entity instanceof ApiKeyAuthConfig apiKeyAuth) {
+            return new ApiAuthConfigurationMessageDTO("123", "Authorization"); // TODO: TEMPORARY FIX THIS!!!
+        }
+        if (entity instanceof BasicAuthConfig basicAuth) {
+            return new ApiAuthConfigurationMessageDTO("123", "Authorization"); // TODO: TEMPORARY FIX THIS!!!
+        }
+        return null;
+    }
 }
