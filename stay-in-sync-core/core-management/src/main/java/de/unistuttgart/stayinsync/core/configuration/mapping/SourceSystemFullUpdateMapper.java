@@ -3,7 +3,8 @@ package de.unistuttgart.stayinsync.core.configuration.mapping;
 import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.SourceSystem;
 import de.unistuttgart.stayinsync.core.configuration.rest.dtos.CreateSourceSystemDTO;
 import de.unistuttgart.stayinsync.core.configuration.rest.dtos.SourceSystemDTO;
-  
+
+import de.unistuttgart.stayinsync.transport.dto.SourceSystemMessageDTO;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.MappingConstants;
@@ -33,4 +34,10 @@ public interface SourceSystemFullUpdateMapper {
     @Mapping(target = "authConfig", source = "authConfig", qualifiedByName = "mapAuthConfigToEntity")
     @Mapping(target = "openApiSpec", ignore = true)
     SourceSystem mapToEntity(CreateSourceSystemDTO sourceSystemDTO);
+
+    @Mapping(target="name", source="name")
+    @Mapping(target="apiUrl", source="apiUrl")
+    @Mapping(target="apiType", source="apiType")
+    @Mapping(target="authDetails", source="authConfig", qualifiedByName = "mapAuthConfigToDTO")
+    SourceSystemMessageDTO mapToMessageDTO(SourceSystem sourceSystem);
 }
