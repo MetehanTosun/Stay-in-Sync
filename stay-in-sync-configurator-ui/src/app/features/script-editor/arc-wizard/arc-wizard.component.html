@@ -47,6 +47,31 @@
           </small>
         </div>
 
+        <!-- Polling Configuration -->
+        <p-fieldset legend="Polling Configuration" class="mt-3">
+          <div class="field">
+            <label for="arc-polling-rate">Polling Rate (in milliseconds)</label>
+            <p-inputNumber
+              id="arc-polling-rate"
+              formControlName="pollingRate"
+              mode="decimal"
+              [showButtons]="true"
+              [min]="1"
+              suffix=" ms"
+            >
+            </p-inputNumber>
+            <small
+              *ngIf="
+                arcForm.get('pollingRate')?.invalid &&
+                arcForm.get('pollingRate')?.touched
+              "
+              class="p-error block mt-1"
+            >
+              A positive polling rate is required.
+            </small>
+          </div>
+        </p-fieldset>
+
         <!-- Path Parameters -->
         <p-fieldset
           legend="Path Parameters"
@@ -85,111 +110,181 @@
         </p-fieldset>
 
         <!-- Query Parameters -->
-        <p-fieldset
-          legend="Query Parameters"
-          class="mt-3"
-          [formArrayName]="'queryParameters'"
-        >
-          <div
-            class="parameter-row grid align-items-center mb-2"
-            *ngFor="let param of queryParameters.controls; let i = index"
-            [formGroupName]="i"
-          >
-            <!-- Key Input -->
-            <div class="field col-5 m-0">
-              <label *ngIf="i === 0">Key</label>
-              <input
-                type="text"
-                pInputText
-                formControlName="key"
-                placeholder="param-key"
-              />
+        <p-fieldset legend="Query Parameters" class="mt-3">
+          <div [formArrayName]="'queryParameters'">
+            <p-table
+              [value]="queryParameters.controls"
+              styleClass="p-datatable-sm"
+            >
+
+              <ng-template pTemplate="header">
+                <tr>
+                  <th style="width: 40%">Key</th>
+                  <th style="width: 40%">Value</th>
+                  <th style="width: 20%; text-align: center">Action</th>
+                </tr>
+              </ng-template>
+
+              <ng-template pTemplate="body" let-param let-i="rowIndex">
+                <tr [formGroupName]="i">
+                  <td>
+                    <div class="p-fluid">
+                      <span
+                        *ngIf="param.get('isRequired')?.value"
+                        class="p-error p-mr-1"
+                        >*</span
+                      >
+                      <input
+                        type="text"
+                        pInputText
+                        formControlName="key"
+                        placeholder="param-key"
+                      />
+                    </div>
+                  </td>
+                  <td>
+                    <div class="p-fluid">
+                      <input
+                        type="text"
+                        pInputText
+                        formControlName="value"
+                        placeholder="param-value"
+                      />
+                    </div>
+                  </td>
+                  <td style="text-align: center">
+                    <p-button
+                      icon="pi pi-trash"
+                      styleClass="p-button-danger p-button-text"
+                      (click)="removeQueryParam(i)"
+                      pTooltip="Remove Parameter"
+                      [disabled]="param.get('isRequired')?.value"
+                    ></p-button>
+                  </td>
+                </tr>
+              </ng-template>
+
+              <ng-template pTemplate="emptymessage">
+                <tr>
+                  <td colspan="3" class="text-center p-3 text-color-secondary">
+                    No query parameters defined. Add one below.
+                  </td>
+                </tr>
+              </ng-template>
+            </p-table>
+          </div>
+
+          <div class="p-divider p-mt-3 p-mb-3"></div>
+
+          <div class="grid p-fluid align-items-end">
+            <div class="col-md-6 col-12">
+              <label>Add a predefined parameter</label>
+              <p-dropdown
+                [options]="availableQueryParams"
+                optionLabel="name"
+                placeholder="Select a parameter"
+                (onChange)="addPredefinedQueryParam($event.value)"
+                #paramDropdown
+              ></p-dropdown>
             </div>
-            <!-- Value Input -->
-            <div class="field col-5 m-0">
-              <label *ngIf="i === 0">Value</label>
-              <input
-                type="text"
-                pInputText
-                formControlName="value"
-                placeholder="param-value"
-              />
-            </div>
-            <!-- Actions Column -->
-            <div class="col-2 field-actions">
+            <div class="col-md-6 col-12">
               <p-button
-                icon="pi pi-trash"
-                styleClass="p-button-danger p-button-text"
-                (click)="removeQueryParam(i)"
-                pTooltip="Remove Parameter"
-                [disabled]="param.get('isRequired')?.value"
+                label="Add Custom Parameter"
+                icon="pi pi-plus"
+                styleClass="p-button-outlined"
+                (click)="addQueryParam()"
               ></p-button>
             </div>
           </div>
-
-          <!-- Message for when there are no query params -->
-          <div
-            *ngIf="queryParameters.controls.length === 0"
-            class="text-center text-color-secondary p-3"
-          >
-            No query parameters defined. Add one below.
-          </div>
-
-          <!-- Add Button -->
-          <p-button
-            label="Add Query Parameter"
-            icon="pi pi-plus"
-            styleClass="p-button-sm p-button-outlined mt-2"
-            (click)="addCustomQueryParam()"
-          ></p-button>
         </p-fieldset>
-        
-        <p-fieldset
-          legend="Headers"
-          class="mt-3"
-          [formArrayName]="'headerParameters'"
-        >
-          <div
-            class="parameter-row grid align-items-center mb-2"
-            *ngFor="let param of headerParameters.controls; let i = index"
-            [formGroupName]="i"
-          >
-            <!-- Key Input -->
-            <div class="field col-5 m-0">
-              <label *ngIf="i === 0">Header Name</label>
-              <input
-                type="text"
-                pInputText
-                formControlName="key"
-                placeholder="Header-Name"
-              />
+
+        <!-- Headers -->
+        <p-fieldset legend="Headers" class="mt-3">
+          <div [formArrayName]="'headerParameters'">
+            <p-table
+              [value]="headerParameters.controls"
+              styleClass="p-datatable-sm"
+            >
+
+              <ng-template pTemplate="header">
+                <tr>
+                  <th style="width: 40%">Key</th>
+                  <th style="width: 40%">Value</th>
+                  <th style="width: 20%; text-align: center">Action</th>
+                </tr>
+              </ng-template>
+
+              <ng-template pTemplate="body" let-param let-i="rowIndex">
+                <tr [formGroupName]="i">
+                  <td>
+                    <div class="p-fluid">
+                      <span
+                        *ngIf="param.get('isRequired')?.value"
+                        class="p-error p-mr-1"
+                        >*</span
+                      >
+                      <input
+                        type="text"
+                        pInputText
+                        formControlName="key"
+                        placeholder="param-key"
+                      />
+                    </div>
+                  </td>
+                  <td>
+                    <div class="p-fluid">
+                      <input
+                        type="text"
+                        pInputText
+                        formControlName="value"
+                        placeholder="param-value"
+                      />
+                    </div>
+                  </td>
+                  <td style="text-align: center">
+                    <p-button
+                      icon="pi pi-trash"
+                      styleClass="p-button-danger p-button-text"
+                      (click)="removeHeader(i)"
+                      pTooltip="Remove Header"
+                      [disabled]="param.get('isRequired')?.value"
+                    ></p-button>
+                  </td>
+                </tr>
+              </ng-template>
+
+              <ng-template pTemplate="emptymessage">
+                <tr>
+                  <td colspan="3" class="text-center p-3 text-color-secondary">
+                    No headers defined. Add one below.
+                  </td>
+                </tr>
+              </ng-template>
+            </p-table>
+          </div>
+
+          <div class="p-divider p-mt-3 p-mb-3"></div>
+          
+          <div class="grid p-fluid align-items-end">
+            <div class="col-md-6 col-12">
+              <label>Add a predefined header</label>
+              <p-dropdown
+                [options]="availableHeaders"
+                optionLabel="name"
+                placeholder="Select a header"
+                (onChange)="addPredefinedHeader($event.value)"
+                #paramDropdown
+              ></p-dropdown>
             </div>
-            <!-- Value Input -->
-            <div class="field col-5 m-0">
-              <label *ngIf="i === 0">Header Value</label>
-              <input
-                type="text"
-                pInputText
-                formControlName="value"
-                placeholder="header-value"
-              />
-            </div>
-            <!-- Actions Column -->
-            <div class="col-2 field-actions">
+            <div class="col-md-6 col-12">
               <p-button
-                icon="pi pi-trash"
-                styleClass="p-button-danger p-button-text"
-                (click)="removeHeader(i)"
-                pTooltip="Remove Header"
+                label="Add Custom Header"
+                icon="pi pi-plus"
+                styleClass="p-button-outlined"
+                (click)="addHeader()"
               ></p-button>
             </div>
           </div>
-          <p-button
-            label="Add Header"
-            icon="pi pi-plus"
-            styleClass="p-button-sm p-button-outlined mt-2"
-            (click)="addCustomHeader()"
-          ></p-button>
         </p-fieldset>
       </div>
     </form>

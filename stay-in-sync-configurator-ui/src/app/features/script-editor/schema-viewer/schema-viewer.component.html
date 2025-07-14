@@ -1,9 +1,21 @@
 <div class="schema-viewer-container">
-  <ng-container *ngIf="jsonData || dtsCode; else noData">
+  <ng-container *ngIf="jsonData !== null && jsonData !== undefined; else noData">
     <p-tabView>
-      <p-tabPanel header="Payload Tree">
-        <p-tree [value]="treeNodes" selectionMode="single" scrollHeight="flex"></p-tree>
+      <p-tabPanel header="Payload Structure">
+        <ng-container *ngIf="isJsonData; else rawTextView">
+          <p-tree [value]="treeNodes" selectionMode="single" scrollHeight="flex"></p-tree>
+        </ng-container>
+
+        <ng-template #rawTextView>
+          <div class="p-4">
+            <h5 class="mt-0 mb-2">Non-JSON Response</h5>
+            <div class="raw-text-box">
+              <pre>{{ rawTextData }}</pre>
+            </div>
+          </div>
+        </ng-template>
       </p-tabPanel>
+      
       <p-tabPanel header="TypeScript Type">
         <ngx-monaco-editor [options]="editorOptions" [ngModel]="dtsCode"></ngx-monaco-editor>
       </p-tabPanel>

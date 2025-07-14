@@ -19,14 +19,15 @@ public class TypeScriptTypeGenerator {
 
         if(rootNode.isArray()){
             if (rootNode.isEmpty()){
-                return "export type Root = any[];\n";
+                return "type Root = any[];\n";
             }
             String elementTypeName = generateInterface("RootObject", rootNode.get(0), allInterfaces);
-            allInterfaces.append(String.format("export type Root = %s[];\n", elementTypeName));
+            allInterfaces.append(String.format("type Root = %s[];\n", elementTypeName));
         } else if(rootNode.isObject()){
-            String rootTypeName = generateInterface("Root", rootNode, allInterfaces); // TODO: evaluate if obsolete
+            String rootTypeName = generateInterface("Root", rootNode, allInterfaces);
+            allInterfaces.append(String.format("type Root = %s;\n", rootTypeName));
         } else {
-            return String.format("export type Root = %s;\n", getTsType("Root", rootNode, new StringBuilder()));
+            return String.format("type Root = %s;\n", getTsType("Root", rootNode, new StringBuilder()));
         }
 
         return allInterfaces.toString();
