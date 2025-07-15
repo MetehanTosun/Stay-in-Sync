@@ -136,6 +136,7 @@ export class ScriptEditorService {
             description: dto.description || '',
             required: dto.required || false,
             options: dto.values || [],
+            type: dto.schemaType.toLowerCase() as 'string' | 'number' | 'integer' | 'boolean' | 'array',
           };
 
           if (definition.in === 'path') {

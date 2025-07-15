@@ -45,6 +45,7 @@ import { HttpClient } from '@angular/common/http';
 import { ArcStateService } from '../../../core/services/arc-state.service';
 import { InputNumberModule } from 'primeng/inputnumber';
 import { TableModule } from 'primeng/table';
+import { InputSwitchModule } from 'primeng/inputswitch';
 
 // TEMPORARY: FIX MESSAGING TOASTS AS A PATTERN
 interface Message {
@@ -70,6 +71,7 @@ interface Message {
     TableModule,
     SchemaViewerComponent,
     InputNumberModule,
+    InputSwitchModule,
     MessagesModule,
   ],
   templateUrl: './arc-wizard.component.html',
@@ -182,7 +184,7 @@ export class ArcWizardComponent implements OnChanges {
         this.availableQueryParams = this.queryParamDefinitions.filter(p => !p.required);
 
         requiredQueryParams.forEach(p => {
-          this.queryParameters.push(this.newParam(p.name, '', true, true));
+          this.queryParameters.push(this.newParam(p.name, '', true, true, p.type));
         });
 
         this.headerParameters.clear();
@@ -198,7 +200,8 @@ export class ArcWizardComponent implements OnChanges {
     key: string,
     value: string,
     isDefined: boolean,
-    isRequired: boolean
+    isRequired: boolean,
+    type: string
   ): FormGroup {
     const valueValidators = isRequired ? [Validators.required] : [];
     return this.fb.group({
@@ -206,13 +209,14 @@ export class ArcWizardComponent implements OnChanges {
       value: [value, valueValidators],
       isDefined: [isDefined],
       isRequired: [isRequired],
+      type: [type],
     });
   }
 
   addPredefinedQueryParam(param: EndpointParameterDefinition | null): void {
     if (!param) return;
     
-    this.queryParameters.push(this.newParam(param.name, '', true, param.required));
+    this.queryParameters.push(this.newParam(param.name, '', true, param.required, param.type));
     this.availableQueryParams = this.availableQueryParams.filter(p => p.name !== param.name);
     
     setTimeout(() => {
@@ -223,7 +227,7 @@ export class ArcWizardComponent implements OnChanges {
   addPredefinedHeader(header: ApiHeaderDefinition | null): void {
     if (!header) return;
     
-    this.headerParameters.push(this.newParam(header.headerName, '', true, false));
+    this.headerParameters.push(this.newParam(header.headerName, '', true, false, 'string'));
     this.availableHeaders = this.availableHeaders.filter(h => h.headerName !== header.headerName);
 
     setTimeout(() => {
@@ -233,10 +237,10 @@ export class ArcWizardComponent implements OnChanges {
 
   addQueryParam(paramToAdd?: EndpointParameterDefinition): void {
     if (paramToAdd) {
-      this.queryParameters.push(this.newParam(paramToAdd.name, '', true, paramToAdd.required));
+      this.queryParameters.push(this.newParam(paramToAdd.name, '', true, paramToAdd.required, paramToAdd.type));
       this.availableQueryParams = this.availableQueryParams.filter(p => p.name !== paramToAdd.name);
     } else {
-      this.queryParameters.push(this.newParam('', '', false, false));
+      this.queryParameters.push(this.newParam('', '', false, false, 'string'));
     }
   }
 
@@ -257,10 +261,10 @@ export class ArcWizardComponent implements OnChanges {
 
   addHeader(headerToAdd?: ApiHeaderDefinition): void {
     if (headerToAdd) {
-      this.headerParameters.push(this.newParam(headerToAdd.headerName, '', true, false));
+      this.headerParameters.push(this.newParam(headerToAdd.headerName, '', true, false, 'string'));
       this.availableHeaders = this.availableHeaders.filter(h => h.headerName !== headerToAdd.headerName);
     } else {
-      this.headerParameters.push(this.newParam('', '', false, false));
+      this.headerParameters.push(this.newParam('', '', false, false, 'string'));
     }
   }
 

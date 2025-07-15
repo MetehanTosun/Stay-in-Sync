@@ -7,6 +7,7 @@ import de.unistuttgart.stayinsync.core.configuration.rest.dtos.CreateApiHeaderDT
 import de.unistuttgart.stayinsync.core.configuration.rest.dtos.CreateSourceSystemEndpointDTO;
 import de.unistuttgart.stayinsync.transport.domain.ApiEndpointQueryParamType;
 import de.unistuttgart.stayinsync.transport.domain.ApiRequestHeaderType;
+import de.unistuttgart.stayinsync.transport.dto.SchemaType;
 import io.quarkus.logging.Log;
 import io.swagger.v3.oas.models.OpenAPI;
 import io.swagger.v3.oas.models.Operation;
@@ -138,6 +139,7 @@ public class OpenApiSpecificationParserService {
 
     private void processParameter(Parameter parameter, SourceSystemEndpoint endpoint) {
         ApiEndpointQueryParamType paramType;
+        SchemaType schemaType = null;
         switch (parameter.getIn()) {
             case "query":
                 paramType = ApiEndpointQueryParamType.QUERY;
@@ -149,11 +151,32 @@ public class OpenApiSpecificationParserService {
                 return;
         }
 
+        switch (parameter.getSchema().getType()) {
+            case "string":
+                schemaType = SchemaType.STRING;
+                break;
+            case "integer":
+                schemaType = SchemaType.INTEGER;
+                break;
+            case "number":
+                schemaType = SchemaType.NUMBER;
+                break;
+            case "boolean":
+                schemaType = SchemaType.BOOLEAN;
+                break;
+            case "array":
+                schemaType = SchemaType.ARRAY;
+                break;
+            default:
+                Log.debugf("Schema description for parameter %s for endpoint with ID %s is not defined", parameter.getName(), endpoint.id);
+        }
+
         ApiEndpointQueryParamDTO paramDTO = new ApiEndpointQueryParamDTO(
                 parameter.getName(),
                 paramType,
+                schemaType,
                 null, // TODO: not sure, which values this is
-                null
+                null // TODO: Add already used values as a suggestion
         );
         apiEndpointQueryParamService.persistApiQueryParam(paramDTO, endpoint.id);
     }

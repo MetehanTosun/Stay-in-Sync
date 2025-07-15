@@ -10,7 +10,6 @@ import de.unistuttgart.stayinsync.core.configuration.rest.dtos.ArcTestResponseDT
 import de.unistuttgart.stayinsync.core.configuration.util.TypeScriptTypeGenerator;
 import io.quarkus.logging.Log;
 import io.smallrye.mutiny.Uni;
-import io.smallrye.mutiny.unchecked.Unchecked;
 import io.vertx.core.http.HttpMethod;
 import io.vertx.mutiny.core.Vertx;
 import io.vertx.mutiny.ext.web.client.WebClient;
