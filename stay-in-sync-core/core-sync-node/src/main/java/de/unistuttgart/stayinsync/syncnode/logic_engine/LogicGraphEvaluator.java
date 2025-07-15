@@ -26,6 +26,7 @@ public class LogicGraphEvaluator {
      * @return {@code true} or {@code false} representing the final evaluated state of the graph.
      * @throws IllegalArgumentException if the provided list of nodes is null or empty.
      */
+    //Todo graph can only be evaluated, if flag (finalized) is true
     public boolean evaluateGraph(List<Node> allNodesInGraph, Map<String, JsonNode> dataContext) {
         if (allNodesInGraph == null || allNodesInGraph.isEmpty()) {
             throw new IllegalArgumentException("The list of graph nodes cannot be null or empty.");

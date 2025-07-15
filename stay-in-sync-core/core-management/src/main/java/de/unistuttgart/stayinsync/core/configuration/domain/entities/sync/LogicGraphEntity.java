@@ -33,4 +33,10 @@ public class LogicGraphEntity extends PanacheEntity {
     @Lob
     @Column(name = "graph_definition_json", columnDefinition = "TEXT", nullable = false)
     public String graphDefinitionJson;
+
+    /**
+     * A flag indicating if the graph has passed all validation checks and is
+     * considered complete and ready for execution.
+     */
+    public boolean finalized = false;
 }

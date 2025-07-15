@@ -22,4 +22,9 @@ public class GraphDTO {
      * A list containing all the node definitions that make up this graph.
      */
     private List<NodeDTO> nodes;
+
+    /**
+     * Indicates whether the graph is in a finalized, valid state.
+     */
+    private boolean finalized;
 }

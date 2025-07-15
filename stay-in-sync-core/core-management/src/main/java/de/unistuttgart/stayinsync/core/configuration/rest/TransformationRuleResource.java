@@ -18,6 +18,7 @@ import org.eclipse.microprofile.openapi.annotations.parameters.Parameter;
 import org.eclipse.microprofile.openapi.annotations.tags.Tag;
 
 import java.util.List;
+import java.util.Map;
 
 import static jakarta.ws.rs.core.MediaType.APPLICATION_JSON;
 
@@ -41,12 +42,23 @@ public class TransformationRuleResource {
             throw new BadRequestException("Graph name must not be empty.");
         }
 
-        var persisted = graphService.persistGraph(dto);
+        GraphStorageService.PersistenceResult result = graphService.persistGraph(dto);
 
-        var location = uriInfo.getAbsolutePathBuilder().path(Long.toString(persisted.id)).build();
-        Log.debugf("New TransformationRule created with URI %s", location);
-
-        return Response.created(location).entity(dto).build();
+        if (result.validationResult().isValid()) {
+            // Case 1: The graph was valid.
+            var location = uriInfo.getAbsolutePathBuilder().path(Long.toString(result.entity().id)).build();
+            return Response.created(location).entity(dto).build(); // Status 201
+        } else {
+            // Case 2: The graph was invalid but was saved as a draft.
+            return Response.status(Response.Status.OK) // Status 200
+                    .entity(Map.of(
+                            "status", "Saved as draft. Graph is not valid.",
+                            "errors", result.validationResult().errorMessages(),
+                            "graphId", result.entity().id,
+                            "graph", dto
+                    ))
+                    .build();
+        }
     }
 
     @GET
@@ -74,11 +86,28 @@ public class TransformationRuleResource {
     @Consumes(APPLICATION_JSON)
     @Operation(summary = "Updates an existing Transformation Rule")
     public Response updateTransformationRule(@Parameter(name = "id", required = true) @PathParam("id") Long id, GraphDTO dto) {
-        graphService.updateGraph(id, dto)
-                .orElseThrow(() -> new NotFoundException("TransformationRule with id " + id + " not found."));
+        GraphStorageService.PersistenceResult result = graphService.updateGraph(id, dto);
 
-        Log.debugf("TransformationRule with id %d was updated.", id);
-        return Response.ok(dto).build();
+        // 2. Prüfe das Ergebnis aus dem Container.
+        if (result.validationResult().isValid()) {
+            // Fall A: Der aktualisierte Graph ist gültig.
+            Log.debugf("TransformationRule with id %d was updated and is valid.", id);
+
+            dto.setFinalized(true);
+
+            return Response.ok(dto).build(); // Status 200 OK mit dem validen Graphen
+        } else {
+            // Fall B: Der aktualisierte Graph ist ungültig (wurde aber als Entwurf gespeichert).
+            Log.warnf("TransformationRule with id %d was updated but is not valid.", id);
+
+            // Sende "200 OK", aber mit den Validierungsfehlern im Body der Antwort.
+            return Response.ok(Map.of(
+                    "status", "Saved as draft. Graph is not valid.",
+                    "errors", result.validationResult().errorMessages(),
+                    "graphId", result.entity().id,
+                    "graph", dto
+            )).build();
+        }
     }
 
     @DELETE
