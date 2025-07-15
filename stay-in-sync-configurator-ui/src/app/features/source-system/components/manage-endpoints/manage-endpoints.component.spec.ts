@@ -7,8 +7,9 @@ import {RouterTestingModule} from '@angular/router/testing';
 
 import {ManageEndpointsComponent} from './manage-endpoints.component';
 import {SourceSystemEndpointResourceService} from '../../service/sourceSystemEndpointResource.service';
-import {SourceSystemEndpointDTO} from '../../generated';
+
 import {HttpEvent} from '@angular/common/http';
+import { SourceSystemEndpointDTO } from '../../models/sourceSystemEndpointDTO';
 
 describe('ManageEndpointsComponent', () => {
   let component: ManageEndpointsComponent;
