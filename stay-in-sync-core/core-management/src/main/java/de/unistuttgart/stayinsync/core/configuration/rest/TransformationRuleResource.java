@@ -4,7 +4,7 @@ package de.unistuttgart.stayinsync.core.configuration.rest;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.LogicGraphEntity;
-import de.unistuttgart.stayinsync.core.configuration.service.GraphStorageService;
+import de.unistuttgart.stayinsync.core.configuration.service.transformationrule.GraphStorageService;
 import de.unistuttgart.stayinsync.transport.dto.transformationrule.GraphDTO;
 import io.quarkus.logging.Log;
 import jakarta.enterprise.context.ApplicationScoped;

@@ -3,12 +3,12 @@
 //import com.fasterxml.jackson.databind.JsonNode;
 //import com.fasterxml.jackson.databind.ObjectMapper;
 //import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.LogicGraphEntity;
-//import de.unistuttgart.stayinsync.core.configuration.service.GraphStorageService;
+//import de.unistuttgart.stayinsync.core.configuration.service.transformationrule.GraphStorageService;
 //import de.unistuttgart.stayinsync.syncnode.logik_engine.logic_operator.LogicOperator;
-//import de.unistuttgart.stayinsync.syncnode.logik_engine.nodes.ConstantNode;
-//import de.unistuttgart.stayinsync.syncnode.logik_engine.nodes.LogicNode;
-//import de.unistuttgart.stayinsync.syncnode.logik_engine.nodes.Node;
-//import de.unistuttgart.stayinsync.syncnode.logik_engine.nodes.ProviderNode;
+//import de.unistuttgart.stayinsync.transport.transformation_rule_shared.nodes.ConstantNode;
+//import de.unistuttgart.stayinsync.transport.transformation_rule.LogicNode;
+//import de.unistuttgart.stayinsync.transport.transformation_rule.Node;
+//import de.unistuttgart.stayinsync.transport.transformation_rule_shared.nodes.ProviderNode;
 //import io.quarkus.test.junit.QuarkusTest;
 //import jakarta.inject.Inject;
 //import jakarta.persistence.EntityManager;
