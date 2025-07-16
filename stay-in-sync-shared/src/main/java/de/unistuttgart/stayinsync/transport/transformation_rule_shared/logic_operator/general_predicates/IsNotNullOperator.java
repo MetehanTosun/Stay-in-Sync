@@ -4,8 +4,8 @@ import com.fasterxml.jackson.databind.JsonNode;
 import de.unistuttgart.stayinsync.transport.transformation_rule_shared.logic_operator.Operation;
 import de.unistuttgart.stayinsync.transport.transformation_rule_shared.nodes.LogicNode;
 import de.unistuttgart.stayinsync.transport.transformation_rule_shared.nodes.Node;
-import de.unistuttgart.stayinsync.syncnode.logic_engine.nodes.ProviderNode;
-import de.unistuttgart.stayinsync.syncnode.logic_engine.nodes.JsonPathValueExtractor;
+import de.unistuttgart.stayinsync.transport.transformation_rule_shared.nodes.ProviderNode;
+import de.unistuttgart.stayinsync.transport.transformation_rule_shared.nodes.JsonPathValueExtractor;
 
 import java.util.Arrays;
 import java.util.List;
