@@ -4,9 +4,11 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.LogicGraphEntity;
 import de.unistuttgart.stayinsync.transport.dto.transformationrule.GraphDTO;
+import de.unistuttgart.stayinsync.transport.transformation_rule_shared.GraphStatus;
 import de.unistuttgart.stayinsync.transport.transformation_rule_shared.ValidationResult;
 import de.unistuttgart.stayinsync.transport.transformation_rule_shared.nodes.Node;
 import de.unistuttgart.stayinsync.transport.transformation_rule_shared.util.GraphMapper;
+import de.unistuttgart.stayinsync.transport.transformation_rule_shared.validation_error.ValidationError;
 import io.quarkus.logging.Log;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
@@ -36,19 +38,18 @@ public class GraphStorageService {
     @Inject
     ObjectMapper jsonObjectMapper;
 
-    public record PersistenceResult(LogicGraphEntity entity, ValidationResult validationResult) {}
+    /**
+     * A record to hold the result of a graph persistence operation.
+     * @param entity The persisted database entity.
+     * @param validationErrors A list of all found validation errors. Empty if the graph is valid.
+     */
+    public record PersistenceResult(LogicGraphEntity entity, List<ValidationError> validationErrors) {}
 
     /**
-     * Maps, validates, and persists a new logic graph to the database.
-     * <p>
-     * This method orchestrates the entire process. It validates the graph and sets the
-     * {@code finalized} flag based on the outcome before saving the entity. It does
-     * not throw an exception for validation failures, as saving an un-finalized graph
-     * is a valid operation.
+     * Maps, validates, and persists a new logic graph.
      *
      * @param graphDto The DTO containing the full graph definition.
-     * @return The persisted {@link LogicGraphEntity}, including its finalization status.
-     * @throws IllegalArgumentException if a graph with the given name already exists.
+     * @return A {@link PersistenceResult} containing the saved entity and any validation errors.
      */
     @Transactional
     public PersistenceResult persistGraph(GraphDTO graphDto) {
@@ -60,26 +61,23 @@ public class GraphStorageService {
 
         List<Node> nodeGraph = mapper.toNodeGraph(graphDto);
 
-        ValidationResult validationResult = validator.validateGraph(nodeGraph);
+        List<ValidationError> validationErrors = validator.validateGraph(nodeGraph);
 
-        boolean isFinalized = validationResult.isValid();
+        GraphStatus status = validationErrors.isEmpty() ? GraphStatus.FINALIZED : GraphStatus.DRAFT;
 
         try {
             String json = jsonObjectMapper.writeValueAsString(graphDto);
-
             LogicGraphEntity entity = new LogicGraphEntity();
             entity.name = graphDto.getName();
             entity.graphDefinitionJson = json;
-            entity.finalized = isFinalized;
+            entity.status = status;
             entity.persist();
 
-            // Log a warning if the graph was saved as a non-finalized draft.
-            if (!isFinalized) {
-                Log.warnf("Graph '%s' (id: %d) was saved as a non-finalized draft due to validation errors: %s",
-                        graphDto.getName(), entity.id, validationResult.errorMessages());
+            if (status == GraphStatus.DRAFT) {
+                Log.warnf("Graph '%s' (id: %d) was saved as a DRAFT due to validation errors.", entity.name, entity.id);
             }
 
-            return new PersistenceResult(entity, validationResult);
+            return new PersistenceResult(entity, validationErrors);
 
         } catch (JsonProcessingException e) {
             throw new RuntimeException("Failed to serialize graph '" + graphDto.getName() + "' to JSON.", e);
@@ -95,7 +93,7 @@ public class GraphStorageService {
      *
      * @param id       The ID of the graph to update.
      * @param graphDTO The DTO containing the new, complete graph definition.
-     * @return A {@link PersistenceResult} containing the updated entity and the validation details.
+     * @return A {@link PersistenceResult} containing the updated entity and any validation errors.
      * @throws NotFoundException if no graph with the given ID is found.
      */
     public PersistenceResult updateGraph(Long id, GraphDTO graphDTO) {
@@ -104,18 +102,25 @@ public class GraphStorageService {
                 .orElseThrow(() -> new NotFoundException("Graph with id " + id + " not found."));
 
         List<Node> nodeGraph = mapper.toNodeGraph(graphDTO);
-        ValidationResult validationResult = validator.validateGraph(nodeGraph);
-        boolean isFinalized = validationResult.isValid();
+
+        List<ValidationError> validationErrors = validator.validateGraph(nodeGraph);
+
+        GraphStatus status = validationErrors.isEmpty() ? GraphStatus.FINALIZED : GraphStatus.DRAFT;
 
         try {
             entity.name = graphDTO.getName();
             entity.graphDefinitionJson = jsonObjectMapper.writeValueAsString(graphDTO);
-            entity.finalized = isFinalized;
-            entity.persist();
+            entity.status = status;
 
-            return new PersistenceResult(entity, validationResult);
+            if (status == GraphStatus.DRAFT) {
+                Log.warnf("Graph '%s' (id: %d) was updated and saved as a DRAFT due to validation errors: %s",
+                        entity.name, entity.id, validationErrors);
+            }
+
+            return new PersistenceResult(entity, validationErrors);
+
         } catch (JsonProcessingException e) {
-            throw new RuntimeException("Failed to serialize graph with id " + id + " to JSON.", e);
+            throw new RuntimeException("Failed to serialize graph with id " + id + " to JSON for update.", e);
         }
     }
 

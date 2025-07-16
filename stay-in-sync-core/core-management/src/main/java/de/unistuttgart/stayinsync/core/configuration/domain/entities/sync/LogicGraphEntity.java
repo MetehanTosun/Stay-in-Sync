@@ -1,11 +1,9 @@
 package de.unistuttgart.stayinsync.core.configuration.domain.entities.sync;
 
 import de.unistuttgart.stayinsync.transport.dto.transformationrule.GraphDTO;
+import de.unistuttgart.stayinsync.transport.transformation_rule_shared.GraphStatus;
 import io.quarkus.hibernate.orm.panache.PanacheEntity;
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.Lob;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -35,8 +33,10 @@ public class LogicGraphEntity extends PanacheEntity {
     public String graphDefinitionJson;
 
     /**
-     * A flag indicating if the graph has passed all validation checks and is
+     * The validation status of the graph, stored as a string ('DRAFT' or 'FINALIZED').
+     * This flag indicates whether the graph has passed all validation checks and is
      * considered complete and ready for execution.
      */
-    public boolean finalized = false;
+    @Enumerated(EnumType.STRING)
+    public GraphStatus status = GraphStatus.DRAFT;
 }

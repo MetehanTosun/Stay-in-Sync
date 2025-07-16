@@ -6,6 +6,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.LogicGraphEntity;
 import de.unistuttgart.stayinsync.core.configuration.service.transformationrule.GraphStorageService;
 import de.unistuttgart.stayinsync.transport.dto.transformationrule.GraphDTO;
+import de.unistuttgart.stayinsync.transport.dto.transformationrule.GraphPersistenceResponseDTO;
 import io.quarkus.logging.Log;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
@@ -44,21 +45,15 @@ public class TransformationRuleResource {
 
         GraphStorageService.PersistenceResult result = graphService.persistGraph(dto);
 
-        if (result.validationResult().isValid()) {
-            // Case 1: The graph was valid.
-            var location = uriInfo.getAbsolutePathBuilder().path(Long.toString(result.entity().id)).build();
-            return Response.created(location).entity(dto).build(); // Status 201
-        } else {
-            // Case 2: The graph was invalid but was saved as a draft.
-            return Response.status(Response.Status.OK) // Status 200
-                    .entity(Map.of(
-                            "status", "Saved as draft. Graph is not valid.",
-                            "errors", result.validationResult().errorMessages(),
-                            "graphId", result.entity().id,
-                            "graph", dto
-                    ))
-                    .build();
-        }
+        GraphPersistenceResponseDTO responseDto = new GraphPersistenceResponseDTO();
+
+        dto.setStatus(result.entity().status);
+        responseDto.setGraph(dto);
+        responseDto.setErrors(result.validationErrors());
+
+        var location = uriInfo.getAbsolutePathBuilder().path(Long.toString(result.entity().id)).build();
+
+        return Response.created(location).entity(responseDto).build();
     }
 
     @GET
@@ -86,28 +81,18 @@ public class TransformationRuleResource {
     @Consumes(APPLICATION_JSON)
     @Operation(summary = "Updates an existing Transformation Rule")
     public Response updateTransformationRule(@Parameter(name = "id", required = true) @PathParam("id") Long id, GraphDTO dto) {
+
         GraphStorageService.PersistenceResult result = graphService.updateGraph(id, dto);
 
-        // 2. Prüfe das Ergebnis aus dem Container.
-        if (result.validationResult().isValid()) {
-            // Fall A: Der aktualisierte Graph ist gültig.
-            Log.debugf("TransformationRule with id %d was updated and is valid.", id);
+        GraphPersistenceResponseDTO responseDto = new GraphPersistenceResponseDTO();
 
-            dto.setFinalized(true);
+        dto.setStatus(result.entity().status);
+        responseDto.setGraph(dto);
+        responseDto.setErrors(result.validationErrors());
 
-            return Response.ok(dto).build(); // Status 200 OK mit dem validen Graphen
-        } else {
-            // Fall B: Der aktualisierte Graph ist ungültig (wurde aber als Entwurf gespeichert).
-            Log.warnf("TransformationRule with id %d was updated but is not valid.", id);
+        Log.debugf("TransformationRule with id %d was updated.", id);
 
-            // Sende "200 OK", aber mit den Validierungsfehlern im Body der Antwort.
-            return Response.ok(Map.of(
-                    "status", "Saved as draft. Graph is not valid.",
-                    "errors", result.validationResult().errorMessages(),
-                    "graphId", result.entity().id,
-                    "graph", dto
-            )).build();
-        }
+        return Response.ok(responseDto).build();
     }
 
     @DELETE

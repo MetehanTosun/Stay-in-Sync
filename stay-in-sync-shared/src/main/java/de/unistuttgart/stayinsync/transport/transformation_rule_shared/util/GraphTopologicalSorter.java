@@ -7,22 +7,23 @@ import java.util.*;
 
 /**
  * A utility class that performs a topological sort on a graph of Nodes
- * and detects the presence of cycles.
+ * and detects the presence and members of cycles.
  */
 @ApplicationScoped
 public class GraphTopologicalSorter {
 
     /**
-     * A record to hold the result of the sorting process, containing both the
-     * sorted list of nodes and a flag indicating if a cycle was detected.
+     * A record to hold the result of the sorting process, containing the
+     * sorted list, a cycle flag, and the IDs of nodes within the cycle.
      */
-    public record SortResult(List<Node> sortedNodes, boolean hasCycle) {}
+    public record SortResult(List<Node> sortedNodes, boolean hasCycle, List<Integer> cycleNodeIds) {}
 
     /**
      * Sorts a given graph of nodes topologically using Kahn's algorithm.
+     * If a cycle is detected, it identifies the nodes that are part of it.
      *
      * @param graphNodes The list of all nodes in the graph.
-     * @return A {@link SortResult} containing the sorted list and a boolean cycle flag.
+     * @return A {@link SortResult} containing the sorted list, a cycle flag, and cycle node IDs.
      */
     public SortResult sort(List<Node> graphNodes) {
         Map<Node, Integer> nodeInDegree = new HashMap<>();
@@ -30,19 +31,17 @@ public class GraphTopologicalSorter {
         Queue<Node> queue = new LinkedList<>();
         List<Node> sortedList = new ArrayList<>();
 
-        // --- Initialization ---
+        // Initialization
         for (Node node : graphNodes) {
             nodeInDegree.put(node, 0);
             childrenList.put(node, new ArrayList<>());
         }
 
-        // --- Dependency Analysis ---
-        // Calculate in-degrees and build the adjacency list (childrenList)
+        // Dependency Analysis
         for (Node currentNode : graphNodes) {
             if (currentNode.getInputNodes() != null) {
                 nodeInDegree.put(currentNode, currentNode.getInputNodes().size());
                 for (Node parentNode : currentNode.getInputNodes()) {
-                    // This check ensures the parentNode exists in the map before adding a child
                     if (childrenList.containsKey(parentNode)) {
                         childrenList.get(parentNode).add(currentNode);
                     }
@@ -50,20 +49,17 @@ public class GraphTopologicalSorter {
             }
         }
 
-        // --- Find Initial Nodes ---
-        // Add all nodes with an in-degree of 0 to the queue
+        // Find Initial Nodes
         for (Map.Entry<Node, Integer> entry : nodeInDegree.entrySet()) {
             if (entry.getValue() == 0) {
                 queue.add(entry.getKey());
             }
         }
 
-        // --- Perform Topological Sort ---
+        // Perform Topological Sort
         while (!queue.isEmpty()) {
             Node node = queue.poll();
             sortedList.add(node);
-
-            // Update all children of the processed node
             for (Node child : childrenList.get(node)) {
                 int newInDegree = nodeInDegree.get(child) - 1;
                 nodeInDegree.put(child, newInDegree);
@@ -73,10 +69,19 @@ public class GraphTopologicalSorter {
             }
         }
 
-        // --- Cycle Detection ---
-        // If the sorted list contains fewer nodes than the original graph, a cycle exists.
+        // --- Cycle Detection & Node Identification ---
         boolean hasCycle = sortedList.size() != graphNodes.size();
+        List<Integer> cycleNodeIds = new ArrayList<>();
 
-        return new SortResult(sortedList, hasCycle);
+        if (hasCycle) {
+            // If a cycle exists, any node with a remaining in-degree > 0 is part of it.
+            for (Map.Entry<Node, Integer> entry : nodeInDegree.entrySet()) {
+                if (entry.getValue() > 0) {
+                    cycleNodeIds.add(entry.getKey().getId());
+                }
+            }
+        }
+
+        return new SortResult(sortedList, hasCycle, cycleNodeIds);
     }
 }
