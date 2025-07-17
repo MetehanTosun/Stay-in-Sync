@@ -4,7 +4,9 @@ package de.unistuttgart.stayinsync.core.configuration.rest;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.LogicGraphEntity;
+import de.unistuttgart.stayinsync.core.configuration.rest.dtos.OperatorMetadataDTO;
 import de.unistuttgart.stayinsync.core.configuration.service.transformationrule.GraphStorageService;
+import de.unistuttgart.stayinsync.core.configuration.util.OperatorMetadata;
 import de.unistuttgart.stayinsync.transport.dto.transformationrule.GraphDTO;
 import de.unistuttgart.stayinsync.transport.dto.transformationrule.GraphPersistenceResponseDTO;
 import io.quarkus.logging.Log;
@@ -34,6 +36,19 @@ public class TransformationRuleResource {
 
     @Inject
     ObjectMapper jsonObjectMapper;
+
+    @Inject
+    OperatorMetadata operatorMetadataService;
+
+
+    @GET
+    @Path("/operators")
+    @Operation(summary = "Returns metadata for all available logic operators",
+            description = "Provides a list of all operators with their signature (description, input/output types) for use in a UI graph editor.")
+    public List<OperatorMetadataDTO> getAvailableOperators() {
+        Log.debug("Fetching all available operator metadata for UI.");
+        return operatorMetadataService.findAllOperatorMetadata();
+    }
 
     @POST
     @Consumes(APPLICATION_JSON)
