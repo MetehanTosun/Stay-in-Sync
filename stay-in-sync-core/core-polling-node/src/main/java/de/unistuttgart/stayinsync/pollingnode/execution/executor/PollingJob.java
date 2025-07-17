@@ -3,6 +3,7 @@ package de.unistuttgart.stayinsync.pollingnode.execution.executor;
 import de.unistuttgart.stayinsync.pollingnode.exceptions.FaultySourceSystemApiRequestMessageDtoException;
 import de.unistuttgart.stayinsync.pollingnode.exceptions.JsonObjectUnthreadingException;
 import de.unistuttgart.stayinsync.pollingnode.exceptions.PollingNodeException;
+import de.unistuttgart.stayinsync.pollingnode.execution.ressource.RequestBuilder;
 import de.unistuttgart.stayinsync.pollingnode.execution.ressource.RestClient;
 import de.unistuttgart.stayinsync.pollingnode.rabbitmq.SyncDataProducer;
 import de.unistuttgart.stayinsync.transport.dto.ApiConnectionDetailsDTO;
@@ -27,6 +28,8 @@ public class PollingJob implements Job {
 
     @Inject
     RestClient restClient;
+    @Inject
+    RequestBuilder requestBuilder;
 
     @Inject
     SyncDataProducer syncDataProducer;
@@ -76,7 +79,7 @@ public class PollingJob implements Job {
      * @throws FaultySourceSystemApiRequestMessageDtoException
      */
     private Uni<HttpResponse<Buffer>> pollUniJsonObject(final ApiConnectionDetailsDTO connectionDetails, final RestClient restClient) throws FaultySourceSystemApiRequestMessageDtoException {
-        HttpRequest<Buffer> bufferHttpRequest = restClient.configureRequest(connectionDetails);
+        HttpRequest<Buffer> bufferHttpRequest = requestBuilder.configureRequest(connectionDetails);
         Log.infof("request headers %s", bufferHttpRequest);
         return restClient.executeRequest(bufferHttpRequest);
     }
