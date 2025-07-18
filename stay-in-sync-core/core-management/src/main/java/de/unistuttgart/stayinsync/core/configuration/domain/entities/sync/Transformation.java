@@ -25,7 +25,7 @@ public class Transformation extends PanacheEntity {
     public TransformationScript transformationScript;
 
 
-    @OneToOne
+    @OneToOne(cascade = CascadeType.ALL)
     public TransformationRule transformationRule;
 
     @ManyToMany(cascade = CascadeType.ALL)
