@@ -3,6 +3,7 @@ package de.unistuttgart.stayinsync.core.configuration.exception;
 import jakarta.ws.rs.WebApplicationException;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
+import jakarta.ws.rs.core.Response.Status;
 
 /**
  * This Class is supposed to be used for handling errors upon web requests
@@ -10,7 +11,7 @@ import jakarta.ws.rs.core.Response;
 public class CoreManagementWebException extends WebApplicationException {
 
     /**
-     * Constucts an CoreManagementWebException
+     * Constructs an {@link CoreManagementWebException]
      *
      * @param status  {@link Response.Status} of current request
      * @param title   short and descriptive title of the occurred error
@@ -21,15 +22,19 @@ public class CoreManagementWebException extends WebApplicationException {
     }
 
     /**
-     * Constucts an CoreManagementWebException
+     * Constucts an {@link CoreManagementWebException]
      *
      * @param status  {@link Response.Status} of current request
      * @param title   short and descriptive title of the occurred error
      * @param message preferably user-friendly message containing more detailed information on the error
-     * @param args message params
+     * @param args    message params
      */
     public CoreManagementWebException(Response.Status status, String title, String message, Object... args) {
         super(buildResponse(title, message, status, args));
+    }
+
+    public CoreManagementWebException(int i, String string, String string2, Long endpointId) {
+        //TODO Auto-generated constructor stub
     }
 
     /**
@@ -62,6 +67,11 @@ public class CoreManagementWebException extends WebApplicationException {
                 .entity(new ErrorResponse(title, message)) //
                 .type(MediaType.APPLICATION_JSON) //
                 .build();
+    }
+
+    public Status getStatus() {
+        // TODO Auto-generated method stub
+        throw new UnsupportedOperationException("Unimplemented method 'getStatus'");
     }
 
 

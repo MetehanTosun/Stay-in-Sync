@@ -1,0 +1,119 @@
+<p-dialog
+  header="New Syncjob"
+  [(visible)]="visible"
+  (onHide)="cancel()"
+  [modal]="true"
+  [style]="{ width: '85vw', maxWidth: '90vw', minHeight: '45vw' }"
+  [baseZIndex]="10000"
+  class="big-dialog"
+>
+  <p-stepper [value]="activeStep" (valueChange)="activeStep = $event ?? 1" class="basis-[50rem]">
+    <p-step-list>
+      <p-step [value]="1">Define Syncjob</p-step>
+      <p-step [value]="2">Add Transformations</p-step>
+      <p-step [value]="3">Overview</p-step>
+    </p-step-list>
+
+    <p-step-panels>
+      <p-step-panel [value]="1">
+        <ng-template #content>
+          <div class="flex flex-col h-48 w-full space-y-4">
+            <div class="border-2 border-dashed border-surface-200 dark:border-surface-700 rounded bg-surface-50 dark:bg-surface-950 flex-auto flex justify-center items-center font-medium">
+              <p-floatlabel variant="on" class="w-80">
+                <input
+                  type="text"
+                  pInputText
+                  id="syncjob_name"
+                  placeholder=" "
+                  [(ngModel)]="syncJobName"
+                  name="syncJobName"
+                  class="w-80"
+                  required
+                  #nameInput="ngModel"
+                />
+                <label for="syncjob_name">Name</label>
+                <div *ngIf="nameInput.invalid && nameInput.touched" class="text-red-500 text-xs mt-1">
+                  name must be given.
+                </div>
+              </p-floatlabel>
+            </div>
+            <div class="border-2 border-dashed border-surface-200 dark:border-surface-700 rounded bg-surface-50 dark:bg-surface-950 flex-auto flex justify-center items-center font-medium">
+              <p-floatlabel variant="on" class="w-80">
+                <textarea
+                  pTextarea
+                  id="syncjob_description"
+                  [(ngModel)]="syncJobDescription"
+                  rows="3"
+                  cols="30"
+                  style="resize: none"
+                  class="w-80"
+                  placeholder=" "
+                ></textarea>
+                <label for="syncjob_description">Description</label>
+              </p-floatlabel>
+            </div>
+            <div class="border-2 border-dashed border-surface-200 dark:border-surface-700 rounded bg-surface-50 dark:bg-surface-950 flex-auto flex justify-center items-center font-medium">
+               <div class="flex flex-col w-80">
+                 <label for="source_system">Sourcesystem(e)</label>
+                 <p-multi-select
+                   id="source_system"
+                   [options]="sourceSystems"
+                   [(ngModel)]="selectedSourceSystems"
+                   optionLabel="name"
+                   placeholder="Quellsystem(e) auswählen"
+                   class="w-80"
+                 ></p-multi-select>
+               </div>
+            </div>
+            <div class="border-2 border-dashed border-surface-200 dark:border-surface-700 rounded bg-surface-50 dark:bg-surface-950 flex-auto flex justify-center items-center font-medium">
+              <div class="flex items-center w-80">
+                <label for="simulationSwitch" class="mr-2">Simulation Mode</label>
+                <p-toggleswitch id="simulationSwitch" [(ngModel)]="isSimulation"></p-toggleswitch>
+              </div>
+            </div>
+          </div>
+        </ng-template>
+      </p-step-panel>
+
+      <p-step-panel [value]="2">
+        <ng-template #content>
+          <div class="flex flex-col h-48 w-full">
+            <div class="border-2 border-dashed border-surface-200 dark:border-surface-700 rounded bg-surface-50 dark:bg-surface-950 flex-1 flex justify-center items-center font-medium w-full">
+              <app-transformation-base
+                class="w-full"
+                (transformationsChanged)="onTransformationsChanged($event)"
+              ></app-transformation-base>
+            </div>
+          </div>
+        </ng-template>
+      </p-step-panel>
+
+      <p-step-panel [value]="3">
+        <ng-template #content>
+          <div class="flex flex-col h-48">
+            <div class="border-2 border-dashed border-surface-200 dark:border-surface-700 rounded bg-surface-50 dark:bg-surface-950 flex-auto flex justify-center items-center font-medium">
+              <app-sync-job-overview [syncJob]="mySyncJob"></app-sync-job-overview>
+            </div>
+          </div>
+        </ng-template>
+      </p-step-panel>
+    </p-step-panels>
+  </p-stepper>
+
+  <!-- 🔽 Navigation Buttons (immer unten rechts) -->
+<div class="syncjob-navigation-buttons">
+  <ng-container [ngSwitch]="activeStep">
+    <ng-container *ngSwitchCase="1">
+      <p-button label="Next" icon="pi pi-arrow-right" iconPos="right" (onClick)="goToStep(2)" />
+    </ng-container>
+    <ng-container *ngSwitchCase="2">
+      <p-button label="Back" severity="secondary" icon="pi pi-arrow-left" (onClick)="goToStep(1)" />
+      <p-button label="Next" icon="pi pi-arrow-right" iconPos="right" (onClick)="goToStep(3)" />
+    </ng-container>
+    <ng-container *ngSwitchCase="3">
+      <p-button label="Back" icon="pi pi-arrow-left" (onClick)="goToStep(2)" />
+      <p-button label="Confirm" (onClick)="createSyncJob()" />
+    </ng-container>
+  </ng-container>
+</div>
+</p-dialog>
