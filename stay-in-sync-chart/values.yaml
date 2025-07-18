@@ -156,7 +156,12 @@ mariadb:
   primary:
     readinessProbe:
       initialDelaySeconds: 90
-
+  auth:
+    rootPassword: "root"
+    database: "stayinsync_core"
+  service:
+    ports:
+      mysql: 3306
 umbrella:
   dataconsumerOne:
     enabled: true
