@@ -6,8 +6,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import de.unistuttgart.stayinsync.scriptengine.ScriptEngineService;
 import de.unistuttgart.stayinsync.scriptengine.message.TransformationResult;
 import de.unistuttgart.stayinsync.syncnode.domain.TransformJob;
-import de.unistuttgart.stayinsync.syncnode.logik_engine.LogicGraphEvaluator;
-import de.unistuttgart.stayinsync.syncnode.logik_engine.nodes.Node;
+//import de.unistuttgart.stayinsync.syncnode.logik_engine.LogicGraphEvaluator;
+//import de.unistuttgart.stayinsync.syncnode.logik_engine.nodes.Node;
 import io.quarkus.logging.Log;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
@@ -24,8 +24,10 @@ import java.util.function.Predicate;
 
 @ApplicationScoped
 public class TransformationExecutionService {
-    @Inject
-    LogicGraphEvaluator logicGraphEvaluator;
+
+    // TODO: Pending change from LogicGraph
+    //@Inject
+    //LogicGraphEvaluator logicGraphEvaluator;
 
     @Inject
     ScriptEngineService scriptEngineService;
@@ -36,6 +38,7 @@ public class TransformationExecutionService {
     @Inject
     ObjectMapper objectMapper;
 
+
     /**
      * Asynchronously evaluates the logic graph and, if the condition passes,
      * executes the script transformation.
@@ -45,6 +48,8 @@ public class TransformationExecutionService {
      * @return A Uni that will eventually contain the TransformationResult, or null if the
      *         pre-condition check failed.
      */
+
+    /* TODO: Pending change from LogicGraph
     public Uni<TransformationResult> execute(TransformJob job, List<Node> graphNodes){
         return Uni.createFrom().item(()-> {
             Log.infof("Job %s: Evaluating pre-condition logic graph...", job.jobId());
@@ -61,4 +66,5 @@ public class TransformationExecutionService {
             }
         });
     }
+    */
 }

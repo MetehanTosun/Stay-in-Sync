@@ -97,6 +97,8 @@ public class SyncDataMessageConsumer {
      */
     private DeliverCallback receiveSyncDataCallback() {
         return (consumerTag, delivery) -> {
+            /* TODO Dependency to LogicGraph
+        }
             try {
                 SyncDataMessageDTO syncData = getSyncDataMessageDTO(delivery);
                 Log.infof("Received syncData for ARC alias: %s", syncData.arcAlias());
@@ -105,7 +107,7 @@ public class SyncDataMessageConsumer {
 
                 for (ExecutionPayload payload : completedPayloads) {
                     Log.infof("Dispatching job %s for conditional execution", payload.job().jobId());
-
+/*
                     transformationExecutionService.execute(payload.job(), payload.graphNodes())
                             .subscribe().with(
                                     result -> {
@@ -125,7 +127,7 @@ public class SyncDataMessageConsumer {
                 Log.errorf("Failed to process sync-data message", e);
                 //Sending message to dead-letter-exchange
                 channel.basicNack(delivery.getEnvelope().getDeliveryTag(), false, false);
-            }
+            }*/
         };
     }
 
