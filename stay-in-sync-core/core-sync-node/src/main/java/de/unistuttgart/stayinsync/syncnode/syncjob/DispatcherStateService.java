@@ -2,8 +2,8 @@ package de.unistuttgart.stayinsync.syncnode.syncjob;
 
 import de.unistuttgart.stayinsync.syncnode.domain.ExecutionPayload;
 import de.unistuttgart.stayinsync.syncnode.domain.TransformJob;
-import de.unistuttgart.stayinsync.syncnode.logik_engine.GraphMapperService;
-import de.unistuttgart.stayinsync.syncnode.logik_engine.nodes.Node;
+//import de.unistuttgart.stayinsync.syncnode.logik_engine.GraphMapperService;
+//import de.unistuttgart.stayinsync.syncnode.logik_engine.nodes.Node;
 import de.unistuttgart.stayinsync.transport.dto.*;
 import io.quarkus.logging.Log;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -16,8 +16,9 @@ import java.util.concurrent.ConcurrentHashMap;
 @ApplicationScoped
 public class DispatcherStateService {
 
-    @Inject
-    GraphMapperService graphMapperService;
+    // TODO: Dependency to LogicGraph
+    //@Inject
+    //GraphMapperService graphMapperService;
 
     private final Map<String, Map<String, Object>> latestArcData = new ConcurrentHashMap<>();
 
@@ -102,7 +103,8 @@ public class DispatcherStateService {
         Map<String, Object> finalSource = Map.of("source", sourceSystemMap);
 
         TransformationRuleDTO rule = tx.transformationRuleDTO();
-        List<Node> graphNodes = graphMapperService.toNodeGraph(rule.graphDTO());
+        // TODO Dependency to LogicGraph
+        //List<Node> graphNodes = graphMapperService.toNodeGraph(rule.graphDTO());
 
         TransformJob job = new TransformJob(
                 "Transformation-" + tx.id(),
@@ -112,7 +114,7 @@ public class DispatcherStateService {
                 "js", // Placeholder
                 tx.transformationScriptDTO().hash(),
                 finalSource);
-        return new ExecutionPayload(job, graphNodes);
+        return new ExecutionPayload(job); // TODO FIX DEPENDENCY FOR LOGICGRAPH
     }
 
     public Map<Long, TransformationState> getTransformationRegistry(){
