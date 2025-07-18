@@ -168,47 +168,61 @@ export class CreateSourceSystemComponent implements OnInit, OnChanges {
     this.currentStep = 0;
   }
 
-  /**
-   * Validates form, constructs DTO including authConfig and optional file blob,
-   * and triggers POST to create the Source System.
-   */
-  save(): void {
-    if (this.form.invalid) {
-      this.form.markAllAsTouched();
-      return;
-    }
-
-    const base = {...this.form.getRawValue()} as CreateSourceSystemDTO;
-    delete base.authConfig;
-    delete base.openApiSpec;
-
-    const authType = this.form.get('apiAuthType')!.value as ApiAuthType;
-    const cfg = this.form.get('authConfig')!.value;
-    if (authType === ApiAuthType.Basic) {
-      base.authConfig = {authType, username: cfg.username, password: cfg.password} as BasicAuthDTO;
-    } else if (authType === ApiAuthType.ApiKey) {
-      base.authConfig = {authType, apiKey: cfg.apiKey, headerName: cfg.headerName} as ApiKeyAuthDTO;
-    }
-
-    const post = () => {
-      this.postDto(base);
-    };
-
-    if (this.selectedFile) {
-      const reader = new FileReader();
-      reader.onload = () => {
-        const b64 = (reader.result as string).split(',')[1];
-        const bytes = atob(b64);
-        const arr = new Uint8Array(bytes.length);
-        for (let i = 0; i < bytes.length; i++) arr[i] = bytes.charCodeAt(i);
-        base.openApiSpec = new Blob([arr], {type: 'application/octet-stream'});
-        post();
-      };
-      reader.readAsDataURL(this.selectedFile);
-    } else {
-      post();
-    }
+/**
+ * Validates form, constructs DTO including authConfig and optional file blob or URL,
+ * and triggers POST to create the Source System.
+ */
+save(): void {
+  if (this.form.invalid) {
+    this.form.markAllAsTouched();
+    return;
   }
+
+  const base = {...this.form.getRawValue()} as CreateSourceSystemDTO;
+  delete base.authConfig;
+  
+  const authType = this.form.get('apiAuthType')!.value as ApiAuthType;
+  const cfg = this.form.get('authConfig')!.value;
+  if (authType === ApiAuthType.Basic) {
+    base.authConfig = {authType, username: cfg.username, password: cfg.password} as BasicAuthDTO;
+  } else if (authType === ApiAuthType.ApiKey) {
+    base.authConfig = {authType, apiKey: cfg.apiKey, headerName: cfg.headerName} as ApiKeyAuthDTO;
+  }
+
+  const post = () => {
+    this.postDto(base);
+  };
+
+  // Prüfe, ob eine Datei ausgewählt wurde
+if (this.selectedFile) {
+  // DATEI-UPLOAD: Das Backend kann keine Blobs verarbeiten, also konvertiere zu String
+  delete (base as any).openApiSpec; // Lösche URL, falls vorhanden
+  const reader = new FileReader();
+  reader.onload = () => {
+    const fileContent = reader.result as string;
+    (base as any).openApiSpec = fileContent; // Type-Assertion verwenden
+    post();
+  };
+  reader.readAsText(this.selectedFile);
+
+} else {
+  // Prüfe, ob openApiSpec eine URL-String ist
+  const openApiSpecValue = base.openApiSpec as any;
+  if (openApiSpecValue && typeof openApiSpecValue === 'string' && openApiSpecValue.trim()) {
+    // URL DIREKT ALS STRING senden
+    console.log('Sending URL as string:', openApiSpecValue);
+    (base as any).openApiSpec = openApiSpecValue; // Type-Assertion verwenden
+    post();
+  } else {
+    // WEDER DATEI NOCH URL: Sende ohne openApiSpec
+    delete (base as any).openApiSpec;
+    post();
+  }
+}
+// ...existing code...
+}
+
+  
 
   /**
    * Performs HTTP POST to persist the Source System and handles Location header parsing.
@@ -216,16 +230,25 @@ export class CreateSourceSystemComponent implements OnInit, OnChanges {
    * @param dto Prepared DTO for creation.
    */
   private postDto(dto: CreateSourceSystemDTO): void {
+    // DEBUG: Schaue dir das DTO an, bevor es gesendet wird
+    console.log('📤 Sending DTO:', dto);
+    console.log('📤 openApiSpec type:', typeof dto.openApiSpec);
+    console.log('📤 openApiSpec value:', dto.openApiSpec);
+    
     this.sourceSystemService
       .apiConfigSourceSystemPost(dto)
       .subscribe({
         next: (resp: SourceSystemDTO) => {
+          console.log('✅ Success:', resp);
           this.createdSourceSystemId = resp.id!;
           this.currentStep = 1;
         },
         error: (err) => {
+          console.error('❌ Detailed error:', err);
+          console.error('❌ Error status:', err.status);
+          console.error('❌ Error message:', err.message);
+          console.error('❌ Error body:', err.error);
           this.errorService.handleError(err);
-          console.error('Failed to create Source System:', err);
         }
       });
   }

@@ -30,6 +30,7 @@ import {ApiEndpointQueryParamType} from '../../models/apiEndpointQueryParamType'
 import {CreateSourceSystemEndpointDTO} from '../../models/createSourceSystemEndpointDTO';
 
 import { load as parseYAML } from 'js-yaml';
+import { SourceSystemDTO } from '../../models/sourceSystemDTO';
 
 
 /**
@@ -167,7 +168,44 @@ export class ManageEndpointsComponent implements OnInit {
       endpointPath: ['', Validators.required],
       httpRequestType: ['GET', Validators.required]
     });
+
+    this.loadSourceSystemAndSetApiUrl();
+   
   }
+
+    /**
+   * Load the source system data and extract the OpenAPI URL for import
+   */
+    private loadSourceSystemAndSetApiUrl(): void {
+      this.sourceSystemService.apiConfigSourceSystemIdGet(this.sourceSystemId)
+        .subscribe({
+          next: (sourceSystem: SourceSystemDTO) => {
+            console.log('Loaded source system:', sourceSystem);
+            
+            // Setze die API-URL für den Import
+            if (sourceSystem.openApiSpec) {
+              // Prüfe, ob openApiSpec eine URL ist (beginnt mit http)
+              if (typeof sourceSystem.openApiSpec === 'string' ) {
+                this.apiUrl = sourceSystem.openApiSpec;
+                console.log('✅ Found OpenAPI URL in source system:', this.apiUrl);
+              } else {
+                // Falls es eine Datei-Inhalt ist, verwende die API-URL + Standard-Pfade
+                this.apiUrl = sourceSystem.apiUrl;
+                console.log('ℹ️ No OpenAPI URL found, using API URL:', this.apiUrl);
+              }
+            } else {
+              // Fallback: Verwende die API-URL
+              this.apiUrl = sourceSystem.apiUrl;
+              console.log('ℹ️ No OpenAPI spec found, using API URL:', this.apiUrl);
+            }
+          },
+          error: (err: any) => {
+            console.error('Failed to load source system:', err);
+            // Fallback: Verwende eine Standard-URL (falls verfügbar)
+            this.apiUrl = 'https://petstore.swagger.io/v2';
+          }
+        });
+    }
 
   /**
    * Load endpoints for the current source system from the backend.
@@ -277,26 +315,43 @@ export class ManageEndpointsComponent implements OnInit {
     this.finish.emit();
   }
 
+  importEndpoints() {
+    if (!this.apiUrl) {
+      console.error('No API URL available for import');
+      return;
+    }
+    
+    this.importing = true;
+    
+    // Wenn apiUrl bereits eine direkte OpenAPI-URL ist, verwende sie direkt
+    if (this.apiUrl.includes('swagger.json') || this.apiUrl.includes('openapi.json')) {
+      console.log('Using direct OpenAPI URL:', this.apiUrl);
+      this.http.get(this.apiUrl).subscribe({
+        next: (openApiSpec: any) => {
+          console.log('✅ Loaded OpenAPI spec from direct URL');
+          this.processOpenApiSpec(openApiSpec);
+        },
+        error: (err) => {
+          console.error('Failed to load OpenAPI spec from direct URL:', err);
+          this.importing = false;
+        }
+      });
+    } else {
+      // Versuche Standard-Pfade an die API-URL anzuhängen
+      this.http.get(this.apiUrl + '/swagger.json').subscribe({
+        next: (openApiSpec: any) => {
+          console.log('✅ Loaded OpenAPI spec from /swagger.json');
+          this.processOpenApiSpec(openApiSpec);
+        },
+        error: (err) => {
+          console.log('ℹ️ /swagger.json not found, trying alternative URLs...');
+          this.tryAlternativeOpenApiUrls();
+        }
+      });
+    }
+  }
 // ...existing code...
-importEndpoints() {
-  if (!this.apiUrl) return;
-  
-  this.importing = true;
-  
-  // Versuche zuerst die Standard-URL
-  this.http.get(this.apiUrl + '/swagger.json')
-    .subscribe({
-      next: (openApiSpec: any) => {
-        console.log('✅ Loaded OpenAPI spec from /swagger.json');
-        this.processOpenApiSpec(openApiSpec);
-      },
-      error: (err) => {
-        console.log('ℹ️ /swagger.json not found, trying alternative URLs...');
-        // Fallback: Versuche alternative URLs
-        this.tryAlternativeOpenApiUrls();
-      }
-    });
-}
+
 
 private tryAlternativeOpenApiUrls() {
   const alternativeUrls = [
@@ -306,8 +361,9 @@ private tryAlternativeOpenApiUrls() {
     `${this.apiUrl}/api-docs`,
     `${this.apiUrl}/openapi.json`,
     `${this.apiUrl}/docs/swagger.json`,
-    `${this.apiUrl}/openapi.yaml`,   // neu
-    `${this.apiUrl}/openapi.yml`     // neu
+    `${this.apiUrl}/openapi.yaml`,   
+    `${this.apiUrl}/openapi.yml`,     
+    'https://raw.githubusercontent.com/open-meteo/open-meteo/main/openapi.yml'
   ];
   console.log('🔍 Trying alternative OpenAPI URLs...');
   this.loadOpenApiFromUrls(alternativeUrls, 0);
@@ -380,28 +436,28 @@ private loadOpenApiFromUrls(urls: string[], index: number) {
       return endpoints;
     }
 
-    // Iteriere über alle Pfade in der OpenAPI-Spezifikation
+    
     Object.keys(spec.paths).forEach(path => {
       const pathItem = spec.paths[path];
       
-      // Ignoriere Metadaten-Felder in pathItem
+      
       const httpMethods = ['get', 'post', 'put', 'delete', 'patch', 'options', 'head'];
       
-      // Iteriere über alle HTTP-Methoden für diesen Pfad
+      
       Object.keys(pathItem).forEach(method => {
         if (httpMethods.includes(method.toLowerCase())) {
           const operation = pathItem[method];
           
-          // Erstelle Endpunkt-DTO
+        
           const endpoint: CreateSourceSystemEndpointDTO = {
             endpointPath: path,
             httpRequestType: method.toUpperCase()
           };
 
-          // Extrahiere Pfad-Parameter aus dem Pfad selbst (z.B. /users/{id})
+          
           const pathParams = this.extractPathParameters(path);
           
-          // Extrahiere Query-Parameter aus der OpenAPI-Spezifikation
+          
           const queryParams = this.extractQueryParametersFromOperation(operation);
 
           endpoints.push({
@@ -416,7 +472,7 @@ private loadOpenApiFromUrls(urls: string[], index: number) {
     return endpoints;
   }
 
-// ...existing code...
+
   /**
    * Extract path parameter names from an endpoint path.
    * Example: "/users/{userId}/posts/{postId}" -> ["userId", "postId"]
@@ -427,7 +483,7 @@ private loadOpenApiFromUrls(urls: string[], index: number) {
     let match;
     
     while ((match = pathParamRegex.exec(endpointPath)) !== null) {
-      matches.push(match[1]); // match[1] enthält den Namen ohne die Klammern
+      matches.push(match[1]); 
     }
     
     return matches;
@@ -440,10 +496,10 @@ private loadOpenApiFromUrls(urls: string[], index: number) {
   private extractQueryParametersFromOperation(operation: any): string[] {
     const queryParams: string[] = [];
     
-    // Nur echte Parameter aus dem parameters-Array extrahieren
+    
     if (operation.parameters && Array.isArray(operation.parameters)) {
       operation.parameters.forEach((param: any) => {
-        // Prüfe, ob es sich um einen echten Query-Parameter handelt
+       
         if (param.in === 'query' && param.name && this.isValidParameterName(param.name)) {
           queryParams.push(param.name);
         }
@@ -457,19 +513,18 @@ private loadOpenApiFromUrls(urls: string[], index: number) {
    * Check if a parameter name is valid and not metadata
    */
   private isValidParameterName(paramName: string): boolean {
-    // Liste von Metadaten-Feldern, die ignoriert werden sollen
+    
     const metadataFields = [
       'additionalMetaData',
       'metadata',
       'meta',
       'additionalProperties',
       'extensions',
-      'x-',  // OpenAPI extension fields start with x-
-      '$',   // JSON Schema fields start with $
-          // Internal fields often start with _
+      'x-',  
+      '$',    
     ];
 
-    // Prüfe, ob der Parameter-Name ein Metadaten-Feld ist
+    
     for (const metaField of metadataFields) {
       if (paramName.toLowerCase().includes(metaField.toLowerCase()) || 
           paramName.startsWith(metaField)) {
@@ -487,11 +542,6 @@ private loadOpenApiFromUrls(urls: string[], index: number) {
     return true;
   }
 
-  /**
-// ...existing code...
-
-  /**
-// ...existing code...
 
   /**
    * Save discovered endpoints to the backend
@@ -503,20 +553,20 @@ private loadOpenApiFromUrls(urls: string[], index: number) {
       return;
     }
 
-    // Erstelle nur die Endpunkt-DTOs für den Batch-POST
+   
     const endpointDTOs = discoveredEndpoints.map(item => item.endpoint);
     
-    // Speichere alle Endpunkte auf einmal
+    
     this.endpointSvc
       .apiConfigSourceSystemSourceSystemIdEndpointPost(this.sourceSystemId, endpointDTOs)
       .subscribe({
         next: () => {
           console.log(`Successfully created ${endpointDTOs.length} endpoints`);
           
-          // Lade die Endpunkte neu, um die IDs zu bekommen
+          
           this.loadEndpoints();
           
-          // Warte kurz und erstelle dann die Parameter
+          
           setTimeout(() => {
             this.createParametersForDiscoveredEndpoints(discoveredEndpoints);
           }, 1000);
@@ -532,24 +582,24 @@ private loadOpenApiFromUrls(urls: string[], index: number) {
    * Create parameters for the discovered endpoints
    */
   private createParametersForDiscoveredEndpoints(discoveredEndpoints: Array<{endpoint: CreateSourceSystemEndpointDTO, pathParams: string[], queryParams: string[]}>) {
-    // Lade die aktuellen Endpunkte, um die IDs zu bekommen
+    
     this.endpointSvc.apiConfigSourceSystemSourceSystemIdEndpointGet(this.sourceSystemId)
       .subscribe({
         next: (currentEndpoints) => {
           discoveredEndpoints.forEach(discoveredItem => {
-            // Finde den entsprechenden Endpunkt in der aktuellen Liste
+            
             const matchingEndpoint = currentEndpoints.find(ep => 
               ep.endpointPath === discoveredItem.endpoint.endpointPath && 
               ep.httpRequestType === discoveredItem.endpoint.httpRequestType
             );
 
             if (matchingEndpoint && matchingEndpoint.id) {
-              // Erstelle Pfad-Parameter
+              
               discoveredItem.pathParams.forEach(paramName => {
                 this.createQueryParam(matchingEndpoint.id!, paramName, ApiEndpointQueryParamType.Path);
               });
 
-              // Erstelle Query-Parameter
+             
               discoveredItem.queryParams.forEach(paramName => {
                 this.createQueryParam(matchingEndpoint.id!, paramName, ApiEndpointQueryParamType.Query);
               });
@@ -587,8 +637,7 @@ private loadOpenApiFromUrls(urls: string[], index: number) {
       });
   }
 
-  /**
-// ...existing code...
+
 
   /**
    * Select an endpoint for detail management.
@@ -597,7 +646,7 @@ private loadOpenApiFromUrls(urls: string[], index: number) {
   manage(endpoint: SourceSystemEndpointDTO) {
     console.log('Managing endpoint', endpoint);
     this.selectedEndpoint = endpoint;
-    this.loadQueryParams(endpoint.id!); // Query-Parameter für den ausgewählten Endpunkt laden
+    this.loadQueryParams(endpoint.id!); 
   }
 
   /**
@@ -658,13 +707,13 @@ private loadOpenApiFromUrls(urls: string[], index: number) {
   private pathParamFormatValidator(): ValidatorFn {
     return (control: AbstractControl): ValidationErrors | null => {
       const parent = control.parent;
-      // wenn Query-Typ, nie Fehler
+      
       if (parent?.get('queryParamType')?.value === ApiEndpointQueryParamType.Query) {
         return null;
       }
   
       const val = control.value as string;
-      // nur dann prüfen, wenn wirklich Path
+     
       if (typeof val === 'string' && val.match(/^\{[A-Za-z0-9_]+\}$/)) {
         return null;
       }
