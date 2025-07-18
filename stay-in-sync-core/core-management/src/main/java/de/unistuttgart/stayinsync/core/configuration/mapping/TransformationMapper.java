@@ -4,13 +4,14 @@ import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.Source
 import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.Transformation;
 import de.unistuttgart.stayinsync.core.configuration.rest.dtos.TransformationDetailsDTO;
 import de.unistuttgart.stayinsync.core.configuration.rest.dtos.TransformationShellDTO;
+import de.unistuttgart.stayinsync.transport.dto.TransformationMessageDTO;
 import org.mapstruct.*;
 
 import java.util.Collections;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-@Mapper(componentModel = MappingConstants.ComponentModel.JAKARTA_CDI, uses = {TransformationScriptMapper.class})
+@Mapper(componentModel = MappingConstants.ComponentModel.JAKARTA_CDI, uses = {TransformationScriptMapper.class, SourceSystemApiRequestConfigurationFullUpdateMapper.class})
 public interface TransformationMapper {
 
     // TODO: Add TransformationRule mappings
@@ -26,6 +27,10 @@ public interface TransformationMapper {
     @Mapping(source = "transformationScript", target = "script")
     // Delegates to TransformationScriptMapper
     TransformationDetailsDTO mapToDetailsDTO(Transformation transformation);
+
+    @Mapping(source = "sourceSystemApiRequestConfigrations", target = "requestConfigurationMessageDTOS")
+        // Delegates to TransformationScriptMapper
+    TransformationMessageDTO mapToMessageDTO(Transformation transformation);
 
     /**
      * Updates a new Transformation entity from a TransformationShellDTO.

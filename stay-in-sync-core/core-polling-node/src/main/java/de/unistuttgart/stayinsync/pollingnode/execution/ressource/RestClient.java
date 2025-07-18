@@ -1,19 +1,17 @@
 package de.unistuttgart.stayinsync.pollingnode.execution.ressource;
 
-import de.unistuttgart.stayinsync.pollingnode.HttpRequestExecutionException;
 import de.unistuttgart.stayinsync.pollingnode.exceptions.FaultySourceSystemApiRequestMessageDtoException;
 import de.unistuttgart.stayinsync.transport.dto.ApiConnectionDetailsDTO;
 import de.unistuttgart.stayinsync.transport.dto.SourceSystemMessageDTO;
-import io.smallrye.mutiny.Uni;
-import io.smallrye.mutiny.unchecked.Unchecked;
-import io.vertx.core.json.JsonObject;
-import io.vertx.mutiny.ext.web.client.HttpRequest;
-import io.vertx.ext.web.client.WebClientOptions;
-import io.vertx.mutiny.core.buffer.Buffer;
-import io.vertx.mutiny.ext.web.client.WebClient;
-import io.vertx.mutiny.core.Vertx;
-import jakarta.enterprise.context.ApplicationScoped;
 import io.quarkus.logging.Log;
+import io.smallrye.mutiny.Uni;
+import io.vertx.ext.web.client.WebClientOptions;
+import io.vertx.mutiny.core.Vertx;
+import io.vertx.mutiny.core.buffer.Buffer;
+import io.vertx.mutiny.ext.web.client.HttpRequest;
+import io.vertx.mutiny.ext.web.client.HttpResponse;
+import io.vertx.mutiny.ext.web.client.WebClient;
+import jakarta.enterprise.context.ApplicationScoped;
 
 import java.time.Duration;
 
@@ -46,6 +44,7 @@ public class RestClient {
 
     /**
      * Returns a configured HttpRequest for the ApiConnectionDetails.
+     *
      * @param connectionDetails contains important info for request build.
      * @return fully configured and parameterised HttpRequest
      * @throws FaultySourceSystemApiRequestMessageDtoException if configuration didn´t work because of some fields.
@@ -56,7 +55,7 @@ public class RestClient {
             this.logSourceSystemDetails(connectionDetails.sourceSystem(), apiCallPath);
             HttpRequest<Buffer> request = buildRequestWithSpecificRequestType(connectionDetails.endpoint().httpRequestType(), apiCallPath);
             this.applyRequestConfiguration(connectionDetails, request);
-            Log.debugf("Request successfully built", request);
+            Log.infof("Request successfully built %s", request.toString());
             return request;
         } catch (Exception e) {
             throw new FaultySourceSystemApiRequestMessageDtoException("Request configuration failed for " + connectionDetails.sourceSystem().toString());
@@ -69,27 +68,12 @@ public class RestClient {
      * @param request is the prebuild parameterised HttpRequest that is executed
      * @return Uni<JsonObject> form which the JsonObject can be retrieved
      */
-    public Uni<JsonObject> executeRequest(final HttpRequest<Buffer> request) {
+    public Uni<HttpResponse<Buffer>> executeRequest(final HttpRequest<Buffer> request) {
         return request.send()
-                .onItem().transform(Unchecked.function(response -> {
-                    if (response.statusCode() >= 200 && response.statusCode() <= 299) {
-                        JsonObject jsonData = response.bodyAsJsonObject();
-                        if (jsonData == null) {
-                            throw new HttpRequestExecutionException("Empty response for this request");
-                        }
-                        return jsonData;
-                    } else {
-                        throw new HttpRequestExecutionException(String.format(
-                                "Http error %d with response status message %s for this request",
-                                response.statusCode(), response.statusMessage()));
-                    }
-                }))
-                .onItem().invoke(() ->
-                        Log.debugf("Json polled successfully")
-                )
-                .onFailure().invoke(throwable ->
-                        Log.errorf(throwable, throwable.getMessage(), request)
-                );
+                .onItem().transform(response -> {
+                    Log.info(response.bodyAsString());
+                    return response;
+                });
     }
 
     /**
@@ -97,7 +81,7 @@ public class RestClient {
      * DELETE is not supported.
      *
      * @param httpRequestType is used to determine the requestType for the build
-     * @param apiCallPath Used to build the request
+     * @param apiCallPath     Used to build the request
      * @return built request
      * @throws FaultySourceSystemApiRequestMessageDtoException if the httpRequestType was in wrong format.
      */
@@ -117,7 +101,8 @@ public class RestClient {
      * Parameterises an already built HttpRequest with the information of the ApiConnectionDetails.
      */
     private void applyRequestConfiguration(ApiConnectionDetailsDTO connectionDetails, HttpRequest<Buffer> request) {
-        request.putHeader(connectionDetails.sourceSystem().authDetails().headerName(), connectionDetails.sourceSystem().authDetails().apiKey());
+        //request.putHeader(connectionDetails.sourceSystem().authDetails().headerName(), connectionDetails.sourceSystem().authDetails().apiKey());
+        request.putHeader("Host", connectionDetails.sourceSystem().apiUrl().replaceFirst("https?://", ""));
         connectionDetails.requestHeader().forEach(header -> request.putHeader(header.headerName(), header.headerValue()));
         connectionDetails.requestParameters().forEach(parameter -> {
             switch (parameter.type()) {
@@ -132,26 +117,20 @@ public class RestClient {
     /*
      * Applies second to first path. Changes all "\" to "/" and makes sure, that there are no additional or missing "/" between the seems.
      */
-    private String concatPaths(final String baseUrl, final String endpointPath) throws FaultySourceSystemApiRequestMessageDtoException {
+    private String concatPaths(final String baseUrl, final String endpointPath) {
         if (baseUrl == null || endpointPath == null) {
             throw new IllegalArgumentException("BaseURL and endpointPath must not be null");
         }
         String base = baseUrl.replace("\\", "/").replaceAll("/+$", "");
-        String endpoint = endpointPath.replace("\\", "/").replaceAll("^/+", "");
-        if (base.isEmpty()) {
-            return endpoint;
-        }
-        if (endpoint.isEmpty()) {
-            return base;
-        }
-        return base + "/" + endpoint;
+
+        return base + endpointPath;
     }
 
     /*
      * Logs SourceSystem Details for debugging.
      */
     private void logSourceSystemDetails(final SourceSystemMessageDTO sourceSystem, final String apiCallPath) {
-        Log.debugf("""
+        Log.infof("""
                 GET called on SourceSystem with these details:
                 name: %s
                 apiType: %s
