@@ -37,6 +37,7 @@ export interface ApiRequestConfiguration {
   endpointPath: string;
   httpMethod: 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH';
   responseDts: string;
+  responseIsArray: boolean;
   // TODO: Include other relevant fields as needed for display or cloning.
 }
 

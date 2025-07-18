@@ -339,6 +339,27 @@ export class ArcWizardComponent implements OnChanges {
       });
   }
 
+  private prunePayloadRecursively(data: any): any {
+    if (data == null || typeof data !== 'object'){
+      return data;
+    }
+
+    if (Array.isArray(data)){
+      if (data.length === 0){
+        return [];
+      }
+      return [this.prunePayloadRecursively(data[0])];
+    }
+
+    const newObject: { [key: string]: any } = {};
+    for(const key in data){
+      if (Object.prototype.hasOwnProperty.call(data, key)){
+        newObject[key] = this.prunePayloadRecursively(data[key]);
+      }
+    }
+    return newObject;
+  }
+
   onSaveArc(): void {
     if (this.arcForm.invalid) {
       this.errorMessages = [
@@ -362,11 +383,14 @@ export class ArcWizardComponent implements OnChanges {
       ];
       return;
     }
+    
 
     this.isSaving = true;
     this.errorMessages = [];
     const queryParameterValues = this.formArrayToMap(this.queryParameters);
     const headerValues = this.formArrayToMap(this.headerParameters);
+
+    const prunedPayload = this.prunePayloadRecursively(this.testResult.responsePayload);
 
     const createDto: ArcSaveRequest = {
       alias: this.alias?.value,
@@ -375,7 +399,7 @@ export class ArcWizardComponent implements OnChanges {
       pathParameterValues: this.cleanObject(this.pathParametersGroup.value),
       queryParameterValues: queryParameterValues,
       headerValues: headerValues,
-      responseDts: JSON.stringify(this.testResult.responsePayload),
+      responseDts: JSON.stringify(prunedPayload),
       pollingIntervallTimeInMs: this.arcForm.get('pollingRate')?.value,
     };
 

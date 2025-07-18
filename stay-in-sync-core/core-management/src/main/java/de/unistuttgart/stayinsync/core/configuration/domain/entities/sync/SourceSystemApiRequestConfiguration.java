@@ -23,6 +23,8 @@ public class SourceSystemApiRequestConfiguration extends ApiRequestConfiguration
     @Lob
     public String responseDts;
 
+    public boolean responseIsArray;
+
     public int pollingIntervallTimeInMs;
 
     public static List<SourceSystemApiRequestConfiguration> listAllWherePollingIsActiveAndUnused() {
