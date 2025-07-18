@@ -80,9 +80,26 @@ public class SyncJobService {
         return SyncJob.findByIdOptional(id);
     }
 
+    @Transactional(REQUIRED)
     public void deleteSyncJob(Long id) {
         Log.debugf("Deleting sync-job by id = %d", id);
-        SyncJob.deleteById(id);
+
+        SyncJob syncJob = SyncJob.findById(id);
+        if (syncJob != null) {
+            // Setze die syncJobId der Transformationen auf null
+            if (syncJob.transformations != null && !syncJob.transformations.isEmpty()) {
+                syncJob.transformations.forEach(transformation -> {
+                    transformation.syncJob = null;
+                    transformation.persist();
+                });
+            }
+
+            // Löschen des SyncJob
+            syncJob.delete();
+            Log.debugf("Sync-job with id %d deleted", id);
+        } else {
+            Log.warnf("Sync-job with id %d not found", id);
+        }
     }
 
     @Transactional(REQUIRED)
