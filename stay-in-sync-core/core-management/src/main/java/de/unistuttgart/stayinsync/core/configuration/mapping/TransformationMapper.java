@@ -34,7 +34,7 @@ public interface TransformationMapper {
      * Maps the Transformation entity to its deployable Message DTO.
      */
     @Mapping(source = "transformationScript", target = "transformationScriptDTO")
-    @Mapping(source = "transformationRule", target = "transformationRuleDTO") // Will use TransformationRuleMapper
+    // TODO LogicGraph @Mapping(source = "transformationRule", target = "transformationRuleDTO") // Will use TransformationRuleMapper
     @Mapping(source = "sourceSystemApiRequestConfigrations", target = "requestConfigurationMessageDTOS")
     @Mapping(source = "sourceSystemApiRequestConfigrations", target = "arcManifest", qualifiedByName = "buildArcManifest")
     TransformationMessageDTO mapToMessageDTO(Transformation transformation);
