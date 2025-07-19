@@ -32,7 +32,7 @@ public class RestClient {
         try{
             return retrieveJsonObjectFromResponse(executeRequest(request));
         } catch (ExecutionException e) {
-            final String exceptionMessage = "";
+            final String exceptionMessage = "During the execution of this request a RuntimeException was thrown.";
             Log.warnf(exceptionMessage, e, request);
             throw new RequestExecutionException(exceptionMessage, e, request);
         } catch (InterruptedException e) {
