@@ -173,40 +173,41 @@ export class ManageEndpointsComponent implements OnInit {
    
   }
 
-    /**
-   * Load the source system data and extract the OpenAPI URL for import
-   */
-    private loadSourceSystemAndSetApiUrl(): void {
-      this.sourceSystemService.apiConfigSourceSystemIdGet(this.sourceSystemId)
-        .subscribe({
-          next: (sourceSystem: SourceSystemDTO) => {
-            console.log('Loaded source system:', sourceSystem);
-            
-            // Setze die API-URL für den Import
-            if (sourceSystem.openApiSpec) {
-              // Prüfe, ob openApiSpec eine URL ist (beginnt mit http)
-              if (typeof sourceSystem.openApiSpec === 'string' ) {
-                this.apiUrl = sourceSystem.openApiSpec;
-                console.log('✅ Found OpenAPI URL in source system:', this.apiUrl);
-              } else {
-                // Falls es eine Datei-Inhalt ist, verwende die API-URL + Standard-Pfade
-                this.apiUrl = sourceSystem.apiUrl;
-                console.log('ℹ️ No OpenAPI URL found, using API URL:', this.apiUrl);
-              }
+  private loadSourceSystemAndSetApiUrl(): void {
+    this.sourceSystemService.apiConfigSourceSystemIdGet(this.sourceSystemId)
+      .subscribe({
+        next: (sourceSystem: SourceSystemDTO) => {
+          console.log('Loaded source system:', sourceSystem);
+          console.log('openApiSpec field:', sourceSystem.openApiSpec);
+          console.log('openApiSpec type:', typeof sourceSystem.openApiSpec);
+          
+          // Setze die API-URL für den Import
+          if (sourceSystem.openApiSpec && typeof sourceSystem.openApiSpec === 'string') {
+            // Prüfe, ob openApiSpec eine URL ist (beginnt mit http)
+            if (sourceSystem.openApiSpec.startsWith('http')) {
+              this.apiUrl = sourceSystem.openApiSpec.trim();
+              console.log('✅ Found OpenAPI URL in source system:', this.apiUrl);
             } else {
-              // Fallback: Verwende die API-URL
-              this.apiUrl = sourceSystem.apiUrl;
-              console.log('ℹ️ No OpenAPI spec found, using API URL:', this.apiUrl);
+              // Falls es Datei-Inhalt ist, aber wir brauchen eine URL
+              console.log('ℹ️ OpenAPI spec contains file content, not URL. Using API URL instead.');
+              this.apiUrl = sourceSystem.apiUrl!;
             }
-          },
-          error: (err: any) => {
-            console.error('Failed to load source system:', err);
-            // Fallback: Verwende eine Standard-URL (falls verfügbar)
-            this.apiUrl = 'https://petstore.swagger.io/v2';
+          } else {
+            // Fallback: Verwende die API-URL
+            this.apiUrl = sourceSystem.apiUrl!;
+            console.log('ℹ️ No OpenAPI spec found, using API URL:', this.apiUrl);
           }
-        });
-    }
-
+        },
+        error: (err: any) => {
+          console.error('Failed to load source system:', err);
+          // Fallback: Verwende eine Standard-URL (falls verfügbar)
+          this.apiUrl = 'https://petstore.swagger.io/v2';
+        }
+      });
+  }
+// ...existing code...
+// ...existing code...
+// ...existing code...
   /**
    * Load endpoints for the current source system from the backend.
    */

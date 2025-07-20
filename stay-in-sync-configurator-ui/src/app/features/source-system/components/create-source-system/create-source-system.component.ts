@@ -193,37 +193,35 @@ save(): void {
     this.postDto(base);
   };
 
-  // Prüfe, ob eine Datei ausgewählt wurde
-if (this.selectedFile) {
-  // DATEI-UPLOAD: Das Backend kann keine Blobs verarbeiten, also konvertiere zu String
-  delete (base as any).openApiSpec; // Lösche URL, falls vorhanden
-  const reader = new FileReader();
-  reader.onload = () => {
-    const fileContent = reader.result as string;
-    (base as any).openApiSpec = fileContent; // Type-Assertion verwenden
-    post();
-  };
-  reader.readAsText(this.selectedFile);
-
-} else {
-  // Prüfe, ob openApiSpec eine URL-String ist
-  const openApiSpecValue = base.openApiSpec as any;
-  if (openApiSpecValue && typeof openApiSpecValue === 'string' && openApiSpecValue.trim()) {
-    // URL DIREKT ALS STRING senden
-    console.log('Sending URL as string:', openApiSpecValue);
-    (base as any).openApiSpec = openApiSpecValue; // Type-Assertion verwenden
-    post();
+  // Prüfe: Wurde eine Datei ausgewählt?
+  if (this.selectedFile) {
+    // DATEI-UPLOAD: Das Backend kann keine Blobs verarbeiten, also konvertiere zu String
+    delete base.openApiSpec; // Lösche URL, falls vorhanden
+    const reader = new FileReader();
+    reader.onload = () => {
+      const fileContent = reader.result as string;
+      base.openApiSpec = fileContent; // Direkt zuweisen, kein Type-Assertion nötig
+      post();
+    };
+    reader.readAsText(this.selectedFile); // Lese als Text, nicht als DataURL
+    
   } else {
-    // WEDER DATEI NOCH URL: Sende ohne openApiSpec
-    delete (base as any).openApiSpec;
-    post();
+    // Prüfe, ob openApiSpec eine URL-String ist
+    const openApiSpecValue = base.openApiSpec;
+    if (openApiSpecValue && typeof openApiSpecValue === 'string' && openApiSpecValue.trim()) {
+      // URL DIREKT ALS STRING senden
+      console.log('Sending URL as string:', openApiSpecValue);
+      base.openApiSpec = openApiSpecValue; // Direkt zuweisen, kein Type-Assertion nötig
+      post();
+    } else {
+      // WEDER DATEI NOCH URL: Sende ohne openApiSpec
+      delete base.openApiSpec;
+      post();
+    }
   }
 }
 // ...existing code...
-}
-
   
-
   /**
    * Performs HTTP POST to persist the Source System and handles Location header parsing.
    *
@@ -231,28 +229,25 @@ if (this.selectedFile) {
    */
   private postDto(dto: CreateSourceSystemDTO): void {
     // DEBUG: Schaue dir das DTO an, bevor es gesendet wird
-    console.log('📤 Sending DTO:', dto);
+    console.log('📤 Sending DTO to backend:', dto);
+    console.log('📤 openApiSpec field:', dto.openApiSpec);
     console.log('📤 openApiSpec type:', typeof dto.openApiSpec);
-    console.log('📤 openApiSpec value:', dto.openApiSpec);
     
     this.sourceSystemService
       .apiConfigSourceSystemPost(dto)
       .subscribe({
         next: (resp: SourceSystemDTO) => {
-          console.log('✅ Success:', resp);
+          console.log('✅ Backend response:', resp);
+          console.log('✅ Returned openApiSpec:', resp.openApiSpec);
           this.createdSourceSystemId = resp.id!;
           this.currentStep = 1;
         },
         error: (err) => {
-          console.error('❌ Detailed error:', err);
-          console.error('❌ Error status:', err.status);
-          console.error('❌ Error message:', err.message);
-          console.error('❌ Error body:', err.error);
+          console.error('❌ CREATE failed:', err);
           this.errorService.handleError(err);
         }
       });
   }
-
   /**
    * Advances the stepper to the next step.
    * If on first step, saves the Source System before proceeding.
