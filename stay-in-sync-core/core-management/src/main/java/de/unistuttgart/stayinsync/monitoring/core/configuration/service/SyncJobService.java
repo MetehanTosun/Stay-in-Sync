@@ -65,7 +65,6 @@ public class SyncJobService {
     }
 
 
-
     @Transactional(SUPPORTS)
     public List<SyncJob> findAllSyncJobsHavingName(String name) {
         Log.debugf("Finding all sync-job having name = %s", name);
@@ -93,65 +92,29 @@ public class SyncJobService {
     }
 
     @Transactional(REQUIRED)
-    public Optional<SyncJob> replaceSyncJob(@NotNull @Valid SyncJobDTO syncJobDTO) {
+    public SyncJob replaceSyncJob(@NotNull @Valid SyncJobCreationDTO syncJobDTO) {
         SyncJob syncJob = syncJobFullUpdateMapper.mapToEntity(syncJobDTO);
 
-        // Transformation-Entitäten prüfen und aktualisieren
-        if (syncJob.transformations != null) {
-            Set<Transformation> resolvedTransformations = syncJob.transformations.stream()
-                    .map(transformation -> {
-                        if (transformation.id != null) {
-                            Transformation existing = Transformation.findById(transformation.id);
-                            if (existing != null) {
-                                // Vorhandene Felder aktualisieren
-                                existing.name = transformation.name;
-                                existing.description = transformation.description;
-                                existing.transformationScript = transformation.transformationScript;
-                                existing.transformationRule = transformation.transformationRule;
-                                existing.targetSystemEndpoint = transformation.targetSystemEndpoint;
-                                existing.sourceSystemApiRequestConfigrations = transformation.sourceSystemApiRequestConfigrations;
-                                existing.sourceSystemVariables = transformation.sourceSystemVariables;
+        List<Transformation> transformations = syncJobDTO.transformationIds().stream()
+                .map(transformationId -> {
+                    Transformation transformation = transformationService.findByIdDirect(transformationId);
+                    transformation.syncJob = syncJob;
+                    return transformation;
+                }).toList();
 
-                                existing.syncJob = syncJob;
-                                return existing;
-                            }
-                        }
+        syncJob.transformations.clear();
+        syncJob.transformations.addAll(transformations);
 
-                        // Neue Transformation
-                        transformation.syncJob = syncJob;
-                        return transformation;
-                    })
-                    .collect(Collectors.toSet());
-
-            // Entfernen von Transformationen, die nicht mehr vorhanden sind
-            if (syncJob.id != null) {
-                SyncJob existingSyncJob = SyncJob.findById(syncJob.id);
-                if (existingSyncJob != null && existingSyncJob.transformations != null) {
-                    Set<Transformation> transformationsToRemove = existingSyncJob.transformations.stream()
-                            .filter(existingTransformation -> resolvedTransformations.stream()
-                                    .noneMatch(newTransformation -> newTransformation.id != null && newTransformation.id.equals(existingTransformation.id)))
-                            .collect(Collectors.toSet());
-
-                    transformationsToRemove.forEach(Transformation::delete);
-                }
-            }
-
-            syncJob.transformations = resolvedTransformations;
-        }
-
-        Log.debugf("Replacing sync-job: %s", syncJob);
-
-        Optional<SyncJob> updatedSyncJob = SyncJob.findByIdOptional(syncJob.id)
+        return SyncJob.findByIdOptional(syncJob.id)
                 .map(SyncJob.class::cast)
                 .map(targetSyncJob -> {
                     this.syncJobFullUpdateMapper.mapFullUpdate(syncJob, targetSyncJob);
+                    syncJobUpdatedEventEvent.fire(new SyncJobUpdatedEvent(targetSyncJob, syncJob));
                     return targetSyncJob;
-                });
-
-        updatedSyncJob.ifPresent(updatedEntity -> syncJobUpdatedEventEvent.fire(new SyncJobUpdatedEvent(updatedEntity, syncJob)));
-
-        return updatedSyncJob;
+                })
+                .orElseThrow(() -> new IllegalArgumentException("SyncJob with ID " + syncJob.id + " not found"));
     }
+
 
 
 }

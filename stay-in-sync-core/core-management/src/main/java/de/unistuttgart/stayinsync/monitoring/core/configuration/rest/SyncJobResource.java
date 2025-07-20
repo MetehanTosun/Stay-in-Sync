@@ -5,6 +5,7 @@ import de.unistuttgart.stayinsync.core.configuration.mapping.SyncJobFullUpdateMa
 import de.unistuttgart.stayinsync.core.configuration.rest.dtos.SyncJobCreationDTO;
 import de.unistuttgart.stayinsync.core.configuration.rest.dtos.SyncJobDTO;
 import de.unistuttgart.stayinsync.monitoring.core.configuration.service.SyncJobService;
+import de.unistuttgart.stayinsync.monitoring.core.configuration.rest.Examples;
 import io.quarkus.logging.Log;
 import jakarta.inject.Inject;
 import jakarta.validation.Valid;
@@ -59,8 +60,8 @@ public class SyncJobResource {
                     required = true,
                     content = @Content(
                             mediaType = APPLICATION_JSON,
-                            schema = @Schema(implementation = SyncJobCreationDTO.class)
-//                            examples = @ExampleObject(name = "valid_sync_job", value = Examples.VALID_EXAMPLE_SYNCJOB_TO_CREATE)
+                            schema = @Schema(implementation = SyncJobCreationDTO.class),
+                            examples = @ExampleObject(name = "valid_sync_job", value = Examples.VALID_EXAMPLE_SYNCJOB_TO_CREATE)
                     )
             )
             @Valid @NotNull SyncJobCreationDTO syncJobDTO,
@@ -101,8 +102,8 @@ public class SyncJobResource {
             description = "Gets a sync-job for a given id",
             content = @Content(
                     mediaType = APPLICATION_JSON,
-                    schema = @Schema(implementation = SyncJobDTO.class)
-//                    examples = @ExampleObject(name = "sync-job", value = Examples.VALID_EXAMPLE_SYNCJOB)
+                    schema = @Schema(implementation = SyncJobDTO.class),
+                    examples = @ExampleObject(name = "sync-job", value = Examples.VALID_EXAMPLE_SYNCJOB)
             )
     )
     @APIResponse(
@@ -155,24 +156,22 @@ public class SyncJobResource {
                                                required = true,
                                                content = @Content(
                                                        mediaType = APPLICATION_JSON,
-                                                       schema = @Schema(implementation = SyncJobDTO.class)
-//                                                       examples = @ExampleObject(name = "valid_sync_job", value = Examples.VALID_EXAMPLE_SYNCJOB)
+                                                       schema = @Schema(implementation = SyncJobDTO.class),
+                                                       examples = @ExampleObject(name = "valid_sync_job", value = Examples.VALID_EXAMPLE_SYNCJOB)
                                                )
                                        )
-                                       @PathParam("id") Long id, @Valid @NotNull SyncJobDTO syncJobDTO) {
+                                       @PathParam("id") Long id, @Valid @NotNull SyncJobCreationDTO syncJobDTO) {
         if (!Objects.equals(id, syncJobDTO.id())) {
             throw new CoreManagementException(Response.Status.BAD_REQUEST, "Id missmatch", "Make sure that the request body entity id matches the request parameter");
         }
 
-        return this.syncJobService.replaceSyncJob(syncJobDTO)
-                .map(updatedSyncJob -> {
-                    Log.debugf("Sync-job replaced with new values %s", updatedSyncJob);
-                    return Response.noContent().build();
-                })
-                .orElseGet(() -> {
-                    Log.debugf("No sync-job found with id %d", id);
-                    return Response.status(Response.Status.NOT_FOUND).build();
-                });
+        var updatedSyncJob = this.syncJobService.replaceSyncJob(syncJobDTO);
+        if (updatedSyncJob != null) {
+            Log.debugf("Sync-job replaced with new values %s", updatedSyncJob);
+            return Response.noContent().build();
+        } else {
+            Log.debugf("No sync-job found with id %d", id);
+            return Response.status(Response.Status.NOT_FOUND).build();
+        }
     }
-
 }
