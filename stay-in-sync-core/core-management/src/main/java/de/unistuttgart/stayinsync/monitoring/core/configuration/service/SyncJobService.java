@@ -1,4 +1,4 @@
-package de.unistuttgart.stayinsync.core.configuration.service;
+package de.unistuttgart.stayinsync.monitoring.core.configuration.service;
 
 import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.SyncJob;
 import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.Transformation;
@@ -7,6 +7,7 @@ import de.unistuttgart.stayinsync.core.configuration.domain.events.sync.SyncJobU
 import de.unistuttgart.stayinsync.core.configuration.mapping.SyncJobFullUpdateMapper;
 import de.unistuttgart.stayinsync.core.configuration.rest.dtos.SyncJobCreationDTO;
 import de.unistuttgart.stayinsync.core.configuration.rest.dtos.SyncJobDTO;
+import de.unistuttgart.stayinsync.core.configuration.service.TransformationService;
 import io.quarkus.logging.Log;
 import io.smallrye.common.constraint.NotNull;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -46,9 +47,14 @@ public class SyncJobService {
     public SyncJob persistSyncJob(@NotNull @Valid SyncJobCreationDTO syncJobDTO) {
         SyncJob syncJob = syncJobFullUpdateMapper.mapToEntity(syncJobDTO);
 
+        List<Transformation> transformations = syncJobDTO.transformationIds().stream()
+                .map(transformationId -> {
+                    Transformation transformation = transformationService.findByIdDirect(transformationId);
+                    transformation.syncJob = syncJob;
+                    return transformation;
+                }).toList();
 
-        List<Transformation> tranformations = syncJobDTO.transformationIds().stream().map(tranformationId -> transformationService.findByIdDirect(tranformationId)).collect(Collectors.toList());
-        tranformations.stream().forEach(tranformation -> syncJob.transformations.add(tranformation));
+        syncJob.transformations.addAll(transformations);
 
         Log.debugf("Persisting sync-job: %s", syncJob);
 
@@ -57,6 +63,7 @@ public class SyncJobService {
 
         return syncJob;
     }
+
 
 
     @Transactional(SUPPORTS)

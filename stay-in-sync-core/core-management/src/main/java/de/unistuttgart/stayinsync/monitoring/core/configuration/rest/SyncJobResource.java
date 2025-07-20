@@ -1,10 +1,10 @@
-package de.unistuttgart.stayinsync.core.configuration.rest;
+package de.unistuttgart.stayinsync.monitoring.core.configuration.rest;
 
 import de.unistuttgart.stayinsync.core.configuration.exception.CoreManagementException;
 import de.unistuttgart.stayinsync.core.configuration.mapping.SyncJobFullUpdateMapper;
 import de.unistuttgart.stayinsync.core.configuration.rest.dtos.SyncJobCreationDTO;
 import de.unistuttgart.stayinsync.core.configuration.rest.dtos.SyncJobDTO;
-import de.unistuttgart.stayinsync.core.configuration.service.SyncJobService;
+import de.unistuttgart.stayinsync.monitoring.core.configuration.service.SyncJobService;
 import io.quarkus.logging.Log;
 import jakarta.inject.Inject;
 import jakarta.validation.Valid;
@@ -23,6 +23,7 @@ import org.eclipse.microprofile.openapi.annotations.media.Schema;
 import org.eclipse.microprofile.openapi.annotations.parameters.Parameter;
 import org.eclipse.microprofile.openapi.annotations.parameters.RequestBody;
 import org.eclipse.microprofile.openapi.annotations.responses.APIResponse;
+
 
 import java.net.URI;
 import java.util.List;
@@ -58,8 +59,8 @@ public class SyncJobResource {
                     required = true,
                     content = @Content(
                             mediaType = APPLICATION_JSON,
-                            schema = @Schema(implementation = SyncJobCreationDTO.class),
-                            examples = @ExampleObject(name = "valid_sync_job", value = Examples.VALID_EXAMPLE_SYNCJOB_TO_CREATE)
+                            schema = @Schema(implementation = SyncJobCreationDTO.class)
+//                            examples = @ExampleObject(name = "valid_sync_job", value = Examples.VALID_EXAMPLE_SYNCJOB_TO_CREATE)
                     )
             )
             @Valid @NotNull SyncJobCreationDTO syncJobDTO,
@@ -100,8 +101,8 @@ public class SyncJobResource {
             description = "Gets a sync-job for a given id",
             content = @Content(
                     mediaType = APPLICATION_JSON,
-                    schema = @Schema(implementation = SyncJobDTO.class),
-                    examples = @ExampleObject(name = "sync-job", value = Examples.VALID_EXAMPLE_SYNCJOB)
+                    schema = @Schema(implementation = SyncJobDTO.class)
+//                    examples = @ExampleObject(name = "sync-job", value = Examples.VALID_EXAMPLE_SYNCJOB)
             )
     )
     @APIResponse(
@@ -154,8 +155,8 @@ public class SyncJobResource {
                                                required = true,
                                                content = @Content(
                                                        mediaType = APPLICATION_JSON,
-                                                       schema = @Schema(implementation = SyncJobDTO.class),
-                                                       examples = @ExampleObject(name = "valid_sync_job", value = Examples.VALID_EXAMPLE_SYNCJOB)
+                                                       schema = @Schema(implementation = SyncJobDTO.class)
+//                                                       examples = @ExampleObject(name = "valid_sync_job", value = Examples.VALID_EXAMPLE_SYNCJOB)
                                                )
                                        )
                                        @PathParam("id") Long id, @Valid @NotNull SyncJobDTO syncJobDTO) {

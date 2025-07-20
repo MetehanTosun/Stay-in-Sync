@@ -99,7 +99,6 @@ export class TransformationBaseComponent implements OnInit {
     this.transformationService.getAll().subscribe(
       (transformations: Transformation[]) => {
         this.transformations = transformations;
-        this.addedTransformations = this.tempStore.getTransformations();
         this.setAddedFlagForIntersection();
         this.transformationChanged();
         console.log('Transformations from backend loaded:', this.transformations);
@@ -114,6 +113,7 @@ export class TransformationBaseComponent implements OnInit {
    * Sets the `added` flag for transformations that are present in the temp store.
    */
   setAddedFlagForIntersection() {
+    this.addedTransformations = this.tempStore.getTransformations();
     const addedIds = this.addedTransformations.map(t => t.id);
     console.log('Added Transformation IDs:', addedIds);
     console.log('All Transformations:', this.transformations);
@@ -132,7 +132,7 @@ export class TransformationBaseComponent implements OnInit {
         this.addedTransformations = this.tempStore.getTransformations();
         this.setAddedFlagForIntersection();
         this.transformationChanged();
-        console.log('Transformations from backend loaded:', this.transformations);
+        console.log('Transformations loaded:', this.transformations);
       },
       (error: any) => {
         console.error('Error loading transformations from backend:', error);
