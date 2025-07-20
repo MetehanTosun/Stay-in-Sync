@@ -1,4 +1,4 @@
-import {Component, EventEmitter, inject, Input, OnInit, Output, ViewChild} from '@angular/core';
+import {Component, EventEmitter, inject, Input, OnInit, Output} from '@angular/core';
 import {Dialog} from 'primeng/dialog';
 import {Button} from 'primeng/button';
 import {Step, StepList, StepPanel, StepPanels, Stepper} from 'primeng/stepper';
@@ -324,7 +324,7 @@ export class SyncJobCreationComponent implements OnInit {
     } else {
       // Create (POST)
       this.syncJobService.create(syncJob).subscribe({
-        next: (createdJob) => {
+        next: () => {
           this.messageService.add({
             severity: 'success',
             summary: 'Sync Job Created',
