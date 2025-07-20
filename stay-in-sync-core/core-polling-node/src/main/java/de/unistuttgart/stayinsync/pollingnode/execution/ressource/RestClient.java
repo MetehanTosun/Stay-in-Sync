@@ -2,6 +2,8 @@ package de.unistuttgart.stayinsync.pollingnode.execution.ressource;
 
 import de.unistuttgart.stayinsync.pollingnode.exceptions.FaultySourceSystemApiRequestMessageDtoException;
 import de.unistuttgart.stayinsync.transport.dto.ApiConnectionDetailsDTO;
+import de.unistuttgart.stayinsync.transport.dto.ApiRequestParameterMessageDTO;
+import de.unistuttgart.stayinsync.transport.dto.ParamType;
 import de.unistuttgart.stayinsync.transport.dto.SourceSystemMessageDTO;
 import io.quarkus.logging.Log;
 import io.smallrye.mutiny.Uni;
@@ -13,6 +15,7 @@ import io.vertx.mutiny.ext.web.client.HttpResponse;
 import io.vertx.mutiny.ext.web.client.WebClient;
 import jakarta.enterprise.context.ApplicationScoped;
 
+import java.net.URI;
 import java.time.Duration;
 
 /**
@@ -51,14 +54,14 @@ public class RestClient {
      */
     public HttpRequest<Buffer> configureRequest(final ApiConnectionDetailsDTO connectionDetails) throws FaultySourceSystemApiRequestMessageDtoException {
         try {
-            final String apiCallPath = concatPaths(connectionDetails.sourceSystem().apiUrl(), connectionDetails.endpoint().endpointPath());
-            this.logSourceSystemDetails(connectionDetails.sourceSystem(), apiCallPath);
-            HttpRequest<Buffer> request = buildRequestWithSpecificRequestType(connectionDetails.endpoint().httpRequestType(), apiCallPath);
+            String resolvedPath = resolvePath(connectionDetails);
+            this.logSourceSystemDetails(connectionDetails.sourceSystem(), resolvedPath);
+            HttpRequest<Buffer> request = buildRequestWithSpecificRequestType(connectionDetails.endpoint().httpRequestType(), resolvedPath);
             this.applyRequestConfiguration(connectionDetails, request);
             Log.infof("Request successfully built %s", request.toString());
             return request;
         } catch (Exception e) {
-            throw new FaultySourceSystemApiRequestMessageDtoException("Request configuration failed for " + connectionDetails.sourceSystem().toString());
+            throw new FaultySourceSystemApiRequestMessageDtoException("Request configuration failed for " + connectionDetails.sourceSystem().toString(), e);
         }
     }
 
@@ -86,15 +89,30 @@ public class RestClient {
      * @throws FaultySourceSystemApiRequestMessageDtoException if the httpRequestType was in wrong format.
      */
     private HttpRequest<Buffer> buildRequestWithSpecificRequestType(final String httpRequestType, String apiCallPath) throws FaultySourceSystemApiRequestMessageDtoException {
-        HttpRequest<Buffer> request;
-        switch (httpRequestType) {
-            case "GET" -> request = webClient.getAbs(apiCallPath);
-            case "POST" -> request = webClient.postAbs(apiCallPath);
-            case "PUT" -> request = webClient.putAbs(apiCallPath);
-            default ->
-                    throw new FaultySourceSystemApiRequestMessageDtoException("The apiRequestType was not 'GET', 'POST', 'PUT'");
+        try {
+            URI uri = new URI(apiCallPath);
+            String host = uri.getHost();
+            int port = uri.getPort();
+            String path = uri.getPath();
+
+            if (port == -1) {
+                port = "https".equalsIgnoreCase(uri.getScheme()) ? 443 : 80;
+            }
+
+            // Earlier implementation with getAbs() locks down the URI so that no PathTemplates are exchangeable
+            // Thus we are building the request manually with all required data present.
+            return webClient.request(
+                    io.vertx.core.http.HttpMethod.valueOf(httpRequestType.toUpperCase()),
+                    port,
+                    host,
+                    path
+            ).ssl(true);
+
+        } catch (java.net.URISyntaxException e) {
+            throw new FaultySourceSystemApiRequestMessageDtoException("The generated apiCallPath is not a valid URI: " + apiCallPath, e);
+        } catch (IllegalArgumentException e) {
+            throw new FaultySourceSystemApiRequestMessageDtoException("The apiRequestType '" + httpRequestType + "' is not a valid HTTP method.", e);
         }
-        return request;
     }
 
     /*
@@ -105,25 +123,24 @@ public class RestClient {
         request.putHeader("Host", connectionDetails.sourceSystem().apiUrl().replaceFirst("https?://", ""));
         connectionDetails.requestHeader().forEach(header -> request.putHeader(header.headerName(), header.headerValue()));
         connectionDetails.requestParameters().forEach(parameter -> {
-            switch (parameter.type()) {
-                //TODO PathParam richtig einführen
-                //case PATH -> request.addPathParam(parameter.paramName(), parameter.paramValue());
-                case QUERY -> request.addQueryParam(parameter.paramName(), parameter.paramValue());
-                default -> throw new IllegalArgumentException("Unsupported parameter type: " + parameter.type());
+            if (parameter.type() == ParamType.QUERY) {
+                request.addQueryParam(parameter.paramName(), parameter.paramValue());
             }
         });
+        Log.infof("The path is: %s", request.toString());
     }
 
     /*
-     * Applies second to first path. Changes all "\" to "/" and makes sure, that there are no additional or missing "/" between the seems.
+     * Builds a valid URI path to be given to the request Handler.
      */
-    private String concatPaths(final String baseUrl, final String endpointPath) {
-        if (baseUrl == null || endpointPath == null) {
-            throw new IllegalArgumentException("BaseURL and endpointPath must not be null");
+    private String resolvePath(ApiConnectionDetailsDTO connectionDetails) {
+        String pathTemplate = connectionDetails.endpoint().endpointPath();
+        for (ApiRequestParameterMessageDTO parameter : connectionDetails.requestParameters()) {
+            if (parameter.type() == ParamType.PATH) {
+                pathTemplate = pathTemplate.replace("{" + parameter.paramName() + "}", parameter.paramValue());
+            }
         }
-        String base = baseUrl.replace("\\", "/").replaceAll("/+$", "");
-
-        return base + endpointPath;
+        return connectionDetails.sourceSystem().apiUrl() + pathTemplate;
     }
 
     /*
