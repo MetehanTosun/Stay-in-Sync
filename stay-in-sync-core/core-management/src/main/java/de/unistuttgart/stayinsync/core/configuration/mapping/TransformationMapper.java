@@ -25,10 +25,11 @@ public interface TransformationMapper {
     @Mapping(source = "targetSystemEndpoint.id", target = "targetSystemEndpointId")
     @Mapping(source = "transformationRule.id", target = "transformationRuleId")
     @Mapping(source = "transformationScript", target = "script")
+    @Mapping(source = "sourceSystemApiRequestConfigurations", target = "sourceSystemApiRequestConfigurations")
     // Delegates to TransformationScriptMapper
     TransformationDetailsDTO mapToDetailsDTO(Transformation transformation);
 
-    @Mapping(source = "sourceSystemApiRequestConfigrations", target = "requestConfigurationMessageDTOS")
+    @Mapping(source = "sourceSystemApiRequestConfigurations", target = "requestConfigurationMessageDTOS")
         // Delegates to TransformationScriptMapper
     TransformationMessageDTO mapToMessageDTO(Transformation transformation);
 

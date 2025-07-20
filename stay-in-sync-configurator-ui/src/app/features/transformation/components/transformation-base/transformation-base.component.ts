@@ -5,7 +5,7 @@
  * as handling interactions with transformation rules and scripts.
  */
 
-import {Component, EventEmitter, OnInit, Output} from '@angular/core';
+import {Component, EventEmitter, Input, OnInit, Output} from '@angular/core';
 import {TableModule} from 'primeng/table';
 import {Transformation, UpdateTransformationRequest} from '../../models/transformation.model';
 import {Button} from 'primeng/button';
@@ -82,6 +82,8 @@ export class TransformationBaseComponent implements OnInit {
    * @property {Transformation} newTransformation - Represents a new transformation being created.
    */
   newTransformation: Transformation = {};
+
+  @Input() selectedSyncJobId: number | undefined;
 
   /**
    * @constructor

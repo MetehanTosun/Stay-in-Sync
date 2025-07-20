@@ -6,6 +6,7 @@ import de.unistuttgart.stayinsync.core.configuration.rest.dtos.CreateSourceSyste
 import de.unistuttgart.stayinsync.core.configuration.rest.dtos.SourceSystemEndpointDTO;
 import de.unistuttgart.stayinsync.core.configuration.service.SourceSystemEndpointService;
 import de.unistuttgart.stayinsync.core.configuration.service.SourceSystemService;
+import de.unistuttgart.stayinsync.monitoring.core.configuration.rest.Examples;
 import io.quarkus.logging.Log;
 import jakarta.inject.Inject;
 import jakarta.validation.Valid;
