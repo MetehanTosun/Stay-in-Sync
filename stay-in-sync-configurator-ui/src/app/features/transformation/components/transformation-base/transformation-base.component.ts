@@ -5,7 +5,7 @@
  * as handling interactions with transformation rules and scripts.
  */
 
-import {Component, EventEmitter, Input, OnInit, Output} from '@angular/core';
+import {Component, EventEmitter, OnInit, Output} from '@angular/core';
 import {TableModule} from 'primeng/table';
 import {Transformation, UpdateTransformationRequest} from '../../models/transformation.model';
 import {Button} from 'primeng/button';
@@ -120,6 +120,7 @@ export class TransformationBaseComponent implements OnInit {
    * Sets the `added` flag for transformations that are present in the temp store.
    */
   setAddedFlagForIntersection() {
+    this.addedTransformations = this.tempStore.getTransformations();
     const addedIds = this.addedTransformations.map(t => t.id);
     console.log('Added Transformation IDs:', addedIds);
     console.log('All Transformations:', this.transformations);
@@ -234,7 +235,6 @@ export class TransformationBaseComponent implements OnInit {
    * @property {number | null} transformationId - ID of the currently selected transformation.
    */
   private _transformationId: number | null = null;
-  @Input() selectedSyncJobId!: number | undefined;
 
   /**
    * Getter for `transformationId`.

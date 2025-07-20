@@ -234,7 +234,7 @@ export class SyncJobCreationComponent implements OnInit {
           console.log("Selected Source Systems:", this.selectedSourceSystems);
           this.isSimulation = job.isSimulation || false;
           this.transformations = Array.from(job.transformations || []);
-          console.log("Loaded Transformations:", this.transformations);
+          console.log("Transformations:", this.transformations);
           this.transformations.forEach(t => this.tempStore.addTransformation(t));
           console.log("Transformations in Temp Store:", this.tempStore.getTransformations());
           this.deployed = job.deployed || false;
@@ -298,6 +298,7 @@ export class SyncJobCreationComponent implements OnInit {
       transformationIds: this.transformations.map(t => t.id),
       deployed: this.deployed
     };
+    console.log(syncJob.transformationIds);
     if (syncJob.name === '' || syncJob.name === null) {
       this.messageService.add({
         severity: 'error',
@@ -323,7 +324,7 @@ export class SyncJobCreationComponent implements OnInit {
     } else {
       // Create (POST)
       this.syncJobService.create(syncJob).subscribe({
-        next: (createdJob) => {
+        next: () => {
           this.messageService.add({
             severity: 'success',
             summary: 'Sync Job Created',

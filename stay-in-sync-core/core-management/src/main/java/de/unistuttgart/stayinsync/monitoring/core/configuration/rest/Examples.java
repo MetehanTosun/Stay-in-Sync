@@ -1,4 +1,4 @@
-package de.unistuttgart.stayinsync.core.configuration.rest;
+package de.unistuttgart.stayinsync.monitoring.core.configuration.rest;
 
 final class Examples {
 
