@@ -56,6 +56,10 @@ import { SourceSystemDTO } from '../../models/sourceSystemDTO';
 })
 export class ManageEndpointsComponent implements OnInit {
   /**
+   * Expose QueryParamType enum to the template.
+   */
+  public ApiEndpointQueryParamType = ApiEndpointQueryParamType;
+  /**
    * ID of the source system whose endpoints are managed.
    */
   @Input() sourceSystemId!: number;
@@ -238,7 +242,7 @@ export class ManageEndpointsComponent implements OnInit {
       .apiConfigSourceSystemSourceSystemIdEndpointPost(this.sourceSystemId, [dto])
       .subscribe({
         next: () => {
-          this.endpointForm.reset({httpRequestType: 'GET'});
+          this.endpointForm.reset({ endpointPath: '', httpRequestType: 'GET' });
           this.loadEndpoints();
         },
         error: console.error
@@ -316,39 +320,59 @@ export class ManageEndpointsComponent implements OnInit {
     this.finish.emit();
   }
 
-  importEndpoints() {
+  async importEndpoints(): Promise<void> {
     if (!this.apiUrl) {
       console.error('No API URL available for import');
       return;
     }
-    
     this.importing = true;
-    
-    // Wenn apiUrl bereits eine direkte OpenAPI-URL ist, verwende sie direkt
-    if (this.apiUrl.includes('swagger.json') || this.apiUrl.includes('openapi.json')) {
+    try {
+      await this.tryImportFromUrl();
+    } catch (err) {
+      console.error('Import failed:', err);
+      this.importing = false;
+    }
+  }
+
+  /**
+   * Attempts to import the OpenAPI spec from the apiUrl, using direct and fallback URLs.
+   */
+  private async tryImportFromUrl(): Promise<void> {
+    if (!this.apiUrl) {
+      throw new Error('No API URL available for import');
+    }
+    // Recognize direct JSON or YAML spec URLs
+    if (
+      this.apiUrl.includes('swagger.json') ||
+      this.apiUrl.includes('openapi.json') ||
+      this.apiUrl.endsWith('.yaml') ||
+      this.apiUrl.endsWith('.yml')
+    ) {
       console.log('Using direct OpenAPI URL:', this.apiUrl);
-      this.http.get(this.apiUrl).subscribe({
-        next: (openApiSpec: any) => {
-          console.log('✅ Loaded OpenAPI spec from direct URL');
-          this.processOpenApiSpec(openApiSpec);
-        },
-        error: (err) => {
-          console.error('Failed to load OpenAPI spec from direct URL:', err);
-          this.importing = false;
-        }
-      });
+      try {
+        const openApiSpec = await this.http.get(this.apiUrl).toPromise();
+        console.log('✅ Loaded OpenAPI spec from direct URL');
+        // Direktes Setzen der Endpunkte ohne Backend-Post
+        const parsed = this.parseOpenApiSpec(openApiSpec);
+        this.endpoints = parsed.map(item => item.endpoint);
+        // Create path and query parameters for imported endpoints, including braces for path params
+        this.createParametersForDiscoveredEndpoints(parsed);
+        this.importing = false;
+      } catch (err) {
+        console.error('Failed to load OpenAPI spec from direct URL:', err);
+        this.importing = false;
+        throw err;
+      }
     } else {
       // Versuche Standard-Pfade an die API-URL anzuhängen
-      this.http.get(this.apiUrl + '/swagger.json').subscribe({
-        next: (openApiSpec: any) => {
-          console.log('✅ Loaded OpenAPI spec from /swagger.json');
-          this.processOpenApiSpec(openApiSpec);
-        },
-        error: (err) => {
-          console.log('ℹ️ /swagger.json not found, trying alternative URLs...');
-          this.tryAlternativeOpenApiUrls();
-        }
-      });
+      try {
+        const openApiSpec = await this.http.get(this.apiUrl + '/swagger.json').toPromise();
+        console.log('✅ Loaded OpenAPI spec from /swagger.json');
+        this.processOpenApiSpec(openApiSpec);
+      } catch (err) {
+        console.log('ℹ️ /swagger.json not found, trying alternative URLs...');
+        this.tryAlternativeOpenApiUrls();
+      }
     }
   }
 // ...existing code...
@@ -476,17 +500,15 @@ private loadOpenApiFromUrls(urls: string[], index: number) {
 
   /**
    * Extract path parameter names from an endpoint path.
-   * Example: "/users/{userId}/posts/{postId}" -> ["userId", "postId"]
+   * Example: "/users/{userId}/posts/{postId}" -> ["{userId}", "{postId}"]
    */
   private extractPathParameters(endpointPath: string): string[] {
     const pathParamRegex = /\{([^}]+)\}/g;
     const matches: string[] = [];
-    let match;
-    
+    let match: RegExpExecArray | null;
     while ((match = pathParamRegex.exec(endpointPath)) !== null) {
-      matches.push(match[1]); 
+      matches.push(match[0]); // include the braces
     }
-    
     return matches;
   }
 
@@ -621,8 +643,15 @@ private loadOpenApiFromUrls(urls: string[], index: number) {
    * Create a single query parameter for a specific endpoint.
    */
   private createQueryParam(endpointId: number, paramName: string, paramType: ApiEndpointQueryParamType) {
+    let name = paramName;
+    if (paramType === ApiEndpointQueryParamType.Path) {
+      // Ensure the parameter is wrapped in braces
+      if (!name.startsWith('{')) {
+        name = `{${name}}`;
+      }
+    }
     const dto: ApiEndpointQueryParamDTO = {
-      paramName: paramName,
+      paramName: name,
       queryParamType: paramType
     };
 
@@ -630,10 +659,10 @@ private loadOpenApiFromUrls(urls: string[], index: number) {
       .apiConfigEndpointEndpointIdQueryParamPost(endpointId, dto)
       .subscribe({
         next: () => {
-          console.log(`Created ${paramType} parameter: ${paramName} for endpoint ${endpointId}`);
+          console.log(`Created ${paramType} parameter: ${name} for endpoint ${endpointId}`);
         },
         error: (err) => {
-          console.error(`Failed to create parameter ${paramName}:`, err);
+          console.error(`Failed to create parameter ${name}:`, err);
         }
       });
   }
