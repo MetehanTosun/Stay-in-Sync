@@ -3,6 +3,7 @@ import {NgIterable} from '@angular/core';
 import {Transformation} from '../../transformation/models/transformation.model';
 
 export interface SyncJob {
+  syncNodeIdentifier: string;
   id?: number;
   name?: string;
   description?: string;

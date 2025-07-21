@@ -2,6 +2,10 @@ import {AfterViewInit, Component, EventEmitter, Input, Output} from '@angular/co
 import * as d3 from 'd3';
 import type {Node, NodeConnection} from '../../core/models/node.model';
 import {LegendPanelComponent} from './legend-panel/legend-panel.component';
+import {
+  SyncJobService
+} from '../../../../../../stay-in-sync-configurator-ui/src/app/features/sync-job/services/sync-job.service';
+import {SyncJob} from '../../../../../../stay-in-sync-configurator-ui/src/app/features/source-system/models/syncJob';
 
 /**
  * GraphPanelComponent
@@ -27,6 +31,11 @@ export class GraphPanelComponent implements AfterViewInit {
 
   private _searchTerm: string = '';
 
+
+
+  constructor(private syncJobService:SyncJobService) {
+  }
+
   /**
    * Input property for the search term.
    * When the search term changes, the graph is filtered and updated accordingly.
@@ -42,24 +51,132 @@ export class GraphPanelComponent implements AfterViewInit {
     return this._searchTerm;
   }
 
+  uniqueTargetSystems = new Set<string>();
+
+  loadSyncjobs() {
+    this.nodes = [];
+    this.links = [];
+    this.uniqueTargetSystems.clear();
+
+    this.syncJobService.getAll().subscribe((jobs) => {
+      const seenSourceSystems = new Map<string, Node>();
+      const seenTargetSystems = new Map<string, Node>();
+      const seenSyncNodes = new Map<string, Node>();
+      const seenSyncJobs = new Map<string, Node>();
+
+      jobs.forEach((job) => {
+        const syncJobId = job.id?.toString() ?? '';
+        const syncNodeId = job.syncNodeIdentifier ?? 'unknown-sync-node';
+
+        // 1. SyncJob as Node (intern treated as 'ASS')
+        const syncJobNode: Node = {
+          id: syncJobId,
+          label: job.name,
+          type: 'SyncNode',
+          status: job.deployed ? 'active' : 'inactive',
+          connections: []
+        };
+        this.nodes.push(syncJobNode);
+        seenSyncJobs.set(syncJobId, syncJobNode);
+
+        // 2. SyncNode Node
+        let syncNode = seenSyncNodes.get(syncNodeId);
+        if (!syncNode) {
+          syncNode = {
+            id: syncNodeId,
+            label: syncNodeId,
+            type: 'SyncNode',
+            status: 'active',
+            connections: []
+          };
+          this.nodes.push(syncNode);
+          seenSyncNodes.set(syncNodeId, syncNode);
+        }
+
+        const syncNodeConnection: NodeConnection = {
+          source: syncNodeId,
+          target: syncJobId,
+          status: job.deployed ? 'active' : 'inactive'
+        };
+        this.links.push(syncNodeConnection);
+        syncNode.connections.push(syncNodeConnection);
+        syncJobNode.connections.push(syncNodeConnection);
+
+        // 3. Process Transformations
+        job.transformations?.forEach((transformation) => {
+          // --- SourceSystems
+          transformation.sourceSystemApiRequestConfigurations?.forEach((sourceConfig) => {
+            const sourceSystem = sourceConfig.sourceSystem;
+            const sourceSystemId = sourceSystem?.id?.toString();
+            if (!sourceSystemId) return;
+
+            let sourceNode = seenSourceSystems.get(sourceSystemId);
+            if (!sourceNode) {
+              sourceNode = {
+                id: sourceSystemId,
+                label: sourceSystem.name,
+                type: 'SourceSystem',
+                status: 'active',
+                connections: []
+              };
+              this.nodes.push(sourceNode);
+              seenSourceSystems.set(sourceSystemId, sourceNode);
+            }
+
+            const conn: NodeConnection = {
+              source: sourceSystemId,
+              target: syncJobId,
+              status: 'active'
+            };
+            this.links.push(conn);
+            sourceNode.connections.push(conn);
+            syncJobNode.connections.push(conn);
+          });
+
+          // --- TargetSystems
+          const targetSystem = transformation.targetSystemEndpoint?.targetSystem;
+          const targetSystemId = targetSystem?.id?.toString();
+          if (!targetSystemId) return;
+
+          let targetNode = seenTargetSystems.get(targetSystemId);
+          if (!targetNode) {
+            targetNode = {
+              id: targetSystemId,
+              label: targetSystem.name,
+              type: 'TargetSystem',
+              status: 'active',
+              connections: []
+            };
+            this.nodes.push(targetNode);
+            seenTargetSystems.set(targetSystemId, targetNode);
+          }
+
+          const conn: NodeConnection = {
+            source: syncJobId,
+            target: targetSystemId,
+            status: 'active'
+          };
+          this.links.push(conn);
+          syncJobNode.connections.push(conn);
+          targetNode.connections.push(conn);
+        });
+      });
+    });
+  }
+
+
+
   /**
    * Array of all nodes in the graph.
    * TODO: Replace with actual data fetching logic.
    */
-  nodes: Node[] = [
-    { id: 'A', type: 'API', status: 'active', connections: [] },
-    { id: 'B', type: 'ASS', status: 'active', connections: [] },
-    { id: 'C', type: 'Syncnode', status: 'inactive', connections: [] }
-  ];
+  nodes: Node[] = [];
 
   /**
    * Array of all links in the graph.
    * TODO: Replace with actual data fetching logic.
    */
-  links: NodeConnection[] = [
-    { source: this.nodes[0], target: this.nodes[1], status: "active" },
-    { source: this.nodes[1], target: this.nodes[2], status: "inactive" },
-  ];
+  links: NodeConnection[] = [];
 
   /**
    * Array of filtered links based on the search term.
