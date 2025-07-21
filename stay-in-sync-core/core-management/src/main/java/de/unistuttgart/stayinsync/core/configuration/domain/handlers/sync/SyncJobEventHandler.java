@@ -52,7 +52,7 @@ public class SyncJobEventHandler {
         Log.infof("Sending deploy message to worker queue for syncjob %s", syncJob.name);
         deployNecessaryApiRequestConfigurations(syncJob);
         //TODO please fix asap
-        syncJob.transformations.stream().forEach(transformation -> transformation.sourceSystemApiRequestConfigrations.addAll(sourceSystemApiRequestConfigurationService.findAllApiRequestConfigurations()));
+        syncJob.transformations.stream().forEach(transformation -> transformation.sourceSystemApiRequestConfigurations.addAll(sourceSystemApiRequestConfigurationService.findAllApiRequestConfigurations()));
         SyncJobMessageDTO syncJobMessageDTO = mapper.mapToMessageDTO(syncJob);
         syncJobMessageProducer.publishSyncJob(syncJobMessageDTO);
     }

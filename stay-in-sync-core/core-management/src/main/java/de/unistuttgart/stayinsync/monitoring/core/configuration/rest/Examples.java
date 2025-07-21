@@ -1,6 +1,6 @@
 package de.unistuttgart.stayinsync.monitoring.core.configuration.rest;
 
-final class Examples {
+public final class Examples {
 
     public static final String VALID_ENDPOINT_PARAM_POST = """
             {
@@ -56,7 +56,7 @@ final class Examples {
 
     }
 
-    static final String VALID_EXAMPLE_SYNCJOB = """
+    public static final String VALID_EXAMPLE_SYNCJOB = """
             {
               "id": "1",
               "name": "Basyx sync job",
@@ -71,7 +71,7 @@ final class Examples {
             }
             """;
 
-    static final String VALID_SOURCE_SYSTEM_CREATE = """
+    public static final String VALID_SOURCE_SYSTEM_CREATE = """
             {
               "name": "Dummy Json",
               "apiUrl": "dummyjson.com",
@@ -86,7 +86,7 @@ final class Examples {
             }
             """;
 
-    static final String VALID_SOURCE_SYSTEM_ENDPOINT_POST = """
+    public static final String VALID_SOURCE_SYSTEM_ENDPOINT_POST = """
             {
               "endpointPath": "/test",
               "httpRequestType": "GET"
