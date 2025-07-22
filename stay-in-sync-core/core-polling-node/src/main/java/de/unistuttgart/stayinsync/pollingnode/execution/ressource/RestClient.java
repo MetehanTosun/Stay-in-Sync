@@ -30,9 +30,9 @@ public class RestClient {
      */
     public JsonObject pollJsonObjectFromApi(final HttpRequest<Buffer> request) throws RequestExecutionException, ResponseSubscriptionException {
         try{
-            return retrieveJsonObjectFromResponse(executeRequest(request));
+            return this.retrieveJsonObjectFromResponse(this.executeRequest(request));
         } catch (ExecutionException e) {
-            final String exceptionMessage = "During the execution of this request a RuntimeException was thrown.";
+            final String exceptionMessage = "During the execution of this request a RuntimeException was thrown in form of an ExecutionException.";
             Log.warnf(exceptionMessage, e, request);
             throw new RequestExecutionException(exceptionMessage, e, request);
         } catch (InterruptedException e) {
