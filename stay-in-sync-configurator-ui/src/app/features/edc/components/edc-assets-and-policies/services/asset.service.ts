@@ -1,7 +1,7 @@
-import { Injectable } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
-import { lastValueFrom, map } from 'rxjs';
-import { Asset } from '../models/asset.model';
+import {Injectable} from '@angular/core';
+import {HttpClient} from '@angular/common/http';
+import {Asset} from '../models/asset.model';
+import {Observable} from 'rxjs/internal/Observable';
 
 @Injectable({
   providedIn: 'root'
@@ -37,24 +37,14 @@ export class AssetService {
     }
   ];
 
-  constructor(private http: HttpClient) {}
+  constructor(private http: HttpClient) {
+  }
 
   /**
    * Fetches all assets and transforms them from ODRL to the simple Asset model.
    */
-  getAssets(): Promise<Asset[]> {
-
-    const assets = this.mockOdrlAssets.map(odrlAsset => this.transformOdrlToAsset(odrlAsset));
-    return Promise.resolve(assets);
-
-    /*
-    // REAL IMPLEMENTATION FOR BACKEND
-    return lastValueFrom(
-      this.http.get<any[]>(`${this.managementApiUrl}/assets`).pipe(
-        map(odrlAssets => odrlAssets.map(this.transformOdrlToAsset))
-      )
-    );
-    */
+  getAssets(): Observable<Asset[]> {
+    return this.http.get<Asset[]>(`/edc-assets`);
   }
 
   /**
@@ -81,7 +71,7 @@ export class AssetService {
       this.mockOdrlAssets.unshift(odrlAsset); // Add if new
     }
 
-    return Promise.resolve({ message: 'Asset created/updated successfully!' });
+    return Promise.resolve({message: 'Asset created/updated successfully!'});
     // return lastValueFrom(this.http.post(`${this.managementApiUrl}/assets`, odrlAsset));
   }
 
@@ -90,7 +80,7 @@ export class AssetService {
    * In a "real" backend, this would be an HTTP PUT request.
    */
   updateAsset(assetToUpdate: Asset): Promise<void> {
-    const index = this.mockOdrlAssets.findIndex(a => a['@id'] === assetToUpdate.id);
+    const index = this.mockOdrlAssets.findIndex(a => a['@id'] === assetToUpdate.assetId);
     if (index !== -1) {
       // Transform the UI model back to ODRL and update the mock "database".
       this.mockOdrlAssets[index] = this.transformAssetToOdrl(assetToUpdate);
@@ -126,7 +116,7 @@ export class AssetService {
    */
   private transformOdrlToAsset(odrlAsset: any): Asset {
     return {
-      id: odrlAsset['@id'] || '',
+      assetId: odrlAsset['@id'] || '',
       name: odrlAsset.properties?.['asset:prop:name'] || '',
       description: odrlAsset.properties?.['asset:prop:description'] || '',
       contentType: odrlAsset.properties?.['asset:prop:contenttype'] || '',
@@ -140,10 +130,10 @@ export class AssetService {
    */
   private transformAssetToOdrl(asset: Asset): any {
     // Use the existing ID for updates, or generate a new one for creations.
-    const assetId = asset.id || 'asset-' + Math.random().toString(36).substring(2, 11);
+    const assetId = asset.assetId || 'asset-' + Math.random().toString(36).substring(2, 11);
 
     return {
-      '@context': { "edc": "https://w3id.org/edc/v0.0.1/ns/" },
+      '@context': {"edc": "https://w3id.org/edc/v0.0.1/ns/"},
       '@id': assetId,
       'properties': {
         'asset:prop:name': asset.name,

@@ -1,32 +1,33 @@
-import { Component, OnInit, ViewChild } from '@angular/core';
-import { CommonModule } from '@angular/common';
-import { FormsModule } from '@angular/forms';
+import {Component, OnInit, ViewChild} from '@angular/core';
+import {CommonModule} from '@angular/common';
+import {FormsModule} from '@angular/forms';
 
 // PrimeNG Modules
-import { Table, TableModule } from 'primeng/table';
-import { ButtonModule } from 'primeng/button';
-import { DialogModule } from 'primeng/dialog';
-import { ConfirmDialogModule } from 'primeng/confirmdialog';
-import { InputTextModule } from 'primeng/inputtext';
-import { InputTextarea } from 'primeng/inputtextarea';
-import { TagModule } from 'primeng/tag';
-import { TooltipModule } from 'primeng/tooltip';
-import { IconFieldModule } from 'primeng/iconfield';
-import { InputIconModule } from 'primeng/inputicon';
-import { RippleModule } from 'primeng/ripple';
+import {Table, TableModule} from 'primeng/table';
+import {ButtonModule} from 'primeng/button';
+import {DialogModule} from 'primeng/dialog';
+import {ConfirmDialogModule} from 'primeng/confirmdialog';
+import {InputTextModule} from 'primeng/inputtext';
+import {InputTextarea} from 'primeng/inputtextarea';
+import {TagModule} from 'primeng/tag';
+import {TooltipModule} from 'primeng/tooltip';
+import {IconFieldModule} from 'primeng/iconfield';
+import {InputIconModule} from 'primeng/inputicon';
+import {RippleModule} from 'primeng/ripple';
 import {ConfirmationService, MessageService} from 'primeng/api';
-import { DividerModule } from 'primeng/divider';
+import {DividerModule} from 'primeng/divider';
 //import { DropdownModule } from 'primeng/dropdown';
-import { SelectModule } from 'primeng/select';
-import { ToastModule } from 'primeng/toast';
-import { AutoCompleteModule } from 'primeng/autocomplete';
+import {SelectModule} from 'primeng/select';
+import {ToastModule} from 'primeng/toast';
+import {AutoCompleteModule} from 'primeng/autocomplete';
 
 
 // App imports
-import { Asset } from './models/asset.model';
-import { AccessPolicy, OdrlContractDefinition, ContractPolicy, OdrlPolicyDefinition } from './models/policy.model';
-import { AssetService } from './services/asset.service';
-import { PolicyService } from './services/policy.service';
+import {Asset} from './models/asset.model';
+import {AccessPolicy, ContractPolicy, OdrlContractDefinition, OdrlPolicyDefinition} from './models/policy.model';
+import {AssetService} from './services/asset.service';
+import {PolicyService} from './services/policy.service';
+import {HttpErrorService} from '../../../../core/services/http-error.service';
 
 @Component({
   selector: 'app-edc-assets-and-policies',
@@ -105,18 +106,19 @@ export class EdcAssetsAndPoliciesComponent implements OnInit {
     private assetService: AssetService,
     private policyService: PolicyService,
     private confirmationService: ConfirmationService,
-    private messageService: MessageService
+    private messageService: MessageService,
+    private httpErrorService: HttpErrorService,
   ) {
     // initialize dropdown options
     this.operatorOptions = [
-      { label: 'Equals', value: 'eq' },
-      { label: 'Not Equals', value: 'neq' },
-      { label: 'Is In', value: 'in' },
+      {label: 'Equals', value: 'eq'},
+      {label: 'Not Equals', value: 'neq'},
+      {label: 'Is In', value: 'in'},
     ];
     this.actionOptions = [
-      { label: 'Use', value: 'use' },
-      { label: 'Read', value: 'read' },
-      { label: 'Write', value: 'write' },
+      {label: 'Use', value: 'use'},
+      {label: 'Read', value: 'read'},
+      {label: 'Write', value: 'write'},
     ];
 
   }
@@ -134,7 +136,7 @@ export class EdcAssetsAndPoliciesComponent implements OnInit {
   searchAssets(event: { query: string }) {
     const query = event.query.toLowerCase();
     this.assetIdSuggestions = this.assets.filter(asset =>
-      asset.id.toLowerCase().includes(query) ||
+      asset.assetId.toLowerCase().includes(query) ||
       asset.name.toLowerCase().includes(query)
     );
   }
@@ -143,12 +145,18 @@ export class EdcAssetsAndPoliciesComponent implements OnInit {
     this.assetLoading = true;
     this.assetService
       .getAssets()
-      .then((data) => (this.assets = data))
-      .catch((error) => {
-        console.error('Failed to load assets:', error);
-        this.messageService.add({severity: 'error', summary: 'Error', detail: 'Could not load assets.'});
-      })
-      .finally(() => (this.assetLoading = false));
+      .subscribe({
+        next: data => {
+          this.assets = data
+        },
+        error: err => {
+          console.error('Failed to load assets:', err);
+          this.httpErrorService.handleError(err);
+        },
+        complete: () => {
+          this.assetLoading = false
+        }
+      });
   }
 
   async loadPolicies() {
@@ -184,7 +192,7 @@ export class EdcAssetsAndPoliciesComponent implements OnInit {
 
     } catch (error) {
       console.error('Failed to load policies:', error);
-      this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Failed to load policies.' });
+      this.messageService.add({severity: 'error', summary: 'Error', detail: 'Failed to load policies.'});
     } finally {
       this.policyLoading = false;
     }
@@ -223,7 +231,7 @@ export class EdcAssetsAndPoliciesComponent implements OnInit {
   // Asset methods
   private createEmptyAsset(): Asset {
     // Initialize with empty strings to allow for placeholder text
-    return { id: '', name: '', url: '', type: '', description: '', contentType: '' };
+    return {assetId: '', name: '', url: '', type: '', description: '', contentType: ''};
   }
 
   openNewAssetDialog() {
@@ -334,7 +342,7 @@ export class EdcAssetsAndPoliciesComponent implements OnInit {
           await this.assetService.uploadAsset(assetJson);
           successfulUploads.push(file.name);
         } catch (error: any) {
-          failedUploads.push({ name: file.name, reason: error.message || 'Could not process file.' });
+          failedUploads.push({name: file.name, reason: error.message || 'Could not process file.'});
         }
       })();
       uploadPromises.push(promise);
@@ -373,7 +381,7 @@ export class EdcAssetsAndPoliciesComponent implements OnInit {
   }
 
   editAsset(asset: Asset) {
-    this.assetToEdit = { ...asset };
+    this.assetToEdit = {...asset};
     this.displayEditAssetDialog = true;
   }
 
@@ -408,7 +416,7 @@ export class EdcAssetsAndPoliciesComponent implements OnInit {
       await this.assetService.updateAsset(this.assetToEdit);
 
       // On success, update the UI
-      const index = this.assets.findIndex((a) => a.id === this.assetToEdit!.id);
+      const index = this.assets.findIndex((a) => a.assetId === this.assetToEdit!.assetId);
       if (index !== -1) {
         this.assets[index] = this.assetToEdit;
         this.assets = [...this.assets]; // Trigger change detection
@@ -440,10 +448,10 @@ export class EdcAssetsAndPoliciesComponent implements OnInit {
       accept: async () => {
         try {
           // Call the service to delete the asset
-          await this.assetService.deleteAsset(asset.id);
+          await this.assetService.deleteAsset(asset.assetId);
 
           // if success, update the UI
-          this.assets = this.assets.filter((a) => a.id !== asset.id);
+          this.assets = this.assets.filter((a) => a.assetId !== asset.assetId);
           this.messageService.add({
             severity: 'success',
             summary: 'Success',
@@ -496,7 +504,11 @@ export class EdcAssetsAndPoliciesComponent implements OnInit {
 
   async saveNewAccessPolicy() {
     if (!this.newAccessPolicy.bpn) {
-      this.messageService.add({severity: 'warn', summary: 'Validation Error', detail: 'BPN is required for manual creation.'});
+      this.messageService.add({
+        severity: 'warn',
+        summary: 'Validation Error',
+        detail: 'BPN is required for manual creation.'
+      });
       return;
     }
     try {
@@ -523,7 +535,7 @@ export class EdcAssetsAndPoliciesComponent implements OnInit {
 
   async saveEditedAccessPolicy() {
     if (!this.policyToEdit || !this.policyToEdit.bpn) {
-      this.messageService.add({ severity: 'warn', summary: 'Validation Error', detail: 'BPN is required.' });
+      this.messageService.add({severity: 'warn', summary: 'Validation Error', detail: 'BPN is required.'});
       return;
     }
 
@@ -539,10 +551,10 @@ export class EdcAssetsAndPoliciesComponent implements OnInit {
         this.filteredAccessPolicies = [...this.allAccessPolicies];
       }
 
-      this.messageService.add({ severity: 'success', summary: 'Success', detail: 'Access Policy updated successfully.' });
+      this.messageService.add({severity: 'success', summary: 'Success', detail: 'Access Policy updated successfully.'});
       this.hideEditAccessPolicyDialog();
     } catch (error) {
-      this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Failed to update access policy.' });
+      this.messageService.add({severity: 'error', summary: 'Error', detail: 'Failed to update access policy.'});
       console.error('Failed to update access policy:', error);
     }
   }
@@ -558,9 +570,13 @@ export class EdcAssetsAndPoliciesComponent implements OnInit {
           // update both the master and filtered lists
           this.allAccessPolicies = this.allAccessPolicies.filter((p: AccessPolicy) => p.id !== policy.id);
           this.filteredAccessPolicies = [...this.allAccessPolicies];
-          this.messageService.add({ severity: 'success', summary: 'Success', detail: 'Access Policy deleted successfully.' });
+          this.messageService.add({
+            severity: 'success',
+            summary: 'Success',
+            detail: 'Access Policy deleted successfully.'
+          });
         } catch (error) {
-          this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Failed to delete access policy.' });
+          this.messageService.add({severity: 'error', summary: 'Error', detail: 'Failed to delete access policy.'});
           console.error('Failed to delete access policy:', error);
         }
       },
@@ -584,9 +600,17 @@ export class EdcAssetsAndPoliciesComponent implements OnInit {
             this.filteredAccessPolicies = [...this.allAccessPolicies];
           }
 
-          this.messageService.add({ severity: 'success', summary: 'Success', detail: 'Contract Definition deleted successfully.' });
+          this.messageService.add({
+            severity: 'success',
+            summary: 'Success',
+            detail: 'Contract Definition deleted successfully.'
+          });
         } catch (error) {
-          this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Failed to delete contract definition.' });
+          this.messageService.add({
+            severity: 'error',
+            summary: 'Error',
+            detail: 'Failed to delete contract definition.'
+          });
           console.error('Failed to delete contract definition:', error);
         }
       },
@@ -638,7 +662,6 @@ export class EdcAssetsAndPoliciesComponent implements OnInit {
           }
 
 
-
           const permission = policy.permission[0];
           if (!permission) {
             throw new Error("Validation failed: The first permission rule is invalid or missing.");
@@ -653,13 +676,11 @@ export class EdcAssetsAndPoliciesComponent implements OnInit {
           }
 
 
-
           if (!permission.constraint || !Array.isArray(permission.constraint) || permission.constraint.length === 0) {
             throw new Error("Validation failed: 'permission.constraint' array is missing or empty.");
           }
 
           const constraint = permission.constraint[0];
-
 
 
           if (!constraint.leftOperand) {
@@ -681,7 +702,7 @@ export class EdcAssetsAndPoliciesComponent implements OnInit {
           await this.policyService.uploadPolicyDefinition(policyJson);
           successfulUploads.push(file.name);
         } catch (error: any) {
-          failedUploads.push({ name: file.name, reason: error.message || 'Could not process file.' });
+          failedUploads.push({name: file.name, reason: error.message || 'Could not process file.'});
         }
       })();
       uploadPromises.push(promise);
@@ -772,7 +793,7 @@ export class EdcAssetsAndPoliciesComponent implements OnInit {
 
       const contractDefId = `contract-def-${this.newContractPolicy.assetId}`;
       const odrlPayload: OdrlContractDefinition = {
-        '@context': { edc: 'https://w3id.org/edc/v0.0.1/ns/' },
+        '@context': {edc: 'https://w3id.org/edc/v0.0.1/ns/'},
         '@id': contractDefId,
         accessPolicyId: this.targetAccessPolicy.id,
         contractPolicyId: this.targetAccessPolicy.id,
@@ -801,11 +822,19 @@ export class EdcAssetsAndPoliciesComponent implements OnInit {
         this.filteredAccessPolicies = [...this.allAccessPolicies];
       }
 
-      this.messageService.add({ severity: 'success', summary: 'Success', detail: 'Contract Definition created successfully.' });
+      this.messageService.add({
+        severity: 'success',
+        summary: 'Success',
+        detail: 'Contract Definition created successfully.'
+      });
       this.hideNewContractPolicyDialog();
 
     } catch (error: any) {
-      this.messageService.add({ severity: 'error', summary: 'Error', detail: error.message || 'Failed to create contract definition.' });
+      this.messageService.add({
+        severity: 'error',
+        summary: 'Error',
+        detail: error.message || 'Failed to create contract definition.'
+      });
       console.error('Failed to create contract definition:', error);
     }
   }
@@ -823,7 +852,11 @@ export class EdcAssetsAndPoliciesComponent implements OnInit {
     }
 
     if (!this.targetAccessPolicy) {
-      this.messageService.add({ severity: 'error', summary: 'Upload Error', detail: 'Cannot upload file: No parent Access Policy is selected.' });
+      this.messageService.add({
+        severity: 'error',
+        summary: 'Upload Error',
+        detail: 'Cannot upload file: No parent Access Policy is selected.'
+      });
       return;
     }
 
@@ -874,7 +907,7 @@ export class EdcAssetsAndPoliciesComponent implements OnInit {
 
           // Check if the asset ID from the file exists in our current assets list
           const assetIdFromFile = selector.operandRight.trim();
-          const assetExists = this.assets.some(asset => asset.id === assetIdFromFile);
+          const assetExists = this.assets.some(asset => asset.assetId === assetIdFromFile);
 
           if (!assetExists) {
             throw new Error(`Validation failed: Asset with ID '${assetIdFromFile}' does not exist.`);
@@ -893,7 +926,7 @@ export class EdcAssetsAndPoliciesComponent implements OnInit {
           successfulUploads.push(file.name);
 
         } catch (error: any) {
-          failedUploads.push({ name: file.name, reason: error.message || 'Could not process file.' });
+          failedUploads.push({name: file.name, reason: error.message || 'Could not process file.'});
         }
       })();
       uploadPromises.push(promise);
@@ -958,7 +991,7 @@ export class EdcAssetsAndPoliciesComponent implements OnInit {
    */
   async saveEditedContractPolicy() {
     if (!this.contractPolicyToEdit || !this.targetAccessPolicy) {
-      this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Cannot save: Editing context is lost.' });
+      this.messageService.add({severity: 'error', summary: 'Error', detail: 'Cannot save: Editing context is lost.'});
       return;
     }
 
@@ -979,7 +1012,7 @@ export class EdcAssetsAndPoliciesComponent implements OnInit {
     try {
       // Build the ODRL payload for the update
       const odrlPayload: OdrlContractDefinition = {
-        '@context': { edc: 'https://w3id.org/edc/v0.0.1/ns/' },
+        '@context': {edc: 'https://w3id.org/edc/v0.0.1/ns/'},
         '@id': this.contractPolicyToEdit.id,
         accessPolicyId: this.targetAccessPolicy.id,
         contractPolicyId: this.targetAccessPolicy.id,
@@ -1006,16 +1039,22 @@ export class EdcAssetsAndPoliciesComponent implements OnInit {
         }
       }
 
-      this.messageService.add({ severity: 'success', summary: 'Success', detail: 'Contract Definition updated successfully.' });
+      this.messageService.add({
+        severity: 'success',
+        summary: 'Success',
+        detail: 'Contract Definition updated successfully.'
+      });
       this.hideEditContractPolicyDialog();
 
     } catch (error: any) {
-      this.messageService.add({ severity: 'error', summary: 'Error', detail: error.message || 'Failed to update contract definition.' });
+      this.messageService.add({
+        severity: 'error',
+        summary: 'Error',
+        detail: error.message || 'Failed to update contract definition.'
+      });
       console.error('Failed to update contract definition:', error);
     }
   }
-
-
 
 
 }
