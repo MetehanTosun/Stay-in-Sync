@@ -31,6 +31,7 @@ import {CreateSourceSystemEndpointDTO} from '../../models/createSourceSystemEndp
 
 import { load as parseYAML } from 'js-yaml';
 import { SourceSystemDTO } from '../../models/sourceSystemDTO';
+import { ManageEndpointParamsComponent } from '../manage-endpoint-params/manage-endpoint-params.component';
 
 
 /**
@@ -49,7 +50,8 @@ import { SourceSystemDTO } from '../../models/sourceSystemDTO';
     CardModule,
     CheckboxModule,
     DialogModule,
-    ProgressSpinnerModule
+    ProgressSpinnerModule,
+    ManageEndpointParamsComponent
   ],
   templateUrl: './manage-endpoints.component.html',
   styleUrls: ['./manage-endpoints.component.css']
@@ -116,26 +118,6 @@ export class ManageEndpointsComponent implements OnInit {
    */
   editForm!: FormGroup;
 
-  /**
-   * Query Parameters for the selected endpoint.
-   */
-  queryParams: ApiEndpointQueryParamDTO[] = [];
-  /**
-   * Reactive form for creating new query parameters.
-   */
-  queryParamForm!: FormGroup;
-  /**
-   * Indicator whether query parameters are currently loading.
-   */
-  queryParamsLoading = false;
-  /**
-   * Available types for query parameters.
-   */
-  paramTypes = [
-    {label: 'Query', value: ApiEndpointQueryParamType.Query},
-    {label: 'Path', value: ApiEndpointQueryParamType.Path}
-  ];
-
 
   /**
    * Injects FormBuilder, endpoint and source system services, and HttpClient.
@@ -157,16 +139,6 @@ export class ManageEndpointsComponent implements OnInit {
       endpointPath: ['', Validators.required],
       httpRequestType: ['GET', Validators.required]
     });
-
-    this.queryParamForm = this.fb.group({
-      paramName: ['', [Validators.required, this.pathParamFormatValidator()]],
-      queryParamType: [ApiEndpointQueryParamType.Query, Validators.required]
-    });
-
-    this.loadEndpoints();
-    this.sourceSystemService
-      .apiConfigSourceSystemIdGet(this.sourceSystemId, 'body')
-      .subscribe(ss => this.apiUrl = ss.apiUrl);
 
     this.editForm = this.fb.group({
       endpointPath: ['', Validators.required],
@@ -356,7 +328,7 @@ export class ManageEndpointsComponent implements OnInit {
         const parsed = this.parseOpenApiSpec(openApiSpec);
         this.endpoints = parsed.map(item => item.endpoint);
         // Create path and query parameters for imported endpoints, including braces for path params
-        this.createParametersForDiscoveredEndpoints(parsed);
+        this.saveDiscoveredEndpoints(parsed);
         this.importing = false;
       } catch (err) {
         console.error('Failed to load OpenAPI spec from direct URL:', err);
@@ -490,8 +462,8 @@ private loadOpenApiFromUrls(urls: string[], index: number) {
   /**
    * Parse OpenAPI specification and extract endpoints with their parameters
    */
-  private parseOpenApiSpec(spec: any): Array<{endpoint: CreateSourceSystemEndpointDTO, pathParams: string[], queryParams: string[]}> {
-    const endpoints: Array<{endpoint: CreateSourceSystemEndpointDTO, pathParams: string[], queryParams: string[]}> = [];
+  private parseOpenApiSpec(spec: any): Array<{endpoint: CreateSourceSystemEndpointDTO, pathParams: string[]}> {
+    const endpoints: Array<{endpoint: CreateSourceSystemEndpointDTO, pathParams: string[]}> = [];
     
     if (!spec.paths) {
       console.warn('No paths found in OpenAPI specification');
@@ -518,14 +490,10 @@ private loadOpenApiFromUrls(urls: string[], index: number) {
 
           
           const pathParams = this.extractPathParameters(path);
-          
-          
-          const queryParams = this.extractQueryParametersFromOperation(operation);
 
           endpoints.push({
             endpoint,
-            pathParams,
-            queryParams
+            pathParams
           });
         }
       });
@@ -575,63 +543,9 @@ private loadOpenApiFromUrls(urls: string[], index: number) {
   }
 
   /**
-   * Extract query parameters from OpenAPI operation definition
-   * Filters out non-parameter metadata fields
-   */
-  private extractQueryParametersFromOperation(operation: any): string[] {
-    const queryParams: string[] = [];
-    
-    
-    if (operation.parameters && Array.isArray(operation.parameters)) {
-      operation.parameters.forEach((param: any) => {
-       
-        if (param.in === 'query' && param.name && this.isValidParameterName(param.name)) {
-          queryParams.push(param.name);
-        }
-      });
-    }
-    
-    return queryParams;
-  }
-
-  /**
-   * Check if a parameter name is valid and not metadata
-   */
-  private isValidParameterName(paramName: string): boolean {
-    
-    const metadataFields = [
-      'additionalMetaData',
-      'metadata',
-      'meta',
-      'additionalProperties',
-      'extensions',
-      'x-',  
-      '$',    
-    ];
-
-    
-    for (const metaField of metadataFields) {
-      if (paramName.toLowerCase().includes(metaField.toLowerCase()) || 
-          paramName.startsWith(metaField)) {
-        console.log(`🚫 Ignoring metadata field: ${paramName}`);
-        return false;
-      }
-    }
-
-    // Zusätzliche Prüfung: Parameter-Name sollte alphanumerisch sein
-    if (!/^[a-zA-Z][a-zA-Z0-9_-]*$/.test(paramName)) {
-      console.log(`🚫 Ignoring invalid parameter name: ${paramName}`);
-      return false;
-    }
-
-    return true;
-  }
-
-
-  /**
    * Save discovered endpoints to the backend
    */
-  private saveDiscoveredEndpoints(discoveredEndpoints: Array<{endpoint: CreateSourceSystemEndpointDTO, pathParams: string[], queryParams: string[]}>) {
+  private saveDiscoveredEndpoints(discoveredEndpoints: Array<{endpoint: CreateSourceSystemEndpointDTO, pathParams: string[]}>) {
     if (discoveredEndpoints.length === 0) {
       console.warn('No endpoints discovered');
       this.importing = false;
@@ -653,7 +567,7 @@ private loadOpenApiFromUrls(urls: string[], index: number) {
           
           
           setTimeout(() => {
-            this.createParametersForDiscoveredEndpoints(discoveredEndpoints);
+            // this.createParametersForDiscoveredEndpoints(discoveredEndpoints); // Removed as per edit hint
           }, 1000);
         },
         error: (err) => {
@@ -664,147 +578,13 @@ private loadOpenApiFromUrls(urls: string[], index: number) {
   }
 
   /**
-   * Create parameters for the discovered endpoints
-   */
-  private createParametersForDiscoveredEndpoints(discoveredEndpoints: Array<{endpoint: CreateSourceSystemEndpointDTO, pathParams: string[], queryParams: string[]}>) {
-    
-    this.endpointSvc.apiConfigSourceSystemSourceSystemIdEndpointGet(this.sourceSystemId)
-      .subscribe({
-        next: (currentEndpoints) => {
-          discoveredEndpoints.forEach(discoveredItem => {
-            
-            const matchingEndpoint = currentEndpoints.find(ep => 
-              ep.endpointPath === discoveredItem.endpoint.endpointPath && 
-              ep.httpRequestType === discoveredItem.endpoint.httpRequestType
-            );
-
-            if (matchingEndpoint && matchingEndpoint.id) {
-              
-              discoveredItem.pathParams.forEach(paramName => {
-                this.createQueryParam(matchingEndpoint.id!, paramName, ApiEndpointQueryParamType.Path);
-              });
-
-             
-              discoveredItem.queryParams.forEach(paramName => {
-                this.createQueryParam(matchingEndpoint.id!, paramName, ApiEndpointQueryParamType.Query);
-              });
-            }
-          });
-
-          this.importing = false;
-          console.log('Import completed successfully');
-        },
-        error: (err) => {
-          console.error('Failed to load endpoints for parameter creation:', err);
-          this.importing = false;
-        }
-      });
-  }
-
-  /**
-   * Create a single query parameter for a specific endpoint.
-   */
-  private createQueryParam(endpointId: number, paramName: string, paramType: ApiEndpointQueryParamType) {
-    let finalParamName = paramName;
-    // Konsistent: Backend speichert Path-Parameter MIT Klammern
-    if (paramType === ApiEndpointQueryParamType.Path) {
-      finalParamName = this.ensureBraces(paramName);
-    }
-    const dto: ApiEndpointQueryParamDTO = {
-      paramName: finalParamName,
-      queryParamType: paramType
-    };
-    this.queryParamSvc.apiConfigEndpointEndpointIdQueryParamPost(endpointId, dto)
-      .subscribe({
-        next: () => {
-          this.loadQueryParams(endpointId);
-        },
-        error: (err) => console.error('Failed to create query param', err)
-      });
-  }
-
-
-
-  /**
-   * Select an endpoint for detail management.
-   * @param endpoint Endpoint to manage.
-   */
-  manage(endpoint: SourceSystemEndpointDTO) {
-    console.log('Managing endpoint', endpoint);
-    this.selectedEndpoint = endpoint;
-    this.loadQueryParams(endpoint.id!); 
-  }
-
-  /**
-   * Load query parameters for a given endpoint.
-   * @param endpointId The ID of the endpoint.
-   */
-  loadQueryParams(endpointId: number) {
-    this.queryParamsLoading = true;
-    this.queryParamSvc.apiConfigEndpointEndpointIdQueryParamGet(endpointId)
-      .subscribe({
-        next: (params) => {
-          this.queryParams = params;
-          this.queryParamsLoading = false;
-        },
-        error: (err) => {
-          console.error('Failed to load query params', err);
-          this.queryParamsLoading = false;
-        }
-      });
-  }
-
-  /**
-   * Add a new query parameter to the selected endpoint.
-   */
-/**
- * Add a new query parameter to the selected endpoint.
- */
-addQueryParam() {
-  if (this.queryParamForm.invalid || !this.selectedEndpoint?.id) {
-    return;
-  }
-  let dto: ApiEndpointQueryParamDTO = { ...this.queryParamForm.value };
-  // NEUE LOGIK: Automatisch Klammern für Path-Parameter hinzufügen
-  if (dto.queryParamType === ApiEndpointQueryParamType.Path) {
-    dto.paramName = this.ensureBraces(dto.paramName!);
-  }
-  this.queryParamSvc.apiConfigEndpointEndpointIdQueryParamPost(this.selectedEndpoint.id, dto)
-    .subscribe({
-      next: () => {
-        this.queryParamForm.reset({queryParamType: ApiEndpointQueryParamType.Query});
-        this.loadQueryParams(this.selectedEndpoint!.id!);
-      },
-      error: (err) => console.error('Failed to add query param', err)
-    });
-}
-
-  /**
-   * Delete a query parameter by its ID.
-   * @param paramId The ID of the query parameter to delete.
-   */
-  deleteQueryParam(paramId: number) {
-    this.queryParamSvc.apiConfigEndpointQueryParamIdDelete(paramId)
-      .subscribe({
-        next: () => {
-          this.queryParams = this.queryParams.filter(p => p.id !== paramId);
-        },
-        error: (err) => console.error('Failed to delete query param', err)
-      });
-  }
-
-
-  /**
    * Validator to ensure path parameter format: starts with { and ends with } with at least one character inside.
    */
   private pathParamFormatValidator(): ValidatorFn {
     return (control: AbstractControl): ValidationErrors | null => {
       const parent = control.parent;
       
-      if (parent?.get('queryParamType')?.value === ApiEndpointQueryParamType.Query) {
-        return null;
-      }
-  
+      // Removed queryParamType check as it's no longer used
       const val = control.value as string;
      
       if (typeof val === 'string' && val.match(/^\{[A-Za-z0-9_]+\}$/)) {

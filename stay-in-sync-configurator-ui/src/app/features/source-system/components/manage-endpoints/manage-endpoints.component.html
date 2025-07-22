@@ -79,7 +79,7 @@
                   class="p-button-info p-button-text"
                   pTooltip="Query-Parameter verwalten"
                   tooltipPosition="top"
-                  (click)="manage(e)"></button>
+                  (click)="selectedEndpoint = e"></button>
           <button pButton type="button" icon="pi pi-trash" class="p-button-text" (click)="deleteEndpoint(e.id!)"></button>
         </td>
       </tr>
@@ -89,65 +89,7 @@
   <!-- =================================================================== -->
 <!--               Section: Manage Query Parameters                    -->
 <!-- =================================================================== -->
-<div *ngIf="selectedEndpoint" class="p-card p-mt-4 p-p-4">
-
-  <!-- Card Title -->
-  <h4 class="p-mb-3">Query-Parameter für: {{ selectedEndpoint.endpointPath }}</h4>
-
-  <!-- Form to Add a New Query Parameter -->
-  <form [formGroup]="queryParamForm" (ngSubmit)="addQueryParam()" class="p-fluid p-formgrid p-grid p-mb-4">
-    <div class="p-field">
-      <label for="paramName">Parameter Name</label>
-      <input id="paramName" type="text" pInputText formControlName="paramName" />
-      <div *ngIf="queryParamForm.get('paramName')?.touched && queryParamForm.get('paramName')?.hasError('invalidPathParamFormat')" class="p-error">
-        Path parameter must be enclosed in braces, e.g. {{ '{' }}paramName{{ '}' }}.
-      </div>
-    </div>
-    <div class="p-field p-col-12 p-md-5">
-      <label for="paramType">Typ</label>
-      <p-dropdown id="paramType"
-                  [options]="paramTypes"
-                  optionLabel="label"
-                  optionValue="value"
-                  formControlName="queryParamType"></p-dropdown>
-    </div>
-    <div class="p-field p-col-12 p-md-2 p-d-flex p-ai-end">
-      <button pButton
-              type="submit"
-              label="Hinzufügen"
-              icon="pi pi-plus"
-              [disabled]="queryParamForm.invalid"></button>
-    </div>
-  </form>
-
-  <!-- Table of Existing Query Parameters -->
-  <p-table [value]="queryParams" [loading]="queryParamsLoading" responsiveLayout="scroll">
-    <ng-template pTemplate="header">
-      <tr>
-        <th>Name</th>
-        <th>Type</th>
-        <th style="width: 8rem">Actions</th>
-      </tr>
-    </ng-template>
-    <ng-template pTemplate="body" let-param>
-      <tr>
-        <td>{{ param.paramName }}</td>
-        <td>{{ param.queryParamType }}</td>
-        <td>
-          <button pButton
-                  type="button"
-                  icon="pi pi-trash"
-                  class="p-button-danger p-button-text"
-                  (click)="deleteQueryParam(param.id!)"></button>
-        </td>
-      </tr>
-    </ng-template>
-    <ng-template pTemplate="emptymessage">
-      <tr>
-        <td colspan="3">There are no Parameters for this endpoint</td>
-      </tr>
-    </ng-template>
-  </p-table>
-
-</div>
+<ng-container *ngIf="selectedEndpoint && selectedEndpoint.id != null">
+  <app-manage-endpoint-params [endpointId]="selectedEndpoint.id!" [endpointPath]="selectedEndpoint.endpointPath"></app-manage-endpoint-params>
+</ng-container>
 

@@ -1,0 +1,12 @@
+.p-error {
+  color: #c00;
+  font-size: 0.95em;
+}
+
+.p-mt-4 {
+  margin-top: 2rem;
+}
+
+.p-mb-3 {
+  margin-bottom: 1.5rem;
+} 
