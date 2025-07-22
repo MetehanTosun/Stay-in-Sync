@@ -131,14 +131,7 @@
     </ng-template>
     <ng-template pTemplate="body" let-param>
       <tr>
-        <td>
-          <ng-container *ngIf="param.queryParamType === ApiEndpointQueryParamType.Path; else queryName">
-            {{ '{' + param.paramName + '}' }}
-          </ng-container>
-          <ng-template #queryName>
-            {{ param.paramName }}
-          </ng-template>
-        </td>
+        <td>{{ param.paramName }}</td>
         <td>{{ param.queryParamType }}</td>
         <td>
           <button pButton

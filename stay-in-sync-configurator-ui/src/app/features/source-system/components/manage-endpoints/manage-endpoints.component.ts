@@ -436,20 +436,57 @@ private loadOpenApiFromUrls(urls: string[], index: number) {
   });
 }
 
-/**
-// ...existing code...
 
-  /**
-   * Process the loaded OpenAPI specification
-   */
-  private processOpenApiSpec(openApiSpec: any) {
-    const discoveredEndpoints = this.parseOpenApiSpec(openApiSpec);
-    console.log('Discovered endpoints:', discoveredEndpoints);
-    this.saveDiscoveredEndpoints(discoveredEndpoints);
+
+
+ private async processOpenApiSpec(spec: any): Promise<void> {
+  try {
+    const endpointsToCreate: CreateSourceSystemEndpointDTO[] = [];
+
+    if (spec.paths) {
+      for (const [path, pathItem] of Object.entries(spec.paths)) {
+        for (const [method, operation] of Object.entries(pathItem as any)) {
+          if (['get', 'post', 'put', 'delete', 'patch', 'head', 'options'].includes(method.toLowerCase())) {
+            const operationDetails = operation as any;
+            
+            // Sammle alle Parameter (sowohl path-level als auch operation-level)
+            const pathLevelParams = (pathItem as any).parameters || [];
+            const operationLevelParams = operationDetails.parameters || [];
+            const allParameters = [...pathLevelParams, ...operationLevelParams];
+            
+            // NEUE ZEILE: Formatiere den Pfad mit korrekten {} Klammern
+            const formattedPath = this.formatPathWithParameters(path, allParameters);
+            
+            const endpoint: CreateSourceSystemEndpointDTO = {
+              endpointPath: formattedPath, // Verwende formatierten Pfad statt path
+              httpRequestType: method.toUpperCase()
+            };
+
+            endpointsToCreate.push(endpoint);
+          }
+        }
+      }
+    }
+
+    if (endpointsToCreate.length > 0) {
+      this.endpointSvc.apiConfigSourceSystemSourceSystemIdEndpointPost(this.sourceSystemId, endpointsToCreate)
+        .subscribe({
+          next: () => {
+            this.loadEndpoints();
+            console.log(`${endpointsToCreate.length} Endpoints erfolgreich importiert`);
+          },
+          error: (error) => {
+            console.error('Fehler beim Speichern der Endpoints:', error);
+          }
+        });
+    }
+  } catch (error) {
+    console.error('Fehler beim Verarbeiten der OpenAPI Spec:', error);
+  } finally {
+    this.importing = false;
   }
+}
 
-  /**
-// ...existing code...
   /**
    * Parse OpenAPI specification and extract endpoints with their parameters
    */
@@ -499,16 +536,41 @@ private loadOpenApiFromUrls(urls: string[], index: number) {
 
 
   /**
+   * Utility: Ensure a parameter name is wrapped in curly braces {paramName}
+   */
+  private ensureBraces(paramName: string): string {
+    const cleanName = paramName.replace(/[{}]/g, '');
+    return `{${cleanName}}`;
+  }
+
+  /**
    * Extract path parameter names from an endpoint path.
    * Example: "/users/{userId}/posts/{postId}" -> ["{userId}", "{postId}"]
+   * Jetzt: Gibt immer {paramName} zurück, auch wenn nur userId gefunden wird.
    */
   private extractPathParameters(endpointPath: string): string[] {
+    // Suche nach {paramName}
     const pathParamRegex = /\{([^}]+)\}/g;
     const matches: string[] = [];
     let match: RegExpExecArray | null;
     while ((match = pathParamRegex.exec(endpointPath)) !== null) {
-      matches.push(match[0]); // include the braces
+      matches.push(this.ensureBraces(match[1]));
     }
+    // Suche nach :paramName, <paramName>, [paramName] und /:paramName
+    const altPatterns = [
+      /:(\w+)/g,
+      /<(\w+)>/g,
+      /\[(\w+)\]/g
+    ];
+    altPatterns.forEach(pattern => {
+      let m: RegExpExecArray | null;
+      while ((m = pattern.exec(endpointPath)) !== null) {
+        const withBraces = this.ensureBraces(m[1]);
+        if (!matches.includes(withBraces)) {
+          matches.push(withBraces);
+        }
+      }
+    });
     return matches;
   }
 
@@ -643,27 +705,21 @@ private loadOpenApiFromUrls(urls: string[], index: number) {
    * Create a single query parameter for a specific endpoint.
    */
   private createQueryParam(endpointId: number, paramName: string, paramType: ApiEndpointQueryParamType) {
-    let name = paramName;
+    let finalParamName = paramName;
+    // Konsistent: Backend speichert Path-Parameter MIT Klammern
     if (paramType === ApiEndpointQueryParamType.Path) {
-      // Ensure the parameter is wrapped in braces
-      if (!name.startsWith('{')) {
-        name = `{${name}}`;
-      }
+      finalParamName = this.ensureBraces(paramName);
     }
     const dto: ApiEndpointQueryParamDTO = {
-      paramName: name,
+      paramName: finalParamName,
       queryParamType: paramType
     };
-
-    this.queryParamSvc
-      .apiConfigEndpointEndpointIdQueryParamPost(endpointId, dto)
+    this.queryParamSvc.apiConfigEndpointEndpointIdQueryParamPost(endpointId, dto)
       .subscribe({
         next: () => {
-          console.log(`Created ${paramType} parameter: ${name} for endpoint ${endpointId}`);
+          this.loadQueryParams(endpointId);
         },
-        error: (err) => {
-          console.error(`Failed to create parameter ${name}:`, err);
-        }
+        error: (err) => console.error('Failed to create query param', err)
       });
   }
 
@@ -701,20 +757,27 @@ private loadOpenApiFromUrls(urls: string[], index: number) {
   /**
    * Add a new query parameter to the selected endpoint.
    */
-  addQueryParam() {
-    if (this.queryParamForm.invalid || !this.selectedEndpoint?.id) {
-      return;
-    }
-    const dto: ApiEndpointQueryParamDTO = this.queryParamForm.value;
-    this.queryParamSvc.apiConfigEndpointEndpointIdQueryParamPost(this.selectedEndpoint.id, dto)
-      .subscribe({
-        next: () => {
-          this.queryParamForm.reset({queryParamType: ApiEndpointQueryParamType.Query});
-          this.loadQueryParams(this.selectedEndpoint!.id!);
-        },
-        error: (err) => console.error('Failed to add query param', err)
-      });
+/**
+ * Add a new query parameter to the selected endpoint.
+ */
+addQueryParam() {
+  if (this.queryParamForm.invalid || !this.selectedEndpoint?.id) {
+    return;
   }
+  let dto: ApiEndpointQueryParamDTO = { ...this.queryParamForm.value };
+  // NEUE LOGIK: Automatisch Klammern für Path-Parameter hinzufügen
+  if (dto.queryParamType === ApiEndpointQueryParamType.Path) {
+    dto.paramName = this.ensureBraces(dto.paramName!);
+  }
+  this.queryParamSvc.apiConfigEndpointEndpointIdQueryParamPost(this.selectedEndpoint.id, dto)
+    .subscribe({
+      next: () => {
+        this.queryParamForm.reset({queryParamType: ApiEndpointQueryParamType.Query});
+        this.loadQueryParams(this.selectedEndpoint!.id!);
+      },
+      error: (err) => console.error('Failed to add query param', err)
+    });
+}
 
   /**
    * Delete a query parameter by its ID.
@@ -751,4 +814,37 @@ private loadOpenApiFromUrls(urls: string[], index: number) {
     };
   }
 
+  private formatPathWithParameters(path: string, parameters: any[]): string {
+    let formattedPath = path;
+    
+    const pathParams = parameters?.filter(param => param.in === 'path') || [];
+    
+    pathParams.forEach(param => {
+      const paramName = param.name;
+      
+      // Verschiedene Path-Parameter Formate normalisieren zu {paramName}
+      const patterns = [
+        // :paramName -> {paramName}
+        { regex: new RegExp(`:${paramName}\\b`, 'g'), replacement: `{${paramName}}` },
+        
+        // <paramName> -> {paramName} 
+        { regex: new RegExp(`<${paramName}>`, 'g'), replacement: `{${paramName}}` },
+        
+        // [paramName] -> {paramName}
+        { regex: new RegExp(`\\[${paramName}\\]`, 'g'), replacement: `{${paramName}}` },
+        
+        // paramName ohne Klammern -> {paramName} (nur wenn es wirklich ein Parameter ist)
+        { 
+          regex: new RegExp(`(?<!\\{|:|<|\\[)\\b${paramName}\\b(?!\\}|>|\\])(?=/|$)`, 'g'), 
+          replacement: `{${paramName}}` 
+        }
+      ];
+      
+      patterns.forEach(pattern => {
+        formattedPath = formattedPath.replace(pattern.regex, pattern.replacement);
+      });
+    });
+    
+    return formattedPath;
+  }
 }

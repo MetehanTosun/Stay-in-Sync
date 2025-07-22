@@ -37,6 +37,11 @@ public class ApiEndpointQueryParamService {
 
         ApiEndpointQueryParam apiEndpointQueryParam = mapper.mapToEntity(apiEndpointQueryParamDTO);
 
+        // NEU: Path-Parameter IMMER mit {} speichern
+        if (apiEndpointQueryParam.queryParamType != null && apiEndpointQueryParam.queryParamType.name().equals("PATH")) {
+            apiEndpointQueryParam.paramName = ensureBraces(apiEndpointQueryParam.paramName);
+        }
+
         SourceSystemEndpoint endpoint = sourceSystemEndpointService.findSourceSystemEndpointById(endpointId).orElseThrow(() -> {
             return new CoreManagementException("Unable to find Endpoint", "There is no endpoint with id %s", endpointId);
         });
@@ -66,6 +71,10 @@ public class ApiEndpointQueryParamService {
 
     public Optional<ApiEndpointQueryParam> replaceQueryParam(@NotNull @Valid ApiEndpointQueryParamDTO apiEndpointQueryParamDTO) {
         ApiEndpointQueryParam apiEndpointQueryParam = mapper.mapToEntity(apiEndpointQueryParamDTO);
+        // NEU: Path-Parameter IMMER mit {} speichern
+        if (apiEndpointQueryParam.queryParamType != null && apiEndpointQueryParam.queryParamType.name().equals("PATH")) {
+            apiEndpointQueryParam.paramName = ensureBraces(apiEndpointQueryParam.paramName);
+        }
         Log.debugf("Replacing endpoint: %s", apiEndpointQueryParam);
 
         Optional<ApiEndpointQueryParam> updatedSourceSystemEndpoint = apiEndpointQueryParam.findByIdOptional(apiEndpointQueryParam.id)
@@ -76,5 +85,12 @@ public class ApiEndpointQueryParamService {
                 });
 
         return updatedSourceSystemEndpoint;
+    }
+
+    // Hilfsmethode für {}-Format
+    private String ensureBraces(String paramName) {
+        if (paramName == null) return null;
+        String clean = paramName.replaceAll("[{}]", "");
+        return "{" + clean + "}";
     }
 }
