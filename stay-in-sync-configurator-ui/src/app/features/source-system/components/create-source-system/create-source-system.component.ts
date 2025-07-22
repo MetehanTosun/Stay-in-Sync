@@ -52,13 +52,13 @@ export class CreateSourceSystemComponent implements OnInit, OnChanges {
   @Output() visibleChange = new EventEmitter<boolean>();
 
 
-  // Reduziertes Step-Model: nur Metadaten und Endpoints
+ 
   steps = [
     {label: 'Metadaten'},
     {label: 'Api Header'},
     {label: 'Endpoints'},
   ];
-  currentStep = 0; // Start bei Schritt 0 (Metadaten)
+  currentStep = 0; 
   createdSourceSystemId!: number;
 
   form!: FormGroup;
@@ -160,7 +160,6 @@ export class CreateSourceSystemComponent implements OnInit, OnChanges {
   cancel(): void {
     this.visible = false;
     this.visibleChange.emit(false);
-    // reset form and state
     this.form.reset({apiType: 'REST_OPENAPI', apiAuthType: null});
     this.selectedFile = null;
     this.fileSelected = false;
@@ -193,34 +192,27 @@ save(): void {
     this.postDto(base);
   };
 
-  // Prüfe: Wurde eine Datei ausgewählt?
   if (this.selectedFile) {
-    // DATEI-UPLOAD: Das Backend kann keine Blobs verarbeiten, also konvertiere zu String
-    delete base.openApiSpec; // Lösche URL, falls vorhanden
+    delete base.openApiSpec;
     const reader = new FileReader();
     reader.onload = () => {
       const fileContent = reader.result as string;
-      base.openApiSpec = fileContent; // Direkt zuweisen, kein Type-Assertion nötig
+      base.openApiSpec = fileContent;
       post();
     };
-    reader.readAsText(this.selectedFile); // Lese als Text, nicht als DataURL
+    reader.readAsText(this.selectedFile);
     
   } else {
-    // Prüfe, ob openApiSpec eine URL-String ist
     const openApiSpecValue = base.openApiSpec;
     if (openApiSpecValue && typeof openApiSpecValue === 'string' && openApiSpecValue.trim()) {
-      // URL DIREKT ALS STRING senden
-      console.log('Sending URL as string:', openApiSpecValue);
-      base.openApiSpec = openApiSpecValue; // Direkt zuweisen, kein Type-Assertion nötig
+      base.openApiSpec = openApiSpecValue;
       post();
     } else {
-      // WEDER DATEI NOCH URL: Sende ohne openApiSpec
       delete base.openApiSpec;
       post();
     }
   }
 }
-// ...existing code...
   
   /**
    * Performs HTTP POST to persist the Source System and handles Location header parsing.
@@ -228,7 +220,6 @@ save(): void {
    * @param dto Prepared DTO for creation.
    */
   private postDto(dto: CreateSourceSystemDTO): void {
-    // DEBUG: Schaue dir das DTO an, bevor es gesendet wird
     console.log('📤 Sending DTO to backend:', dto);
     console.log('📤 openApiSpec field:', dto.openApiSpec);
     console.log('📤 openApiSpec type:', typeof dto.openApiSpec);
@@ -254,9 +245,8 @@ save(): void {
    */
   goNext(): void {
     if (this.currentStep === 0) {
-      this.save();            // erzeugt SourceSystem, springt auf Step 1 (API Headers)
+      this.save();
     } else if (this.currentStep === 1) {
-      // keine Persistenz hier, einfach auf Endpoints weiter
       this.currentStep = 2;
     }
   }

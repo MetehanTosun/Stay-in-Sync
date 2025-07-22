@@ -78,7 +78,7 @@ public class ApiEndpointQueryParamService {
         Log.debugf("Replacing endpoint: %s", apiEndpointQueryParam);
 
         Optional<ApiEndpointQueryParam> updatedSourceSystemEndpoint = apiEndpointQueryParam.findByIdOptional(apiEndpointQueryParam.id)
-                .map(ApiEndpointQueryParam.class::cast) // Only here for type erasure within the IDE
+                .map(ApiEndpointQueryParam.class::cast) 
                 .map(targetSouceSystemEndpoint -> {
                     this.mapper.mapFullUpdate(apiEndpointQueryParam, targetSouceSystemEndpoint);
                     return targetSouceSystemEndpoint;
@@ -87,7 +87,7 @@ public class ApiEndpointQueryParamService {
         return updatedSourceSystemEndpoint;
     }
 
-    // Hilfsmethode für {}-Format
+    
     private String ensureBraces(String paramName) {
         if (paramName == null) return null;
         String clean = paramName.replaceAll("[{}]", "");

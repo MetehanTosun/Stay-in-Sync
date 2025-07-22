@@ -157,33 +157,24 @@ export class ManageEndpointsComponent implements OnInit {
           console.log('openApiSpec field:', sourceSystem.openApiSpec);
           console.log('openApiSpec type:', typeof sourceSystem.openApiSpec);
           
-          // Setze die API-URL für den Import
           if (sourceSystem.openApiSpec && typeof sourceSystem.openApiSpec === 'string') {
-            // Prüfe, ob openApiSpec eine URL ist (beginnt mit http)
             if (sourceSystem.openApiSpec.startsWith('http')) {
               this.apiUrl = sourceSystem.openApiSpec.trim();
               console.log('✅ Found OpenAPI URL in source system:', this.apiUrl);
             } else {
-              // Falls es Datei-Inhalt ist, aber wir brauchen eine URL
-              console.log('ℹ️ OpenAPI spec contains file content, not URL. Using API URL instead.');
               this.apiUrl = sourceSystem.apiUrl!;
             }
           } else {
-            // Fallback: Verwende die API-URL
             this.apiUrl = sourceSystem.apiUrl!;
             console.log('ℹ️ No OpenAPI spec found, using API URL:', this.apiUrl);
           }
         },
         error: (err: any) => {
           console.error('Failed to load source system:', err);
-          // Fallback: Verwende eine Standard-URL (falls verfügbar)
           this.apiUrl = 'https://petstore.swagger.io/v2';
         }
       });
   }
-// ...existing code...
-// ...existing code...
-// ...existing code...
   /**
    * Load endpoints for the current source system from the backend.
    */
@@ -313,7 +304,6 @@ export class ManageEndpointsComponent implements OnInit {
     if (!this.apiUrl) {
       throw new Error('No API URL available for import');
     }
-    // Recognize direct JSON or YAML spec URLs
     if (
       this.apiUrl.includes('swagger.json') ||
       this.apiUrl.includes('openapi.json') ||
@@ -324,10 +314,8 @@ export class ManageEndpointsComponent implements OnInit {
       try {
         const openApiSpec = await this.http.get(this.apiUrl).toPromise();
         console.log('✅ Loaded OpenAPI spec from direct URL');
-        // Direktes Setzen der Endpunkte ohne Backend-Post
         const parsed = this.parseOpenApiSpec(openApiSpec);
         this.endpoints = parsed.map(item => item.endpoint);
-        // Create path and query parameters for imported endpoints, including braces for path params
         this.saveDiscoveredEndpoints(parsed);
         this.importing = false;
       } catch (err) {
@@ -336,7 +324,6 @@ export class ManageEndpointsComponent implements OnInit {
         throw err;
       }
     } else {
-      // Versuche Standard-Pfade an die API-URL anzuhängen
       try {
         const openApiSpec = await this.http.get(this.apiUrl + '/swagger.json').toPromise();
         console.log('✅ Loaded OpenAPI spec from /swagger.json');
@@ -347,7 +334,6 @@ export class ManageEndpointsComponent implements OnInit {
       }
     }
   }
-// ...existing code...
 
 
 private tryAlternativeOpenApiUrls() {
@@ -379,7 +365,6 @@ private loadOpenApiFromUrls(urls: string[], index: number) {
   const url = urls[index];
   console.log(`⏳ Trying: ${url}`);
 
-  // Bestimme, ob wir als JSON oder als text holen müssen
   const isJson = url.endsWith('.json');
   this.http.get(url, {
     responseType: isJson ? 'json' : 'text' as 'json'
@@ -390,7 +375,6 @@ private loadOpenApiFromUrls(urls: string[], index: number) {
       if (isJson) {
         spec = raw;
       } else {
-        // parse YAML → JS-Objekt
         try {
           spec = parseYAML(raw as string);
         } catch (e) {
@@ -421,16 +405,14 @@ private loadOpenApiFromUrls(urls: string[], index: number) {
           if (['get', 'post', 'put', 'delete', 'patch', 'head', 'options'].includes(method.toLowerCase())) {
             const operationDetails = operation as any;
             
-            // Sammle alle Parameter (sowohl path-level als auch operation-level)
             const pathLevelParams = (pathItem as any).parameters || [];
             const operationLevelParams = operationDetails.parameters || [];
             const allParameters = [...pathLevelParams, ...operationLevelParams];
             
-            // NEUE ZEILE: Formatiere den Pfad mit korrekten {} Klammern
             const formattedPath = this.formatPathWithParameters(path, allParameters);
             
             const endpoint: CreateSourceSystemEndpointDTO = {
-              endpointPath: formattedPath, // Verwende formatierten Pfad statt path
+              endpointPath: formattedPath,
               httpRequestType: method.toUpperCase()
             };
 
@@ -554,20 +536,13 @@ private loadOpenApiFromUrls(urls: string[], index: number) {
 
    
     const endpointDTOs = discoveredEndpoints.map(item => item.endpoint);
-    
-    
     this.endpointSvc
       .apiConfigSourceSystemSourceSystemIdEndpointPost(this.sourceSystemId, endpointDTOs)
       .subscribe({
         next: () => {
           console.log(`Successfully created ${endpointDTOs.length} endpoints`);
-          
-          
           this.loadEndpoints();
-          
-          
           setTimeout(() => {
-            // this.createParametersForDiscoveredEndpoints(discoveredEndpoints); // Removed as per edit hint
           }, 1000);
         },
         error: (err) => {
@@ -583,8 +558,6 @@ private loadOpenApiFromUrls(urls: string[], index: number) {
   private pathParamFormatValidator(): ValidatorFn {
     return (control: AbstractControl): ValidationErrors | null => {
       const parent = control.parent;
-      
-      // Removed queryParamType check as it's no longer used
       const val = control.value as string;
      
       if (typeof val === 'string' && val.match(/^\{[A-Za-z0-9_]+\}$/)) {
@@ -602,24 +575,15 @@ private loadOpenApiFromUrls(urls: string[], index: number) {
     pathParams.forEach(param => {
       const paramName = param.name;
       
-      // Verschiedene Path-Parameter Formate normalisieren zu {paramName}
       const patterns = [
-        // :paramName -> {paramName}
         { regex: new RegExp(`:${paramName}\\b`, 'g'), replacement: `{${paramName}}` },
-        
-        // <paramName> -> {paramName} 
         { regex: new RegExp(`<${paramName}>`, 'g'), replacement: `{${paramName}}` },
-        
-        // [paramName] -> {paramName}
         { regex: new RegExp(`\\[${paramName}\\]`, 'g'), replacement: `{${paramName}}` },
-        
-        // paramName ohne Klammern -> {paramName} (nur wenn es wirklich ein Parameter ist)
         { 
           regex: new RegExp(`(?<!\\{|:|<|\\[)\\b${paramName}\\b(?!\\}|>|\\])(?=/|$)`, 'g'), 
           replacement: `{${paramName}}` 
         }
       ];
-      
       patterns.forEach(pattern => {
         formattedPath = formattedPath.replace(pattern.regex, pattern.replacement);
       });
