@@ -6,6 +6,7 @@ import {
   SyncJobService
 } from '../../../../../../stay-in-sync-configurator-ui/src/app/features/sync-job/services/sync-job.service';
 import {SyncJob} from '../../../../../../stay-in-sync-configurator-ui/src/app/features/source-system/models/syncJob';
+import { firstValueFrom } from 'rxjs';
 
 /**
  * GraphPanelComponent
@@ -30,6 +31,7 @@ export class GraphPanelComponent implements AfterViewInit {
   @Output() nodeSelected = new EventEmitter<string | null>();
 
   private _searchTerm: string = '';
+  private isInitialized: boolean = false;
 
 
 
@@ -43,9 +45,13 @@ export class GraphPanelComponent implements AfterViewInit {
   @Input()
   set searchTerm(value: string) {
     this._searchTerm = value;
-    this.filteredNodes = this.filterNodes(this._searchTerm);
-    this.filteredLinks = this.filterLinks();
-    this.updateGraph(this.filteredNodes, this.filteredLinks);
+
+    // Filter nur anwenden, wenn die Komponente bereits initialisiert ist
+    if (this.isInitialized) {
+      this.filteredNodes = this.filterNodes(this._searchTerm);
+      this.filteredLinks = this.filterLinks();
+      this.updateGraph(this.filteredNodes, this.filteredLinks);
+    }
   }
   get searchTerm(): string {
     return this._searchTerm;
@@ -53,116 +59,65 @@ export class GraphPanelComponent implements AfterViewInit {
 
   uniqueTargetSystems = new Set<string>();
 
-  loadSyncjobs() {
-    this.nodes = [];
-    this.links = [];
-    this.uniqueTargetSystems.clear();
 
-    this.syncJobService.getAll().subscribe((jobs) => {
-      const seenSourceSystems = new Map<string, Node>();
-      const seenTargetSystems = new Map<string, Node>();
-      const seenSyncNodes = new Map<string, Node>();
-      const seenSyncJobs = new Map<string, Node>();
+async loadSyncjobs() {
+  this.uniqueTargetSystems.clear();
 
-      jobs.forEach((job) => {
-        const syncJobId = job.id?.toString() ?? '';
-        const syncNodeId = job.syncNodeIdentifier ?? 'unknown-sync-node';
+  try {
+    const jobs = await firstValueFrom(this.syncJobService.getAll());
+    const seenSourceSystems = new Map<string, Node>();
+    const seenTargetSystems = new Map<string, Node>();
+    const seenSyncNodes = new Map<string, Node>();
 
-        // 1. SyncJob as Node (intern treated as 'ASS')
-        const syncJobNode: Node = {
-          id: syncJobId,
-          label: job.name,
-          type: 'SyncNode',
-          status: job.deployed ? 'active' : 'inactive',
-          connections: []
-        };
-        this.nodes.push(syncJobNode);
-        seenSyncJobs.set(syncJobId, syncJobNode);
+    jobs.forEach((job) => {
+      console.log(`Processing SyncJob: ${job.name}, ID: ${job.id}, SyncNode: ${job.syncNodeIdentifier}`);
+      const syncJobId = job.id?.toString() ?? '';
 
-        // 2. SyncNode Node
-        let syncNode = seenSyncNodes.get(syncNodeId);
-        if (!syncNode) {
-          syncNode = {
-            id: syncNodeId,
-            label: syncNodeId,
-            type: 'SyncNode',
-            status: 'active',
-            connections: []
-          };
-          this.nodes.push(syncNode);
-          seenSyncNodes.set(syncNodeId, syncNode);
-        }
+      const syncNode: Node = {
+        id: syncJobId,
+        label: job.name,
+        type: 'SyncNode',
+        status: job.deployed ? 'active' : 'inactive',
+        connections: [],
+      };
+      this.nodes.push(syncNode);
+      console.log(`Adding SyncNode: ${syncNode.label}, ID: ${syncNode.id}, Status: ${syncNode.status}`);
+      seenSyncNodes.set(syncJobId, syncNode);
 
-        const syncNodeConnection: NodeConnection = {
-          source: syncNodeId,
-          target: syncJobId,
-          status: job.deployed ? 'active' : 'inactive'
-        };
-        this.links.push(syncNodeConnection);
-        syncNode.connections.push(syncNodeConnection);
-        syncJobNode.connections.push(syncNodeConnection);
+      job.transformations?.forEach((transformation) => {
+        transformation.sourceSystemApiRequestConfigurations?.forEach((sourceConfig) => {
+          const sourceSystem = sourceConfig.sourceSystem;
+          const sourceSystemId = sourceSystem?.id?.toString();
+          if (!sourceSystemId) return;
 
-        // 3. Process Transformations
-        job.transformations?.forEach((transformation) => {
-          // --- SourceSystems
-          transformation.sourceSystemApiRequestConfigurations?.forEach((sourceConfig) => {
-            const sourceSystem = sourceConfig.sourceSystem;
-            const sourceSystemId = sourceSystem?.id?.toString();
-            if (!sourceSystemId) return;
-
-            let sourceNode = seenSourceSystems.get(sourceSystemId);
-            if (!sourceNode) {
-              sourceNode = {
-                id: sourceSystemId,
-                label: sourceSystem.name,
-                type: 'SourceSystem',
-                status: 'active',
-                connections: []
-              };
-              this.nodes.push(sourceNode);
-              seenSourceSystems.set(sourceSystemId, sourceNode);
-            }
-
-            const conn: NodeConnection = {
-              source: sourceSystemId,
-              target: syncJobId,
-              status: 'active'
-            };
-            this.links.push(conn);
-            sourceNode.connections.push(conn);
-            syncJobNode.connections.push(conn);
-          });
-
-          // --- TargetSystems
-          const targetSystem = transformation.targetSystemEndpoint?.targetSystem;
-          const targetSystemId = targetSystem?.id?.toString();
-          if (!targetSystemId) return;
-
-          let targetNode = seenTargetSystems.get(targetSystemId);
-          if (!targetNode) {
-            targetNode = {
-              id: targetSystemId,
-              label: targetSystem.name,
-              type: 'TargetSystem',
+          let sourceNode = seenSourceSystems.get(sourceSystemId);
+          if (!sourceNode) {
+            sourceNode = {
+              id: '1000' + sourceSystemId,
+              label: sourceSystem.name || 'Unknown Source System',
+              type: 'SourceSystem',
               status: 'active',
               connections: []
             };
-            this.nodes.push(targetNode);
-            seenTargetSystems.set(targetSystemId, targetNode);
+            this.nodes.push(sourceNode);
+            seenSourceSystems.set(sourceSystemId, sourceNode);
           }
 
           const conn: NodeConnection = {
-            source: syncJobId,
-            target: targetSystemId,
+            source: sourceSystemId,
+            target: syncJobId,
             status: 'active'
           };
           this.links.push(conn);
-          syncJobNode.connections.push(conn);
-          targetNode.connections.push(conn);
+          sourceNode.connections.push(conn);
+          syncNode.connections.push(conn);
         });
       });
     });
+  } catch (error) {
+    console.error('Error loading sync jobs:', error);
   }
+}
 
 
 
@@ -170,13 +125,18 @@ export class GraphPanelComponent implements AfterViewInit {
    * Array of all nodes in the graph.
    * TODO: Replace with actual data fetching logic.
    */
-  nodes: Node[] = [];
+  nodes: Node[] = [
+    { id: 'A', type: 'SourceSystem', status: 'active', connections: [], label: 'Source System A' },
+    { id: 'B', type: 'ASS', status: 'active', connections: [], label: 'Hallo' },
+    { id: 'C', type: 'SyncNode', status: 'inactive', connections: [], label: 'Hallo' },
+  ];
 
   /**
    * Array of all links in the graph.
    * TODO: Replace with actual data fetching logic.
    */
-  links: NodeConnection[] = [];
+  links: NodeConnection[] = [
+  ];
 
   /**
    * Array of filtered links based on the search term.
@@ -192,26 +152,33 @@ export class GraphPanelComponent implements AfterViewInit {
    * Lifecycle hook that is called after the view has been initialized.
    * Sets up the SVG container, zoom behavior, and renders the initial graph.
    */
-  ngAfterViewInit() {
-    const svgElement = document.querySelector('svg');
-    const width = svgElement?.clientWidth ?? 400;
-    const height = svgElement?.clientHeight ?? 300;
+  async ngAfterViewInit() {
+    await this.loadSyncjobs()
+      .then(() => {
+        this.isInitialized = true;
+        console.log('GraphPanelComponent initialized with nodes:', this.nodes, 'and links:', this.links, 'start with graph');
+        const svgElement = document.querySelector('svg');
+        const width = svgElement?.clientWidth ?? 400;
+        const height = svgElement?.clientHeight ?? 300;
 
-    const svg = d3.select('svg')
-      .attr('width', '100%')
-      .attr('height', '100%');
+        const svg = d3.select('svg')
+          .attr('width', '100%')
+          .attr('height', '100%');
 
-    const container = svg.append('g');
+        const container = svg.append('g');
 
-    svg.call(
-      d3.zoom<any, unknown>()
-        .scaleExtent([0.5, 5])
-        .on('zoom', (event) => {
-          container.attr('transform', event.transform);
-        })
-    );
-
-    this.renderGraph(container, this.nodes, this.links, width, height);
+        svg.call(
+          d3.zoom<any, unknown>()
+            .scaleExtent([0.5, 5])
+            .on('zoom', (event) => {
+              container.attr('transform', event.transform);
+            })
+        );
+        this.renderGraph(container, this.nodes, this.links, width, height);
+      })
+      .catch((err: any) => {
+        console.error('Error loading sync jobs:', err);
+      });
   }
 
   /**
@@ -289,6 +256,9 @@ export class GraphPanelComponent implements AfterViewInit {
     width: number,
     height: number
   ) {
+    const tooltip = d3.select('#tooltip');
+    console.log(`Rendering graph with ${nodes.length} nodes and ${links.length} links`);
+
     const link = container.append('g')
       .selectAll('line')
       .data(links)
@@ -302,11 +272,23 @@ export class GraphPanelComponent implements AfterViewInit {
 
     nodeGroup.append('circle')
       .attr('r', 20)
-      .attr('fill', '#888');
+      .attr('fill', '#888')
+      .on('mouseover', (event, d) => {
+        tooltip.style('visibility', 'visible')
+          .text(d.label)
+          .style('position', 'absolute')
+          .style('top', `${event.pageY + 10}px`)
+          .style('left', `${event.pageX + 10}px`);
+      })
+      .on('mousemove', (event) => {
+        tooltip.style('top', `${event.pageY + 10}px`)
+          .style('left', `${event.pageX + 10}px`);
+      })
+      .on('mouseout', () => {
+        tooltip.style('visibility', 'hidden');
+      });
 
     this.applyStatusStyles(nodeGroup);
-
-    console.log('width:', width, 'height:', height);
 
     const simulation = this.createSimulation(nodes, links, width, height, link, nodeGroup);
 
@@ -411,7 +393,7 @@ export class GraphPanelComponent implements AfterViewInit {
           .attr('y1', d => (d.source as Node).y ?? 0)
           .attr('x2', d => (d.target as Node).x ?? 0)
           .attr('y2', d => (d.target as Node).y ?? 0);
-
+        console.log('Creating simulation with nodes:', nodes, 'and links:', links);
         nodeGroup
           .attr('transform', d => `translate(${d.x ?? 0},${d.y ?? 0})`);
       });

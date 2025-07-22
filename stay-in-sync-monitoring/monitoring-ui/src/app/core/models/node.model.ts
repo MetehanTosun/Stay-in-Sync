@@ -3,7 +3,7 @@ import * as d3 from 'd3';
 export interface Node {
   id: string;
   type: 'SourceSystem' | 'ASS' | 'SyncNode' | 'TargetSystem';
-  label?: string;
+  label: string ;
   status: 'active' | 'inactive' | 'error';
   connections: NodeConnection[];
   x ?: number;

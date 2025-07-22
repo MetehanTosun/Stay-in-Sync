@@ -78,7 +78,9 @@ export class SyncJobCreationComponent implements OnInit {
   /**
    * @property {SyncJob} mySyncJob - Repräsentiert den aktuellen Sync Job, der erstellt oder bearbeitet wird.
    */
-  mySyncJob: SyncJob = {};
+  mySyncJob: SyncJob = {
+    name: ''
+  };
 
   private _syncJobName: string = '';
   private deployed: boolean = false;
@@ -299,12 +301,12 @@ export class SyncJobCreationComponent implements OnInit {
       deployed: this.deployed
     };
     console.log(syncJob.transformationIds);
-    if (syncJob.name === '' || syncJob.name === null) {
+    if (!syncJob.name || syncJob.name.trim().length < 2) {
       this.messageService.add({
         severity: 'error',
         summary: 'Validation Failed',
-        detail: 'Please enter a name before saving.'
-      })
+        detail: 'Der Name muss mindestens 2 Zeichen lang sein.'
+      });
       return;
     }
     console.log("Creating Sync Job with data:", syncJob);
