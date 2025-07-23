@@ -45,7 +45,7 @@ public class SourceSystemEndpointService {
     public SourceSystemEndpoint persistSourceSystemEndpoint(@NotNull @Valid CreateSourceSystemEndpointDTO sourceSystemEndpointDTO, Long sourceSystemId) {
         Log.debugf("Persisting source-system-endpoint: %s, for source-system with id: %s", sourceSystemEndpointDTO, sourceSystemId);
 
-        // JSON-Validierung für responseBodySchema
+   
         if (sourceSystemEndpointDTO.responseBodySchema() != null && !sourceSystemEndpointDTO.responseBodySchema().isBlank()) {
             try {
                 objectMapper.readTree(sourceSystemEndpointDTO.responseBodySchema());
@@ -99,7 +99,7 @@ public class SourceSystemEndpointService {
     public Optional<SourceSystemEndpoint> replaceSourceSystemEndpoint(@NotNull @Valid SourceSystemEndpoint sourceSystemEndpoint) {
         Log.debugf("Replacing endpoint: %s", sourceSystemEndpoint);
 
-        // JSON-Validierung für responseBodySchema
+      
         if (sourceSystemEndpoint.responseBodySchema != null && !sourceSystemEndpoint.responseBodySchema.isBlank()) {
             try {
                 objectMapper.readTree(sourceSystemEndpoint.responseBodySchema);

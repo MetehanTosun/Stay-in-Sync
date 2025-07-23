@@ -99,7 +99,7 @@ public class SourceSystemEndpointTest {
         Long id = endpoint.id;
         em.clear();
 
-        // Update
+      
         SourceSystemEndpoint toUpdate = em.find(SourceSystemEndpoint.class, id);
         toUpdate.responseBodySchema = "{\"type\":\"number\"}";
         em.flush();
