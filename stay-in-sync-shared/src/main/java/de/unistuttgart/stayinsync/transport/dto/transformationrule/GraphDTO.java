@@ -16,6 +16,11 @@ import java.util.List;
 public class GraphDTO {
 
     /**
+     * The unique database ID of the graph entity.
+     */
+    private Long id;
+
+    /**
      * The unique, human-readable name for this graph.
      */
     private String name;

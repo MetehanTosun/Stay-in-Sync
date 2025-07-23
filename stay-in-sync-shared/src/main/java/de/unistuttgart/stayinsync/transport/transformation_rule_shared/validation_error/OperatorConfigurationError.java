@@ -27,6 +27,6 @@ public class OperatorConfigurationError implements ValidationError {
 
     @Override
     public String getMessage() {
-        return "Node '" + nodeName + "' (ID: " + nodeId + "): " + message;
+        return "Node_ID: " + nodeId + " : "  + message;
     }
 }

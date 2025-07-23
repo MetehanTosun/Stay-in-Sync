@@ -31,6 +31,13 @@ public class OperatorMetadataEntity extends PanacheEntityBase {
     public String description;
 
     /**
+     * The category this operator belongs to (e.g., "ARRAY", "STRING", "GENERAL").
+     * Used for grouping in the UI.
+     */
+    @Column(name = "category")
+    public String category;
+
+    /**
      * A JSON string representing an array of expected input types (e.g., "[\"NUMBER\", \"NUMBER\"]").
      */
     @Lob

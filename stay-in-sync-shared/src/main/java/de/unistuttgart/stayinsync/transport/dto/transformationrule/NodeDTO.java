@@ -72,4 +72,20 @@ public class NodeDTO {
      * Only used if nodeType is "LOGIC".
      */
     private String operatorType;
+
+    /**
+     * A list of strings describing the expected data types for the operator's inputs.
+     * This is persisted to be available for the UI upon loading the graph.
+     */
+    private List<String> inputTypes;
+
+    /**
+     * A string describing the data type of the operator's output.
+     */
+    private String outputType;
+
+    /**
+     * A list containing two integers [min, max] defining the required number of inputs.
+     */
+    private List<Integer> inputLimit;
 }

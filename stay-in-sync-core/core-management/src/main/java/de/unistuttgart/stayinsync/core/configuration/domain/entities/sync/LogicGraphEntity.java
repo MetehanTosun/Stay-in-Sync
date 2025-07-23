@@ -39,4 +39,8 @@ public class LogicGraphEntity extends PanacheEntity {
      */
     @Enumerated(EnumType.STRING)
     public GraphStatus status = GraphStatus.DRAFT;
+
+    @Lob
+    @Column(name = "validation_errors_json", columnDefinition = "LONGTEXT")
+    public String validationErrorsJson;
 }

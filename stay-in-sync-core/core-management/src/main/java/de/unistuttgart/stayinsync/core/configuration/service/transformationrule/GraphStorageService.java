@@ -73,6 +73,11 @@ public class GraphStorageService {
             entity.status = status;
             entity.persist();
 
+
+            if (!validationErrors.isEmpty()) {
+                entity.validationErrorsJson = jsonObjectMapper.writeValueAsString(validationErrors);
+            }
+
             if (status == GraphStatus.DRAFT) {
                 Log.warnf("Graph '%s' (id: %d) was saved as a DRAFT due to validation errors.", entity.name, entity.id);
             }
@@ -189,6 +194,13 @@ public class GraphStorageService {
         Log.debug("Loading all graphs");
 
         return LogicGraphEntity.listAll();
+    }
+
+    @Transactional(SUPPORTS)
+    public List<LogicGraphEntity> getAllGraphs() {
+        Log.debug("Loading all graphs");
+
+        return findAllGraphs();
     }
 
 //    /**

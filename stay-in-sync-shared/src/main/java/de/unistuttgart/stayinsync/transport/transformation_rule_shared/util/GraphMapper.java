@@ -1,5 +1,9 @@
 package de.unistuttgart.stayinsync.transport.transformation_rule_shared.util;
 
+import de.unistuttgart.stayinsync.transport.dto.transformationrule.vFlow.VFlowEdgeDTO;
+import de.unistuttgart.stayinsync.transport.dto.transformationrule.vFlow.VFlowGraphDTO;
+import de.unistuttgart.stayinsync.transport.dto.transformationrule.vFlow.VFlowNodeDTO;
+import de.unistuttgart.stayinsync.transport.dto.transformationrule.vFlow.VFlowNodeDataDTO;
 import de.unistuttgart.stayinsync.transport.transformation_rule_shared.logic_operator.LogicOperator;
 import de.unistuttgart.stayinsync.transport.transformation_rule_shared.nodes.ConstantNode;
 import de.unistuttgart.stayinsync.transport.transformation_rule_shared.nodes.LogicNode;
@@ -8,12 +12,112 @@ import de.unistuttgart.stayinsync.transport.transformation_rule_shared.nodes.Pro
 import de.unistuttgart.stayinsync.transport.dto.transformationrule.GraphDTO;
 import de.unistuttgart.stayinsync.transport.dto.transformationrule.InputDTO;
 import de.unistuttgart.stayinsync.transport.dto.transformationrule.NodeDTO;
+import io.quarkus.logging.Log;
 import jakarta.enterprise.context.ApplicationScoped;
 
 import java.util.*;
 
 @ApplicationScoped
 public class GraphMapper {
+
+
+    /**
+     * Converts a VFlowGraphDTO from the frontend into the flattened GraphDTO format
+     * that is used for persistence in the database.
+     *
+     * @param vflowDto The graph data from the ngx-vflow UI, containing separate node and edge lists.
+     * @return The flattened GraphDTO ready for persistence.
+     */
+    public GraphDTO vflowToGraphDto(VFlowGraphDTO vflowDto) {
+        if (vflowDto == null || vflowDto.getNodes() == null) {
+            return new GraphDTO();
+        }
+
+        GraphDTO graphDto = new GraphDTO();
+        graphDto.setName(vflowDto.getName());
+
+        // Pass 1: Create all flat NodeDTOs from the vflow nodes.
+        Map<String, NodeDTO> nodeDtoMap = mapVFlowNodesToNodeDTOs(vflowDto.getNodes());
+
+        // Pass 2: Apply the edge information to create the input connections.
+        if (vflowDto.getEdges() != null) {
+            applyVFlowEdgesToNodeDTOs(nodeDtoMap, vflowDto.getEdges());
+        }
+
+        graphDto.setNodes(new ArrayList<>(nodeDtoMap.values()));
+        return graphDto;
+    }
+
+    /**
+     * Helper for Pass 1: Creates a map of flattened NodeDTOs from the VFlowNodeDTO list.
+     *
+     * @param vflowNodes The list of nodes received from the frontend.
+     * @return A map of NodeDTOs, keyed by their string ID.
+     */
+    private Map<String, NodeDTO> mapVFlowNodesToNodeDTOs(List<VFlowNodeDTO> vflowNodes) {
+        Map<String, NodeDTO> nodeDtoMap = new HashMap<>();
+        for (VFlowNodeDTO vflowNode : vflowNodes) {
+            NodeDTO nodeDto = new NodeDTO();
+            VFlowNodeDataDTO data = vflowNode.getData();
+
+            // Copy all properties from the VFlow DTO to the persistence DTO
+            nodeDto.setId(Integer.parseInt(vflowNode.getId()));
+            nodeDto.setName(data.getName());
+            nodeDto.setNodeType(data.getNodeType());
+            nodeDto.setOffsetX(vflowNode.getPoint().getX());
+            nodeDto.setOffsetY(vflowNode.getPoint().getY());
+            nodeDto.setArcId(data.getArcId());
+            nodeDto.setJsonPath(data.getJsonPath());
+            nodeDto.setValue(data.getValue());
+            nodeDto.setOperatorType(data.getOperatorType());
+            nodeDto.setInputTypes(data.getInputTypes());
+            nodeDto.setOutputType(data.getOutputType());
+            nodeDto.setInputLimit(data.getInputLimit());
+            nodeDto.setInputNodes(new ArrayList<>());
+
+            nodeDtoMap.put(vflowNode.getId(), nodeDto);
+        }
+        return nodeDtoMap;
+    }
+
+    /**
+     * Helper for Pass 2: Iterates through the edges and adds the corresponding
+     * InputDTOs to the target NodeDTOs.
+     *
+     * @param nodeDtoMap A map of all created NodeDTOs, keyed by their string ID.
+     * @param vflowEdges The list of edges received from the frontend.
+     */
+    private void applyVFlowEdgesToNodeDTOs(Map<String, NodeDTO> nodeDtoMap, List<VFlowEdgeDTO> vflowEdges) {
+        for (VFlowEdgeDTO edge : vflowEdges) {
+            NodeDTO targetNodeDto = nodeDtoMap.get(edge.getTarget());
+            if (targetNodeDto == null) {
+                Log.warnf("Edge references a non-existent target node with ID: %s", edge.getTarget());
+                continue;
+            }
+
+            InputDTO inputDto = new InputDTO();
+            inputDto.setId(Integer.parseInt(edge.getSource()));
+            inputDto.setOrderIndex(parseOrderIndexFromTargetHandle(edge.getTargetHandle()));
+
+            targetNodeDto.getInputNodes().add(inputDto);
+        }
+    }
+
+    /**
+     * Extracts the numeric order index from a vflow target handle string.
+     * Example: "input-0" -> 0
+     */
+    private int parseOrderIndexFromTargetHandle(String targetHandle) {
+        if (targetHandle != null && targetHandle.contains("-")) {
+            try {
+                String[] parts = targetHandle.split("-");
+                return Integer.parseInt(parts[1]);
+            } catch (Exception e) {
+                Log.warnf("Could not parse orderIndex from targetHandle: %s. Defaulting to 0.", targetHandle);
+            }
+        }
+        return 0; // Default to 0 if handle is missing or malformed
+    }
 
     /**
      * Maps a list of in-memory Node objects to a serializable GraphDTO.

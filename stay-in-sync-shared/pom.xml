@@ -45,6 +45,12 @@
             <version>1.5.1</version>
             <scope>compile</scope>
         </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-core</artifactId>
+            <version>3.22.3</version>
+            <scope>compile</scope>
+        </dependency>
     </dependencies>
 
 </project>
