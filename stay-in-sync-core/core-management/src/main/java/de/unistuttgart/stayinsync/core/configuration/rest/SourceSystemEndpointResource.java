@@ -19,7 +19,6 @@ import org.eclipse.microprofile.openapi.annotations.Operation;
 import org.eclipse.microprofile.openapi.annotations.enums.SchemaType;
 import org.eclipse.microprofile.openapi.annotations.headers.Header;
 import org.eclipse.microprofile.openapi.annotations.media.Content;
-import org.eclipse.microprofile.openapi.annotations.media.ExampleObject;
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
 import org.eclipse.microprofile.openapi.annotations.parameters.Parameter;
 import org.eclipse.microprofile.openapi.annotations.parameters.RequestBody;
@@ -63,8 +62,7 @@ public class SourceSystemEndpointResource {
                     required = true,
                     content = @Content(
                             mediaType = APPLICATION_JSON,
-                            schema = @Schema(type = SchemaType.ARRAY, implementation = CreateSourceSystemEndpointDTO.class),
-                            examples = @ExampleObject(name = "valid_sync_job", value = Examples.VALID_EXAMPLE_ENDPOINT_CREATE)
+                            schema = @Schema(type = SchemaType.ARRAY, implementation = CreateSourceSystemEndpointDTO.class)
                     )
             )
             @PathParam("sourceSystemId") Long sourceSystemId,
@@ -104,8 +102,7 @@ public class SourceSystemEndpointResource {
             description = "Gets a source-system-endpoint for a given id",
             content = @Content(
                     mediaType = APPLICATION_JSON,
-                    schema = @Schema(implementation = SourceSystemEndpointDTO.class),
-                    examples = @ExampleObject(name = "source-system-endpoint", value = Examples.VALID_EXAMPLE_SYNCJOB)
+                    schema = @Schema(implementation = SourceSystemEndpointDTO.class)
             )
     )
     @APIResponse(
@@ -158,8 +155,7 @@ public class SourceSystemEndpointResource {
                                                             required = true,
                                                             content = @Content(
                                                                     mediaType = APPLICATION_JSON,
-                                                                    schema = @Schema(implementation = SourceSystemEndpointDTO.class),
-                                                                    examples = @ExampleObject(name = "valid endpoint", value = Examples.VALID_SOURCE_SYSTEM_ENDPOINT_POST)
+                                                                    schema = @Schema(implementation = SourceSystemEndpointDTO.class)
                                                             )
                                                     )
                                                     @PathParam("id") Long id, @Valid @NotNull CreateSourceSystemEndpointDTO sourceSystemEndpointDTO) {

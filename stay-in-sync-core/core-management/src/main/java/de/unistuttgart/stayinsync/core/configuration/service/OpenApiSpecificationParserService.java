@@ -1,5 +1,6 @@
 package de.unistuttgart.stayinsync.core.configuration.service;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.SourceSystem;
 import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.SourceSystemEndpoint;
 import de.unistuttgart.stayinsync.core.configuration.rest.dtos.ApiEndpointQueryParamDTO;
@@ -29,6 +30,9 @@ public class OpenApiSpecificationParserService {
 
     @Inject
     SourceSystemEndpointService sourceSystemEndpointService;
+
+    @Inject
+    ObjectMapper objectMapper;
 
     @Inject
     ApiEndpointQueryParamService apiEndpointQueryParamService;
@@ -121,9 +125,25 @@ public class OpenApiSpecificationParserService {
                 PathItem.HttpMethod httpMethod = opEntry.getKey();
                 Operation operation = opEntry.getValue();
 
+                String responseBodySchema = null;
+                if (operation.getResponses() != null && operation.getResponses().get("200") != null) {
+                    var response = operation.getResponses().get("200");
+                    if (response.getContent() != null && response.getContent().get("application/json") != null) {
+                        var mediaType = response.getContent().get("application/json");
+                        if (mediaType.getSchema() != null) {
+                            try {
+                                responseBodySchema = objectMapper.writeValueAsString(mediaType.getSchema());
+                            } catch (Exception e) {
+                                responseBodySchema = null;
+                            }
+                        }
+                    }
+                }
+
                 CreateSourceSystemEndpointDTO endpointDTO = new CreateSourceSystemEndpointDTO(
                         path,
-                        httpMethod.toString()
+                        httpMethod.toString(),
+                        responseBodySchema
                         // operation.getSummary() != null ? operation.getSummary() : operation.getDescription() // TODO: summary for endpoint?
                 );
                 SourceSystemEndpoint newEndpoint = sourceSystemEndpointService.persistSourceSystemEndpoint(endpointDTO, sourceSystem.id);

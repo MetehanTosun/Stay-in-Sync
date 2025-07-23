@@ -1,5 +1,7 @@
 package de.unistuttgart.stayinsync.core.configuration.service;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.SourceSystem;
 import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.SourceSystemEndpoint;
 import de.unistuttgart.stayinsync.core.configuration.exception.CoreManagementException;
@@ -29,6 +31,9 @@ public class SourceSystemEndpointService {
     Validator validator;
 
     @Inject
+    ObjectMapper objectMapper;
+
+    @Inject
     SourceSystemEndpointService sourceSystemEndpointService;
 
     @Inject
@@ -39,6 +44,15 @@ public class SourceSystemEndpointService {
 
     public SourceSystemEndpoint persistSourceSystemEndpoint(@NotNull @Valid CreateSourceSystemEndpointDTO sourceSystemEndpointDTO, Long sourceSystemId) {
         Log.debugf("Persisting source-system-endpoint: %s, for source-system with id: %s", sourceSystemEndpointDTO, sourceSystemId);
+
+        // JSON-Validierung für responseBodySchema
+        if (sourceSystemEndpointDTO.responseBodySchema() != null && !sourceSystemEndpointDTO.responseBodySchema().isBlank()) {
+            try {
+                objectMapper.readTree(sourceSystemEndpointDTO.responseBodySchema());
+            } catch (JsonProcessingException e) {
+                throw new CoreManagementException(Response.Status.BAD_REQUEST, "Invalid JSON in responseBodySchema", "Das Feld responseBodySchema enthält kein valides JSON: %s", e.getMessage());
+            }
+        }
 
         SourceSystemEndpoint sourceSystemEndpoint = sourceSystemEndpointFullMapper.mapToEntity(sourceSystemEndpointDTO);
 
@@ -84,6 +98,15 @@ public class SourceSystemEndpointService {
 
     public Optional<SourceSystemEndpoint> replaceSourceSystemEndpoint(@NotNull @Valid SourceSystemEndpoint sourceSystemEndpoint) {
         Log.debugf("Replacing endpoint: %s", sourceSystemEndpoint);
+
+        // JSON-Validierung für responseBodySchema
+        if (sourceSystemEndpoint.responseBodySchema != null && !sourceSystemEndpoint.responseBodySchema.isBlank()) {
+            try {
+                objectMapper.readTree(sourceSystemEndpoint.responseBodySchema);
+            } catch (JsonProcessingException e) {
+                throw new CoreManagementException(Response.Status.BAD_REQUEST, "Invalid JSON in responseBodySchema", "Das Feld responseBodySchema enthält kein valides JSON: %s", e.getMessage());
+            }
+        }
 
         return SourceSystemEndpoint.findByIdOptional(sourceSystemEndpoint.id)
                 .map(SourceSystemEndpoint.class::cast) // Only here for type erasure within the IDE
