@@ -1,6 +1,8 @@
 package de.unistuttgart.stayinsync.core.configuration.service;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.*;
 import de.unistuttgart.stayinsync.core.configuration.exception.CoreManagementException;
 import de.unistuttgart.stayinsync.core.configuration.mapping.SourceSystemApiRequestConfigurationFullUpdateMapper;
@@ -115,9 +117,15 @@ public class SourceSystemApiRequestConfigurationService {
             throw new CoreManagementException("Source System mismatch","Endpoint does not belong to the specified source system.");
         }
 
-        String generatedDts;
+        String jsonSample = dto.responseDts();
+        boolean isArray = false;
+        String generatedInterfaces = "";
         try {
-            generatedDts = typeGenerator.generate(dto.responseDts());
+            JsonNode rootNode = new ObjectMapper().readTree(jsonSample);
+            if(rootNode.isArray()){
+                isArray = true;
+            }
+            generatedInterfaces = typeGenerator.generate(jsonSample);
         } catch (JsonProcessingException e) {
             throw new CoreManagementException(Response.Status.BAD_REQUEST, "Invalid sample JSON", "The provided JSON is invalid and cannot be built into a TypeScript type: %s", e.getMessage());
         }
@@ -127,7 +135,8 @@ public class SourceSystemApiRequestConfigurationService {
         newArc.sourceSystem = sourceSystem;
         newArc.sourceSystemEndpoint = endpoint;
         newArc.syncSystemEndpoint = endpoint;
-        newArc.responseDts = generatedDts;
+        newArc.responseDts = generatedInterfaces;
+        newArc.responseIsArray = isArray;
 
         newArc.persist();
 

@@ -37,6 +37,7 @@ export interface ApiRequestConfiguration {
   endpointPath: string;
   httpMethod: 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH';
   responseDts: string;
+  responseIsArray: boolean;
   // TODO: Include other relevant fields as needed for display or cloning.
 }
 
@@ -66,6 +67,7 @@ export interface EndpointParameterDefinition {
   description: string;
   required: boolean;
   options: string[];
+  type: 'string' | 'number' | 'integer' | 'boolean' | 'array';
 }
 
 export interface SourceSystemApiRequestConfiguration extends ApiRequestConfiguration {
@@ -95,4 +97,5 @@ export interface ApiEndpointParamDTO {
   description?: string;
   required?: boolean;
   values: string[];
+  schemaType: 'string' | 'number' | 'integer' | 'boolean' | 'array';
 }

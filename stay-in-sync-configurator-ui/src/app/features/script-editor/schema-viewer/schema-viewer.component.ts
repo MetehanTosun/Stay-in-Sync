@@ -21,10 +21,12 @@ import { TreeModule } from 'primeng/tree';
 })
 export class SchemaViewerComponent implements OnChanges {
 
-  @Input() jsonData: Record<string, any> | null | undefined = null;
+  @Input() jsonData: any | null | undefined = null;
   @Input() dtsCode: string | null | undefined = null;
 
-  treeNodes: TreeNode[] = []
+  treeNodes: TreeNode[] = [];
+  isJsonData = true;
+  rawTextData = '';
   editorOptions = {
     theme: 'vs-dark',
     language: 'typescript',
@@ -34,43 +36,49 @@ export class SchemaViewerComponent implements OnChanges {
   };
 
   ngOnChanges(changes: SimpleChanges): void {
-    if (changes['jsonData'] && this.jsonData) {
-      this.treeNodes = [this.convertSchemaToTreeNode(this.jsonData, 'payload', 'Response Payload')];
+    if (changes['jsonData']) {
+      if(typeof this.jsonData === 'object' && this.jsonData !== null){
+        this.isJsonData = true;
+        this.treeNodes = [this.convertPayloadToTreeNode(this.jsonData, 'payload')];
+      }
     } else {
+      this.isJsonData = false;
+      this.rawTextData = String(this.jsonData);
       this.treeNodes = [];
     }
   }
 
-  private convertSchemaToTreeNode(schema: any, key: string, label: string): TreeNode {
+  private convertPayloadToTreeNode(data: any, key: string): TreeNode {
+    const dataType = this.getPayloadType(data);
+
     const node: TreeNode = {
       key: key,
-      label: label,
-      data: schema,
-      type: schema.type || 'object',
-      expanded: true, // Auto-expand first level for visibility
-      icon: this.getPropertyIcon(schema.type),
+      label: `${key}: ${dataType}`,
+      expanded: false,
+      icon: this.getPropertyIcon(dataType),
       children: []
     };
 
-    if (schema.type === 'object' && schema.properties) {
-      node.label = label;
-      node.children = Object.keys(schema.properties).map(propKey => {
-        const propSchema = schema.properties[propKey];
-        const isRequired = schema.required?.includes(propKey);
-        const propLabel = `${propKey}: ${propSchema.type}${isRequired ? ' (Required)' : ''}`;
-
-        const childNode = this.convertSchemaToTreeNode(propSchema, `${key}-${propKey}`, propLabel);
-        childNode.expanded = false; 
-        return childNode;
+    if (dataType === 'object') {
+      node.children = Object.keys(data).map((propKey, index) => {
+        return this.convertPayloadToTreeNode(data[propKey], propKey);
       });
-    } else if (schema.type === 'array' && schema.items) {
-      node.label = `${label}[]`;
-      const itemNode = this.convertSchemaToTreeNode(schema.items, `${key}-items`, `Item: ${schema.items.type}`);
-      itemNode.expanded = true;
-      node.children = [itemNode];
+    } else if (dataType === 'array') {
+      node.label = `${key}: array`;
+      if(data.length >0){
+        const itemNode = this.convertPayloadToTreeNode(data[0], `Item[0]`);
+        itemNode.label = itemNode.label?.replace('Item [0]', 'Item');
+        node.children = [itemNode];
+      }
     }
     
     return node;
+  }
+
+  private getPayloadType(data: any): string {
+    if(Array.isArray(data)) return 'array';
+    if(data === null) return 'null';
+    return typeof data;
   }
 
   private getPropertyIcon(type: string): string {

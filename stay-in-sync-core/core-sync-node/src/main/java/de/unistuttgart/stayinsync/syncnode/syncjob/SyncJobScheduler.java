@@ -22,10 +22,16 @@ public class SyncJobScheduler {
     @Inject
     SyncDataMessageConsumer syncDataMessageConsumer;
 
+    @Inject
+    DispatcherStateService dispatcherStateService;
+
     Set<SyncJobMessageDTO> runningJobs = new HashSet<>();
 
     public void deploySyncJobExecution(SyncJobMessageDTO syncJob) throws SyncNodeException {
         Log.infof("Deploying sync-job %s (id: %s)", syncJob.name(), syncJob.id());
+
+        dispatcherStateService.loadInitialTransformations(syncJob);
+
         syncJobMessageConsumer.bindSyncJobReconfigurationQueue(syncJob);
         consumeJobSyncData(syncJob);
 
