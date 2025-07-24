@@ -1,22 +1,25 @@
 package de.unistuttgart.stayinsync.pollingnode.execution.ressource;
 
-import de.unistuttgart.stayinsync.pollingnode.exceptions.FaultySourceSystemApiRequestMessageDtoException;
-import de.unistuttgart.stayinsync.transport.dto.ApiConnectionDetailsDTO;
-import de.unistuttgart.stayinsync.transport.dto.ParamType;
-import de.unistuttgart.stayinsync.transport.dto.SourceSystemMessageDTO;
+import de.unistuttgart.stayinsync.pollingnode.entities.RequestBuildingDetails;
+import de.unistuttgart.stayinsync.pollingnode.exceptions.UnsupportedRequestTypeException;
+import de.unistuttgart.stayinsync.pollingnode.exceptions.pollingjob.requestbuilderexceptions.RequestBuildingDetailsNullFieldException;
+import de.unistuttgart.stayinsync.pollingnode.exceptions.pollingjob.requestbuilderexceptions.RequestBuildingException;
 import io.quarkus.logging.Log;
 import io.vertx.ext.web.client.WebClientOptions;
 import io.vertx.mutiny.core.Vertx;
 import io.vertx.mutiny.core.buffer.Buffer;
 import io.vertx.mutiny.ext.web.client.HttpRequest;
 import io.vertx.mutiny.ext.web.client.WebClient;
+import jakarta.enterprise.context.ApplicationScoped;
 
 import java.time.Duration;
-import java.util.Objects;
+
+import static de.unistuttgart.stayinsync.transport.dto.ParamType.QUERY;
 
 /**
  * Offers the method configureRequest in which a request is built for later use.
  */
+@ApplicationScoped
 public class RequestBuilder {
 
     private final WebClient webClient;
@@ -41,24 +44,32 @@ public class RequestBuilder {
     /**
      * Returns a configured HttpRequest for the ApiConnectionDetails.
      *
-     * @param connectionDetails contains important info for request build.
+     * @param requestBuildingDetails contains important info for request building process.
      * @return fully configured and parameterised HttpRequest
-     * @throws FaultySourceSystemApiRequestMessageDtoException if configuration didn´t work because of some fields.
+     * @throws RequestBuildingException if request was not built, because of faulty requestBuildingDetails
      */
-    public HttpRequest<Buffer> configureRequest(final ApiConnectionDetailsDTO connectionDetails) throws FaultySourceSystemApiRequestMessageDtoException {
+    public HttpRequest<Buffer> buildRequest(final RequestBuildingDetails requestBuildingDetails) throws RequestBuildingException {
         try {
-            final String apiCallPath = concatPaths(connectionDetails.sourceSystem().apiUrl(), connectionDetails.endpoint().endpointPath());
-            this.logSourceSystemDetails(connectionDetails.sourceSystem(), apiCallPath);
-            HttpRequest<Buffer> request = buildRequestWithSpecificRequestType(connectionDetails.endpoint().httpRequestType(), apiCallPath);
-            this.applyRequestConfiguration(connectionDetails, request);
-            Log.infof("Request successfully built %s", request.toString());
+            this.throwExceptionIfRequestBuildingDetailsInvalid(requestBuildingDetails);
+            final String apiCallPath = this.concatPaths(requestBuildingDetails.sourceSystem().apiUrl(), requestBuildingDetails.endpoint().endpointPath());
+            final HttpRequest<Buffer> request = this.prebuildRequestWithRequestType(requestBuildingDetails.endpoint().httpRequestType(), apiCallPath);
+            this.parameterizeRequest(requestBuildingDetails, request);
             return request;
-        } catch (Exception e) {
-            throw new FaultySourceSystemApiRequestMessageDtoException("Request configuration failed for " + connectionDetails.sourceSystem().toString());
+        } catch (RequestBuildingDetailsNullFieldException e) {
+            final String exceptionMessage = "Request Not Built! " + e.getMessage();
+            Log.errorf(exceptionMessage);
+            throw new RequestBuildingException(exceptionMessage, e);
+        } catch (Exception e){
+            final String exceptionMessage = "Request Not Built! An unexpected Exception was thrown in the requestBuildingProcess. RequestBuilder in Pollingcomponent should be reviewed with this Exception";
+            Log.errorf(exceptionMessage);
+            throw new RequestBuildingException(exceptionMessage, e, requestBuildingDetails);
         }
     }
 
 
+    /*@
+    @ requires throwExceptionIfRequestBuildingDetailsInvalid(requestBuildingDetails) called before this call.
+     */
     /**
      * Builds request with one of these types: GET, POST, PUT.
      * DELETE is not supported.
@@ -66,56 +77,97 @@ public class RequestBuilder {
      * @param httpRequestType is used to determine the requestType for the build
      * @param apiCallPath     Used to build the request
      * @return built request
-     * @throws FaultySourceSystemApiRequestMessageDtoException if the httpRequestType was in wrong format.
      */
-    private HttpRequest<Buffer> buildRequestWithSpecificRequestType(final String httpRequestType, String apiCallPath) throws FaultySourceSystemApiRequestMessageDtoException {
+    private HttpRequest<Buffer> prebuildRequestWithRequestType(final String httpRequestType, String apiCallPath) {
         HttpRequest<Buffer> request;
         switch (httpRequestType) {
             case "GET" -> request = webClient.getAbs(apiCallPath);
             case "POST" -> request = webClient.postAbs(apiCallPath);
             case "PUT" -> request = webClient.putAbs(apiCallPath);
-            default ->
-                    throw new FaultySourceSystemApiRequestMessageDtoException("The apiRequestType was not 'GET', 'POST', 'PUT'");
+            default -> throw new UnsupportedRequestTypeException("The apiRequestType was not 'GET', 'POST', 'PUT'");
         }
         return request;
     }
 
-    /*
-     * Parameterises an already built HttpRequest with the information of the ApiConnectionDetails.
+    /*@
+    @ requires throwExceptionIfRequestBuildingDetailsInvalid(requestBuildingDetails) called before this call.
      */
-    private void applyRequestConfiguration(ApiConnectionDetailsDTO connectionDetails, HttpRequest<Buffer> request) {
-        request.putHeader("Host", connectionDetails.sourceSystem().apiUrl().replaceFirst("https?://", ""));
-        connectionDetails.requestHeader().forEach(header -> request.putHeader(header.headerName(), header.headerValue()));
-        connectionDetails.requestParameters().forEach(parameter -> {
-            if (Objects.requireNonNull(parameter.type()) == ParamType.QUERY) {
-                request.addQueryParam(parameter.paramName(), parameter.paramValue());
-            }
-        });
-    }
-
-    /*
-     * Applies second to first path. Changes all "\" to "/" and makes sure, that there are no additional or missing "/" between the seems.
+    /**
+     * Parameterizes the request by adding the AuthHeader, other Headers and Parameters to the request.
+     *
+     * @param requestBuildingDetails the buildingDetails for this specific request
+     * @param request the prebuilt but not parameterized request
      */
-    private String concatPaths(final String baseUrl, final String endpointPath) {
-        if (baseUrl == null || endpointPath == null) {
-            throw new IllegalArgumentException("BaseURL and endpointPath must not be null");
+    private void parameterizeRequest(final RequestBuildingDetails requestBuildingDetails, final HttpRequest<Buffer> request) {
+        request.putHeader("Host", requestBuildingDetails.sourceSystem().apiUrl().replaceFirst("https?://", ""));
+        request.putHeader(requestBuildingDetails.sourceSystem().authDetails().headerName(), requestBuildingDetails.sourceSystem().authDetails().apiKey());
+        if (requestBuildingDetails.requestHeader() != null) {
+            requestBuildingDetails.requestHeader().forEach(header -> {
+                if (header.headerName() != null) {
+                    request.putHeader(header.headerName(), header.headerValue());
+                }
+            });
         }
-        String base = baseUrl.replace("\\", "/").replaceAll("/+$", "");
-
-        return base + endpointPath;
+        if(requestBuildingDetails.requestParameters() != null){
+            requestBuildingDetails.requestParameters().forEach(parameter -> {
+                if (parameter.paramName() != null && parameter.type() != null && parameter.type() == QUERY) {
+                    request.addQueryParam(parameter.paramName(), parameter.paramValue());
+                }
+            });
+        }
     }
 
-    /*
-     * Logs SourceSystem Details for debugging.
+    /*@
+    @ requires throwExceptionIfRequestBuildingDetailsInvalid(requestBuildingDetails) called before this call.
      */
-    private void logSourceSystemDetails(final SourceSystemMessageDTO sourceSystem, final String apiCallPath) {
-        Log.infof("""
-                GET called on SourceSystem with these details:
-                name: %s
-                apiType: %s
-                apiPath: %s
-                """, sourceSystem.name(), sourceSystem.apiType(), apiCallPath);
+    /**
+     * Applies second to first path. Changes all "\" to "/" and makes sure, that there are no additional or missing "/" between the seems.
+     *
+     * @param baseUrl      is appended before the other String.
+     * @param endpointPath is appended after the other String.
+     */
+    private String concatPaths(String baseUrl, String endpointPath) {
+        if (endpointPath == null) endpointPath = "";
+        final String base = baseUrl.replace("\\", "/").replaceAll("/+$", "");
+        final String endpoint = endpointPath.replace("\\", "/").replaceAll("^/+", "");
+        return base + "/" + endpoint;
     }
+
+    /*@
+    @ requires throwExceptionIfRequestBuildingDetailsInvalid(requestBuildingDetails) called before this call.
+    @ ensures apiUrl != null && httpRequestType != null && (apiKey && authHeaderName) != null or == null
+     */
+    /**
+     * Throws Exception if the requestBuildingDetails would lead to an invalid request.
+     *
+     * @param requestBuildingDetails the details that are checked for null fields.
+     * @throws RequestBuildingDetailsNullFieldException if an important field is null.
+     */
+    private void throwExceptionIfRequestBuildingDetailsInvalid(final RequestBuildingDetails requestBuildingDetails) throws RequestBuildingDetailsNullFieldException {
+        if(requestBuildingDetails.sourceSystem() == null || requestBuildingDetails.endpoint() == null || requestBuildingDetails.sourceSystem().authDetails() == null){
+            final String exceptionMessage = "No SourceSystem, Endpoint or AuthDetails were defined in RequestBuildingDetails";
+            Log.errorf(exceptionMessage, requestBuildingDetails.sourceSystem());
+            throw new RequestBuildingDetailsNullFieldException(exceptionMessage, requestBuildingDetails.sourceSystem());
+        }
+        if (requestBuildingDetails.sourceSystem().apiUrl() == null) {
+            final String exceptionMessage = "ApiUrl was null";
+            Log.errorf(exceptionMessage, requestBuildingDetails.sourceSystem());
+            throw new RequestBuildingDetailsNullFieldException(exceptionMessage, requestBuildingDetails.sourceSystem());
+        }
+        if (requestBuildingDetails.endpoint().httpRequestType() == null) {
+            final String exceptionMessage = "HttpRequestType was null.";
+            Log.errorf(exceptionMessage, requestBuildingDetails.endpoint());
+            throw new RequestBuildingDetailsNullFieldException(exceptionMessage, requestBuildingDetails.sourceSystem(), requestBuildingDetails.endpoint());
+        }
+        final String apiKey = requestBuildingDetails.sourceSystem().authDetails().apiKey();
+        final String authHeaderName = requestBuildingDetails.sourceSystem().authDetails().headerName();
+        if ((apiKey == null && authHeaderName != null) || (apiKey != null && authHeaderName == null)) {
+            final String exceptionMessage = "ApiKey and AuthHeaderName either both need to be == null or != null";
+            Log.errorf(exceptionMessage, requestBuildingDetails.sourceSystem().authDetails());
+            throw new RequestBuildingDetailsNullFieldException(exceptionMessage, requestBuildingDetails.sourceSystem());
+        }
+    }
+
 
     /**
      * Shuts down the WebClient and releases associated resources.
