@@ -1,9 +1,22 @@
 package de.unistuttgart.stayinsync.transport.transformation_rule_shared.validation_error;
 
+import com.fasterxml.jackson.annotation.JsonSubTypes;
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
+
 /**
  * An interface representing a single validation failure in a logic graph.
  * It provides a user-friendly message and an error code for the frontend.
  */
+@JsonTypeInfo(
+        use = JsonTypeInfo.Id.NAME,
+        include = JsonTypeInfo.As.PROPERTY,
+        property = "errorCode"
+)
+@JsonSubTypes({
+        @JsonSubTypes.Type(value = OperatorConfigurationError.class, name = "OPERATOR_CONFIG_ERROR"),
+        @JsonSubTypes.Type(value = CycleError.class, name = "CYCLE_DETECTED"),
+        @JsonSubTypes.Type(value = FinalNodeError.class, name = "INVALID_FINAL_NODE")
+})
 public interface ValidationError {
 
     /**

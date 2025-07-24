@@ -18,13 +18,6 @@ import lombok.Setter;
 public class LogicGraphEntity extends PanacheEntity {
 
     /**
-     * A user-defined, unique name for the logic graph (e.g., "SystemReadyCheck").
-     * This can be used to easily find and load a specific graph.
-     */
-    @Column(nullable = false, unique = true)
-    public String name;
-
-    /**
      * The complete graph definition, stored as a JSON string in a TEXT or CLOB column.
      * This field contains the serialized version of a {@link GraphDTO}.
      */
@@ -32,15 +25,4 @@ public class LogicGraphEntity extends PanacheEntity {
     @Column(name = "graph_definition_json", columnDefinition = "TEXT", nullable = false)
     public String graphDefinitionJson;
 
-    /**
-     * The validation status of the graph, stored as a string ('DRAFT' or 'FINALIZED').
-     * This flag indicates whether the graph has passed all validation checks and is
-     * considered complete and ready for execution.
-     */
-    @Enumerated(EnumType.STRING)
-    public GraphStatus status = GraphStatus.DRAFT;
-
-    @Lob
-    @Column(name = "validation_errors_json", columnDefinition = "LONGTEXT")
-    public String validationErrorsJson;
 }

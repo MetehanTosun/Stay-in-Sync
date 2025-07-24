@@ -14,27 +14,8 @@ import java.util.List;
 @Setter
 //todo implement annotations (with @Schema?)
 public class GraphDTO {
-
-    /**
-     * The unique database ID of the graph entity.
-     */
-    private Long id;
-
-    /**
-     * The unique, human-readable name for this graph.
-     */
-    private String name;
-
     /**
      * A list containing all the node definitions that make up this graph.
      */
     private List<NodeDTO> nodes;
-
-    /**
-     * Represents the validation status of the graph.
-     * This field is determined by the backend during a create or update operation.
-     * The frontend can use this status to inform the user whether the graph
-     * is a finalized, executable rule or an invalid draft.
-     */
-    private GraphStatus status;
 }

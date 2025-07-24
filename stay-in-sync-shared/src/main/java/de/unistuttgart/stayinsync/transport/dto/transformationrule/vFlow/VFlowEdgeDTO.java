@@ -31,8 +31,4 @@ public class VFlowEdgeDTO {
      */
     private String targetHandle;
 
-    /**
-     * A data payload containing visual styling properties and other metadata for the edge.
-     */
-    private VFlowEdgeStyleDTO data;
 }

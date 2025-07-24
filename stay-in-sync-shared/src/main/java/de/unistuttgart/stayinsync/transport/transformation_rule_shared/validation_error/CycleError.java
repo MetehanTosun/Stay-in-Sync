@@ -1,6 +1,7 @@
 package de.unistuttgart.stayinsync.transport.transformation_rule_shared.validation_error;
 
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import java.util.List;
@@ -9,6 +10,7 @@ import java.util.List;
  * Represents a validation error indicating that a cycle was detected in the graph.
  */
 @Getter
+@NoArgsConstructor(force = true)
 public class CycleError implements ValidationError {
 
     private final List<Integer> nodeIdsInCycle;

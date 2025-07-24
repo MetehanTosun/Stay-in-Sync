@@ -1,5 +1,6 @@
 package de.unistuttgart.stayinsync.transport.dto.transformationrule;
 
+import de.unistuttgart.stayinsync.transport.dto.transformationrule.vFlow.VFlowGraphDTO;
 import de.unistuttgart.stayinsync.transport.transformation_rule_shared.validation_error.ValidationError;
 import lombok.Getter;
 import lombok.Setter;

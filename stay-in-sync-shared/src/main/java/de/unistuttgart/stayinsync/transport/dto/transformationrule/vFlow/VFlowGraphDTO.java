@@ -18,6 +18,11 @@ public class VFlowGraphDTO {
     private String name;
 
     /**
+     * An optional, human-readable description of what the rule does.
+     */
+    private String description;
+
+    /**
      * A list of all nodes in the graph.
      */
     private List<VFlowNodeDTO> nodes;

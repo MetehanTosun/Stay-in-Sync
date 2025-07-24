@@ -1,6 +1,7 @@
 package de.unistuttgart.stayinsync.transport.transformation_rule_shared.validation_error;
 
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 /**
@@ -8,6 +9,7 @@ import lombok.Setter;
  * configured for its assigned operator.
  */
 @Getter
+@NoArgsConstructor(force = true)
 public class OperatorConfigurationError implements ValidationError {
 
     private final int nodeId;

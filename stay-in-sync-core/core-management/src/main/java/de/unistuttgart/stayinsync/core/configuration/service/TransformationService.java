@@ -60,6 +60,7 @@ public class TransformationService {
         //transformation.sourceSystemEndpoints = sourceEndpoints;
 
         script.transformation = transformation;
+        rule.transformation = transformation;
 
         return transformation;
     }

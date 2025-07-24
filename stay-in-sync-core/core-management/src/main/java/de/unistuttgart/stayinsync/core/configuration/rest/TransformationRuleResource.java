@@ -5,12 +5,18 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.LogicGraphEntity;
+import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.TransformationRule;
 import de.unistuttgart.stayinsync.core.configuration.rest.dtos.OperatorMetadataDTO;
+import de.unistuttgart.stayinsync.core.configuration.rest.dtos.TransformationRuleDTO;
+import de.unistuttgart.stayinsync.core.configuration.service.transformationrule.TransformationRuleMapperService;
+import de.unistuttgart.stayinsync.core.configuration.service.transformationrule.TransformationRuleService;
 import de.unistuttgart.stayinsync.core.configuration.service.transformationrule.GraphStorageService;
 import de.unistuttgart.stayinsync.core.configuration.util.OperatorMetadata;
 import de.unistuttgart.stayinsync.transport.dto.transformationrule.GraphDTO;
 import de.unistuttgart.stayinsync.transport.dto.transformationrule.GraphPersistenceResponseDTO;
+import de.unistuttgart.stayinsync.transport.dto.transformationrule.TransformationRulePayloadDTO;
 import de.unistuttgart.stayinsync.transport.dto.transformationrule.vFlow.VFlowGraphDTO;
+import de.unistuttgart.stayinsync.transport.dto.transformationrule.vFlow.VflowGraphResponseDTO;
 import de.unistuttgart.stayinsync.transport.transformation_rule_shared.GraphStatus;
 import de.unistuttgart.stayinsync.transport.transformation_rule_shared.util.GraphMapper;
 import de.unistuttgart.stayinsync.transport.transformation_rule_shared.validation_error.ValidationError;
@@ -27,7 +33,6 @@ import org.eclipse.microprofile.openapi.annotations.tags.Tag;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.stream.Collectors;
 
 import static jakarta.ws.rs.core.MediaType.APPLICATION_JSON;
@@ -38,11 +43,15 @@ import static jakarta.ws.rs.core.MediaType.APPLICATION_JSON;
 @Tag(name = "Transformation Rule", description = "Endpoints for managing logic graph transformation rules")
 public class TransformationRuleResource {
 
-    @Inject
-    GraphStorageService graphService;
 
     @Inject
-    GraphMapper graphMapper;
+    TransformationRuleService ruleService;
+
+    @Inject
+    TransformationRuleMapperService ruleMapper;
+
+    @Inject
+    GraphStorageService graphStorage;
 
     @Inject
     ObjectMapper jsonObjectMapper;
@@ -62,97 +71,100 @@ public class TransformationRuleResource {
 
     @POST
     @Consumes(APPLICATION_JSON)
-    @Operation(summary = "Creates a new Transformation Rule (Graph) from VFlow data")
-    public Response createTransformationRule(VFlowGraphDTO vflowDto, @Context UriInfo uriInfo) {
-        if (vflowDto.getName() == null || vflowDto.getName().trim().isEmpty()) {
+    @Operation(summary = "Creates a new Transformation Rule (Graph)")
+    public Response createTransformationRule(TransformationRulePayloadDTO payload, @Context UriInfo uriInfo) {
+        if (payload.getName() == null || payload.getName().trim().isEmpty()) {
             throw new BadRequestException("Graph name must not be empty.");
         }
 
-        GraphDTO graphForPersistence = graphMapper.vflowToGraphDto(vflowDto);
-
-        GraphStorageService.PersistenceResult result = graphService.persistGraph(graphForPersistence);
+        GraphStorageService.PersistenceResult result = ruleService.createRule(payload);
 
         GraphPersistenceResponseDTO responseDto = new GraphPersistenceResponseDTO();
-        graphForPersistence.setId(result.entity().id);
-        graphForPersistence.setStatus(result.entity().status);
-        responseDto.setGraph(graphForPersistence);
+
+        responseDto.setGraph(ruleMapper.toGraphDTO(result.entity()));
         responseDto.setErrors(result.validationErrors());
 
+        // 4. Baue die HTTP-Antwort.
         var location = uriInfo.getAbsolutePathBuilder().path(Long.toString(result.entity().id)).build();
         Log.debugf("New TransformationRule created with URI %s", location);
 
         return Response.created(location).entity(responseDto).build();
     }
 
-    @GET
-    @Operation(summary = "Returns all Transformation Rules")
-    public List<GraphPersistenceResponseDTO> getAllTransformationRules() {
-        List<LogicGraphEntity> entities = graphService.getAllGraphs();
-        List<GraphPersistenceResponseDTO> responseDtos = new ArrayList<>();
-
-        for (LogicGraphEntity entity : entities) {
-            try {
-                GraphDTO graphDto = jsonObjectMapper.readValue(entity.graphDefinitionJson, GraphDTO.class);
-                graphDto.setId(entity.id);
-                graphDto.setName(entity.name);
-                graphDto.setStatus(entity.status);
-
-                List<ValidationError> errors;
-                if (entity.status == GraphStatus.DRAFT && entity.validationErrorsJson != null) {
-                    errors = jsonObjectMapper.readValue(entity.validationErrorsJson, new TypeReference<List<ValidationError>>() {});
-                } else {
-                    errors = new ArrayList<>();
-                }
-
-                GraphPersistenceResponseDTO responseDto = new GraphPersistenceResponseDTO(graphDto, errors);
-                responseDtos.add(responseDto);
-
-            } catch (JsonProcessingException e) {
-                Log.errorf(e, "Failed to parse data for entity id %d", entity.id);
-            }
-        }
-
-        return responseDtos;
-    }
-
-    @GET
-    @Path("/{id}")
-    @Operation(summary = "Returns a Transformation Rule for a given identifier")
-    public GraphDTO getTransformationRule(@Parameter(name = "id", required = true) @PathParam("id") Long id) {
-        LogicGraphEntity logicGraphEntity = graphService.findGraphById(id).orElseThrow(() -> new NotFoundException("TransformationRule with id " + id + " not found."));
-
-        try {
-            return jsonObjectMapper.readValue(logicGraphEntity.graphDefinitionJson, GraphDTO.class);
-        } catch (JsonProcessingException e) {
-            throw new InternalServerErrorException(e);
-        }
-    }
-
     @PUT
     @Path("/{id}")
     @Consumes(APPLICATION_JSON)
-    @Operation(summary = "Updates an existing Transformation Rule from VFlow data")
-    public Response updateTransformationRule(@Parameter(name = "id", required = true) @PathParam("id") Long id, VFlowGraphDTO vflowDto) {
-        GraphDTO graphForPersistence = graphMapper.vflowToGraphDto(vflowDto);
+    @Operation(summary = "Updates an existing Transformation Rule")
+    public Response updateTransformationRule(@Parameter(name = "id", required = true) @PathParam("id") Long id, TransformationRulePayloadDTO payload) {
 
-        GraphStorageService.PersistenceResult result = graphService.updateGraph(id, graphForPersistence);
+        // 1. Rufe den Service auf, der die Validierung und das Update durchführt.
+        GraphStorageService.PersistenceResult result = ruleService.updateRule(id, payload);
 
+        // 2. Erstelle das finale DTO für die API-Antwort.
         GraphPersistenceResponseDTO responseDto = new GraphPersistenceResponseDTO();
-        graphForPersistence.setId(result.entity().id);
-        graphForPersistence.setStatus(result.entity().status);
-        responseDto.setGraph(graphForPersistence);
+
+        // 3. Benutze die korrigierte Mapper-Methode, um das vollständige GraphDTO zu erstellen.
+        responseDto.setGraph(ruleMapper.toGraphDTO(result.entity()));
         responseDto.setErrors(result.validationErrors());
 
         Log.debugf("TransformationRule with id %d was updated.", id);
 
+        // 4. Gib "200 OK" mit dem finalen Zustand zurück.
         return Response.ok(responseDto).build();
     }
 
+
+
+    @GET
+    @Path("/{id}")
+    @Operation(summary = "Returns the metadata for a single Transformation Rule")
+    public TransformationRuleDTO getTransformationRule(@Parameter(name = "id", required = true) @PathParam("id") Long id) {
+        return graphStorage.findRuleById(id)
+                .map(ruleMapper::toRuleDTO)
+                .orElseThrow(() -> new NotFoundException("TransformationRule with id " + id + " not found."));
+    }
+
+    /**
+     * Retrieves the metadata for all Transformation Rules.
+     *
+     * @return A list of {@link TransformationRuleDTO}s.
+     */
+    @GET
+    @Operation(summary = "Returns the metadata for all Transformation Rules")
+    public List<TransformationRuleDTO> getAllTransformationRules() {
+        return graphStorage.findAllRules().stream()
+                .map(ruleMapper::toRuleDTO)
+                .collect(Collectors.toList());
+    }
+
+    @GET
+    @Path("/{id}/graph")
+    @Operation(summary = "Returns the VFlow graph definition and validation errors for a single rule")
+    public VflowGraphResponseDTO getGraphForTransformationRule(@Parameter(name = "id", required = true) @PathParam("id") Long id) {
+
+        // 1. Hole die vollständige Regel-Entity aus der Datenbank.
+        TransformationRule entity = graphStorage.findRuleById(id)
+                .orElseThrow(() -> new NotFoundException("TransformationRule with id " + id + " not found."));
+
+        // 2. Erstelle das VFlowGraphDTO für den visuellen Teil mit dem Mapper.
+        VFlowGraphDTO graphData = ruleMapper.toVFlowDto(entity);
+
+        List<ValidationError> errors = ruleService.getValidationErrorsForRule(id);
+
+        return new VflowGraphResponseDTO(graphData.getNodes(), graphData.getEdges(), errors);
+    }
+
+    /**
+     * Deletes an existing TransformationRule and its associated graph.
+     *
+     * @param id The ID of the rule to delete.
+     * @return A Response with status 204 (No Content) on success.
+     */
     @DELETE
     @Path("/{id}")
     @Operation(summary = "Deletes an existing Transformation Rule")
     public Response deleteTransformationRule(@Parameter(name = "id", required = true) @PathParam("id") Long id) {
-        boolean deleted = graphService.deleteGraphById(id);
+        boolean deleted = graphStorage.deleteRuleById(id);
         if (deleted) {
             Log.debugf("TransformationRule with id %d deleted.", id);
             return Response.noContent().build();
