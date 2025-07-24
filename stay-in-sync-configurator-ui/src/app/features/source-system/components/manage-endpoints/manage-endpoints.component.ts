@@ -346,7 +346,7 @@ private tryAlternativeOpenApiUrls() {
     `${this.apiUrl}/docs/swagger.json`,
     `${this.apiUrl}/openapi.yaml`,   
     `${this.apiUrl}/openapi.yml`,     
-    'https://raw.githubusercontent.com/open-meteo/open-meteo/main/openapi.yml'
+    
   ];
   console.log('🔍 Trying alternative OpenAPI URLs...');
   this.loadOpenApiFromUrls(alternativeUrls, 0);
