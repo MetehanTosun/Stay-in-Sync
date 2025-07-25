@@ -1,6 +1,7 @@
 import {CommonModule} from '@angular/common';
 import {Component, OnInit} from '@angular/core';
 import {FormBuilder, FormGroup, ReactiveFormsModule, Validators} from '@angular/forms';
+import { FormsModule } from '@angular/forms';
 
 // PrimeNG
 import {TableModule} from 'primeng/table';
@@ -18,12 +19,15 @@ import {TextareaModule} from 'primeng/textarea';
 import {CreateSourceSystemComponent} from '../create-source-system/create-source-system.component';
 import {ManageApiHeadersComponent} from '../manage-api-headers/manage-api-headers.component';
 import {ManageEndpointsComponent} from '../manage-endpoints/manage-endpoints.component';
+import { ManageEndpointParamsComponent } from '../manage-endpoint-params/manage-endpoint-params.component';
 
 // Service und DTOs aus dem `generated`-Ordner
 import {SourceSystemResourceService} from '../../service/sourceSystemResource.service';
 import {SourceSystemDTO} from '../../models/sourceSystemDTO';
 import {SourceSystem} from '../../models/sourceSystem';
 import {HttpErrorService} from '../../../../core/services/http-error.service';
+import { SourceSystemEndpointDTO } from '../../models/sourceSystemEndpointDTO';
+import { SourceSystemEndpointResourceService } from '../../service/sourceSystemEndpointResource.service';
 
 /**
  * Base component for displaying, creating, and managing source systems.
@@ -48,7 +52,10 @@ import {HttpErrorService} from '../../../../core/services/http-error.service';
     ReactiveFormsModule,
     CreateSourceSystemComponent,
     ManageApiHeadersComponent,
-    ManageEndpointsComponent
+    ManageEndpointsComponent,
+    ManageEndpointParamsComponent, // hinzugefügt
+    FormsModule, // für ngModel
+    // ggf. weitere Komponenten
   ]
 })
 export class SourceSystemBaseComponent implements OnInit {
@@ -84,10 +91,18 @@ export class SourceSystemBaseComponent implements OnInit {
    */
   metadataForm!: FormGroup;
 
+  selectedEndpointForParams: SourceSystemEndpointDTO | null = null;
+  endpointsForSelectedSystem: SourceSystemEndpointDTO[] = [];
+
   /**
    * Injects the source system service and form builder.
    */
-  constructor(private api: SourceSystemResourceService, private fb: FormBuilder, protected erorrService: HttpErrorService) {
+  constructor(
+    private api: SourceSystemResourceService,
+    private fb: FormBuilder,
+    protected erorrService: HttpErrorService,
+    private apiEndpointSvc: SourceSystemEndpointResourceService // hinzugefügt
+  ) {
   }
 
   /**
@@ -201,6 +216,7 @@ export class SourceSystemBaseComponent implements OnInit {
       apiUrl: system.apiUrl,
       description: system.description
     });
+    this.loadEndpointsForSelectedSystem();
   }
 
   /**
@@ -235,5 +251,27 @@ export class SourceSystemBaseComponent implements OnInit {
           this.erorrService.handleError(err);
         }
       });
+  }
+
+  // Neue Methode, um Endpunkte für das aktuell ausgewählte System zu laden
+  loadEndpointsForSelectedSystem() {
+    if (!this.selectedSystem?.id) {
+      this.endpointsForSelectedSystem = [];
+      return;
+    }
+    this.apiEndpointSvc.apiConfigSourceSystemSourceSystemIdEndpointGet(this.selectedSystem.id).subscribe({
+      next: (eps: SourceSystemEndpointDTO[]) => {
+        this.endpointsForSelectedSystem = eps;
+      },
+      error: (err) => {
+        this.endpointsForSelectedSystem = [];
+        console.error('Fehler beim Laden der Endpunkte:', err);
+      }
+    });
+  }
+
+  // Methode, um einen Endpoint für die Param-Verwaltung auszuwählen
+  selectEndpointForParams(endpoint: SourceSystemEndpointDTO) {
+    this.selectedEndpointForParams = endpoint;
   }
 }
