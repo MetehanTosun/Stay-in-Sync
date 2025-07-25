@@ -18,7 +18,7 @@ import {CardModule} from 'primeng/card';
 import {CheckboxModule} from 'primeng/checkbox';
 import {DialogModule} from 'primeng/dialog';
 import {ProgressSpinnerModule} from 'primeng/progressspinner';
-import { MonacoEditorModule } from 'ngx-monaco-editor-v2';
+import { MonacoEditorModule, NgxEditorModel } from 'ngx-monaco-editor-v2';
 
 import {SourceSystemEndpointResourceService} from '../../service/sourceSystemEndpointResource.service';
 import {HttpClient} from '@angular/common/http';
@@ -122,6 +122,10 @@ export class ManageEndpointsComponent implements OnInit {
   jsonEditorOptions = { theme: 'vs-dark', language: 'json', automaticLayout: true };
   jsonError: string | null = null;
   editJsonError: string | null = null;
+
+  requestBodyEditorEndpoint: SourceSystemEndpointDTO | null = null;
+  requestBodyEditorModel: NgxEditorModel = { value: '', language: 'json' };
+  requestBodyEditorError: string | null = null;
 
 
   /**
@@ -295,6 +299,69 @@ export class ManageEndpointsComponent implements OnInit {
           console.error('saveEdit error', err);
         }
       });
+  }
+
+  showRequestBodyEditor(endpoint: SourceSystemEndpointDTO) {
+    this.requestBodyEditorEndpoint = endpoint;
+    this.requestBodyEditorModel = {
+      value: endpoint.requestBodySchema || '',
+      language: 'json'
+    };
+    this.requestBodyEditorError = null;
+  }
+
+  closeRequestBodyEditor() {
+    this.requestBodyEditorEndpoint = null;
+    this.requestBodyEditorModel = { value: '', language: 'json' };
+    this.requestBodyEditorError = null;
+  }
+
+  saveRequestBodySchema() {
+    if (!this.requestBodyEditorEndpoint) return;
+    this.requestBodyEditorError = null;
+    // JSON-Validierung
+    if (this.requestBodyEditorModel.value) {
+      try {
+        JSON.parse(this.requestBodyEditorModel.value);
+      } catch (e) {
+        this.requestBodyEditorError = 'Request-Body-Schema ist kein valides JSON.';
+        return;
+      }
+    }
+    const updated: SourceSystemEndpointDTO = {
+      ...this.requestBodyEditorEndpoint,
+      requestBodySchema: this.requestBodyEditorModel.value
+    };
+    this.endpointSvc.apiConfigSourceSystemEndpointIdPut(updated.id!, updated, 'body').subscribe({
+      next: () => {
+        // Update local list
+        const idx = this.endpoints.findIndex(e => e.id === updated.id);
+        if (idx !== -1) this.endpoints[idx] = { ...updated };
+        this.closeRequestBodyEditor();
+      },
+      error: err => {
+        this.requestBodyEditorError = 'Fehler beim Speichern.';
+        console.error('Fehler beim Speichern des Request-Body-Schemas:', err);
+      }
+    });
+  }
+
+  onRequestBodyModelChange(event: any) {
+    let value: string = '';
+    if (typeof event === 'string') {
+      value = event;
+    } else if (event && typeof event.detail === 'string') {
+      value = event.detail;
+    } else if (event && event.target && typeof event.target.value === 'string') {
+      value = event.target.value;
+    } else {
+      // Fallback: versuche event als string zu casten
+      value = String(event);
+    }
+    this.requestBodyEditorModel = {
+      ...this.requestBodyEditorModel,
+      value
+    };
   }
 
   /**
