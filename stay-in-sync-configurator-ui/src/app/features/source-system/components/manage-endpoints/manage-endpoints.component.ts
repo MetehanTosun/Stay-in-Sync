@@ -409,9 +409,7 @@ export class ManageEndpointsComponent implements OnInit {
       try {
         const openApiSpec = await this.http.get(this.apiUrl).toPromise();
         console.log('✅ Loaded OpenAPI spec from direct URL');
-        const parsed = this.parseOpenApiSpec(openApiSpec);
-        this.endpoints = parsed.map(item => item.endpoint);
-        this.saveDiscoveredEndpoints(parsed);
+        await this.processOpenApiSpec(openApiSpec);
         this.importing = false;
       } catch (err) {
         console.error('Failed to load OpenAPI spec from direct URL:', err);
@@ -422,7 +420,7 @@ export class ManageEndpointsComponent implements OnInit {
       try {
         const openApiSpec = await this.http.get(this.apiUrl + '/swagger.json').toPromise();
         console.log('✅ Loaded OpenAPI spec from /swagger.json');
-        this.processOpenApiSpec(openApiSpec);
+        await this.processOpenApiSpec(openApiSpec);
       } catch (err) {
         console.log('ℹ️ /swagger.json not found, trying alternative URLs...');
         this.tryAlternativeOpenApiUrls();
@@ -491,12 +489,18 @@ private loadOpenApiFromUrls(urls: string[], index: number) {
 
 
  private async processOpenApiSpec(spec: any): Promise<void> {
+  
   try {
+    alert('processOpenApiSpec start!')
+    console.log('=== processOpenApiSpec called ===', spec);
     const endpointsToCreate: CreateSourceSystemEndpointDTO[] = [];
+    const schemas = spec.components?.schemas || {};
 
     if (spec.paths) {
       for (const [path, pathItem] of Object.entries(spec.paths)) {
+        console.log('Path:', path, pathItem);
         for (const [method, operation] of Object.entries(pathItem as any)) {
+          console.log('  Method:', method, operation);
           if (['get', 'post', 'put', 'delete', 'patch', 'head', 'options'].includes(method.toLowerCase())) {
             const operationDetails = operation as any;
             
@@ -506,9 +510,31 @@ private loadOpenApiFromUrls(urls: string[], index: number) {
             
             const formattedPath = this.formatPathWithParameters(path, allParameters);
             
+            if (['post', 'put'].includes(method.toLowerCase())) {
+              console.log('    Found POST/PUT:', method, path);
+            }
+
+            // Request-Body-Schema extrahieren (nur für POST/PUT)
+            let requestBodySchema: string | undefined = undefined;
+            if (['post', 'put'].includes(method.toLowerCase())) {
+              const requestBody = operationDetails.requestBody;
+              if (requestBody?.content?.['application/json']?.schema) {
+                console.log('      Found requestBody schema for', method, path, requestBody.content['application/json'].schema);
+                let schema = requestBody.content['application/json'].schema;
+                console.log('      Original schema for', method.toUpperCase(), path, ':', schema);
+                schema = this.resolveRefs(schema, schemas);
+                console.log('      Resolved schema for', method.toUpperCase(), path, ':', schema);
+                if (schema) {
+                  requestBodySchema = JSON.stringify(schema, null, 2);
+                  console.log('      Final requestBodySchema for', method.toUpperCase(), path, ':', requestBodySchema);
+                }
+              }
+            }
+
             const endpoint: CreateSourceSystemEndpointDTO = {
               endpointPath: formattedPath,
-              httpRequestType: method.toUpperCase()
+              httpRequestType: method.toUpperCase(),
+              requestBodySchema
             };
 
             endpointsToCreate.push(endpoint);
@@ -518,10 +544,12 @@ private loadOpenApiFromUrls(urls: string[], index: number) {
     }
 
     if (endpointsToCreate.length > 0) {
+      // Zeige die importierten Endpunkte direkt im UI, bevor Backend-Reload
+      this.endpoints = endpointsToCreate;
       this.endpointSvc.apiConfigSourceSystemSourceSystemIdEndpointPost(this.sourceSystemId, endpointsToCreate)
         .subscribe({
           next: () => {
-            this.loadEndpoints();
+            // this.loadEndpoints(); // Deaktiviert, damit die aufgelösten Endpunkte im UI bleiben
             console.log(`${endpointsToCreate.length} Endpoints erfolgreich importiert`);
           },
           error: (error) => {
@@ -685,5 +713,54 @@ private loadOpenApiFromUrls(urls: string[], index: number) {
     });
     
     return formattedPath;
+  }
+
+  // Robuste rekursive Hilfsfunktion zum Auflösen von $ref in OpenAPI-Schemas
+  private resolveRefs(schema: any, schemas: any, seen = new Set()): any {
+    if (!schema) return schema;
+    // $ref auflösen
+    if (schema.$ref) {
+      if (seen.has(schema.$ref)) return {}; // Zyklische Referenzen verhindern
+      seen.add(schema.$ref);
+      // $ref sieht aus wie "#/components/schemas/Pet"
+      const refPath = schema.$ref.replace(/^#\//, '').split('/');
+      // Wir erwarten, dass schemas = spec.components.schemas ist
+      let resolved = schemas;
+      // refPath: ["components", "schemas", "Pet"]
+      for (const part of refPath.slice(2)) { // skip "components", "schemas"
+        resolved = resolved?.[part];
+      }
+      if (!resolved) return {}; // Fallback falls nicht gefunden
+      return this.resolveRefs(resolved, schemas, seen);
+    }
+    // Properties rekursiv auflösen
+    if (schema.properties) {
+      const newProps: any = {};
+      for (const [key, value] of Object.entries(schema.properties)) {
+        newProps[key] = this.resolveRefs(value, schemas, seen);
+      }
+      return { ...schema, properties: newProps };
+    }
+    // Items (für Arrays) rekursiv auflösen
+    if (schema.items) {
+      return { ...schema, items: this.resolveRefs(schema.items, schemas, seen) };
+    }
+    // allOf/anyOf/oneOf rekursiv auflösen
+    for (const keyword of ['allOf', 'anyOf', 'oneOf']) {
+      if (schema[keyword]) {
+        return {
+          ...schema,
+          [keyword]: schema[keyword].map((s: any) => this.resolveRefs(s, schemas, seen))
+        };
+      }
+    }
+    // additionalProperties kann auch ein Schema sein
+    if (typeof schema.additionalProperties === 'object' && schema.additionalProperties !== null) {
+      return {
+        ...schema,
+        additionalProperties: this.resolveRefs(schema.additionalProperties, schemas, seen)
+      };
+    }
+    return schema;
   }
 }
