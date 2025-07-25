@@ -92,7 +92,7 @@
         <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
-            <version>1.18.30</version>
+            <version>1.18.38</version>
             <scope>provided</scope>
         </dependency>
         <dependency>
@@ -113,6 +113,10 @@
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-jdbc-mariadb</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-scheduler-api</artifactId>
         </dependency>
     </dependencies>
 
