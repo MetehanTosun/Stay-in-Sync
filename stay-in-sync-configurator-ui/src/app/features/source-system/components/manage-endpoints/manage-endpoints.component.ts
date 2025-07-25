@@ -18,6 +18,7 @@ import {CardModule} from 'primeng/card';
 import {CheckboxModule} from 'primeng/checkbox';
 import {DialogModule} from 'primeng/dialog';
 import {ProgressSpinnerModule} from 'primeng/progressspinner';
+import { MonacoEditorModule } from 'ngx-monaco-editor-v2';
 
 import {SourceSystemEndpointResourceService} from '../../service/sourceSystemEndpointResource.service';
 import {HttpClient} from '@angular/common/http';
@@ -46,7 +47,8 @@ import {CreateSourceSystemEndpointDTO} from '../../models/createSourceSystemEndp
     CardModule,
     CheckboxModule,
     DialogModule,
-    ProgressSpinnerModule
+    ProgressSpinnerModule,
+    MonacoEditorModule
   ],
   templateUrl: './manage-endpoints.component.html',
   styleUrls: ['./manage-endpoints.component.css']
@@ -108,6 +110,9 @@ export class ManageEndpointsComponent implements OnInit {
    * Reactive form for editing an existing endpoint.
    */
   editForm!: FormGroup;
+  jsonEditorOptions = { theme: 'vs-dark', language: 'json', automaticLayout: true };
+  jsonError: string | null = null;
+  editJsonError: string | null = null;
 
   /**
    * Query Parameters for the selected endpoint.
@@ -148,7 +153,8 @@ export class ManageEndpointsComponent implements OnInit {
   ngOnInit(): void {
     this.endpointForm = this.fb.group({
       endpointPath: ['', Validators.required],
-      httpRequestType: ['GET', Validators.required]
+      httpRequestType: ['GET', Validators.required],
+      requestBodySchema: ['']
     });
 
     this.queryParamForm = this.fb.group({
@@ -163,7 +169,8 @@ export class ManageEndpointsComponent implements OnInit {
 
     this.editForm = this.fb.group({
       endpointPath: ['', Validators.required],
-      httpRequestType: ['GET', Validators.required]
+      httpRequestType: ['GET', Validators.required],
+      requestBodySchema: ['']
     });
   }
 
@@ -192,7 +199,16 @@ export class ManageEndpointsComponent implements OnInit {
    */
   addEndpoint() {
     if (this.endpointForm.invalid) return;
+    this.jsonError = null;
     const dto = this.endpointForm.value as CreateSourceSystemEndpointDTO;
+    if (dto.requestBodySchema) {
+      try {
+        JSON.parse(dto.requestBodySchema);
+      } catch (e) {
+        this.jsonError = 'Request-Body-Schema ist kein valides JSON.';
+        return;
+      }
+    }
     this.endpointSvc
       .apiConfigSourceSystemSourceSystemIdEndpointPost(this.sourceSystemId, [dto])
       .subscribe({
@@ -227,9 +243,11 @@ export class ManageEndpointsComponent implements OnInit {
     this.editingEndpoint = endpoint;
     this.editForm.patchValue({
       endpointPath: endpoint.endpointPath,
-      httpRequestType: endpoint.httpRequestType
+      httpRequestType: endpoint.httpRequestType,
+      requestBodySchema: endpoint.requestBodySchema || ''
     });
     this.editDialog = true;
+    this.editJsonError = null;
   }
 
   /**
@@ -240,13 +258,23 @@ export class ManageEndpointsComponent implements OnInit {
       return;
     }
     console.log('saveEdit called, editingEndpoint:', this.editingEndpoint);
+    this.editJsonError = null;
     const dto: SourceSystemEndpointDTO = {
       id: this.editingEndpoint.id!,
       sourceSystemId: this.sourceSystemId,
       endpointPath: this.editForm.value.endpointPath,
-      httpRequestType: this.editForm.value.httpRequestType
+      httpRequestType: this.editForm.value.httpRequestType,
+      requestBodySchema: this.editForm.value.requestBodySchema
     };
     console.log('saveEdit DTO to send:', dto);
+    if (dto.requestBodySchema) {
+      try {
+        JSON.parse(dto.requestBodySchema);
+      } catch (e) {
+        this.editJsonError = 'Request-Body-Schema ist kein valides JSON.';
+        return;
+      }
+    }
     this.endpointSvc
       .apiConfigSourceSystemEndpointIdPut(this.editingEndpoint.id!, dto, 'body')
       .subscribe({

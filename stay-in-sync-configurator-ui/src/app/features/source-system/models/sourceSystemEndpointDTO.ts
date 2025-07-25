@@ -15,5 +15,6 @@ export interface SourceSystemEndpointDTO {
     sourceSystemId?: number;
     endpointPath: string;
     httpRequestType: string;
+    requestBodySchema?: string;
 }
 

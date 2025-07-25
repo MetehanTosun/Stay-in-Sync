@@ -12,5 +12,6 @@
 export interface CreateSourceSystemEndpointDTO { 
     endpointPath: string;
     httpRequestType: string;
+    requestBodySchema?: string;
 }
 
