@@ -19,7 +19,7 @@ export interface CreateSourceSystemDTO {
     apiType: string;
     apiAuthType?: ApiAuthType;
     authConfig?: ApiAuthConfigurationDTO;
-    openApiSpec?: Blob;
+    openApiSpec?: string;
 }
 export namespace CreateSourceSystemDTO {
 }

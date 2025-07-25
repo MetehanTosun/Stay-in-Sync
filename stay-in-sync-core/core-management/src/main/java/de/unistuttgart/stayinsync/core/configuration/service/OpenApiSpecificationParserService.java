@@ -42,31 +42,65 @@ public class OpenApiSpecificationParserService {
 
     @Transactional
     public void synchronizeFromSpec(SourceSystem sourceSystem) {
-        if (sourceSystem.openApiSpec == null || sourceSystem.openApiSpec.length == 0) {
+        if (sourceSystem.openApiSpec == null || sourceSystem.openApiSpec.isBlank()) {
             Log.infof("No OpenAPI spec provided for SourceSystem ID %d. Skipping sync.", sourceSystem.id);
             return;
         }
-
-        String specAsString = new String(sourceSystem.openApiSpec, StandardCharsets.UTF_8);
-        SwaggerParseResult result = new OpenAPIV3Parser().readContents(specAsString, null, new ParseOptions());
-        OpenAPI openAPI = result.getOpenAPI();
-
-        if (result.getMessages() != null && !result.getMessages().isEmpty()) {
-            result.getMessages().forEach(Log::warn);
+    
+        try {
+            String specContent;
+            
+            // Prüfe, ob es eine URL ist
+            if (sourceSystem.openApiSpec.startsWith("http")) {
+                Log.infof("📥 Downloading OpenAPI spec from URL: %s", sourceSystem.openApiSpec);
+                specContent = downloadFromUrl(sourceSystem.openApiSpec);
+            } else {
+                Log.infof("📄 Using provided OpenAPI spec content directly");
+                specContent = sourceSystem.openApiSpec; // Direkt verwenden - ist bereits String!
+            }
+    
+            // Parse die Spezifikation
+            SwaggerParseResult result = new OpenAPIV3Parser().readContents(specContent, null, new ParseOptions());
+            OpenAPI openAPI = result.getOpenAPI();
+    
+            if (result.getMessages() != null && !result.getMessages().isEmpty()) {
+                result.getMessages().forEach(Log::warn);
+            }
+            
+            if (openAPI == null) {
+                Log.errorf("Failed to parse OpenAPI specification for SourceSystem ID %d.", sourceSystem.id);
+                return;
+            }
+    
+            // TODO: refresh db model with current openAPI spec (reconciliation, deletion and update of old spec
+            // TODO: keep old values Set for future queryParams
+    
+            processSecuritySchemes(openAPI, sourceSystem);
+            processPaths(openAPI, sourceSystem);
+            
+        } catch (Exception e) {
+            Log.warnf("Failed to process OpenAPI specification for SourceSystem ID %d: %s", sourceSystem.id, e.getMessage());
         }
-        if (openAPI == null) {
-            Log.errorf("Failed to parse OpenAPI specification for SourceSystem ID %id.", sourceSystem.id);
-            return;
-        }
-
-        // TODO: refresh db model with current openAPI spec (reconciliation, deletion and update of old spec
-        // TODO: keep old values Set for future queryParams
-
-        processSecuritySchemes(openAPI, sourceSystem);
-
-        processPaths(openAPI, sourceSystem);
     }
-
+    
+    // Neue Methode hinzufügen
+    private String downloadFromUrl(String url) throws Exception {
+        try (var client = java.net.http.HttpClient.newHttpClient()) {
+            var request = java.net.http.HttpRequest.newBuilder()
+                .uri(java.net.URI.create(url))
+                .header("Accept", "application/json, application/yaml, text/yaml")
+                .build();
+            
+            var response = client.send(request, java.net.http.HttpResponse.BodyHandlers.ofString());
+            
+            if (response.statusCode() == 200) {
+                Log.infof("✅ Successfully downloaded OpenAPI spec from: %s", url);
+                return response.body();
+            } else {
+                throw new RuntimeException("Failed to download OpenAPI spec. Status: " + response.statusCode());
+            }
+        }
+    }
     private void processSecuritySchemes(OpenAPI openAPI, SourceSystem sourceSystem) {
         if (openAPI.getComponents() == null || openAPI.getComponents().getSecuritySchemes() == null || openAPI.getComponents().getSecuritySchemes().isEmpty()) {
             Log.debugf("No security schemes found in spec for SourceSystem ID %d.", sourceSystem.id);
