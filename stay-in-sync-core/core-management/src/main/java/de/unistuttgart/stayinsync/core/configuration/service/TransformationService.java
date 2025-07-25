@@ -49,8 +49,8 @@ public class TransformationService {
                     .orElseThrow(() -> new CoreManagementException(Response.Status.BAD_REQUEST, "Invalid Script ID", "TransformationScript with id %d not found.", dto.transformationScriptId()));
         }
 
-        //TransformationRule rule = TransformationRule.<TransformationRule>findByIdOptional(dto.transformationRuleId())
-        //        .orElseThrow(() -> new CoreManagementException(Response.Status.BAD_REQUEST, "Invalid Rule ID", "TransformationRule with id %d not found.", dto.transformationRuleId()));
+        TransformationRule rule = TransformationRule.<TransformationRule>findByIdOptional(dto.transformationRuleId())
+                .orElseThrow(() -> new CoreManagementException(Response.Status.BAD_REQUEST, "Invalid Rule ID", "TransformationRule with id %d not found.", dto.transformationRuleId()));
 
         Set<SourceSystemEndpoint> sourceEndpoints = dto.sourceSystemEndpointIds().stream()
                 .map(id -> SourceSystemEndpoint.<SourceSystemEndpoint>findByIdOptional(id)
@@ -58,7 +58,7 @@ public class TransformationService {
                 .collect(Collectors.toSet());
 
         transformation.transformationScript = script;
-        //transformation.transformationRule = rule;
+        transformation.transformationRule = rule;
         //TODO: replace with api request configs
         //transformation.sourceSystemEndpoints = sourceEndpoints;
 
