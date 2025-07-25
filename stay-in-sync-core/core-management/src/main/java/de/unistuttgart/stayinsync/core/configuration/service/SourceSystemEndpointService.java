@@ -46,11 +46,11 @@ public class SourceSystemEndpointService {
         Log.debugf("Persisting source-system-endpoint: %s, for source-system with id: %s", sourceSystemEndpointDTO, sourceSystemId);
 
    
-        if (sourceSystemEndpointDTO.responseBodySchema() != null && !sourceSystemEndpointDTO.responseBodySchema().isBlank()) {
+        if (sourceSystemEndpointDTO.requestBodySchema() != null && !sourceSystemEndpointDTO.requestBodySchema().isBlank()) {
             try {
-                objectMapper.readTree(sourceSystemEndpointDTO.responseBodySchema());
+                objectMapper.readTree(sourceSystemEndpointDTO.requestBodySchema());
             } catch (JsonProcessingException e) {
-                throw new CoreManagementException(Response.Status.BAD_REQUEST, "Invalid JSON in responseBodySchema", "Das Feld responseBodySchema enthält kein valides JSON: %s", e.getMessage());
+                throw new CoreManagementException(Response.Status.BAD_REQUEST, "Invalid JSON in requestBodySchema", "Das Feld requestBodySchema enthält kein valides JSON: %s", e.getMessage());
             }
         }
 
@@ -100,11 +100,11 @@ public class SourceSystemEndpointService {
         Log.debugf("Replacing endpoint: %s", sourceSystemEndpoint);
 
       
-        if (sourceSystemEndpoint.responseBodySchema != null && !sourceSystemEndpoint.responseBodySchema.isBlank()) {
+        if (sourceSystemEndpoint.requestBodySchema != null && !sourceSystemEndpoint.requestBodySchema.isBlank()) {
             try {
-                objectMapper.readTree(sourceSystemEndpoint.responseBodySchema);
+                objectMapper.readTree(sourceSystemEndpoint.requestBodySchema);
             } catch (JsonProcessingException e) {
-                throw new CoreManagementException(Response.Status.BAD_REQUEST, "Invalid JSON in responseBodySchema", "Das Feld responseBodySchema enthält kein valides JSON: %s", e.getMessage());
+                throw new CoreManagementException(Response.Status.BAD_REQUEST, "Invalid JSON in requestBodySchema", "Das Feld requestBodySchema enthält kein valides JSON: %s", e.getMessage());
             }
         }
 

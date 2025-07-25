@@ -125,17 +125,14 @@ public class OpenApiSpecificationParserService {
                 PathItem.HttpMethod httpMethod = opEntry.getKey();
                 Operation operation = opEntry.getValue();
 
-                String responseBodySchema = null;
-                if (operation.getResponses() != null && operation.getResponses().get("200") != null) {
-                    var response = operation.getResponses().get("200");
-                    if (response.getContent() != null && response.getContent().get("application/json") != null) {
-                        var mediaType = response.getContent().get("application/json");
-                        if (mediaType.getSchema() != null) {
-                            try {
-                                responseBodySchema = objectMapper.writeValueAsString(mediaType.getSchema());
-                            } catch (Exception e) {
-                                responseBodySchema = null;
-                            }
+                String requestBodySchema = null;
+                if (operation.getRequestBody() != null && operation.getRequestBody().getContent() != null) {
+                    var mediaType = operation.getRequestBody().getContent().get("application/json");
+                    if (mediaType != null && mediaType.getSchema() != null) {
+                        try {
+                            requestBodySchema = objectMapper.writeValueAsString(mediaType.getSchema());
+                        } catch (Exception e) {
+                            requestBodySchema = null;
                         }
                     }
                 }
@@ -143,7 +140,7 @@ public class OpenApiSpecificationParserService {
                 CreateSourceSystemEndpointDTO endpointDTO = new CreateSourceSystemEndpointDTO(
                         path,
                         httpMethod.toString(),
-                        responseBodySchema
+                        requestBodySchema
                         // operation.getSummary() != null ? operation.getSummary() : operation.getDescription() // TODO: summary for endpoint?
                 );
                 SourceSystemEndpoint newEndpoint = sourceSystemEndpointService.persistSourceSystemEndpoint(endpointDTO, sourceSystem.id);
