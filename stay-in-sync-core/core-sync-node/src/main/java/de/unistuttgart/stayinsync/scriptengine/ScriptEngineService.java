@@ -1,10 +1,7 @@
 package de.unistuttgart.stayinsync.scriptengine;
 
 import de.unistuttgart.stayinsync.exception.ScriptEngineException;
-import de.unistuttgart.stayinsync.scriptengine.message.ConditionResult;
-import de.unistuttgart.stayinsync.scriptengine.message.IntegrityResult;
 import de.unistuttgart.stayinsync.scriptengine.message.TransformationResult;
-import de.unistuttgart.stayinsync.scriptengine.message.ValidationResult;
 import de.unistuttgart.stayinsync.syncnode.domain.TransformJob;
 import io.quarkus.logging.Log;
 import io.quarkus.runtime.Quarkus;
@@ -434,47 +431,5 @@ public class ScriptEngineService {
         throw new ScriptEngineException(ScriptEngineException.ErrorType.RESULT_EXTRACTION_ERROR,
                 "Result Extraction Error",
                 errorMsg + ". This type is not explicitly handled.");
-    }
-
-    /**
-     * Evaluates a condition script.
-     * <strong>NOTE: This method is not yet implemented.</strong>
-     *
-     * @param scriptId      The ID of the script.
-     * @param scriptContext The script code or content.
-     * @param inputData     The input data for the script.
-     * @return A {@link ConditionResult}.
-     * @throws UnsupportedOperationException always, as this method is not implemented.
-     */
-    ConditionResult evaluateCondition(String scriptId, String scriptContext, Object inputData) {
-        // TODO: Implement condition evaluation logic.
-        throw new UnsupportedOperationException("Condition evaluation is not supported yet.");
-    }
-
-    /**
-     * Validates the syntax of a script.
-     * <strong>NOTE: This method is not yet implemented.</strong>
-     *
-     * @param scriptContext The script code or content to validate.
-     * @return A {@link ValidationResult}.
-     * @throws UnsupportedOperationException always, as this method is not implemented.
-     */
-    ValidationResult validateSyntax(String scriptContext) {
-        // TODO: Implement script syntax validation logic.
-        // This could involve attempting to parse the script without full execution.
-        throw new UnsupportedOperationException("Syntax validation is not supported yet.");
-    }
-
-    /**
-     * Validates a data source.
-     * <strong>NOTE: This method is not yet implemented.</strong>
-     *
-     * @param inputData The input data to validate.
-     * @return An {@link IntegrityResult}.
-     * @throws UnsupportedOperationException always, as this method is not implemented.
-     */
-    IntegrityResult validateDataSource(Object inputData) {
-        // TODO: Implement data source integrity validation logic.
-        throw new UnsupportedOperationException("Data source validation is not supported yet.");
     }
 }

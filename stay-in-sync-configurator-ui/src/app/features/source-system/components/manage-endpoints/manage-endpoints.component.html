@@ -1,0 +1,95 @@
+<!--
+  -------------------------------------------------------------------------------------------------
+  Manage Endpoints Component
+  - Display, create, edit, delete, and import endpoints for a source system
+  -------------------------------------------------------------------------------------------------
+-->
+<p-card styleClass="p-p-4">
+  <!--
+    Section: Import Endpoints
+  -->
+  <div class="p-mb-3">
+    <button
+      pButton
+      type="button"
+      icon="pi pi-cloud-download"
+      label="Import Endpoints"
+      [disabled]="!apiUrl || importing"
+      (click)="importEndpoints()">
+    </button>
+    <p-progressSpinner *ngIf="importing" styleClass="p-ml-2" strokeWidth="4"></p-progressSpinner>
+  </div>
+  <!--
+    Section: Create New Endpoint Form
+  -->
+  <form [formGroup]="endpointForm" class="p-fluid p-formgrid p-grid" style="margin: 1.5rem 0; padding: 1rem;">
+    <div class="p-field p-col-12" style="margin-bottom: 1rem;">
+      <label for="endpointPath">Path*</label>
+      <input id="endpointPath" pInputText formControlName="endpointPath" />
+    </div>
+    <div class="p-field p-col-12" style="margin-bottom: 1rem;">
+      <label for="httpRequestType">Method*</label>
+      <p-dropdown id="httpRequestType" [options]="httpRequestTypes" formControlName="httpRequestType"></p-dropdown>
+    </div>
+    <div class="p-col-12" style="margin: 2rem 0;">
+      <button pButton type="button" label="Add Endpoint" [disabled]="endpointForm.invalid" (click)="addEndpoint()"></button>
+    </div>
+  </form>
+
+  <!--
+    Section: Edit Endpoint Dialog
+  -->
+  <p-dialog header="Edit Endpoint" [(visible)]="editDialog" modal="true" [style]="{ width: '400px' }">
+    <form [formGroup]="editForm" class="p-fluid p-formgrid p-grid">
+      <div class="p-field p-col-12">
+        <label>Path</label>
+        <input pInputText formControlName="endpointPath" />
+      </div>
+      <div class="p-field p-col-12">
+        <label>Method</label>
+        <p-dropdown [options]="httpRequestTypes" formControlName="httpRequestType"></p-dropdown>
+      </div>
+    </form>
+    <ng-template pTemplate="footer">
+      <button pButton type="button" label="Cancel" class="p-button-text" (click)="editDialog=false"></button>
+      <button pButton type="button" label="Save" (click)="saveEdit()" [disabled]="editForm.invalid"></button>
+    </ng-template>
+  </p-dialog>
+
+  <!--
+    Section: Endpoints Data Table
+  -->
+  <p-table [style]="{ 'margin': '1.5rem 0' }" [value]="endpoints" [loading]="loading" [paginator]="true" [rows]="10">
+    <ng-template pTemplate="header">
+      <tr>
+        <th>Path</th>
+        <th>Method</th>
+        <th>Actions</th>
+      </tr>
+    </ng-template>
+    <ng-template pTemplate="body" let-e>
+      <tr>
+        <td>{{ e.endpointPath }}</td>
+        <td>{{ e.httpRequestType }}</td>
+        <td>
+          <!-- Button zum Verwalten hinzufügen -->
+          <button pButton
+                  type="button"
+                  icon="pi pi-cog"
+                  class="p-button-info p-button-text"
+                  pTooltip="Query-Parameter verwalten"
+                  tooltipPosition="top"
+                  (click)="selectedEndpoint = e"></button>
+          <button pButton type="button" icon="pi pi-trash" class="p-button-text" (click)="deleteEndpoint(e.id!)"></button>
+        </td>
+      </tr>
+    </ng-template>
+  </p-table>
+
+  <!-- =================================================================== -->
+<!--               Section: Manage Query Parameters                    -->
+<!-- =================================================================== -->
+<ng-container *ngIf="selectedEndpoint && selectedEndpoint.id != null">
+  <app-manage-endpoint-params [endpointId]="selectedEndpoint.id!" [endpointPath]="selectedEndpoint.endpointPath"></app-manage-endpoint-params>
+</ng-container>
+

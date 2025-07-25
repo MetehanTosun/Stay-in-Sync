@@ -5,8 +5,10 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.enterprise.context.ApplicationScoped;
 
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.Set;
 
 @ApplicationScoped
 public class TypeScriptTypeGenerator {
@@ -16,12 +18,24 @@ public class TypeScriptTypeGenerator {
     public String generate(String jsonString) throws JsonProcessingException {
         JsonNode rootNode = mapper.readTree(jsonString);
         StringBuilder allInterfaces = new StringBuilder();
+        Set<String> generatedInterfaceNames = new HashSet<>();
 
-        generateInterface("Root", rootNode, allInterfaces);
+        if(rootNode.isArray()){
+            if (!rootNode.isEmpty()){
+                generateInterface("RootObject", rootNode.get(0), allInterfaces, generatedInterfaceNames);
+            }
+        } else if(rootNode.isObject()){
+            generateInterface("Root", rootNode, allInterfaces, generatedInterfaceNames);
+        }
+
         return allInterfaces.toString();
     }
 
-    private void generateInterface(String interfaceName, JsonNode node, StringBuilder allInterfaces) {
+    private void generateInterface(String interfaceName, JsonNode node, StringBuilder allInterfaces, Set<String> generatedNames) {
+        if(generatedNames.contains(interfaceName)){
+            return;
+        }
+
         StringBuilder currentInterface = new StringBuilder();
         currentInterface.append(String.format("interface %s {\n", interfaceName));
 
@@ -29,16 +43,18 @@ public class TypeScriptTypeGenerator {
         while (fields.hasNext()) {
             Map.Entry<String, JsonNode> field = fields.next();
             String fieldName = field.getKey();
+            String validFieldName = fieldName.matches("^[a-zA-Z_][a-zA-Z0-9_]*$") ? fieldName : String.format("'%s'", fieldName);
             JsonNode fieldNode = field.getValue();
-            String type = getTsType(fieldName, fieldNode, allInterfaces);
-            currentInterface.append(String.format(" %s: %s;\n", fieldName, type));
+            String type = getTsType(fieldName, fieldNode, allInterfaces, generatedNames);
+            currentInterface.append(String.format(" %s: %s;\n", validFieldName, type));
         }
         currentInterface.append("}\n");
-        // Prepending for proper order
+        // Prepending ensures that dependencies are defined before they are used.
         allInterfaces.insert(0, currentInterface);
+        generatedNames.add(interfaceName);
     }
 
-    private String getTsType(String fieldName, JsonNode fieldNode, StringBuilder allInterfaces) {
+    private String getTsType(String fieldName, JsonNode fieldNode, StringBuilder allInterfaces, Set<String> generatedNames) {
         if (fieldNode.isTextual()) return "string";
         if (fieldNode.isNumber()) return "number";
         if (fieldNode.isBoolean()) return "boolean";
@@ -46,7 +62,7 @@ public class TypeScriptTypeGenerator {
 
         if (fieldNode.isObject()){
            String nestedInterfaceName = capitalize(fieldName) + "Type";
-           generateInterface(nestedInterfaceName, fieldNode, allInterfaces);
+           generateInterface(nestedInterfaceName, fieldNode, allInterfaces, generatedNames);
            return nestedInterfaceName;
         }
 
@@ -55,8 +71,9 @@ public class TypeScriptTypeGenerator {
                 return "any[]";
             }
             JsonNode firstElement = fieldNode.get(0);
-            String arrayElementType = getTsType(fieldName, firstElement, allInterfaces);
-            return arrayElementType + "[]";
+            String singularFieldName = fieldName.endsWith("s") ? fieldName.substring(0, fieldName.length() - 1) : fieldName;
+            String arrayElementType = getTsType(singularFieldName, firstElement, allInterfaces, generatedNames);
+            return String.format("%s[]", arrayElementType);
         }
 
         return "any";

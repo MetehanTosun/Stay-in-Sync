@@ -7,11 +7,7 @@ import {providePrimeNG} from "primeng/config";
 import { provideHttpClient } from '@angular/common/http';
 import {MessageService} from 'primeng/api';
 import {MyPreset} from './mypreset';
-import Material from '@primeng/themes/material';
-import Aura from '@primeng/themes/aura';
-import Lara from '@primeng/themes/lara';
-import Nora from  '@primeng/themes/nora';
-import { provideMarkdown } from 'ngx-markdown';
+import {provideMarkdown} from 'ngx-markdown';
 
 import { MonacoEditorModule, NgxMonacoEditorConfig } from 'ngx-monaco-editor-v2';
 
@@ -24,7 +20,7 @@ const monacoConfig: NgxMonacoEditorConfig = {
 export const appConfig: ApplicationConfig = {
   providers: [
     provideHttpClient(),
-    provideZoneChangeDetection({ eventCoalescing: true }),
+    provideZoneChangeDetection({eventCoalescing: true}),
     provideRouter(routes),
     provideAnimationsAsync(),
     MessageService,

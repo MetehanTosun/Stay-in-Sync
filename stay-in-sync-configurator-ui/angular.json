@@ -35,6 +35,7 @@
             "styles": [
               "node_modules/primeicons/primeicons.css",
               "src/styles.css"
+
             ],
             "scripts": []
           },
@@ -43,7 +44,7 @@
               "budgets": [
                 {
                   "type": "initial",
-                  "maximumWarning": "500kB",
+                  "maximumWarning": "5MB",
                   "maximumError": "10MB"
                 },
                 {
@@ -80,7 +81,6 @@
         "test": {
           "builder": "@angular-devkit/build-angular:karma",
           "options": {
-            "proxyConfig": "src/proxy.conf.json",
             "polyfills": [
               "zone.js",
               "zone.js/testing"
@@ -95,7 +95,7 @@
             ],
             "styles": [
               "src/styles.css",
-              "Shared_Styles/tokens.css",
+              
               "node_modules/primeicons/primeicons.css"
             ],
             "scripts": []
