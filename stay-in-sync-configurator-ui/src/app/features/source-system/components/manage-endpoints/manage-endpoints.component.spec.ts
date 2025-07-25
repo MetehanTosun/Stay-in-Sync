@@ -3,7 +3,7 @@ import { ReactiveFormsModule } from '@angular/forms';
 import { of, throwError } from 'rxjs';
 import { HttpClientTestingModule, HttpTestingController } from '@angular/common/http/testing';
 import { RouterTestingModule } from '@angular/router/testing';
-import { HttpResponse } from '@angular/common/http';
+import { HttpEvent, HttpResponse } from '@angular/common/http';
 import { NO_ERRORS_SCHEMA, Component } from '@angular/core';
 
 import { ManageEndpointsComponent } from './manage-endpoints.component';
@@ -12,6 +12,8 @@ import { SourceSystemResourceService } from '../../service/sourceSystemResource.
 import { SourceSystemEndpointDTO } from '../../models/sourceSystemEndpointDTO';
 import { SourceSystemDTO } from '../../models/sourceSystemDTO';
 import { CreateSourceSystemEndpointDTO } from '../../models/createSourceSystemEndpointDTO';
+
+
 
 // MOCK COMPONENT - Ersetzt das echte Template
 @Component({
@@ -104,11 +106,11 @@ describe('ManageEndpointsComponent', () => {
     );
     
     mockEndpointService.apiConfigSourceSystemSourceSystemIdEndpointPost.and.returnValue(
-      of(new HttpResponse({ status: 201 }))
+      of(new HttpResponse<HttpEvent<any>>({ status: 201 }))
     );
     
     mockEndpointService.apiConfigSourceSystemEndpointIdDelete.and.returnValue(
-      of(new HttpResponse({ status: 204 }))
+      of(new HttpResponse<HttpEvent<any>>({ status: 204 }))
     );
 
     mockSourceSystemService.apiConfigSourceSystemIdGet.and.returnValue(
@@ -441,5 +443,79 @@ paths:
       // Verify form reset
       expect(component.endpointForm.get('endpointPath')?.value).toBe('');
     });
+  });
+});
+
+describe('ManageEndpointsComponent - Request Body', () => {
+  let component: ManageEndpointsComponent;
+  let fixture: ComponentFixture<ManageEndpointsComponent>;
+  let mockEndpointService: jasmine.SpyObj<SourceSystemEndpointResourceService>;
+
+  beforeEach(() => {
+    mockEndpointService = jasmine.createSpyObj('SourceSystemEndpointResourceService', [
+      'apiConfigSourceSystemSourceSystemIdEndpointPost',
+      'apiConfigSourceSystemEndpointIdPut'
+    ]);
+    TestBed.configureTestingModule({
+      imports: [HttpClientTestingModule], // <-- hinzugefügt
+      providers: [
+        { provide: SourceSystemEndpointResourceService, useValue: mockEndpointService }
+      ]
+    });
+    fixture = TestBed.createComponent(ManageEndpointsComponent);
+    component = fixture.componentInstance;
+    fixture.detectChanges();
+  });
+
+  it('should accept valid JSON in requestBodySchema', () => {
+    mockEndpointService.apiConfigSourceSystemSourceSystemIdEndpointPost.and.returnValue(of(new HttpResponse<any>({ status: 201 })));
+    component.endpointForm.patchValue({
+      endpointPath: '/test',
+      httpRequestType: 'POST',
+      requestBodySchema: '{"foo": "bar"}'
+    });
+    component.addEndpoint();
+    expect(component.jsonError).toBeNull();
+    expect(mockEndpointService.apiConfigSourceSystemSourceSystemIdEndpointPost).toHaveBeenCalled();
+  });
+
+  it('should reject invalid JSON in requestBodySchema', () => {
+    // Kein Mock nötig, da kein Service-Call erwartet wird
+    component.endpointForm.patchValue({
+      endpointPath: '/test',
+      httpRequestType: 'POST',
+      requestBodySchema: '{foo: bar}' // invalid JSON
+    });
+    component.addEndpoint();
+    expect(component.jsonError).toBe('Request-Body-Schema ist kein valides JSON.');
+    expect(mockEndpointService.apiConfigSourceSystemSourceSystemIdEndpointPost).not.toHaveBeenCalled();
+  });
+
+  it('should allow empty requestBodySchema', () => {
+    mockEndpointService.apiConfigSourceSystemSourceSystemIdEndpointPost.and.returnValue(of(new HttpResponse<any>({ status: 201 })));
+    component.endpointForm.patchValue({
+      endpointPath: '/test',
+      httpRequestType: 'POST',
+      requestBodySchema: ''
+    });
+    component.addEndpoint();
+    expect(component.jsonError).toBeNull();
+    expect(mockEndpointService.apiConfigSourceSystemSourceSystemIdEndpointPost).toHaveBeenCalled();
+  });
+
+  it('should show error in request body editor panel for invalid JSON', () => {
+    component.requestBodyEditorEndpoint = { id: 1, endpointPath: '/test', httpRequestType: 'POST' };
+    component.requestBodyEditorModel = { value: '{foo: bar}', language: 'json' };
+    component.saveRequestBodySchema();
+    expect(component.requestBodyEditorError).toBe('Request-Body-Schema ist kein valides JSON.');
+  });
+
+  it('should save valid JSON in request body editor panel', () => {
+    mockEndpointService.apiConfigSourceSystemEndpointIdPut.and.returnValue(of(new HttpResponse<any>({ status: 200 })));
+    component.requestBodyEditorEndpoint = { id: 1, endpointPath: '/test', httpRequestType: 'POST' };
+    component.requestBodyEditorModel = { value: '{"foo": "bar"}', language: 'json' };
+    component.saveRequestBodySchema();
+    expect(component.requestBodyEditorError).toBeNull();
+    expect(mockEndpointService.apiConfigSourceSystemEndpointIdPut).toHaveBeenCalled();
   });
 });
