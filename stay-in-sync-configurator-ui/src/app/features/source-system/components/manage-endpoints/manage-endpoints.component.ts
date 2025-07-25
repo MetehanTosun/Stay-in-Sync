@@ -52,7 +52,8 @@ import { ManageEndpointParamsComponent } from '../manage-endpoint-params/manage-
     CheckboxModule,
     DialogModule,
     ProgressSpinnerModule,
-    ManageEndpointParamsComponent
+    ManageEndpointParamsComponent,
+    MonacoEditorModule,
   ],
   templateUrl: './manage-endpoints.component.html',
   styleUrls: ['./manage-endpoints.component.css']
@@ -141,12 +142,14 @@ export class ManageEndpointsComponent implements OnInit {
   ngOnInit(): void {
     this.endpointForm = this.fb.group({
       endpointPath: ['', Validators.required],
-      httpRequestType: ['GET', Validators.required]
+      httpRequestType: ['GET', Validators.required],
+      requestBodySchema: ['']
     });
 
     this.editForm = this.fb.group({
       endpointPath: ['', Validators.required],
-      httpRequestType: ['GET', Validators.required]
+      httpRequestType: ['GET', Validators.required],
+      requestBodySchema: ['']
     });
 
     this.loadSourceSystemAndSetApiUrl();
