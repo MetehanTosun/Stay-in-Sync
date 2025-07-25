@@ -84,7 +84,6 @@ public class TransformationRuleResource {
         responseDto.setGraph(ruleMapper.toGraphDTO(result.entity()));
         responseDto.setErrors(result.validationErrors());
 
-        // 4. Baue die HTTP-Antwort.
         var location = uriInfo.getAbsolutePathBuilder().path(Long.toString(result.entity().id)).build();
         Log.debugf("New TransformationRule created with URI %s", location);
 
@@ -97,19 +96,15 @@ public class TransformationRuleResource {
     @Operation(summary = "Updates an existing Transformation Rule")
     public Response updateTransformationRule(@Parameter(name = "id", required = true) @PathParam("id") Long id, TransformationRulePayloadDTO payload) {
 
-        // 1. Rufe den Service auf, der die Validierung und das Update durchführt.
         GraphStorageService.PersistenceResult result = ruleService.updateRule(id, payload);
 
-        // 2. Erstelle das finale DTO für die API-Antwort.
         GraphPersistenceResponseDTO responseDto = new GraphPersistenceResponseDTO();
 
-        // 3. Benutze die korrigierte Mapper-Methode, um das vollständige GraphDTO zu erstellen.
         responseDto.setGraph(ruleMapper.toGraphDTO(result.entity()));
         responseDto.setErrors(result.validationErrors());
 
         Log.debugf("TransformationRule with id %d was updated.", id);
 
-        // 4. Gib "200 OK" mit dem finalen Zustand zurück.
         return Response.ok(responseDto).build();
     }
 
@@ -142,11 +137,9 @@ public class TransformationRuleResource {
     @Operation(summary = "Returns the VFlow graph definition and validation errors for a single rule")
     public VflowGraphResponseDTO getGraphForTransformationRule(@Parameter(name = "id", required = true) @PathParam("id") Long id) {
 
-        // 1. Hole die vollständige Regel-Entity aus der Datenbank.
         TransformationRule entity = graphStorage.findRuleById(id)
                 .orElseThrow(() -> new NotFoundException("TransformationRule with id " + id + " not found."));
 
-        // 2. Erstelle das VFlowGraphDTO für den visuellen Teil mit dem Mapper.
         VFlowGraphDTO graphData = ruleMapper.toVFlowDto(entity);
 
         List<ValidationError> errors = ruleService.getValidationErrorsForRule(id);

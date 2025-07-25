@@ -34,7 +34,6 @@ public class GraphValidatorService {
         List<ValidationError> errors = new ArrayList<>();
 
         if (graphNodes == null || graphNodes.isEmpty()) {
-            // Here we could create a new ValidationError type if needed, e.g., new GraphIsEmptyError()
             errors.add(new FinalNodeError("Graph node list cannot be null or empty."));
             return errors;
         }

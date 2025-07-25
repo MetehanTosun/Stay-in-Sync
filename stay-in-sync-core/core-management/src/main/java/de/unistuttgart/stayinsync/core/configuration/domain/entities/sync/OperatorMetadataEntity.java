@@ -12,7 +12,6 @@ import jakarta.persistence.Table;
  * This entity defines the "signature" of an operator for consumption by a frontend UI.
  */
 @Entity
-@Table(name = "operator_metadata")
 public class OperatorMetadataEntity extends PanacheEntityBase {
 
     /**

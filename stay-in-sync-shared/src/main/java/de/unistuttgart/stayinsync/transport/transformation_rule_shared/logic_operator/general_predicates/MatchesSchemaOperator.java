@@ -44,7 +44,6 @@ public class MatchesSchemaOperator implements Operation {
             );
         }
 
-        // This is your original, more robust check, adapted for the new model.
         // It inspects the configured value of the ConstantNode before execution.
         ConstantNode schemaConstant = (ConstantNode) schemaInputNode;
         Object schemaValue = schemaConstant.getValue();

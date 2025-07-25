@@ -25,7 +25,7 @@ public class GraphCompilerService {
 
     private final JsonSchemaFactory schemaFactory = JsonSchemaFactory.getInstance(VersionFlag.V7);
 
-    @Inject // Quarkus provides a configured ObjectMapper via CDI.
+    @Inject
     ObjectMapper jacksonMapper;
 
     /**

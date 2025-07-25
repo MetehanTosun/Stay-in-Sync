@@ -12,7 +12,6 @@ import lombok.Setter;
  * This Panache entity maps to the 'logic_graphs' table.
  */
 @Entity
-@Table(name = "logic_graphs")
 @Getter
 @Setter
 public class LogicGraphEntity extends PanacheEntity {

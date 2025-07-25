@@ -50,6 +50,4 @@ public class TransformationRule extends PanacheEntity {
     @OneToOne(cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     public LogicGraphEntity graph;
 
-    public int updateIntervall;
-
 }
