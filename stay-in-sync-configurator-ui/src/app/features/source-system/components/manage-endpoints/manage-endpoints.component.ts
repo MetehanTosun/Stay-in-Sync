@@ -157,7 +157,7 @@ export class ManageEndpointsComponent implements OnInit {
     });
 
     this.loadSourceSystemAndSetApiUrl();
-   
+    this.loadEndpoints(); // Endpoints beim Initialisieren laden
   }
 
   private loadSourceSystemAndSetApiUrl(): void {

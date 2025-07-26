@@ -94,6 +94,23 @@ export class SourceSystemBaseComponent implements OnInit {
   selectedEndpointForParams: SourceSystemEndpointDTO | null = null;
   endpointsForSelectedSystem: SourceSystemEndpointDTO[] = [];
 
+  showHeadersSection = true;
+  showEndpointsSection = true;
+  showMetadataSection = true;
+
+  toggleHeadersSection() {
+    
+    this.showHeadersSection = !this.showHeadersSection;
+  }
+
+  toggleEndpointsSection() {
+    this.showEndpointsSection = !this.showEndpointsSection;
+  }
+
+  toggleMetadataSection() {
+    this.showMetadataSection = !this.showMetadataSection;
+  }
+
   /**
    * Injects the source system service and form builder.
    */
@@ -199,8 +216,8 @@ export class SourceSystemBaseComponent implements OnInit {
    */
   manageSourceSystem(system: SourceSystemDTO): void {
     this.selectedSystem = system;
-
     this.showCreateDialog = true;
+    this.loadEndpointsForSelectedSystem(); // Endpoints beim Öffnen laden
   }
 
   /**

@@ -61,52 +61,58 @@
     <!--
       Metadata edit form for selected source system
     -->
-    <form [formGroup]="metadataForm" (ngSubmit)="saveMetadata()">
-      <div style="margin-bottom: 2rem;"></div>
-      <!-- Metadata edit form -->
-      <h3 style="margin-bottom: 1.5rem;">Metadata</h3>
-
-      <div class="p-col-12 p-md-3" style="margin-bottom: 1.5rem;">
-        <label for="metaName">Name</label>
-        <input id="metaName" pInputText formControlName="name" />
-      </div>
-      
-      <div class="p-col-12 p-md-3" style="margin-bottom: 1.5rem;">
-        <label for="metaUrl">API URL</label>
-        <input id="metaUrl" pInputText formControlName="apiUrl" />
-      </div>
-      
-      <div class="p-col-12 p-md-3" style="margin-bottom: 1.5rem;">
-        <label for="metaDesc" class="p-d-block">Description</label>
-        <textarea id="metaDesc" pInputTextarea formControlName="description" rows="3" class="p-inputtextarea p-d-block"></textarea>
-      </div>
-      
-   
-      <div style="margin-bottom: 2rem;"></div>
-      
-      <div class="p-col-12 p-md-3 p-d-flex p-ai-end p-jc-end">
-        <button pButton label="Save Metadata"
-                type="submit"
-                [disabled]="metadataForm.invalid"></button>
-      </div>
-    </form>
+    <div style="margin-bottom: 2rem;"></div>
+    <div style="display: flex; align-items: center; cursor: pointer;" (click)="toggleMetadataSection()">
+      <h3 style="flex: 1 1 auto; margin: 0;">Metadata</h3>
+      <i class="pi" [ngClass]="showMetadataSection ? 'pi-chevron-down' : 'pi-chevron-right'"></i>
+    </div>
+    <div *ngIf="showMetadataSection">
+      <form [formGroup]="metadataForm" (ngSubmit)="saveMetadata()">
+        <div class="p-col-12 p-md-3" style="margin-bottom: 1.5rem;">
+          <label for="metaName">Name</label>
+          <input id="metaName" pInputText formControlName="name" />
+        </div>
+        
+        <div class="p-col-12 p-md-3" style="margin-bottom: 1.5rem;">
+          <label for="metaUrl">API URL</label>
+          <input id="metaUrl" pInputText formControlName="apiUrl" />
+        </div>
+        
+        <div class="p-col-12 p-md-3" style="margin-bottom: 1.5rem;">
+          <label for="metaDesc" class="p-d-block">Description</label>
+          <textarea id="metaDesc" pInputTextarea formControlName="description" rows="3" class="p-inputtextarea p-d-block"></textarea>
+        </div>
+        
+        <div style="margin-bottom: 2rem;"></div>
+        
+        <div class="p-col-12 p-md-3 p-d-flex p-ai-end p-jc-end">
+          <button pButton label="Save Metadata"
+                  type="submit"
+                  [disabled]="metadataForm.invalid"></button>
+        </div>
+      </form>
+    </div>
     <div class="p-grid p-m-2">
       <div class="p-col-12 p-md-6">
-        <!--
-          Section: Manage API request headers for the selected system
-        -->
         <p-card>
-          <h4>API Headers</h4>
-          <app-manage-api-headers [syncSystemId]="selectedSystem!.id!"></app-manage-api-headers>
+          <div style="display: flex; align-items: center; cursor: pointer;" (click)="toggleHeadersSection()">
+            <h4 style="flex: 1 1 auto; margin: 0;">API Headers</h4>
+            <i class="pi" [ngClass]="showHeadersSection ? 'pi-chevron-down' : 'pi-chevron-right'"></i>
+          </div>
+          <div *ngIf="showHeadersSection">
+            <app-manage-api-headers [syncSystemId]="selectedSystem!.id!"></app-manage-api-headers>
+          </div>
         </p-card>
       </div>
       <div class="p-col-12 p-md-6">
-        <!--
-          Section: Manage endpoints for the selected system
-        -->
         <p-card>
-          <h4>Endpoints</h4>
-          <app-manage-endpoints [sourceSystemId]="selectedSystem!.id!"></app-manage-endpoints>
+          <div style="display: flex; align-items: center; cursor: pointer;" (click)="toggleEndpointsSection()">
+            <h4 style="flex: 1 1 auto; margin: 0;">Endpoints</h4>
+            <i class="pi" [ngClass]="showEndpointsSection ? 'pi-chevron-down' : 'pi-chevron-right'"></i>
+          </div>
+          <div *ngIf="showEndpointsSection">
+            <app-manage-endpoints [sourceSystemId]="selectedSystem!.id!"></app-manage-endpoints>
+          </div>
         </p-card>
       </div>
     </div>
