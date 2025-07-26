@@ -182,7 +182,7 @@ export class ManageEndpointsComponent implements OnInit {
         },
         error: (err: any) => {
           console.error('Failed to load source system:', err);
-          this.apiUrl = 'https://petstore.swagger.io/v2';
+          this.apiUrl = null; // Reset API URL on error
         }
       });
   }
@@ -303,6 +303,21 @@ export class ManageEndpointsComponent implements OnInit {
 
   showRequestBodyEditor(endpoint: SourceSystemEndpointDTO) {
     this.requestBodyEditorEndpoint = endpoint;
+    
+    // Prüfe, ob ein Request Body Schema vorhanden ist
+    if (!endpoint.requestBodySchema) {
+      this.requestBodyEditorModel = {
+        value: JSON.stringify({
+          error: 'No request body schema defined for this endpoint',
+          endpoint: endpoint.endpointPath,
+          method: endpoint.httpRequestType,
+          note: 'This endpoint does not require a request body or no schema is defined in the OpenAPI specification.'
+        }, null, 2),
+        language: 'json'
+      };
+      this.requestBodyEditorError = null;
+      return;
+    }
     
     // Stelle sicher, dass das Schema als JSON-String angezeigt wird
     let schemaValue = '';
