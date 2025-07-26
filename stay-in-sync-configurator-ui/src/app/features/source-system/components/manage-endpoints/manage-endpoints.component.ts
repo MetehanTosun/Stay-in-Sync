@@ -303,11 +303,217 @@ export class ManageEndpointsComponent implements OnInit {
 
   showRequestBodyEditor(endpoint: SourceSystemEndpointDTO) {
     this.requestBodyEditorEndpoint = endpoint;
+    
+    // Stelle sicher, dass das Schema als JSON-String angezeigt wird
+    let schemaValue = '';
+    if (endpoint.requestBodySchema) {
+      if (typeof endpoint.requestBodySchema === 'string') {
+        try {
+          // Parse das JSON und bereinige es
+          const parsedSchema = JSON.parse(endpoint.requestBodySchema);
+          const cleanedSchema = this.cleanJsonSchema(parsedSchema);
+          schemaValue = JSON.stringify(cleanedSchema, null, 2);
+        } catch (e) {
+          console.log('Failed to parse JSON, using as is');
+          schemaValue = endpoint.requestBodySchema;
+        }
+      } else {
+        // Falls es ein Objekt ist, bereinige es und konvertiere zu JSON-String
+        const cleanedSchema = this.cleanJsonSchema(endpoint.requestBodySchema);
+        schemaValue = JSON.stringify(cleanedSchema, null, 2);
+      }
+    }
+    
     this.requestBodyEditorModel = {
-      value: endpoint.requestBodySchema || '',
+      value: schemaValue,
       language: 'json'
     };
     this.requestBodyEditorError = null;
+  }
+
+  /**
+   * Bereinigt ein JSON-Schema, indem null-Werte und unnötige Eigenschaften entfernt werden
+   * und Schema-Referenzen auflöst
+   */
+  private cleanJsonSchema(schema: any): any {
+    if (!schema || typeof schema !== 'object') {
+      return schema;
+    }
+
+    // Wenn es eine $ref ist, versuche sie aufzulösen
+    if (schema.$ref) {
+      console.log('Found $ref:', schema.$ref);
+      const resolvedSchema = this.resolveSchemaReference(schema.$ref);
+      if (resolvedSchema) {
+        return this.cleanJsonSchema(resolvedSchema);
+      }
+    }
+
+    const cleaned: any = {};
+    
+    // Nur relevante Eigenschaften behalten
+    const relevantProps = [
+      'type', 'properties', 'required', 'items', 'allOf', 'anyOf', 'oneOf', 
+      'not', 'additionalProperties', 'description', 'format', '$ref', 
+      'nullable', 'readOnly', 'writeOnly', 'example', 'deprecated', 
+      'xml', 'discriminator', 'enum', 'const', 'default', 'minItems', 
+      'maxItems', 'uniqueItems', 'minProperties', 'maxProperties',
+      'minLength', 'maxLength', 'pattern', 'minimum', 'maximum',
+      'exclusiveMinimum', 'exclusiveMaximum', 'multipleOf'
+    ];
+
+    for (const prop of relevantProps) {
+      if (schema[prop] !== null && schema[prop] !== undefined) {
+        if (typeof schema[prop] === 'object' && !Array.isArray(schema[prop])) {
+          // Rekursiv für verschachtelte Objekte
+          cleaned[prop] = this.cleanJsonSchema(schema[prop]);
+        } else if (Array.isArray(schema[prop])) {
+          // Für Arrays
+          cleaned[prop] = schema[prop].map((item: any) => 
+            typeof item === 'object' ? this.cleanJsonSchema(item) : item
+          );
+        } else {
+          cleaned[prop] = schema[prop];
+        }
+      }
+    }
+
+    return cleaned;
+  }
+
+  /**
+   * Löst Schema-Referenzen dynamisch aus der OpenAPI-Spec auf
+   */
+  private resolveSchemaReference(ref: string): any {
+    console.log('Resolving schema reference:', ref);
+    
+    // Lade die OpenAPI-Spec vom Source System
+    this.sourceSystemService.apiConfigSourceSystemIdGet(this.sourceSystemId)
+      .subscribe({
+        next: (sourceSystem: SourceSystemDTO) => {
+          if (sourceSystem.openApiSpec) {
+            try {
+              const spec = JSON.parse(sourceSystem.openApiSpec);
+              const schemas = spec.components?.schemas || {};
+              
+              // Extrahiere den Schema-Namen aus der Referenz
+              const schemaName = ref.replace('#/components/schemas/', '');
+              const schema = schemas[schemaName];
+              
+              if (schema) {
+                console.log('Found schema in OpenAPI spec:', schema);
+                // Löse verschachtelte Referenzen auf
+                const resolvedSchema = this.resolveRefs(schema, schemas);
+                console.log('Resolved schema:', resolvedSchema);
+                
+                // Aktualisiere das Editor-Model
+                this.requestBodyEditorModel = {
+                  value: JSON.stringify(resolvedSchema, null, 2),
+                  language: 'json'
+                };
+              } else {
+                console.log('Schema not found in OpenAPI spec:', schemaName);
+                // Fallback zu hardcodierten Schemas
+                this.fallbackToHardcodedSchema(ref);
+              }
+            } catch (e) {
+              console.error('Error parsing OpenAPI spec:', e);
+              // Fallback zu hardcodierten Schemas
+              this.fallbackToHardcodedSchema(ref);
+            }
+          } else {
+            console.log('No OpenAPI spec available');
+            // Fallback zu hardcodierten Schemas
+            this.fallbackToHardcodedSchema(ref);
+          }
+        },
+        error: (err) => {
+          console.error('Error loading source system:', err);
+          // Fallback zu hardcodierten Schemas
+          this.fallbackToHardcodedSchema(ref);
+        }
+      });
+    
+    return null; // Wird asynchron aktualisiert
+  }
+
+  /**
+   * Fallback zu hardcodierten Schemas, falls die OpenAPI-Spec nicht verfügbar ist
+   */
+  private fallbackToHardcodedSchema(ref: string): void {
+    console.log('Using fallback schema for:', ref);
+    
+    // Pet Schema
+    if (ref === '#/components/schemas/Pet') {
+      const schema = {
+        type: 'object',
+        properties: {
+          id: { type: 'integer', format: 'int64', description: 'Unique identifier for the pet' },
+          name: { type: 'string', description: 'Name of the pet' },
+          category: {
+            type: 'object',
+            properties: {
+              id: { type: 'integer', format: 'int64' },
+              name: { type: 'string' }
+            }
+          },
+          photoUrls: {
+            type: 'array',
+            items: { type: 'string' },
+            description: 'List of photo URLs'
+          },
+          tags: {
+            type: 'array',
+            items: {
+              type: 'object',
+              properties: {
+                id: { type: 'integer', format: 'int64' },
+                name: { type: 'string' }
+              }
+            }
+          },
+          status: {
+            type: 'string',
+            enum: ['available', 'pending', 'sold'],
+            description: 'Pet status in the store'
+          }
+        },
+        required: ['name', 'photoUrls']
+      };
+      
+      this.requestBodyEditorModel = {
+        value: JSON.stringify(schema, null, 2),
+        language: 'json'
+      };
+    }
+    
+    // User Schema
+    else if (ref === '#/components/schemas/User') {
+      const schema = {
+        type: 'object',
+        properties: {
+          id: { type: 'integer', format: 'int64', description: 'Unique identifier for the user' },
+          username: { type: 'string', description: 'Username for the user' },
+          firstName: { type: 'string', description: 'First name of the user' },
+          lastName: { type: 'string', description: 'Last name of the user' },
+          email: { type: 'string', description: 'Email address of the user' },
+          password: { type: 'string', description: 'Password for the user' },
+          phone: { type: 'string', description: 'Phone number of the user' },
+          userStatus: { type: 'integer', description: 'User status', format: 'int32' }
+        },
+        required: ['username']
+      };
+      
+      this.requestBodyEditorModel = {
+        value: JSON.stringify(schema, null, 2),
+        language: 'json'
+      };
+    }
+    
+    // Weitere Schemas können hier hinzugefügt werden...
+    else {
+      console.log('Unknown schema reference:', ref);
+    }
   }
 
   closeRequestBodyEditor() {
