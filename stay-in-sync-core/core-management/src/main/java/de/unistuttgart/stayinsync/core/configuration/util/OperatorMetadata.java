@@ -2,7 +2,6 @@ package de.unistuttgart.stayinsync.core.configuration.util;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.OperatorMetadataEntity;
 import de.unistuttgart.stayinsync.core.configuration.rest.dtos.OperatorMetadataDTO;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.transaction.Transactional;
@@ -24,10 +23,10 @@ public class OperatorMetadata {
      */
     @Transactional(SUPPORTS)
     public List<OperatorMetadataDTO> findAllOperatorMetadata() {
-        List<OperatorMetadataEntity> entities = OperatorMetadataEntity.listAll();
+        List<de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.OperatorMetadata> entities = de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.OperatorMetadata.listAll();
         List<OperatorMetadataDTO> dtos = new ArrayList<>();
 
-        for (OperatorMetadataEntity entity : entities) {
+        for (de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.OperatorMetadata entity : entities) {
             // Convert the JSON string from the entity into a list.
             List<String> inputTypes = fromJsonString(entity.inputTypesJson);
 

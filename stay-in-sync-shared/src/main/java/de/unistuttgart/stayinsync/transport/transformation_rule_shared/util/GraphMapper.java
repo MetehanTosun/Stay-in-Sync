@@ -5,10 +5,7 @@ import de.unistuttgart.stayinsync.transport.dto.transformationrule.InputDTO;
 import de.unistuttgart.stayinsync.transport.dto.transformationrule.NodeDTO;
 import de.unistuttgart.stayinsync.transport.dto.transformationrule.vFlow.*;
 import de.unistuttgart.stayinsync.transport.transformation_rule_shared.logic_operator.LogicOperator;
-import de.unistuttgart.stayinsync.transport.transformation_rule_shared.nodes.ConstantNode;
-import de.unistuttgart.stayinsync.transport.transformation_rule_shared.nodes.LogicNode;
-import de.unistuttgart.stayinsync.transport.transformation_rule_shared.nodes.Node;
-import de.unistuttgart.stayinsync.transport.transformation_rule_shared.nodes.ProviderNode;
+import de.unistuttgart.stayinsync.transport.transformation_rule_shared.nodes.*;
 import io.quarkus.logging.Log;
 import jakarta.enterprise.context.ApplicationScoped;
 
@@ -118,8 +115,6 @@ public class GraphMapper {
         }
 
         VFlowGraphDTO vflowDto = new VFlowGraphDTO();
-        vflowDto.setName(ruleName);
-        vflowDto.setDescription(description);
         vflowDto.setNodes(mapNodeDTOsToVFlowNodes(graphDto.getNodes()));
         // Reconstruct the edge list for the frontend from the inputNodes property.
         vflowDto.setEdges(createVFlowEdgesFromNodeDTOs(graphDto.getNodes()));
@@ -213,6 +208,9 @@ public class GraphMapper {
                     break;
                 case "LOGIC":
                     node = new LogicNode(dto.getName(), LogicOperator.valueOf(dto.getOperatorType()));
+                    break;
+                case "FINAL":
+                    node = new FinalNode();
                     break;
                 default:
                     throw new IllegalArgumentException("Unknown nodeType: " + dto.getNodeType());

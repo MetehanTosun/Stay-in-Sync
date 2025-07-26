@@ -85,8 +85,6 @@ public class TransformationRuleMapperService {
             GraphDTO persistenceDto = jsonObjectMapper.readValue(entity.graph.graphDefinitionJson, GraphDTO.class);
 
             VFlowGraphDTO vflowDto = new VFlowGraphDTO();
-            vflowDto.setName(entity.name);
-            vflowDto.setDescription(entity.description);
 
             vflowDto.setNodes(mapNodeDTOsToVFlowNodes(persistenceDto.getNodes()));
             vflowDto.setEdges(createVFlowEdgesFromNodeDTOs(persistenceDto.getNodes()));

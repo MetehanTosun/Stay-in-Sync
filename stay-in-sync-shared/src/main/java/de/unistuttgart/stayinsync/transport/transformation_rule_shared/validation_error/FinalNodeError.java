@@ -18,7 +18,7 @@ public class FinalNodeError implements ValidationError {
 
     @Override
     public String getErrorCode() {
-        return "INVALID_FINAL_NODE";
+        return "FINAL_NODE_ERROR";
     }
 
     @Override

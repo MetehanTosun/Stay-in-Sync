@@ -1,6 +1,7 @@
 package de.unistuttgart.stayinsync.core.configuration.service.transformationrule;
 
 
+import de.unistuttgart.stayinsync.transport.transformation_rule_shared.nodes.FinalNode;
 import de.unistuttgart.stayinsync.transport.transformation_rule_shared.nodes.LogicNode;
 import de.unistuttgart.stayinsync.transport.transformation_rule_shared.nodes.Node;
 import de.unistuttgart.stayinsync.transport.transformation_rule_shared.util.GraphTopologicalSorter;
@@ -23,12 +24,11 @@ public class GraphValidatorService {
 
     /**
      * Performs a comprehensive validation of a graph.
-     * <p>
-     * This method runs all structural and logical checks and returns a list of all
-     * found validation errors. An empty list signifies a valid graph.
+     * This method checks for cycles, operator correctness, and the proper configuration
+     * of the mandatory FinalNode.
      *
      * @param graphNodes The complete list of nodes in the graph.
-     * @return A {@code List<ValidationError>} containing structured error objects.
+     * @return A {@code List<ValidationError>} containing structured error objects. An empty list signifies a valid graph.
      */
     public List<ValidationError> validateGraph(List<Node> graphNodes) {
         List<ValidationError> errors = new ArrayList<>();
@@ -38,36 +38,32 @@ public class GraphValidatorService {
             return errors;
         }
 
-        // 1. Perform operator-specific validation on each LogicNode.
+        // 1. Operator-specific validation on each LogicNode (remains the same).
         validateNodeOperators(graphNodes, errors);
 
-        // 2. Perform topological sort to detect cycles.
+        // 2. Perform topological sort to detect cycles (remains the same).
         GraphTopologicalSorter.SortResult sortResult = sorter.sort(graphNodes);
         if (sortResult.hasCycle()) {
-            // Use the list of cycle nodes from the sort result to create a detailed error.
             errors.add(new CycleError(sortResult.cycleNodeIds()));
         }
 
-        // 3. Find all terminal nodes (nodes with no children).
-        List<Node> targetNodes = findTargetNodes(graphNodes);
+        FinalNode finalNode = null;
+        int finalNodeCount = 0;
+        for (Node node : graphNodes) {
+            if (node instanceof FinalNode) {
+                finalNode = (FinalNode) node;
+                finalNodeCount++;
+            }
+        }
 
-        if (targetNodes.size() != 1) {
-            errors.add(new FinalNodeError("Exactly one target node is required, but found " + targetNodes.size()));
+        // Check if exactly one FinalNode exists.
+        if (finalNodeCount != 1) {
+            errors.add(new FinalNodeError("Exactly one FinalNode is required in the graph, but found " + finalNodeCount));
         } else {
-            // If there is exactly one target node, perform further checks on it.
-            Node finalTargetNode = targetNodes.get(0);
-            if (!(finalTargetNode instanceof LogicNode)) {
-                errors.add(new FinalNodeError("The target node must be a LogicNode."));
-            } else {
-                // Ensure the target node's operator returns a Boolean.
-                LogicNode finalLogicNode = (LogicNode) finalTargetNode;
-                Operation finalOperation = finalLogicNode.getOperator().getOperationStrategy();
-                if (!Boolean.class.isAssignableFrom(finalOperation.getReturnType())) {
-                    String errorMessage = "The operator '" + finalLogicNode.getOperator().name() +
-                            "' of the target node must return a Boolean, but returns '" +
-                            finalOperation.getReturnType().getSimpleName() + "'.";
-                    errors.add(new FinalNodeError(errorMessage));
-                }
+            // If the user has added their own logic (more than just the default FinalNode),
+            // ensure the FinalNode is connected.
+            if (graphNodes.size() > 1 && (finalNode.getInputNodes() == null || finalNode.getInputNodes().isEmpty())) {
+                errors.add(new FinalNodeError("The FinalNode has no input from the rest of the graph."));
             }
         }
 
@@ -75,45 +71,20 @@ public class GraphValidatorService {
     }
 
     /**
-     * Iterates through all nodes and validates the operator configuration for each LogicNode,
-     * collecting any error messages as structured objects.
+     * Iterates through all nodes and validates the operator configuration for each LogicNode.
      */
     private void validateNodeOperators(List<Node> graphNodes, List<ValidationError> errors) {
         for (Node node : graphNodes) {
             if (node instanceof LogicNode) {
                 LogicNode logicNode = (LogicNode) node;
                 try {
+                    // This logic remains the same
                     Operation strategy = logicNode.getOperator().getOperationStrategy();
                     strategy.validateNode(logicNode);
                 } catch (IllegalArgumentException e) {
-                    // Create a specific error object for this failure.
                     errors.add(new OperatorConfigurationError(logicNode.getId(), logicNode.getName(), e.getMessage()));
                 }
             }
         }
-    }
-
-    /**
-     * Finds all nodes in the graph that have no outgoing edges (children).
-     */
-    private List<Node> findTargetNodes(List<Node> graphNodes) {
-        Set<Node> parentNodes = new HashSet<>();
-        for (Node node : graphNodes) {
-            if (node.getInputNodes() != null) {
-                for (Node parent : node.getInputNodes()) {
-                    if (parent != null) {
-                        parentNodes.add(parent);
-                    }
-                }
-            }
-        }
-
-        List<Node> targetNodes = new ArrayList<>();
-        for (Node node : graphNodes) {
-            if (!parentNodes.contains(node)) {
-                targetNodes.add(node);
-            }
-        }
-        return targetNodes;
     }
 }

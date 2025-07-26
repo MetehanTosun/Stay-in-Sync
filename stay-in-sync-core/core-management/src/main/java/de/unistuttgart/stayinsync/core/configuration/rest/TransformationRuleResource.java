@@ -1,10 +1,7 @@
 package de.unistuttgart.stayinsync.core.configuration.rest;
 
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.LogicGraphEntity;
 import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.TransformationRule;
 import de.unistuttgart.stayinsync.core.configuration.rest.dtos.OperatorMetadataDTO;
 import de.unistuttgart.stayinsync.core.configuration.rest.dtos.TransformationRuleDTO;
@@ -12,13 +9,10 @@ import de.unistuttgart.stayinsync.core.configuration.service.transformationrule.
 import de.unistuttgart.stayinsync.core.configuration.service.transformationrule.TransformationRuleService;
 import de.unistuttgart.stayinsync.core.configuration.service.transformationrule.GraphStorageService;
 import de.unistuttgart.stayinsync.core.configuration.util.OperatorMetadata;
-import de.unistuttgart.stayinsync.transport.dto.transformationrule.GraphDTO;
 import de.unistuttgart.stayinsync.transport.dto.transformationrule.GraphPersistenceResponseDTO;
 import de.unistuttgart.stayinsync.transport.dto.transformationrule.TransformationRulePayloadDTO;
 import de.unistuttgart.stayinsync.transport.dto.transformationrule.vFlow.VFlowGraphDTO;
 import de.unistuttgart.stayinsync.transport.dto.transformationrule.vFlow.VflowGraphResponseDTO;
-import de.unistuttgart.stayinsync.transport.transformation_rule_shared.GraphStatus;
-import de.unistuttgart.stayinsync.transport.transformation_rule_shared.util.GraphMapper;
 import de.unistuttgart.stayinsync.transport.transformation_rule_shared.validation_error.ValidationError;
 import io.quarkus.logging.Log;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -31,7 +25,6 @@ import org.eclipse.microprofile.openapi.annotations.Operation;
 import org.eclipse.microprofile.openapi.annotations.parameters.Parameter;
 import org.eclipse.microprofile.openapi.annotations.tags.Tag;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -71,40 +64,50 @@ public class TransformationRuleResource {
 
     @POST
     @Consumes(APPLICATION_JSON)
-    @Operation(summary = "Creates a new Transformation Rule (Graph)")
-    public Response createTransformationRule(TransformationRulePayloadDTO payload, @Context UriInfo uriInfo) {
-        if (payload.getName() == null || payload.getName().trim().isEmpty()) {
-            throw new BadRequestException("Graph name must not be empty.");
+    @Operation(summary = "Creates a new Transformation Rule shell",
+            description = "Creates the initial rule with metadata and a default graph containing only a FinalNode.")
+    public Response createTransformationRule(TransformationRulePayloadDTO dto, @Context UriInfo uriInfo) {
+        if (dto.getName() == null || dto.getName().trim().isEmpty()) {
+            throw new BadRequestException("Rule name must not be empty.");
         }
 
-        GraphStorageService.PersistenceResult result = ruleService.createRule(payload);
+        GraphStorageService.PersistenceResult result = ruleService.createRule(dto);
 
-        GraphPersistenceResponseDTO responseDto = new GraphPersistenceResponseDTO();
+        TransformationRule createdRule = result.entity();
 
-        responseDto.setGraph(ruleMapper.toGraphDTO(result.entity()));
-        responseDto.setErrors(result.validationErrors());
-
-        var location = uriInfo.getAbsolutePathBuilder().path(Long.toString(result.entity().id)).build();
+        var location = uriInfo.getAbsolutePathBuilder().path(Long.toString(createdRule.id)).build();
         Log.debugf("New TransformationRule created with URI %s", location);
 
-        return Response.created(location).entity(responseDto).build();
+        return Response.created(location).entity(ruleMapper.toRuleDTO(createdRule)).build();
     }
 
     @PUT
     @Path("/{id}")
     @Consumes(APPLICATION_JSON)
-    @Operation(summary = "Updates an existing Transformation Rule")
-    public Response updateTransformationRule(@Parameter(name = "id", required = true) @PathParam("id") Long id, TransformationRulePayloadDTO payload) {
+    @Operation(summary = "Updates the metadata of an existing Transformation Rule")
+    public Response updateTransformationRuleMetadata(@Parameter(name = "id", required = true) @PathParam("id") Long id, TransformationRulePayloadDTO dto) { // Wir verwenden hier das PayloadDTO, da es name und beschreibung enthält
 
-        GraphStorageService.PersistenceResult result = ruleService.updateRule(id, payload);
+        TransformationRule updatedRule = ruleService.updateRuleMetadata(id, dto);
 
-        GraphPersistenceResponseDTO responseDto = new GraphPersistenceResponseDTO();
+        Log.debugf("Metadata for TransformationRule with id %d was updated.", id);
 
-        responseDto.setGraph(ruleMapper.toGraphDTO(result.entity()));
-        responseDto.setErrors(result.validationErrors());
+        return Response.ok(ruleMapper.toRuleDTO(updatedRule)).build();
+    }
 
-        Log.debugf("TransformationRule with id %d was updated.", id);
+    @PUT
+    @Path("/{id}/graph")
+    @Consumes(APPLICATION_JSON)
+    @Operation(summary = "Updates the graph of an existing Transformation Rule")
+    public Response updateTransformationRuleGraph(@Parameter(name = "id", required = true) @PathParam("id") Long id, VFlowGraphDTO vflowDto) {
 
+        var result = ruleService.updateRuleGraph(id, vflowDto);
+
+        GraphPersistenceResponseDTO responseDto = new GraphPersistenceResponseDTO(
+                ruleMapper.toGraphDTO(result.entity()),
+                result.validationErrors()
+        );
+
+        Log.debugf("Graph for TransformationRule with id %d was updated.", id);
         return Response.ok(responseDto).build();
     }
 

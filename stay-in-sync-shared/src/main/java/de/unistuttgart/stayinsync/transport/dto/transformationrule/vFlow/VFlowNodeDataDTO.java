@@ -20,7 +20,7 @@ public class VFlowNodeDataDTO {
     private String name;
 
     /**
-     * The type discriminator for the logic engine ("PROVIDER", "CONSTANT", "LOGIC").
+     * The type discriminator for the logic engine ("PROVIDER", "CONSTANT", "LOGIC", "FINAL").
      */
     private String nodeType;
 

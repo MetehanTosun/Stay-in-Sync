@@ -37,7 +37,7 @@ public class NodeDTO {
     private double offsetY;
 
     /**
-     * The discriminator field. Expected values: "PROVIDER", "CONSTANT", "LOGIC".
+     * The discriminator field. Expected values: "PROVIDER", "CONSTANT", "LOGIC", "FINAL".
      */
     private String nodeType;
 

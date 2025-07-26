@@ -20,13 +20,12 @@ public class LogicGraphEvaluator {
 
     /**
      * Evaluates a given valid, directed acyclic graph (DAG) of {@link Node}s.
+     * It assumes the graph has already been validated and contains a single FinalNode.
      *
-     * @param allNodesInGraph A non-empty list containing all {@link Node}s that constitute the graph.
+     * @param allNodesInGraph A non-empty list containing all nodes that constitute the graph.
      * @param dataContext     A map containing the runtime data sources required by ProviderNodes.
      * @return {@code true} or {@code false} representing the final evaluated state of the graph.
-     * @throws IllegalArgumentException if the provided list of nodes is null or empty.
      */
-    //Todo graph can only be evaluated, if flag (finalized) is true
     public boolean evaluateGraph(List<Node> allNodesInGraph, Map<String, JsonNode> dataContext) {
         if (allNodesInGraph == null || allNodesInGraph.isEmpty()) {
             throw new IllegalArgumentException("The list of graph nodes cannot be null or empty.");
@@ -38,7 +37,6 @@ public class LogicGraphEvaluator {
         }
 
         // 1. Get the topologically sorted list of nodes.
-        // We assume the graph is valid and has no cycles, as it was validated upon saving.
         List<Node> sortedNodes = sorter.sort(allNodesInGraph).sortedNodes();
 
         // 2. Evaluate each node in the correct order.
@@ -48,6 +46,7 @@ public class LogicGraphEvaluator {
 
         // 3. The final result is the calculated value of the last node in the sorted list.
         Node finalTargetNode = sortedNodes.get(sortedNodes.size() - 1);
+
         return (boolean) finalTargetNode.getCalculatedResult();
     }
 }

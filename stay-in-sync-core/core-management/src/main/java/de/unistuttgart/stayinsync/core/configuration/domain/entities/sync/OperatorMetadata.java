@@ -5,14 +5,13 @@ import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.Lob;
-import jakarta.persistence.Table;
 
 /**
  * Represents the static metadata for a single logic operator, persisted in the database.
  * This entity defines the "signature" of an operator for consumption by a frontend UI.
  */
 @Entity
-public class OperatorMetadataEntity extends PanacheEntityBase {
+public class OperatorMetadata extends PanacheEntityBase {
 
     /**
      * The unique name of the operator, which also serves as the primary key.

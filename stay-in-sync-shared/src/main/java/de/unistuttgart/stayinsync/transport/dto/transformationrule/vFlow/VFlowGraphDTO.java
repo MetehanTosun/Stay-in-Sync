@@ -12,15 +12,6 @@ import java.util.List;
 @Setter
 public class VFlowGraphDTO {
 
-    /**
-     * The unique, human-readable name for this graph.
-     */
-    private String name;
-
-    /**
-     * An optional, human-readable description of what the rule does.
-     */
-    private String description;
 
     /**
      * A list of all nodes in the graph.

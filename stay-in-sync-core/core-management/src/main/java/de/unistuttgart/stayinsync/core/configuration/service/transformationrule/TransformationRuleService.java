@@ -7,7 +7,9 @@ import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.LogicG
 import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.TransformationRule;
 
 import de.unistuttgart.stayinsync.transport.dto.transformationrule.GraphDTO;
+import de.unistuttgart.stayinsync.transport.dto.transformationrule.NodeDTO;
 import de.unistuttgart.stayinsync.transport.dto.transformationrule.TransformationRulePayloadDTO;
+import de.unistuttgart.stayinsync.transport.dto.transformationrule.vFlow.VFlowGraphDTO;
 import de.unistuttgart.stayinsync.transport.transformation_rule_shared.GraphStatus;
 import de.unistuttgart.stayinsync.transport.transformation_rule_shared.nodes.Node;
 import de.unistuttgart.stayinsync.transport.transformation_rule_shared.util.GraphMapper;
@@ -19,6 +21,7 @@ import jakarta.transaction.Transactional;
 import jakarta.ws.rs.NotFoundException;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -38,67 +41,94 @@ public class TransformationRuleService {
     ObjectMapper jsonObjectMapper;
 
     /**
-     * Creates a new TransformationRule and its associated graph.
+     * Creates a new TransformationRule with a default graph.
+     * The default graph contains only a single FinalNode, which defaults to 'true'.
+     * The rule is immediately marked as FINALIZED.
      *
-     * @param payload The DTO containing all necessary information from the client.
-     * @return A PersistenceResult object with the persisted entity and the validation result.
+     * @param dto The DTO containing the metadata for the new rule.
+     * @return A PersistenceResult containing the newly created entity and an empty validation list.
      */
     @Transactional
-    public GraphStorageService.PersistenceResult createRule(TransformationRulePayloadDTO payload) {
-        // 1. Translate the frontend VFlow format to the internal persistence format (GraphDTO).
-        GraphDTO graphDto = mapper.vflowToGraphDto(payload.getGraph());
+    public GraphStorageService.PersistenceResult createRule(TransformationRulePayloadDTO dto) {
+        Log.debugf("Creating new rule with name: %s", dto.getName());
 
-        // 2. Create the "intelligent" domain objects for validation.
-        List<Node> nodeGraph = mapper.toNodeGraph(graphDto);
+        // 1. Create the default graph structure.
+        NodeDTO finalNodeDto = new NodeDTO();
+        finalNodeDto.setId(0);
+        finalNodeDto.setName("Final Result");
+        finalNodeDto.setNodeType("FINAL");
 
-        // 3. Validate the graph.
-        List<ValidationError> validationErrors = validator.validateGraph(nodeGraph);
-        GraphStatus status = validationErrors.isEmpty() ? GraphStatus.FINALIZED : GraphStatus.DRAFT;
+        GraphDTO defaultGraphDto = new GraphDTO();
+        defaultGraphDto.setNodes(Collections.singletonList(finalNodeDto));
 
-        // 4. Create the entities.
+        // 2. Create the database entities.
         TransformationRule rule = new TransformationRule();
-        rule.name = payload.getName();
-        rule.description = payload.getDescription();
-        rule.graphStatus = status;
+        rule.name = dto.getName();
+        rule.description = dto.getDescription();
+        rule.graphStatus = GraphStatus.FINALIZED; // A default graph is always valid.
 
         LogicGraphEntity graphEntity = new LogicGraphEntity();
-
         try {
-            graphEntity.graphDefinitionJson = jsonObjectMapper.writeValueAsString(graphDto);
-            if (!validationErrors.isEmpty()) {
-                rule.validationErrorsJson = jsonObjectMapper.writeValueAsString(validationErrors);
-            }
+            graphEntity.graphDefinitionJson = jsonObjectMapper.writeValueAsString(defaultGraphDto);
         } catch (JsonProcessingException e) {
-            throw new RuntimeException("Failed to serialize graph or errors to JSON.", e);
+            throw new RuntimeException("Failed to serialize default graph.", e);
         }
 
         rule.graph = graphEntity;
 
-        // 5. Pass the prepared entity to the storage service for simple persistence.
+        // 3. Persist the new rule.
         storageService.persistRule(rule);
 
-        return new GraphStorageService.PersistenceResult(rule, validationErrors);
+        // 4. Return the result. The validation error list is empty.
+        return new GraphStorageService.PersistenceResult(rule, new ArrayList<>());
     }
 
     /**
-     * Updates an existing TransformationRule and its associated graph.
+     * Updates only the metadata (name and description) of an existing TransformationRule.
+     * The graph definition and its status remain unchanged.
      *
-     * @param id      The ID of the rule to update.
-     * @param payload The DTO containing the new data.
-     * @return A PersistenceResult object with the updated entity and the validation result.
+     * @param id  The ID of the rule to update.
+     * @param dto The DTO containing the new metadata.
+     * @return The updated TransformationRule entity.
+     * @throws NotFoundException if no rule with the given ID is found.
      */
     @Transactional
-    public GraphStorageService.PersistenceResult updateRule(Long id, TransformationRulePayloadDTO payload) {
+    public TransformationRule updateRuleMetadata(Long id, TransformationRulePayloadDTO dto) {
         TransformationRule ruleToUpdate = storageService.findRuleById(id)
                 .orElseThrow(() -> new NotFoundException("Rule with id " + id + " not found."));
 
-        GraphDTO graphDto = mapper.vflowToGraphDto(payload.getGraph());
+        ruleToUpdate.name = dto.getName();
+        ruleToUpdate.description = dto.getDescription();
+
+        Log.debugf("Metadata for TransformationRule with id %d was updated.", id);
+        return ruleToUpdate;
+    }
+
+    /**
+     * Updates the graph of an existing TransformationRule.
+     * This method orchestrates the entire process of mapping, validating, and persisting the new graph structure.
+     *
+     * @param id       The ID of the rule whose graph is to be updated.
+     * @param vflowDto The DTO from the frontend containing the new graph structure.
+     * @return A PersistenceResult object with the updated entity and the validation result.
+     */
+    @Transactional
+    public GraphStorageService.PersistenceResult updateRuleGraph(Long id, VFlowGraphDTO vflowDto) {
+        // 1. Find the existing rule entity.
+        TransformationRule ruleToUpdate = storageService.findRuleById(id)
+                .orElseThrow(() -> new NotFoundException("Rule with id " + id + " not found."));
+
+        // 2. Translate the VFlow format into the internal persistence format (GraphDTO).
+        GraphDTO graphDto = mapper.vflowToGraphDto(vflowDto);
+
+        // 3. Create the "intelligent" domain objects for validation.
         List<Node> nodeGraph = mapper.toNodeGraph(graphDto);
+
+        // 4. Validate the new graph structure.
         List<ValidationError> validationErrors = validator.validateGraph(nodeGraph);
         GraphStatus status = validationErrors.isEmpty() ? GraphStatus.FINALIZED : GraphStatus.DRAFT;
 
-        ruleToUpdate.name = payload.getName();
-        ruleToUpdate.description = payload.getDescription();
+        // 5. Update the entity's properties.
         ruleToUpdate.graphStatus = status;
 
         try {
@@ -112,10 +142,12 @@ public class TransformationRuleService {
             throw new RuntimeException("Failed to serialize graph or errors to JSON.", e);
         }
 
-        // The entity is managed, so changes will be persisted on transaction commit.
+        // The entity is managed, so changes will be persisted.
         return new GraphStorageService.PersistenceResult(ruleToUpdate, validationErrors);
     }
-    @Transactional // Wichtig!
+
+
+    @Transactional
     public List<ValidationError> getValidationErrorsForRule(Long id) {
         TransformationRule entity = storageService.findRuleById(id)
                 .orElseThrow(() -> new NotFoundException("TransformationRule with id " + id + " not found."));

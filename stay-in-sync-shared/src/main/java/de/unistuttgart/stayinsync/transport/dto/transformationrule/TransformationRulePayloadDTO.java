@@ -22,8 +22,5 @@ public class TransformationRulePayloadDTO {
      */
     private String description;
 
-    /**
-     * The complete graph definition in the ngx-vflow format.
-     */
-    private VFlowGraphDTO graph;
+
 }
