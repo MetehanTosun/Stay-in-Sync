@@ -387,133 +387,248 @@ export class ManageEndpointsComponent implements OnInit {
   private resolveSchemaReference(ref: string): any {
     console.log('Resolving schema reference:', ref);
     
-    // Lade die OpenAPI-Spec vom Source System
     this.sourceSystemService.apiConfigSourceSystemIdGet(this.sourceSystemId)
       .subscribe({
         next: (sourceSystem: SourceSystemDTO) => {
-          if (sourceSystem.openApiSpec) {
-            try {
-              const spec = JSON.parse(sourceSystem.openApiSpec);
-              const schemas = spec.components?.schemas || {};
-              
-              // Extrahiere den Schema-Namen aus der Referenz
-              const schemaName = ref.replace('#/components/schemas/', '');
-              const schema = schemas[schemaName];
-              
-              if (schema) {
-                console.log('Found schema in OpenAPI spec:', schema);
-                // Löse verschachtelte Referenzen auf
-                const resolvedSchema = this.resolveRefs(schema, schemas);
-                console.log('Resolved schema:', resolvedSchema);
-                
-                // Aktualisiere das Editor-Model
+          if (sourceSystem.openApiSpec && sourceSystem.openApiSpec.startsWith('http')) {
+            // Lade die Spec per HTTP nach
+            this.http.get(sourceSystem.openApiSpec, { responseType: 'text' }).subscribe({
+              next: (specText: string) => {
+                this.parseAndResolveSchema(specText, ref);
+              },
+              error: (err) => {
                 this.requestBodyEditorModel = {
-                  value: JSON.stringify(resolvedSchema, null, 2),
+                  value: JSON.stringify({ $ref: ref, error: 'Failed to load OpenAPI spec from URL' }, null, 2),
                   language: 'json'
                 };
-              } else {
-                console.log('Schema not found in OpenAPI spec:', schemaName);
-                // Fallback zu hardcodierten Schemas
-                this.fallbackToHardcodedSchema(ref);
               }
-            } catch (e) {
-              console.error('Error parsing OpenAPI spec:', e);
-              // Fallback zu hardcodierten Schemas
-              this.fallbackToHardcodedSchema(ref);
-            }
+            });
+            return null;
           } else {
-            console.log('No OpenAPI spec available');
-            // Fallback zu hardcodierten Schemas
-            this.fallbackToHardcodedSchema(ref);
+            this.parseAndResolveSchema(sourceSystem.openApiSpec, ref);
+            return null;
           }
         },
         error: (err) => {
           console.error('Error loading source system:', err);
-          // Fallback zu hardcodierten Schemas
-          this.fallbackToHardcodedSchema(ref);
+          this.requestBodyEditorModel = {
+            value: JSON.stringify({ $ref: ref, error: 'Failed to load source system' }, null, 2),
+            language: 'json'
+          };
         }
       });
-    
     return null; // Wird asynchron aktualisiert
   }
 
   /**
-   * Fallback zu hardcodierten Schemas, falls die OpenAPI-Spec nicht verfügbar ist
+   * Parst die OpenAPI-Spec (JSON oder YAML) und löst das Schema auf
    */
-  private fallbackToHardcodedSchema(ref: string): void {
-    console.log('Using fallback schema for:', ref);
+  private parseAndResolveSchema(specText: string | undefined, ref: string): void {
+    if (!specText) {
+      this.requestBodyEditorModel = {
+        value: JSON.stringify({ $ref: ref, error: 'No OpenAPI spec available' }, null, 2),
+        language: 'json'
+      };
+      return;
+    }
+    try {
+      let spec: any;
+      // Versuche zuerst JSON zu parsen
+      try {
+        spec = JSON.parse(specText);
+        console.log('Successfully parsed as JSON');
+      } catch (jsonError) {
+        // Falls JSON fehlschlägt, versuche YAML zu parsen
+        try {
+          spec = this.parseYamlToJson(specText);
+          console.log('Successfully parsed as YAML');
+        } catch (yamlError) {
+          console.error('Failed to parse as JSON or YAML:', jsonError, yamlError);
+          throw new Error('Failed to parse OpenAPI spec as JSON or YAML');
+        }
+      }
+      const schemas = spec.components?.schemas || {};
+      const schemaName = ref.replace('#/components/schemas/', '');
+      const schema = schemas[schemaName];
+      if (schema) {
+        console.log('Found schema in OpenAPI spec:', schema);
+        const resolvedSchema = this.resolveRefs(schema, schemas);
+        console.log('Resolved schema:', resolvedSchema);
+        this.requestBodyEditorModel = {
+          value: JSON.stringify(resolvedSchema, null, 2),
+          language: 'json'
+        };
+      } else {
+        console.log('Schema not found in OpenAPI spec:', schemaName);
+        this.requestBodyEditorModel = {
+          value: JSON.stringify({ $ref: ref, error: 'Schema not found in OpenAPI spec' }, null, 2),
+          language: 'json'
+        };
+      }
+    } catch (e) {
+      console.error('Error parsing OpenAPI spec:', e);
+      this.requestBodyEditorModel = {
+        value: JSON.stringify({ $ref: ref, error: 'Failed to parse OpenAPI spec' }, null, 2),
+        language: 'json'
+      };
+    }
+  }
+
+  /**
+   * Einfache YAML zu JSON Konvertierung für grundlegende OpenAPI-Specs
+   */
+  private parseYamlToJson(yamlText: string): any {
+    try {
+      // Entferne Kommentare
+      const cleanedYaml = this.cleanYaml(yamlText);
+      
+      // Verwende eine einfachere YAML-Parsing-Logik
+      const result = this.simpleYamlParse(cleanedYaml);
+      return result;
+    } catch (e) {
+      console.error('Failed to parse YAML:', e);
+      throw new Error('YAML parsing failed');
+    }
+  }
+
+  /**
+   * Bereinigt YAML-Text von Kommentaren und unnötigen Zeichen
+   */
+  private cleanYaml(yamlText: string): string {
+    const lines = yamlText.split('\n');
+    const cleanedLines = lines.map(line => {
+      // Entferne Kommentare
+      const commentIndex = line.indexOf('#');
+      if (commentIndex >= 0) {
+        line = line.substring(0, commentIndex);
+      }
+      return line;
+    });
     
-    // Pet Schema
-    if (ref === '#/components/schemas/Pet') {
-      const schema = {
-        type: 'object',
-        properties: {
-          id: { type: 'integer', format: 'int64', description: 'Unique identifier for the pet' },
-          name: { type: 'string', description: 'Name of the pet' },
-          category: {
-            type: 'object',
-            properties: {
-              id: { type: 'integer', format: 'int64' },
-              name: { type: 'string' }
-            }
-          },
-          photoUrls: {
-            type: 'array',
-            items: { type: 'string' },
-            description: 'List of photo URLs'
-          },
-          tags: {
-            type: 'array',
-            items: {
-              type: 'object',
-              properties: {
-                id: { type: 'integer', format: 'int64' },
-                name: { type: 'string' }
-              }
-            }
-          },
-          status: {
-            type: 'string',
-            enum: ['available', 'pending', 'sold'],
-            description: 'Pet status in the store'
+    return cleanedLines.join('\n');
+  }
+
+  /**
+   * Einfache YAML-Parsing-Implementierung für OpenAPI-Specs
+   */
+  private simpleYamlParse(yamlText: string): any {
+    const lines = yamlText.split('\n').filter(line => line.trim() !== '');
+    const result: any = {};
+    const path: string[] = [];
+    const stack: any[] = [result];
+    
+    for (const line of lines) {
+      const indent = this.getIndentLevel(line);
+      const content = line.trim();
+      
+      if (content === '') continue;
+      
+      // Bestimme den Pfad basierend auf der Einrückung
+      while (path.length > indent / 2) {
+        path.pop();
+        stack.pop();
+      }
+      
+      if (content.includes(':')) {
+        const colonIndex = content.indexOf(':');
+        const key = content.substring(0, colonIndex).trim();
+        const value = content.substring(colonIndex + 1).trim();
+        
+        if (value === '') {
+          // Neues Objekt
+          const newObj: any = {};
+          this.setNestedValue(result, [...path, key], newObj);
+          path.push(key);
+          stack.push(newObj);
+        } else {
+          // Einfacher Wert
+          this.setNestedValue(result, [...path, key], this.parseValue(value));
+        }
+      } else if (content.startsWith('- ')) {
+        // Array-Element
+        const value = content.substring(2);
+        const currentPath = [...path];
+        const parentKey = currentPath.pop();
+        
+        if (parentKey) {
+          const parent = this.getNestedValue(result, currentPath);
+          if (!Array.isArray(parent[parentKey])) {
+            parent[parentKey] = [];
           }
-        },
-        required: ['name', 'photoUrls']
-      };
-      
-      this.requestBodyEditorModel = {
-        value: JSON.stringify(schema, null, 2),
-        language: 'json'
-      };
+          parent[parentKey].push(this.parseValue(value));
+        }
+      }
     }
     
-    // User Schema
-    else if (ref === '#/components/schemas/User') {
-      const schema = {
-        type: 'object',
-        properties: {
-          id: { type: 'integer', format: 'int64', description: 'Unique identifier for the user' },
-          username: { type: 'string', description: 'Username for the user' },
-          firstName: { type: 'string', description: 'First name of the user' },
-          lastName: { type: 'string', description: 'Last name of the user' },
-          email: { type: 'string', description: 'Email address of the user' },
-          password: { type: 'string', description: 'Password for the user' },
-          phone: { type: 'string', description: 'Phone number of the user' },
-          userStatus: { type: 'integer', description: 'User status', format: 'int32' }
-        },
-        required: ['username']
-      };
-      
-      this.requestBodyEditorModel = {
-        value: JSON.stringify(schema, null, 2),
-        language: 'json'
-      };
+    return result;
+  }
+
+  /**
+   * Setzt einen Wert in einem verschachtelten Objekt
+   */
+  private setNestedValue(obj: any, path: string[], value: any): void {
+    let current = obj;
+    for (let i = 0; i < path.length - 1; i++) {
+      if (!current[path[i]]) {
+        current[path[i]] = {};
+      }
+      current = current[path[i]];
+    }
+    current[path[path.length - 1]] = value;
+  }
+
+  /**
+   * Holt einen Wert aus einem verschachtelten Objekt
+   */
+  private getNestedValue(obj: any, path: string[]): any {
+    let current = obj;
+    for (const key of path) {
+      if (current && typeof current === 'object' && key in current) {
+        current = current[key];
+      } else {
+        return undefined;
+      }
+    }
+    return current;
+  }
+
+  /**
+   * Bestimmt die Einrückungsebene einer Zeile
+   */
+  private getIndentLevel(line: string): number {
+    let level = 0;
+    for (let i = 0; i < line.length; i++) {
+      if (line[i] === ' ' || line[i] === '\t') {
+        level++;
+      } else {
+        break;
+      }
+    }
+    return level;
+  }
+
+  /**
+   * Parst einen einzelnen YAML-Wert
+   */
+  private parseValue(value: string): any {
+    value = value.trim();
+    
+    if (value === 'true') return true;
+    if (value === 'false') return false;
+    if (value === 'null' || value === '') return null;
+    
+    // Versuche als Zahl zu parsen
+    if (!isNaN(Number(value))) {
+      return Number(value);
     }
     
-    // Weitere Schemas können hier hinzugefügt werden...
-    else {
-      console.log('Unknown schema reference:', ref);
+    // Entferne Anführungszeichen falls vorhanden
+    if ((value.startsWith('"') && value.endsWith('"')) || 
+        (value.startsWith("'") && value.endsWith("'"))) {
+      return value.slice(1, -1);
     }
+    
+    return value;
   }
 
   closeRequestBodyEditor() {
