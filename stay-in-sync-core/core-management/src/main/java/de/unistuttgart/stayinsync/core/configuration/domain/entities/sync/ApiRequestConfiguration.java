@@ -11,7 +11,7 @@ import java.util.Set;
 @DiscriminatorColumn(name = "sync_system_type", discriminatorType = DiscriminatorType.STRING)
 public abstract class ApiRequestConfiguration extends PanacheEntity {
 
-    public String name;
+    public String alias;
 
     public boolean active;
 

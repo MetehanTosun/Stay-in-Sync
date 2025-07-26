@@ -1,5 +1,6 @@
 package de.unistuttgart.stayinsync.core.configuration.domain.entities.sync;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
 import io.quarkus.hibernate.orm.panache.PanacheEntity;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Lob;
@@ -19,7 +20,9 @@ public class TransformationScript extends PanacheEntity {
 
     public String hash;
 
-    @OneToOne
+    @OneToOne(mappedBy = "transformationScript")
+    @JsonBackReference("transformationScript-reference")
     public Transformation transformation;
+
 
 }

@@ -1,0 +1,76 @@
+/* Global Styles */
+.big-dialog {
+  border-radius: 8px;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+}
+
+.flex {
+  display: flex;
+}
+
+.flex-col {
+  flex-direction: column;
+}
+
+.h-48 {
+  height: 12rem;
+}
+
+.w-full {
+  width: 100%;
+}
+
+.space-y-4 > * + * {
+  margin-top: 1rem;
+}
+
+.w-80 {
+  width: 80%;
+}
+
+.border-2 {
+  border-width: 2px;
+}
+
+.rounded {
+  border-radius: 8px;
+}
+
+.bg-surface-50 {
+  background-color: var(-p-surface-color);
+}
+
+
+.p-inputtext {
+  padding: 0.5rem;
+  border: 1px solid #d1d5db;
+  border-radius: 4px;
+}
+
+.p-inputtext:focus {
+  outline: none;
+  border-color: var(-p-primary-color);
+}
+
+
+.p-floatlabel input:focus + label,
+.p-floatlabel textarea:focus + label {
+  color: var(-p-primary-color);
+}
+
+.syncjob-navigation-buttons {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  padding-top: 0;
+  margin-top: 15%;
+  border-top: 1px solid var(-p-surface-200);
+  position: absolute;
+  background-color: var(-p-surface-0, #fff);
+  z-index: 10;
+}
+
+.dark .syncjob-navigation-buttons {
+  border-top: 1px solid var(-p-surface-700);
+  background-color: var(-p-surface-950, #000);
+}

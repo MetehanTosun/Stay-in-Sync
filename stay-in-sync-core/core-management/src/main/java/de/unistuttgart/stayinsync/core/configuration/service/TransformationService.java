@@ -43,8 +43,12 @@ public class TransformationService {
         Transformation transformation = Transformation.<Transformation>findByIdOptional(transformationId)
                 .orElseThrow(() -> new CoreManagementException(Response.Status.NOT_FOUND, "Transformation not found", "Transformation with id %d not found.", transformationId));
 
-        TransformationScript script = TransformationScript.<TransformationScript>findByIdOptional(dto.transformationScriptId())
-                .orElseThrow(() -> new CoreManagementException(Response.Status.BAD_REQUEST, "Invalid Script ID", "TransformationScript with id %d not found.", dto.transformationScriptId()));
+
+        TransformationScript script = null;
+        if (dto.transformationScriptId() != null) {
+            script = TransformationScript.<TransformationScript>findByIdOptional(dto.transformationScriptId())
+                    .orElseThrow(() -> new CoreManagementException(Response.Status.BAD_REQUEST, "Invalid Script ID", "TransformationScript with id %d not found.", dto.transformationScriptId()));
+        }
 
         TransformationRule rule = TransformationRule.<TransformationRule>findByIdOptional(dto.transformationRuleId())
                 .orElseThrow(() -> new CoreManagementException(Response.Status.BAD_REQUEST, "Invalid Rule ID", "TransformationRule with id %d not found.", dto.transformationRuleId()));
@@ -59,8 +63,13 @@ public class TransformationService {
         //TODO: replace with api request configs
         //transformation.sourceSystemEndpoints = sourceEndpoints;
 
-        script.transformation = transformation;
-        rule.transformation = transformation;
+        if (script != null) {
+            script.transformation = transformation;
+        }
+        
+        if (rule != null) {
+            rule.transformation = transformation;
+        }
 
         return transformation;
     }
@@ -69,6 +78,12 @@ public class TransformationService {
     public Optional<Transformation> findById(Long id) {
         Log.debugf("Finding transformation with id %d", id);
         return Transformation.findByIdOptional(id);
+    }
+
+    @Transactional(SUPPORTS)
+    public Transformation findByIdDirect(Long id) {
+        Log.debugf("Finding transformation with id %d", id);
+        return Transformation.findById(id);
     }
 
     public Optional<TransformationScript> findScriptById(Long transformationId) {
@@ -88,7 +103,6 @@ public class TransformationService {
         return Transformation.listAll();
     }
 
-    @Transactional(SUPPORTS)
     public boolean delete(Long id) {
         Log.debugf("Deleting transformation with id %d", id);
         return Transformation.deleteById(id);

@@ -22,10 +22,16 @@ public class SyncJobScheduler {
     @Inject
     SyncDataMessageConsumer syncDataMessageConsumer;
 
+    @Inject
+    DispatcherStateService dispatcherStateService;
+
     Set<SyncJobMessageDTO> runningJobs = new HashSet<>();
 
     public void deploySyncJobExecution(SyncJobMessageDTO syncJob) throws SyncNodeException {
         Log.infof("Deploying sync-job %s (id: %s)", syncJob.name(), syncJob.id());
+
+        dispatcherStateService.loadInitialTransformations(syncJob);
+
         syncJobMessageConsumer.bindSyncJobReconfigurationQueue(syncJob);
         consumeJobSyncData(syncJob);
 
@@ -48,7 +54,7 @@ public class SyncJobScheduler {
                 .flatMap(transformationMessageDTO -> transformationMessageDTO.requestConfigurationMessageDTOS().stream()) //
                 .collect(Collectors.toSet());
         requestConfigurations.forEach(requestConfig -> {
-            Log.infof("Starting to consume data for %s", requestConfig.id());
+            Log.infof("Starting to consume data for request-config with id %s", requestConfig.id());
             syncDataMessageConsumer.startConsumingSyncData(requestConfig);
         });
     }

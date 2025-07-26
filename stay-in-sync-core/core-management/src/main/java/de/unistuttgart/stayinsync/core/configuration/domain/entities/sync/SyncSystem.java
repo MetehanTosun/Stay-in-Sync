@@ -20,7 +20,7 @@ public abstract class SyncSystem extends PanacheEntity {
     public String apiType; // REST, AAS
 
     @Lob
-    public byte[] openApiSpec;
+    public String openApiSpec;
 
     @OneToMany(mappedBy = "syncSystem")
     public Set<SyncSystemEndpoint> syncSystemEndpoints;
