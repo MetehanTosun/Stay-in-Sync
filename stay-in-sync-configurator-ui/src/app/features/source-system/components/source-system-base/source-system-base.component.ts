@@ -14,6 +14,7 @@ import {TabViewModule} from 'primeng/tabview';
 import {DropdownModule} from 'primeng/dropdown';
 import {InputTextModule} from 'primeng/inputtext';
 import {TextareaModule} from 'primeng/textarea';
+import {FileUploadModule} from 'primeng/fileupload';
 
 // Create-Dialog-Komponente
 import {CreateSourceSystemComponent} from '../create-source-system/create-source-system.component';
@@ -49,6 +50,7 @@ import { SourceSystemEndpointResourceService } from '../../service/sourceSystemE
     DropdownModule,
     InputTextModule,
     TextareaModule,
+    FileUploadModule,
     ReactiveFormsModule,
     CreateSourceSystemComponent,
     ManageApiHeadersComponent,
@@ -94,6 +96,8 @@ export class SourceSystemBaseComponent implements OnInit {
   selectedEndpointForParams: SourceSystemEndpointDTO | null = null;
   endpointsForSelectedSystem: SourceSystemEndpointDTO[] = [];
 
+  selectedFile: File | null = null;
+
   showHeadersSection = true;
   showEndpointsSection = true;
   showMetadataSection = true;
@@ -126,13 +130,13 @@ export class SourceSystemBaseComponent implements OnInit {
    * Component initialization lifecycle hook.
    */
   ngOnInit(): void {
-    this.loadSystems();
-
     this.metadataForm = this.fb.group({
       name: ['', Validators.required],
-      apiUrl: ['', [Validators.required, Validators.pattern('https?://.+')]],
-      description: ['']
+      apiUrl: ['', Validators.required],
+      description: [''],
+      openApiSpec: ['']
     });
+    this.loadSystems();
   }
 
   /**
@@ -231,7 +235,8 @@ export class SourceSystemBaseComponent implements OnInit {
     this.metadataForm.patchValue({
       name: system.name,
       apiUrl: system.apiUrl,
-      description: system.description
+      description: system.description,
+      openApiSpec: system.openApiSpec || ''
     });
     this.loadEndpointsForSelectedSystem();
   }
@@ -268,6 +273,22 @@ export class SourceSystemBaseComponent implements OnInit {
           this.erorrService.handleError(err);
         }
       });
+  }
+
+  /**
+   * Handles file selection for OpenAPI spec upload.
+   */
+  onFileSelected(event: any): void {
+    const file = event.files[0];
+    if (file) {
+      this.selectedFile = file;
+      const reader = new FileReader();
+      reader.onload = () => {
+        const fileContent = reader.result as string;
+        this.metadataForm.patchValue({ openApiSpec: fileContent });
+      };
+      reader.readAsText(file);
+    }
   }
 
   // Neue Methode, um Endpunkte für das aktuell ausgewählte System zu laden

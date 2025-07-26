@@ -83,6 +83,19 @@
           <textarea id="metaDesc" pInputTextarea formControlName="description" rows="3" class="p-inputtextarea p-d-block"></textarea>
         </div>
         
+        <div class="p-col-12 p-md-3" style="margin-bottom: 1.5rem;">
+          <label for="metaOpenApiSpec">OpenAPI Spec URL</label>
+          <input id="metaOpenApiSpec" pInputText formControlName="openApiSpec" placeholder="https://..." />
+        </div>
+        
+        <div class="p-col-12 p-md-3" style="margin-bottom: 1.5rem;">
+          <label>OR Upload File</label>
+          <p-fileupload #fu mode="basic" chooseLabel="Choose" chooseIcon="pi pi-upload" name="demo[]"
+                        url="https://www.primefaces.org/cdn/api/upload.php" accept=".json,.yaml,.yml"
+                        (onUpload)="onFileSelected($event)"/>
+          <small *ngIf="selectedFile">{{ selectedFile.name }}</small>
+        </div>
+        
         <div style="margin-bottom: 2rem;"></div>
         
         <div class="p-col-12 p-md-3 p-d-flex p-ai-end p-jc-end">
