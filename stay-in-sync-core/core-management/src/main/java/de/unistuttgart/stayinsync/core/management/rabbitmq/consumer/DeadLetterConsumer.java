@@ -41,6 +41,8 @@ public class DeadLetterConsumer {
             Log.info("Opening rabbitMQ channel");
             channel = rabbitMQClient.connect().openChannel().orElseThrow(() -> new RuntimeException("Unable to establish connection to rabbitMQ"));
             channel.exchangeDeclare("dead-letter-exchange", "direct", true);
+            channel.exchangeDeclare("syncjob-exchange", "direct", true);
+
 
             channel.queueDeclare("failed-syncjobs-queue", true, false, false, null);
             channel.queueBind("failed-syncjobs-queue", "syncjob-exchange", "failed-sync-job");
@@ -51,8 +53,8 @@ public class DeadLetterConsumer {
             channel.basicConsume("failed-syncjobs-queue", true, processDeadSyncJob(), cancelDeadletterConsumption());
             channel.basicConsume("failed-pollingjobs-queue", true, processDeadPollingJob(), cancelDeadletterConsumption());
         } catch (IOException e) {
-            Log.errorf("Error initialising rabbitMQ queues", e);
-            throw new CoreManagementException("RabbitMQ error", "Could not initiliaze consumer", e);
+            Log.errorf("Error initialising rabbitMQ message consumer: %s %s", e.getClass(),e.getMessage());
+            throw new CoreManagementException("RabbitMQ error", "Could not initiliaze consumer: %s", e.getMessage());
         }
     }
 
