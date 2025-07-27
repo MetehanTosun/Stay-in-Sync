@@ -28,7 +28,19 @@ The stay-in-sync helm chart is supposed to be used for development purposes and 
 - [Helm](https://helm.sh/docs/intro/install/)
 - [OpenLens](https://github.com/MuhammedKalkan/OpenLens?tab=readme-ov-file) (optional)
 
+For more information on the minikube cluster and network setup required for the edc please visit: 
+- https://github.com/eclipse-tractusx/tractus-x-umbrella/blob/main/docs/user/setup/README.md
+- https://github.com/eclipse-tractusx/tractus-x-umbrella/blob/main/docs/user/network/README.md
+
+
 ### Post Setup
+
+Create umbrella namespace since the edc dependency seems to rely on it: 
+
+```shell
+kubectl create namespace umbrella
+```
+
 
 Make sure to enable following minikube addons:
 
@@ -37,45 +49,38 @@ minikube addons enable ingress
 minikube addons enable ingress-dns
 ```
 
-To enable your local system to resolve the exposed addresses listed under [Ingress](#ingress), please follow the
+If you are having issues with resolving ingresses after successfully deploying the chart, please try following the
 instructions of [Step 3](https://minikube.sigs.k8s.io/docs/handbook/addons/ingress-dns/)
 
-Alternatively add following to your /etc/hosts (macOs /private/etc/hosts file:
+## Usage
+
+### Docker images
+
+
+The docker images of the stay-in-sync services need to be available to your kubernetes environment to deploy the chart.
+To build the images run following command:
 
 ```shell
-minikube ip
+mvn clean install -DskipTests -Dquarkus.container-image.build=true
 ```
 
-```
-<your minikube ip> centralidp.tx.test
-<your minikube ip> sharedidp.tx.test
-<your minikube ip> portal.tx.test
-<your minikube ip> portal-backend.tx.test
-<your minikube ip> semantics.tx.test
-<your minikube ip> sdfactory.tx.test
-<your minikube ip> ssi-credential-issuer.tx.test
-<your minikube ip> dataconsumer-1-dataplane.tx.test
-<your minikube ip> dataconsumer-1-controlplane.tx.test
-<your minikube ip> dataprovider-dataplane.tx.test
-<your minikube ip> dataprovider-controlplane.tx.test
-<your minikube ip> dataprovider-submodelserver.tx.test
-<your minikube ip> dataconsumer-2-dataplane.tx.test
-<your minikube ip> dataconsumer-2-controlplane.tx.test
-<your minikube ip> bdrs-server.tx.test
-<your minikube ip> business-partners.tx.test
-<your minikube ip> pgadmin4.tx.test
-<your minikube ip> ssi-dim-wallet-stub.tx.test
-<your minikube ip> smtp.tx.test
+When using **minikube** you could prior to building the images configure to use the docker-env of the minikube to avoid having to load the images:
 
-# Basyx
-
-<your minikube ip> basyx-web-ui.test
-<your minikube ip> basyx-aas-registry.test
-<your minikube ip> basyx-submodel-registry.test
-<your minikube ip> basyx-aas-env.test
+```shell
+eval $(minikube docker-env)
 ```
 
-## Usage
+Load images into a minikube using:
+
+```shell
+minikube image load core-management:latest
+```
+And remove them with:
+```shell
+minikube image remove core-management:latest
+```
+
+### Helm chart
 
 Before installing the helm chart make sure to update dependencies, only use this command within the charts folder:
 
@@ -83,10 +88,10 @@ Before installing the helm chart make sure to update dependencies, only use this
 helm dependency update
 ```
 
-Installing the helm chart with the release name **stay-in-sync**:
+Installing the helm chart from within its folder with the release name **stay-in-sync**:
 
 ```shell
-helm install stay-in-sync ./stay-in-sync-chart/
+helm install stay-in-sync ./
 ```
 
 Uninstalling the helm chart using its release name:
@@ -144,3 +149,7 @@ In the current state the helm chart exposes following addresses:
 - http://basyx-aas-registry.test
 - http://basyx-submodel-registry.test
 - http://basyx-aas-env.test
+- 
+### Stay-in-Sync
+
+- http://stay-in-sync-management.test/sync-rules
