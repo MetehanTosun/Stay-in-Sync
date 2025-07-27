@@ -16,7 +16,6 @@ import java.util.stream.Collectors;
 @Mapper(componentModel = MappingConstants.ComponentModel.JAKARTA_CDI, uses = {TransformationScriptMapper.class, SourceSystemApiRequestConfigurationFullUpdateMapper.class, TransformationRuleMapper.class})
 public interface TransformationMapper {
 
-    // TODO: Add TransformationRule mappings
     // TODO: Handle complex object mappings in service layer
 
     /**
@@ -34,7 +33,7 @@ public interface TransformationMapper {
      * Maps the Transformation entity to its deployable Message DTO.
      */
     @Mapping(source = "transformationScript", target = "transformationScriptDTO")
-    // TODO LogicGraph @Mapping(source = "transformationRule", target = "transformationRuleDTO") // Will use TransformationRuleMapper
+    @Mapping(source = "transformationRule", target = "transformationRuleDTO")
     @Mapping(source = "sourceSystemApiRequestConfigrations", target = "requestConfigurationMessageDTOS")
     @Mapping(source = "sourceSystemApiRequestConfigrations", target = "arcManifest", qualifiedByName = "buildArcManifest")
     TransformationMessageDTO mapToMessageDTO(Transformation transformation);
