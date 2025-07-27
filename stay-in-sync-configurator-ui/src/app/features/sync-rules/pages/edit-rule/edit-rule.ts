@@ -5,6 +5,17 @@ import { delay, of, Observable } from 'rxjs';
 import { Vflow, Node, Edge, Connection } from 'ngx-vflow';
 import { ProviderNodeComponent, LogicNodeComponent, ConstantNodeComponent } from '../../components/nodes';
 
+// Dynamic data types extracted from backend
+type NodeDataType = string;
+
+interface LogicOperator {
+  operatorName: string;
+  description: string;
+  inputTypes: string[];
+  outputType: string;
+  operatorType: string; // Groups: general, number, string, boolean, array, object, datetime
+}
+
 interface CustomNode {
   id: number;
   offsetX: number;
@@ -16,6 +27,8 @@ interface CustomNode {
   value?: any;
   operatorType?: string;
   inputNodes?: { id: number; orderIndex: number }[];
+  outputType?: NodeDataType;
+  expectedInputTypes?: NodeDataType[];
 }
 
 interface GraphData {
@@ -30,6 +43,7 @@ interface GraphData {
   styleUrl: './edit-rule.scss'
 })
 export class EditRule implements OnInit {
+  Object = Object;
 
   nodes: Node[] = [];
   edges: Edge[] = [];
@@ -58,19 +72,48 @@ export class EditRule implements OnInit {
   isEditingNodeName = false;
   editingNodeName = '';
 
-  lastMousePosition: { x: number, y: number } | null = null;
+  // Logic operators
+  logicOperators: LogicOperator[] = [];
+  logicOperatorGroups: { [key: string]: LogicOperator[] } = {};
+
+  // Dynamic type system
+  availableDataTypes: Set<string> = new Set();
+  typeDisplayInfo: { [key: string]: { color: string; icon: string; label: string } } = {};
+
+  // Type safety properties
+  showTypeIncompatibilityModal = false;
+  typeIncompatibilityMessage = '';
+  lastAttemptedConnection: { source: string; target: string; sourceType: string; targetType: string } | null = null;
+
+  // Node palette context menu properties
+  showNodePaletteMenu = false;
+  nodePaletteMenuPosition = { x: 0, y: 0 };
+
+  // Logic group context menu properties
+  showLogicGroupMenu = false;
+  logicGroupMenuPosition = { x: 0, y: 0 };
+
+  // Logic operators context menu properties
+  showLogicOperatorsMenu = false;
+  logicOperatorsMenuPosition = { x: 0, y: 0 };
+  selectedLogicGroup = '';
+
+  // Node creation state - awaiting canvas click for positioning
+  pendingNodeCreation: { type: string, operator?: LogicOperator } | null = null;
+
+  cancelNodePlacement() {
+    console.log('Node placement cancelled');
+    this.pendingNodeCreation = null;
+  }
 
   constructor(
     private route: ActivatedRoute,
     private router: Router
-  ) {
-    // Track mouse position globally
-    window.addEventListener('mousemove', (e: MouseEvent) => {
-      this.lastMousePosition = { x: e.clientX, y: e.clientY };
-    });
-  }
+  ) {}
 
   ngOnInit() {
+    this.loadLogicOperators();
+
     // Get rule ID from route parameters or fallback to query parameters
     this.route.paramMap.subscribe(params => {
       const idFromRoute = params.get('id');
@@ -86,6 +129,101 @@ export class EditRule implements OnInit {
     });
   }
 
+  // Load logic operators from mock API
+  private loadLogicOperators() {
+    this.mockApiGetLogicOperators().subscribe({
+      next: (operators: LogicOperator[]) => {
+        this.logicOperators = operators;
+        this.groupLogicOperators();
+        this.extractAndBuildTypeSystem(operators);
+        console.log('Logic operators loaded:', operators);
+        console.log('Logic operator groups:', this.logicOperatorGroups);
+        console.log('Available data types:', Array.from(this.availableDataTypes));
+      },
+      error: (error: any) => {
+        console.error('Error loading logic operators:', error);
+      }
+    });
+  }
+
+  private groupLogicOperators() {
+    this.logicOperatorGroups = {};
+    this.logicOperators.forEach(operator => {
+      if (!this.logicOperatorGroups[operator.operatorType]) {
+        this.logicOperatorGroups[operator.operatorType] = [];
+      }
+      this.logicOperatorGroups[operator.operatorType].push(operator);
+    });
+  }
+
+  private extractAndBuildTypeSystem(operators: LogicOperator[]) {
+    this.availableDataTypes.clear();
+
+    // Add standard types for constant nodes
+    this.availableDataTypes.add('ANY');
+    this.availableDataTypes.add('NUMBER');
+    this.availableDataTypes.add('STRING');
+    this.availableDataTypes.add('BOOLEAN');
+
+    // Extract types from operators
+    operators.forEach(operator => {
+      if (operator.outputType) {
+        this.availableDataTypes.add(operator.outputType);
+      }
+
+      if (operator.inputTypes) {
+        operator.inputTypes.forEach(inputType => {
+          this.availableDataTypes.add(inputType);
+        });
+      }
+    });
+
+    this.buildTypeDisplayInfo();
+    console.log('Dynamic type system built:', Array.from(this.availableDataTypes));
+  }
+
+  /**
+   * Builds display information for all available types
+   */
+  private buildTypeDisplayInfo() {
+    // Default colors and icons for common types
+    const typeDefaults: { [key: string]: { color: string; icon: string } } = {
+      'NUMBER': { color: '#2196F3', icon: '🔢' },
+      'STRING': { color: '#4CAF50', icon: '📝' },
+      'BOOLEAN': { color: '#FF9800', icon: '✅' },
+      'DATE': { color: '#9C27B0', icon: '📅' },
+      'ARRAY': { color: '#795548', icon: '📋' },
+      'JSON': { color: '#607D8B', icon: '🗃️' },
+      'PROVIDER': { color: '#3F51B5', icon: '📡' },
+      'SCHEMA': { color: '#009688', icon: '📋' },
+      'ANY': { color: '#757575', icon: '❓' }
+    };
+
+    // Generate colors for unknown types
+    const fallbackColors = ['#E91E63', '#673AB7', '#8BC34A', '#FFC107', '#FF5722', '#00BCD4'];
+    let colorIndex = 0;
+
+    this.typeDisplayInfo = {};
+
+    Array.from(this.availableDataTypes).forEach(type => {
+      if (typeDefaults[type]) {
+        this.typeDisplayInfo[type] = {
+          color: typeDefaults[type].color,
+          icon: typeDefaults[type].icon,
+          label: type
+        };
+      } else {
+        // Generate display info for unknown types
+        this.typeDisplayInfo[type] = {
+          color: fallbackColors[colorIndex % fallbackColors.length],
+          icon: '🔸',
+          label: type
+        };
+        colorIndex++;
+      }
+    });
+  }
+
   // sTODO REST
   private loadRuleData() {
     // Load mock rule graph for rule ID 1 "Temp Check"
@@ -96,6 +234,10 @@ export class EditRule implements OnInit {
           console.log('Graph data loaded:', data);
           this.nodes = this.convertToVflowNodes(data.nodes);
           this.edges = data.edges;
+
+          setTimeout(() => {
+            console.log('Graph loaded and ready');
+          }, 100);
         },
         error: (error) => {
           console.error('Error loading graph data:', error);
@@ -123,6 +265,13 @@ export class EditRule implements OnInit {
   onDragStart(event: DragEvent, nodeType: string) {
     if (event.dataTransfer) {
       event.dataTransfer.setData('text/plain', nodeType);
+      event.dataTransfer.effectAllowed = 'copy';
+    }
+  }
+
+  onDragStartLogicOperator(event: DragEvent, operator: LogicOperator) {
+    if (event.dataTransfer) {
+      event.dataTransfer.setData('text/plain', `LOGIC_${operator.operatorName}`);
       event.dataTransfer.effectAllowed = 'copy';
     }
   }
@@ -163,52 +312,71 @@ export class EditRule implements OnInit {
 
   //#region Create Region
   private createNewNode(nodeType: string, x: number, y: number) {
+    console.log('Creating new node:', nodeType, 'at position:', x, y);
+
     const newId = this.getNextNodeId();
     let nodeComponent: any;
     let defaultName: string;
     let nodeData: any = {
-      nodeType: nodeType,
+      nodeType: nodeType.startsWith('LOGIC_') ? 'LOGIC' : nodeType,
       inputNodes: [],
       selected: false
     };
 
-    // sTODO replace with actual nodes
-    switch (nodeType) {
-      case 'PROVIDER':
-        nodeComponent = ProviderNodeComponent;
-        defaultName = `Provider ${newId}`;
-        nodeData = {
-          ...nodeData,
-          name: defaultName,
-          arcId: 1,
-          jsonPath: 'source.example.path'
-        };
-        break;
-      case 'LOGIC':
-        nodeComponent = LogicNodeComponent;
-        defaultName = `Logic ${newId}`;
-        nodeData = {
-          ...nodeData,
-          name: defaultName,
-          operatorType: 'AND'
-        };
-        break;
-      case 'CONSTANT':
-        nodeComponent = ConstantNodeComponent;
-        defaultName = `Constant ${newId}`;
-        nodeData = {
-          ...nodeData,
-          name: defaultName,
-          value: 0
-        };
-        break;
-      default:
-        nodeComponent = ProviderNodeComponent;
-        defaultName = `Node ${newId}`;
-        nodeData = {
-          ...nodeData,
-          name: defaultName
-        };
+    // Handle specific logic operators
+    if (nodeType.startsWith('LOGIC_')) {
+      const operatorName = nodeType.replace('LOGIC_', '');
+      const operator = this.logicOperators.find(op => op.operatorName === operatorName);
+
+      nodeComponent = LogicNodeComponent;
+      defaultName = operator ? operator.operatorName : `Logic ${newId}`;
+      nodeData = {
+        ...nodeData,
+        name: defaultName,
+        operatorType: operatorName,
+        description: operator?.description || '',
+        inputTypes: operator?.inputTypes || [],
+        outputType: operator?.outputType || 'BOOLEAN'
+      };
+    } else {
+      // sTODO replace with actual nodes
+      switch (nodeType) {
+        case 'PROVIDER':
+          nodeComponent = ProviderNodeComponent;
+          defaultName = `Provider ${newId}`;
+          nodeData = {
+            ...nodeData,
+            name: defaultName,
+            arcId: 1,
+            jsonPath: 'source.example.path'
+          };
+          break;
+        case 'LOGIC':
+          nodeComponent = LogicNodeComponent;
+          defaultName = `Logic ${newId}`;
+          nodeData = {
+            ...nodeData,
+            name: defaultName,
+            operatorType: 'AND'
+          };
+          break;
+        case 'CONSTANT':
+          nodeComponent = ConstantNodeComponent;
+          defaultName = `Constant ${newId}`;
+          nodeData = {
+            ...nodeData,
+            name: defaultName,
+            value: 0
+          };
+          break;
+        default:
+          nodeComponent = ProviderNodeComponent;
+          defaultName = `Node ${newId}`;
+          nodeData = {
+            ...nodeData,
+            name: defaultName
+          };
+      }
     }
 
     const newNode: Node = {
@@ -220,8 +388,160 @@ export class EditRule implements OnInit {
       data: nodeData
     };
 
+    console.log('Adding node to array:', newNode);
     this.nodes = [...this.nodes, newNode];
+    console.log('Total nodes now:', this.nodes.length);
   }
+
+  //#region Type Safety Methods
+  getTypeDisplayInfo(type: NodeDataType): { color: string; icon: string; label: string } {
+    return this.typeDisplayInfo[type] || this.typeDisplayInfo['ANY'] || {
+      color: '#757575',
+      icon: '❓',
+      label: type || 'UNKNOWN'
+    };
+  }
+
+  getNodeAcceptedInputTypes(node: Node): NodeDataType[] {
+    const nodeData = (node as any).data;
+
+    switch (nodeData.nodeType) {
+      case 'PROVIDER':
+        return [];
+
+      case 'CONSTANT':
+        return [];
+
+      case 'LOGIC':
+        const operator = this.logicOperators.find(op => op.operatorName === nodeData.operatorType);
+        if (operator && operator.inputTypes) {
+          return operator.inputTypes as NodeDataType[];
+        }
+        return ['ANY']; // Fallback
+
+      default:
+        return ['ANY'];
+    }
+  }
+
+  /**
+   * Returns the output type of a node
+   */
+  getNodeOutputType(node: Node): NodeDataType {
+    const nodeData = (node as any).data;
+
+    switch (nodeData.nodeType) {
+      case 'PROVIDER':
+        return 'ANY';
+
+      case 'CONSTANT':
+        return this.inferTypeFromValue(nodeData.value);
+
+      case 'LOGIC':
+        const operator = this.logicOperators.find(op => op.operatorName === nodeData.operatorType);
+        return (operator?.outputType as NodeDataType) || 'BOOLEAN';
+
+      default:
+        return 'ANY';
+    }
+  }
+
+  /**
+   * Returns the expected input type for a logic node at a specific input index
+   */
+  private getExpectedInputType(node: Node, inputIndex: number): NodeDataType {
+    const nodeData = (node as any).data;
+
+    if (nodeData.nodeType !== 'LOGIC') {
+      return 'ANY';
+    }
+
+    const operator = this.logicOperators.find(op => op.operatorName === nodeData.operatorType);
+    if (!operator || !operator.inputTypes) return 'ANY';
+
+    if (inputIndex >= operator.inputTypes.length) {
+      return operator.inputTypes[operator.inputTypes.length - 1] as NodeDataType;
+    }
+
+    return operator.inputTypes[inputIndex] as NodeDataType;
+  }
+
+  /**
+   * Infers the data type from a JavaScript value
+   */
+  private inferTypeFromValue(value: any): NodeDataType {
+    if (value === null || value === undefined) return 'ANY';
+
+    const jsType = typeof value;
+    switch (jsType) {
+      case 'number':
+        return 'NUMBER';
+      case 'string':
+        return 'STRING';
+      case 'boolean':
+        return 'BOOLEAN';
+      case 'object':
+        if (Array.isArray(value)) return 'ARRAY';
+        return 'JSON';
+      default:
+        return 'ANY';
+    }
+  }
+
+  /**
+   * Checks if two types are compatible for edge connection
+   */
+  private areTypesCompatible(sourceType: NodeDataType, targetType: NodeDataType): boolean {
+    if (sourceType === 'ANY' || targetType === 'ANY') return true;
+    if (sourceType === targetType) return true;
+    return false;
+  }
+
+  /**
+   * Validates a connection between two nodes and shows warning if incompatible
+   */
+  private validateConnection(sourceId: string, targetId: string): boolean {
+    const sourceNode = this.nodes.find(n => n.id === sourceId);
+    const targetNode = this.nodes.find(n => n.id === targetId);
+
+    if (!sourceNode || !targetNode) return false;
+
+    const sourceType = this.getNodeOutputType(sourceNode);
+
+    const targetNodeData = (targetNode as any).data;
+    const currentInputCount = targetNodeData.inputNodes?.length || 0;
+    const expectedTargetType = this.getExpectedInputType(targetNode, currentInputCount);
+
+    const isCompatible = this.areTypesCompatible(sourceType, expectedTargetType);
+
+    if (!isCompatible) {
+      // Store connection attempt details for the warning modal
+      this.lastAttemptedConnection = {
+        source: sourceId,
+        target: targetId,
+        sourceType: sourceType,
+        targetType: expectedTargetType
+      };
+
+      this.typeIncompatibilityMessage = `Cannot connect ${sourceType} to ${expectedTargetType}.`;
+      this.showTypeIncompatibilityModal = true;
+
+      return false;
+    }
+
+    return true;
+  }
+
+  /**
+   * Closes the type incompatibility modal
+   */
+  closeTypeIncompatibilityModal(): void {
+    this.showTypeIncompatibilityModal = false;
+    this.typeIncompatibilityMessage = '';
+    this.lastAttemptedConnection = null;
+  }
+
+  //#endregion
 
   private getNextNodeId(): number {
     if (this.nodes.length === 0) return 1;
@@ -230,6 +550,10 @@ export class EditRule implements OnInit {
   }
 
   public createEdge({ source, target, targetHandle }: Connection) {
+    if (!this.validateConnection(source, target)) {
+      return;
+    }
+
     const newEdge: Edge = {
       id: `${source} -> ${target}`,
       source,
@@ -237,18 +561,97 @@ export class EditRule implements OnInit {
       targetHandle,
       type: 'default'
     };
+
+    // sTODO order index bug: creates a new anchor without connecting to the new anchor point
+    // Add the source node to the target node's inputNodes array
+    this.nodes = this.nodes.map((node: any) => {
+      if (node.id === target) {
+        const nodeData = node.data;
+        const inputNodes = nodeData.inputNodes || [];
+
+        const existingInput = inputNodes.find((input: any) => input.id === parseInt(source));
+        if (!existingInput) {
+          const maxOrderIndex = inputNodes.length > 0
+            ? Math.max(...inputNodes.map((input: any) => input.orderIndex))
+            : -1;
+
+          const newInputNode = {
+            id: parseInt(source),
+            orderIndex: maxOrderIndex + 1
+          };
+
+          const updatedNode = {
+            ...node,
+            data: {
+              ...nodeData,
+              inputNodes: [...inputNodes, newInputNode]
+            }
+          };
+
+          return updatedNode;
+        }
+      }
+      return node;
+    });
+
     this.edges = [...this.edges, newEdge];
-    console.log(this.edges);
+    console.log('Valid connection created:', this.edges);
   }
   //#endregion
 
-  //#region Selection Region
-  onCanvasClick() {
-    this.selectedNode = null;
-    this.hideContextMenu();
-    this.selectedEdge = null;
-    this.hideEdgeContextMenu();
-    this.updateNodeSelection();
+  //#region Node Palette Menu
+  onCanvasClick(event?: any) {
+    console.log('Canvas click detected, pendingNodeCreation:', this.pendingNodeCreation);
+
+    // If pending node creation, create node at click location
+    if (this.pendingNodeCreation) {
+      console.log('Creating node from canvas click at cursor position');
+
+      // Get the canvas element to calculate relative position
+      const canvasElement = document.querySelector('.vflow-wrapper') as HTMLElement;
+      if (canvasElement && event?.clientX && event?.clientY) {
+        const rect = canvasElement.getBoundingClientRect();
+        const x = event.clientX - rect.left;
+        const y = event.clientY - rect.top;
+
+        console.log('Canvas click position:', x, y);
+
+        if (this.pendingNodeCreation.operator) {
+          // Create Logic operator node
+          this.createNewNode(`LOGIC_${this.pendingNodeCreation.operator.operatorName}`, x, y);
+        } else {
+          // Create PROVIDER or CONSTANT node
+          this.createNewNode(this.pendingNodeCreation.type, x, y);
+        }
+      } else {
+        // Fallback - create at center
+        console.log('Creating node at center as fallback');
+        if (this.pendingNodeCreation.operator) {
+          this.createNewNode(`LOGIC_${this.pendingNodeCreation.operator.operatorName}`, 300, 200);
+        } else {
+          this.createNewNode(this.pendingNodeCreation.type, 300, 200);
+        }
+      }
+
+      this.pendingNodeCreation = null;
+      return;
+    }
+
+    // Normal canvas click behavior
+    if (true) {
+      console.log('Canvas click processed - clearing selection and closing menus');
+      this.selectedNode = null;
+      this.hideAllContextMenus();
+      this.selectedEdge = null;
+
+      // Also close our node creation menus
+      this.showNodePaletteMenu = false;
+      this.showLogicGroupMenu = false;
+      this.showLogicOperatorsMenu = false;
+      this.selectedLogicGroup = '';
+
+      this.updateNodeSelection();
+    }
   }
 
   onNodeSelected(event: any) {
@@ -343,6 +746,163 @@ export class EditRule implements OnInit {
   hideContextMenu() {
     this.showContextMenu = false;
   }
+
+  openNodePaletteMenu(event: MouseEvent) {
+    event.preventDefault();
+    event.stopPropagation();
+
+    this.hideAllContextMenus();
+    this.nodePaletteMenuPosition = {
+      x: event.clientX,
+      y: event.clientY
+    };
+    this.showNodePaletteMenu = true;
+
+    // Use a timeout to avoid immediate closure
+    setTimeout(() => {
+      document.addEventListener('click', this.hideNodePaletteMenuHandler, { once: true });
+    }, 10);
+  }
+
+  private hideNodePaletteMenuHandler = (event: Event) => {
+    const target = event.target as HTMLElement;
+    const menu = target.closest('.context-menu');
+    if (!menu) {
+      this.hideAllContextMenus();
+    }
+  }
+
+  hideNodePaletteMenu() {
+    this.showNodePaletteMenu = false;
+  }
+
+  selectProviderNode(event: MouseEvent) {
+    console.log('Provider node selected - awaiting canvas click for positioning');
+    event.stopPropagation();
+    this.pendingNodeCreation = { type: 'PROVIDER' };
+
+    // Close context menus
+    this.showNodePaletteMenu = false;
+    this.showLogicGroupMenu = false;
+    this.showLogicOperatorsMenu = false;
+    this.selectedLogicGroup = '';
+
+    console.log('Provider node ready for placement - click on canvas to place it');
+  }
+
+  selectConstantNode(event: MouseEvent) {
+    console.log('Constant node selected - awaiting canvas click for positioning');
+    event.stopPropagation();
+    this.pendingNodeCreation = { type: 'CONSTANT' };
+
+    // Close context menus
+    this.showNodePaletteMenu = false;
+    this.showLogicGroupMenu = false;
+    this.showLogicOperatorsMenu = false;
+    this.selectedLogicGroup = '';
+
+    console.log('Constant node ready for placement - click on canvas to place it');
+  }
+
+  selectLogicNode(event: MouseEvent) {
+    console.log('Logic node selected - opening group menu');
+    event.stopPropagation();
+    // Open next logic node palette menu
+    this.openLogicGroupMenu(event);
+  }
+
+  openLogicGroupMenu(event: MouseEvent) {
+    // Position to the right of the node palette menu
+    const nodePaletteMenuElement = document.querySelector('.node-palette-menu') as HTMLElement;
+    let x = event.clientX;
+    let y = event.clientY;
+
+    if (nodePaletteMenuElement) {
+      const rect = nodePaletteMenuElement.getBoundingClientRect();
+      x = rect.right + 5;
+      y = rect.top;
+    }
+
+    this.logicGroupMenuPosition = { x, y };
+    this.showLogicGroupMenu = true;
+  }
+
+  hideLogicGroupMenu() {
+    this.showLogicGroupMenu = false;
+  }
+
+  selectLogicGroup(groupName: string, event: MouseEvent) {
+    event.stopPropagation();
+    this.selectedLogicGroup = groupName;
+    // Open logic group context menu
+    this.openLogicOperatorsMenu(event);
+  }
+
+  openLogicOperatorsMenu(event: MouseEvent) {
+    // Position to the right of the logic group menu
+    const logicGroupMenuElement = document.querySelector('.logic-group-menu') as HTMLElement;
+    let x = event.clientX;
+    let y = event.clientY;
+
+    if (logicGroupMenuElement) {
+      const rect = logicGroupMenuElement.getBoundingClientRect();
+      x = rect.right + 5;
+      y = rect.top;
+    }
+
+    this.logicOperatorsMenuPosition = { x, y };
+    this.showLogicOperatorsMenu = true;
+  }
+
+  hideLogicOperatorsMenu() {
+    this.showLogicOperatorsMenu = false;
+  }
+
+  selectLogicOperator(operator: LogicOperator, event: MouseEvent) {
+    event.stopPropagation();
+    console.log('Logic operator selected - awaiting canvas click for positioning:', operator);
+    this.pendingNodeCreation = { type: 'LOGIC', operator: operator };
+
+    // Close context menus
+    this.showNodePaletteMenu = false;
+    this.showLogicGroupMenu = false;
+    this.showLogicOperatorsMenu = false;
+    this.selectedLogicGroup = '';
+
+    console.log(`${operator.operatorName} ready for placement - click on canvas to place it`);
+  }
+
+  private hideAllContextMenus() {
+    this.hideContextMenu();
+    this.hideNodePaletteMenu();
+    this.hideLogicGroupMenu();
+    this.hideLogicOperatorsMenu();
+    this.hideEdgeContextMenu();
+
+    // Also close node creation menus and reset state
+    this.showNodePaletteMenu = false;
+    this.showLogicGroupMenu = false;
+    this.showLogicOperatorsMenu = false;
+    this.selectedLogicGroup = '';
+  }
+
+  // Get operators for selected group
+  getOperatorsForGroup(groupName: string): LogicOperator[] {
+    return this.logicOperatorGroups[groupName] || [];
+  }
+
+  getGroupDisplayName(groupName: string): string {
+    const displayNames: { [key: string]: string } = {
+      'general': '🔧 General',
+      'number': '🔢 Number',
+      'string': '📝 String',
+      'boolean': '✅ Boolean',
+      'array': '📋 Array',
+      'object': '🗃️ Object',
+      'datetime': '📅 DateTime'
+    };
+    return displayNames[groupName] || groupName;
+  }
   //#endregion
 
   //#region Context Menu
@@ -396,13 +956,18 @@ export class EditRule implements OnInit {
 
   saveOperatorType() {
     if (this.selectedNode && this.editingOperator.trim()) {
+      const operator = this.logicOperators.find(op => op.operatorName === this.editingOperator.trim());
+
       // Update node data
       const nodeData = (this.selectedNode as any).data;
       const updatedNode = {
         ...this.selectedNode,
         data: {
           ...nodeData,
-          operatorType: this.editingOperator.trim()
+          operatorType: this.editingOperator.trim(),
+          description: operator?.description || '',
+          inputTypes: operator?.inputTypes || [],
+          outputType: operator?.outputType || 'BOOLEAN'
         }
       };
       this.nodes = this.nodes.map((node: any) =>
@@ -430,13 +995,25 @@ export class EditRule implements OnInit {
 
   saveConstantValue() {
     if (this.selectedNode && this.editingConstantValue !== '') {
+      // Parse the value to the respective type
+      let parsedValue = this.editingConstantValue;
+      if (!isNaN(Number(this.editingConstantValue))) {
+        parsedValue = Number(this.editingConstantValue);
+      }
+      else if (this.editingConstantValue.toLowerCase() === 'true') {
+        parsedValue = true;
+      }
+      else if (this.editingConstantValue.toLowerCase() === 'false') {
+        parsedValue = false;
+      }
+
       // Update node data
       const nodeData = (this.selectedNode as any).data;
       const updatedNode = {
         ...this.selectedNode,
         data: {
           ...nodeData,
-          value: this.editingConstantValue
+          value: parsedValue
         }
       };
       this.nodes = this.nodes.map((node: any) =>
@@ -493,6 +1070,24 @@ export class EditRule implements OnInit {
       this.edges = this.edges.filter((edge: any) =>
         edge.source !== this.selectedNode!.id && edge.target !== this.selectedNode!.id
       );
+
+      // Update input node references for remaining nodes
+      this.nodes = this.nodes.map((node: any) => {
+        if (node.data.inputNodes) {
+          const updatedInputNodes = node.data.inputNodes.filter((input: any) =>
+            input.id !== parseInt(this.selectedNode!.id)
+          );
+          return {
+            ...node,
+            data: {
+              ...node.data,
+              inputNodes: updatedInputNodes
+            }
+          };
+        }
+        return node;
+      });
+
       this.selectedNode = null;
       this.hideContextMenu();
     }
@@ -504,7 +1099,31 @@ export class EditRule implements OnInit {
 
     if (Array.isArray(event) && event.length > 0 && event[0].id && event[0].selected) {
       selectedEdge = this.edges.find(e => e.id === event[0].id) || null;
-      if (this.lastMousePosition) { menuPosition = { ...this.lastMousePosition }; }
+
+      // Calculate menu position based on edge source and target node positions
+      if (selectedEdge) {
+        const sourceNode = this.nodes.find(n => n.id === selectedEdge!.source);
+        const targetNode = this.nodes.find(n => n.id === selectedEdge!.target);
+
+        if (sourceNode && targetNode) {
+          // Calculate midpoint between source and target nodes
+          const midX = (sourceNode.point.x + targetNode.point.x) / 2;
+          const midY = (sourceNode.point.y + targetNode.point.y) / 2;
+
+          // Convert to screen coordinates relative to the canvas
+          const canvasElement = document.querySelector('vflow') as HTMLElement;
+          if (canvasElement) {
+            const rect = canvasElement.getBoundingClientRect();
+            menuPosition = {
+              x: rect.left + midX + 110, // Add node width offset
+              y: rect.top + midY + 50    // Add node height offset
+            };
+          } else {
+            // Fallback if canvas not found
+            menuPosition = { x: midX + 110, y: midY + 50 };
+          }
+        }
+      }
     }
 
     if (!selectedEdge) {
@@ -535,6 +1154,27 @@ export class EditRule implements OnInit {
   deleteSelectedEdge() {
     if (this.selectedEdge) {
       this.edges = this.edges.filter(e => e.id !== this.selectedEdge!.id);
+
+      // Update the target node's inputNodes array
+      const targetNodeId = this.selectedEdge.target;
+      const sourceNodeId = parseInt(this.selectedEdge.source);
+
+      this.nodes = this.nodes.map((node: any) => {
+        if (node.id === targetNodeId && node.data.inputNodes) {
+          const updatedInputNodes = node.data.inputNodes.filter((input: any) =>
+            input.id !== sourceNodeId
+          );
+          return {
+            ...node,
+            data: {
+              ...node.data,
+              inputNodes: updatedInputNodes
+            }
+          };
+        }
+        return node;
+      });
+
       this.selectedEdge = null;
       this.hideEdgeContextMenu();
     }
@@ -572,7 +1212,6 @@ export class EditRule implements OnInit {
           value: node.value,
           operatorType: node.operatorType,
           inputNodes: node.inputNodes || [],
-          selected: false
         }
       };
     });
@@ -771,6 +1410,427 @@ export class EditRule implements OnInit {
       savedNodes: graphData.nodes.length,
       savedEdges: graphData.edges.length
     }).pipe(delay(1000));
+  }
+
+  // Mock API method for logic operators
+  private mockApiGetLogicOperators(): Observable<LogicOperator[]> {
+    const operators: LogicOperator[] = [
+      {
+        "operatorName": "ADD",
+        "description": "Adds two or more numbers.",
+        "inputTypes": ["NUMBER", "NUMBER"],
+        "outputType": "NUMBER",
+        "operatorType": "number"
+      },
+      {
+        "operatorName": "AFTER",
+        "description": "Checks if a date is after another date.",
+        "inputTypes": ["DATE", "DATE"],
+        "outputType": "BOOLEAN",
+        "operatorType": "datetime"
+      },
+      {
+        "operatorName": "AGE_GREATER_THAN",
+        "description": "Checks if a date is older than a specific duration.",
+        "inputTypes": ["DATE", "NUMBER", "STRING"],
+        "outputType": "BOOLEAN",
+        "operatorType": "datetime"
+      },
+      {
+        "operatorName": "ALL_OF",
+        "description": "Succeeds if all inputs are true (predicative).",
+        "inputTypes": ["BOOLEAN"],
+        "outputType": "BOOLEAN",
+        "operatorType": "boolean"
+      },
+      {
+        "operatorName": "AND",
+        "description": "Performs a strict logical AND operation.",
+        "inputTypes": ["BOOLEAN", "BOOLEAN"],
+        "outputType": "BOOLEAN",
+        "operatorType": "boolean"
+      },
+      {
+        "operatorName": "AVG",
+        "description": "Calculates the average of all numbers in a list.",
+        "inputTypes": ["ARRAY"],
+        "outputType": "NUMBER",
+        "operatorType": "array"
+      },
+      {
+        "operatorName": "BEFORE",
+        "description": "Checks if a date is before another date.",
+        "inputTypes": ["DATE", "DATE"],
+        "outputType": "BOOLEAN",
+        "operatorType": "datetime"
+      },
+      {
+        "operatorName": "BETWEEN",
+        "description": "Checks if a number is between two bounds (inclusive).",
+        "inputTypes": ["NUMBER", "NUMBER", "NUMBER"],
+        "outputType": "BOOLEAN",
+        "operatorType": "number"
+      },
+      {
+        "operatorName": "BETWEEN_DATES",
+        "description": "Checks if a date is between two other dates.",
+        "inputTypes": ["DATE", "DATE", "DATE"],
+        "outputType": "BOOLEAN",
+        "operatorType": "datetime"
+      },
+      {
+        "operatorName": "CONTAINS",
+        "description": "Checks if a string contains another string.",
+        "inputTypes": ["STRING", "STRING"],
+        "outputType": "BOOLEAN",
+        "operatorType": "string"
+      },
+      {
+        "operatorName": "CONTAINS_ALL",
+        "description": "Checks if a list contains all elements from another list.",
+        "inputTypes": ["ARRAY", "ARRAY"],
+        "outputType": "BOOLEAN",
+        "operatorType": "array"
+      },
+      {
+        "operatorName": "CONTAINS_ANY",
+        "description": "Checks if a list contains at least one element from another list.",
+        "inputTypes": ["ARRAY", "ARRAY"],
+        "outputType": "BOOLEAN",
+        "operatorType": "array"
+      },
+      {
+        "operatorName": "CONTAINS_ELEMENT",
+        "description": "Checks if an element is present in a list.",
+        "inputTypes": ["ARRAY", "ANY"],
+        "outputType": "BOOLEAN",
+        "operatorType": "array"
+      },
+      {
+        "operatorName": "CONTAINS_NONE",
+        "description": "Checks if a list contains no elements from another list.",
+        "inputTypes": ["ARRAY", "ARRAY"],
+        "outputType": "BOOLEAN",
+        "operatorType": "array"
+      },
+      {
+        "operatorName": "ENDS_WITH",
+        "description": "Checks if a string ends with a specific suffix.",
+        "inputTypes": ["STRING", "STRING"],
+        "outputType": "BOOLEAN",
+        "operatorType": "string"
+      },
+      {
+        "operatorName": "EQUALS",
+        "description": "Checks if two or more values are equal.",
+        "inputTypes": ["ANY", "ANY"],
+        "outputType": "BOOLEAN",
+        "operatorType": "general"
+      },
+      {
+        "operatorName": "EQUALS_CASE_SENSITIVE",
+        "description": "Performs a case-sensitive comparison of two strings.",
+        "inputTypes": ["STRING", "STRING"],
+        "outputType": "BOOLEAN",
+        "operatorType": "string"
+      },
+      {
+        "operatorName": "EQUALS_IGNORE_CASE",
+        "description": "Performs a case-insensitive comparison of two strings.",
+        "inputTypes": ["STRING", "STRING"],
+        "outputType": "BOOLEAN",
+        "operatorType": "string"
+      },
+      {
+        "operatorName": "EXISTS",
+        "description": "Checks if one or more JSON paths exist.",
+        "inputTypes": ["PROVIDER"],
+        "outputType": "BOOLEAN",
+        "operatorType": "general"
+      },
+      {
+        "operatorName": "GREATER_OR_EQUAL",
+        "description": "Checks if a number is greater than or equal to another.",
+        "inputTypes": ["NUMBER", "NUMBER"],
+        "outputType": "BOOLEAN",
+        "operatorType": "number"
+      },
+      {
+        "operatorName": "GREATER_THAN",
+        "description": "Checks if a number is greater than another.",
+        "inputTypes": ["NUMBER", "NUMBER"],
+        "outputType": "BOOLEAN",
+        "operatorType": "number"
+      },
+      {
+        "operatorName": "HAS_ALL_KEYS",
+        "description": "Checks if a JSON object has all specified keys.",
+        "inputTypes": ["JSON", "ARRAY"],
+        "outputType": "BOOLEAN",
+        "operatorType": "object"
+      },
+      {
+        "operatorName": "HAS_ANY_KEY",
+        "description": "Checks if a JSON object has at least one of the specified keys.",
+        "inputTypes": ["JSON", "ARRAY"],
+        "outputType": "BOOLEAN",
+        "operatorType": "object"
+      },
+      {
+        "operatorName": "HAS_KEY",
+        "description": "Checks if a JSON object has a specific key.",
+        "inputTypes": ["JSON", "STRING"],
+        "outputType": "BOOLEAN",
+        "operatorType": "object"
+      },
+      {
+        "operatorName": "HAS_NO_KEYS",
+        "description": "Checks if a JSON object has none of the specified keys.",
+        "inputTypes": ["JSON", "ARRAY"],
+        "outputType": "BOOLEAN",
+        "operatorType": "object"
+      },
+      {
+        "operatorName": "IN_SET",
+        "description": "Checks if a value is present in a set of values.",
+        "inputTypes": ["ANY", "ARRAY"],
+        "outputType": "BOOLEAN",
+        "operatorType": "general"
+      },
+      {
+        "operatorName": "IS_FALSE",
+        "description": "Checks if a value is exactly false.",
+        "inputTypes": ["BOOLEAN"],
+        "outputType": "BOOLEAN",
+        "operatorType": "boolean"
+      },
+      {
+        "operatorName": "IS_NOT_NULL",
+        "description": "Checks if a value exists and is not null.",
+        "inputTypes": ["ANY"],
+        "outputType": "BOOLEAN",
+        "operatorType": "general"
+      },
+      {
+        "operatorName": "IS_NULL",
+        "description": "Checks if a value is explicitly null.",
+        "inputTypes": ["ANY"],
+        "outputType": "BOOLEAN",
+        "operatorType": "general"
+      },
+      {
+        "operatorName": "IS_TRUE",
+        "description": "Checks if a value is exactly true.",
+        "inputTypes": ["BOOLEAN"],
+        "outputType": "BOOLEAN",
+        "operatorType": "boolean"
+      },
+      {
+        "operatorName": "LACKS_KEY",
+        "description": "Checks if a JSON object lacks a specific key.",
+        "inputTypes": ["JSON", "STRING"],
+        "outputType": "BOOLEAN",
+        "operatorType": "object"
+      },
+      {
+        "operatorName": "LENGTH_BETWEEN",
+        "description": "Checks if a string's length is between two numbers.",
+        "inputTypes": ["STRING", "NUMBER", "NUMBER"],
+        "outputType": "BOOLEAN",
+        "operatorType": "string"
+      },
+      {
+        "operatorName": "LENGTH_EQUALS",
+        "description": "Compares the length of a list with a number.",
+        "inputTypes": ["ARRAY", "NUMBER"],
+        "outputType": "BOOLEAN",
+        "operatorType": "array"
+      },
+      {
+        "operatorName": "LENGTH_GT",
+        "description": "Checks if the length of a list is greater than a number.",
+        "inputTypes": ["ARRAY", "NUMBER"],
+        "outputType": "BOOLEAN",
+        "operatorType": "array"
+      },
+      {
+        "operatorName": "LENGTH_LT",
+        "description": "Checks if the length of a list is less than a number.",
+        "inputTypes": ["ARRAY", "NUMBER"],
+        "outputType": "BOOLEAN",
+        "operatorType": "array"
+      },
+      {
+        "operatorName": "LESS_OR_EQUAL",
+        "description": "Checks if a number is less than or equal to another.",
+        "inputTypes": ["NUMBER", "NUMBER"],
+        "outputType": "BOOLEAN",
+        "operatorType": "number"
+      },
+      {
+        "operatorName": "LESS_THAN",
+        "description": "Checks if a number is less than another.",
+        "inputTypes": ["NUMBER", "NUMBER"],
+        "outputType": "BOOLEAN",
+        "operatorType": "number"
+      },
+      {
+        "operatorName": "MATCHES_SCHEMA",
+        "description": "Validates a JSON document against a JSON schema.",
+        "inputTypes": ["JSON", "SCHEMA"],
+        "outputType": "BOOLEAN",
+        "operatorType": "object"
+      },
+      {
+        "operatorName": "MAX",
+        "description": "Finds the largest number in a list.",
+        "inputTypes": ["ARRAY"],
+        "outputType": "NUMBER",
+        "operatorType": "array"
+      },
+      {
+        "operatorName": "MIN",
+        "description": "Finds the smallest number in a list.",
+        "inputTypes": ["ARRAY"],
+        "outputType": "NUMBER",
+        "operatorType": "array"
+      },
+      {
+        "operatorName": "NONE_OF",
+        "description": "Succeeds if no input is true (predicative).",
+        "inputTypes": ["BOOLEAN"],
+        "outputType": "BOOLEAN",
+        "operatorType": "boolean"
+      },
+      {
+        "operatorName": "NOT",
+        "description": "Negates a single boolean value (strict).",
+        "inputTypes": ["BOOLEAN"],
+        "outputType": "BOOLEAN",
+        "operatorType": "boolean"
+      },
+      {
+        "operatorName": "NOT_BETWEEN",
+        "description": "Checks if a number is outside of two bounds.",
+        "inputTypes": ["NUMBER", "NUMBER", "NUMBER"],
+        "outputType": "BOOLEAN",
+        "operatorType": "number"
+      },
+      {
+        "operatorName": "NOT_CONTAINS",
+        "description": "Checks if a string does not contain another string.",
+        "inputTypes": ["STRING", "STRING"],
+        "outputType": "BOOLEAN",
+        "operatorType": "string"
+      },
+      {
+        "operatorName": "NOT_CONTAINS_ELEMENT",
+        "description": "Checks if an element is not present in a list.",
+        "inputTypes": ["ARRAY", "ANY"],
+        "outputType": "BOOLEAN",
+        "operatorType": "array"
+      },
+      {
+        "operatorName": "NOT_EMPTY",
+        "description": "Checks if a list or array is not empty.",
+        "inputTypes": ["ARRAY"],
+        "outputType": "BOOLEAN",
+        "operatorType": "array"
+      },
+      {
+        "operatorName": "NOT_EQUALS",
+        "description": "Checks if two or more values are not equal.",
+        "inputTypes": ["ANY", "ANY"],
+        "outputType": "BOOLEAN",
+        "operatorType": "general"
+      },
+      {
+        "operatorName": "NOT_EXISTS",
+        "description": "Checks if one or more JSON paths do not exist.",
+        "inputTypes": ["PROVIDER"],
+        "outputType": "BOOLEAN",
+        "operatorType": "general"
+      },
+      {
+        "operatorName": "NOT_IN_SET",
+        "description": "Checks if a value is not present in a set of values.",
+        "inputTypes": ["ANY", "ARRAY"],
+        "outputType": "BOOLEAN",
+        "operatorType": "general"
+      },
+      {
+        "operatorName": "ONE_OF",
+        "description": "Succeeds if at least one input is true (predicative).",
+        "inputTypes": ["BOOLEAN"],
+        "outputType": "BOOLEAN",
+        "operatorType": "boolean"
+      },
+      {
+        "operatorName": "OR",
+        "description": "Performs a strict logical OR operation.",
+        "inputTypes": ["BOOLEAN", "BOOLEAN"],
+        "outputType": "BOOLEAN",
+        "operatorType": "boolean"
+      },
+      {
+        "operatorName": "REGEX_MATCH",
+        "description": "Checks if a string matches a regular expression pattern.",
+        "inputTypes": ["STRING", "STRING"],
+        "outputType": "BOOLEAN",
+        "operatorType": "string"
+      },
+      {
+        "operatorName": "SAME_DAY",
+        "description": "Checks if two dates are on the same calendar day.",
+        "inputTypes": ["DATE", "DATE"],
+        "outputType": "BOOLEAN",
+        "operatorType": "datetime"
+      },
+      {
+        "operatorName": "STARTS_WITH",
+        "description": "Checks if a string starts with a specific prefix.",
+        "inputTypes": ["STRING", "STRING"],
+        "outputType": "BOOLEAN",
+        "operatorType": "string"
+      },
+      {
+        "operatorName": "SUM",
+        "description": "Calculates the sum of all numbers in a list.",
+        "inputTypes": ["ARRAY"],
+        "outputType": "NUMBER",
+        "operatorType": "array"
+      },
+      {
+        "operatorName": "TYPE_IS",
+        "description": "Checks the Java type of a value.",
+        "inputTypes": ["STRING", "ANY"],
+        "outputType": "BOOLEAN",
+        "operatorType": "general"
+      },
+      {
+        "operatorName": "WITHIN_LAST",
+        "description": "Checks if a date is within the last specified duration.",
+        "inputTypes": ["DATE", "NUMBER", "STRING"],
+        "outputType": "BOOLEAN",
+        "operatorType": "datetime"
+      },
+      {
+        "operatorName": "WITHIN_NEXT",
+        "description": "Checks if a date is within the next specified duration.",
+        "inputTypes": ["DATE", "NUMBER", "STRING"],
+        "outputType": "BOOLEAN",
+        "operatorType": "datetime"
+      },
+      {
+        "operatorName": "XOR",
+        "description": "Checks if exactly one input is true (strict).",
+        "inputTypes": ["BOOLEAN", "BOOLEAN"],
+        "outputType": "BOOLEAN",
+        "operatorType": "boolean"
+      }
+    ];
+
+    return of(operators).pipe(delay(300));
   }
   //#endregion
 

@@ -18,6 +18,7 @@
           <span>⏳ Saving...</span>
         }
       </button>
+      
       @if (saveMessage) {
         <div class="save-message" [class.success]="saveMessage.includes('successfully')" [class.error]="saveMessage.includes('Error')">
           {{ saveMessage }}
@@ -27,50 +28,32 @@
   </div>
 
   <div class="main-content">
-    <div class="node-palette">
-      <h3>Node Palette</h3>
-      <div class="palette-instructions">
-        <p>💡 Drag nodes from here to the canvas to build your rule or right click an element to open its context menu</p>
-      </div>
-
-      <div class="palette-section">
-        <h4>📡 Provider Nodes</h4>
-        <div class="palette-node"
-             draggable="true"
-             (dragstart)="onDragStart($event, 'PROVIDER')"
-             data-node-type="PROVIDER">
-          <div class="node-preview provider-preview">
-            <span class="node-icon">📡</span>
-            <span class="node-label">Provider</span>
-          </div>
+    <div class="compact-palette">
+      <button class="palette-button" 
+              (click)="openNodePaletteMenu($event)"
+              title="Add Node">
+        <span class="palette-icon">➕</span>
+        <span class="palette-label">Add Node</span>
+      </button>
+      
+      <!-- Node placement status indicator -->
+      @if (pendingNodeCreation) {
+        <div class="placement-status">
+          <span class="status-icon">📍</span>
+          <span class="status-message">
+            @if (pendingNodeCreation.operator) {
+              Click canvas to place {{ pendingNodeCreation.operator.operatorName }}
+            } @else {
+              Click canvas to place {{ pendingNodeCreation.type.toLowerCase() }} node
+            }
+          </span>
+          <button class="cancel-placement" 
+                  (click)="cancelNodePlacement()"
+                  title="Cancel node placement">
+            ✕
+          </button>
         </div>
-      </div>
-
-      <div class="palette-section">
-        <h4>⚙️ Logic Nodes</h4>
-        <div class="palette-node"
-             draggable="true"
-             (dragstart)="onDragStart($event, 'LOGIC')"
-             data-node-type="LOGIC">
-          <div class="node-preview logic-preview">
-            <span class="node-icon">⚙️</span>
-            <span class="node-label">Logic</span>
-          </div>
-        </div>
-      </div>
-
-      <div class="palette-section">
-        <h4>🔢 Constant Nodes</h4>
-        <div class="palette-node"
-             draggable="true"
-             (dragstart)="onDragStart($event, 'CONSTANT')"
-             data-node-type="CONSTANT">
-          <div class="node-preview constant-preview">
-            <span class="node-icon">🔢</span>
-            <span class="node-label">Constant</span>
-          </div>
-        </div>
-      </div>
+      }
     </div>
 
     <div class="vflow-wrapper"
@@ -83,7 +66,7 @@
         [nodes]="nodes"
         [edges]="edges"
         [background]="{ type: 'dots' }"
-        (click)="onCanvasClick()"
+        (click)="onCanvasClick($event)"
         (onConnect)="createEdge($event)"
         (onEdgesChange.select)="openEdgeContextMenu($event)">
 
@@ -91,6 +74,50 @@
         <mini-map [scaleOnHover]="true" />
       </vflow>
     </div>
+    
+    <!-- Type Incompatibility Modal -->
+    @if (showTypeIncompatibilityModal) {
+      <div class="modal-overlay" (click)="closeTypeIncompatibilityModal()">
+        <div class="modal-content type-error-modal" (click)="$event.stopPropagation()">
+          <div class="modal-header">
+            <h3>
+              <span class="error-icon">⚠️</span>
+              Type Incompatibility
+            </h3>
+          </div>
+          
+          <div class="modal-body">
+            <p class="error-message">{{ typeIncompatibilityMessage }}</p>
+            
+            @if (lastAttemptedConnection) {
+              <div class="connection-details">
+                <div class="connection-info">
+                  <div class="type-box source">
+                    <span class="type-label">Source:</span>
+                    <span class="type-value">{{ lastAttemptedConnection.sourceType }}</span>
+                  </div>
+                  <div class="arrow">→</div>
+                  <div class="type-box target">
+                    <span class="type-label">Target:</span>
+                    <span class="type-value">{{ lastAttemptedConnection.targetType }}</span>
+                  </div>
+                </div>
+              </div>
+            }
+            
+            <p class="help-text">
+              These data types are not compatible.
+            </p>
+          </div>
+          
+          <div class="modal-actions">
+            <button class="btn-cancel" (click)="closeTypeIncompatibilityModal()">
+              ✓ OK
+            </button>
+          </div>
+        </div>
+      </div>
+    }
   </div>
 
   <!-- Context Menu -->
@@ -99,6 +126,52 @@
          [style.left.px]="contextMenuPosition.x"
          [style.top.px]="contextMenuPosition.y"
          (click)="$event.stopPropagation()">
+
+      <!-- Node Type Information -->
+      <div class="context-menu-info">
+        <div class="node-info">
+          <span class="node-name">{{ getNodeData(selectedNode)?.name || 'Unnamed Node' }}</span>
+          
+          <!-- Type Information -->
+          @if (getNodeData(selectedNode)?.nodeType === 'PROVIDER' || getNodeData(selectedNode)?.nodeType === 'CONSTANT') {
+            <!-- Simple output display for Provider and Constant nodes -->
+            <div class="simple-type-display">
+              <span class="type-label">Output:</span>
+              <span class="type-value" [style.color]="getTypeDisplayInfo(getNodeOutputType(selectedNode)).color">
+                {{ getTypeDisplayInfo(getNodeOutputType(selectedNode)).icon }} {{ getTypeDisplayInfo(getNodeOutputType(selectedNode)).label }}
+              </span>
+            </div>
+          } @else {
+            <!-- Type Flow Visualization for Logic nodes -->
+            <div class="type-flow">
+              <!-- Input Types (left side) -->
+              <div class="input-types-container">
+                @if (getNodeAcceptedInputTypes(selectedNode).length > 0) {
+                  @for (inputType of getNodeAcceptedInputTypes(selectedNode); track inputType) {
+                    <div class="type-node input-type" [style.background-color]="getTypeDisplayInfo(inputType).color">
+                      {{ getTypeDisplayInfo(inputType).label }}
+                    </div>
+                  }
+                } @else {
+                  <div class="no-input-placeholder">∅</div>
+                }
+              </div>
+              
+              <!-- Arrow -->
+              <div class="flow-arrow">→</div>
+              
+              <!-- Output Type (right side) -->
+              <div class="output-type-container">
+                <div class="type-node output-type" [style.background-color]="getTypeDisplayInfo(getNodeOutputType(selectedNode)).color">
+                  {{ getTypeDisplayInfo(getNodeOutputType(selectedNode)).label }}
+                </div>
+              </div>
+            </div>
+          }
+        </div>
+      </div>
+
+      <div class="context-menu-divider"></div>
 
       <div class="context-menu-item" (click)="startEditingNodeName()">
         <span class="menu-icon">✏️</span>
@@ -250,6 +323,70 @@
           <button class="btn-cancel" (click)="cancelEditNodeName()">❌ Cancel</button>
         </div>
       </div>
+    </div>
+  }
+
+  <!-- Node Palette Context Menu -->
+  @if (showNodePaletteMenu) {
+    <div class="context-menu node-palette-menu"
+         [style.left.px]="nodePaletteMenuPosition.x"
+         [style.top.px]="nodePaletteMenuPosition.y"
+         (click)="$event.stopPropagation()">
+
+      <div class="context-menu-item" (click)="selectProviderNode($event)">
+        <span class="menu-icon">📡</span>
+        Provider Node
+      </div>
+
+      <div class="context-menu-item" (click)="selectLogicNode($event)">
+        <span class="menu-icon">⚙️</span>
+        Logic Node
+      </div>
+
+      <div class="context-menu-item" (click)="selectConstantNode($event)">
+        <span class="menu-icon">🔢</span>
+        Constant Node
+      </div>
+    </div>
+  }
+
+  <!-- Logic Group Context Menu -->
+  @if (showLogicGroupMenu) {
+    <div class="context-menu logic-group-menu"
+         [style.left.px]="logicGroupMenuPosition.x"
+         [style.top.px]="logicGroupMenuPosition.y"
+         (click)="$event.stopPropagation()">
+
+      @for (groupName of Object.keys(logicOperatorGroups); track groupName) {
+        <div class="context-menu-item" (click)="selectLogicGroup(groupName, $event)">
+          <span class="menu-icon">{{ getGroupDisplayName(groupName).split(' ')[0] }}</span>
+          {{ getGroupDisplayName(groupName).split(' ').slice(1).join(' ') }}
+        </div>
+      }
+    </div>
+  }
+
+  <!-- Logic Operators Context Menu -->
+  @if (showLogicOperatorsMenu && selectedLogicGroup) {
+    <div class="context-menu logic-operators-menu"
+         [style.left.px]="logicOperatorsMenuPosition.x"
+         [style.top.px]="logicOperatorsMenuPosition.y"
+         (click)="$event.stopPropagation()">
+
+      <div class="context-menu-header">
+        {{ getGroupDisplayName(selectedLogicGroup) }}
+      </div>
+
+      @for (operator of getOperatorsForGroup(selectedLogicGroup); track operator.operatorName) {
+        <div class="context-menu-item logic-operator-item" 
+             (click)="selectLogicOperator(operator, $event)"
+             [title]="operator.description">
+          <div class="operator-details">
+            <span class="operator-name">{{ operator.operatorName }}</span>
+            <span class="operator-output">→ {{ operator.outputType }}</span>
+          </div>
+        </div>
+      }
     </div>
   }
 </div>
