@@ -1047,45 +1047,8 @@ private loadOpenApiFromUrls(urls: string[], index: number) {
    */
   public currentOpenApiSpec: string | any = '';
 
+  // Der Import läuft jetzt ausschließlich über importEndpoints() → tryImportFromUrl() → processOpenApiSpec()
   // TODO: Implementiere die echte Extraktion der Endpunkte aus der OpenAPI-Spec
-  private parseOpenApiEndpoints(): any[] {
-    // Dummy-Implementierung, bitte anpassen!
-    return [];
-  }
-
-  importEndpointsFromOpenApi() {
-    console.log('🚩 importEndpointsFromOpenApi() wurde aufgerufen');
-    // 1. Endpunkte aus der OpenAPI-Spec extrahieren
-    const endpoints = this.parseOpenApiEndpoints();
-
-    // 2. Für jeden Endpoint das Schema auflösen (falls $ref)
-    const endpointsWithResolvedSchemas = endpoints.map((endpoint: any) => {
-      return {
-        ...endpoint,
-        requestBodySchema: this.resolveSchemaReference(endpoint.requestBodySchema)
-      };
-    });
-
-    // 3. An Backend senden
-    console.log('Batch-Import (manuell): Endpoints, die an Backend gesendet werden:', endpointsWithResolvedSchemas);
-    this.endpointSvc.apiConfigSourceSystemSourceSystemIdEndpointPost(
-      this.sourceSystemId,
-      endpointsWithResolvedSchemas
-    ).subscribe({
-      next: () => {
-        // Erfolgshandling
-        this.loadEndpoints(); // Endpunkte nach Import laden
-      },
-      error: err => {
-        // Fehlerhandling
-        console.error('Fehler beim Speichern der Endpunkte:', err);
-      }
-    });
-  }
-
-  /**
-   * Löst ein $ref-Schema aus der aktuellen OpenAPI-Spec auf (rekursiv)
-   */
   private resolveSchemaFromOpenApi(schemaRef: any): any {
     if (!this.currentOpenApiSpec || !schemaRef.includes('$ref')) {
       try {
