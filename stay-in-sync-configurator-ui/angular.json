@@ -33,9 +33,7 @@
               "src/assets"
             ],
             "styles": [
-              "src/styles.css",
-              "../Shared_Styles/tokens.css"
-
+              "src/styles.css"
             ],
             "scripts": []
           },
