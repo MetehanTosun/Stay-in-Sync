@@ -139,6 +139,7 @@ mongodb:
     type: ClusterIP
     port: 27017
 
+
 rabbitmq:
   auth:
     username: user
@@ -159,12 +160,11 @@ mariadb:
 
 umbrella:
   dataconsumerOne:
-    enabled: true
-    # -- uncomment the following for persistence
-    # postgresql:
-    #   primary:
-    #     persistence:
-    #       enabled: true
+    enabled: true  
+    postgresql:
+      primary:
+        persistence:
+          enabled: true
     vault:
       hashicorp:
         url: http://edc-dataconsumer-1-vault:8200
@@ -173,39 +173,39 @@ umbrella:
     seedTestdata: true
     enabled: true
     # -- uncomment the following for persistence
-    # postgresql:
-    #   primary:
-    #     persistence:
-    #       enabled: true
-    # digital-twin-registry:
-    #   postgresql:
-    #     primary:
-    #       persistence:
-    #         enabled: true
+    postgresql:
+      primary:
+        persistence:
+          enabled: true
+    digital-twin-registry:
+      postgresql:
+        primary:
+          persistence:
+            enabled: true
     dataplane:
       env:
         TX_IAM_IATP_CREDENTIALSERVICE_URL: http://ssi-dim-wallet-stub.tx.test/api
         EDC_IAM_DID_WEB_USE_HTTPS: false
-#      ingresses:
-#        - enabled: true
-#          hostname: "dataconsumer-1-dataplane.tx.test"
-#          endpoints:
-#            - default
-#            - public
-#          className: "nginx"
-#          tls:
-#            enabled: false
+      ingresses:
+       - enabled: true
+         hostname: "dataconsumer-1-dataplane.tx.test"
+         endpoints:
+           - default
+           - public
+         className: "nginx"
+         tls:
+           enabled: false
       token:
         signer:
           privatekey_alias: tokenSignerPrivateKey
         verifier:
           publickey_alias: tokenSignerPublicKey
-#      postgresql:
-#        nameOverride: dataconsumer-1-db
-#        jdbcUrl: "jdbc:postgresql://{{ .Release.Name }}-dataconsumer-1-db:5432/edc"
-#        auth:
-#          password: "dbpassworddataconsumerone"
-#          postgresPassword: "dbpassworddataconsumerone"
+      postgresql:
+       nameOverride: dataconsumer-1-db
+       jdbcUrl: "jdbc:postgresql://{{ .Release.Name }}-dataconsumer-1-db:5432/edc"
+       auth:
+         password: "dbpassworddataconsumerone"
+         postgresPassword: "dbpassworddataconsumerone"
       vault:
         hashicorp:
           url: http://edc-dataconsumer-1-vault:8200
@@ -231,3 +231,42 @@ umbrella:
   ssi-dim-wallet-stub:
     enabled: true
 
+################################################################################
+# Tractus‑X Data Space Connector (EDC)
+################################################################################
+tractusx-connector:
+  controlPlane:
+    enabled: true
+    image:
+      repository: eclipse-tractusx/edc-controlplane
+      tag: "0.10.0"
+      pullPolicy: IfNotPresent
+    # Vault‑URL und Token gemäß deiner Vault‑Installation
+    vault:
+      url: http://edc-vault:8200
+      token: root
+    # PostgreSQL‑Datenbank für Assets
+    asset:
+      db:
+        url: jdbc:postgresql://edc-postgres-postgresql:5432/edc
+        user: edc
+        password: edcpass
+    # InMemory‑DAPS (oder Deine Keycloak/DAPS‑URL)
+    keycloak:
+      url: http://inmemory-identity:5000
+      clientId: consumer
+      clientSecret: secret
+
+  dataPlane:
+    enabled: true
+    image:
+      repository: eclipse-tractusx/edc-dataplane
+      tag: "0.10.0"
+      pullPolicy: IfNotPresent
+    vault:
+      url: http://edc-vault:8200
+      token: root
+    keycloak:
+      url: http://inmemory-identity:5000
+      clientId: provider
+      clientSecret: secret

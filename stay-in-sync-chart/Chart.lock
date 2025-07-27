@@ -4,12 +4,12 @@ dependencies:
   version: 16.0.2
 - name: mariadb
   repository: https://charts.bitnami.com/bitnami
-  version: 20.5.5
+  version: 20.5.6
 - name: mongodb
   repository: https://charts.bitnami.com/bitnami
   version: 16.5.11
 - name: umbrella
   repository: https://eclipse-tractusx.github.io/charts/dev
   version: 2.14.1
-digest: sha256:7f22a17b4e6392516d9a1f56997ad36bcecbf61234185cc54f3d77799d65688f
-generated: "2025-05-25T15:05:26.763380966+02:00"
+digest: sha256:71d1c3915b9f66c5753e233e01c4e3911f053a315ba61c04e86047473b4c0c5c
+generated: "2025-07-21T15:54:48.540951+02:00"

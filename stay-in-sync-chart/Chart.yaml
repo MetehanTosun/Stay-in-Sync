@@ -36,3 +36,6 @@ dependencies:
   - name: umbrella
     version: 2.14.1
     repository: https://eclipse-tractusx.github.io/charts/dev
+  - name: tractusx-connector
+    version: 0.10.0
+    repository: https://eclipse-tractusx.github.io/charts/dev
