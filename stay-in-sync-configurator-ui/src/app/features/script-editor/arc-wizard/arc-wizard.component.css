@@ -1,0 +1,29 @@
+.context-header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  background-color: var(--surface-b);
+  border: 1px solid var(--surface-d);
+  padding: 0.75rem 1rem;
+  border-radius: 6px;
+  margin-bottom: 1.5rem;
+}
+
+.http-method {
+  font-weight: bold;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  color: #ffffff;
+  font-size: 0.8rem;
+  text-transform: uppercase;
+}
+
+.endpoint-path {
+  font-size: 1rem;
+}
+
+.http-method.get { background-color: #22c55e; }
+.http-method.post { background-color: #3b82f6; }
+.http-method.put { background-color: #f97316; }
+.http-method.delete { background-color: #ef4444; }
+.http-method.patch { background-color: #eab308; }

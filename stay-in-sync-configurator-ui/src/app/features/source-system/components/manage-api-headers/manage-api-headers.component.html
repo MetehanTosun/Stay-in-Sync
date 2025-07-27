@@ -1,0 +1,59 @@
+<!-- Component: Manage API Headers -->
+<!-- Allows creating, listing, and deleting API header templates for a source system -->
+<p-card styleClass="p-p-4">
+  <h3 style="margin-bottom: 2rem;">Manage API Headers</h3> <!-- Überschrift mit Abstand -->
+
+  <!-- Form: Add new API header -->
+  <form [formGroup]="form" class="p-fluid p-formgrid p-grid p-mb-4 p-p-4">
+    <div class="p-field p-col-8" style="margin-bottom: 1.5rem;"> <!-- Abstand zwischen den Eingabefeldern -->
+      <label for="headerName">Header Name</label>
+      <input id="headerName" pInputText formControlName="headerName" />
+    </div>
+    <div class="p-field p-col-4" style="margin-bottom: 1.5rem;"> <!-- Abstand zwischen den Eingabefeldern -->
+      <label for="headerType">Type</label>
+      <p-dropdown
+        id="headerType"
+        [options]="headerTypes"
+        optionLabel="label"
+        optionValue="value"
+        placeholder="Select type"
+        formControlName="headerType">
+      </p-dropdown>
+    </div>
+    <div class="p-field p-col-12 p-mt-4">
+      <button
+        pButton
+        type="button"
+        label="Add Header"
+        [disabled]="form.invalid"
+        (click)="addHeader()">
+      </button>
+    </div>
+  </form>
+
+  <!-- Table: Display existing API headers -->
+  <p-table [value]="headers" [paginator]="true" [rows]="10" [responsiveLayout]="'scroll'">
+    <ng-template pTemplate="header">
+      <tr>
+        <th>Header Name</th>
+        <th>Header Type</th>
+        <th>Actions</th>
+      </tr>
+    </ng-template>
+    <ng-template pTemplate="body" let-h>
+      <tr>
+        <td>{{ h.headerName }}</td>
+        <td>{{ h.headerType }}</td>
+        <td>
+          <button
+            pButton
+            type="button"
+            icon="pi pi-trash"
+            class="p-button-text"
+            (click)="deleteHeader(h.id!)">
+          </button>
+        </td>
+      </tr>
+    </ng-template>
+  </p-table>
+</p-card>

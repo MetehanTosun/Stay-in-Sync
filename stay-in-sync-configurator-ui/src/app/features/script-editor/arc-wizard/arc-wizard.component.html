@@ -1,0 +1,349 @@
+<p-dialog
+  header="API Request Configuration (ARC)"
+  [(visible)]="visible"
+  (onHide)="closeDialog()"
+  [modal]="true"
+  [style]="{ width: '60vw' }"
+  [draggable]="false"
+  [resizable]="false"
+>
+  <ng-container *ngIf="context">
+    <div class="context-header">
+      <span
+        class="http-method"
+        [ngClass]="context.endpoint.httpRequestType.toLowerCase()"
+      >
+        {{ context.endpoint.httpRequestType }}
+      </span>
+      <span class="endpoint-path font-mono">
+        {{ context.endpoint.endpointPath }}
+      </span>
+    </div>
+
+    <p-messages [(value)]="errorMessages" [closable]="true"></p-messages>
+
+    <div *ngIf="isLoadingDefinitions" class="text-center p-4">
+      <i class="pi pi-spin pi-spinner" style="font-size: 2rem"></i>
+      <p>Loading parameter definitions...</p>
+    </div>
+
+    <form [formGroup]="arcForm" novalidate *ngIf="!isLoadingDefinitions">
+      <div class="p-fluid">
+        <div class="field">
+          <label for="arc-alias">Alias</label>
+          <input
+            id="arc-alias"
+            type="text"
+            pInputText
+            placeholder="e.g., activeUsers, customerById"
+            formControlName="alias"
+          />
+
+          <small
+            *ngIf="alias?.invalid && (alias?.dirty || alias?.touched)"
+            class="p-error block mt-1"
+          >
+            Alias is a required field.
+          </small>
+        </div>
+
+        <!-- Polling Configuration -->
+        <p-fieldset legend="Polling Configuration" class="mt-3">
+          <div class="field">
+            <label for="arc-polling-rate">Polling Rate (in milliseconds)</label>
+            <p-inputNumber
+              id="arc-polling-rate"
+              formControlName="pollingRate"
+              mode="decimal"
+              [showButtons]="true"
+              [min]="1"
+              suffix=" ms"
+            >
+            </p-inputNumber>
+            <small
+              *ngIf="
+                arcForm.get('pollingRate')?.invalid &&
+                arcForm.get('pollingRate')?.touched
+              "
+              class="p-error block mt-1"
+            >
+              A positive polling rate is required.
+            </small>
+          </div>
+        </p-fieldset>
+
+        <!-- Path Parameters -->
+        <p-fieldset
+          legend="Path Parameters"
+          *ngIf="pathParamDefinitions.length > 0"
+          [formGroupName]="'pathParameters'"
+        >
+          <div class="p-fluid grid">
+            <div
+              class="field col-12 md:col-6"
+              *ngFor="let param of pathParamDefinitions"
+            >
+              <label [for]="'path-' + param.name" class="font-bold">
+                {{ param.name }}
+                <span *ngIf="param.required" class="p-error">*</span>
+              </label>
+              <input
+                [id]="'path-' + param.name"
+                type="text"
+                pInputText
+                [formControlName]="param.name"
+                [pTooltip]="param.description"
+                tooltipPosition="top"
+              />
+              <!-- Validation message -->
+              <small
+                *ngIf="
+                  pathParametersGroup.controls[param.name].invalid &&
+                  pathParametersGroup.controls[param.name].touched
+                "
+                class="p-error block mt-1"
+              >
+                This parameter is required.
+              </small>
+            </div>
+          </div>
+        </p-fieldset>
+
+        <!-- Query Parameters -->
+        <p-fieldset legend="Query Parameters" class="mt-3">
+          <div [formArrayName]="'queryParameters'">
+            <p-table
+              [value]="queryParameters.controls"
+              styleClass="p-datatable-sm"
+            >
+              <ng-template pTemplate="header">
+                <tr>
+                  <th style="width: 40%">Key</th>
+                  <th style="width: 40%">Value</th>
+                  <th style="width: 20%; text-align: center">Action</th>
+                </tr>
+              </ng-template>
+
+              <ng-template pTemplate="body" let-param let-i="rowIndex">
+                <tr [formGroupName]="i">
+                  <td>
+                    <div class="p-fluid">
+                      <span
+                        *ngIf="param.get('isRequired')?.value"
+                        class="p-error p-mr-1"
+                        >*</span
+                      >
+                      <input
+                        type="text"
+                        pInputText
+                        formControlName="key"
+                        placeholder="param-key"
+                      />
+                    </div>
+                  </td>
+                  <td>
+                    <div [ngSwitch]="param.get('type')?.value" class="p-fluid">
+                      <!-- Case for NUMBER -->
+                      <p-inputNumber
+                        *ngSwitchCase="'number'"
+                        formControlName="value"
+                        mode="decimal"
+                        [showButtons]="true"
+                      >
+                      </p-inputNumber>
+
+                      <!-- Case for BOOLEAN -->
+                      <p-inputSwitch
+                        *ngSwitchCase="'boolean'"
+                        formControlName="value"
+                      >
+                      </p-inputSwitch>
+
+                      <!-- Case for STRING (and any other unknown type) -->
+                      <input
+                        *ngSwitchDefault
+                        type="text"
+                        pInputText
+                        formControlName="value"
+                        placeholder="param-value"
+                      />
+
+                      <!-- NOTE: The 'array' case would go here if you implement MultiSelect -->
+                    </div>
+                  </td>
+                  <td style="text-align: center">
+                    <p-button
+                      icon="pi pi-trash"
+                      styleClass="p-button-danger p-button-text"
+                      (click)="removeQueryParam(i)"
+                      pTooltip="Remove Parameter"
+                      [disabled]="param.get('isRequired')?.value"
+                    ></p-button>
+                  </td>
+                </tr>
+              </ng-template>
+
+              <ng-template pTemplate="emptymessage">
+                <tr>
+                  <td colspan="3" class="text-center p-3 text-color-secondary">
+                    No query parameters defined. Add one below.
+                  </td>
+                </tr>
+              </ng-template>
+            </p-table>
+          </div>
+
+          <div class="p-divider p-mt-3 p-mb-3"></div>
+
+          <div class="grid p-fluid align-items-end">
+            <div class="col-md-6 col-12">
+              <label>Add a predefined parameter</label>
+              <p-dropdown
+                [options]="availableQueryParams"
+                optionLabel="name"
+                placeholder="Select a parameter"
+                (onChange)="addPredefinedQueryParam($event.value)"
+                #paramDropdown
+              ></p-dropdown>
+            </div>
+            <div class="col-md-6 col-12">
+              <p-button
+                label="Add Custom Parameter"
+                icon="pi pi-plus"
+                styleClass="p-button-outlined"
+                (click)="addQueryParam()"
+              ></p-button>
+            </div>
+          </div>
+        </p-fieldset>
+
+        <!-- Headers -->
+        <p-fieldset legend="Headers" class="mt-3">
+          <div [formArrayName]="'headerParameters'">
+            <p-table
+              [value]="headerParameters.controls"
+              styleClass="p-datatable-sm"
+            >
+              <ng-template pTemplate="header">
+                <tr>
+                  <th style="width: 40%">Key</th>
+                  <th style="width: 40%">Value</th>
+                  <th style="width: 20%; text-align: center">Action</th>
+                </tr>
+              </ng-template>
+
+              <ng-template pTemplate="body" let-param let-i="rowIndex">
+                <tr [formGroupName]="i">
+                  <td>
+                    <div class="p-fluid">
+                      <span
+                        *ngIf="param.get('isRequired')?.value"
+                        class="p-error p-mr-1"
+                        >*</span
+                      >
+                      <input
+                        type="text"
+                        pInputText
+                        formControlName="key"
+                        placeholder="param-key"
+                      />
+                    </div>
+                  </td>
+                  <td>
+                    <div class="p-fluid">
+                      <input
+                        type="text"
+                        pInputText
+                        formControlName="value"
+                        placeholder="param-value"
+                      />
+                    </div>
+                  </td>
+                  <td style="text-align: center">
+                    <p-button
+                      icon="pi pi-trash"
+                      styleClass="p-button-danger p-button-text"
+                      (click)="removeHeader(i)"
+                      pTooltip="Remove Header"
+                      [disabled]="param.get('isRequired')?.value"
+                    ></p-button>
+                  </td>
+                </tr>
+              </ng-template>
+
+              <ng-template pTemplate="emptymessage">
+                <tr>
+                  <td colspan="3" class="text-center p-3 text-color-secondary">
+                    No headers defined. Add one below.
+                  </td>
+                </tr>
+              </ng-template>
+            </p-table>
+          </div>
+
+          <div class="p-divider p-mt-3 p-mb-3"></div>
+
+          <div class="grid p-fluid align-items-end">
+            <div class="col-md-6 col-12">
+              <label>Add a predefined header</label>
+              <p-dropdown
+                [options]="availableHeaders"
+                optionLabel="name"
+                placeholder="Select a header"
+                (onChange)="addPredefinedHeader($event.value)"
+                #paramDropdown
+              ></p-dropdown>
+            </div>
+            <div class="col-md-6 col-12">
+              <p-button
+                label="Add Custom Header"
+                icon="pi pi-plus"
+                styleClass="p-button-outlined"
+                (click)="addHeader()"
+              ></p-button>
+            </div>
+          </div>
+        </p-fieldset>
+      </div>
+    </form>
+
+    <p-divider></p-divider>
+
+    <!-- Section for testing the API call -->
+    <div class="flex justify-content-between align-items-center mb-3">
+      <h5 class="m-0">Test & Review Response</h5>
+      <p-button
+        label="Test Call"
+        icon="pi pi-cloud-upload"
+        (click)="onTestCall()"
+        [loading]="isTesting"
+        [disabled]="arcForm.invalid"
+      >
+      </p-button>
+    </div>
+
+    <app-schema-viewer
+      [jsonData]="testResult?.responsePayload"
+      [dtsCode]="testResult?.generatedDts"
+    >
+    </app-schema-viewer>
+  </ng-container>
+
+  <ng-template pTemplate="footer">
+    <p-button
+      label="Cancel"
+      icon="pi pi-times"
+      styleClass="p-button-text"
+      (click)="closeDialog()"
+    >
+    </p-button>
+    <p-button
+      label="Save ARC"
+      icon="pi pi-check"
+      (click)="onSaveArc()"
+      [loading]="isSaving"
+      [disabled]="arcForm.invalid || !testResult?.isSuccess"
+    >
+    </p-button>
+  </ng-template>
+</p-dialog>
