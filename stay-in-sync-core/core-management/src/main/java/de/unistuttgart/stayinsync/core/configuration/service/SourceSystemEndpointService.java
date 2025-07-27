@@ -46,7 +46,6 @@ public class SourceSystemEndpointService {
         System.out.println("### TEST persist: " + sourceSystemEndpointDTO.requestBodySchema());
         Log.debug("Persisting source-system-endpoint: " + sourceSystemEndpointDTO + ", for source-system with id: " + sourceSystemId);
 
-   
         if (sourceSystemEndpointDTO.requestBodySchema() != null && !sourceSystemEndpointDTO.requestBodySchema().isBlank()) {
             try {
                 objectMapper.readTree(sourceSystemEndpointDTO.requestBodySchema());
@@ -55,19 +54,37 @@ public class SourceSystemEndpointService {
             }
         }
 
-        SourceSystemEndpoint sourceSystemEndpoint = sourceSystemEndpointFullMapper.mapToEntity(sourceSystemEndpointDTO);
-        // Explizit das Schema übernehmen
-        sourceSystemEndpoint.requestBodySchema = sourceSystemEndpointDTO.requestBodySchema();
-        System.out.println("### TEST persist (entity): " + sourceSystemEndpoint.requestBodySchema);
-        Log.info("Wird gespeichert (persist): " + sourceSystemEndpoint.requestBodySchema);
+        // Upsert-Logik: Prüfe, ob Endpoint existiert
+        SourceSystemEndpoint existing = SourceSystemEndpoint.find("sourceSystem.id = ?1 and endpointPath = ?2 and httpRequestType = ?3",
+                sourceSystemId,
+                sourceSystemEndpointDTO.endpointPath(),
+                sourceSystemEndpointDTO.httpRequestType()
+        ).firstResult();
 
         SourceSystem sourceSystem = sourceSystemService.findSourceSystemById(sourceSystemId).orElseThrow(() ->
                 new CoreManagementException(Response.Status.NOT_FOUND, "Unable to find Source System", "There is no source-system with id " + sourceSystemId));
-        sourceSystemEndpoint.sourceSystem = sourceSystem;
-        sourceSystemEndpoint.syncSystem = sourceSystem;
-        sourceSystemEndpoint.persist();
 
-        return sourceSystemEndpoint;
+        if (existing != null) {
+            // Update
+            SourceSystemEndpoint updated = sourceSystemEndpointFullMapper.mapToEntity(sourceSystemEndpointDTO);
+            existing.endpointPath = updated.endpointPath;
+            existing.httpRequestType = updated.httpRequestType;
+            existing.requestBodySchema = updated.requestBodySchema;
+            existing.description = updated.description;
+            // ggf. weitere Felder übernehmen
+            existing.sourceSystem = sourceSystem;
+            existing.syncSystem = sourceSystem;
+            existing.persist();
+            return existing;
+        } else {
+            // Neu anlegen
+            SourceSystemEndpoint sourceSystemEndpoint = sourceSystemEndpointFullMapper.mapToEntity(sourceSystemEndpointDTO);
+            sourceSystemEndpoint.requestBodySchema = sourceSystemEndpointDTO.requestBodySchema();
+            sourceSystemEndpoint.sourceSystem = sourceSystem;
+            sourceSystemEndpoint.syncSystem = sourceSystem;
+            sourceSystemEndpoint.persist();
+            return sourceSystemEndpoint;
+        }
     }
 
     public List<SourceSystemEndpoint> persistSourceSystemEndpointList(@NotNull @Valid List<CreateSourceSystemEndpointDTO> endpoints, Long sourceSystemId) {
