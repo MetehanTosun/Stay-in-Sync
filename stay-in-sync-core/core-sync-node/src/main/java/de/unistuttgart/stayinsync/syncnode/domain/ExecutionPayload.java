@@ -1,11 +1,11 @@
 package de.unistuttgart.stayinsync.syncnode.domain;
 
-//import de.unistuttgart.stayinsync.syncnode.logik_engine.nodes.Node;
+import de.unistuttgart.stayinsync.transport.transformation_rule_shared.nodes.Node;
 
 import java.util.List;
 
 public record ExecutionPayload(
-        TransformJob job//,
-        // TODO: DEPENDENCY TO LOGICGRAPH List<Node> graphNodes
+        TransformJob job,
+        List<Node> graphNodes
 ) {
 }
