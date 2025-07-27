@@ -157,16 +157,43 @@ export class ManageEndpointsComponent implements OnInit {
    */
   addEndpoint() {
     let requestBodySchema = this.endpointForm.get('requestBodySchema')?.value || '';
-    requestBodySchema = this.resolveSchemaReference(requestBodySchema);
+    let resolvedSchema = requestBodySchema;
+    try {
+      const parsed = JSON.parse(requestBodySchema);
+      if (parsed && parsed.$ref && this.currentOpenApiSpec) {
+        const openApi = typeof this.currentOpenApiSpec === 'string'
+          ? JSON.parse(this.currentOpenApiSpec)
+          : this.currentOpenApiSpec;
+        const schemas = openApi.components?.schemas || {};
+        const resolved = this.resolveRefs(parsed, schemas);
+        resolvedSchema = JSON.stringify(resolved, null, 2);
+      }
+    } catch {
+      // Kein JSON, lasse wie es ist
+    }
     const dto: any = {
       endpointPath: this.endpointForm.get('endpointPath')?.value,
       httpRequestType: this.endpointForm.get('httpRequestType')?.value,
-      requestBodySchema
+      requestBodySchema: resolvedSchema
     };
     this.endpointSvc.apiConfigSourceSystemSourceSystemIdEndpointPost(
       this.sourceSystemId,
       [dto]
-    ).subscribe();
+    ).subscribe({
+      next: () => {
+        this.endpoints = [...this.endpoints, {
+          id: undefined,
+          sourceSystemId: this.sourceSystemId,
+          ...dto
+        }];
+        this.endpointForm.reset({
+          endpointPath: '',
+          httpRequestType: 'GET',
+          requestBodySchema: ''
+        });
+      },
+      error: () => {}
+    });
   }
 
   /**
