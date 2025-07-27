@@ -1,32 +1,70 @@
-.request-body-editor-panel {
+.request-body-editor-overlay {
   position: fixed;
-  top: 80px;
+  top: 100px;
   right: 40px;
-  width: 480px;
-  max-width: 90vw;
-  height: 70vh;
+  width: 700px;
+  max-width: 98vw;
+  height: 80vh;
   background: #23272e;
   color: #fff;
-  border-radius: 8px;
-  box-shadow: 0 2px 16px rgba(0,0,0,0.18);
-  z-index: 2000;
-  padding: 1.5rem 1.5rem 1rem 1.5rem;
+  border-radius: 10px;
+  box-shadow: 0 4px 32px rgba(0,0,0,0.25);
+  z-index: 3000;
+  padding: 0;
   display: flex;
   flex-direction: column;
-  gap: 1rem;
-  overflow: auto;
+  overflow: hidden;
 }
 
-.request-body-editor-panel h4 {
+.request-body-editor-overlay .editor-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #1a1d22;
+  padding: 1rem 1.5rem;
+  cursor: move;
+  font-weight: 600;
+  border-top-left-radius: 10px;
+  border-top-right-radius: 10px;
+}
+
+.request-body-editor-overlay .close-btn {
+  background: transparent;
+  border: none;
+  color: #fff;
+  font-size: 1.5rem;
+  cursor: pointer;
+  margin-left: 1rem;
+}
+
+.request-body-editor-overlay ngx-monaco-editor {
+  flex: 1 1 auto;
+  min-height: 400px;
+  height: 100%;
+  width: 100% !important;
+  font-size: 1.1em;
+}
+
+.request-body-editor-overlay .editor-footer {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  background: #23272e;
+  padding: 1rem 1.5rem;
+  border-bottom-left-radius: 10px;
+  border-bottom-right-radius: 10px;
+}
+
+.request-body-editor-overlay h4 {
   margin-top: 0;
   color: #fff;
 }
 
-.request-body-editor-panel .p-error {
+.request-body-editor-overlay .p-error {
   color: #ff6b6b;
 }
 
-.request-body-editor-panel .p-mt-2 {
+.request-body-editor-overlay .p-mt-2 {
   margin-top: 1.5rem;
   display: flex;
   gap: 1rem;

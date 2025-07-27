@@ -100,11 +100,14 @@
     </ng-template>
   </p-table>
 
-  <!-- Request Body Editor Panel -->
-  <div *ngIf="requestBodyEditorEndpoint" class="request-body-editor-panel">
-    <h4>Request-Body-Schema für {{ requestBodyEditorEndpoint.endpointPath }} ({{ requestBodyEditorEndpoint.httpRequestType }})</h4>
+  <!-- Request Body Editor Overlay (außerhalb von p-card/Dialog) -->
+  <div *ngIf="requestBodyEditorEndpoint" class="request-body-editor-overlay" cdkDrag cdkDragRootElement=".request-body-editor-overlay">
+    <div class="editor-header" cdkDragHandle>
+      <span>Request-Body-Schema für {{ requestBodyEditorEndpoint.endpointPath }} ({{ requestBodyEditorEndpoint.httpRequestType }})</span>
+      <button class="close-btn" (click)="closeRequestBodyEditor()">&#10005;</button>
+    </div>
     <ngx-monaco-editor [options]="jsonEditorOptions" [model]="requestBodyEditorModel" (modelChange)="onRequestBodyModelChange($event)"></ngx-monaco-editor>
-    <div class="p-mt-2">
+    <div class="editor-footer">
       <button pButton type="button" label="Speichern" (click)="saveRequestBodySchema()"></button>
       <button pButton type="button" label="Abbrechen" class="p-button-secondary" (click)="closeRequestBodyEditor()"></button>
       <span *ngIf="requestBodyEditorError" class="p-error p-ml-3">{{ requestBodyEditorError }}</span>

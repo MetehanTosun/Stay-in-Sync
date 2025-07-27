@@ -19,6 +19,7 @@ import {CheckboxModule} from 'primeng/checkbox';
 import {DialogModule} from 'primeng/dialog';
 import {ProgressSpinnerModule} from 'primeng/progressspinner';
 import { MonacoEditorModule, NgxEditorModel } from 'ngx-monaco-editor-v2';
+import { DragDropModule } from '@angular/cdk/drag-drop';
 
 import {SourceSystemEndpointResourceService} from '../../service/sourceSystemEndpointResource.service';
 import {HttpClient} from '@angular/common/http';
@@ -54,6 +55,7 @@ import { ManageEndpointParamsComponent } from '../manage-endpoint-params/manage-
     ProgressSpinnerModule,
     ManageEndpointParamsComponent,
     MonacoEditorModule,
+    DragDropModule,
   ],
   templateUrl: './manage-endpoints.component.html',
   styleUrls: ['./manage-endpoints.component.css']
@@ -181,11 +183,7 @@ export class ManageEndpointsComponent implements OnInit {
       [dto]
     ).subscribe({
       next: () => {
-        this.endpoints = [...this.endpoints, {
-          id: undefined,
-          sourceSystemId: this.sourceSystemId,
-          ...dto
-        }];
+        this.loadEndpoints();
         this.endpointForm.reset({
           endpointPath: '',
           httpRequestType: 'GET',
