@@ -40,7 +40,7 @@ public class SourceSystemService {
         SourceSystem sourceSystem = mapper.mapToEntity(sourceSystemDTO);
 
         if (sourceSystemDTO.openApiSpec() != null && !sourceSystemDTO.openApiSpec().isBlank()) {
-            sourceSystem.openApiSpec = sourceSystemDTO.openApiSpec().getBytes(StandardCharsets.UTF_8);
+            sourceSystem.openApiSpec = sourceSystemDTO.openApiSpec();
         }
 
         sourceSystem.persist();

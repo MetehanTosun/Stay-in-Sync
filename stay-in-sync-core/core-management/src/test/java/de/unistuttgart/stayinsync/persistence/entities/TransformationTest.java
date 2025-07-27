@@ -98,6 +98,7 @@ public class TransformationTest {
 //        foundShell.sourceSystemEndpoints = Set.of(sourceEndpoint1, sourceEndpoint2);
         foundShell.transformationScript = script;
         foundShell.transformationRule = rule;
+        rule.transformation = foundShell;
 
         script.transformation = foundShell;
 

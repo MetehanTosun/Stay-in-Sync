@@ -95,7 +95,7 @@
             ],
             "styles": [
               "src/styles.css",
-              "Shared_Styles/tokens.css",
+              
               "node_modules/primeicons/primeicons.css"
             ],
             "scripts": []

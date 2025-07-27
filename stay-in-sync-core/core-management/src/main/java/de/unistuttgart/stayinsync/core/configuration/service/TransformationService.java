@@ -2,6 +2,7 @@ package de.unistuttgart.stayinsync.core.configuration.service;
 
 import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.SourceSystemEndpoint;
 import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.Transformation;
+import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.TransformationRule;
 import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.TransformationScript;
 import de.unistuttgart.stayinsync.core.configuration.exception.CoreManagementException;
 import de.unistuttgart.stayinsync.core.configuration.mapping.TransformationMapper;
@@ -49,8 +50,8 @@ public class TransformationService {
                     .orElseThrow(() -> new CoreManagementException(Response.Status.BAD_REQUEST, "Invalid Script ID", "TransformationScript with id %d not found.", dto.transformationScriptId()));
         }
 
-        //TransformationRule rule = TransformationRule.<TransformationRule>findByIdOptional(dto.transformationRuleId())
-        //        .orElseThrow(() -> new CoreManagementException(Response.Status.BAD_REQUEST, "Invalid Rule ID", "TransformationRule with id %d not found.", dto.transformationRuleId()));
+        TransformationRule rule = TransformationRule.<TransformationRule>findByIdOptional(dto.transformationRuleId())
+                .orElseThrow(() -> new CoreManagementException(Response.Status.BAD_REQUEST, "Invalid Rule ID", "TransformationRule with id %d not found.", dto.transformationRuleId()));
 
         Set<SourceSystemEndpoint> sourceEndpoints = dto.sourceSystemEndpointIds().stream()
                 .map(id -> SourceSystemEndpoint.<SourceSystemEndpoint>findByIdOptional(id)
@@ -58,12 +59,16 @@ public class TransformationService {
                 .collect(Collectors.toSet());
 
         transformation.transformationScript = script;
-        //transformation.transformationRule = rule;
+        transformation.transformationRule = rule;
         //TODO: replace with api request configs
         //transformation.sourceSystemEndpoints = sourceEndpoints;
 
         if (script != null) {
             script.transformation = transformation;
+        }
+        
+        if (rule != null) {
+            rule.transformation = transformation;
         }
 
         return transformation;
