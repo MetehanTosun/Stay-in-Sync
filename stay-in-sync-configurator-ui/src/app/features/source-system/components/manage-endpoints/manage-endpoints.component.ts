@@ -144,6 +144,7 @@ export class ManageEndpointsComponent implements OnInit {
    * Initialize forms and load endpoints and source system API URL.
    */
   ngOnInit(): void {
+    console.log('🚦 ManageEndpointsComponent ngOnInit');
     this.endpointForm = this.fb.group({
       endpointPath: ['', Validators.required],
       httpRequestType: ['GET', Validators.required],
@@ -157,7 +158,8 @@ export class ManageEndpointsComponent implements OnInit {
     });
 
     this.loadSourceSystemAndSetApiUrl();
-    this.loadEndpoints(); // Endpoints beim Initialisieren laden
+    // Endpoints werden jetzt nur nach Import geladen!
+    // this.loadEndpoints();
   }
 
   private loadSourceSystemAndSetApiUrl(): void {
@@ -210,26 +212,23 @@ export class ManageEndpointsComponent implements OnInit {
    * Create a new endpoint using form data and refresh list upon success.
    */
   addEndpoint() {
-    if (this.endpointForm.invalid) return;
-    this.jsonError = null;
-    const dto = this.endpointForm.value as CreateSourceSystemEndpointDTO;
-    if (dto.requestBodySchema) {
-      try {
-        JSON.parse(dto.requestBodySchema);
-      } catch (e) {
-        this.jsonError = 'Request-Body-Schema ist kein valides JSON.';
-        return;
-      }
-    }
-    this.endpointSvc
-      .apiConfigSourceSystemSourceSystemIdEndpointPost(this.sourceSystemId, [dto])
-      .subscribe({
-        next: () => {
-          this.endpointForm.reset({ endpointPath: '', httpRequestType: 'GET' });
-          this.loadEndpoints();
-        },
-        error: console.error
-      });
+    console.log('🚀 NEUE addEndpoint() wird ausgeführt');
+    let requestBodySchema = this.endpointForm.get('requestBodySchema')?.value || '';
+    requestBodySchema = this.resolveSchemaReference(requestBodySchema);
+    console.log('🟢 addEndpoint resolved schema:', requestBodySchema);
+    const dto: any = {
+      endpointPath: this.endpointForm.get('endpointPath')?.value,
+      httpRequestType: this.endpointForm.get('httpRequestType')?.value,
+      requestBodySchema
+    };
+    console.log('DTO, das an Backend gesendet wird:', dto);
+    this.endpointSvc.apiConfigSourceSystemSourceSystemIdEndpointPost(
+      this.sourceSystemId,
+      [dto]
+    ).subscribe({
+      next: () => { /* Erfolg */ },
+      error: err => { console.error(err); }
+    });
   }
 
   /**
@@ -303,7 +302,6 @@ export class ManageEndpointsComponent implements OnInit {
 
   showRequestBodyEditor(endpoint: SourceSystemEndpointDTO) {
     this.requestBodyEditorEndpoint = endpoint;
-    
     // Prüfe, ob ein Request Body Schema vorhanden ist
     if (!endpoint.requestBodySchema) {
       this.requestBodyEditorModel = {
@@ -315,35 +313,15 @@ export class ManageEndpointsComponent implements OnInit {
         }, null, 2),
         language: 'json'
       };
-      this.requestBodyEditorError = null;
       return;
     }
-    
-    // Stelle sicher, dass das Schema als JSON-String angezeigt wird
-    let schemaValue = '';
-    if (endpoint.requestBodySchema) {
-      if (typeof endpoint.requestBodySchema === 'string') {
-        try {
-          // Parse das JSON und bereinige es
-          const parsedSchema = JSON.parse(endpoint.requestBodySchema);
-          const cleanedSchema = this.cleanJsonSchema(parsedSchema);
-          schemaValue = JSON.stringify(cleanedSchema, null, 2);
-        } catch (e) {
-          console.log('Failed to parse JSON, using as is');
-          schemaValue = endpoint.requestBodySchema;
-        }
-      } else {
-        // Falls es ein Objekt ist, bereinige es und konvertiere zu JSON-String
-        const cleanedSchema = this.cleanJsonSchema(endpoint.requestBodySchema);
-        schemaValue = JSON.stringify(cleanedSchema, null, 2);
-      }
-    }
-    
+    // Immer aufgelöst anzeigen!
+    const resolved = this.resolveSchemaReference(endpoint.requestBodySchema);
+    console.log('🟢 showRequestBodyEditor resolved schema:', resolved);
     this.requestBodyEditorModel = {
-      value: schemaValue,
+      value: resolved,
       language: 'json'
     };
-    this.requestBodyEditorError = null;
   }
 
   /**
@@ -354,19 +332,17 @@ export class ManageEndpointsComponent implements OnInit {
     if (!schema || typeof schema !== 'object') {
       return schema;
     }
-
-    // Wenn es eine $ref ist, versuche sie aufzulösen
     if (schema.$ref) {
       console.log('Found $ref:', schema.$ref);
-      const resolvedSchema = this.resolveSchemaReference(schema.$ref);
-      if (resolvedSchema) {
+      const resolvedSchemaStr = this.resolveSchemaReference(schema);
+      try {
+        const resolvedSchema = JSON.parse(resolvedSchemaStr);
         return this.cleanJsonSchema(resolvedSchema);
+      } catch {
+        return schema;
       }
     }
-
     const cleaned: any = {};
-    
-    // Nur relevante Eigenschaften behalten
     const relevantProps = [
       'type', 'properties', 'required', 'items', 'allOf', 'anyOf', 'oneOf', 
       'not', 'additionalProperties', 'description', 'format', '$ref', 
@@ -376,14 +352,11 @@ export class ManageEndpointsComponent implements OnInit {
       'minLength', 'maxLength', 'pattern', 'minimum', 'maximum',
       'exclusiveMinimum', 'exclusiveMaximum', 'multipleOf'
     ];
-
     for (const prop of relevantProps) {
       if (schema[prop] !== null && schema[prop] !== undefined) {
         if (typeof schema[prop] === 'object' && !Array.isArray(schema[prop])) {
-          // Rekursiv für verschachtelte Objekte
           cleaned[prop] = this.cleanJsonSchema(schema[prop]);
         } else if (Array.isArray(schema[prop])) {
-          // Für Arrays
           cleaned[prop] = schema[prop].map((item: any) => 
             typeof item === 'object' ? this.cleanJsonSchema(item) : item
           );
@@ -392,47 +365,35 @@ export class ManageEndpointsComponent implements OnInit {
         }
       }
     }
-
     return cleaned;
   }
 
-  /**
-   * Löst Schema-Referenzen dynamisch aus der OpenAPI-Spec auf
-   */
-  private resolveSchemaReference(ref: string): any {
-    console.log('Resolving schema reference:', ref);
-    
-    this.sourceSystemService.apiConfigSourceSystemIdGet(this.sourceSystemId)
-      .subscribe({
-        next: (sourceSystem: SourceSystemDTO) => {
-          if (sourceSystem.openApiSpec && sourceSystem.openApiSpec.startsWith('http')) {
-            // Lade die Spec per HTTP nach
-            this.http.get(sourceSystem.openApiSpec, { responseType: 'text' }).subscribe({
-              next: (specText: string) => {
-                this.parseAndResolveSchema(specText, ref);
-              },
-              error: (err) => {
-                this.requestBodyEditorModel = {
-                  value: JSON.stringify({ $ref: ref, error: 'Failed to load OpenAPI spec from URL' }, null, 2),
-                  language: 'json'
-                };
-              }
-            });
-            return null;
-          } else {
-            this.parseAndResolveSchema(sourceSystem.openApiSpec, ref);
-            return null;
+  // Vereinheitlichte Methode: Gibt immer ein aufgelöstes Schema als String zurück
+  private resolveSchemaReference(schemaInput: any): string {
+    try {
+      let schemaObj = typeof schemaInput === 'string' ? JSON.parse(schemaInput) : schemaInput;
+      if (schemaObj && schemaObj.$ref && this.currentOpenApiSpec) {
+        const openApi = typeof this.currentOpenApiSpec === 'string'
+          ? JSON.parse(this.currentOpenApiSpec)
+          : this.currentOpenApiSpec;
+        if (schemaObj.$ref.startsWith('#/components/schemas/')) {
+          const schemaName = schemaObj.$ref.replace('#/components/schemas/', '');
+          const resolved = openApi.components?.schemas?.[schemaName];
+          if (resolved) {
+            // Rekursiv weitere $refs auflösen
+            if (resolved.$ref) {
+              return this.resolveSchemaReference(resolved);
+            }
+            // Nur das aufgelöste Schema zurückgeben!
+            return JSON.stringify(resolved, null, 2);
           }
-        },
-        error: (err) => {
-          console.error('Error loading source system:', err);
-          this.requestBodyEditorModel = {
-            value: JSON.stringify({ $ref: ref, error: 'Failed to load source system' }, null, 2),
-            language: 'json'
-          };
         }
-      });
-    return null; // Wird asynchron aktualisiert
+      }
+    } catch (e) {
+      // Falls kein JSON, direkt zurückgeben
+    }
+    // Wenn kein $ref, gib das Original als String zurück
+    return typeof schemaInput === 'string' ? schemaInput : JSON.stringify(schemaInput, null, 2);
   }
 
   /**
@@ -654,32 +615,11 @@ export class ManageEndpointsComponent implements OnInit {
 
   saveRequestBodySchema() {
     if (!this.requestBodyEditorEndpoint) return;
-    this.requestBodyEditorError = null;
-    // JSON-Validierung
-    if (this.requestBodyEditorModel.value) {
-      try {
-        JSON.parse(this.requestBodyEditorModel.value);
-      } catch (e) {
-        this.requestBodyEditorError = 'Request-Body-Schema ist kein valides JSON.';
-        return;
-      }
-    }
-    const updated: SourceSystemEndpointDTO = {
-      ...this.requestBodyEditorEndpoint,
-      requestBodySchema: this.requestBodyEditorModel.value
-    };
-    this.endpointSvc.apiConfigSourceSystemEndpointIdPut(updated.id!, updated, 'body').subscribe({
-      next: () => {
-        // Update local list
-        const idx = this.endpoints.findIndex(e => e.id === updated.id);
-        if (idx !== -1) this.endpoints[idx] = { ...updated };
-        this.closeRequestBodyEditor();
-      },
-      error: err => {
-        this.requestBodyEditorError = 'Fehler beim Speichern.';
-        console.error('Fehler beim Speichern des Request-Body-Schemas:', err);
-      }
-    });
+    let schemaValue = this.requestBodyEditorModel.value;
+    schemaValue = this.resolveSchemaReference(schemaValue);
+    console.log('🟢 saveRequestBodySchema resolved:', schemaValue);
+    this.requestBodyEditorEndpoint.requestBodySchema = schemaValue;
+    this.closeRequestBodyEditor();
   }
 
   onRequestBodyModelChange(event: any) {
@@ -825,7 +765,7 @@ private loadOpenApiFromUrls(urls: string[], index: number) {
 
 
  private async processOpenApiSpec(spec: any): Promise<void> {
-  
+  console.log('🚩 processOpenApiSpec() wurde aufgerufen');
   try {
     alert('processOpenApiSpec start!')
     console.log('=== processOpenApiSpec called ===', spec);
@@ -858,11 +798,11 @@ private loadOpenApiFromUrls(urls: string[], index: number) {
                 console.log('      Found requestBody schema for', method, path, requestBody.content['application/json'].schema);
                 let schema = requestBody.content['application/json'].schema;
                 console.log('      Original schema for', method.toUpperCase(), path, ':', schema);
+                // Rekursiv alle $ref auflösen, egal wie verschachtelt
                 schema = this.resolveRefs(schema, schemas);
-                console.log('      Resolved schema for', method.toUpperCase(), path, ':', schema);
                 if (schema) {
                   requestBodySchema = JSON.stringify(schema, null, 2);
-                  console.log('      Final requestBodySchema for', method.toUpperCase(), path, ':', requestBodySchema);
+                  console.log('      Final (rekursiv aufgelöstes) requestBodySchema for', method.toUpperCase(), path, ':', requestBodySchema);
                 }
               }
             }
@@ -880,6 +820,7 @@ private loadOpenApiFromUrls(urls: string[], index: number) {
     }
 
     if (endpointsToCreate.length > 0) {
+      console.log('Batch-Import: Endpoints, die an Backend gesendet werden:', endpointsToCreate);
       // Zeige die importierten Endpunkte direkt im UI, bevor Backend-Reload
       this.endpoints = endpointsToCreate;
       this.endpointSvc.apiConfigSourceSystemSourceSystemIdEndpointPost(this.sourceSystemId, endpointsToCreate)
@@ -887,6 +828,7 @@ private loadOpenApiFromUrls(urls: string[], index: number) {
           next: () => {
             // this.loadEndpoints(); // Deaktiviert, damit die aufgelösten Endpunkte im UI bleiben
             console.log(`${endpointsToCreate.length} Endpoints erfolgreich importiert`);
+            this.loadEndpoints(); // Endpunkte nach Import laden
           },
           error: (error) => {
             console.error('Fehler beim Speichern der Endpoints:', error);
@@ -1098,5 +1040,86 @@ private loadOpenApiFromUrls(urls: string[], index: number) {
       };
     }
     return schema;
+  }
+
+  /**
+   * Importiert Endpunkte aus der OpenAPI-Spec und löst $ref-Schemas im Frontend auf
+   */
+  public currentOpenApiSpec: string | any = '';
+
+  // TODO: Implementiere die echte Extraktion der Endpunkte aus der OpenAPI-Spec
+  private parseOpenApiEndpoints(): any[] {
+    // Dummy-Implementierung, bitte anpassen!
+    return [];
+  }
+
+  importEndpointsFromOpenApi() {
+    console.log('🚩 importEndpointsFromOpenApi() wurde aufgerufen');
+    // 1. Endpunkte aus der OpenAPI-Spec extrahieren
+    const endpoints = this.parseOpenApiEndpoints();
+
+    // 2. Für jeden Endpoint das Schema auflösen (falls $ref)
+    const endpointsWithResolvedSchemas = endpoints.map((endpoint: any) => {
+      return {
+        ...endpoint,
+        requestBodySchema: this.resolveSchemaReference(endpoint.requestBodySchema)
+      };
+    });
+
+    // 3. An Backend senden
+    console.log('Batch-Import (manuell): Endpoints, die an Backend gesendet werden:', endpointsWithResolvedSchemas);
+    this.endpointSvc.apiConfigSourceSystemSourceSystemIdEndpointPost(
+      this.sourceSystemId,
+      endpointsWithResolvedSchemas
+    ).subscribe({
+      next: () => {
+        // Erfolgshandling
+        this.loadEndpoints(); // Endpunkte nach Import laden
+      },
+      error: err => {
+        // Fehlerhandling
+        console.error('Fehler beim Speichern der Endpunkte:', err);
+      }
+    });
+  }
+
+  /**
+   * Löst ein $ref-Schema aus der aktuellen OpenAPI-Spec auf (rekursiv)
+   */
+  private resolveSchemaFromOpenApi(schemaRef: any): any {
+    if (!this.currentOpenApiSpec || !schemaRef.includes('$ref')) {
+      try {
+        // Falls es schon ein Objekt ist, zurückgeben
+        return typeof schemaRef === 'string' ? JSON.parse(schemaRef) : schemaRef;
+      } catch {
+        return schemaRef;
+      }
+    }
+
+    try {
+      const openApiJson = typeof this.currentOpenApiSpec === 'string'
+        ? JSON.parse(this.currentOpenApiSpec)
+        : this.currentOpenApiSpec;
+
+      const ref = typeof schemaRef === 'string'
+        ? JSON.parse(schemaRef).$ref
+        : schemaRef.$ref;
+
+      if (ref && ref.startsWith('#/components/schemas/')) {
+        const schemaName = ref.replace('#/components/schemas/', '');
+        const schema = openApiJson.components?.schemas?.[schemaName];
+        if (schema) {
+          // Optional: Rekursiv weitere $refs auflösen
+          if (schema.$ref) {
+            return this.resolveSchemaFromOpenApi(JSON.stringify(schema));
+          }
+          return schema;
+        }
+      }
+    } catch (e) {
+      console.error('Error resolving schema:', e);
+    }
+
+    return schemaRef;
   }
 }

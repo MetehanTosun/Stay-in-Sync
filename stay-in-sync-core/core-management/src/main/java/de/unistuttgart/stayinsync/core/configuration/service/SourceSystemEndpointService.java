@@ -43,7 +43,8 @@ public class SourceSystemEndpointService {
     SourceSystemEndpointFullUpdateMapper sourceSystemEndpointFullMapper;
 
     public SourceSystemEndpoint persistSourceSystemEndpoint(@NotNull @Valid CreateSourceSystemEndpointDTO sourceSystemEndpointDTO, Long sourceSystemId) {
-        Log.debugf("Persisting source-system-endpoint: %s, for source-system with id: %s", sourceSystemEndpointDTO, sourceSystemId);
+        System.out.println("### TEST persist: " + sourceSystemEndpointDTO.requestBodySchema());
+        Log.debug("Persisting source-system-endpoint: " + sourceSystemEndpointDTO + ", for source-system with id: " + sourceSystemId);
 
    
         if (sourceSystemEndpointDTO.requestBodySchema() != null && !sourceSystemEndpointDTO.requestBodySchema().isBlank()) {
@@ -55,9 +56,13 @@ public class SourceSystemEndpointService {
         }
 
         SourceSystemEndpoint sourceSystemEndpoint = sourceSystemEndpointFullMapper.mapToEntity(sourceSystemEndpointDTO);
+        // Explizit das Schema übernehmen
+        sourceSystemEndpoint.requestBodySchema = sourceSystemEndpointDTO.requestBodySchema();
+        System.out.println("### TEST persist (entity): " + sourceSystemEndpoint.requestBodySchema);
+        Log.info("Wird gespeichert (persist): " + sourceSystemEndpoint.requestBodySchema);
 
         SourceSystem sourceSystem = sourceSystemService.findSourceSystemById(sourceSystemId).orElseThrow(() ->
-                new CoreManagementException(Response.Status.NOT_FOUND, "Unable to find Source System", "There is no source-system with id %s", sourceSystemId));
+                new CoreManagementException(Response.Status.NOT_FOUND, "Unable to find Source System", "There is no source-system with id " + sourceSystemId));
         sourceSystemEndpoint.sourceSystem = sourceSystem;
         sourceSystemEndpoint.syncSystem = sourceSystem;
         sourceSystemEndpoint.persist();
@@ -66,7 +71,7 @@ public class SourceSystemEndpointService {
     }
 
     public List<SourceSystemEndpoint> persistSourceSystemEndpointList(@NotNull @Valid List<CreateSourceSystemEndpointDTO> endpoints, Long sourceSystemId) {
-        Log.debugf("Persisting source-system-endpoints: %s, for source-system with id: %s", sourceSystemId);
+        Log.debug("Persisting source-system-endpoints for source-system with id: " + sourceSystemId);
         return endpoints.stream().map(endpointDTO -> this.persistSourceSystemEndpoint(endpointDTO, sourceSystemId)).collect(Collectors.toList());
     }
 
@@ -97,7 +102,8 @@ public class SourceSystemEndpointService {
     }
 
     public Optional<SourceSystemEndpoint> replaceSourceSystemEndpoint(@NotNull @Valid SourceSystemEndpoint sourceSystemEndpoint) {
-        Log.debugf("Replacing endpoint: %s", sourceSystemEndpoint);
+        System.out.println("### TEST replace: " + sourceSystemEndpoint.requestBodySchema);
+        Log.debug("Replacing endpoint: " + sourceSystemEndpoint);
 
       
         if (sourceSystemEndpoint.requestBodySchema != null && !sourceSystemEndpoint.requestBodySchema.isBlank()) {
@@ -112,6 +118,10 @@ public class SourceSystemEndpointService {
                 .map(SourceSystemEndpoint.class::cast) // Only here for type erasure within the IDE
                 .map(targetSouceSystemEndpoint -> {
                     this.sourceSystemEndpointFullMapper.mapFullUpdate(sourceSystemEndpoint, targetSouceSystemEndpoint);
+                    // Explizit das Schema übernehmen
+                    targetSouceSystemEndpoint.requestBodySchema = sourceSystemEndpoint.requestBodySchema;
+                    System.out.println("### TEST replace (entity): " + targetSouceSystemEndpoint.requestBodySchema);
+                    Log.info("Wird gespeichert (replace): " + targetSouceSystemEndpoint.requestBodySchema);
                     return targetSouceSystemEndpoint;
                 });
     }
