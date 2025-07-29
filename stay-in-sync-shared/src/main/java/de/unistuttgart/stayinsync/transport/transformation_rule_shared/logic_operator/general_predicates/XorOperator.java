@@ -1,6 +1,8 @@
 package de.unistuttgart.stayinsync.transport.transformation_rule_shared.logic_operator.general_predicates;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import de.unistuttgart.stayinsync.transport.exception.GraphEvaluationException;
+import de.unistuttgart.stayinsync.transport.exception.OperatorValidationException;
 import de.unistuttgart.stayinsync.transport.transformation_rule_shared.nodes.LogicNode;
 import de.unistuttgart.stayinsync.transport.transformation_rule_shared.logic_operator.Operation;
 import de.unistuttgart.stayinsync.transport.transformation_rule_shared.nodes.Node;
@@ -16,14 +18,14 @@ public class XorOperator implements Operation {
      * This operation requires at least two inputs to perform a meaningful XOR.
      *
      * @param node The LogicNode to validate.
-     * @throws IllegalArgumentException if the node does not have at least two inputs.
+     * @throws OperatorValidationException if the node does not have at least two inputs.
      */
     @Override
     public void validateNode(LogicNode node) {
         List<Node> inputs = node.getInputNodes();
 
         if (inputs == null || inputs.size() < 2) {
-            throw new IllegalArgumentException(
+            throw new OperatorValidationException(
                     "XOR operation for node '" + node.getName() + "' requires at least 2 inputs."
             );
         }
@@ -35,10 +37,10 @@ public class XorOperator implements Operation {
      * @param node        The LogicNode being evaluated.
      * @param dataContext The runtime data context.
      * @return {@code true} if exactly one input resolves to {@code true}, otherwise {@code false}.
-     * @throws IllegalArgumentException if any resolved input value is not a Boolean.
+     * @throws GraphEvaluationException if any resolved input value is not a Boolean.
      */
     @Override
-    public Object execute(LogicNode node, Map<String, JsonNode> dataContext){
+    public Object execute(LogicNode node, Map<String, JsonNode> dataContext) throws GraphEvaluationException {
         int count = 0;
 
         for (Node inputNode : node.getInputNodes()) {
@@ -49,8 +51,11 @@ public class XorOperator implements Operation {
             }
 
             if (!(value instanceof Boolean)) {
-                throw new IllegalArgumentException(
-                        "XOR operation for node '" + node.getName() + "' requires boolean inputs, but got a " + (value == null ? "null" : value.getClass().getSimpleName())
+                throw new GraphEvaluationException(
+                        GraphEvaluationException.ErrorType.TYPE_MISMATCH,
+                        "Type Mismatch in XOR",
+                        "XOR operation for node '" + node.getName() + "' requires boolean inputs, but got a " + (value == null ? "null" : value.getClass().getSimpleName()),
+                        null
                 );
             }
 

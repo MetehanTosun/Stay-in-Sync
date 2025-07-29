@@ -1,11 +1,13 @@
 package de.unistuttgart.stayinsync.transport.transformation_rule_shared.nodes;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import de.unistuttgart.stayinsync.transport.exception.GraphEvaluationException;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import java.util.Arrays;
 import java.util.Map;
+import de.unistuttgart.stayinsync.transport.exception.NodeConfigurationException;
 
 /**
  * A node that provides a value by extracting it from an external JSON data source
@@ -30,11 +32,11 @@ public class ProviderNode extends Node {
      * Constructs a new ProviderNode with a specific jsonPath.
      *
      * @param jsonPath The full semantic path to the data source. Cannot be null or empty.
-     * @throws IllegalArgumentException if jsonPath is null or empty.
+     * @throws NodeConfigurationException if jsonPath is null or empty.
      */
     public ProviderNode(String jsonPath) {
         if (jsonPath == null || jsonPath.trim().isEmpty()) {
-            throw new IllegalArgumentException("jsonPath for ProviderNode cannot be null or empty.");
+            throw new NodeConfigurationException("jsonPath for ProviderNode cannot be null or empty.");
         }
         this.jsonPath = jsonPath;
     }
@@ -54,39 +56,52 @@ public class ProviderNode extends Node {
      *
      * @param dataContext A map where keys are logical source names and values are the
      * corresponding root {@link JsonNode} objects.
-     * @throws IllegalStateException if the {@code jsonPath} is malformed or if the
+     * @throws GraphEvaluationException if the {@code jsonPath} is malformed or if the
      * required data source is not found in the dataContext.
      */
     @Override
-    public void calculate(Map<String, JsonNode> dataContext) {
+    public void calculate(Map<String, JsonNode> dataContext) throws GraphEvaluationException {
         String fullPath = this.getJsonPath();
 
         if (fullPath == null || !fullPath.startsWith("source.")) {
-            throw new IllegalStateException("Invalid jsonPath format on node " + getId() + ": Must start with 'source.'");
+            throw new GraphEvaluationException(
+                    GraphEvaluationException.ErrorType.EXECUTION_FAILED,
+                    "Invalid Path Format",
+                    "Invalid jsonPath format on node " + getId() + ": Must start with 'source.'",
+                    null
+            );
         }
 
         // 1. Split the path into its components.
-        String[] parts = fullPath.split("\\.");
+        String[] parts = fullPath.split("\\.", 2);
         if (parts.length < 2) {
-            throw new IllegalStateException("Invalid jsonPath format on node " + getId() + ": Must contain 'source.{sourceName}'.");
+            throw new GraphEvaluationException(
+                    GraphEvaluationException.ErrorType.EXECUTION_FAILED,
+                    "Invalid Path Format",
+                    "Invalid jsonPath format on node " + getId() + ": Must contain 'source.{sourceName}'.",
+                    null
+            );
         }
 
-        // 2. The 'sourceName' is always the second element and serves as the key for the context.
-        String sourceName = parts[1];
+        // 2. The 'sourceName' is the part after "source."
+        String sourceName = parts[0].substring(7);
+        String internalJsonPath = parts[1];
 
-        // 3. The 'internalJsonPath' is everything that follows.
-        String internalJsonPath = (parts.length > 2) ? String.join(".", Arrays.copyOfRange(parts, 2, parts.length)) : "";
-
-        // 4. Get the correct JSON object from the dataContext.
+        // 3. Get the correct JSON object from the dataContext.
         JsonNode sourceObject = dataContext.get(sourceName);
         if (sourceObject == null) {
-            throw new IllegalStateException("Data source '" + sourceName + "' for node " + getId() + " not found in dataContext.");
+            throw new GraphEvaluationException(
+                    GraphEvaluationException.ErrorType.DATA_NOT_FOUND,
+                    "Data Source Not Found",
+                    "Data source '" + sourceName + "' for node " + getId() + " not found in dataContext.",
+                    null
+            );
         }
 
-        // 5. Extract the final value.
+        // 4. Extract the final value.
         JsonPathValueExtractor extractor = new JsonPathValueExtractor();
         Object result = extractor.extractValue(sourceObject, internalJsonPath)
-                .orElse(null);
+                .orElse(null); // A non-existent path results in null, as previously decided.
 
         this.setCalculatedResult(result);
     }

@@ -1,6 +1,7 @@
 package de.unistuttgart.stayinsync.transport.transformation_rule_shared.logic_operator.datetime_predicates;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import de.unistuttgart.stayinsync.transport.exception.OperatorValidationException;
 import de.unistuttgart.stayinsync.transport.transformation_rule_shared.logic_operator.Operation;
 import de.unistuttgart.stayinsync.transport.transformation_rule_shared.nodes.LogicNode;
 import de.unistuttgart.stayinsync.transport.transformation_rule_shared.nodes.Node;
@@ -17,13 +18,13 @@ public class AgeGreaterThanOperator implements Operation {
      * and a string representing the time unit.
      *
      * @param node The LogicNode to validate.
-     * @throws IllegalArgumentException if the node does not have exactly three inputs.
+     * @throws OperatorValidationException if the node does not have exactly three inputs.
      */
     @Override
     public void validateNode(LogicNode node) {
         List<Node> inputs = node.getInputNodes();
         if (inputs == null || inputs.size() != 3) {
-            throw new IllegalArgumentException(
+            throw new OperatorValidationException(
                     "AGE_GREATER_THAN operation for node '" + node.getName() + "' requires 3 inputs: a date-time, a numeric value, and a time unit string (e.g., 'DAYS')."
             );
         }

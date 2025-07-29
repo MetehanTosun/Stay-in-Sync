@@ -1,6 +1,7 @@
 package de.unistuttgart.stayinsync.transport.transformation_rule_shared.logic_operator.object_predicates;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import de.unistuttgart.stayinsync.transport.exception.OperatorValidationException;
 import de.unistuttgart.stayinsync.transport.transformation_rule_shared.nodes.LogicNode;
 import de.unistuttgart.stayinsync.transport.transformation_rule_shared.nodes.Node;
 import de.unistuttgart.stayinsync.transport.transformation_rule_shared.logic_operator.Operation;
@@ -14,13 +15,13 @@ public class HasKeyOperator implements Operation {
      * Validates that the node has exactly two inputs: the JSON object and the key name.
      *
      * @param node The LogicNode to validate.
-     * @throws IllegalArgumentException if the node does not have exactly two inputs.
+     * @throws OperatorValidationException if the node does not have exactly two inputs.
      */
     @Override
     public void validateNode(LogicNode node) {
         List<Node> inputs = node.getInputNodes();
         if (inputs == null || inputs.size() != 2) {
-            throw new IllegalArgumentException(
+            throw new OperatorValidationException(
                     "HAS_KEY operation for node '" + node.getName() + "' requires exactly 2 inputs: the JSON object and the key (String)."
             );
         }

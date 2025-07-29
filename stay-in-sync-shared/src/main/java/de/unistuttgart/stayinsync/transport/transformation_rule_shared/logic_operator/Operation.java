@@ -1,6 +1,7 @@
 package de.unistuttgart.stayinsync.transport.transformation_rule_shared.logic_operator;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import de.unistuttgart.stayinsync.transport.exception.GraphEvaluationException;
 import de.unistuttgart.stayinsync.transport.transformation_rule_shared.nodes.LogicNode;
 
 import java.util.Map;
@@ -18,7 +19,7 @@ public interface Operation {
      * @param dataContext The runtime data context.
      * @return The result of the calculation.
      */
-    Object execute(LogicNode node, Map<String, JsonNode> dataContext);
+    Object execute(LogicNode node, Map<String, JsonNode> dataContext) throws GraphEvaluationException;
 
     /**
      * Validates the node to ensure it is correctly configured for this operation

@@ -1,6 +1,7 @@
 package de.unistuttgart.stayinsync.transport.transformation_rule_shared.logic_operator.general_predicates;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import de.unistuttgart.stayinsync.transport.exception.OperatorValidationException;
 import de.unistuttgart.stayinsync.transport.transformation_rule_shared.logic_operator.Operation;
 import de.unistuttgart.stayinsync.transport.transformation_rule_shared.nodes.LogicNode;
 import de.unistuttgart.stayinsync.transport.transformation_rule_shared.nodes.Node;
@@ -19,21 +20,21 @@ public class IsNotNullOperator implements Operation {
      * Validates that the node has at least one input, and all inputs are ProviderNodes.
      *
      * @param node The LogicNode to validate.
-     * @throws IllegalArgumentException if the configuration is invalid.
+     * @throws OperatorValidationException if the configuration is invalid.
      */
     @Override
     public void validateNode(LogicNode node) {
         List<Node> inputs = node.getInputNodes();
 
         if (inputs == null || inputs.isEmpty()) {
-            throw new IllegalArgumentException(
+            throw new OperatorValidationException(
                     "IS_NOT_NULL operation for node '" + node.getName() + "' requires at least 1 input."
             );
         }
 
         for (Node input : inputs) {
             if (!(input instanceof ProviderNode)) {
-                throw new IllegalArgumentException(
+                throw new OperatorValidationException(
                         "IS_NOT_NULL operation for node '" + node.getName() + "' requires all its inputs to be of type ProviderNode, but found " + input.getClass().getSimpleName()
                 );
             }

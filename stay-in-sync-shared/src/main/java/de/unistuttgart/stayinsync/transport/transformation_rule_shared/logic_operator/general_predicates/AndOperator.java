@@ -1,6 +1,8 @@
 package de.unistuttgart.stayinsync.transport.transformation_rule_shared.logic_operator.general_predicates;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import de.unistuttgart.stayinsync.transport.exception.GraphEvaluationException;
+import de.unistuttgart.stayinsync.transport.exception.OperatorValidationException;
 import de.unistuttgart.stayinsync.transport.transformation_rule_shared.logic_operator.Operation;
 import de.unistuttgart.stayinsync.transport.transformation_rule_shared.nodes.LogicNode;
 import de.unistuttgart.stayinsync.transport.transformation_rule_shared.nodes.Node;
@@ -16,13 +18,13 @@ public class AndOperator implements Operation {
      * This operation requires at least two input nodes.
      *
      * @param node The LogicNode to validate.
-     * @throws IllegalArgumentException if the node does not have at least two inputs.
+     * @throws OperatorValidationException if the node does not have at least two inputs.
      */
     @Override
     public void validateNode(LogicNode node) {
         List<Node> inputs = node.getInputNodes();
         if (inputs == null || inputs.size() < 2) {
-            throw new IllegalArgumentException(
+            throw new OperatorValidationException(
                     "AND operation for node '" + node.getName() + "' requires at least 2 inputs."
             );
         }
@@ -34,10 +36,10 @@ public class AndOperator implements Operation {
      * @param node        The LogicNode being evaluated.
      * @param dataContext The runtime data context.
      * @return {@code true} if all provided input values are true, otherwise {@code false}.
-     * @throws IllegalArgumentException if any provided input value is not a Boolean.
+     * @throws GraphEvaluationException if any provided input value is not a Boolean.
      */
     @Override
-    public Object execute(LogicNode node, Map<String, JsonNode> dataContext) {
+    public Object execute(LogicNode node, Map<String, JsonNode> dataContext) throws GraphEvaluationException {
         List<Node> inputs = node.getInputNodes();
 
         for (Node inputNode : inputs) {
@@ -47,8 +49,11 @@ public class AndOperator implements Operation {
             // This strict check is a core requirement of the AND operator.
             // It ensures that only boolean values are being combined.
             if (!(value instanceof Boolean)) {
-                throw new IllegalArgumentException(
-                        "AND operation for node '" + node.getName() + "' requires boolean inputs, but got a " + (value == null ? "null" : value.getClass().getSimpleName())
+                throw new GraphEvaluationException(
+                        GraphEvaluationException.ErrorType.TYPE_MISMATCH,
+                        "Type Mismatch in AND",
+                        "AND operation for node '" + node.getName() + "' requires boolean inputs, but got a " + (value == null ? "null" : value.getClass().getSimpleName()),
+                        null
                 );
             }
 

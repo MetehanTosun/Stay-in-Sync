@@ -1,6 +1,8 @@
 package de.unistuttgart.stayinsync.transport.transformation_rule_shared.nodes;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import de.unistuttgart.stayinsync.transport.exception.GraphEvaluationException;
+import de.unistuttgart.stayinsync.transport.exception.NodeConfigurationException;
 import de.unistuttgart.stayinsync.transport.transformation_rule_shared.logic_operator.LogicOperator;
 import de.unistuttgart.stayinsync.transport.transformation_rule_shared.logic_operator.Operation;
 import lombok.Getter;
@@ -22,14 +24,14 @@ public class LogicNode extends Node {
      * Inputs are set later in a second pass.
      *
      * @param name     The unique, human-readable name for this node.
-     * @param operator The logical operation this node will perform.
+     * @throws NodeConfigurationException if the name or operator are null/empty.
      */
     public LogicNode(String name, LogicOperator operator) {
         if (name == null || name.trim().isEmpty()) {
-            throw new IllegalArgumentException("Name for LogicNode cannot be null or empty.");
+            throw new NodeConfigurationException("Name for LogicNode cannot be null or empty.");
         }
         if (operator == null) {
-            throw new IllegalArgumentException("Operator for LogicNode cannot be null.");
+            throw new NodeConfigurationException("Operator for LogicNode cannot be null.");
         }
         this.setName(name);
         this.operator = operator;
@@ -59,17 +61,25 @@ public class LogicNode extends Node {
      * pre-calculated results from this node's inputs (via {@code this.getInputNodes()})
      * and performing the actual operation.
      *
-     * @param dataContext The runtime data context, which is passed down to the strategy.
+     * @throws GraphEvaluationException if the underlying operation strategy fails during execution
+     * (e.g., due to a type mismatch).
      */
     @Override
-    public void calculate(Map<String, JsonNode> dataContext) {
-        // 1. Retrieve the specific strategy implementation from the operator.
+    public void calculate(Map<String, JsonNode> dataContext) throws GraphEvaluationException {
         Operation strategy = this.getOperator().getOperationStrategy();
 
-        // 2. Delegate the actual execution to the strategy.
-        Object result = strategy.execute(this, dataContext);
-
-        // 3. Store the computed result internally.
-        this.setCalculatedResult(result);
+        try {
+            Object result = strategy.execute(this, dataContext);
+            this.setCalculatedResult(result);
+        } catch (GraphEvaluationException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new GraphEvaluationException(
+                    GraphEvaluationException.ErrorType.EXECUTION_FAILED,
+                    "Execution Failed",
+                    "An unexpected error occurred in operator '" + this.getOperator() + "' for node '" + this.getName() + "'.",
+                    e
+            );
+        }
     }
 }

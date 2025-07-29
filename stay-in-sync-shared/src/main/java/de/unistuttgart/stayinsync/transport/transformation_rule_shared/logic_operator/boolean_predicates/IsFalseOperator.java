@@ -1,6 +1,7 @@
 package de.unistuttgart.stayinsync.transport.transformation_rule_shared.logic_operator.boolean_predicates;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import de.unistuttgart.stayinsync.transport.exception.OperatorValidationException;
 import de.unistuttgart.stayinsync.transport.transformation_rule_shared.nodes.LogicNode;
 import de.unistuttgart.stayinsync.transport.transformation_rule_shared.nodes.Node;
 import de.unistuttgart.stayinsync.transport.transformation_rule_shared.logic_operator.Operation;
@@ -13,13 +14,13 @@ public class IsFalseOperator implements Operation {
     /**
      * Validates that the node has at least one input.
      * @param node The LogicNode to validate.
-     * @throws IllegalArgumentException if the node has no inputs.
+     * @throws OperatorValidationException if the node has no inputs.
      */
     @Override
     public void validateNode(LogicNode node) {
         List<Node> inputs = node.getInputNodes();
         if (inputs == null || inputs.isEmpty()) {
-            throw new IllegalArgumentException("IS_FALSE operation requires at least 1 input.");
+            throw new OperatorValidationException("IS_FALSE operation requires at least 1 input.");
         }
     }
 

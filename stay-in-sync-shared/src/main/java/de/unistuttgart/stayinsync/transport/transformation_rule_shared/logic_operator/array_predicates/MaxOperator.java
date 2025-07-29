@@ -1,6 +1,7 @@
 package de.unistuttgart.stayinsync.transport.transformation_rule_shared.logic_operator.array_predicates;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import de.unistuttgart.stayinsync.transport.exception.OperatorValidationException;
 import de.unistuttgart.stayinsync.transport.transformation_rule_shared.nodes.LogicNode;
 import de.unistuttgart.stayinsync.transport.transformation_rule_shared.nodes.Node;
 import de.unistuttgart.stayinsync.transport.transformation_rule_shared.logic_operator.Operation;
@@ -19,13 +20,13 @@ public class MaxOperator implements Operation {
      * expected to deliver the array or collection of numbers.
      *
      * @param node The LogicNode to validate.
-     * @throws IllegalArgumentException if the node does not have exactly one input.
+     * @throws OperatorValidationException if the node does not have exactly one input.
      */
     @Override
     public void validateNode(LogicNode node) {
         List<Node> inputs = node.getInputNodes();
         if (inputs == null || inputs.size() != 1) {
-            throw new IllegalArgumentException(
+            throw new OperatorValidationException(
                     "MAX operation for node '" + node.getName() + "' requires exactly 1 input."
             );
         }

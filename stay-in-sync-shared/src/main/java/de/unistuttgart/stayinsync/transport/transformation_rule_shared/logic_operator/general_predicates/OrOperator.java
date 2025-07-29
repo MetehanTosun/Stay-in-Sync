@@ -1,6 +1,8 @@
 package de.unistuttgart.stayinsync.transport.transformation_rule_shared.logic_operator.general_predicates;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import de.unistuttgart.stayinsync.transport.exception.GraphEvaluationException;
+import de.unistuttgart.stayinsync.transport.exception.OperatorValidationException;
 import de.unistuttgart.stayinsync.transport.transformation_rule_shared.nodes.LogicNode;
 import de.unistuttgart.stayinsync.transport.transformation_rule_shared.logic_operator.Operation;
 import de.unistuttgart.stayinsync.transport.transformation_rule_shared.nodes.Node;
@@ -17,13 +19,13 @@ public class OrOperator implements Operation {
      * This operation requires at least two inputs to perform a logical OR.
      *
      * @param node The LogicNode to validate.
-     * @throws IllegalArgumentException if the node does not have at least two inputs.
+     * @throws OperatorValidationException if the node does not have at least two inputs.
      */
     public void validateNode(LogicNode node) {
         List<Node> inputs = node.getInputNodes();
 
         if (inputs == null || inputs.size() < 2) {
-            throw new IllegalArgumentException(
+            throw new OperatorValidationException(
                     "OR operation for node '" + node.getName() + "' requires at least 2 inputs."
             );
         }
@@ -35,16 +37,19 @@ public class OrOperator implements Operation {
      * @param node        The LogicNode being evaluated.
      * @param dataContext The runtime data context.
      * @return {@code true} if at least one resolved input value is true, otherwise {@code false}.
-     * @throws IllegalArgumentException if any resolved input value is not a Boolean.
+     * @throws GraphEvaluationException if any resolved input value is not a Boolean.
      */
     @Override
-    public Object execute(LogicNode node, Map<String, JsonNode> dataContext) {
+    public Object execute(LogicNode node, Map<String, JsonNode> dataContext) throws GraphEvaluationException {
         for (Node inputProvider : node.getInputNodes()) {
             Object value = inputProvider.getCalculatedResult();
 
             if (!(value instanceof Boolean)) {
-                throw new IllegalArgumentException(
-                        "OR operation for node '" + node.getName() + "' requires boolean inputs, but got a " + (value == null ? "null" : value.getClass().getSimpleName())
+                throw new GraphEvaluationException(
+                        GraphEvaluationException.ErrorType.TYPE_MISMATCH,
+                        "Type Mismatch in OR",
+                        "OR operation for node '" + node.getName() + "' requires boolean inputs, but got a " + (value == null ? "null" : value.getClass().getSimpleName()),
+                        null
                 );
             }
 

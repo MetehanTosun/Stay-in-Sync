@@ -1,6 +1,7 @@
 package de.unistuttgart.stayinsync.transport.transformation_rule_shared.logic_operator.general_predicates;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import de.unistuttgart.stayinsync.transport.exception.OperatorValidationException;
 import de.unistuttgart.stayinsync.transport.transformation_rule_shared.logic_operator.Operation;
 import de.unistuttgart.stayinsync.transport.transformation_rule_shared.nodes.*;
 
@@ -17,11 +18,11 @@ public class ExistsOperator implements Operation {
         // Diese Validierung bleibt gleich und stellt sicher, dass alle Inputs ProviderNodes sind.
         List<Node> inputs = node.getInputNodes();
         if (inputs == null || inputs.isEmpty()) {
-            throw new IllegalArgumentException("EXISTS operation requires at least 1 input.");
+            throw new OperatorValidationException("EXISTS operation requires at least 1 input.");
         }
         for (Node input : inputs) {
             if (!(input instanceof ProviderNode)) {
-                throw new IllegalArgumentException("EXISTS operation requires all inputs to be of type ProviderNode.");
+                throw new OperatorValidationException("EXISTS operation requires all inputs to be of type ProviderNode.");
             }
         }
     }

@@ -1,6 +1,7 @@
 package de.unistuttgart.stayinsync.transport.transformation_rule_shared.logic_operator.general_predicates;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import de.unistuttgart.stayinsync.transport.exception.OperatorValidationException;
 import de.unistuttgart.stayinsync.transport.transformation_rule_shared.nodes.LogicNode;
 import de.unistuttgart.stayinsync.transport.transformation_rule_shared.logic_operator.Operation;
 import de.unistuttgart.stayinsync.transport.transformation_rule_shared.nodes.Node;
@@ -16,13 +17,13 @@ public class OneOfOperator implements Operation {
      * </p>
      *
      * @param node The LogicNode to validate
-     * @throws IllegalArgumentException if the node has no input nodes configured
+     * @throws OperatorValidationException if the node has no input nodes configured
      */
     @Override
     public void validateNode(LogicNode node) {
         List<Node> inputs = node.getInputNodes();
         if(inputs == null || inputs.isEmpty()){
-            throw new IllegalArgumentException("ONE_OF operation is for node" + node.getName() + "requires at least 1 input");
+            throw new OperatorValidationException("ONE_OF operation is for node" + node.getName() + "requires at least 1 input");
         }
     }
 

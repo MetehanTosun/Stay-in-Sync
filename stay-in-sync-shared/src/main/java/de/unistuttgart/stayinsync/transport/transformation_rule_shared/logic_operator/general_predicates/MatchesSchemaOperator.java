@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.networknt.schema.JsonSchema;
 import com.networknt.schema.ValidationMessage;
+import de.unistuttgart.stayinsync.transport.exception.OperatorValidationException;
 import de.unistuttgart.stayinsync.transport.transformation_rule_shared.nodes.ConstantNode;
 import de.unistuttgart.stayinsync.transport.transformation_rule_shared.nodes.LogicNode;
 import de.unistuttgart.stayinsync.transport.transformation_rule_shared.logic_operator.Operation;
@@ -25,21 +26,21 @@ public class MatchesSchemaOperator implements Operation {
      * before execution begins.
      *
      * @param node The LogicNode to validate.
-     * @throws IllegalArgumentException if the node's configuration is invalid.
+     * @throws OperatorValidationException if the node's configuration is invalid.
      */
     @Override
     public void validateNode(LogicNode node) {
         List<Node> inputs = node.getInputNodes();
 
         if (inputs == null || inputs.size() != 2) {
-            throw new IllegalArgumentException(
+            throw new OperatorValidationException(
                     "MATCHES_SCHEMA operation for node '" + node.getName() + "' requires exactly 2 inputs."
             );
         }
 
         Node schemaInputNode = inputs.get(1);
         if (!(schemaInputNode instanceof ConstantNode)) {
-            throw new IllegalArgumentException(
+            throw new OperatorValidationException(
                     "MATCHES_SCHEMA operation requires the second input to be a ConstantNode."
             );
         }
@@ -51,7 +52,7 @@ public class MatchesSchemaOperator implements Operation {
         // The ConstantNode must contain either the schema String (before compilation)
         // or the compiled JsonSchema object (after compilation).
         if (!(schemaValue instanceof JsonSchema) && !(schemaValue instanceof String)) {
-            throw new IllegalArgumentException(
+            throw new OperatorValidationException(
                     "The ConstantNode for MATCHES_SCHEMA must contain a JsonSchema object or a schema String."
             );
         }

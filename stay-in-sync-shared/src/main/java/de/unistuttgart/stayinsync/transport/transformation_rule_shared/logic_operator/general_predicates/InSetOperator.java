@@ -1,6 +1,7 @@
 package de.unistuttgart.stayinsync.transport.transformation_rule_shared.logic_operator.general_predicates;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import de.unistuttgart.stayinsync.transport.exception.OperatorValidationException;
 import de.unistuttgart.stayinsync.transport.transformation_rule_shared.nodes.ConstantNode;
 import de.unistuttgart.stayinsync.transport.transformation_rule_shared.nodes.LogicNode;
 import de.unistuttgart.stayinsync.transport.transformation_rule_shared.nodes.Node;
@@ -21,21 +22,21 @@ public class InSetOperator implements Operation {
      * </ol>
      *
      * @param node The LogicNode to validate.
-     * @throws IllegalArgumentException if the node's configuration is invalid.
+     * @throws OperatorValidationException if the node's configuration is invalid.
      */
     @Override
     public void validateNode(LogicNode node) {
         List<Node> inputs = node.getInputNodes();
 
         if (inputs == null || inputs.size() != 2) {
-            throw new IllegalArgumentException(
+            throw new OperatorValidationException(
                     "IN_SET operation for node '" + node.getName() + "' requires exactly 2 inputs: the value to check, and a ConstantNode with the array of values."
             );
         }
 
         Node setInputNode = inputs.get(1);
         if (!(setInputNode instanceof ConstantNode)) {
-            throw new IllegalArgumentException(
+            throw new OperatorValidationException(
                     "IN_SET operation requires the second input to be a ConstantNode."
             );
         }
@@ -44,7 +45,7 @@ public class InSetOperator implements Operation {
         Object setValue = ((ConstantNode) setInputNode).getValue();
 
         if (setValue == null || !setValue.getClass().isArray()) {
-            throw new IllegalArgumentException(
+            throw new OperatorValidationException(
                     "The ConstantNode for IN_SET must contain an array, but got " + (setValue == null ? "null" : setValue.getClass().getSimpleName())
             );
         }
