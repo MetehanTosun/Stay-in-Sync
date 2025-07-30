@@ -1,4 +1,4 @@
-package de.unistuttgart.stayinsync.pollingnode.exceptions.pollingjob;
+package de.unistuttgart.stayinsync.pollingnode.exceptions.execution.pollingjob;
 
 import de.unistuttgart.stayinsync.pollingnode.exceptions.PollingNodeException;
 
