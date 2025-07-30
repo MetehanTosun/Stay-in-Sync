@@ -1,6 +1,6 @@
-package de.unistuttgart.stayinsync.pollingnode.exceptions.pollingjob.requestbuilderexceptions;
+package de.unistuttgart.stayinsync.pollingnode.exceptions.execution.pollingjob.requestbuilderexceptions;
 
-import de.unistuttgart.stayinsync.pollingnode.exceptions.pollingjob.PollingJobException;
+import de.unistuttgart.stayinsync.pollingnode.exceptions.execution.pollingjob.PollingJobException;
 import de.unistuttgart.stayinsync.transport.dto.SourceSystemEndpointMessageDTO;
 import de.unistuttgart.stayinsync.transport.dto.SourceSystemMessageDTO;
 

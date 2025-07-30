@@ -1,7 +1,7 @@
-package de.unistuttgart.stayinsync.pollingnode.exceptions.pollingjob.requestbuilderexceptions;
+package de.unistuttgart.stayinsync.pollingnode.exceptions.execution.pollingjob.requestbuilderexceptions;
 
 import de.unistuttgart.stayinsync.pollingnode.entities.RequestBuildingDetails;
-import de.unistuttgart.stayinsync.pollingnode.exceptions.pollingjob.PollingJobException;
+import de.unistuttgart.stayinsync.pollingnode.exceptions.execution.pollingjob.PollingJobException;
 
 public class RequestBuildingException extends PollingJobException {
 

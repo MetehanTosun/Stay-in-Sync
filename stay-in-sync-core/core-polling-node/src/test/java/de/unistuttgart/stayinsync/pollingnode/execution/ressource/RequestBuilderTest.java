@@ -1,7 +1,7 @@
 package de.unistuttgart.stayinsync.pollingnode.execution.ressource;
 
 import de.unistuttgart.stayinsync.pollingnode.entities.RequestBuildingDetails;
-import de.unistuttgart.stayinsync.pollingnode.exceptions.pollingjob.requestbuilderexceptions.RequestBuildingException;
+import de.unistuttgart.stayinsync.pollingnode.exceptions.execution.pollingjob.requestbuilderexceptions.RequestBuildingException;
 import de.unistuttgart.stayinsync.transport.dto.*;
 import io.vertx.mutiny.core.Vertx;
 import io.vertx.mutiny.core.buffer.Buffer;

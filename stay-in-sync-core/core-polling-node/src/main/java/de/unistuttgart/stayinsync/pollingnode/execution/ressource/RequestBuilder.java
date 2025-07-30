@@ -1,9 +1,9 @@
 package de.unistuttgart.stayinsync.pollingnode.execution.ressource;
 
 import de.unistuttgart.stayinsync.pollingnode.entities.RequestBuildingDetails;
-import de.unistuttgart.stayinsync.pollingnode.exceptions.UnsupportedRequestTypeException;
-import de.unistuttgart.stayinsync.pollingnode.exceptions.pollingjob.requestbuilderexceptions.RequestBuildingDetailsNullFieldException;
-import de.unistuttgart.stayinsync.pollingnode.exceptions.pollingjob.requestbuilderexceptions.RequestBuildingException;
+import de.unistuttgart.stayinsync.pollingnode.exceptions.execution.UnsupportedRequestTypeException;
+import de.unistuttgart.stayinsync.pollingnode.exceptions.execution.pollingjob.requestbuilderexceptions.RequestBuildingDetailsNullFieldException;
+import de.unistuttgart.stayinsync.pollingnode.exceptions.execution.pollingjob.requestbuilderexceptions.RequestBuildingException;
 import io.quarkus.logging.Log;
 import io.vertx.ext.web.client.WebClientOptions;
 import io.vertx.mutiny.core.Vertx;
