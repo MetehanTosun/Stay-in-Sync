@@ -1,9 +1,8 @@
 package de.unistuttgart.stayinsync.pollingnode.execution.ressource;
 
 import com.github.tomakehurst.wiremock.WireMockServer;
-import de.unistuttgart.stayinsync.pollingnode.exceptions.pollingjob.RequestExecutionException;
-import de.unistuttgart.stayinsync.pollingnode.exceptions.pollingjob.ResponseSubscriptionException;
-import io.vertx.core.cli.annotations.Description;
+import de.unistuttgart.stayinsync.pollingnode.exceptions.execution.pollingjob.restclientexceptions.RequestExecutionException;
+import de.unistuttgart.stayinsync.pollingnode.exceptions.execution.pollingjob.restclientexceptions.ResponseSubscriptionException;
 import io.vertx.core.json.JsonObject;
 import io.vertx.mutiny.core.Vertx;
 import io.vertx.mutiny.core.buffer.Buffer;
@@ -132,7 +131,7 @@ public class RestClientTest {
     }
 
     /**
-     * Tries to call RestClient with the arranged request in a try-catch-block. Should immediatley fail if an Exception occurs.
+     * Tries to call RestClient with the arranged request in a try-catch-block. Should immediately fail if an Exception occurs.
      * @param arrangedRequest executed in the restClient
      * @return the result of the restClient method call: A polled JsonObject
      */
