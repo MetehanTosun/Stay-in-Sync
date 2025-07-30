@@ -2,7 +2,8 @@ import * as d3 from 'd3';
 
 export interface Node {
   id: string;
-  type: 'API' | 'ASS' | 'Syncnode' | 'EDC';
+  type: 'SourceSystem' | 'ASS' | 'SyncNode' | 'TargetSystem';
+  label: string ;
   status: 'active' | 'inactive' | 'error';
   connections: NodeConnection[];
   x ?: number;

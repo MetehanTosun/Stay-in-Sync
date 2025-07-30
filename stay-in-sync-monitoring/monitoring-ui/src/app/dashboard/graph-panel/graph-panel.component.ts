@@ -2,6 +2,11 @@ import {AfterViewInit, Component, EventEmitter, Input, Output} from '@angular/co
 import * as d3 from 'd3';
 import type {Node, NodeConnection} from '../../core/models/node.model';
 import {LegendPanelComponent} from './legend-panel/legend-panel.component';
+import {
+  SyncJobService
+} from '../../../../../../stay-in-sync-configurator-ui/src/app/features/sync-job/services/sync-job.service';
+import {SyncJob} from '../../../../../../stay-in-sync-configurator-ui/src/app/features/source-system/models/syncJob';
+import { firstValueFrom } from 'rxjs';
 
 /**
  * GraphPanelComponent
@@ -26,6 +31,12 @@ export class GraphPanelComponent implements AfterViewInit {
   @Output() nodeSelected = new EventEmitter<string | null>();
 
   private _searchTerm: string = '';
+  private isInitialized: boolean = false;
+
+
+
+  constructor(private syncJobService:SyncJobService) {
+  }
 
   /**
    * Input property for the search term.
@@ -34,22 +45,90 @@ export class GraphPanelComponent implements AfterViewInit {
   @Input()
   set searchTerm(value: string) {
     this._searchTerm = value;
-    this.filteredNodes = this.filterNodes(this._searchTerm);
-    this.filteredLinks = this.filterLinks();
-    this.updateGraph(this.filteredNodes, this.filteredLinks);
+
+    // Filter nur anwenden, wenn die Komponente bereits initialisiert ist
+    if (this.isInitialized) {
+      this.filteredNodes = this.filterNodes(this._searchTerm);
+      this.filteredLinks = this.filterLinks();
+      this.updateGraph(this.filteredNodes, this.filteredLinks);
+    }
   }
   get searchTerm(): string {
     return this._searchTerm;
   }
+
+  uniqueTargetSystems = new Set<string>();
+
+
+async loadSyncjobs() {
+  this.uniqueTargetSystems.clear();
+
+  try {
+    const jobs = await firstValueFrom(this.syncJobService.getAll());
+    const seenSourceSystems = new Map<string, Node>();
+    const seenTargetSystems = new Map<string, Node>();
+    const seenSyncNodes = new Map<string, Node>();
+
+    jobs.forEach((job) => {
+      console.log(`Processing SyncJob: ${job.name}, ID: ${job.id}, SyncNode: ${job.syncNodeIdentifier}`);
+      const syncJobId = job.id?.toString() ?? '';
+
+      const syncNode: Node = {
+        id: syncJobId,
+        label: job.name,
+        type: 'SyncNode',
+        status: job.deployed ? 'active' : 'inactive',
+        connections: [],
+      };
+      this.nodes.push(syncNode);
+      console.log(`Adding SyncNode: ${syncNode.label}, ID: ${syncNode.id}, Status: ${syncNode.status}`);
+      seenSyncNodes.set(syncJobId, syncNode);
+
+      job.transformations?.forEach((transformation) => {
+        transformation.sourceSystemApiRequestConfigurations?.forEach((sourceConfig) => {
+          const sourceSystem = sourceConfig.sourceSystem;
+          const sourceSystemId = sourceSystem?.id?.toString();
+          if (!sourceSystemId) return;
+
+          let sourceNode = seenSourceSystems.get(sourceSystemId);
+          if (!sourceNode) {
+            sourceNode = {
+              id: '1000' + sourceSystemId,
+              label: sourceSystem.name || 'Unknown Source System',
+              type: 'SourceSystem',
+              status: 'active',
+              connections: []
+            };
+            this.nodes.push(sourceNode);
+            seenSourceSystems.set(sourceSystemId, sourceNode);
+          }
+
+          const conn: NodeConnection = {
+            source: sourceSystemId,
+            target: syncJobId,
+            status: 'active'
+          };
+          this.links.push(conn);
+          sourceNode.connections.push(conn);
+          syncNode.connections.push(conn);
+        });
+      });
+    });
+  } catch (error) {
+    console.error('Error loading sync jobs:', error);
+  }
+}
+
+
 
   /**
    * Array of all nodes in the graph.
    * TODO: Replace with actual data fetching logic.
    */
   nodes: Node[] = [
-    { id: 'A', type: 'API', status: 'active', connections: [] },
-    { id: 'B', type: 'ASS', status: 'active', connections: [] },
-    { id: 'C', type: 'Syncnode', status: 'inactive', connections: [] }
+    { id: 'A', type: 'SourceSystem', status: 'active', connections: [], label: 'Source System A' },
+    { id: 'B', type: 'ASS', status: 'active', connections: [], label: 'Hallo' },
+    { id: 'C', type: 'SyncNode', status: 'inactive', connections: [], label: 'Hallo' },
   ];
 
   /**
@@ -57,8 +136,6 @@ export class GraphPanelComponent implements AfterViewInit {
    * TODO: Replace with actual data fetching logic.
    */
   links: NodeConnection[] = [
-    { source: this.nodes[0], target: this.nodes[1], status: "active" },
-    { source: this.nodes[1], target: this.nodes[2], status: "inactive" },
   ];
 
   /**
@@ -75,26 +152,33 @@ export class GraphPanelComponent implements AfterViewInit {
    * Lifecycle hook that is called after the view has been initialized.
    * Sets up the SVG container, zoom behavior, and renders the initial graph.
    */
-  ngAfterViewInit() {
-    const svgElement = document.querySelector('svg');
-    const width = svgElement?.clientWidth ?? 400;
-    const height = svgElement?.clientHeight ?? 300;
+  async ngAfterViewInit() {
+    await this.loadSyncjobs()
+      .then(() => {
+        this.isInitialized = true;
+        console.log('GraphPanelComponent initialized with nodes:', this.nodes, 'and links:', this.links, 'start with graph');
+        const svgElement = document.querySelector('svg');
+        const width = svgElement?.clientWidth ?? 400;
+        const height = svgElement?.clientHeight ?? 300;
 
-    const svg = d3.select('svg')
-      .attr('width', '100%')
-      .attr('height', '100%');
+        const svg = d3.select('svg')
+          .attr('width', '100%')
+          .attr('height', '100%');
 
-    const container = svg.append('g');
+        const container = svg.append('g');
 
-    svg.call(
-      d3.zoom<any, unknown>()
-        .scaleExtent([0.5, 5])
-        .on('zoom', (event) => {
-          container.attr('transform', event.transform);
-        })
-    );
-
-    this.renderGraph(container, this.nodes, this.links, width, height);
+        svg.call(
+          d3.zoom<any, unknown>()
+            .scaleExtent([0.5, 5])
+            .on('zoom', (event) => {
+              container.attr('transform', event.transform);
+            })
+        );
+        this.renderGraph(container, this.nodes, this.links, width, height);
+      })
+      .catch((err: any) => {
+        console.error('Error loading sync jobs:', err);
+      });
   }
 
   /**
@@ -172,6 +256,9 @@ export class GraphPanelComponent implements AfterViewInit {
     width: number,
     height: number
   ) {
+    const tooltip = d3.select('#tooltip');
+    console.log(`Rendering graph with ${nodes.length} nodes and ${links.length} links`);
+
     const link = container.append('g')
       .selectAll('line')
       .data(links)
@@ -185,11 +272,23 @@ export class GraphPanelComponent implements AfterViewInit {
 
     nodeGroup.append('circle')
       .attr('r', 20)
-      .attr('fill', '#888');
+      .attr('fill', '#888')
+      .on('mouseover', (event, d) => {
+        tooltip.style('visibility', 'visible')
+          .text(d.label)
+          .style('position', 'absolute')
+          .style('top', `${event.pageY + 10}px`)
+          .style('left', `${event.pageX + 10}px`);
+      })
+      .on('mousemove', (event) => {
+        tooltip.style('top', `${event.pageY + 10}px`)
+          .style('left', `${event.pageX + 10}px`);
+      })
+      .on('mouseout', () => {
+        tooltip.style('visibility', 'hidden');
+      });
 
     this.applyStatusStyles(nodeGroup);
-
-    console.log('width:', width, 'height:', height);
 
     const simulation = this.createSimulation(nodes, links, width, height, link, nodeGroup);
 
@@ -294,7 +393,7 @@ export class GraphPanelComponent implements AfterViewInit {
           .attr('y1', d => (d.source as Node).y ?? 0)
           .attr('x2', d => (d.target as Node).x ?? 0)
           .attr('y2', d => (d.target as Node).y ?? 0);
-
+        console.log('Creating simulation with nodes:', nodes, 'and links:', links);
         nodeGroup
           .attr('transform', d => `translate(${d.x ?? 0},${d.y ?? 0})`);
       });
