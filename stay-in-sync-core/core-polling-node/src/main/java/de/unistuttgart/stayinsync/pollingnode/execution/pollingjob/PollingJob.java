@@ -66,6 +66,6 @@ public class PollingJob implements Job {
     private SyncDataMessageDTO convertJsonObjectToSyncDataMessageDTO(final PollingJobDetails pollingJobDetails, final JsonObject jsonObject) {
         Map<String, Object> map = new HashMap<>();
         map.put(pollingJobDetails.name(), jsonObject.getMap());
-        return new SyncDataMessageDTO(pollingJobDetails.id(), map);
+        return new SyncDataMessageDTO(pollingJobDetails.name(), pollingJobDetails.id(), map);
     }
 }
