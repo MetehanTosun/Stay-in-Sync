@@ -1,4 +1,19 @@
 <div class="logs-panel">
+  <div>
+    <label>Startzeit:</label>
+    <input [(ngModel)]="startTime" type="datetime-local" />
+    <label>Endzeit:</label>
+    <input [(ngModel)]="endTime" type="datetime-local" />
+    <label>Level:</label>
+    <select [(ngModel)]="level">
+      <option value="">Alle</option>
+      <option value="INFO">Info</option>
+      <option value="WARN">Warn</option>
+      <option value="ERROR">Error</option>
+      <option value="DEBUG">Debug</option>
+      <option value="TRACE">Trace</option>
+    </select>
+  </div>
   <div *ngIf="filteredLogs.length === 0">Keine Logs vorhanden.</div>
   <ul *ngIf="filteredLogs.length > 0">
     <li *ngFor="let log of filteredLogs">

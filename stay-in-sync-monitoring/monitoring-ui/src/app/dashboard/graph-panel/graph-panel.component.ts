@@ -144,7 +144,7 @@ export class GraphPanelComponent implements AfterViewInit {
     container.selectAll('g').remove();
 
     const svgNode = svg.node();
-    const width = (svgNode instanceof SVGSVGElement) ? window.innerWidth * 1.5 : 400;
+    const width = (svgNode instanceof SVGSVGElement) ? window.innerWidth : 400;
     const height = (svgNode instanceof SVGSVGElement) ? svgNode.clientHeight : 300;
 
     this.renderGraph(container, newNodes, newLinks, width, height);
