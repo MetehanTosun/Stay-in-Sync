@@ -5,8 +5,10 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.enterprise.context.ApplicationScoped;
 
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.Set;
 
 @ApplicationScoped
 public class TypeScriptTypeGenerator {
@@ -16,25 +18,22 @@ public class TypeScriptTypeGenerator {
     public String generate(String jsonString) throws JsonProcessingException {
         JsonNode rootNode = mapper.readTree(jsonString);
         StringBuilder allInterfaces = new StringBuilder();
+        Set<String> generatedInterfaceNames = new HashSet<>();
 
         if(rootNode.isArray()){
-            if (rootNode.isEmpty()){
-                return "export type Root = any[];\n";
+            if (!rootNode.isEmpty()){
+                generateInterface("RootObject", rootNode.get(0), allInterfaces, generatedInterfaceNames);
             }
-            String elementTypeName = generateInterface("RootObject", rootNode.get(0), allInterfaces);
-            allInterfaces.append(String.format("export type Root = %s[];\n", elementTypeName));
         } else if(rootNode.isObject()){
-            String rootTypeName = generateInterface("Root", rootNode, allInterfaces); // TODO: evaluate if obsolete
-        } else {
-            return String.format("export type Root = %s;\n", getTsType("Root", rootNode, new StringBuilder()));
+            generateInterface("Root", rootNode, allInterfaces, generatedInterfaceNames);
         }
 
         return allInterfaces.toString();
     }
 
-    private String generateInterface(String interfaceName, JsonNode node, StringBuilder allInterfaces) {
-        if (allInterfaces.toString().contains("interface " + interfaceName + " {")) {
-            return interfaceName;
+    private void generateInterface(String interfaceName, JsonNode node, StringBuilder allInterfaces, Set<String> generatedNames) {
+        if(generatedNames.contains(interfaceName)){
+            return;
         }
 
         StringBuilder currentInterface = new StringBuilder();
@@ -46,16 +45,16 @@ public class TypeScriptTypeGenerator {
             String fieldName = field.getKey();
             String validFieldName = fieldName.matches("^[a-zA-Z_][a-zA-Z0-9_]*$") ? fieldName : String.format("'%s'", fieldName);
             JsonNode fieldNode = field.getValue();
-            String type = getTsType(fieldName, fieldNode, allInterfaces);
+            String type = getTsType(fieldName, fieldNode, allInterfaces, generatedNames);
             currentInterface.append(String.format(" %s: %s;\n", validFieldName, type));
         }
         currentInterface.append("}\n");
         // Prepending ensures that dependencies are defined before they are used.
         allInterfaces.insert(0, currentInterface);
-        return interfaceName;
+        generatedNames.add(interfaceName);
     }
 
-    private String getTsType(String fieldName, JsonNode fieldNode, StringBuilder allInterfaces) {
+    private String getTsType(String fieldName, JsonNode fieldNode, StringBuilder allInterfaces, Set<String> generatedNames) {
         if (fieldNode.isTextual()) return "string";
         if (fieldNode.isNumber()) return "number";
         if (fieldNode.isBoolean()) return "boolean";
@@ -63,7 +62,7 @@ public class TypeScriptTypeGenerator {
 
         if (fieldNode.isObject()){
            String nestedInterfaceName = capitalize(fieldName) + "Type";
-           generateInterface(nestedInterfaceName, fieldNode, allInterfaces);
+           generateInterface(nestedInterfaceName, fieldNode, allInterfaces, generatedNames);
            return nestedInterfaceName;
         }
 
@@ -73,7 +72,7 @@ public class TypeScriptTypeGenerator {
             }
             JsonNode firstElement = fieldNode.get(0);
             String singularFieldName = fieldName.endsWith("s") ? fieldName.substring(0, fieldName.length() - 1) : fieldName;
-            String arrayElementType = getTsType(singularFieldName, firstElement, allInterfaces);
+            String arrayElementType = getTsType(singularFieldName, firstElement, allInterfaces, generatedNames);
             return String.format("%s[]", arrayElementType);
         }
 

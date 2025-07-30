@@ -11,6 +11,7 @@ import io.quarkus.runtime.StartupEvent;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.event.Observes;
 import jakarta.inject.Inject;
+import org.eclipse.microprofile.config.inject.ConfigProperty;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -40,7 +41,7 @@ public class SyncJobMessageProducer {
             channel = rabbitMQClient.connect().openChannel().orElseThrow(() -> new CoreManagementException("RabbitMQ Error", "Unable to open rabbitMQ Channel"));
             channel.exchangeDeclare("syncjob-exchange", "direct", true);
         } catch (Exception e) {
-            Log.errorf("Error initialising rabbitMQ message producer", e);
+            Log.errorf("Error initialising rabbitMQ message producer: %s %s", e.getClass(),e.getMessage());
             throw new CoreManagementException("RabbitMQ error", "Could not initiliaze producer", e);
         }
     }

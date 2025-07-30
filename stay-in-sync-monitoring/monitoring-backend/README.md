@@ -1,5 +1,22 @@
-# monitoring-backend
+### Prerequisites
 
+Make sure you have the following tools installed before running the monitoring-backend project:
+
+- JDK: Java 17 or higher  
+  Check with: java -version
+
+- Maven Wrapper: The project uses ./mvnw so Maven doesn't need to be installed globally.  
+  If missing, generate it with:  
+  mvn -N io.takari:maven:wrapper
+
+- Docker: Required for Quarkus DevServices and Testcontainers  
+  Install from: https://www.docker.com/products/docker-desktop  
+  Check with: docker info
+
+- Database: Optional, only if not using Docker DevServices  
+  Example config in „application.properties“
+
+# monitoring-backend
 This project uses Quarkus, the Supersonic Subatomic Java Framework.
 
 If you want to learn more about Quarkus, please visit its website: <https://quarkus.io/>.

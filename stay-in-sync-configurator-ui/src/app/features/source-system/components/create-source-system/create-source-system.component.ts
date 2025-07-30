@@ -52,13 +52,13 @@ export class CreateSourceSystemComponent implements OnInit, OnChanges {
   @Output() visibleChange = new EventEmitter<boolean>();
 
 
-  // Reduziertes Step-Model: nur Metadaten und Endpoints
+ 
   steps = [
     {label: 'Metadaten'},
     {label: 'Api Header'},
     {label: 'Endpoints'},
   ];
-  currentStep = 0; // Start bei Schritt 0 (Metadaten)
+  currentStep = 0; 
   createdSourceSystemId!: number;
 
   form!: FormGroup;
@@ -160,7 +160,6 @@ export class CreateSourceSystemComponent implements OnInit, OnChanges {
   cancel(): void {
     this.visible = false;
     this.visibleChange.emit(false);
-    // reset form and state
     this.form.reset({apiType: 'REST_OPENAPI', apiAuthType: null});
     this.selectedFile = null;
     this.fileSelected = false;
@@ -168,77 +167,86 @@ export class CreateSourceSystemComponent implements OnInit, OnChanges {
     this.currentStep = 0;
   }
 
-  /**
-   * Validates form, constructs DTO including authConfig and optional file blob,
-   * and triggers POST to create the Source System.
-   */
-  save(): void {
-    if (this.form.invalid) {
-      this.form.markAllAsTouched();
-      return;
-    }
+/**
+ * Validates form, constructs DTO including authConfig and optional file blob or URL,
+ * and triggers POST to create the Source System.
+ */
+save(): void {
+  if (this.form.invalid) {
+    this.form.markAllAsTouched();
+    return;
+  }
 
-    const base = {...this.form.getRawValue()} as CreateSourceSystemDTO;
-    delete base.authConfig;
+  const base = {...this.form.getRawValue()} as CreateSourceSystemDTO;
+  delete base.authConfig;
+  
+  const authType = this.form.get('apiAuthType')!.value as ApiAuthType;
+  const cfg = this.form.get('authConfig')!.value;
+  if (authType === ApiAuthType.Basic) {
+    base.authConfig = {authType, username: cfg.username, password: cfg.password} as BasicAuthDTO;
+  } else if (authType === ApiAuthType.ApiKey) {
+    base.authConfig = {authType, apiKey: cfg.apiKey, headerName: cfg.headerName} as ApiKeyAuthDTO;
+  }
+
+  const post = () => {
+    this.postDto(base);
+  };
+
+  if (this.selectedFile) {
     delete base.openApiSpec;
-
-    const authType = this.form.get('apiAuthType')!.value as ApiAuthType;
-    const cfg = this.form.get('authConfig')!.value;
-    if (authType === ApiAuthType.Basic) {
-      base.authConfig = {authType, username: cfg.username, password: cfg.password} as BasicAuthDTO;
-    } else if (authType === ApiAuthType.ApiKey) {
-      base.authConfig = {authType, apiKey: cfg.apiKey, headerName: cfg.headerName} as ApiKeyAuthDTO;
-    }
-
-    const post = () => {
-      this.postDto(base);
+    const reader = new FileReader();
+    reader.onload = () => {
+      const fileContent = reader.result as string;
+      base.openApiSpec = fileContent;
+      post();
     };
-
-    if (this.selectedFile) {
-      const reader = new FileReader();
-      reader.onload = () => {
-        const b64 = (reader.result as string).split(',')[1];
-        const bytes = atob(b64);
-        const arr = new Uint8Array(bytes.length);
-        for (let i = 0; i < bytes.length; i++) arr[i] = bytes.charCodeAt(i);
-        base.openApiSpec = new Blob([arr], {type: 'application/octet-stream'});
-        post();
-      };
-      reader.readAsDataURL(this.selectedFile);
+    reader.readAsText(this.selectedFile);
+    
+  } else {
+    const openApiSpecValue = base.openApiSpec;
+    if (openApiSpecValue && typeof openApiSpecValue === 'string' && openApiSpecValue.trim()) {
+      base.openApiSpec = openApiSpecValue;
+      post();
     } else {
+      delete base.openApiSpec;
       post();
     }
   }
-
+}
+  
   /**
    * Performs HTTP POST to persist the Source System and handles Location header parsing.
    *
    * @param dto Prepared DTO for creation.
    */
   private postDto(dto: CreateSourceSystemDTO): void {
+    console.log('📤 Sending DTO to backend:', dto);
+    console.log('📤 openApiSpec field:', dto.openApiSpec);
+    console.log('📤 openApiSpec type:', typeof dto.openApiSpec);
+    
     this.sourceSystemService
       .apiConfigSourceSystemPost(dto)
       .subscribe({
         next: (resp: SourceSystemDTO) => {
+          console.log('✅ Backend response:', resp);
+          console.log('✅ Returned openApiSpec:', resp.openApiSpec);
           this.createdSourceSystemId = resp.id!;
           this.currentStep = 1;
         },
         error: (err) => {
+          console.error('❌ CREATE failed:', err);
           this.errorService.handleError(err);
-          console.error('Failed to create Source System:', err);
         }
       });
   }
-
   /**
    * Advances the stepper to the next step.
    * If on first step, saves the Source System before proceeding.
    */
   goNext(): void {
     if (this.currentStep === 0) {
-      this.save();            // erzeugt SourceSystem, springt auf Step 1 (API Headers)
+      this.save();
     } else if (this.currentStep === 1) {
-      // keine Persistenz hier, einfach auf Endpoints weiter
       this.currentStep = 2;
     }
   }

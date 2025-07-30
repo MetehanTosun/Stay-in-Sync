@@ -15,6 +15,6 @@ export interface SourceSystemDTO {
     apiUrl: string;
     description?: string;
     apiType: string;
-    openApiSpec?: Blob;
+    openApiSpec?: string;
 }
 
