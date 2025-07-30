@@ -6,8 +6,11 @@ import com.rabbitmq.client.CancelCallback;
 import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.DeliverCallback;
 import com.rabbitmq.client.Delivery;
+import de.unistuttgart.stayinsync.pollingnode.entities.PollingJobDetails;
 import de.unistuttgart.stayinsync.pollingnode.exceptions.PollingNodeException;
-import de.unistuttgart.stayinsync.pollingnode.usercontrol.management.PollingJobManagement;
+import de.unistuttgart.stayinsync.pollingnode.exceptions.rabbitmqexceptions.ConsumerQueueBindingException;
+import de.unistuttgart.stayinsync.pollingnode.exceptions.rabbitmqexceptions.ConsumerQueueUnbindingException;
+import de.unistuttgart.stayinsync.pollingnode.management.MessageProcessor;
 import de.unistuttgart.stayinsync.transport.dto.SourceSystemApiRequestConfigurationMessageDTO;
 import io.quarkiverse.rabbitmqclient.RabbitMQClient;
 import io.quarkus.logging.Log;
@@ -31,7 +34,7 @@ public class PollingJobMessageConsumer {
     ObjectMapper objectMapper;
 
     @Inject
-    PollingJobManagement pollingJobManagement;
+    MessageProcessor pollingJobManagement;
 
     private Channel channel;
 
@@ -63,7 +66,6 @@ public class PollingJobMessageConsumer {
             //TODO: Consider different routing key/another queue for dead-letter-exchange
             //Declare queue for a single worker to receive updates on its running jobs
             pollingNodeQueueName = channel.queueDeclare("", false, true, true, queueArgs).getQueue();
-
 
             channel.basicConsume("new-pollingjob-queue", false, deployPollingJobCallback(), cancelSyncJobDeploymentCallback("new-pollingjob-queue"));
         } catch (IOException e) {
@@ -112,8 +114,7 @@ public class PollingJobMessageConsumer {
     }
 
     /**
-     * Called when the the consumer got canceled from consuming
-     *
+     * Called when the consumer got canceled from consuming
      * @return
      */
     private CancelCallback cancelSyncJobDeploymentCallback(String queue) {
@@ -124,7 +125,6 @@ public class PollingJobMessageConsumer {
 
     /**
      * Processes a message for a running polling-job configuration
-     *
      * @return
      */
     private DeliverCallback updateDeployedPollingJobCallback() {
@@ -148,14 +148,15 @@ public class PollingJobMessageConsumer {
      * @param apiRequestConfigurationMessageDTO
      * @throws PollingNodeException
      */
-    public void bindExisitingPollingJobQueue(SourceSystemApiRequestConfigurationMessageDTO apiRequestConfigurationMessageDTO) throws PollingNodeException {
+    public void bindExisitingPollingJobQueue(SourceSystemApiRequestConfigurationMessageDTO apiRequestConfigurationMessageDTO) throws ConsumerQueueBindingException {
         try {
             String routingKey = "polling-job" + apiRequestConfigurationMessageDTO.id();
             Log.infof("Binding queue %s with routing key %s", pollingNodeQueueName, routingKey);
             channel.queueBind(pollingNodeQueueName, "pollingjob-exchange", routingKey);
             channel.basicConsume(pollingNodeQueueName, false, updateDeployedPollingJobCallback(), cancelSyncJobDeploymentCallback(pollingNodeQueueName));
         } catch (IOException e) {
-            throw new PollingNodeException("RabbitMQ error, Failed to bind queue");
+            Log.errorf("RabbitMQ error, Failed to bind queue");
+            throw new ConsumerQueueBindingException("RabbitMQ error, Failed to bind queue", e);
         }
     }
 
@@ -165,13 +166,13 @@ public class PollingJobMessageConsumer {
      * @param apiRequestConfigurationMessageDTO
      * @throws PollingNodeException
      */
-    public void unbindExisitingPollingJobQueue(SourceSystemApiRequestConfigurationMessageDTO apiRequestConfigurationMessageDTO) throws PollingNodeException {
+    public void unbindExisitingPollingJobQueue(PollingJobDetails apiRequestConfigurationMessageDTO) throws ConsumerQueueUnbindingException {
         try {
             String routingKey = "polling-job" + apiRequestConfigurationMessageDTO.id();
             Log.infof("Unbinding queue %s with routing key %s", pollingNodeQueueName, routingKey);
             channel.queueUnbind(pollingNodeQueueName, "pollingjob-exchange", routingKey);
         } catch (IOException e) {
-            throw new PollingNodeException("RabbitMQ error, Failed to unbind queue");
+            throw new ConsumerQueueUnbindingException("RabbitMQ error, Failed to unbind queue", e);
         }
     }
 
