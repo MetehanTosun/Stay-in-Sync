@@ -1,25 +1,41 @@
-<div class="logs-panel">
-  <div>
-    <label>Startzeit:</label>
-    <input [(ngModel)]="startTime" type="datetime-local" />
-    <label>Endzeit:</label>
-    <input [(ngModel)]="endTime" type="datetime-local" />
-    <label>Level:</label>
-    <select [(ngModel)]="level">
-      <option value="">Alle</option>
-      <option value="INFO">Info</option>
-      <option value="WARN">Warn</option>
-      <option value="ERROR">Error</option>
-      <option value="DEBUG">Debug</option>
-      <option value="TRACE">Trace</option>
+<div class="log-filters">
+  <label>
+    Startzeit:
+    <input type="datetime-local" [(ngModel)]="startTime" (change)="onFilterChange()" />
+  </label>
+
+  <label>
+    Endzeit:
+    <input type="datetime-local" [(ngModel)]="endTime" (change)="onFilterChange()" />
+  </label>
+
+  <label>
+    Stream:
+    <select [(ngModel)]="stream" (change)="onFilterChange()">
+      <option value="stderr">stderr</option>
+      <option value="stdout">stdout</option>
     </select>
-  </div>
-  <div *ngIf="filteredLogs.length === 0">Keine Logs vorhanden.</div>
-  <ul *ngIf="filteredLogs.length > 0">
-    <li *ngFor="let log of filteredLogs">
-      <span>{{ log.timestamp }}:</span>
-      <span>{{ log.message }}</span>
-      <span *ngIf="log.nodeId">[{{ log.nodeId }}]</span>
-    </li>
-  </ul>
+  </label>
+
+  <label>
+    Level:
+    <select [(ngModel)]="level" (change)="onFilterChange()">
+      <option value="">Alle</option>
+      <option value="info">Info</option>
+      <option value="warn">Warn</option>
+      <option value="error">Error</option>
+      <option value="debug">Debug</option>
+      <option value="trace">Trace</option>
+    </select>
+  </label>
 </div>
+<div *ngFor="let log of filteredLogs" class="log-line">
+  <span class="timestamp">{{ log.timestamp | date: 'short' }}</span>
+  <span class="level" [ngClass]="log.level">{{ log.level }}</span>
+  <span class="message">{{ log.message }}</span>
+</div>
+
+<ng-template #noLogs>
+  <p>Keine Logs gefunden für die gewählten Filter.</p>
+</ng-template>
+
