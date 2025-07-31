@@ -23,7 +23,7 @@ public class SumOperator implements Operation {
      * @throws OperatorValidationException if the node does not have exactly one input.
      */
     @Override
-    public void validateNode(LogicNode node) {
+    public void validateNode(LogicNode node)throws OperatorValidationException {
         List<Node> inputs = node.getInputNodes();
         if (inputs == null || inputs.size() != 1) {
             throw new OperatorValidationException(

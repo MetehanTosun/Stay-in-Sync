@@ -20,7 +20,7 @@ public class OneOfOperator implements Operation {
      * @throws OperatorValidationException if the node has no input nodes configured
      */
     @Override
-    public void validateNode(LogicNode node) {
+    public void validateNode(LogicNode node)throws OperatorValidationException {
         List<Node> inputs = node.getInputNodes();
         if(inputs == null || inputs.isEmpty()){
             throw new OperatorValidationException("ONE_OF operation is for node" + node.getName() + "requires at least 1 input");

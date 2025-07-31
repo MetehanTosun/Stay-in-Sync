@@ -26,7 +26,7 @@ public class LogicNode extends Node {
      * @param name     The unique, human-readable name for this node.
      * @throws NodeConfigurationException if the name or operator are null/empty.
      */
-    public LogicNode(String name, LogicOperator operator) {
+    public LogicNode(String name, LogicOperator operator) throws NodeConfigurationException {
         if (name == null || name.trim().isEmpty()) {
             throw new NodeConfigurationException("Name for LogicNode cannot be null or empty.");
         }
@@ -44,7 +44,7 @@ public class LogicNode extends Node {
      * @param operator The logical operation this node will perform.
      * @param inputs   The parent nodes that provide input for this node.
      */
-    public LogicNode(String name, LogicOperator operator, Node... inputs) {
+    public LogicNode(String name, LogicOperator operator, Node... inputs) throws NodeConfigurationException {
         this(name, operator); // Calls the main constructor to set and validate name and operator
         this.setInputNodes(Arrays.asList(inputs));
     }

@@ -26,7 +26,7 @@ public class BetweenOperator implements Operation {
      * @throws OperatorValidationException if the validation fails.
      */
     @Override
-    public void validateNode(LogicNode node) {
+    public void validateNode(LogicNode node)throws OperatorValidationException {
         List<Node> inputs = node.getInputNodes();
 
         // Rule 1: Must have exactly 3 inputs

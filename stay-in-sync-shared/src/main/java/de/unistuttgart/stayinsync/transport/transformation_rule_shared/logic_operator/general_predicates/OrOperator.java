@@ -21,7 +21,7 @@ public class OrOperator implements Operation {
      * @param node The LogicNode to validate.
      * @throws OperatorValidationException if the node does not have at least two inputs.
      */
-    public void validateNode(LogicNode node) {
+    public void validateNode(LogicNode node)throws OperatorValidationException {
         List<Node> inputs = node.getInputNodes();
 
         if (inputs == null || inputs.size() < 2) {

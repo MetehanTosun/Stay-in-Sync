@@ -114,7 +114,7 @@ public class GraphStorageService {
     /**
      * A private helper method to "hydrate" a graph entity into an executable list of nodes.
      * It centralizes the mapping and compiling logic for loading a graph.
-     */
+
     private List<Node> hydrateGraph(LogicGraphEntity entity) {
         try {
             GraphDTO dto = jsonObjectMapper.readValue(entity.graphDefinitionJson, GraphDTO.class);
@@ -129,6 +129,7 @@ public class GraphStorageService {
             throw new RuntimeException("Failed to deserialize graph from JSON.", e);
         }
     }
+     */
 
 }
 

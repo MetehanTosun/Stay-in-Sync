@@ -22,8 +22,7 @@ public abstract class AbstractTwoDateTimeOperator implements Operation {
      * @throws OperatorValidationException if the node does not have exactly two inputs.
      */
     @Override
-    public void validateNode(LogicNode node) {
-        // We now access the list of parent Node objects.
+    public void validateNode(LogicNode node)throws OperatorValidationException {
         List<Node> inputs = node.getInputNodes();
         if (inputs == null || inputs.size() != 2) {
             throw new OperatorValidationException(

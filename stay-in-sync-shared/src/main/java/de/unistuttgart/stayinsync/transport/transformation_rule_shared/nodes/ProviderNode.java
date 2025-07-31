@@ -34,7 +34,7 @@ public class ProviderNode extends Node {
      * @param jsonPath The full semantic path to the data source. Cannot be null or empty.
      * @throws NodeConfigurationException if jsonPath is null or empty.
      */
-    public ProviderNode(String jsonPath) {
+    public ProviderNode(String jsonPath) throws NodeConfigurationException {
         if (jsonPath == null || jsonPath.trim().isEmpty()) {
             throw new NodeConfigurationException("jsonPath for ProviderNode cannot be null or empty.");
         }

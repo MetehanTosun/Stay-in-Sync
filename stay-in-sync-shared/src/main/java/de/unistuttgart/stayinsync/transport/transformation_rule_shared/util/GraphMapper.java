@@ -4,6 +4,7 @@ import de.unistuttgart.stayinsync.transport.dto.transformationrule.GraphDTO;
 import de.unistuttgart.stayinsync.transport.dto.transformationrule.InputDTO;
 import de.unistuttgart.stayinsync.transport.dto.transformationrule.NodeDTO;
 import de.unistuttgart.stayinsync.transport.dto.transformationrule.vFlow.*;
+import de.unistuttgart.stayinsync.transport.exception.NodeConfigurationException;
 import de.unistuttgart.stayinsync.transport.transformation_rule_shared.logic_operator.LogicOperator;
 import de.unistuttgart.stayinsync.transport.transformation_rule_shared.nodes.*;
 import io.quarkus.logging.Log;
@@ -116,7 +117,7 @@ public class GraphMapper {
      * Maps a GraphDTO (deserialized from JSON) into a fully connected
      * in-memory graph of Node objects for validation and evaluation.
      */
-    public List<Node> toNodeGraph(GraphDTO graphDto) {
+    public List<Node> toNodeGraph(GraphDTO graphDto) throws NodeConfigurationException  {
         Log.debug("Starting mapping from GraphDTO to internal Node graph.");
         if (graphDto == null || graphDto.getNodes() == null || graphDto.getNodes().isEmpty()) {
             Log.debug("Input GraphDTO is null or empty, returning empty list.");
@@ -127,32 +128,33 @@ public class GraphMapper {
 
         // Pass 1: Create all node instances.
         Log.debug("Pass 1: Creating all Node instances from DTOs.");
-        for (NodeDTO dto : graphDto.getNodes()) {
-            Node node;
-            switch (dto.getNodeType()) {
-                case "PROVIDER":
-                    node = new ProviderNode(dto.getJsonPath());
-                    ((ProviderNode) node).setArcId(dto.getArcId());
-                    break;
-                case "CONSTANT":
-                    node = new ConstantNode(dto.getName(), dto.getValue());
-                    break;
-                case "LOGIC":
-                    node = new LogicNode(dto.getName(), LogicOperator.valueOf(dto.getOperatorType()));
-                    break;
-                case "FINAL":
-                    node = new FinalNode();
-                    break;
-                default:
-                    Log.errorf("Unknown nodeType encountered during mapping: %s", dto.getNodeType());
-                    throw new IllegalArgumentException("Unknown nodeType: " + dto.getNodeType());
+            for (NodeDTO dto : graphDto.getNodes()) {
+                    Node node;
+                    switch (dto.getNodeType()) {
+                        case "PROVIDER":
+                            node = new ProviderNode(dto.getJsonPath());
+                            ((ProviderNode) node).setArcId(dto.getArcId());
+                            break;
+                        case "CONSTANT":
+                            node = new ConstantNode(dto.getName(), dto.getValue());
+                            break;
+                        case "LOGIC":
+                            node = new LogicNode(dto.getName(), LogicOperator.valueOf(dto.getOperatorType()));
+                            break;
+                        case "FINAL":
+                            node = new FinalNode();
+                            break;
+                        default:
+                            Log.errorf("Unknown nodeType encountered during mapping: %s", dto.getNodeType());
+                            throw new NodeConfigurationException("Unknown nodeType: " + dto.getNodeType());
+                    }
+                    node.setId(dto.getId());
+                    node.setName(dto.getName());
+                    node.setOffsetX(dto.getOffsetX());
+                    node.setOffsetY(dto.getOffsetY());
+                    createdNodes.put(node.getId(), node);
             }
-            node.setId(dto.getId());
-            node.setName(dto.getName());
-            node.setOffsetX(dto.getOffsetX());
-            node.setOffsetY(dto.getOffsetY());
-            createdNodes.put(node.getId(), node);
-        }
+
         Log.debugf("Created %d Node instances.", createdNodes.size());
 
         // Pass 2: Apply input connections from the inputNodes property of each NodeDTO.

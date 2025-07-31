@@ -23,7 +23,7 @@ public class EqualsOperator implements Operation {
      * @param node The LogicNode to validate.
      * @throws OperatorValidationException if the configuration is invalid.
      */
-    public void validateNode(LogicNode node) {
+    public void validateNode(LogicNode node)throws OperatorValidationException {
         List<Node> inputs = node.getInputNodes();
 
         if (inputs == null || inputs.size() < 2) {

@@ -17,7 +17,7 @@ public class IsFalseOperator implements Operation {
      * @throws OperatorValidationException if the node has no inputs.
      */
     @Override
-    public void validateNode(LogicNode node) {
+    public void validateNode(LogicNode node)throws OperatorValidationException {
         List<Node> inputs = node.getInputNodes();
         if (inputs == null || inputs.isEmpty()) {
             throw new OperatorValidationException("IS_FALSE operation requires at least 1 input.");

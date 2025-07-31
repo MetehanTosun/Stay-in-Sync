@@ -26,7 +26,7 @@ public class ConstantNode extends Node {
      * @param value The constant value for this node. Cannot be null.
      * @throws NodeConfigurationException if name or value are null or empty.
      */
-    public ConstantNode(String name, Object value) {
+    public ConstantNode(String name, Object value) throws NodeConfigurationException {
         if (name == null || name.trim().isEmpty()) {
             throw new NodeConfigurationException("Name for ConstantNode cannot be null or empty.");
         }

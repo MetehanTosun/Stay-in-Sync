@@ -10,6 +10,7 @@ import de.unistuttgart.stayinsync.transport.dto.transformationrule.GraphDTO;
 import de.unistuttgart.stayinsync.transport.dto.transformationrule.NodeDTO;
 import de.unistuttgart.stayinsync.transport.dto.transformationrule.TransformationRulePayloadDTO;
 import de.unistuttgart.stayinsync.transport.dto.transformationrule.vFlow.VFlowGraphDTO;
+import de.unistuttgart.stayinsync.transport.exception.NodeConfigurationException;
 import de.unistuttgart.stayinsync.transport.transformation_rule_shared.GraphStatus;
 import de.unistuttgart.stayinsync.transport.transformation_rule_shared.nodes.Node;
 import de.unistuttgart.stayinsync.transport.transformation_rule_shared.util.GraphMapper;
@@ -116,29 +117,37 @@ public class TransformationRuleService {
                 .orElseThrow(() -> new CoreManagementException(Response.Status.NOT_FOUND,
                         "Not Found", "Rule with id %d not found.", id));
 
-        GraphDTO graphDto = mapper.vflowToGraphDto(vflowDto);
-        List<Node> nodeGraph = mapper.toNodeGraph(graphDto);
-        List<ValidationError> validationErrors = validator.validateGraph(nodeGraph);
-        GraphStatus status = validationErrors.isEmpty() ? GraphStatus.FINALIZED : GraphStatus.DRAFT;
-
-        ruleToUpdate.graphStatus = status;
-
         try {
+            GraphDTO graphDto = mapper.vflowToGraphDto(vflowDto);
+            List<Node> nodeGraph = mapper.toNodeGraph(graphDto);
+
+            List<ValidationError> validationErrors = validator.validateGraph(nodeGraph);
+            GraphStatus status = validationErrors.isEmpty() ? GraphStatus.FINALIZED : GraphStatus.DRAFT;
+
+            ruleToUpdate.graphStatus = status;
             ruleToUpdate.graph.graphDefinitionJson = jsonObjectMapper.writeValueAsString(graphDto);
+
             if (!validationErrors.isEmpty()) {
                 ruleToUpdate.validationErrorsJson = jsonObjectMapper.writeValueAsString(validationErrors);
             } else {
-                ruleToUpdate.validationErrorsJson = null;
+                ruleToUpdate.validationErrorsJson = null; // Clear old errors if the graph is now valid.
             }
+
+            Log.infof("Successfully updated graph for rule '%s' (id: %d). New status: %s",
+                    ruleToUpdate.name, id, status);
+
+            return new GraphStorageService.PersistenceResult(ruleToUpdate, validationErrors);
+
+        } catch (NodeConfigurationException e) {
+            Log.warnf(e, "Client sent a malformed graph for rule id %d: %s", id, e.getMessage());
+            throw new CoreManagementException(Response.Status.BAD_REQUEST,
+                    "Invalid node configuration", e.getMessage(), e);
+
         } catch (JsonProcessingException e) {
-            Log.errorf(e, "Failed to serialize graph for rule with id %d", id);
+            Log.errorf(e, "Failed to serialize graph or errors for rule with id %d", id);
             throw new CoreManagementException(Response.Status.INTERNAL_SERVER_ERROR,
                     "Serialization Error", "Failed to serialize graph for update.", e);
         }
-
-        Log.infof("Successfully updated graph for rule '%s' (id: %d). New status: %s",
-                ruleToUpdate.name, id, status);
-        return new GraphStorageService.PersistenceResult(ruleToUpdate, validationErrors);
     }
 
     /**
@@ -163,9 +172,7 @@ public class TransformationRuleService {
                 System.out.println("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
                 System.out.println("!!! JSON PROCESSING EXCEPTION GEWORFEN !!!");
                 System.out.println("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
-                // Diese Zeile ist am wichtigsten, sie druckt den genauen Fehler:
                 e.printStackTrace();
-                // =====================================================================
 
             }
         }

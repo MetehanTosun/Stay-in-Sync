@@ -2,6 +2,7 @@ package de.unistuttgart.stayinsync.transport.transformation_rule_shared.logic_op
 
 import com.fasterxml.jackson.databind.JsonNode;
 import de.unistuttgart.stayinsync.transport.exception.GraphEvaluationException;
+import de.unistuttgart.stayinsync.transport.exception.OperatorValidationException;
 import de.unistuttgart.stayinsync.transport.transformation_rule_shared.nodes.LogicNode;
 
 import java.util.Map;
@@ -27,7 +28,7 @@ public interface Operation {
      * @param node The LogicNode to validate.
      * @throws IllegalArgumentException if the configuration is invalid.
      */
-    void validateNode(LogicNode node);
+    void validateNode(LogicNode node) throws OperatorValidationException;;
 
     /**
      * Returns the Java type of the value that this operation produces.

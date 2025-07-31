@@ -1,6 +1,7 @@
 package de.unistuttgart.stayinsync.core.configuration.service.transformationrule;
 
 
+import de.unistuttgart.stayinsync.transport.exception.OperatorValidationException;
 import de.unistuttgart.stayinsync.transport.transformation_rule_shared.nodes.FinalNode;
 import de.unistuttgart.stayinsync.transport.transformation_rule_shared.nodes.LogicNode;
 import de.unistuttgart.stayinsync.transport.transformation_rule_shared.nodes.Node;
@@ -31,7 +32,7 @@ public class GraphValidatorService {
      * @param graphNodes The complete list of nodes in the graph.
      * @return A {@code List<ValidationError>} containing structured error objects. An empty list signifies a valid graph.
      */
-    public List<ValidationError> validateGraph(List<Node> graphNodes) {
+    public List<ValidationError> validateGraph(List<Node> graphNodes){
         Log.debugf("Validating graph with %d nodes.", graphNodes != null ? graphNodes.size() : 0);
         List<ValidationError> errors = new ArrayList<>();
 
@@ -95,16 +96,15 @@ public class GraphValidatorService {
     /**
      * Iterates through all nodes and validates the operator configuration for each LogicNode.
      */
-    private void validateNodeOperators(List<Node> graphNodes, List<ValidationError> errors) {
+    private void validateNodeOperators(List<Node> graphNodes, List<ValidationError> errors)  {
         Log.debug("Validating individual node operators...");
         for (Node node : graphNodes) {
             if (node instanceof LogicNode) {
                 LogicNode logicNode = (LogicNode) node;
                 try {
-                    // This logic remains the same
                     Operation strategy = logicNode.getOperator().getOperationStrategy();
                     strategy.validateNode(logicNode);
-                } catch (IllegalArgumentException e) {
+                } catch (OperatorValidationException  e) {
                     Log.warnf("Validation error for node '%s' (ID: %d): %s", logicNode.getName(), logicNode.getId(), e.getMessage());
                     errors.add(new OperatorConfigurationError(logicNode.getId(), logicNode.getName(), e.getMessage()));
                 }

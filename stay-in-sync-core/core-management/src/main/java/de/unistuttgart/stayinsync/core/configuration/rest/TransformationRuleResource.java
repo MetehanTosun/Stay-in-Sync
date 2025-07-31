@@ -14,6 +14,7 @@ import de.unistuttgart.stayinsync.transport.dto.transformationrule.GraphPersiste
 import de.unistuttgart.stayinsync.transport.dto.transformationrule.TransformationRulePayloadDTO;
 import de.unistuttgart.stayinsync.transport.dto.transformationrule.vFlow.VFlowGraphDTO;
 import de.unistuttgart.stayinsync.transport.dto.transformationrule.vFlow.VflowGraphResponseDTO;
+import de.unistuttgart.stayinsync.transport.exception.NodeConfigurationException;
 import de.unistuttgart.stayinsync.transport.transformation_rule_shared.validation_error.ValidationError;
 import io.quarkus.logging.Log;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -110,12 +111,18 @@ public class TransformationRuleResource {
     public Response updateTransformationRuleGraph(@Parameter(name = "id", required = true) @PathParam("id") Long id, VFlowGraphDTO vflowDto) {
         try {
             var result = ruleService.updateRuleGraph(id, vflowDto);
+
             GraphPersistenceResponseDTO responseDto = new GraphPersistenceResponseDTO(
                     ruleMapper.toGraphDTO(result.entity()),
                     result.validationErrors()
             );
+
             Log.infof("Successfully updated graph for rule with id %d. New status: %s", id, result.entity().graphStatus);
             return Response.ok(responseDto).build();
+
+        } catch (CoreManagementException e) {
+            throw e;
+
         } catch (Exception e) {
             Log.errorf(e, "Unexpected error in updateTransformationRuleGraph for id %d", id);
             throw new CoreManagementException(Response.Status.INTERNAL_SERVER_ERROR,
