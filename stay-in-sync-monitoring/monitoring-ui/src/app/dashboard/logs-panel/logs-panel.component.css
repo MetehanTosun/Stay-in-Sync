@@ -1,8 +1,9 @@
-.level.info { color: blue; }
-.level.warn { color: orange; }
-.level.error { color: red; }
-.level.debug { color: green; }
-.level.trace { color: gray; }
+::ng-deep .level.info { color: blue !important; }
+::ng-deep .level.warn { color: orange !important; }
+::ng-deep .level.error { color: red !important; }
+::ng-deep .level.debug { color: green !important; }
+::ng-deep .level.trace { color: gray !important; }
+
 
 .log-line {
   border-left: 4px solid transparent;

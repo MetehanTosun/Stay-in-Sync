@@ -3,6 +3,7 @@ import { LogEntry } from '../../core/models/log.model';
 import { LogService } from '../../core/services/log.service';
 import { FormsModule } from '@angular/forms';
 import {DatePipe, NgClass, NgForOf, NgIf} from '@angular/common';
+import {TableModule} from 'primeng/table';
 
 @Component({
   selector: 'app-logs-panel',
@@ -11,7 +12,8 @@ import {DatePipe, NgClass, NgForOf, NgIf} from '@angular/common';
     FormsModule,
     NgForOf,
     DatePipe,
-    NgClass
+    NgClass,
+    TableModule
   ]
 })
 export class LogsPanelComponent implements OnInit, OnChanges {
