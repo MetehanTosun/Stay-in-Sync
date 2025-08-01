@@ -2,7 +2,7 @@ package de.unistuttgart.stayinsync.core.configuration.edc.service;
 
 import de.unistuttgart.stayinsync.core.configuration.edc.EDCAsset;
 import jakarta.enterprise.context.ApplicationScoped;
-
+import jakarta.transaction.Transactional;
 import java.util.List;
 import java.util.Optional;
 
@@ -17,22 +17,29 @@ public class EDCAssetService {
         return Optional.ofNullable(EDCAsset.findById(id));
     }
 
-    public EDCAsset createFromDto(EDCAsset asset) {
-        asset.persist();
-        return asset;
+    @Transactional
+    public EDCAsset createFromDto(EDCAsset entity) {
+        entity.persist();
+        return entity;
     }
 
+    @Transactional
     public Optional<EDCAsset> update(Long id, EDCAsset newState) {
-        return findById(id).map(existing -> {
-            existing.assetId = newState.assetId;
-            existing.dataAddress = newState.dataAddress;
-            existing.properties = newState.properties;
-            existing.targetSystemEndpoint = newState.targetSystemEndpoint;
-            existing.targetEDC = newState.targetEDC;
-            return existing;
-        });
+        EDCAsset existing = EDCAsset.findById(id);
+        if (existing == null) {
+            return Optional.empty();
+        }
+        // Felder kopieren
+        existing.assetId = newState.assetId;
+        existing.dataAddress = newState.dataAddress;
+        existing.properties = newState.properties;
+        existing.edcAccessPolicies = newState.edcAccessPolicies;
+        existing.targetSystemEndpoint = newState.targetSystemEndpoint;
+        existing.targetEDC = newState.targetEDC;
+        return Optional.of(existing);
     }
 
+    @Transactional
     public boolean delete(Long id) {
         return EDCAsset.deleteById(id);
     }

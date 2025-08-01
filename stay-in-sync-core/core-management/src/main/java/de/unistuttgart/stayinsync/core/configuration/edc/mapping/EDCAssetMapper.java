@@ -1,64 +1,68 @@
 package de.unistuttgart.stayinsync.core.configuration.edc.mapping;
 
-import de.unistuttgart.stayinsync.core.configuration.edc.EDCAsset;
-import de.unistuttgart.stayinsync.core.configuration.edc.EDCDataAddress;
-import de.unistuttgart.stayinsync.core.configuration.edc.EDCProperty;
-import de.unistuttgart.stayinsync.core.configuration.edc.EDC;
-import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.TargetSystemEndpoint;
+
 import de.unistuttgart.stayinsync.core.configuration.edc.dtoedc.EDCAssetDto;
-import java.util.Set;
+import de.unistuttgart.stayinsync.core.configuration.edc.*;
+import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.TargetSystemEndpoint;
 import java.util.stream.Collectors;
+
 
 public class EDCAssetMapper {
 
-    public static EDCAssetDto toDto(EDCAsset asset) {
-        if (asset == null) {
-            return null;
-        }
-        EDCAssetDto dto = new EDCAssetDto()
-            .setId(asset.id)
-            .setAssetId(asset.assetId)
-            .setDataAddressId(asset.dataAddress != null ? asset.dataAddress.id : null)
-            .setPropertiesId(asset.properties != null ? asset.properties.id : null)
-            .setTargetSystemEndpointId(
-                asset.targetSystemEndpoint != null ? asset.targetSystemEndpoint.id : null
-            )
-            .setTargetEDCId(asset.targetEDC != null ? asset.targetEDC.id : null)
-            .setAccessPolicyIds(extractPolicyIds(asset));
-        return dto;
+    public static EDCAssetDto toDto(EDCAsset e) {
+        if (e == null) return null;
+        return new EDCAssetDto()
+            .setId(e.id)
+            .setAssetId(e.assetId)
+            .setDataAddressId(e.dataAddress != null ? e.dataAddress.id : null)
+            .setPropertiesId(e.properties != null ? e.properties.id : null)
+            .setAccessPolicyIds(e.edcAccessPolicies != null
+                ? e.edcAccessPolicies.stream().map(p -> p.id).collect(Collectors.toSet())
+                : null)
+            .setTargetSystemEndpointId(e.targetSystemEndpoint != null ? e.targetSystemEndpoint.id : null)
+            .setTargetEDCId(e.targetEDC != null ? e.targetEDC.id : null);
     }
 
     public static EDCAsset fromDto(EDCAssetDto dto) {
-        if (dto == null) {
-            return null;
-        }
-        EDCAsset asset = dto.getId() != null
-            ? EDCAsset.findById(dto.getId())
-            : new EDCAsset();
+        if (dto == null) return null;
+        EDCAsset e = new EDCAsset();
+        e.assetId = dto.getAssetId();
 
-        asset.assetId = dto.getAssetId();
-        asset.dataAddress = dto.getDataAddressId() != null
-            ? EDCDataAddress.findById(dto.getDataAddressId())
-            : null;
-        asset.properties = dto.getPropertiesId() != null
-            ? EDCProperty.findById(dto.getPropertiesId())
-            : null;
-        asset.targetSystemEndpoint = dto.getTargetSystemEndpointId() != null
-            ? TargetSystemEndpoint.findById(dto.getTargetSystemEndpointId())
-            : null;
-        asset.targetEDC = dto.getTargetEDCId() != null
-            ? EDC.findById(dto.getTargetEDCId())
-            : null;
-        // Access policies werden derzeit nicht gesetzt – geschieht über eigene Resource
-        return asset;
-    }
+        // referenzierte Objekte laden
+        EDCDataAddress addr = EDCDataAddress.findById(dto.getDataAddressId());
+        if (addr == null) throw new IllegalArgumentException("DataAddress " + dto.getDataAddressId() + " nicht gefunden");
+        e.dataAddress = addr;
 
-    private static Set<Long> extractPolicyIds(EDCAsset asset) {
-        if (asset.edcAccessPolicies == null) {
-            return Set.of();
+        if (dto.getPropertiesId() != null) {
+            EDCProperty prop = EDCProperty.findById(dto.getPropertiesId());
+            if (prop == null) throw new IllegalArgumentException("Property " + dto.getPropertiesId() + " nicht gefunden");
+            e.properties = prop;
         }
-        return asset.edcAccessPolicies.stream()
-            .map(p -> p.id)
-            .collect(Collectors.toSet());
+
+        if (dto.getAccessPolicyIds() != null) {
+            // wir verknüpfen nur die IDs – Service schiebt ggf. die Policies drauf
+            e.edcAccessPolicies = dto.getAccessPolicyIds().stream()
+                 .map(id -> {
+                  EDCAccessPolicy p = EDCAccessPolicy.findById(id);
+             if (p == null) {
+                throw new IllegalArgumentException("Policy " + id + " nicht gefunden");
+             }
+                 return p;
+            })
+                .collect(Collectors.toSet());
+
+        }
+
+        if (dto.getTargetSystemEndpointId() != null) {
+            TargetSystemEndpoint tse = TargetSystemEndpoint.findById(dto.getTargetSystemEndpointId());
+            if (tse == null) throw new IllegalArgumentException("Endpoint " + dto.getTargetSystemEndpointId() + " nicht gefunden");
+            e.targetSystemEndpoint = tse;
+        }
+
+        EDC edc = EDC.findById(dto.getTargetEDCId());
+        if (edc == null) throw new IllegalArgumentException("EDC " + dto.getTargetEDCId() + " nicht gefunden");
+        e.targetEDC = edc;
+
+        return e;
     }
 }
