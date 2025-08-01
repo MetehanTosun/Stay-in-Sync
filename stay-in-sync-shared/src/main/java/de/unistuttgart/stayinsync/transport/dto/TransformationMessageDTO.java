@@ -1,5 +1,7 @@
 package de.unistuttgart.stayinsync.transport.dto;
 
+import de.unistuttgart.stayinsync.transport.dto.targetsystems.RequestConfigurationMessageDTO;
+
 import java.util.List;
 import java.util.Set;
 
@@ -8,6 +10,7 @@ public record TransformationMessageDTO(
         TransformationScriptDTO transformationScriptDTO,
         TransformationRuleDTO transformationRuleDTO,
         Set<SourceSystemApiRequestConfigurationMessageDTO> requestConfigurationMessageDTOS,
-        List<String> arcManifest // TODO: When building TransformationmessageDTO, add manifest with iterate over ARCs
+        List<String> arcManifest,
+        Set<RequestConfigurationMessageDTO> targetRequestConfigurationMessageDTOS
 ) {
 }
