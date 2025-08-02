@@ -1,4 +1,4 @@
-<p-splitter [panelSizes]="[50, 50]" [style]="{ height: '100vh' }" >
+<p-splitter [panelSizes]="[60, 40]">
   <ng-template pTemplate="panel">
     <div class="sidebar">
       <div class="sidebar-header">
@@ -8,17 +8,19 @@
       <app-graph-panel (nodeSelected)="onNodeSelected($event)" [searchTerm]="searchTerm"></app-graph-panel>
     </div>
   </ng-template>
-  <ng-template pTemplate="panel" >
-    <p-tabs value="/dashboard" class="w-full flex">
+  <ng-template pTemplate="panel">
+    <p-tabs class="w-full flex flex-grow-1">
       <p-tablist>
         @for(tab of tabs; track tab.route){
-          <p-tab [value]="tab.route" [routerLink]="tab.route" class="flex items-center !gap-2 text-inherit">
+          <p-tab [value]="tab.route" [routerLink]="tab.route" [queryParams]="{input: selectedNodeId}">
             <i [class]="tab.icon"></i>
             <span>{{ tab.label }}</span>
           </p-tab>
         }
       </p-tablist>
-      <router-outlet></router-outlet>
+      <div style="height: 100%; overflow: auto;">
+        <router-outlet></router-outlet>
+      </div>
     </p-tabs>
   </ng-template>
 </p-splitter>

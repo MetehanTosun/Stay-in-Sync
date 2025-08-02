@@ -37,3 +37,14 @@ h1 {
 .w-full {
   width: 100%;
 }
+.flex {
+  display: flex;
+}
+
+.flex-grow-1 {
+  flex-grow: 1;
+}
+
+.w-full {
+  width: 100%;
+}
