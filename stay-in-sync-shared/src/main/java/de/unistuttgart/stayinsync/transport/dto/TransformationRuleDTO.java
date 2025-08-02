@@ -1,4 +1,6 @@
 package de.unistuttgart.stayinsync.transport.dto;
 
-public record TransformationRuleDTO() {
+import de.unistuttgart.stayinsync.transport.dto.transformationrule.GraphDTO;
+
+public record TransformationRuleDTO(GraphDTO graphDTO) {
 }

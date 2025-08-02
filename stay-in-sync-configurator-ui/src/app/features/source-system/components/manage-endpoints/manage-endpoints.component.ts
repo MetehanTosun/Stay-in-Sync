@@ -29,6 +29,10 @@ import {ApiEndpointQueryParamDTO} from '../../models/apiEndpointQueryParamDTO';
 import {ApiEndpointQueryParamType} from '../../models/apiEndpointQueryParamType';
 import {CreateSourceSystemEndpointDTO} from '../../models/createSourceSystemEndpointDTO';
 
+import { load as parseYAML } from 'js-yaml';
+import { SourceSystemDTO } from '../../models/sourceSystemDTO';
+import { ManageEndpointParamsComponent } from '../manage-endpoint-params/manage-endpoint-params.component';
+
 
 /**
  * Component for managing endpoints of a source system: list, create, edit, delete, and import.
@@ -46,12 +50,17 @@ import {CreateSourceSystemEndpointDTO} from '../../models/createSourceSystemEndp
     CardModule,
     CheckboxModule,
     DialogModule,
-    ProgressSpinnerModule
+    ProgressSpinnerModule,
+    ManageEndpointParamsComponent
   ],
   templateUrl: './manage-endpoints.component.html',
   styleUrls: ['./manage-endpoints.component.css']
 })
 export class ManageEndpointsComponent implements OnInit {
+  /**
+   * Expose QueryParamType enum to the template.
+   */
+  public ApiEndpointQueryParamType = ApiEndpointQueryParamType;
   /**
    * ID of the source system whose endpoints are managed.
    */
@@ -109,26 +118,6 @@ export class ManageEndpointsComponent implements OnInit {
    */
   editForm!: FormGroup;
 
-  /**
-   * Query Parameters for the selected endpoint.
-   */
-  queryParams: ApiEndpointQueryParamDTO[] = [];
-  /**
-   * Reactive form for creating new query parameters.
-   */
-  queryParamForm!: FormGroup;
-  /**
-   * Indicator whether query parameters are currently loading.
-   */
-  queryParamsLoading = false;
-  /**
-   * Available types for query parameters.
-   */
-  paramTypes = [
-    {label: 'Query', value: ApiEndpointQueryParamType.Query},
-    {label: 'Path', value: ApiEndpointQueryParamType.Path}
-  ];
-
 
   /**
    * Injects FormBuilder, endpoint and source system services, and HttpClient.
@@ -151,22 +140,41 @@ export class ManageEndpointsComponent implements OnInit {
       httpRequestType: ['GET', Validators.required]
     });
 
-    this.queryParamForm = this.fb.group({
-      paramName: ['', [Validators.required, this.pathParamFormatValidator()]],
-      queryParamType: [ApiEndpointQueryParamType.Query, Validators.required]
-    });
-
-    this.loadEndpoints();
-    this.sourceSystemService
-      .apiConfigSourceSystemIdGet(this.sourceSystemId, 'body')
-      .subscribe(ss => this.apiUrl = ss.apiUrl);
-
     this.editForm = this.fb.group({
       endpointPath: ['', Validators.required],
       httpRequestType: ['GET', Validators.required]
     });
+
+    this.loadSourceSystemAndSetApiUrl();
+   
   }
 
+  private loadSourceSystemAndSetApiUrl(): void {
+    this.sourceSystemService.apiConfigSourceSystemIdGet(this.sourceSystemId)
+      .subscribe({
+        next: (sourceSystem: SourceSystemDTO) => {
+          console.log('Loaded source system:', sourceSystem);
+          console.log('openApiSpec field:', sourceSystem.openApiSpec);
+          console.log('openApiSpec type:', typeof sourceSystem.openApiSpec);
+          
+          if (sourceSystem.openApiSpec && typeof sourceSystem.openApiSpec === 'string') {
+            if (sourceSystem.openApiSpec.startsWith('http')) {
+              this.apiUrl = sourceSystem.openApiSpec.trim();
+              console.log('✅ Found OpenAPI URL in source system:', this.apiUrl);
+            } else {
+              this.apiUrl = sourceSystem.apiUrl!;
+            }
+          } else {
+            this.apiUrl = sourceSystem.apiUrl!;
+            console.log('ℹ️ No OpenAPI spec found, using API URL:', this.apiUrl);
+          }
+        },
+        error: (err: any) => {
+          console.error('Failed to load source system:', err);
+          this.apiUrl = 'https://petstore.swagger.io/v2';
+        }
+      });
+  }
   /**
    * Load endpoints for the current source system from the backend.
    */
@@ -197,7 +205,7 @@ export class ManageEndpointsComponent implements OnInit {
       .apiConfigSourceSystemSourceSystemIdEndpointPost(this.sourceSystemId, [dto])
       .subscribe({
         next: () => {
-          this.endpointForm.reset({httpRequestType: 'GET'});
+          this.endpointForm.reset({ endpointPath: '', httpRequestType: 'GET' });
           this.loadEndpoints();
         },
         error: console.error
@@ -275,146 +283,312 @@ export class ManageEndpointsComponent implements OnInit {
     this.finish.emit();
   }
 
-  /**
-   * Attempt to import endpoints by fetching an OpenAPI spec and pushing to backend.
-   */
-  importEndpoints() {
-    if (!this.apiUrl) return;
-    this.importing = true;
-    const tryLoad = (url: string) => this.http.get<any>(url).toPromise();
-    const paths = [
-      '/v2/swagger.json',
-      '/v2/openapi.json',
-      '/openapi.json',
-      '/swagger.json',
-      '/v3/api-docs',
-      '/v3/api-docs.json',
-      '/v3/openapi.json',
-      '/v3/swagger.json',
-      '/api/v3/openapi.json',
-    ];
-    (async () => {
-      let spec: any = null;
-      for (const p of paths) {
-        try {
-          spec = await tryLoad(`${this.apiUrl}${p}`);
-          console.log('Loaded spec from', p);
-          break;
-        } catch (_) {
-        }
-      }
-      if (!spec) {
-        this.importing = false;
-        console.error('Failed to load any OpenAPI spec');
-        return;
-      }
-      const dtos: CreateSourceSystemEndpointDTO[] = [];
-      for (const [path, methods] of Object.entries(spec.paths || {})) {
-        for (const m of Object.keys(methods as object)) {
-          dtos.push({endpointPath: path, httpRequestType: m.toUpperCase()});
-        }
-      }
-      this.endpointSvc
-        .apiConfigSourceSystemSourceSystemIdEndpointPost(this.sourceSystemId, dtos)
-        .subscribe({
-          next: () => {
-            this.importing = false;
-            this.loadEndpoints();
-          },
-          error: err => {
-            console.error('Import failed', err);
-            this.importing = false;
-          }
-        });
-    })();
-  }
-
-  /**
-   * Select an endpoint for detail management.
-   * @param endpoint Endpoint to manage.
-   */
-  manage(endpoint: SourceSystemEndpointDTO) {
-    console.log('Managing endpoint', endpoint);
-    this.selectedEndpoint = endpoint;
-    this.loadQueryParams(endpoint.id!); // Query-Parameter für den ausgewählten Endpunkt laden
-  }
-
-  /**
-   * Load query parameters for a given endpoint.
-   * @param endpointId The ID of the endpoint.
-   */
-  loadQueryParams(endpointId: number) {
-    this.queryParamsLoading = true;
-    this.queryParamSvc.apiConfigEndpointEndpointIdQueryParamGet(endpointId)
-      .subscribe({
-        next: (params) => {
-          this.queryParams = params;
-          this.queryParamsLoading = false;
-        },
-        error: (err) => {
-          console.error('Failed to load query params', err);
-          this.queryParamsLoading = false;
-        }
-      });
-  }
-
-  /**
-   * Add a new query parameter to the selected endpoint.
-   */
-  addQueryParam() {
-    if (this.queryParamForm.invalid || !this.selectedEndpoint?.id) {
+  async importEndpoints(): Promise<void> {
+    if (!this.apiUrl) {
+      console.error('No API URL available for import');
       return;
     }
-    const dto: ApiEndpointQueryParamDTO = this.queryParamForm.value;
-    this.queryParamSvc.apiConfigEndpointEndpointIdQueryParamPost(this.selectedEndpoint.id, dto)
-      .subscribe({
-        next: () => {
-          this.queryParamForm.reset({queryParamType: ApiEndpointQueryParamType.Query});
-          this.loadQueryParams(this.selectedEndpoint!.id!);
-        },
-        error: (err) => console.error('Failed to add query param', err)
-      });
+    this.importing = true;
+    try {
+      await this.tryImportFromUrl();
+    } catch (err) {
+      console.error('Import failed:', err);
+      this.importing = false;
+    }
   }
 
   /**
-   * Delete a query parameter by its ID.
-   * @param paramId The ID of the query parameter to delete.
+   * Attempts to import the OpenAPI spec from the apiUrl, using direct and fallback URLs.
    */
-  deleteQueryParam(paramId: number) {
-    this.queryParamSvc.apiConfigEndpointQueryParamIdDelete(paramId)
-      .subscribe({
-        next: () => {
-          this.queryParams = this.queryParams.filter(p => p.id !== paramId);
-        },
-        error: (err) => console.error('Failed to delete query param', err)
-      });
+  private async tryImportFromUrl(): Promise<void> {
+    if (!this.apiUrl) {
+      throw new Error('No API URL available for import');
+    }
+    if (
+      this.apiUrl.includes('swagger.json') ||
+      this.apiUrl.includes('openapi.json') ||
+      this.apiUrl.endsWith('.yaml') ||
+      this.apiUrl.endsWith('.yml')
+    ) {
+      console.log('Using direct OpenAPI URL:', this.apiUrl);
+      try {
+        const openApiSpec = await this.http.get(this.apiUrl).toPromise();
+        console.log('✅ Loaded OpenAPI spec from direct URL');
+        const parsed = this.parseOpenApiSpec(openApiSpec);
+        this.endpoints = parsed.map(item => item.endpoint);
+        this.saveDiscoveredEndpoints(parsed);
+        this.importing = false;
+      } catch (err) {
+        console.error('Failed to load OpenAPI spec from direct URL:', err);
+        this.importing = false;
+        throw err;
+      }
+    } else {
+      try {
+        const openApiSpec = await this.http.get(this.apiUrl + '/swagger.json').toPromise();
+        console.log('✅ Loaded OpenAPI spec from /swagger.json');
+        this.processOpenApiSpec(openApiSpec);
+      } catch (err) {
+        console.log('ℹ️ /swagger.json not found, trying alternative URLs...');
+        this.tryAlternativeOpenApiUrls();
+      }
+    }
   }
 
+
+private tryAlternativeOpenApiUrls() {
+  const alternativeUrls = [
+    `${this.apiUrl}/v2/swagger.json`,
+    `${this.apiUrl}/api/v3/openapi.json`,
+    `${this.apiUrl}/swagger/v1/swagger.json`,
+    `${this.apiUrl}/api-docs`,
+    `${this.apiUrl}/openapi.json`,
+    `${this.apiUrl}/docs/swagger.json`,
+    `${this.apiUrl}/openapi.yaml`,   
+    `${this.apiUrl}/openapi.yml`,     
+    
+  ];
+  console.log('🔍 Trying alternative OpenAPI URLs...');
+  this.loadOpenApiFromUrls(alternativeUrls, 0);
+}
+
+
+ 
+
+
+private loadOpenApiFromUrls(urls: string[], index: number) {
+  if (index >= urls.length) {
+    console.error('❌ Could not load OpenAPI spec from any URL');
+    this.importing = false;
+    return;
+  }
+  const url = urls[index];
+  console.log(`⏳ Trying: ${url}`);
+
+  const isJson = url.endsWith('.json');
+  this.http.get(url, {
+    responseType: isJson ? 'json' : 'text' as 'json'
+  }).subscribe({
+    next: (raw: any) => {
+      console.log(`✅ SUCCESS! Loaded OpenAPI spec from: ${url}`);
+      let spec: any;
+      if (isJson) {
+        spec = raw;
+      } else {
+        try {
+          spec = parseYAML(raw as string);
+        } catch (e) {
+          console.error('Failed to parse YAML', e);
+          this.loadOpenApiFromUrls(urls, index + 1);
+          return;
+        }
+      }
+      this.processOpenApiSpec(spec);
+    },
+    error: () => {
+      console.log(`❌ Not found or invalid spec at: ${url}`);
+      this.loadOpenApiFromUrls(urls, index + 1);
+    }
+  });
+}
+
+
+
+
+ private async processOpenApiSpec(spec: any): Promise<void> {
+  try {
+    const endpointsToCreate: CreateSourceSystemEndpointDTO[] = [];
+
+    if (spec.paths) {
+      for (const [path, pathItem] of Object.entries(spec.paths)) {
+        for (const [method, operation] of Object.entries(pathItem as any)) {
+          if (['get', 'post', 'put', 'delete', 'patch', 'head', 'options'].includes(method.toLowerCase())) {
+            const operationDetails = operation as any;
+            
+            const pathLevelParams = (pathItem as any).parameters || [];
+            const operationLevelParams = operationDetails.parameters || [];
+            const allParameters = [...pathLevelParams, ...operationLevelParams];
+            
+            const formattedPath = this.formatPathWithParameters(path, allParameters);
+            
+            const endpoint: CreateSourceSystemEndpointDTO = {
+              endpointPath: formattedPath,
+              httpRequestType: method.toUpperCase()
+            };
+
+            endpointsToCreate.push(endpoint);
+          }
+        }
+      }
+    }
+
+    if (endpointsToCreate.length > 0) {
+      this.endpointSvc.apiConfigSourceSystemSourceSystemIdEndpointPost(this.sourceSystemId, endpointsToCreate)
+        .subscribe({
+          next: () => {
+            this.loadEndpoints();
+            console.log(`${endpointsToCreate.length} Endpoints erfolgreich importiert`);
+          },
+          error: (error) => {
+            console.error('Fehler beim Speichern der Endpoints:', error);
+          }
+        });
+    }
+  } catch (error) {
+    console.error('Fehler beim Verarbeiten der OpenAPI Spec:', error);
+  } finally {
+    this.importing = false;
+  }
+}
+
+  /**
+   * Parse OpenAPI specification and extract endpoints with their parameters
+   */
+  private parseOpenApiSpec(spec: any): Array<{endpoint: CreateSourceSystemEndpointDTO, pathParams: string[]}> {
+    const endpoints: Array<{endpoint: CreateSourceSystemEndpointDTO, pathParams: string[]}> = [];
+    
+    if (!spec.paths) {
+      console.warn('No paths found in OpenAPI specification');
+      return endpoints;
+    }
+
+    
+    Object.keys(spec.paths).forEach(path => {
+      const pathItem = spec.paths[path];
+      
+      
+      const httpMethods = ['get', 'post', 'put', 'delete', 'patch', 'options', 'head'];
+      
+      
+      Object.keys(pathItem).forEach(method => {
+        if (httpMethods.includes(method.toLowerCase())) {
+          const operation = pathItem[method];
+          
+        
+          const endpoint: CreateSourceSystemEndpointDTO = {
+            endpointPath: path,
+            httpRequestType: method.toUpperCase()
+          };
+
+          
+          const pathParams = this.extractPathParameters(path);
+
+          endpoints.push({
+            endpoint,
+            pathParams
+          });
+        }
+      });
+    });
+
+    return endpoints;
+  }
+
+
+  /**
+   * Utility: Ensure a parameter name is wrapped in curly braces {paramName}
+   */
+  private ensureBraces(paramName: string): string {
+    const cleanName = paramName.replace(/[{}]/g, '');
+    return `{${cleanName}}`;
+  }
+
+  /**
+   * Extract path parameter names from an endpoint path.
+   * Example: "/users/{userId}/posts/{postId}" -> ["{userId}", "{postId}"]
+   * Jetzt: Gibt immer {paramName} zurück, auch wenn nur userId gefunden wird.
+   */
+  private extractPathParameters(endpointPath: string): string[] {
+    // Suche nach {paramName}
+    const pathParamRegex = /\{([^}]+)\}/g;
+    const matches: string[] = [];
+    let match: RegExpExecArray | null;
+    while ((match = pathParamRegex.exec(endpointPath)) !== null) {
+      matches.push(this.ensureBraces(match[1]));
+    }
+    // Suche nach :paramName, <paramName>, [paramName] und /:paramName
+    const altPatterns = [
+      /:(\w+)/g,
+      /<(\w+)>/g,
+      /\[(\w+)\]/g
+    ];
+    altPatterns.forEach(pattern => {
+      let m: RegExpExecArray | null;
+      while ((m = pattern.exec(endpointPath)) !== null) {
+        const withBraces = this.ensureBraces(m[1]);
+        if (!matches.includes(withBraces)) {
+          matches.push(withBraces);
+        }
+      }
+    });
+    return matches;
+  }
+
+  /**
+   * Save discovered endpoints to the backend
+   */
+  private saveDiscoveredEndpoints(discoveredEndpoints: Array<{endpoint: CreateSourceSystemEndpointDTO, pathParams: string[]}>) {
+    if (discoveredEndpoints.length === 0) {
+      console.warn('No endpoints discovered');
+      this.importing = false;
+      return;
+    }
+
+   
+    const endpointDTOs = discoveredEndpoints.map(item => item.endpoint);
+    this.endpointSvc
+      .apiConfigSourceSystemSourceSystemIdEndpointPost(this.sourceSystemId, endpointDTOs)
+      .subscribe({
+        next: () => {
+          console.log(`Successfully created ${endpointDTOs.length} endpoints`);
+          this.loadEndpoints();
+          setTimeout(() => {
+          }, 1000);
+        },
+        error: (err) => {
+          console.error('Failed to create endpoints:', err);
+          this.importing = false;
+        }
+      });
+  }
 
   /**
    * Validator to ensure path parameter format: starts with { and ends with } with at least one character inside.
    */
   private pathParamFormatValidator(): ValidatorFn {
     return (control: AbstractControl): ValidationErrors | null => {
-
-      const formGroup = control.parent;
-      if (formGroup && formGroup.get('queryParamType')?.value === ApiEndpointQueryParamType.Query) {
+      const parent = control.parent;
+      const val = control.value as string;
+     
+      if (typeof val === 'string' && val.match(/^\{[A-Za-z0-9_]+\}$/)) {
         return null;
       }
-
-      const val = control.value as string;
-      if (typeof val !== 'string') {
-        return {invalidPathParamFormat: true};
-      }
-
-      if (val.length >= 3 && val.startsWith('{') && val.endsWith('}')) {
-        const inner = val.substring(1, val.length - 1);
-        if (inner.length > 0) {
-          return null;
-        }
-      }
-      return {invalidPathParamFormat: true};
+      return { invalidPathParamFormat: true };
     };
   }
 
+  private formatPathWithParameters(path: string, parameters: any[]): string {
+    let formattedPath = path;
+    
+    const pathParams = parameters?.filter(param => param.in === 'path') || [];
+    
+    pathParams.forEach(param => {
+      const paramName = param.name;
+      
+      const patterns = [
+        { regex: new RegExp(`:${paramName}\\b`, 'g'), replacement: `{${paramName}}` },
+        { regex: new RegExp(`<${paramName}>`, 'g'), replacement: `{${paramName}}` },
+        { regex: new RegExp(`\\[${paramName}\\]`, 'g'), replacement: `{${paramName}}` },
+        { 
+          regex: new RegExp(`(?<!\\{|:|<|\\[)\\b${paramName}\\b(?!\\}|>|\\])(?=/|$)`, 'g'), 
+          replacement: `{${paramName}}` 
+        }
+      ];
+      patterns.forEach(pattern => {
+        formattedPath = formattedPath.replace(pattern.regex, pattern.replacement);
+      });
+    });
+    
+    return formattedPath;
+  }
 }

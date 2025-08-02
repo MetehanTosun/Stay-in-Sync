@@ -1,0 +1,58 @@
+<!-- Component for managing query and path parameters for a specific endpoint -->
+<div class="p-card p-mt-4 p-p-4">
+  <!-- Display the title with the current endpoint path -->
+  <h4 class="p-mb-3">Query and Path Parameters for: {{ endpointPath || 'Endpoint' }}</h4>
+
+  <!-- Form to add a new query or path parameter -->
+  <form [formGroup]="queryParamForm" (ngSubmit)="addQueryParam()" class="p-fluid p-formgrid p-grid p-mb-4">
+    <div class="p-field p-col-6">
+      <label for="paramName">Parameter Name</label>
+      <input id="paramName" type="text" pInputText formControlName="paramName" />
+  
+    </div>
+    <div class="p-field p-col-4">
+      <label for="paramType">Type</label>
+      <p-dropdown id="paramType"
+                  [options]="paramTypes"
+                  optionLabel="label"
+                  optionValue="value"
+                  formControlName="queryParamType"></p-dropdown>
+    </div>
+    <div class="p-field p-col-2 p-d-flex p-ai-end">
+      <button pButton
+              type="submit"
+              label="Add"
+              icon="pi pi-plus"
+              [disabled]="queryParamForm.invalid"></button>
+    </div>
+  </form>
+
+  <!-- Table listing existing query and path parameters -->
+  <p-table [value]="queryParams" [loading]="queryParamsLoading" responsiveLayout="scroll">
+    <ng-template pTemplate="header">
+      <tr>
+        <th>Name</th>
+        <th>Type</th>
+        <th style="width: 8rem">Actions</th>
+      </tr>
+    </ng-template>
+    <ng-template pTemplate="body" let-param>
+      <tr>
+        <td>{{ param.paramName }}</td>
+        <td>{{ param.queryParamType }}</td>
+        <td>
+          <button pButton
+                  type="button"
+                  icon="pi pi-trash"
+                  class="p-button-danger p-button-text"
+                  (click)="deleteQueryParam(param.id!)"></button>
+        </td>
+      </tr>
+    </ng-template>
+    <ng-template pTemplate="emptymessage">
+      <tr>
+        <td colspan="3">No parameters available for this endpoint</td>
+      </tr>
+    </ng-template>
+  </p-table>
+</div> 

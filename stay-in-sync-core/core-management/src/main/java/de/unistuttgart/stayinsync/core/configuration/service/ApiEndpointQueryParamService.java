@@ -37,6 +37,11 @@ public class ApiEndpointQueryParamService {
 
         ApiEndpointQueryParam apiEndpointQueryParam = mapper.mapToEntity(apiEndpointQueryParamDTO);
 
+        // NEU: Path-Parameter IMMER mit {} speichern
+        if (apiEndpointQueryParam.queryParamType != null && apiEndpointQueryParam.queryParamType.name().equals("PATH")) {
+            apiEndpointQueryParam.paramName = ensureBraces(apiEndpointQueryParam.paramName);
+        }
+
         SourceSystemEndpoint endpoint = sourceSystemEndpointService.findSourceSystemEndpointById(endpointId).orElseThrow(() -> {
             return new CoreManagementException("Unable to find Endpoint", "There is no endpoint with id %s", endpointId);
         });
@@ -66,15 +71,26 @@ public class ApiEndpointQueryParamService {
 
     public Optional<ApiEndpointQueryParam> replaceQueryParam(@NotNull @Valid ApiEndpointQueryParamDTO apiEndpointQueryParamDTO) {
         ApiEndpointQueryParam apiEndpointQueryParam = mapper.mapToEntity(apiEndpointQueryParamDTO);
+        // NEU: Path-Parameter IMMER mit {} speichern
+        if (apiEndpointQueryParam.queryParamType != null && apiEndpointQueryParam.queryParamType.name().equals("PATH")) {
+            apiEndpointQueryParam.paramName = ensureBraces(apiEndpointQueryParam.paramName);
+        }
         Log.debugf("Replacing endpoint: %s", apiEndpointQueryParam);
 
         Optional<ApiEndpointQueryParam> updatedSourceSystemEndpoint = apiEndpointQueryParam.findByIdOptional(apiEndpointQueryParam.id)
-                .map(ApiEndpointQueryParam.class::cast) // Only here for type erasure within the IDE
+                .map(ApiEndpointQueryParam.class::cast) 
                 .map(targetSouceSystemEndpoint -> {
                     this.mapper.mapFullUpdate(apiEndpointQueryParam, targetSouceSystemEndpoint);
                     return targetSouceSystemEndpoint;
                 });
 
         return updatedSourceSystemEndpoint;
+    }
+
+    
+    private String ensureBraces(String paramName) {
+        if (paramName == null) return null;
+        String clean = paramName.replaceAll("[{}]", "");
+        return "{" + clean + "}";
     }
 }
