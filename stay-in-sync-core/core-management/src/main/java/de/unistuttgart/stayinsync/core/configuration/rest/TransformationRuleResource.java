@@ -70,7 +70,8 @@ public class TransformationRuleResource {
             description = "Creates the initial rule with metadata and a default graph containing only a FinalNode.")
     public Response createTransformationRule(TransformationRulePayloadDTO payload, @Context UriInfo uriInfo) {
         if (payload.getName() == null || payload.getName().trim().isEmpty()) {
-            throw new BadRequestException("Rule name must not be empty.");
+            throw new CoreManagementException(Response.Status.BAD_REQUEST,"Invalid Request",
+                    "Rule name must not be empty");
         }
         try {
             GraphStorageService.PersistenceResult result = ruleService.createRule(payload);

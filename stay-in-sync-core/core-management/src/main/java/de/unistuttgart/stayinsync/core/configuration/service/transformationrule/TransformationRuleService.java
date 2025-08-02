@@ -108,6 +108,9 @@ public class TransformationRuleService {
 
     /**
      * Updates the graph of an existing TransformationRule.
+     * This method will now always persist the graph, even if it's invalid.
+     * It combines errors from the mapping process (structural errors) and the validation
+     * process (logical errors) into a single list.
      */
     @Transactional
     public GraphStorageService.PersistenceResult updateRuleGraph(Long id, VFlowGraphDTO vflowDto) {
@@ -119,29 +122,30 @@ public class TransformationRuleService {
 
         try {
             GraphDTO graphDto = mapper.vflowToGraphDto(vflowDto);
-            List<Node> nodeGraph = mapper.toNodeGraph(graphDto);
 
-            List<ValidationError> validationErrors = validator.validateGraph(nodeGraph);
-            GraphStatus status = validationErrors.isEmpty() ? GraphStatus.FINALIZED : GraphStatus.DRAFT;
+            GraphMapper.MappingResult mappingResult = mapper.toNodeGraph(graphDto);
+            List<Node> successfullyMappedNodes = mappingResult.nodes();
+            List<ValidationError> allErrors = new ArrayList<>(mappingResult.mappingErrors());
+
+            int originalNodeCount = vflowDto.getNodes() != null ? vflowDto.getNodes().size() : 0;
+            List<ValidationError> validationErrors = validator.validateGraph(successfullyMappedNodes, originalNodeCount);
+            allErrors.addAll(validationErrors);
+
+            GraphStatus status = allErrors.isEmpty() ? GraphStatus.FINALIZED : GraphStatus.DRAFT;
 
             ruleToUpdate.graphStatus = status;
             ruleToUpdate.graph.graphDefinitionJson = jsonObjectMapper.writeValueAsString(graphDto);
 
-            if (!validationErrors.isEmpty()) {
-                ruleToUpdate.validationErrorsJson = jsonObjectMapper.writeValueAsString(validationErrors);
+            if (!allErrors.isEmpty()) {
+                ruleToUpdate.validationErrorsJson = jsonObjectMapper.writeValueAsString(allErrors);
             } else {
-                ruleToUpdate.validationErrorsJson = null; // Clear old errors if the graph is now valid.
+                ruleToUpdate.validationErrorsJson = null;
             }
 
-            Log.infof("Successfully updated graph for rule '%s' (id: %d). New status: %s",
-                    ruleToUpdate.name, id, status);
+            Log.infof("Successfully updated graph for rule '%s' (id: %d). New status: %s. Total errors: %d",
+                    ruleToUpdate.name, id, status, allErrors.size());
 
-            return new GraphStorageService.PersistenceResult(ruleToUpdate, validationErrors);
-
-        } catch (NodeConfigurationException e) {
-            Log.warnf(e, "Client sent a malformed graph for rule id %d: %s", id, e.getMessage());
-            throw new CoreManagementException(Response.Status.BAD_REQUEST,
-                    "Invalid node configuration", e.getMessage(), e);
+            return new GraphStorageService.PersistenceResult(ruleToUpdate, allErrors);
 
         } catch (JsonProcessingException e) {
             Log.errorf(e, "Failed to serialize graph or errors for rule with id %d", id);

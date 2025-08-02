@@ -7,6 +7,9 @@ import de.unistuttgart.stayinsync.transport.dto.transformationrule.vFlow.*;
 import de.unistuttgart.stayinsync.transport.exception.NodeConfigurationException;
 import de.unistuttgart.stayinsync.transport.transformation_rule_shared.logic_operator.LogicOperator;
 import de.unistuttgart.stayinsync.transport.transformation_rule_shared.nodes.*;
+import de.unistuttgart.stayinsync.transport.transformation_rule_shared.validation_error.NodeConfigurationError;
+import de.unistuttgart.stayinsync.transport.transformation_rule_shared.validation_error.OperatorConfigurationError;
+import de.unistuttgart.stayinsync.transport.transformation_rule_shared.validation_error.ValidationError;
 import io.quarkus.logging.Log;
 import jakarta.enterprise.context.ApplicationScoped;
 
@@ -20,6 +23,14 @@ import java.util.*;
  */
 @ApplicationScoped
 public class GraphMapper {
+
+
+    /**
+     * A record to hold the result of the mapping process from DTO to Node objects.
+     * @param nodes The list of successfully created nodes.
+     * @param mappingErrors A list of configuration errors found during mapping.
+     */
+    public record MappingResult(List<Node> nodes, List<ValidationError> mappingErrors) {}
 
     // ==========================================================================================
     // SECTION 1: Mapping from Frontend (VFlow) to Persistence Format (GraphDTO)
@@ -117,18 +128,20 @@ public class GraphMapper {
      * Maps a GraphDTO (deserialized from JSON) into a fully connected
      * in-memory graph of Node objects for validation and evaluation.
      */
-    public List<Node> toNodeGraph(GraphDTO graphDto) throws NodeConfigurationException  {
+    public MappingResult toNodeGraph(GraphDTO graphDto)  {
         Log.debug("Starting mapping from GraphDTO to internal Node graph.");
         if (graphDto == null || graphDto.getNodes() == null || graphDto.getNodes().isEmpty()) {
             Log.debug("Input GraphDTO is null or empty, returning empty list.");
-            return new ArrayList<>();
+            return new MappingResult(new ArrayList<>(), new ArrayList<>());
         }
         Log.debugf("Mapping GraphDTO with %d nodes to internal domain model.", graphDto.getNodes().size());
         Map<Integer, Node> createdNodes = new HashMap<>();
+        List<ValidationError> mappingErrors = new ArrayList<>();
 
         // Pass 1: Create all node instances.
         Log.debug("Pass 1: Creating all Node instances from DTOs.");
             for (NodeDTO dto : graphDto.getNodes()) {
+                try {
                     Node node;
                     switch (dto.getNodeType()) {
                         case "PROVIDER":
@@ -145,7 +158,6 @@ public class GraphMapper {
                             node = new FinalNode();
                             break;
                         default:
-                            Log.errorf("Unknown nodeType encountered during mapping: %s", dto.getNodeType());
                             throw new NodeConfigurationException("Unknown nodeType: " + dto.getNodeType());
                     }
                     node.setId(dto.getId());
@@ -153,6 +165,12 @@ public class GraphMapper {
                     node.setOffsetX(dto.getOffsetX());
                     node.setOffsetY(dto.getOffsetY());
                     createdNodes.put(node.getId(), node);
+                }
+
+                catch (NodeConfigurationException e) {
+                        Log.warnf(e, "A node with invalid configuration was found (ID: %d). It will be skipped.", dto.getId());
+                        mappingErrors.add(new NodeConfigurationError(dto.getId(), dto.getName(), e.getMessage()));
+                    }
             }
 
         Log.debugf("Created %d Node instances.", createdNodes.size());
@@ -180,7 +198,7 @@ public class GraphMapper {
         Log.debug("Finished connecting nodes.");
 
         Log.infof("Successfully mapped GraphDTO to an internal graph with %d nodes.", createdNodes.size());
-        return new ArrayList<>(createdNodes.values());
+        return new MappingResult(new ArrayList<>(createdNodes.values()), mappingErrors);
     }
 
     /**
