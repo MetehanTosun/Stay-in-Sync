@@ -94,7 +94,7 @@ services:
     container_name: fluent-bit
     ports:
       - "5500:5000"
-      - "5170:5170"
+      - "5170:5170"  # Quarkus TCP Log-Port
     volumes:
       - ./fluent-bit/fluent-bit.conf:/fluent-bit/etc/fluent-bit.conf:ro
       - ./fluent-bit/parsers.conf:/fluent-bit/etc/parsers.conf:ro
@@ -105,9 +105,12 @@ services:
       - loki
     networks:
       - elk
-
+  #context anpassen
   core-polling-node:
-    image: stay-in-sync/core-polling-node:latest
+    build:
+      context: /Users/serhatceri/Desktop/StuPro331/stay-in-sync-core/core-polling-node
+      dockerfile: src/main/docker/Dockerfile.jvm
+    image: stay-in-sync/core-polling-node
     container_name: core-polling-node
     environment:
       - QUARKUS_PROFILE=monitoring
@@ -116,8 +119,12 @@ services:
     networks:
       - elk
 
+#context anpassen
   core-sync-node:
-    image: stay-in-sync/core-sync-node:latest
+    build:
+      context: /Users/serhatceri/Desktop/StuPro331/stay-in-sync-core/core-sync-node
+      dockerfile: src/main/docker/Dockerfile.jvm
+    image: stay-in-sync/core-sync-node
     container_name: core-sync-node
     environment:
       - QUARKUS_PROFILE=monitoring
