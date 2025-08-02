@@ -47,7 +47,7 @@ public class SourceSystemEndpointTest {
 
     @Test
     public void testInvalidJsonInRequestBodySchemaThrowsException() {
-        CreateSourceSystemEndpointDTO dto = new CreateSourceSystemEndpointDTO("/bar", "POST", "{invalidJson}");
+        CreateSourceSystemEndpointDTO dto = new CreateSourceSystemEndpointDTO("/bar", "POST", "{invalidJson}", null);
         CoreManagementException ex = Assertions.assertThrows(CoreManagementException.class, () -> {
             endpointService.persistSourceSystemEndpoint(dto, null);
         });

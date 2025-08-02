@@ -52,3 +52,6 @@ Chart.lock
 #
 .bloop/
 .metals/
+.cursor/rules/create-prd.md
+.cursor/rules/generate-tasks.md
+.cursor/rules/process-task-list.md

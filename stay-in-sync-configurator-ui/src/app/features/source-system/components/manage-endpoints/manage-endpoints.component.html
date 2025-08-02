@@ -36,6 +36,11 @@
       <ngx-monaco-editor [options]="jsonEditorOptions" formControlName="requestBodySchema"></ngx-monaco-editor>
       <div *ngIf="jsonError" class="p-error">{{ jsonError }}</div>
     </div>
+    <div class="p-field p-col-12" style="margin-bottom: 1rem;">
+      <label for="responseBodySchema">Response-Body-Schema (JSON)</label>
+      <ngx-monaco-editor [options]="jsonEditorOptions" formControlName="responseBodySchema"></ngx-monaco-editor>
+      <div *ngIf="jsonError" class="p-error">{{ jsonError }}</div>
+    </div>
     <div class="p-col-12" style="margin: 2rem 0;">
       <button pButton type="button" label="Add Endpoint" [disabled]="endpointForm.invalid" (click)="addEndpoint()"></button>
     </div>
@@ -59,6 +64,11 @@
         <ngx-monaco-editor [options]="jsonEditorOptions" formControlName="requestBodySchema"></ngx-monaco-editor>
         <div *ngIf="editJsonError" class="p-error">{{ editJsonError }}</div>
       </div>
+      <div class="p-field p-col-12">
+        <label>Response-Body-Schema (JSON)</label>
+        <ngx-monaco-editor [options]="jsonEditorOptions" formControlName="responseBodySchema"></ngx-monaco-editor>
+        <div *ngIf="editJsonError" class="p-error">{{ editJsonError }}</div>
+      </div>
     </form>
     <ng-template pTemplate="footer">
       <button pButton type="button" label="Cancel" class="p-button-text" (click)="editDialog=false"></button>
@@ -75,6 +85,7 @@
         <th>Path</th>
         <th>Method</th>
         <th>Request-Body</th>
+        <th>Response-Body</th>
         <th>Actions</th>
       </tr>
     </ng-template>
@@ -84,6 +95,9 @@
         <td>{{ e.httpRequestType }}</td>
         <td>
           <button *ngIf="e.httpRequestType === 'POST' || e.httpRequestType === 'PUT'" pButton type="button" label="Request Body" (click)="showRequestBodyEditor(e)"></button>
+        </td>
+        <td>
+          <button pButton type="button" label="Response Preview" (click)="showResponsePreviewModal(e)"></button>
         </td>
         <td>
           <!-- Button zum Verwalten hinzufügen -->
@@ -108,11 +122,20 @@
     </div>
     <ngx-monaco-editor [options]="jsonEditorOptions" [model]="requestBodyEditorModel" (modelChange)="onRequestBodyModelChange($event)"></ngx-monaco-editor>
     <div class="editor-footer">
-      <button pButton type="button" label="Speichern" (click)="saveRequestBodySchema()"></button>
-      <button pButton type="button" label="Abbrechen" class="p-button-secondary" (click)="closeRequestBodyEditor()"></button>
+   
       <span *ngIf="requestBodyEditorError" class="p-error p-ml-3">{{ requestBodyEditorError }}</span>
     </div>
   </div>
+
+  <!-- Response Preview Modal -->
+  <app-response-preview-modal
+    [(visible)]="responsePreviewModalVisible"
+    [endpointId]="selectedResponsePreviewEndpoint?.id"
+    [endpointPath]="selectedResponsePreviewEndpoint?.endpointPath || ''"
+    [httpMethod]="selectedResponsePreviewEndpoint?.httpRequestType || ''"
+    [responseBodySchema]="selectedResponsePreviewEndpoint?.responseBodySchema"
+    (visibleChange)="onResponsePreviewModalVisibleChange($event)">
+  </app-response-preview-modal>
 
   <!-- =================================================================== -->
 <!--               Section: Manage Query Parameters                    -->

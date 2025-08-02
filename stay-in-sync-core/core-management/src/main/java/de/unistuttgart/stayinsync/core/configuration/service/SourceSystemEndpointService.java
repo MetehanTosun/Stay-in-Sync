@@ -54,6 +54,14 @@ public class SourceSystemEndpointService {
             }
         }
 
+        if (sourceSystemEndpointDTO.responseBodySchema() != null && !sourceSystemEndpointDTO.responseBodySchema().isBlank()) {
+            try {
+                objectMapper.readTree(sourceSystemEndpointDTO.responseBodySchema());
+            } catch (JsonProcessingException e) {
+                throw new CoreManagementException(Response.Status.BAD_REQUEST, "Invalid JSON in responseBodySchema", "Das Feld responseBodySchema enthält kein valides JSON: %s", e.getMessage());
+            }
+        }
+
         // Upsert-Logik: Prüfe, ob Endpoint existiert
         SourceSystemEndpoint existing = SourceSystemEndpoint.find("sourceSystem.id = ?1 and endpointPath = ?2 and httpRequestType = ?3",
                 sourceSystemId,
@@ -70,6 +78,7 @@ public class SourceSystemEndpointService {
             existing.endpointPath = updated.endpointPath;
             existing.httpRequestType = updated.httpRequestType;
             existing.requestBodySchema = updated.requestBodySchema;
+            existing.responseBodySchema = updated.responseBodySchema;
             existing.description = updated.description;
             // ggf. weitere Felder übernehmen
             existing.sourceSystem = sourceSystem;
@@ -80,6 +89,7 @@ public class SourceSystemEndpointService {
             // Neu anlegen
             SourceSystemEndpoint sourceSystemEndpoint = sourceSystemEndpointFullMapper.mapToEntity(sourceSystemEndpointDTO);
             sourceSystemEndpoint.requestBodySchema = sourceSystemEndpointDTO.requestBodySchema();
+            sourceSystemEndpoint.responseBodySchema = sourceSystemEndpointDTO.responseBodySchema();
             sourceSystemEndpoint.sourceSystem = sourceSystem;
             sourceSystemEndpoint.syncSystem = sourceSystem;
             sourceSystemEndpoint.persist();

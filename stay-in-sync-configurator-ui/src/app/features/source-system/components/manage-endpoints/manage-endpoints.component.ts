@@ -34,6 +34,7 @@ import {CreateSourceSystemEndpointDTO} from '../../models/createSourceSystemEndp
 import { load as parseYAML } from 'js-yaml';
 import { SourceSystemDTO } from '../../models/sourceSystemDTO';
 import { ManageEndpointParamsComponent } from '../manage-endpoint-params/manage-endpoint-params.component';
+import { ResponsePreviewModalComponent } from '../response-preview-modal/response-preview-modal.component';
 
 
 /**
@@ -54,6 +55,7 @@ import { ManageEndpointParamsComponent } from '../manage-endpoint-params/manage-
     DialogModule,
     ProgressSpinnerModule,
     ManageEndpointParamsComponent,
+    ResponsePreviewModalComponent,
     MonacoEditorModule,
     DragDropModule,
   ],
@@ -86,6 +88,10 @@ export class ManageEndpointsComponent implements OnInit {
   requestBodyEditorEndpoint: SourceSystemEndpointDTO | null = null;
   requestBodyEditorModel: NgxEditorModel = { value: '', language: 'json' };
   requestBodyEditorError: string | null = null;
+  
+  // Response Preview Modal properties
+  responsePreviewModalVisible: boolean = false;
+  selectedResponsePreviewEndpoint: SourceSystemEndpointDTO | null = null;
 
   constructor(
     private fb: FormBuilder,
@@ -102,12 +108,14 @@ export class ManageEndpointsComponent implements OnInit {
     this.endpointForm = this.fb.group({
       endpointPath: ['', Validators.required],
       httpRequestType: ['GET', Validators.required],
-      requestBodySchema: ['']
+      requestBodySchema: [''],
+      responseBodySchema: ['']
     });
     this.editForm = this.fb.group({
       endpointPath: ['', Validators.required],
       httpRequestType: ['GET', Validators.required],
-      requestBodySchema: ['']
+      requestBodySchema: [''],
+      responseBodySchema: ['']
     });
     this.loadSourceSystemAndSetApiUrl();
   }
@@ -173,10 +181,23 @@ export class ManageEndpointsComponent implements OnInit {
     } catch {
       // Kein JSON, lasse wie es ist
     }
+
+    // Validate response body schema
+    let responseBodySchema = this.endpointForm.get('responseBodySchema')?.value || '';
+    if (responseBodySchema) {
+      try {
+        JSON.parse(responseBodySchema);
+      } catch (e) {
+        this.jsonError = 'Response-Body-Schema ist kein valides JSON.';
+        return;
+      }
+    }
+
     const dto: any = {
       endpointPath: this.endpointForm.get('endpointPath')?.value,
       httpRequestType: this.endpointForm.get('httpRequestType')?.value,
-      requestBodySchema: resolvedSchema
+      requestBodySchema: resolvedSchema,
+      responseBodySchema: responseBodySchema
     };
     this.endpointSvc.apiConfigSourceSystemSourceSystemIdEndpointPost(
       this.sourceSystemId,
@@ -187,7 +208,8 @@ export class ManageEndpointsComponent implements OnInit {
         this.endpointForm.reset({
           endpointPath: '',
           httpRequestType: 'GET',
-          requestBodySchema: ''
+          requestBodySchema: '',
+          responseBodySchema: ''
         });
       },
       error: () => {}
@@ -214,7 +236,8 @@ export class ManageEndpointsComponent implements OnInit {
     this.editForm.patchValue({
       endpointPath: endpoint.endpointPath,
       httpRequestType: endpoint.httpRequestType,
-      requestBodySchema: endpoint.requestBodySchema || ''
+      requestBodySchema: endpoint.requestBodySchema || '',
+      responseBodySchema: endpoint.responseBodySchema || ''
     });
     this.editDialog = true;
     this.editJsonError = null;
@@ -233,13 +256,22 @@ export class ManageEndpointsComponent implements OnInit {
       sourceSystemId: this.sourceSystemId,
       endpointPath: this.editForm.value.endpointPath,
       httpRequestType: this.editForm.value.httpRequestType,
-      requestBodySchema: this.editForm.value.requestBodySchema
+      requestBodySchema: this.editForm.value.requestBodySchema,
+      responseBodySchema: this.editForm.value.responseBodySchema
     };
     if (dto.requestBodySchema) {
       try {
         JSON.parse(dto.requestBodySchema);
       } catch (e) {
         this.editJsonError = 'Request-Body-Schema ist kein valides JSON.';
+        return;
+      }
+    }
+    if (dto.responseBodySchema) {
+      try {
+        JSON.parse(dto.responseBodySchema);
+      } catch (e) {
+        this.editJsonError = 'Response-Body-Schema ist kein valides JSON.';
         return;
       }
     }
@@ -276,6 +308,52 @@ export class ManageEndpointsComponent implements OnInit {
       value: resolved,
       language: 'json'
     };
+  }
+
+  /**
+   * Show the response preview modal for a given endpoint.
+   */
+  showResponsePreviewModal(endpoint: SourceSystemEndpointDTO) {
+    try {
+      // Validate endpoint data
+      if (!endpoint) {
+        console.error('No endpoint provided for response preview');
+        return;
+      }
+
+      if (!endpoint.id) {
+        console.error('Endpoint ID is required for response preview');
+        return;
+      }
+
+      // Set the selected endpoint and open modal
+      this.selectedResponsePreviewEndpoint = endpoint;
+      this.responsePreviewModalVisible = true;
+
+      console.log(`Opening response preview modal for endpoint: ${endpoint.endpointPath} (${endpoint.httpRequestType})`);
+    } catch (error) {
+      console.error('Error opening response preview modal:', error);
+      // In a real application, you might want to show a toast notification here
+    }
+  }
+
+  /**
+   * Close the response preview modal and clean up data.
+   */
+  closeResponsePreviewModal() {
+    this.responsePreviewModalVisible = false;
+    this.selectedResponsePreviewEndpoint = null;
+    console.log('Response preview modal closed');
+  }
+
+  /**
+   * Handle response preview modal visibility changes.
+   */
+  onResponsePreviewModalVisibleChange(visible: boolean) {
+    if (!visible) {
+      // Modal is being closed, clean up data
+      this.closeResponsePreviewModal();
+    }
   }
 
   /**
@@ -705,10 +783,30 @@ export class ManageEndpointsComponent implements OnInit {
                   }
                 }
               }
+
+              // Extract response body schema
+              let responseBodySchema: string | undefined = undefined;
+              if (operationDetails.responses) {
+                // Try to get 200 response first, then fallback to other success responses
+                const successResponses = ['200', '201', '202', '204'];
+                for (const statusCode of successResponses) {
+                  const response = operationDetails.responses[statusCode];
+                  if (response?.content?.['application/json']?.schema) {
+                    let schema = response.content['application/json'].schema;
+                    schema = this.resolveRefs(schema, schemas);
+                    if (schema) {
+                      responseBodySchema = JSON.stringify(schema, null, 2);
+                      break; // Use the first successful response found
+                    }
+                  }
+                }
+              }
+
               const endpoint: CreateSourceSystemEndpointDTO = {
                 endpointPath: formattedPath,
                 httpRequestType: method.toUpperCase(),
-                requestBodySchema
+                requestBodySchema,
+                responseBodySchema
               };
               endpointsToCreate.push(endpoint);
             }

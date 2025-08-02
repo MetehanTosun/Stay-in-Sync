@@ -171,10 +171,26 @@ public class OpenApiSpecificationParserService {
                     }
                 }
 
+                String responseBodySchema = null;
+                if (operation.getResponses() != null && operation.getResponses().get("200") != null) {
+                    var response = operation.getResponses().get("200");
+                    if (response.getContent() != null && response.getContent().get("application/json") != null) {
+                        var mediaType = response.getContent().get("application/json");
+                        if (mediaType.getSchema() != null) {
+                            try {
+                                responseBodySchema = objectMapper.writeValueAsString(mediaType.getSchema());
+                            } catch (Exception e) {
+                                responseBodySchema = null;
+                            }
+                        }
+                    }
+                }
+
                 CreateSourceSystemEndpointDTO endpointDTO = new CreateSourceSystemEndpointDTO(
                         path,
                         httpMethod.toString(),
-                        requestBodySchema
+                        requestBodySchema,
+                        responseBodySchema
                         // operation.getSummary() != null ? operation.getSummary() : operation.getDescription() // TODO: summary for endpoint?
                 );
                 SourceSystemEndpoint newEndpoint = sourceSystemEndpointService.persistSourceSystemEndpoint(endpointDTO, sourceSystem.id);

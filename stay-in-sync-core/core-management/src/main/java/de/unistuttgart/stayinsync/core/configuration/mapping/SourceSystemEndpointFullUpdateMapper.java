@@ -24,16 +24,19 @@ public interface SourceSystemEndpointFullUpdateMapper {
 
     @Mapping(source = "sourceSystem.id", target = "sourceSystemId")
     @Mapping(source = "requestBodySchema", target = "requestBodySchema")
+    @Mapping(source = "responseBodySchema", target = "responseBodySchema")
     SourceSystemEndpointDTO mapToDTO(SourceSystemEndpoint input);
 
     List<SourceSystemEndpointDTO> mapToDTOList(List<SourceSystemEndpoint> input);
 
     @Mapping(target = "id", ignore = true)
     @Mapping(source = "requestBodySchema", target = "requestBodySchema")
+    @Mapping(source = "responseBodySchema", target = "responseBodySchema")
     SourceSystemEndpoint mapToEntity(SourceSystemEndpointDTO input);
 
     List<SourceSystemEndpoint> mapToEntityList(List<SourceSystemEndpointDTO> input);
 
     @Mapping(source = "requestBodySchema", target = "requestBodySchema")
+    @Mapping(source = "responseBodySchema", target = "responseBodySchema")
     SourceSystemEndpoint mapToEntity(CreateSourceSystemEndpointDTO sourceSystemEndpointDTO);
 }

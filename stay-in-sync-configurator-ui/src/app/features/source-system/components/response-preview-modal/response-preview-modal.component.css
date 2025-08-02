@@ -1,0 +1,154 @@
+.response-preview-container {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+}
+
+.loading-overlay {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  min-height: 300px;
+  color: var(--text-color-secondary);
+}
+
+.loading-overlay p {
+  margin-top: 1rem;
+  font-size: 1rem;
+}
+
+.error-message {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 1rem;
+  background-color: var(--red-50);
+  color: var(--red-700);
+  border: 1px solid var(--red-200);
+  border-radius: 6px;
+  margin-bottom: 1rem;
+}
+
+.error-message i {
+  font-size: 1.2rem;
+}
+
+.no-data-message {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 1rem;
+  background-color: var(--blue-50);
+  color: var(--blue-700);
+  border: 1px solid var(--blue-200);
+  border-radius: 6px;
+  margin-bottom: 1rem;
+}
+
+.no-data-message i {
+  font-size: 1.2rem;
+}
+
+.editor-container {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 400px;
+}
+
+.editor-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.75rem 1rem;
+  background-color: var(--surface-100);
+  border-bottom: 1px solid var(--surface-200);
+  border-radius: 6px 6px 0 0;
+}
+
+.endpoint-info {
+  font-size: 0.9rem;
+  color: var(--text-color-secondary);
+}
+
+.endpoint-info strong {
+  color: var(--primary-color);
+  font-weight: 600;
+}
+
+.schema-info {
+  font-size: 0.9rem;
+  color: var(--text-color-secondary);
+  font-weight: 500;
+}
+
+.monaco-wrapper {
+  flex: 1;
+  min-height: 350px;
+  border: 1px solid var(--surface-300);
+  border-radius: 0 0 6px 6px;
+  overflow: hidden;
+}
+
+.dialog-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--surface-200);
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .editor-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+  
+  .endpoint-info,
+  .schema-info {
+    font-size: 0.85rem;
+  }
+  
+  .monaco-wrapper {
+    min-height: 300px;
+  }
+}
+
+@media (max-width: 480px) {
+  .monaco-wrapper {
+    min-height: 250px;
+  }
+  
+  .error-message,
+  .no-data-message {
+    padding: 0.75rem;
+    font-size: 0.9rem;
+  }
+}
+
+/* Dark theme adjustments */
+:host-context(.dark) .error-message {
+  background-color: rgba(239, 68, 68, 0.1);
+  border-color: rgba(239, 68, 68, 0.3);
+  color: #fca5a5;
+}
+
+:host-context(.dark) .no-data-message {
+  background-color: rgba(59, 130, 246, 0.1);
+  border-color: rgba(59, 130, 246, 0.3);
+  color: #93c5fd;
+}
+
+:host-context(.dark) .editor-header {
+  background-color: var(--surface-800);
+  border-color: var(--surface-700);
+}
+
+:host-context(.dark) .monaco-wrapper {
+  border-color: var(--surface-600);
+} 

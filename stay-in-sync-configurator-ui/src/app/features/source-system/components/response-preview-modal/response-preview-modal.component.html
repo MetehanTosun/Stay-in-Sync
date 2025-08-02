@@ -1,0 +1,63 @@
+<p-dialog 
+  [header]="modalTitle"
+  [(visible)]="visible"
+  (visibleChange)="visibleChange.emit($event)"
+  [modal]="true"
+  [style]="{ width: '80vw', height: '80vh' }"
+  [draggable]="false"
+  [resizable]="true"
+  [closable]="true"
+  [closeOnEscape]="true"
+  [dismissableMask]="false">
+  
+  <div class="response-preview-container">
+    <!-- Loading State -->
+    <div *ngIf="loading" class="loading-overlay">
+      <p-progressSpinner strokeWidth="4"></p-progressSpinner>
+      <p>Loading response body schema...</p>
+    </div>
+
+    <!-- Error State -->
+    <div *ngIf="error" class="error-message">
+      <i class="pi pi-exclamation-triangle"></i>
+      <span>{{ error }}</span>
+    </div>
+
+    <!-- No Response Body State -->
+    <div *ngIf="!hasResponseBody && !loading && !error" class="no-data-message">
+      <i class="pi pi-info-circle"></i>
+      <span>No response body schema available for this endpoint</span>
+    </div>
+
+    <!-- Response Body Schema Editor -->
+    <div *ngIf="hasResponseBody && !loading && !error" class="editor-container">
+      <div class="editor-header">
+        <span class="endpoint-info">
+          <strong>{{ httpMethod }}</strong> {{ endpointPath }}
+        </span>
+        <span class="schema-info">
+          Response Body Schema
+        </span>
+      </div>
+      
+      <div class="monaco-wrapper">
+        <ngx-monaco-editor
+          [options]="editorOptions"
+          [model]="editorModel"
+          style="width: 100%; height: 100%">
+        </ngx-monaco-editor>
+      </div>
+    </div>
+  </div>
+
+  <ng-template pTemplate="footer">
+    <div class="dialog-footer">
+      <p-button 
+        label="Close" 
+        icon="pi pi-times" 
+        (click)="onClose()"
+        styleClass="p-button-text">
+      </p-button>
+    </div>
+  </ng-template>
+</p-dialog> 

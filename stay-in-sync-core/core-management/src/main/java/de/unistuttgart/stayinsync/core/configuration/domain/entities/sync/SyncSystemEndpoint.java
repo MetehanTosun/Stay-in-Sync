@@ -17,6 +17,9 @@ public abstract class SyncSystemEndpoint extends PanacheEntity {
     @Lob
     public String requestBodySchema;
 
+    @Lob
+    public String responseBodySchema;
+
     public String description;
 
     public String httpRequestType;
