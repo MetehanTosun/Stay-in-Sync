@@ -127,8 +127,9 @@ async loadSyncjobs() {
    */
   nodes: Node[] = [
     { id: 'A', type: 'SourceSystem', status: 'active', connections: [], label: 'Source System A' },
-    { id: 'B', type: 'ASS', status: 'active', connections: [], label: 'Hallo' },
-    { id: 'C', type: 'SyncNode', status: 'inactive', connections: [], label: 'Hallo' },
+    { id: 'B', type: 'ASS', status: 'active', connections: [], label: 'ASS 1' },
+    { id: 'C', type: 'SyncNode', status: 'active', connections: [], label: 'Sync' },
+    {id: 'D', type: 'TargetSystem', status: 'active', connections: [], label: 'Target' },
   ];
 
   /**
@@ -136,6 +137,9 @@ async loadSyncjobs() {
    * TODO: Replace with actual data fetching logic.
    */
   links: NodeConnection[] = [
+    { source: 'A', target: 'C', status: 'active' },
+    { source: 'B', target: 'C', status: 'inactive' },
+    {source: 'C', target: 'D', status: 'active' },
   ];
 
   /**
@@ -270,23 +274,45 @@ async loadSyncjobs() {
       .data(nodes)
       .enter().append('g');
 
-    nodeGroup.append('circle')
-      .attr('r', 20)
-      .attr('fill', '#888')
-      .on('mouseover', (event, d) => {
-        tooltip.style('visibility', 'visible')
-          .text(d.label)
-          .style('position', 'absolute')
-          .style('top', `${event.pageY + 10}px`)
-          .style('left', `${event.pageX + 10}px`);
-      })
-      .on('mousemove', (event) => {
-        tooltip.style('top', `${event.pageY + 10}px`)
-          .style('left', `${event.pageX + 10}px`);
-      })
-      .on('mouseout', () => {
-        tooltip.style('visibility', 'hidden');
-      });
+    nodeGroup.each(function (d: Node) {
+      let shape: any;
+      if (d.type === 'SourceSystem' || d.type === 'ASS') {
+        shape = d3.select(this)
+          .append('polygon')
+          .attr('points', '-25,20 25,20 0,-35') // Größeres Dreieck
+          .attr('fill', '#888');
+      } else if (d.type === 'TargetSystem') {
+        shape = d3.select(this)
+          .append('rect')
+          .attr('width', 40)
+          .attr('height', 40)
+          .attr('x', -20)
+          .attr('y', -20)
+          .attr('fill', '#888');
+      } else {
+        shape = d3.select(this)
+          .append('circle')
+          .attr('r', 20)
+          .attr('fill', '#888');
+      }
+      if (shape) {
+        shape
+          .on('mouseover', (event: MouseEvent, d: Node) => {
+            tooltip.style('visibility', 'visible')
+              .text(d.label)
+              .style('position', 'absolute')
+              .style('top', `${event.pageY + 10}px`)
+              .style('left', `${event.pageX + 10}px`);
+          })
+          .on('mousemove', (event: MouseEvent) => {
+            tooltip.style('top', `${event.pageY + 10}px`)
+              .style('left', `${event.pageX + 10}px`);
+          })
+          .on('mouseout', () => {
+            tooltip.style('visibility', 'hidden');
+          });
+      }
+    });
 
     this.applyStatusStyles(nodeGroup);
 
