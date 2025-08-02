@@ -121,9 +121,6 @@ public class TransformationRuleResource {
             Log.infof("Successfully updated graph for rule with id %d. New status: %s", id, result.entity().graphStatus);
             return Response.ok(responseDto).build();
 
-        } catch (CoreManagementException e) {
-            throw e;
-
         } catch (Exception e) {
             Log.errorf(e, "Unexpected error in updateTransformationRuleGraph for id %d", id);
             throw new CoreManagementException(Response.Status.INTERNAL_SERVER_ERROR,

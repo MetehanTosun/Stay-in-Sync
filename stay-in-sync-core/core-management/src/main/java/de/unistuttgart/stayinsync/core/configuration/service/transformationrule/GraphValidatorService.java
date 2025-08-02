@@ -37,7 +37,7 @@ public class GraphValidatorService {
     public List<ValidationError> validateGraph(List<Node> graphNodes, int originalNodeCount) {
         Log.debugf("Validating graph with %d created nodes (original count: %d).", graphNodes != null ? graphNodes.size() : 0, originalNodeCount);
         List<ValidationError> errors = new ArrayList<>();
-        
+
         if (originalNodeCount >= 0 && (graphNodes == null || graphNodes.isEmpty())) {
             errors.add(new FinalNodeError("Graph contains no nodes to process."));
             Log.warn("Validation failed: Graph node list is effectively empty, although nodes were expected.");
