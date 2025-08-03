@@ -4,7 +4,7 @@ import {Splitter} from 'primeng/splitter';
 import {PrimeTemplate} from 'primeng/api';
 import {SearchBarComponent} from './search-bar/search-bar.component';
 import {Tab, TabList, Tabs} from 'primeng/tabs';
-import {RouterLink, RouterOutlet} from '@angular/router';
+import {Router, RouterLink, RouterOutlet} from '@angular/router';
 
 
 @Component({
@@ -26,8 +26,16 @@ import {RouterLink, RouterOutlet} from '@angular/router';
 export class DashboardComponent {
   selectedNodeId: string | null = null;
 
+  constructor(private router: Router) {}
+
   onNodeSelected(nodeId: string | null) {
     this.selectedNodeId = nodeId;
+    if (nodeId) {
+      this.router.navigate([], {
+        queryParams: { input: nodeId },
+        queryParamsHandling: 'merge',
+      });
+    }
   }
 
   searchTerm = '';
@@ -41,5 +49,4 @@ export class DashboardComponent {
   onSearch(term: string) {
     this.searchTerm = term;
   }
-
 }

@@ -6,10 +6,47 @@
   [styleClass]="'custom-sidebar'"
   [showCloseIcon]="false">
   <div class="sidebar-header">
-    <h3>Legende</h3>
+    <h3>Legend</h3>
     <button class="close-button" (click)="visibleSidebar = false">X</button>
   </div>
-<p>Hier ist deine Legende oder Zusatzinfo.</p>
+  <div class="legend-content">
+    <p><strong>shapes:</strong></p>
+    <ul>
+      <li>
+        <svg width="20" height="20">
+          <circle cx="10" cy="10" r="8" fill="#888"></circle>
+        </svg>
+        SyncNode
+      </li>
+      <li>
+        <svg width="20" height="20">
+          <polygon points="0,18 20,18 10,0" fill="#888"></polygon>
+        </svg>
+        SourceSystem / ASS
+      </li>
+      <li>
+        <svg width="20" height="20">
+          <rect x="2" y="2" width="16" height="16" fill="#888"></rect>
+        </svg>
+        TargetSystem
+      </li>
+    </ul>
+    <p><strong>colours:</strong></p>
+    <ul>
+      <li>
+        <span style="display: inline-block; width: 16px; height: 16px; background-color: #4caf50; margin-right: 5px;"></span>
+        active
+      </li>
+      <li>
+        <span style="display: inline-block; width: 16px; height: 16px; background-color: #f44336; margin-right: 5px;"></span>
+        error
+      </li>
+      <li>
+        <span style="display: inline-block; width: 16px; height: 16px; background-color: #ffeb3b; margin-right: 5px;"></span>
+        inactive
+      </li>
+    </ul>
+  </div>
 </p-sidebar>
 
 <div class="sidebar-toggle-btn">
