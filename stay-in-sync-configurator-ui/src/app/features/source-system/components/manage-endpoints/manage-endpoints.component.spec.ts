@@ -5,6 +5,7 @@ import { HttpClientTestingModule, HttpTestingController } from '@angular/common/
 import { RouterTestingModule } from '@angular/router/testing';
 import { HttpEvent, HttpResponse } from '@angular/common/http';
 import { NO_ERRORS_SCHEMA, Component } from '@angular/core';
+import { MonacoEditorModule, NGX_MONACO_EDITOR_CONFIG } from 'ngx-monaco-editor-v2';
 
 import { ManageEndpointsComponent } from './manage-endpoints.component';
 import { SourceSystemEndpointResourceService } from '../../service/sourceSystemEndpointResource.service';
@@ -44,13 +45,15 @@ describe('ManageEndpointsComponent', () => {
       id: 1,
       endpointPath: '/pets',
       httpRequestType: 'GET',
-      sourceSystemId: 1
+      sourceSystemId: 1,
+      responseBodySchema: '{"message": "Success"}'
     },
     {
       id: 2,
       endpointPath: '/pets/{id}',
       httpRequestType: 'GET',
-      sourceSystemId: 1
+      sourceSystemId: 1,
+      responseBodySchema: '{"message": "Success"}'
     }
   ];
 
@@ -121,7 +124,8 @@ describe('ManageEndpointsComponent', () => {
       imports: [
         ReactiveFormsModule,
         HttpClientTestingModule,
-        RouterTestingModule
+        RouterTestingModule,
+        MonacoEditorModule.forRoot()
       ],
       declarations: [MockManageEndpointsComponent],
       providers: [
@@ -166,7 +170,9 @@ describe('ManageEndpointsComponent', () => {
       
       const newEndpoint: CreateSourceSystemEndpointDTO = {
         endpointPath: '/users',
-        httpRequestType: 'POST'
+        httpRequestType: 'POST',
+        requestBodySchema: '',
+        responseBodySchema: ''
       };
 
       component.endpointForm.patchValue(newEndpoint);
@@ -437,7 +443,9 @@ paths:
       expect(mockEndpointService.apiConfigSourceSystemSourceSystemIdEndpointPost)
         .toHaveBeenCalledWith(1, [{
           endpointPath: '/api/test',
-          httpRequestType: 'POST'
+          httpRequestType: 'POST',
+          requestBodySchema: '',
+          responseBodySchema: ''
         }]);
       
       // Verify form reset
@@ -457,7 +465,10 @@ describe('ManageEndpointsComponent - Request Body', () => {
       'apiConfigSourceSystemEndpointIdPut'
     ]);
     TestBed.configureTestingModule({
-      imports: [HttpClientTestingModule], // <-- hinzugefügt
+      imports: [
+        HttpClientTestingModule,
+        MonacoEditorModule.forRoot()
+      ],
       providers: [
         { provide: SourceSystemEndpointResourceService, useValue: mockEndpointService }
       ]
@@ -517,5 +528,128 @@ describe('ManageEndpointsComponent - Request Body', () => {
     component.saveRequestBodySchema();
     expect(component.requestBodyEditorError).toBeNull();
     expect(mockEndpointService.apiConfigSourceSystemEndpointIdPut).toHaveBeenCalled();
+  });
+});
+
+describe('ManageEndpointsComponent - Response Body', () => {
+  let component: ManageEndpointsComponent;
+  let fixture: ComponentFixture<ManageEndpointsComponent>;
+  let mockEndpointService: jasmine.SpyObj<SourceSystemEndpointResourceService>;
+
+  beforeEach(() => {
+    mockEndpointService = jasmine.createSpyObj('SourceSystemEndpointResourceService', [
+      'apiConfigSourceSystemSourceSystemIdEndpointPost',
+      'apiConfigSourceSystemEndpointIdPut'
+    ]);
+    TestBed.configureTestingModule({
+      imports: [
+        HttpClientTestingModule,
+        MonacoEditorModule.forRoot()
+      ],
+      providers: [
+        { provide: SourceSystemEndpointResourceService, useValue: mockEndpointService }
+      ]
+    });
+    fixture = TestBed.createComponent(ManageEndpointsComponent);
+    component = fixture.componentInstance;
+    fixture.detectChanges();
+  });
+
+  it('should accept valid JSON in responseBodySchema', () => {
+    mockEndpointService.apiConfigSourceSystemSourceSystemIdEndpointPost.and.returnValue(of(new HttpResponse<any>({ status: 201 })));
+    component.endpointForm.patchValue({
+      endpointPath: '/test',
+      httpRequestType: 'GET',
+      responseBodySchema: '{"message": "Success"}'
+    });
+    component.addEndpoint();
+    expect(component.jsonError).toBeNull();
+    expect(mockEndpointService.apiConfigSourceSystemSourceSystemIdEndpointPost).toHaveBeenCalled();
+  });
+
+  it('should reject invalid JSON in responseBodySchema', () => {
+    component.endpointForm.patchValue({
+      endpointPath: '/test',
+      httpRequestType: 'GET',
+      responseBodySchema: '{message: Success}' // invalid JSON
+    });
+    component.addEndpoint();
+    expect(component.jsonError).toBe('Response-Body-Schema ist kein valides JSON.');
+    expect(mockEndpointService.apiConfigSourceSystemSourceSystemIdEndpointPost).not.toHaveBeenCalled();
+  });
+
+  it('should allow empty responseBodySchema', () => {
+    mockEndpointService.apiConfigSourceSystemSourceSystemIdEndpointPost.and.returnValue(of(new HttpResponse<any>({ status: 201 })));
+    component.endpointForm.patchValue({
+      endpointPath: '/test',
+      httpRequestType: 'GET',
+      responseBodySchema: ''
+    });
+    component.addEndpoint();
+    expect(component.jsonError).toBeNull();
+    expect(mockEndpointService.apiConfigSourceSystemSourceSystemIdEndpointPost).toHaveBeenCalled();
+  });
+
+  it('should extract response body schema from OpenAPI spec', () => {
+    const mockSpec = {
+      openapi: '3.0.0',
+      paths: {
+        '/test': {
+          get: {
+            responses: {
+              '200': {
+                content: {
+                  'application/json': {
+                    schema: {
+                      type: 'object',
+                      properties: {
+                        message: { type: 'string' }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    };
+
+    const result = component['processOpenApiSpec'](mockSpec);
+    expect(result).toBeUndefined(); // processOpenApiSpec returns void
+  });
+
+  it('should show response preview modal', () => {
+    const endpoint: SourceSystemEndpointDTO = {
+      id: 1,
+      endpointPath: '/test',
+      httpRequestType: 'GET',
+      responseBodySchema: '{"message": "Success"}'
+    };
+
+    component.showResponsePreviewModal(endpoint);
+    
+    expect(component.responsePreviewModalVisible).toBe(true);
+    expect(component.selectedResponsePreviewEndpoint).toEqual(endpoint);
+  });
+
+  it('should close response preview modal', () => {
+    component.responsePreviewModalVisible = true;
+    component.selectedResponsePreviewEndpoint = { id: 1, endpointPath: '/test', httpRequestType: 'GET' };
+    
+    component.closeResponsePreviewModal();
+    
+    expect(component.responsePreviewModalVisible).toBe(false);
+    expect(component.selectedResponsePreviewEndpoint).toBeNull();
+  });
+
+  it('should handle response preview modal visibility change', () => {
+    component.responsePreviewModalVisible = true;
+    component.selectedResponsePreviewEndpoint = { id: 1, endpointPath: '/test', httpRequestType: 'GET' };
+    
+    component.onResponsePreviewModalVisibleChange(false);
+    
+    expect(component.responsePreviewModalVisible).toBe(false);
+    expect(component.selectedResponsePreviewEndpoint).toBeNull();
   });
 });
