@@ -2,7 +2,9 @@ package de.unistuttgart.stayinsync.pollingnode.usercontrol.management;
 
 
 import de.unistuttgart.stayinsync.pollingnode.execution.controller.PollingJobExecutionController;
+import de.unistuttgart.stayinsync.pollingnode.rabbitmq.PollingJobDeploymentFeedbackProducer;
 import de.unistuttgart.stayinsync.pollingnode.rabbitmq.PollingJobMessageConsumer;
+import de.unistuttgart.stayinsync.transport.domain.JobDeploymentStatus;
 import de.unistuttgart.stayinsync.transport.dto.SourceSystemApiRequestConfigurationMessageDTO;
 import io.quarkus.logging.Log;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -21,6 +23,9 @@ public class PollingJobManagement {
     PollingJobMessageConsumer pollingJobConsumer;
 
     @Inject
+    PollingJobDeploymentFeedbackProducer feedbackProducer;
+
+    @Inject
     PollingJobManagement pollingJobManagement;
 
     /**
@@ -34,6 +39,7 @@ public class PollingJobManagement {
             Log.infof("Deploying polling for %s at path %s with id %s", apiRequestConfigurationMessage.apiConnectionDetails().sourceSystem().apiUrl(), apiRequestConfigurationMessage.apiConnectionDetails().endpoint().endpointPath(), apiRequestConfigurationMessage.id());
             pollingJobConsumer.bindExisitingPollingJobQueue(apiRequestConfigurationMessage);
             pollingJobExecutionController.startPollingJobExecution(apiRequestConfigurationMessage);
+            feedbackProducer.publishPollingJobFeedback(apiRequestConfigurationMessage.id(), JobDeploymentStatus.DEPLOYED);
             Log.infof("PollingJob for SourceSystem %s with the id %d was successfully created", apiRequestConfigurationMessage.apiConnectionDetails().sourceSystem().name(), apiRequestConfigurationMessage.id());
         } catch (Exception e) {
             Log.error(e);
