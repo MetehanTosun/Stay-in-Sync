@@ -18,7 +18,7 @@
           <span>⏳ Saving...</span>
         }
       </button>
-      
+
       @if (saveMessage) {
         <div class="save-message" [class.success]="saveMessage.includes('successfully')" [class.error]="saveMessage.includes('Error')">
           {{ saveMessage }}
@@ -27,15 +27,89 @@
     </div>
   </div>
 
+  <!-- Loading Indicator -->
+  @if (isLoadingRule) {
+    <div class="loading-indicator">
+      <span class="loading-spinner">⏳</span>
+      <span>Loading transformation rule...</span>
+    </div>
+  }
+
+  <!-- Error Panel -->
+    <div class="error-panel">
+      <div class="error-header">
+        <div class="error-title">
+          <span class="error-icon">⚠️</span>
+          <span>Issues Found ({{ getErrorCount() }})</span>
+        </div>
+        <div class="error-actions">
+          @if (loadingErrors.length > 0) {
+            <button class="retry-btn" (click)="retryLoadRule()" title="Retry loading">
+              🔄 Retry
+            </button>
+          }
+          <button class="close-btn" (click)="closeErrorPanel()" title="Close error panel">
+            ✕
+          </button>
+        </div>
+      </div>
+
+      <div class="error-content">
+        <!-- Loading Errors -->
+        @if (loadingErrors.length > 0) {
+          <div class="error-section">
+            <h4 class="error-section-title">
+              <span class="section-icon">🔌</span>
+              Loading Errors
+            </h4>
+            @for (error of loadingErrors; track error) {
+              <div class="error-item loading-error">
+                <span class="error-item-icon">❌</span>
+                <span class="error-message">{{ error }}</span>
+              </div>
+            }
+          </div>
+        }
+
+        <!-- Validation Errors -->
+        @if (validationErrors.length > 0) {
+          <div class="error-section">
+            <h4 class="error-section-title">
+              <span class="section-icon">🔍</span>
+              Validation Errors
+            </h4>
+            @for (error of validationErrors; track error.message) {
+              <div class="error-item validation-error">
+                <div class="error-details">
+                  <div class="error-message">{{ error.message }}</div>
+                  <div class="error-meta">
+                    <span class="error-type">{{ getErrorTypeDisplayName(error.errorType) }}</span>
+                    @if (error.nodeId) {
+                      <button class="navigate-btn"
+                              (click)="navigateToErrorNode(error.nodeId!)"
+                              title="Navigate to problematic node">
+                        📍 Go to Node {{ error.nodeId }}
+                      </button>
+                    }
+                  </div>
+                </div>
+              </div>
+            }
+          </div>
+        }
+      </div>
+    </div>
+
+
   <div class="main-content">
     <div class="compact-palette">
-      <button class="palette-button" 
+      <button class="palette-button"
               (click)="openNodePaletteMenu($event)"
               title="Add Node">
         <span class="palette-icon">➕</span>
         <span class="palette-label">Add Node</span>
       </button>
-      
+
       <!-- Node placement status indicator -->
       @if (pendingNodeCreation) {
         <div class="placement-status">
@@ -47,7 +121,7 @@
               Click canvas to place {{ pendingNodeCreation.type.toLowerCase() }} node
             }
           </span>
-          <button class="cancel-placement" 
+          <button class="cancel-placement"
                   (click)="cancelNodePlacement()"
                   title="Cancel node placement">
             ✕
@@ -74,7 +148,7 @@
         <mini-map [scaleOnHover]="true" />
       </vflow>
     </div>
-    
+
     <!-- Type Incompatibility Modal -->
     @if (showTypeIncompatibilityModal) {
       <div class="modal-overlay" (click)="closeTypeIncompatibilityModal()">
@@ -85,10 +159,10 @@
               Type Incompatibility
             </h3>
           </div>
-          
+
           <div class="modal-body">
             <p class="error-message">{{ typeIncompatibilityMessage }}</p>
-            
+
             @if (lastAttemptedConnection) {
               <div class="connection-details">
                 <div class="connection-info">
@@ -104,12 +178,12 @@
                 </div>
               </div>
             }
-            
+
             <p class="help-text">
               These data types are not compatible.
             </p>
           </div>
-          
+
           <div class="modal-actions">
             <button class="btn-cancel" (click)="closeTypeIncompatibilityModal()">
               ✓ OK
@@ -131,7 +205,7 @@
       <div class="context-menu-info">
         <div class="node-info">
           <span class="node-name">{{ getNodeData(selectedNode)?.name || 'Unnamed Node' }}</span>
-          
+
           <!-- Type Information -->
           @if (getNodeData(selectedNode)?.nodeType === 'PROVIDER' || getNodeData(selectedNode)?.nodeType === 'CONSTANT') {
             <!-- Simple output display for Provider and Constant nodes -->
@@ -156,10 +230,10 @@
                   <div class="no-input-placeholder">∅</div>
                 }
               </div>
-              
+
               <!-- Arrow -->
               <div class="flow-arrow">→</div>
-              
+
               <!-- Output Type (right side) -->
               <div class="output-type-container">
                 <div class="type-node output-type" [style.background-color]="getTypeDisplayInfo(getNodeOutputType(selectedNode)).color">
@@ -378,7 +452,7 @@
       </div>
 
       @for (operator of getOperatorsForGroup(selectedLogicGroup); track operator.operatorName) {
-        <div class="context-menu-item logic-operator-item" 
+        <div class="context-menu-item logic-operator-item"
              (click)="selectLogicOperator(operator, $event)"
              [title]="operator.description">
           <div class="operator-details">

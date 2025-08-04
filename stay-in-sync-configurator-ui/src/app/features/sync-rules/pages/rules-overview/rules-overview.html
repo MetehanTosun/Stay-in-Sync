@@ -25,9 +25,7 @@
         @for (rule of rules; track rule.id) {
         <tr>
           <td>{{ rule.name }}</td>
-          <td>
-            {{ rule.status }}
-          </td>
+          <td> {{ rule.graphStatus }} </td>
           <td>
             <div class="actions">
               <button class="action-btn edit-btn" (click)="editRule(rule.id)" title="Edit Rule">
@@ -54,6 +52,8 @@
       <div class="form-group">
         <label for="ruleName">Name</label>
         <input id="ruleName" type="text" [(ngModel)]="newRule.name" placeholder="Demo Rule" class="form-input">
+        <label for="ruleDescription">Description</label>
+        <input id="ruleDescription" type="text" [(ngModel)]="newRule.description" placeholder="This Rule syncs stuff" class="form-input">
       </div>
 
       <div class="dialog-actions">

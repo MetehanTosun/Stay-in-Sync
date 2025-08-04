@@ -1,9 +1,10 @@
 import { Component, OnInit } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
+import { HttpClient } from '@angular/common/http';
 import { delay, of, Observable } from 'rxjs';
 import { Vflow, Node, Edge, Connection } from 'ngx-vflow';
-import { ProviderNodeComponent, LogicNodeComponent, ConstantNodeComponent } from '../../components/nodes';
+import { ProviderNodeComponent, LogicNodeComponent, ConstantNodeComponent, ResultNodeComponent } from '../../components/nodes';
 
 // Dynamic data types extracted from backend
 type NodeDataType = string;
@@ -11,9 +12,9 @@ type NodeDataType = string;
 interface LogicOperator {
   operatorName: string;
   description: string;
-  inputTypes: string[];
+  category: string; // category: general, number, string, boolean, array, object, datetime
   outputType: string;
-  operatorType: string; // Groups: general, number, string, boolean, array, object, datetime
+  inputTypes: string[];
 }
 
 interface CustomNode {
@@ -36,6 +37,50 @@ interface GraphData {
   edges: Edge[];
 }
 
+// Backend API DTOs
+interface VFlowGraphDTO {
+  nodes: VFlowNodeDTO[];
+  edges: VFlowEdgeDTO[];
+}
+
+interface VFlowNodeDTO {
+  id: string;
+  point: { x: number; y: number };
+  type: string;
+  width: number;
+  height: number;
+  data: VFlowNodeDataDTO;
+}
+
+interface VFlowEdgeDTO {
+  id: string;
+  source: string;
+  target: string;
+  targetHandle?: string;
+  type?: string;
+}
+
+interface VFlowNodeDataDTO {
+  nodeType: string;
+  name: string;
+  arcId?: number;
+  jsonPath?: string;
+  value?: any;
+  operatorType?: string;
+  inputNodes?: { id: number; orderIndex: number }[];
+}
+
+interface GraphPersistenceResponseDTO {
+  graphData: any;
+  validationErrors: ValidationError[];
+}
+
+interface ValidationError {
+  message: string;
+  nodeId?: string;
+  errorType: string;
+}
+
 @Component({
   selector: 'app-edit-rule',
   imports: [Vflow, FormsModule],
@@ -51,6 +96,12 @@ export class EditRule implements OnInit {
   saveMessage = '';
   currentRuleId: number | null = null;
   ruleName = 'New Rule';
+
+  // Error handling properties
+  validationErrors: ValidationError[] = [];
+  loadingErrors: string[] = [];
+  showErrorPanel = false;
+  isLoadingRule = false;
 
   // Selection and context menu properties
   selectedNode: Node | null = null;
@@ -108,7 +159,8 @@ export class EditRule implements OnInit {
 
   constructor(
     private route: ActivatedRoute,
-    private router: Router
+    private router: Router,
+    private http: HttpClient
   ) {}
 
   ngOnInit() {
@@ -129,14 +181,13 @@ export class EditRule implements OnInit {
     });
   }
 
-  // Load logic operators from mock API
+  // Load logic operators from API
   private loadLogicOperators() {
-    this.mockApiGetLogicOperators().subscribe({
+    this.http.get<any>(`/api/config/transformation-rule/operators`).subscribe({
       next: (operators: LogicOperator[]) => {
         this.logicOperators = operators;
         this.groupLogicOperators();
         this.extractAndBuildTypeSystem(operators);
-        console.log('Logic operators loaded:', operators);
         console.log('Logic operator groups:', this.logicOperatorGroups);
         console.log('Available data types:', Array.from(this.availableDataTypes));
       },
@@ -149,10 +200,10 @@ export class EditRule implements OnInit {
   private groupLogicOperators() {
     this.logicOperatorGroups = {};
     this.logicOperators.forEach(operator => {
-      if (!this.logicOperatorGroups[operator.operatorType]) {
-        this.logicOperatorGroups[operator.operatorType] = [];
+      if (!this.logicOperatorGroups[operator.category]) {
+        this.logicOperatorGroups[operator.category] = [];
       }
-      this.logicOperatorGroups[operator.operatorType].push(operator);
+      this.logicOperatorGroups[operator.category].push(operator);
     });
   }
 
@@ -224,31 +275,133 @@ export class EditRule implements OnInit {
     });
   }
 
-  // sTODO REST
+  // Load rule data from backend API
   private loadRuleData() {
-    // Load mock rule graph for rule ID 1 "Temp Check"
-    if (this.currentRuleId === 1) {
-      this.ruleName = 'Temp Check';
-      this.mockApiGetGraphDataFromDatabase().subscribe({
-        next: (data) => {
-          console.log('Graph data loaded:', data);
-          this.nodes = this.convertToVflowNodes(data.nodes);
-          this.edges = data.edges;
-
-          setTimeout(() => {
-            console.log('Graph loaded and ready');
-          }, 100);
-        },
-        error: (error) => {
-          console.error('Error loading graph data:', error);
-        }
-      });
-    } else {
-      // Empty graph for other Rules
-      this.ruleName = this.currentRuleId ? `Rule ${this.currentRuleId}` : 'New Rule';
+    if (!this.currentRuleId) {
+      console.log('No rule ID provided');
+      this.loadingErrors = ['No rule ID provided'];
+      this.showErrorPanel = true;
+      this.ruleName = 'New Rule';
       this.nodes = [];
       this.edges = [];
+      console.log('Error panel shown for missing rule ID');
+      return;
     }
+
+    this.isLoadingRule = true;
+    this.loadingErrors = [];
+    console.log('Loading rule metadata...');
+
+    this.http.get<any>(`/api/config/transformation-rule/${this.currentRuleId}`).subscribe({
+      next: (transformationRule) => {
+        console.log('Rule metadata loaded successfully:', transformationRule);
+        this.ruleName = transformationRule.name || `Rule ${this.currentRuleId}`;
+        this.loadGraphData();
+      },
+      error: (error) => {
+        console.error('Error loading rule metadata:', error);
+        console.log('Rule metadata error details:', {
+          status: error.status,
+          statusText: error.statusText,
+          message: error.message,
+          error: error.error,
+          fullError: error
+        });
+
+        this.isLoadingRule = false;
+
+        // sTODO Error Handling
+      }
+    });
+  }
+  private loadGraphData() {
+    this.isLoadingRule = true;
+    this.loadingErrors = [];
+    this.validationErrors = [];
+
+    console.log('Loading graph data for rule ID:', this.currentRuleId);
+
+    this.http.get<any>(`/api/config/transformation-rule/${this.currentRuleId}/graph`).subscribe({
+      next: (graphResponse) => {
+        console.log('Graph data loaded successfully:', graphResponse);
+        this.isLoadingRule = false;
+
+        if (graphResponse.errors && graphResponse.errors.length > 0) {
+          console.log('Validation errors found in graph response:');
+          console.log('Errors array:', graphResponse.errors);
+          console.log('Error count:', graphResponse.errors.length);
+
+          graphResponse.errors.forEach((error: any, index: number) => {
+            console.log(`Error ${index + 1}:`, {
+              message: error.message,
+              nodeId: error.nodeId,
+              errorType: error.errorType,
+              fullError: error
+            });
+          });
+
+          this.validationErrors = graphResponse.errors;
+          this.showErrorPanel = true;
+          console.log('Error panel will be shown with', this.validationErrors.length, 'validation errors');
+        } else {
+          console.log('No validation errors found in response');
+          this.validationErrors = [];
+          this.showErrorPanel = false;
+        }
+
+        if (graphResponse.nodes && graphResponse.nodes.length > 0) {
+          this.nodes = this.convertVFlowNodesToFrontend(graphResponse.nodes);
+          this.edges = graphResponse.edges || [];
+        } else {
+          this.nodes = [];
+          this.edges = [];
+        }
+      },
+      error: (error) => {
+        console.error('Error loading graph data:', error);
+        console.log('Error details:', {
+          status: error.status,
+          statusText: error.statusText,
+          message: error.message,
+          error: error.error,
+          fullError: error
+        });
+
+        this.isLoadingRule = false;
+        // sTODO Error Handling
+      }
+    });
+  }
+
+  private convertVFlowNodesToFrontend(vflowNodes: any[]): Node[] {
+    return vflowNodes.map(vflowNode => {
+      let nodeComponent: any;
+      switch (vflowNode.data.nodeType) {
+        case 'PROVIDER':
+          nodeComponent = ProviderNodeComponent;
+          break;
+        case 'LOGIC':
+          nodeComponent = LogicNodeComponent;
+          break;
+        case 'CONSTANT':
+          nodeComponent = ConstantNodeComponent;
+          break;
+        case 'FINAL':
+          nodeComponent = ResultNodeComponent;
+          break;
+        default:
+          nodeComponent = ProviderNodeComponent;
+      }
+
+      return {
+        id: vflowNode.id,
+        point: { x: vflowNode.point.x, y: vflowNode.point.y },
+        type: nodeComponent,
+        width: vflowNode.width || 220,
+        height: vflowNode.height || 100,
+        data: vflowNode.data
+      };
+    });
   }
 
   goBackToOverview() {
@@ -411,6 +564,9 @@ export class EditRule implements OnInit {
 
       case 'CONSTANT':
         return [];
+
+      case 'RESULT':
+        return ['Boolean'];
 
       case 'LOGIC':
         const operator = this.logicOperators.find(op => op.operatorName === nodeData.operatorType);
@@ -1180,657 +1336,222 @@ export class EditRule implements OnInit {
     }
   }
 
-  private convertToVflowNodes(customNodes: CustomNode[]): Node[] {
-    return customNodes.map(node => {
-      let nodeType: any;
-      switch (node.nodeType) {
-        case 'PROVIDER':
-          nodeType = ProviderNodeComponent;
-          break;
-        case 'LOGIC':
-          nodeType = LogicNodeComponent;
-          break;
-        case 'CONSTANT':
-          nodeType = ConstantNodeComponent;
-          break;
-        default:
-          nodeType = ProviderNodeComponent;
-      }
-      const scaledX = node.offsetX * 250;
-      const scaledY = node.offsetY * 150;
-      return {
-        id: node.id.toString(),
-        point: { x: scaledX, y: scaledY },
-        type: nodeType,
-        width: 220,
-        height: 100,
-        data: {
-          name: node.name,
-          nodeType: node.nodeType,
-          arcId: node.arcId,
-          jsonPath: node.jsonPath,
-          value: node.value,
-          operatorType: node.operatorType,
-          inputNodes: node.inputNodes || [],
-        }
-      };
-    });
-  }
+  /**
+   * Converts the current graph to the VFlowGraphDTO format expected by the backend
+   */
+  private convertToVFlowGraphDTO(): VFlowGraphDTO {
+    // Convert nodes to VFlowNodeDTO format
+    const vflowNodes: VFlowNodeDTO[] = this.nodes.map((node: any) => {
+      const nodeData = node.data;
 
-  private generateEdgesFromInputNodes(nodes: CustomNode[]): Edge[] {
-    const edges: Edge[] = [];
-    nodes.forEach(node => {
-      if (node.inputNodes && node.inputNodes.length > 0) {
-        node.inputNodes.forEach(inputNode => {
-          const edge: Edge = {
-            id: `${inputNode.id}->${node.id}`,
-            source: inputNode.id.toString(),
-            target: node.id.toString(),
-            type: 'default'
-          };
-          if (node.nodeType === 'LOGIC' && (node.inputNodes?.length || 0) > 1) {
-            edge.targetHandle = `input-${inputNode.orderIndex}`;
-          }
-          edges.push(edge);
-        });
-      }
-    });
-    return edges;
-  }
-
-  private convertToSaveFormat(): GraphData {
-    const customNodes: CustomNode[] = this.nodes.map((vflowNode: any) => {
-      const nodeData = vflowNode.data;
-      return {
-        id: parseInt(vflowNode.id),
-        offsetX: Math.round(vflowNode.point.x / 250),
-        offsetY: Math.round(vflowNode.point.y / 150),
+      const vflowNodeData: VFlowNodeDataDTO = {
         nodeType: nodeData.nodeType,
         name: nodeData.name,
-        arcId: nodeData.arcId,
-        jsonPath: nodeData.jsonPath,
-        value: nodeData.value,
-        operatorType: nodeData.operatorType,
-        inputNodes: nodeData.inputNodes
+        inputNodes: nodeData.inputNodes || []
+      };
+
+      // Add node-type specific data
+      if (nodeData.nodeType === 'PROVIDER') {
+        vflowNodeData.arcId = nodeData.arcId;
+        vflowNodeData.jsonPath = nodeData.jsonPath;
+      } else if (nodeData.nodeType === 'CONSTANT') {
+        vflowNodeData.value = nodeData.value;
+      } else if (nodeData.nodeType === 'LOGIC') {
+        vflowNodeData.operatorType = nodeData.operatorType;
+      }
+
+      return {
+        id: node.id,
+        point: { x: node.point.x, y: node.point.y },
+        type: nodeData.nodeType, // Map component type to string
+        width: node.width || 220,
+        height: node.height || 100,
+        data: vflowNodeData
       };
     });
+
+    // Convert edges to VFlowEdgeDTO format
+    const vflowEdges: VFlowEdgeDTO[] = this.edges.map((edge: any) => ({
+      id: edge.id,
+      source: edge.source,
+      target: edge.target,
+      targetHandle: edge.targetHandle,
+      type: edge.type || 'default'
+    }));
+
     return {
-      nodes: customNodes,
-      edges: this.edges
+      nodes: vflowNodes,
+      edges: vflowEdges
     };
   }
   //#endregion
 
-  // sTODO
-  //#region Mock Backend API
-  private mockApiGetGraphDataFromDatabase(): Observable<GraphData> {
-    const databaseResponse = {
-      "nodes": [
-        {
-          "id": 0,
-          "offsetX": 0,
-          "offsetY": 0,
-          "inputNodes": [],
-          "nodeType": "PROVIDER",
-          "name": "currentTemperature",
-          "arcId": 22,
-          "jsonPath": "source.anlageAAS.arc_temperature22.sensorData.currentTemperature"
-        },
-        {
-          "id": 1,
-          "offsetX": 1,
-          "offsetY": 1,
-          "inputNodes": [],
-          "nodeType": "CONSTANT",
-          "name": "tempOffset",
-          "value": -2.0
-        },
-        {
-          "id": 2,
-          "offsetX": 1,
-          "offsetY": 0,
-          "inputNodes": [],
-          "nodeType": "PROVIDER",
-          "name": "maxAllowedThreshold",
-          "arcId": 11,
-          "jsonPath": "source.anlageAAS.arc_thresholds38.maxAllowedTemp"
-        },
-        {
-          "id": 3,
-          "offsetX": 0,
-          "offsetY": 1,
-          "inputNodes": [],
-          "nodeType": "CONSTANT",
-          "name": "SystemEnabledFlag",
-          "value": true
-        },
-        {
-          "id": 4,
-          "offsetX": 2,
-          "offsetY": 1,
-          "inputNodes": [
-            {
-              "id": 0,
-              "orderIndex": 0
-            },
-            {
-              "id": 1,
-              "orderIndex": 1
-            }
-          ],
-          "nodeType": "LOGIC",
-          "name": "addOperation",
-          "operatorType": "ADD"
-        },
-        {
-          "id": 5,
-          "offsetX": 2,
-          "offsetY": 2,
-          "inputNodes": [
-            {
-              "id": 4,
-              "orderIndex": 0
-            },
-            {
-              "id": 2,
-              "orderIndex": 1
-            }
-          ],
-          "nodeType": "LOGIC",
-          "name": "lessThanComparison",
-          "operatorType": "LESS_THAN"
-        },
-        {
-          "id": 6,
-          "offsetX": 4,
-          "offsetY": 0,
-          "inputNodes": [
-            {
-              "id": 5,
-              "orderIndex": 0
-            },
-            {
-              "id": 3,
-              "orderIndex": 1
-            }
-          ],
-          "nodeType": "LOGIC",
-          "name": "finalAndGate",
-          "operatorType": "AND"
-        }
-      ]
-    };
+  //#region Error
+  closeErrorPanel(): void {
+    console.log('Closing error panel');
+    console.log('Current state before close:', {
+      validationErrors: this.validationErrors.length,
+      loadingErrors: this.loadingErrors.length,
+      showErrorPanel: this.showErrorPanel
+    });
 
-    const mockData: GraphData = {
-      nodes: databaseResponse.nodes,
-      edges: this.generateEdgesFromInputNodes(databaseResponse.nodes)
-    };
+    this.showErrorPanel = false;
+    this.validationErrors = [];
+    this.loadingErrors = [];
 
-    return of(mockData).pipe(delay(500));
+    console.log('Error panel closed and errors cleared');
   }
+
+  retryLoadRule(): void {
+    console.log('Retrying rule load...');
+    this.closeErrorPanel();
+    this.loadRuleData();
+  }
+
+  navigateToErrorNode(nodeId: string): void {
+    console.log('Navigating to error node:', nodeId);
+    const targetNode = this.nodes.find(n => n.id === nodeId);
+    if (targetNode) {
+      this.selectedNode = targetNode;
+      this.updateNodeSelection();
+
+      console.log('Successfully navigated to node:', {
+        nodeId: nodeId,
+        nodeName: (targetNode as any).data?.name,
+        nodeType: (targetNode as any).data?.nodeType
+      });
+
+    } else {
+      console.warn('Could not find node with ID:', nodeId);
+      console.log('Available node IDs:', this.nodes.map(n => n.id));
+    }
+  }
+
+  getErrorTypeDisplayName(errorType: string): string {
+    const displayName = (() => {
+      switch (errorType) {
+        case 'VALIDATION_ERROR':
+          return 'Validation Error';
+        case 'TYPE_MISMATCH':
+          return 'Type Mismatch';
+        case 'MISSING_CONNECTION':
+          return 'Missing Connection';
+        case 'INVALID_CONFIGURATION':
+          return 'Invalid Configuration';
+        default:
+          return errorType.replace(/_/g, ' ').toLowerCase().replace(/\b\w/g, l => l.toUpperCase());
+      }
+    })();
+
+    console.log('Error type display name:', { errorType, displayName });
+    return displayName;
+  }
+
+  hasErrors(): boolean {
+    const hasErrors = this.validationErrors.length > 0 || this.loadingErrors.length > 0;
+    console.log('🔍 Has errors check:', {
+      validationErrors: this.validationErrors.length,
+      loadingErrors: this.loadingErrors.length,
+      hasErrors: hasErrors
+    });
+    return hasErrors;
+  }
+
+  getErrorCount(): number {
+    const count = this.validationErrors.length + this.loadingErrors.length;
+    console.log('📊 Total error count:', {
+      validationErrors: this.validationErrors.length,
+      loadingErrors: this.loadingErrors.length,
+      total: count
+    });
+    return count;
+  }
+  //#endregion
 
   saveGraph(): void {
     this.isSaving = true;
     this.saveMessage = '';
 
-    try {
-      const graphData = this.convertToSaveFormat();
-      console.log('Saving graph data:', graphData);
+    // Validate that we have a rule ID to save to
+    if (!this.currentRuleId) {
+      this.isSaving = false;
+      this.saveMessage = 'Error: No rule ID found. Cannot save graph.';
+      console.error('Cannot save graph: No currentRuleId');
+      this.clearMessageAfter(5);
+      return;
+    }
 
-      // sTODO Call the mock save API (replace with real API call later)
-      this.mockApiSaveGraphData(graphData).subscribe({
-        next: (response) => {
-          this.isSaving = false;
-          this.saveMessage = 'Graph saved successfully!';
-          console.log('Graph saved successfully:', response);
-          this.clearMessageAfter(3);
-        },
-        error: (error) => {
-          this.isSaving = false;
-          this.saveMessage = 'Error saving graph. Please try again.';
-          console.error('Error saving graph:', error);
-          this.clearMessageAfter(5);
-        }
-      });
+    try {
+      // Convert frontend graph format to backend VFlowGraphDTO format
+      const vflowGraphData = this.convertToVFlowGraphDTO();
+      console.log('Saving graph data to backend:', vflowGraphData);
+
+      // Call the backend API to save the transformation rule graph
+      this.http.put<GraphPersistenceResponseDTO>(`/api/config/transformation-rule/${this.currentRuleId}/graph`, vflowGraphData)
+        .subscribe({
+          next: (response) => {
+            this.isSaving = false;
+
+            // Check for validation errors
+            if (response.validationErrors && response.validationErrors.length > 0) {
+              console.log('Validation errors returned from save operation:');
+              console.log('Save validation errors array:', response.validationErrors);
+              console.log('Save error count:', response.validationErrors.length);
+
+              // Log each save validation error individually
+              response.validationErrors.forEach((error: any, index: number) => {
+                console.log(`Save Error ${index + 1}:`, {
+                  message: error.message,
+                  nodeId: error.nodeId,
+                  errorType: error.errorType,
+                  fullError: error
+                });
+              });
+
+              this.validationErrors = response.validationErrors;
+              this.showErrorPanel = true;
+
+              const errorMessages = response.validationErrors.map(err => err.message).join('; ');
+              this.saveMessage = `Graph saved with ${response.validationErrors.length} warning(s). Check error panel for details.`;
+              console.log('Error panel updated with save validation errors');
+              this.clearMessageAfter(8);
+            } else {
+              console.log('Save successful with no validation errors');
+              // Clear any existing validation errors on successful save
+              this.validationErrors = [];
+              if (this.loadingErrors.length === 0) {
+                this.showErrorPanel = false;
+                console.log('Error panel hidden - no errors remaining');
+              }
+
+              this.saveMessage = 'Graph saved successfully!';
+              console.log('Graph saved successfully:', response);
+              this.clearMessageAfter(3);
+            }
+          },
+          error: (error) => {
+            this.isSaving = false;
+            this.saveMessage = 'Error saving graph. Please try again.';
+            console.error('Error saving graph:', error);
+
+            // Provide more specific error messages based on status
+            if (error.status === 404) {
+              this.saveMessage = 'Error: Transformation rule not found.';
+            } else if (error.status === 400) {
+              this.saveMessage = 'Error: Invalid graph data.';
+            } else if (error.status >= 500) {
+              this.saveMessage = 'Error: Server error. Please try again later.';
+            }
+
+            this.clearMessageAfter(5);
+          }
+        });
     } catch (error) {
       this.isSaving = false;
       this.saveMessage = 'Error preparing graph data for save.';
       console.error('Error converting graph data:', error);
+      this.clearMessageAfter(5);
     }
-  }
-
-  // sTODO
-  private mockApiSaveGraphData(graphData: GraphData): Observable<any> {
-    console.log('Mock API: Saving to backend...', graphData);
-
-    return of({
-      success: true,
-      message: 'Graph data saved successfully',
-      timestamp: new Date().toISOString(),
-      savedNodes: graphData.nodes.length,
-      savedEdges: graphData.edges.length
-    }).pipe(delay(1000));
-  }
-
-  // Mock API method for logic operators
-  private mockApiGetLogicOperators(): Observable<LogicOperator[]> {
-    const operators: LogicOperator[] = [
-      {
-        "operatorName": "ADD",
-        "description": "Adds two or more numbers.",
-        "inputTypes": ["NUMBER", "NUMBER"],
-        "outputType": "NUMBER",
-        "operatorType": "number"
-      },
-      {
-        "operatorName": "AFTER",
-        "description": "Checks if a date is after another date.",
-        "inputTypes": ["DATE", "DATE"],
-        "outputType": "BOOLEAN",
-        "operatorType": "datetime"
-      },
-      {
-        "operatorName": "AGE_GREATER_THAN",
-        "description": "Checks if a date is older than a specific duration.",
-        "inputTypes": ["DATE", "NUMBER", "STRING"],
-        "outputType": "BOOLEAN",
-        "operatorType": "datetime"
-      },
-      {
-        "operatorName": "ALL_OF",
-        "description": "Succeeds if all inputs are true (predicative).",
-        "inputTypes": ["BOOLEAN"],
-        "outputType": "BOOLEAN",
-        "operatorType": "boolean"
-      },
-      {
-        "operatorName": "AND",
-        "description": "Performs a strict logical AND operation.",
-        "inputTypes": ["BOOLEAN", "BOOLEAN"],
-        "outputType": "BOOLEAN",
-        "operatorType": "boolean"
-      },
-      {
-        "operatorName": "AVG",
-        "description": "Calculates the average of all numbers in a list.",
-        "inputTypes": ["ARRAY"],
-        "outputType": "NUMBER",
-        "operatorType": "array"
-      },
-      {
-        "operatorName": "BEFORE",
-        "description": "Checks if a date is before another date.",
-        "inputTypes": ["DATE", "DATE"],
-        "outputType": "BOOLEAN",
-        "operatorType": "datetime"
-      },
-      {
-        "operatorName": "BETWEEN",
-        "description": "Checks if a number is between two bounds (inclusive).",
-        "inputTypes": ["NUMBER", "NUMBER", "NUMBER"],
-        "outputType": "BOOLEAN",
-        "operatorType": "number"
-      },
-      {
-        "operatorName": "BETWEEN_DATES",
-        "description": "Checks if a date is between two other dates.",
-        "inputTypes": ["DATE", "DATE", "DATE"],
-        "outputType": "BOOLEAN",
-        "operatorType": "datetime"
-      },
-      {
-        "operatorName": "CONTAINS",
-        "description": "Checks if a string contains another string.",
-        "inputTypes": ["STRING", "STRING"],
-        "outputType": "BOOLEAN",
-        "operatorType": "string"
-      },
-      {
-        "operatorName": "CONTAINS_ALL",
-        "description": "Checks if a list contains all elements from another list.",
-        "inputTypes": ["ARRAY", "ARRAY"],
-        "outputType": "BOOLEAN",
-        "operatorType": "array"
-      },
-      {
-        "operatorName": "CONTAINS_ANY",
-        "description": "Checks if a list contains at least one element from another list.",
-        "inputTypes": ["ARRAY", "ARRAY"],
-        "outputType": "BOOLEAN",
-        "operatorType": "array"
-      },
-      {
-        "operatorName": "CONTAINS_ELEMENT",
-        "description": "Checks if an element is present in a list.",
-        "inputTypes": ["ARRAY", "ANY"],
-        "outputType": "BOOLEAN",
-        "operatorType": "array"
-      },
-      {
-        "operatorName": "CONTAINS_NONE",
-        "description": "Checks if a list contains no elements from another list.",
-        "inputTypes": ["ARRAY", "ARRAY"],
-        "outputType": "BOOLEAN",
-        "operatorType": "array"
-      },
-      {
-        "operatorName": "ENDS_WITH",
-        "description": "Checks if a string ends with a specific suffix.",
-        "inputTypes": ["STRING", "STRING"],
-        "outputType": "BOOLEAN",
-        "operatorType": "string"
-      },
-      {
-        "operatorName": "EQUALS",
-        "description": "Checks if two or more values are equal.",
-        "inputTypes": ["ANY", "ANY"],
-        "outputType": "BOOLEAN",
-        "operatorType": "general"
-      },
-      {
-        "operatorName": "EQUALS_CASE_SENSITIVE",
-        "description": "Performs a case-sensitive comparison of two strings.",
-        "inputTypes": ["STRING", "STRING"],
-        "outputType": "BOOLEAN",
-        "operatorType": "string"
-      },
-      {
-        "operatorName": "EQUALS_IGNORE_CASE",
-        "description": "Performs a case-insensitive comparison of two strings.",
-        "inputTypes": ["STRING", "STRING"],
-        "outputType": "BOOLEAN",
-        "operatorType": "string"
-      },
-      {
-        "operatorName": "EXISTS",
-        "description": "Checks if one or more JSON paths exist.",
-        "inputTypes": ["PROVIDER"],
-        "outputType": "BOOLEAN",
-        "operatorType": "general"
-      },
-      {
-        "operatorName": "GREATER_OR_EQUAL",
-        "description": "Checks if a number is greater than or equal to another.",
-        "inputTypes": ["NUMBER", "NUMBER"],
-        "outputType": "BOOLEAN",
-        "operatorType": "number"
-      },
-      {
-        "operatorName": "GREATER_THAN",
-        "description": "Checks if a number is greater than another.",
-        "inputTypes": ["NUMBER", "NUMBER"],
-        "outputType": "BOOLEAN",
-        "operatorType": "number"
-      },
-      {
-        "operatorName": "HAS_ALL_KEYS",
-        "description": "Checks if a JSON object has all specified keys.",
-        "inputTypes": ["JSON", "ARRAY"],
-        "outputType": "BOOLEAN",
-        "operatorType": "object"
-      },
-      {
-        "operatorName": "HAS_ANY_KEY",
-        "description": "Checks if a JSON object has at least one of the specified keys.",
-        "inputTypes": ["JSON", "ARRAY"],
-        "outputType": "BOOLEAN",
-        "operatorType": "object"
-      },
-      {
-        "operatorName": "HAS_KEY",
-        "description": "Checks if a JSON object has a specific key.",
-        "inputTypes": ["JSON", "STRING"],
-        "outputType": "BOOLEAN",
-        "operatorType": "object"
-      },
-      {
-        "operatorName": "HAS_NO_KEYS",
-        "description": "Checks if a JSON object has none of the specified keys.",
-        "inputTypes": ["JSON", "ARRAY"],
-        "outputType": "BOOLEAN",
-        "operatorType": "object"
-      },
-      {
-        "operatorName": "IN_SET",
-        "description": "Checks if a value is present in a set of values.",
-        "inputTypes": ["ANY", "ARRAY"],
-        "outputType": "BOOLEAN",
-        "operatorType": "general"
-      },
-      {
-        "operatorName": "IS_FALSE",
-        "description": "Checks if a value is exactly false.",
-        "inputTypes": ["BOOLEAN"],
-        "outputType": "BOOLEAN",
-        "operatorType": "boolean"
-      },
-      {
-        "operatorName": "IS_NOT_NULL",
-        "description": "Checks if a value exists and is not null.",
-        "inputTypes": ["ANY"],
-        "outputType": "BOOLEAN",
-        "operatorType": "general"
-      },
-      {
-        "operatorName": "IS_NULL",
-        "description": "Checks if a value is explicitly null.",
-        "inputTypes": ["ANY"],
-        "outputType": "BOOLEAN",
-        "operatorType": "general"
-      },
-      {
-        "operatorName": "IS_TRUE",
-        "description": "Checks if a value is exactly true.",
-        "inputTypes": ["BOOLEAN"],
-        "outputType": "BOOLEAN",
-        "operatorType": "boolean"
-      },
-      {
-        "operatorName": "LACKS_KEY",
-        "description": "Checks if a JSON object lacks a specific key.",
-        "inputTypes": ["JSON", "STRING"],
-        "outputType": "BOOLEAN",
-        "operatorType": "object"
-      },
-      {
-        "operatorName": "LENGTH_BETWEEN",
-        "description": "Checks if a string's length is between two numbers.",
-        "inputTypes": ["STRING", "NUMBER", "NUMBER"],
-        "outputType": "BOOLEAN",
-        "operatorType": "string"
-      },
-      {
-        "operatorName": "LENGTH_EQUALS",
-        "description": "Compares the length of a list with a number.",
-        "inputTypes": ["ARRAY", "NUMBER"],
-        "outputType": "BOOLEAN",
-        "operatorType": "array"
-      },
-      {
-        "operatorName": "LENGTH_GT",
-        "description": "Checks if the length of a list is greater than a number.",
-        "inputTypes": ["ARRAY", "NUMBER"],
-        "outputType": "BOOLEAN",
-        "operatorType": "array"
-      },
-      {
-        "operatorName": "LENGTH_LT",
-        "description": "Checks if the length of a list is less than a number.",
-        "inputTypes": ["ARRAY", "NUMBER"],
-        "outputType": "BOOLEAN",
-        "operatorType": "array"
-      },
-      {
-        "operatorName": "LESS_OR_EQUAL",
-        "description": "Checks if a number is less than or equal to another.",
-        "inputTypes": ["NUMBER", "NUMBER"],
-        "outputType": "BOOLEAN",
-        "operatorType": "number"
-      },
-      {
-        "operatorName": "LESS_THAN",
-        "description": "Checks if a number is less than another.",
-        "inputTypes": ["NUMBER", "NUMBER"],
-        "outputType": "BOOLEAN",
-        "operatorType": "number"
-      },
-      {
-        "operatorName": "MATCHES_SCHEMA",
-        "description": "Validates a JSON document against a JSON schema.",
-        "inputTypes": ["JSON", "SCHEMA"],
-        "outputType": "BOOLEAN",
-        "operatorType": "object"
-      },
-      {
-        "operatorName": "MAX",
-        "description": "Finds the largest number in a list.",
-        "inputTypes": ["ARRAY"],
-        "outputType": "NUMBER",
-        "operatorType": "array"
-      },
-      {
-        "operatorName": "MIN",
-        "description": "Finds the smallest number in a list.",
-        "inputTypes": ["ARRAY"],
-        "outputType": "NUMBER",
-        "operatorType": "array"
-      },
-      {
-        "operatorName": "NONE_OF",
-        "description": "Succeeds if no input is true (predicative).",
-        "inputTypes": ["BOOLEAN"],
-        "outputType": "BOOLEAN",
-        "operatorType": "boolean"
-      },
-      {
-        "operatorName": "NOT",
-        "description": "Negates a single boolean value (strict).",
-        "inputTypes": ["BOOLEAN"],
-        "outputType": "BOOLEAN",
-        "operatorType": "boolean"
-      },
-      {
-        "operatorName": "NOT_BETWEEN",
-        "description": "Checks if a number is outside of two bounds.",
-        "inputTypes": ["NUMBER", "NUMBER", "NUMBER"],
-        "outputType": "BOOLEAN",
-        "operatorType": "number"
-      },
-      {
-        "operatorName": "NOT_CONTAINS",
-        "description": "Checks if a string does not contain another string.",
-        "inputTypes": ["STRING", "STRING"],
-        "outputType": "BOOLEAN",
-        "operatorType": "string"
-      },
-      {
-        "operatorName": "NOT_CONTAINS_ELEMENT",
-        "description": "Checks if an element is not present in a list.",
-        "inputTypes": ["ARRAY", "ANY"],
-        "outputType": "BOOLEAN",
-        "operatorType": "array"
-      },
-      {
-        "operatorName": "NOT_EMPTY",
-        "description": "Checks if a list or array is not empty.",
-        "inputTypes": ["ARRAY"],
-        "outputType": "BOOLEAN",
-        "operatorType": "array"
-      },
-      {
-        "operatorName": "NOT_EQUALS",
-        "description": "Checks if two or more values are not equal.",
-        "inputTypes": ["ANY", "ANY"],
-        "outputType": "BOOLEAN",
-        "operatorType": "general"
-      },
-      {
-        "operatorName": "NOT_EXISTS",
-        "description": "Checks if one or more JSON paths do not exist.",
-        "inputTypes": ["PROVIDER"],
-        "outputType": "BOOLEAN",
-        "operatorType": "general"
-      },
-      {
-        "operatorName": "NOT_IN_SET",
-        "description": "Checks if a value is not present in a set of values.",
-        "inputTypes": ["ANY", "ARRAY"],
-        "outputType": "BOOLEAN",
-        "operatorType": "general"
-      },
-      {
-        "operatorName": "ONE_OF",
-        "description": "Succeeds if at least one input is true (predicative).",
-        "inputTypes": ["BOOLEAN"],
-        "outputType": "BOOLEAN",
-        "operatorType": "boolean"
-      },
-      {
-        "operatorName": "OR",
-        "description": "Performs a strict logical OR operation.",
-        "inputTypes": ["BOOLEAN", "BOOLEAN"],
-        "outputType": "BOOLEAN",
-        "operatorType": "boolean"
-      },
-      {
-        "operatorName": "REGEX_MATCH",
-        "description": "Checks if a string matches a regular expression pattern.",
-        "inputTypes": ["STRING", "STRING"],
-        "outputType": "BOOLEAN",
-        "operatorType": "string"
-      },
-      {
-        "operatorName": "SAME_DAY",
-        "description": "Checks if two dates are on the same calendar day.",
-        "inputTypes": ["DATE", "DATE"],
-        "outputType": "BOOLEAN",
-        "operatorType": "datetime"
-      },
-      {
-        "operatorName": "STARTS_WITH",
-        "description": "Checks if a string starts with a specific prefix.",
-        "inputTypes": ["STRING", "STRING"],
-        "outputType": "BOOLEAN",
-        "operatorType": "string"
-      },
-      {
-        "operatorName": "SUM",
-        "description": "Calculates the sum of all numbers in a list.",
-        "inputTypes": ["ARRAY"],
-        "outputType": "NUMBER",
-        "operatorType": "array"
-      },
-      {
-        "operatorName": "TYPE_IS",
-        "description": "Checks the Java type of a value.",
-        "inputTypes": ["STRING", "ANY"],
-        "outputType": "BOOLEAN",
-        "operatorType": "general"
-      },
-      {
-        "operatorName": "WITHIN_LAST",
-        "description": "Checks if a date is within the last specified duration.",
-        "inputTypes": ["DATE", "NUMBER", "STRING"],
-        "outputType": "BOOLEAN",
-        "operatorType": "datetime"
-      },
-      {
-        "operatorName": "WITHIN_NEXT",
-        "description": "Checks if a date is within the next specified duration.",
-        "inputTypes": ["DATE", "NUMBER", "STRING"],
-        "outputType": "BOOLEAN",
-        "operatorType": "datetime"
-      },
-      {
-        "operatorName": "XOR",
-        "description": "Checks if exactly one input is true (strict).",
-        "inputTypes": ["BOOLEAN", "BOOLEAN"],
-        "outputType": "BOOLEAN",
-        "operatorType": "boolean"
-      }
-    ];
-
-    return of(operators).pipe(delay(300));
   }
   //#endregion
 
