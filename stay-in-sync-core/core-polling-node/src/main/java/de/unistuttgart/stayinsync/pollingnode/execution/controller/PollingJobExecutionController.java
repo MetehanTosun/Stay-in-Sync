@@ -122,11 +122,9 @@ public class PollingJobExecutionController {
      * @throws SchedulerException
      */
     private void activateJobIfNeeded(SourceSystemApiRequestConfigurationMessageDTO apiRequestConfigurationMessage, JobDetail job) throws SchedulerException {
-        if (apiRequestConfigurationMessage.active()) {
             final Trigger trigger = createTriggerWithApiRequestConfigurationMessage(apiRequestConfigurationMessage);
             scheduler.scheduleJob(job, trigger);
             Log.infof("Polling for Job with id %d was activated with timing %d", apiRequestConfigurationMessage.id(), apiRequestConfigurationMessage.pollingIntervallTimeInMs(), job.getKey());
-        }
     }
 
     /**
