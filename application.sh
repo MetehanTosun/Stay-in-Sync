@@ -97,7 +97,7 @@ start_application() {
         echo "Starting backend in background..."
         cd stay-in-sync-core/core-management
         
-        nohup ./mvnw quarkus:dev -Dquarkus.test.continuous-testing=disabled -DskipTests > ../../backend.log 2>&1 &
+        nohup ./mvnw quarkus:dev -Dquarkus.test.continuous-testing=disabled > ../../backend.log 2>&1 &
         BACKEND_PID=$!
         echo "Backend started with PID: $BACKEND_PID"
         echo "Logs are being written to: backend.log"
