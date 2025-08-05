@@ -83,7 +83,7 @@ public class SyncJobEventHandler {
         List<SourceSystemApiRequestConfigurationMessageDTO> messages = allApiRequestConfigurations.stream().map(apiRequestConfiguration -> apiRequestConfigurationFullUpdateMapper.mapToMessageDTO(apiRequestConfiguration)).collect(Collectors.toList());*/
 // TODO: PROPOSAL FOR POLLING JOB DEPLOYMENT (fixed required ARCs in script extraction)
         syncJob.transformations.stream()
-                .flatMap(transformation -> transformation.sourceSystemApiRequestConfigrations.stream())
+                .flatMap(transformation -> transformation.sourceSystemApiRequestConfigurations.stream())
                 .distinct()
                 .filter(arc -> !arc.active)
                 .forEach(arc -> {
