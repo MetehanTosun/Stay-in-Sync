@@ -31,13 +31,6 @@
 
     <!-- Response Body Schema Editor -->
     <div *ngIf="hasResponseBody && !loading && !error" class="editor-container">
-      <!-- Debug info -->
-      <div style="background: yellow; padding: 10px; margin: 10px 0; font-size: 12px;">
-        DEBUG: hasResponseBody={{ hasResponseBody }}, activeTabIndex={{ activeTabIndex }}, 
-        responseBodySchema length={{ responseBodySchema?.length || 0 }}, 
-        responseDts length={{ responseDts?.length || 0 }}
-      </div>
-      
       <div class="editor-header">
         <span class="endpoint-info">
           <strong>{{ httpMethod }}</strong> {{ endpointPath }}

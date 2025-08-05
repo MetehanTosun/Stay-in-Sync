@@ -972,24 +972,17 @@ ${jsonSchema}
     try {
       // Validate endpoint data
       if (!endpoint) {
-        console.error('No endpoint provided for response preview');
         return;
       }
 
       if (!endpoint.id) {
-        console.error('Endpoint ID is required for response preview');
         return;
       }
 
       // Set the selected endpoint and open modal
       this.selectedResponsePreviewEndpoint = endpoint;
       this.responsePreviewModalVisible = true;
-
-      console.log(`Opening response preview modal for endpoint: ${endpoint.endpointPath} (${endpoint.httpRequestType})`);
-      console.log('[ManageEndpoints] responseBodySchema:', endpoint.responseBodySchema);
-      console.log('[ManageEndpoints] responseDts:', endpoint.responseDts);
     } catch (error) {
-      console.error('Error opening response preview modal:', error);
       // In a real application, you might want to show a toast notification here
     }
   }
@@ -1000,7 +993,6 @@ ${jsonSchema}
   closeResponsePreviewModal() {
     this.responsePreviewModalVisible = false;
     this.selectedResponsePreviewEndpoint = null;
-    console.log('Response preview modal closed');
   }
 
   /**

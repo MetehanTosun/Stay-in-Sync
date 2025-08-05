@@ -59,33 +59,15 @@ export class ResponsePreviewModalComponent implements OnInit, OnChanges {
   ) {}
 
   ngOnInit(): void {
-    console.log('[ResponsePreviewModal] ngOnInit called');
     this.updateEditorModel();
   }
 
-  /**
-   * Log component state for debugging
-   */
-  private logComponentState(): void {
-    console.log('[ResponsePreviewModal] === Component State ===');
-    console.log('[ResponsePreviewModal] visible:', this.visible);
-    console.log('[ResponsePreviewModal] endpointId:', this.endpointId);
-    console.log('[ResponsePreviewModal] endpointPath:', this.endpointPath);
-    console.log('[ResponsePreviewModal] httpMethod:', this.httpMethod);
-    console.log('[ResponsePreviewModal] responseBodySchema:', this.responseBodySchema?.substring(0, 100) + '...');
-    console.log('[ResponsePreviewModal] responseDts:', this.responseDts?.substring(0, 100) + '...');
-    console.log('[ResponsePreviewModal] hasResponseBody:', this.hasResponseBody);
-    console.log('[ResponsePreviewModal] activeTabIndex:', this.activeTabIndex);
-    console.log('[ResponsePreviewModal] jsonEditorModel.value length:', this.jsonEditorModel.value.length);
-    console.log('[ResponsePreviewModal] typescriptEditorModel.value length:', this.typescriptEditorModel.value.length);
-    console.log('[ResponsePreviewModal] ========================');
-  }
+
 
   /**
    * Force tab change programmatically
    */
   private forceTabChange(tabIndex: number): void {
-    console.log('[ResponsePreviewModal] Force changing tab to index:', tabIndex);
     this.activeTabIndex = tabIndex;
     this.cdr.detectChanges();
     
@@ -97,13 +79,11 @@ export class ResponsePreviewModalComponent implements OnInit, OnChanges {
    * Set active tab (public method for template)
    */
   setActiveTab(tabIndex: number): void {
-    console.log('[ResponsePreviewModal] setActiveTab called with index:', tabIndex);
     this.activeTabIndex = tabIndex;
     this.onTabChange({ index: tabIndex });
   }
 
   ngOnChanges(changes: SimpleChanges): void {
-    console.log('[ResponsePreviewModal] ngOnChanges called');
     this.updateEditorModel();
     
     // Reset TypeScript generation when schema changes
@@ -112,23 +92,18 @@ export class ResponsePreviewModalComponent implements OnInit, OnChanges {
     this.typescriptError = null;
     this.generatedTypeScript = '';
     
-    // Log component state for debugging
-    this.logComponentState();
-    
     // Force change detection after model update
     this.cdr.detectChanges();
 
-    // Add a longer delay to ensure PrimeNG TabView has fully rendered
+    // Add a longer delay to ensure custom tabs have fully rendered
     setTimeout(() => {
-      console.log('[ResponsePreviewModal] Forcing change detection after timeout in ngOnChanges');
       this.cdr.detectChanges();
       
       // Force the tab to update if we have TypeScript data
       if (this.responseDts && this.activeTabIndex === 1) {
-        console.log('[ResponsePreviewModal] Forcing TypeScript tab update');
         this.forceTabChange(1);
       }
-    }, 100); // Increased delay to ensure TabView is fully rendered
+    }, 100);
   }
 
   /**
@@ -136,15 +111,11 @@ export class ResponsePreviewModalComponent implements OnInit, OnChanges {
    */
   onTabChange(event: any): void {
     this.activeTabIndex = event.index;
-    console.log('[ResponsePreviewModal] Tab changed to index:', event.index);
     
     // Wenn TypeScript tab aktiviert wird
     if (event.index === 1) {
-      console.log('[ResponsePreviewModal] TypeScript tab activated');
-      
       // Wenn responseDts vorhanden ist, nur Model setzen
       if (this.responseDts) {
-        console.log('[ResponsePreviewModal] TypeScript tab with responseDts - setting model');
         this.typescriptEditorModel = { value: this.responseDts };
         this.isGeneratingTypeScript = false;
         this.typescriptError = null;
@@ -153,7 +124,6 @@ export class ResponsePreviewModalComponent implements OnInit, OnChanges {
       
       // Wenn kein responseDts, TypeScript generieren
       if (!this.responseDts) {
-        console.log('[ResponsePreviewModal] TypeScript tab without responseDts - generating TypeScript');
         if (!this.generatedTypeScript && !this.isGeneratingTypeScript) {
           this.loadTypeScript();
         } else if (this.generatedTypeScript && !this.typescriptEditorModel.value) {
@@ -168,12 +138,9 @@ export class ResponsePreviewModalComponent implements OnInit, OnChanges {
    */
   loadTypeScript(): void {
     if (!this.responseBodySchema || !this.endpointId) {
-      console.warn('[ResponsePreviewModal] Cannot generate TypeScript: missing schema or endpoint ID');
       this.typescriptError = 'Cannot generate TypeScript: missing schema or endpoint ID';
       return;
     }
-
-    console.log('[ResponsePreviewModal] Starting TypeScript generation for endpoint:', this.endpointId);
     
     this.isGeneratingTypeScript = true;
     this.typescriptError = null;
@@ -187,7 +154,6 @@ export class ResponsePreviewModalComponent implements OnInit, OnChanges {
     // Validate JSON schema first
     const validation = this.validateJsonSchema(this.responseBodySchema);
     if (!validation.isValid) {
-      console.warn('[ResponsePreviewModal] Invalid JSON schema:', validation.error);
       this.isGeneratingTypeScript = false;
       this.clearTypeScriptGenerationTimeout();
       this.typescriptError = `Invalid JSON schema: ${validation.error}`;
@@ -199,19 +165,15 @@ export class ResponsePreviewModalComponent implements OnInit, OnChanges {
       jsonSchema: this.responseBodySchema
     };
 
-    console.log('[ResponsePreviewModal] Sending TypeScript generation request:', request);
-
     // Call the backend service
     this.endpointSvc.generateTypeScript(this.endpointId, request).subscribe({
       next: (response: TypeScriptGenerationResponse) => {
-        console.log('[ResponsePreviewModal] TypeScript generation successful:', response);
         this.clearTypeScriptGenerationTimeout();
         this.isGeneratingTypeScript = false;
         this.generatedTypeScript = response.generatedTypeScript || '';
         this.typescriptEditorModel = { value: response.generatedTypeScript || '' };
       },
       error: (error) => {
-        console.error('[ResponsePreviewModal] TypeScript generation failed:', error);
         this.clearTypeScriptGenerationTimeout();
         this.isGeneratingTypeScript = false;
         
@@ -229,7 +191,6 @@ export class ResponsePreviewModalComponent implements OnInit, OnChanges {
    * Handle TypeScript generation timeout
    */
   private handleTypeScriptGenerationTimeout(): void {
-    console.warn('[ResponsePreviewModal] TypeScript generation timed out');
     this.isGeneratingTypeScript = false;
     this.typescriptError = 'TypeScript generation timed out after 30 seconds';
     
@@ -285,38 +246,27 @@ export interface ResponseBody {
    * Update editor model with current response body schema
    */
   private updateEditorModel(): void {
-    console.log('[ResponsePreviewModal] updateEditorModel called');
-    console.log('[ResponsePreviewModal] responseBodySchema:', this.responseBodySchema);
-    console.log('[ResponsePreviewModal] responseDts:', this.responseDts);
-    
     // Set JSON model
     if (this.responseBodySchema) {
-      console.log('[ResponsePreviewModal] Updating JSON editor model with schema');
       this.jsonEditorModel = { value: this.responseBodySchema };
     } else {
-      console.log('[ResponsePreviewModal] No response body schema available');
       this.jsonEditorModel = { value: '// No JSON schema available' };
     }
     
     // Set TypeScript model if responseDts is available
     if (this.responseDts) {
-      console.log('[ResponsePreviewModal] Updating TypeScript editor model with responseDts');
       this.typescriptEditorModel = { value: this.responseDts };
       this.generatedTypeScript = this.responseDts;
-      console.log('[ResponsePreviewModal] typescriptEditorModel.value set to:', this.typescriptEditorModel.value.substring(0, 100) + '...');
       
       // If we have TypeScript data, set the active tab to TypeScript (index 1)
       if (this.activeTabIndex !== 1) {
-        console.log('[ResponsePreviewModal] Setting active tab to TypeScript (index 1)');
         this.activeTabIndex = 1;
       }
     } else {
-      console.log('[ResponsePreviewModal] No responseDts available, TypeScript model will be set when tab is clicked');
       this.typescriptEditorModel = { value: '// Click on TypeScript tab to generate interface' };
       
       // If no TypeScript data, default to JSON tab (index 0)
       if (this.activeTabIndex !== 0) {
-        console.log('[ResponsePreviewModal] Setting active tab to JSON (index 0)');
         this.activeTabIndex = 0;
       }
     }
@@ -331,7 +281,6 @@ export interface ResponseBody {
    * Close the modal
    */
   onClose(): void {
-    console.log('[ResponsePreviewModal] Closing modal');
     this.clearTypeScriptGenerationTimeout();
     this.visible = false;
     this.visibleChange.emit(false);
@@ -343,16 +292,7 @@ export interface ResponseBody {
   get hasResponseBody(): boolean {
     const hasSchema = !!this.responseBodySchema && this.responseBodySchema.trim().length > 0;
     const hasDts = !!this.responseDts && this.responseDts.trim().length > 0;
-    const result = hasSchema || hasDts;
-    
-    console.log('[ResponsePreviewModal] hasResponseBody check:');
-    console.log('[ResponsePreviewModal] - hasSchema:', hasSchema);
-    console.log('[ResponsePreviewModal] - hasDts:', hasDts);
-    console.log('[ResponsePreviewModal] - result:', result);
-    console.log('[ResponsePreviewModal] - responseBodySchema length:', this.responseBodySchema?.length || 0);
-    console.log('[ResponsePreviewModal] - responseDts length:', this.responseDts?.length || 0);
-    
-    return result;
+    return hasSchema || hasDts;
   }
 
 
