@@ -8,5 +8,7 @@ public record SourceSystemEndpointDTO(Long id, Long sourceSystemId, @NotNull Str
                                       @Schema(description = "Request-Body-Schema als JSON-Schema oder freier String")
                                       String requestBodySchema,
                                       @Schema(description = "Response-Body-Schema als JSON-Schema oder freier String")
-                                      String responseBodySchema) {
+                                      String responseBodySchema,
+                                      @Schema(description = "Generated TypeScript types from response body schema")
+                                      String responseDts) {
 }

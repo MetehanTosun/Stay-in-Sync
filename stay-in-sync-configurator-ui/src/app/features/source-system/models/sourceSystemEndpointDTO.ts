@@ -17,5 +17,6 @@ export interface SourceSystemEndpointDTO {
     httpRequestType: string;
     requestBodySchema?: string;
     responseBodySchema?: string;
+    responseDts?: string; // TypeScript definitions for response
 }
 

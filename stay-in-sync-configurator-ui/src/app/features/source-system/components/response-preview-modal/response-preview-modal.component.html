@@ -3,7 +3,7 @@
   [(visible)]="visible"
   (visibleChange)="visibleChange.emit($event)"
   [modal]="true"
-  [style]="{ width: '80vw', height: '80vh' }"
+  [style]="{ width: '90vw', height: '90vh' }"
   [draggable]="false"
   [resizable]="true"
   [closable]="true"
@@ -31,6 +31,13 @@
 
     <!-- Response Body Schema Editor -->
     <div *ngIf="hasResponseBody && !loading && !error" class="editor-container">
+      <!-- Debug info -->
+      <div style="background: yellow; padding: 10px; margin: 10px 0; font-size: 12px;">
+        DEBUG: hasResponseBody={{ hasResponseBody }}, activeTabIndex={{ activeTabIndex }}, 
+        responseBodySchema length={{ responseBodySchema?.length || 0 }}, 
+        responseDts length={{ responseDts?.length || 0 }}
+      </div>
+      
       <div class="editor-header">
         <span class="endpoint-info">
           <strong>{{ httpMethod }}</strong> {{ endpointPath }}
@@ -41,11 +48,70 @@
       </div>
       
       <div class="monaco-wrapper">
-        <ngx-monaco-editor
-          [options]="editorOptions"
-          [model]="editorModel"
-          style="width: 100%; height: 100%">
-        </ngx-monaco-editor>
+        <!-- Custom Tab Navigation -->
+        <div class="custom-tab-nav">
+          <button 
+            class="tab-button" 
+            [class.active]="activeTabIndex === 0"
+            (click)="setActiveTab(0)">
+            <i class="pi pi-file"></i>
+            JSON
+          </button>
+          <button 
+            class="tab-button" 
+            [class.active]="activeTabIndex === 1"
+            (click)="setActiveTab(1)">
+            <i class="pi pi-code"></i>
+            TypeScript
+          </button>
+        </div>
+        
+        <!-- Tab Content -->
+        <div class="tab-content">
+          <!-- JSON Tab -->
+          <div *ngIf="activeTabIndex === 0" class="tab-panel">
+            <div class="code-editor">
+              <div class="editor-header">
+                <i class="pi pi-file"></i>
+                <span>JSON Schema</span>
+              </div>
+              <textarea 
+                [value]="jsonEditorModel.value || '// No JSON content available'"
+                readonly
+                class="code-textarea json-textarea">
+              </textarea>
+            </div>
+          </div>
+          
+          <!-- TypeScript Tab -->
+          <div *ngIf="activeTabIndex === 1" class="tab-panel">
+            <div *ngIf="isGeneratingTypeScript" class="typescript-loading">
+              <p-progressSpinner [style]="{width: '20px', height: '20px'}" strokeWidth="2" fill="var(--surface-ground)" animationDuration=".5s"></p-progressSpinner>
+              <span class="loading-text">Generating TypeScript interface...</span>
+            </div>
+            <div *ngIf="!isGeneratingTypeScript && typescriptError" class="typescript-error">
+              <div class="error-header">
+                <i class="pi pi-exclamation-triangle"></i>
+                <span>TypeScript Generation Error</span>
+              </div>
+              <div class="error-message">{{ typescriptError }}</div>
+              <div class="error-actions">
+                <button pButton type="button" label="Retry" class="p-button-sm" (click)="loadTypeScript()"></button>
+              </div>
+            </div>
+            <div *ngIf="!isGeneratingTypeScript && !typescriptError" class="code-editor">
+              <div class="editor-header">
+                <i class="pi pi-code"></i>
+                <span>TypeScript Interface</span>
+              </div>
+              <textarea 
+                [value]="typescriptEditorModel.value || '// No TypeScript content available'"
+                readonly
+                class="code-textarea typescript-textarea">
+              </textarea>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   </div>

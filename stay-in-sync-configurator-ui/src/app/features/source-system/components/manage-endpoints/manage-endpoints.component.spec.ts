@@ -13,6 +13,8 @@ import { SourceSystemResourceService } from '../../service/sourceSystemResource.
 import { SourceSystemEndpointDTO } from '../../models/sourceSystemEndpointDTO';
 import { SourceSystemDTO } from '../../models/sourceSystemDTO';
 import { CreateSourceSystemEndpointDTO } from '../../models/createSourceSystemEndpointDTO';
+import { TypeScriptGenerationRequest } from '../../models/typescriptGenerationRequest';
+import { TypeScriptGenerationResponse } from '../../models/typescriptGenerationResponse';
 
 
 
@@ -96,7 +98,8 @@ describe('ManageEndpointsComponent', () => {
     mockEndpointService = jasmine.createSpyObj('SourceSystemEndpointResourceService', [
       'apiConfigSourceSystemSourceSystemIdEndpointGet',
       'apiConfigSourceSystemSourceSystemIdEndpointPost',
-      'apiConfigSourceSystemEndpointIdDelete'
+      'apiConfigSourceSystemEndpointIdDelete',
+      'generateTypeScript'
     ]);
 
     mockSourceSystemService = jasmine.createSpyObj('SourceSystemResourceService', [
@@ -651,5 +654,385 @@ describe('ManageEndpointsComponent - Response Body', () => {
     
     expect(component.responsePreviewModalVisible).toBe(false);
     expect(component.selectedResponsePreviewEndpoint).toBeNull();
+  });
+
+  // TypeScript Tab Functionality Tests
+  describe('TypeScript Tab Functionality', () => {
+    const validJsonSchema = '{"type": "object", "properties": {"id": {"type": "number"}, "name": {"type": "string"}}}';
+    const invalidJsonSchema = '{invalid json}';
+    const largeJsonSchema = '{"type": "object", "properties": {' + '"prop' + Array(1000).fill(0).map((_, i) => i).join('": {"type": "string"}, "prop') + '": {"type": "string"}}}';
+
+    beforeEach(() => {
+      component.ngOnInit();
+    });
+
+    it('should generate TypeScript from valid JSON schema', fakeAsync(() => {
+      const mockResponse: TypeScriptGenerationResponse = {
+        generatedTypeScript: 'interface ResponseBody { id: number; name: string; }'
+      };
+      mockEndpointService.generateTypeScript.and.returnValue(of(mockResponse));
+
+      component.endpointForm.patchValue({ responseBodySchema: validJsonSchema });
+      component.loadTypeScriptForMainForm();
+      tick();
+
+      expect(component.generatedTypeScript).toContain('interface ResponseBody');
+      expect(component.typescriptError).toBeNull();
+      expect(component.isGeneratingTypeScript).toBeFalse();
+    }));
+
+    it('should handle TypeScript generation error', fakeAsync(() => {
+      const mockResponse: TypeScriptGenerationResponse = {
+        error: 'Invalid JSON schema provided'
+      };
+      mockEndpointService.generateTypeScript.and.returnValue(of(mockResponse));
+
+      component.endpointForm.patchValue({ responseBodySchema: invalidJsonSchema });
+      component.loadTypeScriptForMainForm();
+      tick();
+
+      expect(component.typescriptError).toContain('Invalid JSON schema');
+      expect(component.generatedTypeScript).toContain('Error: Unable to generate TypeScript');
+      expect(component.isGeneratingTypeScript).toBeFalse();
+    }));
+
+    it('should handle network error during TypeScript generation', fakeAsync(() => {
+      mockEndpointService.generateTypeScript.and.returnValue(throwError(() => new Error('Network error')));
+
+      component.endpointForm.patchValue({ responseBodySchema: validJsonSchema });
+      component.loadTypeScriptForMainForm();
+      tick();
+
+      expect(component.typescriptError).toContain('Backend communication failed');
+      expect(component.generatedTypeScript).toContain('Error: Unable to generate TypeScript');
+      expect(component.isGeneratingTypeScript).toBeFalse();
+    }));
+
+    it('should validate JSON schema size', () => {
+      const validation = component['validateJsonSchema'](largeJsonSchema);
+      expect(validation.isValid).toBeFalse();
+      expect(validation.error).toContain('too large');
+    });
+
+    it('should validate JSON schema structure', () => {
+      const validSchema = '{"type": "object", "properties": {"test": {"type": "string"}}}';
+      const invalidSchema = '{"notASchema": true}';
+      
+      const validValidation = component['validateJsonSchema'](validSchema);
+      const invalidValidation = component['validateJsonSchema'](invalidSchema);
+      
+      expect(validValidation.isValid).toBeTrue();
+      expect(invalidValidation.isValid).toBeFalse();
+      expect(invalidValidation.error).toContain('Invalid JSON Schema structure');
+    });
+
+    it('should handle tab change to TypeScript tab', fakeAsync(() => {
+      const mockResponse: TypeScriptGenerationResponse = {
+        generatedTypeScript: 'interface ResponseBody { id: number; }'
+      };
+      mockEndpointService.generateTypeScript.and.returnValue(of(mockResponse));
+
+      component.endpointForm.patchValue({ responseBodySchema: validJsonSchema });
+      component.onTabChange({ index: 1 }); // Switch to TypeScript tab
+      tick();
+
+      expect(component.activeTabIndex).toBe(1);
+      expect(component.generatedTypeScript).toContain('interface ResponseBody');
+    }));
+
+    it('should not regenerate TypeScript if already generated', fakeAsync(() => {
+      const mockResponse: TypeScriptGenerationResponse = {
+        generatedTypeScript: 'interface ResponseBody { id: number; }'
+      };
+      mockEndpointService.generateTypeScript.and.returnValue(of(mockResponse));
+
+      component.endpointForm.patchValue({ responseBodySchema: validJsonSchema });
+      component.loadTypeScriptForMainForm();
+      tick();
+
+      const initialCallCount = mockEndpointService.generateTypeScript.calls.count();
+      
+      component.onTabChange({ index: 1 }); // Switch to TypeScript tab again
+      tick();
+
+      expect(mockEndpointService.generateTypeScript.calls.count()).toBe(initialCallCount);
+    }));
+
+    it('should handle edit form TypeScript generation', fakeAsync(() => {
+      const mockResponse: TypeScriptGenerationResponse = {
+        generatedTypeScript: 'interface ResponseBody { id: number; name: string; }'
+      };
+      mockEndpointService.generateTypeScript.and.returnValue(of(mockResponse));
+
+      component.editForm.patchValue({ responseBodySchema: validJsonSchema });
+      component.loadTypeScriptForEditForm();
+      tick();
+
+      expect(component.editGeneratedTypeScript).toContain('interface ResponseBody');
+      expect(component.editTypeScriptError).toBeNull();
+      expect(component.isGeneratingEditTypeScript).toBeFalse();
+    }));
+
+    it('should clear TypeScript data when form is reset', fakeAsync(() => {
+      const mockResponse: TypeScriptGenerationResponse = {
+        generatedTypeScript: 'interface ResponseBody { id: number; }'
+      };
+      mockEndpointService.generateTypeScript.and.returnValue(of(mockResponse));
+      mockEndpointService.apiConfigSourceSystemSourceSystemIdEndpointPost.and.returnValue(of(new HttpResponse<any>({ status: 201 })));
+
+      component.endpointForm.patchValue({ 
+        endpointPath: '/test', 
+        httpRequestType: 'GET',
+        responseBodySchema: validJsonSchema 
+      });
+      component.loadTypeScriptForMainForm();
+      tick();
+
+      component.addEndpoint();
+      tick();
+
+      expect(component.generatedTypeScript).toBe('');
+      expect(component.typescriptError).toBeNull();
+      expect(component.activeTabIndex).toBe(0);
+    }));
+
+    it('should handle timeout during TypeScript generation', fakeAsync(() => {
+      // Simulate a slow response that would timeout
+      mockEndpointService.generateTypeScript.and.returnValue(
+        new Promise(resolve => setTimeout(() => resolve({
+          generatedTypeScript: 'interface ResponseBody { id: number; }'
+        }), 35000)) // Longer than 30 second timeout
+      );
+
+      component.endpointForm.patchValue({ responseBodySchema: validJsonSchema });
+      component.loadTypeScriptForMainForm();
+      
+      // Fast forward past the timeout
+      tick(31000);
+
+      expect(component.typescriptError).toContain('timed out');
+      expect(component.isGeneratingTypeScript).toBeFalse();
+    }));
+
+    it('should format error messages correctly', () => {
+      const networkError = component['formatErrorMessage']('HttpErrorResponse: Network error', 'Test context');
+      const timeoutError = component['formatErrorMessage']('Request timeout', 'Test context');
+      const jsonError = component['formatErrorMessage']('Invalid JSON syntax', 'Test context');
+
+      expect(networkError).toContain('Network error: Unable to connect to the server');
+      expect(timeoutError).toContain('Request timed out');
+      expect(jsonError).toContain('Invalid JSON format in schema');
+    });
+
+    // Additional tests for complex scenarios
+    it('should generate TypeScript from complex nested JSON schema', fakeAsync(() => {
+      const complexSchema = '{"type": "object", "properties": {"user": {"type": "object", "properties": {"id": {"type": "number"}, "profile": {"type": "object", "properties": {"name": {"type": "string"}, "email": {"type": "string"}}}}}}}';
+      const mockResponse: TypeScriptGenerationResponse = {
+        generatedTypeScript: 'interface ResponseBody { user: { id: number; profile: { name: string; email: string; }; }; }'
+      };
+      mockEndpointService.generateTypeScript.and.returnValue(of(mockResponse));
+
+      component.endpointForm.patchValue({ responseBodySchema: complexSchema });
+      component.loadTypeScriptForMainForm();
+      tick();
+
+      expect(component.generatedTypeScript).toContain('user: { id: number; profile:');
+      expect(component.typescriptError).toBeNull();
+    }));
+
+    it('should generate TypeScript from array schema', fakeAsync(() => {
+      const arraySchema = '{"type": "object", "properties": {"items": {"type": "array", "items": {"type": "string"}}, "count": {"type": "number"}}}';
+      const mockResponse: TypeScriptGenerationResponse = {
+        generatedTypeScript: 'interface ResponseBody { items: string[]; count: number; }'
+      };
+      mockEndpointService.generateTypeScript.and.returnValue(of(mockResponse));
+
+      component.endpointForm.patchValue({ responseBodySchema: arraySchema });
+      component.loadTypeScriptForMainForm();
+      tick();
+
+      expect(component.generatedTypeScript).toContain('items: string[]');
+      expect(component.generatedTypeScript).toContain('count: number');
+    }));
+
+    it('should generate TypeScript from union type schema', fakeAsync(() => {
+      const unionSchema = '{"type": "object", "properties": {"status": {"type": "string", "enum": ["active", "inactive"]}, "value": {"oneOf": [{"type": "string"}, {"type": "number"}]}}}';
+      const mockResponse: TypeScriptGenerationResponse = {
+        generatedTypeScript: 'interface ResponseBody { status: "active" | "inactive"; value: string | number; }'
+      };
+      mockEndpointService.generateTypeScript.and.returnValue(of(mockResponse));
+
+      component.endpointForm.patchValue({ responseBodySchema: unionSchema });
+      component.loadTypeScriptForMainForm();
+      tick();
+
+      expect(component.generatedTypeScript).toContain('status: "active" | "inactive"');
+      expect(component.generatedTypeScript).toContain('value: string | number');
+    }));
+
+    it('should handle special characters in JSON schema', fakeAsync(() => {
+      const specialCharSchema = '{"type": "object", "properties": {"user_name": {"type": "string"}, "email@domain": {"type": "string"}, "$metadata": {"type": "object"}}}';
+      const mockResponse: TypeScriptGenerationResponse = {
+        generatedTypeScript: 'interface ResponseBody { user_name: string; "email@domain": string; $metadata: object; }'
+      };
+      mockEndpointService.generateTypeScript.and.returnValue(of(mockResponse));
+
+      component.endpointForm.patchValue({ responseBodySchema: specialCharSchema });
+      component.loadTypeScriptForMainForm();
+      tick();
+
+      expect(component.generatedTypeScript).toContain('user_name: string');
+      expect(component.generatedTypeScript).toContain('"email@domain": string');
+      expect(component.generatedTypeScript).toContain('$metadata: object');
+    }));
+
+    it('should handle Unicode characters in JSON schema', fakeAsync(() => {
+      const unicodeSchema = '{"type": "object", "properties": {"name": {"type": "string", "description": "User\'s name with émojis 🎉"}, "message": {"type": "string"}}}';
+      const mockResponse: TypeScriptGenerationResponse = {
+        generatedTypeScript: 'interface ResponseBody { name: string; message: string; }'
+      };
+      mockEndpointService.generateTypeScript.and.returnValue(of(mockResponse));
+
+      component.endpointForm.patchValue({ responseBodySchema: unicodeSchema });
+      component.loadTypeScriptForMainForm();
+      tick();
+
+      expect(component.generatedTypeScript).toContain('name: string');
+      expect(component.generatedTypeScript).toContain('message: string');
+    }));
+
+    it('should handle OpenAPI 3.0 specific features', fakeAsync(() => {
+      const openApi3Schema = '{"type": "object", "properties": {"id": {"type": "integer", "format": "int64"}, "email": {"type": "string", "format": "email"}, "createdAt": {"type": "string", "format": "date-time"}}}';
+      const mockResponse: TypeScriptGenerationResponse = {
+        generatedTypeScript: 'interface ResponseBody { id: number; email: string; createdAt: string; }'
+      };
+      mockEndpointService.generateTypeScript.and.returnValue(of(mockResponse));
+
+      component.endpointForm.patchValue({ responseBodySchema: openApi3Schema });
+      component.loadTypeScriptForMainForm();
+      tick();
+
+      expect(component.generatedTypeScript).toContain('id: number');
+      expect(component.generatedTypeScript).toContain('email: string');
+      expect(component.generatedTypeScript).toContain('createdAt: string');
+    }));
+
+    it('should handle custom type definitions', fakeAsync(() => {
+      const customTypeSchema = '{"type": "object", "properties": {"data": {"$ref": "#/components/schemas/User"}, "metadata": {"type": "object"}}}';
+      const mockResponse: TypeScriptGenerationResponse = {
+        generatedTypeScript: 'interface ResponseBody { data: User; metadata: object; }'
+      };
+      mockEndpointService.generateTypeScript.and.returnValue(of(mockResponse));
+
+      component.endpointForm.patchValue({ responseBodySchema: customTypeSchema });
+      component.loadTypeScriptForMainForm();
+      tick();
+
+      expect(component.generatedTypeScript).toContain('data: User');
+      expect(component.generatedTypeScript).toContain('metadata: object');
+    }));
+
+    it('should handle malformed JSON schema gracefully', fakeAsync(() => {
+      const malformedSchema = '{"type": "object", "properties": {"id": {"type": "invalid_type"}}}';
+      const mockResponse: TypeScriptGenerationResponse = {
+        error: 'Invalid type: invalid_type'
+      };
+      mockEndpointService.generateTypeScript.and.returnValue(of(mockResponse));
+
+      component.endpointForm.patchValue({ responseBodySchema: malformedSchema });
+      component.loadTypeScriptForMainForm();
+      tick();
+
+      expect(component.typescriptError).toContain('Invalid type');
+      expect(component.generatedTypeScript).toContain('Error: Unable to generate TypeScript');
+    }));
+
+    it('should handle concurrent TypeScript generation requests', fakeAsync(() => {
+      const mockResponse: TypeScriptGenerationResponse = {
+        generatedTypeScript: 'interface ResponseBody { id: number; }'
+      };
+      mockEndpointService.generateTypeScript.and.returnValue(of(mockResponse));
+
+      component.endpointForm.patchValue({ responseBodySchema: validJsonSchema });
+      
+      // Simulate multiple rapid requests
+      component.loadTypeScriptForMainForm();
+      component.loadTypeScriptForMainForm();
+      component.loadTypeScriptForMainForm();
+      tick();
+
+      // Should only make one service call due to caching
+      expect(mockEndpointService.generateTypeScript).toHaveBeenCalledTimes(1);
+      expect(component.generatedTypeScript).toContain('interface ResponseBody');
+    }));
+
+    it('should handle empty response body schema', fakeAsync(() => {
+      component.endpointForm.patchValue({ responseBodySchema: '' });
+      component.loadTypeScriptForMainForm();
+      tick();
+
+      expect(component.generatedTypeScript).toBe('');
+      expect(component.typescriptError).toBeNull();
+      expect(mockEndpointService.generateTypeScript).not.toHaveBeenCalled();
+    }));
+
+    it('should handle whitespace-only response body schema', fakeAsync(() => {
+      component.endpointForm.patchValue({ responseBodySchema: '   ' });
+      component.loadTypeScriptForMainForm();
+      tick();
+
+      expect(component.generatedTypeScript).toBe('');
+      expect(component.typescriptError).toBeNull();
+      expect(mockEndpointService.generateTypeScript).not.toHaveBeenCalled();
+    }));
+
+    it('should handle null response body schema', fakeAsync(() => {
+      component.endpointForm.patchValue({ responseBodySchema: null });
+      component.loadTypeScriptForMainForm();
+      tick();
+
+      expect(component.generatedTypeScript).toBe('');
+      expect(component.typescriptError).toBeNull();
+      expect(mockEndpointService.generateTypeScript).not.toHaveBeenCalled();
+    }));
+
+    it('should handle Monaco editor initialization for TypeScript', fakeAsync(() => {
+      const mockResponse: TypeScriptGenerationResponse = {
+        generatedTypeScript: 'interface ResponseBody { id: number; }'
+      };
+      mockEndpointService.generateTypeScript.and.returnValue(of(mockResponse));
+
+      component.endpointForm.patchValue({ responseBodySchema: validJsonSchema });
+      component.loadTypeScriptForMainForm();
+      tick();
+
+      // Verify Monaco editor options are set correctly for TypeScript
+      expect(component.typescriptEditorOptions).toBeDefined();
+      expect(component.typescriptEditorOptions.language).toBe('typescript');
+    }));
+
+    it('should handle tab switching between JSON and TypeScript', fakeAsync(() => {
+      const mockResponse: TypeScriptGenerationResponse = {
+        generatedTypeScript: 'interface ResponseBody { id: number; }'
+      };
+      mockEndpointService.generateTypeScript.and.returnValue(of(mockResponse));
+
+      component.endpointForm.patchValue({ responseBodySchema: validJsonSchema });
+      
+      // Switch to TypeScript tab
+      component.onTabChange({ index: 1 });
+      tick();
+
+      expect(component.activeTabIndex).toBe(1);
+      expect(component.generatedTypeScript).toContain('interface ResponseBody');
+
+      // Switch back to JSON tab
+      component.onTabChange({ index: 0 });
+      tick();
+
+      expect(component.activeTabIndex).toBe(0);
+      // TypeScript should still be cached
+      expect(component.generatedTypeScript).toContain('interface ResponseBody');
+    }));
   });
 });

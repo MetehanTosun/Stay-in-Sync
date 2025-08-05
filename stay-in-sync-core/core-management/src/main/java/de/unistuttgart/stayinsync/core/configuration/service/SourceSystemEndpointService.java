@@ -7,6 +7,7 @@ import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.Source
 import de.unistuttgart.stayinsync.core.configuration.exception.CoreManagementException;
 import de.unistuttgart.stayinsync.core.configuration.mapping.SourceSystemEndpointFullUpdateMapper;
 import de.unistuttgart.stayinsync.core.configuration.rest.dtos.CreateSourceSystemEndpointDTO;
+import de.unistuttgart.stayinsync.core.configuration.util.TypeScriptTypeGenerator;
 import io.quarkus.logging.Log;
 import io.smallrye.common.constraint.NotNull;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -41,6 +42,9 @@ public class SourceSystemEndpointService {
 
     @Inject
     SourceSystemEndpointFullUpdateMapper sourceSystemEndpointFullMapper;
+
+    @Inject
+    TypeScriptTypeGenerator typeScriptTypeGenerator;
 
     public SourceSystemEndpoint persistSourceSystemEndpoint(@NotNull @Valid CreateSourceSystemEndpointDTO sourceSystemEndpointDTO, Long sourceSystemId) {
         System.out.println("### TEST persist: " + sourceSystemEndpointDTO.requestBodySchema());
@@ -80,6 +84,20 @@ public class SourceSystemEndpointService {
             existing.requestBodySchema = updated.requestBodySchema;
             existing.responseBodySchema = updated.responseBodySchema;
             existing.description = updated.description;
+            
+            // Generate TypeScript if responseBodySchema is present
+            if (existing.responseBodySchema != null && !existing.responseBodySchema.isBlank()) {
+                try {
+                    existing.responseDts = typeScriptTypeGenerator.generate(existing.responseBodySchema);
+                } catch (JsonProcessingException e) {
+                    Log.warnf(e, "Could not generate TypeScript for endpoint %s", existing.endpointPath);
+                    existing.responseDts = null;
+                }
+            } else {
+                // Clear responseDts if no responseBodySchema
+                existing.responseDts = null;
+            }
+            
             // ggf. weitere Felder übernehmen
             existing.sourceSystem = sourceSystem;
             existing.syncSystem = sourceSystem;
@@ -90,6 +108,20 @@ public class SourceSystemEndpointService {
             SourceSystemEndpoint sourceSystemEndpoint = sourceSystemEndpointFullMapper.mapToEntity(sourceSystemEndpointDTO);
             sourceSystemEndpoint.requestBodySchema = sourceSystemEndpointDTO.requestBodySchema();
             sourceSystemEndpoint.responseBodySchema = sourceSystemEndpointDTO.responseBodySchema();
+            
+            // Generate TypeScript if responseBodySchema is present
+            if (sourceSystemEndpoint.responseBodySchema != null && !sourceSystemEndpoint.responseBodySchema.isBlank()) {
+                try {
+                    sourceSystemEndpoint.responseDts = typeScriptTypeGenerator.generate(sourceSystemEndpoint.responseBodySchema);
+                } catch (JsonProcessingException e) {
+                    Log.warnf(e, "Could not generate TypeScript for new endpoint %s", sourceSystemEndpoint.endpointPath);
+                    sourceSystemEndpoint.responseDts = null;
+                }
+            } else {
+                // Clear responseDts if no responseBodySchema
+                sourceSystemEndpoint.responseDts = null;
+            }
+            
             sourceSystemEndpoint.sourceSystem = sourceSystem;
             sourceSystemEndpoint.syncSystem = sourceSystem;
             sourceSystemEndpoint.persist();
@@ -141,16 +173,69 @@ public class SourceSystemEndpointService {
             }
         }
 
+        if (sourceSystemEndpoint.responseBodySchema != null && !sourceSystemEndpoint.responseBodySchema.isBlank()) {
+            try {
+                objectMapper.readTree(sourceSystemEndpoint.responseBodySchema);
+            } catch (JsonProcessingException e) {
+                throw new CoreManagementException(Response.Status.BAD_REQUEST, "Invalid JSON in responseBodySchema", "Das Feld responseBodySchema enthält kein valides JSON: %s", e.getMessage());
+            }
+        }
+
         return SourceSystemEndpoint.findByIdOptional(sourceSystemEndpoint.id)
                 .map(SourceSystemEndpoint.class::cast) // Only here for type erasure within the IDE
                 .map(targetSouceSystemEndpoint -> {
                     this.sourceSystemEndpointFullMapper.mapFullUpdate(sourceSystemEndpoint, targetSouceSystemEndpoint);
                     // Explizit das Schema übernehmen
                     targetSouceSystemEndpoint.requestBodySchema = sourceSystemEndpoint.requestBodySchema;
+                    targetSouceSystemEndpoint.responseBodySchema = sourceSystemEndpoint.responseBodySchema;
+                    
+                    // Generate TypeScript if responseBodySchema is present
+                    if (targetSouceSystemEndpoint.responseBodySchema != null && !targetSouceSystemEndpoint.responseBodySchema.isBlank()) {
+                        try {
+                            targetSouceSystemEndpoint.responseDts = typeScriptTypeGenerator.generate(targetSouceSystemEndpoint.responseBodySchema);
+                        } catch (JsonProcessingException e) {
+                            Log.warnf(e, "Could not generate TypeScript for endpoint %s (replace)", targetSouceSystemEndpoint.endpointPath);
+                            targetSouceSystemEndpoint.responseDts = null;
+                        }
+                    } else {
+                        // Clear responseDts if no responseBodySchema
+                        targetSouceSystemEndpoint.responseDts = null;
+                    }
+                    
                     System.out.println("### TEST replace (entity): " + targetSouceSystemEndpoint.requestBodySchema);
                     Log.info("Wird gespeichert (replace): " + targetSouceSystemEndpoint.requestBodySchema);
                     return targetSouceSystemEndpoint;
                 });
+    }
+
+    /**
+     * Updates all existing endpoints to generate TypeScript types if they have responseBodySchema but no responseDts
+     * This method should be called once after deployment to migrate existing data
+     */
+    @Transactional(REQUIRED)
+    public void updateExistingEndpointsWithTypeScript() {
+        Log.info("Starting TypeScript generation for existing endpoints...");
+        
+        List<SourceSystemEndpoint> allEndpoints = SourceSystemEndpoint.<SourceSystemEndpoint>listAll();
+        int updatedCount = 0;
+        int errorCount = 0;
+        
+        for (SourceSystemEndpoint endpoint : allEndpoints) {
+            if (endpoint.responseBodySchema != null && !endpoint.responseBodySchema.isBlank() && 
+                (endpoint.responseDts == null || endpoint.responseDts.isBlank())) {
+                try {
+                    endpoint.responseDts = typeScriptTypeGenerator.generate(endpoint.responseBodySchema);
+                    endpoint.persist();
+                    updatedCount++;
+                    Log.debugf("Generated TypeScript for endpoint: %s", endpoint.endpointPath);
+                } catch (JsonProcessingException e) {
+                    errorCount++;
+                    Log.warnf(e, "Could not generate TypeScript for existing endpoint %s", endpoint.endpointPath);
+                }
+            }
+        }
+        
+        Log.infof("TypeScript generation completed. Updated: %d, Errors: %d", updatedCount, errorCount);
     }
 
 }

@@ -20,7 +20,6 @@ import {FileUploadModule} from 'primeng/fileupload';
 import {CreateSourceSystemComponent} from '../create-source-system/create-source-system.component';
 import {ManageApiHeadersComponent} from '../manage-api-headers/manage-api-headers.component';
 import {ManageEndpointsComponent} from '../manage-endpoints/manage-endpoints.component';
-import { ManageEndpointParamsComponent } from '../manage-endpoint-params/manage-endpoint-params.component';
 
 // Service und DTOs aus dem `generated`-Ordner
 import {SourceSystemResourceService} from '../../service/sourceSystemResource.service';
@@ -55,7 +54,6 @@ import { SourceSystemEndpointResourceService } from '../../service/sourceSystemE
     CreateSourceSystemComponent,
     ManageApiHeadersComponent,
     ManageEndpointsComponent,
-    ManageEndpointParamsComponent, // hinzugefügt
     FormsModule, // für ngModel
     // ggf. weitere Komponenten
   ]

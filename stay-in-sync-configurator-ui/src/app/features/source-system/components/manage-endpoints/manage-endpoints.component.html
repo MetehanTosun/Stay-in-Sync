@@ -37,9 +37,30 @@
       <div *ngIf="jsonError" class="p-error">{{ jsonError }}</div>
     </div>
     <div class="p-field p-col-12" style="margin-bottom: 1rem;">
-      <label for="responseBodySchema">Response-Body-Schema (JSON)</label>
-      <ngx-monaco-editor [options]="jsonEditorOptions" formControlName="responseBodySchema"></ngx-monaco-editor>
-      <div *ngIf="jsonError" class="p-error">{{ jsonError }}</div>
+      <label for="responseBodySchema">Response-Body-Schema</label>
+      <p-tabView [(activeIndex)]="activeTabIndex" (onChange)="onTabChange($event)">
+        <p-tabPanel header="JSON">
+          <ngx-monaco-editor [options]="jsonEditorOptions" formControlName="responseBodySchema"></ngx-monaco-editor>
+          <div *ngIf="jsonError" class="p-error">{{ jsonError }}</div>
+        </p-tabPanel>
+        <p-tabPanel header="TypeScript">
+          <div *ngIf="isGeneratingTypeScript" class="typescript-loading">
+            <p-progressSpinner [style]="{width: '20px', height: '20px'}" strokeWidth="2" fill="var(--surface-ground)" animationDuration=".5s"></p-progressSpinner>
+            <span class="loading-text">Generating TypeScript interface...</span>
+          </div>
+          <div *ngIf="!isGeneratingTypeScript && typescriptError" class="typescript-error">
+            <div class="error-header">
+              <i class="pi pi-exclamation-triangle"></i>
+              <span>TypeScript Generation Error</span>
+            </div>
+            <div class="error-message">{{ typescriptError }}</div>
+            <div class="error-actions">
+              <button pButton type="button" label="Retry" class="p-button-sm" (click)="loadTypeScriptForMainForm()"></button>
+            </div>
+          </div>
+          <ngx-monaco-editor *ngIf="!isGeneratingTypeScript && !typescriptError" [options]="typescriptEditorOptions" [model]="typescriptModel"></ngx-monaco-editor>
+        </p-tabPanel>
+      </p-tabView>
     </div>
     <div class="p-col-12" style="margin: 2rem 0;">
       <button pButton type="button" label="Add Endpoint" [disabled]="endpointForm.invalid" (click)="addEndpoint()"></button>
@@ -49,7 +70,7 @@
   <!--
     Section: Edit Endpoint Dialog
   -->
-  <p-dialog header="Edit Endpoint" [(visible)]="editDialog" modal="true" [style]="{ width: '400px' }">
+  <p-dialog header="Edit Endpoint" [(visible)]="editDialog" modal="true" [style]="{ width: '600px' }">
     <form [formGroup]="editForm" class="p-fluid p-formgrid p-grid">
       <div class="p-field p-col-12">
         <label>Path</label>
@@ -65,13 +86,34 @@
         <div *ngIf="editJsonError" class="p-error">{{ editJsonError }}</div>
       </div>
       <div class="p-field p-col-12">
-        <label>Response-Body-Schema (JSON)</label>
-        <ngx-monaco-editor [options]="jsonEditorOptions" formControlName="responseBodySchema"></ngx-monaco-editor>
-        <div *ngIf="editJsonError" class="p-error">{{ editJsonError }}</div>
+        <label>Response-Body-Schema</label>
+        <p-tabView [(activeIndex)]="editActiveTabIndex" (onChange)="onEditTabChange($event)">
+          <p-tabPanel header="JSON">
+            <ngx-monaco-editor [options]="jsonEditorOptions" formControlName="responseBodySchema"></ngx-monaco-editor>
+            <div *ngIf="editJsonError" class="p-error">{{ editJsonError }}</div>
+          </p-tabPanel>
+          <p-tabPanel header="TypeScript">
+            <div *ngIf="isGeneratingEditTypeScript" class="typescript-loading">
+              <p-progressSpinner [style]="{width: '20px', height: '20px'}" strokeWidth="2" fill="var(--surface-ground)" animationDuration=".5s"></p-progressSpinner>
+              <span class="loading-text">Generating TypeScript interface...</span>
+            </div>
+            <div *ngIf="!isGeneratingEditTypeScript && editTypeScriptError" class="typescript-error">
+              <div class="error-header">
+                <i class="pi pi-exclamation-triangle"></i>
+                <span>TypeScript Generation Error</span>
+              </div>
+              <div class="error-message">{{ editTypeScriptError }}</div>
+              <div class="error-actions">
+                <button pButton type="button" label="Retry" class="p-button-sm" (click)="loadTypeScriptForEditForm()"></button>
+              </div>
+            </div>
+            <ngx-monaco-editor *ngIf="!isGeneratingEditTypeScript && !editTypeScriptError" [options]="typescriptEditorOptions" [model]="editTypeScriptModel"></ngx-monaco-editor>
+          </p-tabPanel>
+        </p-tabView>
       </div>
     </form>
     <ng-template pTemplate="footer">
-      <button pButton type="button" label="Cancel" class="p-button-text" (click)="editDialog=false"></button>
+      <button pButton type="button" label="Cancel" class="p-button-text" (click)="closeEditDialog()"></button>
       <button pButton type="button" label="Save" (click)="saveEdit()" [disabled]="editForm.invalid"></button>
     </ng-template>
   </p-dialog>
@@ -134,6 +176,7 @@
     [endpointPath]="selectedResponsePreviewEndpoint?.endpointPath || ''"
     [httpMethod]="selectedResponsePreviewEndpoint?.httpRequestType || ''"
     [responseBodySchema]="selectedResponsePreviewEndpoint?.responseBodySchema"
+    [responseDts]="selectedResponsePreviewEndpoint?.responseDts"
     (visibleChange)="onResponsePreviewModalVisibleChange($event)">
   </app-response-preview-modal>
 
