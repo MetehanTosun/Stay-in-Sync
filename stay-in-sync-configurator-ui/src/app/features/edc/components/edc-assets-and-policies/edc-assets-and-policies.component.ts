@@ -16,7 +16,7 @@ import { InputIconModule } from 'primeng/inputicon';
 import { RippleModule } from 'primeng/ripple';
 import {ConfirmationService, MessageService} from 'primeng/api';
 import { DividerModule } from 'primeng/divider';
-//import { DropdownModule } from 'primeng/dropdown';
+import { DropdownModule } from 'primeng/dropdown';
 import { SelectModule } from 'primeng/select';
 import { ToastModule } from 'primeng/toast';
 import { AutoCompleteModule } from 'primeng/autocomplete';
@@ -46,7 +46,7 @@ import { PolicyService } from './services/policy.service';
     InputIconModule,
     RippleModule,
     DividerModule,
-    //DropdownModule,
+    DropdownModule,
     SelectModule,
     ToastModule,
     AutoCompleteModule,
@@ -58,6 +58,7 @@ import { PolicyService } from './services/policy.service';
 export class EdcAssetsAndPoliciesComponent implements OnInit {
   @ViewChild('dtAssets') dtAssets!: Table;
   @ViewChild('dtPolicies') dtPolicies!: Table;
+  @ViewChild('dtContracts') dtContracts!: Table;
 
   // Asset properties
   assets: Asset[] = [];
@@ -69,7 +70,6 @@ export class EdcAssetsAndPoliciesComponent implements OnInit {
 
   // Policy properties
   policyLoading: boolean = true;
-  manuallyExpandedRows: Set<string> = new Set<string>();
   displayNewAccessPolicyDialog: boolean = false;
   newAccessPolicy: AccessPolicy = this.createEmptyAccessPolicy();
   displayNewContractPolicyDialog: boolean = false;
@@ -77,27 +77,23 @@ export class EdcAssetsAndPoliciesComponent implements OnInit {
   newContractPolicy: {
     id: string;
     assetId: string;
-    operandLeft: string;
-    operator: string;
+    accessPolicyId: string; // The ID of the parent Access Policy
   } = this.createEmptyContractPolicy();
 
   displayEditContractPolicyDialog: boolean = false;
-  contractPolicyToEdit: {
-    id: string;
-    assetId: string;
-    operandLeft: string;
-    operator: string;
-  } | null = null;
+  contractPolicyToEdit: ContractPolicy | null = null;
 
-  targetAccessPolicy: AccessPolicy | null = null;
   displayEditAccessPolicyDialog: boolean = false;
   policyToEdit: AccessPolicy | null = null;
   operatorOptions: { label: string; value: string; }[];
   actionOptions: { label: string; value: string; }[];
 
-
   allAccessPolicies: AccessPolicy[] = [];
   filteredAccessPolicies: AccessPolicy[] = [];
+
+  // A flat list for all contract definitions
+  allContractDefinitions: ContractPolicy[] = [];
+  filteredContractDefinitions: ContractPolicy[] = [];
 
   assetIdSuggestions: Asset[] = [];
 
@@ -123,7 +119,7 @@ export class EdcAssetsAndPoliciesComponent implements OnInit {
 
   ngOnInit(): void {
     this.loadAssets();
-    this.loadPolicies();
+    this.loadPoliciesAndDefinitions();
   }
 
   /**
@@ -151,7 +147,7 @@ export class EdcAssetsAndPoliciesComponent implements OnInit {
       .finally(() => (this.assetLoading = false));
   }
 
-  async loadPolicies() {
+  async loadPoliciesAndDefinitions() {
     this.policyLoading = true;
     try {
       const [accessPolicies, contractDefinitions] = await Promise.all([
@@ -159,25 +155,22 @@ export class EdcAssetsAndPoliciesComponent implements OnInit {
         this.policyService.getContractDefinitions(),
       ]);
 
-      const contractDefsByPolicyId = new Map<string, ContractPolicy[]>();
-      for (const cd of contractDefinitions) {
+      // Create a map from policy ID to the policy object for efficient lookup
+      const policyMap = new Map<string, AccessPolicy>();
+      accessPolicies.forEach(p => policyMap.set(p.id, p));
+
+      // Create a flat, enriched list of all contract definitions
+      this.allContractDefinitions = contractDefinitions.map(cd => {
         const parentId = cd.accessPolicyId;
-        if (!parentId) continue;
-
-        const uiContractPolicy: ContractPolicy = {
+        const parentPolicy = parentId ? policyMap.get(parentId) : undefined;
+        return {
           id: cd['@id'],
-          assetId: cd.assetsSelector?.[0]?.operandRight || 'Unknown Asset',
+          assetId: cd.assetsSelector?.[0]?.operandRight ?? 'Unknown Asset',
+          bpn: parentPolicy?.bpn || 'Unknown BPN',
+          accessPolicyId: parentId || ''
         };
-
-        if (!contractDefsByPolicyId.has(parentId)) {
-          contractDefsByPolicyId.set(parentId, []);
-        }
-        contractDefsByPolicyId.get(parentId)!.push(uiContractPolicy);
-      }
-
-      for (const policy of accessPolicies) {
-        policy.contractPolicies = contractDefsByPolicyId.get(policy.id) || [];
-      }
+      });
+      this.filteredContractDefinitions = [...this.allContractDefinitions];
 
       this.allAccessPolicies = accessPolicies;
       this.filteredAccessPolicies = [...this.allAccessPolicies];
@@ -210,12 +203,26 @@ export class EdcAssetsAndPoliciesComponent implements OnInit {
         policy.id,
         policy.bpn,
         policy.action,
-        policy.operator,
-
-        ...policy.contractPolicies.flatMap(cp => [cp.id, cp.assetId])
+        policy.operator
       ].join(' ').toLowerCase();
 
       // Check if the combined text includes the search term
+      return searchableText.includes(searchTerm);
+    });
+  }
+
+  onGlobalContractDefSearch(event: Event): void {
+    const searchTerm = (event.target as HTMLInputElement).value.toLowerCase();
+    if (!searchTerm) {
+      this.filteredContractDefinitions = [...this.allContractDefinitions];
+      return;
+    }
+    this.filteredContractDefinitions = this.allContractDefinitions.filter(cd => {
+      const searchableText = [
+        cd.id,
+        cd.assetId,
+        cd.bpn
+      ].join(' ').toLowerCase();
       return searchableText.includes(searchTerm);
     });
   }
@@ -461,19 +468,6 @@ export class EdcAssetsAndPoliciesComponent implements OnInit {
     });
   }
 
-  // policy  methods
-  togglePolicyRow(policyId: string): void {
-    if (this.manuallyExpandedRows.has(policyId)) {
-      this.manuallyExpandedRows.delete(policyId);
-    } else {
-      this.manuallyExpandedRows.add(policyId);
-    }
-  }
-
-  isPolicyRowExpanded(policyId: string): boolean {
-    return this.manuallyExpandedRows.has(policyId);
-  }
-
   //access policy methods
   private createEmptyAccessPolicy(): AccessPolicy {
     return {
@@ -502,7 +496,7 @@ export class EdcAssetsAndPoliciesComponent implements OnInit {
     try {
       await this.policyService.createAccessPolicy(this.newAccessPolicy);
       this.messageService.add({severity: 'success', summary: 'Success', detail: 'Access Policy created successfully.'});
-      this.loadPolicies();
+      this.loadPoliciesAndDefinitions();
       this.hideNewAccessPolicyDialog();
     } catch (error) {
       this.messageService.add({severity: 'error', summary: 'Error', detail: 'Failed to create access policy.'});
@@ -555,39 +549,19 @@ export class EdcAssetsAndPoliciesComponent implements OnInit {
       accept: async () => {
         try {
           await this.policyService.deleteAccessPolicy(policy.id);
-          // update both the master and filtered lists
+
+          // Also remove associated contract definitions from the UI
+          this.allContractDefinitions = this.allContractDefinitions.filter(cd => cd.accessPolicyId !== policy.id);
+          this.filteredContractDefinitions = [...this.allContractDefinitions];
+
+          // update both the master and filtered lists for access policies
           this.allAccessPolicies = this.allAccessPolicies.filter((p: AccessPolicy) => p.id !== policy.id);
           this.filteredAccessPolicies = [...this.allAccessPolicies];
-          this.messageService.add({ severity: 'success', summary: 'Success', detail: 'Access Policy deleted successfully.' });
+
+          this.messageService.add({ severity: 'success', summary: 'Success', detail: 'Access Policy and associated definitions deleted successfully.' });
         } catch (error) {
           this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Failed to delete access policy.' });
           console.error('Failed to delete access policy:', error);
-        }
-      },
-    });
-  }
-
-  deleteContractPolicy(contractPolicy: ContractPolicy, parentAccessPolicy: AccessPolicy) {
-    this.confirmationService.confirm({
-      message: `Are you sure you want to delete the contract definition for asset "${contractPolicy.assetId}"?`,
-      header: 'Confirm Deletion',
-      icon: 'pi pi-exclamation-triangle',
-      accept: async () => {
-        try {
-          await this.policyService.deleteContractDefinition(contractPolicy.id);
-
-          //update the nested array in the 'allAccessPolicies' master list
-          const parentIndex = this.allAccessPolicies.findIndex((p: AccessPolicy) => p.id === parentAccessPolicy.id);
-          if (parentIndex !== -1) {
-            this.allAccessPolicies[parentIndex].contractPolicies = this.allAccessPolicies[parentIndex].contractPolicies.filter((cp: ContractPolicy) => cp.id !== contractPolicy.id);
-            // refresh the filtered list to update the UI
-            this.filteredAccessPolicies = [...this.allAccessPolicies];
-          }
-
-          this.messageService.add({ severity: 'success', summary: 'Success', detail: 'Contract Definition deleted successfully.' });
-        } catch (error) {
-          this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Failed to delete contract definition.' });
-          console.error('Failed to delete contract definition:', error);
         }
       },
     });
@@ -711,7 +685,7 @@ export class EdcAssetsAndPoliciesComponent implements OnInit {
 
     // If at least one upload was successful, refresh the list and close the dialog
     if (successfulUploads.length > 0) {
-      this.loadPolicies();
+      this.loadPoliciesAndDefinitions();
       this.hideNewAccessPolicyDialog();
     }
 
@@ -724,21 +698,18 @@ export class EdcAssetsAndPoliciesComponent implements OnInit {
   private createEmptyContractPolicy() {
     return {
       id: '',
-      assetId: '',
-      operandLeft: 'https://w3id.org/edc/v0.0.1/ns/id', // Default value
-      operator: '=',
+      assetId: '', // This will be an Asset object from autocomplete
+      accessPolicyId: ''
     };
   }
 
-  openNewContractPolicyDialog(accessPolicy: AccessPolicy) {
-    this.targetAccessPolicy = accessPolicy;
+  openNewContractPolicyDialog() {
     this.newContractPolicy = this.createEmptyContractPolicy();
     this.displayNewContractPolicyDialog = true;
   }
 
   hideNewContractPolicyDialog() {
     this.displayNewContractPolicyDialog = false;
-    this.targetAccessPolicy = null;
   }
 
   /**
@@ -746,60 +717,45 @@ export class EdcAssetsAndPoliciesComponent implements OnInit {
    */
   async saveNewContractPolicy() {
 
-    if (
-      !this.newContractPolicy.assetId?.trim() ||
-      !this.newContractPolicy.operandLeft?.trim() ||
-      !this.newContractPolicy.operator
-    ) {
+    // The assetId from autocomplete is an object, we need its id.
+    const assetId = (this.newContractPolicy.assetId as any)?.id || this.newContractPolicy.assetId;
+
+    if (!assetId || !this.newContractPolicy.accessPolicyId) {
       this.messageService.add({
         severity: 'warn',
         summary: 'Validation Error',
-        detail: 'Asset ID, EDC ID (Operand Left), and Operator are required fields.',
-      });
-      return;
-    }
-
-    if (!this.targetAccessPolicy) {
-      this.messageService.add({
-        severity: 'error',
-        summary: 'Error',
-        detail: 'Cannot save: No parent Access Policy context.',
+        detail: 'An Asset and an Access Policy must be selected.',
       });
       return;
     }
 
     try {
-
-      const contractDefId = `contract-def-${this.newContractPolicy.assetId}`;
+      const contractDefId = `contract-def-${assetId}`;
       const odrlPayload: OdrlContractDefinition = {
         '@context': { edc: 'https://w3id.org/edc/v0.0.1/ns/' },
         '@id': contractDefId,
-        accessPolicyId: this.targetAccessPolicy.id,
-        contractPolicyId: this.targetAccessPolicy.id,
+        accessPolicyId: this.newContractPolicy.accessPolicyId,
+        contractPolicyId: this.newContractPolicy.accessPolicyId, // Typically same as access policy
         assetsSelector: [
           {
-            operandLeft: this.newContractPolicy.operandLeft,
-            operator: this.newContractPolicy.operator,
-            operandRight: this.newContractPolicy.assetId,
+            operandLeft: 'https://w3id.org/edc/v0.0.1/ns/id',
+            operator: '=',
+            operandRight: assetId,
           },
         ],
       };
 
-
       await this.policyService.createContractDefinition(odrlPayload);
 
-
-      const newUiPolicy: ContractPolicy = {
+      // Add to the flat list for the UI
+      const parentPolicy = this.allAccessPolicies.find(p => p.id === this.newContractPolicy.accessPolicyId);
+      this.allContractDefinitions.unshift({
         id: contractDefId,
-        assetId: this.newContractPolicy.assetId,
-      };
-
-      const parentIndex = this.allAccessPolicies.findIndex((p: AccessPolicy) => p.id === this.targetAccessPolicy!.id);
-      if (parentIndex !== -1) {
-        this.allAccessPolicies[parentIndex].contractPolicies.push(newUiPolicy);
-
-        this.filteredAccessPolicies = [...this.allAccessPolicies];
-      }
+        assetId: assetId,
+        bpn: parentPolicy?.bpn || 'Unknown BPN',
+        accessPolicyId: this.newContractPolicy.accessPolicyId
+      });
+      this.filteredContractDefinitions = [...this.allContractDefinitions];
 
       this.messageService.add({ severity: 'success', summary: 'Success', detail: 'Contract Definition created successfully.' });
       this.hideNewContractPolicyDialog();
@@ -810,7 +766,6 @@ export class EdcAssetsAndPoliciesComponent implements OnInit {
     }
   }
 
-
   /**
    * Handles contract definition file uploads with detailed validation.
    */
@@ -819,11 +774,6 @@ export class EdcAssetsAndPoliciesComponent implements OnInit {
     const fileList: FileList | null = element.files;
 
     if (!fileList || fileList.length === 0) {
-      return;
-    }
-
-    if (!this.targetAccessPolicy) {
-      this.messageService.add({ severity: 'error', summary: 'Upload Error', detail: 'Cannot upload file: No parent Access Policy is selected.' });
       return;
     }
 
@@ -846,8 +796,9 @@ export class EdcAssetsAndPoliciesComponent implements OnInit {
           if (!contractDefJson.accessPolicyId?.trim()) {
             throw new Error("Validation failed: The 'accessPolicyId' field is missing or empty.");
           }
-          if (contractDefJson.accessPolicyId !== this.targetAccessPolicy!.id) {
-            throw new Error(`Validation failed: 'accessPolicyId' in file does not match the selected policy ('${this.targetAccessPolicy!.id}').`);
+          const parentPolicyExists = this.allAccessPolicies.some(p => p.id === contractDefJson.accessPolicyId);
+          if (!parentPolicyExists) {
+            throw new Error(`Validation failed: 'accessPolicyId' (${contractDefJson.accessPolicyId}) in file does not correspond to any existing Access Policy.`);
           }
           if (!contractDefJson.assetsSelector || !Array.isArray(contractDefJson.assetsSelector) || contractDefJson.assetsSelector.length === 0) {
             throw new Error("Validation failed: The 'assetsSelector' array is missing or empty.");
@@ -883,13 +834,16 @@ export class EdcAssetsAndPoliciesComponent implements OnInit {
 
           await this.policyService.createContractDefinition(contractDefJson);
 
-          // Update the UI
-          const newContractPolicy: ContractPolicy = {
+          const parentPolicy = this.allAccessPolicies.find(p => p.id === contractDefJson.accessPolicyId);
+          this.allContractDefinitions.unshift({
             id: contractDefJson['@id'],
-            assetId: selector.operandRight
-          };
+            assetId: selector.operandRight,
+            bpn: parentPolicy?.bpn || 'Unknown BPN',
+            accessPolicyId: contractDefJson.accessPolicyId
+          });
 
-          this.targetAccessPolicy!.contractPolicies.push(newContractPolicy);
+          this.filteredContractDefinitions = [...this.allContractDefinitions];
+
           successfulUploads.push(file.name);
 
         } catch (error: any) {
@@ -907,7 +861,6 @@ export class EdcAssetsAndPoliciesComponent implements OnInit {
         summary: 'Upload Complete',
         detail: `${successfulUploads.length} contract definition(s) uploaded successfully.`,
       });
-      await this.loadPolicies();
     }
 
     if (failedUploads.length > 0) {
@@ -921,7 +874,7 @@ export class EdcAssetsAndPoliciesComponent implements OnInit {
     }
 
     if (successfulUploads.length > 0) {
-      this.hideNewContractPolicyDialog();
+      this.loadPoliciesAndDefinitions(); // Full reload to ensure consistency
     }
 
     element.value = '';
@@ -931,15 +884,9 @@ export class EdcAssetsAndPoliciesComponent implements OnInit {
   /**
    * Opens the dialog to edit an existing Contract Definition.
    */
-  editContractPolicy(contractPolicy: ContractPolicy, parentAccessPolicy: AccessPolicy) {
-
-    this.contractPolicyToEdit = {
-      id: contractPolicy.id,
-      assetId: contractPolicy.assetId,
-      operandLeft: 'https://w3id.org/edc/v0.0.1/ns/id', // Default value
-      operator: '=', // Default value
-    };
-    this.targetAccessPolicy = parentAccessPolicy; // Set context for saving
+  editContractPolicy(contractPolicy: ContractPolicy) {
+    // Create a deep copy to avoid modifying the table row during edits
+    this.contractPolicyToEdit = JSON.parse(JSON.stringify(contractPolicy));
     this.displayEditContractPolicyDialog = true;
   }
 
@@ -949,25 +896,20 @@ export class EdcAssetsAndPoliciesComponent implements OnInit {
   hideEditContractPolicyDialog() {
     this.displayEditContractPolicyDialog = false;
     this.contractPolicyToEdit = null;
-    this.targetAccessPolicy = null; // Clear context
   }
-
 
   /**
    * Saves the changes to an existing Contract Definition.
    */
   async saveEditedContractPolicy() {
-    if (!this.contractPolicyToEdit || !this.targetAccessPolicy) {
+    if (!this.contractPolicyToEdit) {
       this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Cannot save: Editing context is lost.' });
       return;
     }
 
-    // Validation
-    if (
-      !this.contractPolicyToEdit.assetId?.trim() ||
-      !this.contractPolicyToEdit.operandLeft?.trim() ||
-      !this.contractPolicyToEdit.operator
-    ) {
+    const assetId = (this.contractPolicyToEdit.assetId as any)?.id || this.contractPolicyToEdit.assetId;
+
+    if (!assetId || !this.contractPolicyToEdit.accessPolicyId) {
       this.messageService.add({
         severity: 'warn',
         summary: 'Validation Error',
@@ -981,41 +923,55 @@ export class EdcAssetsAndPoliciesComponent implements OnInit {
       const odrlPayload: OdrlContractDefinition = {
         '@context': { edc: 'https://w3id.org/edc/v0.0.1/ns/' },
         '@id': this.contractPolicyToEdit.id,
-        accessPolicyId: this.targetAccessPolicy.id,
-        contractPolicyId: this.targetAccessPolicy.id,
+        accessPolicyId: this.contractPolicyToEdit.accessPolicyId,
+        contractPolicyId: this.contractPolicyToEdit.accessPolicyId,
         assetsSelector: [
           {
-            operandLeft: this.contractPolicyToEdit.operandLeft,
-            operator: this.contractPolicyToEdit.operator,
-            operandRight: this.contractPolicyToEdit.assetId,
+            operandLeft: 'https://w3id.org/edc/v0.0.1/ns/id',
+            operator: '=',
+            operandRight: assetId,
           },
         ],
       };
 
-      // relies on the 'updateContractDefinition' method in PolicyService
       await this.policyService.updateContractDefinition(odrlPayload);
 
       // Update the UI model
-      const parentIndex = this.allAccessPolicies.findIndex((p: AccessPolicy) => p.id === this.targetAccessPolicy!.id);
-      if (parentIndex !== -1) {
-        const contractIndex = this.allAccessPolicies[parentIndex].contractPolicies.findIndex((cp: ContractPolicy) => cp.id === this.contractPolicyToEdit!.id);
-        if (contractIndex !== -1) {
-          this.allAccessPolicies[parentIndex].contractPolicies[contractIndex].assetId = this.contractPolicyToEdit!.assetId;
-
-          this.filteredAccessPolicies = [...this.allAccessPolicies];
-        }
+      const index = this.allContractDefinitions.findIndex(cd => cd.id === this.contractPolicyToEdit!.id);
+      if (index !== -1) {
+        const parentPolicy = this.allAccessPolicies.find(p => p.id === this.contractPolicyToEdit!.accessPolicyId);
+        this.allContractDefinitions[index] = {
+          ...this.contractPolicyToEdit,
+          assetId: assetId,
+          bpn: parentPolicy?.bpn || 'Unknown BPN'
+        };
+        this.filteredContractDefinitions = [...this.allContractDefinitions];
       }
 
       this.messageService.add({ severity: 'success', summary: 'Success', detail: 'Contract Definition updated successfully.' });
       this.hideEditContractPolicyDialog();
-
     } catch (error: any) {
       this.messageService.add({ severity: 'error', summary: 'Error', detail: error.message || 'Failed to update contract definition.' });
       console.error('Failed to update contract definition:', error);
     }
   }
 
-
-
-
+  deleteContractPolicy(contractPolicy: ContractPolicy) {
+    this.confirmationService.confirm({
+      message: `Are you sure you want to delete the contract definition for asset "${contractPolicy.assetId}"?`,
+      header: 'Confirm Deletion',
+      icon: 'pi pi-exclamation-triangle',
+      accept: async () => {
+        try {
+          await this.policyService.deleteContractDefinition(contractPolicy.id);
+          this.allContractDefinitions = this.allContractDefinitions.filter(cd => cd.id !== contractPolicy.id);
+          this.filteredContractDefinitions = [...this.allContractDefinitions];
+          this.messageService.add({ severity: 'success', summary: 'Success', detail: 'Contract Definition deleted successfully.' });
+        } catch (error) {
+          this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Failed to delete contract definition.' });
+          console.error('Failed to delete contract definition:', error);
+        }
+      },
+    });
+  }
 }

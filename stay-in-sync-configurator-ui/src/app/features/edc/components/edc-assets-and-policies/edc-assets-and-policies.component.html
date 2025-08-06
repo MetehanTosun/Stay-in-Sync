@@ -111,13 +111,11 @@
 
     <ng-template pTemplate="header">
       <tr>
-        <th style="width: 4rem"></th>
-        <th style="width: 40%" pSortableColumn="id">ID <p-sortIcon field="id"></p-sortIcon></th>
-        <th style="width: 45%" pSortableColumn="bpn">BPN <p-sortIcon field="bpn"></p-sortIcon></th>
+        <th style="width: 45%" pSortableColumn="id">ID <p-sortIcon field="id"></p-sortIcon></th>
+        <th style="width: 40%" pSortableColumn="bpn">BPN <p-sortIcon field="bpn"></p-sortIcon></th>
         <th style="width: 15%">Actions</th>
       </tr>
       <tr>
-        <th></th>
         <th><p-columnFilter type="text" field="id" placeholder="Filter by ID"></p-columnFilter></th>
         <th><p-columnFilter type="text" field="bpn" placeholder="Filter by BPN"></p-columnFilter></th>
         <th></th>
@@ -126,9 +124,6 @@
 
     <ng-template pTemplate="body" let-policy>
       <tr>
-        <td>
-          <button type="button" pButton pRipple (click)="togglePolicyRow(policy.id)" class="p-button-text p-button-rounded p-button-plain" [icon]="isPolicyRowExpanded(policy.id) ? 'pi pi-chevron-down' : 'pi pi-chevron-right'"></button>
-        </td>
         <td>{{ policy.id }}</td>
         <td>{{ policy.bpn }}</td>
         <td>
@@ -136,52 +131,70 @@
           <button pButton pRipple type="button" icon="pi pi-trash" class="p-button-rounded p-button-text p-button-danger" pTooltip="Delete Access Policy" (click)="deleteAccessPolicy(policy)"></button>
         </td>
       </tr>
-      <tr *ngIf="isPolicyRowExpanded(policy.id)">
-        <td [attr.colspan]="4">
-          <div class="p-3">
-            <div class="flex align-items-center justify-content-between mb-3">
-              <h5 class="m-0">Contract Definitions for {{ policy.bpn }}</h5>
-              <button pButton pRipple label="New Contract Policy" icon="pi pi-plus" class="p-button-sm p-button-success" (click)="openNewContractPolicyDialog(policy)"></button>
-            </div>
+    </ng-template>
 
+    <ng-template pTemplate="emptymessage">
+      <tr><td [attr.colspan]="3">No policies found.</td></tr>
+    </ng-template>
+  </p-table>
+</div>
 
-            <p-table [value]="policy.contractPolicies"
-                     dataKey="id"
-                     styleClass="nested-table p-datatable-sm p-datatable-striped"
-                      [tableStyle]="{'max-width': '50rem'}">
-              <ng-template pTemplate="header">
-                <tr>
-                  <th style="width: 45%" pSortableColumn="id">ID <p-sortIcon field="id"></p-sortIcon></th>
-                  <th style="width: 40%" pSortableColumn="assetId">Asset ID <p-sortIcon field="assetId"></p-sortIcon></th>
-                  <th style="width: 15%">Actions</th>
-                </tr>
-                <tr>
-                  <th><p-columnFilter type="text" field="id" placeholder="Filter by ID"></p-columnFilter></th>
-                  <th><p-columnFilter type="text" field="assetId" placeholder="Filter by Asset ID"></p-columnFilter></th>
-                  <th></th>
-                </tr>
-              </ng-template>
-              <ng-template pTemplate="body" let-contractPolicy>
-                <tr>
-                  <td>{{ contractPolicy.id }}</td>
-                  <td>{{ contractPolicy.assetId }}</td>
-                  <td>
-                    <button pButton pRipple type="button" icon="pi pi-pencil" class="p-button-rounded p-button-text p-button-info mr-2" pTooltip="Edit Contract Policy" (click)="editContractPolicy(contractPolicy, policy)" ></button>
-                    <button pButton pRipple type="button" icon="pi pi-trash" class="p-button-rounded p-button-text p-button-danger" pTooltip="Delete Contract Policy" (click)="deleteContractPolicy(contractPolicy, policy)"></button>
-                  </td>
-                </tr>
-              </ng-template>
-              <ng-template pTemplate="emptymessage">
-                <tr><td [attr.colspan]="3">No contract policies found. Click "New Contract Policy" to add one.</td></tr>
-              </ng-template>
-            </p-table>
-          </div>
+<!-- Contract Definitions Table -->
+<div class="card mt-4">
+  <p-table
+    #dtContracts
+    [value]="filteredContractDefinitions"
+    dataKey="id"
+    [rows]="10"
+    [rowsPerPageOptions]="[10, 25, 50]"
+    [paginator]="true"
+    [loading]="policyLoading"
+    [globalFilterFields]="['id', 'assetId', 'bpn']"
+    [tableStyle]="{ 'min-width': '60rem' }"
+    styleClass="p-datatable-striped p-datatable-gridlines"
+  >
+    <ng-template pTemplate="caption">
+      <div class="flex align-items-center justify-content-between">
+        <h5 class="m-0">Contract Definitions</h5>
+        <div class="flex align-items-center">
+          <p-iconfield iconPosition="left" class="mr-2">
+            <p-inputicon><i class="pi pi-search"></i></p-inputicon>
+            <input pInputText type="text" (input)="onGlobalContractDefSearch($event)" placeholder="Search keyword" />
+          </p-iconfield>
+          <button pButton pRipple label="New Contract Definition" icon="pi pi-plus" class="p-button-success" (click)="openNewContractPolicyDialog()"></button>
+        </div>
+      </div>
+    </ng-template>
+
+    <ng-template pTemplate="header">
+      <tr>
+        <th style="width: 35%" pSortableColumn="id">ID <p-sortIcon field="id"></p-sortIcon></th>
+        <th style="width: 30%" pSortableColumn="assetId">Asset ID <p-sortIcon field="assetId"></p-sortIcon></th>
+        <th style="width: 20%" pSortableColumn="bpn">Policy BPN <p-sortIcon field="bpn"></p-sortIcon></th>
+        <th style="width: 15%">Actions</th>
+      </tr>
+      <tr>
+        <th><p-columnFilter type="text" field="id" placeholder="Filter by ID"></p-columnFilter></th>
+        <th><p-columnFilter type="text" field="assetId" placeholder="Filter by Asset ID"></p-columnFilter></th>
+        <th><p-columnFilter type="text" field="bpn" placeholder="Filter by BPN"></p-columnFilter></th>
+        <th></th>
+      </tr>
+    </ng-template>
+
+    <ng-template pTemplate="body" let-contractPolicy>
+      <tr>
+        <td>{{ contractPolicy.id }}</td>
+        <td>{{ contractPolicy.assetId }}</td>
+        <td>{{ contractPolicy.bpn }}</td>
+        <td>
+          <button pButton pRipple type="button" icon="pi pi-pencil" class="p-button-rounded p-button-text p-button-info mr-2" pTooltip="Edit Contract Definition" (click)="editContractPolicy(contractPolicy)"></button>
+          <button pButton pRipple type="button" icon="pi pi-trash" class="p-button-rounded p-button-text p-button-danger" pTooltip="Delete Contract Definition" (click)="deleteContractPolicy(contractPolicy)"></button>
         </td>
       </tr>
     </ng-template>
 
     <ng-template pTemplate="emptymessage">
-      <tr><td [attr.colspan]="4">No policies found.</td></tr>
+      <tr><td [attr.colspan]="4">No contract definitions found.</td></tr>
     </ng-template>
   </p-table>
 </div>
@@ -434,27 +447,42 @@
     <h6 class="text-center">Enter Details Manually</h6>
     <div class="px-4">
       <div class="field grid align-items-center mb-3">
-        <label for="cdOperandLeft" class="col-3">EDC ID (Operand Left)</label>
-        <div class="col-9">
-          <input id="cdOperandLeft" type="text" pInputText [(ngModel)]="newContractPolicy.operandLeft" required class="w-full" />
+        <label for="cdAccessPolicy" class="col-4">Access Policy</label>
+        <div class="col-8">
+          <p-dropdown
+            id="cdAccessPolicy"
+            [options]="allAccessPolicies"
+            [(ngModel)]="newContractPolicy.accessPolicyId"
+            optionLabel="bpn"
+            optionValue="id"
+            placeholder="Select an Access Policy"
+            [showClear]="true"
+            styleClass="w-full"
+            [appendTo]="'body'">
+            <ng-template let-policy pTemplate="item">
+              <div>{{ policy.bpn }} ({{ policy.id }})</div>
+            </ng-template>
+          </p-dropdown>
         </div>
       </div>
 
-
       <div class="field grid align-items-center mb-3">
-        <label for="cdAssetId" class="col-3">Asset ID (Operand Right)</label>
-        <div class="col-9">
+        <label for="cdAssetId" class="col-4">Asset</label>
+        <div class="col-8">
           <p-autoComplete
             id="cdAssetId"
             [(ngModel)]="newContractPolicy.assetId"
             [suggestions]="assetIdSuggestions"
             (completeMethod)="searchAssets($event)"
-            field="id"
+            field="name"
             [forceSelection]="true"
             placeholder="Type to search for an Asset"
             styleClass="w-full"
             inputStyleClass="w-full"
             [appendTo]="'body'">
+            <ng-template let-asset pTemplate="item">
+              <div>{{ asset.name }} ({{ asset.id }})</div>
+            </ng-template>
           </p-autoComplete>
         </div>
       </div>
@@ -481,24 +509,35 @@
 
   <ng-container *ngIf="contractPolicyToEdit">
     <div class="px-4">
-
       <div class="field grid align-items-center mb-3">
-        <label for="editCdOperandLeft" class="col-4">EDC ID (Operand Left)</label>
+        <label for="editCdAccessPolicy" class="col-4">Access Policy</label>
         <div class="col-8">
-          <input id="editCdOperandLeft" type="text" pInputText [(ngModel)]="contractPolicyToEdit.operandLeft" required class="w-full" />
+          <p-dropdown
+            id="editCdAccessPolicy"
+            [options]="allAccessPolicies"
+            [(ngModel)]="contractPolicyToEdit.accessPolicyId"
+            optionLabel="bpn"
+            optionValue="id"
+            placeholder="Select an Access Policy"
+            [showClear]="true"
+            styleClass="w-full"
+            [appendTo]="'body'">
+            <ng-template let-policy pTemplate="item">
+              <div>{{ policy.bpn }} ({{ policy.id }})</div>
+            </ng-template>
+          </p-dropdown>
         </div>
       </div>
 
-
       <div class="field grid align-items-center mb-3">
-        <label for="editCdAssetId" class="col-4">Asset ID (Operand Right)</label>
+        <label for="editCdAssetId" class="col-4">Asset</label>
         <div class="col-8">
           <p-autoComplete
             id="editCdAssetId"
             [(ngModel)]="contractPolicyToEdit.assetId"
             [suggestions]="assetIdSuggestions"
             (completeMethod)="searchAssets($event)"
-            field="id"
+            field="name"
             [forceSelection]="true"
             placeholder="Type to search for an Asset"
             styleClass="w-full"

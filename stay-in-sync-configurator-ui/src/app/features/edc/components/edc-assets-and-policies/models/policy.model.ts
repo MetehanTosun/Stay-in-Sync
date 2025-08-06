@@ -15,6 +15,8 @@ export interface AccessPolicy {
 export interface ContractPolicy {
   id:string;
   assetId: string;
+  bpn: string; // BPN of the parent Access Policy
+  accessPolicyId: string; // ID of the parent Access Policy
 }
 
 
