@@ -1,0 +1,106 @@
+<div class="search-bar-container" [formGroup]="searchForm">
+  <div class="search-input-wrapper">
+    <!-- Search Icon -->
+    <i [class]="searchIconClasses + ' search-icon'" *ngIf="!hasSearchTerm"></i>
+    
+    <!-- Search Input -->
+    <input 
+      pInputText 
+      type="text" 
+      formControlName="searchTerm"
+      [placeholder]="placeholderText"
+      (input)="onSearchInput($event)"
+      (change)="onSearchInputChange($event)"
+      (paste)="onSearchPaste($event)"
+      (keydown)="onKeyDown($event)"
+      class="search-input"
+      [attr.aria-label]="'Search ' + placeholderText"
+      [attr.aria-describedby]="'search-results'"
+      autocomplete="off"
+      spellcheck="false"
+      [title]="getKeyboardShortcutsHelp()"
+    />
+    
+    <!-- Loading Indicator -->
+    <div class="loading-container" *ngIf="loading && config.showLoadingIndicator">
+      <p-progressSpinner 
+        [style]="{width: '20px', height: '20px'}" 
+        strokeWidth="2"
+        animationDuration=".5s"
+        class="loading-spinner"
+        [attr.aria-label]="loadingText"
+      ></p-progressSpinner>
+      <span *ngIf="showLoadingText" class="loading-text" [attr.aria-live]="'polite'">
+        {{ loadingText }}
+      </span>
+    </div>
+    
+    <!-- Clear Button -->
+    <button 
+      pButton 
+      type="button" 
+      icon="pi pi-times" 
+      class="p-button-text p-button-rounded clear-button"
+      *ngIf="hasSearchTerm && config.showClearButton"
+      (click)="onClearSearch()"
+      (keydown.enter)="onClearSearch()"
+      (keydown.space)="onClearSearch()"
+      [attr.aria-label]="'Clear search'"
+      title="Clear search (or press Escape)"
+      tabindex="0"
+    ></button>
+    
+    <!-- Search Button (optional) -->
+    <button 
+      pButton 
+      type="button" 
+      icon="pi pi-search" 
+      class="p-button-text p-button-rounded search-button"
+      *ngIf="config.showSearchButton"
+      (click)="onSearchSubmit()"
+      [attr.aria-label]="'Search'"
+      title="Search"
+    ></button>
+  </div>
+  
+  <!-- Search Results Count -->
+  <div 
+    *ngIf="resultCount !== undefined && hasSearchTerm" 
+    class="search-results-count"
+    id="search-results"
+    [attr.aria-live]="'polite'"
+  >
+    <small class="result-count-text">{{ resultCountText }}</small>
+  </div>
+  
+  <!-- Search Options (for future advanced features) -->
+  <div class="search-options" *ngIf="config.enableRegex || config.caseSensitive !== undefined">
+    <div class="search-toggle-options">
+      <!-- Case Sensitivity Toggle -->
+      <div class="toggle-option" *ngIf="config.caseSensitive !== undefined">
+        <label class="toggle-label">
+          <input 
+            type="checkbox" 
+            [checked]="config.caseSensitive"
+            (change)="config.caseSensitive = !config.caseSensitive"
+            class="toggle-checkbox"
+          />
+          <span class="toggle-text">Case sensitive</span>
+        </label>
+      </div>
+      
+      <!-- Regex Toggle -->
+      <div class="toggle-option" *ngIf="config.enableRegex">
+        <label class="toggle-label">
+          <input 
+            type="checkbox" 
+            [checked]="config.enableRegex"
+            (change)="config.enableRegex = !config.enableRegex"
+            class="toggle-checkbox"
+          />
+          <span class="toggle-text">Regex</span>
+        </label>
+      </div>
+    </div>
+  </div>
+</div> 
