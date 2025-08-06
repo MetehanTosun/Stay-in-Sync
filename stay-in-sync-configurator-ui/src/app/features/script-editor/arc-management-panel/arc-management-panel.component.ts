@@ -14,7 +14,7 @@ import { ProgressSpinnerModule } from 'primeng/progressspinner';
 import { TooltipModule } from 'primeng/tooltip';
 import { TabViewModule } from 'primeng/tabview';
 import { combineLatest, map, Observable, shareReplay } from 'rxjs';
-import { FilterByEndpointPipe } from '../../../pipes/filter-by-endpoint.pipe';
+import { FilterByEndpointPipe } from '../../source-system/pipes/filter-by-endpoint.pipe';
 
 type SystemWithState = SourceSystem & {
   endpoints: SourceSystemEndpoint[];

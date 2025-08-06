@@ -55,3 +55,5 @@ Chart.lock
 .cursor/rules/create-prd.md
 .cursor/rules/generate-tasks.md
 .cursor/rules/process-task-list.md
+tasks/prd-source-system-search.md
+tasks/tasks-prd-source-system-search.md

@@ -12,7 +12,7 @@ import {ApiRequestHeaderType} from '../../models/apiRequestHeaderType';
 import {ApiHeaderDTO} from '../../models/apiHeaderDTO';
 import {CreateApiHeaderDTO} from '../../models/createApiHeaderDTO';
 import {HttpErrorService} from '../../../../core/services/http-error.service';
-import {ConfirmationDialogComponent, ConfirmationDialogData} from '../../../../shared/components/confirmation-dialog/confirmation-dialog.component';
+import {ConfirmationDialogComponent, ConfirmationDialogData} from '../confirmation-dialog/confirmation-dialog.component';
 
 /**
  * Component for managing API header templates for a given system.

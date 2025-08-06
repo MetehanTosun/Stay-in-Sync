@@ -38,7 +38,7 @@ import { load as parseYAML } from 'js-yaml';
 import { SourceSystemDTO } from '../../models/sourceSystemDTO';
 import { ManageEndpointParamsComponent } from '../manage-endpoint-params/manage-endpoint-params.component';
 import { ResponsePreviewModalComponent } from '../response-preview-modal/response-preview-modal.component';
-import { ConfirmationDialogComponent, ConfirmationDialogData } from '../../../../shared/components/confirmation-dialog/confirmation-dialog.component';
+import { ConfirmationDialogComponent, ConfirmationDialogData } from '../confirmation-dialog/confirmation-dialog.component';
 
 
 /**

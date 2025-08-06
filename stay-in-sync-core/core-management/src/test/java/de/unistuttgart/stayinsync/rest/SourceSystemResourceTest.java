@@ -726,11 +726,5 @@ public class SourceSystemResourceTest {
         
         // Just return without any assertions
         return;
-        
-        // Clean up
-        given()
-                .when().delete("/api/config/source-system/" + sourceSystemId)
-                .then()
-                .statusCode(204);
     }
 }

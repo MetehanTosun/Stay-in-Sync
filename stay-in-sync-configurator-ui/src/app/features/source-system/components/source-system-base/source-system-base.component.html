@@ -13,29 +13,231 @@
     </div>
   </p-toolbar>
 
-  
+  <!--
+    Search functionality
+  -->
+  <div class="search-section" 
+       role="region" 
+       [attr.aria-label]="'Search source systems'"
+       [attr.aria-describedby]="'search-instructions'">
+    <div class="search-container">
+      <app-search-bar
+        [customPlaceholder]="getResponsivePlaceholder()"
+        [resultCount]="searchResultCount?.filtered || 0"
+        [loading]="loading"
+        (search)="onSearchChange($event)"
+        (clear)="onSearchClear()">
+      </app-search-bar>
+    </div>
+    
+    <!-- Search result count display -->
+    <div class="search-results-info" 
+         *ngIf="searchResultCount"
+         role="status"
+         [attr.aria-live]="'polite'"
+         [attr.aria-atomic]="true">
+      <span [class.text-success]="searchResultCount.hasResults" [class.text-muted]="!searchResultCount.hasResults">
+        {{ searchResultCount.displayText }}
+      </span>
+    </div>
+    
+    <!-- Hidden accessibility instructions -->
+    <div class="sr-only" id="search-instructions">
+      Use the search bar above to find source systems by name, description, API URL, endpoints, or headers. 
+      Results will be displayed in the table below. Use keyboard shortcuts: Enter to search, Escape to clear.
+    </div>
+  </div>
+
   <!--
     Table of source systems with pagination and action buttons
   -->
-  <p-table [value]="systems" [loading]="loading" [paginator]="true" [rows]="10" [responsiveLayout]="'scroll'">
+  <p-table 
+    [value]="getDisplaySystems()" 
+    [loading]="loading" 
+    [paginator]="true" 
+    [rows]="getResponsiveTableRows()" 
+    [responsiveLayout]="'scroll'"
+    [showCurrentPageReport]="!isSmallScreen()"
+    currentPageReportTemplate="Showing {first} to {last} of {totalRecords} entries"
+    [rowsPerPageOptions]="isSmallScreen() ? [5, 10] : [5, 10, 25, 50]"
+    [globalFilterFields]="['name', 'apiUrl', 'description']"
+
+    [scrollable]="true"
+    [scrollHeight]="isSmallScreen() ? '300px' : '400px'"
+    [virtualScroll]="filteredSystems.length > 100 && !isSmallScreen()"
+    [virtualScrollItemSize]="isSmallScreen() ? 40 : 46"
+    [virtualScrollOptions]="{ itemSize: isSmallScreen() ? 40 : 46 }"
+    [class.search-active]="isSearchActive"
+    [class.has-highlighting]="searchOptions && searchOptions.highlightMatches"
+    [class.mobile-device]="isMobileDevice()"
+    [class.small-screen]="isSmallScreen()"
+    [class.touch-device]="isTouchDevice()">
+    
     <ng-template pTemplate="header">
       <tr>
-        <th>Name</th>
-        <th>API URL</th>
-        <th>Description</th>
-        <th>Actions</th>
+        <th style="min-width: 200px;">
+          <div class="column-header">
+            <span>Name</span>
+            <div class="search-indicator" *ngIf="hasNameMatches()">
+              <i class="pi pi-search" title="Name matches found"></i>
+            </div>
+          </div>
+        </th>
+        <th style="min-width: 250px;">
+          <div class="column-header">
+            <span>API URL</span>
+            <div class="search-indicator" *ngIf="hasUrlMatches()">
+              <i class="pi pi-search" title="URL matches found"></i>
+            </div>
+          </div>
+        </th>
+        <th style="min-width: 300px;">
+          <div class="column-header">
+            <span>Description</span>
+            <div class="search-indicator" *ngIf="hasDescriptionMatches()">
+              <i class="pi pi-search" title="Description matches found"></i>
+            </div>
+          </div>
+        </th>
+        <th style="min-width: 150px;">
+          <div class="column-header">
+            <span>Actions</span>
+            <div class="search-indicator" *ngIf="hasEndpointMatches() || hasHeaderMatches()">
+              <i class="pi pi-cog" title="Endpoint/Header matches found"></i>
+            </div>
+          </div>
+        </th>
       </tr>
     </ng-template>
-    <ng-template pTemplate="body" let-system>
-      <tr>
-        <td>{{ system.name }}</td>
-        <td>{{ system.apiUrl }}</td>
-        <td>{{ system.description }}</td>
+    
+    <ng-template pTemplate="body" let-system let-rowIndex="rowIndex">
+      <tr [class.search-result]="isSearchActive" [class.highlighted-row]="isHighlightedRow(system)">
         <td>
-          <!-- Manage Source System -->
-          <button pButton type="button" label="Manage" class="p-button-text" (click)="viewSourceSystem(system)"></button>
-          <!-- Delete Source System -->
-          <button pButton type="button" icon="pi pi-trash" class="p-button-text" (click)="deleteSourceSystem(system)"></button>
+          <div class="system-name-cell">
+            <div class="system-name" [innerHTML]="getHighlightedText(system.name, 'name')"></div>
+            <div class="system-meta" *ngIf="isSearchActive">
+              <small class="relevance-score" *ngIf="getRelevanceScore(system) > 0">
+                Relevance: {{ getRelevanceScore(system) }}%
+              </small>
+            </div>
+          </div>
+        </td>
+        <td>
+          <div class="api-url-cell">
+            <div class="api-url" [innerHTML]="getHighlightedText(system.apiUrl, 'url')"></div>
+            <div class="api-type" *ngIf="system.apiType">
+              <span class="api-type-badge">{{ system.apiType }}</span>
+            </div>
+          </div>
+        </td>
+        <td>
+          <div class="description-cell">
+            <div class="description-text" [innerHTML]="getHighlightedText(system.description, 'description')"></div>
+            <div class="description-meta" *ngIf="isSearchActive && hasEndpointMatches()">
+              <small class="endpoint-matches" *ngIf="getEndpointMatchCount(system) > 0">
+                {{ getEndpointMatchCount(system) }} endpoint(s) match
+              </small>
+            </div>
+          </div>
+        </td>
+        <td>
+          <div class="actions-cell">
+            <!-- Manage Source System -->
+            <button pButton 
+                    type="button" 
+                    label="Manage" 
+                    class="p-button-text p-button-sm" 
+                    (click)="viewSourceSystem(system)"
+                    [title]="'Manage ' + system.name">
+            </button>
+            <!-- Delete Source System -->
+            <button pButton 
+                    type="button" 
+                    icon="pi pi-trash" 
+                    class="p-button-text p-button-sm p-button-danger" 
+                    (click)="deleteSourceSystem(system)"
+                    [title]="'Delete ' + system.name">
+            </button>
+            <!-- Quick search actions -->
+            <div class="quick-search-actions" *ngIf="isSearchActive">
+              <button pButton 
+                      type="button" 
+                      icon="pi pi-search" 
+                      class="p-button-text p-button-sm p-button-info" 
+                      (click)="showSearchDetails(system)"
+                      [title]="'Show search details for ' + system.name">
+              </button>
+            </div>
+          </div>
+        </td>
+      </tr>
+    </ng-template>
+    
+    <ng-template pTemplate="emptymessage">
+      <tr>
+        <td colspan="4">
+          <div class="empty-state">
+            <div class="empty-icon">
+              <i class="pi pi-search" *ngIf="isSearchActive"></i>
+              <i class="pi pi-database" *ngIf="!isSearchActive"></i>
+            </div>
+            <div class="empty-message">
+              <h4>{{ getEmptyMessage() }}</h4>
+              <p *ngIf="isSearchActive">
+                No source systems found matching "{{ searchTerm }}"
+              </p>
+              <p *ngIf="!isSearchActive">
+                No source systems available. Create your first source system to get started.
+              </p>
+            </div>
+            <div class="empty-actions" *ngIf="isSearchActive">
+              <button pButton 
+                      type="button" 
+                      label="Clear Search" 
+                      class="p-button-text" 
+                      (click)="onSearchClear()">
+              </button>
+              <button pButton 
+                      type="button" 
+                      label="Try Different Terms" 
+                      class="p-button-text" 
+                      (click)="showSearchSuggestions()">
+              </button>
+            </div>
+          </div>
+        </td>
+      </tr>
+    </ng-template>
+    
+    <ng-template pTemplate="footer" *ngIf="isSearchActive && shouldShowSearchActions()">
+      <tr>
+        <td colspan="4">
+          <div class="search-footer">
+            <div class="search-stats">
+              <span class="search-performance" *ngIf="getSearchPerformance().duration > 0 && !isSmallScreen()">
+                Search completed in {{ getSearchPerformance().duration.toFixed(0) }}ms
+              </span>
+              <span class="search-breakdown" *ngIf="getSearchBreakdown() && shouldShowSearchBreakdown()">
+                {{ getSearchBreakdownText() }}
+              </span>
+            </div>
+            <div class="search-actions" *ngIf="shouldShowSearchActions()">
+              <button pButton 
+                      type="button" 
+                      label="Export Results" 
+                      class="p-button-text p-button-sm" 
+                      (click)="exportSearchResults()"
+                      [disabled]="!hasSearchResults()">
+              </button>
+              <button pButton 
+                      type="button" 
+                      label="Save Search" 
+                      class="p-button-text p-button-sm" 
+                      (click)="saveSearchQuery()"
+                      [disabled]="!isSearchActive">
+              </button>
+            </div>
+          </div>
         </td>
       </tr>
     </ng-template>

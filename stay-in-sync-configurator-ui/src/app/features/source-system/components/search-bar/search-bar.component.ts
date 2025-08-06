@@ -58,11 +58,15 @@ export class SearchBarComponent implements OnInit, OnDestroy {
   private destroy$ = new Subject<void>();
   private searchSubject = new Subject<string>();
 
+  // Accessibility properties
+  componentId!: string;
+
   constructor(private fb: FormBuilder) {}
 
   ngOnInit(): void {
     this.initializeForm();
     this.setupSearchDebouncing();
+    this.componentId = this.generateComponentId();
   }
 
   ngOnDestroy(): void {
@@ -268,5 +272,9 @@ export class SearchBarComponent implements OnInit, OnDestroy {
 
   get searchIconClasses(): string {
     return this.searchIconClass;
+  }
+
+  private generateComponentId(): string {
+    return 'search-bar-' + Math.random().toString(36).substr(2, 9);
   }
 } 
