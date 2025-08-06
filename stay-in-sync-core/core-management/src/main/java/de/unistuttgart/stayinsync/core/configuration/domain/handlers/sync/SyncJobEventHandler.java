@@ -51,7 +51,7 @@ public class SyncJobEventHandler {
     public void onSyncJobUpdatedEvent(@Observes SyncJobUpdatedEvent event) {
         SyncJob outdatedSyncJob = event.outdatedSyncJob;
         SyncJob updatedSyncJob = event.updatedSyncJob;
-        Set<Transformation> matchingAndeDeployedTransformations = outdatedSyncJob.transformations.stream()
+        Set<Transformation> matchingUndeployedTransformations = outdatedSyncJob.transformations.stream()
                 .filter(transformation -> updatedSyncJob.transformations.stream()
                         .anyMatch(updatedSyncTransformation -> updatedSyncTransformation.id == transformation.id && !isJobNotDeployed(updatedSyncTransformation)))
                 .collect(Collectors.toSet());
@@ -61,7 +61,7 @@ public class SyncJobEventHandler {
                     return isJobNotDeployed(transformation1);
                 }).collect(Collectors.toSet());
 
-        matchingAndeDeployedTransformations.stream().forEach(transformation -> reconfigureSyncJobDeployment(transformation));
+        matchingUndeployedTransformations.stream().forEach(transformation -> reconfigureSyncJobDeployment(transformation));
         undeployedTransformations.stream().forEach(transformation -> deployTransformation(transformation));
     }
 
