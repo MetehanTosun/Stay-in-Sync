@@ -27,51 +27,51 @@ public class DispatcherStateService {
 
     private final Map<String, String> arcToSystemAliasMap = new ConcurrentHashMap<>();
 
-    public void loadInitialTransformations(SyncJobMessageDTO syncJob){
-        if (syncJob.transformations() == null){
-            return;
-        }
+    public void loadInitialTransformations(TransformationMessageDTO transformation) {
 
         transformationRegistry.clear();
         arcToTransformationMap.clear();
         arcToSystemAliasMap.clear();
 
-        for(TransformationMessageDTO tx : syncJob.transformations()){
-            Log.infof("Registering Transformation ID: %d, Manifest: %s", tx.id(), tx.arcManifest());
-            TransformationState state = new TransformationState(tx);
-            transformationRegistry.put(tx.id(), state);
 
-            for (String arcAlias : tx.arcManifest()){
-                arcToTransformationMap.computeIfAbsent(arcAlias, k -> new ArrayList<>()).add(tx.id());
+        Log.infof("Registering Transformation ID: %d, Manifest: %s", transformation.id(), transformation.arcManifest());
+        TransformationState state = new TransformationState(transformation);
+        transformationRegistry.put(transformation.id(), state);
+
+        if (transformation.arcManifest() != null) {
+            for (String arcAlias : transformation.arcManifest()) {
+                arcToTransformationMap.computeIfAbsent(arcAlias, k -> new ArrayList<>()).add(transformation.id());
             }
 
-            if(tx.requestConfigurationMessageDTOS() != null){
-                for(SourceSystemApiRequestConfigurationMessageDTO reqConfig : tx.requestConfigurationMessageDTOS()){
-                    SourceSystemMessageDTO sourceSystem = reqConfig.apiConnectionDetails().sourceSystem();
-                    if (reqConfig.name() != null && sourceSystem != null && sourceSystem.name() != null){
-                        Log.debugf("Mapping arcAlias '%s' to systemName '%s'", reqConfig.name(), sourceSystem.name());
-                        arcToSystemAliasMap.put(reqConfig.name(), sourceSystem.name());
-                    }
+        }
+
+        if (transformation.requestConfigurationMessageDTOS() != null) {
+            for (SourceSystemApiRequestConfigurationMessageDTO reqConfig : transformation.requestConfigurationMessageDTOS()) {
+                SourceSystemMessageDTO sourceSystem = reqConfig.apiConnectionDetails().sourceSystem();
+                if (reqConfig.name() != null && sourceSystem != null && sourceSystem.name() != null) {
+                    Log.debugf("Mapping arcAlias '%s' to systemName '%s'", reqConfig.name(), sourceSystem.name());
+                    arcToSystemAliasMap.put(reqConfig.name(), sourceSystem.name());
                 }
             }
         }
+
     }
 
-    public List<ExecutionPayload> processArc(SyncDataMessageDTO arc){
+    public List<ExecutionPayload> processArc(SyncDataMessageDTO arc) {
         latestArcData.put(arc.arcAlias(), arc.jsonData());
         List<Long> affectedTransformationIds = arcToTransformationMap.getOrDefault(arc.arcAlias(), Collections.emptyList());
-        if(affectedTransformationIds.isEmpty()){
+        if (affectedTransformationIds.isEmpty()) {
             return Collections.emptyList();
         }
 
         List<ExecutionPayload> completedPayloads = new ArrayList<>();
 
-        for (Long txId : affectedTransformationIds){
+        for (Long txId : affectedTransformationIds) {
             TransformationState state = transformationRegistry.get(txId);
 
             state.recordArrival(arc.arcAlias());
 
-            if (state.isReady()){
+            if (state.isReady()) {
                 Log.infof("Transformation %d is ready! Building job.", txId);
                 ExecutionPayload payload = buildExecutionPayload(state.getTransformation());
                 completedPayloads.add(payload);
@@ -82,12 +82,12 @@ public class DispatcherStateService {
         return completedPayloads;
     }
 
-    private ExecutionPayload buildExecutionPayload(TransformationMessageDTO tx){
+    private ExecutionPayload buildExecutionPayload(TransformationMessageDTO tx) {
         Map<String, Object> sourceSystemMap = new ConcurrentHashMap<>();
 
-        for(String arcAlias : tx.arcManifest()){
+        for (String arcAlias : tx.arcManifest()) {
             String systemName = arcToSystemAliasMap.get(arcAlias);
-            if(systemName == null){
+            if (systemName == null) {
                 Log.warnf("Could not find systemName for arcAlias '%s'. Skipping this ARC in the final payload.", arcAlias);
                 continue;
             }
@@ -102,7 +102,11 @@ public class DispatcherStateService {
         Map<String, Object> finalSource = Map.of("source", sourceSystemMap);
 
         TransformationRuleDTO rule = tx.transformationRuleDTO();
-        List<Node> graphNodes = graphMapperService.toNodeGraph(rule.graphDTO());
+        List<Node> graphNodes = new ArrayList<>();
+        if(rule != null)
+        {
+        graphNodes = graphMapperService.toNodeGraph(rule.graphDTO());
+        }
 
         TransformJob job = new TransformJob(
                 "Transformation-" + tx.id(),
@@ -115,7 +119,7 @@ public class DispatcherStateService {
         return new ExecutionPayload(job, graphNodes);
     }
 
-    public Map<Long, TransformationState> getTransformationRegistry(){
+    public Map<Long, TransformationState> getTransformationRegistry() {
         return this.transformationRegistry;
     }
 
@@ -132,31 +136,33 @@ public class DispatcherStateService {
             this.lastActivityTimestamp = Instant.now().toEpochMilli();
         }
 
-        public synchronized void recordArrival(String arcAlias){
+        public synchronized void recordArrival(String arcAlias) {
             receivedArcs.add(arcAlias);
             this.lastActivityTimestamp = Instant.now().toEpochMilli();
         }
 
-        public synchronized boolean isReady(){
+        public synchronized boolean isReady() {
             return receivedArcs.size() == manifest.size();
         }
 
-        public synchronized void reset(){
+        public synchronized void reset() {
             receivedArcs.clear();
         }
 
-        public synchronized List<String> getManifest(){
+        public synchronized List<String> getManifest() {
             return manifest;
         }
 
-        public synchronized Set<String> getReceivedArcs(){
+        public synchronized Set<String> getReceivedArcs() {
             return this.receivedArcs;
         }
 
-        public TransformationMessageDTO getTransformation(){
+        public TransformationMessageDTO getTransformation() {
             return this.transformation;
         }
 
-        public long getLastActivityTimestamp(){ return lastActivityTimestamp; }
+        public long getLastActivityTimestamp() {
+            return lastActivityTimestamp;
+        }
     }
 }

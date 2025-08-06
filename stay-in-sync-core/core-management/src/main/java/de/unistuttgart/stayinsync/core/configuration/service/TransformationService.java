@@ -1,13 +1,12 @@
 package de.unistuttgart.stayinsync.core.configuration.service;
 
-import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.SourceSystemEndpoint;
-import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.Transformation;
-import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.TransformationRule;
-import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.TransformationScript;
+import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.*;
 import de.unistuttgart.stayinsync.core.configuration.exception.CoreManagementException;
 import de.unistuttgart.stayinsync.core.configuration.mapping.TransformationMapper;
 import de.unistuttgart.stayinsync.core.configuration.rest.dtos.TransformationAssemblyDTO;
 import de.unistuttgart.stayinsync.core.configuration.rest.dtos.TransformationShellDTO;
+import de.unistuttgart.stayinsync.transport.domain.JobDeploymentStatus;
+import de.unistuttgart.stayinsync.transport.dto.TransformationDeploymentFeedbackMessageDTO;
 import io.quarkus.logging.Log;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
@@ -106,5 +105,17 @@ public class TransformationService {
     public boolean delete(Long id) {
         Log.debugf("Deleting transformation with id %d", id);
         return Transformation.deleteById(id);
+    }
+
+    public void updateDeploymentStatus(TransformationDeploymentFeedbackMessageDTO feedbackMessageDTO) {
+        Optional<Transformation> apiRequestConfigurationById = findById(feedbackMessageDTO.transformationId());
+        if(apiRequestConfigurationById.isEmpty()){
+            Log.warnf("Unable to update deployment status of request configuration with id %d since no transformation was found using id", feedbackMessageDTO.transformationId());
+        } else {
+            Transformation sourceSystemApiRequestConfiguration = apiRequestConfigurationById.get();
+            sourceSystemApiRequestConfiguration.deploymentStatus = feedbackMessageDTO.status();
+            if(apiRequestConfigurationById.get().deploymentStatus.equals(JobDeploymentStatus.DEPLOYED))
+                sourceSystemApiRequestConfiguration.workerHostName = feedbackMessageDTO.syncNode();
+        }
     }
 }
