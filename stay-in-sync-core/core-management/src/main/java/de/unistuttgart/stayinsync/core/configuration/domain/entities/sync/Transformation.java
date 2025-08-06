@@ -2,6 +2,7 @@ package de.unistuttgart.stayinsync.core.configuration.domain.entities.sync;
 
 import com.fasterxml.jackson.annotation.JsonBackReference;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
+import de.unistuttgart.stayinsync.transport.domain.JobDeploymentStatus;
 import io.quarkus.hibernate.orm.panache.PanacheEntity;
 import jakarta.persistence.*;
 
@@ -24,8 +25,11 @@ public class Transformation extends PanacheEntity {
     @JsonManagedReference("transformationScript-reference")
     public TransformationScript transformationScript;
 
+    @Enumerated(EnumType.STRING)
+    public JobDeploymentStatus deploymentStatus;
 
-    @OneToOne(cascade = CascadeType.ALL)
+    public String workerHostName;
+    @OneToOne
     public TransformationRule transformationRule;
 
     @ManyToMany(cascade = CascadeType.ALL)
@@ -34,7 +38,7 @@ public class Transformation extends PanacheEntity {
             joinColumns = @JoinColumn(name = "transformation_id"),
             inverseJoinColumns = @JoinColumn(name = "source_system_api_request_configuration_id")
     )
-    public Set<SourceSystemApiRequestConfiguration> sourceSystemApiRequestConfigurations = new HashSet<>();
+    public Set<SourceSystemApiRequestConfiguration> sourceSystemApiRequestConfigrations = new HashSet<>();
 
     @ManyToMany
     @JoinTable(

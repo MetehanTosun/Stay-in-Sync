@@ -4,14 +4,13 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.rabbitmq.client.AMQP;
 import com.rabbitmq.client.Channel;
 import de.unistuttgart.stayinsync.core.configuration.exception.CoreManagementException;
-import de.unistuttgart.stayinsync.transport.dto.SyncJobMessageDTO;
+import de.unistuttgart.stayinsync.transport.dto.TransformationMessageDTO;
 import io.quarkiverse.rabbitmqclient.RabbitMQClient;
 import io.quarkus.logging.Log;
 import io.quarkus.runtime.StartupEvent;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.event.Observes;
 import jakarta.inject.Inject;
-import org.eclipse.microprofile.config.inject.ConfigProperty;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -20,7 +19,7 @@ import java.nio.charset.StandardCharsets;
  * RabbitMQ Message Producer for SyncJobs
  */
 @ApplicationScoped
-public class SyncJobMessageProducer {
+public class TransformationJobMessageProducer {
 
     @Inject
     RabbitMQClient rabbitMQClient;
@@ -39,7 +38,7 @@ public class SyncJobMessageProducer {
         try {
             Log.info("Opening rabbitMQ channel");
             channel = rabbitMQClient.connect().openChannel().orElseThrow(() -> new CoreManagementException("RabbitMQ Error", "Unable to open rabbitMQ Channel"));
-            channel.exchangeDeclare("syncjob-exchange", "direct", true);
+            channel.exchangeDeclare("transformation-exchange", "direct", true);
         } catch (Exception e) {
             Log.errorf("Error initialising rabbitMQ message producer: %s %s", e.getClass(),e.getMessage());
             throw new CoreManagementException("RabbitMQ error", "Could not initiliaze producer", e);
@@ -49,19 +48,19 @@ public class SyncJobMessageProducer {
     /**
      * Sends a message to the worker queue
      *
-     * @param syncJob user defined sync-job entity
+     * @param transformationMessageDTO user defined transformation entity
      * @throws CoreManagementException
      */
-    public void publishSyncJob(SyncJobMessageDTO syncJob) throws CoreManagementException {
+    public void publishTransformationJob(TransformationMessageDTO transformationMessageDTO) throws CoreManagementException {
         try {
-            Log.infof("Publishing sync-job %s (id: %s)", syncJob.name(), syncJob.id());
-            String messageBody = objectMapper.writeValueAsString(syncJob);
+            Log.infof("Publishing sync-job %s (id: %s)", transformationMessageDTO.name(), transformationMessageDTO.id());
+            String messageBody = objectMapper.writeValueAsString(transformationMessageDTO);
             AMQP.BasicProperties properties = new AMQP.BasicProperties.Builder()
                     .contentType("application/json")
                     .deliveryMode(2) // persistent
                     .build();
 
-            channel.basicPublish("syncjob-exchange", "", properties,
+            channel.basicPublish("transformation-exchange", "", properties,
                     messageBody.getBytes(StandardCharsets.UTF_8));
         } catch (IOException e) {
             throw new CoreManagementException("Unable to publish Job", "Object JSON-serialization failed", e);
@@ -74,16 +73,16 @@ public class SyncJobMessageProducer {
      * @param syncJob user defined sync-job entity
      * @throws CoreManagementException
      */
-    public void reconfigureDeployedSyncJob(SyncJobMessageDTO syncJob) {
+    public void reconfigureDeployedTransformationJob(TransformationMessageDTO transformationMessageDTO) {
         try {
-            Log.infof("Publishing sync-job %s (id: %s)", syncJob.name(), syncJob.id());
-            String messageBody = objectMapper.writeValueAsString(syncJob);
+            Log.infof("Publishing sync-job %s (id: %s)", transformationMessageDTO.name(), transformationMessageDTO.id());
+            String messageBody = objectMapper.writeValueAsString(transformationMessageDTO);
             AMQP.BasicProperties properties = new AMQP.BasicProperties.Builder()
                     .contentType("application/json")
                     .deliveryMode(2) // persistent
                     .build();
 
-            channel.basicPublish("syncjob-exchange", "sync-job-" + syncJob.id(), properties,
+            channel.basicPublish("transformation-exchange", "transformation-" + transformationMessageDTO.id(), properties,
                     messageBody.getBytes(StandardCharsets.UTF_8));
         } catch (IOException e) {
             throw new CoreManagementException("Unable to publish Job", "Object JSON-serialization failed", e);
