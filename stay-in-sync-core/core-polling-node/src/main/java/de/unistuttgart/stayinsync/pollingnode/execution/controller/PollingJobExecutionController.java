@@ -21,6 +21,7 @@ import java.util.Objects;
 public class PollingJobExecutionController {
 
     private Scheduler scheduler;
+
     private final Map<Long, JobKey> supportedJobs;
 
     public PollingJobExecutionController() {
@@ -204,4 +205,9 @@ public class PollingJobExecutionController {
             Log.warnf("No active polling job found for API: %s", id);
         }
     }
+
+    public Map<Long, JobKey> getSupportedJobs() {
+        return supportedJobs;
+    }
+
 }

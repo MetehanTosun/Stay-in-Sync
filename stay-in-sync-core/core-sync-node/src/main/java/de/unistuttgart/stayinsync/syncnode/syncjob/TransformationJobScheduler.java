@@ -25,7 +25,7 @@ public class TransformationJobScheduler {
     @Inject
     DispatcherStateService dispatcherStateService;
 
-    Set<TransformationMessageDTO> runningJobs = new HashSet<>();
+    private Set<TransformationMessageDTO> runningJobs = new HashSet<>();
 
     public void deployTransformation(TransformationMessageDTO transformation) throws SyncNodeException {
         Log.infof("Deploying transformation with id: %d",transformation.id());
@@ -60,5 +60,9 @@ public class TransformationJobScheduler {
     //TODO implement this method
     private void stopConsumingFromUnusedRequestConfigurations() {
 
+    }
+
+    public Set<TransformationMessageDTO> getRunningJobs() {
+        return runningJobs;
     }
 }

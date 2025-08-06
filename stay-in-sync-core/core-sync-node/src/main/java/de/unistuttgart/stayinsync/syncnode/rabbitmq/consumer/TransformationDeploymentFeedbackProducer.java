@@ -4,10 +4,13 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.rabbitmq.client.AMQP;
 import com.rabbitmq.client.Channel;
 import de.unistuttgart.stayinsync.exception.SyncNodeException;
+import de.unistuttgart.stayinsync.syncnode.syncjob.TransformationJobScheduler;
 import de.unistuttgart.stayinsync.transport.domain.JobDeploymentStatus;
 import de.unistuttgart.stayinsync.transport.dto.TransformationDeploymentFeedbackMessageDTO;
+import de.unistuttgart.stayinsync.transport.dto.TransformationMessageDTO;
 import io.quarkiverse.rabbitmqclient.RabbitMQClient;
 import io.quarkus.logging.Log;
+import io.quarkus.runtime.ShutdownEvent;
 import io.quarkus.runtime.StartupEvent;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.event.Observes;
@@ -16,6 +19,7 @@ import org.eclipse.microprofile.config.inject.ConfigProperty;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.util.Set;
 
 @ApplicationScoped
 public class TransformationDeploymentFeedbackProducer {
@@ -28,6 +32,9 @@ public class TransformationDeploymentFeedbackProducer {
 
     @Inject
     ObjectMapper objectMapper;
+
+    @Inject
+    TransformationJobScheduler transformationJobScheduler;
 
     private Channel channel;
 
@@ -68,6 +75,19 @@ public class TransformationDeploymentFeedbackProducer {
                     messageBody.getBytes(StandardCharsets.UTF_8));
         } catch (IOException e) {
             throw new SyncNodeException("Unable to publish Job" , "Object JSON-serialization failed");
+        }
+    }
+
+    /**
+     * Sends feedback that jobs have been stopped on shutdown
+     *
+     * @param shutdownEvent
+     */
+    void onShutdown(@Observes ShutdownEvent shutdownEvent) throws SyncNodeException {
+        Set<TransformationMessageDTO> runningJobs = transformationJobScheduler.getRunningJobs();
+        for(TransformationMessageDTO transformationMessageDTO : runningJobs)
+        {
+            publishTransformationFeedback(transformationMessageDTO.id(), JobDeploymentStatus.STOPPED);
         }
     }
 
