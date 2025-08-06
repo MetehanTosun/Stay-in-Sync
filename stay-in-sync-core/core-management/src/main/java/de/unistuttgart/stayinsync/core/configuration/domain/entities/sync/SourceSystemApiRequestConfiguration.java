@@ -1,9 +1,11 @@
 package de.unistuttgart.stayinsync.core.configuration.domain.entities.sync;
 
+import de.unistuttgart.stayinsync.transport.domain.JobDeploymentStatus;
 import jakarta.persistence.*;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 
 @Entity
@@ -21,6 +23,13 @@ public class SourceSystemApiRequestConfiguration extends ApiRequestConfiguration
 
     @Lob
     public String responseDts;
+
+    @Enumerated(EnumType.STRING)
+    public JobDeploymentStatus deploymentStatus;
+
+    public String workerPodName;
+
+    public boolean responseIsArray;
 
     public int pollingIntervallTimeInMs;
 
@@ -67,6 +76,10 @@ public class SourceSystemApiRequestConfiguration extends ApiRequestConfiguration
                                 "WHERE arc.sourceSystem.name IN :names", Object[].class)
                 .setParameter("names", names)
                 .getResultList();
+    }
+
+    public static Optional<SourceSystemApiRequestConfiguration> findBySourceSystemAndArcName(String sourceSystemName, String arcName) {
+        return find("sourceSystem.name = ?1 and alias = ?2", sourceSystemName, arcName).firstResultOptional();
     }
 
 }

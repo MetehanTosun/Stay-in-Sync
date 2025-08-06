@@ -121,6 +121,21 @@ nodeSelector: { }
 tolerations: [ ]
 
 affinity: { }
+core-management:
+  app:
+    envs:
+      DB_HOST: stay-in-sync-mariadb
+      DB_PASSWORD: root
+      DB_USERNAME: root
+      RABBITMQ_HOST: stay-in-sync-rabbitmq
+core-polling-node:
+  app:
+    envs:
+      RABBITMQ_HOST: stay-in-sync-rabbitmq
+core-sync-node:
+  app:
+    envs:
+      RABBITMQ_HOST: stay-in-sync-rabbitmq
 
 mongodb:
   auth:
@@ -140,23 +155,28 @@ mongodb:
     port: 27017
 
 rabbitmq:
+  fullnameOverride: stay-in-sync-rabbitmq
   auth:
-    username: user
-    password: bitnami
+    username: guest
+    password: guest
     erlangCookie: my-erlang-cookie
   tls:
     enabled: false
-
   persistence:
     enabled: false
-
   replicaCount: 1
 
 mariadb:
+  fullnameOverride: stay-in-sync-mariadb
   primary:
     readinessProbe:
-      initialDelaySeconds: 90
-
+      initialDelaySeconds: 30
+  auth:
+    rootPassword: "root"
+    database: "stayinsync_core"
+  service:
+    ports:
+      mysql: 3306
 umbrella:
   dataconsumerOne:
     enabled: true

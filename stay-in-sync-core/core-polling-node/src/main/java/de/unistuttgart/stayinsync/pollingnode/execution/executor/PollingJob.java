@@ -18,7 +18,6 @@ import jakarta.enterprise.inject.spi.CDI;
 import jakarta.inject.Inject;
 import org.quartz.*;
 
-import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
 
@@ -42,6 +41,7 @@ public class PollingJob implements Job {
 
         SourceSystemApiRequestConfigurationMessageDTO apiRequestConfigurationMessage = (SourceSystemApiRequestConfigurationMessageDTO) dataMap.get("requestConfiguration");
 
+        // TODO: Evaluate another way to give out this log
         if (apiRequestConfigurationMessage == null) {
             Log.errorf("No configuration found for configId: %d", apiRequestConfigurationMessage.id());
             throw new JobExecutionException("Configuration not found for ID: " + apiRequestConfigurationMessage.id());
@@ -105,8 +105,7 @@ public class PollingJob implements Job {
     }
 
     private SyncDataMessageDTO convertJsonObjectToSyncDataMessageDTO(final SourceSystemApiRequestConfigurationMessageDTO apiRequestConfiguration, final JsonObject jsonObject) {
-        Map<String, Object> map = new HashMap<>();
-        map.put(apiRequestConfiguration.name(), jsonObject.getMap());
-        return new SyncDataMessageDTO(apiRequestConfiguration.id(), map);
+        Map<String, Object> map = jsonObject.getMap();
+        return new SyncDataMessageDTO(apiRequestConfiguration.name(), apiRequestConfiguration.id(), map);
     }
 }

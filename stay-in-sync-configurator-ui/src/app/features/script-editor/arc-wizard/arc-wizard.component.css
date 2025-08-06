@@ -27,15 +27,3 @@
 .http-method.put { background-color: #f97316; }
 .http-method.delete { background-color: #ef4444; }
 .http-method.patch { background-color: #eab308; }
-
-.parameter-row .field-actions {
-  padding-top: 1.7rem;
-}
-
-.parameter-row label {
-  visibility: hidden;
-}
-
-.parameter-row:first-child label {
-  visibility: visible;
-}
