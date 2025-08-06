@@ -45,3 +45,6 @@ dependencies:
   - name: core-sync-node
     version: 1.0.0-SNAPSHOT
     repository: "file://../stay-in-sync-core/core-sync-node/target/helm/kubernetes/core-sync-node"
+  - name: monitoring-backend
+    version: 1.0.0-SNAPSHOT
+    repository: "file://../stay-in-sync-monitoring/monitoring-backend/target/helm/kubernetes/monitoring-backend"

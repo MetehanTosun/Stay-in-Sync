@@ -20,5 +20,8 @@ dependencies:
 - name: core-sync-node
   repository: file://../stay-in-sync-core/core-sync-node/target/helm/kubernetes/core-sync-node
   version: 1.0.0-SNAPSHOT
-digest: sha256:14460e20aff47867c1604a35c03b7a878399a3763e53173779786ce3cd319373
-generated: "2025-07-27T15:21:20.663484234+02:00"
+- name: monitoring-backend
+  repository: file://../stay-in-sync-monitoring/monitoring-backend/target/helm/kubernetes/monitoring-backend
+  version: 1.0.0-SNAPSHOT
+digest: sha256:f3cee5b5df533720b57cf09ee76dbb5675b6fb696151496e529fc077eef659f1
+generated: "2025-08-06T14:05:13.735672519+02:00"
