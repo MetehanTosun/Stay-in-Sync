@@ -156,8 +156,27 @@ public class SourceSystemEndpointService {
     }
 
     public void deleteSourceSystemEndpointById(Long id) {
-        Log.debugf("Deleting endpoint by id = %d", id);
-        SourceSystemEndpoint.deleteById(id);
+        Log.debugf("Deleting source-system-endpoint by id = %d", id);
+        
+        // First find the endpoint to ensure it exists and handle relationships properly
+        Optional<SourceSystemEndpoint> endpointOpt = SourceSystemEndpoint.findByIdOptional(id);
+        if (endpointOpt.isPresent()) {
+            SourceSystemEndpoint endpoint = endpointOpt.get();
+            
+            // Clear the relationship with SourceSystem
+            if (endpoint.sourceSystem != null) {
+                // Remove this endpoint from the sourceSystem's sourceSystemEndpoints collection
+                if (endpoint.sourceSystem.sourceSystemEndpoints != null) {
+                    endpoint.sourceSystem.sourceSystemEndpoints.remove(endpoint);
+                }
+                endpoint.sourceSystem = null;
+            }
+            
+            // Delete the endpoint
+            endpoint.delete();
+        } else {
+            Log.warnf("No source-system-endpoint found with id %d", id);
+        }
     }
 
     public Optional<SourceSystemEndpoint> replaceSourceSystemEndpoint(@NotNull @Valid SourceSystemEndpoint sourceSystemEndpoint) {

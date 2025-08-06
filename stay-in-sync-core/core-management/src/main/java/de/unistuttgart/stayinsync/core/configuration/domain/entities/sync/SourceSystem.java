@@ -14,6 +14,6 @@ public class SourceSystem extends SyncSystem {
     @OneToMany(mappedBy = "sourceSystem", cascade = CascadeType.ALL, orphanRemoval = true)
     public Set<SourceSystemEndpoint> sourceSystemEndpoints;
 
-    @OneToMany(mappedBy = "sourceSystem", cascade = CascadeType.ALL, orphanRemoval = true)
-    public Set<SourceSystemApiRequestConfiguration> sourceSystemApiRequestConfigurations;
+    // Removed the @OneToMany relationship to avoid inheritance issues during deletion
+    // SourceSystemApiRequestConfigurations are now managed manually in the service layer
 }

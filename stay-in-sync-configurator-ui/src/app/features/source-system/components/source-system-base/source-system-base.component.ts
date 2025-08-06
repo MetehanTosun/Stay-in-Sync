@@ -20,6 +20,7 @@ import {FileUploadModule} from 'primeng/fileupload';
 import {CreateSourceSystemComponent} from '../create-source-system/create-source-system.component';
 import {ManageApiHeadersComponent} from '../manage-api-headers/manage-api-headers.component';
 import {ManageEndpointsComponent} from '../manage-endpoints/manage-endpoints.component';
+import {ConfirmationDialogComponent, ConfirmationDialogData} from '../../../../shared/components/confirmation-dialog/confirmation-dialog.component';
 
 // Service und DTOs aus dem `generated`-Ordner
 import {SourceSystemResourceService} from '../../service/sourceSystemResource.service';
@@ -54,6 +55,7 @@ import { SourceSystemEndpointResourceService } from '../../service/sourceSystemE
     CreateSourceSystemComponent,
     ManageApiHeadersComponent,
     ManageEndpointsComponent,
+    ConfirmationDialogComponent,
     FormsModule, // für ngModel
     // ggf. weitere Komponenten
   ]
@@ -99,6 +101,17 @@ export class SourceSystemBaseComponent implements OnInit {
   showHeadersSection = true;
   showEndpointsSection = true;
   showMetadataSection = true;
+
+  // Confirmation dialog properties
+  showConfirmationDialog = false;
+  confirmationData: ConfirmationDialogData = {
+    title: 'Delete Source System',
+    message: 'Are you sure you want to delete this source system? This action cannot be undone.',
+    confirmLabel: 'Delete',
+    cancelLabel: 'Cancel',
+    severity: 'danger'
+  };
+  systemToDelete: SourceSystemDTO | null = null;
 
   toggleHeadersSection() {
     
@@ -186,21 +199,42 @@ export class SourceSystemBaseComponent implements OnInit {
   }
 
   /**
-   * Delete a source system and refresh the list.
+   * Show confirmation dialog for deleting a source system.
    * @param system the system to delete.
    */
   deleteSourceSystem(system: SourceSystemDTO): void {
-    if (!system.id) {
-      console.warn('Keine ID vorhanden, Löschen übersprungen');
-      return;
+    this.systemToDelete = system;
+    this.confirmationData = {
+      title: 'Delete Source System',
+      message: `Are you sure you want to delete the source system "${system.name}"? This action cannot be undone and will also delete all associated endpoints, headers, and configurations.`,
+      confirmLabel: 'Delete',
+      cancelLabel: 'Cancel',
+      severity: 'danger'
+    };
+    this.showConfirmationDialog = true;
+  }
+
+  /**
+   * Handle confirmation dialog events.
+   */
+  onConfirmationConfirmed(): void {
+    if (this.systemToDelete && this.systemToDelete.id) {
+      this.api.apiConfigSourceSystemIdDelete(this.systemToDelete.id).subscribe({
+        next: () => {
+          this.loadSystems();
+          this.systemToDelete = null;
+        },
+        error: err => {
+          console.error('Löschen des Source System fehlgeschlagen', err)
+          this.erorrService.handleError(err);
+          this.systemToDelete = null;
+        }
+      });
     }
-    this.api.apiConfigSourceSystemIdDelete(system.id).subscribe({
-      next: () => this.loadSystems(),
-      error: err => {
-        console.error('Löschen des Source System fehlgeschlagen', err)
-        this.erorrService.handleError(err);
-      }
-    });
+  }
+
+  onConfirmationCancelled(): void {
+    this.systemToDelete = null;
   }
 
   /**

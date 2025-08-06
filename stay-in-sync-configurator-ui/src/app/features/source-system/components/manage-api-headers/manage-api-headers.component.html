@@ -50,10 +50,20 @@
             type="button"
             icon="pi pi-trash"
             class="p-button-text"
-            (click)="deleteHeader(h.id!)">
+            (click)="deleteHeader(h)">
           </button>
         </td>
       </tr>
     </ng-template>
   </p-table>
 </p-card>
+
+<!--
+  Confirmation dialog for deletion
+-->
+<app-confirmation-dialog
+  [(visible)]="showConfirmationDialog"
+  [data]="confirmationData"
+  (confirmed)="onConfirmationConfirmed()"
+  (cancelled)="onConfirmationCancelled()">
+</app-confirmation-dialog>

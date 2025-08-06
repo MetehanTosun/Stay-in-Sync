@@ -150,7 +150,7 @@
                   pTooltip="Query-Parameter verwalten"
                   tooltipPosition="top"
                   (click)="selectedEndpoint = e"></button>
-          <button pButton type="button" icon="pi pi-trash" class="p-button-text" (click)="deleteEndpoint(e.id!)"></button>
+          <button pButton type="button" icon="pi pi-trash" class="p-button-text" (click)="deleteEndpoint(e)"></button>
         </td>
       </tr>
     </ng-template>
@@ -186,4 +186,14 @@
 <ng-container *ngIf="selectedEndpoint && selectedEndpoint.id != null">
   <app-manage-endpoint-params [endpointId]="selectedEndpoint.id!" [endpointPath]="selectedEndpoint.endpointPath"></app-manage-endpoint-params>
 </ng-container>
+
+<!--
+  Confirmation dialog for deletion
+-->
+<app-confirmation-dialog
+  [(visible)]="showConfirmationDialog"
+  [data]="confirmationData"
+  (confirmed)="onConfirmationConfirmed()"
+  (cancelled)="onConfirmationCancelled()">
+</app-confirmation-dialog>
 

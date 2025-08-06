@@ -1,8 +1,10 @@
 package de.unistuttgart.stayinsync.core.configuration.service;
 
 import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.ApiHeader;
+import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.ApiHeaderValue;
 import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.SyncSystem;
 import de.unistuttgart.stayinsync.core.configuration.exception.CoreManagementException;
+import jakarta.ws.rs.core.Response;
 import de.unistuttgart.stayinsync.core.configuration.mapping.ApiHeaderFullUpdateMapper;
 import de.unistuttgart.stayinsync.core.configuration.rest.dtos.ApiHeaderDTO;
 import de.unistuttgart.stayinsync.core.configuration.rest.dtos.CreateApiHeaderDTO;
@@ -56,13 +58,36 @@ public class ApiHeaderService {
 
     @Transactional(SUPPORTS)
     public Optional<ApiHeader> findRequestHeaderById(Long id) {
-        Log.debugf("Finding api-endpoint-query-param by id = %d", id);
-        return ApiHeader.findByIdOptional(id);
+        Log.debugf("Finding api-request-header by id = %d", id);
+        // Use a more specific query to avoid inheritance issues
+        List<ApiHeader> headers = ApiHeader.find("id", id).list();
+        return headers.isEmpty() ? Optional.empty() : Optional.of(headers.get(0));
     }
 
     public void deleteRequestHeaderById(Long id) {
-        Log.debugf("Deleting endpoint by id = %d", id);
-        ApiHeader.deleteById(id);
+        Log.debugf("Deleting api-request-header by id = %d", id);
+        
+        try {
+            // Use direct SQL deletion to avoid inheritance issues
+            long deletedValues = ApiHeaderValue.delete("apiHeader.id", id);
+            Log.debugf("Deleted %d header values for header ID: %d", deletedValues, id);
+            
+            long deletedHeaders = ApiHeader.delete("id", id);
+            Log.debugf("Deleted %d headers with ID: %d", deletedHeaders, id);
+            
+            if (deletedHeaders == 0) {
+                Log.warnf("No api-request-header found with id %d", id);
+            } else {
+                Log.debugf("Successfully deleted api-request-header with ID: %d", id);
+            }
+        } catch (Exception e) {
+            Log.errorf(e, "Error deleting api-request-header with ID: %d", id);
+            throw new CoreManagementException(
+                Response.Status.INTERNAL_SERVER_ERROR,
+                "Failed to delete API header",
+                "Error deleting API header with ID %d: %s", id, e.getMessage()
+            );
+        }
     }
 
     public Optional<ApiHeader> replaceRequestHeader(@NotNull @Valid ApiHeaderDTO apiEndpointQueryParamDTO) {

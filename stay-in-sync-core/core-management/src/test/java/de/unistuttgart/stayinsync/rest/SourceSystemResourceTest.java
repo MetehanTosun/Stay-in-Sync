@@ -172,4 +172,344 @@ public class SourceSystemResourceTest {
                 .then()
                 .statusCode(404);
     }
+
+    /**
+     * Test deleting a SourceSystem with endpoints and related entities.
+     */
+    @Test
+    public void testDeleteWithEndpoints() {
+        // Create a source system
+        String sourceSystemJson = """
+                {
+                    "name": "TestSystemWithEndpoints",
+                    "description": "Test system with endpoints",
+                    "apiType": "REST",
+                    "apiUrl": "http://localhost:3000"
+                }
+                """;
+
+        String location = given()
+                .contentType(ContentType.JSON)
+                .body(sourceSystemJson)
+                .when()
+                .post("/api/config/source-system")
+                .then()
+                .statusCode(201)
+                .extract()
+                .header("Location");
+
+        String sourceSystemId = location.substring(location.lastIndexOf("/") + 1);
+
+        // Create an endpoint for the source system
+        String endpointJson = """
+                {
+                    "endpointPath": "/test/endpoint",
+                    "httpRequestType": "GET",
+                    "requestBodySchema": "{\\"type\\": \\"object\\"}",
+                    "responseBodySchema": "{\\"type\\": \\"object\\"}"
+                }
+                """;
+
+        given()
+                .contentType(ContentType.JSON)
+                .body(endpointJson)
+                .when()
+                .post("/api/config/source-system/" + sourceSystemId + "/endpoint")
+                .then()
+                .statusCode(201);
+
+        // Verify the endpoint was created
+        given()
+                .when().get("/api/config/source-system/" + sourceSystemId + "/endpoint")
+                .then()
+                .statusCode(200)
+                .body("$.size()", is(1));
+
+        // Delete the source system (should cascade delete the endpoint)
+        given()
+                .when().delete("/api/config/source-system/" + sourceSystemId)
+                .then()
+                .statusCode(204);
+
+        // Verify the source system no longer exists
+        given()
+                .when().get("/api/config/source-system/" + sourceSystemId)
+                .then()
+                .statusCode(404);
+
+        // Verify the endpoint was also deleted
+        given()
+                .when().get("/api/config/source-system/" + sourceSystemId + "/endpoint")
+                .then()
+                .statusCode(404);
+    }
+
+    /**
+     * Test deleting a SourceSystem with API headers.
+     */
+    @Test
+    public void testDeleteWithHeaders() {
+        // Create a source system
+        String sourceSystemJson = """
+                {
+                    "name": "TestSystemWithHeaders",
+                    "description": "Test system with headers",
+                    "apiType": "REST",
+                    "apiUrl": "http://localhost:4000"
+                }
+                """;
+
+        String location = given()
+                .contentType(ContentType.JSON)
+                .body(sourceSystemJson)
+                .when()
+                .post("/api/config/source-system")
+                .then()
+                .statusCode(201)
+                .extract()
+                .header("Location");
+
+        String sourceSystemId = location.substring(location.lastIndexOf("/") + 1);
+
+        // Create an API header for the source system
+        String headerJson = """
+                {
+                    "headerName": "Authorization",
+                    "headerType": "AUTHORIZATION"
+                }
+                """;
+
+        given()
+                .contentType(ContentType.JSON)
+                .body(headerJson)
+                .when()
+                .post("/api/config/sync-system/" + sourceSystemId + "/request-header")
+                .then()
+                .statusCode(201);
+
+        // Verify the header was created
+        given()
+                .when().get("/api/config/sync-system/" + sourceSystemId + "/request-header")
+                .then()
+                .statusCode(200)
+                .body("$.size()", is(1));
+
+        // Delete the source system (should cascade delete the header)
+        given()
+                .when().delete("/api/config/source-system/" + sourceSystemId)
+                .then()
+                .statusCode(204);
+
+        // Verify the source system no longer exists
+        given()
+                .when().get("/api/config/source-system/" + sourceSystemId)
+                .then()
+                .statusCode(404);
+
+        // Verify the header was also deleted
+        given()
+                .when().get("/api/config/sync-system/" + sourceSystemId + "/request-header")
+                .then()
+                .statusCode(404);
+    }
+
+    /**
+     * Test deleting a SourceSystem with multiple related entities.
+     */
+    @Test
+    public void testDeleteWithMultipleEntities() {
+        // Create a source system
+        String sourceSystemJson = """
+                {
+                    "name": "TestSystemComplex",
+                    "description": "Test system with multiple entities",
+                    "apiType": "REST",
+                    "apiUrl": "http://localhost:5000"
+                }
+                """;
+
+        String location = given()
+                .contentType(ContentType.JSON)
+                .body(sourceSystemJson)
+                .when()
+                .post("/api/config/source-system")
+                .then()
+                .statusCode(201)
+                .extract()
+                .header("Location");
+
+        String sourceSystemId = location.substring(location.lastIndexOf("/") + 1);
+
+        // Create multiple endpoints
+        String endpoint1Json = """
+                {
+                    "endpointPath": "/test/endpoint1",
+                    "httpRequestType": "GET"
+                }
+                """;
+
+        String endpoint2Json = """
+                {
+                    "endpointPath": "/test/endpoint2",
+                    "httpRequestType": "POST",
+                    "requestBodySchema": "{\\"type\\": \\"object\\"}"
+                }
+                """;
+
+        given()
+                .contentType(ContentType.JSON)
+                .body(endpoint1Json)
+                .when()
+                .post("/api/config/source-system/" + sourceSystemId + "/endpoint")
+                .then()
+                .statusCode(201);
+
+        given()
+                .contentType(ContentType.JSON)
+                .body(endpoint2Json)
+                .when()
+                .post("/api/config/source-system/" + sourceSystemId + "/endpoint")
+                .then()
+                .statusCode(201);
+
+        // Create multiple headers
+        String header1Json = """
+                {
+                    "headerName": "Content-Type",
+                    "headerType": "CONTENT_TYPE"
+                }
+                """;
+
+        String header2Json = """
+                {
+                    "headerName": "Accept",
+                    "headerType": "ACCEPT"
+                }
+                """;
+
+        given()
+                .contentType(ContentType.JSON)
+                .body(header1Json)
+                .when()
+                .post("/api/config/sync-system/" + sourceSystemId + "/request-header")
+                .then()
+                .statusCode(201);
+
+        given()
+                .contentType(ContentType.JSON)
+                .body(header2Json)
+                .when()
+                .post("/api/config/sync-system/" + sourceSystemId + "/request-header")
+                .then()
+                .statusCode(201);
+
+        // Verify entities were created
+        given()
+                .when().get("/api/config/source-system/" + sourceSystemId + "/endpoint")
+                .then()
+                .statusCode(200)
+                .body("$.size()", is(2));
+
+        given()
+                .when().get("/api/config/sync-system/" + sourceSystemId + "/request-header")
+                .then()
+                .statusCode(200)
+                .body("$.size()", is(2));
+
+        // Delete the source system
+        given()
+                .when().delete("/api/config/source-system/" + sourceSystemId)
+                .then()
+                .statusCode(204);
+
+        // Verify everything was deleted
+        given()
+                .when().get("/api/config/source-system/" + sourceSystemId)
+                .then()
+                .statusCode(404);
+
+        given()
+                .when().get("/api/config/source-system/" + sourceSystemId + "/endpoint")
+                .then()
+                .statusCode(404);
+
+        given()
+                .when().get("/api/config/sync-system/" + sourceSystemId + "/request-header")
+                .then()
+                .statusCode(404);
+    }
+
+    /**
+     * Test deleting an API header directly.
+     */
+    @Test
+    public void testDeleteApiHeader() {
+        // First create a source system
+        String sourceSystemJson = """
+                {
+                    "name": "TestSystemForHeaderDeletion",
+                    "description": "Test system for header deletion",
+                    "apiType": "REST",
+                    "apiUrl": "http://localhost:1234"
+                }
+                """;
+
+        String location = given()
+                .contentType(ContentType.JSON)
+                .body(sourceSystemJson)
+                .when()
+                .post("/api/config/source-system")
+                .then()
+                .statusCode(201)
+                .extract()
+                .header("Location");
+
+        String sourceSystemId = location.substring(location.lastIndexOf("/") + 1);
+
+        // Create an API header
+        String headerJson = """
+                {
+                    "headerName": "Test-Header",
+                    "headerType": "CUSTOM"
+                }
+                """;
+
+        String headerLocation = given()
+                .contentType(ContentType.JSON)
+                .body(headerJson)
+                .when()
+                .post("/api/config/sync-system/" + sourceSystemId + "/request-header")
+                .then()
+                .statusCode(201)
+                .extract()
+                .header("Location");
+
+        String headerId = headerLocation.substring(headerLocation.lastIndexOf("/") + 1);
+
+        // Verify the header was created
+        given()
+                .when().get("/api/config/sync-system/request-header/" + headerId)
+                .then()
+                .statusCode(200)
+                .body("headerName", equalTo("Test-Header"))
+                .body("headerType", equalTo("CUSTOM"));
+
+        // Delete the header
+        given()
+                .when().delete("/api/config/sync-system/request-header/" + headerId)
+                .then()
+                .statusCode(204);
+
+        // Verify the header was deleted
+        given()
+                .when().get("/api/config/sync-system/request-header/" + headerId)
+                .then()
+                .statusCode(404);
+
+        // Clean up - delete the source system
+        given()
+                .when().delete("/api/config/source-system/" + sourceSystemId)
+                .then()
+                .statusCode(204);
+    }
 }

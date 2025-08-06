@@ -38,6 +38,7 @@ import { load as parseYAML } from 'js-yaml';
 import { SourceSystemDTO } from '../../models/sourceSystemDTO';
 import { ManageEndpointParamsComponent } from '../manage-endpoint-params/manage-endpoint-params.component';
 import { ResponsePreviewModalComponent } from '../response-preview-modal/response-preview-modal.component';
+import { ConfirmationDialogComponent, ConfirmationDialogData } from '../../../../shared/components/confirmation-dialog/confirmation-dialog.component';
 
 
 /**
@@ -60,6 +61,7 @@ import { ResponsePreviewModalComponent } from '../response-preview-modal/respons
     TabViewModule,
     ManageEndpointParamsComponent,
     ResponsePreviewModalComponent,
+    ConfirmationDialogComponent,
     MonacoEditorModule,
     DragDropModule,
   ],
@@ -174,6 +176,17 @@ export class ManageEndpointsComponent implements OnInit, OnDestroy {
   // Error states for TypeScript generation
   typescriptError: string | null = null;
   editTypeScriptError: string | null = null;
+
+  // Confirmation dialog properties
+  showConfirmationDialog = false;
+  confirmationData: ConfirmationDialogData = {
+    title: 'Delete Endpoint',
+    message: 'Are you sure you want to delete this endpoint? This action cannot be undone.',
+    confirmLabel: 'Delete',
+    cancelLabel: 'Cancel',
+    severity: 'warning'
+  };
+  endpointToDelete: SourceSystemEndpointDTO | null = null;
   
   // Performance and timeout settings
   private readonly TYPESCRIPT_GENERATION_TIMEOUT = 30000; // 30 seconds
@@ -791,15 +804,41 @@ ${jsonSchema}
   }
 
   /**
-   * Delete an endpoint by its ID and remove it from the list.
+   * Show confirmation dialog for deleting an endpoint.
    */
-  deleteEndpoint(id: number) {
-    this.endpointSvc
-      .apiConfigSourceSystemEndpointIdDelete(id)
-      .subscribe({
-        next: () => this.endpoints = this.endpoints.filter(e => e.id !== id),
-        error: () => {}
-      });
+  deleteEndpoint(endpoint: SourceSystemEndpointDTO) {
+    this.endpointToDelete = endpoint;
+    this.confirmationData = {
+      title: 'Delete Endpoint',
+      message: `Are you sure you want to delete the endpoint "${endpoint.endpointPath}" (${endpoint.httpRequestType})? This action cannot be undone and will also delete all associated query parameters.`,
+      confirmLabel: 'Delete',
+      cancelLabel: 'Cancel',
+      severity: 'warning'
+    };
+    this.showConfirmationDialog = true;
+  }
+
+  /**
+   * Handle confirmation dialog events.
+   */
+  onConfirmationConfirmed(): void {
+    if (this.endpointToDelete && this.endpointToDelete.id) {
+      this.endpointSvc
+        .apiConfigSourceSystemEndpointIdDelete(this.endpointToDelete.id)
+        .subscribe({
+          next: () => {
+            this.endpoints = this.endpoints.filter(e => e.id !== this.endpointToDelete!.id);
+            this.endpointToDelete = null;
+          },
+          error: () => {
+            this.endpointToDelete = null;
+          }
+        });
+    }
+  }
+
+  onConfirmationCancelled(): void {
+    this.endpointToDelete = null;
   }
 
   /**

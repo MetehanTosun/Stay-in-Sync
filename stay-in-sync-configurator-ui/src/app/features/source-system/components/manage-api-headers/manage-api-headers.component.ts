@@ -12,6 +12,7 @@ import {ApiRequestHeaderType} from '../../models/apiRequestHeaderType';
 import {ApiHeaderDTO} from '../../models/apiHeaderDTO';
 import {CreateApiHeaderDTO} from '../../models/createApiHeaderDTO';
 import {HttpErrorService} from '../../../../core/services/http-error.service';
+import {ConfirmationDialogComponent, ConfirmationDialogData} from '../../../../shared/components/confirmation-dialog/confirmation-dialog.component';
 
 /**
  * Component for managing API header templates for a given system.
@@ -27,7 +28,8 @@ import {HttpErrorService} from '../../../../core/services/http-error.service';
     ButtonModule,
     InputTextModule,
     DropdownModule,
-    CardModule
+    CardModule,
+    ConfirmationDialogComponent
   ],
   templateUrl: './manage-api-headers.component.html'
 })
@@ -38,6 +40,17 @@ export class ManageApiHeadersComponent implements OnInit {
   headers: ApiHeaderDTO[] = [];
   form!: FormGroup;
   loading = false;
+
+  // Confirmation dialog properties
+  showConfirmationDialog = false;
+  confirmationData: ConfirmationDialogData = {
+    title: 'Delete API Header',
+    message: 'Are you sure you want to delete this API header? This action cannot be undone.',
+    confirmLabel: 'Delete',
+    cancelLabel: 'Cancel',
+    severity: 'warning'
+  };
+  headerToDelete: ApiHeaderDTO | null = null;
 
   headerTypes = [
     {label: 'Accept', value: ApiRequestHeaderType.Accept},
@@ -80,7 +93,7 @@ export class ManageApiHeadersComponent implements OnInit {
           this.loading = false;
         },
         error: (err) => {
-          console.error(err);
+          this.errorSerice.handleError(err);
           this.loading = false;
         }
       });
@@ -101,23 +114,49 @@ export class ManageApiHeadersComponent implements OnInit {
           this.onCreated.emit();
         },
         error: (err) => {
-          console.log(err);
           this.errorSerice.handleError(err);
         }
       });
   }
 
   /**
-   * Deletes an existing API header by its identifier and updates the list.
+   * Show confirmation dialog for deleting an API header.
    *
-   * @param id The identifier of the header to delete.
+   * @param header The header to delete.
    */
-  deleteHeader(id: number) {
-    this.hdrSvc
-      .apiConfigSyncSystemRequestHeaderIdDelete(id)
-      .subscribe({
-        next: () => this.headers = this.headers.filter(h => h.id !== id),
-        error: console.error
-      });
+  deleteHeader(header: ApiHeaderDTO) {
+    this.headerToDelete = header;
+    this.confirmationData = {
+      title: 'Delete API Header',
+      message: `Are you sure you want to delete the API header "${header.headerName}" (${header.headerType})? This action cannot be undone.`,
+      confirmLabel: 'Delete',
+      cancelLabel: 'Cancel',
+      severity: 'warning'
+    };
+    this.showConfirmationDialog = true;
+  }
+
+  /**
+   * Handle confirmation dialog events.
+   */
+  onConfirmationConfirmed(): void {
+    if (this.headerToDelete && this.headerToDelete.id) {
+      this.hdrSvc
+        .apiConfigSyncSystemRequestHeaderIdDelete(this.headerToDelete.id)
+        .subscribe({
+          next: () => {
+            this.headers = this.headers.filter(h => h.id !== this.headerToDelete!.id);
+            this.headerToDelete = null;
+          },
+          error: (err) => {
+            this.errorSerice.handleError(err);
+            this.headerToDelete = null;
+          }
+        });
+    }
+  }
+
+  onConfirmationCancelled(): void {
+    this.headerToDelete = null;
   }
 }

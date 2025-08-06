@@ -1,0 +1,38 @@
+<p-dialog
+  [header]="data.title"
+  [(visible)]="visible"
+  (onHide)="onCancel()"
+  [modal]="true"
+  [style]="{ width: '400px' }"
+  [draggable]="false"
+  [resizable]="false"
+  [closable]="true"
+>
+  <div class="confirmation-content">
+    <div class="confirmation-icon">
+      <i class="pi" [ngClass]="getIconClass()"></i>
+    </div>
+    <div class="confirmation-message">
+      {{ data.message }}
+    </div>
+  </div>
+
+  <ng-template pTemplate="footer">
+    <div class="dialog-footer">
+      <button
+        pButton
+        type="button"
+        [label]="data.cancelLabel || 'Cancel'"
+        class="p-button-text"
+        (click)="onCancel()"
+      ></button>
+      <button
+        pButton
+        type="button"
+        [label]="data.confirmLabel || 'Confirm'"
+        [class]="getSeverityClass()"
+        (click)="onConfirm()"
+      ></button>
+    </div>
+  </ng-template>
+</p-dialog> 

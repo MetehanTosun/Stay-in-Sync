@@ -54,7 +54,6 @@ public class SourceSystemApiRequestConfigurationService {
         sourceSystemApiRequestConfiguration.sourceSystem = sourceSystemEndpoint.sourceSystem;
         sourceSystemApiRequestConfiguration.sourceSystemEndpoint = sourceSystemEndpoint;
         sourceSystemEndpoint.apiRequestConfigurations.add(sourceSystemApiRequestConfiguration);
-        sourceSystemEndpoint.sourceSystem.sourceSystemApiRequestConfigurations.add(sourceSystemApiRequestConfiguration);
         sourceSystemApiRequestConfiguration.persist();
 
 

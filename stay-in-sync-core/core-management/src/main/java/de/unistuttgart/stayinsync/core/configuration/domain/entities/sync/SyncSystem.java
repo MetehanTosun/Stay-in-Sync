@@ -25,8 +25,8 @@ public abstract class SyncSystem extends PanacheEntity {
     @OneToMany(mappedBy = "syncSystem")
     public Set<SyncSystemEndpoint> syncSystemEndpoints;
 
-    @OneToMany(mappedBy = "syncSystem")
-    public Set<ApiHeader> apiRequestHeaders;
+    // Removed the @OneToMany relationship to avoid inheritance issues during deletion
+    // ApiHeaders are now managed manually in the service layer
 
     @OneToOne(cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     public SyncSystemAuthConfig authConfig;
