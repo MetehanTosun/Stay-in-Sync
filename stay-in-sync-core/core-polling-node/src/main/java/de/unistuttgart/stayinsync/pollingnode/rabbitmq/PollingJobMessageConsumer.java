@@ -81,7 +81,7 @@ public class PollingJobMessageConsumer {
         return (consumerTag, delivery) -> {
             try {
                 SourceSystemApiRequestConfigurationMessageDTO apiRequestConfigurationMessageDTO = getPollingJob(delivery);
-                Log.infof("Received new request configuration for api: %s", apiRequestConfigurationMessageDTO.apiConnectionDetails().sourceSystem().apiUrl());
+                Log.infof("Received new request configuration %s with id %d", apiRequestConfigurationMessageDTO.name(), apiRequestConfigurationMessageDTO.id());
                 pollingJobManagement.beginSupportOfRequestConfiguration(apiRequestConfigurationMessageDTO);
                 channel.basicAck(delivery.getEnvelope().getDeliveryTag(), false);
             } catch (PollingNodeException e) {
