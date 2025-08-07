@@ -49,7 +49,8 @@ public class TransformationTest {
         assertThat(found.syncJob).isNull();
         assertThat(found.transformationScript).isNull();
         assertThat(found.transformationRule).isNull();
-        assertThat(found.targetSystemEndpoint).isNull();
+        assertThat(found.sourceSystemApiRequestConfigrations).isEmpty();
+        assertThat(found.targetSystemApiRequestConfigurations).isEmpty();
 //        assertThat(found.sourceSystemEndpoints).isNotNull().isEmpty();
     }
 
@@ -67,10 +68,6 @@ public class TransformationTest {
         SyncJob syncJob = new SyncJob();
         syncJob.name = "Test SyncJob";
         syncJob.persist();
-
-        TargetSystemEndpoint targetEndpoint = new TargetSystemEndpoint();
-        targetEndpoint.endpointPath = "Test Target Endpoint";
-        targetEndpoint.persist();
 
         SourceSystemEndpoint sourceEndpoint1 = new SourceSystemEndpoint();
         sourceEndpoint1.endpointPath = "Test Source 1";
@@ -94,7 +91,6 @@ public class TransformationTest {
         Transformation foundShell = Transformation.findById(transformationToUpdate.id);
 
         foundShell.syncJob = syncJob;
-        foundShell.targetSystemEndpoint = targetEndpoint;
 //        foundShell.sourceSystemEndpoints = Set.of(sourceEndpoint1, sourceEndpoint2);
         foundShell.transformationScript = script;
         foundShell.transformationRule = rule;
@@ -111,7 +107,6 @@ public class TransformationTest {
         assertThat(fullyAssembled).isNotNull();
 
         assertThat(fullyAssembled.syncJob.id).isEqualTo(syncJob.id);
-        assertThat(fullyAssembled.targetSystemEndpoint.id).isEqualTo(targetEndpoint.id);
         assertThat(fullyAssembled.transformationScript.id).isEqualTo(script.id);
         assertThat(fullyAssembled.transformationRule.id).isEqualTo(rule.id);
 

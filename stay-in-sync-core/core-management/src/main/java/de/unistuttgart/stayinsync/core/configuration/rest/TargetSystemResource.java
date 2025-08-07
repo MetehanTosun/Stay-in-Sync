@@ -9,8 +9,8 @@ import org.eclipse.microprofile.openapi.annotations.parameters.Parameter;
 import org.eclipse.microprofile.openapi.annotations.tags.Tag;
 
 import de.unistuttgart.stayinsync.core.configuration.exception.CoreManagementException;
-import de.unistuttgart.stayinsync.core.configuration.mapping.TargetSystemMapper;
-import de.unistuttgart.stayinsync.core.configuration.rest.dtos.TargetSystemDTO;
+import de.unistuttgart.stayinsync.core.configuration.mapping.targetsystem.TargetSystemMapper;
+import de.unistuttgart.stayinsync.core.configuration.rest.dtos.targetsystem.TargetSystemDTO;
 import de.unistuttgart.stayinsync.core.configuration.service.TargetSystemService;
 import io.quarkus.logging.Log;
 import jakarta.inject.Inject;

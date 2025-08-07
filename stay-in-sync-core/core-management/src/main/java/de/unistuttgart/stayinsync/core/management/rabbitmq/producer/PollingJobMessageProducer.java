@@ -40,7 +40,7 @@ public class PollingJobMessageProducer {
             channel = rabbitMQClient.connect().openChannel().orElseThrow(() -> new CoreManagementException("RabbitMQ Error", "Unable to open rabbitMQ Channel"));
             channel.exchangeDeclare("pollingjob-exchange", "direct", true);
         } catch (Exception e) {
-            Log.errorf("Error initialising rabbitMQ message producer", e);
+            Log.errorf("Error initialising rabbitMQ message producer: %s %s", e.getClass(),e.getMessage());
             throw new CoreManagementException("RabbitMQ error", "Could not initiliaze producer", e);
         }
     }

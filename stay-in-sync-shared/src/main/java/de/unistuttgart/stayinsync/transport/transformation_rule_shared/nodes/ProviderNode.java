@@ -38,6 +38,16 @@ public class ProviderNode extends Node {
         if (jsonPath == null || jsonPath.trim().isEmpty()) {
             throw new NodeConfigurationException("jsonPath for ProviderNode cannot be null or empty.");
         }
+
+        if(!jsonPath.startsWith("source")){
+            throw new IllegalArgumentException("jsonPath for ProviderNode must start with 'source'.");
+        }
+
+        String[] parts = jsonPath.split("\\.");
+        if (parts.length < 2) {
+            throw new IllegalStateException("Invalid jsonPath format on node " + getId() + ": Must contain 'source.{sourceName}'.");
+        }
+
         this.jsonPath = jsonPath;
     }
 
@@ -60,49 +70,25 @@ public class ProviderNode extends Node {
      * required data source is not found in the dataContext.
      */
     @Override
-    public void calculate(Map<String, JsonNode> dataContext) throws GraphEvaluationException {
-        String fullPath = this.getJsonPath();
+    public void calculate(Map<String, JsonNode> dataContext) {
+        String[] jsonPathKeys = jsonPath.split("\\.");
 
-        if (fullPath == null || !fullPath.startsWith("source.")) {
-            throw new GraphEvaluationException(
-                    GraphEvaluationException.ErrorType.EXECUTION_FAILED,
-                    "Invalid Path Format",
-                    "Invalid jsonPath format on node " + getId() + ": Must start with 'source.'",
-                    null
-            );
+        if(!dataContext.containsKey("source")) {
+            throw new IllegalArgumentException("Malformed dataContext, source is not the first scoped key.");
+        }
+        JsonNode sourceScope = dataContext.get("source");
+
+        if(sourceScope == null) {
+            throw new IllegalArgumentException("Malformed dataContext, no defined sourceSystemNames found.");
         }
 
-        // 1. Split the path into its components.
-        String[] parts = fullPath.split("\\.", 2);
-        if (parts.length < 2) {
-            throw new GraphEvaluationException(
-                    GraphEvaluationException.ErrorType.EXECUTION_FAILED,
-                    "Invalid Path Format",
-                    "Invalid jsonPath format on node " + getId() + ": Must contain 'source.{sourceName}'.",
-                    null
-            );
+        for (int i = 0; i < jsonPath.split("\\.").length; i++) {
+            sourceScope = sourceScope.get(jsonPathKeys[i]);
+            if(sourceScope == null) {
+                throw new IllegalArgumentException("Malformed dataContext, no defined keys on path to insertable value.");
+            }
         }
 
-        // 2. The 'sourceName' is the part after "source."
-        String sourceName = parts[0].substring(7);
-        String internalJsonPath = parts[1];
-
-        // 3. Get the correct JSON object from the dataContext.
-        JsonNode sourceObject = dataContext.get(sourceName);
-        if (sourceObject == null) {
-            throw new GraphEvaluationException(
-                    GraphEvaluationException.ErrorType.DATA_NOT_FOUND,
-                    "Data Source Not Found",
-                    "Data source '" + sourceName + "' for node " + getId() + " not found in dataContext.",
-                    null
-            );
-        }
-
-        // 4. Extract the final value.
-        JsonPathValueExtractor extractor = new JsonPathValueExtractor();
-        Object result = extractor.extractValue(sourceObject, internalJsonPath)
-                .orElse(null); // A non-existent path results in null, as previously decided.
-
-        this.setCalculatedResult(result);
+        this.setCalculatedResult(sourceScope);
     }
 }
