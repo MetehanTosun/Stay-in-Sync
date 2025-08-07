@@ -47,7 +47,6 @@ public class SourceSystemEndpointService {
     TypeScriptTypeGenerator typeScriptTypeGenerator;
 
     public SourceSystemEndpoint persistSourceSystemEndpoint(@NotNull @Valid CreateSourceSystemEndpointDTO sourceSystemEndpointDTO, Long sourceSystemId) {
-        System.out.println("### TEST persist: " + sourceSystemEndpointDTO.requestBodySchema());
         Log.debug("Persisting source-system-endpoint: " + sourceSystemEndpointDTO + ", for source-system with id: " + sourceSystemId);
 
         if (sourceSystemEndpointDTO.requestBodySchema() != null && !sourceSystemEndpointDTO.requestBodySchema().isBlank()) {
