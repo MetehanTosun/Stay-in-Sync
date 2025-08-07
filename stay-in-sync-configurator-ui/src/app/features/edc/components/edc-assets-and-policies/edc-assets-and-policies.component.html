@@ -344,8 +344,11 @@
 
   <!-- Normal Mode -->
   <div *ngIf="!isExpertMode" class="flex flex-column flex-grow-1 overflow-hidden">
-      <div class="col-12">
+      <div class="field col-12">
+        <div class="flex justify-content-between align-items-center mb-2">
           <label for="cdAccessPolicy" class="font-bold block mb-2">Select Access Policy</label>
+          <button pButton pRipple type="button" label="New" icon="pi pi-plus" class="p-button-sm p-button-text" (click)="openNewAccessPolicyDialog()"></button>
+        </div>
           <p-autoComplete
                   id="cdAccessPolicy"
                   [(ngModel)]="newContractPolicy.accessPolicyId"
@@ -363,8 +366,11 @@
           </p-autoComplete>
       </div>
 
-      <div class="col-12 mt-4 flex flex-column flex-grow-1 overflow-hidden">
+      <div class="field col-12 mt-4 flex flex-column flex-grow-1 overflow-hidden">
+        <div class="flex justify-content-between align-items-center mb-2">
           <label class="font-bold block mb-2">Select Assets and their Operators</label>
+          <button pButton pRipple type="button" label="New" icon="pi pi-plus" class="p-button-sm p-button-text" (click)="openNewAssetDialog()"></button>
+        </div>
           <p-table
                   #dtDialogAssets
                   [value]="assetsForDialog"

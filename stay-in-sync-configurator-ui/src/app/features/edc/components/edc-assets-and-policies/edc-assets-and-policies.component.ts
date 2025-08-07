@@ -297,6 +297,10 @@ export class EdcAssetsAndPoliciesComponent implements OnInit {
     ]).then(([assets, odrlAssets]) => {
       this.assets = assets;
       this.allOdrlAssets = odrlAssets;
+      // If a dialog that uses the asset list is open, refresh its content
+      if (this.displayNewContractPolicyDialog || this.displayEditContractPolicyDialog) {
+        this.refreshAssetsForDialog();
+      }
     })
       .catch((error) => {
         console.error('Failed to load assets:', error);
@@ -1405,6 +1409,17 @@ export class EdcAssetsAndPoliciesComponent implements OnInit {
       operandLeft: 'https://w3id.org/edc/v0.0.1/ns/id',
       operator: selectedAsset.operator,
       operandRight: selectedAsset.id,
+    }));
+  }
+
+  /**
+   * Refreshes the list of assets displayed within the new/edit contract definition dialogs.
+   * This is called after a new asset is created to make it immediately available for selection.
+   */
+  private refreshAssetsForDialog(): void {
+    this.assetsForDialog = this.assets.map(asset => ({
+      ...asset,
+      operator: this.selectedAssetsInDialog.find(s => s.id === asset.id)?.operator || 'eq'
     }));
   }
 
