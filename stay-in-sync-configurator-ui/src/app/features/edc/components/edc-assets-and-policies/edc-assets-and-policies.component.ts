@@ -19,6 +19,7 @@ import { DropdownModule } from 'primeng/dropdown';
 import { SelectModule } from 'primeng/select';
 import { ToastModule } from 'primeng/toast';
 import { AutoCompleteModule } from 'primeng/autocomplete';
+import { MonacoEditorModule } from 'ngx-monaco-editor-v2';
 
 
 // App imports
@@ -48,6 +49,7 @@ import { PolicyService } from './services/policy.service';
     SelectModule,
     ToastModule,
     AutoCompleteModule,
+    MonacoEditorModule,
   ],
   templateUrl: './edc-assets-and-policies.component.html',
   styleUrls: ['./edc-assets-and-policies.component.css'],
@@ -100,6 +102,19 @@ export class EdcAssetsAndPoliciesComponent implements OnInit {
   assetsForDialog: (Asset & { operator: string })[] = [];
   selectedAssetsInDialog: (Asset & { operator: string })[] = [];
 
+  // Properties for Expert Mode in 'New Contract Definition' dialog
+  isExpertMode: boolean = false;
+  expertModeJsonContent: string = '';
+  contractDefinitionTemplates: { name: string, content: any }[] = [];
+  selectedTemplate: any | null = null;
+
+  editorOptions = {
+    theme: 'vs-dark',
+    language: 'json',
+    automaticLayout: true,
+    minimap: { enabled: false },
+  };
+
 
   constructor(
     private assetService: AssetService,
@@ -124,6 +139,45 @@ export class EdcAssetsAndPoliciesComponent implements OnInit {
   ngOnInit(): void {
     this.loadAssets();
     this.loadPoliciesAndDefinitions();
+    this.loadContractDefinitionTemplates();
+  }
+
+  private loadContractDefinitionTemplates() {
+    // In backend this would come from a service or whatever
+    this.contractDefinitionTemplates = [
+      {
+        name: 'Simple Asset Selector',
+        content: {
+          '@context': { edc: 'https://w3id.org/edc/v0.0.1/ns/' },
+          '@id': 'contract-def-unique-id',
+          accessPolicyId: 'policy-id-goes-here',
+          contractPolicyId: 'policy-id-goes-here',
+          assetsSelector: [
+            {
+              operandLeft: 'https://w3id.org/edc/v0.0.1/ns/id',
+              operator: '=',
+              operandRight: 'asset-id-goes-here',
+            },
+          ],
+        }
+      },
+      {
+        name: 'Template with Placeholders',
+        content: {
+          '@context': { edc: 'https://w3id.org/edc/v0.0.1/ns/' },
+          '@id': 'contract-def-${uuid}',
+          accessPolicyId: '${access_policy_id}',
+          contractPolicyId: '${access_policy_id}',
+          assetsSelector: [
+            {
+              operandLeft: 'https://w3id.org/edc/v0.0.1/ns/id',
+              operator: '=',
+              operandRight: '${asset_id}',
+            },
+          ],
+        }
+      }
+    ];
   }
 
   /**
@@ -721,18 +775,51 @@ export class EdcAssetsAndPoliciesComponent implements OnInit {
   }
 
   openNewContractPolicyDialog() {
+    // Reset mode to normal every time dialog is opened
+    this.isExpertMode = false;
+    this.expertModeJsonContent = '';
+    this.selectedTemplate = null;
+
     // Prepare assets for the dialog table by adding a default operator to each
     this.assetsForDialog = this.assets.map(asset => ({
       ...asset,
       operator: 'eq' // Default operator
     }));
     this.selectedAssetsInDialog = []; // Clear previous selections
+
     this.newContractPolicy = this.createEmptyContractPolicy();
     this.displayNewContractPolicyDialog = true;
   }
 
   hideNewContractPolicyDialog() {
     this.displayNewContractPolicyDialog = false;
+  }
+
+  onTemplateChange(event: { value: any }) {
+    if (event.value) {
+      this.expertModeJsonContent = JSON.stringify(event.value.content, null, 2);
+    } else {
+      this.expertModeJsonContent = '';
+    }
+  }
+
+  async onTemplateFileSelect(event: Event) {
+    const element = event.currentTarget as HTMLInputElement;
+    const fileList: FileList | null = element.files;
+
+    if (!fileList || fileList.length === 0) {
+      return;
+    }
+
+    const file = fileList[0]; // Only one file
+    try {
+      this.expertModeJsonContent = await file.text();
+      this.messageService.add({ severity: 'info', summary: 'Template Loaded', detail: `Template from ${file.name} loaded into editor.` });
+    } catch (error) {
+      this.messageService.add({ severity: 'error', summary: 'Read Error', detail: 'Could not read the selected file.' });
+    } finally {
+      element.value = ''; // Reset file input
+    }
   }
 
   /**
@@ -913,6 +1000,60 @@ export class EdcAssetsAndPoliciesComponent implements OnInit {
     element.value = '';
   }
 
+  /**
+   * Saves a contract definition from the JSON content in the expert mode editor.
+   */
+  async saveContractDefinitionFromExpertMode() {
+    if (!this.expertModeJsonContent.trim()) {
+      this.messageService.add({ severity: 'warn', summary: 'Validation Error', detail: 'JSON content cannot be empty.' });
+      return;
+    }
+
+    try {
+      const contractDefJson = JSON.parse(this.expertModeJsonContent);
+      // The user might be saving a single object or an array of objects.
+      const definitionsToCreate = Array.isArray(contractDefJson) ? contractDefJson : [contractDefJson];
+
+      const uploadPromises: Promise<any>[] = [];
+      const successfulUploads: string[] = [];
+      const failedUploads: { id: string; reason: string }[] = [];
+
+      for (const def of definitionsToCreate) {
+        const promise = (async () => {
+          const id = def['@id'] || 'unknown-id';
+          try {
+            // A more robust validation could be added here before calling the service
+            await this.policyService.createContractDefinition(def);
+            successfulUploads.push(id);
+          } catch (error: any) {
+            failedUploads.push({ id, reason: error.message || 'Failed to process definition.' });
+          }
+        })();
+        uploadPromises.push(promise);
+      }
+
+      await Promise.all(uploadPromises);
+
+      if (successfulUploads.length > 0) {
+        this.messageService.add({ severity: 'success', summary: 'Success', detail: `${successfulUploads.length} contract definition(s) saved.` });
+        this.loadPoliciesAndDefinitions();
+        this.hideNewContractPolicyDialog();
+      }
+
+      if (failedUploads.length > 0) {
+        this.messageService.add({
+          severity: 'error',
+          summary: `${failedUploads.length} Upload(s) Failed`,
+          detail: 'See browser console for details on failed definitions.',
+          life: 5000,
+        });
+        console.error('Failed expert mode uploads:', failedUploads);
+      }
+    } catch (error: any) {
+      this.messageService.add({ severity: 'error', summary: 'JSON Parse Error', detail: 'Could not parse the JSON content. Please check for syntax errors.' });
+      console.error('Failed to parse expert mode JSON:', error);
+    }
+  }
 
   /**
    * Opens the dialog to edit an existing Contract Definition.
