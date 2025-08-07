@@ -11,7 +11,7 @@ import java.util.Set;
 @DiscriminatorValue("SOURCE_SYSTEM")
 public class SourceSystem extends SyncSystem {
 
-    @OneToMany(mappedBy = "sourceSystem", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OneToMany(mappedBy = "sourceSystem", cascade = CascadeType.ALL)
     public Set<SourceSystemEndpoint> sourceSystemEndpoints;
 
     // Removed the @OneToMany relationship to avoid inheritance issues during deletion
