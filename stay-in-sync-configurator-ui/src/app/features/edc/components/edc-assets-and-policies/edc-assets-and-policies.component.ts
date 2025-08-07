@@ -202,7 +202,7 @@ export class EdcAssetsAndPoliciesComponent implements OnInit {
   }
 
   private loadAccessPolicyTemplates() {
-    // In a real app, this would come from a service
+
     this.accessPolicyTemplates = [
       {
         name: 'BPN Access Policy',
@@ -597,7 +597,7 @@ export class EdcAssetsAndPoliciesComponent implements OnInit {
     });
   }
 
-  // --- Access Policy Methods (JSON-only) ---
+  // Access Policy Methods (JSON-only)
   openNewAccessPolicyDialog() {
     // Set a default template for the user
     this.expertModeJsonContent = JSON.stringify({
@@ -1083,7 +1083,7 @@ export class EdcAssetsAndPoliciesComponent implements OnInit {
         const promise = (async () => {
           const id = def['@id'] || 'unknown-id';
           try {
-            // A more robust validation could be added here before calling the service
+
             await this.policyService.createContractDefinition(def);
             successfulUploads.push(id);
           } catch (error: any) {
@@ -1226,23 +1226,23 @@ export class EdcAssetsAndPoliciesComponent implements OnInit {
   editContractPolicy(contractPolicy: ContractPolicy) {
      this.isExpertMode = false; // Default to normal mode
      this.isComplexSelectorForEdit = false; // Reset
- 
+
      // Find the full ODRL object for expert mode
      this.contractDefinitionToEditODRL = this.allOdrlContractDefinitions.find(cd => cd['@id'] === contractPolicy.id) ?? null;
- 
+
      if (!this.contractDefinitionToEditODRL) {
        this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Could not find the full contract definition to edit.' });
        return;
      }
- 
+
      this.expertModeJsonContent = JSON.stringify(this.contractDefinitionToEditODRL, null, 2);
- 
+
      // Check if the asset selectors are too complex for the Normal Mode UI.
      // The Normal Mode UI can only handle a list of simple asset ID selectors.
      this.isComplexSelectorForEdit = this.contractDefinitionToEditODRL.assetsSelector.some(
        selector => selector.operandLeft !== 'https://w3id.org/edc/v0.0.1/ns/id'
      );
- 
+
      if (this.isComplexSelectorForEdit) {
          // If the selector logic is complex, force expert mode to avoid data loss.
          this.isExpertMode = true;
@@ -1253,13 +1253,13 @@ export class EdcAssetsAndPoliciesComponent implements OnInit {
              life: 6000
          });
      }
- 
+
      // Prepare assets for the dialog table, same as in the 'create' dialog
      this.assetsForDialog = this.assets.map(asset => ({
        ...asset,
        operator: 'eq' // Default operator
      }));
- 
+
      // Pre-select the assets that are part of this contract definition
      const assetSelectors = this.contractDefinitionToEditODRL.assetsSelector || [];
      this.selectedAssetsInDialog = this.assetsForDialog.filter(dialogAsset => {
@@ -1270,15 +1270,15 @@ export class EdcAssetsAndPoliciesComponent implements OnInit {
        }
        return false;
      });
- 
+
      const accessPolicyObject = this.allAccessPolicies.find(p => p.id === contractPolicy.accessPolicyId);
- 
+
      this.contractPolicyToEdit = {
        ...contractPolicy,
        accessPolicyId: accessPolicyObject as any,
        assetId: '' // No longer used for a single asset, but keep property for model consistency
      };
- 
+
      this.displayEditContractPolicyDialog = true;
   }
 
@@ -1403,7 +1403,7 @@ export class EdcAssetsAndPoliciesComponent implements OnInit {
   private buildAssetSelectors(): OdrlCriterion[] {
     return this.selectedAssetsInDialog.map(selectedAsset => ({
       operandLeft: 'https://w3id.org/edc/v0.0.1/ns/id',
-      operator: selectedAsset.operator, // 'eq' is now the correct value from the UI
+      operator: selectedAsset.operator,
       operandRight: selectedAsset.id,
     }));
   }
@@ -1477,7 +1477,7 @@ export class EdcAssetsAndPoliciesComponent implements OnInit {
     }
   }
 
-  // --- View Details Methods ---
+  // View Details Methods
 
   viewAssetDetails(event: TableRowSelectEvent): void {
     const asset = event.data as Asset;
