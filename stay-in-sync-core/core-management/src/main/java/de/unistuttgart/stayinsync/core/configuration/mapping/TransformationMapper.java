@@ -33,7 +33,6 @@ public interface TransformationMapper {
      * Maps the Transformation entity to its deployable Message DTO.
      */
     @Mapping(source = "transformationScript", target = "transformationScriptDTO")
-    @Mapping(source = "transformationRule", target = "transformationRuleDTO")
     @Mapping(source = "sourceSystemApiRequestConfigrations", target = "requestConfigurationMessageDTOS")
     @Mapping(source = "sourceSystemApiRequestConfigrations", target = "arcManifest", qualifiedByName = "buildArcManifest")
     @Mapping(target = "transformationRuleDTO", ignore = true)
