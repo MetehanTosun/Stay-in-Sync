@@ -15,6 +15,7 @@ import { InputIconModule } from 'primeng/inputicon';
 import { RippleModule } from 'primeng/ripple';
 import {ConfirmationService, MessageService} from 'primeng/api';
 import { DividerModule } from 'primeng/divider';
+import { TabViewModule } from 'primeng/tabview';
 import { DropdownModule } from 'primeng/dropdown';
 import { SelectModule } from 'primeng/select';
 import { ToastModule } from 'primeng/toast';
@@ -22,11 +23,13 @@ import { AutoCompleteModule } from 'primeng/autocomplete';
 import { MonacoEditorModule } from 'ngx-monaco-editor-v2';
 
 
+
 // App imports
 import { Asset } from './models/asset.model';
 import { AccessPolicy, OdrlContractDefinition, ContractPolicy, OdrlPolicyDefinition, OdrlCriterion } from './models/policy.model';
 import { AssetService } from './services/asset.service';
 import { PolicyService } from './services/policy.service';
+import { EdcInstanceService } from '../edc-instances/services/edc-instance.service';
 
 @Component({
   selector: 'app-edc-assets-and-policies',
@@ -50,6 +53,7 @@ import { PolicyService } from './services/policy.service';
     ToastModule,
     AutoCompleteModule,
     MonacoEditorModule,
+    TabViewModule,
   ],
   templateUrl: './edc-assets-and-policies.component.html',
   styleUrls: ['./edc-assets-and-policies.component.css'],
@@ -122,6 +126,9 @@ export class EdcAssetsAndPoliciesComponent implements OnInit {
   // Model for the simple "Normal Mode" form
   newAccessPolicy: { bpn: string; action: string; operator: string; } = this.createEmptySimpleAccessPolicy();
 
+  // BPN suggestions
+  bpnSuggestions: string[] = [];
+  allBpns: string[] = [];
 
   editorOptions = {
     theme: 'vs-dark',
@@ -139,12 +146,17 @@ export class EdcAssetsAndPoliciesComponent implements OnInit {
     readOnly: true,
   };
 
+  // Properties for the structured detail view
+  viewingEntityType: 'asset' | 'policy' | 'contract' | null = null;
+  linkedAccessPolicy: AccessPolicy | null = null;
+  linkedAssets: Asset[] = [];
 
   constructor(
     private assetService: AssetService,
     private policyService: PolicyService,
     private confirmationService: ConfirmationService,
-    private messageService: MessageService
+    private messageService: MessageService,
+    private edcInstanceService: EdcInstanceService
   ) {
     // initialize dropdown options
     this.operatorOptions = [
@@ -165,6 +177,7 @@ export class EdcAssetsAndPoliciesComponent implements OnInit {
     this.loadContractDefinitionTemplates();
     this.loadAccessPolicyTemplates();
     this.loadAssetTemplates();
+    this.loadAllBpns();
   }
 
   private loadContractDefinitionTemplates() {
@@ -265,6 +278,14 @@ export class EdcAssetsAndPoliciesComponent implements OnInit {
         }
       }
     ];
+  }
+
+  private loadAllBpns() {
+    this.edcInstanceService.getEdcInstancesLarge().then(instances => {
+      // Use a Set to get unique BPNs from existing instances
+      const bpnSet = new Set(instances.map(i => i.bpn));
+      this.allBpns = [...bpnSet];
+    });
   }
 
   /**
@@ -607,6 +628,13 @@ export class EdcAssetsAndPoliciesComponent implements OnInit {
 
   private createEmptySimpleAccessPolicy() {
     return { bpn: '', action: 'use', operator: 'eq' };
+  }
+
+  searchBpns(event: { query: string }) {
+    const query = event.query.toLowerCase();
+    this.bpnSuggestions = this.allBpns.filter(bpn =>
+      bpn.toLowerCase().includes(query)
+    );
   }
 
   // Access Policy Methods (JSON-only)
@@ -1561,7 +1589,16 @@ export class EdcAssetsAndPoliciesComponent implements OnInit {
 
   // View Details Methods
 
+  hideViewDialog() {
+    this.displayViewDialog = false;
+    this.viewingEntityType = null;
+    this.linkedAccessPolicy = null;
+    this.linkedAssets = [];
+    this.jsonToView = '';
+  }
+
   viewAssetDetails(event: TableRowSelectEvent): void {
+    this.viewingEntityType = 'asset';
     const asset = event.data as Asset;
     const odrlAsset = this.allOdrlAssets.find(a => a['@id'] === asset.id);
     if (odrlAsset) {
@@ -1574,6 +1611,7 @@ export class EdcAssetsAndPoliciesComponent implements OnInit {
   }
 
   viewAccessPolicyDetails(event: TableRowSelectEvent): void {
+    this.viewingEntityType = 'policy';
     const policy = event.data as AccessPolicy;
     const odrlPolicy = this.allOdrlAccessPolicies.find(p => p['@id'] === policy.id);
     if (odrlPolicy) {
@@ -1586,11 +1624,22 @@ export class EdcAssetsAndPoliciesComponent implements OnInit {
   }
 
   viewContractDefinitionDetails(event: TableRowSelectEvent): void {
+    this.viewingEntityType = 'contract';
     const contractPolicy = event.data as ContractPolicy;
     const odrlContractDef = this.allOdrlContractDefinitions.find(cd => cd['@id'] === contractPolicy.id);
+
     if (odrlContractDef) {
+      // For Raw JSON tab
       this.jsonToView = JSON.stringify(odrlContractDef, null, 2);
       this.viewDialogHeader = `Details for Contract Definition: ${contractPolicy.id}`;
+      // For Details tab
+      // 1. Find linked Access Policy
+      this.linkedAccessPolicy = this.allAccessPolicies.find(p => p.id === odrlContractDef.accessPolicyId) || null;
+
+      // 2. Find linked Assets
+      const assetIds = new Set(odrlContractDef.assetsSelector.map(s => s.operandRight));
+      this.linkedAssets = this.assets.filter(a => assetIds.has(a.id));
+
       this.displayViewDialog = true;
     } else {
       this.messageService.add({ severity: 'warn', summary: 'Not Found', detail: 'Could not find the full ODRL details for this contract definition.' });

@@ -267,7 +267,18 @@
   <div *ngIf="!isAccessPolicyExpertMode" class="p-fluid grid pt-3">
     <div class="field col-12">
       <label for="apBpn" class="font-bold block mb-2">Business Partner Number (BPN)</label>
-      <input id="apBpn" type="text" pInputText [(ngModel)]="newAccessPolicy.bpn" required autofocus class="w-full" />
+      <p-autoComplete
+        id="apBpn"
+        [(ngModel)]="newAccessPolicy.bpn"
+        [suggestions]="bpnSuggestions"
+        (completeMethod)="searchBpns($event)"
+        [dropdown]="true"
+        [forceSelection]="false"
+        placeholder="Enter or select a BPN"
+        styleClass="w-full"
+        inputStyleClass="w-full"
+        [appendTo]="'body'">
+      </p-autoComplete>
     </div>
     <div class="field col-12">
       <label for="apAction" class="font-bold block mb-2">Action</label>
@@ -568,18 +579,63 @@
   [header]="viewDialogHeader"
   [(visible)]="displayViewDialog"
   [modal]="true"
-  [style]="{ width: '50vw' }"
-  (onHide)="displayViewDialog = false"
+  [style]="{ width: '60vw' }"
+  (onHide)="hideViewDialog()"
   [draggable]="false"
   [resizable]="false"
 >
-  <ngx-monaco-editor
-    [options]="readOnlyEditorOptions"
-    [(ngModel)]="jsonToView"
-    style="height: 60vh; border: 1px solid var(--surface-d);"
-  ></ngx-monaco-editor>
+  <ng-container [ngSwitch]="viewingEntityType">
+    <!-- Simple JSON view for Assets and Policies -->
+    <ng-container *ngSwitchCase="'asset'">
+      <ngx-monaco-editor [options]="readOnlyEditorOptions" [(ngModel)]="jsonToView" style="height: 60vh; border: 1px solid var(--surface-d);"></ngx-monaco-editor>
+    </ng-container>
+    <ng-container *ngSwitchCase="'policy'">
+      <ngx-monaco-editor [options]="readOnlyEditorOptions" [(ngModel)]="jsonToView" style="height: 60vh; border: 1px solid var(--surface-d);"></ngx-monaco-editor>
+    </ng-container>
+
+    <!-- Tabbed view for Contract Definitions -->
+    <ng-container *ngSwitchCase="'contract'">
+      <p-tabView>
+        <p-tabPanel header="Details">
+          <div class="p-4">
+            <h5 class="mt-0 mb-3">Linked Access Policy</h5>
+            <div *ngIf="linkedAccessPolicy; else noPolicy" class="surface-card p-3 border-round">
+              <div class="font-medium mb-2">ID: <span class="font-normal text-color-secondary">{{ linkedAccessPolicy.id }}</span></div>
+              <div class="font-medium">BPN: <span class="font-normal text-color-secondary">{{ linkedAccessPolicy.bpn }}</span></div>
+            </div>
+            <ng-template #noPolicy><p>No linked access policy found.</p></ng-template>
+
+            <h5 class="mt-4 mb-3">Linked Assets ({{ linkedAssets.length }})</h5>
+            <p-table [value]="linkedAssets" [rows]="5" [paginator]="true" styleClass="p-datatable-sm">
+              <ng-template pTemplate="header">
+                <tr>
+                  <th>Name</th>
+                  <th>ID</th>
+                  <th>Type</th>
+                </tr>
+              </ng-template>
+              <ng-template pTemplate="body" let-asset>
+                <tr>
+                  <td>{{ asset.name }}</td>
+                  <td>{{ asset.id }}</td>
+                  <td><p-tag [value]="asset.type"></p-tag></td>
+                </tr>
+              </ng-template>
+              <ng-template pTemplate="emptymessage">
+                <tr><td colspan="3">No linked assets found.</td></tr>
+              </ng-template>
+            </p-table>
+          </div>
+        </p-tabPanel>
+        <p-tabPanel header="Raw JSON">
+          <ngx-monaco-editor [options]="readOnlyEditorOptions" [(ngModel)]="jsonToView" style="height: 60vh; border: 1px solid var(--surface-d);"></ngx-monaco-editor>
+        </p-tabPanel>
+      </p-tabView>
+    </ng-container>
+  </ng-container>
+
   <ng-template pTemplate="footer">
-    <button pButton pRipple label="Close" icon="pi pi-check" class="p-button-text" (click)="displayViewDialog = false"></button>
+    <button pButton pRipple label="Close" icon="pi pi-times" class="p-button-text" (click)="hideViewDialog()"></button>
   </ng-template>
 </p-dialog>
 
