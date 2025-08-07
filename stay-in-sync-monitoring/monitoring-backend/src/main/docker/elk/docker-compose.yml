@@ -61,20 +61,6 @@ services:
     networks:
       - elk
 
-  # rabbitmq:
-  #   image: rabbitmq:3.13-management
-  #   container_name: rabbitmq
-  #   environment:
-  #     - RABBITMQ_DEFAULT_USER=admin
-  #     - RABBITMQ_DEFAULT_PASS=admin
-  #   ports:
-  #     - "5672:5672"
-  #     - "15672:15672"
-  #   volumes:
-  #     - rabbitmq_data:/var/lib/rabbitmq
-  #   networks:
-  #     - elk
-
   metricbeat:
     image: docker.elastic.co/beats/metricbeat:8.13.4
     container_name: metricbeat
@@ -108,27 +94,49 @@ services:
     container_name: fluent-bit
     ports:
       - "5500:5000"
+      - "5170:5170"  # Quarkus TCP Log-Port
     volumes:
       - ./fluent-bit/fluent-bit.conf:/fluent-bit/etc/fluent-bit.conf:ro
       - ./fluent-bit/parsers.conf:/fluent-bit/etc/parsers.conf:ro
       - ./fluent-bit/scripts:/fluent-bit/scripts:ro
       - /var/lib/docker/containers:/var/lib/docker/containers:ro
       - /var/log:/var/log:ro
-
     depends_on:
       - loki
     networks:
       - elk
+  #context anpassen
+  core-polling-node:
+    build:
+      context: /Users/serhatceri/Desktop/StuPro331/stay-in-sync-core/core-polling-node
+      dockerfile: src/main/docker/Dockerfile.jvm
+    image: stay-in-sync/core-polling-node
+    container_name: core-polling-node
+    environment:
+      - QUARKUS_PROFILE=monitoring
+    depends_on:
+      - fluent-bit
+    networks:
+      - elk
 
-
+#context anpassen
+  core-sync-node:
+    build:
+      context: /Users/serhatceri/Desktop/StuPro331/stay-in-sync-core/core-sync-node
+      dockerfile: src/main/docker/Dockerfile.jvm
+    image: stay-in-sync/core-sync-node
+    container_name: core-sync-node
+    environment:
+      - QUARKUS_PROFILE=monitoring
+    depends_on:
+      - fluent-bit
+    networks:
+      - elk
 
 volumes:
   elasticsearch_data:
   grafana_data:
-  # rabbitmq_data:
 
 networks:
   elk:
     driver: bridge
-
-

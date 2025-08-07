@@ -48,6 +48,29 @@ Make sure to enable following minikube addons:
 minikube addons enable ingress
 minikube addons enable ingress-dns
 ```
+And add following to your hosts file: 
+```
+<your minikube ip> centralidp.tx.test
+<your minikube ip> sharedidp.tx.test
+<your minikube ip> portal.tx.test
+<your minikube ip> portal-backend.tx.test
+<your minikube ip> semantics.tx.test
+<your minikube ip> sdfactory.tx.test
+<your minikube ip> ssi-credential-issuer.tx.test
+<your minikube ip> dataconsumer-1-dataplane.tx.test
+<your minikube ip> dataconsumer-1-controlplane.tx.test
+<your minikube ip> dataprovider-dataplane.tx.test
+<your minikube ip> dataprovider-controlplane.tx.test
+<your minikube ip> dataprovider-submodelserver.tx.test
+<your minikube ip> dataconsumer-2-dataplane.tx.test
+<your minikube ip> dataconsumer-2-controlplane.tx.test
+<your minikube ip> bdrs-server.tx.test
+<your minikube ip> business-partners.tx.test
+<your minikube ip> pgadmin4.tx.test
+<your minikube ip> ssi-dim-wallet-stub.tx.test
+<your minikube ip> smtp.tx.test
+<your minikube ip> stay-in-sync-management.test
+```
 
 If you are having issues with resolving ingresses after successfully deploying the chart, please try following the
 instructions of [Step 3](https://minikube.sigs.k8s.io/docs/handbook/addons/ingress-dns/)
