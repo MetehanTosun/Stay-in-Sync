@@ -14,63 +14,11 @@
     </div>
   </p-toolbar>
 
-  <!-- Search functionality section with real-time filtering -->
-  <div class="search-section" 
-       role="region" 
-       [attr.aria-label]="'Search source systems'"
-       [attr.aria-describedby]="'search-instructions'">
-    <div class="search-container">
-      <app-search-bar
-        [customPlaceholder]="getResponsivePlaceholder()"
-        [resultCount]="searchResultCount?.filtered || 0"
-        [loading]="loading"
-        (search)="onSearchChange($event)"
-        (clear)="onSearchClear()">
-      </app-search-bar>
-    </div>
-    
-    <!-- Search result count display with status indicators -->
-    <div class="search-results-info" 
-         *ngIf="searchResultCount"
-         role="status"
-         [attr.aria-live]="'polite'"
-         [attr.aria-atomic]="true">
-      <span [class.text-success]="searchResultCount.hasResults" [class.text-muted]="!searchResultCount.hasResults">
-        {{ searchResultCount.displayText }}
-      </span>
-    </div>
-    
-    <!-- Accessibility instructions for screen readers -->
-    <div class="sr-only" id="search-instructions">
-      Use the search bar above to find source systems by name, description, API URL, endpoints, or headers. 
-      Results will be displayed in the table below. Use keyboard shortcuts: Enter to search, Escape to clear.
-    </div>
-  </div>
 
-  <!-- Data table with pagination, virtual scrolling, and responsive features -->
-  <p-table 
-    [value]="getDisplaySystems()" 
-    [loading]="loading" 
-    [paginator]="true" 
-    [rows]="getResponsiveTableRows()" 
-    [responsiveLayout]="'scroll'"
-    [showCurrentPageReport]="!isSmallScreen()"
-    currentPageReportTemplate="Showing {first} to {last} of {totalRecords} entries"
-    [rowsPerPageOptions]="isSmallScreen() ? [5, 10] : [5, 10, 25, 50]"
-    [globalFilterFields]="['name', 'apiUrl', 'description']"
-
-    [scrollable]="true"
-    [scrollHeight]="isSmallScreen() ? '300px' : '400px'"
-    [virtualScroll]="filteredSystems.length > 100 && !isSmallScreen()"
-    [virtualScrollItemSize]="isSmallScreen() ? 40 : 46"
-    [virtualScrollOptions]="{ itemSize: isSmallScreen() ? 40 : 46 }"
-    [class.search-active]="isSearchActive"
-    [class.has-highlighting]="searchOptions && searchOptions.highlightMatches"
-    [class.mobile-device]="isMobileDevice()"
-    [class.small-screen]="isSmallScreen()"
-    [class.touch-device]="isTouchDevice()">
-    
-    <!-- Table header with search indicators -->
+  <!--
+    Table of source systems with pagination and action buttons
+  -->
+  <p-table [value]="systems" [loading]="loading" [paginator]="true" [rows]="10" [responsiveLayout]="'scroll'">
     <ng-template pTemplate="header">
       <tr>
         <th style="min-width: 200px;">
@@ -107,7 +55,7 @@
         </th>
       </tr>
     </ng-template>
-    
+
     <!-- Table body with search highlighting and action buttons -->
     <ng-template pTemplate="body" let-system let-rowIndex="rowIndex">
       <tr [class.search-result]="isSearchActive" [class.highlighted-row]="isHighlightedRow(system)">
@@ -142,27 +90,27 @@
         <td>
           <div class="actions-cell">
             <!-- Manage button to view and edit source system details -->
-            <button pButton 
-                    type="button" 
-                    label="Manage" 
-                    class="p-button-text p-button-sm" 
+            <button pButton
+                    type="button"
+                    label="Manage"
+                    class="p-button-text p-button-sm"
                     (click)="viewSourceSystem(system)"
                     [title]="'Manage ' + system.name">
             </button>
             <!-- Delete button to remove source system -->
-            <button pButton 
-                    type="button" 
-                    icon="pi pi-trash" 
-                    class="p-button-text p-button-sm p-button-danger" 
+            <button pButton
+                    type="button"
+                    icon="pi pi-trash"
+                    class="p-button-text p-button-sm p-button-danger"
                     (click)="deleteSourceSystem(system)"
                     [title]="'Delete ' + system.name">
             </button>
             <!-- Quick search actions for detailed search information -->
             <div class="quick-search-actions" *ngIf="isSearchActive">
-              <button pButton 
-                      type="button" 
-                      icon="pi pi-search" 
-                      class="p-button-text p-button-sm p-button-info" 
+              <button pButton
+                      type="button"
+                      icon="pi pi-search"
+                      class="p-button-text p-button-sm p-button-info"
                       (click)="showSearchDetails(system)"
                       [title]="'Show search details for ' + system.name">
               </button>
@@ -171,7 +119,7 @@
         </td>
       </tr>
     </ng-template>
-    
+
     <!-- Empty state message when no data is available -->
     <ng-template pTemplate="emptymessage">
       <tr>
@@ -191,24 +139,24 @@
               </p>
             </div>
             <div class="empty-actions" *ngIf="isSearchActive">
-              <button pButton 
-                      type="button" 
-                      label="Clear Search" 
-                      class="p-button-text" 
+              <button pButton
+                      type="button"
+                      label="Clear Search"
+                      class="p-button-text"
                       (click)="onSearchClear()">
               </button>
-              <button pButton 
-                      type="button" 
-                      label="Show All" 
-                      class="p-button-text" 
+              <button pButton
+                      type="button"
+                      label="Show All"
+                      class="p-button-text"
                       (click)="onSearchClear()">
               </button>
             </div>
             <div class="empty-actions" *ngIf="!isSearchActive">
-              <button pButton 
-                      type="button" 
-                      label="Create Source System" 
-                      icon="pi pi-plus" 
+              <button pButton
+                      type="button"
+                      label="Create Source System"
+                      icon="pi pi-plus"
                       (click)="openCreate()">
               </button>
             </div>
@@ -226,18 +174,18 @@
       </small>
     </div>
     <div class="search-actions">
-      <button pButton 
-              type="button" 
-              label="Export Results" 
-              icon="pi pi-download" 
+      <button pButton
+              type="button"
+              label="Export Results"
+              icon="pi pi-download"
               class="p-button-text p-button-sm"
               (click)="exportSearchResults()"
               [disabled]="!hasSearchResults()">
       </button>
-      <button pButton 
-              type="button" 
-              label="Save Query" 
-              icon="pi pi-save" 
+      <button pButton
+              type="button"
+              label="Save Query"
+              icon="pi pi-save"
               class="p-button-text p-button-sm"
               (click)="saveSearchQuery()"
               [disabled]="!hasSearchResults()">
@@ -252,78 +200,62 @@
   (visibleChange)="onCreateDialogClose($event)">
 </app-create-source-system>
 
-<!-- Source System Detail Dialog -->
-<p-dialog
-  [(visible)]="showDetailDialog"
-  [header]="selectedSystem?.name || 'Source System Details'"
-  [modal]="true"
-  [style]="{ width: '90vw', maxWidth: '1200px' }"
-  [draggable]="false"
-  [resizable]="false"
-  [closable]="true"
-  (onHide)="closeDetailDialog()">
-  
-  <!-- Tab navigation for different sections -->
-  <p-tabView>
-    <!-- Metadata tab for basic system information -->
-    <p-tabPanel header="Metadata">
-      <form [formGroup]="metadataForm" (ngSubmit)="saveMetadata()">
-        <div class="p-field">
-          <label for="name">Name</label>
-          <input pInputText id="name" formControlName="name" />
-        </div>
-        <div class="p-field">
-          <label for="description">Description</label>
-          <textarea pInputTextarea id="description" formControlName="description" rows="3"></textarea>
-        </div>
-        <div class="p-field">
-          <label for="apiUrl">API URL</label>
-          <input pInputText id="apiUrl" formControlName="apiUrl" />
-        </div>
-        <div class="p-field">
-          <label for="apiType">API Type</label>
-          <p-dropdown id="apiType" formControlName="apiType" [options]="['REST', 'AAS']"></p-dropdown>
-        </div>
-        <div class="p-field">
-          <label for="openApiSpec">OpenAPI Specification</label>
-          <p-fileUpload 
-            id="openApiSpec"
-            mode="basic" 
-            [auto]="true" 
-            accept=".json,.yaml,.yml"
-            (onSelect)="onFileSelected($event)"
-            chooseLabel="Choose File">
-          </p-fileUpload>
-        </div>
-        <div class="p-field">
-          <button pButton type="submit" label="Save Changes" [disabled]="!metadataForm.valid"></button>
-        </div>
-      </form>
-    </p-tabPanel>
+<!--
+  Detail dialog for metadata, API headers, and endpoints management of a selected system
+-->
+<p-dialog header="Manage Source System" [(visible)]="showDetailDialog" [modal]="true" [style]="{ width: '80vw', height: '80vh' }" (onHide)="closeDetailDialog()">
+  <ng-container *ngIf="selectedSystem">
+    <!--
+      Metadata edit form for selected source system
+    -->
+    <form [formGroup]="metadataForm" (ngSubmit)="saveMetadata()">
+      <div style="margin-bottom: 2rem;"></div>
+      <!-- Metadata edit form -->
+      <h3 style="margin-bottom: 1.5rem;">Metadata</h3>
 
-    <!-- Headers tab for API header management -->
-    <p-tabPanel header="Headers" *ngIf="selectedSystem">
-      <app-manage-api-headers 
-        [syncSystemId]="selectedSystem.id!"
-        (onCreated)="loadSystems()">
-      </app-manage-api-headers>
-    </p-tabPanel>
+      <div class="p-col-12 p-md-3" style="margin-bottom: 1.5rem;">
+        <label for="metaName">Name</label>
+        <input id="metaName" pInputText formControlName="name" />
+      </div>
 
-    <!-- Endpoints tab for endpoint management -->
-    <p-tabPanel header="Endpoints" *ngIf="selectedSystem">
-      <app-manage-endpoints 
-        [sourceSystemId]="selectedSystem.id!"
-        (backStep)="closeDetailDialog()"
-        (finish)="closeDetailDialog()">
-      </app-manage-endpoints>
-    </p-tabPanel>
-  </p-tabView>
+      <div class="p-col-12 p-md-3" style="margin-bottom: 1.5rem;">
+        <label for="metaUrl">API URL</label>
+        <input id="metaUrl" pInputText formControlName="apiUrl" />
+      </div>
+
+      <div class="p-col-12 p-md-3" style="margin-bottom: 1.5rem;">
+        <label for="metaDesc" class="p-d-block">Description</label>
+        <textarea id="metaDesc" pInputTextarea formControlName="description" rows="3" class="p-inputtextarea p-d-block"></textarea>
+      </div>
+
+
+      <div style="margin-bottom: 2rem;"></div>
+
+      <div class="p-col-12 p-md-3 p-d-flex p-ai-end p-jc-end">
+        <button pButton label="Save Metadata"
+                type="submit"
+                [disabled]="metadataForm.invalid"></button>
+      </div>
+    </form>
+    <div class="p-grid p-m-2">
+      <div class="p-col-12 p-md-6">
+        <!--
+          Section: Manage API request headers for the selected system
+        -->
+        <p-card>
+          <h4>API Headers</h4>
+          <app-manage-api-headers [syncSystemId]="selectedSystem!.id!"></app-manage-api-headers>
+        </p-card>
+      </div>
+      <div class="p-col-12 p-md-6">
+        <!--
+          Section: Manage endpoints for the selected system
+        -->
+        <p-card>
+          <h4>Endpoints</h4>
+          <app-manage-endpoints [sourceSystemId]="selectedSystem!.id!"></app-manage-endpoints>
+        </p-card>
+      </div>
+    </div>
+  </ng-container>
 </p-dialog>
-
-<!-- Confirmation dialog for delete operations -->
-<app-confirmation-dialog
-  [(visible)]="showConfirmationDialog"
-  [data]="confirmationData"
-  (confirmed)="onConfirmationConfirmed()"
-  (cancelled)="onConfirmationCancelled()">
-</app-confirmation-dialog>
