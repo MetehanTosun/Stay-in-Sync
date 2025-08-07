@@ -169,8 +169,8 @@
     <ng-template pTemplate="header">
       <tr>
         <th style="width: 35%" pSortableColumn="id">ID <p-sortIcon field="id"></p-sortIcon></th>
-        <th style="width: 30%" pSortableColumn="assetId">Asset ID <p-sortIcon field="assetId"></p-sortIcon></th>
-        <th style="width: 20%" pSortableColumn="bpn">Policy BPN <p-sortIcon field="bpn"></p-sortIcon></th>
+        <th style="width: 30%" pSortableColumn="assetId">Asset IDs <p-sortIcon field="assetId"></p-sortIcon></th>
+        <th style="width: 20%" pSortableColumn="bpn">BPN <p-sortIcon field="bpn"></p-sortIcon></th>
         <th style="width: 15%">Actions</th>
       </tr>
       <tr>
@@ -419,77 +419,78 @@
 
 <!-- new contract definition dialog -->
 <p-dialog [(visible)]="displayNewContractPolicyDialog"
-          [style]="{width: '500px'}"
+          [style]="{width: '70vw', height: '80vh'}"
           header="Create New Contract Definition"
           [modal]="true"
           class="p-fluid"
           (onHide)="hideNewContractPolicyDialog()"
           [draggable]="false"
           [resizable]="false">
-
-  <div class="p-fluid">
-
-    <div class="text-center mb-3">
-      <button pButton pRipple
-              type="button"
-              label="Upload JSON File"
-              icon="pi pi-upload"
-              class="p-button-secondary"
-              (click)="contractDefFileInput.click()"></button>
-    </div>
-
-
-    <p-divider align="center" type="dashed" styleClass="my-4">
-      <b>OR</b>
-    </p-divider>
-
-
-    <h6 class="text-center">Enter Details Manually</h6>
-    <div class="px-4">
-      <div class="field grid align-items-center mb-3">
-        <label for="cdAccessPolicy" class="col-4">Access Policy</label>
-        <div class="col-8">
-          <p-dropdown
-            id="cdAccessPolicy"
-            [options]="allAccessPolicies"
-            [(ngModel)]="newContractPolicy.accessPolicyId"
-            optionLabel="bpn"
-            optionValue="id"
-            placeholder="Select an Access Policy"
-            [showClear]="true"
-            styleClass="w-full"
-            [appendTo]="'body'">
-            <ng-template let-policy pTemplate="item">
-              <div>{{ policy.bpn }} ({{ policy.id }})</div>
-            </ng-template>
-          </p-dropdown>
+    <div class="p-fluid grid h-full">
+        <div class="col-12">
+            <label for="cdAccessPolicy" class="font-bold block mb-2">Select Access Policy</label>
+            <p-autoComplete
+                    id="cdAccessPolicy"
+                    [(ngModel)]="newContractPolicy.accessPolicyId"
+                    [suggestions]="accessPolicySuggestions"
+                    (completeMethod)="searchAccessPolicies($event)"
+                    field="bpn"
+                    [forceSelection]="true"
+                    placeholder="Type BPN or Policy ID"
+                    styleClass="w-full"
+                    inputStyleClass="w-full"
+                    [appendTo]="'body'">
+                <ng-template let-policy pTemplate="item">
+                    <div>{{ policy.bpn }} ({{ policy.id }})</div>
+                </ng-template>
+            </p-autoComplete>
         </div>
-      </div>
 
-      <div class="field grid align-items-center mb-3">
-        <label for="cdAssetId" class="col-4">Asset</label>
-        <div class="col-8">
-          <p-autoComplete
-            id="cdAssetId"
-            [(ngModel)]="newContractPolicy.assetId"
-            [suggestions]="assetIdSuggestions"
-            (completeMethod)="searchAssets($event)"
-            field="name"
-            [forceSelection]="true"
-            placeholder="Type to search for an Asset"
-            styleClass="w-full"
-            inputStyleClass="w-full"
-            [appendTo]="'body'">
-            <ng-template let-asset pTemplate="item">
-              <div>{{ asset.name }} ({{ asset.id }})</div>
-            </ng-template>
-          </p-autoComplete>
+        <div class="col-12 mt-4 flex flex-column">
+            <label class="font-bold block mb-2">Select Assets and their Operators</label>
+            <p-table
+                    #dtDialogAssets
+                    [value]="assetsForDialog"
+                    [(selection)]="selectedAssetsInDialog"
+                    dataKey="id"
+                    [rows]="5"
+                    [paginator]="true"
+                    [globalFilterFields]="['id', 'name', 'type']"
+                    styleClass="p-datatable-sm"
+                    [tableStyle]="{'min-width': '50rem'}"
+                    [scrollable]="true"
+                    scrollHeight="flex"
+            >
+                <ng-template pTemplate="caption">
+                    <div class="flex align-items-center justify-content-end">
+                        <p-iconfield iconPosition="left">
+                            <p-inputicon><i class="pi pi-search"></i></p-inputicon>
+                            <input #dialogAssetSearch pInputText type="text" (input)="dtDialogAssets.filterGlobal(dialogAssetSearch.value, 'contains')" placeholder="Search Assets..." />
+                        </p-iconfield>
+                    </div>
+                </ng-template>
+                <ng-template pTemplate="header">
+                    <tr>
+                        <th style="width: 3rem"><p-tableHeaderCheckbox></p-tableHeaderCheckbox></th>
+                        <th pSortableColumn="name">Name <p-sortIcon field="name"></p-sortIcon></th>
+                        <th pSortableColumn="id">ID <p-sortIcon field="id"></p-sortIcon></th>
+                        <th style="width: 10rem">Operator</th>
+                    </tr>
+                </ng-template>
+                <ng-template pTemplate="body" let-asset>
+                    <tr>
+                        <td><p-tableCheckbox [value]="asset"></p-tableCheckbox></td>
+                        <td>{{ asset.name }}</td>
+                        <td>{{ asset.id }}</td>
+                        <td><p-dropdown [options]="operatorOptions" [(ngModel)]="asset.operator" optionLabel="label" optionValue="value" styleClass="w-full" [appendTo]="'body'"></p-dropdown></td>
+                    </tr>
+                </ng-template>
+                <ng-template pTemplate="emptymessage">
+                    <tr><td colspan="4">No assets available.</td></tr>
+                </ng-template>
+            </p-table>
         </div>
-      </div>
     </div>
-  </div>
-
-
   <ng-template pTemplate="footer">
     <button pButton pRipple label="Cancel" icon="pi pi-times" class="p-button-text" (click)="hideNewContractPolicyDialog()"></button>
     <button pButton pRipple label="Save" icon="pi pi-check" class="p-button-text" (click)="saveNewContractPolicy()"></button>
@@ -512,20 +513,21 @@
       <div class="field grid align-items-center mb-3">
         <label for="editCdAccessPolicy" class="col-4">Access Policy</label>
         <div class="col-8">
-          <p-dropdown
+          <p-autoComplete
             id="editCdAccessPolicy"
-            [options]="allAccessPolicies"
             [(ngModel)]="contractPolicyToEdit.accessPolicyId"
-            optionLabel="bpn"
-            optionValue="id"
-            placeholder="Select an Access Policy"
-            [showClear]="true"
+            [suggestions]="accessPolicySuggestions"
+            (completeMethod)="searchAccessPolicies($event)"
+            field="bpn"
+            [forceSelection]="true"
+            placeholder="Type BPN or Policy ID"
             styleClass="w-full"
+            inputStyleClass="w-full"
             [appendTo]="'body'">
             <ng-template let-policy pTemplate="item">
               <div>{{ policy.bpn }} ({{ policy.id }})</div>
             </ng-template>
-          </p-dropdown>
+          </p-autoComplete>
         </div>
       </div>
 
@@ -543,6 +545,9 @@
             styleClass="w-full"
             inputStyleClass="w-full"
             [appendTo]="'body'">
+            <ng-template let-asset pTemplate="item">
+              <div>{{ asset.name }} ({{ asset.id }})</div>
+            </ng-template>
           </p-autoComplete>
         </div>
       </div>

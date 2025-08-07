@@ -118,6 +118,15 @@ export class PolicyService {
 
 
   createContractDefinition(odrlContractDef: OdrlContractDefinition): Promise<any> {
+    // Translate UI-friendly operators to ODRL-compliant ones before validation.
+    if (odrlContractDef.assetsSelector) {
+      odrlContractDef.assetsSelector.forEach(selector => {
+        if (selector.operator === 'eq') {
+          selector.operator = '=';
+        }
+      });
+    }
+
     if (!this.validateContractDefinitionOperator(odrlContractDef)) {
       const errorMessage = 'Invalid Contract Definition: The operator for all asset selectors must be "=".';
       console.error(errorMessage, odrlContractDef);
@@ -135,6 +144,15 @@ export class PolicyService {
   }
 
   updateContractDefinition(odrlContractDef: OdrlContractDefinition): Promise<void> {
+    // Translate UI-friendly operators to ODRL-compliant ones before validation.
+    if (odrlContractDef.assetsSelector) {
+      odrlContractDef.assetsSelector.forEach(selector => {
+        if (selector.operator === 'eq') {
+          selector.operator = '=';
+        }
+      });
+    }
+
     if (!this.validateContractDefinitionOperator(odrlContractDef)) {
       const errorMessage = 'Invalid Contract Definition: The operator for all asset selectors must be "=".';
       console.error(errorMessage, odrlContractDef);
