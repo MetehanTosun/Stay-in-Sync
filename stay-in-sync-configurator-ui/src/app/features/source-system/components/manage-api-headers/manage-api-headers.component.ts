@@ -34,14 +34,15 @@ import {ConfirmationDialogComponent, ConfirmationDialogData} from '../confirmati
   templateUrl: './manage-api-headers.component.html'
 })
 export class ManageApiHeadersComponent implements OnInit {
-  @Input() syncSystemId!: number;              // hier übergibst du die ID (bspw. sourceSystemId)
+  /** ID of the sync system (e.g., sourceSystemId) */
+  @Input() syncSystemId!: number;
   @Output() onCreated = new EventEmitter<void>();
 
   headers: ApiHeaderDTO[] = [];
   form!: FormGroup;
   loading = false;
 
-  // Confirmation dialog properties
+  /** Confirmation dialog properties */
   showConfirmationDialog = false;
   confirmationData: ConfirmationDialogData = {
     title: 'Delete API Header',

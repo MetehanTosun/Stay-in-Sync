@@ -22,35 +22,90 @@ import { TypeScriptGenerationResponse } from '../../models/typescriptGenerationR
   styleUrls: ['./response-preview-modal.component.css']
 })
 export class ResponsePreviewModalComponent implements OnInit, OnChanges {
+  /**
+   * Controls the visibility of the modal.
+   */
   @Input() visible: boolean = false;
+
+  /**
+   * ID of the endpoint associated with the modal.
+   */
   @Input() endpointId: number | null | undefined = null;
+
+  /**
+   * Path of the endpoint associated with the modal.
+   */
   @Input() endpointPath: string = '';
+
+  /**
+   * HTTP method of the endpoint.
+   */
   @Input() httpMethod: string = '';
+
+  /**
+   * JSON schema of the response body.
+   */
   @Input() responseBodySchema: string | null | undefined = null;
+
+  /**
+   * TypeScript definition of the response body.
+   */
   @Input() responseDts: string | null | undefined = null;
+
+  /**
+   * Emits an event when the visibility of the modal changes.
+   */
   @Output() visibleChange = new EventEmitter<boolean>();
 
-  // Editor models for textareas
+  /**
+   * Model for the JSON editor.
+   */
   jsonEditorModel = { value: '' };
+
+  /**
+   * Model for the TypeScript editor.
+   */
   typescriptEditorModel = { value: '' };
-  
-  // Tab state
+
+  /**
+   * Index of the currently active tab.
+   */
   activeTabIndex: number = 0;
-  
-  // Loading and error states
+
+  /**
+   * Indicates whether the modal is loading data.
+   */
   loading = false;
+
+  /**
+   * Error message for the modal.
+   */
   error: string | null = null;
-  
-  // TypeScript generation states
+
+  /**
+   * Indicates whether TypeScript generation is in progress.
+   */
   isGeneratingTypeScript: boolean = false;
+
+  /**
+   * Error message for TypeScript generation.
+   */
   typescriptError: string | null = null;
+
+  /**
+   * Generated TypeScript definition.
+   */
   generatedTypeScript: string = '';
-  
-  // Timeout settings
-  private readonly TYPESCRIPT_GENERATION_TIMEOUT = 30000; // 30 seconds
+
+  /**
+   * Timeout duration for TypeScript generation.
+   */
+  private readonly TYPESCRIPT_GENERATION_TIMEOUT = 30000;
+
+  /**
+   * Timeout reference for TypeScript generation.
+   */
   private typescriptGenerationTimeout: any = null;
-  
-  // Content for display - removed typescriptContent property
 
   constructor(
     private endpointSvc: SourceSystemEndpointResourceService,
@@ -58,48 +113,27 @@ export class ResponsePreviewModalComponent implements OnInit, OnChanges {
     private cdr: ChangeDetectorRef
   ) {}
 
+  /**
+   * Initializes the component and updates the editor models.
+   */
   ngOnInit(): void {
     this.updateEditorModel();
   }
 
-
-
   /**
-   * Force tab change programmatically
+   * Updates the component when input properties change.
+   * @param changes The changes to the input properties.
    */
-  private forceTabChange(tabIndex: number): void {
-    this.activeTabIndex = tabIndex;
-    this.cdr.detectChanges();
-    
-    // Simulate the tab change event
-    this.onTabChange({ index: tabIndex });
-  }
-
-  /**
-   * Set active tab (public method for template)
-   */
-  setActiveTab(tabIndex: number): void {
-    this.activeTabIndex = tabIndex;
-    this.onTabChange({ index: tabIndex });
-  }
-
   ngOnChanges(changes: SimpleChanges): void {
     this.updateEditorModel();
-    
-    // Reset TypeScript generation when schema changes
     this.clearTypeScriptGenerationTimeout();
     this.isGeneratingTypeScript = false;
     this.typescriptError = null;
     this.generatedTypeScript = '';
-    
-    // Force change detection after model update
     this.cdr.detectChanges();
 
-    // Add a longer delay to ensure custom tabs have fully rendered
     setTimeout(() => {
       this.cdr.detectChanges();
-      
-      // Force the tab to update if we have TypeScript data
       if (this.responseDts && this.activeTabIndex === 1) {
         this.forceTabChange(1);
       }
@@ -107,22 +141,37 @@ export class ResponsePreviewModalComponent implements OnInit, OnChanges {
   }
 
   /**
-   * Handle tab change and generate TypeScript if needed
+   * Changes the active tab programmatically.
+   * @param tabIndex The index of the tab to activate.
+   */
+  private forceTabChange(tabIndex: number): void {
+    this.activeTabIndex = tabIndex;
+    this.cdr.detectChanges();
+    this.onTabChange({ index: tabIndex });
+  }
+
+  /**
+   * Sets the active tab.
+   * @param tabIndex The index of the tab to activate.
+   */
+  setActiveTab(tabIndex: number): void {
+    this.activeTabIndex = tabIndex;
+    this.onTabChange({ index: tabIndex });
+  }
+
+  /**
+   * Handles tab change events and triggers TypeScript generation if needed.
+   * @param event The tab change event.
    */
   onTabChange(event: any): void {
     this.activeTabIndex = event.index;
-    
-    // Wenn TypeScript tab aktiviert wird
     if (event.index === 1) {
-      // Wenn responseDts vorhanden ist, nur Model setzen
       if (this.responseDts) {
         this.typescriptEditorModel = { value: this.responseDts };
         this.isGeneratingTypeScript = false;
         this.typescriptError = null;
         return;
       }
-      
-      // Wenn kein responseDts, TypeScript generieren
       if (!this.responseDts) {
         if (!this.generatedTypeScript && !this.isGeneratingTypeScript) {
           this.loadTypeScript();
@@ -134,24 +183,22 @@ export class ResponsePreviewModalComponent implements OnInit, OnChanges {
   }
 
   /**
-   * Load TypeScript interface from the backend
+   * Loads the TypeScript interface from the backend.
    */
   loadTypeScript(): void {
     if (!this.responseBodySchema || !this.endpointId) {
       this.typescriptError = 'Cannot generate TypeScript: missing schema or endpoint ID';
       return;
     }
-    
+
     this.isGeneratingTypeScript = true;
     this.typescriptError = null;
     this.generatedTypeScript = '';
-    
-    // Set timeout for TypeScript generation
+
     this.typescriptGenerationTimeout = setTimeout(() => {
       this.handleTypeScriptGenerationTimeout();
     }, this.TYPESCRIPT_GENERATION_TIMEOUT);
 
-    // Validate JSON schema first
     const validation = this.validateJsonSchema(this.responseBodySchema);
     if (!validation.isValid) {
       this.isGeneratingTypeScript = false;
@@ -160,12 +207,10 @@ export class ResponsePreviewModalComponent implements OnInit, OnChanges {
       return;
     }
 
-    // Create request payload
     const request: TypeScriptGenerationRequest = {
       jsonSchema: this.responseBodySchema
     };
 
-    // Call the backend service
     this.endpointSvc.generateTypeScript(this.endpointId, request).subscribe({
       next: (response: TypeScriptGenerationResponse) => {
         this.clearTypeScriptGenerationTimeout();
@@ -176,31 +221,25 @@ export class ResponsePreviewModalComponent implements OnInit, OnChanges {
       error: (error) => {
         this.clearTypeScriptGenerationTimeout();
         this.isGeneratingTypeScript = false;
-        
-        // Provide fallback TypeScript interface
         this.generatedTypeScript = this.getTypeScriptErrorFallback(this.responseBodySchema || '');
         this.typescriptEditorModel = { value: this.generatedTypeScript };
-        
-        // Set error message
         this.typescriptError = this.formatErrorMessage(error.message || 'Unknown error', 'TypeScript Generation');
       }
     });
   }
 
   /**
-   * Handle TypeScript generation timeout
+   * Handles TypeScript generation timeout.
    */
   private handleTypeScriptGenerationTimeout(): void {
     this.isGeneratingTypeScript = false;
     this.typescriptError = 'TypeScript generation timed out after 30 seconds';
-    
-    // Provide fallback TypeScript interface
     this.generatedTypeScript = this.getTypeScriptErrorFallback(this.responseBodySchema || '');
     this.typescriptEditorModel = { value: this.generatedTypeScript };
   }
 
   /**
-   * Clear TypeScript generation timeout
+   * Clears the TypeScript generation timeout.
    */
   private clearTypeScriptGenerationTimeout(): void {
     if (this.typescriptGenerationTimeout) {
@@ -210,14 +249,19 @@ export class ResponsePreviewModalComponent implements OnInit, OnChanges {
   }
 
   /**
-   * Format error message for display
+   * Formats an error message for display.
+   * @param error The error message.
+   * @param context The context of the error.
+   * @returns The formatted error message.
    */
   private formatErrorMessage(error: string, context: string): string {
     return `${context} failed: ${error}`;
   }
 
   /**
-   * Get fallback TypeScript interface when generation fails
+   * Provides a fallback TypeScript interface when generation fails.
+   * @param jsonSchema The JSON schema.
+   * @returns The fallback TypeScript interface.
    */
   private getTypeScriptErrorFallback(jsonSchema: string): string {
     return `// TypeScript generation failed
@@ -225,13 +269,14 @@ export class ResponsePreviewModalComponent implements OnInit, OnChanges {
 // Original schema: ${jsonSchema.substring(0, 100)}...
 
 export interface ResponseBody {
-  // Fallback interface - please check the JSON schema above
   [key: string]: any;
 }`;
   }
 
   /**
-   * Validate JSON schema
+   * Validates the JSON schema.
+   * @param jsonSchema The JSON schema.
+   * @returns The validation result.
    */
   private validateJsonSchema(jsonSchema: string): { isValid: boolean; error?: string } {
     try {
@@ -243,42 +288,35 @@ export interface ResponseBody {
   }
 
   /**
-   * Update editor model with current response body schema
+   * Updates the editor models with the current response body schema.
    */
   private updateEditorModel(): void {
-    // Set JSON model
     if (this.responseBodySchema) {
       this.jsonEditorModel = { value: this.responseBodySchema };
     } else {
       this.jsonEditorModel = { value: '// No JSON schema available' };
     }
-    
-    // Set TypeScript model if responseDts is available
+
     if (this.responseDts) {
       this.typescriptEditorModel = { value: this.responseDts };
       this.generatedTypeScript = this.responseDts;
-      
-      // If we have TypeScript data, set the active tab to TypeScript (index 1)
       if (this.activeTabIndex !== 1) {
         this.activeTabIndex = 1;
       }
     } else {
       this.typescriptEditorModel = { value: '// Click on TypeScript tab to generate interface' };
-      
-      // If no TypeScript data, default to JSON tab (index 0)
       if (this.activeTabIndex !== 0) {
         this.activeTabIndex = 0;
       }
     }
-    
-    // Force change detection after model updates
+
     setTimeout(() => {
       this.cdr.detectChanges();
     }, 0);
   }
 
   /**
-   * Close the modal
+   * Closes the modal and emits the visibility change event.
    */
   onClose(): void {
     this.clearTypeScriptGenerationTimeout();
@@ -287,7 +325,8 @@ export interface ResponseBody {
   }
 
   /**
-   * Check if response body is available
+   * Checks whether the response body is available.
+   * @returns True if the response body is available, false otherwise.
    */
   get hasResponseBody(): boolean {
     const hasSchema = !!this.responseBodySchema && this.responseBodySchema.trim().length > 0;
@@ -295,14 +334,11 @@ export interface ResponseBody {
     return hasSchema || hasDts;
   }
 
-
-
-
-
   /**
-   * Get modal title
+   * Gets the title of the modal.
+   * @returns The modal title.
    */
   get modalTitle(): string {
     return `Response Body Schema - ${this.httpMethod} ${this.endpointPath}`;
   }
-} 
+}

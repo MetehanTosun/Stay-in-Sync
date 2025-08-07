@@ -142,7 +142,7 @@
           <button pButton type="button" label="Response Preview" (click)="showResponsePreviewModal(e)"></button>
         </td>
         <td>
-          <!-- Button zum Verwalten hinzufügen -->
+          <!-- Add manage button -->
           <button pButton
                   type="button"
                   icon="pi pi-cog"
@@ -156,7 +156,7 @@
     </ng-template>
   </p-table>
 
-  <!-- Request Body Editor Overlay (außerhalb von p-card/Dialog) -->
+  <!-- Request Body Editor Overlay (outside of p-card/Dialog) -->
   <div *ngIf="requestBodyEditorEndpoint" class="request-body-editor-overlay" cdkDrag cdkDragRootElement=".request-body-editor-overlay">
     <div class="editor-header" cdkDragHandle>
       <span>Request-Body-Schema für {{ requestBodyEditorEndpoint.endpointPath }} ({{ requestBodyEditorEndpoint.httpRequestType }})</span>

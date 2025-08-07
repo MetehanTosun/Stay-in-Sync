@@ -37,6 +37,7 @@ public interface TransformationMapper {
     // TODO LogicGraph @Mapping(source = "transformationRule", target = "transformationRuleDTO") // Will use TransformationRuleMapper
     @Mapping(source = "sourceSystemApiRequestConfigrations", target = "requestConfigurationMessageDTOS")
     @Mapping(source = "sourceSystemApiRequestConfigrations", target = "arcManifest", qualifiedByName = "buildArcManifest")
+    @Mapping(target = "transformationRuleDTO", ignore = true)
     TransformationMessageDTO mapToMessageDTO(Transformation transformation);
 
     /**

@@ -1,16 +1,24 @@
+<!--
+  Search Bar Component
+  Provides a comprehensive search input with loading indicators, clear functionality,
+  and accessibility features. Supports real-time search with debouncing and
+  various configuration options.
+-->
 <div class="search-bar-container" 
      [formGroup]="searchForm"
      role="search" 
      [attr.aria-label]="'Search functionality'"
      [attr.aria-describedby]="'search-help-' + componentId">
+  
+  <!-- Main search input wrapper with icon, input, and action buttons -->
   <div class="search-input-wrapper">
-    <!-- Search Icon -->
+    <!-- Search icon displayed when no search term is entered -->
     <i [class]="searchIconClasses + ' search-icon'" 
        *ngIf="!hasSearchTerm"
        [attr.aria-hidden]="true">
     </i>
     
-    <!-- Search Input -->
+    <!-- Primary search input field with comprehensive accessibility attributes -->
     <input 
       pInputText 
       type="text" 
@@ -38,7 +46,7 @@
       [attr.data-testid]="'search-input'"
     />
     
-    <!-- Loading Indicator -->
+    <!-- Loading indicator with spinner and optional text -->
     <div class="loading-container" 
          *ngIf="loading && config.showLoadingIndicator"
          [attr.aria-label]="getLoadingDisplayText()"
@@ -58,7 +66,7 @@
       </span>
     </div>
     
-    <!-- Clear Button -->
+    <!-- Clear button to remove current search term -->
     <button 
       pButton 
       type="button" 
@@ -77,7 +85,7 @@
       [attr.data-testid]="'clear-search-button'"
     ></button>
     
-    <!-- Search Button (optional) -->
+    <!-- Optional search submit button -->
     <button 
       pButton 
       type="button" 
@@ -94,7 +102,7 @@
     ></button>
   </div>
   
-  <!-- Search Results Count -->
+  <!-- Search results count display -->
   <div 
     *ngIf="resultCount !== undefined && hasSearchTerm" 
     class="search-results-count"
@@ -107,13 +115,13 @@
     <small class="result-count-text">{{ resultCountText }}</small>
   </div>
   
-  <!-- Search Options (for future advanced features) -->
+  <!-- Advanced search options for case sensitivity and regex -->
   <div class="search-options" 
        *ngIf="config.enableRegex || config.caseSensitive !== undefined"
        role="group"
        [attr.aria-label]="'Search options'">
     <div class="search-toggle-options">
-      <!-- Case Sensitivity Toggle -->
+      <!-- Case sensitivity toggle option -->
       <div class="toggle-option" *ngIf="config.caseSensitive !== undefined">
         <label class="toggle-label">
           <input 
@@ -127,7 +135,7 @@
         </label>
       </div>
       
-      <!-- Regex Toggle -->
+      <!-- Regular expression search toggle option -->
       <div class="toggle-option" *ngIf="config.enableRegex">
         <label class="toggle-label">
           <input 
@@ -143,7 +151,7 @@
     </div>
   </div>
   
-  <!-- Hidden accessibility help text -->
+  <!-- Accessibility help text for screen readers -->
   <div class="sr-only" 
        [attr.id]="'search-help-' + componentId"
        role="tooltip">
@@ -151,13 +159,14 @@
     {{ getKeyboardShortcutsHelp() }}
   </div>
   
+  <!-- Clear button help text for screen readers -->
   <div class="sr-only" 
        [attr.id]="'clear-help-' + componentId"
        role="tooltip">
     Clear button. Press Enter or Space to clear the current search term.
   </div>
   
-  <!-- Screen reader only status updates -->
+  <!-- Live status updates for screen readers -->
   <div class="sr-only" 
        [attr.aria-live]="'polite'"
        [attr.aria-atomic]="true"

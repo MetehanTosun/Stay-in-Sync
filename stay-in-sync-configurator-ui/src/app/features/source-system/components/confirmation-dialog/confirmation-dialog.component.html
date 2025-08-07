@@ -1,3 +1,8 @@
+<!--
+  Confirmation Dialog Component
+  Displays a modal dialog for user confirmation with customizable title, message, and buttons.
+  Supports different severity levels (warning, danger, info) with appropriate styling.
+-->
 <p-dialog
   [header]="data.title"
   [(visible)]="visible"
@@ -8,17 +13,22 @@
   [resizable]="false"
   [closable]="true"
 >
+  <!-- Main content area with icon and message -->
   <div class="confirmation-content">
+    <!-- Severity-based icon display -->
     <div class="confirmation-icon">
       <i class="pi" [ngClass]="getIconClass()"></i>
     </div>
+    <!-- User message content -->
     <div class="confirmation-message">
       {{ data.message }}
     </div>
   </div>
 
+  <!-- Footer with action buttons -->
   <ng-template pTemplate="footer">
     <div class="dialog-footer">
+      <!-- Cancel button with default styling -->
       <button
         pButton
         type="button"
@@ -26,6 +36,7 @@
         class="p-button-text"
         (click)="onCancel()"
       ></button>
+      <!-- Confirm button with severity-based styling -->
       <button
         pButton
         type="button"

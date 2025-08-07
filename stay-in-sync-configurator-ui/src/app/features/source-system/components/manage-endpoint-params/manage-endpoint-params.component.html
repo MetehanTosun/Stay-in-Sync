@@ -1,12 +1,12 @@
 <!-- Component for managing query and path parameters for a specific endpoint -->
 <div class="p-card p-mt-4 p-p-4">
-  <!-- Klickbarer Header mit Pfeil -->
+  <!-- Clickable header with arrow -->
   <div style="display: flex; align-items: center; cursor: pointer;" (click)="toggleExpanded()">
     <h4 style="flex: 1 1 auto; margin: 0;">Query and Path Parameters for: {{ endpointPath || 'Endpoint' }}</h4>
     <i class="pi" [ngClass]="isExpanded ? 'pi-chevron-down' : 'pi-chevron-right'"></i>
   </div>
 
-  <!-- Inhalt nur anzeigen wenn expanded -->
+  <!-- Show content only when expanded -->
   <div *ngIf="isExpanded">
     <!-- Form to add a new query or path parameter -->
     <form [formGroup]="queryParamForm" (ngSubmit)="addQueryParam()" class="p-fluid p-formgrid p-grid p-mb-4">

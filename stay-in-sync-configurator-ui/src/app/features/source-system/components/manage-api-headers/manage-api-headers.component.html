@@ -1,15 +1,15 @@
 <!-- Component: Manage API Headers -->
 <!-- Allows creating, listing, and deleting API header templates for a source system -->
 <p-card styleClass="p-p-4">
-  <h3 style="margin-bottom: 2rem;">Manage API Headers</h3> <!-- Überschrift mit Abstand -->
+  <h3 style="margin-bottom: 2rem;">Manage API Headers</h3> <!-- Header with spacing -->
 
   <!-- Form: Add new API header -->
   <form [formGroup]="form" class="p-fluid p-formgrid p-grid p-mb-4 p-p-4">
-    <div class="p-field p-col-8" style="margin-bottom: 1.5rem;"> <!-- Abstand zwischen den Eingabefeldern -->
+    <div class="p-field p-col-8" style="margin-bottom: 1.5rem;"> 
       <label for="headerName">Header Name</label>
       <input id="headerName" pInputText formControlName="headerName" />
     </div>
-    <div class="p-field p-col-4" style="margin-bottom: 1.5rem;"> <!-- Abstand zwischen den Eingabefeldern -->
+    <div class="p-field p-col-4" style="margin-bottom: 1.5rem;">
       <label for="headerType">Type</label>
       <p-dropdown
         id="headerType"

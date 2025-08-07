@@ -1,29 +1,47 @@
 import { Injectable } from '@angular/core';
 import { SourceSystemDTO } from '../models/sourceSystemDTO';
 
-// Extended interface for search functionality
+/**
+ * Extended interface for search functionality with additional properties
+ * for endpoints, headers, and metadata that may be used in future implementations
+ */
 interface ExtendedSourceSystemDTO extends SourceSystemDTO {
   endpoints?: any[];
   headers?: any[];
   metadata?: { [key: string]: any };
 }
 
-// Type alias for backward compatibility
+/**
+ * Type alias for backward compatibility and type safety
+ */
 type SearchableSourceSystem = SourceSystemDTO;
 
+/**
+ * Configuration options for search functionality
+ */
 export interface SearchOptions {
-  caseSensitive?: boolean; // Default: false (case-insensitive)
-  enableRegex?: boolean; // Default: false
-  searchScope?: 'all' | 'names' | 'descriptions' | 'urls' | 'endpoints' | 'headers'; // Default: 'all'
-  highlightMatches?: boolean; // Default: false
+  /** Whether search should be case-sensitive (default: false) */
+  caseSensitive?: boolean;
+  /** Whether to treat search term as regex pattern (default: false) */
+  enableRegex?: boolean;
+  /** Scope of search across different fields (default: 'all') */
+  searchScope?: 'all' | 'names' | 'descriptions' | 'urls' | 'endpoints' | 'headers';
+  /** Whether to highlight matches in results (default: false) */
+  highlightMatches?: boolean;
 }
 
+/**
+ * Represents a search result with relevance scoring
+ */
 export interface SearchResult {
   item: SourceSystemDTO;
   matches: string[];
   score: number;
 }
 
+/**
+ * Information about search results when no matches are found
+ */
 export interface NoResultsInfo {
   hasResults: boolean;
   totalItems: number;
@@ -35,6 +53,9 @@ export interface NoResultsInfo {
   message: string;
 }
 
+/**
+ * Detailed count information for search results
+ */
 export interface SearchResultCount {
   total: number;
   filtered: number;
@@ -52,19 +73,27 @@ export interface SearchResultCount {
   };
 }
 
+/**
+ * Injectable pipe for filtering and searching source systems
+ * Provides comprehensive search functionality with relevance scoring,
+ * highlighting, and various search options
+ */
 @Injectable({
   providedIn: 'root'
 })
 export class SourceSystemSearchPipe {
   /**
-   * Transform source systems based on search term and options
+   * Transforms source systems based on search term and options
+   * @param sourceSystems - Array of source systems to search through
+   * @param searchTerm - Search term to filter by
+   * @param options - Search configuration options
+   * @returns Filtered and sorted array of source systems
    */
   transform(
     sourceSystems: SearchableSourceSystem[] | null | undefined, 
     searchTerm: string | null | undefined,
     options: SearchOptions = {}
   ): SearchableSourceSystem[] {
-    // Return original array if no search term or empty search term
     if (!sourceSystems || !searchTerm || searchTerm.trim() === '') {
       return sourceSystems || [];
     }
@@ -72,17 +101,18 @@ export class SourceSystemSearchPipe {
     const normalizedSearchTerm = this.normalizeSearchTerm(searchTerm, options);
     const searchScope = options.searchScope || 'all';
 
-    // Filter systems based on search criteria
     const filteredSystems = sourceSystems.filter(system => 
       this.matchesSearchCriteria(system, normalizedSearchTerm, searchScope, options)
     );
 
-    // Sort by relevance
     return this.sortByRelevance(filteredSystems, normalizedSearchTerm, searchScope, options);
   }
 
   /**
-   * Normalize search term based on options
+   * Normalizes search term based on case sensitivity option
+   * @param searchTerm - Original search term
+   * @param options - Search options containing case sensitivity setting
+   * @returns Normalized search term
    */
   private normalizeSearchTerm(searchTerm: string, options: SearchOptions): string {
     if (options.caseSensitive === true) {
@@ -92,7 +122,12 @@ export class SourceSystemSearchPipe {
   }
 
   /**
-   * Check if a system matches the search criteria
+   * Checks if a system matches the search criteria
+   * @param system - Source system to check
+   * @param searchTerm - Normalized search term
+   * @param searchScope - Scope of search fields
+   * @param options - Search configuration options
+   * @returns True if system matches search criteria
    */
   private matchesSearchCriteria(
     system: SearchableSourceSystem, 
@@ -116,12 +151,15 @@ export class SourceSystemSearchPipe {
   }
 
   /**
-   * Gets all searchable text from a source system based on search scope
+   * Extracts searchable text from a source system based on search scope
+   * @param system - Source system to extract text from
+   * @param searchScope - Scope of fields to include in search
+   * @param options - Search configuration options
+   * @returns Combined searchable text string
    */
   private getSystemSearchableText(system: SearchableSourceSystem, searchScope: string, options: SearchOptions): string {
     const searchableParts: string[] = [];
 
-    // Always include basic system information
     if (searchScope === 'all' || searchScope === 'names') {
       searchableParts.push(system.name || '');
       searchableParts.push(system.description || '');
@@ -132,15 +170,17 @@ export class SourceSystemSearchPipe {
       searchableParts.push(system.apiType || '');
     }
 
-    // Note: endpoints and headers search is not available in current SourceSystemDTO
-    // These would need to be implemented separately if needed
-
     const combinedText = searchableParts.join(' ').toLowerCase();
     return options.caseSensitive === true ? combinedText : combinedText.toLowerCase();
   }
 
   /**
-   * Sort systems by relevance score
+   * Sorts systems by relevance score in descending order
+   * @param systems - Array of systems to sort
+   * @param searchTerm - Search term for relevance calculation
+   * @param searchScope - Search scope for relevance calculation
+   * @param options - Search configuration options
+   * @returns Sorted array of systems
    */
   private sortByRelevance(
     systems: SearchableSourceSystem[], 
@@ -159,7 +199,12 @@ export class SourceSystemSearchPipe {
   }
 
   /**
-   * Calculate relevance score for a system
+   * Calculates relevance score for a system based on search term matches
+   * @param system - Source system to score
+   * @param searchTerm - Search term to match against
+   * @param searchScope - Search scope for scoring
+   * @param options - Search configuration options
+   * @returns Relevance score (higher is more relevant)
    */
   private calculateRelevanceScore(
     system: SearchableSourceSystem, 
@@ -170,7 +215,6 @@ export class SourceSystemSearchPipe {
     let score = 0;
     const normalizedSearchTerm = searchTerm.toLowerCase();
 
-    // Name matches (highest priority)
     if (system.name) {
       const normalizedName = system.name.toLowerCase();
       if (normalizedName === normalizedSearchTerm) {
@@ -180,7 +224,6 @@ export class SourceSystemSearchPipe {
       }
     }
 
-    // Description matches
     if (system.description) {
       const normalizedDesc = system.description.toLowerCase();
       if (normalizedDesc.includes(normalizedSearchTerm)) {
@@ -188,7 +231,6 @@ export class SourceSystemSearchPipe {
       }
     }
 
-    // URL matches
     if (system.apiUrl) {
       const normalizedUrl = system.apiUrl.toLowerCase();
       if (normalizedUrl.includes(normalizedSearchTerm)) {
@@ -196,7 +238,6 @@ export class SourceSystemSearchPipe {
       }
     }
 
-    // API type matches
     if (system.apiType) {
       const normalizedType = system.apiType.toLowerCase();
       if (normalizedType === normalizedSearchTerm) {
@@ -210,7 +251,11 @@ export class SourceSystemSearchPipe {
   }
 
   /**
-   * Highlight matches in text
+   * Highlights search matches in text using HTML mark tags
+   * @param text - Text to highlight matches in
+   * @param searchTerm - Search term to highlight
+   * @param options - Search configuration options
+   * @returns Text with highlighted matches
    */
   public highlightMatches(text: string, searchTerm: string, options: SearchOptions = {}): string {
     if (!text || !searchTerm || searchTerm.trim() === '') {
@@ -236,14 +281,20 @@ export class SourceSystemSearchPipe {
   }
 
   /**
-   * Escape regex special characters
+   * Escapes special regex characters in a string
+   * @param string - String to escape
+   * @returns Escaped string safe for regex use
    */
   private escapeRegex(string: string): string {
     return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
   }
 
   /**
-   * Get search statistics
+   * Gets basic search statistics
+   * @param originalCount - Total number of items before filtering
+   * @param filteredCount - Number of items after filtering
+   * @param searchTerm - Search term used
+   * @returns Object containing search statistics
    */
   public getSearchStats(
     originalCount: number, 
@@ -258,7 +309,11 @@ export class SourceSystemSearchPipe {
   }
 
   /**
-   * Get search result count information
+   * Gets comprehensive search result count information
+   * @param sourceSystems - Array of source systems
+   * @param searchTerm - Search term used
+   * @param options - Search configuration options
+   * @returns Detailed count information
    */
   public getSearchResultCount(
     sourceSystems: SearchableSourceSystem[] | null | undefined,
@@ -294,7 +349,11 @@ export class SourceSystemSearchPipe {
   }
 
   /**
-   * Get result count text
+   * Gets formatted result count text for display
+   * @param sourceSystems - Array of source systems
+   * @param searchTerm - Search term used
+   * @param options - Search configuration options
+   * @returns Formatted count text
    */
   public getResultCountText(
     sourceSystems: SearchableSourceSystem[] | null | undefined,
@@ -306,7 +365,11 @@ export class SourceSystemSearchPipe {
   }
 
   /**
-   * Check if search has results
+   * Checks if search has any results
+   * @param sourceSystems - Array of source systems
+   * @param searchTerm - Search term used
+   * @param options - Search configuration options
+   * @returns True if search has results
    */
   public hasSearchResults(
     sourceSystems: SearchableSourceSystem[] | null | undefined,
@@ -318,7 +381,11 @@ export class SourceSystemSearchPipe {
   }
 
   /**
-   * Get no results information
+   * Gets detailed information when no search results are found
+   * @param sourceSystems - Array of source systems
+   * @param searchTerm - Search term used
+   * @param options - Search configuration options
+   * @returns Information about no results situation
    */
   public getNoResultsInfo(
     sourceSystems: SearchableSourceSystem[] | null | undefined,
@@ -357,7 +424,11 @@ export class SourceSystemSearchPipe {
   }
 
   /**
-   * Get a simple "no results found" message
+   * Gets a simple "no results found" message
+   * @param sourceSystems - Array of source systems
+   * @param searchTerm - Search term used
+   * @param options - Search configuration options
+   * @returns Simple no results message
    */
   public getNoResultsMessage(
     sourceSystems: SearchableSourceSystem[] | null | undefined,
@@ -369,7 +440,11 @@ export class SourceSystemSearchPipe {
   }
 
   /**
-   * Check if search has no results
+   * Checks if search has no results
+   * @param sourceSystems - Array of source systems
+   * @param searchTerm - Search term used
+   * @param options - Search configuration options
+   * @returns True if search has no results
    */
   public hasNoResults(
     sourceSystems: SearchableSourceSystem[] | null | undefined,
@@ -381,7 +456,11 @@ export class SourceSystemSearchPipe {
   }
 
   /**
-   * Highlights matches in a source system object
+   * Highlights search matches in a source system object
+   * @param system - Source system to highlight matches in
+   * @param searchTerm - Search term to highlight
+   * @param options - Search configuration options
+   * @returns Source system with highlighted matches
    */
   public highlightSourceSystemMatches(
     system: SearchableSourceSystem, 
@@ -394,17 +473,14 @@ export class SourceSystemSearchPipe {
 
     const highlightedSystem = { ...system };
 
-    // Highlight in name
     if (highlightedSystem.name) {
       highlightedSystem.name = this.highlightMatches(highlightedSystem.name, searchTerm, options);
     }
 
-    // Highlight in description
     if (highlightedSystem.description) {
       highlightedSystem.description = this.highlightMatches(highlightedSystem.description, searchTerm, options);
     }
 
-    // Highlight in API URL
     if (highlightedSystem.apiUrl) {
       highlightedSystem.apiUrl = this.highlightMatches(highlightedSystem.apiUrl, searchTerm, options);
     }
@@ -413,7 +489,11 @@ export class SourceSystemSearchPipe {
   }
 
   /**
-   * Highlights matches in an array of source systems
+   * Highlights search matches in an array of source systems
+   * @param systems - Array of source systems to highlight matches in
+   * @param searchTerm - Search term to highlight
+   * @param options - Search configuration options
+   * @returns Array of source systems with highlighted matches
    */
   public highlightSourceSystemsMatches(
     systems: SearchableSourceSystem[], 
@@ -428,7 +508,8 @@ export class SourceSystemSearchPipe {
   }
 
   /**
-   * Get default search options
+   * Gets default search options configuration
+   * @returns Default search options object
    */
   public getDefaultSearchOptions(): SearchOptions {
     return {
@@ -440,7 +521,8 @@ export class SourceSystemSearchPipe {
   }
 
   /**
-   * Check if case-insensitive is default
+   * Checks if case-insensitive search is the default behavior
+   * @returns True if case-insensitive is default
    */
   public isCaseInsensitiveByDefault(): boolean {
     return true;

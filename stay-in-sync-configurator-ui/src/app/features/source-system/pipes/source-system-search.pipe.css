@@ -102,32 +102,32 @@
     background-color: #2c3e50;
     color: #ecf0f1;
   }
-  
+
   .search-highlight-exact {
     background-color: #27ae60;
     color: #ffffff;
   }
-  
+
   .search-highlight-partial {
     background-color: #f39c12;
     color: #ffffff;
   }
-  
+
   .search-highlight-name {
     background-color: #3498db;
     color: #ffffff;
   }
-  
+
   .search-highlight-url {
     background-color: #17a2b8;
     color: #ffffff;
   }
-  
+
   .search-highlight-endpoint {
     background-color: #e74c3c;
     color: #ffffff;
   }
-  
+
   .search-highlight-header {
     background-color: #95a5a6;
     color: #ffffff;
@@ -178,4 +178,4 @@
     box-shadow: none !important;
     border: 1px solid #000000 !important;
   }
-} 
+}
