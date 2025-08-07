@@ -119,6 +119,14 @@ describe('ManageEndpointsComponent', () => {
       of(new HttpResponse<HttpEvent<any>>({ status: 204 }))
     );
 
+    // Setup default TypeScript generation mock
+    mockEndpointService.generateTypeScript.and.returnValue(
+      of(new HttpResponse<TypeScriptGenerationResponse>({ 
+        body: { generatedTypeScript: 'interface ResponseBody { }' }, 
+        status: 200 
+      }))
+    );
+
     mockSourceSystemService.apiConfigSourceSystemIdGet.and.returnValue(
       of(new HttpResponse({ body: mockSourceSystem, status: 200 }))
     );
@@ -202,10 +210,11 @@ describe('ManageEndpointsComponent', () => {
       component.ngOnInit();
       component.endpoints = mockEndpoints;
 
-      component.deleteEndpoint(1);
+      const endpointToDelete = mockEndpoints[0];
+      component.deleteEndpoint(endpointToDelete);
 
       expect(mockEndpointService.apiConfigSourceSystemEndpointIdDelete)
-        .toHaveBeenCalledWith(1);
+        .toHaveBeenCalledWith(endpointToDelete.id!);
     });
 
     it('should emit backStep event', () => {
@@ -670,7 +679,9 @@ describe('ManageEndpointsComponent - Response Body', () => {
       const mockResponse: TypeScriptGenerationResponse = {
         generatedTypeScript: 'interface ResponseBody { id: number; name: string; }'
       };
-      mockEndpointService.generateTypeScript.and.returnValue(of(mockResponse));
+      mockEndpointService.generateTypeScript.and.returnValue(
+        of(new HttpResponse<TypeScriptGenerationResponse>({ body: mockResponse }))
+      );
 
       component.endpointForm.patchValue({ responseBodySchema: validJsonSchema });
       component.loadTypeScriptForMainForm();
@@ -685,7 +696,9 @@ describe('ManageEndpointsComponent - Response Body', () => {
       const mockResponse: TypeScriptGenerationResponse = {
         error: 'Invalid JSON schema provided'
       };
-      mockEndpointService.generateTypeScript.and.returnValue(of(mockResponse));
+      mockEndpointService.generateTypeScript.and.returnValue(
+        of(new HttpResponse<TypeScriptGenerationResponse>({ body: mockResponse }))
+      );
 
       component.endpointForm.patchValue({ responseBodySchema: invalidJsonSchema });
       component.loadTypeScriptForMainForm();
@@ -730,7 +743,9 @@ describe('ManageEndpointsComponent - Response Body', () => {
       const mockResponse: TypeScriptGenerationResponse = {
         generatedTypeScript: 'interface ResponseBody { id: number; }'
       };
-      mockEndpointService.generateTypeScript.and.returnValue(of(mockResponse));
+      mockEndpointService.generateTypeScript.and.returnValue(
+        of(new HttpResponse<TypeScriptGenerationResponse>({ body: mockResponse }))
+      );
 
       component.endpointForm.patchValue({ responseBodySchema: validJsonSchema });
       component.onTabChange({ index: 1 }); // Switch to TypeScript tab
@@ -744,7 +759,9 @@ describe('ManageEndpointsComponent - Response Body', () => {
       const mockResponse: TypeScriptGenerationResponse = {
         generatedTypeScript: 'interface ResponseBody { id: number; }'
       };
-      mockEndpointService.generateTypeScript.and.returnValue(of(mockResponse));
+      mockEndpointService.generateTypeScript.and.returnValue(
+        of(new HttpResponse<TypeScriptGenerationResponse>({ body: mockResponse }))
+      );
 
       component.endpointForm.patchValue({ responseBodySchema: validJsonSchema });
       component.loadTypeScriptForMainForm();
@@ -762,7 +779,9 @@ describe('ManageEndpointsComponent - Response Body', () => {
       const mockResponse: TypeScriptGenerationResponse = {
         generatedTypeScript: 'interface ResponseBody { id: number; name: string; }'
       };
-      mockEndpointService.generateTypeScript.and.returnValue(of(mockResponse));
+      mockEndpointService.generateTypeScript.and.returnValue(
+        of(new HttpResponse<TypeScriptGenerationResponse>({ body: mockResponse }))
+      );
 
       component.editForm.patchValue({ responseBodySchema: validJsonSchema });
       component.loadTypeScriptForEditForm();
@@ -777,7 +796,9 @@ describe('ManageEndpointsComponent - Response Body', () => {
       const mockResponse: TypeScriptGenerationResponse = {
         generatedTypeScript: 'interface ResponseBody { id: number; }'
       };
-      mockEndpointService.generateTypeScript.and.returnValue(of(mockResponse));
+      mockEndpointService.generateTypeScript.and.returnValue(
+        of(new HttpResponse<TypeScriptGenerationResponse>({ body: mockResponse }))
+      );
       mockEndpointService.apiConfigSourceSystemSourceSystemIdEndpointPost.and.returnValue(of(new HttpResponse<any>({ status: 201 })));
 
       component.endpointForm.patchValue({
@@ -799,9 +820,9 @@ describe('ManageEndpointsComponent - Response Body', () => {
     it('should handle timeout during TypeScript generation', fakeAsync(() => {
       // Simulate a slow response that would timeout
       mockEndpointService.generateTypeScript.and.returnValue(
-        new Promise(resolve => setTimeout(() => resolve({
-          generatedTypeScript: 'interface ResponseBody { id: number; }'
-        }), 35000)) // Longer than 30 second timeout
+        of(new HttpResponse<TypeScriptGenerationResponse>({ 
+          body: { generatedTypeScript: 'interface ResponseBody { id: number; }' }
+        }))
       );
 
       component.endpointForm.patchValue({ responseBodySchema: validJsonSchema });
@@ -830,7 +851,9 @@ describe('ManageEndpointsComponent - Response Body', () => {
       const mockResponse: TypeScriptGenerationResponse = {
         generatedTypeScript: 'interface ResponseBody { user: { id: number; profile: { name: string; email: string; }; }; }'
       };
-      mockEndpointService.generateTypeScript.and.returnValue(of(mockResponse));
+      mockEndpointService.generateTypeScript.and.returnValue(
+        of(new HttpResponse<TypeScriptGenerationResponse>({ body: mockResponse }))
+      );
 
       component.endpointForm.patchValue({ responseBodySchema: complexSchema });
       component.loadTypeScriptForMainForm();
@@ -845,7 +868,9 @@ describe('ManageEndpointsComponent - Response Body', () => {
       const mockResponse: TypeScriptGenerationResponse = {
         generatedTypeScript: 'interface ResponseBody { items: string[]; count: number; }'
       };
-      mockEndpointService.generateTypeScript.and.returnValue(of(mockResponse));
+      mockEndpointService.generateTypeScript.and.returnValue(
+        of(new HttpResponse<TypeScriptGenerationResponse>({ body: mockResponse }))
+      );
 
       component.endpointForm.patchValue({ responseBodySchema: arraySchema });
       component.loadTypeScriptForMainForm();
@@ -860,7 +885,9 @@ describe('ManageEndpointsComponent - Response Body', () => {
       const mockResponse: TypeScriptGenerationResponse = {
         generatedTypeScript: 'interface ResponseBody { status: "active" | "inactive"; value: string | number; }'
       };
-      mockEndpointService.generateTypeScript.and.returnValue(of(mockResponse));
+      mockEndpointService.generateTypeScript.and.returnValue(
+        of(new HttpResponse<TypeScriptGenerationResponse>({ body: mockResponse }))
+      );
 
       component.endpointForm.patchValue({ responseBodySchema: unionSchema });
       component.loadTypeScriptForMainForm();
@@ -875,7 +902,9 @@ describe('ManageEndpointsComponent - Response Body', () => {
       const mockResponse: TypeScriptGenerationResponse = {
         generatedTypeScript: 'interface ResponseBody { user_name: string; "email@domain": string; $metadata: object; }'
       };
-      mockEndpointService.generateTypeScript.and.returnValue(of(mockResponse));
+      mockEndpointService.generateTypeScript.and.returnValue(
+        of(new HttpResponse<TypeScriptGenerationResponse>({ body: mockResponse }))
+      );
 
       component.endpointForm.patchValue({ responseBodySchema: specialCharSchema });
       component.loadTypeScriptForMainForm();
@@ -891,7 +920,9 @@ describe('ManageEndpointsComponent - Response Body', () => {
       const mockResponse: TypeScriptGenerationResponse = {
         generatedTypeScript: 'interface ResponseBody { name: string; message: string; }'
       };
-      mockEndpointService.generateTypeScript.and.returnValue(of(mockResponse));
+      mockEndpointService.generateTypeScript.and.returnValue(
+        of(new HttpResponse<TypeScriptGenerationResponse>({ body: mockResponse }))
+      );
 
       component.endpointForm.patchValue({ responseBodySchema: unicodeSchema });
       component.loadTypeScriptForMainForm();
@@ -906,7 +937,9 @@ describe('ManageEndpointsComponent - Response Body', () => {
       const mockResponse: TypeScriptGenerationResponse = {
         generatedTypeScript: 'interface ResponseBody { id: number; email: string; createdAt: string; }'
       };
-      mockEndpointService.generateTypeScript.and.returnValue(of(mockResponse));
+      mockEndpointService.generateTypeScript.and.returnValue(
+        of(new HttpResponse<TypeScriptGenerationResponse>({ body: mockResponse }))
+      );
 
       component.endpointForm.patchValue({ responseBodySchema: openApi3Schema });
       component.loadTypeScriptForMainForm();
@@ -922,7 +955,9 @@ describe('ManageEndpointsComponent - Response Body', () => {
       const mockResponse: TypeScriptGenerationResponse = {
         generatedTypeScript: 'interface ResponseBody { data: User; metadata: object; }'
       };
-      mockEndpointService.generateTypeScript.and.returnValue(of(mockResponse));
+      mockEndpointService.generateTypeScript.and.returnValue(
+        of(new HttpResponse<TypeScriptGenerationResponse>({ body: mockResponse }))
+      );
 
       component.endpointForm.patchValue({ responseBodySchema: customTypeSchema });
       component.loadTypeScriptForMainForm();
@@ -937,7 +972,9 @@ describe('ManageEndpointsComponent - Response Body', () => {
       const mockResponse: TypeScriptGenerationResponse = {
         error: 'Invalid type: invalid_type'
       };
-      mockEndpointService.generateTypeScript.and.returnValue(of(mockResponse));
+      mockEndpointService.generateTypeScript.and.returnValue(
+        of(new HttpResponse<TypeScriptGenerationResponse>({ body: mockResponse }))
+      );
 
       component.endpointForm.patchValue({ responseBodySchema: malformedSchema });
       component.loadTypeScriptForMainForm();
@@ -951,7 +988,9 @@ describe('ManageEndpointsComponent - Response Body', () => {
       const mockResponse: TypeScriptGenerationResponse = {
         generatedTypeScript: 'interface ResponseBody { id: number; }'
       };
-      mockEndpointService.generateTypeScript.and.returnValue(of(mockResponse));
+      mockEndpointService.generateTypeScript.and.returnValue(
+        of(new HttpResponse<TypeScriptGenerationResponse>({ body: mockResponse }))
+      );
 
       component.endpointForm.patchValue({ responseBodySchema: validJsonSchema });
 
@@ -1000,7 +1039,9 @@ describe('ManageEndpointsComponent - Response Body', () => {
       const mockResponse: TypeScriptGenerationResponse = {
         generatedTypeScript: 'interface ResponseBody { id: number; }'
       };
-      mockEndpointService.generateTypeScript.and.returnValue(of(mockResponse));
+      mockEndpointService.generateTypeScript.and.returnValue(
+        of(new HttpResponse<TypeScriptGenerationResponse>({ body: mockResponse }))
+      );
 
       component.endpointForm.patchValue({ responseBodySchema: validJsonSchema });
       component.loadTypeScriptForMainForm();
@@ -1015,7 +1056,9 @@ describe('ManageEndpointsComponent - Response Body', () => {
       const mockResponse: TypeScriptGenerationResponse = {
         generatedTypeScript: 'interface ResponseBody { id: number; }'
       };
-      mockEndpointService.generateTypeScript.and.returnValue(of(mockResponse));
+      mockEndpointService.generateTypeScript.and.returnValue(
+        of(new HttpResponse<TypeScriptGenerationResponse>({ body: mockResponse }))
+      );
 
       component.endpointForm.patchValue({ responseBodySchema: validJsonSchema });
 
