@@ -3,6 +3,7 @@ package de.unistuttgart.stayinsync.core.configuration.mapping;
 import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.SourceSystemApiRequestConfiguration;
 import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.SourceSystemEndpoint;
 import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.Transformation;
+import de.unistuttgart.stayinsync.core.configuration.mapping.targetsystem.RequestConfigurationMessageMapper;
 import de.unistuttgart.stayinsync.core.configuration.rest.dtos.TransformationDetailsDTO;
 import de.unistuttgart.stayinsync.core.configuration.rest.dtos.TransformationShellDTO;
 import de.unistuttgart.stayinsync.transport.dto.TransformationMessageDTO;
@@ -13,7 +14,12 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-@Mapper(componentModel = MappingConstants.ComponentModel.JAKARTA_CDI, uses = {TransformationScriptMapper.class, SourceSystemApiRequestConfigurationFullUpdateMapper.class, TransformationRuleMapper.class})
+@Mapper(componentModel = MappingConstants.ComponentModel.JAKARTA_CDI,
+        uses = {
+                TransformationScriptMapper.class,
+                TransformationRuleMapper.class,
+                SourceSystemApiRequestConfigurationFullUpdateMapper.class,
+                RequestConfigurationMessageMapper.class})
 public interface TransformationMapper {
 
     // TODO: Handle complex object mappings in service layer
@@ -23,7 +29,6 @@ public interface TransformationMapper {
      * This is used for all GET endpoints (e.g., get by ID, get all).
      */
     @Mapping(source = "syncJob.id", target = "syncJobId")
-    @Mapping(source = "targetSystemEndpoint.id", target = "targetSystemEndpointId")
     @Mapping(source = "transformationRule.id", target = "transformationRuleId")
     @Mapping(source = "transformationScript", target = "script")
     // Delegates to TransformationScriptMapper
@@ -34,8 +39,8 @@ public interface TransformationMapper {
      */
     @Mapping(source = "transformationScript", target = "transformationScriptDTO")
     @Mapping(source = "sourceSystemApiRequestConfigrations", target = "requestConfigurationMessageDTOS")
-    @Mapping(source = "sourceSystemApiRequestConfigrations", target = "arcManifest", qualifiedByName = "buildArcManifest")
-    @Mapping(target = "transformationRuleDTO", ignore = true)
+    @Mapping(source = "targetSystemApiRequestConfigurations", target = "targetRequestConfigurationMessageDTOS")
+    @Mapping(source = "sourceSystemApiRequestConfigrations", target = "arcManifest", qualifiedByName = "buildSourceArcManifest")
     TransformationMessageDTO mapToMessageDTO(Transformation transformation);
 
     /**
@@ -45,7 +50,6 @@ public interface TransformationMapper {
      */
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "syncJob", ignore = true)
-    @Mapping(target = "targetSystemEndpoint", ignore = true)
     @Mapping(target = "transformationRule", ignore = true)
     @Mapping(target = "transformationScript", ignore = true)
     @Mapping(target = "sourceSystemVariables", ignore = true)
@@ -61,7 +65,7 @@ public interface TransformationMapper {
                 .collect(Collectors.toSet());
     }
 
-    @Named("buildArcManifest")
+    @Named("buildSourceArcManifest")
     default List<String> buildArcManifest(Set<SourceSystemApiRequestConfiguration> arcs){
         if (arcs == null || arcs.isEmpty()){
             return List.of();

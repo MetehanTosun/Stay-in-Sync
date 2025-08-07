@@ -101,7 +101,7 @@ public class SyncJobService {
                                 existing.description = transformation.description;
                                 existing.transformationScript = transformation.transformationScript;
                                 existing.transformationRule = transformation.transformationRule;
-                                existing.targetSystemEndpoint = transformation.targetSystemEndpoint;
+                                existing.targetSystemApiRequestConfigurations = transformation.targetSystemApiRequestConfigurations;
                                 existing.sourceSystemApiRequestConfigrations = transformation.sourceSystemApiRequestConfigrations;
                                 existing.sourceSystemVariables = transformation.sourceSystemVariables;
 

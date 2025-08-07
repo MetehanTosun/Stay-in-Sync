@@ -1,5 +1,6 @@
 package de.unistuttgart.stayinsync.transport.dto;
 
+import de.unistuttgart.stayinsync.transport.dto.targetsystems.RequestConfigurationMessageDTO;
 import de.unistuttgart.stayinsync.transport.domain.JobDeploymentStatus;
 
 import java.util.List;
@@ -12,6 +13,7 @@ public record TransformationMessageDTO(
         TransformationRuleDTO transformationRuleDTO,
         JobDeploymentStatus jobDeploymentStatus,
         Set<SourceSystemApiRequestConfigurationMessageDTO> requestConfigurationMessageDTOS,
-        List<String> arcManifest // TODO: When building TransformationmessageDTO, add manifest with iterate over ARCs
+        List<String> arcManifest,
+        Set<RequestConfigurationMessageDTO> targetRequestConfigurationMessageDTOS
 ) {
 }
