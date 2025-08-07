@@ -430,14 +430,14 @@
   <ng-template pTemplate="header">
     <div class="flex justify-content-between align-items-center w-full">
       <span class="p-dialog-title">Create New Contract Definition</span>
-      <button pButton pRipple type="button" [label]="isExpertMode ? 'Normal Mode' : 'Expert Mode'" [icon]="isExpertMode ? 'pi pi-user' : 'pi pi-code'" class="p-button-text" (click)="isExpertMode = !isExpertMode"></button>
+      <button pButton pRipple type="button" [label]="isExpertMode ? 'Normal Mode' : 'Expert Mode'" [icon]="isExpertMode ? 'pi pi-user' : 'pi pi-code'" class="p-button-text" (click)="toggleNewExpertMode()"></button>
     </div>
   </ng-template>
 
   <!-- Normal Mode -->
   <div *ngIf="!isExpertMode" class="flex flex-column flex-grow-1 overflow-hidden">
       <div class="col-12">
-          <label for="cdAccessPolicy" class="font-bold block mb-2">1. Select Access Policy</label>
+          <label for="cdAccessPolicy" class="font-bold block mb-2">Select Access Policy</label>
           <p-autoComplete
                   id="cdAccessPolicy"
                   [(ngModel)]="newContractPolicy.accessPolicyId"
@@ -456,7 +456,7 @@
       </div>
 
       <div class="col-12 mt-4 flex flex-column flex-grow-1 overflow-hidden">
-          <label class="font-bold block mb-2">2. Select Assets and their Operators</label>
+          <label class="font-bold block mb-2">Select Assets and their Operators</label>
           <p-table
                   #dtDialogAssets
                   [value]="assetsForDialog"
@@ -541,7 +541,7 @@
   <ng-template pTemplate="header">
     <div class="flex justify-content-between align-items-center w-full">
       <span class="p-dialog-title">Edit Contract Definition</span>
-      <button pButton pRipple type="button" [label]="isExpertMode ? 'Normal Mode' : 'Expert Mode'" [icon]="isExpertMode ? 'pi pi-user' : 'pi pi-code'" class="p-button-text" (click)="isExpertMode = !isExpertMode" [disabled]="isComplexSelectorForEdit"></button>
+      <button pButton pRipple type="button" [label]="isExpertMode ? 'Normal Mode' : 'Expert Mode'" [icon]="isExpertMode ? 'pi pi-user' : 'pi pi-code'" class="p-button-text" (click)="toggleEditExpertMode()" [disabled]="isComplexSelectorForEdit"></button>
     </div>
   </ng-template>
 
@@ -549,7 +549,7 @@
     <!-- Normal Mode -->
     <div *ngIf="!isExpertMode" class="flex flex-column flex-grow-1 overflow-hidden">
       <div class="col-12">
-        <label for="editCdAccessPolicy" class="font-bold block mb-2">1. Select Access Policy</label>
+        <label for="editCdAccessPolicy" class="font-bold block mb-2">Select Access Policy</label>
         <p-autoComplete
           id="editCdAccessPolicy"
           [(ngModel)]="contractPolicyToEdit.accessPolicyId"
@@ -568,7 +568,7 @@
       </div>
 
       <div class="col-12 mt-4 flex flex-column flex-grow-1 overflow-hidden">
-        <label class="font-bold block mb-2">2. Select Assets and their Operators</label>
+        <label class="font-bold block mb-2">Select Assets and their Operators</label>
         <p-table
           #dtEditDialogAssets
           [value]="assetsForDialog"

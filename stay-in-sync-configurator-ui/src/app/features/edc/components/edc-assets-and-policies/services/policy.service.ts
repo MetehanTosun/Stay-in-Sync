@@ -63,7 +63,7 @@ export class PolicyService {
       assetsSelector: [
         {
           operandLeft: 'https://w3id.org/edc/v0.0.1/ns/id',
-          operator: '=',
+          operator: 'eq',
           operandRight: 'asset-newsum-01',
         },
       ],
@@ -77,7 +77,7 @@ export class PolicyService {
       assetsSelector: [
         {
           operandLeft: 'https://w3id.org/edc/v0.0.1/ns/id',
-          operator: '=',
+          operator: 'eq',
           operandRight: 'asset-weather-data-02',
         },
       ],
@@ -118,17 +118,8 @@ export class PolicyService {
 
 
   createContractDefinition(odrlContractDef: OdrlContractDefinition): Promise<any> {
-    // Translate UI-friendly operators to ODRL-compliant ones before validation.
-    if (odrlContractDef.assetsSelector) {
-      odrlContractDef.assetsSelector.forEach(selector => {
-        if (selector.operator === 'eq') {
-          selector.operator = '=';
-        }
-      });
-    }
-
     if (!this.validateContractDefinitionOperator(odrlContractDef)) {
-      const errorMessage = 'Invalid Contract Definition: The operator for all asset selectors must be "=".';
+      const errorMessage = `Invalid Contract Definition: One or more asset selectors use an unsupported operator.`;
       console.error(errorMessage, odrlContractDef);
       return Promise.reject(new Error(errorMessage));
     }
@@ -144,17 +135,8 @@ export class PolicyService {
   }
 
   updateContractDefinition(odrlContractDef: OdrlContractDefinition): Promise<void> {
-    // Translate UI-friendly operators to ODRL-compliant ones before validation.
-    if (odrlContractDef.assetsSelector) {
-      odrlContractDef.assetsSelector.forEach(selector => {
-        if (selector.operator === 'eq') {
-          selector.operator = '=';
-        }
-      });
-    }
-
     if (!this.validateContractDefinitionOperator(odrlContractDef)) {
-      const errorMessage = 'Invalid Contract Definition: The operator for all asset selectors must be "=".';
+      const errorMessage = `Invalid Contract Definition: One or more asset selectors use an unsupported operator.`;
       console.error(errorMessage, odrlContractDef);
       return Promise.reject(new Error(errorMessage));
     }
@@ -256,9 +238,12 @@ export class PolicyService {
    * @returns True if valid, false otherwise.
    */
   private validateContractDefinitionOperator(contractDef: OdrlContractDefinition): boolean {
-    if (!contractDef.assetsSelector || contractDef.assetsSelector.length === 0) {
+    if (!contractDef.assetsSelector || contractDef.assetsSelector.length === 0)
+    {
       return true;
     }
-    return contractDef.assetsSelector.every(selector => selector.operator === '=');
+    // These are the ODRL-compliant operators that the Normal Mode UI supports.
+    const allowedOperators = ['eq', 'neq'];
+    return contractDef.assetsSelector.every(selector => allowedOperators.includes(selector.operator));
   }
 }
