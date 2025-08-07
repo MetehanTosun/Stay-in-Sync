@@ -18,7 +18,7 @@ import { TypeScriptGenerationResponse } from '../../models/typescriptGenerationR
 
 
 
-// MOCK COMPONENT - Ersetzt das echte Template
+
 @Component({
   selector: 'app-manage-endpoints',
   template: '<div>Mock Template</div>',
@@ -106,7 +106,7 @@ describe('ManageEndpointsComponent', () => {
       'apiConfigSourceSystemIdGet'
     ]);
 
-    // Setup default return values
+
     mockEndpointService.apiConfigSourceSystemSourceSystemIdEndpointGet.and.returnValue(
       of(new HttpResponse({ body: mockEndpoints, status: 200 }))
     );
@@ -119,11 +119,11 @@ describe('ManageEndpointsComponent', () => {
       of(new HttpResponse<HttpEvent<any>>({ status: 204 }))
     );
 
-    // Setup default TypeScript generation mock
+
     mockEndpointService.generateTypeScript.and.returnValue(
-      of(new HttpResponse<TypeScriptGenerationResponse>({ 
-        body: { generatedTypeScript: 'interface ResponseBody { }' }, 
-        status: 200 
+      of(new HttpResponse<TypeScriptGenerationResponse>({
+        body: { generatedTypeScript: 'interface ResponseBody { }' },
+        status: 200
       }))
     );
 
@@ -154,7 +154,7 @@ describe('ManageEndpointsComponent', () => {
     component = fixture.componentInstance;
     component.sourceSystemId = 1;
 
-    // Use real ngOnInit implementation
+
     spyOn(component, 'ngOnInit').and.callThrough();
   });
 
@@ -237,7 +237,7 @@ describe('ManageEndpointsComponent', () => {
       component.ngOnInit();
       component.apiUrl = 'https://api.test.com/openapi.json';
 
-      // Mock HTTP request
+
       spyOn(component as any, 'tryImportFromUrl').and.returnValue(Promise.resolve());
 
       component.importEndpoints();
@@ -294,12 +294,12 @@ describe('ManageEndpointsComponent', () => {
         throwError(() => new Error('Network error'))
       );
 
-      // Reset ngOnInit spy to allow real call
+
       (component.ngOnInit as jasmine.Spy).and.callThrough();
 
       component.ngOnInit();
 
-      // KORRIGIERT: Erwarte das Fallback-Verhalten
+
       expect(component.apiUrl).toBe('https://petstore.swagger.io/v2');
     });
 
@@ -325,11 +325,11 @@ describe('ManageEndpointsComponent', () => {
 
       component.importEndpoints();
 
-      // First attempt: /swagger.json
+
       const req1 = httpMock.expectOne('https://api.test.com/swagger.json');
       req1.flush('Not found', { status: 404, statusText: 'Not Found' });
 
-      // Second attempt: alternative URLs
+
       const req2 = httpMock.expectOne('https://api.test.com/v2/swagger.json');
       req2.flush(mockOpenApiSpec);
       tick();
@@ -420,20 +420,20 @@ paths:
     });
 
     it('should complete full import workflow', fakeAsync(() => {
-      // Setup
+
       component.ngOnInit();
 
-      // Start import
+
       component.importEndpoints();
 
-      // Mock successful OpenAPI download
+
       const req = httpMock.expectOne('https://petstore3.swagger.io/api/v3/openapi.json');
       req.flush(mockOpenApiSpec);
 
-      // Wait for processing
+
       tick();
 
-      // Verify endpoints were created
+
       expect(mockEndpointService.apiConfigSourceSystemSourceSystemIdEndpointPost)
         .toHaveBeenCalled();
       expect(component.importing).toBe(false);
@@ -442,16 +442,16 @@ paths:
     it('should handle complete manual endpoint creation workflow', () => {
       component.ngOnInit();
 
-      // Fill form
+
       component.endpointForm.patchValue({
         endpointPath: '/api/test',
         httpRequestType: 'POST'
       });
 
-      // Add endpoint
+
       component.addEndpoint();
 
-      // Verify service call
+
       expect(mockEndpointService.apiConfigSourceSystemSourceSystemIdEndpointPost)
         .toHaveBeenCalledWith(1, [{
           endpointPath: '/api/test',
@@ -460,7 +460,7 @@ paths:
           responseBodySchema: ''
         }]);
 
-      // Verify form reset
+
       expect(component.endpointForm.get('endpointPath')?.value).toBe('');
     });
   });
@@ -503,11 +503,11 @@ describe('ManageEndpointsComponent - Request Body', () => {
   });
 
   it('should reject invalid JSON in requestBodySchema', () => {
-    // Kein Mock nötig, da kein Service-Call erwartet wird
+
     component.endpointForm.patchValue({
       endpointPath: '/test',
       httpRequestType: 'POST',
-      requestBodySchema: '{foo: bar}' // invalid JSON
+              requestBodySchema: '{foo: bar}'
     });
     component.addEndpoint();
     expect(component.jsonError).toBe('Request-Body-Schema ist kein valides JSON.');
@@ -583,7 +583,7 @@ describe('ManageEndpointsComponent - Response Body', () => {
     component.endpointForm.patchValue({
       endpointPath: '/test',
       httpRequestType: 'GET',
-      responseBodySchema: '{message: Success}' // invalid JSON
+              responseBodySchema: '{message: Success}'
     });
     component.addEndpoint();
     expect(component.jsonError).toBe('Response-Body-Schema ist kein valides JSON.');
@@ -628,7 +628,7 @@ describe('ManageEndpointsComponent - Response Body', () => {
     };
 
     const result = component['processOpenApiSpec'](mockSpec);
-    expect(result).toBeUndefined(); // processOpenApiSpec returns void
+          expect(result).toBeUndefined();
   });
 
   it('should show response preview modal', () => {
@@ -665,7 +665,7 @@ describe('ManageEndpointsComponent - Response Body', () => {
     expect(component.selectedResponsePreviewEndpoint).toBeNull();
   });
 
-  // TypeScript Tab Functionality Tests
+
   describe('TypeScript Tab Functionality', () => {
     const validJsonSchema = '{"type": "object", "properties": {"id": {"type": "number"}, "name": {"type": "string"}}}';
     const invalidJsonSchema = '{invalid json}';
@@ -748,7 +748,7 @@ describe('ManageEndpointsComponent - Response Body', () => {
       );
 
       component.endpointForm.patchValue({ responseBodySchema: validJsonSchema });
-      component.onTabChange({ index: 1 }); // Switch to TypeScript tab
+      component.onTabChange({ index: 1 });
       tick();
 
       expect(component.activeTabIndex).toBe(1);
@@ -769,7 +769,7 @@ describe('ManageEndpointsComponent - Response Body', () => {
 
       const initialCallCount = mockEndpointService.generateTypeScript.calls.count();
 
-      component.onTabChange({ index: 1 }); // Switch to TypeScript tab again
+      component.onTabChange({ index: 1 });
       tick();
 
       expect(mockEndpointService.generateTypeScript.calls.count()).toBe(initialCallCount);
@@ -818,9 +818,9 @@ describe('ManageEndpointsComponent - Response Body', () => {
     }));
 
     it('should handle timeout during TypeScript generation', fakeAsync(() => {
-      // Simulate a slow response that would timeout
+
       mockEndpointService.generateTypeScript.and.returnValue(
-        of(new HttpResponse<TypeScriptGenerationResponse>({ 
+        of(new HttpResponse<TypeScriptGenerationResponse>({
           body: { generatedTypeScript: 'interface ResponseBody { id: number; }' }
         }))
       );
@@ -828,7 +828,7 @@ describe('ManageEndpointsComponent - Response Body', () => {
       component.endpointForm.patchValue({ responseBodySchema: validJsonSchema });
       component.loadTypeScriptForMainForm();
 
-      // Fast forward past the timeout
+
       tick(31000);
 
       expect(component.typescriptError).toContain('timed out');
@@ -845,7 +845,7 @@ describe('ManageEndpointsComponent - Response Body', () => {
       expect(jsonError).toContain('Invalid JSON format in schema');
     });
 
-   
+
     it('should generate TypeScript from complex nested JSON schema', fakeAsync(() => {
       const complexSchema = '{"type": "object", "properties": {"user": {"type": "object", "properties": {"id": {"type": "number"}, "profile": {"type": "object", "properties": {"name": {"type": "string"}, "email": {"type": "string"}}}}}}}';
       const mockResponse: TypeScriptGenerationResponse = {
@@ -994,13 +994,13 @@ describe('ManageEndpointsComponent - Response Body', () => {
 
       component.endpointForm.patchValue({ responseBodySchema: validJsonSchema });
 
-      // Simulate multiple rapid requests
+
       component.loadTypeScriptForMainForm();
       component.loadTypeScriptForMainForm();
       component.loadTypeScriptForMainForm();
       tick();
 
-      // Should only make one service call due to caching
+
       expect(mockEndpointService.generateTypeScript).toHaveBeenCalledTimes(1);
       expect(component.generatedTypeScript).toContain('interface ResponseBody');
     }));
@@ -1047,7 +1047,7 @@ describe('ManageEndpointsComponent - Response Body', () => {
       component.loadTypeScriptForMainForm();
       tick();
 
-      // Verify Monaco editor options are set correctly for TypeScript
+
       expect(component.typescriptEditorOptions).toBeDefined();
       expect(component.typescriptEditorOptions.language).toBe('typescript');
     }));
@@ -1062,19 +1062,19 @@ describe('ManageEndpointsComponent - Response Body', () => {
 
       component.endpointForm.patchValue({ responseBodySchema: validJsonSchema });
 
-      // Switch to TypeScript tab
+
       component.onTabChange({ index: 1 });
       tick();
 
       expect(component.activeTabIndex).toBe(1);
       expect(component.generatedTypeScript).toContain('interface ResponseBody');
 
-      // Switch back to JSON tab
+
       component.onTabChange({ index: 0 });
       tick();
 
       expect(component.activeTabIndex).toBe(0);
-      // TypeScript should still be cached
+
       expect(component.generatedTypeScript).toContain('interface ResponseBody');
     }));
   });
