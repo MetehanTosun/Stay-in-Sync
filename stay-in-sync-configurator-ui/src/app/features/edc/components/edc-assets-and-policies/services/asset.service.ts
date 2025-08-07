@@ -57,6 +57,10 @@ export class AssetService {
     */
   }
 
+  getOdrlAssets(): Promise<any[]> {
+    return Promise.resolve([...this.mockOdrlAssets]);
+  }
+
   /**
    * Creates a new asset by building the ODRL structure from the ui.
    * @param asset The simple asset object from the UI form.

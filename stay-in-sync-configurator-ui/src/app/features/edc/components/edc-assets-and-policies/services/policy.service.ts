@@ -92,15 +92,12 @@ export class PolicyService {
     return Promise.resolve(policies);
   }
 
+  getOdrlPolicyDefinitions(): Promise<OdrlPolicyDefinition[]> {
+    return Promise.resolve([...this.mockOdrlPolicies]);
+  }
 
   getContractDefinitions(): Promise<OdrlContractDefinition[]> {
     return Promise.resolve(this.mockOdrlContractDefinitions);
-  }
-
-
-  createAccessPolicy(accessPolicy: AccessPolicy): Promise<any> {
-    const odrlPayload = this.transformAccessPolicyToOdrl(accessPolicy);
-    return this.uploadPolicyDefinition(odrlPayload);
   }
 
   uploadPolicyDefinition(odrlPolicy: OdrlPolicyDefinition): Promise<any> {
@@ -162,26 +159,6 @@ export class PolicyService {
     }
   }
 
-
-  updateAccessPolicy(policyToUpdate: AccessPolicy): Promise<void> {
-    const index = this.mockOdrlPolicies.findIndex(p => p['@id'] === policyToUpdate.id);
-    if (index !== -1) {
-      const odrlPolicy = this.mockOdrlPolicies[index];
-      const permission = odrlPolicy.policy.permission[0];
-      const constraint = permission.constraint[0];
-
-      permission.action = policyToUpdate.action;
-      constraint.operator = policyToUpdate.operator;
-      constraint.rightOperand = policyToUpdate.bpn;
-
-      console.log('Mock Service: Updated access policy', this.mockOdrlPolicies[index]);
-      return Promise.resolve();
-    } else {
-      console.error('Mock Service: Access policy not found for update', policyToUpdate);
-      return Promise.reject('Access policy not found');
-    }
-  }
-
   deleteAccessPolicy(policyId: string): Promise<void> {
     const initialLength = this.mockOdrlPolicies.length;
     this.mockOdrlPolicies = this.mockOdrlPolicies.filter(p => p['@id'] !== policyId);
@@ -206,29 +183,6 @@ export class PolicyService {
       action: permission?.action || 'use',
       operator: constraint?.operator || 'eq',
       contractPolicies: [],
-    };
-  }
-
-  private transformAccessPolicyToOdrl(accessPolicy: AccessPolicy): OdrlPolicyDefinition {
-    const policyId = accessPolicy.id || `policy-${accessPolicy.bpn}`;
-
-    return {
-      '@context': { odrl: 'http://www.w3.org/ns/odrl/2/' },
-      '@id': policyId,
-      policy: {
-        permission: [
-          {
-            action: accessPolicy.action || 'use',
-            constraint: [
-              {
-                leftOperand: 'BusinessPartnerNumber',
-                operator: accessPolicy.operator || 'eq',
-                rightOperand: accessPolicy.bpn,
-              },
-            ],
-          },
-        ],
-      },
     };
   }
 

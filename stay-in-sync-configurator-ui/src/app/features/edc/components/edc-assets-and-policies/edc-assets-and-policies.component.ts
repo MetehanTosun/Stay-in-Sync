@@ -62,16 +62,15 @@ export class EdcAssetsAndPoliciesComponent implements OnInit {
 
   // Asset properties
   assets: Asset[] = [];
+  allOdrlAssets: any[] = []; // For holding the raw ODRL
   assetLoading: boolean = true;
   displayNewAssetDialog: boolean = false;
-  newAsset: Asset = this.createEmptyAsset();
   displayEditAssetDialog: boolean = false;
-  assetToEdit: Asset | null = null;
+  assetToEditODRL: any | null = null; // For editing raw JSON
 
   // Policy properties
   policyLoading: boolean = true;
   displayNewAccessPolicyDialog: boolean = false;
-  newAccessPolicy: AccessPolicy = this.createEmptyAccessPolicy();
   displayNewContractPolicyDialog: boolean = false;
 
   newContractPolicy: {
@@ -84,11 +83,12 @@ export class EdcAssetsAndPoliciesComponent implements OnInit {
   contractPolicyToEdit: ContractPolicy | null = null;
 
   displayEditAccessPolicyDialog: boolean = false;
-  policyToEdit: AccessPolicy | null = null;
+  policyToEditODRL: OdrlPolicyDefinition | null = null;
   operatorOptions: { label: string; value: string; }[];
   actionOptions: { label: string; value: string; }[];
 
   allAccessPolicies: AccessPolicy[] = [];
+  allOdrlAccessPolicies: OdrlPolicyDefinition[] = [];
   filteredAccessPolicies: AccessPolicy[] = [];
 
   // A flat list for all contract definitions
@@ -110,6 +110,14 @@ export class EdcAssetsAndPoliciesComponent implements OnInit {
   selectedTemplate: any | null = null;
   isComplexSelectorForEdit: boolean = false;
   contractDefinitionToEditODRL: OdrlContractDefinition | null = null;
+
+  // Properties for Asset Templates
+  assetTemplates: { name: string, content: any }[] = [];
+  selectedAssetTemplate: any | null = null;
+
+  // Properties for Access Policy Templates
+  accessPolicyTemplates: { name: string, content: any }[] = [];
+  selectedAccessPolicyTemplate: any | null = null;
 
   editorOptions = {
     theme: 'vs-dark',
@@ -142,6 +150,8 @@ export class EdcAssetsAndPoliciesComponent implements OnInit {
     this.loadAssets();
     this.loadPoliciesAndDefinitions();
     this.loadContractDefinitionTemplates();
+    this.loadAccessPolicyTemplates();
+    this.loadAssetTemplates();
   }
 
   private loadContractDefinitionTemplates() {
@@ -182,6 +192,68 @@ export class EdcAssetsAndPoliciesComponent implements OnInit {
     ];
   }
 
+  private loadAccessPolicyTemplates() {
+    // In a real app, this would come from a service
+    this.accessPolicyTemplates = [
+      {
+        name: 'BPN Access Policy',
+        content: {
+          "@context": { "odrl": "http://www.w3.org/ns/odrl/2/" },
+          "@id": "policy-id-goes-here",
+          "policy": {
+            "permission": [{
+              "action": "use",
+              "constraint": [{
+                "leftOperand": "BusinessPartnerNumber",
+                "operator": "eq",
+                "rightOperand": "bpn-goes-here"
+              }]
+            }]
+          }
+        }
+      },
+      {
+        name: 'Membership Policy',
+        content: {
+          "@context": { "odrl": "http://www.w3.org/ns/odrl/2/" },
+          "@id": "membership-policy-1",
+          "policy": {
+            "permission": [{
+              "action": "use",
+              "constraint": [{
+                "leftOperand": "Membership",
+                "operator": "eq",
+                "rightOperand": "active"
+              }]
+            }]
+          }
+        }
+      }
+    ];
+  }
+
+  private loadAssetTemplates() {
+    // Mock data for asset templates
+    this.assetTemplates = [
+      {
+        name: 'Standard HTTP Data Asset',
+        content: {
+          "@context": { "edc": "https://w3id.org/edc/v0.0.1/ns/" },
+          "@id": "asset-id-goes-here",
+          "properties": {
+            "asset:prop:name": "Asset Name",
+            "asset:prop:description": "A description of the asset.",
+            "asset:prop:contenttype": "application/json"
+          },
+          "dataAddress": {
+            "type": "HttpData",
+            "baseUrl": "https://my-backend/api/data"
+          }
+        }
+      }
+    ];
+  }
+
   /**
    * Filters assets based on user input for the autocomplete component.
    * It searches by both Asset ID and asset's name
@@ -210,9 +282,13 @@ export class EdcAssetsAndPoliciesComponent implements OnInit {
 
   private loadAssets(): void {
     this.assetLoading = true;
-    this.assetService
-      .getAssets()
-      .then((data) => (this.assets = data))
+    Promise.all([
+      this.assetService.getAssets(),
+      this.assetService.getOdrlAssets()
+    ]).then(([assets, odrlAssets]) => {
+      this.assets = assets;
+      this.allOdrlAssets = odrlAssets;
+    })
       .catch((error) => {
         console.error('Failed to load assets:', error);
         this.messageService.add({severity: 'error', summary: 'Error', detail: 'Could not load assets.'});
@@ -223,12 +299,14 @@ export class EdcAssetsAndPoliciesComponent implements OnInit {
   async loadPoliciesAndDefinitions() {
     this.policyLoading = true;
     try {
-      const [accessPolicies, contractDefinitions] = await Promise.all([
+      const [accessPolicies, contractDefinitions, odrlAccessPolicies] = await Promise.all([
         this.policyService.getAccessPolicies(),
         this.policyService.getContractDefinitions(),
+        this.policyService.getOdrlPolicyDefinitions(),
       ]);
 
       this.allOdrlContractDefinitions = contractDefinitions;
+      this.allOdrlAccessPolicies = odrlAccessPolicies;
 
       // Create a map from policy ID to the policy object for efficient lookup
       const policyMap = new Map<string, AccessPolicy>();
@@ -304,13 +382,21 @@ export class EdcAssetsAndPoliciesComponent implements OnInit {
   }
 
   // Asset methods
-  private createEmptyAsset(): Asset {
-    // Initialize with empty strings to allow for placeholder text
-    return { id: '', name: '', url: '', type: '', description: '', contentType: '' };
-  }
-
   openNewAssetDialog() {
-    this.newAsset = this.createEmptyAsset();
+    this.expertModeJsonContent = JSON.stringify({
+      "@context": { "edc": "https://w3id.org/edc/v0.0.1/ns/" },
+      "@id": "asset-id-goes-here",
+      "properties": {
+        "asset:prop:name": "Asset Name",
+        "asset:prop:description": "A description of the asset.",
+        "asset:prop:contenttype": "application/json"
+      },
+      "dataAddress": {
+        "type": "HttpData",
+        "baseUrl": "https://my-backend/api/data"
+      }
+    }, null, 2);
+    this.selectedAssetTemplate = null;
     this.displayNewAssetDialog = true;
   }
 
@@ -319,40 +405,20 @@ export class EdcAssetsAndPoliciesComponent implements OnInit {
   }
 
   async saveNewAsset() {
-
-    if (
-      !this.newAsset.name ||
-      !this.newAsset.url ||
-      !this.newAsset.type ||
-      !this.newAsset.contentType
-    ) {
-
-      this.messageService.add({
-        severity: 'warn',
-        summary: 'Validation Error',
-        detail: 'Name, URL, Type, and Content Type are required.',
-        life: 4000
-      });
-      return;
-    }
-
     try {
-
-      await this.assetService.createAsset(this.newAsset);
-      this.messageService.add({
-        severity: 'success',
-        summary: 'Success',
-        detail: 'Asset created successfully.',
-      });
+      const assetJson = JSON.parse(this.expertModeJsonContent);
+      // Basic validation
+      if (!assetJson['@id'] || !assetJson.properties || !assetJson.dataAddress) {
+        throw new Error("Invalid asset structure. '@id', 'properties', and 'dataAddress' are required.");
+      }
+      await this.assetService.uploadAsset(assetJson);
+      this.messageService.add({ severity: 'success', summary: 'Success', detail: 'Asset created successfully.' });
       this.loadAssets();
       this.hideNewAssetDialog();
-    } catch (error) {
-      this.messageService.add({
-        severity: 'error',
-        summary: 'Error',
-        detail: 'Failed to create asset.',
-      });
-      console.error('Failed to create asset:', error);
+    } catch (error: any) {
+      const detail = error.message.includes('JSON') ? 'Could not parse JSON.' : 'Failed to save asset.';
+      this.messageService.add({ severity: 'error', summary: 'Error', detail });
+      console.error('Failed to save asset:', error);
     }
   }
 
@@ -456,61 +522,39 @@ export class EdcAssetsAndPoliciesComponent implements OnInit {
   }
 
   editAsset(asset: Asset) {
-    this.assetToEdit = { ...asset };
-    this.displayEditAssetDialog = true;
+    this.assetToEditODRL = this.allOdrlAssets.find(a => a['@id'] === asset.id) ?? null;
+    if (this.assetToEditODRL) {
+      this.expertModeJsonContent = JSON.stringify(this.assetToEditODRL, null, 2);
+      this.displayEditAssetDialog = true;
+    } else {
+      this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Could not find the full ODRL asset to edit.' });
+    }
   }
 
   hideEditAssetDialog() {
     this.displayEditAssetDialog = false;
-    this.assetToEdit = null;
+    this.assetToEditODRL = null;
   }
 
   async saveEditedAsset() {
-    if (!this.assetToEdit) {
+    if (!this.assetToEditODRL) {
+      this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Editing context is lost.' });
       return;
     }
-
-    // Add validation to ensure required fields are not empty
-    if (
-      !this.assetToEdit.name ||
-      !this.assetToEdit.url ||
-      !this.assetToEdit.type ||
-      !this.assetToEdit.contentType
-    ) {
-      this.messageService.add({
-        severity: 'warn',
-        summary: 'Validation Error',
-        detail: 'Name, URL, Type, and Content Type are required.',
-        life: 4000
-      });
-      return;
-    }
-
     try {
-      // Call the service to change
-      await this.assetService.updateAsset(this.assetToEdit);
-
-      // On success, update the UI
-      const index = this.assets.findIndex((a) => a.id === this.assetToEdit!.id);
-      if (index !== -1) {
-        this.assets[index] = this.assetToEdit;
-        this.assets = [...this.assets]; // Trigger change detection
+      const assetJson = JSON.parse(this.expertModeJsonContent);
+      if (assetJson['@id'] !== this.assetToEditODRL['@id']) {
+        throw new Error("The '@id' of the asset cannot be changed during an edit.");
       }
-
-      this.messageService.add({
-        severity: 'success',
-        summary: 'Success',
-        detail: 'Asset updated successfully.',
-      });
-
+      // The service's uploadAsset handles both create and update
+      await this.assetService.uploadAsset(assetJson);
+      this.messageService.add({ severity: 'success', summary: 'Success', detail: 'Asset updated successfully.' });
+      this.loadAssets();
       this.hideEditAssetDialog();
-    } catch (error) {
-      this.messageService.add({
-        severity: 'error',
-        summary: 'Error',
-        detail: 'Failed to update asset.',
-      });
-      console.error('Failed to update asset:', error);
+    } catch (error: any) {
+      const detail = error.message.includes('JSON') ? 'Could not parse JSON.' : error.message || 'Failed to save asset.';
+      this.messageService.add({ severity: 'error', summary: 'Error', detail });
+      console.error('Failed to save asset:', error);
     }
   }
 
@@ -544,19 +588,24 @@ export class EdcAssetsAndPoliciesComponent implements OnInit {
     });
   }
 
-  //access policy methods
-  private createEmptyAccessPolicy(): AccessPolicy {
-    return {
-      id: '',
-      bpn: '',
-      contractPolicies: [],
-      action: 'use',
-      operator: 'eq',
-    };
-  }
-
+  // --- Access Policy Methods (JSON-only) ---
   openNewAccessPolicyDialog() {
-    this.newAccessPolicy = this.createEmptyAccessPolicy();
+    // Set a default template for the user
+    this.expertModeJsonContent = JSON.stringify({
+      "@context": { "odrl": "http://www.w3.org/ns/odrl/2/" },
+      "@id": "policy-id-goes-here",
+      "policy": {
+        "permission": [{
+          "action": "use",
+          "constraint": [{
+            "leftOperand": "BusinessPartnerNumber",
+            "operator": "eq",
+            "rightOperand": "bpn-goes-here"
+          }]
+        }]
+      }
+    }, null, 2);
+    this.selectedAccessPolicyTemplate = null; // Reset template selection
     this.displayNewAccessPolicyDialog = true;
   }
 
@@ -565,54 +614,55 @@ export class EdcAssetsAndPoliciesComponent implements OnInit {
   }
 
   async saveNewAccessPolicy() {
-    if (!this.newAccessPolicy.bpn) {
-      this.messageService.add({severity: 'warn', summary: 'Validation Error', detail: 'BPN is required for manual creation.'});
-      return;
-    }
     try {
-      await this.policyService.createAccessPolicy(this.newAccessPolicy);
+      const policyJson = JSON.parse(this.expertModeJsonContent);
+      // Basic validation
+      if (!policyJson['@id'] || !policyJson.policy) {
+        throw new Error("Invalid policy structure. '@id' and 'policy' are required.");
+      }
+      await this.policyService.uploadPolicyDefinition(policyJson);
       this.messageService.add({severity: 'success', summary: 'Success', detail: 'Access Policy created successfully.'});
       this.loadPoliciesAndDefinitions();
       this.hideNewAccessPolicyDialog();
-    } catch (error) {
-      this.messageService.add({severity: 'error', summary: 'Error', detail: 'Failed to create access policy.'});
-      console.error('Failed to create access policy:', error);
+    } catch (error: any) {
+      const detail = error.message.includes('JSON') ? 'Could not parse JSON.' : 'Failed to save access policy.';
+      this.messageService.add({ severity: 'error', summary: 'Error', detail: detail });
+      console.error('Failed to save access policy:', error);
     }
   }
 
   editAccessPolicy(policy: AccessPolicy) {
-    // using a deep copy to avoid modifying the original object while editing
-    this.policyToEdit = JSON.parse(JSON.stringify(policy));
-    this.displayEditAccessPolicyDialog = true;
+    this.policyToEditODRL = this.allOdrlAccessPolicies.find(p => p['@id'] === policy.id) ?? null;
+    if (this.policyToEditODRL) {
+      this.expertModeJsonContent = JSON.stringify(this.policyToEditODRL, null, 2);
+      this.displayEditAccessPolicyDialog = true;
+    } else {
+      this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Could not find the full ODRL policy to edit.' });
+    }
   }
 
   hideEditAccessPolicyDialog() {
     this.displayEditAccessPolicyDialog = false;
-    this.policyToEdit = null;
+    this.policyToEditODRL = null;
   }
 
   async saveEditedAccessPolicy() {
-    if (!this.policyToEdit || !this.policyToEdit.bpn) {
-      this.messageService.add({ severity: 'warn', summary: 'Validation Error', detail: 'BPN is required.' });
+    if (!this.policyToEditODRL) {
+      this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Editing context is lost.' });
       return;
     }
-
     try {
-      await this.policyService.updateAccessPolicy(this.policyToEdit);
-
-      // Update the 'allAccessPolicies' master list
-      const index = this.allAccessPolicies.findIndex((p: AccessPolicy) => p.id === this.policyToEdit!.id);
-      if (index !== -1) {
-        this.policyToEdit.contractPolicies = this.allAccessPolicies[index].contractPolicies;
-        this.allAccessPolicies[index] = this.policyToEdit;
-        //refresh the filtered list to update the UI
-        this.filteredAccessPolicies = [...this.allAccessPolicies];
+      const policyJson = JSON.parse(this.expertModeJsonContent);
+      if (policyJson['@id'] !== this.policyToEditODRL['@id']) {
+        throw new Error("The '@id' of the policy cannot be changed during an edit.");
       }
-
+      await this.policyService.uploadPolicyDefinition(policyJson);
       this.messageService.add({ severity: 'success', summary: 'Success', detail: 'Access Policy updated successfully.' });
+      this.loadPoliciesAndDefinitions();
       this.hideEditAccessPolicyDialog();
-    } catch (error) {
-      this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Failed to update access policy.' });
+    } catch (error: any) {
+      const detail = error.message.includes('JSON') ? 'Could not parse JSON.' : error.message || 'Failed to save access policy.';
+      this.messageService.add({ severity: 'error', summary: 'Error', detail: detail });
       console.error('Failed to update access policy:', error);
     }
   }
@@ -1361,6 +1411,60 @@ export class EdcAssetsAndPoliciesComponent implements OnInit {
         accessPolicyId: accessPolicyId,        contractPolicyId: accessPolicyId,        assetsSelector: this.buildAssetSelectors(),
       };
       this.expertModeJsonContent = JSON.stringify(updatedOdrlPayload, null, 2);
+    }
+  }
+
+  onAccessPolicyTemplateChange(event: { value: any }) {
+    if (event.value) {
+      this.expertModeJsonContent = JSON.stringify(event.value.content, null, 2);
+    } else {
+      this.expertModeJsonContent = '';
+    }
+  }
+
+  async onAccessPolicyTemplateFileSelect(event: Event) {
+    const element = event.currentTarget as HTMLInputElement;
+    const fileList: FileList | null = element.files;
+
+    if (!fileList || fileList.length === 0) {
+      return;
+    }
+
+    const file = fileList[0]; // Only one file
+    try {
+      this.expertModeJsonContent = await file.text();
+      this.messageService.add({ severity: 'info', summary: 'Template Loaded', detail: `Template from ${file.name} loaded into editor.` });
+    } catch (error) {
+      this.messageService.add({ severity: 'error', summary: 'Read Error', detail: 'Could not read the selected file.' });
+    } finally {
+      element.value = ''; // Reset file input
+    }
+  }
+
+  onAssetTemplateChange(event: { value: any }) {
+    if (event.value) {
+      this.expertModeJsonContent = JSON.stringify(event.value.content, null, 2);
+    } else {
+      this.expertModeJsonContent = '';
+    }
+  }
+
+  async onAssetTemplateFileSelect(event: Event) {
+    const element = event.currentTarget as HTMLInputElement;
+    const fileList: FileList | null = element.files;
+
+    if (!fileList || fileList.length === 0) {
+      return;
+    }
+
+    const file = fileList[0];
+    try {
+      this.expertModeJsonContent = await file.text();
+      this.messageService.add({ severity: 'info', summary: 'Template Loaded', detail: `Template from ${file.name} loaded into editor.` });
+    } catch (error) {
+      this.messageService.add({ severity: 'error', summary: 'Read Error', detail: 'Could not read the selected file.' });
+    } finally {
+      element.value = '';
     }
   }
 }
