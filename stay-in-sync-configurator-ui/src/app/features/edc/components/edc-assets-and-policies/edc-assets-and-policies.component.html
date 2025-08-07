@@ -9,6 +9,8 @@
     [rows]="10"
     [rowsPerPageOptions]="[10, 25, 50]"
     [loading]="assetLoading"
+    selectionMode="single"
+    (onRowSelect)="viewAssetDetails($event)"
     [paginator]="true"
     [globalFilterFields]="['id', 'name', 'url', 'type', 'contentType', 'description']"
     [tableStyle]="{ 'min-width': '60rem' }"
@@ -49,7 +51,7 @@
     </ng-template>
 
     <ng-template pTemplate="body" let-asset>
-      <tr [pTooltip]="asset.description" tooltipPosition="top">
+      <tr [pSelectableRow]="asset" [pTooltip]="asset.description" tooltipPosition="top">
         <td>{{ asset.id }}</td>
         <td>{{ asset.name }}</td>
         <td><p-tag [value]="asset.type"></p-tag></td>
@@ -84,6 +86,8 @@
     [rows]="10"
     [rowsPerPageOptions]="[10, 25, 50]"
     [paginator]="true"
+    selectionMode="single"
+    (onRowSelect)="viewAccessPolicyDetails($event)"
     [loading]="policyLoading"
     [globalFilterFields]="['id', 'bpn']"
     [tableStyle]="{ 'min-width': '35rem' }"
@@ -126,7 +130,7 @@
     </ng-template>
 
     <ng-template pTemplate="body" let-policy>
-      <tr>
+      <tr [pSelectableRow]="policy">
         <td>{{ policy.id }}</td>
         <td>{{ policy.bpn }}</td>
         <td>
@@ -151,6 +155,8 @@
     [rows]="10"
     [rowsPerPageOptions]="[10, 25, 50]"
     [paginator]="true"
+    selectionMode="single"
+    (onRowSelect)="viewContractDefinitionDetails($event)"
     [loading]="policyLoading"
     [globalFilterFields]="['id', 'assetId', 'bpn']"
     [tableStyle]="{ 'min-width': '60rem' }"
@@ -185,7 +191,7 @@
     </ng-template>
 
     <ng-template pTemplate="body" let-contractPolicy>
-      <tr>
+      <tr [pSelectableRow]="contractPolicy">
         <td>{{ contractPolicy.id }}</td>
         <td>{{ contractPolicy.assetId }}</td>
         <td>{{ contractPolicy.bpn }}</td>
@@ -527,6 +533,26 @@
   <ng-template pTemplate="footer">
     <button pButton pRipple label="Cancel" icon="pi pi-times" class="p-button-text" (click)="hideEditContractPolicyDialog()"></button>
     <button pButton pRipple label="Save Changes" icon="pi pi-check" class="p-button-text" (click)="saveEditedContractPolicy()"></button>
+  </ng-template>
+</p-dialog>
+
+<!-- Read-only View Dialog -->
+<p-dialog
+  [header]="viewDialogHeader"
+  [(visible)]="displayViewDialog"
+  [modal]="true"
+  [style]="{ width: '50vw' }"
+  (onHide)="displayViewDialog = false"
+  [draggable]="false"
+  [resizable]="false"
+>
+  <ngx-monaco-editor
+    [options]="readOnlyEditorOptions"
+    [(ngModel)]="jsonToView"
+    style="height: 60vh; border: 1px solid var(--surface-d);"
+  ></ngx-monaco-editor>
+  <ng-template pTemplate="footer">
+    <button pButton pRipple label="Close" icon="pi pi-check" class="p-button-text" (click)="displayViewDialog = false"></button>
   </ng-template>
 </p-dialog>
 

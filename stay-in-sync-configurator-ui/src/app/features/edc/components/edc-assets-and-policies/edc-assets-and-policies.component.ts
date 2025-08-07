@@ -3,7 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 
 // PrimeNG Modules
-import { Table, TableModule } from 'primeng/table';
+import { Table, TableModule, TableRowSelectEvent } from 'primeng/table';
 import { ButtonModule } from 'primeng/button';
 import { DialogModule } from 'primeng/dialog';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
@@ -124,6 +124,15 @@ export class EdcAssetsAndPoliciesComponent implements OnInit {
     language: 'json',
     automaticLayout: true,
     minimap: { enabled: false },
+  };
+
+  // Properties for the read-only view dialog
+  displayViewDialog: boolean = false;
+  viewDialogHeader: string = '';
+  jsonToView: string = '';
+  readOnlyEditorOptions = {
+    ...this.editorOptions,
+    readOnly: true,
   };
 
 
@@ -1465,6 +1474,44 @@ export class EdcAssetsAndPoliciesComponent implements OnInit {
       this.messageService.add({ severity: 'error', summary: 'Read Error', detail: 'Could not read the selected file.' });
     } finally {
       element.value = '';
+    }
+  }
+
+  // --- View Details Methods ---
+
+  viewAssetDetails(event: TableRowSelectEvent): void {
+    const asset = event.data as Asset;
+    const odrlAsset = this.allOdrlAssets.find(a => a['@id'] === asset.id);
+    if (odrlAsset) {
+      this.jsonToView = JSON.stringify(odrlAsset, null, 2);
+      this.viewDialogHeader = `Details for Asset: ${asset.name}`;
+      this.displayViewDialog = true;
+    } else {
+      this.messageService.add({ severity: 'warn', summary: 'Not Found', detail: 'Could not find the full ODRL details for this asset.' });
+    }
+  }
+
+  viewAccessPolicyDetails(event: TableRowSelectEvent): void {
+    const policy = event.data as AccessPolicy;
+    const odrlPolicy = this.allOdrlAccessPolicies.find(p => p['@id'] === policy.id);
+    if (odrlPolicy) {
+      this.jsonToView = JSON.stringify(odrlPolicy, null, 2);
+      this.viewDialogHeader = `Details for Access Policy: ${policy.id}`;
+      this.displayViewDialog = true;
+    } else {
+      this.messageService.add({ severity: 'warn', summary: 'Not Found', detail: 'Could not find the full ODRL details for this policy.' });
+    }
+  }
+
+  viewContractDefinitionDetails(event: TableRowSelectEvent): void {
+    const contractPolicy = event.data as ContractPolicy;
+    const odrlContractDef = this.allOdrlContractDefinitions.find(cd => cd['@id'] === contractPolicy.id);
+    if (odrlContractDef) {
+      this.jsonToView = JSON.stringify(odrlContractDef, null, 2);
+      this.viewDialogHeader = `Details for Contract Definition: ${contractPolicy.id}`;
+      this.displayViewDialog = true;
+    } else {
+      this.messageService.add({ severity: 'warn', summary: 'Not Found', detail: 'Could not find the full ODRL details for this contract definition.' });
     }
   }
 }
