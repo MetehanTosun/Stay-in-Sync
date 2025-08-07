@@ -59,7 +59,7 @@ public class ApiHeaderService {
     @Transactional(SUPPORTS)
     public Optional<ApiHeader> findRequestHeaderById(Long id) {
         Log.debugf("Finding api-request-header by id = %d", id);
-        // Use a more specific query to avoid inheritance issues
+        
         List<ApiHeader> headers = ApiHeader.find("id", id).list();
         return headers.isEmpty() ? Optional.empty() : Optional.of(headers.get(0));
     }
@@ -68,7 +68,7 @@ public class ApiHeaderService {
         Log.debugf("Deleting api-request-header by id = %d", id);
         
         try {
-            // Use direct SQL deletion to avoid inheritance issues
+            
             long deletedValues = ApiHeaderValue.delete("apiHeader.id", id);
             Log.debugf("Deleted %d header values for header ID: %d", deletedValues, id);
             
@@ -95,7 +95,7 @@ public class ApiHeaderService {
         Log.debugf("Replacing endpoint: %s", apiEndpointQueryParam);
 
         Optional<ApiHeader> updatedSourceSystemEndpoint = ApiHeader.findByIdOptional(apiEndpointQueryParam.id)
-                .map(ApiHeader.class::cast) // Only here for type erasure within the IDE
+                .map(ApiHeader.class::cast) 
                 .map(targetSouceSystemEndpoint -> {
                     this.mapper.mapFullUpdate(apiEndpointQueryParam, targetSouceSystemEndpoint);
                     return targetSouceSystemEndpoint;

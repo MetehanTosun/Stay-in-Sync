@@ -66,7 +66,7 @@ public class SourceSystemEndpointService {
             }
         }
 
-        // Upsert-Logik: Prüfe, ob Endpoint existiert
+  
         SourceSystemEndpoint existing = SourceSystemEndpoint.find("sourceSystem.id = ?1 and endpointPath = ?2 and httpRequestType = ?3",
                 sourceSystemId,
                 sourceSystemEndpointDTO.endpointPath(),
@@ -77,7 +77,7 @@ public class SourceSystemEndpointService {
                 new CoreManagementException(Response.Status.NOT_FOUND, "Unable to find Source System", "There is no source-system with id " + sourceSystemId));
 
         if (existing != null) {
-            // Update
+
             SourceSystemEndpoint updated = sourceSystemEndpointFullMapper.mapToEntity(sourceSystemEndpointDTO);
             existing.endpointPath = updated.endpointPath;
             existing.httpRequestType = updated.httpRequestType;
@@ -85,7 +85,7 @@ public class SourceSystemEndpointService {
             existing.responseBodySchema = updated.responseBodySchema;
             existing.description = updated.description;
             
-            // Generate TypeScript if responseBodySchema is present
+         
             if (existing.responseBodySchema != null && !existing.responseBodySchema.isBlank()) {
                 try {
                     existing.responseDts = typeScriptTypeGenerator.generate(existing.responseBodySchema);
@@ -93,23 +93,23 @@ public class SourceSystemEndpointService {
                     Log.warnf(e, "Could not generate TypeScript for endpoint %s", existing.endpointPath);
                     existing.responseDts = null;
                 }
-            } else {
-                // Clear responseDts if no responseBodySchema
+            } else {   
                 existing.responseDts = null;
             }
             
-            // ggf. weitere Felder übernehmen
+            
             existing.sourceSystem = sourceSystem;
             existing.syncSystem = sourceSystem;
             existing.persist();
             return existing;
         } else {
-            // Neu anlegen
+         
+             
             SourceSystemEndpoint sourceSystemEndpoint = sourceSystemEndpointFullMapper.mapToEntity(sourceSystemEndpointDTO);
             sourceSystemEndpoint.requestBodySchema = sourceSystemEndpointDTO.requestBodySchema();
             sourceSystemEndpoint.responseBodySchema = sourceSystemEndpointDTO.responseBodySchema();
             
-            // Generate TypeScript if responseBodySchema is present
+            
             if (sourceSystemEndpoint.responseBodySchema != null && !sourceSystemEndpoint.responseBodySchema.isBlank()) {
                 try {
                     sourceSystemEndpoint.responseDts = typeScriptTypeGenerator.generate(sourceSystemEndpoint.responseBodySchema);
@@ -118,7 +118,7 @@ public class SourceSystemEndpointService {
                     sourceSystemEndpoint.responseDts = null;
                 }
             } else {
-                // Clear responseDts if no responseBodySchema
+               
                 sourceSystemEndpoint.responseDts = null;
             }
             
@@ -158,21 +158,21 @@ public class SourceSystemEndpointService {
     public void deleteSourceSystemEndpointById(Long id) {
         Log.debugf("Deleting source-system-endpoint by id = %d", id);
         
-        // First find the endpoint to ensure it exists and handle relationships properly
+        
         Optional<SourceSystemEndpoint> endpointOpt = SourceSystemEndpoint.findByIdOptional(id);
         if (endpointOpt.isPresent()) {
             SourceSystemEndpoint endpoint = endpointOpt.get();
             
-            // Clear the relationship with SourceSystem
+          
             if (endpoint.sourceSystem != null) {
-                // Remove this endpoint from the sourceSystem's sourceSystemEndpoints collection
+             
                 if (endpoint.sourceSystem.sourceSystemEndpoints != null) {
                     endpoint.sourceSystem.sourceSystemEndpoints.remove(endpoint);
                 }
                 endpoint.sourceSystem = null;
             }
             
-            // Delete the endpoint
+            
             endpoint.delete();
         } else {
             Log.warnf("No source-system-endpoint found with id %d", id);
@@ -204,11 +204,11 @@ public class SourceSystemEndpointService {
                 .map(SourceSystemEndpoint.class::cast) // Only here for type erasure within the IDE
                 .map(targetSouceSystemEndpoint -> {
                     this.sourceSystemEndpointFullMapper.mapFullUpdate(sourceSystemEndpoint, targetSouceSystemEndpoint);
-                    // Explizit das Schema übernehmen
+                 
                     targetSouceSystemEndpoint.requestBodySchema = sourceSystemEndpoint.requestBodySchema;
                     targetSouceSystemEndpoint.responseBodySchema = sourceSystemEndpoint.responseBodySchema;
                     
-                    // Generate TypeScript if responseBodySchema is present
+            
                     if (targetSouceSystemEndpoint.responseBodySchema != null && !targetSouceSystemEndpoint.responseBodySchema.isBlank()) {
                         try {
                             targetSouceSystemEndpoint.responseDts = typeScriptTypeGenerator.generate(targetSouceSystemEndpoint.responseBodySchema);
@@ -217,7 +217,7 @@ public class SourceSystemEndpointService {
                             targetSouceSystemEndpoint.responseDts = null;
                         }
                     } else {
-                        // Clear responseDts if no responseBodySchema
+
                         targetSouceSystemEndpoint.responseDts = null;
                     }
                     

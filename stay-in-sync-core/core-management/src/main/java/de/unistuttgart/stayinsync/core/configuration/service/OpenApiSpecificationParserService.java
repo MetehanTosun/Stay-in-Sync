@@ -50,16 +50,15 @@ public class OpenApiSpecificationParserService {
         try {
             String specContent;
             
-            // Prüfe, ob es eine URL ist
+           
             if (sourceSystem.openApiSpec.startsWith("http")) {
                 Log.infof("📥 Downloading OpenAPI spec from URL: %s", sourceSystem.openApiSpec);
                 specContent = downloadFromUrl(sourceSystem.openApiSpec);
             } else {
                 Log.infof("📄 Using provided OpenAPI spec content directly");
-                specContent = sourceSystem.openApiSpec; // Direkt verwenden - ist bereits String!
+                specContent = sourceSystem.openApiSpec; 
             }
     
-            // Parse die Spezifikation
             SwaggerParseResult result = new OpenAPIV3Parser().readContents(specContent, null, new ParseOptions());
             OpenAPI openAPI = result.getOpenAPI();
     
@@ -83,7 +82,7 @@ public class OpenApiSpecificationParserService {
         }
     }
     
-    // Neue Methode hinzufügen
+    
     private String downloadFromUrl(String url) throws Exception {
         try (var client = java.net.http.HttpClient.newHttpClient()) {
             var request = java.net.http.HttpRequest.newBuilder()
@@ -110,7 +109,7 @@ public class OpenApiSpecificationParserService {
         for (Map.Entry<String, SecurityScheme> entry : openAPI.getComponents().getSecuritySchemes().entrySet()) {
             SecurityScheme securityScheme = entry.getValue();
 
-            // cookie/query based schemes are skipped, we only care about schemes resulting in a request header.
+            
             if (securityScheme.getIn() != SecurityScheme.In.HEADER && securityScheme.getType() != SecurityScheme.Type.HTTP) {
                 continue;
             }
@@ -127,7 +126,7 @@ public class OpenApiSpecificationParserService {
                 headerType = ApiRequestHeaderType.AUTHORIZATION;
 
             } else {
-                continue; // TODO: handle possible future types.
+                continue;
             }
 
             boolean alreadyExists = apiHeaderService.findAllHeadersBySyncSystemId(sourceSystem.id)
@@ -242,8 +241,8 @@ public class OpenApiSpecificationParserService {
                 parameter.getName(),
                 paramType,
                 schemaType,
-                null, // TODO: not sure, which values this is
-                null // TODO: Add already used values as a suggestion
+                null, 
+                null 
         );
         apiEndpointQueryParamService.persistApiQueryParam(paramDTO, endpoint.id);
     }

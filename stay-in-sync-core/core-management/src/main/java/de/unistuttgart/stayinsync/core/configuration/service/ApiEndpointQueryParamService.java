@@ -42,7 +42,6 @@ public class ApiEndpointQueryParamService {
 
         ApiEndpointQueryParam apiEndpointQueryParam = mapper.mapToEntity(apiEndpointQueryParamDTO);
 
-        // NEU: Path-Parameter IMMER mit {} speichern
         if (apiEndpointQueryParam.queryParamType != null && apiEndpointQueryParam.queryParamType.name().equals("PATH")) {
             apiEndpointQueryParam.paramName = ensureBraces(apiEndpointQueryParam.paramName);
         }
@@ -60,7 +59,7 @@ public class ApiEndpointQueryParamService {
     public List<ApiEndpointQueryParam> findAllQueryParamsByEndpointId(Long endpointId) {
         Log.debugf("Finding all query params for endpoint with id = %s", endpointId);
         try {
-            // Use a simple query that avoids inheritance issues
+           
             return ApiEndpointQueryParam.find("syncSystemEndpoint.id", endpointId).list();
         } catch (Exception e) {
             Log.errorf(e, "Error finding query params for endpoint ID: %d", endpointId);
@@ -85,7 +84,7 @@ public class ApiEndpointQueryParamService {
 
     public Optional<ApiEndpointQueryParam> replaceQueryParam(@NotNull @Valid ApiEndpointQueryParamDTO apiEndpointQueryParamDTO) {
         ApiEndpointQueryParam apiEndpointQueryParam = mapper.mapToEntity(apiEndpointQueryParamDTO);
-        // NEU: Path-Parameter IMMER mit {} speichern
+       
         if (apiEndpointQueryParam.queryParamType != null && apiEndpointQueryParam.queryParamType.name().equals("PATH")) {
             apiEndpointQueryParam.paramName = ensureBraces(apiEndpointQueryParam.paramName);
         }

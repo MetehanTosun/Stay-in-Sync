@@ -430,7 +430,7 @@ export class SourceSystemBaseComponent implements OnInit, OnDestroy {
     if (event.files && event.files.length > 0) {
       this.selectedFile = event.files[0];
       this.metadataForm.patchValue({
-        openApiSpec: this.selectedFile.name
+        openApiSpec: this.selectedFile?.name || ''
       });
     }
   }
