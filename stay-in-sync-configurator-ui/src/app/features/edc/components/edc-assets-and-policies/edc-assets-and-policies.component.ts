@@ -118,6 +118,10 @@ export class EdcAssetsAndPoliciesComponent implements OnInit {
   // Properties for Access Policy Templates
   accessPolicyTemplates: { name: string, content: any }[] = [];
   selectedAccessPolicyTemplate: any | null = null;
+  isAccessPolicyExpertMode: boolean = false;
+  // Model for the simple "Normal Mode" form
+  newAccessPolicy: { bpn: string; action: string; operator: string; } = this.createEmptySimpleAccessPolicy();
+
 
   editorOptions = {
     theme: 'vs-dark',
@@ -601,24 +605,15 @@ export class EdcAssetsAndPoliciesComponent implements OnInit {
     });
   }
 
+  private createEmptySimpleAccessPolicy() {
+    return { bpn: '', action: 'use', operator: 'eq' };
+  }
+
   // Access Policy Methods (JSON-only)
   openNewAccessPolicyDialog() {
-    // Set a default template for the user
-    this.expertModeJsonContent = JSON.stringify({
-      "@context": { "odrl": "http://www.w3.org/ns/odrl/2/" },
-      "@id": "policy-id-goes-here",
-      "policy": {
-        "permission": [{
-          "action": "use",
-          "constraint": [{
-            "leftOperand": "BusinessPartnerNumber",
-            "operator": "eq",
-            "rightOperand": "bpn-goes-here"
-          }]
-        }]
-      }
-    }, null, 2);
-    this.selectedAccessPolicyTemplate = null; // Reset template selection
+    this.isAccessPolicyExpertMode = false; // Default to normal mode
+    this.newAccessPolicy = this.createEmptySimpleAccessPolicy();
+    this.expertModeJsonContent = '';
     this.displayNewAccessPolicyDialog = true;
   }
 
@@ -627,12 +622,42 @@ export class EdcAssetsAndPoliciesComponent implements OnInit {
   }
 
   async saveNewAccessPolicy() {
-    try {
-      const policyJson = JSON.parse(this.expertModeJsonContent);
-      // Basic validation
-      if (!policyJson['@id'] || !policyJson.policy) {
-        throw new Error("Invalid policy structure. '@id' and 'policy' are required.");
+    let policyJson: OdrlPolicyDefinition;
+
+    if (this.isAccessPolicyExpertMode) {
+      try {
+        policyJson = JSON.parse(this.expertModeJsonContent);
+        if (!policyJson['@id'] || !policyJson.policy) {
+          throw new Error("Invalid policy structure. '@id' and 'policy' are required.");
+        }
+      } catch (e) {
+        this.messageService.add({ severity: 'error', summary: 'JSON Parse Error', detail: 'Could not parse the JSON content.' });
+        return;
       }
+    } else {
+      if (!this.newAccessPolicy.bpn) {
+        this.messageService.add({ severity: 'warn', summary: 'Validation Error', detail: 'BPN is required.' });
+        return;
+      }
+      // Construct the ODRL from the simple form
+      const policyId = `policy-${this.newAccessPolicy.bpn}-${Date.now()}`;
+      policyJson = {
+        '@context': { odrl: 'http://www.w3.org/ns/odrl/2/' },
+        '@id': policyId,
+        policy: {
+          permission: [{
+            action: this.newAccessPolicy.action,
+            constraint: [{
+              leftOperand: 'BusinessPartnerNumber',
+              operator: this.newAccessPolicy.operator,
+              rightOperand: this.newAccessPolicy.bpn,
+            }]
+          }]
+        }
+      };
+    }
+
+    try {
       await this.policyService.uploadPolicyDefinition(policyJson);
       this.messageService.add({severity: 'success', summary: 'Success', detail: 'Access Policy created successfully.'});
       this.loadPoliciesAndDefinitions();
@@ -641,6 +666,48 @@ export class EdcAssetsAndPoliciesComponent implements OnInit {
       const detail = error.message.includes('JSON') ? 'Could not parse JSON.' : 'Failed to save access policy.';
       this.messageService.add({ severity: 'error', summary: 'Error', detail: detail });
       console.error('Failed to save access policy:', error);
+    }
+  }
+
+  toggleNewAccessPolicyMode() {
+    if (this.isAccessPolicyExpertMode) {
+      // Switching from Expert to Normal
+      try {
+        const odrlPayload: OdrlPolicyDefinition = JSON.parse(this.expertModeJsonContent);
+        const permission = odrlPayload.policy?.permission?.[0];
+        const constraint = permission?.constraint?.[0];
+
+        // Check if the structure is simple enough to be represented in the form
+        if (permission && constraint && constraint.leftOperand === 'BusinessPartnerNumber' && odrlPayload.policy.permission.length === 1 && permission.constraint.length === 1) {
+          this.newAccessPolicy.bpn = constraint.rightOperand;
+          this.newAccessPolicy.action = permission.action;
+          this.newAccessPolicy.operator = constraint.operator;
+          this.isAccessPolicyExpertMode = false;
+        } else {
+          this.messageService.add({ severity: 'warn', summary: 'Cannot Switch to Normal Mode', detail: 'The JSON structure is too complex for the simple form.', life: 5000 });
+        }
+      } catch (e) {
+        this.messageService.add({ severity: 'error', summary: 'JSON Parse Error', detail: 'Could not parse JSON. Please fix errors before switching.', life: 5000 });
+      }
+    } else {
+      // Switching from Normal to Expert
+      const policyId = `policy-${this.newAccessPolicy.bpn || 'new'}-${Date.now()}`;
+      const odrlPayload: OdrlPolicyDefinition = {
+        '@context': { odrl: 'http://www.w3.org/ns/odrl/2/' },
+        '@id': policyId,
+        policy: {
+          permission: [{
+            action: this.newAccessPolicy.action,
+            constraint: [{
+              leftOperand: 'BusinessPartnerNumber',
+              operator: this.newAccessPolicy.operator,
+              rightOperand: this.newAccessPolicy.bpn,
+            }]
+          }]
+        }
+      };
+      this.expertModeJsonContent = JSON.stringify(odrlPayload, null, 2);
+      this.isAccessPolicyExpertMode = true;
     }
   }
 

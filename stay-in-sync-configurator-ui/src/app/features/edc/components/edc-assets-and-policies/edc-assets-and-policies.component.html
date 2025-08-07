@@ -255,30 +255,51 @@
 </p-dialog>
 
 <!-- Policy Dialogs -->
-<p-dialog header="Create New Access Policy" [(visible)]="displayNewAccessPolicyDialog" [modal]="true" [style]="{ width: '50vw' }" (onHide)="hideNewAccessPolicyDialog()" [draggable]="false" [resizable]="false">
-  <div class="p-fluid grid pt-3">
-    <div class="field col-12">
-      <button pButton pRipple type="button" label="Create from JSON File" icon="pi pi-upload" class="p-button-secondary w-full" (click)="policyFileInput.click()"></button>
+<p-dialog [(visible)]="displayNewAccessPolicyDialog" [modal]="true" [style]="{ width: '50vw' }" (onHide)="hideNewAccessPolicyDialog()" [draggable]="false" [resizable]="false">
+  <ng-template pTemplate="header">
+    <div class="flex justify-content-between align-items-center w-full">
+      <span class="p-dialog-title">Create New Access Policy</span>
+      <button pButton pRipple type="button" [label]="isAccessPolicyExpertMode ? 'Normal Mode' : 'Expert Mode'" [icon]="isAccessPolicyExpertMode ? 'pi pi-user' : 'pi pi-code'" class="p-button-text" (click)="toggleNewAccessPolicyMode()"></button>
     </div>
+  </ng-template>
 
-    <p-divider align="center" type="dashed" styleClass="my-4">
-      <b>OR</b>
-    </p-divider>
-
+  <!-- Normal Mode -->
+  <div *ngIf="!isAccessPolicyExpertMode" class="p-fluid grid pt-3">
     <div class="field col-12">
-      <div class="grid">
-        <div class="col-6">
-          <p-dropdown [options]="accessPolicyTemplates" [(ngModel)]="selectedAccessPolicyTemplate" (onChange)="onAccessPolicyTemplateChange($event)" optionLabel="name" placeholder="Select a Template" [showClear]="true" styleClass="w-full"></p-dropdown>
-        </div>
-        <div class="col-6">
-          <button pButton pRipple type="button" label="Upload Template from JSON" icon="pi pi-folder-open" class="p-button-outlined w-full" (click)="accessPolicyTemplateFileInput.click()"></button>
+      <label for="apBpn" class="font-bold block mb-2">Business Partner Number (BPN)</label>
+      <input id="apBpn" type="text" pInputText [(ngModel)]="newAccessPolicy.bpn" required autofocus class="w-full" />
+    </div>
+    <div class="field col-12">
+      <label for="apAction" class="font-bold block mb-2">Action</label>
+      <p-dropdown id="apAction" [options]="actionOptions" [(ngModel)]="newAccessPolicy.action" styleClass="w-full" [appendTo]="'body'"></p-dropdown>
+    </div>
+    <div class="field col-12">
+      <label for="apOperator" class="font-bold block mb-2">Constraint Operator</label>
+      <p-dropdown id="apOperator" [options]="operatorOptions" [(ngModel)]="newAccessPolicy.operator" styleClass="w-full" [appendTo]="'body'"></p-dropdown>
+    </div>
+  </div>
+
+  <!-- Expert Mode -->
+  <div *ngIf="isAccessPolicyExpertMode" class="p-fluid grid pt-3">
+      <div class="field col-12">
+        <button pButton pRipple type="button" label="Create from JSON File" icon="pi pi-upload" class="p-button-secondary w-full" (click)="policyFileInput.click()"></button>
+      </div>
+      <p-divider align="center" type="dashed" styleClass="my-4">
+        <b>OR</b>
+      </p-divider>
+      <div class="field col-12">
+        <div class="grid">
+          <div class="col-6">
+            <p-dropdown [options]="accessPolicyTemplates" [(ngModel)]="selectedAccessPolicyTemplate" (onChange)="onAccessPolicyTemplateChange($event)" optionLabel="name" placeholder="Select a Template" [showClear]="true" styleClass="w-full"></p-dropdown>
+          </div>
+          <div class="col-6">
+            <button pButton pRipple type="button" label="Upload Template from JSON" icon="pi pi-folder-open" class="p-button-outlined w-full" (click)="accessPolicyTemplateFileInput.click()"></button>
+          </div>
         </div>
       </div>
-    </div>
-
-    <div class="field col-12 mt-3">
-      <ngx-monaco-editor id="newAccessPolicyJsonEditor" [options]="editorOptions" [(ngModel)]="expertModeJsonContent" style="height: 300px; border: 1px solid var(--surface-d);"></ngx-monaco-editor>
-    </div>
+      <div class="field col-12 mt-3">
+        <ngx-monaco-editor id="newAccessPolicyJsonEditor" [options]="editorOptions" [(ngModel)]="expertModeJsonContent" style="height: 300px; border: 1px solid var(--surface-d);"></ngx-monaco-editor>
+      </div>
   </div>
   <ng-template pTemplate="footer">
     <button pButton pRipple label="Cancel" icon="pi pi-times" class="p-button-text" (click)="hideNewAccessPolicyDialog()"></button>
