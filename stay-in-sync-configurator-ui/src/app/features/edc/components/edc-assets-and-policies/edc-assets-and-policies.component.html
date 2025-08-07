@@ -529,57 +529,95 @@
 
 <!-- Edit contract definition dialog -->
 <p-dialog [(visible)]="displayEditContractPolicyDialog"
-          [style]="{width: '500px'}"
           header="Edit Contract Definition"
+          [style]="{width: '70vw', height: '80vh'}"
           [modal]="true"
+          [contentStyle]="{ 'overflow-y': 'auto' }"
           class="p-fluid"
           (onHide)="hideEditContractPolicyDialog()"
           [draggable]="false"
           [resizable]="false">
 
+  <ng-template pTemplate="header">
+    <div class="flex justify-content-between align-items-center w-full">
+      <span class="p-dialog-title">Edit Contract Definition</span>
+      <button pButton pRipple type="button" [label]="isExpertMode ? 'Normal Mode' : 'Expert Mode'" [icon]="isExpertMode ? 'pi pi-user' : 'pi pi-code'" class="p-button-text" (click)="isExpertMode = !isExpertMode" [disabled]="isComplexSelectorForEdit"></button>
+    </div>
+  </ng-template>
 
   <ng-container *ngIf="contractPolicyToEdit">
-    <div class="px-4">
-      <div class="field grid align-items-center mb-3">
-        <label for="editCdAccessPolicy" class="col-4">Access Policy</label>
-        <div class="col-8">
-          <p-autoComplete
-            id="editCdAccessPolicy"
-            [(ngModel)]="contractPolicyToEdit.accessPolicyId"
-            [suggestions]="accessPolicySuggestions"
-            (completeMethod)="searchAccessPolicies($event)"
-            field="bpn"
-            [forceSelection]="true"
-            placeholder="Type BPN or Policy ID"
-            styleClass="w-full"
-            inputStyleClass="w-full"
-            [appendTo]="'body'">
-            <ng-template let-policy pTemplate="item">
-              <div>{{ policy.bpn }} ({{ policy.id }})</div>
-            </ng-template>
-          </p-autoComplete>
-        </div>
+    <!-- Normal Mode -->
+    <div *ngIf="!isExpertMode" class="flex flex-column flex-grow-1 overflow-hidden">
+      <div class="col-12">
+        <label for="editCdAccessPolicy" class="font-bold block mb-2">1. Select Access Policy</label>
+        <p-autoComplete
+          id="editCdAccessPolicy"
+          [(ngModel)]="contractPolicyToEdit.accessPolicyId"
+          [suggestions]="accessPolicySuggestions"
+          (completeMethod)="searchAccessPolicies($event)"
+          field="bpn"
+          [forceSelection]="true"
+          placeholder="Type BPN or Policy ID"
+          styleClass="w-full"
+          inputStyleClass="w-full"
+          [appendTo]="'body'">
+          <ng-template let-policy pTemplate="item">
+            <div>{{ policy.bpn }} ({{ policy.id }})</div>
+          </ng-template>
+        </p-autoComplete>
       </div>
 
-      <div class="field grid align-items-center mb-3">
-        <label for="editCdAssetId" class="col-4">Asset</label>
-        <div class="col-8">
-          <p-autoComplete
-            id="editCdAssetId"
-            [(ngModel)]="contractPolicyToEdit.assetId"
-            [suggestions]="assetIdSuggestions"
-            (completeMethod)="searchAssets($event)"
-            field="name"
-            [forceSelection]="true"
-            placeholder="Type to search for an Asset"
-            styleClass="w-full"
-            inputStyleClass="w-full"
-            [appendTo]="'body'">
-            <ng-template let-asset pTemplate="item">
-              <div>{{ asset.name }} ({{ asset.id }})</div>
-            </ng-template>
-          </p-autoComplete>
-        </div>
+      <div class="col-12 mt-4 flex flex-column flex-grow-1 overflow-hidden">
+        <label class="font-bold block mb-2">2. Select Assets and their Operators</label>
+        <p-table
+          #dtEditDialogAssets
+          [value]="assetsForDialog"
+          [(selection)]="selectedAssetsInDialog"
+          dataKey="id"
+          [rows]="5"
+          [paginator]="true"
+          [globalFilterFields]="['id', 'name', 'type']"
+          styleClass="p-datatable-sm"
+          [tableStyle]="{'min-width': '50rem'}"
+          [scrollable]="true"
+          scrollHeight="flex"
+        >
+          <ng-template pTemplate="caption">
+            <div class="flex align-items-center justify-content-end">
+              <p-iconfield iconPosition="left">
+                <p-inputicon><i class="pi pi-search"></i></p-inputicon>
+                <input #editDialogAssetSearch pInputText type="text" (input)="dtEditDialogAssets.filterGlobal(editDialogAssetSearch.value, 'contains')" placeholder="Search Assets..." />
+              </p-iconfield>
+            </div>
+          </ng-template>
+          <ng-template pTemplate="header">
+            <tr>
+              <th style="width: 3rem"><p-tableHeaderCheckbox></p-tableHeaderCheckbox></th>
+              <th pSortableColumn="name">Name <p-sortIcon field="name"></p-sortIcon></th>
+              <th pSortableColumn="id">ID <p-sortIcon field="id"></p-sortIcon></th>
+              <th style="width: 10rem">Operator</th>
+            </tr>
+          </ng-template>
+          <ng-template pTemplate="body" let-asset>
+            <tr>
+              <td><p-tableCheckbox [value]="asset"></p-tableCheckbox></td>
+              <td>{{ asset.name }}</td>
+              <td>{{ asset.id }}</td>
+              <td><p-dropdown [options]="operatorOptions" [(ngModel)]="asset.operator" optionLabel="label" optionValue="value" styleClass="w-full" [appendTo]="'body'"></p-dropdown></td>
+            </tr>
+          </ng-template>
+          <ng-template pTemplate="emptymessage">
+            <tr><td colspan="4">No assets available.</td></tr>
+          </ng-template>
+        </p-table>
+      </div>
+    </div>
+
+    <!-- Expert Mode -->
+    <div *ngIf="isExpertMode" class="p-fluid grid pt-3">
+      <div class="field col-12">
+        <label for="editExpertJsonEditor" class="block mb-2">JSON Content</label>
+        <ngx-monaco-editor id="editExpertJsonEditor" [options]="editorOptions" [(ngModel)]="expertModeJsonContent" style="height: 550px; border: 1px solid var(--surface-d);"></ngx-monaco-editor>
       </div>
     </div>
   </ng-container>

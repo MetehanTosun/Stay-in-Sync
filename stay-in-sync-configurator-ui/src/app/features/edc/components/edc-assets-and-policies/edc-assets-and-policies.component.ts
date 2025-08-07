@@ -92,6 +92,7 @@ export class EdcAssetsAndPoliciesComponent implements OnInit {
   filteredAccessPolicies: AccessPolicy[] = [];
 
   // A flat list for all contract definitions
+  allOdrlContractDefinitions: OdrlContractDefinition[] = [];
   allContractDefinitions: ContractPolicy[] = [];
   filteredContractDefinitions: ContractPolicy[] = [];
 
@@ -107,6 +108,8 @@ export class EdcAssetsAndPoliciesComponent implements OnInit {
   expertModeJsonContent: string = '';
   contractDefinitionTemplates: { name: string, content: any }[] = [];
   selectedTemplate: any | null = null;
+  isComplexSelectorForEdit: boolean = false;
+  contractDefinitionToEditODRL: OdrlContractDefinition | null = null;
 
   editorOptions = {
     theme: 'vs-dark',
@@ -226,6 +229,8 @@ export class EdcAssetsAndPoliciesComponent implements OnInit {
         this.policyService.getContractDefinitions(),
       ]);
 
+      this.allOdrlContractDefinitions = contractDefinitions;
+
       // Create a map from policy ID to the policy object for efficient lookup
       const policyMap = new Map<string, AccessPolicy>();
       accessPolicies.forEach(p => policyMap.set(p.id, p));
@@ -234,9 +239,10 @@ export class EdcAssetsAndPoliciesComponent implements OnInit {
       this.allContractDefinitions = contractDefinitions.map(cd => {
         const parentId = cd.accessPolicyId;
         const parentPolicy = parentId ? policyMap.get(parentId) : undefined;
+        const assetIds = cd.assetsSelector?.map(s => s.operandRight).join(', ') ?? 'Unknown Asset';
         return {
           id: cd['@id'],
-          assetId: cd.assetsSelector?.[0]?.operandRight ?? 'Unknown Asset',
+          assetId: assetIds,
           bpn: parentPolicy?.bpn || 'Unknown BPN',
           accessPolicyId: parentId || ''
         };
@@ -1059,9 +1065,62 @@ export class EdcAssetsAndPoliciesComponent implements OnInit {
    * Opens the dialog to edit an existing Contract Definition.
    */
   editContractPolicy(contractPolicy: ContractPolicy) {
-    // Create a deep copy to avoid modifying the table row during edits
-    this.contractPolicyToEdit = JSON.parse(JSON.stringify(contractPolicy));
-    this.displayEditContractPolicyDialog = true;
+     this.isExpertMode = false; // Default to normal mode
+     this.isComplexSelectorForEdit = false; // Reset
+ 
+     // Find the full ODRL object for expert mode
+     this.contractDefinitionToEditODRL = this.allOdrlContractDefinitions.find(cd => cd['@id'] === contractPolicy.id) ?? null;
+ 
+     if (!this.contractDefinitionToEditODRL) {
+       this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Could not find the full contract definition to edit.' });
+       return;
+     }
+ 
+     this.expertModeJsonContent = JSON.stringify(this.contractDefinitionToEditODRL, null, 2);
+ 
+     // Check if the asset selectors are too complex for the Normal Mode UI.
+     // The Normal Mode UI can only handle a list of simple asset ID selectors.
+     this.isComplexSelectorForEdit = this.contractDefinitionToEditODRL.assetsSelector.some(
+       selector => selector.operandLeft !== 'https://w3id.org/edc/v0.0.1/ns/id'
+     );
+ 
+     if (this.isComplexSelectorForEdit) {
+         // If the selector logic is complex, force expert mode to avoid data loss.
+         this.isExpertMode = true;
+         this.messageService.add({
+             severity: 'info',
+             summary: 'Expert Mode Required',
+             detail: 'This definition uses complex asset selection rules and can only be edited in Expert Mode.',
+             life: 6000
+         });
+     }
+ 
+     // Prepare assets for the dialog table, same as in the 'create' dialog
+     this.assetsForDialog = this.assets.map(asset => ({
+       ...asset,
+       operator: 'eq' // Default operator
+     }));
+ 
+     // Pre-select the assets that are part of this contract definition
+     const assetSelectors = this.contractDefinitionToEditODRL.assetsSelector || [];
+     this.selectedAssetsInDialog = this.assetsForDialog.filter(dialogAsset => {
+       const selector = assetSelectors.find(s => s.operandRight === dialogAsset.id);
+       if (selector) {
+         dialogAsset.operator = selector.operator === '=' ? 'eq' : selector.operator;
+         return true;
+       }
+       return false;
+     });
+ 
+     const accessPolicyObject = this.allAccessPolicies.find(p => p.id === contractPolicy.accessPolicyId);
+ 
+     this.contractPolicyToEdit = {
+       ...contractPolicy,
+       accessPolicyId: accessPolicyObject as any,
+       assetId: '' // No longer used for a single asset, but keep property for model consistency
+     };
+ 
+     this.displayEditContractPolicyDialog = true;
   }
 
   /**
@@ -1076,54 +1135,67 @@ export class EdcAssetsAndPoliciesComponent implements OnInit {
    * Saves the changes to an existing Contract Definition.
    */
   async saveEditedContractPolicy() {
-    if (!this.contractPolicyToEdit) {
+    if (!this.contractPolicyToEdit || !this.contractDefinitionToEditODRL) {
       this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Cannot save: Editing context is lost.' });
       return;
     }
 
-    const assetId = (this.contractPolicyToEdit.assetId as any)?.id || this.contractPolicyToEdit.assetId;
-    const accessPolicyId = (this.contractPolicyToEdit.accessPolicyId as any)?.id || this.contractPolicyToEdit.accessPolicyId;
-
-
-    if (!assetId || !accessPolicyId) {
-      this.messageService.add({
-        severity: 'warn',
-        summary: 'Validation Error',
-        detail: 'All fields are required.',
-      });
-      return;
-    }
+    let odrlPayload: OdrlContractDefinition;
 
     try {
-      // Build the ODRL payload for the update
-      const odrlPayload: OdrlContractDefinition = {
-        '@context': { edc: 'https://w3id.org/edc/v0.0.1/ns/' },
-        '@id': this.contractPolicyToEdit.id,
-        accessPolicyId: accessPolicyId,
-        contractPolicyId: accessPolicyId,
-        assetsSelector: [
-          {
-            operandLeft: 'https://w3id.org/edc/v0.0.1/ns/id',
-            operator: '=',
-            operandRight: assetId,
-          },
-        ],
-      };
+      if (this.isExpertMode) {
+        // Save from Expert Mode
+        try {
+          odrlPayload = JSON.parse(this.expertModeJsonContent);
+          // Basic validation on the parsed JSON
+          if (!odrlPayload['@id'] || odrlPayload['@id'] !== this.contractDefinitionToEditODRL['@id']) {
+            this.messageService.add({ severity: 'error', summary: 'Validation Error', detail: "The '@id' in the JSON must not be changed." });
+            return;
+          }
+        } catch (error) {
+          this.messageService.add({ severity: 'error', summary: 'JSON Parse Error', detail: 'Could not parse the JSON content. Please check for syntax errors.' });
+          return;
+        }
+      } else {
+        // Save from Normal Mode, reading from the asset table
+        const accessPolicyId = (this.contractPolicyToEdit.accessPolicyId as any)?.id || this.contractPolicyToEdit.accessPolicyId;
+
+        if (this.selectedAssetsInDialog.length === 0) {
+          this.messageService.add({
+            severity: 'warn',
+            summary: 'Validation Error',
+            detail: 'You must select at least one asset.',
+          });
+          return;
+        }
+        if (!accessPolicyId) {
+          this.messageService.add({
+            severity: 'warn',
+            summary: 'Validation Error',
+            detail: 'An Access Policy must be selected.',
+          });
+          return;
+        }
+
+        const assetsSelector: OdrlCriterion[] = this.selectedAssetsInDialog.map(selectedAsset => ({
+          operandLeft: 'https://w3id.org/edc/v0.0.1/ns/id',
+          operator: selectedAsset.operator,
+          operandRight: selectedAsset.id,
+        }));
+
+        odrlPayload = {
+          ...this.contractDefinitionToEditODRL, // Keep other properties
+          '@id': this.contractPolicyToEdit.id,
+          accessPolicyId: accessPolicyId,
+          contractPolicyId: accessPolicyId, // Usually the same
+          assetsSelector: assetsSelector,
+        };
+      }
 
       await this.policyService.updateContractDefinition(odrlPayload);
 
-      // Update the UI model
-      const index = this.allContractDefinitions.findIndex(cd => cd.id === this.contractPolicyToEdit!.id);
-      if (index !== -1) {
-        const parentPolicy = this.allAccessPolicies.find(p => p.id === accessPolicyId);
-        this.allContractDefinitions[index] = {
-          id: this.contractPolicyToEdit.id,
-          assetId: assetId,
-          bpn: parentPolicy?.bpn || 'Unknown BPN',
-          accessPolicyId: accessPolicyId
-        };
-        this.filteredContractDefinitions = [...this.allContractDefinitions];
-      }
+      // Update the UI model by reloading everything to ensure data consistency
+      await this.loadPoliciesAndDefinitions();
 
       this.messageService.add({ severity: 'success', summary: 'Success', detail: 'Contract Definition updated successfully.' });
       this.hideEditContractPolicyDialog();
