@@ -57,3 +57,6 @@ Chart.lock
 .cursor/rules/process-task-list.md
 tasks/prd-source-system-search.md
 tasks/tasks-prd-source-system-search.md
+
+# Ignore tasks directory
+tasks/
