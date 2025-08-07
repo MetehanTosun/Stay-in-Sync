@@ -25,9 +25,8 @@ public class Transformation extends PanacheEntity {
     @JsonManagedReference("transformationScript-reference")
     public TransformationScript transformationScript;
 
-    // Temporarily commented out for tests - will be re-enabled when database schema is updated
-    // @Enumerated(EnumType.STRING)
-    // public JobDeploymentStatus deploymentStatus;
+  @Enumerated(EnumType.STRING)
+  public JobDeploymentStatus deploymentStatus;
 
     public String workerHostName;
     @OneToOne
@@ -56,4 +55,6 @@ public class Transformation extends PanacheEntity {
             inverseJoinColumns = @JoinColumn(name = "target_system_api_request_configuration_id")
     )
     public Set<TargetSystemApiRequestConfiguration> targetSystemApiRequestConfigurations = new HashSet<>();
+
+
 }
