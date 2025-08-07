@@ -209,10 +209,6 @@ public class TransformationResourceTest {
         sj.id = DEFAULT_SYNC_JOB_ID;
         transformation.syncJob = sj;
 
-        var tsep = new TargetSystemEndpoint();
-        tsep.id = DEFAULT_TARGET_ENDPOINT_ID;
-        transformation.targetSystemEndpoint = tsep;
-
         var script = new TransformationScript();
         script.id = DEFAULT_SCRIPT_ID;
         script.name = "Test Script";
