@@ -172,12 +172,6 @@ public class TransformationRuleService {
                 errors = jsonObjectMapper.readValue(entity.validationErrorsJson, new TypeReference<>() {});
             } catch (JsonProcessingException e) {
                 Log.errorf(e, "Failed to parse validation errors for entity id %d", entity.id);
-
-                System.out.println("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
-                System.out.println("!!! JSON PROCESSING EXCEPTION GEWORFEN !!!");
-                System.out.println("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
-                e.printStackTrace();
-
             }
         }
 
