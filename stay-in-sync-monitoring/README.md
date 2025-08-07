@@ -9,6 +9,9 @@ Prerequisites:
 
 - Make sure Docker Desktop is running before starting any services.
 
+- in stay-in-sync-core/core-sync-node: mvn clean install -Dquarkus.package.type=fast-jar
+- in stay-in-sync-core/core-polling-node: mvn clean install -Dquarkus.package.type=fast-jar
+
 Start Quarkus in Development Mode:
 
 cd stay-in-sync-monitoring/monitoring-backend
