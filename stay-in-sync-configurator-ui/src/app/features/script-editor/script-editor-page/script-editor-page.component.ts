@@ -249,7 +249,9 @@ export class ScriptEditorPageComponent implements OnInit, OnDestroy {
         compilerOptions: {module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ESNext},
       });
 
-      const jsHash = await this.generateHash(transpileOutput.outputText);
+      //https://github.tik.uni-stuttgart.de/st189097/StuPro/issues/245
+      //const jsHash = await this.generateHash(transpileOutput.outputText);
+      const jsHash = "thisIsAHash";
 
       const payload: ScriptPayload = {
         name: this.preloadedData?.scriptName,

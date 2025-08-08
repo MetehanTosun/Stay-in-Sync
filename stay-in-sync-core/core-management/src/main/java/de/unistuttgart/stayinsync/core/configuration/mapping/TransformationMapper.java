@@ -3,6 +3,7 @@ package de.unistuttgart.stayinsync.core.configuration.mapping;
 import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.SourceSystemApiRequestConfiguration;
 import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.SourceSystemEndpoint;
 import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.Transformation;
+import de.unistuttgart.stayinsync.core.configuration.mapping.targetsystem.RequestConfigurationMessageMapper;
 import de.unistuttgart.stayinsync.core.configuration.rest.dtos.TransformationDetailsDTO;
 import de.unistuttgart.stayinsync.core.configuration.rest.dtos.TransformationShellDTO;
 import de.unistuttgart.stayinsync.transport.dto.TransformationMessageDTO;
@@ -13,7 +14,12 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-@Mapper(componentModel = MappingConstants.ComponentModel.JAKARTA_CDI, uses = {TransformationScriptMapper.class, SourceSystemApiRequestConfigurationFullUpdateMapper.class, TransformationRuleMapper.class})
+@Mapper(componentModel = MappingConstants.ComponentModel.JAKARTA_CDI,
+        uses = {
+                TransformationScriptMapper.class,
+                TransformationRuleMapper.class,
+                SourceSystemApiRequestConfigurationFullUpdateMapper.class,
+                RequestConfigurationMessageMapper.class})
 public interface TransformationMapper {
 
     // TODO: Handle complex object mappings in service layer
@@ -35,7 +41,8 @@ public interface TransformationMapper {
     @Mapping(source = "transformationScript", target = "transformationScriptDTO")
     @Mapping(source = "transformationRule", target = "transformationRuleDTO")
     @Mapping(source = "sourceSystemApiRequestConfigurations", target = "requestConfigurationMessageDTOS")
-    @Mapping(source = "sourceSystemApiRequestConfigurations", target = "arcManifest", qualifiedByName = "buildArcManifest")
+    @Mapping(source = "targetSystemApiRequestConfigurations", target = "targetRequestConfigurationMessageDTOS")
+    @Mapping(source = "sourceSystemApiRequestConfigurations", target = "arcManifest", qualifiedByName = "buildSourceArcManifest")
     TransformationMessageDTO mapToMessageDTO(Transformation transformation);
 
     /**
@@ -61,7 +68,7 @@ public interface TransformationMapper {
                 .collect(Collectors.toSet());
     }
 
-    @Named("buildArcManifest")
+    @Named("buildSourceArcManifest")
     default List<String> buildArcManifest(Set<SourceSystemApiRequestConfiguration> arcs){
         if (arcs == null || arcs.isEmpty()){
             return List.of();

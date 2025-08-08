@@ -11,7 +11,6 @@ public record TransformationDetailsDTO(
         Long syncJobId,
 //        Set<Long> sourceSystemEndpointIds,
         // Set<Long> sourceSystemVariableIds,
-        Long targetSystemEndpointId,
         Long transformationRuleId,
         TransformationScriptDTO script,
         Set<SourceSystemApiRequestConfiguration> sourceSystemApiRequestConfigurations

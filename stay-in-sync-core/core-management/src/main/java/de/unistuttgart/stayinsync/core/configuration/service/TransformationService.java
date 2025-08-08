@@ -1,13 +1,13 @@
 package de.unistuttgart.stayinsync.core.configuration.service;
 
-import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.SourceSystemEndpoint;
-import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.Transformation;
-import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.TransformationRule;
-import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.TransformationScript;
+import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.*;
 import de.unistuttgart.stayinsync.core.configuration.exception.CoreManagementException;
 import de.unistuttgart.stayinsync.core.configuration.mapping.TransformationMapper;
 import de.unistuttgart.stayinsync.core.configuration.rest.dtos.TransformationAssemblyDTO;
 import de.unistuttgart.stayinsync.core.configuration.rest.dtos.TransformationShellDTO;
+import de.unistuttgart.stayinsync.core.configuration.rest.dtos.targetsystem.UpdateTransformationRequestConfigurationDTO;
+import de.unistuttgart.stayinsync.transport.domain.JobDeploymentStatus;
+import de.unistuttgart.stayinsync.transport.dto.TransformationDeploymentFeedbackMessageDTO;
 import io.quarkus.logging.Log;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
@@ -74,6 +74,31 @@ public class TransformationService {
         return transformation;
     }
 
+    @Transactional
+    public Transformation updateTargetArcs(Long transformationId, UpdateTransformationRequestConfigurationDTO dto){
+        Log.debugf("Updating Target ARCs for Transformation with id %d", transformationId);
+
+        Transformation transformation = Transformation.<Transformation>findByIdOptional(transformationId)
+                .orElseThrow(() -> new CoreManagementException(Response.Status.NOT_FOUND, "Transformation not found", "Transformation with id %d not found.", transformationId));
+
+        transformation.targetSystemApiRequestConfigurations.clear();
+
+        if (dto.targetArcIds() != null && !dto.targetArcIds().isEmpty()) {
+            List<TargetSystemApiRequestConfiguration> arcsToLink = TargetSystemApiRequestConfiguration.list("id in ?1", dto.targetArcIds());
+
+            if (arcsToLink.size() != dto.targetArcIds().size()) {
+                throw new CoreManagementException(Response.Status.BAD_REQUEST, "Invalid ARC ID", "One or more provided Target ARC IDs could not be found.");
+            }
+
+            transformation.targetSystemApiRequestConfigurations.addAll(arcsToLink);
+        }
+
+        Log.infof("Successfully updated Target ARCs for Transformation %d. New count: %d",
+                transformationId, transformation.targetSystemApiRequestConfigurations.size());
+
+        return transformation;
+    }
+
     @Transactional(SUPPORTS)
     public Optional<Transformation> findById(Long id) {
         Log.debugf("Finding transformation with id %d", id);
@@ -106,5 +131,17 @@ public class TransformationService {
     public boolean delete(Long id) {
         Log.debugf("Deleting transformation with id %d", id);
         return Transformation.deleteById(id);
+    }
+
+    public void updateDeploymentStatus(TransformationDeploymentFeedbackMessageDTO feedbackMessageDTO) {
+        Optional<Transformation> apiRequestConfigurationById = findById(feedbackMessageDTO.transformationId());
+        if(apiRequestConfigurationById.isEmpty()){
+            Log.warnf("Unable to update deployment status of request configuration with id %d since no transformation was found using id", feedbackMessageDTO.transformationId());
+        } else {
+            Transformation sourceSystemApiRequestConfiguration = apiRequestConfigurationById.get();
+            sourceSystemApiRequestConfiguration.deploymentStatus = feedbackMessageDTO.status();
+            if(apiRequestConfigurationById.get().deploymentStatus.equals(JobDeploymentStatus.DEPLOYED))
+                sourceSystemApiRequestConfiguration.workerHostName = feedbackMessageDTO.syncNode();
+        }
     }
 }
