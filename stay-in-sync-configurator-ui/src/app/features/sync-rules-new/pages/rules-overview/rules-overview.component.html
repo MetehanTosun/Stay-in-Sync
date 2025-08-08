@@ -1,0 +1,85 @@
+<!-- MARK: Page Header -->
+<div class="page-header">
+  <h2>Synchronization Rules</h2>
+  <button id="create-button" (click)="openCreateRuleModal()">
+    <span class="material-symbols-rounded">
+      add
+    </span>
+    Create new Rule
+  </button>
+</div>
+
+<!-- MARK: Table -->
+<div class="table-container">
+  <p-table [value]="rules" [loading]="isLoading">
+    <!-- Table Header -->
+    <ng-template #header>
+      <tr>
+        <th>Name</th>
+        <th>Description</th>
+        <th>Status</th>
+        <th>Actions</th>
+      </tr>
+    </ng-template>
+    <!-- Table Body -->
+    <ng-template #body let-rule>
+      <tr>
+        <td>{{ rule.name }} #{{ rule.id }}</td>
+        <td>{{ rule.description }}</td>
+        <td>{{ rule.graphStatus }}</td>
+        <td>
+          <div class="actions">
+            <button id="edit-rule-button" title="Edit" (click)="editRule(rule.id)">
+              <span class="material-symbols-rounded">
+                edit_square
+              </span>
+            </button>
+            <button id="delete-rule-button" title="Delete">
+              <span class="material-symbols-rounded">
+                delete
+              </span>
+            </button>
+          </div>
+        </td>
+      </tr>
+    </ng-template>
+  </p-table>
+</div>
+
+<!-- MARK: Create Rule -->
+<div id="create-rule-modal" *ngIf="showCreateRule">
+  <h3>Create new Rule</h3>
+  <form (ngSubmit)="createRule()">
+
+    <!-- New Rules Name -->
+    <div class="form-field">
+      <label for="rule-name">Name</label>
+      <input name="rule-name" type="text" [(ngModel)]="newRule.name" placeholder="Demo Rule" class="form-input"
+        required>
+    </div>
+
+    <!-- New Rules Description -->
+    <div class="form-field">
+      <label for="rule-description">Description</label>
+      <textarea name="rule-description" type="text" [(ngModel)]="newRule.description" placeholder="It does stuff"
+        class="form-input" required>
+      </textarea>
+    </div>
+
+    <!-- Form Actions -->
+    <div class="form-actions">
+      <button id="save-button" type="submit">
+        <span class="material-symbols-rounded">
+          save
+        </span>
+        Save
+      </button>
+      <button id="cancel-button" type="button" (click)="closeCreateRuleModal()">
+        <span class="material-symbols-rounded">
+          close
+        </span>
+        Cancel
+      </button>
+    </div>
+  </form>
+</div>

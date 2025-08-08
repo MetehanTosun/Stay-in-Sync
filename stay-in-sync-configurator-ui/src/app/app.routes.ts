@@ -22,10 +22,14 @@ import { ScriptEditorPageComponent } from './features/script-editor/script-edito
 import {
   TransformationScriptSelectionComponent
 } from './features/transformation/components/transformation-script-selection/transformation-script-selection.component';
+import { RulesOverviewComponent } from './features/sync-rules-new/pages/rules-overview/rules-overview.component';
+import { EditRuleComponent } from './features/sync-rules-new/pages/edit-rule/edit-rule.component';
 
 
 export const routes: Routes = [
   // Route für Sync Rules
+  { path: 'sync-rules-new', component: RulesOverviewComponent },
+  { path: 'sync-rules-new/edit-rule/:id', component: EditRuleComponent },
   {
     path: 'sync-rules',
     component: SyncRulesComponent,
@@ -33,7 +37,7 @@ export const routes: Routes = [
       { path: '', component: RulesOverview },
       { path: 'edit-rule/:id', component: EditRule },
     ]
-  },
+  }, // TODO-s Delete
 
   // Route für Configurations
   { path: 'configs', component: ConfigBaseComponent },
