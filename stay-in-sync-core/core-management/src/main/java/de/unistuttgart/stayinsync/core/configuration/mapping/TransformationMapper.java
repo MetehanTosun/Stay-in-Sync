@@ -29,7 +29,6 @@ public interface TransformationMapper {
      * This is used for all GET endpoints (e.g., get by ID, get all).
      */
     @Mapping(source = "syncJob.id", target = "syncJobId")
-    @Mapping(source = "targetSystemEndpoint.id", target = "targetSystemEndpointId")
     @Mapping(source = "transformationRule.id", target = "transformationRuleId")
     @Mapping(source = "transformationScript", target = "script")
     // Delegates to TransformationScriptMapper
@@ -52,7 +51,6 @@ public interface TransformationMapper {
      */
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "syncJob", ignore = true)
-    @Mapping(target = "targetSystemEndpoint", ignore = true)
     @Mapping(target = "transformationRule", ignore = true)
     @Mapping(target = "transformationScript", ignore = true)
     @Mapping(target = "sourceSystemVariables", ignore = true)
