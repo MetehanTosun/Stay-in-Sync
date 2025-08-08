@@ -20,6 +20,7 @@ import org.eclipse.microprofile.openapi.annotations.parameters.Parameter;
 import org.eclipse.microprofile.openapi.annotations.tags.Tag;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 import static jakarta.ws.rs.core.MediaType.APPLICATION_JSON;
@@ -80,8 +81,8 @@ public class TransformationResource {
 
     @GET
     @Operation(summary = "Returns all transformations")
-    public List<TransformationDetailsDTO> getAllTransformations() {
-        var transformations = service.findAll();
+    public List<TransformationDetailsDTO> getAllTransformations(@Parameter(name = "with_syncjob_filter", description = "An optional filter parameter to filter transformations") @QueryParam("withSyncJob") Optional<Boolean> withSyncJob) {
+        var transformations = withSyncJob.map(this.service::findAllWithSyncJobFilter).orElseGet(service::findAll);
         Log.debugf("Total number of transformations: %d", transformations.size());
         return transformations.stream()
                 .map(mapper::mapToDetailsDTO)

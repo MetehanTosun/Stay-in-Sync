@@ -1,5 +1,7 @@
 package de.unistuttgart.stayinsync.core.configuration.rest.dtos;
 
+import de.unistuttgart.stayinsync.transport.domain.JobDeploymentStatus;
+
 public record TransformationDetailsDTO(
         Long id,
         String name,
@@ -7,6 +9,7 @@ public record TransformationDetailsDTO(
         Long syncJobId,
 //        Set<Long> sourceSystemEndpointIds,
         // Set<Long> sourceSystemVariableIds,
+        JobDeploymentStatus deploymentStatus,
         Long transformationRuleId,
         TransformationScriptDTO script
 ) {

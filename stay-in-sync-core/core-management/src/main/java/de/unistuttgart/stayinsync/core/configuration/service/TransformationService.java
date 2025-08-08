@@ -66,7 +66,7 @@ public class TransformationService {
         if (script != null) {
             script.transformation = transformation;
         }
-        
+
         if (rule != null) {
             rule.transformation = transformation;
         }
@@ -75,7 +75,7 @@ public class TransformationService {
     }
 
     @Transactional
-    public Transformation updateTargetArcs(Long transformationId, UpdateTransformationRequestConfigurationDTO dto){
+    public Transformation updateTargetArcs(Long transformationId, UpdateTransformationRequestConfigurationDTO dto) {
         Log.debugf("Updating Target ARCs for Transformation with id %d", transformationId);
 
         Transformation transformation = Transformation.<Transformation>findByIdOptional(transformationId)
@@ -128,6 +128,16 @@ public class TransformationService {
         return Transformation.listAll();
     }
 
+    @Transactional(SUPPORTS)
+    public List<Transformation> findAllWithSyncJobFilter(boolean withSyncJob) {
+        if (withSyncJob) {
+            Log.debug("Getting all transformations with sync job.");
+            return Transformation.listAllWithSyncJob();
+        }
+        Log.debug("Getting all transformations without sync job.");
+        return Transformation.listAllWithoutSyncJob();
+    }
+
     public boolean delete(Long id) {
         Log.debugf("Deleting transformation with id %d", id);
         return Transformation.deleteById(id);
@@ -135,12 +145,12 @@ public class TransformationService {
 
     public void updateDeploymentStatus(TransformationDeploymentFeedbackMessageDTO feedbackMessageDTO) {
         Optional<Transformation> apiRequestConfigurationById = findById(feedbackMessageDTO.transformationId());
-        if(apiRequestConfigurationById.isEmpty()){
+        if (apiRequestConfigurationById.isEmpty()) {
             Log.warnf("Unable to update deployment status of request configuration with id %d since no transformation was found using id", feedbackMessageDTO.transformationId());
         } else {
             Transformation sourceSystemApiRequestConfiguration = apiRequestConfigurationById.get();
             sourceSystemApiRequestConfiguration.deploymentStatus = feedbackMessageDTO.status();
-            if(apiRequestConfigurationById.get().deploymentStatus.equals(JobDeploymentStatus.DEPLOYED))
+            if (apiRequestConfigurationById.get().deploymentStatus.equals(JobDeploymentStatus.DEPLOYED))
                 sourceSystemApiRequestConfiguration.workerHostName = feedbackMessageDTO.syncNode();
         }
     }

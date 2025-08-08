@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import {Observable} from 'rxjs/internal/Observable';
-import {HttpClient} from '@angular/common/http';
+import {HttpClient, HttpParams} from '@angular/common/http';
 import {Transformation, UpdateTransformationRequest} from '../models/transformation.model';
 
 @Injectable({
@@ -12,6 +12,11 @@ export class TransformationService {
 
   getAll(): Observable<Transformation[]> {
     return this.httpClient.get<Transformation[]>(`/api/config/transformation`);
+  }
+
+  getAllWithoutSyncJob(): Observable<Transformation[]> {
+    const params = new HttpParams().set('withSyncJob', 'false');
+    return this.httpClient.get<Transformation[]>(`/api/config/transformation`, { params });
   }
 
   create(transformation: Transformation): Observable<Transformation> {
