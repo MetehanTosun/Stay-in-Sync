@@ -3,6 +3,8 @@ package de.unistuttgart.stayinsync.core.configuration.service;
 import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.SourceSystem;
 import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.SourceSystemEndpoint;
 import de.unistuttgart.stayinsync.core.configuration.rest.dtos.ApiEndpointQueryParamDTO;
+import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.TargetSystem;
+import de.unistuttgart.stayinsync.core.configuration.rest.dtos.CreateTargetSystemEndpointDTO;
 import de.unistuttgart.stayinsync.core.configuration.rest.dtos.CreateApiHeaderDTO;
 import de.unistuttgart.stayinsync.core.configuration.rest.dtos.CreateSourceSystemEndpointDTO;
 import de.unistuttgart.stayinsync.transport.domain.ApiEndpointQueryParamType;
@@ -29,6 +31,9 @@ public class OpenApiSpecificationParserService {
 
     @Inject
     SourceSystemEndpointService sourceSystemEndpointService;
+
+    @Inject
+    TargetSystemEndpointService targetSystemEndpointService;
 
     @Inject
     ApiEndpointQueryParamService apiEndpointQueryParamService;
@@ -76,6 +81,43 @@ public class OpenApiSpecificationParserService {
             
         } catch (Exception e) {
             Log.warnf("Failed to process OpenAPI specification for SourceSystem ID %d: %s", sourceSystem.id, e.getMessage());
+        }
+    }
+
+    @Transactional
+    public void synchronizeFromSpec(TargetSystem targetSystem) {
+        if (targetSystem.openApiSpec == null || targetSystem.openApiSpec.isBlank()) {
+            Log.infof("No OpenAPI spec provided for TargetSystem ID %d. Skipping sync.", targetSystem.id);
+            return;
+        }
+
+        try {
+            String specContent;
+
+            if (targetSystem.openApiSpec.startsWith("http")) {
+                Log.infof("📥 Downloading OpenAPI spec from URL: %s", targetSystem.openApiSpec);
+                specContent = downloadFromUrl(targetSystem.openApiSpec);
+            } else {
+                Log.infof("📄 Using provided OpenAPI spec content directly");
+                specContent = targetSystem.openApiSpec;
+            }
+
+            SwaggerParseResult result = new OpenAPIV3Parser().readContents(specContent, null, new ParseOptions());
+            OpenAPI openAPI = result.getOpenAPI();
+
+            if (result.getMessages() != null && !result.getMessages().isEmpty()) {
+                result.getMessages().forEach(Log::warn);
+            }
+
+            if (openAPI == null) {
+                Log.errorf("Failed to parse OpenAPI specification for TargetSystem ID %d.", targetSystem.id);
+                return;
+            }
+
+            processPathsForTarget(openAPI, targetSystem);
+
+        } catch (Exception e) {
+            Log.warnf("Failed to process OpenAPI specification for TargetSystem ID %d: %s", targetSystem.id, e.getMessage());
         }
     }
     
@@ -167,6 +209,41 @@ public class OpenApiSpecificationParserService {
                         processParameter(parameter, newEndpoint);
                     }
                 }
+            }
+        }
+    }
+
+    private void processPathsForTarget(OpenAPI openAPI, TargetSystem targetSystem) {
+        if (openAPI.getPaths() == null || openAPI.getPaths().isEmpty()) {
+            return;
+        }
+
+        for (Map.Entry<String, PathItem> entry : openAPI.getPaths().entrySet()) {
+            String path = entry.getKey();
+            PathItem pathItem = entry.getValue();
+
+            for (Map.Entry<PathItem.HttpMethod, Operation> opEntry : pathItem.readOperationsMap().entrySet()) {
+                PathItem.HttpMethod httpMethod = opEntry.getKey();
+
+                // Idempotenz: existiert bereits?
+                var existing = io.quarkus.hibernate.orm.panache.Panache.getEntityManager()
+                        .createQuery("SELECT t FROM TargetSystemEndpoint t WHERE t.targetSystem.id = :tsId AND t.endpointPath = :path AND t.httpRequestType = :method")
+                        .setParameter("tsId", targetSystem.id)
+                        .setParameter("path", path)
+                        .setParameter("method", httpMethod.toString())
+                        .getResultList();
+
+                if (existing != null && !existing.isEmpty()) {
+                    Log.debugf("Target endpoint already exists for %s %s on TargetSystem %d. Skipping.", httpMethod, path, targetSystem.id);
+                    continue;
+                }
+
+                CreateTargetSystemEndpointDTO endpointDTO = new CreateTargetSystemEndpointDTO(
+                        path,
+                        httpMethod.toString()
+                );
+
+                targetSystemEndpointService.persistTargetSystemEndpoint(endpointDTO, targetSystem.id);
             }
         }
     }
