@@ -1,6 +1,7 @@
 package de.unistuttgart.stayinsync.transport.transformation_rule_shared.logic_operator.string_predicates;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import de.unistuttgart.stayinsync.transport.exception.OperatorValidationException;
 import de.unistuttgart.stayinsync.transport.transformation_rule_shared.nodes.LogicNode;
 import de.unistuttgart.stayinsync.transport.transformation_rule_shared.nodes.Node;
 import de.unistuttgart.stayinsync.transport.transformation_rule_shared.logic_operator.Operation;
@@ -15,13 +16,13 @@ public class StringLengthBetweenOperator implements Operation {
      * and an upper bound number.
      *
      * @param node The LogicNode to validate.
-     * @throws IllegalArgumentException if the node does not have exactly three inputs.
+     * @throws OperatorValidationException if the node does not have exactly three inputs.
      */
     @Override
-    public void validateNode(LogicNode node) {
+    public void validateNode(LogicNode node)throws OperatorValidationException {
         List<Node> inputs = node.getInputNodes();
         if (inputs == null || inputs.size() != 3) {
-            throw new IllegalArgumentException(
+            throw new OperatorValidationException(
                     "LENGTH_BETWEEN operation for node '" + node.getName() + "' requires exactly 3 inputs: the string, a lower bound, and an upper bound."
             );
         }

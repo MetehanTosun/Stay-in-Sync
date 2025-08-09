@@ -15,7 +15,8 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo;
 @JsonSubTypes({
         @JsonSubTypes.Type(value = OperatorConfigurationError.class, name = "OPERATOR_CONFIG_ERROR"),
         @JsonSubTypes.Type(value = CycleError.class, name = "CYCLE_DETECTED"),
-        @JsonSubTypes.Type(value = FinalNodeError.class, name = "INVALID_FINAL_NODE")
+        @JsonSubTypes.Type(value = FinalNodeError.class, name = "FINAL_NODE_ERROR"),
+        @JsonSubTypes.Type(value = NodeConfigurationError.class, name = "NODE_CONFIG_ERROR")
 })
 public interface ValidationError {
 

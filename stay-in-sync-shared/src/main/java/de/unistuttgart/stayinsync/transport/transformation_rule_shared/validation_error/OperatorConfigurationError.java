@@ -9,12 +9,13 @@ import lombok.Setter;
  * configured for its assigned operator.
  */
 @Getter
+@Setter
 @NoArgsConstructor(force = true)
 public class OperatorConfigurationError implements ValidationError {
 
-    private final int nodeId;
-    private final String nodeName;
-    private final String message;
+    private  int nodeId;
+    private  String nodeName;
+    private  String message;
 
     public OperatorConfigurationError(int nodeId, String nodeName, String message) {
         this.nodeId = nodeId;
