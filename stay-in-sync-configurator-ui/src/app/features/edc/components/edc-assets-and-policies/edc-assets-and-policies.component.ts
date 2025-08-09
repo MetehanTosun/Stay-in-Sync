@@ -187,25 +187,41 @@ export class EdcAssetsAndPoliciesComponent implements OnInit {
         name: 'Simple Asset Selector',
         content: {
           '@context': { edc: 'https://w3id.org/edc/v0.0.1/ns/' },
-          '@id': 'contract-def-unique-id',
-          accessPolicyId: 'policy-id-goes-here',
-          contractPolicyId: 'policy-id-goes-here',
+          '@id': 'CONTRACT_DEFINITION_ID_1',
+          accessPolicyId: 'ACCESS_POLICY_ID',
+          contractPolicyId: 'CONTRACT_POLICY_ID',
           assetsSelector: [
             {
               operandLeft: 'https://w3id.org/edc/v0.0.1/ns/id',
               operator: 'eq',
-              operandRight: 'asset-id-goes-here',
+              operandRight: 'ASSET_ID',
             },
           ],
         }
       },
       {
-        name: 'Template with Placeholders',
+        name: 'Multi-Asset Selector (using IN)',
         content: {
           '@context': { edc: 'https://w3id.org/edc/v0.0.1/ns/' },
-          '@id': 'contract-def-${uuid}',
-          accessPolicyId: '${access_policy_id}',
-          contractPolicyId: '${access_policy_id}',
+          '@id': 'CONTRACT_DEFINITION_ID_2',
+          accessPolicyId: 'ACCESS_POLICY_ID',
+          contractPolicyId: 'CONTRACT_POLICY_ID',
+          assetsSelector: [
+            {
+              "operandLeft": "https://w3id.org/edc/v0.0.1/ns/id",
+              "operator": "in",
+              "operandRight": ["ASSET_ID_1", "ASSET_ID_2", "ASSET_ID_3"]
+            }
+          ]
+        }
+      },
+      {
+        name: 'Template with Variables (Advanced)',
+        content: {
+          '@context': { edc: 'https://w3id.org/edc/v0.0.1/ns/' },
+          '@id': 'CONTRACT_DEF_ID_WITH_VARIABLE_${uuid}',
+          accessPolicyId: 'ACCESS_POLICY_ID_VARIABLE_${access_policy_id}',
+          contractPolicyId: 'CONTRACT_POLICY_ID_VARIABLE_${contract_policy_id}',
           assetsSelector: [
             {
               operandLeft: 'https://w3id.org/edc/v0.0.1/ns/id',
@@ -225,14 +241,14 @@ export class EdcAssetsAndPoliciesComponent implements OnInit {
         name: 'BPN Access Policy',
         content: {
           "@context": { "odrl": "http://www.w3.org/ns/odrl/2/" },
-          "@id": "policy-id-goes-here",
+          "@id": "ACCESS_POLICY_ID_1",
           "policy": {
             "permission": [{
               "action": "use",
               "constraint": [{
                 "leftOperand": "BusinessPartnerNumber",
                 "operator": "eq",
-                "rightOperand": "bpn-goes-here"
+                "rightOperand": "BPN_OF_ALLOWED_PARTNER"
               }]
             }]
           }
@@ -242,7 +258,7 @@ export class EdcAssetsAndPoliciesComponent implements OnInit {
         name: 'Membership Policy',
         content: {
           "@context": { "odrl": "http://www.w3.org/ns/odrl/2/" },
-          "@id": "membership-policy-1",
+          "@id": "MEMBERSHIP_POLICY_ID",
           "policy": {
             "permission": [{
               "action": "use",
@@ -251,6 +267,39 @@ export class EdcAssetsAndPoliciesComponent implements OnInit {
                 "operator": "eq",
                 "rightOperand": "active"
               }]
+            }]
+          }
+        }
+      },
+      {
+        name: 'Framework Agreement Policy (Traceability)',
+        content: {
+          "@context": { "odrl": "http://www.w3.org/ns/odrl/2/" },
+          "@id": "TRACEABILITY_FRAMEWORK_POLICY_ID",
+          "policy": {
+            "permission": [{
+              "action": "use",
+              "constraint": [{
+                "leftOperand": "FrameworkAgreement.traceability",
+                "operator": "eq",
+                "rightOperand": "active"
+              }]
+            }]
+          }
+        }
+      },
+      {
+        name: 'Multi-Constraint BPN Policy',
+        content: {
+          "@context": { "odrl": "http://www.w3.org/ns/odrl/2/" },
+          "@id": "MULTI_CONSTRAINT_POLICY_ID",
+          "policy": {
+            "permission": [{
+              "action": "use",
+              "constraint": [
+                { "leftOperand": "BusinessPartnerNumber", "operator": "eq", "rightOperand": "BPN_OF_ALLOWED_PARTNER" },
+                { "leftOperand": "Membership", "operator": "eq", "rightOperand": "active" }
+              ]
             }]
           }
         }
@@ -265,15 +314,34 @@ export class EdcAssetsAndPoliciesComponent implements OnInit {
         name: 'Standard HTTP Data Asset',
         content: {
           "@context": { "edc": "https://w3id.org/edc/v0.0.1/ns/" },
-          "@id": "asset-id-goes-here",
+          "@id": "UNIQUE_ASSET_ID",
           "properties": {
-            "asset:prop:name": "Asset Name",
-            "asset:prop:description": "A description of the asset.",
-            "asset:prop:contenttype": "application/json"
+            "asset:prop:name": "HUMAN_READABLE_ASSET_NAME",
+            "asset:prop:description": "A_BRIEF_DESCRIPTION_OF_THE_ASSET",
+            "asset:prop:contenttype": "application/json",
+            "asset:prop:version": "1.0.0"
           },
           "dataAddress": {
             "type": "HttpData",
-            "baseUrl": "https://my-backend/api/data"
+            "baseUrl": "https://YOUR_BACKEND_ENDPOINT/api/data"
+          }
+        }
+      }
+      ,
+      {
+        name: 'Traceability Data Asset (BOM)',
+        content: {
+          "@context": { "edc": "https://w3id.org/edc/v0.0.1/ns/" },
+          "@id": "urn:uuid:A_UNIQUE_UUID_FOR_THE_ASSET",
+          "properties": {
+            "asset:prop:name": "BOM_AS_BUILT_V1.2.3",
+            "asset:prop:description": "BILL_OF_MATERIALS_FOR_A_SPECIFIC_COMPONENT",
+            "asset:prop:contenttype": "application/json",
+            "asset:prop:version": "1.2.3",
+            "asset:prop:standard": "urn:bamm:io.catenax.serial_part:1.1.0#SerialPart"
+          },
+          "dataAddress": {
+            "type": "HttpData",
           }
         }
       }
