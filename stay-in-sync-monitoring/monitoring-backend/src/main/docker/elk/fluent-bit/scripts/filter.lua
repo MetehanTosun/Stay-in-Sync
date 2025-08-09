@@ -1,15 +1,15 @@
--- Funktion zur Erkennung verschachtelter Tabellen
+-- Function to detect nested tables in logs
 function parse_nested_log(tag, timestamp, record)
     local log_str = record["log"]
     local parsed = {}
 
-    -- Extrahiere bekannte Felder aus dem Log-String
+    -- Extract known fields from the log string
     for k, v in string.gmatch(log_str, '([%w_]+)=("[^"]+"|[%w%.%-]+)') do
-        v = v:gsub('^"(.-)"$', '%1')
+        v = v:gsub('^"(.-)"$', '%1')  -- Remove quotes from string values
         parsed[k] = v
     end
 
-    -- Setze extrahierte Felder ins Record
+    -- Set extracted fields into the record
     if parsed["msg"] then
         record["message"] = parsed["msg"]
     end
@@ -41,7 +41,27 @@ function parse_nested_log(tag, timestamp, record)
         record["error"] = parsed["error"]
     end
 
-    -- Severity-Mapping anhand Level
+    -- Additional fields for metrics extraction
+    if parsed["request_count"] then
+        record["request_count"] = tonumber(parsed["request_count"])
+    end
+    if parsed["cpu_load"] then
+        record["cpu_load"] = tonumber(parsed["cpu_load"])
+    end
+    if parsed["script_name"] then
+        record["script_name"] = parsed["script_name"]
+    end
+    if parsed["script_duration"] then
+        record["script_duration"] = tonumber(parsed["script_duration"])
+    end
+    if parsed["source_system"] then
+        record["source_system"] = parsed["source_system"]
+    end
+    if parsed["target_system"] then
+        record["target_system"] = parsed["target_system"]
+    end
+
+    -- Severity mapping based on level
     if parsed["level"] == "error" then
         record["severity"] = "critical"
     elseif parsed["level"] == "warn" then
