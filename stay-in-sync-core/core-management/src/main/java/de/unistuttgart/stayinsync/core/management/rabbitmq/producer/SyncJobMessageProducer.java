@@ -30,6 +30,9 @@ public class SyncJobMessageProducer {
 
     private Channel channel;
 
+    @ConfigProperty(name = "stayinsync.rabbitmq.enabled", defaultValue = "true")
+    boolean rabbitEnabled;
+
     /**
      * The application needs to open a connection and declare the domain specific exchange on startup
      *
@@ -37,6 +40,10 @@ public class SyncJobMessageProducer {
      */
     void initialize(@Observes StartupEvent startupEvent) {
         try {
+            if (!rabbitEnabled) {
+                Log.info("RabbitMQ disabled by config (stayinsync.rabbitmq.enabled=false). Skipping SyncJobMessageProducer init.");
+                return;
+            }
             Log.info("Opening rabbitMQ channel");
             channel = rabbitMQClient.connect().openChannel().orElseThrow(() -> new CoreManagementException("RabbitMQ Error", "Unable to open rabbitMQ Channel"));
             channel.exchangeDeclare("syncjob-exchange", "direct", true);

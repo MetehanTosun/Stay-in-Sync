@@ -13,6 +13,7 @@ import de.unistuttgart.stayinsync.core.configuration.exception.CoreManagementExc
 import de.unistuttgart.stayinsync.core.configuration.mapping.TargetSystemEndpointFullUpdateMapper;
 import de.unistuttgart.stayinsync.core.configuration.rest.dtos.CreateTargetSystemEndpointDTO;
 import io.quarkus.logging.Log;
+import io.quarkus.hibernate.orm.panache.Panache;
 import io.smallrye.common.constraint.NotNull;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
@@ -71,17 +72,39 @@ public class TargetSystemEndpointService {
     }
 
     public void deleteTargetSystemEndpointById(Long id) {
-        Log.debugf("Deleting target-system-endpoint by id = %d", id);
-        TargetSystemEndpoint.deleteById(id);
+        Log.infof("Deleting target-system-endpoint by id = %d", id);
+        var em = Panache.getEntityManager();
+        int rows = em.createQuery("delete from TargetSystemEndpoint t where t.id = :id")
+                .setParameter("id", id)
+                .executeUpdate();
+        Log.infof("Rows deleted: %d", rows);
+        em.flush();
+        em.clear();
     }
 
     public Optional<TargetSystemEndpoint> replaceTargetSystemEndpoint(@NotNull @Valid TargetSystemEndpoint endpoint) {
-        Log.debugf("Replacing target-system-endpoint: %s", endpoint);
+        Log.infof("Replacing target-system-endpoint id=%s method=%s path=%s", endpoint.id, endpoint.httpRequestType, endpoint.endpointPath);
         return TargetSystemEndpoint.findByIdOptional(endpoint.id)
                 .map(TargetSystemEndpoint.class::cast)
-                .map(target -> {
-                    this.mapper.mapFullUpdate(endpoint, target);
-                    return target;
+                .map(existing -> {
+                    Log.infof("Existing entity before update id=%s method=%s path=%s", existing.id, existing.httpRequestType, existing.endpointPath);
+                    var em = Panache.getEntityManager();
+                    var updated = em.createQuery(
+                                    "update TargetSystemEndpoint t set t.endpointPath = :path, t.httpRequestType = :method, t.description = :desc, t.jsonSchema = :schema where t.id = :id")
+                            .setParameter("path", endpoint.endpointPath)
+                            .setParameter("method", endpoint.httpRequestType)
+                            .setParameter("desc", endpoint.description)
+                            .setParameter("schema", endpoint.jsonSchema)
+                            .setParameter("id", endpoint.id)
+                            .executeUpdate();
+                    Log.infof("Rows updated: %d", updated);
+                    em.flush();
+                    em.clear();
+                    var reloaded = TargetSystemEndpoint.findByIdOptional(endpoint.id).map(TargetSystemEndpoint.class::cast).orElse(null);
+                    if (reloaded != null) {
+                        Log.infof("Entity after update id=%s method=%s path=%s", reloaded.id, reloaded.httpRequestType, reloaded.endpointPath);
+                    }
+                    return reloaded;
                 });
     }
 }
