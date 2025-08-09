@@ -42,7 +42,7 @@ import { EdcInstanceService } from './services/edc-instance.service';
   ],
   templateUrl: './edc-instances.component.html',
   styleUrl: './edc-instances.component.css',
-  providers: [ConfirmationService, EdcInstanceService],
+  providers: [ConfirmationService],
 })
 export class EdcInstancesComponent implements OnInit {
   @ViewChild('dt2') dt2: Table | undefined;
@@ -127,11 +127,9 @@ export class EdcInstancesComponent implements OnInit {
 
   saveEditedInstance(): void {
     if (this.instanceToEdit && this.instanceToEdit.name && this.instanceToEdit.url && this.instanceToEdit.bpn) {
-      const index = this.edcInstances.findIndex(i => i.id === this.instanceToEdit!.id);
-      if (index !== -1) {
-        this.edcInstances[index] = { ...this.instanceToEdit };
-        this.edcInstances = [...this.edcInstances];
-      }
+      this.edcInstances = this.edcInstances.map(instance =>
+        instance.id === this.instanceToEdit!.id ? { ...this.instanceToEdit! } : instance
+      );
       this.hideEditInstanceDialog();
     } else {
       console.error('Name, URL, and BPN are required for edited instance.');

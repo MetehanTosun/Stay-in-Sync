@@ -1633,10 +1633,10 @@ export class EdcAssetsAndPoliciesComponent implements OnInit {
       this.jsonToView = JSON.stringify(odrlContractDef, null, 2);
       this.viewDialogHeader = `Details for Contract Definition: ${contractPolicy.id}`;
       // For Details tab
-      // 1. Find linked Access Policy
+      // First find linked Access Policy
       this.linkedAccessPolicy = this.allAccessPolicies.find(p => p.id === odrlContractDef.accessPolicyId) || null;
 
-      // 2. Find linked Assets
+      // Then find linked Assets
       const assetIds = new Set(odrlContractDef.assetsSelector.map(s => s.operandRight));
       this.linkedAssets = this.assets.filter(a => assetIds.has(a.id));
 
