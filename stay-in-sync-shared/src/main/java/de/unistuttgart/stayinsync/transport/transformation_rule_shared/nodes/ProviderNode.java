@@ -40,12 +40,12 @@ public class ProviderNode extends Node {
         }
 
         if(!jsonPath.startsWith("source")){
-            throw new IllegalArgumentException("jsonPath for ProviderNode must start with 'source'.");
+            throw new NodeConfigurationException("jsonPath for ProviderNode must start with 'source'.");
         }
 
         String[] parts = jsonPath.split("\\.");
         if (parts.length < 2) {
-            throw new IllegalStateException("Invalid jsonPath format on node " + getId() + ": Must contain 'source.{sourceName}'.");
+            throw new NodeConfigurationException("Invalid jsonPath format on node " + getId() + ": Must contain 'source.{sourceName}'.");
         }
 
         this.jsonPath = jsonPath;
@@ -70,22 +70,39 @@ public class ProviderNode extends Node {
      * required data source is not found in the dataContext.
      */
     @Override
-    public void calculate(Map<String, JsonNode> dataContext) {
+    public void calculate(Map<String, JsonNode> dataContext) throws GraphEvaluationException {
         String[] jsonPathKeys = jsonPath.split("\\.");
 
         if(!dataContext.containsKey("source")) {
-            throw new IllegalArgumentException("Malformed dataContext, source is not the first scoped key.");
+            throw new GraphEvaluationException(
+                    GraphEvaluationException.ErrorType.DATA_NOT_FOUND,
+                    "Invalid DataContext",
+                    "Malformed dataContext, 'source' is not the first scoped key.",
+                    null
+            );
         }
         JsonNode sourceScope = dataContext.get("source");
 
         if(sourceScope == null) {
-            throw new IllegalArgumentException("Malformed dataContext, no defined sourceSystemNames found.");
+            throw new GraphEvaluationException(
+                    GraphEvaluationException.ErrorType.DATA_NOT_FOUND,
+                    "Invalid DataContext",
+                    "Malformed dataContext, no defined sourceSystemNames found under 'source'.",
+                    null
+            );
         }
 
         for (int i = 0; i < jsonPath.split("\\.").length; i++) {
-            sourceScope = sourceScope.get(jsonPathKeys[i]);
-            if(sourceScope == null) {
-                throw new IllegalArgumentException("Malformed dataContext, no defined keys on path to insertable value.");
+            String key = jsonPathKeys[i];
+            sourceScope = sourceScope.get(key);
+
+            if (sourceScope == null) {
+                throw new GraphEvaluationException(
+                        GraphEvaluationException.ErrorType.DATA_NOT_FOUND,
+                        "Path Not Found",
+                        "Malformed dataContext, key '" + key + "' in path '" + jsonPath + "' does not exist.",
+                        null
+                );
             }
         }
 
