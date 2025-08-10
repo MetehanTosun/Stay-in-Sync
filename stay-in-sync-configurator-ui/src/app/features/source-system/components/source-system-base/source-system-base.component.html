@@ -194,6 +194,14 @@
   </div>
 </p-card>
 
+<!-- Shared confirmation dialog for delete -->
+<app-confirmation-dialog
+  [(visible)]="showConfirmationDialog"
+  [data]="confirmationData"
+  (confirmed)="onConfirmationConfirmed()"
+  (cancelled)="onConfirmationCancelled()">
+</app-confirmation-dialog>
+
 <!-- Create Source System Dialog -->
 <app-create-source-system
   [(visible)]="showCreateDialog"
