@@ -34,7 +34,7 @@ export class RulesOverviewComponent implements OnInit {
     private rulesApi: TransformationRulesApiService
   ) { }
 
-  ngOnInit() {
+  ngOnInit() : void {
     this.loadRules();
   }
 

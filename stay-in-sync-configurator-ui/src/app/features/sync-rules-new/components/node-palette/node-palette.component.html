@@ -4,7 +4,7 @@
     <div class="node-palette-item" (click)="selectProviderNode()">
       Provider Node
     </div>
-    <div class="node-palette-item"> <!-- TODO -->
+    <div class="node-palette-item" (click)="selectLogicNodePalette()">
       Logic Node
     </div>
     <div class="node-palette-item" (click)="selectConstantNode()">
@@ -13,5 +13,14 @@
   </div>
 
   <!-- Logic Groups Sub-Palette -->
+  <div id="logic-groups-menu" *ngIf="showLogicGroups" (click)="$event.stopPropagation()">
+    <div *ngFor="let groupName of getLogicGroups()" class="node-palette-item" (click)="selectLogicGroup(groupName)">
+      <span>{{ groupName }}</span>
+    </div>
+  </div>
+
   <!-- Logic Nodes Sub-Palette -->
+  <div id="logic-groups-menu" *ngIf="showLogicGroupOperators">
+
+  </div>
 </div>

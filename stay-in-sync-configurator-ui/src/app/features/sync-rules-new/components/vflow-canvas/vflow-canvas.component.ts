@@ -2,7 +2,7 @@ import { Component, EventEmitter, OnInit, Output } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import { Edge, Node, Vflow } from 'ngx-vflow';
 import { GraphAPIService } from '../../service';
-import { NodeType, VFlowGraphDTO } from '../../models';
+import { LogicOperator, NodeType, VFlowGraphDTO } from '../../models';
 import { ConstantNodeComponent, FinalNodeComponent, LogicNodeComponent, ProviderNodeComponent } from '..';
 
 @Component({
@@ -19,7 +19,7 @@ export class VflowCanvasComponent implements OnInit {
 
   constructor(private route: ActivatedRoute, private graphApi: GraphAPIService) { }
 
-  ngOnInit() {
+  ngOnInit(): void {
     const routeId = this.route.snapshot.paramMap.get('id');
     const ruleId = routeId ? Number(routeId) : undefined;
 
@@ -71,18 +71,28 @@ export class VflowCanvasComponent implements OnInit {
     const y = mouseEvent.clientY - rect.top;
 
     this.canvasClick.emit({ x, y });
-    console.log("Mouse click registered at: ", this.canvasClick); // TODO-s DELETE
+    console.log("Mouse click registered at: ", { x, y }); // TODO-s DELETE
   }
 
-  addNode(nodeType: NodeType, pos: { x: number, y: number }) {
+  addNode(nodeType: NodeType, pos: { x: number, y: number }, operator?: LogicOperator) {
+    let nodeData: any = {
+      name: `${nodeType} Node`
+    };
+    if (nodeType === NodeType.LOGIC && operator) {
+      nodeData = {
+        ...operator,
+        name: `Logic Node ${operator.operatorName}`
+      }
+    }
+
     const newNode: Node = {
-      id: this.nodes.length.toString(),
+      id: `${Date.now()}-${crypto.randomUUID().split('-')[0]}`,
       point: pos,
       type: this.getNodeType(nodeType),
       width: 200,
       height: 100,
       data: {
-        name: nodeType,
+        ...nodeData,
         nodeType: nodeType
       }
     };
@@ -96,6 +106,9 @@ export class VflowCanvasComponent implements OnInit {
       case NodeType.CONSTANT: return ConstantNodeComponent;
       case NodeType.LOGIC: return LogicNodeComponent;
       case NodeType.FINAL: return FinalNodeComponent;
+      default:
+        alert("Unknown NodeType");
+        throw Error("Unknown NodeType"); // TODO-s err
     }
   }
   // #region
