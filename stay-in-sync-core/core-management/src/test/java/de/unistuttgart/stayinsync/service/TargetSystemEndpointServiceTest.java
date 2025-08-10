@@ -7,7 +7,7 @@ import jakarta.persistence.EntityManager;
 import jakarta.transaction.Transactional;
 import de.unistuttgart.stayinsync.core.configuration.mapping.TargetSystemEndpointFullUpdateMapper;
 import de.unistuttgart.stayinsync.core.configuration.rest.dtos.CreateTargetSystemEndpointDTO;
-import de.unistuttgart.stayinsync.core.configuration.rest.dtos.TargetSystemDTO;
+import de.unistuttgart.stayinsync.core.configuration.rest.dtos.targetsystem.TargetSystemDTO;
 import de.unistuttgart.stayinsync.core.configuration.service.TargetSystemEndpointService;
 import de.unistuttgart.stayinsync.core.configuration.service.TargetSystemService;
 import io.quarkus.test.junit.QuarkusTest;

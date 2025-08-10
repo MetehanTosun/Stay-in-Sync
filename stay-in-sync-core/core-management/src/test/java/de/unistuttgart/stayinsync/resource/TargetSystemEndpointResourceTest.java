@@ -1,6 +1,6 @@
 package de.unistuttgart.stayinsync.resource;
 
-import de.unistuttgart.stayinsync.core.configuration.rest.dtos.TargetSystemDTO;
+import de.unistuttgart.stayinsync.core.configuration.rest.dtos.targetsystem.TargetSystemDTO;
 import de.unistuttgart.stayinsync.core.configuration.service.TargetSystemService;
 import io.quarkus.test.junit.QuarkusTest;
 import io.restassured.http.ContentType;
