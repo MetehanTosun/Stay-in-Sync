@@ -34,7 +34,7 @@ Once the containers are running, Prometheus will start scraping the configured t
 
 To start the ELK stack and RabbitMQ, navigate to the following directory and run:
 
-cd stay-in-sync-monitoring/src/main/docker/elk
+cd stay-in-sync-monitoring/monitoring-backend/src/main/docker/elk
 
 docker compose up -d
 

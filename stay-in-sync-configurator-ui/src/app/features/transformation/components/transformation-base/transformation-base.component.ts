@@ -5,7 +5,7 @@
  * as handling interactions with transformation rules and scripts.
  */
 
-import {Component, EventEmitter, OnInit, Output} from '@angular/core';
+import {Component, EventEmitter, Input, OnInit, Output} from '@angular/core';
 import {TableModule} from 'primeng/table';
 import {Transformation, UpdateTransformationRequest} from '../../models/transformation.model';
 import {Button} from 'primeng/button';
@@ -83,6 +83,8 @@ export class TransformationBaseComponent implements OnInit {
    */
   newTransformation: Transformation = {};
 
+  @Input() selectedSyncJobId: number | undefined;
+
   /**
    * @constructor
    * @param {TransformationService} transformationService - Service for managing transformations.
@@ -99,6 +101,12 @@ export class TransformationBaseComponent implements OnInit {
     this.transformationService.getAll().subscribe(
       (transformations: Transformation[]) => {
         this.transformations = transformations;
+        if (this.selectedSyncJobId !== undefined && this.selectedSyncJobId !== null) {
+          this.transformations = transformations.filter(t => t.syncJobId === null || t.syncJobId === this.selectedSyncJobId);
+        }else {
+          this.transformations = transformations.filter(t => t.syncJobId === null);
+        }
+        console.log('Transformations nach Filterung:', this.transformations);
         this.addedTransformations = this.tempStore.getTransformations();
         this.setAddedFlagForIntersection();
         this.transformationChanged();
@@ -114,6 +122,7 @@ export class TransformationBaseComponent implements OnInit {
    * Sets the `added` flag for transformations that are present in the temp store.
    */
   setAddedFlagForIntersection() {
+    this.addedTransformations = this.tempStore.getTransformations();
     const addedIds = this.addedTransformations.map(t => t.id);
     console.log('Added Transformation IDs:', addedIds);
     console.log('All Transformations:', this.transformations);
@@ -128,8 +137,10 @@ export class TransformationBaseComponent implements OnInit {
   loadTransformationsFromBackend() {
     this.transformationService.getAll().subscribe(
       (transformations: Transformation[]) => {
-        this.transformations = transformations;
-        this.addedTransformations = this.tempStore.getTransformations();
+        this.transformations = transformations.filter(t => t.syncJobId == null);
+        console.log('Transformations vor Filterung:', transformations);
+        this.transformations = transformations.filter(t => t.syncJobId === null);
+        console.log('Transformations nach Filterung:', this.transformations);
         this.setAddedFlagForIntersection();
         this.transformationChanged();
         console.log('Transformations from backend loaded:', this.transformations);
