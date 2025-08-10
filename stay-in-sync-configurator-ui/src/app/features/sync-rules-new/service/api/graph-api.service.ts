@@ -20,10 +20,10 @@ export class GraphAPIService {
    * Sends a GET request to read a specific transformation graph.
    *
    * @param ruleId
-   * @returns
+   * @returns the frontend (vflow) graph representation
    */
   getGraph(ruleId: number): Observable<VFlowGraphDTO> {
-    return this.http.get<VFlowGraphDTO>(`${this.apiUrl}/${ruleId}`);
+    return this.http.get<VFlowGraphDTO>(`${this.apiUrl}/${ruleId}/graph`);
   }
 
   /**

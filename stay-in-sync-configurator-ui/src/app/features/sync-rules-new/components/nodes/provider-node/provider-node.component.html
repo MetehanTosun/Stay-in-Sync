@@ -1,0 +1,16 @@
+<div class="provider-node">
+  <!-- Node Header -->
+  <div class="node-header">
+    <span class="node-type">Provider</span>
+  </div>
+
+  <!-- Node Body -->
+  <div class="node-content">
+    <h4>{{ node().data?.name}}</h4>
+    <p class="description">{{ node().data?.jsonPath || 'JSON Path not set' }}</p>
+    <small class="arc-id">Arc ID: {{ node().data?.arcId || 'N/A' }}</small>
+  </div>
+
+  <!-- Node Anchors -->
+  <handle type="source" position="right" />
+</div>

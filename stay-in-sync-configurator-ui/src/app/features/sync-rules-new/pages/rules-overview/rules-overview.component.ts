@@ -78,7 +78,7 @@ export class RulesOverviewComponent implements OnInit {
         this.editRule(res.body?.id)
       },
       error: (err) => {
-        alert(err);
+        alert(err.error?.message || err.message);
         console.log(err); // TODO-s err
       },
     })
@@ -93,7 +93,7 @@ export class RulesOverviewComponent implements OnInit {
         this.rules = rules;
       },
       error: (err) => {
-        alert(err);
+        alert(err.error?.message || err.message);
         console.log(err); // TODO-s err
       },
       complete: () => {
@@ -112,7 +112,7 @@ export class RulesOverviewComponent implements OnInit {
         alert("deletion successful"); // TODO-s notify
       },
       error: (err) => {
-        alert(err);
+        alert(err.error?.message || err.message);
         console.log(err); // TODO-s err
       }
     })

@@ -1,1 +1,41 @@
-<p>edit-rule works!</p>
+<!-- MARK: Page Header -->
+<div class="page-header">
+  <button class="return-button" (click)="return()">
+    Back to Rules
+  </button>
+  <h2>Rule Editor - {{ ruleName }}</h2>
+
+  <!-- MARK: Toolbar -->
+  <div class="toolbar">
+    <button id="save-graph-button"> <!-- TODO -->
+      <span class="material-symbols-rounded">
+        save
+      </span>
+      Save Graph
+    </button>
+
+    <button id="node-palette-button" (click)="openMainNodePalette($event)">
+      Add Node
+    </button>
+  </div>
+</div>
+
+<!-- MARK: Main Body -->
+<div class="vflow-wrapper">
+  <app-vflow-canvas
+    (canvasClick)="onCanvasClick($event)"
+  >
+  </app-vflow-canvas>
+</div>
+
+<div class="node-palette-wrapper">
+  <app-node-palette
+    [showMainNodePalette]="showMainNodePalette"
+    (exit)="closeNodePalette()"
+    (nodeSelected)="onNodeSelected($event)">
+  </app-node-palette>
+
+  <div id="node-selection-indicator" *ngIf="selectedNodeType">
+    Selected: {{ selectedNodeType }} - Click on canvas to place
+  </div>
+</div>

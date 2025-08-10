@@ -1,4 +1,6 @@
+import { CustomNodeComponent } from "ngx-vflow";
 import { NodeType } from "..";
+import { WritableSignal } from "@angular/core";
 
 export interface VFlowGraphDTO {
   nodes: VFlowNode[];

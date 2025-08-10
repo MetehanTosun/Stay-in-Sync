@@ -15,11 +15,32 @@ export class OperatorNodesApiService {
 
   constructor(private http: HttpClient) { }
 
+  // TODO-s Check if any Methods are redundant
+
   /**
    * Sends a GET request to receive a collection of all available logic operators
    */
   getOperators(): Observable<LogicOperator[]> {
     return this.http.get<LogicOperator[]>(this.apiUrl);
+  }
+
+  /**
+   * Groups the all Operators by category
+   * @returns Map of Operators identified by category
+   */
+  getGroupedOperators(): Observable<Map<string, LogicOperator[]>> {
+    return this.getOperators().pipe(
+      map(operators => {
+        const groups = new Map<string, LogicOperator[]>();
+        operators.forEach(op => {
+          if (!groups.has(op.category)) {
+            groups.set(op.category, []);
+          }
+          groups.get(op.category)!.push(op);
+        });
+        return groups;
+      })
+    );
   }
 
   /**

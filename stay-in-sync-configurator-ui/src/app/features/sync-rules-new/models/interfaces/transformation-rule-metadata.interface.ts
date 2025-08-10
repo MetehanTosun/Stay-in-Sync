@@ -10,5 +10,5 @@ export interface TransformationRule {
   /**
    * The ID of the parent transformation this rule belongs to.
    */
-  transformationId: number;
+  transformationId: number; // TODO-s check if needed
 }

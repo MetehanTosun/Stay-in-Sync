@@ -5,20 +5,20 @@ export enum NodeType {
   /**
    * Provider nodes represent data sources from ARCs / JSON paths
    */
-  PROVIDER = 'provider',
+  PROVIDER = 'PROVIDER',
 
   /**
    * Logic nodes represent operations
    */
-  LOGIC = 'logic',
+  LOGIC = 'LOGIC',
 
   /**
    * Constant nodes represent static values
    */
-  CONSTANT = 'constant',
+  CONSTANT = 'CONSTANT',
 
   /**
    * Final nodes represent the end of the boolean condition / the output of the transformation graph
    */
-  FINAL = 'final'
+  FINAL = 'FINAL'
 }
