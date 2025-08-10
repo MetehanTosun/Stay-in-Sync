@@ -28,17 +28,15 @@ import {SourceSystemResourceService} from '../../service/sourceSystemResource.se
 import {TypeScriptGenerationRequest} from '../../models/typescriptGenerationRequest';
 import {TypeScriptGenerationResponse} from '../../models/typescriptGenerationResponse';
 
-import {ApiEndpointQueryParamResourceService} from '../../service/apiEndpointQueryParamResource.service';
 import {SourceSystemEndpointDTO} from '../../models/sourceSystemEndpointDTO';
-import {ApiEndpointQueryParamDTO} from '../../models/apiEndpointQueryParamDTO';
 import {ApiEndpointQueryParamType} from '../../models/apiEndpointQueryParamType';
-import {CreateSourceSystemEndpointDTO} from '../../models/createSourceSystemEndpointDTO';
 
 import { load as parseYAML } from 'js-yaml';
 import { SourceSystemDTO } from '../../models/sourceSystemDTO';
 import { ManageEndpointParamsComponent } from '../manage-endpoint-params/manage-endpoint-params.component';
 import { ResponsePreviewModalComponent } from '../response-preview-modal/response-preview-modal.component';
 import { ConfirmationDialogComponent, ConfirmationDialogData } from '../confirmation-dialog/confirmation-dialog.component';
+import { OpenApiImportService } from '../../../../core/services/openapi-import.service';
 
 
 /**
@@ -199,7 +197,7 @@ export class ManageEndpointsComponent implements OnInit, OnDestroy {
     private endpointSvc: SourceSystemEndpointResourceService,
     private sourceSystemService: SourceSystemResourceService,
     private http: HttpClient,
-    private queryParamSvc: ApiEndpointQueryParamResourceService,
+    private openapi: OpenApiImportService,
   ) {}
 
   /**
@@ -1348,173 +1346,52 @@ ${jsonSchema}
    * Imports endpoints from the OpenAPI spec.
    */
   async importEndpoints(): Promise<void> {
-    if (!this.apiUrl) {
-      return;
-    }
+    if (!this.apiUrl) return;
     this.importing = true;
     try {
-      await this.tryImportFromUrl();
-    } catch (err) {
-      this.importing = false;
-    }
-  }
-
-  /**
-   * Attempts to import the OpenAPI spec from the apiUrl, using direct and fallback URLs.
-   */
-  private async tryImportFromUrl(): Promise<void> {
-    if (!this.apiUrl) {
-      throw new Error('No API URL available for import');
-    }
-    if (
-      this.apiUrl.includes('swagger.json') ||
-      this.apiUrl.includes('openapi.json') ||
-      this.apiUrl.endsWith('.yaml') ||
-      this.apiUrl.endsWith('.yml')
-    ) {
-      try {
-        const openApiSpec = await this.http.get(this.apiUrl).toPromise();
-        await this.processOpenApiSpec(openApiSpec);
-        this.importing = false;
-      } catch (err) {
-        this.importing = false;
-        throw err;
-      }
-    } else {
-      try {
-        const openApiSpec = await this.http.get(this.apiUrl + '/swagger.json').toPromise();
-        await this.processOpenApiSpec(openApiSpec);
-      } catch (err) {
-        this.tryAlternativeOpenApiUrls();
-      }
-    }
-  }
-
-  /**
-   * Tries alternative OpenAPI URLs if the main one fails.
-   */
-  private tryAlternativeOpenApiUrls() {
-    const alternativeUrls = [
-      `${this.apiUrl}/v2/swagger.json`,
-      `${this.apiUrl}/api/v3/openapi.json`,
-      `${this.apiUrl}/swagger/v1/swagger.json`,
-      `${this.apiUrl}/api-docs`,
-      `${this.apiUrl}/openapi.json`,
-      `${this.apiUrl}/docs/swagger.json`,
-      `${this.apiUrl}/openapi.yaml`,   
-      `${this.apiUrl}/openapi.yml`,     
-    ];
-    this.loadOpenApiFromUrls(alternativeUrls, 0);
-  }
-
-  /**
-   * Loads the OpenAPI spec from a list of URLs.
-   */
-  private loadOpenApiFromUrls(urls: string[], index: number) {
-    if (index >= urls.length) {
-      this.importing = false;
-      return;
-    }
-    const url = urls[index];
-    const isJson = url.endsWith('.json');
-    this.http.get(url, {
-      responseType: isJson ? 'json' : 'text' as 'json'
-    }).subscribe({
-      next: (raw: any) => {
-        let spec: any;
-        if (isJson) {
-          spec = raw;
-        } else {
-          try {
-            spec = parseYAML(raw as string);
-          } catch (e) {
-            this.loadOpenApiFromUrls(urls, index + 1);
-            return;
-          }
+      const endpoints = await this.openapi.discoverEndpointsFromSpecUrl(this.apiUrl);
+      const spec = await this.loadSpecCandidates(this.apiUrl);
+      if (spec) this.currentOpenApiSpec = spec;
+      const paramsByKey = spec ? this.openapi.discoverParamsFromSpec(spec) : {};
+      if (endpoints.length) {
+        const created = await this.endpointSvc.apiConfigSourceSystemSourceSystemIdEndpointPost(this.sourceSystemId, endpoints as any).toPromise();
+        const createdList = (created as any[]) || [];
+        for (const ep of createdList) {
+          const key = `${ep.httpRequestType} ${ep.endpointPath}`;
+          const params = paramsByKey[key] || [];
+          if (ep.id && params.length) await this.openapi.persistParamsForEndpoint(ep.id, params);
         }
-        this.processOpenApiSpec(spec);
-      },
-      error: () => {
-        this.loadOpenApiFromUrls(urls, index + 1);
-      }
-    });
-  }
-
-  /**
-   * Processes the OpenAPI spec and creates endpoints.
-   */
-  private async processOpenApiSpec(spec: any): Promise<void> {
-    try {
-      const endpointsToCreate: CreateSourceSystemEndpointDTO[] = [];
-      const schemas = spec.components?.schemas || {};
-      if (spec.paths) {
-        for (const [path, pathItem] of Object.entries(spec.paths)) {
-          for (const [method, operation] of Object.entries(pathItem as any)) {
-            if ([
-              'get', 'post', 'put', 'delete', 'patch', 'head', 'options'
-            ].includes(method.toLowerCase())) {
-              const operationDetails = operation as any;
-              const pathLevelParams = (pathItem as any).parameters || [];
-              const operationLevelParams = operationDetails.parameters || [];
-              const allParameters = [...pathLevelParams, ...operationLevelParams];
-              const formattedPath = this.formatPathWithParameters(path, allParameters);
-              let requestBodySchema: string | undefined = undefined;
-              if ([
-                'post', 'put'
-              ].includes(method.toLowerCase())) {
-                const requestBody = operationDetails.requestBody;
-                if (requestBody?.content?.['application/json']?.schema) {
-                  let schema = requestBody.content['application/json'].schema;
-                  schema = this.resolveRefs(schema, schemas);
-                  if (schema) {
-                    requestBodySchema = JSON.stringify(schema, null, 2);
-                  }
-                }
-              }
-
-              // Extract response body schema
-              let responseBodySchema: string | undefined = undefined;
-              if (operationDetails.responses) {
-                // Try to get 200 response first, then fallback to other success responses
-                const successResponses = ['200', '201', '202', '204'];
-                for (const statusCode of successResponses) {
-                  const response = operationDetails.responses[statusCode];
-                  if (response?.content?.['application/json']?.schema) {
-                    let schema = response.content['application/json'].schema;
-                    schema = this.resolveRefs(schema, schemas);
-                    if (schema) {
-                      responseBodySchema = JSON.stringify(schema, null, 2);
-                      break; // Use the first successful response found
-                    }
-                  }
-                }
-              }
-
-              const endpoint: CreateSourceSystemEndpointDTO = {
-                endpointPath: formattedPath,
-                httpRequestType: method.toUpperCase(),
-                requestBodySchema,
-                responseBodySchema
-              };
-              endpointsToCreate.push(endpoint);
-            }
-          }
-        }
-      }
-      if (endpointsToCreate.length > 0) {
-        this.endpoints = endpointsToCreate;
-        this.endpointSvc.apiConfigSourceSystemSourceSystemIdEndpointPost(this.sourceSystemId, endpointsToCreate)
-          .subscribe({
-            next: () => {
-              this.loadEndpoints();
-            },
-            error: () => {}
-          });
+        this.loadEndpoints();
       }
     } finally {
       this.importing = false;
     }
   }
+
+  private async loadSpecCandidates(baseUrl: string): Promise<any> {
+    const urls = [
+      baseUrl,
+      `${baseUrl}/swagger.json`,
+      `${baseUrl}/openapi.json`,
+      `${baseUrl}/v2/swagger.json`,
+      `${baseUrl}/api/v3/openapi.json`,
+      `${baseUrl}/swagger/v1/swagger.json`,
+      `${baseUrl}/api-docs`,
+      `${baseUrl}/openapi.yaml`,
+      `${baseUrl}/openapi.yml`
+    ];
+    for (const url of urls) {
+      try {
+        const isJson = url.endsWith('.json') || (!url.endsWith('.yaml') && !url.endsWith('.yml'));
+        const raw = await this.http.get(url, { responseType: isJson ? 'json' : 'text' as 'json' }).toPromise();
+        const spec: any = isJson ? raw : parseYAML(raw as string);
+        if (spec && spec.paths) return spec;
+      } catch { /* try next */ }
+    }
+    return null;
+  }
+
+  // Removed legacy OpenAPI import and processing methods in favor of shared OpenApiImportService
 
   /**
    * Ensures a parameter name is wrapped in curly braces {paramName}.
@@ -1554,7 +1431,7 @@ ${jsonSchema}
   /**
    * Saves discovered endpoints to the backend.
    */
-  private saveDiscoveredEndpoints(discoveredEndpoints: Array<{endpoint: CreateSourceSystemEndpointDTO, pathParams: string[]}>) {
+  private saveDiscoveredEndpoints(discoveredEndpoints: Array<{endpoint: any, pathParams: string[]}>) {
     if (discoveredEndpoints.length === 0) {
       this.importing = false;
       return;

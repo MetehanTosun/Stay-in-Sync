@@ -12,7 +12,9 @@ import jakarta.persistence.UniqueConstraint;
 
 @Entity
 @DiscriminatorValue("TARGET_SYSTEM")
-@Table(uniqueConstraints = @UniqueConstraint(columnNames = {"sync_system_id", "endpointPath"}))
+@Table(
+    uniqueConstraints = @UniqueConstraint(columnNames = {"sync_system_id", "endpointPath", "httpRequestType"})
+)
 public class TargetSystemEndpoint extends SyncSystemEndpoint {
 
     @OneToMany(mappedBy = "targetSystemEndpoint")

@@ -8,6 +8,8 @@ import { InputTextModule } from 'primeng/inputtext';
 import { DropdownModule } from 'primeng/dropdown';
 import { CardModule } from 'primeng/card';
 import { ProgressSpinnerModule } from 'primeng/progressspinner';
+import { HttpClient } from '@angular/common/http';
+import { firstValueFrom } from 'rxjs';
 
 import { TargetSystemEndpointResourceService } from '../../service/targetSystemEndpointResource.service';
 import { TargetSystemEndpointDTO } from '../../models/targetSystemEndpointDTO';
@@ -15,6 +17,10 @@ import { CreateTargetSystemEndpointDTO } from '../../models/createTargetSystemEn
 import { ManageEndpointParamsComponent } from '../../../source-system/components/manage-endpoint-params/manage-endpoint-params.component';
 import { TabViewModule } from 'primeng/tabview';
 import { MonacoEditorModule, NgxEditorModel } from 'ngx-monaco-editor-v2';
+import { TargetSystemResourceService } from '../../service/targetSystemResource.service';
+import { TargetSystemDTO } from '../../models/targetSystemDTO';
+import { OpenApiImportService } from '../../../../core/services/openapi-import.service';
+import { load as parseYAML } from 'js-yaml';
 
 @Component({
   standalone: true,
@@ -36,6 +42,10 @@ import { MonacoEditorModule, NgxEditorModel } from 'ngx-monaco-editor-v2';
   template: `
     <p-card header="Target Endpoints">
       <button pButton label="New" icon="pi pi-plus" (click)="openCreate()"></button>
+      <div class="p-mb-3">
+        <button pButton type="button" icon="pi pi-cloud-download" label="Import Endpoints" [disabled]="importing" (click)="importEndpoints()"></button>
+        <p-progressSpinner *ngIf="importing" styleClass="p-ml-2" strokeWidth="4"></p-progressSpinner>
+      </div>
       <p-table [value]="endpoints" [loading]="loading" class="mt-3">
         <ng-template pTemplate="header">
           <tr>
@@ -84,13 +94,12 @@ import { MonacoEditorModule, NgxEditorModel } from 'ngx-monaco-editor-v2';
         </div>
         <div class="p-field">
           <label>Response Body Schema</label>
-          <p-tabView>
+          <p-tabView (onChange)="onDialogTabChange($event)">
             <p-tabPanel header="JSON">
               <ngx-monaco-editor [options]="jsonEditorOptions" formControlName="responseBodySchema"></ngx-monaco-editor>
             </p-tabPanel>
             <p-tabPanel header="TypeScript">
               <ngx-monaco-editor [options]="typescriptEditorOptions" [model]="typescriptModel"></ngx-monaco-editor>
-              <button pButton type="button" class="mt-2" label="Generate TypeScript" (click)="generateTypeScriptForForm()"></button>
             </p-tabPanel>
           </p-tabView>
         </div>
@@ -113,13 +122,12 @@ import { MonacoEditorModule, NgxEditorModel } from 'ngx-monaco-editor-v2';
     </p-dialog>
 
     <p-dialog [(visible)]="responsePreviewDialog" [modal]="true" [style]="{width: '60vw', height: '70vh'}" header="Response Body">
-      <p-tabView>
+      <p-tabView (onChange)="onResponseTabChange($event)">
         <p-tabPanel header="JSON">
           <ngx-monaco-editor [options]="jsonEditorOptions" [model]="responseJsonModel"></ngx-monaco-editor>
         </p-tabPanel>
         <p-tabPanel header="TypeScript">
           <ngx-monaco-editor [options]="typescriptEditorOptions" [model]="responseTypeScriptModel"></ngx-monaco-editor>
-          <button pButton type="button" class="mt-2" label="Generate TypeScript" (click)="generateTypeScriptForPreview()"></button>
         </p-tabPanel>
       </p-tabView>
       <ng-template pTemplate="footer">
@@ -135,6 +143,7 @@ export class ManageTargetEndpointsComponent implements OnInit {
 
   endpoints: TargetSystemEndpointDTO[] = [];
   loading = false;
+  importing = false;
   showDialog = false;
   dialogTitle = 'Neuer Endpoint';
   form!: FormGroup;
@@ -163,7 +172,7 @@ export class ManageTargetEndpointsComponent implements OnInit {
   responseJsonModel: NgxEditorModel = { value: '', language: 'json' };
   responseTypeScriptModel: NgxEditorModel = { value: '', language: 'typescript' };
 
-  constructor(private api: TargetSystemEndpointResourceService, private fb: FormBuilder) {}
+  constructor(private api: TargetSystemEndpointResourceService, private fb: FormBuilder, private tsService: TargetSystemResourceService, private openapi: OpenApiImportService, private http: HttpClient) {}
 
   ngOnInit(): void {
     this.form = this.fb.group({
@@ -173,6 +182,11 @@ export class ManageTargetEndpointsComponent implements OnInit {
       responseBodySchema: ['']
     });
     this.load();
+
+    // Auto-generate TypeScript when responseBodySchema changes (like Source Systems)
+    this.form.get('responseBodySchema')?.valueChanges.subscribe(value => {
+      this.generateTypeScriptForForm();
+    });
   }
 
   load(): void {
@@ -182,6 +196,66 @@ export class ManageTargetEndpointsComponent implements OnInit {
       next: list => { this.endpoints = list; this.loading = false; },
       error: () => { this.loading = false; }
     });
+  }
+
+  // -------- Import from OpenAPI (similar to Source Systems) --------
+  async importEndpoints(): Promise<void> {
+    this.importing = true;
+    try {
+      // Load target-system to decide where to fetch OpenAPI spec
+      const ts = await firstValueFrom(this.tsService.getById(this.targetSystemId));
+      const apiUrl = (ts && (ts as any).openAPI && (ts as any).openAPI.startsWith('http')) ? (ts as any).openAPI.trim() : (ts.apiUrl || '');
+      if (!apiUrl) { this.importing = false; return; }
+      // discover endpoints and params via shared service
+      const endpoints = await this.openapi.discoverEndpointsFromSpecUrl(apiUrl);
+      const spec = await this.loadSpecCandidates(apiUrl);
+      const paramsByKey = spec ? this.openapi.discoverParamsFromSpec(spec) : {};
+      // filter out duplicates by METHOD + PATH (matches backend unique key)
+      const existing = await firstValueFrom(this.api.list(this.targetSystemId));
+      const existingKeys = new Set(existing.map(e => `${e.httpRequestType} ${e.endpointPath}`));
+      const seenNew = new Set<string>();
+      const toCreate = endpoints.filter((e: any) => {
+        const key = `${e.httpRequestType} ${e.endpointPath}`;
+        if (existingKeys.has(key) || seenNew.has(key)) return false;
+        seenNew.add(key);
+        return true;
+      });
+      if (toCreate.length) {
+        const created = await firstValueFrom(this.api.create(this.targetSystemId, toCreate as any));
+        // Map created endpoints to keys and persist params
+        for (const ep of (created as any[])) {
+          const key = `${ep.httpRequestType} ${ep.endpointPath}`;
+          const params = paramsByKey[key] || [];
+          if (ep.id && params.length) await this.openapi.persistParamsForEndpoint(ep.id, params);
+        }
+        this.load();
+      }
+    } finally {
+      this.importing = false;
+    }
+  }
+
+  private async loadSpecCandidates(baseUrl: string): Promise<any> {
+    const urls = [
+      baseUrl,
+      `${baseUrl}/swagger.json`,
+      `${baseUrl}/openapi.json`,
+      `${baseUrl}/v2/swagger.json`,
+      `${baseUrl}/api/v3/openapi.json`,
+      `${baseUrl}/swagger/v1/swagger.json`,
+      `${baseUrl}/api-docs`,
+      `${baseUrl}/openapi.yaml`,
+      `${baseUrl}/openapi.yml`
+    ];
+    for (const url of urls) {
+      try {
+        const isJson = url.endsWith('.json') || (!url.endsWith('.yaml') && !url.endsWith('.yml'));
+        const raw = await firstValueFrom(this.http.get(url, { responseType: isJson ? 'json' : 'text' as 'json' }));
+        const spec: any = isJson ? raw : parseYAML(raw as string);
+        if (spec && spec.paths) return spec;
+      } catch { /* try next */ }
+    }
+    return null;
   }
 
   openCreate(): void {
@@ -260,6 +334,18 @@ export class ManageTargetEndpointsComponent implements OnInit {
     this.api.generateTypeScript(endpointId, { jsonSchema: schema }).subscribe({
       next: resp => this.responseTypeScriptModel = { value: resp.generatedTypeScript || '', language: 'typescript' }
     });
+  }
+
+  onDialogTabChange(event: any): void {
+    if (event?.index === 1) {
+      this.generateTypeScriptForForm();
+    }
+  }
+
+  onResponseTabChange(event: any): void {
+    if (event?.index === 1) {
+      this.generateTypeScriptForPreview();
+    }
   }
 }
 
