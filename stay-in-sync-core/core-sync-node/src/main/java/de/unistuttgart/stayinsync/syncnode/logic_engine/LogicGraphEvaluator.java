@@ -1,16 +1,19 @@
 package de.unistuttgart.stayinsync.syncnode.logic_engine;
 
+import java.util.List;
+import java.util.Map;
+
 import com.fasterxml.jackson.databind.JsonNode;
+
+import de.unistuttgart.stayinsync.syncnode.domain.TransformJob;
+import de.unistuttgart.stayinsync.syncnode.monitor.snapshot.SnapshotFactory;
+import de.unistuttgart.stayinsync.syncnode.monitor.snapshot.SnapshotStore;
 import de.unistuttgart.stayinsync.transport.exception.GraphEvaluationException;
-import de.unistuttgart.stayinsync.transport.transformation_rule_shared.util.GraphTopologicalSorter;
 import de.unistuttgart.stayinsync.transport.transformation_rule_shared.nodes.Node;
+import de.unistuttgart.stayinsync.transport.transformation_rule_shared.util.GraphTopologicalSorter;
 import io.quarkus.logging.Log;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
-import jakarta.transaction.Transactional;
-
-import java.util.List;
-import java.util.Map;
 
 /**
  * Evaluates a logic graph composed of Node objects.
@@ -20,28 +23,37 @@ public class LogicGraphEvaluator {
 
     @Inject
     GraphTopologicalSorter sorter;
+    @Inject
+    SnapshotStore snapshotStore;
 
     /**
      * Evaluates a given valid, directed acyclic graph (DAG) of {@link Node}s.
-     * It assumes the graph has already been validated and contains a single FinalNode.
+     * It assumes the graph has already been validated and contains a single
+     * FinalNode.
      *
-     * @param allNodesInGraph A non-empty list containing all nodes that constitute the graph.
-     * @param dataContext     A map containing the runtime data sources required by ProviderNodes.
-     * @return {@code true} or {@code false} representing the final evaluated state of the graph.
-     * @throws GraphEvaluationException if the provided list of nodes is null or empty, or if any
-     * unexpected runtime error occurs during the evaluation process.
+     * @param allNodesInGraph A non-empty list containing all nodes that constitute
+     *                        the graph.
+     * @param dataContext     A map containing the runtime data sources required by
+     *                        ProviderNodes.
+     * @return {@code true} or {@code false} representing the final evaluated state
+     *         of the graph.
+     * @throws GraphEvaluationException if the provided list of nodes is null or
+     *                                  empty, or if any
+     *                                  unexpected runtime error occurs during the
+     *                                  evaluation process.
      */
-    public boolean evaluateGraph(List<Node> allNodesInGraph, Map<String, JsonNode> dataContext) throws GraphEvaluationException{
+    public boolean evaluateGraph(List<Node> allNodesInGraph, Map<String, JsonNode> dataContext, TransformJob job)
+            throws GraphEvaluationException {
         if (allNodesInGraph == null || allNodesInGraph.isEmpty()) {
             Log.warn("Attempted to evaluate a null or empty graph. Throwing GraphEvaluationException.");
             throw new GraphEvaluationException(
                     GraphEvaluationException.ErrorType.INVALID_INPUT,
                     "Invalid Input",
                     "The list of graph nodes to evaluate cannot be null or empty.",
-                    null
-            );
+                    null);
         }
-        Log.debugf("Starting evaluation of graph with %d nodes and data context keys: %s", allNodesInGraph.size(), dataContext.keySet());
+        Log.debugf("Starting evaluation of graph with %d nodes and data context keys: %s", allNodesInGraph.size(),
+                dataContext.keySet());
 
         try {
             // Reset results before evaluation
@@ -55,7 +67,6 @@ public class LogicGraphEvaluator {
             List<Node> sortedNodes = sorter.sort(allNodesInGraph).sortedNodes();
             Log.debugf("Graph sorted. Evaluation order contains %d nodes.", sortedNodes.size());
 
-
             // 2. Evaluate each node in the correct order.
             Log.debug("Evaluating each node in topological order...");
             for (Node node : sortedNodes) {
@@ -64,22 +75,49 @@ public class LogicGraphEvaluator {
                 Log.tracef("...Node ID %d result: %s", node.getId(), node.getCalculatedResult());
             }
 
-            // 3. The final result is the calculated value of the last node in the sorted list.
+            // 3. The final result is the calculated value of the last node in the sorted
+            // list.
             Node finalTargetNode = sortedNodes.get(sortedNodes.size() - 1);
-            Log.debugf("Retrieving final result from target node with ID %d ('%s').", finalTargetNode.getId(), finalTargetNode.getName());
+            Log.debugf("Retrieving final result from target node with ID %d ('%s').", finalTargetNode.getId(),
+                    finalTargetNode.getName());
 
             boolean finalResult = (boolean) finalTargetNode.getCalculatedResult();
             Log.infof("Graph evaluation completed successfully. Final result: %b", finalResult);
 
             return finalResult;
+        } catch (GraphEvaluationException graphEvaluationException) {
+            // Only create and store a snapshot in case of an error, then rethrow it
+            // unchanged
+            var snapshot = SnapshotFactory.fromFailure(
+                    job.jobId(),
+                    allNodesInGraph,
+                    dataContext,
+                    graphEvaluationException);
+            if (snapshotStore != null) {
+                snapshotStore.put(snapshot);
+            }
+            throw graphEvaluationException;
+
         } catch (Exception e) {
-            Log.errorf(e, "An unexpected error occurred during graph evaluation. Wrapping in GraphEvaluationException.");
-            throw new GraphEvaluationException(
+            Log.errorf(e,
+                    "An unexpected error occurred during graph evaluation. Wrapping in GraphEvaluationException.");
+
+            var wrapped = new GraphEvaluationException(
                     GraphEvaluationException.ErrorType.EXECUTION_FAILED,
                     "Evaluation Failed",
                     "An unexpected error occurred during graph evaluation.",
-                    e
-            );
+                    e);
+
+            // Also write a snapshot for unexpected errors.
+            var snapshot = SnapshotFactory.fromFailure(
+                    job.jobId(),
+                    allNodesInGraph,
+                    dataContext,
+                    wrapped);
+            if (snapshotStore != null) {
+                snapshotStore.put(snapshot);
+            }
+            throw wrapped;
         }
     }
 }

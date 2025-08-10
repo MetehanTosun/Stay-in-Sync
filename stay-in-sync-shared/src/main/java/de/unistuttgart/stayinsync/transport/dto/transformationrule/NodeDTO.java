@@ -1,9 +1,9 @@
 package de.unistuttgart.stayinsync.transport.dto.transformationrule;
 
+import java.util.List;
+
 import lombok.Getter;
 import lombok.Setter;
-
-import java.util.List;
 
 /**
  * A "flat" Data Transfer Object for a single node in the logic graph.
@@ -37,18 +37,21 @@ public class NodeDTO {
     private double offsetY;
 
     /**
-     * The discriminator field. Expected values: "PROVIDER", "CONSTANT", "LOGIC", "FINAL".
+     * The discriminator field. Expected values: "PROVIDER", "CONSTANT", "LOGIC",
+     * "FINAL".
      */
     private String nodeType;
 
     /**
-     * A list of input connections for this node, referencing other nodes by their IDs.
+     * A list of input connections for this node, referencing other nodes by their
+     * IDs.
      */
     private List<InputDTO> inputNodes;
 
     // --- Properties specific to PROVIDER nodes ---
     /**
-     * An optional ID for identifying the source system or component (e.g., an ARC id).
+     * An optional ID for identifying the source system or component (e.g., an ARC
+     * id).
      * Only used if nodeType is "PROVIDER".
      */
     private Integer arcId;
@@ -67,14 +70,16 @@ public class NodeDTO {
 
     // --- Properties specific to LOGIC nodes ---
     /**
-     * The name of the logical operator this node performs (e.g., "ADD", "LESS_THAN").
+     * The name of the logical operator this node performs (e.g., "ADD",
+     * "LESS_THAN").
      * Corresponds to a LogicOperator enum constant.
      * Only used if nodeType is "LOGIC".
      */
     private String operatorType;
 
     /**
-     * A list of strings describing the expected data types for the operator's inputs.
+     * A list of strings describing the expected data types for the operator's
+     * inputs.
      * This is persisted to be available for the UI upon loading the graph.
      */
     private List<String> inputTypes;
@@ -85,7 +90,14 @@ public class NodeDTO {
     private String outputType;
 
     /**
-     * A list containing two integers [min, max] defining the required number of inputs.
+     * A list containing two integers [min, max] defining the required number of
+     * inputs.
      */
     private List<Integer> inputLimit;
+
+    /**
+     * Used to Map the calculatedResult of a Node during evaluation, Important for
+     * the Snapshot and reconstruction in the UI
+     */
+    private Object dynamicValue;
 }
