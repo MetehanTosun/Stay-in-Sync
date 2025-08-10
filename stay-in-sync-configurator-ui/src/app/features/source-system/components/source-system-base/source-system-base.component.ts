@@ -488,8 +488,10 @@ export class SourceSystemBaseComponent implements OnInit, OnDestroy {
    * Uses the search pipe to filter and sort results
    */
   private updateFilteredSystems(): void {
+    this.startSearchTimer();
     this.filteredSystems = this.searchPipe.transform(this.systems, this.searchTerm, this.searchOptions);
     this.updateSearchResultCount();
+    this.searchDurationMs = this.endSearchTimer();
   }
 
   /**
@@ -1090,6 +1092,8 @@ export class SourceSystemBaseComponent implements OnInit, OnDestroy {
    * End time for search performance measurement
    */
   private searchEndTime: number = 0;
+  /** Cached search duration to avoid recomputation during checks */
+  searchDurationMs: number = 0;
 
   /**
    * Starts the search performance timer
@@ -1113,7 +1117,7 @@ export class SourceSystemBaseComponent implements OnInit, OnDestroy {
    */
   getSearchPerformance(): { duration: number; resultCount: number; searchTerm: string } {
     return {
-      duration: this.endSearchTimer(),
+      duration: this.searchDurationMs,
       resultCount: this.searchResultCount?.filtered || 0,
       searchTerm: this.searchTerm
     };
