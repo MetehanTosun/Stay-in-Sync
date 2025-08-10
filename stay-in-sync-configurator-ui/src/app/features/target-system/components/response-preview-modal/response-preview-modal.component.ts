@@ -119,19 +119,13 @@ export class TargetResponsePreviewModalComponent implements OnInit, OnChanges {
       next: (response: TypeScriptGenerationResponse) => {
         this.clearTypeScriptGenerationTimeout();
         this.isGeneratingTypeScript = false;
-        if (response.error) {
-          this.typescriptError = this.formatErrorMessage(response.error, 'Backend generation failed');
-          this.generatedTypeScript = this.generateTypeScriptFallback(this.responseBodySchema || '');
-          this.typescriptEditorModel = { value: this.generatedTypeScript };
-          return;
-        }
         this.generatedTypeScript = response.generatedTypeScript || '';
-        this.typescriptEditorModel = { value: response.generatedTypeScript || this.generateTypeScriptFallback(this.responseBodySchema || '') };
+        this.typescriptEditorModel = { value: response.generatedTypeScript || '' };
       },
       error: (error) => {
         this.clearTypeScriptGenerationTimeout();
         this.isGeneratingTypeScript = false;
-        this.generatedTypeScript = this.generateTypeScriptFallback(this.responseBodySchema || '');
+        this.generatedTypeScript = this.getTypeScriptErrorFallback(this.responseBodySchema || '');
         this.typescriptEditorModel = { value: this.generatedTypeScript };
         this.typescriptError = this.formatErrorMessage(error.message || 'Unknown error', 'TypeScript Generation');
       }
@@ -141,7 +135,7 @@ export class TargetResponsePreviewModalComponent implements OnInit, OnChanges {
   private handleTypeScriptGenerationTimeout(): void {
     this.isGeneratingTypeScript = false;
     this.typescriptError = 'TypeScript generation timed out after 30 seconds';
-    this.generatedTypeScript = this.generateTypeScriptFallback(this.responseBodySchema || '');
+    this.generatedTypeScript = this.getTypeScriptErrorFallback(this.responseBodySchema || '');
     this.typescriptEditorModel = { value: this.generatedTypeScript };
   }
 
@@ -156,13 +150,8 @@ export class TargetResponsePreviewModalComponent implements OnInit, OnChanges {
     return `${context} failed: ${error}`;
   }
 
-  private generateTypeScriptFallback(jsonSchema: string): string {
-    try {
-      const schema = JSON.parse(jsonSchema);
-      return this.convertJsonSchemaToTypeScript(schema);
-    } catch {
-      return `// TypeScript generation failed\n// Invalid JSON schema. Showing generic fallback.\nexport interface ResponseBody {\n  [key: string]: any;\n}`;
-    }
+  private getTypeScriptErrorFallback(jsonSchema: string): string {
+    return `// TypeScript generation failed\n// Fallback interface based on JSON schema\n// Original schema: ${jsonSchema.substring(0, 100)}...\n\nexport interface ResponseBody {\n  [key: string]: any;\n}`;
   }
 
   private validateJsonSchema(jsonSchema: string): { isValid: boolean; error?: string } {
@@ -172,47 +161,6 @@ export class TargetResponsePreviewModalComponent implements OnInit, OnChanges {
     } catch (error) {
       return { isValid: false, error: error instanceof Error ? error.message : 'Invalid JSON' };
     }
-  }
-
-  // Minimal JSON-Schema -> TypeScript converter (mirrors Source fallback)
-  private convertJsonSchemaToTypeScript(schema: any): string {
-    const toTs = (s: any): string => {
-      if (!s || typeof s !== 'object') return 'any';
-      if (s.$ref) return 'any';
-      switch (s.type) {
-        case 'string':
-          if (Array.isArray(s.enum)) return s.enum.map((v: any) => `'${String(v)}'`).join(' | ');
-          return 'string';
-        case 'number':
-        case 'integer':
-          if (Array.isArray(s.enum)) return s.enum.join(' | ');
-          return 'number';
-        case 'boolean':
-          return 'boolean';
-        case 'array':
-          return `${toTs(s.items || {})}[]`;
-        case 'object':
-          if (s.properties) {
-            const req = Array.isArray(s.required) ? new Set(s.required) : new Set<string>();
-            const lines = Object.entries(s.properties).map(([key, val]: [string, any]) => {
-              const optional = req.has(key) ? '' : '?';
-              return `  ${key}${optional}: ${toTs(val)};`;
-            });
-            return `{
-${lines.join('\n')}
-}`;
-          }
-          return 'Record<string, any>';
-        default:
-          return 'any';
-      }
-    };
-    const body = toTs(schema);
-    const header = '// Fallback TypeScript interface generated from JSON Schema';
-    if (body.trim().startsWith('{')) {
-      return `${header}\nexport interface ResponseBody ${body}`;
-    }
-    return `${header}\nexport type ResponseBody = ${body};`;
   }
 
   private updateEditorModel(): void {
