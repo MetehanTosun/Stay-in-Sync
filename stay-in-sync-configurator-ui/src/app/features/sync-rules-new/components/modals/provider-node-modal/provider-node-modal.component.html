@@ -1,0 +1,32 @@
+<div id="provider-node-modal-container">
+  <!-- Modal Header -->
+  <h3>Edit Provider Value</h3>
+
+  <!-- Modal Body -->
+  <form (ngSubmit)="submit()">
+    <div class="form-field">
+      <label for="provider-value">Provider Value</label>
+      <div id="json-path-input-line">
+        <span>source.</span>
+        <input name="provider-value" type="text" [(ngModel)]="jsonPath" placeholder="Enter JSON Path" class="form-input"
+          required>
+      </div>
+    </div>
+
+    <!-- Modal Footer -->
+    <div class="form-actions">
+      <button id="save-button" type="submit">
+        <span class="material-symbols-rounded">
+          save
+        </span>
+        Save
+      </button>
+      <button id="cancel-button" type="button" (click)="closeModal()">
+        <span class="material-symbols-rounded">
+          close
+        </span>
+        Cancel
+      </button>
+    </div>
+  </form>
+</div>

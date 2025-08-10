@@ -59,21 +59,38 @@ export class VflowCanvasComponent implements OnInit {
    *
    * @param nodeType The node type of to be created node
    * @param pos The position of the new node
-   * @param operator Optional: The operator of the new (logic) node
+   * @param providerJsonPath Optional: The JSON path of the new (provider) node
+   * @param constantValue Optional: The value of the new (constant) node
+   * @param operatorData Optional: The operator of the new (logic) node
    */
-  addNode(nodeType: NodeType, pos: { x: number, y: number }, operator?: LogicOperatorMeta) {
-    // Standard node data with node name
-    let nodeData: any = {
-      name: `${nodeType} Node`
-    };
+  addNode(
+    nodeType: NodeType,
+    pos: { x: number, y: number },
+    providerJsonPath?: string,
+    constantValue?: any,
+    operatorData?: LogicOperatorMeta,
+  ) {
+    let nodeData: any;
 
-    // Add operator meta data if applicable
-    if (nodeType === NodeType.LOGIC && operator) {
+    if (nodeType === NodeType.PROVIDER && providerJsonPath) {
       nodeData = {
-        ...operator,
-        name: `Logic Node ${operator.operatorName}`,
-        operatorType: operator.operatorName,  // Map operatorName to operatorType for the Backend
+        name: `Provider: ${providerJsonPath}`, // TODO-s real json paths are gonna be real long
+        arcId: 0, // TODO-s get arcId from JSON path
+        jsonPath: providerJsonPath
       }
+    } else if (nodeType === NodeType.CONSTANT && constantValue) {
+      nodeData = {
+        name: `Constant: ${constantValue}`,
+        value: constantValue
+      }
+    } else if (nodeType === NodeType.LOGIC && operatorData) {
+      nodeData = {
+        ...operatorData,
+        name: `Operator: ${operatorData.operatorName}`,
+        operatorType: operatorData.operatorName,  // Map operatorName to operatorType for the Backend
+      }
+    } else {
+      alert("Unable to create node") // TODO-s err
     }
 
     // Create and add new node

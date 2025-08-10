@@ -21,21 +21,35 @@
 </div>
 
 <!-- MARK: Main Body -->
- <!-- Graph Canvas -->
+<!-- Graph Canvas -->
 <div class="vflow-wrapper">
-  <app-vflow-canvas
-    (canvasClick)="onCanvasClick($event)"  >
+  <app-vflow-canvas (canvasClick)="onCanvasClick($event)">
   </app-vflow-canvas>
 </div>
 
 <!-- Node Palette -->
 <div class="node-palette-wrapper">
-  <app-node-palette
-    [showMainNodePalette]="showMainNodePalette"
-    (nodeSelected)="onNodeSelected($event)">
+  <app-node-palette [showMainNodePalette]="showMainNodePalette" (nodeSelected)="onNodeSelected($event)">
   </app-node-palette>
 
   <div id="node-selection-indicator" *ngIf="selectedNodeType">
     Selected: {{ selectedNodeType }} - Click on canvas to place <!-- TODO-s -->
   </div>
+</div>
+
+<!-- Provider Modal -->
+<div id="provider-node-modal" *ngIf="showProviderModal">
+<app-provider-node-modal
+  (providerCreated)="onProviderCreated($event)"
+  (modalsClosed)="onModalsClosed()">
+</app-provider-node-modal>
+</div>
+
+<!-- MARK: Modals -->
+<!-- Constant Modal -->
+<div id="constant-node-modal" *ngIf="showConstantModal">
+  <app-constant-node-modal
+    (constantCreated)="onConstantCreated($event)"
+    (modalsClosed)="onModalsClosed()">
+  </app-constant-node-modal>
 </div>

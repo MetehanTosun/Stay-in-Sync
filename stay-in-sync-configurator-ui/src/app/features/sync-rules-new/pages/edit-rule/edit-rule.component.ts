@@ -1,8 +1,7 @@
 import { Component, ViewChild } from '@angular/core';
 import { Router } from '@angular/router';
-import { VflowCanvasComponent } from '../../components';
+import { ConstantNodeModalComponent, NodePaletteComponent, ProviderNodeModalComponent, VflowCanvasComponent } from '../../components';
 import { LogicOperatorMeta, NodeType } from '../../models';
-import { NodePaletteComponent } from '../../components/node-palette/node-palette.component';
 import { CommonModule } from '@angular/common';
 
 /**
@@ -13,7 +12,9 @@ import { CommonModule } from '@angular/common';
   imports: [
     CommonModule,
     VflowCanvasComponent,
-    NodePaletteComponent
+    NodePaletteComponent,
+    ProviderNodeModalComponent,
+    ConstantNodeModalComponent
   ],
   templateUrl: './edit-rule.component.html',
   styleUrl: './edit-rule.component.css'
@@ -26,6 +27,11 @@ export class EditRuleComponent {
   showMainNodePalette = false;
   selectedNodeType: NodeType | null = null;
   selectedOperator: LogicOperatorMeta | null = null;
+
+  // Modal states
+  showProviderModal = false;
+  showConstantModal = false;
+  pendingNodePos: { x: number, y: number } | null = null;
 
   @ViewChild(NodePaletteComponent) nodePalette!: NodePaletteComponent;
   @ViewChild(VflowCanvasComponent) canvas!: VflowCanvasComponent;
@@ -83,12 +89,54 @@ export class EditRuleComponent {
    * @param pos
    */
   onCanvasClick(pos: { x: number, y: number }) {
-    if (this.selectedNodeType) {
-      this.canvas.addNode(this.selectedNodeType, pos, this.selectedOperator || undefined);
-      this.clearNodeSelection();
-    }
+    if (this.selectedNodeType)
+      switch (this.selectedNodeType) {
+        case NodeType.PROVIDER:
+          this.pendingNodePos = pos;
+          this.showProviderModal = true;
+          break;
+        case NodeType.CONSTANT:
+          this.pendingNodePos = pos;
+          this.showConstantModal = true;
+          break;
+        case NodeType.LOGIC:
+          this.canvas.addNode(this.selectedNodeType, pos, undefined, undefined, this.selectedOperator!);
+          this.clearNodeSelection();
+          break;
+      }
+
     this.showMainNodePalette = false
     this.nodePalette.closeSubPalettes();
+  }
+  //#endregion
+
+  //#region Modal Events
+  /**
+   * Forwards the to be created provider node's JSON path to node creation
+   * @param providerJsonPath
+   */
+  onProviderCreated(providerJsonPath: any) {
+    this.canvas.addNode(NodeType.PROVIDER, this.pendingNodePos!, providerJsonPath);
+    this.onModalsClosed();
+  }
+
+  /**
+   * Forwards the to be created constant node's value to node creation
+   * @param constantData
+   */
+  onConstantCreated(constantValue: any) {
+    this.canvas.addNode(NodeType.CONSTANT, this.pendingNodePos!, undefined, constantValue);
+    this.onModalsClosed();
+  }
+
+  /**
+   * Closes all modals of this page
+   */
+  onModalsClosed() {
+    this.showConstantModal = false;
+    this.showProviderModal = false;
+    this.pendingNodePos = null;
+    this.clearNodeSelection();
   }
   //#endregion
 }

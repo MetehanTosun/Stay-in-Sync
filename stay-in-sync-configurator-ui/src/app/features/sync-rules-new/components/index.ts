@@ -1,3 +1,10 @@
+// Modals
+export * from './modals/constant-node-modal/constant-node-modal.component';
+export * from './modals/provider-node-modal/provider-node-modal.component';
+
+// Node Palette
+export * from './node-palette/node-palette.component';
+
 // Nodes
 export * from './nodes/constant-node/constant-node.component';
 export * from './nodes/logic-node/logic-node.component';
