@@ -1,8 +1,8 @@
 import { Component, EventEmitter, OnInit, Output } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
-import { Edge, Node, Vflow } from 'ngx-vflow';
+import { Edge, Vflow } from 'ngx-vflow';
 import { GraphAPIService } from '../../service';
-import { LogicOperator as LogicOperatorMeta, NodeType, VFlowGraphDTO } from '../../models';
+import { CustomVFlowNode, LogicOperatorMeta, NodeType, VFlowGraphDTO } from '../../models';
 import { ConstantNodeComponent, FinalNodeComponent, LogicNodeComponent, ProviderNodeComponent } from '..';
 
 /**
@@ -16,8 +16,10 @@ import { ConstantNodeComponent, FinalNodeComponent, LogicNodeComponent, Provider
 })
 export class VflowCanvasComponent implements OnInit {
   //#region Setup
-  nodes: Node[] = [];
+  nodes: CustomVFlowNode[] = [];
   edges: Edge[] = [];
+  ruleId: number | undefined = undefined;
+  lastNodeId = 0;
 
   @Output() canvasClick = new EventEmitter<{ x: number, y: number }>();
 
@@ -25,10 +27,10 @@ export class VflowCanvasComponent implements OnInit {
 
   ngOnInit(): void {
     const routeId = this.route.snapshot.paramMap.get('id');
-    const ruleId = routeId ? Number(routeId) : undefined;
+    this.ruleId = routeId ? Number(routeId) : undefined;
 
-    if (ruleId) {
-      this.loadGraph(ruleId);
+    if (this.ruleId) {
+      this.loadGraph(this.ruleId);
     } else {
       alert("Unable to load graph - cannot read rule id") // TODO-s err
     }
@@ -50,36 +52,7 @@ export class VflowCanvasComponent implements OnInit {
   }
   //#endregion
 
-  //#region Graph Operations
-  /**
-   * This loads the transformation rules graph from the backend and assigns the corresponding type
-   * @param ruleId
-   */
-  loadGraph(ruleId: number) {
-    this.graphApi.getGraph(ruleId).subscribe({
-      next: (graph: VFlowGraphDTO) => {
-
-        // loads nodes
-        this.nodes = graph.nodes.map(node => ({
-          ...node,
-          id: node.id.toString(),
-          type: this.getNodeType(node.type)
-        }));
-
-        // loads edges
-        this.edges = graph.edges.map(edge => ({
-          ...edge,
-          type: edge.type as any
-        }));
-
-        // TODO-s loads errors
-      },
-      error: (err) => {
-        alert(err.error?.message || err.message);  // TODO-s err
-      }
-    })
-  }
-
+  //#region Frontend Logic
   /**
    * Creates and adds a new node to the vflow canvas
    * * This does not persist the node in the database
@@ -98,13 +71,14 @@ export class VflowCanvasComponent implements OnInit {
     if (nodeType === NodeType.LOGIC && operator) {
       nodeData = {
         ...operator,
-        name: `Logic Node ${operator.operatorName}`
+        name: `Logic Node ${operator.operatorName}`,
+        operatorType: operator.operatorName,  // Map operatorName to operatorType for the Backend
       }
     }
 
     // Create and add new node
-    const newNode: Node = {
-      id: `${Date.now()}-${crypto.randomUUID().split('-')[0]}`,
+    const newNode: CustomVFlowNode = {
+      id: (++this.lastNodeId).toString(),
       point: pos,
       type: this.getNodeType(nodeType),
       width: 200,
@@ -115,6 +89,66 @@ export class VflowCanvasComponent implements OnInit {
       }
     };
     this.nodes = [...this.nodes, newNode];
+  }
+  //#endregion
+
+  //#region REST Methods
+  /**
+   * This loads the transformation rules graph from the backend and assigns the corresponding type
+   * @param ruleId
+   */
+  loadGraph(ruleId: number) {
+    this.graphApi.getGraph(ruleId).subscribe({
+      next: (graph: VFlowGraphDTO) => {
+
+        // loads nodes
+        this.nodes = graph.nodes.map(node => ({
+          ...node,
+          type: this.getNodeType(node.type)
+        }));
+
+        // caches the largest node ID
+        this.lastNodeId = graph.nodes.length > 0
+          ? Math.max(...graph.nodes.map(n => parseInt(n.id)))
+          : 0;
+
+        // loads edges
+        this.edges = graph.edges.map(edge => ({
+          ...edge,
+          type: edge.type as any
+        }));
+
+        // TODO-s loads errors
+      },
+      error: (err) => {
+        alert(err.error?.message || err.message);  // TODO-s err
+      }
+    })
+  }
+
+  /**
+   * Saves the current graph
+   */
+  saveGraph() {
+    const graphDTO: VFlowGraphDTO = {
+      nodes: this.nodes.map(node => ({
+        ...node,
+        type: node.data.nodeType
+      })),
+      edges: this.edges
+    }
+
+    console.log('Final graphDTO being sent:', JSON.stringify(graphDTO, null, 2)); // TODO-s DELETE
+
+    this.graphApi.updateGraph(this.ruleId!, graphDTO).subscribe({
+      next: (res) => {
+        console.log('Graph saved successfully'); // TODO-s
+      },
+      error: (err) => {
+        console.error('Error response body:', err.error); // TODO-s DELETE
+        alert(err.message);
+      }
+    });
   }
   //#endregion
 
@@ -130,6 +164,6 @@ export class VflowCanvasComponent implements OnInit {
         throw Error("Unknown NodeType"); // TODO-s err
     }
   }
-  //#region
+  //#endregion
 
 }

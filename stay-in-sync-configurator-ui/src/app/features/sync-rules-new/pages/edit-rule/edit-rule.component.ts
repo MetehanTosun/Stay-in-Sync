@@ -1,7 +1,7 @@
 import { Component, ViewChild } from '@angular/core';
 import { Router } from '@angular/router';
 import { VflowCanvasComponent } from '../../components';
-import { LogicOperator, NodeType } from '../../models';
+import { LogicOperatorMeta, NodeType } from '../../models';
 import { NodePaletteComponent } from '../../components/node-palette/node-palette.component';
 import { CommonModule } from '@angular/common';
 
@@ -25,7 +25,7 @@ export class EditRuleComponent {
   // Palette Attributes
   showMainNodePalette = false;
   selectedNodeType: NodeType | null = null;
-  selectedOperator: LogicOperator | null = null;
+  selectedOperator: LogicOperatorMeta | null = null;
 
   @ViewChild(NodePaletteComponent) nodePalette!: NodePaletteComponent;
   @ViewChild(VflowCanvasComponent) canvas!: VflowCanvasComponent;
@@ -59,7 +59,7 @@ export class EditRuleComponent {
    *
    * @param selection
    */
-  onNodeSelected(selection: { nodeType: NodeType, operator?: LogicOperator }) {
+  onNodeSelected(selection: { nodeType: NodeType, operator?: LogicOperatorMeta }) {
     this.selectedNodeType = selection.nodeType;
     this.selectedOperator = selection.operator || null;
     this.showMainNodePalette = false

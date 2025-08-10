@@ -1,6 +1,6 @@
 import { CommonModule } from '@angular/common';
 import { Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
-import { LogicOperator, NodeType } from '../../models';
+import { LogicOperatorMeta, NodeType } from '../../models';
 import { OperatorNodesApiService } from '../../service';
 
 /**
@@ -15,10 +15,10 @@ import { OperatorNodesApiService } from '../../service';
 export class NodePaletteComponent implements OnInit {
   //#region Setup
   @Input() showMainNodePalette = false;
-  @Output() nodeSelected = new EventEmitter<{ nodeType: NodeType, operator?: LogicOperator }>();
+  @Output() nodeSelected = new EventEmitter<{ nodeType: NodeType, operator?: LogicOperatorMeta }>();
 
   NodeType = NodeType; //* for .html file
-  operatorsGrouped: Map<string, LogicOperator[]> = new Map<string, LogicOperator[]>();
+  operatorsGrouped: Map<string, LogicOperatorMeta[]> = new Map<string, LogicOperatorMeta[]>();
 
   // Palette Status
   showLogicGroups = false;
@@ -39,7 +39,7 @@ export class NodePaletteComponent implements OnInit {
    * @param nodeType The type of node that is to be created
    * @param operator The logic operator that is to be created, only for logic nodes
    */
-  selectNode(nodeType: NodeType, operator?: LogicOperator) {
+  selectNode(nodeType: NodeType, operator?: LogicOperatorMeta) {
     this.nodeSelected.emit({ nodeType, operator });
   }
 
@@ -76,7 +76,7 @@ export class NodePaletteComponent implements OnInit {
    */
   loadGroupedOperators() {
     this.nodesApi.getGroupedOperators().subscribe({
-      next: (operatorsGrouped: Map<string, LogicOperator[]>) => {
+      next: (operatorsGrouped: Map<string, LogicOperatorMeta[]>) => {
         this.operatorsGrouped = operatorsGrouped;
       },
       error: (err) => {
@@ -101,7 +101,7 @@ export class NodePaletteComponent implements OnInit {
    * @param groupName
    * @returns Array of logic operators
    */
-  getOperatorsForGroup(groupName: string): LogicOperator[] {
+  getOperatorsForGroup(groupName: string): LogicOperatorMeta[] {
     return this.operatorsGrouped.get(groupName) || [];
   }
   //#endregion

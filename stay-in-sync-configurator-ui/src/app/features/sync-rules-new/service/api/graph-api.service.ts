@@ -36,7 +36,7 @@ export class GraphAPIService {
    * @returns the database representation of the created graph
    */
   updateGraph(ruleId: number, graphDto: VFlowGraphDTO): Observable<unknown> {
-    return this.http.put<unknown>(`${this.apiUrl}/${ruleId}`, graphDto);
+    return this.http.put<unknown>(`${this.apiUrl}/${ruleId}/graph`, graphDto);
   }
   //#endregion
 }
