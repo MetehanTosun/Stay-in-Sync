@@ -1,20 +1,28 @@
 package de.unistuttgart.stayinsync.core.configuration.edc;
 
-import io.quarkus.hibernate.orm.panache.PanacheEntity;
+import de.unistuttgart.stayinsync.core.model.UuidEntity;
+import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 
 @Entity
-public class EDCDataAddress extends PanacheEntity {
+public class EDCDataAddress extends UuidEntity {
 
+    @Column(name = "jsonld_type", nullable = false)
     public String jsonLDType;
 
+    @Column(name = "type", nullable = false)
     public String type;
 
+    @Column(name = "base_url", nullable = false)
     public String baseURL;
 
+    @Column(name = "proxy_path", nullable = false)
     public boolean proxyPath;
 
+    @Column(name = "proxy_query_params", nullable = false)
     public boolean proxyQueryParams;
+
+    // Getter/Setter
 
     public String getJsonLDType() {
         return jsonLDType;
@@ -55,5 +63,4 @@ public class EDCDataAddress extends PanacheEntity {
     public void setProxyQueryParams(boolean proxyQueryParams) {
         this.proxyQueryParams = proxyQueryParams;
     }
-
 }

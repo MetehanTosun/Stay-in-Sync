@@ -1,26 +1,28 @@
 package de.unistuttgart.stayinsync.core.configuration.edc.dtoedc;
 
+import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import java.util.UUID;
 
 public class EDCAccessPolicyPermissionDto {
-    private Long id;
+    private UUID id;
 
-    @NotNull
+    @NotBlank
     private String action;
 
-    @NotNull
+    @NotBlank
     private String constraintLeftOperand;
 
-    @NotNull
+    @NotBlank
     private String constraintOperator;
 
-    @NotNull
+    @NotBlank
     private String constraintRightOperand;
 
-    public Long getId() {
+    public UUID getId() {
         return id;
     }
-    public EDCAccessPolicyPermissionDto setId(Long id) {
+    public EDCAccessPolicyPermissionDto setId(UUID id) {
         this.id = id;
         return this;
     }

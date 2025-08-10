@@ -1,24 +1,28 @@
 package de.unistuttgart.stayinsync.core.configuration.edc;
 
-import io.quarkus.hibernate.orm.panache.PanacheEntity;
-import jakarta.persistence.Entity;
-import jakarta.persistence.ManyToOne;
+import de.unistuttgart.stayinsync.core.model.UuidEntity;
+import jakarta.persistence.*;
 
 @Entity
-public class EDCAccessPolicyPermission extends PanacheEntity {
+@Table(name = "edc_access_policy_permission")
+public class EDCAccessPolicyPermission extends UuidEntity {
 
     @ManyToOne
+    @JoinColumn(name = "policy_id", columnDefinition = "CHAR(36)", nullable = false)
     public EDCAccessPolicy edcAccessPolicy;
 
+    @Column(nullable = false)
     public String action;
 
+    @Column(name = "constraint_left_operand", nullable = false)
     public String constraintLeftOperand;
 
+    @Column(name = "constraint_operator", nullable = false)
     public String constraintOperator;
     
+    @Column(name = "constraint_right_operand", nullable = false)
     public String constraintRightOperand;
 
-    // --- Getter & Setter ---
     public EDCAccessPolicy getEdcAccessPolicy() {
         return edcAccessPolicy;
     }
@@ -58,4 +62,6 @@ public class EDCAccessPolicyPermission extends PanacheEntity {
     public void setConstraintRightOperand(String constraintRightOperand) {
         this.constraintRightOperand = constraintRightOperand;
     }
+
+    // Getter/Setter…
 }

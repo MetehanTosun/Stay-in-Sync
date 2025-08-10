@@ -1,82 +1,59 @@
 package de.unistuttgart.stayinsync.core.configuration.edc;
 
 import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.TargetSystemEndpoint;
-import io.quarkus.hibernate.orm.panache.PanacheEntity;
-import jakarta.persistence.Entity;
-import jakarta.persistence.ManyToOne;
-import jakarta.persistence.OneToMany;
-import jakarta.persistence.OneToOne;
-
+import de.unistuttgart.stayinsync.core.model.UuidEntity;
+import jakarta.persistence.*;
+import jakarta.validation.constraints.NotBlank;
 import java.util.Set;
 
-
 @Entity
-public class EDCAsset extends PanacheEntity {
+@Table(name = "edc_asset")
+public class EDCAsset extends UuidEntity {
 
+    @NotBlank
+    @Column(nullable = false)
     public String assetId;
 
-    @OneToOne
+    @NotBlank
+    @Column(nullable = false)
+    public String url;
+
+    @NotBlank
+    @Column(nullable = false)
+    public String type;
+
+    @NotBlank
+    @Column(nullable = false)
+    public String contentType;
+
+    @Column(length = 1024)
+    public String description;
+
+    // Relation zur DataAddress (UUID-PK)
+    @ManyToOne(optional = false, fetch = FetchType.LAZY)
+    @JoinColumn(name = "data_address_id", columnDefinition = "CHAR(36)", nullable = false)
     public EDCDataAddress dataAddress;
 
-    @OneToOne
+    // Relation zu Properties (UUID-PK, optional)
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "properties_id", columnDefinition = "CHAR(36)")
     public EDCProperty properties;
 
-    @OneToMany(mappedBy = "edcAsset")
+    // Relation zur EDC-Instanz (UUID-PK)
+    @ManyToOne(optional = false, fetch = FetchType.LAZY)
+    @JoinColumn(name = "target_edc_id", columnDefinition = "CHAR(36)", nullable = false)
+    public EDCInstance targetEDC;
+
+    // Optional: Access Policies
+    @OneToMany(mappedBy = "edcAsset", cascade = CascadeType.ALL, orphanRemoval = true)
     public Set<EDCAccessPolicy> edcAccessPolicies;
 
-    @OneToOne
+    // Optional: Contract Definitions
+    @OneToMany(mappedBy = "asset", cascade = CascadeType.ALL, orphanRemoval = true)
+    public Set<EDCContractDefinition> contractDefinitions;
+
+    // Relation zum TargetSystemEndpoint (Long-PK) — hier NICHT mehr CHAR(36)!
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "target_system_endpoint_id", nullable = true)
     public TargetSystemEndpoint targetSystemEndpoint;
-
-    @ManyToOne
-    public EDC targetEDC;
-
-    // Getter und Setter
-    public String getAssetId() {
-        return assetId;
-    }
-
-    public void setAssetId(String assetId) {
-        this.assetId = assetId;
-    }
-
-    public EDCDataAddress getDataAddress() {
-        return dataAddress;
-    }
-
-    public void setDataAddress(EDCDataAddress dataAddress) {
-        this.dataAddress = dataAddress;
-    }
-
-    public EDCProperty getProperties() {
-        return properties;
-    }
-
-    public void setProperties(EDCProperty properties) {
-        this.properties = properties;
-    }
-
-    public Set<EDCAccessPolicy> getEdcAccessPolicies() {
-        return edcAccessPolicies;
-    }
-
-    public void setEdcAccessPolicies(Set<EDCAccessPolicy> edcAccessPolicies) {
-        this.edcAccessPolicies = edcAccessPolicies;
-    }
-
-    public TargetSystemEndpoint getTargetSystemEndpoint() {
-        return targetSystemEndpoint;
-    }
-
-    public void setTargetSystemEndpoint(TargetSystemEndpoint targetSystemEndpoint) {
-        this.targetSystemEndpoint = targetSystemEndpoint;
-    }
-
-    public EDC getTargetEDC() {
-        return targetEDC;
-    }
-
-    public void setTargetEDC(EDC targetEDC) {
-        this.targetEDC = targetEDC;
-    }
-
 }

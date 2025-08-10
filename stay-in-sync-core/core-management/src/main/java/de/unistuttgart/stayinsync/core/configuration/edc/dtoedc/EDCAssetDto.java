@@ -2,48 +2,82 @@ package de.unistuttgart.stayinsync.core.configuration.edc.dtoedc;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
-import java.util.Set;
+import java.util.UUID;
 
 public class EDCAssetDto {
-    private Long id;
+
+    public UUID id;
 
     @NotBlank
-    private String assetId;
+    public String assetId;
+
+    @NotBlank
+    public String url;
+
+    @NotBlank
+    public String type;
+
+    @NotBlank
+    public String contentType;
+
+    public String description;
 
     @NotNull
-    private Long dataAddressId;
+    public UUID targetEDCId;
 
-    private Long propertiesId;
+    public UUID getId() {
+        return id;
+    }
 
-    private Set<Long> accessPolicyIds;
+    public void setId(UUID id) {
+        this.id = id;
+    }
 
-    private Long targetSystemEndpointId;
+    public String getAssetId() {
+        return assetId;
+    }
 
-    @NotNull
-    private Long targetEDCId;
+    public void setAssetId(String assetId) {
+        this.assetId = assetId;
+    }
 
-    // Getter/Setter fluent
-    public Long getId() { return id; }
-    public EDCAssetDto setId(Long id){ this.id = id; return this; }
+    public String getUrl() {
+        return url;
+    }
 
-    public String getAssetId() { return assetId; }
-    public EDCAssetDto setAssetId(String assetId){ this.assetId = assetId; return this; }
+    public void setUrl(String url) {
+        this.url = url;
+    }
 
-    public Long getDataAddressId() { return dataAddressId; }
-    public EDCAssetDto setDataAddressId(Long dataAddressId){ this.dataAddressId = dataAddressId; return this; }
+    public String getType() {
+        return type;
+    }
 
-    public Long getPropertiesId() { return propertiesId; }
-    public EDCAssetDto setPropertiesId(Long propertiesId){ this.propertiesId = propertiesId; return this; }
+    public void setType(String type) {
+        this.type = type;
+    }
 
-    public Set<Long> getAccessPolicyIds() { return accessPolicyIds; }
-    public EDCAssetDto setAccessPolicyIds(Set<Long> accessPolicyIds){ this.accessPolicyIds = accessPolicyIds; return this; }
+    public String getContentType() {
+        return contentType;
+    }
 
-    public Long getTargetSystemEndpointId() { return targetSystemEndpointId; }
-    public EDCAssetDto setTargetSystemEndpointId(Long targetSystemEndpointId){ this.targetSystemEndpointId = targetSystemEndpointId; return this; }
+    public void setContentType(String contentType) {
+        this.contentType = contentType;
+    }
 
-    public Long getTargetEDCId() { return targetEDCId; }
-    public EDCAssetDto setTargetEDCId(Long targetEDCId){ this.targetEDCId = targetEDCId; return this; }
+    public String getDescription() {
+        return description;
+    }
+
+    public void setDescription(String description) {
+        this.description = description;
+    }
+
+    public UUID getTargetEDCId() {
+        return targetEDCId;
+    }
+
+    public void setTargetEDCId(UUID targetEDCId) {
+        this.targetEDCId = targetEDCId;
+    }
 }
-
-
-

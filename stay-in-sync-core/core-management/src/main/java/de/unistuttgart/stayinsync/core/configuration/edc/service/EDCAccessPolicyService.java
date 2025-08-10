@@ -6,6 +6,7 @@ import jakarta.transaction.Transactional;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 @ApplicationScoped
 public class EDCAccessPolicyService {
@@ -14,30 +15,29 @@ public class EDCAccessPolicyService {
         return EDCAccessPolicy.listAll();
     }
 
-    public Optional<EDCAccessPolicy> findById(Long id) {
+    public Optional<EDCAccessPolicy> findById(UUID id) {
         return EDCAccessPolicy.findByIdOptional(id);
     }
 
     @Transactional
-    public EDCAccessPolicy createFromDto(EDCAccessPolicy entity) {
+    public EDCAccessPolicy create(EDCAccessPolicy entity) {
         entity.persist();
         return entity;
     }
 
     @Transactional
-    public EDCAccessPolicy update(Long id, EDCAccessPolicy newState) {
+    public Optional<EDCAccessPolicy> update(UUID id, EDCAccessPolicy newState) {
         EDCAccessPolicy existing = EDCAccessPolicy.findById(id);
         if (existing == null) {
-            throw new IllegalArgumentException("AccessPolicy " + id + " nicht gefunden");
+            return Optional.empty();
         }
-        // Asset und Permissions übernehmen
         existing.setEdcAsset(newState.getEdcAsset());
         existing.setAccessPolicyPermissions(newState.getAccessPolicyPermissions());
-        return existing;
+        return Optional.of(existing);
     }
 
     @Transactional
-    public boolean delete(Long id) {
+    public boolean delete(UUID id) {
         return EDCAccessPolicy.deleteById(id);
     }
 }

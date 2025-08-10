@@ -11,12 +11,13 @@ import org.eclipse.microprofile.openapi.annotations.tags.Tag;
 
 import java.net.URI;
 import java.util.List;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 @Path("/api/config/edcs/access-policies")
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
-@Tag(name = "EDCAccessPolicy", description = "Verwaltet EDC‑Access‑Policies")
+@Tag(name = "EDCAccessPolicy", description = "Verwaltet EDC-Access-Policies")
 public class EDCAccessPolicyResource {
 
     @Inject
@@ -29,17 +30,19 @@ public class EDCAccessPolicyResource {
             .collect(Collectors.toList());
     }
 
-    @GET @Path("{id}")
-    public EDCAccessPolicyDto get(@PathParam("id") Long id) {
+    @GET
+    @Path("{id}")
+    public EDCAccessPolicyDto get(@PathParam("id") UUID id) {
         return service.findById(id)
             .map(EDCAccessPolicyMapper::toDto)
             .orElseThrow(() -> new NotFoundException("AccessPolicy " + id + " nicht gefunden"));
     }
 
-    @POST @Transactional
+    @POST
+    @Transactional
     public Response create(EDCAccessPolicyDto dto, @Context UriInfo uriInfo) {
-        var entity = EDCAccessPolicyMapper.fromDto(dto);
-        var created = service.createFromDto(entity);
+        var entity     = EDCAccessPolicyMapper.fromDto(dto);
+        var created    = service.create(entity);
         var createdDto = EDCAccessPolicyMapper.toDto(created);
         URI uri = uriInfo.getAbsolutePathBuilder()
                          .path(createdDto.getId().toString())
@@ -49,16 +52,21 @@ public class EDCAccessPolicyResource {
                        .build();
     }
 
-    @PUT @Path("{id}") @Transactional
-    public EDCAccessPolicyDto update(@PathParam("id") Long id, EDCAccessPolicyDto dto) {
+    @PUT
+    @Path("{id}")
+    @Transactional
+    public EDCAccessPolicyDto update(@PathParam("id") UUID id, EDCAccessPolicyDto dto) {
         dto.setId(id);
         var newState = EDCAccessPolicyMapper.fromDto(dto);
-        var updated = service.update(id, newState);
-        return EDCAccessPolicyMapper.toDto(updated);
+        return service.update(id, newState)
+            .map(EDCAccessPolicyMapper::toDto)
+            .orElseThrow(() -> new NotFoundException("AccessPolicy " + id + " nicht gefunden"));
     }
 
-    @DELETE @Path("{id}") @Transactional
-    public void delete(@PathParam("id") Long id) {
+    @DELETE
+    @Path("{id}")
+    @Transactional
+    public void delete(@PathParam("id") UUID id) {
         if (!service.delete(id)) {
             throw new NotFoundException("AccessPolicy " + id + " nicht gefunden");
         }

@@ -1,14 +1,12 @@
 package de.unistuttgart.stayinsync.core.configuration.edc;
 
-import io.quarkus.hibernate.orm.panache.PanacheEntity;
-import jakarta.persistence.CascadeType;
-import jakarta.persistence.Entity;
-import jakarta.persistence.ManyToOne;
-import jakarta.persistence.OneToMany;
+import de.unistuttgart.stayinsync.core.model.UuidEntity;
+import jakarta.persistence.*;
 import java.util.Set;
 
 @Entity
-public class EDCAccessPolicy extends PanacheEntity {
+@Table(name = "edc_access_policy")
+public class EDCAccessPolicy extends UuidEntity {
 
     @OneToMany(mappedBy = "edcAccessPolicy",
                cascade = CascadeType.ALL,
@@ -16,18 +14,15 @@ public class EDCAccessPolicy extends PanacheEntity {
     public Set<EDCAccessPolicyPermission> accessPolicyPermissions;
 
     @ManyToOne
+    @JoinColumn(name = "asset_id", columnDefinition = "CHAR(36)", nullable = false)
     public EDCAsset edcAsset;
 
-    // --- Getter & Setter ---
     public Set<EDCAccessPolicyPermission> getAccessPolicyPermissions() {
         return accessPolicyPermissions;
     }
 
-    public void setAccessPolicyPermissions(Set<EDCAccessPolicyPermission> perms) {
-        this.accessPolicyPermissions = perms;
-        if (perms != null) {
-            perms.forEach(p -> p.setEdcAccessPolicy(this));
-        }
+    public void setAccessPolicyPermissions(Set<EDCAccessPolicyPermission> accessPolicyPermissions) {
+        this.accessPolicyPermissions = accessPolicyPermissions;
     }
 
     public EDCAsset getEdcAsset() {
@@ -37,4 +32,6 @@ public class EDCAccessPolicy extends PanacheEntity {
     public void setEdcAsset(EDCAsset edcAsset) {
         this.edcAsset = edcAsset;
     }
+
+    // Getter/Setter…
 }

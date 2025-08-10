@@ -6,6 +6,7 @@ import jakarta.transaction.Transactional;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 @ApplicationScoped
 public class EDCPropertyService {
@@ -14,8 +15,8 @@ public class EDCPropertyService {
         return EDCProperty.listAll();
     }
 
-    public Optional<EDCProperty> findById(Long id) {
-        return Optional.ofNullable(EDCProperty.findById(id));
+    public Optional<EDCProperty> findById(UUID id) {
+        return EDCProperty.findByIdOptional(id);
     }
 
     @Transactional
@@ -25,7 +26,7 @@ public class EDCPropertyService {
     }
 
     @Transactional
-    public Optional<EDCProperty> update(Long id, EDCProperty newState) {
+    public Optional<EDCProperty> update(UUID id, EDCProperty newState) {
         return findById(id)
             .map(existing -> {
                 existing.description = newState.description;
@@ -34,7 +35,7 @@ public class EDCPropertyService {
     }
 
     @Transactional
-    public boolean delete(Long id) {
+    public boolean delete(UUID id) {
         return EDCProperty.deleteById(id);
     }
 }

@@ -1,28 +1,30 @@
 package de.unistuttgart.stayinsync.core.configuration.edc.service;
 
-import de.unistuttgart.stayinsync.core.configuration.edc.EDC;
+import de.unistuttgart.stayinsync.core.configuration.edc.EDCInstance;
 import jakarta.enterprise.context.ApplicationScoped;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 @ApplicationScoped
 public class EDCService {
 
-    public List<EDC> listAll() {
-        return EDC.listAll();
+    public List<EDCInstance> listAll() {
+        return EDCInstance.listAll();
     }
 
-    public Optional<EDC> findById(Long id) {
-        return Optional.ofNullable(EDC.findById(id));
+    public Optional<EDCInstance> findById(UUID id) {
+        return Optional.ofNullable(EDCInstance.findById(id));
     }
 
-    public EDC create(EDC edc) {
+    public EDCInstance create(EDCInstance edc) {
+        // Persist setzt dank @PrePersist automatisch die UUID, wenn noch keine vergeben ist
         edc.persist();
         return edc;
     }
 
-    public Optional<EDC> update(Long id, EDC updated) {
+    public Optional<EDCInstance> update(UUID id, EDCInstance updated) {
         return findById(id).map(existing -> {
             existing.name   = updated.name;
             existing.url    = updated.url;
@@ -31,7 +33,7 @@ public class EDCService {
         });
     }
 
-    public boolean delete(Long id) {
-        return EDC.deleteById(id);
+    public boolean delete(UUID id) {
+        return EDCInstance.deleteById(id);
     }
 }

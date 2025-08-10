@@ -2,30 +2,31 @@ package de.unistuttgart.stayinsync.core.configuration.edc.dtoedc;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import java.util.UUID;
 
 public class EDCContractDefinitionDto {
 
-    private Long id;
+    private UUID id;
 
     @NotBlank
     private String contractDefinitionId;
 
     @NotNull
-    private Long assetId;
+    private UUID assetId;
 
     @NotNull
-    private Long accessPolicyId;      // hier wird die ID des EDCAccessPolicy–Datensatzes erwartet
+    private UUID accessPolicyId;      // ID des EDCAccessPolicy–Datensatzes
 
     @NotNull
-    private Long contractPolicyId;    // und hier die ID der ContractPolicy (ebenfalls EDCAccessPolicy)
+    private UUID contractPolicyId;    // ID der ContractPolicy (ebenfalls EDCAccessPolicy)
 
-    // --- Getter & Fluent‑Setter ---
+    // --- Getter & Fluent-Setter ---
 
-    public Long getId() {
+    public UUID getId() {
         return id;
     }
 
-    public EDCContractDefinitionDto setId(Long id) {
+    public EDCContractDefinitionDto setId(UUID id) {
         this.id = id;
         return this;
     }
@@ -39,29 +40,29 @@ public class EDCContractDefinitionDto {
         return this;
     }
 
-    public Long getAssetId() {
+    public UUID getAssetId() {
         return assetId;
     }
 
-    public EDCContractDefinitionDto setAssetId(Long assetId) {
+    public EDCContractDefinitionDto setAssetId(UUID assetId) {
         this.assetId = assetId;
         return this;
     }
 
-    public Long getAccessPolicyId() {
+    public UUID getAccessPolicyId() {
         return accessPolicyId;
     }
 
-    public EDCContractDefinitionDto setAccessPolicyId(Long accessPolicyId) {
+    public EDCContractDefinitionDto setAccessPolicyId(UUID accessPolicyId) {
         this.accessPolicyId = accessPolicyId;
         return this;
     }
 
-    public Long getContractPolicyId() {
+    public UUID getContractPolicyId() {
         return contractPolicyId;
     }
 
-    public EDCContractDefinitionDto setContractPolicyId(Long contractPolicyId) {
+    public EDCContractDefinitionDto setContractPolicyId(UUID contractPolicyId) {
         this.contractPolicyId = contractPolicyId;
         return this;
     }
