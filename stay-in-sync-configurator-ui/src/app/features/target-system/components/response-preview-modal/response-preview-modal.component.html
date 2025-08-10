@@ -1,0 +1,124 @@
+<p-dialog 
+  [header]="modalTitle"
+  [(visible)]="visible"
+  (visibleChange)="visibleChange.emit($event)"
+  [modal]="true"
+  [style]="{ width: '90vw', height: '90vh' }"
+  [draggable]="false"
+  [resizable]="true"
+  [closable]="true"
+  [closeOnEscape]="true"
+  [dismissableMask]="false">
+  
+  <div class="response-preview-container">
+    <!-- Loading State -->
+    <div *ngIf="loading" class="loading-overlay">
+      <p-progressSpinner strokeWidth="4"></p-progressSpinner>
+      <p>Loading response body schema...</p>
+    </div>
+
+    <!-- Error State -->
+    <div *ngIf="error" class="error-message">
+      <i class="pi pi-exclamation-triangle"></i>
+      <span>{{ error }}</span>
+    </div>
+
+    <!-- No Response Body State -->
+    <div *ngIf="!hasResponseBody && !loading && !error" class="no-data-message">
+      <i class="pi pi-info-circle"></i>
+      <span>No response body schema available for this endpoint</span>
+    </div>
+
+    <!-- Response Body Schema Viewer (no Monaco) -->
+    <div *ngIf="hasResponseBody && !loading && !error" class="editor-container">
+      <div class="editor-header">
+        <span class="endpoint-info">
+          <strong>{{ httpMethod }}</strong> {{ endpointPath }}
+        </span>
+        <span class="schema-info">
+          Response Body Schema
+        </span>
+      </div>
+      
+      <div class="monaco-wrapper">
+        <!-- Custom Tab Navigation -->
+        <div class="custom-tab-nav">
+          <button 
+            class="tab-button" 
+            [class.active]="activeTabIndex === 0"
+            (click)="setActiveTab(0)">
+            <i class="pi pi-file"></i>
+            JSON
+          </button>
+          <button 
+            class="tab-button" 
+            [class.active]="activeTabIndex === 1"
+            (click)="setActiveTab(1)">
+            <i class="pi pi-code"></i>
+            TypeScript
+          </button>
+        </div>
+        
+        <!-- Tab Content -->
+        <div class="tab-content">
+          <!-- JSON Tab -->
+          <div *ngIf="activeTabIndex === 0" class="tab-panel">
+            <div class="code-editor">
+              <div class="editor-header">
+                <i class="pi pi-file"></i>
+                <span>JSON Schema</span>
+              </div>
+              <textarea 
+                [value]="jsonEditorModel.value || '// No JSON content available'"
+                readonly
+                class="code-textarea json-textarea">
+              </textarea>
+            </div>
+          </div>
+          
+          <!-- TypeScript Tab -->
+          <div *ngIf="activeTabIndex === 1" class="tab-panel">
+            <div *ngIf="!isGeneratingTypeScript && typescriptError" class="typescript-error">
+              <div class="error-header">
+                <i class="pi pi-exclamation-triangle"></i>
+                <span>TypeScript Generation Error</span>
+              </div>
+              <div class="error-message">{{ typescriptError }}</div>
+              <div class="error-actions">
+                <button pButton type="button" label="Retry" class="p-button-sm" (click)="loadTypeScript()"></button>
+              </div>
+            </div>
+            <div *ngIf="isGeneratingTypeScript" class="typescript-loading">
+              <p-progressSpinner [style]="{width: '20px', height: '20px'}" strokeWidth="2" fill="var(--surface-ground)" animationDuration=".5s"></p-progressSpinner>
+              <span class="loading-text">Generating TypeScript interface...</span>
+            </div>
+            <div *ngIf="!isGeneratingTypeScript && !typescriptError" class="code-editor">
+              <div class="editor-header">
+                <i class="pi pi-code"></i>
+                <span>TypeScript Interface</span>
+              </div>
+              <textarea 
+                [value]="typescriptEditorModel.value || '// No TypeScript content available'"
+                readonly
+                class="code-textarea typescript-textarea">
+              </textarea>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <ng-template pTemplate="footer">
+    <div class="dialog-footer">
+      <p-button 
+        label="Close" 
+        icon="pi pi-times" 
+        (click)="onClose()"
+        styleClass="p-button-text">
+      </p-button>
+    </div>
+  </ng-template>
+</p-dialog>
+
+

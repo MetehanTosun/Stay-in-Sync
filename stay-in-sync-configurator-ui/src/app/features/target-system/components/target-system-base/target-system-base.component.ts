@@ -6,20 +6,26 @@ import { TableModule } from 'primeng/table';
 import { ButtonModule } from 'primeng/button';
 import { DialogModule } from 'primeng/dialog';
 import { InputTextModule } from 'primeng/inputtext';
+import { TextareaModule } from 'primeng/textarea';
 import { ToolbarModule } from 'primeng/toolbar';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { ConfirmationService, MessageService } from 'primeng/api';
 import { TargetSystemResourceService } from '../../service/targetSystemResource.service';
 import { TargetSystemDTO } from '../../models/targetSystemDTO';
 import { CreateTargetSystemComponent } from '../create-target-system/create-target-system.component';
+import { ManageTargetEndpointsComponent } from '../manage-target-endpoints/manage-target-endpoints.component';
+import { ManageApiHeadersComponent } from '../../../source-system/components/manage-api-headers/manage-api-headers.component';
 
 @Component({
   standalone: true,
   selector: 'app-target-system-base',
   template: `
     <p-toolbar>
-      <div class="p-toolbar-group-start">
-        <button pButton label="New" icon="pi pi-plus" (click)="openCreate()"></button>
+      <div class="p-toolbar-group-left">
+        <h3>Target Systems</h3>
+      </div>
+      <div class="p-toolbar-group-right">
+        <button pButton type="button" label="Create Target System" icon="pi pi-plus" (click)="openCreate()"></button>
       </div>
     </p-toolbar>
 
@@ -28,17 +34,24 @@ import { CreateTargetSystemComponent } from '../create-target-system/create-targ
         <tr>
           <th>Name</th>
           <th>API URL</th>
-          <th>Type</th>
+          <th>Description</th>
           <th>Actions</th>
         </tr>
       </ng-template>
       <ng-template pTemplate="body" let-row>
         <tr>
           <td>{{ row.name }}</td>
-          <td>{{ row.apiUrl }}</td>
-          <td>{{ row.apiType }}</td>
+            <td>
+              <div class="api-url-cell">
+                <div class="api-url">{{ row.apiUrl }}</div>
+                <div class="api-type" *ngIf="row.apiType">
+                  <span class="api-type-badge">{{ row.apiType }}</span>
+                </div>
+              </div>
+            </td>
+            <td>{{ row.description }}</td>
           <td>
-            <button pButton icon="pi pi-pencil" class="p-button-text" (click)="edit(row)"></button>
+            <button pButton label="Manage" class="p-button-text p-button-sm" (click)="manage(row)"></button>
             <button pButton icon="pi pi-trash" class="p-button-text p-button-danger" (click)="confirmDelete(row)"></button>
           </td>
         </tr>
@@ -71,6 +84,45 @@ import { CreateTargetSystemComponent } from '../create-target-system/create-targ
     </p-dialog>
     
     <app-create-target-system [(visible)]="wizardVisible"></app-create-target-system>
+
+    <p-dialog [(visible)]="showDetailDialog" [modal]="true" [style]="{ width: '80vw', height: '80vh' }" header="Manage Target System">
+      <div class="p-grid p-dir-col">
+        <div class="p-col">
+          <h3 class="p-mb-2">Metadata</h3>
+          <form *ngIf="manageForm" [formGroup]="manageForm" class="p-fluid p-formgrid p-grid" (ngSubmit)="saveManagedMetadata()">
+            <div class="p-field p-col-12 p-md-6">
+              <label for="m_name">Name</label>
+              <input id="m_name" pInputText formControlName="name" />
+            </div>
+            <div class="p-field p-col-12 p-md-6">
+              <label for="m_apiUrl">API URL</label>
+              <input id="m_apiUrl" pInputText formControlName="apiUrl" />
+            </div>
+            <!-- spacer row between metadata rows -->
+            <div class="p-col-12" style="height: 1rem;"></div>
+            <div class="p-field p-col-12 p-md-6">
+              <label for="m_apiType">API Type</label>
+              <input id="m_apiType" pInputText formControlName="apiType" />
+            </div>
+            <div class="p-field p-col-12">
+              <label for="m_description">Description</label>
+              <textarea id="m_description" pInputTextarea rows="3" formControlName="description"></textarea>
+            </div>
+            <div class="p-col-12">
+              <button pButton type="submit" label="Save Metadata" [disabled]="manageForm.invalid"></button>
+            </div>
+          </form>
+        </div>
+        <div class="p-col p-mt-4">
+          <h3 class="p-mb-2">API Headers</h3>
+          <app-manage-api-headers *ngIf="selectedSystem" [syncSystemId]="selectedSystem.id!"></app-manage-api-headers>
+        </div>
+        <div class="p-col p-mt-4">
+          <h3 class="p-mb-2">Endpoints</h3>
+          <app-manage-target-endpoints *ngIf="selectedSystem" [targetSystemId]="selectedSystem.id!" (finish)="onManageFinished()"></app-manage-target-endpoints>
+        </div>
+      </div>
+    </p-dialog>
     <p-confirmDialog></p-confirmDialog>
   `,
   imports: [
@@ -83,9 +135,13 @@ import { CreateTargetSystemComponent } from '../create-target-system/create-targ
     InputTextModule,
     ToolbarModule,
     ConfirmDialogModule,
-    CreateTargetSystemComponent
+    CreateTargetSystemComponent,
+    ManageTargetEndpointsComponent,
+    ManageApiHeadersComponent,
+    TextareaModule
   ],
-  providers: [ConfirmationService, MessageService]
+  providers: [ConfirmationService, MessageService],
+  styleUrls: ['./target-system-base.component.css']
 })
 export class TargetSystemBaseComponent implements OnInit {
   systems: TargetSystemDTO[] = [];
@@ -95,6 +151,9 @@ export class TargetSystemBaseComponent implements OnInit {
   form!: FormGroup;
   editing: TargetSystemDTO | null = null;
   wizardVisible = false;
+  showDetailDialog = false;
+  selectedSystem: TargetSystemDTO | null = null;
+  manageForm!: FormGroup;
 
   constructor(
     private api: TargetSystemResourceService,
@@ -110,6 +169,13 @@ export class TargetSystemBaseComponent implements OnInit {
       description: ['']
     });
     this.load();
+    // initialize manageForm to avoid undefined on first render
+    this.manageForm = this.fb.group({
+      name: ['', Validators.required],
+      apiUrl: ['', [Validators.required, Validators.pattern('https?://.+')]],
+      apiType: ['', Validators.required],
+      description: ['']
+    });
   }
 
   load(): void {
@@ -164,6 +230,29 @@ export class TargetSystemBaseComponent implements OnInit {
   }
 
   closeDialog(): void { this.showDialog = false; }
+
+  manage(row: TargetSystemDTO): void {
+    this.selectedSystem = row;
+    this.manageForm = this.fb.group({
+      name: [row.name || '', Validators.required],
+      apiUrl: [row.apiUrl || '', [Validators.required, Validators.pattern('https?://.+')]],
+      apiType: [row.apiType || '', Validators.required],
+      description: [row.description || '']
+    });
+    this.showDetailDialog = true;
+  }
+
+  onManageFinished(): void {
+    this.showDetailDialog = false;
+    this.selectedSystem = null;
+    this.load();
+  }
+
+  saveManagedMetadata(): void {
+    if (!this.selectedSystem || this.manageForm.invalid) return;
+    const payload: TargetSystemDTO = { ...this.selectedSystem, ...this.manageForm.value } as TargetSystemDTO;
+    this.api.update(this.selectedSystem.id!, payload).subscribe({ next: () => { this.load(); } });
+  }
 }
 
 

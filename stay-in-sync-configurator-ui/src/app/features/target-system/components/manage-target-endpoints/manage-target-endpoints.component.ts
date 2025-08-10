@@ -17,10 +17,12 @@ import { CreateTargetSystemEndpointDTO } from '../../models/createTargetSystemEn
 import { ManageEndpointParamsComponent } from '../../../source-system/components/manage-endpoint-params/manage-endpoint-params.component';
 import { TabViewModule } from 'primeng/tabview';
 import { MonacoEditorModule, NgxEditorModel } from 'ngx-monaco-editor-v2';
+import { DragDropModule } from '@angular/cdk/drag-drop';
 import { TargetSystemResourceService } from '../../service/targetSystemResource.service';
 import { TargetSystemDTO } from '../../models/targetSystemDTO';
 import { OpenApiImportService } from '../../../../core/services/openapi-import.service';
 import { load as parseYAML } from 'js-yaml';
+import { TargetResponsePreviewModalComponent } from '../response-preview-modal/response-preview-modal.component';
 
 @Component({
   standalone: true,
@@ -37,16 +39,49 @@ import { load as parseYAML } from 'js-yaml';
     ProgressSpinnerModule,
     ManageEndpointParamsComponent,
     TabViewModule,
-    MonacoEditorModule
+    MonacoEditorModule,
+    DragDropModule,
+    TargetResponsePreviewModalComponent
   ],
   template: `
-    <p-card header="Target Endpoints">
-      <button pButton label="New" icon="pi pi-plus" (click)="openCreate()"></button>
-      <div class="p-mb-3">
+    <p-card header="Target Endpoints" styleClass="p-p-4">
+      <div class="p-d-flex p-ai-center p-mb-3" style="gap: .5rem;">
         <button pButton type="button" icon="pi pi-cloud-download" label="Import Endpoints" [disabled]="importing" (click)="importEndpoints()"></button>
         <p-progressSpinner *ngIf="importing" styleClass="p-ml-2" strokeWidth="4"></p-progressSpinner>
       </div>
-      <p-table [value]="endpoints" [loading]="loading" class="mt-3">
+
+      <div id="create-endpoint-form"></div>
+      <form [formGroup]="form" class="p-fluid p-formgrid p-grid" style="margin: 1.5rem 0; padding: 1rem;">
+        <div class="p-field p-col-12" style="margin-bottom: 1rem;">
+          <label for="endpointPath">Endpoint Path</label>
+          <input id="endpointPath" pInputText formControlName="endpointPath">
+        </div>
+        <div class="p-field p-col-12" style="margin-bottom: 1rem;">
+          <label for="httpRequestType">HTTP Method</label>
+          <select id="httpRequestType" formControlName="httpRequestType">
+            <option *ngFor="let m of httpRequestTypes" [value]="m">{{ m }}</option>
+          </select>
+        </div>
+        <div class="p-field p-col-12" style="margin-bottom: 1rem;" *ngIf="form.get('httpRequestType')?.value === 'POST' || form.get('httpRequestType')?.value === 'PUT'">
+          <label>Request Body Schema (JSON)</label>
+          <ngx-monaco-editor [options]="jsonEditorOptions" formControlName="requestBodySchema"></ngx-monaco-editor>
+        </div>
+        <div class="p-field p-col-12" style="margin-bottom: 1rem;">
+          <label>Response Body Schema</label>
+          <p-tabView (onChange)="onDialogTabChange($event)">
+            <p-tabPanel header="JSON">
+              <ngx-monaco-editor [options]="jsonEditorOptions" formControlName="responseBodySchema"></ngx-monaco-editor>
+            </p-tabPanel>
+            <p-tabPanel header="TypeScript">
+              <ngx-monaco-editor [options]="typescriptEditorOptions" [model]="typescriptModel"></ngx-monaco-editor>
+            </p-tabPanel>
+          </p-tabView>
+        </div>
+        <div class="p-col-12" style="margin: 2rem 0;">
+          <button pButton type="button" label="Add Endpoint" [disabled]="form.invalid" (click)="addEndpoint()"></button>
+        </div>
+      </form>
+      <p-table [value]="endpoints" [loading]="loading" [paginator]="true" [rows]="10" [style]="{ 'margin': '1.5rem 0' }">
         <ng-template pTemplate="header">
           <tr>
             <th>Path</th>
@@ -66,33 +101,40 @@ import { load as parseYAML } from 'js-yaml';
             <td>
               <button pButton type="button" label="Response Preview" (click)="openResponsePreview(row)"></button>
             </td>
-            <td>
-              <button pButton icon="pi pi-pencil" class="p-button-text" (click)="openEdit(row)"></button>
-              <button pButton icon="pi pi-trash" class="p-button-text p-button-danger" (click)="delete(row)"></button>
-              <button pButton icon="pi pi-sliders-h" class="p-button-text" (click)="openParams(row)"></button>
-            </td>
+             <td>
+               <button pButton icon="pi pi-pencil" class="p-button-text" (click)="openEdit(row)"></button>
+               <button pButton icon="pi pi-trash" class="p-button-text p-button-danger" (click)="delete(row)"></button>
+               <button pButton
+                       type="button"
+                       icon="pi pi-cog"
+                       class="p-button-info p-button-text"
+                       pTooltip="Manage query parameters"
+                       tooltipPosition="top"
+                       (click)="selectedEndpointForParams = row"></button>
+             </td>
           </tr>
         </ng-template>
       </p-table>
     </p-card>
 
+    <!-- Edit Dialog only -->
     <p-dialog [(visible)]="showDialog" [modal]="true" [style]="{width: '60vw', height: '80vh'}" [header]="dialogTitle">
-      <form [formGroup]="form" class="p-fluid">
-        <div class="p-field">
+      <form [formGroup]="form" class="p-fluid p-formgrid p-grid" style="margin: 1.5rem 0; padding: 1rem;">
+        <div class="p-field p-col-12" style="margin-bottom: 1rem;">
           <label for="endpointPath">Endpoint Path</label>
           <input id="endpointPath" pInputText formControlName="endpointPath">
         </div>
-        <div class="p-field">
+        <div class="p-field p-col-12" style="margin-bottom: 1rem;">
           <label for="httpRequestType">HTTP Method</label>
           <select id="httpRequestType" formControlName="httpRequestType">
             <option *ngFor="let m of httpRequestTypes" [value]="m">{{ m }}</option>
           </select>
         </div>
-        <div class="p-field" *ngIf="form.get('httpRequestType')?.value === 'POST' || form.get('httpRequestType')?.value === 'PUT'">
+        <div class="p-field p-col-12" style="margin-bottom: 1rem;" *ngIf="form.get('httpRequestType')?.value === 'POST' || form.get('httpRequestType')?.value === 'PUT'">
           <label>Request Body Schema (JSON)</label>
           <ngx-monaco-editor [options]="jsonEditorOptions" formControlName="requestBodySchema"></ngx-monaco-editor>
         </div>
-        <div class="p-field">
+        <div class="p-field p-col-12" style="margin-bottom: 1rem;">
           <label>Response Body Schema</label>
           <p-tabView (onChange)="onDialogTabChange($event)">
             <p-tabPanel header="JSON">
@@ -110,32 +152,80 @@ import { load as parseYAML } from 'js-yaml';
       </ng-template>
     </p-dialog>
 
-    <p-dialog [(visible)]="paramsDialog" [modal]="true" [style]="{width: '720px'}" header="Endpoint Parameters">
-      <app-manage-endpoint-params *ngIf="selectedEndpointForParams" [endpointId]="selectedEndpointForParams.id!" [endpointPath]="selectedEndpointForParams.endpointPath"></app-manage-endpoint-params>
-    </p-dialog>
+    <ng-container *ngIf="selectedEndpointForParams as ep">
+      <div class="p-mt-3" style="margin: 1.5rem 0;">
+        <app-manage-endpoint-params [endpointId]="ep.id!" [endpointPath]="ep.endpointPath"></app-manage-endpoint-params>
+      </div>
+    </ng-container>
 
-    <p-dialog [(visible)]="requestBodyDialog" [modal]="true" [style]="{width: '60vw', height: '70vh'}" header="Request Body Schema">
-      <ngx-monaco-editor [options]="jsonEditorOptions" [model]="requestBodyEditorModel"></ngx-monaco-editor>
-      <ng-template pTemplate="footer">
-        <button pButton label="Close" class="p-button-text" (click)="requestBodyDialog=false"></button>
-      </ng-template>
-    </p-dialog>
+    <!-- Request Body Editor Overlay (draggable like Source System) -->
+    <div *ngIf="requestBodyEditorEndpoint"
+         class="request-body-editor-overlay"
+         cdkDrag
+         cdkDragRootElement=".request-body-editor-overlay">
+      <div class="editor-header" cdkDragHandle>
+        <span>Request-Body-Schema for {{ requestBodyEditorEndpoint.endpointPath }} ({{ requestBodyEditorEndpoint.httpRequestType }})</span>
+        <button class="close-btn" (click)="closeRequestBodyEditor()">&#10005;</button>
+      </div>
+      <ngx-monaco-editor [options]="jsonEditorOptions"
+                         [model]="requestBodyEditorModel"
+                         (modelChange)="onRequestBodyModelChange($event)"></ngx-monaco-editor>
+      <div class="editor-footer">
+        <span *ngIf="requestBodyEditorError" class="p-error p-ml-3">{{ requestBodyEditorError }}</span>
+      </div>
+    </div>
 
-    <p-dialog [(visible)]="responsePreviewDialog" [modal]="true" [style]="{width: '60vw', height: '70vh'}" header="Response Body">
-      <p-tabView (onChange)="onResponseTabChange($event)">
-        <p-tabPanel header="JSON">
-          <ngx-monaco-editor [options]="jsonEditorOptions" [model]="responseJsonModel"></ngx-monaco-editor>
-        </p-tabPanel>
-        <p-tabPanel header="TypeScript">
-          <ngx-monaco-editor [options]="typescriptEditorOptions" [model]="responseTypeScriptModel"></ngx-monaco-editor>
-        </p-tabPanel>
-      </p-tabView>
-      <ng-template pTemplate="footer">
-        <button pButton label="Close" class="p-button-text" (click)="responsePreviewDialog=false"></button>
-      </ng-template>
-    </p-dialog>
+    <app-target-response-preview-modal
+      [(visible)]="responsePreviewDialog"
+      [endpointId]="selectedResponsePreviewEndpoint?.id"
+      [endpointPath]="selectedResponsePreviewEndpoint?.endpointPath || ''"
+      [httpMethod]="selectedResponsePreviewEndpoint?.httpRequestType || ''"
+      [responseBodySchema]="selectedResponsePreviewEndpoint?.responseBodySchema"
+      [responseDts]="selectedResponsePreviewEndpoint?.responseDts">
+    </app-target-response-preview-modal>
   `,
-  styles: [``]
+  styles: [`
+    .request-body-editor-overlay {
+      position: fixed;
+      top: 10vh;
+      left: 10vw;
+      width: 60vw;
+      height: 70vh;
+      background: var(--surface-card);
+      border: 1px solid var(--surface-border);
+      border-radius: 8px;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.2);
+      z-index: 1000;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+    .request-body-editor-overlay .editor-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: .75rem 1rem;
+      background: var(--surface-ground);
+      border-bottom: 1px solid var(--surface-border);
+      cursor: move;
+      user-select: none;
+    }
+    .request-body-editor-overlay .close-btn {
+      border: none;
+      background: transparent;
+      font-size: 1rem;
+      cursor: pointer;
+    }
+    .request-body-editor-overlay ngx-monaco-editor {
+      flex: 1;
+      min-height: 0;
+    }
+    .request-body-editor-overlay .editor-footer {
+      padding: .5rem 1rem;
+      border-top: 1px solid var(--surface-border);
+      background: var(--surface-ground);
+    }
+  `]
 })
 export class ManageTargetEndpointsComponent implements OnInit {
   @Input() targetSystemId!: number;
@@ -152,7 +242,10 @@ export class ManageTargetEndpointsComponent implements OnInit {
   paramsDialog = false;
   selectedEndpointForParams: TargetSystemEndpointDTO | null = null;
   requestBodyDialog = false;
+  requestBodyEditorEndpoint: TargetSystemEndpointDTO | null = null;
+  requestBodyEditorError: string | null = null;
   responsePreviewDialog = false;
+  selectedResponsePreviewEndpoint: TargetSystemEndpointDTO | null = null;
 
   jsonEditorOptions = {
     theme: 'vs-dark',
@@ -262,7 +355,23 @@ export class ManageTargetEndpointsComponent implements OnInit {
     this.editing = null;
     this.dialogTitle = 'New Endpoint';
     this.form.reset({ endpointPath: '', httpRequestType: 'GET', requestBodySchema: '', responseBodySchema: '' });
-    this.showDialog = true;
+    // no dialog; inline create form is visible by default
+  }
+
+  addEndpoint(): void {
+    if (this.form.invalid) return;
+    const payload: CreateTargetSystemEndpointDTO = {
+      endpointPath: this.form.value.endpointPath,
+      httpRequestType: this.form.value.httpRequestType,
+      ...(this.form.value.requestBodySchema ? { requestBodySchema: this.form.value.requestBodySchema } : {}),
+      ...(this.form.value.responseBodySchema ? { responseBodySchema: this.form.value.responseBodySchema } : {})
+    } as any;
+    this.api.create(this.targetSystemId, [payload]).subscribe({
+      next: () => {
+        this.form.reset({ endpointPath: '', httpRequestType: 'GET', requestBodySchema: '', responseBodySchema: '' });
+        this.load();
+      }
+    });
   }
 
   openEdit(row: TargetSystemEndpointDTO): void {
@@ -307,13 +416,24 @@ export class ManageTargetEndpointsComponent implements OnInit {
   }
 
   openRequestBodyEditor(row: TargetSystemEndpointDTO): void {
+    this.requestBodyEditorEndpoint = row;
     this.requestBodyEditorModel = { value: row.requestBodySchema || '// No request body schema', language: 'json' };
-    this.requestBodyDialog = true;
+    this.requestBodyEditorError = null;
+  }
+
+  closeRequestBodyEditor(): void {
+    this.requestBodyEditorEndpoint = null;
+    this.requestBodyEditorModel = { value: '', language: 'json' };
+    this.requestBodyEditorError = null;
+  }
+
+  onRequestBodyModelChange(event: any): void {
+    const value = typeof event === 'string' ? event : (event?.detail ?? event?.target?.value ?? String(event));
+    this.requestBodyEditorModel = { ...this.requestBodyEditorModel, value };
   }
 
   openResponsePreview(row: TargetSystemEndpointDTO): void {
-    this.responseJsonModel = { value: row.responseBodySchema || '// No response body schema', language: 'json' };
-    this.responseTypeScriptModel = { value: row.responseDts || '// Click Generate to build TypeScript' , language: 'typescript'};
+    this.selectedResponsePreviewEndpoint = row;
     this.responsePreviewDialog = true;
   }
 
