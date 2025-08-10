@@ -12,6 +12,7 @@ import { ProgressSpinnerModule } from 'primeng/progressspinner';
 import { TargetSystemEndpointResourceService } from '../../service/targetSystemEndpointResource.service';
 import { TargetSystemEndpointDTO } from '../../models/targetSystemEndpointDTO';
 import { CreateTargetSystemEndpointDTO } from '../../models/createTargetSystemEndpointDTO';
+import { ManageEndpointParamsComponent } from '../../../source-system/components/manage-endpoint-params/manage-endpoint-params.component';
 
 @Component({
   standalone: true,
@@ -25,7 +26,8 @@ import { CreateTargetSystemEndpointDTO } from '../../models/createTargetSystemEn
     InputTextModule,
     DropdownModule,
     CardModule,
-    ProgressSpinnerModule
+    ProgressSpinnerModule,
+    ManageEndpointParamsComponent
   ],
   template: `
     <p-card header="Target Endpoints">
@@ -35,7 +37,7 @@ import { CreateTargetSystemEndpointDTO } from '../../models/createTargetSystemEn
           <tr>
             <th>Path</th>
             <th>Method</th>
-            <th>Aktionen</th>
+            <th>Actions</th>
           </tr>
         </ng-template>
         <ng-template pTemplate="body" let-row>
@@ -45,6 +47,7 @@ import { CreateTargetSystemEndpointDTO } from '../../models/createTargetSystemEn
             <td>
               <button pButton icon="pi pi-pencil" class="p-button-text" (click)="openEdit(row)"></button>
               <button pButton icon="pi pi-trash" class="p-button-text p-button-danger" (click)="delete(row)"></button>
+              <button pButton icon="pi pi-sliders-h" class="p-button-text" (click)="openParams(row)"></button>
             </td>
           </tr>
         </ng-template>
@@ -69,6 +72,10 @@ import { CreateTargetSystemEndpointDTO } from '../../models/createTargetSystemEn
         <button pButton label="Speichern" (click)="save()" [disabled]="form.invalid"></button>
       </ng-template>
     </p-dialog>
+
+    <p-dialog [(visible)]="paramsDialog" [modal]="true" [style]="{width: '720px'}" header="Endpoint Parameters">
+      <app-manage-endpoint-params *ngIf="selectedEndpointForParams" [endpointId]="selectedEndpointForParams.id!" [endpointPath]="selectedEndpointForParams.endpointPath"></app-manage-endpoint-params>
+    </p-dialog>
   `,
   styles: [``]
 })
@@ -83,6 +90,8 @@ export class ManageTargetEndpointsComponent implements OnInit {
   form!: FormGroup;
   editing: TargetSystemEndpointDTO | null = null;
   httpRequestTypes: Array<'GET'|'POST'|'PUT'|'DELETE'|'PATCH'> = ['GET','POST','PUT','DELETE','PATCH'];
+  paramsDialog = false;
+  selectedEndpointForParams: TargetSystemEndpointDTO | null = null;
 
   constructor(private api: TargetSystemEndpointResourceService, private fb: FormBuilder) {}
 
@@ -138,6 +147,11 @@ export class ManageTargetEndpointsComponent implements OnInit {
   delete(row: TargetSystemEndpointDTO): void {
     if (!row.id) return;
     this.api.delete(row.id).subscribe({ next: () => this.load() });
+  }
+
+  openParams(row: TargetSystemEndpointDTO): void {
+    this.selectedEndpointForParams = row;
+    this.paramsDialog = true;
   }
 }
 

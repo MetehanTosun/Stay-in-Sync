@@ -1,7 +1,7 @@
 package de.unistuttgart.stayinsync.core.configuration.service;
 
 import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.ApiEndpointQueryParam;
-import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.SourceSystemEndpoint;
+import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.SyncSystemEndpoint;
 import de.unistuttgart.stayinsync.core.configuration.exception.CoreManagementException;
 import de.unistuttgart.stayinsync.core.configuration.mapping.ApiEndpointQueryParamMapper;
 import de.unistuttgart.stayinsync.core.configuration.rest.dtos.ApiEndpointQueryParamDTO;
@@ -27,13 +27,10 @@ public class ApiEndpointQueryParamService {
     Validator validator;
 
     @Inject
-    SourceSystemEndpointService sourceSystemEndpointService;
-
-    @Inject
     ApiEndpointQueryParamMapper mapper;
 
     public ApiEndpointQueryParam persistApiQueryParam(@NotNull @Valid ApiEndpointQueryParamDTO apiEndpointQueryParamDTO, Long endpointId) {
-        Log.debugf("Persisting api-endpoint-query-param: %s, for source-system with id: %s", apiEndpointQueryParamDTO, endpointId);
+        Log.debugf("Persisting api-endpoint-query-param: %s, for endpoint with id: %s", apiEndpointQueryParamDTO, endpointId);
 
         ApiEndpointQueryParam apiEndpointQueryParam = mapper.mapToEntity(apiEndpointQueryParamDTO);
 
@@ -42,9 +39,9 @@ public class ApiEndpointQueryParamService {
             apiEndpointQueryParam.paramName = ensureBraces(apiEndpointQueryParam.paramName);
         }
 
-        SourceSystemEndpoint endpoint = sourceSystemEndpointService.findSourceSystemEndpointById(endpointId).orElseThrow(() -> {
-            return new CoreManagementException("Unable to find Endpoint", "There is no endpoint with id %s", endpointId);
-        });
+        SyncSystemEndpoint endpoint = (SyncSystemEndpoint) SyncSystemEndpoint.findByIdOptional(endpointId).orElseThrow(() ->
+                new CoreManagementException("Unable to find Endpoint", "There is no endpoint with id %s", endpointId)
+        );
         apiEndpointQueryParam.syncSystemEndpoint = endpoint;
         apiEndpointQueryParam.persist();
 
