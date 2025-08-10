@@ -272,7 +272,9 @@ public class OpenApiSpecificationParserService {
 
                 CreateTargetSystemEndpointDTO endpointDTO = new CreateTargetSystemEndpointDTO(
                         path,
-                        httpMethod.toString()
+                        httpMethod.toString(),
+                        null,
+                        null
                 );
 
                 targetSystemEndpointService.persistTargetSystemEndpoint(endpointDTO, targetSystem.id);

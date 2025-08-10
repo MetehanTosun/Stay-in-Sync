@@ -3,6 +3,8 @@ import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { TargetSystemEndpointDTO } from '../models/targetSystemEndpointDTO';
 import { CreateTargetSystemEndpointDTO } from '../models/createTargetSystemEndpointDTO';
+import { TypeScriptGenerationRequest } from '../../source-system/models/typescriptGenerationRequest';
+import { TypeScriptGenerationResponse } from '../../source-system/models/typescriptGenerationResponse';
 
 @Injectable({ providedIn: 'root' })
 export class TargetSystemEndpointResourceService {
@@ -26,6 +28,10 @@ export class TargetSystemEndpointResourceService {
 
   delete(id: number): Observable<void> {
     return this.http.delete<void>(`/api/target-systems/endpoint/${id}`);
+  }
+
+  generateTypeScript(endpointId: number, request: TypeScriptGenerationRequest): Observable<TypeScriptGenerationResponse> {
+    return this.http.post<TypeScriptGenerationResponse>(`/api/target-systems/endpoint/${endpointId}/generate-typescript`, request);
   }
 }
 

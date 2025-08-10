@@ -20,6 +20,9 @@ import de.unistuttgart.stayinsync.core.configuration.rest.dtos.CreateTargetSyste
 import de.unistuttgart.stayinsync.core.configuration.rest.dtos.TargetSystemEndpointDTO;
 import de.unistuttgart.stayinsync.core.configuration.service.TargetSystemEndpointService;
 import io.quarkus.logging.Log;
+import de.unistuttgart.stayinsync.core.configuration.rest.dtos.TypeScriptGenerationRequest;
+import de.unistuttgart.stayinsync.core.configuration.rest.dtos.TypeScriptGenerationResponse;
+import de.unistuttgart.stayinsync.core.configuration.util.TypeScriptTypeGenerator;
 import jakarta.inject.Inject;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
@@ -39,6 +42,9 @@ public class TargetSystemEndpointResource {
 
     @Inject
     TargetSystemEndpointFullUpdateMapper mapper;
+
+    @Inject
+    TypeScriptTypeGenerator typeScriptTypeGenerator;
 
     @POST
     @Path("{targetSystemId}/endpoint")
@@ -98,6 +104,59 @@ public class TargetSystemEndpointResource {
     public void deleteTargetSystemEndpoint(@Parameter(name = "id", required = true) @PathParam("id") Long id) {
         service.deleteTargetSystemEndpointById(id);
         Log.debugf("target-system-endpoint with id %d deleted", id);
+    }
+
+    @POST
+    @Path("/endpoint/{id}/generate-typescript")
+    @Consumes(APPLICATION_JSON)
+    @Operation(summary = "Generate TypeScript interface from JSON schema for target endpoint")
+    @APIResponse(
+            responseCode = "200",
+            description = "TypeScript interface generated successfully",
+            content = @Content(
+                    mediaType = APPLICATION_JSON,
+                    schema = @Schema(implementation = TypeScriptGenerationResponse.class)
+            )
+    )
+    @APIResponse(
+            responseCode = "400",
+            description = "Invalid JSON schema provided"
+    )
+    @APIResponse(
+            responseCode = "404",
+            description = "Endpoint not found"
+    )
+    public Response generateTypeScriptFromSchema(
+            @Parameter(name = "id", required = true) @PathParam("id") Long id,
+            @RequestBody(
+                    name = "json-schema",
+                    required = true,
+                    content = @Content(
+                            mediaType = APPLICATION_JSON,
+                            schema = @Schema(implementation = TypeScriptGenerationRequest.class)
+                    )
+            )
+            @Valid @NotNull TypeScriptGenerationRequest request) {
+
+        try {
+            String generatedTypeScript = typeScriptTypeGenerator.generate(request.jsonSchema());
+
+            TypeScriptGenerationResponse response = new TypeScriptGenerationResponse(
+                generatedTypeScript,
+                null
+            );
+
+            Log.debugf("TypeScript generated successfully for target endpoint %d", id);
+            return Response.ok(response).build();
+
+        } catch (Exception e) {
+            Log.warnf(e, "Failed to generate TypeScript for target endpoint %d", id);
+            TypeScriptGenerationResponse errorResponse = new TypeScriptGenerationResponse(
+                null,
+                "Failed to generate TypeScript: " + e.getMessage()
+            );
+            return Response.status(Response.Status.BAD_REQUEST).entity(errorResponse).build();
+        }
     }
 }
 

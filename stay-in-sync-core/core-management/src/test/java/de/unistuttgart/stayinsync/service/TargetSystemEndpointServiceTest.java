@@ -65,8 +65,8 @@ public class TargetSystemEndpointServiceTest {
   public void createAndListEndpoints() {
     assertTrue(endpointService.findAllEndpointsWithTargetSystemIdLike(targetSystemId).isEmpty());
 
-    var e1 = new CreateTargetSystemEndpointDTO("/a", "GET");
-    var e2 = new CreateTargetSystemEndpointDTO("/b", "POST");
+    var e1 = new CreateTargetSystemEndpointDTO("/a", "GET", null, null);
+    var e2 = new CreateTargetSystemEndpointDTO("/b", "POST", null, null);
 
     List<TargetSystemEndpoint> saved = endpointService.persistTargetSystemEndpointList(List.of(e1, e2), targetSystemId);
     assertEquals(2, saved.size());
@@ -77,7 +77,7 @@ public class TargetSystemEndpointServiceTest {
 
   @Test
   public void getReplaceDeleteEndpoint() {
-    var e1 = new CreateTargetSystemEndpointDTO("/x", "GET");
+    var e1 = new CreateTargetSystemEndpointDTO("/x", "GET", null, null);
     TargetSystemEndpoint saved = endpointService.persistTargetSystemEndpoint(e1, targetSystemId);
 
     Optional<TargetSystemEndpoint> found = endpointService.findTargetSystemEndpointById(saved.id);
