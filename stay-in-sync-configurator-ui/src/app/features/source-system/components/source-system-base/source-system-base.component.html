@@ -4,6 +4,11 @@
   Provides comprehensive search functionality with highlighting and responsive design.
 -->
 <p-card>
+  <app-search-bar
+    [customPlaceholder]="'Search source systems by name, description, API URL, endpoints, or headers...'"
+    (search)="onSearchChange($event)"
+    (clear)="onSearchClear()">
+  </app-search-bar>
   <!-- Header toolbar with title and create button -->
   <p-toolbar>
     <div class="p-toolbar-group-left">

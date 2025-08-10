@@ -16,6 +16,7 @@ import { TargetSystemDTO } from '../../models/targetSystemDTO';
 import { CreateTargetSystemComponent } from '../create-target-system/create-target-system.component';
 import { ManageTargetEndpointsComponent } from '../manage-target-endpoints/manage-target-endpoints.component';
 import { ManageApiHeadersComponent } from '../../../source-system/components/manage-api-headers/manage-api-headers.component';
+import { SearchBarComponent } from '../../../source-system/components/search-bar/search-bar.component';
 
 @Component({
   standalone: true,
@@ -30,7 +31,13 @@ import { ManageApiHeadersComponent } from '../../../source-system/components/man
       </div>
     </p-toolbar>
 
-    <p-table [value]="systems" [loading]="loading">
+    <app-search-bar
+      [customPlaceholder]="'Search target systems by name, description, API URL...'"
+      (search)="onSearchChange($event)"
+      (clear)="onSearchClear()">
+    </app-search-bar>
+
+    <p-table [value]="displaySystems" [loading]="loading">
       <ng-template pTemplate="header">
         <tr>
           <th>Name</th>
@@ -144,6 +151,7 @@ import { ManageApiHeadersComponent } from '../../../source-system/components/man
     CreateTargetSystemComponent,
     ManageTargetEndpointsComponent,
     ManageApiHeadersComponent,
+    SearchBarComponent,
     TextareaModule,
     ConfirmationDialogComponent
   ],
@@ -152,6 +160,8 @@ import { ManageApiHeadersComponent } from '../../../source-system/components/man
 })
 export class TargetSystemBaseComponent implements OnInit {
   systems: TargetSystemDTO[] = [];
+  displaySystems: TargetSystemDTO[] = [];
+  searchTerm: string = '';
   loading = false;
   showDialog = false;
   dialogTitle = 'New Target System';
@@ -188,9 +198,30 @@ export class TargetSystemBaseComponent implements OnInit {
   load(): void {
     this.loading = true;
     this.api.getAll().subscribe({
-      next: list => { this.systems = list; this.loading = false; },
+      next: list => { this.systems = list; this.applyFilter(); this.loading = false; },
       error: () => { this.loading = false; }
     });
+  }
+
+  onSearchChange(term: string): void {
+    this.searchTerm = term || '';
+    this.applyFilter();
+  }
+
+  onSearchClear(): void {
+    this.searchTerm = '';
+    this.applyFilter();
+  }
+
+  private applyFilter(): void {
+    const t = this.searchTerm.toLowerCase().trim();
+    if (!t) { this.displaySystems = this.systems.slice(); return; }
+    this.displaySystems = this.systems.filter(s =>
+      (s.name || '').toLowerCase().includes(t) ||
+      (s.description || '').toLowerCase().includes(t) ||
+      (s.apiUrl || '').toLowerCase().includes(t) ||
+      (s.apiType || '').toLowerCase().includes(t)
+    );
   }
 
   openCreate(): void {
