@@ -10,6 +10,7 @@ import { TextareaModule } from 'primeng/textarea';
 import { ToolbarModule } from 'primeng/toolbar';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { ConfirmationService, MessageService } from 'primeng/api';
+import { ConfirmationDialogComponent, ConfirmationDialogData } from '../../../source-system/components/confirmation-dialog/confirmation-dialog.component';
 import { TargetSystemResourceService } from '../../service/targetSystemResource.service';
 import { TargetSystemDTO } from '../../models/targetSystemDTO';
 import { CreateTargetSystemComponent } from '../create-target-system/create-target-system.component';
@@ -123,7 +124,12 @@ import { ManageApiHeadersComponent } from '../../../source-system/components/man
         </div>
       </div>
     </p-dialog>
-    <p-confirmDialog></p-confirmDialog>
+    <app-confirmation-dialog
+      [(visible)]="showConfirmationDialog"
+      [data]="confirmationData"
+      (confirmed)="onConfirmationConfirmed()"
+      (cancelled)="onConfirmationCancelled()">
+    </app-confirmation-dialog>
   `,
   imports: [
     CommonModule,
@@ -138,7 +144,8 @@ import { ManageApiHeadersComponent } from '../../../source-system/components/man
     CreateTargetSystemComponent,
     ManageTargetEndpointsComponent,
     ManageApiHeadersComponent,
-    TextareaModule
+    TextareaModule,
+    ConfirmationDialogComponent
   ],
   providers: [ConfirmationService, MessageService],
   styleUrls: ['./target-system-base.component.css']
@@ -218,10 +225,15 @@ export class TargetSystemBaseComponent implements OnInit {
   }
 
   confirmDelete(row: TargetSystemDTO): void {
-    this.confirm.confirm({
-      message: `Soll "${row.name}" gelöscht werden?`,
-      accept: () => this.remove(row)
-    });
+    this.systemToDelete = row;
+    this.confirmationData = {
+      title: 'Confirm Delete',
+      message: `Are you sure you want to delete "${row.name}"?`,
+      confirmLabel: 'Delete',
+      cancelLabel: 'Cancel',
+      severity: 'danger'
+    };
+    this.showConfirmationDialog = true;
   }
 
   remove(row: TargetSystemDTO): void {
@@ -240,6 +252,30 @@ export class TargetSystemBaseComponent implements OnInit {
       description: [row.description || '']
     });
     this.showDetailDialog = true;
+  }
+
+  // Confirmation Dialog state & handlers
+  showConfirmationDialog = false;
+  confirmationData: ConfirmationDialogData = {
+    title: 'Confirm Delete',
+    message: 'Are you sure?',
+    confirmLabel: 'Delete',
+    cancelLabel: 'Cancel',
+    severity: 'danger'
+  };
+  systemToDelete: TargetSystemDTO | null = null;
+
+  onConfirmationConfirmed() {
+    if (this.systemToDelete) {
+      this.remove(this.systemToDelete);
+      this.systemToDelete = null;
+    }
+    this.showConfirmationDialog = false;
+  }
+
+  onConfirmationCancelled() {
+    this.systemToDelete = null;
+    this.showConfirmationDialog = false;
   }
 
   onManageFinished(): void {
