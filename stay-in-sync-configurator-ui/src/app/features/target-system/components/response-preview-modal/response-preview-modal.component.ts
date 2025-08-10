@@ -5,6 +5,8 @@ import { ButtonModule } from 'primeng/button';
 import { ProgressSpinnerModule } from 'primeng/progressspinner';
 import { HttpClient } from '@angular/common/http';
 import { TargetSystemEndpointResourceService } from '../../service/targetSystemEndpointResource.service';
+import { TypeScriptGenerationRequest } from '../../../source-system/models/typescriptGenerationRequest';
+import { TypeScriptGenerationResponse } from '../../../source-system/models/typescriptGenerationResponse';
 
 @Component({
   selector: 'app-target-response-preview-modal',
@@ -112,9 +114,9 @@ export class TargetResponsePreviewModalComponent implements OnInit, OnChanges {
       this.typescriptError = `Invalid JSON schema: ${validation.error}`;
       return;
     }
-    const request = { jsonSchema: this.responseBodySchema } as any;
+    const request: TypeScriptGenerationRequest = { jsonSchema: this.responseBodySchema };
     this.endpointSvc.generateTypeScript(this.endpointId, request).subscribe({
-      next: (response: any) => {
+      next: (response: TypeScriptGenerationResponse) => {
         this.clearTypeScriptGenerationTimeout();
         this.isGeneratingTypeScript = false;
         this.generatedTypeScript = response.generatedTypeScript || '';

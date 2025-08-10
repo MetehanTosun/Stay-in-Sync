@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpContext, HttpEvent, HttpResponse } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { TargetSystemEndpointDTO } from '../models/targetSystemEndpointDTO';
 import { CreateTargetSystemEndpointDTO } from '../models/createTargetSystemEndpointDTO';
@@ -30,8 +30,35 @@ export class TargetSystemEndpointResourceService {
     return this.http.delete<void>(`/api/target-systems/endpoint/${id}`);
   }
 
-  generateTypeScript(endpointId: number, request: TypeScriptGenerationRequest): Observable<TypeScriptGenerationResponse> {
-    return this.http.post<TypeScriptGenerationResponse>(`/api/target-systems/endpoint/${endpointId}/generate-typescript`, request);
+  /**
+   * Generate TypeScript interface from JSON schema for target endpoint (mirrors Source service)
+   */
+  public generateTypeScript(endpointId: number, request: TypeScriptGenerationRequest, observe?: 'body', reportProgress?: boolean, options?: {
+    httpHeaderAccept?: 'application/json',
+    context?: HttpContext
+  }): Observable<TypeScriptGenerationResponse>;
+  public generateTypeScript(endpointId: number, request: TypeScriptGenerationRequest, observe?: 'response', reportProgress?: boolean, options?: {
+    httpHeaderAccept?: 'application/json',
+    context?: HttpContext
+  }): Observable<HttpResponse<TypeScriptGenerationResponse>>;
+  public generateTypeScript(endpointId: number, request: TypeScriptGenerationRequest, observe?: 'events', reportProgress?: boolean, options?: {
+    httpHeaderAccept?: 'application/json',
+    context?: HttpContext
+  }): Observable<HttpEvent<TypeScriptGenerationResponse>>;
+  public generateTypeScript(endpointId: number, request: TypeScriptGenerationRequest, observe: any = 'body', reportProgress: boolean = false, options?: {
+    httpHeaderAccept?: 'application/json',
+    context?: HttpContext
+  }): Observable<any> {
+    return this.http.request<TypeScriptGenerationResponse>('post', `/api/target-systems/endpoint/${endpointId}/generate-typescript`, {
+      body: request,
+      context: options?.context,
+      observe: observe,
+      reportProgress: reportProgress,
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': options?.httpHeaderAccept || 'application/json'
+      }
+    });
   }
 }
 

@@ -441,7 +441,7 @@ export class ManageTargetEndpointsComponent implements OnInit {
     const schema = this.form.value.responseBodySchema;
     if (!schema) { this.typescriptModel = { value: '// No schema provided', language: 'typescript' }; return; }
     this.api.generateTypeScript(this.editing?.id || 0, { jsonSchema: schema }).subscribe({
-      next: resp => this.typescriptModel = { value: resp.generatedTypeScript || '', language: 'typescript' }
+      next: (resp) => this.typescriptModel = { value: resp.generatedTypeScript || '', language: 'typescript' }
     });
   }
 
@@ -452,7 +452,7 @@ export class ManageTargetEndpointsComponent implements OnInit {
     const endpoint = this.selectedEndpointForParams ?? this.endpoints[0];
     const endpointId = endpoint?.id || 0;
     this.api.generateTypeScript(endpointId, { jsonSchema: schema }).subscribe({
-      next: resp => this.responseTypeScriptModel = { value: resp.generatedTypeScript || '', language: 'typescript' }
+      next: (resp) => this.responseTypeScriptModel = { value: resp.generatedTypeScript || '', language: 'typescript' }
     });
   }
 
