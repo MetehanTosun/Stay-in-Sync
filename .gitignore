@@ -59,3 +59,5 @@ tasks/prd-target-system-endpoint-analog-source.md
 .cursor/rules/create-prd.md
 .gitignore
 tasks/prd-target-system-endpoint-analog-source.md
+tasks/tasks-prd-target-systems-frontend.md
+.gitignore
