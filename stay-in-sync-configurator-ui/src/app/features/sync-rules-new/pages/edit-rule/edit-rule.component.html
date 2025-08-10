@@ -31,11 +31,10 @@
 <div class="node-palette-wrapper">
   <app-node-palette
     [showMainNodePalette]="showMainNodePalette"
-    (exit)="showMainNodePalette = false"
     (nodeSelected)="onNodeSelected($event)">
   </app-node-palette>
 
   <div id="node-selection-indicator" *ngIf="selectedNodeType">
-    Selected: {{ selectedNodeType }} - Click on canvas to place
+    Selected: {{ selectedNodeType }} - Click on canvas to place <!-- TODO-s -->
   </div>
 </div>

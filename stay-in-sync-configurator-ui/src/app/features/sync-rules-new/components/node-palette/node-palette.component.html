@@ -20,7 +20,11 @@
   </div>
 
   <!-- Logic Nodes Sub-Palette -->
-  <div id="logic-groups-menu" *ngIf="showLogicGroupOperators">
-
+  <div id="logic-group-submenu" *ngIf="showGroupOperators" (click)="$event.stopPropagation()">
+    <div *ngFor="let operator of getOperatorsForGroup(selectedLogicGroup!)" class="node-palette-item"
+      (click)="selectLogicOperator(operator)">
+      <span>{{ operator.operatorName }}</span>
+      <small *ngIf="operator.description">{{ operator.description }}</small>
+    </div>
   </div>
 </div>

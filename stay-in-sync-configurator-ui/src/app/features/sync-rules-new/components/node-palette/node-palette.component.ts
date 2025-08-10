@@ -11,7 +11,6 @@ import { OperatorNodesApiService } from '../../service';
 })
 export class NodePaletteComponent implements OnInit {
   @Input() showMainNodePalette = false;
-  @Output() exit = new EventEmitter<void>();
   @Output() nodeSelected = new EventEmitter<{ nodeType: NodeType, operator?: LogicOperator }>();
 
   operatorsGrouped: Map<string, LogicOperator[]> = new Map<string, LogicOperator[]>();
@@ -19,7 +18,7 @@ export class NodePaletteComponent implements OnInit {
   // Palette Status
   showLogicGroups = false;
   selectedLogicGroup: string | null = null;
-  showLogicGroupOperators = false;
+  showGroupOperators = false;
 
   constructor(private nodesApi: OperatorNodesApiService) { }
 
@@ -44,7 +43,6 @@ export class NodePaletteComponent implements OnInit {
 
   selectProviderNode() {
     this.nodeSelected.emit({ nodeType: NodeType.PROVIDER });
-    this.exit.emit();
   }
 
   selectLogicNodePalette() {
@@ -53,7 +51,6 @@ export class NodePaletteComponent implements OnInit {
 
   selectConstantNode() {
     this.nodeSelected.emit({ nodeType: NodeType.CONSTANT });
-    this.exit.emit();
   }
 
   getLogicGroups(): string[] {
@@ -61,15 +58,22 @@ export class NodePaletteComponent implements OnInit {
   }
 
   closeAllMenus() {
-    this.showMainNodePalette = false;
     this.showLogicGroups = false;
-    this.showLogicGroupOperators = false;
+    this.showGroupOperators = false;
     this.selectedLogicGroup = null;
   }
 
   selectLogicGroup(groupName: string) {
     this.selectedLogicGroup = groupName;
-    console.log('Selected logic group:', groupName); // TODO-s
+    this.showGroupOperators = true;
+  }
+
+  selectLogicOperator(operator: LogicOperator) {
+    this.nodeSelected.emit({ nodeType: NodeType.LOGIC, operator: operator });
+  }
+
+  getOperatorsForGroup(groupName: string): LogicOperator[] {
+    return this.operatorsGrouped.get(groupName) || [];
   }
 
 }

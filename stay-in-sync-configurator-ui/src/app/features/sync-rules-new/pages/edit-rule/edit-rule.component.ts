@@ -43,6 +43,7 @@ export class EditRuleComponent {
   onNodeSelected(selection: { nodeType: NodeType, operator?: LogicOperator }) {
     this.selectedNodeType = selection.nodeType;
     this.selectedOperator = selection.operator || null;
+    this.showMainNodePalette = false
     this.nodePalette.closeAllMenus();
     console.log('Selected: ', selection) // TODO-s DELETE
   }
