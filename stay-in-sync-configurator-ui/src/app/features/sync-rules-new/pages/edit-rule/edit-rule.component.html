@@ -21,13 +21,14 @@
 </div>
 
 <!-- MARK: Main Body -->
+ <!-- Graph Canvas -->
 <div class="vflow-wrapper">
   <app-vflow-canvas
-    (canvasClick)="onCanvasClick($event)"
-  >
+    (canvasClick)="onCanvasClick($event)"  >
   </app-vflow-canvas>
 </div>
 
+<!-- Node Palette -->
 <div class="node-palette-wrapper">
   <app-node-palette
     [showMainNodePalette]="showMainNodePalette"

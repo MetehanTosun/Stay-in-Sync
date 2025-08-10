@@ -1,5 +1,5 @@
 /**
- * Interface of the necessary info needed to create a new rule
+ * Interface of the necessary data needed to create a new rule
  */
 export interface RuleCreationDTO {
   name: string;

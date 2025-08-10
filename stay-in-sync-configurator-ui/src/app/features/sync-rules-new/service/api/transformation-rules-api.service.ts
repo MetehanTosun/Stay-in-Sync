@@ -15,6 +15,7 @@ export class TransformationRulesApiService {
 
   constructor(private http: HttpClient) { }
 
+  //#region Create Operations
   /**
    * Sends a POST request for the creation of a new transformation rule.
    *
@@ -26,7 +27,9 @@ export class TransformationRulesApiService {
       observe: 'response'
     });
   }
+  //#endregion
 
+  //#region Read Operations
   /**
    * Sends a GET request to read a specific transformation rules metadata.
    *
@@ -45,7 +48,9 @@ export class TransformationRulesApiService {
   getRules(): Observable<TransformationRule[]> {
     return this.http.get<TransformationRule[]>(this.apiUrl);
   }
+  //#endregion
 
+  //#region Update Operations
   /**
    * Sends a PUT request to update a specific transformation rules name or description.
    *
@@ -56,7 +61,9 @@ export class TransformationRulesApiService {
   updateRule(ruleId: number, updatedRuleDto: Partial<RuleCreationDTO>): Observable<TransformationRule> {
     return this.http.put<TransformationRule>(`${this.apiUrl}/${ruleId}`, updatedRuleDto);
   }
+  //#endregion
 
+  //#region Delete Operations
   /**
    * Sends a DELETE request to delete a specific transformation rule
    *
@@ -66,4 +73,5 @@ export class TransformationRulesApiService {
   deleteRule(ruleId: number): Observable<void> {
     return this.http.delete<void>(`${this.apiUrl}/${ruleId}`);
   }
+  //#endregion
 }

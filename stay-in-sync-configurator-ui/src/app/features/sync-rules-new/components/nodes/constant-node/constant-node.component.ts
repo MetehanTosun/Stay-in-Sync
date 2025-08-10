@@ -1,6 +1,9 @@
 import { Component } from '@angular/core';
 import { CustomNodeComponent, HandleComponent } from 'ngx-vflow';
 
+/**
+ * A node representing a static constant within a vflow graph
+ */
 @Component({
   selector: 'app-constant-node',
   imports: [HandleComponent],

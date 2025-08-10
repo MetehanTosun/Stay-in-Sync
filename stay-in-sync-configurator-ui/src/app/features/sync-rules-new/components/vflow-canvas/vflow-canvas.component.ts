@@ -2,9 +2,12 @@ import { Component, EventEmitter, OnInit, Output } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import { Edge, Node, Vflow } from 'ngx-vflow';
 import { GraphAPIService } from '../../service';
-import { LogicOperator, NodeType, VFlowGraphDTO } from '../../models';
+import { LogicOperator as LogicOperatorMeta, NodeType, VFlowGraphDTO } from '../../models';
 import { ConstantNodeComponent, FinalNodeComponent, LogicNodeComponent, ProviderNodeComponent } from '..';
 
+/**
+ * The canvas of the rule editor on which the rule graph is visualized
+ */
 @Component({
   selector: 'app-vflow-canvas',
   imports: [Vflow],
@@ -12,6 +15,7 @@ import { ConstantNodeComponent, FinalNodeComponent, LogicNodeComponent, Provider
   styleUrl: './vflow-canvas.component.css'
 })
 export class VflowCanvasComponent implements OnInit {
+  //#region Setup
   nodes: Node[] = [];
   edges: Edge[] = [];
 
@@ -29,7 +33,24 @@ export class VflowCanvasComponent implements OnInit {
       alert("Unable to load graph - cannot read rule id") // TODO-s err
     }
   }
+  //#endregion
 
+  //#region Template Methods
+  /**
+   * Calculates and emits the mouse position on the vflow canvas
+   * @param mouseEvent
+   */
+  onCanvasClick(mouseEvent: MouseEvent) {
+    // Gets the canvas element's position and size relative to the viewport
+    const rect = (mouseEvent.currentTarget as HTMLElement).getBoundingClientRect();
+    const x = mouseEvent.clientX - rect.left;
+    const y = mouseEvent.clientY - rect.top;
+
+    this.canvasClick.emit({ x, y });
+  }
+  //#endregion
+
+  //#region Graph Operations
   /**
    * This loads the transformation rules graph from the backend and assigns the corresponding type
    * @param ruleId
@@ -44,7 +65,6 @@ export class VflowCanvasComponent implements OnInit {
           id: node.id.toString(),
           type: this.getNodeType(node.type)
         }));
-        console.log(this.nodes) // TODO-s DELETE
 
         // loads edges
         this.edges = graph.edges.map(edge => ({
@@ -61,23 +81,20 @@ export class VflowCanvasComponent implements OnInit {
   }
 
   /**
-   * Calculates and emits the mouse position on the vflow canvas
-   * @param mouseEvent
+   * Creates and adds a new node to the vflow canvas
+   * * This does not persist the node in the database
+   *
+   * @param nodeType The node type of to be created node
+   * @param pos The position of the new node
+   * @param operator Optional: The operator of the new (logic) node
    */
-  onCanvasClick(mouseEvent: MouseEvent) {
-    // Gets the canvas element's position and size relative to the viewport
-    const rect = (mouseEvent.currentTarget as HTMLElement).getBoundingClientRect();
-    const x = mouseEvent.clientX - rect.left;
-    const y = mouseEvent.clientY - rect.top;
-
-    this.canvasClick.emit({ x, y });
-    console.log("Mouse click registered at: ", { x, y }); // TODO-s DELETE
-  }
-
-  addNode(nodeType: NodeType, pos: { x: number, y: number }, operator?: LogicOperator) {
+  addNode(nodeType: NodeType, pos: { x: number, y: number }, operator?: LogicOperatorMeta) {
+    // Standard node data with node name
     let nodeData: any = {
       name: `${nodeType} Node`
     };
+
+    // Add operator meta data if applicable
     if (nodeType === NodeType.LOGIC && operator) {
       nodeData = {
         ...operator,
@@ -85,6 +102,7 @@ export class VflowCanvasComponent implements OnInit {
       }
     }
 
+    // Create and add new node
     const newNode: Node = {
       id: `${Date.now()}-${crypto.randomUUID().split('-')[0]}`,
       point: pos,
@@ -98,8 +116,9 @@ export class VflowCanvasComponent implements OnInit {
     };
     this.nodes = [...this.nodes, newNode];
   }
+  //#endregion
 
-  // #region Helpers
+  //#region Helpers
   getNodeType(nodeType: NodeType) {
     switch (nodeType) {
       case NodeType.PROVIDER: return ProviderNodeComponent;
@@ -111,6 +130,6 @@ export class VflowCanvasComponent implements OnInit {
         throw Error("Unknown NodeType"); // TODO-s err
     }
   }
-  // #region
+  //#region
 
 }

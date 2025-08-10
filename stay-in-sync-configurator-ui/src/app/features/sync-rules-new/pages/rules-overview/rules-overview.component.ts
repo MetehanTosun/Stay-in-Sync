@@ -7,6 +7,9 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { HttpResponse } from '@angular/common/http';
 
+/**
+ * The page component responsible for viewing the list of transformation rule graphs
+ */
 @Component({
   selector: 'app-rules-overview',
   imports: [
@@ -18,12 +21,12 @@ import { HttpResponse } from '@angular/common/http';
   styleUrl: './rules-overview.component.css'
 })
 export class RulesOverviewComponent implements OnInit {
+  //#region Setup
   rules: TransformationRule[] = [];
   isLoading = true;
-
-  // Modal States
   showCreateRule = false;
 
+  // Input Data
   newRule: RuleCreationDTO = {
     name: '',
     description: ''
@@ -37,8 +40,12 @@ export class RulesOverviewComponent implements OnInit {
   ngOnInit() : void {
     this.loadRules();
   }
+  //#endregion
 
-  // #region Template Methods
+  //#region Template Methods
+  /**
+   * Opens the modal to receive user input for the creation of a new rule
+   */
   openCreateRuleModal() {
     this.showCreateRule = true;
     this.newRule = {
@@ -47,6 +54,9 @@ export class RulesOverviewComponent implements OnInit {
     };
   }
 
+  /**
+   * Closes the rule creation modal
+   */
   closeCreateRuleModal() {
     this.showCreateRule = false;
   }
@@ -58,9 +68,9 @@ export class RulesOverviewComponent implements OnInit {
   editRule(ruleId: number) {
     this.router.navigate(['/sync-rules-new/edit-rule', ruleId]); // TODO-s update
   }
-  // #endregion
+  //#endregion
 
-  // #region REST Methods
+  //#region REST Methods
   /**
    * Creates a new rule with the name and description chosen by the user
    */
@@ -117,9 +127,9 @@ export class RulesOverviewComponent implements OnInit {
       }
     })
   }
-  // #endregion
+  //#endregion
 
-  // #region Helpers
+  //#region Helpers
   /**
    * Checks the current user input within the rule creation form
    * @returns true if the user input is valid
@@ -130,5 +140,5 @@ export class RulesOverviewComponent implements OnInit {
     }
     return false;
   }
-  // #endregion
+  //#endregion
 }

@@ -15,8 +15,7 @@ export class OperatorNodesApiService {
 
   constructor(private http: HttpClient) { }
 
-  // TODO-s Check if any Methods are redundant
-
+  //#region Read Operations
   /**
    * Sends a GET request to receive a collection of all available logic operators
    */
@@ -42,27 +41,5 @@ export class OperatorNodesApiService {
       })
     );
   }
-
-  /**
-   * Extracts all operator categories of all available operators
-   * @returns all operator categories
-   */
-  getOperatorCategories(): Observable<string[]> {
-    return this.getOperators().pipe(
-      map(operators => [...new Set(operators.map(op => op.category))])
-    );
-  }
-
-  /**
-   * Extracts all possible data types used in transformation graphs of all available operators
-   * @returns data types used in transformation graphs
-   */
-  getGraphDataTypes(): Observable<string[]> {
-    return this.getOperators().pipe(
-      map(operators => [...new Set([
-        ...operators.flatMap(op => op.inputTypes),
-        ...operators.map(op => op.outputType)
-      ])])
-    );
-  }
+  //#endregion
 }

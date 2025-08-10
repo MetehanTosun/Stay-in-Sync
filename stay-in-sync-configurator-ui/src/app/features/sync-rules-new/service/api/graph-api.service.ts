@@ -5,7 +5,7 @@ import { VFlowGraphDTO } from '../../models';
 
 /**
  * An injectable singleton class which allows the communication with the backend
- * regarding all endpoint to manage transformation graphs
+ * regarding all endpoint to manage transformation graphs.
  */
 @Injectable({
   providedIn: 'root'
@@ -15,7 +15,7 @@ export class GraphAPIService {
 
   constructor(private http: HttpClient) { }
 
-
+  //#region Read Operations
   /**
    * Sends a GET request to read a specific transformation graph.
    *
@@ -25,7 +25,9 @@ export class GraphAPIService {
   getGraph(ruleId: number): Observable<VFlowGraphDTO> {
     return this.http.get<VFlowGraphDTO>(`${this.apiUrl}/${ruleId}/graph`);
   }
+  //#endregion
 
+  //#region Update Operations
   /**
    * Sends a PUT request to update a specific transformation graph.
    *
@@ -36,4 +38,5 @@ export class GraphAPIService {
   updateGraph(ruleId: number, graphDto: VFlowGraphDTO): Observable<unknown> {
     return this.http.put<unknown>(`${this.apiUrl}/${ruleId}`, graphDto);
   }
+  //#endregion
 }

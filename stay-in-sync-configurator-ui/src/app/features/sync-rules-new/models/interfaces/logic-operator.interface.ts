@@ -5,6 +5,6 @@ export interface LogicOperator {
   operatorName: string;
   description: string;
   category: string;
-  outputType: string;
   inputTypes: string[];
+  outputType: string;
 }

@@ -1,13 +1,13 @@
 <div class="node-palette-container">
   <!-- Main Menu -->
   <div id="main-node-palette-menu" *ngIf="showMainNodePalette">
-    <div class="node-palette-item" (click)="selectProviderNode()">
+    <div class="node-palette-item" (click)="selectNode(NodeType.PROVIDER)">
       Provider Node
     </div>
     <div class="node-palette-item" (click)="selectLogicNodePalette()">
       Logic Node
     </div>
-    <div class="node-palette-item" (click)="selectConstantNode()">
+    <div class="node-palette-item" (click)="selectNode(NodeType.CONSTANT)">
       Constant Node
     </div>
   </div>
@@ -22,7 +22,7 @@
   <!-- Logic Nodes Sub-Palette -->
   <div id="logic-group-submenu" *ngIf="showGroupOperators" (click)="$event.stopPropagation()">
     <div *ngFor="let operator of getOperatorsForGroup(selectedLogicGroup!)" class="node-palette-item"
-      (click)="selectLogicOperator(operator)">
+      (click)="selectNode(NodeType.LOGIC, operator)">
       <span>{{ operator.operatorName }}</span>
       <small *ngIf="operator.description">{{ operator.description }}</small>
     </div>

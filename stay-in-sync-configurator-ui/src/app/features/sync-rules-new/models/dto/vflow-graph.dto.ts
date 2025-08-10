@@ -1,13 +1,17 @@
-import { CustomNodeComponent } from "ngx-vflow";
 import { NodeType } from "..";
-import { WritableSignal } from "@angular/core";
 
+/**
+ * The DTO representation the backend sends of the vflow graph
+ */
 export interface VFlowGraphDTO {
   nodes: VFlowNode[];
   edges: VFlowEdge[];
   errors: any[];
 }
 
+/**
+ * The DTO representation the backend sends of a vflow node
+ */
 export interface VFlowNode {
   id: number;
   point: { x: number, y: number};
@@ -17,6 +21,9 @@ export interface VFlowNode {
   data: VFlowNodeData;
 }
 
+/**
+ * The DTO representation the backend sends of a vflow node's data
+ */
 export interface VFlowNodeData {
   name: string;
   nodeType: NodeType;
@@ -30,14 +37,14 @@ export interface VFlowNodeData {
 
   // For LOGIC nodes
   operatorType?: string;
-  category?: string;
-  inputNodes?: { id: number; orderIndex: number }[];
-
-  outputType?: string;
   inputTypes?: string[];
+  outputType?: string;
   inputLimit?: number;
 }
 
+/**
+ * The DTO representation the backend sends of a vflow edge
+ */
 export interface VFlowEdge {
   id: string;
   source: string;
