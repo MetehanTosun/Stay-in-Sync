@@ -5,14 +5,14 @@
   <p-table
     #dtAssets
     [value]="assets"
-    dataKey="id"
+    dataKey="assetId"
     [rows]="10"
     [rowsPerPageOptions]="[10, 25, 50]"
     [loading]="assetLoading"
     selectionMode="single"
     (onRowSelect)="viewAssetDetails($event)"
     [paginator]="true"
-    [globalFilterFields]="['id', 'name', 'url', 'type', 'contentType', 'description']"
+    [globalFilterFields]="['assetId', 'name', 'url', 'type', 'contentType', 'description']"
     [tableStyle]="{ 'min-width': '60rem' }"
     styleClass="p-datatable-striped p-datatable-gridlines"
     responsiveLayout="scroll"
@@ -35,14 +35,14 @@
 
     <ng-template pTemplate="header">
       <tr>
-        <th style="width: 15%" pSortableColumn="id">ID <p-sortIcon field="id"></p-sortIcon></th>
+        <th style="width: 15%" pSortableColumn="assetId">ID <p-sortIcon field="assetId"></p-sortIcon></th>
         <th style="width: 40%" pSortableColumn="name">Name <p-sortIcon field="name"></p-sortIcon></th>
         <th style="width: 10%" pSortableColumn="type">Type <p-sortIcon field="type"></p-sortIcon></th>
         <th style="width: 20%" pSortableColumn="contentType">Content Type <p-sortIcon field="contentType"></p-sortIcon></th>
         <th style="width: 15%">Actions</th>
       </tr>
       <tr>
-        <th><p-columnFilter type="text" field="id" placeholder="Filter by ID"></p-columnFilter></th>
+        <th><p-columnFilter type="text" field="assetId" placeholder="Filter by ID"></p-columnFilter></th>
         <th><p-columnFilter type="text" field="name" placeholder="Filter by Name"></p-columnFilter></th>
         <th><p-columnFilter type="text" field="type" placeholder="Filter by Type"></p-columnFilter></th>
         <th><p-columnFilter type="text" field="contentType" placeholder="Filter by Content Type"></p-columnFilter></th>
@@ -52,7 +52,7 @@
 
     <ng-template pTemplate="body" let-asset>
       <tr [pSelectableRow]="asset" [pTooltip]="asset.description" tooltipPosition="top">
-        <td>{{ asset.id }}</td>
+        <td>{{ asset.assetId }}</td>
         <td>{{ asset.name }}</td>
         <td><p-tag [value]="asset.type"></p-tag></td>
         <td>{{ asset.contentType }}</td>
@@ -406,10 +406,10 @@
                   #dtDialogAssets
                   [value]="assetsForDialog"
                   [(selection)]="selectedAssetsInDialog"
-                  dataKey="id"
+                  dataKey="assetId"
                   [rows]="5"
                   [paginator]="true"
-                  [globalFilterFields]="['id', 'name', 'type']"
+                  [globalFilterFields]="['assetId', 'name', 'type']"
                   styleClass="p-datatable-sm"
                   [tableStyle]="{'min-width': '50rem'}"
                   [scrollable]="true"
@@ -427,14 +427,14 @@
                   <tr>
                       <th style="width: 3rem"><p-tableHeaderCheckbox></p-tableHeaderCheckbox></th>
                       <th style="width: 50%" pSortableColumn="name">Name <p-sortIcon field="name"></p-sortIcon></th>
-                      <th style="width: 50%" pSortableColumn="id">ID <p-sortIcon field="id"></p-sortIcon></th>
+                      <th style="width: 50%" pSortableColumn="assetId">ID <p-sortIcon field="assetId"></p-sortIcon></th>
                   </tr>
               </ng-template>
               <ng-template pTemplate="body" let-asset>
                   <tr>
                       <td><p-tableCheckbox [value]="asset"></p-tableCheckbox></td>
                       <td>{{ asset.name }}</td>
-                      <td>{{ asset.id }}</td>
+                      <td>{{ asset.assetId }}</td>
                   </tr>
               </ng-template>
               <ng-template pTemplate="emptymessage">
@@ -516,10 +516,10 @@
           #dtEditDialogAssets
           [value]="assetsForDialog"
           [(selection)]="selectedAssetsInDialog"
-          dataKey="id"
+          dataKey="assetId"
           [rows]="5"
           [paginator]="true"
-          [globalFilterFields]="['id', 'name', 'type']"
+          [globalFilterFields]="['assetId', 'name', 'type']"
           styleClass="p-datatable-sm"
           [tableStyle]="{'min-width': '50rem'}"
           [scrollable]="true"
@@ -537,14 +537,14 @@
             <tr>
               <th style="width: 3rem"><p-tableHeaderCheckbox></p-tableHeaderCheckbox></th>
               <th style="width: 50%" pSortableColumn="name">Name <p-sortIcon field="name"></p-sortIcon></th>
-              <th style="width: 50%" pSortableColumn="id">ID <p-sortIcon field="id"></p-sortIcon></th>
+              <th style="width: 50%" pSortableColumn="assetId">ID <p-sortIcon field="assetId"></p-sortIcon></th>
             </tr>
           </ng-template>
           <ng-template pTemplate="body" let-asset>
             <tr>
               <td><p-tableCheckbox [value]="asset"></p-tableCheckbox></td>
               <td>{{ asset.name }}</td>
-              <td>{{ asset.id }}</td>
+              <td>{{ asset.assetId }}</td>
             </tr>
           </ng-template>
           <ng-template pTemplate="emptymessage">
@@ -612,7 +612,7 @@
               <ng-template pTemplate="body" let-asset>
                 <tr>
                   <td>{{ asset.name }}</td>
-                  <td>{{ asset.id }}</td>
+                  <td>{{ asset.assetId }}</td>
                   <td><p-tag [value]="asset.type"></p-tag></td>
                 </tr>
               </ng-template>

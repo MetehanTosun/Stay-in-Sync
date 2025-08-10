@@ -31,6 +31,7 @@ import { AssetService } from './services/asset.service';
 import { PolicyService } from './services/policy.service';
 import { EdcInstanceService } from '../edc-instances/services/edc-instance.service';
 import {HttpErrorService} from '../../../../core/services/http-error.service';
+import { lastValueFrom } from 'rxjs';
 
 @Component({
   selector: 'app-edc-assets-and-policies',
@@ -383,24 +384,25 @@ export class EdcAssetsAndPoliciesComponent implements OnInit {
     );
   }
 
-  private loadAssets(): void {
+  private async loadAssets(): Promise<void> {
     this.assetLoading = true;
-    Promise.all([
-      this.assetService.getAssets(),
-      this.assetService.getOdrlAssets()
-    ]).then(([assets, odrlAssets]) => {
+    try {
+      const [assets, odrlAssets] = await Promise.all<any>([
+        lastValueFrom(this.assetService.getAssets()),
+        this.assetService.getOdrlAssets()
+      ]);
       this.assets = assets;
       this.allOdrlAssets = odrlAssets;
       // If a dialog that uses the asset list is open, refresh its content
       if (this.displayNewContractPolicyDialog || this.displayEditContractPolicyDialog) {
         this.refreshAssetsForDialog();
       }
-    })
-      .catch((error) => {
-        console.error('Failed to load assets:', error);
-        this.messageService.add({severity: 'error', summary: 'Error', detail: 'Could not load assets.'});
-      })
-      .finally(() => (this.assetLoading = false));
+    } catch (error) {
+      console.error('Failed to load assets:', error);
+      this.messageService.add({severity: 'error', summary: 'Error', detail: 'Could not load assets.'});
+    } finally {
+      this.assetLoading = false;
+    }
   }
 
   async loadPoliciesAndDefinitions() {
@@ -629,7 +631,7 @@ export class EdcAssetsAndPoliciesComponent implements OnInit {
   }
 
   editAsset(asset: Asset) {
-    this.assetToEditODRL = this.allOdrlAssets.find(a => a['@id'] === asset.id) ?? null;
+    this.assetToEditODRL = this.allOdrlAssets.find(a => a['@id'] === asset.assetId) ?? null;
     if (this.assetToEditODRL) {
       this.expertModeJsonContent = JSON.stringify(this.assetToEditODRL, null, 2);
       this.displayEditAssetDialog = true;
@@ -1096,7 +1098,7 @@ export class EdcAssetsAndPoliciesComponent implements OnInit {
       const parentPolicy = this.allAccessPolicies.find(p => p.id === accessPolicyId);
       this.allContractDefinitions.unshift({
         id: contractDefId,
-        assetId: this.selectedAssetsInDialog.map(a => a.id).join(', '), // Represent as comma-separated list
+        assetId: this.selectedAssetsInDialog.map(a => a.assetId).join(', '), // Represent as comma-separated list
         bpn: parentPolicy?.bpn || 'Unknown BPN',
         accessPolicyId: accessPolicyId
       });
@@ -1312,7 +1314,7 @@ export class EdcAssetsAndPoliciesComponent implements OnInit {
         this.newContractPolicy.accessPolicyId = accessPolicyObject as any;
 
         this.selectedAssetsInDialog = this.assetsForDialog.filter(dialogAsset => {
-          const selector = assetSelectors.find(s => s.operandRight === dialogAsset.id);
+          const selector = assetSelectors.find(s => s.operandRight === dialogAsset.assetId);
           if (selector) {
             dialogAsset.operator = selector.operator === '=' ? 'eq' : selector.operator;
             return true;
@@ -1374,7 +1376,7 @@ export class EdcAssetsAndPoliciesComponent implements OnInit {
         }
 
         this.selectedAssetsInDialog = this.assetsForDialog.filter(dialogAsset => {
-          const selector = assetSelectors.find(s => s.operandRight === dialogAsset.id);
+          const selector = assetSelectors.find(s => s.operandRight === dialogAsset.assetId);
           if (selector) {
             dialogAsset.operator = selector.operator === '=' ? 'eq' : selector.operator;
             return true;
@@ -1436,7 +1438,7 @@ export class EdcAssetsAndPoliciesComponent implements OnInit {
      // Pre-select the assets that are part of this contract definition
      const assetSelectors = this.contractDefinitionToEditODRL.assetsSelector || [];
      this.selectedAssetsInDialog = this.assetsForDialog.filter(dialogAsset => {
-       const selector = assetSelectors.find(s => s.operandRight === dialogAsset.id);
+       const selector = assetSelectors.find(s => s.operandRight === dialogAsset.assetId);
        if (selector) {
          dialogAsset.operator = selector.operator === '=' ? 'eq' : selector.operator;
          return true;
@@ -1581,7 +1583,7 @@ export class EdcAssetsAndPoliciesComponent implements OnInit {
     return this.selectedAssetsInDialog.map(selectedAsset => ({
       operandLeft: 'https://w3id.org/edc/v0.0.1/ns/id',
       operator: selectedAsset.operator,
-      operandRight: selectedAsset.id,
+      operandRight: selectedAsset.assetId,
     }));
   }
 
@@ -1592,7 +1594,7 @@ export class EdcAssetsAndPoliciesComponent implements OnInit {
   private refreshAssetsForDialog(): void {
     this.assetsForDialog = this.assets.map(asset => ({
       ...asset,
-      operator: this.selectedAssetsInDialog.find(s => s.id === asset.id)?.operator || 'eq'
+      operator: this.selectedAssetsInDialog.find(s => s.assetId === asset.assetId)?.operator || 'eq'
     }));
   }
 
@@ -1678,7 +1680,7 @@ export class EdcAssetsAndPoliciesComponent implements OnInit {
   viewAssetDetails(event: TableRowSelectEvent): void {
     this.viewingEntityType = 'asset';
     const asset = event.data as Asset;
-    const odrlAsset = this.allOdrlAssets.find(a => a['@id'] === asset.id);
+    const odrlAsset = this.allOdrlAssets.find(a => a['@id'] === asset.assetId);
     if (odrlAsset) {
       this.jsonToView = JSON.stringify(odrlAsset, null, 2);
       this.viewDialogHeader = `Details for Asset: ${asset.name}`;
@@ -1716,7 +1718,7 @@ export class EdcAssetsAndPoliciesComponent implements OnInit {
 
       // Then find linked Assets
       const assetIds = new Set(odrlContractDef.assetsSelector.map(s => s.operandRight));
-      this.linkedAssets = this.assets.filter(a => assetIds.has(a.id));
+      this.linkedAssets = this.assets.filter(a => assetIds.has(a.assetId));
 
       this.displayViewDialog = true;
     } else {
