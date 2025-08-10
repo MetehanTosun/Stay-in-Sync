@@ -9,6 +9,8 @@ import de.unistuttgart.stayinsync.syncnode.domain.TransformJob;
 import de.unistuttgart.stayinsync.syncnode.logic_engine.LogicGraphEvaluator;
 import de.unistuttgart.stayinsync.transport.exception.GraphEvaluationException;
 import de.unistuttgart.stayinsync.transport.transformation_rule_shared.nodes.Node;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.Timer;
 import io.quarkus.logging.Log;
 import io.smallrye.mutiny.Uni;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -21,6 +23,7 @@ import java.util.Map;
 @ApplicationScoped
 public class TransformationExecutionService {
 
+    @Inject
     LogicGraphEvaluator logicGraphEvaluator;
 
     @Inject
@@ -32,9 +35,11 @@ public class TransformationExecutionService {
     @Inject
     ObjectMapper objectMapper;
 
+    @Inject
+    MeterRegistry meterRegistry;
 
     /**
-     * Asynchronously evaluates the logic graph and, if the condition passes,
+     * Asynchronously evaluates the logic graph and if the condition passes,
      * executes the script transformation.
      *
      * @param job         The TransformJob containing the source data.
@@ -43,7 +48,7 @@ public class TransformationExecutionService {
      *         pre-condition check failed.
      */
     public Uni<TransformationResult> execute(TransformJob job, List<Node> graphNodes){
-        return Uni.createFrom().item(()-> {
+        return Uni.createFrom().item(() -> {
             Log.infof("Job %s: Evaluating pre-condition logic graph...", job.jobId());
             TypeReference<Map<String, JsonNode>> typeRef = new TypeReference<>() {};
             Map<String, JsonNode> dataContext = objectMapper.convertValue(job.sourceData(), typeRef);
@@ -57,7 +62,22 @@ public class TransformationExecutionService {
         }).runSubscriptionOn(managedExecutor).onItem().transformToUni(conditionMet -> {
             if (conditionMet) {
                 Log.infof("Job %s: Pre-condition PASSED. Proceeding to script transformation...", job.jobId());
-                return scriptEngineService.transformAsync(job);
+
+                // Start timer for script execution
+                Timer.Sample sample = Timer.start(meterRegistry);
+
+                return scriptEngineService.transformAsync(job)
+                        .invoke(result -> {
+                            // Stop timer and record metric
+                            sample.stop(
+                                    meterRegistry.timer(
+                                            "script_execution_time_seconds",
+                                            "scriptId", job.scriptId() != null ? job.scriptId() : "unknown"
+                                    )
+                            );
+                            Log.infof("Job %s: Script execution completed.", job.jobId());
+                        });
+
             } else {
                 Log.infof("Job %s: Pre-condition FAILED. Skipping script transformation...", job.jobId());
                 return Uni.createFrom().nullItem();
