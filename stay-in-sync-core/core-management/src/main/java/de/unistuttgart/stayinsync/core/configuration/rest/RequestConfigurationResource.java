@@ -17,7 +17,6 @@ import org.eclipse.microprofile.openapi.annotations.Operation;
 import org.eclipse.microprofile.openapi.annotations.enums.SchemaType;
 import org.eclipse.microprofile.openapi.annotations.headers.Header;
 import org.eclipse.microprofile.openapi.annotations.media.Content;
-import org.eclipse.microprofile.openapi.annotations.media.ExampleObject;
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
 import org.eclipse.microprofile.openapi.annotations.parameters.Parameter;
 import org.eclipse.microprofile.openapi.annotations.parameters.RequestBody;
@@ -59,8 +58,7 @@ public class RequestConfigurationResource {
                     required = true,
                     content = @Content(
                             mediaType = APPLICATION_JSON,
-                            schema = @Schema(implementation = CreateArcDTO.class),
-                            examples = @ExampleObject(name = "valid request config", value = Examples.VALID_EXAMPLE_REQUEST_CONFIGURATION_CREATE)
+                            schema = @Schema(implementation = CreateArcDTO.class)
                     )
             )
             @Valid CreateArcDTO arcDto,
@@ -178,8 +176,7 @@ public class RequestConfigurationResource {
             description = "Gets a api-request-configuration for a given id",
             content = @Content(
                     mediaType = APPLICATION_JSON,
-                    schema = @Schema(implementation = CreateRequestConfigurationDTO.class),
-                    examples = @ExampleObject(name = "api-request-configuration", value = Examples.VALID_EXAMPLE_SYNCJOB)
+                    schema = @Schema(implementation = CreateRequestConfigurationDTO.class)
             )
     )
     @APIResponse(
@@ -232,8 +229,7 @@ public class RequestConfigurationResource {
                                                             required = true,
                                                             content = @Content(
                                                                     mediaType = APPLICATION_JSON,
-                                                                    schema = @Schema(implementation = CreateRequestConfigurationDTO.class),
-                                                                    examples = @ExampleObject(name = "valid_sync_job", value = Examples.VALID_EXAMPLE_SYNCJOB)
+                                                                    schema = @Schema(implementation = CreateRequestConfigurationDTO.class)
                                                             )
                                                     )
                                                     @PathParam("id") Long id, @Valid @NotNull CreateRequestConfigurationDTO SourceSystemApiRequestConfigurationDTO) {

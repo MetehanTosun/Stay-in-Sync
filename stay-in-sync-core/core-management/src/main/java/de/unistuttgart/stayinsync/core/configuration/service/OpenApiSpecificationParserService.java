@@ -1,5 +1,6 @@
 package de.unistuttgart.stayinsync.core.configuration.service;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.SourceSystem;
 import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.SourceSystemEndpoint;
 import de.unistuttgart.stayinsync.core.configuration.rest.dtos.ApiEndpointQueryParamDTO;
@@ -36,6 +37,9 @@ public class OpenApiSpecificationParserService {
     TargetSystemEndpointService targetSystemEndpointService;
 
     @Inject
+    ObjectMapper objectMapper;
+
+    @Inject
     ApiEndpointQueryParamService apiEndpointQueryParamService;
 
     @Inject
@@ -51,16 +55,15 @@ public class OpenApiSpecificationParserService {
         try {
             String specContent;
             
-            // Prüfe, ob es eine URL ist
+           
             if (sourceSystem.openApiSpec.startsWith("http")) {
                 Log.infof("📥 Downloading OpenAPI spec from URL: %s", sourceSystem.openApiSpec);
                 specContent = downloadFromUrl(sourceSystem.openApiSpec);
             } else {
                 Log.infof("📄 Using provided OpenAPI spec content directly");
-                specContent = sourceSystem.openApiSpec; // Direkt verwenden - ist bereits String!
+                specContent = sourceSystem.openApiSpec; 
             }
     
-            // Parse die Spezifikation
             SwaggerParseResult result = new OpenAPIV3Parser().readContents(specContent, null, new ParseOptions());
             OpenAPI openAPI = result.getOpenAPI();
     
@@ -121,7 +124,7 @@ public class OpenApiSpecificationParserService {
         }
     }
     
-    // Neue Methode hinzufügen
+    
     private String downloadFromUrl(String url) throws Exception {
         try (var client = java.net.http.HttpClient.newHttpClient()) {
             var request = java.net.http.HttpRequest.newBuilder()
@@ -148,7 +151,7 @@ public class OpenApiSpecificationParserService {
         for (Map.Entry<String, SecurityScheme> entry : openAPI.getComponents().getSecuritySchemes().entrySet()) {
             SecurityScheme securityScheme = entry.getValue();
 
-            // cookie/query based schemes are skipped, we only care about schemes resulting in a request header.
+            
             if (securityScheme.getIn() != SecurityScheme.In.HEADER && securityScheme.getType() != SecurityScheme.Type.HTTP) {
                 continue;
             }
@@ -165,7 +168,7 @@ public class OpenApiSpecificationParserService {
                 headerType = ApiRequestHeaderType.AUTHORIZATION;
 
             } else {
-                continue; // TODO: handle possible future types.
+                continue;
             }
 
             boolean alreadyExists = apiHeaderService.findAllHeadersBySyncSystemId(sourceSystem.id)
@@ -197,9 +200,38 @@ public class OpenApiSpecificationParserService {
                 PathItem.HttpMethod httpMethod = opEntry.getKey();
                 Operation operation = opEntry.getValue();
 
+                String requestBodySchema = null;
+                if (operation.getRequestBody() != null && operation.getRequestBody().getContent() != null) {
+                    var mediaType = operation.getRequestBody().getContent().get("application/json");
+                    if (mediaType != null && mediaType.getSchema() != null) {
+                        try {
+                            requestBodySchema = objectMapper.writeValueAsString(mediaType.getSchema());
+                        } catch (Exception e) {
+                            requestBodySchema = null;
+                        }
+                    }
+                }
+
+                String responseBodySchema = null;
+                if (operation.getResponses() != null && operation.getResponses().get("200") != null) {
+                    var response = operation.getResponses().get("200");
+                    if (response.getContent() != null && response.getContent().get("application/json") != null) {
+                        var mediaType = response.getContent().get("application/json");
+                        if (mediaType.getSchema() != null) {
+                            try {
+                                responseBodySchema = objectMapper.writeValueAsString(mediaType.getSchema());
+                            } catch (Exception e) {
+                                responseBodySchema = null;
+                            }
+                        }
+                    }
+                }
+
                 CreateSourceSystemEndpointDTO endpointDTO = new CreateSourceSystemEndpointDTO(
                         path,
-                        httpMethod.toString()
+                        httpMethod.toString(),
+                        requestBodySchema,
+                        responseBodySchema
                         // operation.getSummary() != null ? operation.getSummary() : operation.getDescription() // TODO: summary for endpoint?
                 );
                 SourceSystemEndpoint newEndpoint = sourceSystemEndpointService.persistSourceSystemEndpoint(endpointDTO, sourceSystem.id);
@@ -286,8 +318,8 @@ public class OpenApiSpecificationParserService {
                 parameter.getName(),
                 paramType,
                 schemaType,
-                null, // TODO: not sure, which values this is
-                null // TODO: Add already used values as a suggestion
+                null, 
+                null 
         );
         apiEndpointQueryParamService.persistApiQueryParam(paramDTO, endpoint.id);
     }

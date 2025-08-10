@@ -6,12 +6,13 @@ import com.rabbitmq.client.CancelCallback;
 import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.DeliverCallback;
 import com.rabbitmq.client.Delivery;
-import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.SourceSystemEndpoint;
-import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.SyncJob;
 import de.unistuttgart.stayinsync.core.configuration.exception.CoreManagementException;
+import de.unistuttgart.stayinsync.transport.dto.SourceSystemApiRequestConfigurationMessageDTO;
+import de.unistuttgart.stayinsync.transport.dto.TransformationMessageDTO;
 import io.quarkiverse.rabbitmqclient.RabbitMQClient;
 import io.quarkus.logging.Log;
 import io.quarkus.runtime.StartupEvent;
+import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.event.Observes;
 import jakarta.inject.Inject;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
@@ -22,6 +23,7 @@ import java.io.UnsupportedEncodingException;
 /**
  * This class is supposed to handle messages from the core-management, that were rejected by the consumers
  */
+@ApplicationScoped
 public class DeadLetterConsumer {
     @Inject
     RabbitMQClient rabbitMQClient;
@@ -50,18 +52,17 @@ public class DeadLetterConsumer {
             Log.info("Opening rabbitMQ channel");
             channel = rabbitMQClient.connect().openChannel().orElseThrow(() -> new RuntimeException("Unable to establish connection to rabbitMQ"));
             channel.exchangeDeclare("dead-letter-exchange", "direct", true);
-            channel.exchangeDeclare("syncjob-exchange", "direct", true);
 
 
-            channel.queueDeclare("failed-syncjobs-queue", true, false, false, null);
-            channel.queueBind("failed-syncjobs-queue", "syncjob-exchange", "failed-sync-job");
+            channel.queueDeclare("failed-transformations-queue", true, false, false, null);
+            channel.queueBind("failed-transformations-queue", "dead-letter-exchange", "failed-transformation-job");
 
             channel.queueDeclare("failed-pollingjobs-queue", true, false, false, null);
-            channel.queueBind("failed-pollingjobs-queue", "syncjob-exchange", "failed-polling-job");
+            channel.queueBind("failed-pollingjobs-queue", "dead-letter-exchange", "failed-polling-job");
 
-            channel.basicConsume("failed-syncjobs-queue", true, processDeadSyncJob(), cancelDeadletterConsumption());
+            channel.basicConsume("failed-transformations-queue", true, processDeadTransformation(), cancelDeadletterConsumption());
             channel.basicConsume("failed-pollingjobs-queue", true, processDeadPollingJob(), cancelDeadletterConsumption());
-        } catch (IOException e) {
+        } catch (Exception e) {
             Log.errorf("Error initialising rabbitMQ message consumer: %s %s", e.getClass(),e.getMessage());
             throw new CoreManagementException("RabbitMQ error", "Could not initiliaze consumer: %s", e.getMessage());
         }
@@ -78,10 +79,10 @@ public class DeadLetterConsumer {
      *
      * @return
      */
-    private DeliverCallback processDeadSyncJob() {
+    private DeliverCallback processDeadTransformation() {
         return (consumerTag, delivery) -> {
-            SyncJob syncJob = extractSyncJob(delivery);
-            Log.warnf("Received dead letter for sync-job %s (id: %s)", syncJob.name, syncJob.id);
+            TransformationMessageDTO transformationMessageDTO = extractTransformation(delivery);
+            Log.warnf("Received dead letter for transformation (id: %s)", transformationMessageDTO.id());
         };
     }
 
@@ -92,8 +93,8 @@ public class DeadLetterConsumer {
      */
     private DeliverCallback processDeadPollingJob() {
         return (consumerTag, delivery) -> {
-            SyncJob syncJob = extractSyncJob(delivery);
-            Log.warnf("Received dead letter for sync-job %s (id: %s)", syncJob.name, syncJob.id);
+            SourceSystemApiRequestConfigurationMessageDTO sourceSystemApiRequestConfigurationMessageDTO = extractPollingJob(delivery);
+            Log.warnf("Received dead letter for polling job with id: %s", sourceSystemApiRequestConfigurationMessageDTO.id());
         };
     }
 
@@ -105,10 +106,10 @@ public class DeadLetterConsumer {
      * @throws UnsupportedEncodingException
      * @throws JsonProcessingException
      */
-    private SyncJob extractSyncJob(Delivery delivery) throws UnsupportedEncodingException, JsonProcessingException {
+    private TransformationMessageDTO extractTransformation(Delivery delivery) throws UnsupportedEncodingException, JsonProcessingException {
         Log.info("Extracting sync-job from consumed message");
         String message = new String(delivery.getBody(), "UTF-8");
-        return objectMapper.readValue(message, SyncJob.class);
+        return objectMapper.readValue(message, TransformationMessageDTO.class);
     }
 
     /**
@@ -119,9 +120,9 @@ public class DeadLetterConsumer {
      * @throws UnsupportedEncodingException
      * @throws JsonProcessingException
      */
-    private SourceSystemEndpoint extractPollingJob(Delivery delivery) throws UnsupportedEncodingException, JsonProcessingException {
+    private SourceSystemApiRequestConfigurationMessageDTO extractPollingJob(Delivery delivery) throws UnsupportedEncodingException, JsonProcessingException {
         Log.info("Extracting Source system endpoint from consumed message");
         String message = new String(delivery.getBody(), "UTF-8");
-        return objectMapper.readValue(message, SourceSystemEndpoint.class);
+        return objectMapper.readValue(message, SourceSystemApiRequestConfigurationMessageDTO.class);
     }
 }

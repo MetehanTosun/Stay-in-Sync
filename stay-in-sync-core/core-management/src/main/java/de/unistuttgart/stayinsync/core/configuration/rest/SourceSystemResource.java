@@ -104,8 +104,19 @@ public class SourceSystemResource {
     @APIResponse(responseCode = "404", description = "Source system not found")
     public Response updateSs(@Parameter(name = "id", required = true) @PathParam("id") Long id,
                              @Valid @NotNull CreateSourceSystemDTO sourceSystemDTO) {
-//        sourceSystemDTO.id() = id;
-        return sourceSystemService.updateSourceSystem(sourceSystemDTO)
+        // Create a new DTO with the correct ID from the path parameter
+        CreateSourceSystemDTO updatedDTO = new CreateSourceSystemDTO(
+            id,
+            sourceSystemDTO.name(),
+            sourceSystemDTO.apiUrl(),
+            sourceSystemDTO.description(),
+            sourceSystemDTO.apiType(),
+            sourceSystemDTO.apiAuthType(),
+            sourceSystemDTO.authConfig(),
+            sourceSystemDTO.openApiSpec()
+        );
+        
+        return sourceSystemService.updateSourceSystem(updatedDTO)
                 .map(updated -> Response.ok(sourceSystemFullUpdateMapper.mapToDTO(updated)).build())
                 .orElseThrow(() -> new CoreManagementException(
                         Response.Status.NOT_FOUND,

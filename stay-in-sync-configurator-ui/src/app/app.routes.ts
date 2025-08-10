@@ -1,7 +1,6 @@
 // biome-ignore lint/style/useImportType: <explanation>
 import { Routes } from '@angular/router';
 import { SyncRulesComponent } from './features/sync-rules/components/sync-rules.component';
-import { ConfigBaseComponent } from './features/configuration/config-base/config-base.component';
 import { ConfigurationscriptsBaseComponent } from './features/configuration/configurationscripts-base/configurationscripts-base.component';
 // neu (relativ zu src/app/app.routes.ts)
 import { SourceSystemBaseComponent } from
@@ -27,9 +26,6 @@ import { TargetSystemBaseComponent } from './features/target-system/components/t
 export const routes: Routes = [
   // Route für Sync Rules
   { path: 'sync-rules', component: SyncRulesComponent },
-
-  // Route für Configurations
-  { path: 'configs', component: ConfigBaseComponent },
 
   // Route für Transformation Scripts
   { path: 'transformation-scripts', component: ConfigurationscriptsBaseComponent },
