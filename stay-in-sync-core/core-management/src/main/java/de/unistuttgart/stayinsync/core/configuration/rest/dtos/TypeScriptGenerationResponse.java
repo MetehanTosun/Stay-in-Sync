@@ -18,7 +18,7 @@ public class TypeScriptGenerationResponse {
         this.error = error;
     }
 
-    public String generatedTypeScript() {
+    public String getGeneratedTypeScript() {
         return generatedTypeScript;
     }
 
@@ -26,7 +26,7 @@ public class TypeScriptGenerationResponse {
         this.generatedTypeScript = generatedTypeScript;
     }
 
-    public String error() {
+    public String getError() {
         return error;
     }
 

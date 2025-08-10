@@ -94,6 +94,17 @@
   color: var(--text-color);
 }
 
+/* Match Source System styling */
+.json-textarea {
+  background: #f8f9fa;
+  color: #212529;
+}
+
+.typescript-textarea {
+  background: #1e1e1e;
+  color: #d4d4d4;
+}
+
 .typescript-loading {
   display: flex;
   align-items: center;

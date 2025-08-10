@@ -48,6 +48,10 @@ export class TargetResponsePreviewModalComponent implements OnInit, OnChanges {
 
   ngOnInit(): void {
     this.updateEditorModel();
+    // Start on TypeScript tab like Source behavior when schema exists
+    if (this.responseBodySchema || this.responseDts) {
+      setTimeout(() => this.setActiveTab(1), 0);
+    }
   }
 
   ngOnChanges(changes: SimpleChanges): void {
