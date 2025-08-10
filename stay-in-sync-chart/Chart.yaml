@@ -26,7 +26,7 @@ appVersion: "1.16.0"
 dependencies:
   - name: rabbitmq
     repository: https://charts.bitnami.com/bitnami
-    version: 16.0.11
+    version: 16.0.2
   - name: mariadb
     version: 20.5.6
     repository: https://charts.bitnami.com/bitnami
@@ -36,12 +36,6 @@ dependencies:
   - name: umbrella
     version: 2.14.1
     repository: https://eclipse-tractusx.github.io/charts/dev
-  - name: core-management
-    version: 1.0.0-SNAPSHOT
-    repository: "file://../stay-in-sync-core/core-management/target/helm/kubernetes/core-management"
-  - name: core-polling-node
-    version: 1.0.0-SNAPSHOT
-    repository: "file://../stay-in-sync-core/core-polling-node/target/helm/kubernetes/core-polling-node"
-  - name: core-sync-node
-    version: 1.0.0-SNAPSHOT
-    repository: "file://../stay-in-sync-core/core-sync-node/target/helm/kubernetes/core-sync-node"
+  - name: tractusx-connector
+    version: 0.10.0
+    repository: https://eclipse-tractusx.github.io/charts/dev

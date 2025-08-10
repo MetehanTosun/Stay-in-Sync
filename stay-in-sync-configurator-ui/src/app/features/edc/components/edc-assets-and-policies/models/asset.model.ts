@@ -1,5 +1,5 @@
 export interface Asset {
-  id: string;
+  assetId: string;
   name: string;
   url: string;
   type: string;

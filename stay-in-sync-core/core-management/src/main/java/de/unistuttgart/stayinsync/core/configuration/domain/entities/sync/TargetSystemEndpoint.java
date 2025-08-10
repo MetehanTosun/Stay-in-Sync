@@ -1,12 +1,13 @@
 package de.unistuttgart.stayinsync.core.configuration.domain.entities.sync;
 
-import de.unistuttgart.stayinsync.core.configuration.domain.entities.edc.EDCAsset;
 import jakarta.persistence.Entity;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.OneToOne;
 
 import java.util.Set;
+
+import de.unistuttgart.stayinsync.core.configuration.edc.EDCAsset;
 
 @Entity
 public class TargetSystemEndpoint extends SyncSystemEndpoint {
