@@ -87,3 +87,5 @@ Ziel ist es, `TargetSystemEndpoint` im Backend strukturell und funktional analog
 4. Muss der OpenAPI-Sync auch EDC-relevante Metadaten (Asset-Zuordnung) ableiten oder bleibt `asset` rein manuell?
 
 
+
+

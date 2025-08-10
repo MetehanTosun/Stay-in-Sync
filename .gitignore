@@ -52,3 +52,10 @@ Chart.lock
 #
 .bloop/
 .metals/
+tasks/prd-target-system-endpoint-analog-source.md
+tasks/prd-target-system-endpoint-analog-source.md
+.cursor/rules/process-task-list.md
+.cursor/rules/generate-tasks.md
+.cursor/rules/create-prd.md
+.gitignore
+tasks/prd-target-system-endpoint-analog-source.md
