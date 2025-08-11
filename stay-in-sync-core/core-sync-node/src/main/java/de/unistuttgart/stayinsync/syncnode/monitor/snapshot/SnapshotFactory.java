@@ -22,8 +22,7 @@ import de.unistuttgart.stayinsync.transport.transformation_rule_shared.nodes.Pro
 
 /**
  * Builds a GraphSnapshotDTO in case of an error and contains an internal mapper
- * from runtime node list -> GraphDTO (only structure: IDs, names, positions,
- * edges).
+ * from runtime node list -> GraphDTO
  */
 public final class SnapshotFactory {
 
@@ -60,8 +59,6 @@ public final class SnapshotFactory {
 
     /**
      * Internal mapper: List<Node> -> GraphDTO.
-     * Includes only structural information (id, name, offsetX/Y, inputNodes(id,
-     * orderIndex)).
      */
     private static GraphDTO mapToGraphDTO(List<Node> nodes) {
         GraphDTO graphDTO = new GraphDTO();
