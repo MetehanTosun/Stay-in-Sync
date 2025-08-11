@@ -66,30 +66,5 @@ export class ConstantNodeModalComponent {
     }
     return value.trim();
   }
-
-
-  /**
-   * Infers the data type from a JavaScript value
-   *
-   * @param value an not undefined, non-blank value
-   */
-  private inferTypeFromValue(value: any): string { // TODO-s Use for TypeCheck; probably relocate (use may also be necessary for providers)
-    if (value === null) return 'ANY'
-
-    const jsType = typeof value;
-    switch (jsType) {
-      case 'number':
-        return 'NUMBER';
-      case 'string':
-        return 'STRING';
-      case 'boolean':
-        return 'BOOLEAN';
-      case 'object':
-        if (Array.isArray(value)) return 'ARRAY';
-        return 'JSON';
-      default:
-        return 'ANY';
-    }
-  }
   //#endregion
 }

@@ -4,13 +4,17 @@ import { Connection, Edge, EdgeType, Vflow } from 'ngx-vflow';
 import { GraphAPIService } from '../../service';
 import { CustomVFlowNode, LogicOperatorMeta, NodeType, VFlowEdgeDTO, VFlowGraphDTO } from '../../models';
 import { ConstantNodeComponent, FinalNodeComponent, LogicNodeComponent, ProviderNodeComponent } from '..';
+import { CommonModule } from '@angular/common';
 
 /**
  * The canvas of the rule editor on which the rule graph is visualized
  */
 @Component({
   selector: 'app-vflow-canvas',
-  imports: [Vflow],
+  imports: [
+    Vflow,
+    CommonModule
+  ],
   templateUrl: './vflow-canvas.component.html',
   styleUrl: './vflow-canvas.component.css'
 })
@@ -20,6 +24,11 @@ export class VflowCanvasComponent implements OnInit {
   edges: Edge[] = [];
   ruleId: number | undefined = undefined;
   lastNodeId = 0;
+
+  // Edge Validation Attributes
+  showTypeIncompatibilityModal = false;
+  typeIncompatibilityMessage = '';
+  lastAttemptedConnection: { sourceType: string, targetType: string } | null = null;
 
   @Output() canvasClick = new EventEmitter<{ x: number, y: number }>();
 
@@ -49,6 +58,12 @@ export class VflowCanvasComponent implements OnInit {
     const y = mouseEvent.clientY - rect.top;
 
     this.canvasClick.emit({ x, y });
+  }
+
+  closeTypeIncompatibilityModal() {
+    this.showTypeIncompatibilityModal = false;
+    this.typeIncompatibilityMessage = '';
+    this.lastAttemptedConnection = null;
   }
   //#endregion
 
@@ -118,12 +133,8 @@ export class VflowCanvasComponent implements OnInit {
    * @returns
    */
   addEdge({ source, target, targetHandle }: Connection) {
-    const existingEdge = this.edges.find(e => e.source === source && e.target === target);
-
-    if (existingEdge) {
-      if (existingEdge.targetHandle != targetHandle)
-        alert('An edge between these nodes with a different handle already exists.');
-      return
+    if (!this.validateEdge({ source, target, targetHandle })) {
+      return;
     }
 
     const newEdge: Edge = {
@@ -161,11 +172,10 @@ export class VflowCanvasComponent implements OnInit {
           const targetNode = this.nodes.find(n => n.id === String(edge.target)); // TODO-s: backend problem; DELETE
           const inputHandles = targetNode?.data?.inputTypes ?? []; // TODO-s: backend problem; DELETE
           const hasSingleInput = inputHandles.length === 1 || inputHandles.length === 0; // TODO-s: backend problem; DELETE
-          console.log(targetNode?.data)
           return {
             ...edge,
             type: edge.type as EdgeType,
-            targetHandle: hasSingleInput? undefined : edge.targetHandle // TODO-s: backend problem; DELETE
+            targetHandle: hasSingleInput ? undefined : edge.targetHandle // TODO-s: backend problem; DELETE
           }
         }); // TODO-s: backend problem: Single input nodes should not assign a target handle to the connected node, use a static amount of input handlers
 
@@ -207,7 +217,87 @@ export class VflowCanvasComponent implements OnInit {
   //#endregion
 
   //#region Helpers
-  getNodeType(nodeType: NodeType) {
+  /**
+   * TODO-s
+   * @param param0
+   * @returns
+   */
+  private validateEdge({ source, target, targetHandle }: Connection): boolean {
+    const existingEdge = this.edges.find(e => e.source === source && e.target === target);
+
+    if (existingEdge) {
+      if (existingEdge.targetHandle != targetHandle) {
+        this.showTypeIncompatibilityModal = true;
+        this.typeIncompatibilityMessage = 'An edge between these nodes with a different handle already exists.';
+        this.lastAttemptedConnection = null;
+      }
+      return false;
+    }
+
+    const sourceNode = this.nodes.find(n => n.id === source);
+    const targetNode = this.nodes.find(n => n.id === target);
+
+    let sourceType = sourceNode?.data.outputType ?? 'ANY';
+    if (sourceNode?.data.nodeType! === NodeType.CONSTANT)
+      sourceType = this.inferTypeFromValue(sourceNode?.data.value);
+
+    const targetType = this.getExpectedInputType(targetNode!, targetHandle);
+
+    if (sourceType === 'ANY' || targetType === 'ANY') return true;
+    if (sourceType === targetType) return true;
+
+    this.showTypeIncompatibilityModal = true;
+    this.typeIncompatibilityMessage = `Type mismatch: cannot connect ${sourceType} to ${targetType}`;
+    this.lastAttemptedConnection = { sourceType, targetType };
+    return false;
+  }
+
+  /**
+   * Infers the data type from a JavaScript value
+   *
+   * @param value an not undefined, non-blank value
+   */
+  private inferTypeFromValue(value: any): string {
+    if (value === null) return 'ANY'
+
+    const jsType = typeof value;
+    switch (jsType) {
+      case 'number':
+        return 'NUMBER';
+      case 'string':
+        return 'STRING';
+      case 'boolean':
+        return 'BOOLEAN';
+      case 'object':
+        if (Array.isArray(value)) return 'ARRAY';
+        return 'JSON';
+      default:
+        return 'ANY';
+    }
+  }
+
+  /**
+   * Returns the expected input type for a target Node
+   */
+  private getExpectedInputType(target: CustomVFlowNode, targetHandle?: string): string {
+    const inputTypes = target?.data?.inputTypes;
+    if (target.data.nodeType === NodeType.FINAL) return 'BOOLEAN'
+
+    if (targetHandle) {
+      // Extract index from handle, e.g., "input-0" => 0
+      const match = targetHandle.match(/input-(\d+)/);
+      const index = match ? parseInt(match[1], 10) : 0;
+      return inputTypes![index];
+    }
+    return inputTypes![0];
+  }
+
+  /**
+   * TODO-s
+   * @param nodeType
+   * @returns
+   */
+  private getNodeType(nodeType: NodeType) {
     switch (nodeType) {
       case NodeType.PROVIDER: return ProviderNodeComponent;
       case NodeType.CONSTANT: return ConstantNodeComponent;
