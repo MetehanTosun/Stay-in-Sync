@@ -157,11 +157,32 @@ export class ManageTargetEndpointsComponent implements OnInit {
     try {
       // Load target-system to decide where to fetch OpenAPI spec
       const ts = await firstValueFrom(this.tsService.getById(this.targetSystemId));
-      const apiUrl = (ts && (ts as any).openAPI && (ts as any).openAPI.startsWith('http')) ? (ts as any).openAPI.trim() : (ts.apiUrl || '');
-      if (!apiUrl) { this.importing = false; return; }
-      // discover endpoints and params via shared service
-      const endpoints = await this.openapi.discoverEndpointsFromSpecUrl(apiUrl);
-      const spec = await this.loadSpecCandidates(apiUrl);
+
+      let endpoints: any[] = [];
+      let spec: any | null = null;
+
+      // 1) If openAPI is provided and is raw content (uploaded file), parse locally
+      if ((ts as any).openAPI && typeof (ts as any).openAPI === 'string' && !(ts as any).openAPI.startsWith('http')) {
+        try {
+          try {
+            spec = JSON.parse((ts as any).openAPI as string);
+          } catch {
+            spec = parseYAML((ts as any).openAPI as string);
+          }
+          endpoints = this.openapi.discoverEndpointsFromSpec(spec);
+        } catch {
+          spec = null;
+          endpoints = [];
+        }
+      }
+
+      // 2) Fallback: Use URL (either openAPI URL or apiUrl base + candidates)
+      const apiUrl = ((ts as any).openAPI && (ts as any).openAPI.startsWith('http')) ? (ts as any).openAPI.trim() : (ts.apiUrl || '');
+      if ((!spec || endpoints.length === 0) && apiUrl) {
+        endpoints = await this.openapi.discoverEndpointsFromSpecUrl(apiUrl);
+        spec = await this.loadSpecCandidates(apiUrl);
+      }
+
       const paramsByKey = spec ? this.openapi.discoverParamsFromSpec(spec) : {};
       // filter out duplicates by METHOD + PATH (matches backend unique key)
       const existing = await firstValueFrom(this.api.list(this.targetSystemId));
