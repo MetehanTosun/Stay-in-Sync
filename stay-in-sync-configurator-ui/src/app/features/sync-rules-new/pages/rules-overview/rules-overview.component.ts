@@ -25,6 +25,7 @@ export class RulesOverviewComponent implements OnInit {
   rules: TransformationRule[] = [];
   isLoading = true;
   showCreateRule = false;
+  expandedRuleId: number | null = null;
 
   // Input Data
   newRule: RuleCreationDTO = {

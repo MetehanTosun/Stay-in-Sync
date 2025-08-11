@@ -6,9 +6,9 @@
 
   <!-- Node Body -->
   <div class="node-content">
-    <h4>{{ node().data?.name}}</h4>
-    <p class="description">{{ node().data?.jsonPath || 'JSON Path not set' }}</p>
-    <small class="arc-id">Arc ID: {{ node().data?.arcId || 'N/A' }}</small>
+    <div class="node-title">{{ node().data?.name }}</div>
+    <div class="node-path"><strong>Path:</strong> {{ node().data?.jsonPath || 'Not set' }}</div>
+    <div class="arc-id"><small>Arc ID: {{ node().data?.arcId || 'N/A' }}</small></div>
   </div>
 
   <!-- I/O Handlers -->

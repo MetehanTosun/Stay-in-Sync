@@ -1,8 +1,9 @@
-import { Component, ViewChild } from '@angular/core';
-import { Router } from '@angular/router';
+import { Component, OnInit, ViewChild } from '@angular/core';
+import { ActivatedRoute, Router } from '@angular/router';
 import { ConstantNodeModalComponent, NodePaletteComponent, ProviderNodeModalComponent, VflowCanvasComponent } from '../../components';
 import { LogicOperatorMeta, NodeType } from '../../models';
 import { CommonModule } from '@angular/common';
+import { TransformationRulesApiService } from '../../service';
 
 /**
  * The rule editor page component in which the user can view and edit a transformation rule graph
@@ -19,9 +20,10 @@ import { CommonModule } from '@angular/common';
   templateUrl: './edit-rule.component.html',
   styleUrl: './edit-rule.component.css'
 })
-export class EditRuleComponent {
+export class EditRuleComponent implements OnInit {
   //#region Setup
   ruleName = 'New Rule';
+  ruleId: number | undefined = undefined;
 
   // Palette Attributes
   showMainNodePalette = false;
@@ -33,10 +35,42 @@ export class EditRuleComponent {
   showConstantModal = false;
   pendingNodePos: { x: number, y: number } | null = null;
 
+  private documentClickListener: any;
+  
   @ViewChild(NodePaletteComponent) nodePalette!: NodePaletteComponent;
   @ViewChild(VflowCanvasComponent) canvas!: VflowCanvasComponent;
 
-  constructor(private router: Router) { }
+  constructor(private route: ActivatedRoute, private router: Router, private rulesApi: TransformationRulesApiService) { }
+
+  ngOnInit(): void {
+    const routeId = this.route.snapshot.paramMap.get('id');
+    this.ruleId = routeId ? Number(routeId) : undefined;
+
+    if (this.ruleId) {
+      this.rulesApi.getRule(this.ruleId).subscribe(rule => {
+        this.ruleName = rule.name;
+      });
+    }
+
+    // Listen for clicks outside the node palette to close it
+    this.documentClickListener = (event: MouseEvent) => {
+      if (!this.showMainNodePalette) return;
+      const paletteButton = document.getElementById('node-palette-button');
+      const paletteMenu = document.querySelector('app-node-palette');
+      if (
+        (paletteButton && paletteButton.contains(event.target as Node)) ||
+        (paletteMenu && paletteMenu.contains(event.target as Node))
+      ) {
+        return;
+      }
+
+      this.showMainNodePalette = false;
+      if (this.nodePalette) {
+        this.nodePalette.closeSubPalettes();
+      }
+    };
+    document.addEventListener('mousedown', this.documentClickListener, true);
+  }
   //#endregion
 
   //#region Navigation
@@ -105,7 +139,7 @@ export class EditRuleComponent {
           break;
       }
 
-    this.showMainNodePalette = false
+    this.showMainNodePalette = false;
     this.nodePalette.closeSubPalettes();
   }
   //#endregion
@@ -137,6 +171,12 @@ export class EditRuleComponent {
     this.showProviderModal = false;
     this.pendingNodePos = null;
     this.clearNodeSelection();
+  }
+
+  ngOnDestroy(): void {
+    if (this.documentClickListener) {
+      document.removeEventListener('mousedown', this.documentClickListener, true);
+    }
   }
   //#endregion
 }

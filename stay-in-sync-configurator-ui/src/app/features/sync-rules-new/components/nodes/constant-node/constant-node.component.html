@@ -6,8 +6,7 @@
 
   <!-- Node Body -->
   <div class="node-content">
-    <h4>{{ node().data?.name}}</h4>
-    <strong>Value:</strong> {{ node().data?.value || 'Not set' }}
+    <div class="node-value"><strong>Value:</strong> {{ node().data?.value || 'Not set' }}</div>
   </div>
 
   <!-- I/O Handlers -->

@@ -16,7 +16,6 @@
     <ng-template #header>
       <tr>
         <th>Name</th>
-        <th>Description</th>
         <th>Status</th>
         <th>Actions</th>
       </tr>
@@ -24,21 +23,35 @@
     <!-- Table Body -->
     <ng-template #body let-rule>
       <tr>
-        <td>{{ rule.name }} #{{ rule.id }}</td>
-        <td>{{ rule.description }}</td>
-        <td>{{ rule.graphStatus }}</td>
+        <td>
+          <span class="rule-name-hitbox" (click)="expandedRuleId = expandedRuleId === rule.id ? null : rule.id">
+            <span class="rule-name">{{ rule.name }}</span>
+            <span class="rule-id">#{{ rule.id }}</span>
+          </span>
+        </td>
+        <td>
+          <span [ngClass]="{
+            'status-finalized': rule.graphStatus === 'FINALIZED',
+            'status-draft': rule.graphStatus === 'DRAFT'
+          }">
+            {{ rule.graphStatus === 'FINALIZED' ? 'Finalized' : 'Draft' }}
+          </span>
+        </td>
         <td>
           <div class="actions">
             <button id="edit-rule-button" title="Edit" (click)="editRule(rule.id)">
-              <span class="material-symbols-rounded">
-                edit_square
-              </span>
+              <span class="material-symbols-rounded">edit_square</span>
             </button>
             <button id="delete-rule-button" title="Delete">
-              <span class="material-symbols-rounded">
-                delete
-              </span>
+              <span class="material-symbols-rounded">delete</span>
             </button>
+          </div>
+        </td>
+      </tr>
+      <tr *ngIf="expandedRuleId === rule.id">
+        <td colspan="3" class="rule-description-row">
+          <div class="rule-description">
+            {{ rule.description }}
           </div>
         </td>
       </tr>
@@ -48,9 +61,8 @@
 
 <!-- MARK: Create Rule --> <!-- TODO-s Move to modals/ -->
 <div id="create-rule-modal" *ngIf="showCreateRule">
-  <h3>Create new Rule</h3>
   <form (ngSubmit)="createRule()">
-
+    <h3>Create new Rule</h3>
     <!-- New Rules Name -->
     <div class="form-field">
       <label for="rule-name">Name</label>
@@ -69,15 +81,11 @@
     <!-- Form Actions -->
     <div class="form-actions">
       <button id="save-button" type="submit">
-        <span class="material-symbols-rounded">
-          save
-        </span>
+        <span class="material-symbols-rounded">save</span>
         Save
       </button>
       <button id="cancel-button" type="button" (click)="closeCreateRuleModal()">
-        <span class="material-symbols-rounded">
-          close
-        </span>
+        <span class="material-symbols-rounded">close</span>
         Cancel
       </button>
     </div>

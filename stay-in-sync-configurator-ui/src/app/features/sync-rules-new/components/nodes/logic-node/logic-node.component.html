@@ -6,12 +6,8 @@
 
   <!-- Node Body -->
   <div class="node-content">
-    <h4>{{ node().data?.name }}</h4>
-    <div class="operator-type">{{ node().data?.operatorType}}</div>
-    <div class="operator-category">{{ node().data?.category }}</div>
-    <div class="output-type">
-      <strong>Output:</strong> {{ node().data?.outputType }}
-    </div>
+    <div class="node-title">{{ node().data?.name }}</div>
+    <div class="operator-category">{{ node().data?.operatorType }}</div>
   </div>
 
   <!-- I/O Handlers -->

@@ -89,7 +89,7 @@ export class VflowCanvasComponent implements OnInit {
 
     if (nodeType === NodeType.PROVIDER && providerJsonPath) {
       nodeData = {
-        name: `Provider: ${providerJsonPath}`, // TODO-s real json paths are gonna be real long
+        name: providerJsonPath, // TODO-s real json paths are gonna be real long
         arcId: 0, // TODO-s get arcId from JSON path
         jsonPath: providerJsonPath
       }
@@ -101,7 +101,7 @@ export class VflowCanvasComponent implements OnInit {
     } else if (nodeType === NodeType.LOGIC && operatorData) {
       nodeData = {
         ...operatorData,
-        name: `Operator: ${operatorData.operatorName}`,
+        name: operatorData.operatorName,
         operatorType: operatorData.operatorName,  // Map operatorName to operatorType for the Backend
       }
     } else {

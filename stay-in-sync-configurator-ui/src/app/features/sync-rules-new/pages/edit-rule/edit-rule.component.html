@@ -7,15 +7,22 @@
 
   <!-- MARK: Toolbar -->
   <div class="toolbar">
+    <div style="display: flex; align-items: center; gap: 0.5rem;">
+      <div id="node-selection-indicator" *ngIf="selectedNodeType">
+        Selected: {{ selectedNodeType }} - Click on canvas to place
+      </div>
+      <div class="node-palette-trigger-wrapper" style="position: relative; display: inline-block;">
+        <button id="node-palette-button" (click)="openMainNodePalette($event)">
+          Add Node
+        </button>
+        <app-node-palette [showMainNodePalette]="showMainNodePalette" (nodeSelected)="onNodeSelected($event)"></app-node-palette>
+      </div>
+    </div>
     <button id="save-graph-button" (click)="canvas.saveGraph()">
       <span class="material-symbols-rounded">
         save
       </span>
       Save Graph
-    </button>
-
-    <button id="node-palette-button" (click)="openMainNodePalette($event)">
-      Add Node
     </button>
   </div>
 </div>
@@ -25,16 +32,6 @@
 <div class="vflow-wrapper">
   <app-vflow-canvas (canvasClick)="onCanvasClick($event)">
   </app-vflow-canvas>
-</div>
-
-<!-- Node Palette -->
-<div class="node-palette-wrapper">
-  <app-node-palette [showMainNodePalette]="showMainNodePalette" (nodeSelected)="onNodeSelected($event)">
-  </app-node-palette>
-
-  <div id="node-selection-indicator" *ngIf="selectedNodeType">
-    Selected: {{ selectedNodeType }} - Click on canvas to place <!-- TODO-s -->
-  </div>
 </div>
 
 <!-- Provider Modal -->

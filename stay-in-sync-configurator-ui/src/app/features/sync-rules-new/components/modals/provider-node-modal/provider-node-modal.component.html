@@ -1,11 +1,12 @@
-<div id="provider-node-modal-container">
+<div class="modal-backdrop"></div>
+<div id="provider-node-modal-container" class="provider-node-modal">
   <!-- Modal Header -->
   <h3>Edit Provider Value</h3>
 
   <!-- Modal Body -->
   <form (ngSubmit)="submit()">
     <div class="form-field">
-      <label for="provider-value">Provider Value</label>
+      <label for="provider-value">Provider Value:</label>
       <div id="json-path-input-line">
         <span>source.</span>
         <input name="provider-value" type="text" [(ngModel)]="jsonPath" placeholder="Enter JSON Path" class="form-input"
