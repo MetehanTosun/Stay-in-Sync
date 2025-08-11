@@ -253,10 +253,14 @@ export class ManageEndpointsComponent implements OnInit, OnDestroy {
           if (sourceSystem.openApiSpec && typeof sourceSystem.openApiSpec === 'string') {
             if (sourceSystem.openApiSpec.startsWith('http')) {
               this.apiUrl = sourceSystem.openApiSpec.trim();
+              this.currentOpenApiSpec = '';
             } else {
+              // Spec was provided as raw content (uploaded file). Keep a local copy to parse client-side.
+              this.currentOpenApiSpec = sourceSystem.openApiSpec;
               this.apiUrl = sourceSystem.apiUrl!;
             }
           } else {
+            this.currentOpenApiSpec = '';
             this.apiUrl = sourceSystem.apiUrl!;
           }
         },
@@ -1346,12 +1350,33 @@ ${jsonSchema}
    * Imports endpoints from the OpenAPI spec.
    */
   async importEndpoints(): Promise<void> {
-    if (!this.apiUrl) return;
     this.importing = true;
     try {
-      const endpoints = await this.openapi.discoverEndpointsFromSpecUrl(this.apiUrl);
-      const spec = await this.loadSpecCandidates(this.apiUrl);
-      if (spec) this.currentOpenApiSpec = spec;
+      let spec: any | null = null;
+      let endpoints: any[] = [];
+
+      // 1) Prefer locally stored spec content (uploaded file case)
+      if (this.currentOpenApiSpec && typeof this.currentOpenApiSpec === 'string' && this.currentOpenApiSpec.trim()) {
+        try {
+          try {
+            spec = JSON.parse(this.currentOpenApiSpec);
+          } catch {
+            spec = parseYAML(this.currentOpenApiSpec as string);
+          }
+          endpoints = this.openapi.discoverEndpointsFromSpec(spec);
+        } catch {
+          spec = null;
+          endpoints = [];
+        }
+      }
+
+      // 2) Fallback to URL discovery when no local spec is available
+      if ((!spec || endpoints.length === 0) && this.apiUrl) {
+        endpoints = await this.openapi.discoverEndpointsFromSpecUrl(this.apiUrl);
+        spec = await this.loadSpecCandidates(this.apiUrl);
+      }
+
+      // 3) Persist endpoints and discovered params if available
       const paramsByKey = spec ? this.openapi.discoverParamsFromSpec(spec) : {};
       if (endpoints.length) {
         const created = await this.endpointSvc.apiConfigSourceSystemSourceSystemIdEndpointPost(this.sourceSystemId, endpoints as any).toPromise();
