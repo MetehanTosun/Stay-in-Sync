@@ -68,11 +68,7 @@
                 <i class="pi pi-file"></i>
                 <span>JSON Schema</span>
               </div>
-              <textarea 
-                [value]="jsonEditorModel.value || '// No JSON content available'"
-                readonly
-                class="code-textarea json-textarea">
-              </textarea>
+              <ngx-monaco-editor [options]="jsonEditorOptions" [model]="jsonEditorModel"></ngx-monaco-editor>
             </div>
           </div>
           
@@ -97,11 +93,7 @@
                 <i class="pi pi-code"></i>
                 <span>TypeScript Interface</span>
               </div>
-              <textarea 
-                [value]="typescriptEditorModel.value || '// No TypeScript content available'"
-                readonly
-                class="code-textarea typescript-textarea">
-              </textarea>
+              <ngx-monaco-editor [options]="typescriptEditorOptions" [model]="typescriptEditorModel"></ngx-monaco-editor>
             </div>
           </div>
         </div>
