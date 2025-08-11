@@ -1,8 +1,8 @@
 import { Component, EventEmitter, OnInit, Output } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
-import { Edge, Vflow } from 'ngx-vflow';
+import { Connection, Edge, EdgeType, Vflow } from 'ngx-vflow';
 import { GraphAPIService } from '../../service';
-import { CustomVFlowNode, LogicOperatorMeta, NodeType, VFlowGraphDTO } from '../../models';
+import { CustomVFlowNode, LogicOperatorMeta, NodeType, VFlowEdgeDTO, VFlowGraphDTO } from '../../models';
 import { ConstantNodeComponent, FinalNodeComponent, LogicNodeComponent, ProviderNodeComponent } from '..';
 
 /**
@@ -52,7 +52,7 @@ export class VflowCanvasComponent implements OnInit {
   }
   //#endregion
 
-  //#region Frontend Logic
+  //#region Element Creation
   /**
    * Creates and adds a new node to the vflow canvas
    * * This does not persist the node in the database
@@ -107,6 +107,33 @@ export class VflowCanvasComponent implements OnInit {
     };
     this.nodes = [...this.nodes, newNode];
   }
+
+  /**
+   * Creates and adds a new edge to the vflow canvas
+   * * This does not persist the edge in the database
+   *
+   * @param source The source node's ID
+   * @param target The target node's ID
+   * @param targetHandle The target node's handler
+   * @returns
+   */
+  addEdge({ source, target, targetHandle }: Connection) {
+    const existingEdge = this.edges.find(e => e.source === source && e.target === target);
+
+    if (existingEdge) {
+      if (existingEdge.targetHandle != targetHandle)
+        alert('An edge between these nodes with a different handle already exists.');
+      return
+    }
+
+    const newEdge: Edge = {
+      id: `${source} -> ${target}`,
+      source,
+      target,
+      targetHandle: targetHandle,
+    };
+    this.edges = [...this.edges, newEdge];
+  }
   //#endregion
 
   //#region REST Methods
@@ -130,10 +157,17 @@ export class VflowCanvasComponent implements OnInit {
           : 0;
 
         // loads edges
-        this.edges = graph.edges.map(edge => ({
-          ...edge,
-          type: edge.type as any
-        }));
+        this.edges = graph.edges.map(edge => {
+          const targetNode = this.nodes.find(n => n.id === String(edge.target)); // TODO-s: backend problem; DELETE
+          const inputHandles = targetNode?.data?.inputTypes ?? []; // TODO-s: backend problem; DELETE
+          const hasSingleInput = inputHandles.length === 1 || inputHandles.length === 0; // TODO-s: backend problem; DELETE
+          console.log(targetNode?.data)
+          return {
+            ...edge,
+            type: edge.type as EdgeType,
+            targetHandle: hasSingleInput? undefined : edge.targetHandle // TODO-s: backend problem; DELETE
+          }
+        }); // TODO-s: backend problem: Single input nodes should not assign a target handle to the connected node, use a static amount of input handlers
 
         // TODO-s loads errors
       },
@@ -152,7 +186,10 @@ export class VflowCanvasComponent implements OnInit {
         ...node,
         type: node.data.nodeType
       })),
-      edges: this.edges
+      edges: this.edges.map(edge => ({
+        ...edge,
+        type: edge.type as string
+      }))
     }
 
     console.log('Final graphDTO being sent:', JSON.stringify(graphDTO, null, 2)); // TODO-s DELETE
