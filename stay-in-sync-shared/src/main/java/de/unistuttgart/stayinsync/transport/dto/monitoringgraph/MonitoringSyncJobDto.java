@@ -1,5 +1,7 @@
 package de.unistuttgart.stayinsync.transport.dto.monitoringgraph;
 
+import java.util.List;
+
 public class MonitoringSyncJobDto {
         public Long id;
         public String name;

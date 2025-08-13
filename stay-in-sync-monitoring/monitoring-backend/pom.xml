@@ -139,8 +139,12 @@
             <artifactId>shared</artifactId>
             <version>1.0.0-SNAPSHOT</version>
         </dependency>
-
-
+        <dependency>
+            <groupId>de.unistuttgart.stayinsync</groupId>
+            <artifactId>core-management</artifactId>
+            <version>1.0.0-SNAPSHOT</version>
+            <scope>compile</scope>
+        </dependency>
 
 
         <!-- Optional: Resilience4j (Fallback) -->
