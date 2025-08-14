@@ -14,8 +14,7 @@ import java.util.concurrent.ExecutionException;
 
 
 /**
- * Offers methods to build CRUD requests excluding DELETE, as well as the method executeRequest(HttpRequest<Buffer> request),
- * that executes these requests and returns the polled data.
+ * Offers method executeRequest to execute prebuild requests and to return the retrieved JsonObject.
  */
 @ApplicationScoped
 public class RestClient {

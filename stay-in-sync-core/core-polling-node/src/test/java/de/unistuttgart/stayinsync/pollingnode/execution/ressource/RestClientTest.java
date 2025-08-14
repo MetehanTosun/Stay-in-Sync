@@ -3,6 +3,7 @@ package de.unistuttgart.stayinsync.pollingnode.execution.ressource;
 import com.github.tomakehurst.wiremock.WireMockServer;
 import de.unistuttgart.stayinsync.pollingnode.exceptions.execution.pollingjob.restclientexceptions.RequestExecutionException;
 import de.unistuttgart.stayinsync.pollingnode.exceptions.execution.pollingjob.restclientexceptions.ResponseSubscriptionException;
+import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 import io.vertx.mutiny.core.Vertx;
 import io.vertx.mutiny.core.buffer.Buffer;
@@ -34,9 +35,14 @@ public class RestClientTest {
     @BeforeEach
     void setUp() {
         restClient = new RestClient();
+
+        JsonArray dataArrayForExpectedJsonObject = new JsonArray()
+                .add(new JsonObject().put("id", 1).put("name", "Test 1"))
+                .add(new JsonObject().put("id", 2).put("name", "Test 2"));
         expectedJsonObject = new JsonObject()
                 .put("requestMatched", true)
-                .put("message", "All parameters matched correctly");
+                .put("message", "All parameters matched correctly")
+                .put("array", dataArrayForExpectedJsonObject);
 
         mockServer = new WireMockServer(8089);
         mockServer.start();
