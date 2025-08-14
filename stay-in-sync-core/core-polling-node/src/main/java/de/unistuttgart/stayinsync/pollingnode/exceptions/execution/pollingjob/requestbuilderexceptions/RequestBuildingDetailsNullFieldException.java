@@ -6,21 +6,22 @@ import de.unistuttgart.stayinsync.transport.dto.SourceSystemMessageDTO;
 
 public class RequestBuildingDetailsNullFieldException extends PollingJobException {
 
-    private SourceSystemMessageDTO sourceSystem;
-    private SourceSystemEndpointMessageDTO endpoint;
+    private String sourceSystemName;
 
     public RequestBuildingDetailsNullFieldException(String message) {
         super(message);
     }
 
-    public RequestBuildingDetailsNullFieldException(String message, SourceSystemMessageDTO sourceSystem) {
+    public RequestBuildingDetailsNullFieldException(String message, String sourceSystemName) {
         super(message);
-        this.sourceSystem = sourceSystem;
+        this.sourceSystemName = sourceSystemName;
     }
 
-    public RequestBuildingDetailsNullFieldException(String message, SourceSystemMessageDTO sourceSystem, SourceSystemEndpointMessageDTO endpoint) {
-        super(message);
-        this.sourceSystem = sourceSystem;
-        this.endpoint = endpoint;
+    public String getSourceSystemName(){
+        if(sourceSystemName == null){
+            return "No SourceSystemName defined";
+        }
+        return sourceSystemName;
     }
+
 }

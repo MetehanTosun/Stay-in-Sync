@@ -62,7 +62,7 @@ public class RequestBuilder {
         } catch (Exception e){
             final String exceptionMessage = "Request Not Built! An unexpected Exception was thrown in the requestBuildingProcess. RequestBuilder in Pollingcomponent should be reviewed with this Exception";
             Log.errorf(exceptionMessage);
-            throw new RequestBuildingException(exceptionMessage, e, requestBuildingDetails);
+            throw new RequestBuildingException(exceptionMessage, e);
         }
     }
 
@@ -146,25 +146,25 @@ public class RequestBuilder {
     private void throwExceptionIfRequestBuildingDetailsInvalid(final RequestBuildingDetails requestBuildingDetails) throws RequestBuildingDetailsNullFieldException {
         if(requestBuildingDetails.sourceSystem() == null || requestBuildingDetails.endpoint() == null || requestBuildingDetails.sourceSystem().authDetails() == null){
             final String exceptionMessage = "No SourceSystem, Endpoint or AuthDetails were defined in RequestBuildingDetails";
-            Log.errorf(exceptionMessage, requestBuildingDetails.sourceSystem());
-            throw new RequestBuildingDetailsNullFieldException(exceptionMessage, requestBuildingDetails.sourceSystem());
+            Log.errorf(exceptionMessage);
+            throw new RequestBuildingDetailsNullFieldException(exceptionMessage);
         }
         if (requestBuildingDetails.sourceSystem().apiUrl() == null) {
             final String exceptionMessage = "ApiUrl was null";
-            Log.errorf(exceptionMessage, requestBuildingDetails.sourceSystem());
-            throw new RequestBuildingDetailsNullFieldException(exceptionMessage, requestBuildingDetails.sourceSystem());
+            Log.errorf(exceptionMessage, requestBuildingDetails.sourceSystem().name());
+            throw new RequestBuildingDetailsNullFieldException(exceptionMessage, requestBuildingDetails.sourceSystem().name());
         }
         if (requestBuildingDetails.endpoint().httpRequestType() == null) {
             final String exceptionMessage = "HttpRequestType was null.";
             Log.errorf(exceptionMessage, requestBuildingDetails.endpoint());
-            throw new RequestBuildingDetailsNullFieldException(exceptionMessage, requestBuildingDetails.sourceSystem(), requestBuildingDetails.endpoint());
+            throw new RequestBuildingDetailsNullFieldException(exceptionMessage, requestBuildingDetails.sourceSystem().name());
         }
         final String apiKey = requestBuildingDetails.sourceSystem().authDetails().apiKey();
         final String authHeaderName = requestBuildingDetails.sourceSystem().authDetails().headerName();
         if ((apiKey == null && authHeaderName != null) || (apiKey != null && authHeaderName == null)) {
             final String exceptionMessage = "ApiKey and AuthHeaderName either both need to be == null or != null";
-            Log.errorf(exceptionMessage, requestBuildingDetails.sourceSystem().authDetails());
-            throw new RequestBuildingDetailsNullFieldException(exceptionMessage, requestBuildingDetails.sourceSystem());
+            Log.errorf(exceptionMessage, requestBuildingDetails.sourceSystem().name());
+            throw new RequestBuildingDetailsNullFieldException(exceptionMessage, requestBuildingDetails.sourceSystem().name());
         }
     }
 

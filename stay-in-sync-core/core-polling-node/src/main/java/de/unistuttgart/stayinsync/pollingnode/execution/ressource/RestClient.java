@@ -33,12 +33,12 @@ public class RestClient {
             return this.retrieveJsonObjectFromResponse(this.executeRequest(request));
         } catch (ExecutionException e) {
             final String exceptionMessage = "During the execution of this request a RuntimeException was thrown in form of an ExecutionException.";
-            Log.errorf(exceptionMessage, e, request);
-            throw new RequestExecutionException(exceptionMessage, e, request);
+            Log.errorf(exceptionMessage, e);
+            throw new RequestExecutionException(exceptionMessage, e);
         } catch (InterruptedException e) {
             final String exceptionMessage = "The response subscription of the request was interrupted by a new response created by a new request execution.";
-            Log.errorf(exceptionMessage, e, request);
-            throw new ResponseSubscriptionException(exceptionMessage, e, request);
+            Log.errorf(exceptionMessage, e);
+            throw new ResponseSubscriptionException(exceptionMessage, e);
         }
     }
 

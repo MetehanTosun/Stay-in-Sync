@@ -38,18 +38,17 @@ public class PollingJob implements Job {
 
     /**
      * Main method of a PollingJob that can be executed by a scheduler.
-     * Configures a request with the requestBuilder, executes it with the restVlient and
-     * @param context
-     * @throws JobExecutionException
+     * Configures a request with the requestBuilder, executes it with the restClient and
+     * @param context contains the pollingJobDetails
+     * @throws JobExecutionException if no PollingJobDetails were provided or an exception occurs in the JobExecution.
      */
     @Override
     public void execute(final JobExecutionContext context) throws JobExecutionException {
-        JobDataMap dataMap = context.getJobDetail().getJobDataMap();
-        PollingJobDetails pollingJobDetails = (PollingJobDetails) dataMap.get("requestConfiguration");
-
+        PollingJobDetails pollingJobDetails = getPollingJobDetailsFromJobExecutionContext(context);
         if (pollingJobDetails == null) {
-            Log.errorf("No configuration found for configId: %d", pollingJobDetails.id());
-            throw new JobExecutionException("Configuration not found for ID: " + pollingJobDetails.id());
+            final String exceptionMessage = "PollingJob was requested without providing pollingJobDetails. PollingJobExecution not aborted";
+            Log.errorf(exceptionMessage);
+            throw new JobExecutionException(exceptionMessage);
         }
         try {
            final JsonObject jsonObject = restClient.pollJsonObjectFromApi(requestBuilder.buildRequest(pollingJobDetails.requestBuildingDetails()));
@@ -57,12 +56,29 @@ public class PollingJob implements Job {
            syncDataProducer.publishSyncData(this.convertJsonObjectToSyncDataMessageDTO(pollingJobDetails, jsonObject));
 
         } catch (RequestBuildingException | RequestExecutionException | ResponseSubscriptionException | ProducerSetUpStreamException | ProducerPublishDataException e) {
-            final String exceptionMessage = "Error during polling execution for configId " + pollingJobDetails.id() +". " + e.getMessage();
+            final String exceptionMessage = "Error during PollingJob execution for configId " + pollingJobDetails.id() +". " + e.getMessage();
             Log.errorf(exceptionMessage, e);
             throw new JobExecutionException(exceptionMessage, e);
         }
     }
 
+    /**
+     * Extracts the pollingJobDetails from JobExecutionContext and returns them.
+     * @param context contains pollingJobDetails.
+     * @return pollingJobDetails extracted from context.
+     */
+    private PollingJobDetails getPollingJobDetailsFromJobExecutionContext(JobExecutionContext context) {
+        JobDataMap dataMap = context.getJobDetail().getJobDataMap();
+        return (PollingJobDetails) dataMap.get("requestConfiguration");
+    }
+
+    /**
+     * Creates SyncDataMessageDTO out of polled pollingJob and its pollingJobDetails. The message can later be provided to the RabbitMQProducer.
+     *
+     * @param pollingJobDetails contain data that is included into the dataMap.
+     * @param jsonObject is used to create the DataMap that is needed to create the SyncDataMessageDTO.
+     * @return SyncDataMessageDTO created from the JsonObject and the pollingJobDetails.
+     */
     private SyncDataMessageDTO convertJsonObjectToSyncDataMessageDTO(final PollingJobDetails pollingJobDetails, final JsonObject jsonObject) {
         Map<String, Object> map = new HashMap<>();
         map.put(pollingJobDetails.name(), jsonObject.getMap());
