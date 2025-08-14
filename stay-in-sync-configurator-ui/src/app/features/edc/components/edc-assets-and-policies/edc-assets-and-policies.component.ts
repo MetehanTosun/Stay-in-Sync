@@ -17,7 +17,6 @@ import {ConfirmationService, MessageService} from 'primeng/api';
 import { DividerModule } from 'primeng/divider';
 import { TabViewModule } from 'primeng/tabview';
 import { DropdownModule } from 'primeng/dropdown';
-import { SelectModule } from 'primeng/select';
 import { ToastModule } from 'primeng/toast';
 import { AutoCompleteModule } from 'primeng/autocomplete';
 import { MonacoEditorModule } from 'ngx-monaco-editor-v2';
@@ -30,7 +29,6 @@ import { AccessPolicy, OdrlContractDefinition, ContractPolicy, OdrlPolicyDefinit
 import { AssetService } from './services/asset.service';
 import { PolicyService } from './services/policy.service';
 import { EdcInstanceService } from '../edc-instances/services/edc-instance.service';
-import {HttpErrorService} from '../../../../core/services/http-error.service';
 import { lastValueFrom } from 'rxjs';
 
 @Component({
@@ -51,7 +49,6 @@ import { lastValueFrom } from 'rxjs';
     RippleModule,
     DividerModule,
     DropdownModule,
-    SelectModule,
     ToastModule,
     AutoCompleteModule,
     MonacoEditorModule,
@@ -124,7 +121,6 @@ export class EdcAssetsAndPoliciesComponent implements OnInit {
   // Properties for Access Policy Templates
   accessPolicyTemplates: { name: string, content: any }[] = [];
   selectedAccessPolicyTemplate: any | null = null;
-  isAccessPolicyExpertMode: boolean = false;
   // Model for the simple "Normal Mode" form
   newAccessPolicy: { bpn: string; action: string; operator: string; } = this.createEmptySimpleAccessPolicy();
 
@@ -708,11 +704,28 @@ export class EdcAssetsAndPoliciesComponent implements OnInit {
     );
   }
 
-  // Access Policy Methods (JSON-only)
+  // Access Policy Methods
+
   openNewAccessPolicyDialog() {
-    this.isAccessPolicyExpertMode = false; // Default to normal mode
     this.newAccessPolicy = this.createEmptySimpleAccessPolicy();
-    this.expertModeJsonContent = '';
+    // Create a default empty JSON structure
+    const odrlPayload: OdrlPolicyDefinition = {
+      '@context': { odrl: 'http://www.w3.org/ns/odrl/2/' },
+      '@id': 'POLICY_ID',
+      policy: {
+        permission: [{
+          action: this.newAccessPolicy.action,
+          constraint: [{
+            leftOperand: 'BusinessPartnerNumber',
+            operator: this.newAccessPolicy.operator,
+            rightOperand: this.newAccessPolicy.bpn,
+          }]
+        }]
+      }
+    };
+    this.expertModeJsonContent = JSON.stringify(odrlPayload, null, 2);
+    this.selectedAccessPolicyTemplate = null;
+    this.policyToEditODRL = null; // Ensure we are in "create" mode
     this.displayNewAccessPolicyDialog = true;
   }
 
@@ -722,38 +735,14 @@ export class EdcAssetsAndPoliciesComponent implements OnInit {
 
   async saveNewAccessPolicy() {
     let policyJson: OdrlPolicyDefinition;
-
-    if (this.isAccessPolicyExpertMode) {
-      try {
-        policyJson = JSON.parse(this.expertModeJsonContent);
-        if (!policyJson['@id'] || !policyJson.policy) {
-          throw new Error("Invalid policy structure. '@id' and 'policy' are required.");
-        }
-      } catch (e) {
-        this.messageService.add({ severity: 'error', summary: 'JSON Parse Error', detail: 'Could not parse the JSON content.' });
-        return;
+    try {
+      policyJson = JSON.parse(this.expertModeJsonContent);
+      if (!policyJson['@id'] || !policyJson.policy) {
+        throw new Error("Invalid policy structure. '@id' and 'policy' are required.");
       }
-    } else {
-      if (!this.newAccessPolicy.bpn) {
-        this.messageService.add({ severity: 'warn', summary: 'Validation Error', detail: 'BPN is required.' });
-        return;
-      }
-      // Construct the ODRL from the simple form
-      const policyId = `policy-${this.newAccessPolicy.bpn}-${Date.now()}`;
-      policyJson = {
-        '@context': { odrl: 'http://www.w3.org/ns/odrl/2/' },
-        '@id': policyId,
-        policy: {
-          permission: [{
-            action: this.newAccessPolicy.action,
-            constraint: [{
-              leftOperand: 'BusinessPartnerNumber',
-              operator: this.newAccessPolicy.operator,
-              rightOperand: this.newAccessPolicy.bpn,
-            }]
-          }]
-        }
-      };
+    } catch (e) {
+      this.messageService.add({ severity: 'error', summary: 'JSON Parse Error', detail: 'Could not parse the JSON content.' });
+      return;
     }
 
     try {
@@ -768,52 +757,11 @@ export class EdcAssetsAndPoliciesComponent implements OnInit {
     }
   }
 
-  toggleNewAccessPolicyMode() {
-    if (this.isAccessPolicyExpertMode) {
-      // Switching from Expert to Normal
-      try {
-        const odrlPayload: OdrlPolicyDefinition = JSON.parse(this.expertModeJsonContent);
-        const permission = odrlPayload.policy?.permission?.[0];
-        const constraint = permission?.constraint?.[0];
-
-        // Check if the structure is simple enough to be represented in the form
-        if (permission && constraint && constraint.leftOperand === 'BusinessPartnerNumber' && odrlPayload.policy.permission.length === 1 && permission.constraint.length === 1) {
-          this.newAccessPolicy.bpn = constraint.rightOperand;
-          this.newAccessPolicy.action = permission.action;
-          this.newAccessPolicy.operator = constraint.operator;
-          this.isAccessPolicyExpertMode = false;
-        } else {
-          this.messageService.add({ severity: 'warn', summary: 'Cannot Switch to Normal Mode', detail: 'The JSON structure is too complex for the simple form.', life: 5000 });
-        }
-      } catch (e) {
-        this.messageService.add({ severity: 'error', summary: 'JSON Parse Error', detail: 'Could not parse JSON. Please fix errors before switching.', life: 5000 });
-      }
-    } else {
-      // Switching from Normal to Expert
-      const policyId = `policy-${this.newAccessPolicy.bpn || 'new'}-${Date.now()}`;
-      const odrlPayload: OdrlPolicyDefinition = {
-        '@context': { odrl: 'http://www.w3.org/ns/odrl/2/' },
-        '@id': policyId,
-        policy: {
-          permission: [{
-            action: this.newAccessPolicy.action,
-            constraint: [{
-              leftOperand: 'BusinessPartnerNumber',
-              operator: this.newAccessPolicy.operator,
-              rightOperand: this.newAccessPolicy.bpn,
-            }]
-          }]
-        }
-      };
-      this.expertModeJsonContent = JSON.stringify(odrlPayload, null, 2);
-      this.isAccessPolicyExpertMode = true;
-    }
-  }
-
   editAccessPolicy(policy: AccessPolicy) {
     this.policyToEditODRL = this.allOdrlAccessPolicies.find(p => p['@id'] === policy.id) ?? null;
     if (this.policyToEditODRL) {
       this.expertModeJsonContent = JSON.stringify(this.policyToEditODRL, null, 2);
+      this.syncFormFromJson(); // Sync the form from the loaded JSON
       this.displayEditAccessPolicyDialog = true;
     } else {
       this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Could not find the full ODRL policy to edit.' });
@@ -1613,12 +1561,78 @@ export class EdcAssetsAndPoliciesComponent implements OnInit {
     }
   }
 
+  /**
+   * Updates the JSON editor content based on changes in the simple form fields.
+   */
+  syncJsonFromForm(): void {
+    try {
+      // Attempt to parse the current JSON to preserve its structure and any extra fields
+      const currentJson = JSON.parse(this.expertModeJsonContent || '{}');
+
+      // Update only the relevant parts
+      const permission = currentJson.policy?.permission?.[0];
+      if (permission) {
+        permission.action = this.newAccessPolicy.action;
+        const constraint = permission.constraint?.[0];
+        if (constraint) {
+          constraint.operator = this.newAccessPolicy.operator;
+          constraint.rightOperand = this.newAccessPolicy.bpn;
+        }
+      }
+
+      // Re-stringify the updated JSON to the editor
+      this.expertModeJsonContent = JSON.stringify(currentJson, null, 2);
+    } catch (e) {
+      // If JSON is invalid, create a fresh one from the form. This is a good fallback.
+      const policyId = this.policyToEditODRL?.['@id'] || `policy-${this.newAccessPolicy.bpn || 'new'}-${Date.now()}`;
+      const odrlPayload: OdrlPolicyDefinition = {
+        '@context': { odrl: 'http://www.w3.org/ns/odrl/2/' },
+        '@id': policyId,
+        policy: {
+          permission: [{
+            action: this.newAccessPolicy.action,
+            constraint: [{
+              leftOperand: 'BusinessPartnerNumber',
+              operator: this.newAccessPolicy.operator,
+              rightOperand: this.newAccessPolicy.bpn,
+            }]
+          }]
+        }
+      };
+      this.expertModeJsonContent = JSON.stringify(odrlPayload, null, 2);
+    }
+  }
+
+  /**
+   * Updates the simple form fields based on the content of the JSON editor.
+   */
+  syncFormFromJson(): void {
+    try {
+      const odrlPayload: OdrlPolicyDefinition = JSON.parse(this.expertModeJsonContent);
+      const permission = odrlPayload.policy?.permission?.[0];
+      const constraint = permission?.constraint?.[0];
+
+      // Only sync if the structure is simple and what we expect
+      if (permission && constraint && constraint.leftOperand === 'BusinessPartnerNumber') {
+        this.newAccessPolicy.bpn = constraint.rightOperand || '';
+        this.newAccessPolicy.action = permission.action || 'use';
+        this.newAccessPolicy.operator = constraint.operator || 'eq';
+      } else {
+        // If the structure is complex or doesn't match, clear the form fields
+        this.newAccessPolicy = this.createEmptySimpleAccessPolicy();
+      }
+    } catch (e) {
+      // If JSON is invalid, do nothing to the form, let the user fix the JSON.
+    }
+  }
+
   onAccessPolicyTemplateChange(event: { value: any }) {
     if (event.value) {
       this.expertModeJsonContent = JSON.stringify(event.value.content, null, 2);
     } else {
       this.expertModeJsonContent = '';
     }
+    this.syncFormFromJson();
   }
 
   async onAccessPolicyTemplateFileSelect(event: Event) {
@@ -1637,6 +1651,7 @@ export class EdcAssetsAndPoliciesComponent implements OnInit {
       this.messageService.add({ severity: 'error', summary: 'Read Error', detail: 'Could not read the selected file.' });
     } finally {
       element.value = ''; // Reset file input
+      this.syncFormFromJson();
     }
   }
 
