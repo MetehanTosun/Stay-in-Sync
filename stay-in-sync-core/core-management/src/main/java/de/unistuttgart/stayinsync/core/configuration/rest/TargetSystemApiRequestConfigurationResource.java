@@ -54,9 +54,9 @@ public class TargetSystemApiRequestConfigurationResource {
     @GET
     @Path("/by-system/{targetSystemId}")
     @Operation(summary = "Returns all Target ARCs for a given Target System")
-    public List<GetRequestConfigurationDTO> getArcsByTargetSystem(@PathParam("targetSystemId") Long targetSystemId) {
+    public Response getArcsByTargetSystem(@PathParam("targetSystemId") Long targetSystemId) {
         var arcs = service.findAllByTargetSystemId(targetSystemId);
-        return mapper.mapToGetDTOList(arcs);
+        return Response.ok(mapper.mapToGetDTOList(arcs)).build();
     }
 
     @DELETE

@@ -15,9 +15,11 @@ import jakarta.ws.rs.core.Response;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import static jakarta.transaction.Transactional.TxType.REQUIRED;
 import static jakarta.transaction.Transactional.TxType.SUPPORTS;
 
 @ApplicationScoped
+@Transactional(REQUIRED)
 public class TargetSystemApiRequestConfigurationService {
 
     @Inject

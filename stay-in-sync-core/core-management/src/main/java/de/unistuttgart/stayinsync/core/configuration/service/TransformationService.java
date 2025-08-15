@@ -27,6 +27,9 @@ public class TransformationService {
     @Inject
     TransformationMapper mapper;
 
+    @Inject
+    RequestConfigurationMapper requestConfigurationMapper;
+
     public Transformation createTransformation(TransformationShellDTO dto) {
         Log.debugf("Creating new transformation shell with name: %s", dto.name());
         Transformation transformation = new Transformation();
@@ -70,6 +73,17 @@ public class TransformationService {
         }
 
         return transformation;
+    }
+
+    public List<GetRequestConfigurationDTO> getTargetArcs(Long transformationId){
+        Log.debugf("Getting Target ARCs for Transformation with id %d", transformationId);
+
+        Transformation transformation = Transformation.<Transformation>findByIdOptional(transformationId)
+                .orElseThrow(() -> new CoreManagementException(Response.Status.NOT_FOUND, "Transformation not found", "Transformation with id %d not found.", transformationId));
+
+        Set<TargetSystemApiRequestConfiguration> targetArcs = transformation.targetSystemApiRequestConfigurations;
+        List<TargetSystemApiRequestConfiguration> targetArcsToList =  targetArcs.stream().toList();
+        return requestConfigurationMapper.mapToGetDTOList(targetArcsToList);
     }
 
     @Transactional

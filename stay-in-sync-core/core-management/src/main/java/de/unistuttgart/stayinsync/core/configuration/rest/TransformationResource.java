@@ -44,6 +44,9 @@ public class TransformationResource {
     @Inject
     TransformationScriptMapper scriptMapper;
 
+    @Inject
+    TransformationService transformationService;
+
     @POST
     @Consumes(APPLICATION_JSON)
     @Operation(summary = "Creates a new transformation shell",
@@ -104,6 +107,15 @@ public class TransformationResource {
                     return Response.ok(scriptMapper.mapToDTO(script)).build();
                 })
                 .orElseThrow(() -> new CoreManagementException(Response.Status.NOT_FOUND, "Unable to find transformation script", "No script is assigned to Transformation with id %d", id));
+    }
+
+    @GET
+    @Path("/{id}/target-arcs")
+    @Produces(APPLICATION_JSON)
+    @Operation(summary = "Gets the associated Target ARCs for a Transformation",
+            description = "Provides the currently actively bound Target ARCs for a Transformation")
+    public Response getTransformationTargetArcs(@Parameter(name = "id", required = true) @PathParam("id") Long id) {
+        return Response.ok(transformationService.getTargetArcs(id)).build();
     }
 
     @PUT
