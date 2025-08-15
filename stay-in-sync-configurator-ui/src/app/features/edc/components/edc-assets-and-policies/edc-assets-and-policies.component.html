@@ -280,22 +280,35 @@
       </div>
     </div>
 
-    <div class="field col-12 md:col-4">
-      <label for="apBpn" class="font-bold block mb-2">Business Partner Number (BPN)</label>
-      <p-autoComplete id="apBpn" [(ngModel)]="newAccessPolicy.bpn" (ngModelChange)="syncJsonFromForm()" [suggestions]="bpnSuggestions" (completeMethod)="searchBpns($event)" [forceSelection]="false" placeholder="Enter or select a BPN" styleClass="w-full" inputStyleClass="w-full" [appendTo]="'body'"></p-autoComplete>
+    <div *ngIf="isPolicyJsonComplex" class="col-12">
+      <p-message severity="warn" text="The policy structure is too complex for this form. Please edit the JSON directly."></p-message>
     </div>
-    <div class="field col-12 md:col-4">
+
+    <div class="field col-12 md:col-6">
       <label for="apAction" class="font-bold block mb-2">Action</label>
-      <p-dropdown id="apAction" [options]="actionOptions" [(ngModel)]="newAccessPolicy.action" (onChange)="syncJsonFromForm()" styleClass="w-full" [appendTo]="'body'"></p-dropdown>
+      <p-dropdown id="apAction" [options]="actionOptions" [(ngModel)]="formAction" (onChange)="syncJsonFromForm()" styleClass="w-full" [appendTo]="'body'" [disabled]="isPolicyJsonComplex"></p-dropdown>
     </div>
-    <div class="field col-12 md:col-4">
-      <label for="apOperator" class="font-bold block mb-2">Constraint Operator</label>
-      <p-dropdown id="apOperator" [options]="operatorOptions" [(ngModel)]="newAccessPolicy.operator" (onChange)="syncJsonFromForm()" styleClass="w-full" [appendTo]="'body'"></p-dropdown>
-    </div>
+
+    <!-- Dynamic Constraints Section -->
+    <ng-container *ngFor="let constraint of formConstraints; let i = index">
+      <div class="field col-12 md:col-6">
+        <label class="font-bold block mb-2">{{ constraint.label }}</label>
+        <div class="grid p-fluid">
+          <div class="col-6">
+            <label [for]="'constraintOp' + i">Operator</label>
+            <p-dropdown [id]="'constraintOp' + i" [options]="operatorOptions" [(ngModel)]="constraint.operator" (onChange)="syncJsonFromForm()" [appendTo]="'body'" [disabled]="isPolicyJsonComplex"></p-dropdown>
+          </div>
+          <div class="col-6">
+            <label [for]="'constraintVal' + i">{{ constraint.valueLabel }}</label>
+            <input [id]="'constraintVal' + i" type="text" pInputText [(ngModel)]="constraint.rightOperand" (ngModelChange)="syncJsonFromForm()" [disabled]="isPolicyJsonComplex"/>
+          </div>
+        </div>
+      </div>
+    </ng-container>
 
     <div class="field col-12 mt-3">
       <label class="font-bold block mb-2">JSON Editor</label>
-      <ngx-monaco-editor id="newAccessPolicyJsonEditor" [options]="editorOptions" [(ngModel)]="expertModeJsonContent" style="height: 300px; border: 1px solid var(--surface-d);"></ngx-monaco-editor>
+      <ngx-monaco-editor id="newAccessPolicyJsonEditor" [options]="editorOptions" [(ngModel)]="expertModeJsonContent" (ngModelChange)="syncFormFromJsonWithDebounce()" style="height: 300px; border: 1px solid var(--surface-d);"></ngx-monaco-editor>
     </div>
   </div>
   <ng-template pTemplate="footer">
@@ -317,21 +330,34 @@
   </ng-template>
   <ng-container *ngIf="policyToEditODRL">
     <div class="p-fluid grid pt-3">
-        <div class="field col-12 md:col-4">
-            <label for="edit_apBpn" class="font-bold block mb-2">Business Partner Number (BPN)</label>
-            <p-autoComplete id="edit_apBpn" [(ngModel)]="newAccessPolicy.bpn" (ngModelChange)="syncJsonFromForm()" [suggestions]="bpnSuggestions" (completeMethod)="searchBpns($event)" [forceSelection]="false" placeholder="Enter or select a BPN" styleClass="w-full" inputStyleClass="w-full" [appendTo]="'body'"></p-autoComplete>
+      <div *ngIf="isPolicyJsonComplex" class="col-12">
+        <p-message severity="warn" text="The policy structure is too complex for this form. Please edit the JSON directly."></p-message>
+      </div>
+
+      <div class="field col-12 md:col-6">
+        <label for="edit_apAction" class="font-bold block mb-2">Action</label>
+        <p-dropdown id="edit_apAction" [options]="actionOptions" [(ngModel)]="formAction" (onChange)="syncJsonFromForm()" styleClass="w-full" [appendTo]="'body'" [disabled]="isPolicyJsonComplex"></p-dropdown>
+      </div>
+
+      <!-- Dynamic Constraints Section -->
+      <ng-container *ngFor="let constraint of formConstraints; let i = index">
+        <div class="field col-12 md:col-6">
+          <label class="font-bold block mb-2">{{ constraint.label }}</label>
+          <div class="grid p-fluid">
+            <div class="col-6">
+              <label [for]="'edit_constraintOp' + i">Operator</label>
+              <p-dropdown [id]="'edit_constraintOp' + i" [options]="operatorOptions" [(ngModel)]="constraint.operator" (onChange)="syncJsonFromForm()" [appendTo]="'body'" [disabled]="isPolicyJsonComplex"></p-dropdown>
+            </div>
+            <div class="col-6">
+              <label [for]="'edit_constraintVal' + i">{{ constraint.valueLabel }}</label>
+              <input [id]="'edit_constraintVal' + i" type="text" pInputText [(ngModel)]="constraint.rightOperand" (ngModelChange)="syncJsonFromForm()" [disabled]="isPolicyJsonComplex"/>
+            </div>
+          </div>
         </div>
-        <div class="field col-12 md:col-4">
-            <label for="edit_apAction" class="font-bold block mb-2">Action</label>
-            <p-dropdown id="edit_apAction" [options]="actionOptions" [(ngModel)]="newAccessPolicy.action" (onChange)="syncJsonFromForm()" styleClass="w-full" [appendTo]="'body'"></p-dropdown>
-        </div>
-        <div class="field col-12 md:col-4">
-            <label for="edit_apOperator" class="font-bold block mb-2">Constraint Operator</label>
-            <p-dropdown id="edit_apOperator" [options]="operatorOptions" [(ngModel)]="newAccessPolicy.operator" (onChange)="syncJsonFromForm()" styleClass="w-full" [appendTo]="'body'"></p-dropdown>
-        </div>
+      </ng-container>
         <div class="field col-12 mt-3">
             <label class="font-bold block mb-2">JSON Editor</label>
-            <ngx-monaco-editor id="editAccessPolicyJsonEditor" [options]="editorOptions" [(ngModel)]="expertModeJsonContent" style="height: 400px; border: 1px solid var(--surface-d);"></ngx-monaco-editor>
+            <ngx-monaco-editor id="editAccessPolicyJsonEditor" [options]="editorOptions" [(ngModel)]="expertModeJsonContent" (ngModelChange)="syncFormFromJsonWithDebounce()" style="height: 400px; border: 1px solid var(--surface-d);"></ngx-monaco-editor>
         </div>
     </div>
   </ng-container>

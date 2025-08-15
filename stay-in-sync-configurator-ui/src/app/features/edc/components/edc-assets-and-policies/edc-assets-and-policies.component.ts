@@ -1,4 +1,4 @@
-import {Component, OnInit, ViewChild} from '@angular/core';
+import {Component, OnDestroy, OnInit, ViewChild} from '@angular/core';
 import {CommonModule} from '@angular/common';
 import {FormsModule} from '@angular/forms';
 
@@ -19,17 +19,19 @@ import { TabViewModule } from 'primeng/tabview';
 import { DropdownModule } from 'primeng/dropdown';
 import { ToastModule } from 'primeng/toast';
 import { AutoCompleteModule } from 'primeng/autocomplete';
+import { MessageModule } from 'primeng/message';
 import { MonacoEditorModule } from 'ngx-monaco-editor-v2';
 
 
 
 // App imports
 import { Asset } from './models/asset.model';
-import { AccessPolicy, OdrlContractDefinition, ContractPolicy, OdrlPolicyDefinition, OdrlCriterion } from './models/policy.model';
+import { AccessPolicy, OdrlContractDefinition, ContractPolicy, OdrlPolicyDefinition, OdrlCriterion, OdrlConstraint } from './models/policy.model';
 import { AssetService } from './services/asset.service';
 import { PolicyService } from './services/policy.service';
 import { EdcInstanceService } from '../edc-instances/services/edc-instance.service';
-import { lastValueFrom } from 'rxjs';
+import {lastValueFrom, Subject, Subscription} from 'rxjs';
+import {debounceTime} from "rxjs/operators";
 
 @Component({
   selector: 'app-edc-assets-and-policies',
@@ -51,6 +53,7 @@ import { lastValueFrom } from 'rxjs';
     DropdownModule,
     ToastModule,
     AutoCompleteModule,
+    MessageModule,
     MonacoEditorModule,
     TabViewModule,
   ],
@@ -58,7 +61,7 @@ import { lastValueFrom } from 'rxjs';
   styleUrls: ['./edc-assets-and-policies.component.css'],
   providers: [ConfirmationService, MessageService],
 })
-export class EdcAssetsAndPoliciesComponent implements OnInit {
+export class EdcAssetsAndPoliciesComponent implements OnInit, OnDestroy {
   @ViewChild('dtAssets') dtAssets!: Table;
   @ViewChild('dtPolicies') dtPolicies!: Table;
   @ViewChild('dtContracts') dtContracts!: Table;
@@ -121,8 +124,18 @@ export class EdcAssetsAndPoliciesComponent implements OnInit {
   // Properties for Access Policy Templates
   accessPolicyTemplates: { name: string, content: any }[] = [];
   selectedAccessPolicyTemplate: any | null = null;
-  // Model for the simple "Normal Mode" form
-  newAccessPolicy: { bpn: string; action: string; operator: string; } = this.createEmptySimpleAccessPolicy();
+
+  // Dynamic form properties for Access Policy dialogs
+  formAction: string = 'use';
+  formConstraints: {
+    label: string;
+    leftOperand: string;
+    operator: string;
+    rightOperand: any;
+    valueLabel: string;
+  }[] = [];
+  isPolicyJsonComplex: boolean = false;
+
 
   // BPN suggestions
   bpnSuggestions: string[] = [];
@@ -149,6 +162,10 @@ export class EdcAssetsAndPoliciesComponent implements OnInit {
   linkedAccessPolicy: AccessPolicy | null = null;
   linkedAssets: Asset[] = [];
 
+  // Real-time sync from JSON editor to form
+  private jsonSyncSubscription: Subscription | null = null;
+  private jsonSyncSubject = new Subject<void>();
+
   constructor(
     private assetService: AssetService,
     private policyService: PolicyService,
@@ -167,6 +184,12 @@ export class EdcAssetsAndPoliciesComponent implements OnInit {
       {label: 'Write', value: 'write'},
     ];
 
+    this.jsonSyncSubscription = this.jsonSyncSubject.pipe(
+      debounceTime(500) // Wait for 500ms of silence before processing
+    ).subscribe(() => {
+      this.syncFormFromJson();
+    });
+
   }
 
   ngOnInit(): void {
@@ -176,6 +199,10 @@ export class EdcAssetsAndPoliciesComponent implements OnInit {
     this.loadAccessPolicyTemplates();
     this.loadAssetTemplates();
     this.loadAllBpns();
+  }
+
+  ngOnDestroy(): void {
+    this.jsonSyncSubscription?.unsubscribe();
   }
 
   private loadContractDefinitionTemplates() {
@@ -693,37 +720,25 @@ export class EdcAssetsAndPoliciesComponent implements OnInit {
     });
   }
 
-  private createEmptySimpleAccessPolicy() {
-    return { bpn: '', action: 'use', operator: 'eq' };
-  }
-
-  searchBpns(event: { query: string }) {
-    const query = event.query.toLowerCase();
-    this.bpnSuggestions = this.allBpns.filter(bpn =>
-      bpn.toLowerCase().includes(query)
-    );
-  }
-
   // Access Policy Methods
 
   openNewAccessPolicyDialog() {
-    this.newAccessPolicy = this.createEmptySimpleAccessPolicy();
+    this.isPolicyJsonComplex = false;
+    this.formAction = 'use';
+    this.formConstraints = [];
     // Create a default empty JSON structure
     const odrlPayload: OdrlPolicyDefinition = {
       '@context': { odrl: 'http://www.w3.org/ns/odrl/2/' },
       '@id': 'POLICY_ID',
       policy: {
         permission: [{
-          action: this.newAccessPolicy.action,
-          constraint: [{
-            leftOperand: 'BusinessPartnerNumber',
-            operator: this.newAccessPolicy.operator,
-            rightOperand: this.newAccessPolicy.bpn,
-          }]
+          action: 'use',
+          constraint: []
         }]
       }
     };
     this.expertModeJsonContent = JSON.stringify(odrlPayload, null, 2);
+    this.syncFormFromJson();
     this.selectedAccessPolicyTemplate = null;
     this.policyToEditODRL = null; // Ensure we are in "create" mode
     this.displayNewAccessPolicyDialog = true;
@@ -761,7 +776,7 @@ export class EdcAssetsAndPoliciesComponent implements OnInit {
     this.policyToEditODRL = this.allOdrlAccessPolicies.find(p => p['@id'] === policy.id) ?? null;
     if (this.policyToEditODRL) {
       this.expertModeJsonContent = JSON.stringify(this.policyToEditODRL, null, 2);
-      this.syncFormFromJson(); // Sync the form from the loaded JSON
+      this.syncFormFromJson();
       this.displayEditAccessPolicyDialog = true;
     } else {
       this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Could not find the full ODRL policy to edit.' });
@@ -1564,66 +1579,119 @@ export class EdcAssetsAndPoliciesComponent implements OnInit {
   /**
    * Updates the JSON editor content based on changes in the simple form fields.
    */
-  syncJsonFromForm(): void {
-    try {
-      // Attempt to parse the current JSON to preserve its structure and any extra fields
-      const currentJson = JSON.parse(this.expertModeJsonContent || '{}');
+   syncJsonFromForm(): void {
+     try {
+       const currentJson = JSON.parse(this.expertModeJsonContent || '{}');
+       const permission = currentJson.policy?.permission?.[0];
 
-      // Update only the relevant parts
-      const permission = currentJson.policy?.permission?.[0];
-      if (permission) {
-        permission.action = this.newAccessPolicy.action;
-        const constraint = permission.constraint?.[0];
-        if (constraint) {
-          constraint.operator = this.newAccessPolicy.operator;
-          constraint.rightOperand = this.newAccessPolicy.bpn;
-        }
-      }
+       if (permission) {
+         permission.action = this.formAction;
+         permission.constraint = this.formConstraints.map(c => ({
+           leftOperand: c.leftOperand,
+           operator: c.operator,
+           rightOperand: c.rightOperand
+         }));
+       }
 
-      // Re-stringify the updated JSON to the editor
-      this.expertModeJsonContent = JSON.stringify(currentJson, null, 2);
-    } catch (e) {
-      // If JSON is invalid, create a fresh one from the form. This is a good fallback.
-      const policyId = this.policyToEditODRL?.['@id'] || `policy-${this.newAccessPolicy.bpn || 'new'}-${Date.now()}`;
-      const odrlPayload: OdrlPolicyDefinition = {
-        '@context': { odrl: 'http://www.w3.org/ns/odrl/2/' },
-        '@id': policyId,
-        policy: {
-          permission: [{
-            action: this.newAccessPolicy.action,
-            constraint: [{
-              leftOperand: 'BusinessPartnerNumber',
-              operator: this.newAccessPolicy.operator,
-              rightOperand: this.newAccessPolicy.bpn,
-            }]
-          }]
-        }
-      };
-      this.expertModeJsonContent = JSON.stringify(odrlPayload, null, 2);
-    }
-  }
+       this.expertModeJsonContent = JSON.stringify(currentJson, null, 2);
+     } catch (e) {
+       const policyId = this.policyToEditODRL?.['@id'] || `policy-new-${Date.now()}`;
+       const odrlPayload: OdrlPolicyDefinition = {
+         '@context': { odrl: 'http://www.w3.org/ns/odrl/2/' },
+         '@id': policyId,
+         policy: {
+           permission: [{
+             action: this.formAction,
+             constraint: this.formConstraints.map(c => ({
+               leftOperand: c.leftOperand,
+               operator: c.operator,
+               rightOperand: c.rightOperand
+             }))
+           }]
+         }
+       };
+       this.expertModeJsonContent = JSON.stringify(odrlPayload, null, 2);
+     }
+   }
 
   /**
    * Updates the simple form fields based on the content of the JSON editor.
    */
   syncFormFromJson(): void {
+    this.isPolicyJsonComplex = false; // Assume the JSON is simple until proven otherwise
     try {
-      const odrlPayload: OdrlPolicyDefinition = JSON.parse(this.expertModeJsonContent);
-      const permission = odrlPayload.policy?.permission?.[0];
-      const constraint = permission?.constraint?.[0];
+      const odrlPayload: OdrlPolicyDefinition = JSON.parse(this.expertModeJsonContent || '{}');
+      const permissions = odrlPayload.policy?.permission;
 
-      // Only sync if the structure is simple and what we expect
-      if (permission && constraint && constraint.leftOperand === 'BusinessPartnerNumber') {
-        this.newAccessPolicy.bpn = constraint.rightOperand || '';
-        this.newAccessPolicy.action = permission.action || 'use';
-        this.newAccessPolicy.operator = constraint.operator || 'eq';
+      // If there are no permissions or more than one, the form is considered complex or empty.
+      if (!permissions || permissions.length !== 1) {
+        if (permissions && permissions.length > 1) {
+          this.isPolicyJsonComplex = true;
+        }
+        // For no permissions or multiple permissions, the simple form should be empty and disabled (if complex).
+        this.formAction = 'use';
+        this.formConstraints = [];
+        return;
+      }
+
+      const permission = permissions[0];
+      const newConstraints = permission?.constraint || [];
+
+      // Check if the structure of the constraints has changed (number of constraints or their left operands).
+      const structureChanged = newConstraints.length !== this.formConstraints.length ||
+        newConstraints.some((nc, i) => nc.leftOperand !== this.formConstraints[i].leftOperand);
+
+      this.formAction = permission.action || 'use';
+
+      if (structureChanged) {
+        // If structure is different (e.g., new template loaded), rebuild the entire form model.
+        this.formConstraints = newConstraints.map((c: OdrlConstraint) => {
+          const isTemplateVar = typeof c.rightOperand === 'string' && c.rightOperand === c.rightOperand.toUpperCase() && c.rightOperand.includes('_');
+          return {
+            label: this.formatConstraintLabel(c.leftOperand),
+            leftOperand: c.leftOperand,
+            operator: c.operator || 'eq',
+            rightOperand: isTemplateVar ? '' : (c.rightOperand || ''),
+            valueLabel: isTemplateVar ? this.formatValueLabel(c.rightOperand) : 'Value'
+          };
+        });
       } else {
-        // If the structure is complex or doesn't match, clear the form fields
-        this.newAccessPolicy = this.createEmptySimpleAccessPolicy();
+        // If structure is the same, only update the values to prevent losing the custom label.
+        newConstraints.forEach((nc, i) => {
+          const isTemplateVar = typeof nc.rightOperand === 'string' && nc.rightOperand === nc.rightOperand.toUpperCase() && nc.rightOperand.includes('_');
+          this.formConstraints[i].operator = nc.operator || 'eq';
+          // If the value from JSON is a template variable, reset the input and update the label.
+          // Otherwise, just update the input's value and leave the label as it was.
+          if (isTemplateVar) {
+            this.formConstraints[i].rightOperand = '';
+            this.formConstraints[i].valueLabel = this.formatValueLabel(nc.rightOperand);
+          } else {
+            this.formConstraints[i].rightOperand = nc.rightOperand || '';
+          }
+        });
       }
     } catch (e) {
-      // If JSON is invalid, do nothing to the form, let the user fix the JSON.
+      // If JSON is invalid, it's "complex" and the form should be disabled.
+      this.isPolicyJsonComplex = true;
+      this.formAction = 'use';
+      this.formConstraints = [];
     }
+  }
+
+  private formatConstraintLabel(operand: string): string {
+    if (!operand) return 'Unknown Constraint';
+    return operand.replace(/([A-Z])/g, ' $1').replace(/([a-z])([A-Z])/g, '$1 $2').replace(/^./, (str) => str.toUpperCase()).trim();
+  }
+
+  private formatValueLabel(templateVar: string): string {
+    if (!templateVar || typeof templateVar !== 'string') {
+      return 'Value';
+    }
+    // A simple check if it's a template variable (example ALL_CAPS_WITH_UNDERSCORES)
+    return templateVar
+      .replace(/_/g, ' ')
+      .toLowerCase()
+      .replace(/^\w/, c => c.toUpperCase());
   }
 
   onAccessPolicyTemplateChange(event: { value: any }) {
@@ -1680,6 +1748,13 @@ export class EdcAssetsAndPoliciesComponent implements OnInit {
     } finally {
       element.value = '';
     }
+  }
+
+  /**
+   * Triggers the debounced synchronization from the JSON editor to the form fields.
+   */
+  syncFormFromJsonWithDebounce(): void {
+    this.jsonSyncSubject.next();
   }
 
   // View Details Methods
