@@ -175,13 +175,18 @@ export class PolicyService {
   // Helper methods
   private transformOdrlToAccessPolicy(odrlDef: OdrlPolicyDefinition): AccessPolicy {
     const permission = odrlDef.policy?.permission?.[0];
-    const constraint = permission?.constraint?.[0];
+    const constraints = permission?.constraint || [];
+
+    // find the BPN constraint to display in the table.
+    const bpnConstraint = constraints.find(c => c.leftOperand === 'BusinessPartnerNumber');
+
+    const firstConstraint = constraints[0];
 
     return {
       id: odrlDef['@id'],
-      bpn: constraint?.rightOperand || '',
+      bpn: bpnConstraint?.rightOperand || 'N/A', // Show BPN if available, otherwise indicate not applicable.
       action: permission?.action || 'use',
-      operator: constraint?.operator || 'eq',
+      operator: firstConstraint?.operator || 'N/A',
       contractPolicies: [],
     };
   }
