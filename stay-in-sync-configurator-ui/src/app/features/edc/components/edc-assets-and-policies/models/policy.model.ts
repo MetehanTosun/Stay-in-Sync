@@ -39,7 +39,7 @@ export interface OdrlPermission {
 export interface OdrlConstraint {
   leftOperand: string;
   operator: string;
-  rightOperand: string;
+  rightOperand: any; // Can be a string or an array of strings
 }
 
 /**
@@ -59,5 +59,5 @@ export interface OdrlContractDefinition {
 export interface OdrlCriterion {
   operandLeft: string;
   operator: string;
-  operandRight: string;
+  operandRight: any; // Can be a string for 'eq' or an array of strings for 'in'
 }

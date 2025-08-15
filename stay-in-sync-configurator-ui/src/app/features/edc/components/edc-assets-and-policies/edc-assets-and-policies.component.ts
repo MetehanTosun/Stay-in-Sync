@@ -249,22 +249,6 @@ export class EdcAssetsAndPoliciesComponent implements OnInit, OnDestroy {
             }
           ]
         }
-      },
-      {
-        name: 'Template with Variables (Advanced)',
-        content: {
-          '@context': { edc: 'https://w3id.org/edc/v0.0.1/ns/' },
-          '@id': 'CONTRACT_DEF_ID_WITH_VARIABLE_${uuid}',
-          accessPolicyId: 'ACCESS_POLICY_ID_VARIABLE_${access_policy_id}',
-          contractPolicyId: 'CONTRACT_POLICY_ID_VARIABLE_${contract_policy_id}',
-          assetsSelector: [
-            {
-              operandLeft: 'https://w3id.org/edc/v0.0.1/ns/id',
-              operator: 'eq',
-              operandRight: '${asset_id}',
-            },
-          ],
-        }
       }
     ];
   }
@@ -1005,7 +989,25 @@ export class EdcAssetsAndPoliciesComponent implements OnInit, OnDestroy {
 
   onTemplateChange(event: { value: any }) {
     if (event.value) {
-      this.expertModeJsonContent = JSON.stringify(event.value.content, null, 2);
+      // Deep copy to avoid modifying the original template object
+      const templateContent = JSON.parse(JSON.stringify(event.value.content));
+      const accessPolicyId = (this.newContractPolicy.accessPolicyId as any)?.id || this.newContractPolicy.accessPolicyId || 'ACCESS_POLICY_ID';
+      const selectedAssetIds = this.selectedAssetsInDialog.map(asset => asset.assetId);
+
+      // Dynamically populate common fields
+      templateContent.accessPolicyId = accessPolicyId;
+      templateContent.contractPolicyId = accessPolicyId;
+
+      // Handle specific templates
+      if (templateContent['@id'] === 'CONTRACT_DEFINITION_ID_1') { // Simple Asset Selector
+        // Use the first selected asset, or a placeholder
+        templateContent.assetsSelector[0].operandRight = selectedAssetIds[0] || 'ASSET_ID';
+      } else if (templateContent['@id'] === 'CONTRACT_DEFINITION_ID_2') { // Multi-Asset Selector
+        // Use all selected assets, or a placeholder array
+        templateContent.assetsSelector[0].operandRight = selectedAssetIds.length > 0 ? selectedAssetIds : ["ASSET_ID_1", "ASSET_ID_2", "ASSET_ID_3"];
+      }
+
+      this.expertModeJsonContent = JSON.stringify(templateContent, null, 2);
     } else {
       // When clearing the template, reset to a default empty structure
       this.expertModeJsonContent = JSON.stringify({
@@ -1436,40 +1438,33 @@ export class EdcAssetsAndPoliciesComponent implements OnInit, OnDestroy {
   /**
    * Updates the JSON editor content based on changes in the simple form fields.
    */
-   syncJsonFromForm(): void {
-     try {
-       const currentJson = JSON.parse(this.expertModeJsonContent || '{}');
-       const permission = currentJson.policy?.permission?.[0];
+  syncJsonFromForm(): void {
+    try {
+      const currentJson: OdrlPolicyDefinition = JSON.parse(this.expertModeJsonContent || '{}');
+      const permission = currentJson.policy?.permission?.[0];
 
-       if (permission) {
-         permission.action = this.formAction;
-         permission.constraint = this.formConstraints.map(c => ({
-           leftOperand: c.leftOperand,
-           operator: c.operator,
-           rightOperand: c.rightOperand
-         }));
-       }
+      if (permission) {
+        permission.action = this.formAction;
 
-       this.expertModeJsonContent = JSON.stringify(currentJson, null, 2);
-     } catch (e) {
-       const policyId = this.policyToEditODRL?.['@id'] || `policy-new-${Date.now()}`;
-       const odrlPayload: OdrlPolicyDefinition = {
-         '@context': { odrl: 'http://www.w3.org/ns/odrl/2/' },
-         '@id': policyId,
-         policy: {
-           permission: [{
-             action: this.formAction,
-             constraint: this.formConstraints.map(c => ({
-               leftOperand: c.leftOperand,
-               operator: c.operator,
-               rightOperand: c.rightOperand
-             }))
-           }]
-         }
-       };
-       this.expertModeJsonContent = JSON.stringify(odrlPayload, null, 2);
-     }
-   }
+        // Instead of replacing the whole constraint array, update values in place.
+        // This preserves any other data in the constraints that isn't visible in the simple form.
+        if (Array.isArray(permission.constraint)) {
+          this.formConstraints.forEach(formConstraint => {
+            const jsonConstraint = permission.constraint.find(c => c.leftOperand === formConstraint.leftOperand);
+            if (jsonConstraint) {
+              jsonConstraint.operator = formConstraint.operator;
+              jsonConstraint.rightOperand = formConstraint.rightOperand;
+            }
+          });
+        }
+      }
+
+      this.expertModeJsonContent = JSON.stringify(currentJson, null, 2);
+    } catch (e) {
+      // If JSON is invalid, do nothing. This prevents overwriting the user's manual edits.
+      console.warn('syncJsonFromForm: Could not parse JSON, aborting sync to prevent data loss.');
+    }
+  }
 
   /**
    * Updates the simple form fields based on the content of the JSON editor.
@@ -1631,21 +1626,21 @@ export class EdcAssetsAndPoliciesComponent implements OnInit, OnDestroy {
 
       currentJson.accessPolicyId = accessPolicyId;
       currentJson.contractPolicyId = accessPolicyId; // Keep them in sync for simplicity
-      currentJson.assetsSelector = this.buildAssetSelectors();
+
+      // Intelligently update asset selectors to preserve 'in' operator if present
+      const assetSelectors = currentJson.assetsSelector || [];
+      if (assetSelectors.length === 1 && assetSelectors[0].operator === 'in') {
+        // If the template is an 'in' selector, just update the list of asset IDs
+        assetSelectors[0].operandRight = this.selectedAssetsInDialog.map(a => a.assetId);
+      } else {
+        // Otherwise, assume a list of 'eq' selectors and rebuild it
+        currentJson.assetsSelector = this.buildAssetSelectors();
+      }
 
       this.expertModeJsonContent = JSON.stringify(currentJson, null, 2);
     } catch (e) {
-      // Fallback for invalid JSON: create a new structure from the form state
-      const accessPolicyId = (this.newContractPolicy.accessPolicyId as any)?.id || this.newContractPolicy.accessPolicyId;
-      const contractDefId = `contract-def-${accessPolicyId || 'new'}-${Date.now()}`;
-      const odrlPayload: OdrlContractDefinition = {
-        '@context': { edc: 'https://w3id.org/edc/v0.0.1/ns/' },
-        '@id': contractDefId,
-        accessPolicyId: accessPolicyId,
-        contractPolicyId: accessPolicyId,
-        assetsSelector: this.buildAssetSelectors(),
-      };
-      this.expertModeJsonContent = JSON.stringify(odrlPayload, null, 2);
+      // If JSON is invalid (e.g., during manual editing), do nothing to avoid overwriting user's work.
+      console.warn('syncJsonFromContractForm: Could not parse JSON, aborting sync to prevent data loss.');
     }
   }
 
@@ -1658,9 +1653,9 @@ export class EdcAssetsAndPoliciesComponent implements OnInit, OnDestroy {
       const odrlPayload: OdrlContractDefinition = JSON.parse(this.expertModeJsonContent || '{}');
       const assetSelectors = odrlPayload.assetsSelector || [];
 
-      // A contract is "complex" if any criterion uses something other than the simple `id = value` format.
+      // A contract is "complex" if it contains criteria that are not simple 'eq' or 'in' selectors on asset ID
       const isComplex = assetSelectors.some(s =>
-        s.operator !== 'eq' || s.operandLeft !== 'https://w3id.org/edc/v0.0.1/ns/id'
+        s.operandLeft !== 'https://w3id.org/edc/v0.0.1/ns/id' || !['eq', 'in'].includes(s.operator)
       );
 
       if (isComplex) {
@@ -1676,7 +1671,14 @@ export class EdcAssetsAndPoliciesComponent implements OnInit, OnDestroy {
       this.newContractPolicy.accessPolicyId = accessPolicyObject as any || '';
 
       // Sync Asset Selection
-      const selectedAssetIds = new Set(assetSelectors.map(s => s.operandRight));
+      const selectedAssetIds = new Set<string>();
+      assetSelectors.forEach(selector => {
+        if (selector.operator === 'eq' && typeof selector.operandRight === 'string') {
+          selectedAssetIds.add(selector.operandRight);
+        } else if (selector.operator === 'in' && Array.isArray(selector.operandRight)) {
+          selector.operandRight.forEach(id => selectedAssetIds.add(id as string));
+        }
+      });
       this.selectedAssetsInDialog = this.assets.filter(asset => selectedAssetIds.has(asset.assetId));
     } catch (e) {
       this.isContractJsonComplex = true; // Invalid JSON is considered complex
