@@ -17,14 +17,22 @@ import {
   SourceSystem,
   SourceSystemEndpoint,
 } from '../../features/source-system/models/source-system.models';
+import { 
+  CreateTargetArcDTO, 
+  EndpointSuggestion, 
+  TargetArcConfiguration, 
+  TargetSystem, 
+  TypeDefinitionsResponse 
+} from '../../features/script-editor/models/target-system.models';
 
 export interface ScriptPayload {
   id?: string;
   name: string | null | undefined;
   typescriptCode: string;
   javascriptCode?: string;
-  hash: string;
   requiredArcAliases?: string[];
+  status: 'DRAFT' | 'VALIDATED';
+  targetArcIds: number[];
 }
 
 @Injectable({
@@ -110,6 +118,35 @@ export class ScriptEditorService {
     return this.http.get<SourceSystemEndpoint[]>(
       `${this.API_URL}/config/source-system/${systemId}/endpoint`
     );
+  }
+
+  getTargetSystems(): Observable<TargetSystem[]> {
+    return this.http.get<TargetSystem[]>(`${this.API_URL}/config/target-systems`);
+  }
+
+  getArcsByTargetSystem(targetSystemId: number): Observable<TargetArcConfiguration[]> {
+    return this.http.get<TargetArcConfiguration[]>(`${this.API_URL}/config/arcs/by-system/${targetSystemId}`);
+  }
+
+  // TODO: Add Endpoint
+  getEndpointSuggestionsForTargetSystem(targetSystemId: number): Observable<EndpointSuggestion[]> {
+    return this.http.get<EndpointSuggestion[]>(`${this.API_URL}/config/target-systems/${targetSystemId}/endpoints`);
+  }
+
+  createArc(dto: CreateTargetArcDTO): Observable<TargetArcConfiguration> {
+    return this.http.post<TargetArcConfiguration>(`${this.API_URL}/config/target-arc`, dto);
+  }
+
+  getActiveArcsForTransformation(transformationId: string): Observable<TargetArcConfiguration[]> {
+    return this.http.get<TargetArcConfiguration[]>(`${this.API_URL}/config/transformation/${transformationId}/target-arcs`);
+  }
+
+  updateTransformationTargetArcs(transformationId: number, arcIds: number[]): Observable<any> {
+    return this.http.put(`${this.API_URL}/config/transformation/${transformationId}/target-arcs`, { arcIds });
+  }
+
+  getTargetTypeDefinitions(transformationId: number): Observable<TypeDefinitionsResponse> {
+    return this.http.get<TypeDefinitionsResponse>(`${this.API_URL}/config/transformation/${transformationId}/target-type-definitions`);
   }
 
   getArcWizardContextData(

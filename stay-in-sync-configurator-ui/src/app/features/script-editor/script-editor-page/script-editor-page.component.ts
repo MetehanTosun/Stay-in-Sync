@@ -1,4 +1,4 @@
-import {ChangeDetectorRef, Component, inject, OnDestroy, OnInit,} from '@angular/core';
+import {ChangeDetectorRef, Component, inject, OnDestroy, OnInit, ViewChild,} from '@angular/core';
 import {FormsModule} from '@angular/forms';
 import {CommonModule} from '@angular/common';
 import type {editor, IDisposable} from 'monaco-editor';
@@ -30,6 +30,9 @@ import {ArcManagementPanelComponent} from '../arc-management-panel/arc-managemen
 import {ArcWizardComponent} from '../arc-wizard/arc-wizard.component';
 import {InputTextModule} from 'primeng/inputtext';
 import {FloatLabel} from 'primeng/floatlabel';
+import { MonacoEditorService } from '../../../core/services/monaco-editor.service';
+import { TypeDefinitionsResponse } from '../models/target-system.models';
+import { TargetArcPanelComponent } from '../target-arc-panel/target-arc-panel.component';
 
 interface MonacoExtraLib {
   uri: String;
@@ -55,13 +58,15 @@ interface MonacoExtraLib {
     ArcWizardComponent,
     ToastModule,
     InputTextModule,
-    FloatLabel
+    FloatLabel,
+    TargetArcPanelComponent
   ],
 })
 export class ScriptEditorPageComponent implements OnInit, OnDestroy {
+  @ViewChild(TargetArcPanelComponent) targetArcPanel!: TargetArcPanelComponent;
 
   currentTransformationId: string | null = null;
-  preloadedData?: ScriptEditorData;
+  scriptPayload: ScriptPayload | null = null;
 
   editorOptions = {
     theme: 'vs-dark',
@@ -93,18 +98,12 @@ export class ScriptEditorPageComponent implements OnInit, OnDestroy {
   private scriptEditorService = inject(ScriptEditorService);
   private messageService = inject(MessageService);
   private arcStateService = inject(ArcStateService);
+  private monacoEditorService = inject(MonacoEditorService);
+
   private route = inject(ActivatedRoute);
   private router = inject(Router);
 
   constructor() {
-    const navigation = this.router.getCurrentNavigation();
-    this.preloadedData = navigation?.extras?.state?.['scriptData'];
-    console.log('Preloaded data from state: ', this.preloadedData);
-
-    if (this.preloadedData?.scriptName) {
-      this.loadingMessage = `Loading ${this.preloadedData.scriptName}...`;
-    }
-
     this.subscriptions.add(
       this.onModelChange.pipe(debounceTime(1000)).subscribe(() => this.analyzeEditorContentForTypes())
     );
@@ -132,6 +131,17 @@ export class ScriptEditorPageComponent implements OnInit, OnDestroy {
     this.monaco = monaco;
     console.log('Monaco editor instance initialized', editorInstance);
 
+    console.log('[ScriptEditorPage] Subscribing to type definition updates...');
+    this.subscriptions.add(
+      this.monacoEditorService.typeUpdateRequested$.subscribe(response => {
+        if(!response){
+          return;
+        }
+        console.log('[ScriptEditorPage] Received type update request. Applying to Monaco instance.');
+        this.applyTypeDefinitions(response);
+      })
+    );
+
     monaco.languages.typescript.typescriptDefaults.setCompilerOptions({
       target: monaco.languages.typescript.ScriptTarget.ESNext,
       allowNonTsExtensions: true,
@@ -156,7 +166,7 @@ export class ScriptEditorPageComponent implements OnInit, OnDestroy {
 
     if (this.currentTransformationId) {
       console.log(`Editor is ready. Loading context for Transformation ID: ${this.currentTransformationId}`);
-      this.loadContextForScript(this.currentTransformationId).subscribe();
+      this.loadContextForScript(this.currentTransformationId);
     }
   }
 
@@ -181,30 +191,40 @@ export class ScriptEditorPageComponent implements OnInit, OnDestroy {
     });
   }
 
-  private loadContextForScript(transformationId: string) {
-    if (!transformationId) {
-      return of(null);
+  private applyTypeDefinitions(response: TypeDefinitionsResponse): void {
+    if (!this.monaco){
+      console.error("Cannot apply types, monaco instance is not available.");
+      return;
     }
+    console.log("HELOOOOOOOOOOOOOOOOOO");7
+    if (response && response.libraries) {
+      for (const lib of response.libraries) {
+        this.monaco.languages.typescript.typescriptDefaults.addExtraLib(lib.content, `file:///${lib.filePath}`);
+      }
+      console.log('Target type definitions successfully applied to Monaco editor.');
+    }
+  }
 
+  private loadContextForScript(transformationId: string): void {
     this.isLoading = true;
     this.loadingMessage = `Loading context for Transformation with ID: ${transformationId}...`;
 
-    return this.scriptEditorService.getScriptForTransformation(Number(transformationId)).pipe(
-      catchError(error => {
-        if (error.status === 404) return of(null);
-        return throwError(() => error);
-      }),
-      tap(savedScript => {
-        const scriptName = this.preloadedData?.scriptName;
-        if (savedScript?.typescriptCode) {
-          this.code = savedScript.typescriptCode;
+    this.scriptEditorService.getScriptForTransformation(Number(transformationId))
+      .pipe(
+        finalize(() => this.isLoading = false)
+      )
+      .subscribe({
+        next: (payload) => {
+          this.scriptPayload = payload;
+          this.code = payload.typescriptCode || this.generateDefaultScriptTemplate();
           this.analyzeEditorContentForTypes();
-        } else {
-          this.code = this.generateDefaultScriptTemplate(scriptName);
+        },
+        error: (err) => {
+          console.error('Failed to load script context', err);
+          this.code = `// ERROR: Could not load script context for Transformation ID ${transformationId}.`;
+          this.messageService.add({ severity: 'error', summary: 'Load Error', detail: 'Script context could not be loaded.' });
         }
-      }),
-      finalize(() => this.isLoading = false)
-    );
+      });
   }
 
   async saveScript(): Promise<void> {
@@ -220,14 +240,31 @@ export class ScriptEditorPageComponent implements OnInit, OnDestroy {
       return;
     }
 
-    const hasErrors = await this.hasValidationErrors();
-    if (hasErrors) {
-      this.messageService.add({
+    const activeTargetArcIds = this.targetArcPanel.activeArcs.map(arc => arc.id);
+
+    let scriptStatus: 'DRAFT' | 'VALIDATED' = 'DRAFT';
+    let transpiledCode = '';
+    let hasErrors = true;
+
+    try {
+      hasErrors = await this.hasValidationErrors();
+      if (hasErrors){
+        this.messageService.add({
         severity: 'error',
         summary: 'Validation Failed',
         detail: 'Please fix the TypeScript errors before saving.'
       });
-      return;
+      }
+      const transpileOutput = ts.transpileModule(this.code, {
+        compilerOptions: {module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ESNext},
+      });
+      transpiledCode = transpileOutput.outputText;
+
+      if(!hasErrors){
+        scriptStatus = 'VALIDATED';
+      }
+    } catch (e){
+      scriptStatus = 'DRAFT';
     }
 
     const codeToSave = this.code;
@@ -244,36 +281,23 @@ export class ScriptEditorPageComponent implements OnInit, OnDestroy {
     const requiredArcAliases = Array.from(requiredArcSet);
     console.log('%c[Editor] Extracted ARC dependencies:', 'color: #f97316;', requiredArcAliases);
 
-    try {
-      const transpileOutput = ts.transpileModule(codeToSave, {
-        compilerOptions: {module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ESNext},
-      });
-
-      const jsHash = await this.generateHash(transpileOutput.outputText);
-
-      const payload: ScriptPayload = {
-        name: this.preloadedData?.scriptName,
-        typescriptCode: codeToSave,
-        javascriptCode: transpileOutput.outputText,
-        hash: jsHash,
-        requiredArcAliases: requiredArcAliases
+    const payload: ScriptPayload = {
+        name: this.scriptPayload!.name,
+        typescriptCode: this.code,
+        javascriptCode: transpiledCode,
+        requiredArcAliases: requiredArcAliases,
+        status: scriptStatus,
+        targetArcIds: activeTargetArcIds
       };
-
-      console.log(payload);
-
-      this.isSaving = true;
-
-      this.scriptEditorService.saveScriptForTransformation(Number(this.currentTransformationId), payload).subscribe({
-        next: (savedScript) => {
+    
+    this.isSaving = true;
+    this.scriptEditorService.saveScriptForTransformation(Number(this.currentTransformationId), payload).subscribe({
+        next: () => {
           this.messageService.add({
             severity: 'success',
             summary: 'Saved!',
             detail: 'Script has been saved successfully.'
           });
-
-          if (this.preloadedData) {
-            this.preloadedData.id = savedScript.id;
-          }
 
           this.isSaving = false;
           this.cdr.detectChanges();
@@ -289,16 +313,6 @@ export class ScriptEditorPageComponent implements OnInit, OnDestroy {
           this.cdr.detectChanges();
         }
       });
-
-    } catch (e) {
-      this.messageService.add({
-        severity: 'error',
-        summary: 'Transpilation Error',
-        detail: 'An error occurred during script transpilation.'
-      });
-      console.error('Error in saveScript:', e);
-      this.isSaving = false;
-    }
   }
 
   // --- Helper & Private Methods ---
@@ -348,43 +362,106 @@ export class ScriptEditorPageComponent implements OnInit, OnDestroy {
     this.addExtraLib(stayinsyncApiDts, 'file:///global-stayinsync-api.d.ts');
   }
 
-  private generateDefaultScriptTemplate(scriptName: string | undefined): string {
+  private generateDefaultScriptTemplate(): string {
     return `/**
- * Transformation Script for SyncJob: ${scriptName}
- *
- * Available API functions:
- *  - stayinsync.log('Your message', 'INFO' | 'WARN' | 'ERROR')
- *  - stayinsync.setOutput({ ... your final JSON object ... })
+ * ==========================================================================================
+ * Stay-in-Sync Transformation Script
+ * ==========================================================================================
+ * 
+ * Welcome to the Script Editor!
+ * 
+ * Your mission is to write a function named 'transform'.
+ * This function will read data from your Source Systems (via the 'source' object)
+ * and create a list of instructions ("Directives") for your Target Systems
+ * (via the 'targets' object).
+ * 
+ * ------------------------------------------------------------------------------------------
+ *                            GOLDEN RULES
+ * ------------------------------------------------------------------------------------------
+ * 1. The function MUST be named 'transform'.
+ * 2. It MUST return an array of Directives.
+ * 3. Activate your Data Sources (left panel) and Target Directives (right panel)
+ *    to populate the 'source' and 'targets' objects and enable auto-complete.
+ * ------------------------------------------------------------------------------------------
+ * 
  */
-async function transformData() {
-    stayinsync.log('Starting transformation for job: ${scriptName}');
 
-    // --- YOUR TRANSFORMATION LOGIC STARTS HERE ---
+/**
+ * This function transforms source data into a list of instructions (Directives)
+ * for the target systems to execute.
+ * 
+ * @returns {any[]} An array of Directive objects.
+ */
+function transform() {
+    stayinsync.log('Transformation started...');
 
-    // Example: Accessing data from a source system.
-    // Replace 'crmCustomer' with an alias from your context.
-    // const customer = sourceData.crmCustomer;
+    // You will collect all instructions to be executed in this array.
+    const directives = [];
 
-    // if (customer) {
-    //   const output = {
-    //      id: customer.id,
-    //      fullName: customer.name,
-    //      isContactable: customer.isActive && customer.email,
-    //   };
-    //   stayinsync.setOutput(output);
-    // } else {
-    //   stayinsync.log('Source data not found or invalid.', 'WARN');
-    //   stayinsync.setOutput(null); // Explicitly set output to null
-    // }
+    // --- EXAMPLE WORKFLOW (Commented Out) ---
+    // Please uncomment the following sections once you have configured your systems.
 
-    // --- YOUR TRANSFORMATION LOGIC ENDS HERE ---
+    /*
+    
+    // --- 1. GET DATA FROM THE SOURCE ---
+    // Access your configured data sources via the global 'source' object.
+    // Replace 'myCrmSystem' and 'allCustomers' with your actual aliases.
+    
+    // const customerData = source.myCrmSystem.allCustomers.payload;
+    // stayinsync.log(\`Loaded \${customerData.length} customers from the CRM.\`);
 
-    // Don't forget to call setOutput!
-    stayinsync.setOutput({ message: "Transformation complete. Replace this with your actual output." });
+    
+    // --- 2. MAP SOURCE ITEMS TO TARGET DIRECTIVES ---
+    // Loop through your source data (e.g., with .map()) and for each item,
+    // create an instruction for the target system.
+
+    // const customerDirectives = customerData.map(customer => {
+
+        // Access your target configurations via the global 'targets' object.
+        // Replace 'myErpSystem' with your actual alias.
+        // 'defineUpsert()' starts the "check-then-create-or-update" process.
+        
+        // return targets.myErpSystem.defineUpsert()
+
+            // .usingCheck(): Defines the GET call to check for existence.
+            // The methods (.with...()) are auto-generated from your OpenAPI specification.
+            // .usingCheck(check => {
+            //     check.withQueryParamCustomerNumber(customer.id);
+            // })
+
+            // .onCreate(): Defines the POST call if the customer does not exist.
+            // .onCreate(create => {
+            //     create.withPayload({
+            //         id: customer.id,
+            //         name: customer.companyName,
+            //         contact: customer.contactPerson,
+            //         isActive: true
+            //     });
+            // })
+
+            // .onUpdate(): Defines the PUT call if the customer already exists.
+            // .onUpdate(update => {
+            //     update.withPathId(checkResponse => checkResponse.body.internalId)
+            //           .withPayload({
+            //              contact: customer.contactPerson
+            //           });
+            // })
+
+            // .build() finalizes the Directive's definition.
+            // .build();
+    // });
+
+    // directives.push(...customerDirectives);
+    
+    */
+
+    stayinsync.log('Transformation finished. Returning directives now.');
+
+    // The function must always return an array, even if it's empty.
+    return directives;
 }
 
-// Execute the transformation function.
-transformData();
+// The synchronization engine will call your 'transform' function automatically.
 `;
   }
 

@@ -1,67 +1,70 @@
 <p-toast></p-toast>
-<div class="script-editor-container p-m-2">
-  <div *ngIf="isLoading" class="loading-overlay">
-    <p-progressSpinner strokeWidth="4"></p-progressSpinner>
-    <p>{{ loadingMessage }}</p>
+<div *ngIf="isLoading" class="loading-overlay">
+  <p-progressSpinner strokeWidth="4"></p-progressSpinner>
+  <p>{{ loadingMessage }}</p>
+</div>
+
+<div class="script-editor-layout" [class.blurred]="isLoading">
+  <!-- Source System ARCs -->
+  <div class="side-panel">
+    <app-arc-management-panel
+      (createArc)="handleCreateArc($event)"
+      (cloneArc)="handleCloneArc($event)"
+    ></app-arc-management-panel>
   </div>
 
-  <p-splitter
-    [style]="{ height: '80vh' }"
-    styleClass="p-mb-3"
-    [panelSizes]="[70, 30]"
-    [class.blurred]="isLoading"
-  >
-    <ng-template pTemplate pTemplateType="panel">
-      <div class="col-main-editor p-fluid">
-        <p-panel styleClass="h-full editor-panel">
+  <!-- Code Editor Panel -->
+  <div class="main-panel">
+    <p-panel styleClass="h-full editor-panel">
+      <ng-template pTemplate="header">
+        <p-float-label>
+          <input
+            *ngIf="scriptPayload"
+            pInputText
+            id="script_name"
+            [(ngModel)]="scriptPayload.name"
+            autocomplete="off"
+          />
+          <label for="script_name">Script Name</label>
+        </p-float-label>
+      </ng-template>
 
-          <ng-template pTemplate="header">
-            <p-float-label variant="in">
-              <input pInputText id="script_name" [(ngModel)]="preloadedData!.scriptName" autocomplete="off"/>
-              <label for="script_name">Script Name</label>
-            </p-float-label>
-          </ng-template>
-
-          <div class="monaco-wrapper">
-            <ngx-monaco-editor
-              style="width: 100%; height: 100%"
-              [options]="editorOptions"
-              [(ngModel)]="code"
-              (onInit)="onEditorInit($event)"
-            >
-            </ngx-monaco-editor>
-          </div>
-          <ng-template pTemplate="footer">
-            <div class="p-d-flex p-jc-end">
-              <p-button
-                label="Save Script"
-                icon="pi pi-save"
-                (click)="saveScript()"
-                [loading]="isSaving"
-                [disabled]="isLoading || isSaving || !currentTransformationId"
-              ></p-button>
-            </div>
-          </ng-template>
-        </p-panel>
+      <div class="monaco-editor-wrapper">
+        <ngx-monaco-editor
+          style="width: 100%; height: 100%"
+          [options]="editorOptions"
+          [(ngModel)]="code"
+          (onInit)="onEditorInit($event)"
+        ></ngx-monaco-editor>
       </div>
-    </ng-template>
-    <ng-template pTemplate pTemplateType="panel">
-      <div class="col-side-panel p-fluid" style="height: 100%">
-        <app-arc-management-panel
-          (createArc)="handleCreateArc($event)"
-          (cloneArc)="handleCloneArc($event)"
-        >
-        </app-arc-management-panel>
-      </div>
-    </ng-template>
-  </p-splitter>
 
-  <app-arc-wizard
-    *ngIf="isWizardVisible && wizardContext"
-    [visible]="isWizardVisible"
-    [context]="wizardContext"
-    (onHide)="isWizardVisible = false"
-    (onSaveSuccess)="handleArcSave($event)"
-  >
-  </app-arc-wizard>
+      <ng-template pTemplate="footer">
+        <p-button
+          label="Save Script"
+          icon="pi pi-save"
+          (click)="saveScript()"
+          [loading]="isSaving"
+          [disabled]="isLoading || isSaving || !currentTransformationId"
+        ></p-button>
+      </ng-template>
+    </p-panel>
+  </div>
+
+  <!-- Target ARC Panel -->
+  <div class="side-panel">
+    <app-target-arc-panel
+      *ngIf="currentTransformationId"
+      [transformationId]="currentTransformationId"
+    ></app-target-arc-panel>
+  </div>
 </div>
+
+<!-- ARC Wizard Pop-Out -->
+<app-arc-wizard
+  *ngIf="isWizardVisible && wizardContext"
+  [visible]="isWizardVisible"
+  [context]="wizardContext"
+  (onHide)="isWizardVisible = false"
+  (onSaveSuccess)="handleArcSave($event)"
+>
+</app-arc-wizard>
