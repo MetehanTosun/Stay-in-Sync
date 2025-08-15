@@ -718,23 +718,20 @@ export class EdcAssetsAndPoliciesComponent implements OnInit, OnDestroy {
 
   openNewAccessPolicyDialog() {
     this.isPolicyJsonComplex = false;
-    this.formAction = 'use';
-    this.formConstraints = [];
-    // Create a default empty JSON structure
-    const odrlPayload: OdrlPolicyDefinition = {
-      '@context': { odrl: 'http://www.w3.org/ns/odrl/2/' },
-      '@id': 'POLICY_ID',
-      policy: {
-        permission: [{
-          action: 'use',
-          constraint: []
-        }]
-      }
-    };
-    this.expertModeJsonContent = JSON.stringify(odrlPayload, null, 2);
-    this.syncFormFromJson();
-    this.selectedAccessPolicyTemplate = null;
     this.policyToEditODRL = null; // Ensure we are in "create" mode
+
+    // Set "BPN Access Policy" as the default template
+    const defaultTemplate = this.accessPolicyTemplates.find(t => t.name === 'BPN Access Policy');
+    if (defaultTemplate) {
+      this.selectedAccessPolicyTemplate = defaultTemplate;
+      // This will set the JSON content and sync the form
+      this.onAccessPolicyTemplateChange({ value: this.selectedAccessPolicyTemplate });
+    } else {
+      // Fallback if template is not found
+      this.expertModeJsonContent = JSON.stringify({}, null, 2);
+      this.syncFormFromJson();
+    }
+
     this.displayNewAccessPolicyDialog = true;
   }
 
@@ -964,22 +961,24 @@ export class EdcAssetsAndPoliciesComponent implements OnInit, OnDestroy {
 
   openNewContractPolicyDialog() {
     this.isContractJsonComplex = false;
-    this.selectedTemplate = null;
-
-    // Prepare assets for the dialog table by adding a default operator to each
     this.assetsForDialog = this.assets.map(asset => ({
       ...asset,
       operator: 'eq' // Default operator
     }));
     this.selectedAssetsInDialog = []; // Clear previous selections
     this.newContractPolicy = this.createEmptyContractPolicy();
-    // Create a default empty JSON structure
-    this.expertModeJsonContent = JSON.stringify({
-      '@context': { edc: 'https://w3id.org/edc/v0.0.1/ns/' },
-      '@id': `contract-def-new-${Date.now()}`,
-      accessPolicyId: '', contractPolicyId: '', assetsSelector: [],
-    }, null, 2);
-    this.syncContractFormFromJson(); // Initialize form state from the empty JSON
+
+    // Set "Simple Asset Selector" as the default template
+    const defaultTemplate = this.contractDefinitionTemplates.find(t => t.name === 'Simple Asset Selector');
+    if (defaultTemplate) {
+      this.selectedTemplate = defaultTemplate;
+      this.onTemplateChange({ value: this.selectedTemplate });
+    } else {
+      // Fallback if template is not found
+      this.expertModeJsonContent = JSON.stringify({}, null, 2);
+      this.syncContractFormFromJson();
+    }
+
     this.displayNewContractPolicyDialog = true;
   }
 
