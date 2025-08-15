@@ -395,104 +395,86 @@
   <ng-template pTemplate="header">
     <div class="flex justify-content-between align-items-center w-full">
       <span class="p-dialog-title">Create New Contract Definition</span>
-      <button pButton pRipple type="button" [label]="isExpertMode ? 'Normal Mode' : 'Expert Mode'" [icon]="isExpertMode ? 'pi pi-user' : 'pi pi-code'" class="p-button-text" (click)="toggleNewExpertMode()"></button>
     </div>
   </ng-template>
 
-  <!-- Normal Mode -->
-  <div *ngIf="!isExpertMode" class="flex flex-column flex-grow-1 overflow-hidden">
-      <div class="field col-12">
-        <div class="flex justify-content-between align-items-center mb-2">
-          <label for="cdAccessPolicy" class="font-bold block mb-2">Select Access Policy</label>
-          <button pButton pRipple type="button" label="New" icon="pi pi-plus" class="p-button-sm p-button-text" (click)="openNewAccessPolicyDialog()"></button>
-        </div>
-          <p-autoComplete
-                  id="cdAccessPolicy"
-                  [(ngModel)]="newContractPolicy.accessPolicyId"
-                  [suggestions]="accessPolicySuggestions"
-                  (completeMethod)="searchAccessPolicies($event)"
-                  field="bpn"
-                  [forceSelection]="true"
-                  placeholder="Type BPN or Policy ID"
-                  styleClass="w-full"
-                  inputStyleClass="w-full"
-                  [appendTo]="'body'">
-              <ng-template let-policy pTemplate="item">
-                  <div>{{ policy.bpn }} ({{ policy.id }})</div>
-              </ng-template>
-          </p-autoComplete>
-      </div>
-
-      <div class="field col-12 mt-4 flex flex-column flex-grow-1 overflow-hidden">
-        <div class="flex justify-content-between align-items-center mb-2">
-          <label class="font-bold block mb-2">Select Assets and their Operators</label>
-          <button pButton pRipple type="button" label="New" icon="pi pi-plus" class="p-button-sm p-button-text" (click)="openNewAssetDialog()"></button>
-        </div>
-          <p-table
-                  #dtDialogAssets
-                  [value]="assetsForDialog"
-                  [(selection)]="selectedAssetsInDialog"
-                  dataKey="assetId"
-                  [rows]="5"
-                  [paginator]="true"
-                  [globalFilterFields]="['assetId', 'name', 'type']"
-                  styleClass="p-datatable-sm"
-                  [tableStyle]="{'min-width': '50rem'}"
-                  [scrollable]="true"
-                  scrollHeight="flex"
-          >
-              <ng-template pTemplate="caption">
-                  <div class="flex align-items-center justify-content-end">
-                      <p-iconfield iconPosition="left">
-                          <p-inputicon><i class="pi pi-search"></i></p-inputicon>
-                          <input #dialogAssetSearch pInputText type="text" (input)="dtDialogAssets.filterGlobal(dialogAssetSearch.value, 'contains')" placeholder="Search Assets..." />
-                      </p-iconfield>
-                  </div>
-              </ng-template>
-              <ng-template pTemplate="header">
-                  <tr>
-                      <th style="width: 3rem"><p-tableHeaderCheckbox></p-tableHeaderCheckbox></th>
-                      <th style="width: 50%" pSortableColumn="name">Name <p-sortIcon field="name"></p-sortIcon></th>
-                      <th style="width: 50%" pSortableColumn="assetId">ID <p-sortIcon field="assetId"></p-sortIcon></th>
-                  </tr>
-              </ng-template>
-              <ng-template pTemplate="body" let-asset>
-                  <tr>
-                      <td><p-tableCheckbox [value]="asset"></p-tableCheckbox></td>
-                      <td>{{ asset.name }}</td>
-                      <td>{{ asset.assetId }}</td>
-                  </tr>
-              </ng-template>
-              <ng-template pTemplate="emptymessage">
-                  <tr><td colspan="3">No assets available.</td></tr>
-              </ng-template>
-          </p-table>
-      </div>
-  </div>
-
-  <!-- Expert Mode -->
-  <div *ngIf="isExpertMode" class="p-fluid grid pt-3">
+  <div class="p-fluid grid pt-3">
     <div class="field col-12">
-      <button pButton pRipple type="button" label="Import directly from JSON file" icon="pi pi-upload" class="p-button-secondary w-full" (click)="contractDefFileInput.click()"></button>
+      <button pButton pRipple type="button" label="Import from JSON File" icon="pi pi-upload" class="p-button-secondary w-full" (click)="contractDefFileInput.click()"></button>
     </div>
-    <div class="field col-12">
-      <p-divider align="center" type="dashed"><b>OR</b></p-divider>
+
+    <p-divider align="center" type="dashed" styleClass="my-4"><b>OR</b></p-divider>
+
+    <div *ngIf="isContractJsonComplex" class="col-12">
+      <p-message severity="warn" text="The contract definition is too complex for the simple form. Please edit the JSON directly."></p-message>
     </div>
+
     <div class="field col-12">
+      <label class="font-bold block mb-2">Start with a Template (Optional)</label>
       <div class="grid">
-        <div class="col-6"><p-dropdown [options]="contractDefinitionTemplates" [(ngModel)]="selectedTemplate" (onChange)="onTemplateChange($event)" optionLabel="name" placeholder="Select Template" [showClear]="true" styleClass="w-full"></p-dropdown></div>
-        <div class="col-6"><button pButton pRipple type="button" label="Upload Template from JSON" icon="pi pi-folder-open" class="p-button-outlined w-full" (click)="templateFileInput.click()"></button></div>
+        <div class="col-6">
+          <p-dropdown [options]="contractDefinitionTemplates" [(ngModel)]="selectedTemplate" (onChange)="onTemplateChange($event)" optionLabel="name" placeholder="Select Template" [showClear]="true" styleClass="w-full"></p-dropdown>
+        </div>
+        <div class="col-6">
+          <button pButton pRipple type="button" label="Upload Template" icon="pi pi-folder-open" class="p-button-outlined w-full" (click)="templateFileInput.click()"></button>
+        </div>
       </div>
     </div>
+
     <div class="field col-12">
-      <label for="expertJsonEditor" class="block mb-2">JSON Content</label>
-      <ngx-monaco-editor id="expertJsonEditor" [options]="editorOptions" [(ngModel)]="expertModeJsonContent" style="height: 450px; border: 1px solid var(--surface-d);"></ngx-monaco-editor>
+      <label for="cdAccessPolicy" class="font-bold block mb-2">Select Access Policy</label>
+      <p-autoComplete
+        id="cdAccessPolicy"
+        [(ngModel)]="newContractPolicy.accessPolicyId"
+        [suggestions]="accessPolicySuggestions"
+        (completeMethod)="searchAccessPolicies($event)"
+        (onSelect)="syncJsonFromContractForm()"
+        (onClear)="syncJsonFromContractForm()"
+        field="bpn"
+        [forceSelection]="true"
+        placeholder="Type BPN or Policy ID"
+        styleClass="w-full"
+        inputStyleClass="w-full"
+        [appendTo]="'body'"
+        [disabled]="isContractJsonComplex">
+        <ng-template let-policy pTemplate="item">
+          <div>{{ policy.bpn }} ({{ policy.id }})</div>
+        </ng-template>
+      </p-autoComplete>
+    </div>
+
+    <div class="field col-12">
+        <label for="cdAssets" class="font-bold block mb-2">Select Assets</label>
+        <p-autoComplete
+          id="cdAssets"
+          [(ngModel)]="selectedAssetsInDialog"
+          [suggestions]="assetIdSuggestions"
+          (completeMethod)="searchAssets($event)"
+          (onSelect)="syncJsonFromContractForm()"
+          (onUnselect)="syncJsonFromContractForm()"
+          (onClear)="syncJsonFromContractForm()"
+          field="name"
+          [multiple]="true"
+          placeholder="Search by Asset Name or ID"
+          styleClass="w-full"
+          inputStyleClass="w-full"
+          [appendTo]="'body'"
+          [disabled]="isContractJsonComplex">
+          <ng-template let-asset pTemplate="item">
+            <div>{{ asset.name }} ({{ asset.assetId }})</div>
+          </ng-template>
+        </p-autoComplete>
+    </div>
+
+    <div class="field col-12 mt-2">
+      <label class="font-bold block mb-2">JSON Editor</label>
+      <ngx-monaco-editor id="expertJsonEditor" [options]="editorOptions" [(ngModel)]="expertModeJsonContent" (ngModelChange)="syncContractFormFromJsonWithDebounce()" style="height: 300px; border: 1px solid var(--surface-d);"></ngx-monaco-editor>
     </div>
   </div>
+
   <ng-template pTemplate="footer">
     <button pButton pRipple label="Cancel" icon="pi pi-times" class="p-button-text" (click)="hideNewContractPolicyDialog()"></button>
-    <button *ngIf="!isExpertMode" pButton pRipple label="Save" icon="pi pi-check" class="p-button-text" (click)="saveNewContractPolicy()"></button>
-    <button *ngIf="isExpertMode" pButton pRipple label="Save" icon="pi pi-check" class="p-button-text" (click)="saveContractDefinitionFromExpertMode()"></button>
+    <button pButton pRipple label="Save" icon="pi pi-check" class="p-button-text" (click)="saveNewContractDefinition()"></button>
   </ng-template>
 </p-dialog>
 

@@ -135,6 +135,7 @@ export class EdcAssetsAndPoliciesComponent implements OnInit, OnDestroy {
     valueLabel: string;
   }[] = [];
   isPolicyJsonComplex: boolean = false;
+  isContractJsonComplex: boolean = false;
 
 
   // BPN suggestions
@@ -165,6 +166,8 @@ export class EdcAssetsAndPoliciesComponent implements OnInit, OnDestroy {
   // Real-time sync from JSON editor to form
   private jsonSyncSubscription: Subscription | null = null;
   private jsonSyncSubject = new Subject<void>();
+  private contractJsonSyncSubscription: Subscription | null = null;
+  private contractJsonSyncSubject = new Subject<void>();
 
   constructor(
     private assetService: AssetService,
@@ -190,6 +193,12 @@ export class EdcAssetsAndPoliciesComponent implements OnInit, OnDestroy {
       this.syncFormFromJson();
     });
 
+    this.contractJsonSyncSubscription = this.contractJsonSyncSubject.pipe(
+      debounceTime(500) // Wait for 500ms of silence before processing
+    ).subscribe(() => {
+      this.syncContractFormFromJson(); // Corrected from syncFormFromJson
+    });
+
   }
 
   ngOnInit(): void {
@@ -203,6 +212,7 @@ export class EdcAssetsAndPoliciesComponent implements OnInit, OnDestroy {
 
   ngOnDestroy(): void {
     this.jsonSyncSubscription?.unsubscribe();
+    this.contractJsonSyncSubscription?.unsubscribe();
   }
 
   private loadContractDefinitionTemplates() {
@@ -969,9 +979,7 @@ export class EdcAssetsAndPoliciesComponent implements OnInit, OnDestroy {
   }
 
   openNewContractPolicyDialog() {
-    // Reset mode to normal every time dialog is opened
-    this.isExpertMode = false;
-    this.expertModeJsonContent = '';
+    this.isContractJsonComplex = false;
     this.selectedTemplate = null;
 
     // Prepare assets for the dialog table by adding a default operator to each
@@ -980,8 +988,14 @@ export class EdcAssetsAndPoliciesComponent implements OnInit, OnDestroy {
       operator: 'eq' // Default operator
     }));
     this.selectedAssetsInDialog = []; // Clear previous selections
-
     this.newContractPolicy = this.createEmptyContractPolicy();
+    // Create a default empty JSON structure
+    this.expertModeJsonContent = JSON.stringify({
+      '@context': { edc: 'https://w3id.org/edc/v0.0.1/ns/' },
+      '@id': `contract-def-new-${Date.now()}`,
+      accessPolicyId: '', contractPolicyId: '', assetsSelector: [],
+    }, null, 2);
+    this.syncContractFormFromJson(); // Initialize form state from the empty JSON
     this.displayNewContractPolicyDialog = true;
   }
 
@@ -993,8 +1007,14 @@ export class EdcAssetsAndPoliciesComponent implements OnInit, OnDestroy {
     if (event.value) {
       this.expertModeJsonContent = JSON.stringify(event.value.content, null, 2);
     } else {
-      this.expertModeJsonContent = '';
+      // When clearing the template, reset to a default empty structure
+      this.expertModeJsonContent = JSON.stringify({
+        '@context': { edc: 'https://w3id.org/edc/v0.0.1/ns/' },
+        '@id': `contract-def-new-${Date.now()}`,
+        accessPolicyId: '', contractPolicyId: '', assetsSelector: [],
+      }, null, 2);
     }
+    this.syncContractFormFromJson();
   }
 
   async onTemplateFileSelect(event: Event) {
@@ -1013,74 +1033,28 @@ export class EdcAssetsAndPoliciesComponent implements OnInit, OnDestroy {
       this.messageService.add({ severity: 'error', summary: 'Read Error', detail: 'Could not read the selected file.' });
     } finally {
       element.value = ''; // Reset file input
+      this.syncContractFormFromJson(); // Sync form after loading from file
     }
   }
 
   /**
-   * Validates and saves a new Contract Definition created manually.
+   * Validates and saves a new Contract Definition from the dialog.
    */
-  async saveNewContractPolicy() {
-
-    const accessPolicyId = (this.newContractPolicy.accessPolicyId as any)?.id || this.newContractPolicy.accessPolicyId;
-
-
-    if (this.selectedAssetsInDialog.length === 0) {
-      this.messageService.add({
-        severity: 'warn',
-        summary: 'Validation Error',
-        detail: 'You must select at least one asset.',
-      });
-      return;
-    }
-    if (!accessPolicyId) {
-      this.messageService.add({
-        severity: 'warn',
-        summary: 'Validation Error',
-        detail: 'An Access Policy must be selected.',
-      });
-      return;
-    }
-
+  async saveNewContractDefinition() {
     try {
-      // Generate ID since we don't have a single asset ID to rely on
-      const contractDefId = `contract-def-${accessPolicyId}-${Date.now()}`;
-
-      const assetsSelector = this.buildAssetSelectors();
-
-      const odrlPayload: OdrlContractDefinition = {
-        '@context': {edc: 'https://w3id.org/edc/v0.0.1/ns/'},
-        '@id': contractDefId,
-        accessPolicyId: accessPolicyId,
-        contractPolicyId: accessPolicyId, // Typically same as access policy
-        assetsSelector: assetsSelector,
-      };
-
-      await this.policyService.createContractDefinition(odrlPayload);
-
-      // Add to the flat list for the UI
-      const parentPolicy = this.allAccessPolicies.find(p => p.id === accessPolicyId);
-      this.allContractDefinitions.unshift({
-        id: contractDefId,
-        assetId: this.selectedAssetsInDialog.map(a => a.assetId).join(', '), // Represent as comma-separated list
-        bpn: parentPolicy?.bpn || 'Unknown BPN',
-        accessPolicyId: accessPolicyId
-      });
-      this.filteredContractDefinitions = [...this.allContractDefinitions];
-
-      this.messageService.add({
-        severity: 'success',
-        summary: 'Success',
-        detail: 'Contract Definition created successfully.'
-      });
+      const contractDefJson = JSON.parse(this.expertModeJsonContent);
+      // Basic validation
+      if (!contractDefJson['@id'] || !contractDefJson.accessPolicyId) {
+        throw new Error("Invalid contract definition. '@id' and 'accessPolicyId' are required.");
+      }
+      await this.policyService.createContractDefinition(contractDefJson);
+      this.messageService.add({ severity: 'success', summary: 'Success', detail: 'Contract Definition created successfully.' });
+      this.loadPoliciesAndDefinitions();
       this.hideNewContractPolicyDialog();
-
     } catch (error: any) {
-      this.messageService.add({
-        severity: 'error',
-        summary: 'Error',
-        detail: error.message || 'Failed to create contract definition.'
-      });
-      console.error('Failed to create contract definition:', error);
+      const detail = error.message.includes('JSON') ? 'Could not parse JSON.' : error.message || 'Failed to save contract definition.';
+      this.messageService.add({ severity: 'error', summary: 'Error', detail });
+      console.error('Failed to save contract definition:', error);
     }
   }
 
@@ -1197,123 +1171,6 @@ export class EdcAssetsAndPoliciesComponent implements OnInit, OnDestroy {
     }
 
     element.value = '';
-  }
-
-  /**
-   * Saves a contract definition from the JSON content in the expert mode editor.
-   */
-  async saveContractDefinitionFromExpertMode() {
-    if (!this.expertModeJsonContent.trim()) {
-      this.messageService.add({ severity: 'warn', summary: 'Validation Error', detail: 'JSON content cannot be empty.' });
-      return;
-    }
-
-    try {
-      const contractDefJson = JSON.parse(this.expertModeJsonContent);
-      // The user might be saving a single object or an array of objects.
-      const definitionsToCreate = Array.isArray(contractDefJson) ? contractDefJson : [contractDefJson];
-
-      const uploadPromises: Promise<any>[] = [];
-      const successfulUploads: string[] = [];
-      const failedUploads: { id: string; reason: string }[] = [];
-
-      for (const def of definitionsToCreate) {
-        const promise = (async () => {
-          const id = def['@id'] || 'unknown-id';
-          try {
-
-            await this.policyService.createContractDefinition(def);
-            successfulUploads.push(id);
-          } catch (error: any) {
-            failedUploads.push({ id, reason: error.message || 'Failed to process definition.' });
-          }
-        })();
-        uploadPromises.push(promise);
-      }
-
-      await Promise.all(uploadPromises);
-
-      if (successfulUploads.length > 0) {
-        this.messageService.add({ severity: 'success', summary: 'Success', detail: `${successfulUploads.length} contract definition(s) saved.` });
-        this.loadPoliciesAndDefinitions();
-        this.hideNewContractPolicyDialog();
-      }
-
-      if (failedUploads.length > 0) {
-        this.messageService.add({
-          severity: 'error',
-          summary: `${failedUploads.length} Upload(s) Failed`,
-          detail: 'See browser console for details on failed definitions.',
-          life: 5000,
-        });
-        console.error('Failed expert mode uploads:', failedUploads);
-      }
-    } catch (error: any) {
-      this.messageService.add({ severity: 'error', summary: 'JSON Parse Error', detail: 'Could not parse the JSON content. Please check for syntax errors.' });
-      console.error('Failed to parse expert mode JSON:', error);
-    }
-  }
-
-  /**
-   * Toggles expert mode for the 'New Contract Definition' dialog, synchronizing state between modes.
-   */
-  toggleNewExpertMode() {
-    if (this.isExpertMode) {
-      // Switching from Expert to Normal
-      try {
-        const odrlPayload: OdrlContractDefinition = JSON.parse(this.expertModeJsonContent);
-        const assetSelectors = odrlPayload.assetsSelector || [];
-
-        const isComplex = assetSelectors.some(s =>
-          s.operandLeft !== 'https://w3id.org/edc/v0.0.1/ns/id' || !['eq', 'neq'].includes(s.operator)
-        );
-
-        if (isComplex) {
-          this.messageService.add({ severity: 'warn', summary: 'Cannot Switch to Normal Mode', detail: 'The JSON contains complex rules not supported by the Normal Mode UI.', life: 5000 });
-          return;
-        }
-
-        const accessPolicyObject = this.allAccessPolicies.find(p => p.id === odrlPayload.accessPolicyId);
-        this.newContractPolicy.accessPolicyId = accessPolicyObject as any;
-
-        this.selectedAssetsInDialog = this.assetsForDialog.filter(dialogAsset => {
-          const selector = assetSelectors.find(s => s.operandRight === dialogAsset.assetId);
-          if (selector) {
-            dialogAsset.operator = selector.operator === '=' ? 'eq' : selector.operator;
-            return true;
-          }
-          return false;
-        });
-
-        this.isExpertMode = false;
-      } catch (error) {
-        this.messageService.add({ severity: 'error', summary: 'JSON Parse Error', detail: 'Could not parse JSON. Please fix errors before switching.', life: 5000 });
-        return;
-      }
-    } else {
-      // Switching from Normal to Expert
-      const accessPolicyId = (this.newContractPolicy.accessPolicyId as any)?.id || this.newContractPolicy.accessPolicyId;
-      if (!accessPolicyId || this.selectedAssetsInDialog.length === 0) {
-        this.expertModeJsonContent = JSON.stringify({
-          '@context': { edc: 'https://w3id.org/edc/v0.0.1/ns/' },
-          '@id': 'contract-def-unique-id',
-          accessPolicyId: 'policy-id-goes-here',
-          contractPolicyId: 'policy-id-goes-here',
-          assetsSelector: [],
-        }, null, 2);
-      } else {
-        const contractDefId = `contract-def-${accessPolicyId}-${Date.now()}`;        const assetsSelector = this.buildAssetSelectors();
-        const odrlPayload: OdrlContractDefinition = {
-          '@context': { edc: 'https://w3id.org/edc/v0.0.1/ns/' },
-          '@id': contractDefId,
-          accessPolicyId: accessPolicyId,
-          contractPolicyId: accessPolicyId,
-          assetsSelector: assetsSelector,
-        };
-        this.expertModeJsonContent = JSON.stringify(odrlPayload, null, 2);
-      }
-      this.isExpertMode = true;
-    }
   }
 
   /**
@@ -1545,7 +1402,7 @@ export class EdcAssetsAndPoliciesComponent implements OnInit, OnDestroy {
   private buildAssetSelectors(): OdrlCriterion[] {
     return this.selectedAssetsInDialog.map(selectedAsset => ({
       operandLeft: 'https://w3id.org/edc/v0.0.1/ns/id',
-      operator: selectedAsset.operator,
+      operator: 'eq', // The new UI uses a multi-select, so we default to 'eq'
       operandRight: selectedAsset.assetId,
     }));
   }
@@ -1757,6 +1614,69 @@ export class EdcAssetsAndPoliciesComponent implements OnInit, OnDestroy {
     this.jsonSyncSubject.next();
   }
 
+  /**
+   * Triggers the debounced synchronization from the contract JSON editor to the form fields.
+   */
+  syncContractFormFromJsonWithDebounce(): void {
+    this.contractJsonSyncSubject.next();
+  }
+
+  /**
+   * Updates the contract definition JSON based on changes in the simple form.
+   */
+  syncJsonFromContractForm(): void {
+    try {
+      const currentJson: OdrlContractDefinition = JSON.parse(this.expertModeJsonContent || '{}');
+      const accessPolicyId = (this.newContractPolicy.accessPolicyId as any)?.id || this.newContractPolicy.accessPolicyId;
+
+      currentJson.accessPolicyId = accessPolicyId;
+      currentJson.contractPolicyId = accessPolicyId; // Keep them in sync for simplicity
+      currentJson.assetsSelector = this.buildAssetSelectors();
+
+      this.expertModeJsonContent = JSON.stringify(currentJson, null, 2);
+    } catch (e) {
+      // Fallback for invalid JSON: create a new structure from the form state
+      const accessPolicyId = (this.newContractPolicy.accessPolicyId as any)?.id || this.newContractPolicy.accessPolicyId;
+      const contractDefId = `contract-def-${accessPolicyId || 'new'}-${Date.now()}`;
+      const odrlPayload: OdrlContractDefinition = {
+        '@context': { edc: 'https://w3id.org/edc/v0.0.1/ns/' },
+        '@id': contractDefId,
+        accessPolicyId: accessPolicyId,
+        contractPolicyId: accessPolicyId,
+        assetsSelector: this.buildAssetSelectors(),
+      };
+      this.expertModeJsonContent = JSON.stringify(odrlPayload, null, 2);
+    }
+  }
+
+  /**
+   * Updates the simple contract definition form based on the JSON editor content.
+   */
+  syncContractFormFromJson(): void {
+    this.isContractJsonComplex = false; // Reset
+    try {
+      const odrlPayload: OdrlContractDefinition = JSON.parse(this.expertModeJsonContent || '{}');
+      const assetSelectors = odrlPayload.assetsSelector || [];
+
+      // A contract is "complex" if it has more than one selector rule, or uses operators other than 'eq'.
+      const isComplex = assetSelectors.length > 1 || assetSelectors.some(s => s.operator !== 'eq');
+
+      if (isComplex) {
+        this.isContractJsonComplex = true;
+        return; // Don't sync to the simple form if complex
+      }
+
+      // Sync Access Policy
+      const accessPolicyObject = this.allAccessPolicies.find(p => p.id === odrlPayload.accessPolicyId);
+      this.newContractPolicy.accessPolicyId = accessPolicyObject as any || '';
+
+      // Sync Asset Selection
+      const selectedAssetIds = new Set(assetSelectors.map(s => s.operandRight));
+      this.selectedAssetsInDialog = this.assetsForDialog.filter(asset => selectedAssetIds.has(asset.assetId));
+    } catch (e) {
+      this.isContractJsonComplex = true; // Invalid JSON is considered complex
+    }
+  }
   // View Details Methods
 
   hideViewDialog() {
