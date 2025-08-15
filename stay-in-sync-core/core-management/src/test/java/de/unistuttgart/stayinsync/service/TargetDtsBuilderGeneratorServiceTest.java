@@ -66,7 +66,7 @@ class TargetDtsBuilderGeneratorServiceTest {
 
         targetRequestConfiguration = new TargetSystemApiRequestConfiguration();
         targetRequestConfiguration.alias = "productSystem";
-        targetRequestConfiguration.patternType = TargetApiRequestConfigurationPatternType.OBJECT_UPSERT;
+        targetRequestConfiguration.arcPatternType = TargetApiRequestConfigurationPatternType.OBJECT_UPSERT;
         targetRequestConfiguration.targetSystem = testTargetSystem;
         targetRequestConfiguration.actions = new ArrayList<>();
         targetRequestConfiguration.persist();

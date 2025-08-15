@@ -44,7 +44,12 @@ public class TargetDtsBuilderGeneratorService {
         String globalNamespace = generatedGlobalTargetsNamespace(targetArcs);
         TypeLibraryDTO manifestLibrary = new TypeLibraryDTO("stayinsync/targets/manifest.d.ts", globalNamespace);
 
+        TypeLibraryDTO baseDirectiveLibrary = new TypeLibraryDTO("stayinsync/targets/base.d.ts",
+                "/** A shared base interface for all generated target directives. */\ndeclare interface TargetDirective {}");
+
+
         List<TypeLibraryDTO> allLibraries = new ArrayList<>();
+        allLibraries.add(baseDirectiveLibrary);
         if (sharedModelsLibrary != null && !sharedModelsLibrary.content().isEmpty()) {
             allLibraries.add(sharedModelsLibrary);
         }
@@ -93,6 +98,8 @@ public class TargetDtsBuilderGeneratorService {
 
     private TypeLibraryDTO generateArcLibrary(TargetSystemApiRequestConfiguration arc, OpenAPI specification, DtsGenerationContext context) {
         StringBuilder dtsContent = new StringBuilder();
+        dtsContent.append("/// <reference path=\"../shared/models.d.ts\" />\n\n");
+
         String clientClassName = toPascalCase(arc.alias) + "_Client";
         String builderName = toPascalCase(arc.alias) + "_UpsertBuilder";
 
@@ -140,7 +147,7 @@ public class TargetDtsBuilderGeneratorService {
     }
 
     private String generateDirectiveInterfaces(TargetSystemApiRequestConfiguration arc) {
-        return String.format("declare interface %s { /* Internal recipe type for the executor */ }\n", toPascalCase(arc.alias) + "_UpsertDirective");
+        return String.format("declare interface %s extends TargetDirective { /* Internal recipe type for the executor */ }\n", toPascalCase(arc.alias) + "_UpsertDirective");
     }
 
     private String generateBuilderInterfacesForAction(TargetSystemApiRequestConfigurationAction action, OpenAPI specification, DtsGenerationContext context) {
@@ -303,14 +310,47 @@ public class TargetDtsBuilderGeneratorService {
 
     private String generateInterfaceFromSchema(String interfaceName, Schema<?> schema, OpenAPI specification, DtsGenerationContext context) {
         StringBuilder currentInterface = new StringBuilder();
+        Map<String, Schema> allProperties = new LinkedHashMap<>();
+        List<String> allRequired = new ArrayList<>();
+
+        if (schema.getAllOf() != null && !schema.getAllOf().isEmpty()) {
+            for (Schema<?> partSchema : schema.getAllOf()) {
+                if (partSchema.get$ref() != null) {
+                    String refName = partSchema.get$ref().substring(partSchema.get$ref().lastIndexOf('/') + 1);
+                    Schema<?> resolvedSchema = specification.getComponents().getSchemas().get(refName);
+                    if (resolvedSchema != null) {
+                        if (resolvedSchema.getProperties() != null) {
+                            allProperties.putAll(resolvedSchema.getProperties());
+                        }
+                        if (resolvedSchema.getRequired() != null) {
+                            allRequired.addAll(resolvedSchema.getRequired());
+                        }
+                    }
+                } else {
+                    if (partSchema.getProperties() != null) {
+                        allProperties.putAll(partSchema.getProperties());
+                    }
+                    if (partSchema.getRequired() != null) {
+                        allRequired.addAll(partSchema.getRequired());
+                    }
+                }
+            }
+        } else {
+            if (schema.getProperties() != null) {
+                allProperties.putAll(schema.getProperties());
+            }
+            if (schema.getRequired() != null) {
+                allRequired.addAll(schema.getRequired());
+            }
+        }
+
         currentInterface.append(String.format("declare interface %s {\n", interfaceName));
 
-        if (schema.getProperties() != null){
-            schema.getProperties().forEach((fieldName, value) -> {
+        if (!allProperties.isEmpty()){
+            allProperties.forEach((fieldName, fieldSchema) -> {
                 String validFieldName = fieldName.matches("^[a-zA-Z_][a-zA-Z0-9_]*$") ? fieldName : String.format("'%s'", fieldName);
-                Schema<?> fieldSchema = (Schema<?>) value;
                 String type = extractTsTypeFromSchema(fieldSchema, specification, context);
-                boolean isRequired = schema.getRequired() != null && schema.getRequired().contains(fieldName);
+                boolean isRequired = allRequired.contains(fieldName);
 
                 currentInterface.append(String.format("  %s%s: %s;\n",
                         validFieldName,
