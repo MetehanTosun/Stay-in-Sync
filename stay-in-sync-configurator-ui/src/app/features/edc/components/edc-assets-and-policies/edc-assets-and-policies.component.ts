@@ -107,7 +107,7 @@ export class EdcAssetsAndPoliciesComponent implements OnInit, OnDestroy {
 
   // Properties for the 'New Contract Definition' dialog
   assetsForDialog: (Asset & { operator: string })[] = [];
-  selectedAssetsInDialog: (Asset & { operator: string })[] = [];
+  selectedAssetsInDialog: Asset[] = [];
 
   // Properties for Expert Mode in 'New Contract Definition' dialog
   isExpertMode: boolean = false;
@@ -1414,7 +1414,7 @@ export class EdcAssetsAndPoliciesComponent implements OnInit, OnDestroy {
   private refreshAssetsForDialog(): void {
     this.assetsForDialog = this.assets.map(asset => ({
       ...asset,
-      operator: this.selectedAssetsInDialog.find(s => s.assetId === asset.assetId)?.operator || 'eq'
+      operator: 'eq' // Default to 'eq' as the selection list no longer holds operator info
     }));
   }
 
@@ -1658,12 +1658,17 @@ export class EdcAssetsAndPoliciesComponent implements OnInit, OnDestroy {
       const odrlPayload: OdrlContractDefinition = JSON.parse(this.expertModeJsonContent || '{}');
       const assetSelectors = odrlPayload.assetsSelector || [];
 
-      // A contract is "complex" if it has more than one selector rule, or uses operators other than 'eq'.
-      const isComplex = assetSelectors.length > 1 || assetSelectors.some(s => s.operator !== 'eq');
+      // A contract is "complex" if any criterion uses something other than the simple `id = value` format.
+      const isComplex = assetSelectors.some(s =>
+        s.operator !== 'eq' || s.operandLeft !== 'https://w3id.org/edc/v0.0.1/ns/id'
+      );
 
       if (isComplex) {
         this.isContractJsonComplex = true;
-        return; // Don't sync to the simple form if complex
+        // When complex, clear the simple form to avoid confusion
+        this.newContractPolicy.accessPolicyId = '';
+        this.selectedAssetsInDialog = [];
+        return;
       }
 
       // Sync Access Policy
@@ -1672,7 +1677,7 @@ export class EdcAssetsAndPoliciesComponent implements OnInit, OnDestroy {
 
       // Sync Asset Selection
       const selectedAssetIds = new Set(assetSelectors.map(s => s.operandRight));
-      this.selectedAssetsInDialog = this.assetsForDialog.filter(asset => selectedAssetIds.has(asset.assetId));
+      this.selectedAssetsInDialog = this.assets.filter(asset => selectedAssetIds.has(asset.assetId));
     } catch (e) {
       this.isContractJsonComplex = true; // Invalid JSON is considered complex
     }
