@@ -3,8 +3,10 @@ package de.unistuttgart.stayinsync.core.configuration.service;
 import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.*;
 import de.unistuttgart.stayinsync.core.configuration.exception.CoreManagementException;
 import de.unistuttgart.stayinsync.core.configuration.mapping.TransformationMapper;
+import de.unistuttgart.stayinsync.core.configuration.mapping.targetsystem.RequestConfigurationMapper;
 import de.unistuttgart.stayinsync.core.configuration.rest.dtos.TransformationAssemblyDTO;
 import de.unistuttgart.stayinsync.core.configuration.rest.dtos.TransformationShellDTO;
+import de.unistuttgart.stayinsync.core.configuration.rest.dtos.targetsystem.GetRequestConfigurationDTO;
 import de.unistuttgart.stayinsync.core.configuration.rest.dtos.targetsystem.UpdateTransformationRequestConfigurationDTO;
 import io.quarkus.logging.Log;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -34,6 +36,14 @@ public class TransformationService {
         Log.debugf("Creating new transformation shell with name: %s", dto.name());
         Transformation transformation = new Transformation();
         mapper.updateFromShellDTO(dto, transformation);
+
+        TransformationScript script = new TransformationScript();
+        script.name = dto.name() + " Script";
+        script.typescriptCode = "";
+
+        script.transformation = transformation;
+        transformation.transformationScript = script;
+
         transformation.persist();
         return transformation;
     }
