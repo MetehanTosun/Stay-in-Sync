@@ -106,12 +106,13 @@
                    (input)="onGlobalPolicySearch($event)"
                    placeholder="Search keyword" />
           </p-iconfield>
-
           <button pButton pRipple
                   label="New Access Policy"
                   icon="pi pi-plus"
                   class="p-button-success"
                   (click)="openNewAccessPolicyDialog()"></button>
+          <button pButton pRipple label="Fast Imports" icon="pi pi-upload" class="p-button-secondary mr-2" (click)="policyFileInput.click()" pTooltip="Import one or more access policies from JSON files"></button>
+
         </div>
       </div>
     </ng-template>
@@ -170,7 +171,9 @@
             <p-inputicon><i class="pi pi-search"></i></p-inputicon>
             <input pInputText type="text" (input)="onGlobalContractDefSearch($event)" placeholder="Search keyword" />
           </p-iconfield>
+
           <button pButton pRipple label="New Contract Definition" icon="pi pi-plus" class="p-button-success" (click)="openNewContractPolicyDialog()"></button>
+          <button pButton pRipple label="Fast Imports" icon="pi pi-upload" class="p-button-secondary mr-2" (click)="contractDefFileInput.click()" pTooltip="Import one or more contract definitions from JSON files"></button>
         </div>
       </div>
     </ng-template>
@@ -263,12 +266,6 @@
   </ng-template>
 
   <div class="p-fluid grid pt-3">
-    <div class="field col-12">
-      <button pButton pRipple type="button" label="Create from JSON File" icon="pi pi-upload" class="p-button-secondary w-full" (click)="policyFileInput.click()"></button>
-    </div>
-    <p-divider align="center" type="dashed" styleClass="my-4">
-      <b>OR</b>
-    </p-divider>
     <div class="field col-12">
       <div class="grid">
         <div class="col-6">
@@ -399,12 +396,6 @@
   </ng-template>
 
   <div class="p-fluid grid pt-3">
-    <div class="field col-12">
-      <button pButton pRipple type="button" label="Import from JSON File" icon="pi pi-upload" class="p-button-secondary w-full" (click)="contractDefFileInput.click()"></button>
-    </div>
-
-    <p-divider align="center" type="dashed" styleClass="my-4"><b>OR</b></p-divider>
-
     <div *ngIf="isContractJsonComplex" class="col-12">
       <p-message severity="warn" text="The contract definition is too complex for the simple form. Please edit the JSON directly."></p-message>
     </div>
