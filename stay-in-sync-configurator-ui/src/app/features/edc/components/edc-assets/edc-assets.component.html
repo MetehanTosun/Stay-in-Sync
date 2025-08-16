@@ -1,0 +1,195 @@
+<p-toast></p-toast>
+<p-confirmDialog [style]="{ width: '450px' }"></p-confirmDialog>
+
+<div class="card">
+  <p-table
+    #table
+    [value]="assets"
+    dataKey="id"
+    [paginator]="true"
+    [rows]="10"
+    [rowsPerPageOptions]="[10,25,50]"
+    [globalFilterFields]="['assetId','url','type','contentType','targetEDCId']"
+    styleClass="p-datatable-striped p-datatable-gridlines p-datatable-sm"
+  >
+    <ng-template pTemplate="caption">
+      <div class="flex justify-content-between align-items-center mb-2">
+        <h5 class="m-0">EDC Assets</h5>
+        <div class="flex align-items-center gap-2">
+          <span class="p-input-icon-left">
+            <i class="pi pi-search"></i>
+            <input
+              pInputText
+              type="text"
+              #globalFilterInput
+              (input)="table.filterGlobal(globalFilterInput.value,'contains')"
+              placeholder="Suche..."
+            />
+          </span>
+          <button
+            pButton
+            label="New Asset"
+            icon="pi pi-plus"
+            class="p-button-success"
+            (click)="openNewAssetDialog()"
+          ></button>
+        </div>
+      </div>
+    </ng-template>
+
+    <ng-template pTemplate="header">
+      <tr>
+        <th pSortableColumn="assetId">Asset ID <p-sortIcon field="assetId"></p-sortIcon></th>
+        <th pSortableColumn="url">URL <p-sortIcon field="url"></p-sortIcon></th>
+        <th pSortableColumn="type">Type <p-sortIcon field="type"></p-sortIcon></th>
+        <th pSortableColumn="contentType">Content Type <p-sortIcon field="contentType"></p-sortIcon></th>
+        <th pSortableColumn="targetEDCId">EDC ID <p-sortIcon field="targetEDCId"></p-sortIcon></th>
+        <th>Actions</th>
+      </tr>
+    </ng-template>
+
+    <ng-template pTemplate="body" let-asset>
+      <tr>
+        <td>{{ asset.assetId }}</td>
+        <td>{{ asset.url }}</td>
+        <td>{{ asset.type }}</td>
+        <td>{{ asset.contentType }}</td>
+        <td>{{ asset.targetEDCId }}</td>
+        <td class="actions-column">
+          <button
+            pButton
+            icon="pi pi-pencil"
+            class="p-button-text"
+            (click)="editAsset(asset)"
+            pTooltip="Edit"
+          ></button>
+          <button
+            pButton
+            icon="pi pi-trash"
+            class="p-button-text p-button-danger"
+            (click)="confirmDelete(asset)"
+            pTooltip="Delete"
+          ></button>
+        </td>
+      </tr>
+    </ng-template>
+
+    <ng-template pTemplate="emptymessage">
+      <tr>
+        <td colspan="6" class="text-center">Keine Assets gefunden.</td>
+      </tr>
+    </ng-template>
+  </p-table>
+</div>
+
+<p-dialog
+  header="{{ isEdit ? 'Edit Asset' : 'Create Asset' }}"
+  [(visible)]="displayNewAssetDialog"
+  [modal]="true"
+  [style]="{ width: '600px' }"
+  [draggable]="false"
+  [resizable]="false"
+>
+  <p-tabView [(activeIndex)]="activeTab">
+    <p-tabPanel header="Formular">
+      <form class="asset-form">
+        <div class="form-grid">
+          <!-- Asset ID -->
+          <div class="form-field">
+            <label for="assetId">Asset ID *</label>
+            <input
+              id="assetId"
+              pInputText
+              [(ngModel)]="newAsset.assetId"
+              name="assetId"
+              required
+            />
+          </div>
+          <!-- URL -->
+          <div class="form-field">
+            <label for="url">URL *</label>
+            <input
+              id="url"
+              pInputText
+              [(ngModel)]="newAsset.url"
+              name="url"
+              required
+            />
+          </div>
+          <!-- Type -->
+          <div class="form-field">
+            <label for="type">Type *</label>
+            <input
+              id="type"
+              pInputText
+              [(ngModel)]="newAsset.type"
+              name="type"
+              required
+            />
+          </div>
+          <!-- Content Type -->
+          <div class="form-field">
+            <label for="contentType">Content Type *</label>
+            <input
+              id="contentType"
+              pInputText
+              [(ngModel)]="newAsset.contentType"
+              name="contentType"
+              required
+            />
+          </div>
+          <!-- EDC ID -->
+          <div class="form-field">
+            <label for="targetEDCId">EDC ID *</label>
+            <input
+              id="targetEDCId"
+              pInputText
+              [(ngModel)]="newAsset.targetEDCId"
+              name="targetEDCId"
+              required
+            />
+          </div>
+          <!-- Description -->
+          <div class="form-field-full">
+            <label for="description">Description</label>
+            <textarea
+              id="description"
+              pInputTextarea
+              rows="3"
+              [(ngModel)]="newAsset.description"
+              name="description"
+            ></textarea>
+          </div>
+        </div>
+      </form>
+    </p-tabPanel>
+
+    <p-tabPanel header="JSON">
+      <div class="p-fluid">
+        <label for="jsonInput">Asset JSON</label>
+        <textarea
+          id="jsonInput"
+          pInputTextarea
+          rows="12"
+          [(ngModel)]="jsonInput"
+          name="jsonInput"
+          style="font-family: monospace;"
+        ></textarea>
+        <small *ngIf="jsonError" class="p-error">{{ jsonError }}</small>
+      </div>
+    </p-tabPanel>
+  </p-tabView>
+
+  <ng-template pTemplate="footer">
+    <div class="flex justify-content-end gap-2">
+      <button
+        pButton
+        label="Cancel"
+        icon="pi pi-times"
+        class="p-button-text"
+        (click)="cancel()"
+      ></button>
+      <button pButton label="Save" icon="pi pi-check" (click)="saveByTab()"></button>
+    </div>
+  </ng-template>
+</p-dialog>

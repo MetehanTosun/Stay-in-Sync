@@ -1,54 +1,88 @@
+// src/app/features/edc/services/edc-instance.service.ts
 import { Injectable } from '@angular/core';
-import { EdcInstance } from '../models/edc-instance.model';
 import { HttpClient } from '@angular/common/http';
-import { Observable, of } from 'rxjs';
+import { Observable, firstValueFrom, map } from 'rxjs';
+import { EdcInstance } from '../models/edc-instance.model';
 
-@Injectable({
-  providedIn: 'root'
-})
+// ---------- Backend-Typen ----------
+type BackendEdcInstanceDto = {
+  id: string;
+  name: string;
+  url: string;
+  protocolVersion?: string;
+  description?: string;
+  bpn?: string;
+  // apiKey wird vom Backend idealerweise NICHT im GET geliefert
+};
+
+type BackendEdcInstanceRequest = {
+  name: string;
+  url: string;
+  protocolVersion?: string;
+  description?: string;
+  bpn?: string;
+  apiKey?: string; // write-only
+};
+
+// ---------- Adapter ----------
+const toUi = (d: BackendEdcInstanceDto): EdcInstance => ({
+  id: d.id,
+  name: d.name,
+  url: d.url,
+  protocolVersion: d.protocolVersion ?? '—',
+  description: d.description ?? '—',
+  bpn: d.bpn ?? '—',
+  apiKey: undefined, // nie aus GET anzeigen
+});
+
+const toRequest = (m: Partial<EdcInstance>): BackendEdcInstanceRequest => ({
+  name: m.name!, // Pflicht
+  url: m.url!,   // Pflicht
+  protocolVersion: m.protocolVersion && m.protocolVersion !== '—' ? m.protocolVersion : undefined,
+  description:     m.description     && m.description     !== '—' ? m.description     : undefined,
+  bpn:             m.bpn             && m.bpn             !== '—' ? m.bpn             : undefined,
+  apiKey: m.apiKey || undefined,
+});
+
+@Injectable({ providedIn: 'root' })
 export class EdcInstanceService {
-
-
-  private mockEdcInstances: EdcInstance[] = [
-    {
-      id: 'instance-1',
-      name: 'EDC 1',
-      url: 'https://edc.dev.catena-x.net/management',
-      protocolVersion: '1.0.0',
-      description: 'lurem ipsum dolor sit',
-      bpn: 'BPNL000000000001',
-      apiKey: 'test-api-key-123',
-    },
-    {
-      id: 'instance-2',
-      name: 'EDC 2',
-      url: 'http://localhost:19193/management',
-      protocolVersion: '1.1.0',
-      description: 'lurem ipsum dolor sit amet, consectetur adipiscing elit.',
-      bpn: 'BPNL000000000002',
-      apiKey: 'local-key-456',
-    },
-    {
-      id: 'instance-3',
-      name: 'EDC 3',
-      url: 'https://partner-a.com/api/v2/data',
-      protocolVersion: '1.0.0',
-      description: 'Connector for data exchange with Partner A.',
-      bpn: 'BPNL000000000ABC',
-      // apiKey is optional
-    },
-  ];
+  // In Dev ideal: Proxy nutzen und hier '/api/config/edcs'
+  private baseUrl = 'http://localhost:8090/api/config/edcs';
 
   constructor(private http: HttpClient) {}
 
-  // Method to get EDC instances
+  // ---- READ ----
+  getAll$(): Observable<EdcInstance[]> {
+    return this.http.get<BackendEdcInstanceDto[]>(this.baseUrl).pipe(
+      map(list => list.map(toUi))
+    );
+  }
+
+  getAll(): Promise<EdcInstance[]> {
+    return firstValueFrom(this.getAll$());
+  }
+
+  // ✅ Alias für bestehende Aufrufer mit .then(...)
   getEdcInstancesLarge(): Promise<EdcInstance[]> {
-    return Promise.resolve([...this.mockEdcInstances]); // Return a copy
+    return this.getAll();
   }
 
-  getEdcInstancesObservable(): Observable<EdcInstance[]> {
-    return of([...this.mockEdcInstances]);
+  getById$(id: string): Observable<EdcInstance> {
+    return this.http.get<BackendEdcInstanceDto>(`${this.baseUrl}/${id}`).pipe(map(toUi));
   }
 
-  // Future methods for CRUD operations would go here
+  // ---- CREATE ----
+  create$(model: Partial<EdcInstance>): Observable<EdcInstance> {
+    return this.http.post<BackendEdcInstanceDto>(this.baseUrl, toRequest(model)).pipe(map(toUi));
+  }
+
+  // ---- UPDATE ----
+  update$(id: string, model: Partial<EdcInstance>): Observable<EdcInstance> {
+    return this.http.put<BackendEdcInstanceDto>(`${this.baseUrl}/${id}`, toRequest(model)).pipe(map(toUi));
+  }
+
+  // ---- DELETE ----
+  delete$(id: string): Observable<void> {
+    return this.http.delete<void>(`${this.baseUrl}/${id}`);
+  }
 }

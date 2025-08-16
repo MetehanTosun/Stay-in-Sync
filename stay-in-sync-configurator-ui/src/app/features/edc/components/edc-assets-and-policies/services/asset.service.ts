@@ -7,7 +7,7 @@ import {Observable} from 'rxjs/internal/Observable';
   providedIn: 'root'
 })
 export class AssetService {
-  private managementApiUrl = '/api/management/v2';
+  private managementApiUrl = 'http://localhost:8090/api/config/edcs/assets';
 
 
   private mockOdrlAssets: any[] = [

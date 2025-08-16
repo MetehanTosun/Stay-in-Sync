@@ -24,6 +24,36 @@ public class EDCInstanceDto {
 
     public Set<UUID> edcAssetIds;
 
+    public String protocolVersion;
+
+    public String description;
+    
+    public String bpn;
+
+    public String getProtocolVersion() {
+        return protocolVersion;
+    }
+
+    public void setProtocolVersion(String protocolVersion) {
+        this.protocolVersion = protocolVersion;
+    }
+
+    public String getDescription() {
+        return description;
+    }
+
+    public void setDescription(String description) {
+        this.description = description;
+    }
+
+    public String getBpn() {
+        return bpn;
+    }
+
+    public void setBpn(String bpn) {
+        this.bpn = bpn;
+    }
+
     public UUID getId() {
         return id;
     }

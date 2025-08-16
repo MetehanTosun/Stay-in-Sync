@@ -1,0 +1,88 @@
+/* Card-Container */
+.card {
+  padding: 1rem;
+  background-color: var(--p-surface-card, #fff);
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+/* Gestreifte Zeilen */
+.p-datatable-striped .p-datatable-tbody > tr:nth-child(odd) {
+  background-color: var(--p-hover-bg, #f9f9f9);
+}
+
+/* Gridlines */
+.p-datatable-gridlines .p-datatable-thead > tr > th,
+.p-datatable-gridlines .p-datatable-tbody > tr > td {
+  border: 1px solid var(--p-border-color, #d9d9d9);
+}
+
+/* Kompakte Zellenabstände */
+.p-datatable-sm .p-datatable-thead > tr > th,
+.p-datatable-sm .p-datatable-tbody > tr > td {
+  padding: 0.75rem;
+}
+
+/* Such-Icon-Input */
+.p-input-icon-left {
+  display: inline-flex;
+  align-items: center;
+}
+
+/* Abstand für Action-Buttons */
+.actions-column button {
+  margin-right: 0.5rem;
+}
+
+/* Formular-Layout */
+.asset-form {
+  width: 100%;
+}
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 1rem;
+}
+.form-field,
+.form-field-full {
+  display: flex;
+  flex-direction: column;
+}
+.form-field-full {
+  grid-column: span 2;
+}
+.asset-form label {
+  font-weight: 600;
+  margin-bottom: 0.3rem;
+}
+.asset-form input,
+.asset-form textarea {
+  width: 100%;
+}
+
+/* TabView */
+:host ::ng-deep .p-tabview .p-tabview-nav li .p-tabview-title {
+  font-weight: 600;
+}
+:host ::ng-deep .p-tabview .p-tabview-panel {
+  padding: 1rem;
+}
+
+/* Utility */
+.flex { display: flex; }
+.justify-content-between { justify-content: space-between; }
+.justify-content-end { justify-content: flex-end; }
+.align-items-center { align-items: center; }
+.gap-2 { gap: 0.5rem; }
+.mb-2 { margin-bottom: 0.5rem; }
+.text-center { text-align: center; }
+
+/* Validierungsfehler */
+.p-error {
+  color: #f44336;
+  font-size: 0.85rem;
+  margin-top: 0.25rem;
+}
+input.p-invalid, textarea.p-invalid {
+  border-color: #f44336 !important;
+}

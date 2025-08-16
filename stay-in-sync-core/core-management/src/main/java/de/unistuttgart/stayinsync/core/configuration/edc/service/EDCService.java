@@ -28,7 +28,12 @@ public class EDCService {
         return findById(id).map(existing -> {
             existing.name   = updated.name;
             existing.url    = updated.url;
-            existing.apiKey = updated.apiKey;
+            existing.protocolVersion = updated.protocolVersion; // NEU
+            existing.description     = updated.description;     // NEU
+            existing.bpn             = updated.bpn;  
+            if (updated.apiKey != null && !updated.apiKey.isBlank()) {
+                existing.apiKey = updated.apiKey;
+           }
             return existing;
         });
     }

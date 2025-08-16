@@ -41,6 +41,7 @@ public class EDCAssetService {
         existing.edcAccessPolicies     = newState.edcAccessPolicies;
         existing.targetSystemEndpoint  = newState.targetSystemEndpoint;
         existing.targetEDC             = newState.targetEDC;
+        
         return Optional.of(existing);
     }
 

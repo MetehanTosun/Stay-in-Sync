@@ -14,8 +14,8 @@ public class EDCAsset extends UuidEntity {
     @Column(nullable = false)
     public String assetId;
 
-    @NotBlank
-    @Column(nullable = false)
+  
+    @Column(nullable = true)
     public String url;
 
     @NotBlank

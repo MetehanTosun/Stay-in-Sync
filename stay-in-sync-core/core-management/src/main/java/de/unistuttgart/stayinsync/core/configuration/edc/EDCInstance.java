@@ -17,6 +17,12 @@ public class EDCInstance extends UuidEntity {
     @Column(nullable = false)
     public String apiKey;
 
+    @Column(name="protocol_version", length=20) public String protocolVersion; // NEU
+
+    @Column(length=1024) public String description;                             // NEU
+    
+    @Column(length=36) public String bpn; 
+
     @OneToMany(mappedBy = "targetEDC", cascade = CascadeType.ALL, orphanRemoval = true)
     public Set<EDCAsset> edcAssets;
 }

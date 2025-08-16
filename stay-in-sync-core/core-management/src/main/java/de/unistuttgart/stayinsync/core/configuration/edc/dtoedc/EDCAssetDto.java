@@ -24,6 +24,7 @@ public class EDCAssetDto {
 
     @NotNull
     public UUID targetEDCId;
+    
 
     public UUID getId() {
         return id;

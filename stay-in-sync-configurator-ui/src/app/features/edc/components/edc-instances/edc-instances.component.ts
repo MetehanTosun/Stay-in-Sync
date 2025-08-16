@@ -1,6 +1,7 @@
 import { Component, OnInit, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormsModule } from '@angular/forms'; // For ngModel
+import { FormsModule } from '@angular/forms';
+
 
 // PrimeNG
 import { Table, TableModule } from 'primeng/table';
@@ -17,9 +18,9 @@ import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { ConfirmationService } from 'primeng/api';
 import { PasswordModule } from 'primeng/password';
 
+// passe die Pfade ggf. an deine Struktur an:
 import { EdcInstance } from './models/edc-instance.model';
 import { EdcInstanceService } from './services/edc-instance.service';
-
 
 @Component({
   selector: 'app-edc-instances',
@@ -29,7 +30,7 @@ import { EdcInstanceService } from './services/edc-instance.service';
     FormsModule,
     TableModule,
     InputTextModule,
-    InputTextarea,
+    InputTextModule,
     TagModule,
     ButtonModule,
     IconFieldModule,
@@ -41,22 +42,23 @@ import { EdcInstanceService } from './services/edc-instance.service';
     PasswordModule,
   ],
   templateUrl: './edc-instances.component.html',
-  styleUrl: './edc-instances.component.css',
+  styleUrls: ['./edc-instances.component.css'],
   providers: [ConfirmationService],
 })
 export class EdcInstancesComponent implements OnInit {
   @ViewChild('dt2') dt2: Table | undefined;
 
   edcInstances: EdcInstance[] = [];
-  loading: boolean = true;
+  allBpns: string[] = [];
+  loading = true;
 
-  // Dialog related properties
-  displayNewInstanceDialog: boolean = false;
-  newInstance: EdcInstance = this.createEmptyInstance(); // To hold form data
+  // Dialog: Neu anlegen
+  displayNewInstanceDialog = false;
+  newInstance: EdcInstance = this.createEmptyInstance();
 
-  // Edit instance dialog properties
-  displayEditInstanceDialog: boolean = false;
-  instanceToEdit: EdcInstance | null = null; // Instance being edited
+  // Dialog: Bearbeiten
+  displayEditInstanceDialog = false;
+  instanceToEdit: EdcInstance | null = null;
 
   constructor(
     private edcInstanceService: EdcInstanceService,
@@ -64,35 +66,45 @@ export class EdcInstancesComponent implements OnInit {
   ) {}
 
   ngOnInit(): void {
-    this.edcInstanceService.getEdcInstancesLarge().then((data) => {
-      this.edcInstances = data;
+    this.loadInstances();
+  }
+
+  private loadInstances(): void {
+    this.loading = true;
+    this.edcInstanceService.getAll().then((instances: EdcInstance[]) => {
+      this.edcInstances = instances;
+      const bpnSet: Set<string> = new Set(instances.map(i => i.bpn || '—'));
+      this.allBpns = Array.from(bpnSet);
+      this.loading = false;
+    }).catch(err => {
+      console.error('Fehler beim Laden der EDC-Instanzen:', err);
       this.loading = false;
     });
   }
 
   private createEmptyInstance(): EdcInstance {
     return {
-      id: '',
+      id: '',             // wird vom Backend gesetzt, bleibt hier leer
       name: '',
       url: '',
       protocolVersion: '',
       description: '',
       bpn: '',
-      apiKey: '',
+      apiKey: '',         // write-only; wird nicht zurückgegeben
     };
   }
 
+  // Filter / Tabelle
   onGlobalFilter(event: Event): void {
     const inputElement = event.target as HTMLInputElement;
-    if (this.dt2) {
-      this.dt2.filterGlobal(inputElement.value, 'contains');
-    }
+    this.dt2?.filterGlobal(inputElement.value, 'contains');
   }
 
   clear(table: Table): void {
     table.clear();
   }
 
+  // Neu anlegen
   openNewInstanceDialog(): void {
     this.newInstance = this.createEmptyInstance();
     this.displayNewInstanceDialog = true;
@@ -103,18 +115,24 @@ export class EdcInstancesComponent implements OnInit {
   }
 
   saveNewInstance(): void {
-    // Basic validation
-    if (this.newInstance.name && this.newInstance.url && this.newInstance.bpn) {
-      // the ID would be assigned by the backend
-      this.newInstance.id = 'temp_' + Math.random().toString(36).substring(2, 9);
-      this.edcInstances = [...this.edcInstances, this.newInstance];
-      this.hideNewInstanceDialog();
-    } else {
-
-      console.error('Name, URL, and BPN are required.');
+    const m = this.newInstance;
+    if (!m.name || !m.url) {
+      console.error('Name und URL sind Pflichtfelder.');
+      return;
     }
+    // WICHTIG: kein temp-ID-Trick mehr – direkt ans Backend
+    this.edcInstanceService.create$(m).subscribe({
+      next: (created) => {
+        this.edcInstances = [created, ...this.edcInstances];
+        this.hideNewInstanceDialog();
+      },
+      error: (err) => {
+        console.error('Fehler beim Anlegen:', err);
+      }
+    });
   }
 
+  // Bearbeiten
   editInstance(instance: EdcInstance): void {
     this.instanceToEdit = { ...instance };
     this.displayEditInstanceDialog = true;
@@ -122,29 +140,48 @@ export class EdcInstancesComponent implements OnInit {
 
   hideEditInstanceDialog(): void {
     this.displayEditInstanceDialog = false;
-    this.instanceToEdit = null; // Clear the instance being edited
+    this.instanceToEdit = null;
   }
 
   saveEditedInstance(): void {
-    if (this.instanceToEdit && this.instanceToEdit.name && this.instanceToEdit.url && this.instanceToEdit.bpn) {
-      this.edcInstances = this.edcInstances.map(instance =>
-        instance.id === this.instanceToEdit!.id ? { ...this.instanceToEdit! } : instance
-      );
-      this.hideEditInstanceDialog();
-    } else {
-      console.error('Name, URL, and BPN are required for edited instance.');
+    const m = this.instanceToEdit;
+    if (!m) return;
+    if (!m.id) {
+      console.error('ID fehlt beim Update.');
+      return;
     }
+    if (!m.name || !m.url) {
+      console.error('Name und URL sind Pflichtfelder.');
+      return;
+    }
+    this.edcInstanceService.update$(m.id, m).subscribe({
+      next: (updated) => {
+        this.edcInstances = this.edcInstances.map(x => x.id === updated.id ? updated : x);
+        this.hideEditInstanceDialog();
+      },
+      error: (err) => {
+        console.error('Fehler beim Aktualisieren:', err);
+      }
+    });
   }
 
+  // Löschen
   deleteInstance(instance: EdcInstance): void {
     this.confirmationService.confirm({
-      message: `Are you sure you want to delete the instance "${instance.name}"?`,
-      header: 'Confirm Deletion',
+      message: `Möchtest du "${instance.name}" wirklich löschen?`,
+      header: 'Löschen bestätigen',
       icon: 'pi pi-exclamation-triangle',
       acceptButtonStyleClass: 'p-button-danger',
       rejectButtonStyleClass: 'p-button-text',
       accept: () => {
-        this.edcInstances = this.edcInstances.filter(i => i.id !== instance.id);
+        this.edcInstanceService.delete$(instance.id).subscribe({
+          next: () => {
+            this.edcInstances = this.edcInstances.filter(i => i.id !== instance.id);
+          },
+          error: (err) => {
+            console.error('Fehler beim Löschen:', err);
+          }
+        });
       },
     });
   }

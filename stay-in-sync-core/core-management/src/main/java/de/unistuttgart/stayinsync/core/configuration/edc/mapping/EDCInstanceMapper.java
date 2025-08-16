@@ -22,7 +22,10 @@ public class EDCInstanceMapper {
         dto.setId(entity.id);
         dto.setName(entity.name);
         dto.setUrl(entity.url);
-        dto.setApiKey(entity.apiKey);
+         dto.setProtocolVersion(entity.protocolVersion);
+        dto.setDescription(entity.description);
+        dto.setBpn(entity.bpn);
+       
 
         Set<UUID> assetIds = Optional.ofNullable(entity.edcAssets)
             .orElse(Set.of())
@@ -48,8 +51,14 @@ public class EDCInstanceMapper {
         entity.id     = dto.getId();
         entity.name   = dto.getName();
         entity.url    = dto.getUrl();
-        entity.apiKey = dto.getApiKey();
+        
+        entity.protocolVersion = dto.getProtocolVersion();
+        entity.description     = dto.getDescription();
+        entity.bpn             = dto.getBpn();
         // edcAssets werden separat verwaltet
+        if (dto.getApiKey() != null && !dto.getApiKey().isBlank()) {
+        entity.apiKey = dto.getApiKey();
+    }
         return entity;
     }
 }
