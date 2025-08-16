@@ -41,4 +41,12 @@ public class ConstantNode extends Node {
     public void calculate(Map<String, JsonNode> dataContext) {
         this.setCalculatedResult(this.getValue());
     }
+
+    @Override
+    public Class<?> getOutputType() {
+        if (value == null) {
+            return Object.class;
+        }
+        return value.getClass();
+    }
 }

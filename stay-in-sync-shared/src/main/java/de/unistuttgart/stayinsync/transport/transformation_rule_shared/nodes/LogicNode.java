@@ -82,4 +82,12 @@ public class LogicNode extends Node {
             );
         }
     }
+
+    @Override
+    public Class<?> getOutputType() {
+        if (operator == null) {
+            return Object.class;
+        }
+        return getOperator().getOperationStrategy().getReturnType();
+    }
 }

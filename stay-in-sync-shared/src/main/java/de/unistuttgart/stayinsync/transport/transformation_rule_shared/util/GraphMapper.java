@@ -157,6 +157,14 @@ public class GraphMapper {
                         case "FINAL":
                             node = new FinalNode();
                             break;
+                        case "CONFIG":
+                            ConfigNode configNode = new ConfigNode();
+                            configNode.setActive(dto.isChangeDetectionActive());
+                            if (dto.getChangeDetectionMode() != null) {
+                                configNode.setMode(ConfigNode.ChangeDetectionMode.valueOf(dto.getChangeDetectionMode()));
+                            }
+                            node = configNode;
+                            break;
                         default:
                             throw new NodeConfigurationException("Unknown nodeType: " + dto.getNodeType());
                     }

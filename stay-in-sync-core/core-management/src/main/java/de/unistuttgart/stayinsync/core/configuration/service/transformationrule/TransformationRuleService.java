@@ -7,6 +7,7 @@ import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.LogicG
 import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.TransformationRule;
 import de.unistuttgart.stayinsync.core.configuration.exception.CoreManagementException; // Import der korrekten Exception
 import de.unistuttgart.stayinsync.transport.dto.transformationrule.GraphDTO;
+import de.unistuttgart.stayinsync.transport.dto.transformationrule.InputDTO;
 import de.unistuttgart.stayinsync.transport.dto.transformationrule.NodeDTO;
 import de.unistuttgart.stayinsync.transport.dto.transformationrule.TransformationRulePayloadDTO;
 import de.unistuttgart.stayinsync.transport.dto.transformationrule.vFlow.VFlowGraphDTO;
@@ -23,6 +24,7 @@ import jakarta.ws.rs.NotFoundException;
 import jakarta.ws.rs.core.Response;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
@@ -58,13 +60,27 @@ public class TransformationRuleService {
         }
 
         try {
+            NodeDTO configNodeDto = new NodeDTO();
+            configNodeDto.setId(0);
+            configNodeDto.setName("Change Detection");
+            configNodeDto.setNodeType("CONFIG");
+            configNodeDto.setChangeDetectionActive(true);
+            configNodeDto.setChangeDetectionMode("OR");
+
+
             NodeDTO finalNodeDto = new NodeDTO();
-            finalNodeDto.setId(0);
+            finalNodeDto.setId(1);
             finalNodeDto.setName("Final Result");
             finalNodeDto.setNodeType("FINAL");
 
+            InputDTO connection = new InputDTO();
+            connection.setId(configNodeDto.getId());
+            connection.setOrderIndex(0);
+            finalNodeDto.setInputNodes(Collections.singletonList(connection));
+
             GraphDTO defaultGraphDto = new GraphDTO();
-            defaultGraphDto.setNodes(Collections.singletonList(finalNodeDto));
+            defaultGraphDto.setNodes(Arrays.asList(configNodeDto, finalNodeDto));
+
 
             TransformationRule rule = new TransformationRule();
             rule.name = payload.getName();

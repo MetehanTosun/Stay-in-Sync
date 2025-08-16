@@ -7,6 +7,8 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import java.util.Arrays;
 import java.util.Map;
+import java.util.Optional;
+
 import de.unistuttgart.stayinsync.transport.exception.NodeConfigurationException;
 
 /**
@@ -92,20 +94,24 @@ public class ProviderNode extends Node {
             );
         }
 
-        for (int i = 0; i < jsonPath.split("\\.").length; i++) {
-            String key = jsonPathKeys[i];
-            sourceScope = sourceScope.get(key);
+        // Create the internal path (without the first "source")
+        String[] remainingPathParts = Arrays.copyOfRange(jsonPathKeys, 1, jsonPathKeys.length);
+        String internalPath = String.join(".", remainingPathParts);
 
-            if (sourceScope == null) {
-                throw new GraphEvaluationException(
-                        GraphEvaluationException.ErrorType.DATA_NOT_FOUND,
-                        "Path Not Found",
-                        "Malformed dataContext, key '" + key + "' in path '" + jsonPath + "' does not exist.",
-                        null
-                );
-            }
+        // Use JsonPathValueExtractor for navigation and conversion
+        JsonPathValueExtractor extractor = new JsonPathValueExtractor();
+        Optional<Object> result = extractor.extractValue(sourceScope, internalPath);
+
+        if (result.isPresent()) {
+            this.setCalculatedResult(result.get());
+        } else {
+            // Path does not exist or value is null
+            this.setCalculatedResult(null);
         }
+    }
 
-        this.setCalculatedResult(sourceScope);
+    @Override
+    public Class<?> getOutputType() {
+        return Object.class;
     }
 }

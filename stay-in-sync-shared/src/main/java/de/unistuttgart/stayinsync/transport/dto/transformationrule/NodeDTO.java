@@ -68,6 +68,19 @@ public class NodeDTO {
      */
     private Object value;
 
+    // --- Properties specific to CONFIG node ---
+    /**
+     * Defines the logical condition ('AND' or 'OR') for the change detection.
+     * Only used if nodeType is "CONFIG".
+     */
+    private String changeDetectionMode;
+
+    /**
+     * A boolean flag that acts as a bypass switch to enable (true) or disable (false) the change detection logic.
+     * Only used if nodeType is "CONFIG".
+     */
+    private boolean changeDetectionActive;
+
     // --- Properties specific to LOGIC nodes ---
     /**
      * The name of the logical operator this node performs (e.g., "ADD",

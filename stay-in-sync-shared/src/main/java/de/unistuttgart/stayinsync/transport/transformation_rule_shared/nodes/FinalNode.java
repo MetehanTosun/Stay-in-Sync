@@ -41,4 +41,9 @@ public class FinalNode extends Node {
             this.setCalculatedResult(true);
         }
     }
+
+    @Override
+    public Class<?> getOutputType() {
+        return Boolean.class;
+    }
 }

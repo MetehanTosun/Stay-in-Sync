@@ -2,6 +2,9 @@ package de.unistuttgart.stayinsync.transport.transformation_rule_shared.nodes;
 
 import com.fasterxml.jackson.databind.JsonNode; // Jackson-Import
 import com.fasterxml.jackson.databind.node.JsonNodeType;
+
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 
 public class JsonPathValueExtractor {
@@ -93,12 +96,43 @@ public class JsonPathValueExtractor {
      * Converts a Jackson JsonNode to a corresponding Java primitive wrapper or String.
      */
     private Object convertJsonNodeToJavaObject(JsonNode jsonNode) {
+        if (jsonNode.isNull()) {
+            return null; // For isNull/isNotNull predicates
+        }
+
         JsonNodeType nodeType = jsonNode.getNodeType();
         switch (nodeType) {
-            case JsonNodeType.STRING:  return jsonNode.asText();
-            case JsonNodeType.NUMBER:  return jsonNode.isIntegralNumber() ? jsonNode.asLong() : jsonNode.asDouble();
-            case JsonNodeType.BOOLEAN: return jsonNode.asBoolean();
-            // Note: ARRAY and OBJECT types could be converted to List/Map here if needed.
+            case STRING:
+                String textValue = jsonNode.asText();
+                // For Date/Time Predicates: Leave ISO-8601 strings as string
+                return textValue;
+
+            case NUMBER:
+                // Keep integer precision for number predicates
+                if (jsonNode.isIntegralNumber()) {
+                    long longValue = jsonNode.asLong();
+                    if (longValue >= Integer.MIN_VALUE && longValue <= Integer.MAX_VALUE) {
+                        return (int) longValue;
+                    }
+                    return longValue;
+                }
+                return jsonNode.asDouble();
+
+            case BOOLEAN:
+                return jsonNode.asBoolean();
+
+            case ARRAY:
+                // For Array Predicates: Convert to List<Object>
+                List<Object> list = new ArrayList<>();
+                for (JsonNode element : jsonNode) {
+                    list.add(convertJsonNodeToJavaObject(element)); // Rekursiv
+                }
+                return list;
+
+            case OBJECT:
+                // For Object Predicates: Keep as JsonNode
+                return jsonNode;
+
             default:
                 throw new IllegalArgumentException("Unhandled JsonNode type for conversion: " + nodeType);
         }
