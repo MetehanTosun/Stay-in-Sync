@@ -112,8 +112,6 @@ export class EdcAssetsAndPoliciesComponent implements OnInit, OnDestroy {
   // Properties for Expert Mode in 'New Contract Definition' dialog
   isExpertMode: boolean = false;
   expertModeJsonContent: string = '';
-  contractDefinitionTemplates: { name: string, content: any }[] = [];
-  selectedTemplate: any | null = null;
   isComplexSelectorForEdit: boolean = false;
   contractDefinitionToEditODRL: OdrlContractDefinition | null = null;
 
@@ -204,7 +202,6 @@ export class EdcAssetsAndPoliciesComponent implements OnInit, OnDestroy {
   ngOnInit(): void {
     this.loadAssets();
     this.loadPoliciesAndDefinitions();
-    this.loadContractDefinitionTemplates();
     this.loadAccessPolicyTemplates();
     this.loadAssetTemplates();
     this.loadAllBpns();
@@ -215,43 +212,6 @@ export class EdcAssetsAndPoliciesComponent implements OnInit, OnDestroy {
     this.contractJsonSyncSubscription?.unsubscribe();
   }
 
-  private loadContractDefinitionTemplates() {
-    // In backend this would come from a service or whatever
-    this.contractDefinitionTemplates = [
-      {
-        name: 'Simple Asset Selector',
-        content: {
-          '@context': { edc: 'https://w3id.org/edc/v0.0.1/ns/' },
-          '@id': 'CONTRACT_DEFINITION_ID_1',
-          accessPolicyId: 'ACCESS_POLICY_ID',
-          contractPolicyId: 'CONTRACT_POLICY_ID',
-          assetsSelector: [
-            {
-              operandLeft: 'https://w3id.org/edc/v0.0.1/ns/id',
-              operator: 'eq',
-              operandRight: 'ASSET_ID',
-            },
-          ],
-        }
-      },
-      {
-        name: 'Multi-Asset Selector (using IN)',
-        content: {
-          '@context': { edc: 'https://w3id.org/edc/v0.0.1/ns/' },
-          '@id': 'CONTRACT_DEFINITION_ID_2',
-          accessPolicyId: 'ACCESS_POLICY_ID',
-          contractPolicyId: 'CONTRACT_POLICY_ID',
-          assetsSelector: [
-            {
-              "operandLeft": "https://w3id.org/edc/v0.0.1/ns/id",
-              "operator": "in",
-              "operandRight": ["ASSET_ID_1", "ASSET_ID_2", "ASSET_ID_3"]
-            }
-          ]
-        }
-      }
-    ];
-  }
 
   private loadAccessPolicyTemplates() {
 
@@ -968,54 +928,21 @@ export class EdcAssetsAndPoliciesComponent implements OnInit, OnDestroy {
     this.selectedAssetsInDialog = []; // Clear previous selections
     this.newContractPolicy = this.createEmptyContractPolicy();
 
-    // Set "Simple Asset Selector" as the default template
-    const defaultTemplate = this.contractDefinitionTemplates.find(t => t.name === 'Simple Asset Selector');
-    if (defaultTemplate) {
-      this.selectedTemplate = defaultTemplate;
-      this.onTemplateChange({ value: this.selectedTemplate });
-    } else {
-      // Fallback if template is not found
-      this.expertModeJsonContent = JSON.stringify({}, null, 2);
-      this.syncContractFormFromJson();
-    }
+    // Create a default empty JSON structure
+    this.expertModeJsonContent = JSON.stringify({
+      '@context': { edc: 'https://w3id.org/edc/v0.0.1/ns/' },
+      '@id': `contract-def-new-${Date.now()}`,
+      accessPolicyId: '',
+      contractPolicyId: '',
+      assetsSelector: [],
+    }, null, 2);
+    this.syncContractFormFromJson(); // Initialize form state from the empty JSON
 
     this.displayNewContractPolicyDialog = true;
   }
 
   hideNewContractPolicyDialog() {
     this.displayNewContractPolicyDialog = false;
-  }
-
-  onTemplateChange(event: { value: any }) {
-    if (event.value) {
-      // Deep copy to avoid modifying the original template object
-      const templateContent = JSON.parse(JSON.stringify(event.value.content));
-      const accessPolicyId = (this.newContractPolicy.accessPolicyId as any)?.id || this.newContractPolicy.accessPolicyId || 'ACCESS_POLICY_ID';
-      const selectedAssetIds = this.selectedAssetsInDialog.map(asset => asset.assetId);
-
-      // Dynamically populate common fields
-      templateContent.accessPolicyId = accessPolicyId;
-      templateContent.contractPolicyId = accessPolicyId;
-
-      // Handle specific templates
-      if (templateContent['@id'] === 'CONTRACT_DEFINITION_ID_1') { // Simple Asset Selector
-        // Use the first selected asset, or a placeholder
-        templateContent.assetsSelector[0].operandRight = selectedAssetIds[0] || 'ASSET_ID';
-      } else if (templateContent['@id'] === 'CONTRACT_DEFINITION_ID_2') { // Multi-Asset Selector
-        // Use all selected assets, or a placeholder array
-        templateContent.assetsSelector[0].operandRight = selectedAssetIds.length > 0 ? selectedAssetIds : ["ASSET_ID_1", "ASSET_ID_2", "ASSET_ID_3"];
-      }
-
-      this.expertModeJsonContent = JSON.stringify(templateContent, null, 2);
-    } else {
-      // When clearing the template, reset to a default empty structure
-      this.expertModeJsonContent = JSON.stringify({
-        '@context': { edc: 'https://w3id.org/edc/v0.0.1/ns/' },
-        '@id': `contract-def-new-${Date.now()}`,
-        accessPolicyId: '', contractPolicyId: '', assetsSelector: [],
-      }, null, 2);
-    }
-    this.syncContractFormFromJson();
   }
 
   async onTemplateFileSelect(event: Event) {
@@ -1029,7 +956,7 @@ export class EdcAssetsAndPoliciesComponent implements OnInit, OnDestroy {
     const file = fileList[0]; // Only one file
     try {
       this.expertModeJsonContent = await file.text();
-      this.messageService.add({ severity: 'info', summary: 'Template Loaded', detail: `Template from ${file.name} loaded into editor.` });
+      this.messageService.add({ severity: 'info', summary: 'Content Loaded', detail: `JSON from ${file.name} loaded into editor.` });
     } catch (error) {
       this.messageService.add({ severity: 'error', summary: 'Read Error', detail: 'Could not read the selected file.' });
     } finally {
@@ -1626,16 +1553,7 @@ export class EdcAssetsAndPoliciesComponent implements OnInit, OnDestroy {
       currentJson.accessPolicyId = accessPolicyId;
       currentJson.contractPolicyId = accessPolicyId; // Keep them in sync for simplicity
 
-      // Intelligently update asset selectors to preserve 'in' operator if present
-      const assetSelectors = currentJson.assetsSelector || [];
-      if (assetSelectors.length === 1 && assetSelectors[0].operator === 'in') {
-        // If the template is an 'in' selector, just update the list of asset IDs
-        assetSelectors[0].operandRight = this.selectedAssetsInDialog.map(a => a.assetId);
-      } else {
-        // Otherwise, assume a list of 'eq' selectors and rebuild it
-        currentJson.assetsSelector = this.buildAssetSelectors();
-      }
-
+      currentJson.assetsSelector = this.buildAssetSelectors();
       this.expertModeJsonContent = JSON.stringify(currentJson, null, 2);
     } catch (e) {
       // If JSON is invalid (e.g., during manual editing), do nothing to avoid overwriting user's work.

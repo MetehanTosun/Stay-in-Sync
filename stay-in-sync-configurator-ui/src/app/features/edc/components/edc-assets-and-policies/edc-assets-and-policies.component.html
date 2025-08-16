@@ -410,15 +410,7 @@
     </div>
 
     <div class="field col-12">
-      <label class="font-bold block mb-2">Start with a Template (Optional)</label>
-      <div class="grid">
-        <div class="col-6">
-          <p-dropdown [options]="contractDefinitionTemplates" [(ngModel)]="selectedTemplate" (onChange)="onTemplateChange($event)" optionLabel="name" placeholder="Select Template" [showClear]="true" styleClass="w-full"></p-dropdown>
-        </div>
-        <div class="col-6">
-          <button pButton pRipple type="button" label="Upload Template" icon="pi pi-folder-open" class="p-button-outlined w-full" (click)="templateFileInput.click()"></button>
-        </div>
-      </div>
+      <button pButton pRipple type="button" label="Upload JSON to Editor" icon="pi pi-folder-open" class="p-button-outlined w-full" (click)="templateFileInput.click()"></button>
     </div>
 
     <div class="field col-12">
