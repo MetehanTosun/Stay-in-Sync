@@ -1,6 +1,7 @@
 package de.unistuttgart.stayinsync.core.configuration.rest.dtos;
 
 import de.unistuttgart.stayinsync.transport.transformation_rule_shared.GraphStatus;
+import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -10,6 +11,7 @@ import lombok.Setter;
  */
 @Getter
 @Setter
+@AllArgsConstructor
 public class TransformationRuleDTO {
 
     /**
@@ -38,12 +40,4 @@ public class TransformationRuleDTO {
     private Long transformationId;
 
     public TransformationRuleDTO() {}
-
-    public TransformationRuleDTO(Long id, String name, String description, GraphStatus graphStatus, Long transformationId) {
-        this.id = id;
-        this.name = name;
-        this.description = description;
-        this.graphStatus = graphStatus;
-        this.transformationId = transformationId;
-    }
 }

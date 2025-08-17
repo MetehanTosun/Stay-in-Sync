@@ -39,15 +39,14 @@ public class TransformationRuleMapperService {
         if (entity == null) return null;
 
         Long transformationId = entity.transformation != null ? entity.transformation.id : null;
-        TransformationRuleDTO dto = new TransformationRuleDTO(
+        Log.infof("Successfully mapped entity id %d to TransformationRuleDTO.", entity.id);
+        return new TransformationRuleDTO(
                 entity.id,
                 entity.name,
                 entity.description,
                 entity.graphStatus,
                 transformationId
         );
-        Log.infof("Successfully mapped entity id %d to TransformationRuleDTO.", entity.id);
-        return dto;
     }
 
     /**
