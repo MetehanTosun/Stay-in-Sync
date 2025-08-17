@@ -165,13 +165,9 @@ export class VflowCanvasComponent implements OnInit {
         ...nodeData,
         nodeType: nodeType
       },
-      contextMenuItems: this.getNodeMenuItems({
-        data: {
-          ...nodeData,
-          nodeType: nodeType
-        }
-      } as CustomVFlowNode)
+      contextMenuItems: []
     };
+    newNode.contextMenuItems = this.getNodeMenuItems(newNode);
     this.nodes = [...this.nodes, newNode];
   }
 
