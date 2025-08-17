@@ -9,8 +9,13 @@
   <form [formGroup]="wizardForm" class="form-container">
     <!-- Basic Information -->
     <div class="form-field">
-        <label for="alias">Alias</label>
-        <input id="alias" pInputText formControlName="alias" placeholder="e.g. synchronizeProducts">
+      <label for="alias">Alias</label>
+      <input
+        id="alias"
+        pInputText
+        formControlName="alias"
+        placeholder="e.g. synchronizeProducts"
+      />
     </div>
 
     <div class="form-field">
@@ -48,37 +53,68 @@
           <label for="checkEndpoint">CHECK (GET)</label>
           <p-select
             id="checkEndpoint"
-            [options]="endpointSuggestions$ | async | filterByHttpMethod : 'GET'"
+            [options]="(endpointSuggestions$ | async) || []"
             formControlName="checkEndpointId"
             placeholder="GET-Endpoint for existence check"
             optionLabel="endpointPath"
             optionValue="id"
             [showClear]="true"
-          ></p-select>
+          >
+            <ng-template let-endpoint pTemplate="item">
+              <div class="endpoint-option">
+                <span class="font-bold mr-2">{{
+                  endpoint.httpRequestType
+                }}</span>
+                <span>{{ endpoint.endpointPath }}</span>
+              </div>
+            </ng-template>
+          </p-select>
         </div>
         <div class="form-field">
           <label for="createEndpoint">CREATE (POST)</label>
           <p-select
             id="createEndpoint"
-            [options]="endpointSuggestions$ | async | filterByHttpMethod : 'POST'"
+            [options]="
+              (endpointSuggestions$ | async) || []
+            "
             formControlName="createEndpointId"
             placeholder="POST-Endpoint for creation"
             optionLabel="endpointPath"
             optionValue="id"
             [showClear]="true"
-          ></p-select>
+          >
+            <ng-template let-endpoint pTemplate="item">
+              <div class="endpoint-option">
+                <span class="font-bold mr-2">{{
+                  endpoint.httpRequestType
+                }}</span>
+                <span>{{ endpoint.endpointPath }}</span>
+              </div>
+            </ng-template>
+          </p-select>
         </div>
         <div class="form-field">
           <label for="updateEndpoint">UPDATE (PUT)</label>
           <p-select
             id="updateEndpoint"
-            [options]="endpointSuggestions$ | async | filterByHttpMethod : 'PUT'"
+            [options]="
+              (endpointSuggestions$ | async) || []
+            "
             formControlName="updateEndpointId"
             placeholder="PUT-Endpoint for updates"
             optionLabel="endpointPath"
             optionValue="id"
             [showClear]="true"
-          ></p-select>
+          >
+            <ng-template let-endpoint pTemplate="item">
+              <div class="endpoint-option">
+                <span class="font-bold mr-2">{{
+                  endpoint.httpRequestType
+                }}</span>
+                <span>{{ endpoint.endpointPath }}</span>
+              </div>
+            </ng-template>
+          </p-select>
         </div>
       </ng-container>
     </ng-container>
