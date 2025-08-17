@@ -140,7 +140,7 @@ export class VflowCanvasComponent implements OnInit {
         arcId: 0, // TODO-s get arcId from JSON path
         jsonPath: providerJsonPath
       }
-    } else if (nodeType === NodeType.CONSTANT && constantValue) {
+    } else if (nodeType === NodeType.CONSTANT && constantValue !== undefined) {
       nodeData = {
         name: `Constant: ${constantValue}`,
         value: constantValue
