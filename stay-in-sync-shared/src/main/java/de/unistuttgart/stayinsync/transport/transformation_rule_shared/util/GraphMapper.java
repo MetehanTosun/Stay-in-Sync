@@ -4,8 +4,12 @@ import de.unistuttgart.stayinsync.transport.dto.transformationrule.GraphDTO;
 import de.unistuttgart.stayinsync.transport.dto.transformationrule.InputDTO;
 import de.unistuttgart.stayinsync.transport.dto.transformationrule.NodeDTO;
 import de.unistuttgart.stayinsync.transport.dto.transformationrule.vFlow.*;
+import de.unistuttgart.stayinsync.transport.exception.NodeConfigurationException;
 import de.unistuttgart.stayinsync.transport.transformation_rule_shared.logic_operator.LogicOperator;
 import de.unistuttgart.stayinsync.transport.transformation_rule_shared.nodes.*;
+import de.unistuttgart.stayinsync.transport.transformation_rule_shared.validation_error.NodeConfigurationError;
+import de.unistuttgart.stayinsync.transport.transformation_rule_shared.validation_error.OperatorConfigurationError;
+import de.unistuttgart.stayinsync.transport.transformation_rule_shared.validation_error.ValidationError;
 import io.quarkus.logging.Log;
 import jakarta.enterprise.context.ApplicationScoped;
 
@@ -20,6 +24,14 @@ import java.util.*;
 @ApplicationScoped
 public class GraphMapper {
 
+
+    /**
+     * A record to hold the result of the mapping process from DTO to Node objects.
+     * @param nodes The list of successfully created nodes.
+     * @param mappingErrors A list of configuration errors found during mapping.
+     */
+    public record MappingResult(List<Node> nodes, List<ValidationError> mappingErrors) {}
+
     // ==========================================================================================
     // SECTION 1: Mapping from Frontend (VFlow) to Persistence Format (GraphDTO)
     // ==========================================================================================
@@ -32,9 +44,12 @@ public class GraphMapper {
      * @return The flattened GraphDTO ready for persistence.
      */
     public GraphDTO vflowToGraphDto(VFlowGraphDTO vflowDto) {
-        if (vflowDto == null || vflowDto.getNodes() == null) {
+        Log.debug("Starting mapping from VFlowGraphDTO to GraphDTO.");
+        if (vflowDto == null || vflowDto.getNodes() == null || vflowDto.getNodes().isEmpty()) {
+            Log.debug("Input VFlowGraphDTO is null or empty, returning new GraphDTO.");
             return new GraphDTO();
         }
+        Log.debugf("Mapping VFlowGraphDTO with %d nodes and %d edges.", vflowDto.getNodes().size(), vflowDto.getEdges() != null ? vflowDto.getEdges().size() : 0);
 
         GraphDTO graphDto = new GraphDTO();
 
@@ -47,6 +62,7 @@ public class GraphMapper {
         }
 
         graphDto.setNodes(new ArrayList<>(nodeDtoMap.values()));
+        Log.infof("Successfully mapped VFlowGraphDTO to GraphDTO with %d nodes.", graphDto.getNodes().size());
         return graphDto;
     }
 
@@ -54,6 +70,7 @@ public class GraphMapper {
      * Helper to create a map of flattened NodeDTOs from the VFlowNodeDTO list.
      */
     private Map<String, NodeDTO> mapVFlowNodesToNodeDTOs(List<VFlowNodeDTO> vflowNodes) {
+        Log.debugf("Creating flat NodeDTOs from %d VFlowNodeDTOs.", vflowNodes.size());
         Map<String, NodeDTO> nodeDtoMap = new HashMap<>();
         for (VFlowNodeDTO vflowNode : vflowNodes) {
             NodeDTO nodeDto = new NodeDTO();
@@ -75,6 +92,7 @@ public class GraphMapper {
 
             nodeDtoMap.put(vflowNode.getId(), nodeDto);
         }
+        Log.debugf("Created %d NodeDTOs.", nodeDtoMap.size());
         return nodeDtoMap;
     }
 
@@ -83,6 +101,8 @@ public class GraphMapper {
      * InputDTOs to the target NodeDTOs' `inputNodes` list.
      */
     private void applyVFlowEdgesToInputNodes(Map<String, NodeDTO> nodeDtoMap, List<VFlowEdgeDTO> vflowEdges) {
+        Log.debugf("Applying %d VFlow edges to connect NodeDTOs.", vflowEdges.size());
+        int appliedEdges = 0;
         for (VFlowEdgeDTO edge : vflowEdges) {
             NodeDTO targetNodeDto = nodeDtoMap.get(edge.getTarget());
             if (targetNodeDto == null) {
@@ -95,90 +115,9 @@ public class GraphMapper {
             inputDto.setOrderIndex(parseOrderIndexFromTargetHandle(edge.getTargetHandle()));
 
             targetNodeDto.getInputNodes().add(inputDto);
+            appliedEdges++;
         }
-    }
-
-    // ==========================================================================================
-    // SECTION 2: Mapping from Persistence Format (GraphDTO) back to Frontend (VFlowGraphDTO)
-    // ==========================================================================================
-
-    /**
-     * Converts a flattened GraphDTO (from the database) back into the VFlowGraphDTO format
-     * that the frontend UI expects.
-     *
-     * @param graphDto The flattened graph data from the database.
-     * @return The VFlowGraphDTO with separate lists for nodes and edges.
-     */
-    public VFlowGraphDTO graphToVFlowDto(GraphDTO graphDto, String ruleName, String description) {
-        if (graphDto == null) {
-            return new VFlowGraphDTO();
-        }
-
-        VFlowGraphDTO vflowDto = new VFlowGraphDTO();
-        vflowDto.setNodes(mapNodeDTOsToVFlowNodes(graphDto.getNodes()));
-        // Reconstruct the edge list for the frontend from the inputNodes property.
-        vflowDto.setEdges(createVFlowEdgesFromNodeDTOs(graphDto.getNodes()));
-
-        return vflowDto;
-    }
-
-    /**
-     * Helper to map a list of persistence NodeDTOs to a list of VFlowNodeDTOs.
-     */
-    private List<VFlowNodeDTO> mapNodeDTOsToVFlowNodes(List<NodeDTO> nodeDtos) {
-        // ... (this method remains the same as before) ...
-        if(nodeDtos == null) return new ArrayList<>();
-        List<VFlowNodeDTO> vflowNodes = new ArrayList<>();
-        for (NodeDTO nodeDto : nodeDtos) {
-            VFlowNodeDTO vflowNode = new VFlowNodeDTO();
-            vflowNode.setId(String.valueOf(nodeDto.getId()));
-
-            PointDTO point = new PointDTO();
-            point.setX(nodeDto.getOffsetX());
-            point.setY(nodeDto.getOffsetY());
-            vflowNode.setPoint(point);
-            vflowNode.setType(nodeDto.getNodeType());
-
-            VFlowNodeDataDTO data = new VFlowNodeDataDTO();
-            data.setName(nodeDto.getName());
-            data.setNodeType(nodeDto.getNodeType());
-            data.setArcId(nodeDto.getArcId());
-            data.setJsonPath(nodeDto.getJsonPath());
-            data.setValue(nodeDto.getValue());
-            data.setOperatorType(nodeDto.getOperatorType());
-            data.setInputTypes(nodeDto.getInputTypes());
-            data.setOutputType(nodeDto.getOutputType());
-            data.setInputLimit(nodeDto.getInputLimit());
-
-            vflowNode.setData(data);
-            vflowNodes.add(vflowNode);
-        }
-        return vflowNodes;
-    }
-
-    /**
-     * Helper to reconstruct the list of VFlowEdgeDTOs from the flattened inputNodes properties.
-     */
-    private List<VFlowEdgeDTO> createVFlowEdgesFromNodeDTOs(List<NodeDTO> nodeDtos) {
-        if(nodeDtos == null) return new ArrayList<>();
-        List<VFlowEdgeDTO> vflowEdges = new ArrayList<>();
-        for (NodeDTO targetNodeDto : nodeDtos) {
-            if (targetNodeDto.getInputNodes() != null) {
-                for (InputDTO inputDto : targetNodeDto.getInputNodes()) {
-                    VFlowEdgeDTO edge = new VFlowEdgeDTO();
-                    String sourceIdStr = String.valueOf(inputDto.getId());
-                    String targetIdStr = String.valueOf(targetNodeDto.getId());
-
-                    edge.setSource(sourceIdStr);
-                    edge.setTarget(targetIdStr);
-                    edge.setId(sourceIdStr + " -> " + targetIdStr);
-                    edge.setTargetHandle("input-" + inputDto.getOrderIndex());
-
-                    vflowEdges.add(edge);
-                }
-            }
-        }
-        return vflowEdges;
+        Log.debugf("Successfully applied %d edges.", appliedEdges);
     }
 
     // ==========================================================================================
@@ -189,40 +128,55 @@ public class GraphMapper {
      * Maps a GraphDTO (deserialized from JSON) into a fully connected
      * in-memory graph of Node objects for validation and evaluation.
      */
-    public List<Node> toNodeGraph(GraphDTO graphDto) {
-        if (graphDto == null || graphDto.getNodes() == null) {
-            return new ArrayList<>();
+    public MappingResult toNodeGraph(GraphDTO graphDto)  {
+        Log.debug("Starting mapping from GraphDTO to internal Node graph.");
+        if (graphDto == null || graphDto.getNodes() == null || graphDto.getNodes().isEmpty()) {
+            Log.debug("Input GraphDTO is null or empty, returning empty list.");
+            return new MappingResult(new ArrayList<>(), new ArrayList<>());
         }
+        Log.debugf("Mapping GraphDTO with %d nodes to internal domain model.", graphDto.getNodes().size());
         Map<Integer, Node> createdNodes = new HashMap<>();
+        List<ValidationError> mappingErrors = new ArrayList<>();
 
         // Pass 1: Create all node instances.
-        for (NodeDTO dto : graphDto.getNodes()) {
-            Node node = null;
-            switch (dto.getNodeType()) {
-                case "PROVIDER":
-                    node = new ProviderNode(dto.getJsonPath());
-                    ((ProviderNode) node).setArcId(dto.getArcId());
-                    break;
-                case "CONSTANT":
-                    node = new ConstantNode(dto.getName(), dto.getValue());
-                    break;
-                case "LOGIC":
-                    node = new LogicNode(dto.getName(), LogicOperator.valueOf(dto.getOperatorType()));
-                    break;
-                case "FINAL":
-                    node = new FinalNode();
-                    break;
-                default:
-                    throw new IllegalArgumentException("Unknown nodeType: " + dto.getNodeType());
+        Log.debug("Pass 1: Creating all Node instances from DTOs.");
+            for (NodeDTO dto : graphDto.getNodes()) {
+                try {
+                    Node node;
+                    switch (dto.getNodeType()) {
+                        case "PROVIDER":
+                            node = new ProviderNode(dto.getJsonPath());
+                            ((ProviderNode) node).setArcId(dto.getArcId());
+                            break;
+                        case "CONSTANT":
+                            node = new ConstantNode(dto.getName(), dto.getValue());
+                            break;
+                        case "LOGIC":
+                            node = new LogicNode(dto.getName(), LogicOperator.valueOf(dto.getOperatorType()));
+                            break;
+                        case "FINAL":
+                            node = new FinalNode();
+                            break;
+                        default:
+                            throw new NodeConfigurationException("Unknown nodeType: " + dto.getNodeType());
+                    }
+                    node.setId(dto.getId());
+                    node.setName(dto.getName());
+                    node.setOffsetX(dto.getOffsetX());
+                    node.setOffsetY(dto.getOffsetY());
+                    createdNodes.put(node.getId(), node);
+                }
+
+                catch (NodeConfigurationException e) {
+                        Log.warnf(e, "A node with invalid configuration was found (ID: %d). It will be skipped.", dto.getId());
+                        mappingErrors.add(new NodeConfigurationError(dto.getId(), dto.getName(), e.getMessage()));
+                    }
             }
-            node.setId(dto.getId());
-            node.setName(dto.getName());
-            node.setOffsetX(dto.getOffsetX());
-            node.setOffsetY(dto.getOffsetY());
-            createdNodes.put(node.getId(), node);
-        }
+
+        Log.debugf("Created %d Node instances.", createdNodes.size());
 
         // Pass 2: Apply input connections from the inputNodes property of each NodeDTO.
+        Log.debug("Pass 2: Connecting Node instances based on InputDTOs.");
         for (NodeDTO dto : graphDto.getNodes()) {
             Node targetNode = createdNodes.get(dto.getId());
             if (dto.getInputNodes() != null && !dto.getInputNodes().isEmpty()) {
@@ -234,13 +188,17 @@ public class GraphMapper {
                     Node sourceNode = createdNodes.get(inputDto.getId());
                     if (sourceNode != null) {
                         orderedInputs.add(sourceNode);
+                    } else {
+                        Log.warnf("Could not find source node with id %d for target node %d. Connection skipped.", inputDto.getId(), targetNode.getId());
                     }
                 }
                 targetNode.setInputNodes(orderedInputs);
             }
         }
+        Log.debug("Finished connecting nodes.");
 
-        return new ArrayList<>(createdNodes.values());
+        Log.infof("Successfully mapped GraphDTO to an internal graph with %d nodes.", createdNodes.size());
+        return new MappingResult(new ArrayList<>(createdNodes.values()), mappingErrors);
     }
 
     /**
@@ -251,7 +209,7 @@ public class GraphMapper {
             try {
                 return Integer.parseInt(targetHandle.split("-")[1]);
             } catch (Exception e) {
-                Log.warnf("Could not parse orderIndex from targetHandle: %s. Defaulting to 0.", targetHandle);
+                Log.warnf(e, "Could not parse orderIndex from targetHandle: '%s'. Defaulting to 0.", targetHandle);
             }
         }
         return 0;

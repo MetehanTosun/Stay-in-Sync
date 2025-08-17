@@ -1,23 +1,53 @@
-import { Injectable} from '@angular/core';
-import {Observable} from 'rxjs';
-import {LogEntry} from '../models/log.model';
+import { Injectable } from '@angular/core';
+import { Observable, map } from 'rxjs';
+import { HttpClient, HttpParams } from '@angular/common/http';
 
 @Injectable({ providedIn: 'root' })
 export class LogService {
-  getLogs(): Observable<LogEntry[]> {
+  private baseUrl = '/loki/api/v1/query_range';
 
-    const mockLogs: LogEntry[] = [
-      { timestamp: '2024-06-01T12:00:00Z', message: 'Node A gestartet', nodeId: 'A' },
-      { timestamp: '2024-06-01T12:01:00Z', message: 'Node B verbunden', nodeId: 'B' },
-      { timestamp: '2024-06-01T12:02:00Z', message: 'Node C Fehler', nodeId: 'C' },
-      { timestamp: '2024-06-01T12:03:00Z', message: 'System läuft stabil' }
-    ];
-    return new Observable<LogEntry[]>(observer => {
-      observer.next(mockLogs);
-      observer.complete();
-    });
+  constructor(private http: HttpClient) {}
+
+  getLogs(
+    stream: 'stdout' | 'stderr',
+    level: string,
+    nodeId: string,
+    startTime: string,
+    endTime: string
+  ): Observable<any[]> {
+    // Labels
+    let labelParts = [`stream="${stream}"`];
+    if (nodeId) labelParts.push(`nodeId="${nodeId}"`);
+    const labelSelector = `{${labelParts.join(',')}}`;
+
+    // Log level
+    const query = level ? `${labelSelector} |= "level=${level}"` : labelSelector;
+
+    const params = new HttpParams()
+      .set('query', query)
+      .set('start', startTime)
+      .set('end', endTime)
+      .set('limit', '1000')
+      .set('direction', 'backward');
+
+    console.log('Loki Query:', query);
+
+    return this.http.get(this.baseUrl, { params, responseType: 'text' }).pipe(
+      map(raw => {
+        const response = JSON.parse(raw);
+        if (!response.data || !response.data.result) return [];
+        return response.data.result.flatMap((stream: any) =>
+          stream.values.map((entry: [string, string]) => {
+            const parsed = JSON.parse(entry[1]);
+            return {
+              timestamp: parsed.time,
+              message: parsed.log
+            };
+          })
+        );
+      })
+    );
   }
+
+
 }
-
-
-

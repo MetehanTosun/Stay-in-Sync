@@ -88,7 +88,7 @@ public class SyncJobEventHandler {
     }
 
     public void deployNecessaryApiRequestConfigurations(Transformation transformation) {
-        transformation.sourceSystemApiRequestConfigrations
+        transformation.sourceSystemApiRequestConfigurations
                 .stream()
                 .filter(arc -> isJobNotDeployed(arc))
                 .forEach(arc -> {

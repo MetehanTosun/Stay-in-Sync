@@ -7,3 +7,10 @@ html, body {
   box-sizing: border-box;
   overflow: hidden;
 }
+.level.info { color: blue !important; }
+.level.warn { color: orange !important; }
+.level.error { color: red !important; }
+.level.debug { color: green !important; }
+.level.trace { color: gray !important; }
+
+
