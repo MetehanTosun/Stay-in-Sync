@@ -366,101 +366,47 @@ export class ScriptEditorPageComponent implements OnInit, OnDestroy {
  * ==========================================================================================
  * Stay-in-Sync Transformation Script
  * ==========================================================================================
- * 
- * Welcome to the Script Editor!
- * 
- * Your mission is to write a function named 'transform'.
- * This function will read data from your Source Systems (via the 'source' object)
- * and create a list of instructions ("Directives") for your Target Systems
- * (via the 'targets' object).
- * 
- * ------------------------------------------------------------------------------------------
- *                            GOLDEN RULES
- * ------------------------------------------------------------------------------------------
- * 1. The function MUST be named 'transform'.
- * 2. It MUST return an array of Directives.
- * 3. Activate your Data Sources (left panel) and Target Directives (right panel)
- *    to populate the 'source' and 'targets' objects and enable auto-complete.
- * ------------------------------------------------------------------------------------------
- * 
+ *
+ * Your mission is to implement the 'transform' function.
+ * This function reads data from 'source' objects and MUST return a 'DirectiveMap' object,
+ * which contains arrays of directives for your configured target systems.
+ *
+ * Golden Rule: The return value of this function IS the output.
+ *
  */
 
 /**
- * This function transforms source data into a list of instructions (Directives)
- * for the target systems to execute.
- * 
- * @returns {any[]} An array of Directive objects.
+ * Transforms source data into a map of instructions (Directives) for the target systems.
+ * @returns {DirectiveMap} An object where keys are your Target ARC aliases and
+ *                         values are arrays of the corresponding directives.
  */
-function transform() {
+function transform(): DirectiveMap {
     stayinsync.log('Transformation started...');
 
-    // You will collect all instructions to be executed in this array.
-    const directives = [];
-
     // --- EXAMPLE WORKFLOW (Commented Out) ---
-    // Please uncomment the following sections once you have configured your systems.
-
     /*
-    
-    // --- 1. GET DATA FROM THE SOURCE ---
-    // Access your configured data sources via the global 'source' object.
-    // Replace 'myCrmSystem' and 'allCustomers' with your actual aliases.
-    
-    // const customerData = source.myCrmSystem.allCustomers.payload;
-    // stayinsync.log(\`Loaded \${customerData.length} customers from the CRM.\`);
 
-    
-    // --- 2. MAP SOURCE ITEMS TO TARGET DIRECTIVES ---
-    // Loop through your source data (e.g., with .map()) and for each item,
-    // create an instruction for the target system.
+    // 1. Get and filter your source data
+    // const activeProducts = source.myCrm.allProducts.payload.filter(p => p.isActive);
 
-    // const customerDirectives = customerData.map(customer => {
-
-        // Access your target configurations via the global 'targets' object.
-        // Replace 'myErpSystem' with your actual alias.
-        // 'defineUpsert()' starts the "check-then-create-or-update" process.
-        
-        // return targets.myErpSystem.defineUpsert()
-
-            // .usingCheck(): Defines the GET call to check for existence.
-            // The methods (.with...()) are auto-generated from your OpenAPI specification.
-            // .usingCheck(check => {
-            //     check.withQueryParamCustomerNumber(customer.id);
-            // })
-
-            // .onCreate(): Defines the POST call if the customer does not exist.
-            // .onCreate(create => {
-            //     create.withPayload({
-            //         id: customer.id,
-            //         name: customer.companyName,
-            //         contact: customer.contactPerson,
-            //         isActive: true
-            //     });
-            // })
-
-            // .onUpdate(): Defines the PUT call if the customer already exists.
-            // .onUpdate(update => {
-            //     update.withPathId(checkResponse => checkResponse.body.internalId)
-            //           .withPayload({
-            //              contact: customer.contactPerson
-            //           });
-            // })
-
-            // .build() finalizes the Directive's definition.
-            // .build();
+    // 2. Map the data to an array of directives for a specific target
+    // const productDirectives = activeProducts.map(product => {
+    //     return targets.synchronizeProducts.defineUpsert()
+    //         .usingCheck(check => check.withQueryParamId(product.id))
+    //         .onCreate(create => create.withPayload({ ...product }))
+    //         .onUpdate(update => update.withPathId(res => res.body.id).withPayload({ ...product }))
+    //         .build();
     // });
 
-    // directives.push(...customerDirectives);
-    
     */
 
-    stayinsync.log('Transformation finished. Returning directives now.');
-
-    // The function must always return an array, even if it's empty.
-    return directives;
+    // 3. Return the DirectiveMap object. The keys MUST match your target ARC aliases.
+    // Auto-complete will guide you when you type 'return { }'.
+    return {
+        // synchronizeProducts: productDirectives,
+        // anotherArcAlias: []
+    };
 }
-
-// The synchronization engine will call your 'transform' function automatically.
 `;
   }
 
