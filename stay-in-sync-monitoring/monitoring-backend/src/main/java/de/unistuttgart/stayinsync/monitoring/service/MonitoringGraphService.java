@@ -58,10 +58,23 @@ public class MonitoringGraphService {
 
             if (job.transformations != null) {
                 for (MonitoringTransformationDto tf : job.transformations) {
-                    // Source → SyncNode
-                    for (Long srcId : tf.sourceSystemIds) {
-                        connections.add(createConnection("SRC_" + srcId, syncNodeId, "active"));
+
+                    // --- PollingNodes hinzufügen ---
+                    if (tf.pollingNodes != null) {
+                        for (String pollingNodeName : tf.pollingNodes) {
+                            String pollingNodeId = "POLL_" + pollingNodeName;
+                            nodeMap.putIfAbsent(pollingNodeId, createNode(pollingNodeId, "PollingNode", pollingNodeName, "active"));
+
+                            // SourceSystem → PollingNode
+                            for (Long srcId : tf.sourceSystemIds) {
+                                connections.add(createConnection("SRC_" + srcId, pollingNodeId, "active"));
+                            }
+
+                            // PollingNode → SyncNode
+                            connections.add(createConnection(pollingNodeId, syncNodeId, "active"));
+                        }
                     }
+
                     // SyncNode → Target
                     for (Long tgtId : tf.targetSystemIds) {
                         connections.add(createConnection(syncNodeId, "TGT_" + tgtId, "active"));
@@ -69,11 +82,13 @@ public class MonitoringGraphService {
                 }
             }
         }
+
         GraphResponse graph = new GraphResponse();
         graph.nodes = new ArrayList<>(nodeMap.values());
         graph.connections = connections;
         return graph;
     }
+
 
     private NodeDto createNode(String id, String type, String label, String status) {
         NodeDto node = new NodeDto();

@@ -8,4 +8,5 @@ public class MonitoringTransformationDto {
     public List<Long> targetSystemIds;
     public String name;
     public String description;
+    public List<String> pollingNodes;
 }

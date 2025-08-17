@@ -41,8 +41,16 @@ public abstract class MonitoringGraphTransformationMapper {
                 .collect(Collectors.toList())
                 : List.of();
 
+        dto.pollingNodes = entity.sourceSystemApiRequestConfigurations != null
+                ? entity.sourceSystemApiRequestConfigurations.stream()
+                .map(cfg -> cfg.workerPodName)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toList())
+                : List.of();
+
         return dto;
     }
+
 
     public Transformation mapToEntity(MonitoringTransformationDto dto) {
         if (dto == null) {
