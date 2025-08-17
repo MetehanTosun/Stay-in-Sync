@@ -19,7 +19,7 @@ export class TransformationTempStoreService {
   }
 
   addTransformation(transformation: Transformation) {
-    if (!this.addedTransformations.some(t => t.name === transformation.name)) {
+    if (!this.addedTransformations.some(t => t.id === transformation.id)) {
       this.addedTransformations.push(transformation);
       this.saveToStorage();
     }

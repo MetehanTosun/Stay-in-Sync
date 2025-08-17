@@ -53,3 +53,12 @@ html, body, #root, app-root {
   margin-bottom: 0.6rem;
   margin-top: 1rem;
 }
+
+.p-drawer-header {
+  display: none !important;
+  padding: 0 !important;
+}
+
+.p-datatable-flex-scrollable{
+  height: 94.5% !important;
+}

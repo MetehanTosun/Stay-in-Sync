@@ -1,4 +1,4 @@
-package de.unistuttgart.stayinsync.persistence.entities;
+package de.unistuttgart.stayinsync.monitoring.persistence.entities;
 
 import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.SyncJob;
 import io.quarkus.test.TestTransaction;
