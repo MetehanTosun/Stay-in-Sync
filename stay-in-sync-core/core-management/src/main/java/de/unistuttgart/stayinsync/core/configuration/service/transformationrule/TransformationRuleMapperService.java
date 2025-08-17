@@ -32,15 +32,14 @@ public class TransformationRuleMapperService {
     public TransformationRuleDTO toRuleDTO(TransformationRule entity) {
         if (entity == null) return null;
 
-        TransformationRuleDTO dto = new TransformationRuleDTO();
-        dto.setId(entity.id);
-        dto.setName(entity.name);
-        dto.setDescription(entity.description);
-        dto.setGraphStatus(entity.graphStatus);
-        if (entity.transformation != null) {
-            dto.setTransformationId(entity.transformation.id);
-        }
-        return dto;
+        Long transformationId = entity.transformation != null ? entity.transformation.id : null;
+        return new TransformationRuleDTO(
+                entity.id,
+                entity.name,
+                entity.description,
+                entity.graphStatus,
+                transformationId
+        );
     }
 
     // ==========================================================================================

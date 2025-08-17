@@ -36,4 +36,14 @@ public class TransformationRuleDTO {
      * The ID of the parent transformation this rule belongs to.
      */
     private Long transformationId;
+
+    public TransformationRuleDTO() {}
+
+    public TransformationRuleDTO(Long id, String name, String description, GraphStatus graphStatus, Long transformationId) {
+        this.id = id;
+        this.name = name;
+        this.description = description;
+        this.graphStatus = graphStatus;
+        this.transformationId = transformationId;
+    }
 }

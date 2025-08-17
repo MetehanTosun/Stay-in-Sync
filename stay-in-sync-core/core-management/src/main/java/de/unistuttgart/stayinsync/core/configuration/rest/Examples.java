@@ -1,6 +1,6 @@
 package de.unistuttgart.stayinsync.core.configuration.rest;
 
-final class Examples {
+public final class Examples {
 
     public static final String VALID_ENDPOINT_PARAM_POST = """
             {
