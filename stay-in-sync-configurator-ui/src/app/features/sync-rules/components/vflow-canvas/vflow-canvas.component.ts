@@ -26,6 +26,7 @@ export class VflowCanvasComponent implements OnInit {
   //#region Setup
   nodes: CustomVFlowNode[] = [];
   edges: Edge[] = [];
+  hasUnsavedChanges: boolean = false;
   ruleId: number | undefined = undefined;
   lastNodeId = 0;
 
@@ -169,6 +170,7 @@ export class VflowCanvasComponent implements OnInit {
     };
     newNode.contextMenuItems = this.getNodeMenuItems(newNode);
     this.nodes = [...this.nodes, newNode];
+    this.hasUnsavedChanges = true;
   }
 
   /**
@@ -192,6 +194,7 @@ export class VflowCanvasComponent implements OnInit {
       targetHandle: targetHandle,
     };
     this.edges = [...this.edges, newEdge];
+    this.hasUnsavedChanges = true;
   }
   //#endregion
 
@@ -225,6 +228,7 @@ export class VflowCanvasComponent implements OnInit {
       const node = this.nodes.find(n => n.id === change.id);
       if (node) {
         node.point = change.point;
+        this.hasUnsavedChanges = true;
       }
     }
   }
@@ -267,6 +271,7 @@ export class VflowCanvasComponent implements OnInit {
           updatedNode,
           ...this.nodes.slice(index + 1)
         ];
+        this.hasUnsavedChanges = true;
       }
       this.editNodeNameModalOpen = false;
       this.nodeBeingEdited = null;
@@ -290,6 +295,7 @@ export class VflowCanvasComponent implements OnInit {
           updatedNode,
           ...this.nodes.slice(index + 1)
         ];
+        this.hasUnsavedChanges = true;
       }
       this.editJsonPathModalOpen = false;
       this.nodeBeingEdited = null;
@@ -313,6 +319,7 @@ export class VflowCanvasComponent implements OnInit {
           updatedNode,
           ...this.nodes.slice(index + 1)
         ];
+        this.hasUnsavedChanges = true;
       }
       this.editNodeValueModalOpen = false;
       this.nodeBeingEdited = null;
@@ -327,6 +334,7 @@ export class VflowCanvasComponent implements OnInit {
     event.stopPropagation();
     if (this.selectedEdge) {
       this.edges = this.edges.filter(e => e.id !== this.selectedEdge!.id);
+      this.hasUnsavedChanges = true;
       this.closeEdgeContextMenu();
     }
   }
@@ -338,6 +346,7 @@ export class VflowCanvasComponent implements OnInit {
   deleteNode(node: CustomVFlowNode) {
     this.nodes = this.nodes.filter(n => n.id !== node.id);
     this.edges = this.edges.filter(e => e.source !== node.id && e.target !== node.id);
+    this.hasUnsavedChanges = true;
 
     if (this.selectedNode?.id === node.id)
       this.closeNodeContextMenu();
@@ -401,6 +410,7 @@ export class VflowCanvasComponent implements OnInit {
     this.graphApi.updateGraph(this.ruleId!, graphDTO).subscribe({
       next: (res) => {
         alert('Graph saved successfully'); // TODO-s
+        this.hasUnsavedChanges = false;
       },
       error: (err) => {
         console.error('Error response body:', err.error); // TODO-s DELETE

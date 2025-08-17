@@ -21,12 +21,13 @@ import {
 } from './features/transformation/components/transformation-script-selection/transformation-script-selection.component';
 import { RulesOverviewComponent } from './features/sync-rules/pages/rules-overview/rules-overview.component';
 import { EditRuleComponent } from './features/sync-rules/pages/edit-rule/edit-rule.component';
+import { EditRuleDeactivateGuard } from './features/sync-rules/pages/edit-rule/edit-rule-deactivate.guard';
 
 
 export const routes: Routes = [
   // Route für Sync Rules
   { path: 'sync-rules', component: RulesOverviewComponent },
-  { path: 'sync-rules/edit-rule/:id', component: EditRuleComponent },
+  { path: 'sync-rules/edit-rule/:id', component: EditRuleComponent, canDeactivate: [EditRuleDeactivateGuard] },
 
   // Route für Configurations
   { path: 'configs', component: ConfigBaseComponent },
