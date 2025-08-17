@@ -1,37 +1,42 @@
 <p-panel header="Target Directives" [toggleable]="true" styleClass="h-full flex flex-column">
-  <p-table 
-    [value]="activeArcs" 
-    [loading]="isLoading" 
-    responsiveLayout="scroll" 
-    styleClass="flex-grow-1"
+
+  <p-treeTable
+    [value]="activeArcsTree"
+    [loading]="isLoading"
+    size="small"
+    styleClass="compact-treetable flex-grow-1"
   >
     <ng-template pTemplate="header">
       <tr>
-        <th>Alias</th>
-        <th>Target System</th>
-        <th style="width: 5rem;">Action</th>
+        <th style="width: 75%;">Name</th>
+        <th style="width: 25%;">Action</th>
       </tr>
     </ng-template>
-    <ng-template pTemplate="body" let-arc>
+
+    <ng-template pTemplate="body" let-rowNode let-rowData="rowData">
       <tr>
-        <td>{{ arc.alias }}</td>
-        <td>{{ arc.targetSystemName }}</td>
         <td>
-          <p-button 
-            icon="pi pi-trash" 
+          <p-treeTableToggler [rowNode]="rowNode"></p-treeTableToggler>
+          {{ rowData.name }}
+        </td>
+        <td>
+          <p-button
+            *ngIf="rowData.type === 'arc'"
+            icon="pi pi-trash"
             styleClass="p-button-rounded p-button-danger p-button-text"
-            (click)="removeArc(arc.id)"
+            (click)="removeArc(rowData.id)"
             pTooltip="Remove Directive"
           ></p-button>
         </td>
       </tr>
     </ng-template>
+
     <ng-template pTemplate="emptymessage">
       <tr>
-        <td colspan="3" class="text-center">No directives are configured for this Transformation.</td>
+        <td colspan="2" class="text-center">No directives are configured for this Transformation.</td>
       </tr>
     </ng-template>
-  </p-table>
+  </p-treeTable>
 
   <ng-template pTemplate="footer">
     <div class="flex gap-2">
@@ -43,21 +48,38 @@
 
 <!-- Dialog for Library -->
 <p-dialog header="ARC Library" [(visible)]="displayLibrary" [modal]="true" [style]="{width: '50vw'}">
-  <p-accordion [multiple]="true">
-    <p-accordionTab *ngFor="let system of librarySystems" [header]="system.name" (click)="onSystemExpand(system)">
+  
+  <!-- Wir verwenden (onOpen), da es mit <p-accordionTab> am zuverlässigsten funktioniert -->
+  <p-accordion [multiple]="true" (onOpen)="onTabOpen($event)">
+    
+    <!-- Wir iterieren über die VOLLE, ungefilterte Liste 'librarySystems' -->
+    <p-accordionTab *ngFor="let system of librarySystems" [header]="system.name">
+      
       <div *ngIf="system.isLoading" class="text-center p-2">
         <p-progressSpinner styleClass="w-2rem h-2rem"></p-progressSpinner>
       </div>
+
       <ul *ngIf="!system.isLoading" class="list-none p-0 m-0">
         <li *ngFor="let arc of system.arcs" class="flex align-items-center justify-content-between p-2 border-bottom-1 surface-border">
           <span>{{ arc.alias }}</span>
-          <p-button label="Hinzufügen" icon="pi pi-check" styleClass="p-button-sm" (click)="addArc(arc.id)"></p-button>
+
+          <!-- --- NEUE, KONDITIONALE BUTTON-LOGIK --- -->
+          <!-- Wir prüfen mit `activeArcIds.has()`, ob der Button deaktiviert sein soll -->
+          <p-button 
+            [label]="activeArcIds.has(arc.id) ? 'Added' : 'Add'"
+            [icon]="activeArcIds.has(arc.id) ? 'pi pi-check' : 'pi pi-plus'"
+            [styleClass]="'p-button-sm' + (activeArcIds.has(arc.id) ? ' p-button-success' : '')"
+            [disabled]="activeArcIds.has(arc.id)"
+            (click)="addArc(arc.id)">
+          </p-button>
+
         </li>
         <li *ngIf="system.arcs.length === 0" class="p-2 text-center text-muted">
             There were no ARCs created for this Target System yet.
         </li>
       </ul>
     </p-accordionTab>
+
   </p-accordion>
 </p-dialog>
 
@@ -65,6 +87,5 @@
 <app-target-arc-wizard 
   *ngIf="isWizardVisible" 
   [(visible)]="isWizardVisible" 
-  (saveSuccess)="onWizardSaveSuccess()">
+  (saveSuccess)="onWizardSaveSuccess($event)">
 </app-target-arc-wizard>
-
