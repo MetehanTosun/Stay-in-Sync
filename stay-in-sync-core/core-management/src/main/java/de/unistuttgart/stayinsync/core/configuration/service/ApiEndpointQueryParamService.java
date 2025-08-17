@@ -9,9 +9,11 @@ import io.quarkus.logging.Log;
 import io.smallrye.common.constraint.NotNull;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
+import jakarta.persistence.EntityManager;
 import jakarta.transaction.Transactional;
 import jakarta.validation.Valid;
 import jakarta.validation.Validator;
+import jakarta.ws.rs.core.Response;
 
 import java.util.List;
 import java.util.Optional;
@@ -32,12 +34,14 @@ public class ApiEndpointQueryParamService {
     @Inject
     ApiEndpointQueryParamMapper mapper;
 
+    @Inject
+    EntityManager entityManager;
+
     public ApiEndpointQueryParam persistApiQueryParam(@NotNull @Valid ApiEndpointQueryParamDTO apiEndpointQueryParamDTO, Long endpointId) {
         Log.debugf("Persisting api-endpoint-query-param: %s, for source-system with id: %s", apiEndpointQueryParamDTO, endpointId);
 
         ApiEndpointQueryParam apiEndpointQueryParam = mapper.mapToEntity(apiEndpointQueryParamDTO);
 
-        // NEU: Path-Parameter IMMER mit {} speichern
         if (apiEndpointQueryParam.queryParamType != null && apiEndpointQueryParam.queryParamType.name().equals("PATH")) {
             apiEndpointQueryParam.paramName = ensureBraces(apiEndpointQueryParam.paramName);
         }
@@ -53,9 +57,18 @@ public class ApiEndpointQueryParamService {
 
     @Transactional(SUPPORTS)
     public List<ApiEndpointQueryParam> findAllQueryParamsByEndpointId(Long endpointId) {
-        Log.debugf("Finding all endpoints of source system with id = %s", endpointId);
-        return Optional.ofNullable(ApiEndpointQueryParam.findByEndpointId(endpointId))
-                .orElseGet(List::of);
+        Log.debugf("Finding all query params for endpoint with id = %s", endpointId);
+        try {
+           
+            return ApiEndpointQueryParam.find("syncSystemEndpoint.id", endpointId).list();
+        } catch (Exception e) {
+            Log.errorf(e, "Error finding query params for endpoint ID: %d", endpointId);
+            throw new CoreManagementException(
+                Response.Status.INTERNAL_SERVER_ERROR,
+                "Failed to find query params",
+                "Error finding query params for endpoint with ID %d: %s", endpointId, e.getMessage()
+            );
+        }
     }
 
     @Transactional(SUPPORTS)
@@ -71,7 +84,7 @@ public class ApiEndpointQueryParamService {
 
     public Optional<ApiEndpointQueryParam> replaceQueryParam(@NotNull @Valid ApiEndpointQueryParamDTO apiEndpointQueryParamDTO) {
         ApiEndpointQueryParam apiEndpointQueryParam = mapper.mapToEntity(apiEndpointQueryParamDTO);
-        // NEU: Path-Parameter IMMER mit {} speichern
+       
         if (apiEndpointQueryParam.queryParamType != null && apiEndpointQueryParam.queryParamType.name().equals("PATH")) {
             apiEndpointQueryParam.paramName = ensureBraces(apiEndpointQueryParam.paramName);
         }

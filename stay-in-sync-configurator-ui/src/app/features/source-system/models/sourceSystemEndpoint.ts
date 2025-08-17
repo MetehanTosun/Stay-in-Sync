@@ -21,6 +21,8 @@ export interface SourceSystemEndpoint {
     jsonSchema?: string;
     description?: string;
     httpRequestType?: string;
+    requestBodySchema?: string;
+    responseBodySchema?: string;
     queryParams?: Set<ApiEndpointQueryParam>;
     apiRequestConfiguration?: Set<ApiRequestConfiguration>;
     syncSystem?: SyncSystem;
