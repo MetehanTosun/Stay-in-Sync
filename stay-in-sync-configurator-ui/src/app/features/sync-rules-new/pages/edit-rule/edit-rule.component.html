@@ -12,10 +12,13 @@
         Selected: {{ selectedNodeType }} - Click on canvas to place
       </div>
       <div class="node-palette-trigger-wrapper" style="position: relative; display: inline-block;">
-        <button id="node-palette-button" (click)="openMainNodePalette($event)">
+        <button id="node-palette-button" (click)="openMainNodePalette()">
           Add Node
         </button>
-        <app-node-palette [showMainNodePalette]="showMainNodePalette" (nodeSelected)="onNodeSelected($event)"></app-node-palette>
+        <div #nodePalette>
+          <app-node-palette [showMainNodePalette]="showMainNodePalette" (nodeSelected)="onNodeSelected($event)">
+          </app-node-palette>
+        </div>
       </div>
     </div>
     <button id="save-graph-button" (click)="canvas.saveGraph()">
@@ -29,24 +32,20 @@
 
 <!-- MARK: Main Body -->
 <!-- Graph Canvas -->
-<div class="vflow-wrapper">
+<div class="vflow-wrapper" #vflowWrapper>
   <app-vflow-canvas (canvasClick)="onCanvasClick($event)">
   </app-vflow-canvas>
 </div>
 
 <!-- Provider Modal -->
 <div id="provider-node-modal" *ngIf="showProviderModal">
-<app-provider-node-modal
-  (providerCreated)="onProviderCreated($event)"
-  (modalsClosed)="onModalsClosed()">
-</app-provider-node-modal>
+  <app-provider-node-modal (providerCreated)="onProviderCreated($event)" (modalsClosed)="onModalsClosed()">
+  </app-provider-node-modal>
 </div>
 
 <!-- MARK: Modals -->
 <!-- Constant Modal -->
 <div id="constant-node-modal" *ngIf="showConstantModal">
-  <app-constant-node-modal
-    (constantCreated)="onConstantCreated($event)"
-    (modalsClosed)="onModalsClosed()">
+  <app-constant-node-modal (constantCreated)="onConstantCreated($event)" (modalsClosed)="onModalsClosed()">
   </app-constant-node-modal>
 </div>

@@ -1,10 +1,11 @@
 import { Component, EventEmitter, OnInit, Output } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
-import { Connection, Edge, EdgeType, Vflow } from 'ngx-vflow';
+import { Connection, Edge, EdgeChange, EdgeType, NodeChange, Vflow } from 'ngx-vflow';
 import { GraphAPIService } from '../../service';
-import { CustomVFlowNode, LogicOperatorMeta, NodeType, VFlowEdgeDTO, VFlowGraphDTO } from '../../models';
-import { ConstantNodeComponent, FinalNodeComponent, LogicNodeComponent, ProviderNodeComponent } from '..';
+import { CustomVFlowNode, LogicOperatorMeta, NodeMenuItem, NodeType, VFlowGraphDTO } from '../../models';
+import { ConstantNodeComponent, ConstantNodeModalComponent, FinalNodeComponent, LogicNodeComponent, ProviderNodeComponent, ProviderNodeModalComponent } from '..';
 import { CommonModule } from '@angular/common';
+import { SetNodeNameModalComponent } from '../modals/set-node-name-modal/set-node-name-modal.component';
 
 /**
  * The canvas of the rule editor on which the rule graph is visualized
@@ -13,7 +14,10 @@ import { CommonModule } from '@angular/common';
   selector: 'app-vflow-canvas',
   imports: [
     Vflow,
-    CommonModule
+    CommonModule,
+    SetNodeNameModalComponent,
+    ProviderNodeModalComponent,
+    ConstantNodeModalComponent
   ],
   templateUrl: './vflow-canvas.component.html',
   styleUrl: './vflow-canvas.component.css'
@@ -29,6 +33,22 @@ export class VflowCanvasComponent implements OnInit {
   showTypeIncompatibilityModal = false;
   typeIncompatibilityMessage = '';
   lastAttemptedConnection: { sourceType: string, targetType: string } | null = null;
+
+  // Graph Element Selection Attributes
+  selectedNode: CustomVFlowNode | null = null;
+  selectedEdge: Edge | null = null;
+  showNodeContextMenu = false;
+  showEdgeContextMenu = false;
+  edgeContextMenuPosition = { x: 0, y: 0 };
+  nodeContextMenuPosition = { x: 0, y: 0 };
+  lastMousePosition = { x: 0, y: 0 };
+  //* Don't merge the positions
+
+  // Modal Status
+  editNodeNameModalOpen = false;
+  editJsonPathModalOpen = false;
+  editNodeValueModalOpen = false;
+  nodeBeingEdited: CustomVFlowNode | null = null;
 
   @Output() canvasClick = new EventEmitter<{ x: number, y: number }>();
 
@@ -64,6 +84,32 @@ export class VflowCanvasComponent implements OnInit {
     this.showTypeIncompatibilityModal = false;
     this.typeIncompatibilityMessage = '';
     this.lastAttemptedConnection = null;
+  }
+
+  // TODO-s
+  private getNodeMenuItems(node: CustomVFlowNode): NodeMenuItem[] {
+    switch (node.data.nodeType) {
+      case NodeType.CONSTANT:
+        return [
+          { label: 'Set Value', action: () => this.startEditingNodeValue(node) },
+          { label: 'Delete Node', action: () => this.deleteNode(node) }
+        ];
+      case NodeType.PROVIDER:
+        return [
+          { label: 'Set Name', action: () => this.startEditingNodeName(node) },
+          { label: 'Edit JSON Path', action: () => this.startEditingJsonPath(node) },
+          { label: 'Delete Node', action: () => this.deleteNode(node) }
+        ];
+      case NodeType.LOGIC:
+        return [
+          { label: 'Set Name', action: () => this.startEditingNodeName(node) },
+          { label: 'Delete Node', action: () => this.deleteNode(node) }
+        ];
+      case NodeType.FINAL:
+        return [
+          { label: 'Empty Menu', action: () => { } }
+        ];
+    }
   }
   //#endregion
 
@@ -118,7 +164,13 @@ export class VflowCanvasComponent implements OnInit {
       data: {
         ...nodeData,
         nodeType: nodeType
-      }
+      },
+      contextMenuItems: this.getNodeMenuItems({
+        data: {
+          ...nodeData,
+          nodeType: nodeType
+        }
+      } as CustomVFlowNode)
     };
     this.nodes = [...this.nodes, newNode];
   }
@@ -147,6 +199,155 @@ export class VflowCanvasComponent implements OnInit {
   }
   //#endregion
 
+  //#region Element Selection
+  // TODO-s Doc
+  onNodeSelect(changes: NodeChange[]) {
+    const change = changes.pop()!;
+    if (change.type === 'select' && (change as any).selected) {
+      const node = this.nodes.find(e => e.id === change.id);
+      if (node) {
+        this.selectedNode = node;
+        this.nodeContextMenuPosition = this.lastMousePosition;
+        this.showNodeContextMenu = true;
+      }
+    } else if (this.selectedNode?.id === change.id) {
+      this.closeNodeContextMenu();
+    }
+  }
+
+  /**
+   * Takes the positional change of a node and updates its point property
+   *
+   * @param changes
+   */
+  onNodePositionChange(changes: NodeChange[]) {
+    this.closeNodeContextMenu();
+    this.closeEdgeContextMenu();
+
+    const change = changes.pop()!;
+    if (change.type === 'position') {
+      const node = this.nodes.find(n => n.id === change.id);
+      if (node) {
+        node.point = change.point;
+      }
+    }
+  }
+
+  /**
+   * Opens the edge context menu for an edge
+   *
+   * @param changes
+   */
+  onEdgeSelect(changes: EdgeChange[]) {
+    const change = changes.pop()!;
+    if (change.type === 'select' && (change as any).selected) {
+      const edge = this.edges.find(e => e.id === change.id);
+      if (edge) {
+        this.selectedEdge = edge;
+        this.edgeContextMenuPosition = this.lastMousePosition;
+        this.showEdgeContextMenu = true;
+      }
+    } else if (this.selectedEdge?.id === change.id) {
+      this.closeEdgeContextMenu();
+    }
+  }
+  //#endregion
+
+  //#region Element Edit
+  // TODO-s (kinda verbose so it rerenders automatically)
+  onNodeNameSaved(newName: string) {
+    if (this.nodeBeingEdited) {
+      const index = this.nodes.findIndex(n => n.id === this.nodeBeingEdited!.id);
+      if (index !== -1) {
+        const updatedNode = {
+          ...this.nodes[index],
+          data: {
+            ...this.nodes[index].data,
+            name: newName
+          }
+        };
+        this.nodes = [
+          ...this.nodes.slice(0, index),
+          updatedNode,
+          ...this.nodes.slice(index + 1)
+        ];
+      }
+      this.editNodeNameModalOpen = false;
+      this.nodeBeingEdited = null;
+      this.closeNodeContextMenu();
+    }
+  }
+  // TODO-s (kinda verbose so it rerenders automatically)
+  onJsonPathSaved(newJsonPath: string) {
+    if (this.nodeBeingEdited) {
+      const index = this.nodes.findIndex(n => n.id === this.nodeBeingEdited!.id);
+      if (index !== -1) {
+        const updatedNode = {
+          ...this.nodes[index],
+          data: {
+            ...this.nodes[index].data,
+            jsonPath: newJsonPath
+          }
+        };
+        this.nodes = [
+          ...this.nodes.slice(0, index),
+          updatedNode,
+          ...this.nodes.slice(index + 1)
+        ];
+      }
+      this.editJsonPathModalOpen = false;
+      this.nodeBeingEdited = null;
+      this.closeNodeContextMenu();
+    }
+  }
+  // TODO-s (kinda verbose so it rerenders automatically)
+  onValueSaved(newValue: string) {
+    if (this.nodeBeingEdited) {
+      const index = this.nodes.findIndex(n => n.id === this.nodeBeingEdited!.id);
+      if (index !== -1) {
+        const updatedNode = {
+          ...this.nodes[index],
+          data: {
+            ...this.nodes[index].data,
+            value: newValue
+          }
+        };
+        this.nodes = [
+          ...this.nodes.slice(0, index),
+          updatedNode,
+          ...this.nodes.slice(index + 1)
+        ];
+      }
+      this.editNodeValueModalOpen = false;
+      this.nodeBeingEdited = null;
+      this.closeNodeContextMenu();
+    }
+  }
+  //#endregion
+
+  //#region Element Deletion
+  // TODO-s Doc
+  deleteSelectedEdge(event: MouseEvent) {
+    event.stopPropagation();
+    if (this.selectedEdge) {
+      this.edges = this.edges.filter(e => e.id !== this.selectedEdge!.id);
+      this.closeEdgeContextMenu();
+    }
+  }
+
+  /**
+   * Deletes the given node and all edges connected to it
+   * @param node The node to delete
+   */
+  deleteNode(node: CustomVFlowNode) {
+    this.nodes = this.nodes.filter(n => n.id !== node.id);
+    this.edges = this.edges.filter(e => e.source !== node.id && e.target !== node.id);
+
+    if (this.selectedNode?.id === node.id)
+      this.closeNodeContextMenu();
+  }
+  //#endregion
+
   //#region REST Methods
   /**
    * This loads the transformation rules graph from the backend and assigns the corresponding type
@@ -159,7 +360,8 @@ export class VflowCanvasComponent implements OnInit {
         // loads nodes
         this.nodes = graph.nodes.map(node => ({
           ...node,
-          type: this.getNodeType(node.type)
+          type: this.getNodeType(node.type),
+          contextMenuItems: this.getNodeMenuItems.call(this, node as unknown as CustomVFlowNode)
         }));
 
         // caches the largest node ID
@@ -169,15 +371,11 @@ export class VflowCanvasComponent implements OnInit {
 
         // loads edges
         this.edges = graph.edges.map(edge => {
-          const targetNode = this.nodes.find(n => n.id === String(edge.target)); // TODO-s: backend problem; DELETE
-          const inputHandles = targetNode?.data?.inputTypes ?? []; // TODO-s: backend problem; DELETE
-          const hasSingleInput = inputHandles.length === 1 || inputHandles.length === 0; // TODO-s: backend problem; DELETE
           return {
             ...edge,
             type: edge.type as EdgeType,
-            targetHandle: hasSingleInput ? undefined : edge.targetHandle // TODO-s: backend problem; DELETE
           }
-        }); // TODO-s: backend problem: Single input nodes should not assign a target handle to the connected node, use a static amount of input handlers
+        });
 
         // TODO-s loads errors
       },
@@ -206,7 +404,7 @@ export class VflowCanvasComponent implements OnInit {
 
     this.graphApi.updateGraph(this.ruleId!, graphDTO).subscribe({
       next: (res) => {
-        console.log('Graph saved successfully'); // TODO-s
+        alert('Graph saved successfully'); // TODO-s
       },
       error: (err) => {
         console.error('Error response body:', err.error); // TODO-s DELETE
@@ -217,6 +415,56 @@ export class VflowCanvasComponent implements OnInit {
   //#endregion
 
   //#region Helpers
+  // TODO-s use find() because of live update bug
+  startEditingNodeValue(node: CustomVFlowNode) {
+    const latestNode = this.nodes.find(n => n.id === node.id);
+    this.nodeBeingEdited = latestNode ?? node;
+    this.editNodeValueModalOpen = true;
+  }
+
+  // TODO-s use find() because of live update bug
+  startEditingJsonPath(node: CustomVFlowNode) {
+    const latestNode = this.nodes.find(n => n.id === node.id);
+    this.nodeBeingEdited = latestNode ?? node;
+    this.editJsonPathModalOpen = true;
+  }
+
+  // TODO-s use find() because of live update bug
+  startEditingNodeName(node: CustomVFlowNode) {
+    const latestNode = this.nodes.find(n => n.id === node.id);
+    this.nodeBeingEdited = latestNode ?? node;
+    this.editNodeNameModalOpen = true;
+  }
+
+  /**
+   * Caches the current mouse position
+   *
+   * @param event
+   */
+  storeMousePosition(event: MouseEvent) {
+    this.lastMousePosition = { x: event.clientX, y: event.clientY };
+  }
+
+  // TODO-s
+  closeModals() {
+    this.editNodeNameModalOpen = false;
+    this.editJsonPathModalOpen = false;
+    this.editNodeValueModalOpen = false;
+  }
+  // TODO-s
+  closeNodeContextMenu() {
+    this.selectedNode = null;
+    this.showNodeContextMenu = false;
+    this.nodeContextMenuPosition = { x: 0, y: 0 };
+  }
+
+  // TODO-s
+  closeEdgeContextMenu() {
+    this.selectedEdge = null;
+    this.showEdgeContextMenu = false;
+    this.edgeContextMenuPosition = { x: 0, y: 0 };
+  }
+
   /**
    * TODO-s
    * @param param0

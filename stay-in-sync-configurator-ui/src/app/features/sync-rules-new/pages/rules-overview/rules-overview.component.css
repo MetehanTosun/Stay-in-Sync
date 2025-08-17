@@ -45,12 +45,19 @@
   .actions button {
     background: none;
     border: none;
-    color: #007bff;
     font-size: 2rem;
     cursor: pointer;
     padding: 0.2rem 0.5rem;
     border-radius: 4px;
     transition: background 0.15s;
+  }
+
+  .actions #edit-rule-button {
+    color: #007bff;
+  }
+
+  .actions #delete-rule-button {
+    color: #e00606;
   }
 
   .actions button:hover {

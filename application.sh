@@ -80,8 +80,8 @@ start_application() {
     fi
 
     # Build application
-    echo "Building application (skipping tests)..."
-    mvn clean install -DskipTests
+    echo "Building application..."
+    mvn clean install
     BUILD_EXIT_CODE=$?
     if [ $BUILD_EXIT_CODE -eq 0 ]; then
         echo "Build completed successfully!"

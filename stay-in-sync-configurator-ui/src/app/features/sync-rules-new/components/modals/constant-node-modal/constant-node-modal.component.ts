@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Output } from '@angular/core';
+import { Component, EventEmitter, Input, OnChanges, Output } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 
 @Component({
@@ -8,10 +8,16 @@ import { FormsModule } from '@angular/forms';
   styleUrl: './constant-node-modal.component.css'
 })
 export class ConstantNodeModalComponent {
+  @Input() currentValue: string = '';
   @Output() constantCreated = new EventEmitter<any>();
+  @Output() save = new EventEmitter<string>();
   @Output() modalsClosed = new EventEmitter<void>();
 
   constantValue: string = '';
+
+  ngOnInit() {
+    this.constantValue = this.currentValue || '';
+  }
 
   //#region Modal Methods
   /**
@@ -25,7 +31,7 @@ export class ConstantNodeModalComponent {
       return;
     }
 
-    this.constantCreated.emit(this.parseValue(this.constantValue))
+    (this.currentValue !== '' ? this.save : this.constantCreated).emit(this.parseValue(this.constantValue));
     this.closeModal();
   }
 

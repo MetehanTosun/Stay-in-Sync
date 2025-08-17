@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Output } from '@angular/core';
+import { Component, EventEmitter, Input, Output } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 
 @Component({
@@ -8,10 +8,16 @@ import { FormsModule } from '@angular/forms';
   styleUrl: './provider-node-modal.component.css'
 })
 export class ProviderNodeModalComponent {
+  @Input() currentJsonPath: string = '';
   @Output() providerCreated = new EventEmitter<string>();
+  @Output() save = new EventEmitter<string>();
   @Output() modalsClosed = new EventEmitter<void>();
 
   jsonPath: string = '';
+
+  ngOnInit() {
+    this.jsonPath = this.currentJsonPath || '';
+  }
 
   //#region Modal Methods
   /**
@@ -25,7 +31,7 @@ export class ProviderNodeModalComponent {
       return;
     }
     //TODO-s Check if JSON Path is valid
-    this.providerCreated.emit(`source.${this.jsonPath.trim()}`);
+    (this.currentJsonPath.trim() !== '' ? this.save : this.providerCreated).emit(`source.${this.jsonPath.trim()}`);
     this.closeModal();
   }
 

@@ -1,4 +1,4 @@
-import { Component, OnInit, ViewChild } from '@angular/core';
+import { Component, ElementRef, OnInit, ViewChild } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { ConstantNodeModalComponent, NodePaletteComponent, ProviderNodeModalComponent, VflowCanvasComponent } from '../../components';
 import { LogicOperatorMeta, NodeType } from '../../models';
@@ -36,9 +36,10 @@ export class EditRuleComponent implements OnInit {
   pendingNodePos: { x: number, y: number } | null = null;
 
   private documentClickListener: any;
-  
+
   @ViewChild(NodePaletteComponent) nodePalette!: NodePaletteComponent;
   @ViewChild(VflowCanvasComponent) canvas!: VflowCanvasComponent;
+  @ViewChild('nodePalette', { static: true }) nodePaletteRef!: ElementRef;
 
   constructor(private route: ActivatedRoute, private router: Router, private rulesApi: TransformationRulesApiService) { }
 
@@ -52,24 +53,7 @@ export class EditRuleComponent implements OnInit {
       });
     }
 
-    // Listen for clicks outside the node palette to close it
-    this.documentClickListener = (event: MouseEvent) => {
-      if (!this.showMainNodePalette) return;
-      const paletteButton = document.getElementById('node-palette-button');
-      const paletteMenu = document.querySelector('app-node-palette');
-      if (
-        (paletteButton && paletteButton.contains(event.target as Node)) ||
-        (paletteMenu && paletteMenu.contains(event.target as Node))
-      ) {
-        return;
-      }
-
-      this.showMainNodePalette = false;
-      if (this.nodePalette) {
-        this.nodePalette.closeSubPalettes();
-      }
-    };
-    document.addEventListener('mousedown', this.documentClickListener, true);
+    document.addEventListener('mousedown', this.handlePageClick, true);
   }
   //#endregion
 
@@ -82,6 +66,22 @@ export class EditRuleComponent implements OnInit {
   }
   //#endregion
 
+  //#region Page Events
+  /**
+   * Checks the target of the mouse click and closes the node palette accordingly
+   * *Not closing context menus of the vflow canvas,
+   * *since that framework does not expose a way to deselect the element within
+   *
+   * @param event
+   */
+  private handlePageClick = (event: MouseEvent) => {
+    if (!this.nodePaletteRef.nativeElement.contains(event.target)) {
+      this.showMainNodePalette = false;
+      this.nodePalette.closeSubPalettes();
+    }
+  }
+  //#endregion
+
   //#region Node Palette
   /**
    * Opens the main palette of the node selection,
@@ -89,9 +89,8 @@ export class EditRuleComponent implements OnInit {
    *
    * @param mouseEvent
    */
-  openMainNodePalette(mouseEvent: MouseEvent) {
+  openMainNodePalette() {
     this.showMainNodePalette = true;
-    // TODO-s mouse position
   }
 
   /**
