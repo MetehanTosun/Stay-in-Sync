@@ -1,22 +1,30 @@
 <!-- MARK: Page Header -->
 <div class="page-header">
   <h2>Synchronization Rules</h2>
-  <button id="create-button" (click)="openCreateRuleModal()">
-    <span class="material-symbols-rounded">
-      add
-    </span>
-    Create new Rule
-  </button>
+  <div class="header-actions">
+    <input
+      type="text"
+      [(ngModel)]="searchTerm"
+      placeholder="Search by rule name..."
+      class="form-input search-input"
+    />
+    <button id="create-button" (click)="openCreateRuleModal()">
+      <span class="material-symbols-rounded">
+        add
+      </span>
+      Create new Rule
+    </button>
+  </div>
 </div>
 
 <!-- MARK: Table -->
 <div class="table-container">
-  <p-table [value]="rules" [loading]="isLoading">
+  <p-table [value]="filteredRules" [loading]="isLoading">
     <!-- Table Header -->
     <ng-template #header>
       <tr>
-        <th>Name</th>
-        <th>Status</th>
+  <th pSortableColumn="name">Name <p-sortIcon field="name" /></th>
+        <th pSortableColumn="graphStatus">Status <p-sortIcon field="graphStatus" /></th>
         <th>Actions</th>
       </tr>
     </ng-template>
@@ -26,7 +34,7 @@
         <td>
           <span class="rule-name-hitbox" (click)="expandedRuleId = expandedRuleId === rule.id ? null : rule.id">
             <span class="rule-name">{{ rule.name }}</span>
-            <span class="rule-id">#{{ rule.id }}</span>
+            <!-- <span class="rule-id">#{{ rule.id }}</span> -->
           </span>
         </td>
         <td>

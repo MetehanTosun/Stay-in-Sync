@@ -27,6 +27,9 @@ export class RulesOverviewComponent implements OnInit {
   showCreateRule = false;
   expandedRuleId: number | null = null;
 
+  // Search
+  searchTerm: string = '';
+
   // Input Data
   newRule: RuleCreationDTO = {
     name: '',
@@ -142,4 +145,14 @@ export class RulesOverviewComponent implements OnInit {
     return false;
   }
   //#endregion
+  /**
+   * Returns the rules filtered by the search term
+   */
+  get filteredRules(): TransformationRule[] {
+    if (!this.searchTerm.trim()) {
+      return this.rules;
+    }
+    const term = this.searchTerm.trim().toLowerCase();
+    return this.rules.filter(rule => rule.name.toLowerCase().includes(term));
+  }
 }
