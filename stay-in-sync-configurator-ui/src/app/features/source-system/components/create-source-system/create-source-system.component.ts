@@ -10,7 +10,7 @@ import {InputTextModule} from 'primeng/inputtext';
 import {ButtonModule} from 'primeng/button';
 import {TextareaModule} from 'primeng/textarea';
 import {StepsModule} from 'primeng/steps';
-import {FileUploadEvent, FileUploadModule} from 'primeng/fileupload';
+import {FileSelectEvent, FileUploadEvent, FileUploadModule} from 'primeng/fileupload';
 
 
 
@@ -148,7 +148,7 @@ export class CreateSourceSystemComponent implements OnInit, OnChanges {
    *
    * @param ev File input change event.
    */
-  onFileSelected(event: FileUploadEvent): void {
+  onFileSelected(event: FileSelectEvent): void {
     this.selectedFile = event.files[0];
     this.fileSelected = true;
     this.form.get('openApiSpec')!.disable();

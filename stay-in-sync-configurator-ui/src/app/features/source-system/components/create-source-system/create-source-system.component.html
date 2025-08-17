@@ -66,9 +66,14 @@
       </div>
       <div class="p-field">
         <label>OR Upload File</label>
-        <p-fileupload #fu mode="basic" chooseLabel="Choose" chooseIcon="pi pi-upload" name="demo[]"
-                      url="https://www.primefaces.org/cdn/api/upload.php" accept=".json,.yaml,.yml"
-                      (onUpload)="onFileSelected($event)"/>
+        <p-fileupload
+          #fu
+          mode="basic"
+          [auto]="false"
+          [showUploadButton]="false"
+          [showCancelButton]="false"
+          accept=".json,.yaml,.yml"
+          (onSelect)="onFileSelected($event)" />
 
         <small *ngIf="selectedFile">{{ selectedFile.name }}</small>
       </div>

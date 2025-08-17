@@ -108,7 +108,7 @@ public class GraphValidatorService {
                 try {
                     Operation strategy = logicNode.getOperator().getOperationStrategy();
                     strategy.validateNode(logicNode);
-                } catch (OperatorValidationException  e) {
+                } catch (Exception e) {
                     Log.warnf("Validation error for node '%s' (ID: %d): %s", logicNode.getName(), logicNode.getId(), e.getMessage());
                     errors.add(new OperatorConfigurationError(logicNode.getId(), logicNode.getName(), e.getMessage()));
                 }

@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { DialogModule } from 'primeng/dialog';
 import { ButtonModule } from 'primeng/button';
 import { ProgressSpinnerModule } from 'primeng/progressspinner';
+import { MonacoEditorModule, NgxEditorModel } from 'ngx-monaco-editor-v2';
 
 import { HttpClient } from '@angular/common/http';
 import { SourceSystemEndpointResourceService } from '../../service/sourceSystemEndpointResource.service';
@@ -16,7 +17,8 @@ import { TypeScriptGenerationResponse } from '../../models/typescriptGenerationR
     CommonModule,
     DialogModule,
     ButtonModule,
-    ProgressSpinnerModule
+    ProgressSpinnerModule,
+    MonacoEditorModule
   ],
   templateUrl: './response-preview-modal.component.html',
   styleUrls: ['./response-preview-modal.component.css']
@@ -57,15 +59,34 @@ export class ResponsePreviewModalComponent implements OnInit, OnChanges {
    */
   @Output() visibleChange = new EventEmitter<boolean>();
 
+  /** Editor options */
+  jsonEditorOptions = {
+    theme: 'vs-dark',
+    language: 'json',
+    automaticLayout: true,
+    readOnly: true,
+    minimap: { enabled: false },
+    wordWrap: 'on'
+  } as const;
+
+  typescriptEditorOptions = {
+    theme: 'vs-dark',
+    language: 'typescript',
+    automaticLayout: true,
+    readOnly: true,
+    minimap: { enabled: false },
+    wordWrap: 'on'
+  } as const;
+
   /**
    * Model for the JSON editor.
    */
-  jsonEditorModel = { value: '' };
+  jsonEditorModel: NgxEditorModel = { value: '', language: 'json' };
 
   /**
    * Model for the TypeScript editor.
    */
-  typescriptEditorModel = { value: '' };
+  typescriptEditorModel: NgxEditorModel = { value: '', language: 'typescript' };
 
   /**
    * Index of the currently active tab.
@@ -167,7 +188,7 @@ export class ResponsePreviewModalComponent implements OnInit, OnChanges {
     this.activeTabIndex = event.index;
     if (event.index === 1) {
       if (this.responseDts) {
-        this.typescriptEditorModel = { value: this.responseDts };
+        this.typescriptEditorModel = { value: this.responseDts, language: 'typescript' };
         this.isGeneratingTypeScript = false;
         this.typescriptError = null;
         return;
@@ -176,7 +197,7 @@ export class ResponsePreviewModalComponent implements OnInit, OnChanges {
         if (!this.generatedTypeScript && !this.isGeneratingTypeScript) {
           this.loadTypeScript();
         } else if (this.generatedTypeScript && !this.typescriptEditorModel.value) {
-          this.typescriptEditorModel = { value: this.generatedTypeScript };
+          this.typescriptEditorModel = { value: this.generatedTypeScript, language: 'typescript' };
         }
       }
     }
@@ -216,13 +237,13 @@ export class ResponsePreviewModalComponent implements OnInit, OnChanges {
         this.clearTypeScriptGenerationTimeout();
         this.isGeneratingTypeScript = false;
         this.generatedTypeScript = response.generatedTypeScript || '';
-        this.typescriptEditorModel = { value: response.generatedTypeScript || '' };
+        this.typescriptEditorModel = { value: response.generatedTypeScript || '', language: 'typescript' };
       },
       error: (error) => {
         this.clearTypeScriptGenerationTimeout();
         this.isGeneratingTypeScript = false;
         this.generatedTypeScript = this.getTypeScriptErrorFallback(this.responseBodySchema || '');
-        this.typescriptEditorModel = { value: this.generatedTypeScript };
+        this.typescriptEditorModel = { value: this.generatedTypeScript, language: 'typescript' };
         this.typescriptError = this.formatErrorMessage(error.message || 'Unknown error', 'TypeScript Generation');
       }
     });
@@ -235,7 +256,7 @@ export class ResponsePreviewModalComponent implements OnInit, OnChanges {
     this.isGeneratingTypeScript = false;
     this.typescriptError = 'TypeScript generation timed out after 30 seconds';
     this.generatedTypeScript = this.getTypeScriptErrorFallback(this.responseBodySchema || '');
-    this.typescriptEditorModel = { value: this.generatedTypeScript };
+    this.typescriptEditorModel = { value: this.generatedTypeScript, language: 'typescript' };
   }
 
   /**
@@ -292,19 +313,19 @@ export interface ResponseBody {
    */
   private updateEditorModel(): void {
     if (this.responseBodySchema) {
-      this.jsonEditorModel = { value: this.responseBodySchema };
+      this.jsonEditorModel = { value: this.responseBodySchema, language: 'json' };
     } else {
-      this.jsonEditorModel = { value: '// No JSON schema available' };
+      this.jsonEditorModel = { value: '// No JSON schema available', language: 'json' };
     }
 
     if (this.responseDts) {
-      this.typescriptEditorModel = { value: this.responseDts };
+      this.typescriptEditorModel = { value: this.responseDts, language: 'typescript' };
       this.generatedTypeScript = this.responseDts;
       if (this.activeTabIndex !== 1) {
         this.activeTabIndex = 1;
       }
     } else {
-      this.typescriptEditorModel = { value: '// Click on TypeScript tab to generate interface' };
+      this.typescriptEditorModel = { value: '// Click on TypeScript tab to generate interface', language: 'typescript' };
       if (this.activeTabIndex !== 0) {
         this.activeTabIndex = 0;
       }
