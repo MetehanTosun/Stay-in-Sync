@@ -67,7 +67,7 @@ export class RulesOverviewComponent implements OnInit {
    * @param ruleId
    */
   editRule(ruleId: number) {
-    this.router.navigate(['/sync-rules-new/edit-rule', ruleId]); // TODO-s update
+    this.router.navigate(['/sync-rules/edit-rule', ruleId]);
   }
   //#endregion
 

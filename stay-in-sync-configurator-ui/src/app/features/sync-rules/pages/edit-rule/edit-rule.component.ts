@@ -62,7 +62,7 @@ export class EditRuleComponent implements OnInit {
    * Navigates back to the rules overview page
    */
   return() {
-    this.router.navigate(['/sync-rules-new']); // TODO-s update
+    this.router.navigate(['/sync-rules']);
   }
   //#endregion
 

@@ -1,6 +1,5 @@
 // biome-ignore lint/style/useImportType: <explanation>
 import { Routes } from '@angular/router';
-import { SyncRulesComponent } from './features/sync-rules/components/sync-rules/sync-rules.component';
 import { ConfigBaseComponent } from './features/configuration/config-base/config-base.component';
 import { ConfigurationscriptsBaseComponent } from './features/configuration/configurationscripts-base/configurationscripts-base.component';
 // neu (relativ zu src/app/app.routes.ts)
@@ -9,8 +8,6 @@ import { SourceSystemBaseComponent } from
 import { CreateSourceSystemComponent } from
     './features/source-system/components/create-source-system/create-source-system.component';
 import { EdcBaseComponent } from './features/edc/components/edc-base/edc-base.component';
-import { RulesOverview } from './features/sync-rules/pages/rules-overview/rules-overview';
-import { EditRule } from './features/sync-rules/pages/edit-rule/edit-rule';
 import {HelpPageComponent} from './features/help-page/help-page.component';
 import {SyncJobPageComponent} from './features/sync-job/components/sync-job-page/sync-job-page.component';
 import {SyncJobCreationComponent} from './features/sync-job/components/sync-job-creation/sync-job-creation.component';
@@ -22,22 +19,14 @@ import { ScriptEditorPageComponent } from './features/script-editor/script-edito
 import {
   TransformationScriptSelectionComponent
 } from './features/transformation/components/transformation-script-selection/transformation-script-selection.component';
-import { RulesOverviewComponent } from './features/sync-rules-new/pages/rules-overview/rules-overview.component';
-import { EditRuleComponent } from './features/sync-rules-new/pages/edit-rule/edit-rule.component';
+import { RulesOverviewComponent } from './features/sync-rules/pages/rules-overview/rules-overview.component';
+import { EditRuleComponent } from './features/sync-rules/pages/edit-rule/edit-rule.component';
 
 
 export const routes: Routes = [
   // Route für Sync Rules
-  { path: 'sync-rules-new', component: RulesOverviewComponent },
-  { path: 'sync-rules-new/edit-rule/:id', component: EditRuleComponent },
-  {
-    path: 'sync-rules',
-    component: SyncRulesComponent,
-    children: [
-      { path: '', component: RulesOverview },
-      { path: 'edit-rule/:id', component: EditRule },
-    ]
-  }, // TODO-s Delete
+  { path: 'sync-rules', component: RulesOverviewComponent },
+  { path: 'sync-rules/edit-rule/:id', component: EditRuleComponent },
 
   // Route für Configurations
   { path: 'configs', component: ConfigBaseComponent },
