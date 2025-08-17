@@ -14,7 +14,6 @@ export interface TargetArcConfiguration {
   targetSystemName: string;
   arcPatternType: 'BASIC_API' | 'OBJECT_UPSERT' | 'LIST_UPSERT' | 'CUSTOM_WORKFLOW';
   actions: TargetArcAction[];
-  staticHeaderValues: { [key: string]: string };
 }
 
 export interface TargetArcAction {
@@ -42,7 +41,6 @@ export interface CreateTargetArcDTO {
         actionRole: TargetArcAction['actionRole'];
         executionOrder: number;
     }[];
-    staticHeaderValues?: { [key: string]: string };
 }
 
 export interface UpdateTransformationArcsDTO {
