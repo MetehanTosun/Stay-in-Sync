@@ -7,6 +7,7 @@ import {
 } from '../../../../../../stay-in-sync-configurator-ui/src/app/features/sync-job/services/sync-job.service';
 import {SyncJob} from '../../../../../../stay-in-sync-configurator-ui/src/app/features/source-system/models/syncJob';
 import { firstValueFrom } from 'rxjs';
+import {MonitoringGraphService} from '../../core/services/monitoring-graph.service';
 
 /**
  * GraphPanelComponent
@@ -35,7 +36,7 @@ export class GraphPanelComponent implements AfterViewInit {
 
 
 
-  constructor(private syncJobService:SyncJobService) {
+  constructor(private syncJobService:SyncJobService, private graphService: MonitoringGraphService) {
   }
 
   /**
@@ -57,67 +58,41 @@ export class GraphPanelComponent implements AfterViewInit {
     return this._searchTerm;
   }
 
-  uniqueTargetSystems = new Set<string>();
+  loadGraphData() {
+    this.graphService.getMonitoringGraphData().subscribe((data) => {
+      console.log('Graph data loaded:', data);
+      this.nodes = data.nodes;
+      if (data.links === undefined || data.links === null) {
+        this.links = [];
+      }else {
+        this.links = data.links;
+      }
+      this.filteredNodes = this.filterNodes(this.searchTerm);
+      this.filteredLinks = this.filterLinks();
+      this.updateGraph(this.filteredNodes, this.filteredLinks);
+      this.isInitialized = true;
+      const svgElement = document.querySelector('svg');
+      const width = svgElement?.clientWidth ?? 400;
+      const height = svgElement?.clientHeight ?? 300;
 
+      const svg = d3.select('svg')
+        .attr('width', '100%')
+        .attr('height', '100%');
 
-async loadSyncjobs() {
-  this.uniqueTargetSystems.clear();
+      const container = svg.append('g');
 
-  try {
-    const jobs = await firstValueFrom(this.syncJobService.getAll());
-    const seenSourceSystems = new Map<string, Node>();
-    const seenTargetSystems = new Map<string, Node>();
-    const seenSyncNodes = new Map<string, Node>();
-
-    jobs.forEach((job) => {
-      console.log(`Processing SyncJob: ${job.name}, ID: ${job.id}, SyncNode: ${job.syncNodeIdentifier}`);
-      const syncJobId = job.id?.toString() ?? '';
-
-      const syncNode: Node = {
-        id: syncJobId,
-        label: job.name,
-        type: 'SyncNode',
-        status: job.deployed ? 'active' : 'inactive',
-        connections: [],
-      };
-      this.nodes.push(syncNode);
-      console.log(`Adding SyncNode: ${syncNode.label}, ID: ${syncNode.id}, Status: ${syncNode.status}`);
-      seenSyncNodes.set(syncJobId, syncNode);
-
-      job.transformations?.forEach((transformation) => {
-        transformation.sourceSystemApiRequestConfigurations?.forEach((sourceConfig) => {
-          const sourceSystem = sourceConfig.sourceSystem;
-          const sourceSystemId = sourceSystem?.id?.toString();
-          if (!sourceSystemId) return;
-
-          let sourceNode = seenSourceSystems.get(sourceSystemId);
-          if (!sourceNode) {
-            sourceNode = {
-              id: '1000' + sourceSystemId,
-              label: sourceSystem.name || 'Unknown Source System',
-              type: 'SourceSystem',
-              status: 'active',
-              connections: []
-            };
-            this.nodes.push(sourceNode);
-            seenSourceSystems.set(sourceSystemId, sourceNode);
-          }
-
-          const conn: NodeConnection = {
-            source: sourceSystemId,
-            target: syncJobId,
-            status: 'active'
-          };
-          this.links.push(conn);
-          sourceNode.connections.push(conn);
-          syncNode.connections.push(conn);
-        });
-      });
+      svg.call(
+        d3.zoom<any, unknown>()
+          .scaleExtent([0.5, 5])
+          .on('zoom', (event) => {
+            container.attr('transform', event.transform);
+          })
+      );
+      this.renderGraph(container, this.nodes, this.links, width, height);
+    }, (error) => {
+      console.error('Error loading graph data:', error);
     });
-  } catch (error) {
-    console.error('Error loading sync jobs:', error);
   }
-}
 
 
 
@@ -156,34 +131,10 @@ async loadSyncjobs() {
    * Lifecycle hook that is called after the view has been initialized.
    * Sets up the SVG container, zoom behavior, and renders the initial graph.
    */
-  async ngAfterViewInit() {
-    await this.loadSyncjobs()
-      .then(() => {
-        this.isInitialized = true;
-        console.log('GraphPanelComponent initialized with nodes:', this.nodes, 'and links:', this.links, 'start with graph');
-        const svgElement = document.querySelector('svg');
-        const width = svgElement?.clientWidth ?? 400;
-        const height = svgElement?.clientHeight ?? 300;
-
-        const svg = d3.select('svg')
-          .attr('width', '100%')
-          .attr('height', '100%');
-
-        const container = svg.append('g');
-
-        svg.call(
-          d3.zoom<any, unknown>()
-            .scaleExtent([0.5, 5])
-            .on('zoom', (event) => {
-              container.attr('transform', event.transform);
-            })
-        );
-        this.renderGraph(container, this.nodes, this.links, width, height);
-      })
-      .catch((err: any) => {
-        console.error('Error loading sync jobs:', err);
-      });
-  }
+ngAfterViewInit() {
+  this.loadGraphData();
+  // Die Initialisierung erfolgt nach dem Laden der Daten in loadGraphData()
+}
 
   /**
    * Filters the nodes based on the provided search term.

@@ -5,8 +5,6 @@ import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.Source
 import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.TargetSystemApiRequestConfiguration;
 import de.unistuttgart.stayinsync.transport.dto.monitoringgraph.MonitoringTransformationDto;
 import io.quarkus.logging.Log;
-import jakarta.inject.Inject;
-import jakarta.persistence.EntityManager;
 import org.mapstruct.Mapper;
 import org.mapstruct.MappingConstants;
 
@@ -17,9 +15,6 @@ import java.util.stream.Collectors;
 
 @Mapper(componentModel = MappingConstants.ComponentModel.JAKARTA_CDI)
 public abstract class MonitoringGraphTransformationMapper {
-
-    @Inject
-    EntityManager em;
 
     public MonitoringTransformationDto mapToDto(Transformation entity) {
         if (entity == null) {
@@ -60,21 +55,10 @@ public abstract class MonitoringGraphTransformationMapper {
         entity.name = dto.name;
         entity.description = dto.description;
 
-        // SourceSystemApiRequestConfigurations setzen
-        if (dto.sourceSystemIds != null && !dto.sourceSystemIds.isEmpty()) {
-            entity.sourceSystemApiRequestConfigurations = dto.sourceSystemIds.stream()
-                    .map(id -> em.find(SourceSystemApiRequestConfiguration.class, id))
-                    .filter(Objects::nonNull)
-                    .collect(Collectors.toSet());
-        }
-
-        // TargetSystemApiRequestConfigurations setzen
-        if (dto.targetSystemIds != null && !dto.targetSystemIds.isEmpty()) {
-            entity.targetSystemApiRequestConfigurations = dto.targetSystemIds.stream()
-                    .map(id -> em.find(TargetSystemApiRequestConfiguration.class, id))
-                    .filter(Objects::nonNull)
-                    .collect(Collectors.toSet());
-        }
+        // Diese Felder können hier nicht mehr per DB geladen werden –
+        // der Aufrufer muss die vollständigen Objekte selbst setzen.
+        entity.sourceSystemApiRequestConfigurations = Set.of();
+        entity.targetSystemApiRequestConfigurations = Set.of();
 
         return entity;
     }

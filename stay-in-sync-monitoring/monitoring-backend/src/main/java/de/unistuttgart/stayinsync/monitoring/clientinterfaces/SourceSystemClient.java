@@ -8,7 +8,7 @@ import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
 import java.util.List;
 
 @RegisterRestClient(configKey = "backend-api")
-@Path("/api/sourcesystem")
+@Path("/api/config/source-system")
 public interface SourceSystemClient {
     @GET
     List<MonitoringSourceSystemDto> getAll();

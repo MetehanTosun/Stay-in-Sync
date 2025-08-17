@@ -60,7 +60,8 @@
         "serve": {
           "options": {
             "port": 4201,
-            "host": "localhost"
+            "host": "localhost",
+            "proxyConfig": "./src/proxy.conf.json"
           },
           "builder": "@angular-devkit/build-angular:dev-server",
           "configurations": {

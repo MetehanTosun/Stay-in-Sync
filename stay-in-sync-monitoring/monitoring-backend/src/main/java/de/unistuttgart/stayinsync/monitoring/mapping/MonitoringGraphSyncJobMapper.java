@@ -3,10 +3,14 @@ package de.unistuttgart.stayinsync.monitoring.mapping;
 import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.SyncJob;
 import de.unistuttgart.stayinsync.transport.dto.monitoringgraph.MonitoringSyncJobDto;
 import jakarta.inject.Inject;
+import org.mapstruct.Mapper;
+import org.mapstruct.MappingConstants;
 
 import java.util.List;
 import java.util.stream.Collectors;
 
+
+@Mapper(componentModel = MappingConstants.ComponentModel.JAKARTA_CDI)
 public abstract class MonitoringGraphSyncJobMapper {
 
     @Inject

@@ -9,7 +9,7 @@ import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
 import java.util.List;
 
 @RegisterRestClient(configKey = "backend-api")
-@Path("/api/syncjob")
+@Path("/api/config/sync-job")
 public interface SyncJobClient {
     @GET
     List<SyncJob> getAll();
