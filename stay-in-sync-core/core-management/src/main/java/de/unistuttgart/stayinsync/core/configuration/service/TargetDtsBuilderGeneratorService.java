@@ -37,8 +37,10 @@ public class TargetDtsBuilderGeneratorService {
         DtsGenerationContext context = new DtsGenerationContext();
 
         TypeLibraryDTO sharedModelsLibrary = generateSharedModelsLibrary(parsedSpecs, context);
+        final boolean hasSharedModels = sharedModelsLibrary != null && !sharedModelsLibrary.content().isEmpty();
+
         List<TypeLibraryDTO> arcLibraries = targetArcs.stream()
-                .map(arc -> generateArcLibrary(arc, parsedSpecs.get(arc.targetSystem.id), context))
+                .map(arc -> generateArcLibrary(arc, parsedSpecs.get(arc.targetSystem.id), context, hasSharedModels))
                 .toList();
 
         String globalNamespace = generatedGlobalTargetsNamespace(targetArcs);
@@ -96,9 +98,12 @@ public class TargetDtsBuilderGeneratorService {
         return new TypeLibraryDTO("stayinsync/shared/models.d.ts", content.toString());
     }
 
-    private TypeLibraryDTO generateArcLibrary(TargetSystemApiRequestConfiguration arc, OpenAPI specification, DtsGenerationContext context) {
+    private TypeLibraryDTO generateArcLibrary(TargetSystemApiRequestConfiguration arc, OpenAPI specification, DtsGenerationContext context, boolean hasSharedModels) {
         StringBuilder dtsContent = new StringBuilder();
-        dtsContent.append("/// <reference path=\"../shared/models.d.ts\" />\n\n");
+
+        if(hasSharedModels){
+            dtsContent.append("/// <reference path=\"../shared/models.d.ts\" />\n\n");
+        }
 
         String clientClassName = toPascalCase(arc.alias) + "_Client";
         String builderName = toPascalCase(arc.alias) + "_UpsertBuilder";

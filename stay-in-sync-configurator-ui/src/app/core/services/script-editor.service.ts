@@ -125,7 +125,7 @@ export class ScriptEditorService {
   }
 
   getArcsByTargetSystem(targetSystemId: number): Observable<TargetArcConfiguration[]> {
-    return this.http.get<TargetArcConfiguration[]>(`${this.API_URL}/config/arcs/by-system/${targetSystemId}`);
+    return this.http.get<TargetArcConfiguration[]>(`${this.API_URL}/config/target-arcs/by-system/${targetSystemId}`);
   }
 
   // TODO: Add Endpoint
@@ -134,15 +134,15 @@ export class ScriptEditorService {
   }
 
   createArc(dto: CreateTargetArcDTO): Observable<TargetArcConfiguration> {
-    return this.http.post<TargetArcConfiguration>(`${this.API_URL}/config/target-arc`, dto);
+    return this.http.post<TargetArcConfiguration>(`${this.API_URL}/config/target-arcs`, dto);
   }
 
   getActiveArcsForTransformation(transformationId: string): Observable<TargetArcConfiguration[]> {
     return this.http.get<TargetArcConfiguration[]>(`${this.API_URL}/config/transformation/${transformationId}/target-arcs`);
   }
 
-  updateTransformationTargetArcs(transformationId: number, arcIds: number[]): Observable<any> {
-    return this.http.put(`${this.API_URL}/config/transformation/${transformationId}/target-arcs`, { arcIds });
+  updateTransformationTargetArcs(transformationId: number, targetArcIds: number[]): Observable<any> {
+    return this.http.put(`${this.API_URL}/config/transformation/${transformationId}/target-arcs`, { targetArcIds });
   }
 
   getTargetTypeDefinitions(transformationId: number): Observable<TypeDefinitionsResponse> {

@@ -8,9 +8,8 @@ import {MessagesModule} from 'primeng/messages';
 import {MessageService} from 'primeng/api';
 
 import {ActivatedRoute, Router} from '@angular/router';
-import {ScriptEditorData} from '../script-editor-navigation.service';
 
-import {catchError, debounceTime, finalize, of, Subject, Subscription, tap, throwError} from 'rxjs';
+import { debounceTime, finalize, Subject, Subscription } from 'rxjs';
 
 // PrimeNG Modules
 import {PanelModule} from 'primeng/panel';
@@ -196,7 +195,7 @@ export class ScriptEditorPageComponent implements OnInit, OnDestroy {
       console.error("Cannot apply types, monaco instance is not available.");
       return;
     }
-    console.log("HELOOOOOOOOOOOOOOOOOO");7
+
     if (response && response.libraries) {
       for (const lib of response.libraries) {
         this.monaco.languages.typescript.typescriptDefaults.addExtraLib(lib.content, `file:///${lib.filePath}`);
@@ -289,7 +288,7 @@ export class ScriptEditorPageComponent implements OnInit, OnDestroy {
         status: scriptStatus,
         targetArcIds: activeTargetArcIds
       };
-    
+
     this.isSaving = true;
     this.scriptEditorService.saveScriptForTransformation(Number(this.currentTransformationId), payload).subscribe({
         next: () => {

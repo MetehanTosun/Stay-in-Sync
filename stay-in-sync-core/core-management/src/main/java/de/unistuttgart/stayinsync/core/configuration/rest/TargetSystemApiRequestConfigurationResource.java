@@ -3,7 +3,6 @@ package de.unistuttgart.stayinsync.core.configuration.rest;
 import de.unistuttgart.stayinsync.core.configuration.exception.CoreManagementException;
 import de.unistuttgart.stayinsync.core.configuration.mapping.targetsystem.RequestConfigurationMapper;
 import de.unistuttgart.stayinsync.core.configuration.rest.dtos.targetsystem.CreateArcDTO;
-import de.unistuttgart.stayinsync.core.configuration.rest.dtos.targetsystem.GetRequestConfigurationDTO;
 import de.unistuttgart.stayinsync.core.configuration.service.TargetSystemApiRequestConfigurationService;
 import io.quarkus.logging.Log;
 import jakarta.inject.Inject;
@@ -15,11 +14,9 @@ import jakarta.ws.rs.core.UriInfo;
 import org.eclipse.microprofile.openapi.annotations.Operation;
 import org.eclipse.microprofile.openapi.annotations.tags.Tag;
 
-import java.util.List;
-
 import static jakarta.ws.rs.core.MediaType.APPLICATION_JSON;
 
-@Path("/api/config/target-arc")
+@Path("/api/config/target-arcs")
 @Produces(APPLICATION_JSON)
 @Tag(name = "Target ARC Configuration", description = "Endpoints for managing Target System API Request Configurations (ARCs)")
 public class TargetSystemApiRequestConfigurationResource {

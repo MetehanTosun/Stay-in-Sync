@@ -44,7 +44,7 @@ export interface CreateTargetArcDTO {
 }
 
 export interface UpdateTransformationArcsDTO {
-  arcIds: number[];
+  targetArcIds: number[];
 }
 
 export interface TypeLibrary {

@@ -13,7 +13,6 @@ import { DialogModule } from 'primeng/dialog';
 import { ButtonModule } from 'primeng/button';
 import { InputTextModule } from 'primeng/inputtext';
 import { ProgressSpinnerModule } from 'primeng/progressspinner';
-import { FilterByHttpMethodPipe } from '../../../pipes/filter-by-http-method.pipe';
 import { SelectModule } from 'primeng/select';
 
 @Component({
@@ -26,8 +25,7 @@ import { SelectModule } from 'primeng/select';
     ButtonModule,
     InputTextModule,
     SelectModule,
-    ProgressSpinnerModule,
-    FilterByHttpMethodPipe
+    ProgressSpinnerModule
   ],
   templateUrl: './target-arc-wizard.component.html',
   styleUrls: ['./target-arc-wizard.component.css']
@@ -109,7 +107,6 @@ export class TargetArcWizardComponent implements OnChanges {
 
     this.scriptEditorService.createArc(dto).subscribe({
       next: (savedArc) => {
-        this.messageService.add({ severity: 'success', summary: 'Gespeichert', detail: `Der ARC '${savedArc.alias}' wurde erstellt.` });
         this.saveSuccess.emit(savedArc);
         this.closeDialog();
       },
