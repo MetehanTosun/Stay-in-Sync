@@ -49,10 +49,12 @@ public class TargetDtsBuilderGeneratorService {
         TypeLibraryDTO baseDirectiveLibrary = new TypeLibraryDTO("stayinsync/targets/base.d.ts",
                 "/** A shared base interface for all generated target directives. */\ndeclare interface TargetDirective {}");
 
+        TypeLibraryDTO contractLibrary = generateContractLibrary(targetArcs);
 
         List<TypeLibraryDTO> allLibraries = new ArrayList<>();
         allLibraries.add(baseDirectiveLibrary);
-        if (sharedModelsLibrary != null && !sharedModelsLibrary.content().isEmpty()) {
+        allLibraries.add(contractLibrary);
+        if (sharedModelsLibrary != null) {
             allLibraries.add(sharedModelsLibrary);
         }
         allLibraries.addAll(arcLibraries);
@@ -398,6 +400,31 @@ public class TargetDtsBuilderGeneratorService {
         }
 
         return mapOpenApiToTsType(schema.getType());
+    }
+
+    private TypeLibraryDTO generateContractLibrary(Set<TargetSystemApiRequestConfiguration> arcs){
+        StringBuilder content = new StringBuilder();
+
+        // --- DirectiveMap Interface Declarations ---
+        content.append("/**\n * A map of directives to be returned by the transform function.\n");
+        content.append(" * The keys must match the aliases of your configured Target ARCs.\n");
+        content.append(" * All configured ARCs MUST be present as keys in the returned object.\n */\n");
+        content.append("declare interface DirectiveMap {\n");
+
+        for (TargetSystemApiRequestConfiguration arc : arcs){
+            String alias = arc.alias;
+            String directiveTypeName = toPascalCase(alias) + "_UpsertDirective";
+            content.append(String.format(" %s: %s[];\n", alias, directiveTypeName));
+        }
+
+        content.append("}\n\n");
+
+        // --- Transform Signature Declarations ---
+        content.append("/**\n * This is the main entry point for your transformation logic.\n");
+        content.append(" * It must return an object conforming to the DirectiveMap interface.\n */\n");
+        content.append("declare function transform(): DirectiveMap;\n");
+
+        return new TypeLibraryDTO("stayinsync/targets/contract.d.ts", content.toString());
     }
 
     private String mapOpenApiToTsType(String openApiType) {
