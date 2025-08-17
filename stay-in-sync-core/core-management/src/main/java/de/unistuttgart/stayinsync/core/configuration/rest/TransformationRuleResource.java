@@ -14,7 +14,7 @@ import de.unistuttgart.stayinsync.transport.dto.transformationrule.GraphPersiste
 import de.unistuttgart.stayinsync.transport.dto.transformationrule.TransformationRulePayloadDTO;
 import de.unistuttgart.stayinsync.transport.dto.transformationrule.vFlow.VFlowGraphDTO;
 import de.unistuttgart.stayinsync.transport.dto.transformationrule.vFlow.VflowGraphResponseDTO;
-import de.unistuttgart.stayinsync.transport.exception.NodeConfigurationException;
+// import de.unistuttgart.stayinsync.transport.exception.NodeConfigurationException;
 import de.unistuttgart.stayinsync.transport.transformation_rule_shared.validation_error.ValidationError;
 import io.quarkus.logging.Log;
 import jakarta.enterprise.context.ApplicationScoped;

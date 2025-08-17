@@ -1,4 +1,4 @@
-package de.unistuttgart.stayinsync.monitoring.core.configuration.service;
+package de.unistuttgart.stayinsync.core.configuration.service;
 
 import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.SyncJob;
 import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.Transformation;

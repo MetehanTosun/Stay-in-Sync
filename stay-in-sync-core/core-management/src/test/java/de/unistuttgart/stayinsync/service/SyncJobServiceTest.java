@@ -1,9 +1,9 @@
-package de.unistuttgart.stayinsync.monitoring.service;
+package de.unistuttgart.stayinsync.service;
 
 import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.SyncJob;
 import de.unistuttgart.stayinsync.core.configuration.domain.events.sync.SyncJobPersistedEvent;
 import de.unistuttgart.stayinsync.core.configuration.mapping.SyncJobFullUpdateMapper;
-import de.unistuttgart.stayinsync.monitoring.core.configuration.service.SyncJobService;
+import de.unistuttgart.stayinsync.core.configuration.service.SyncJobService;
 import io.quarkus.arc.ArcUndeclaredThrowableException;
 import io.quarkus.arc.ArcUndeclaredThrowableException;
 import io.quarkus.panache.mock.PanacheMock;
