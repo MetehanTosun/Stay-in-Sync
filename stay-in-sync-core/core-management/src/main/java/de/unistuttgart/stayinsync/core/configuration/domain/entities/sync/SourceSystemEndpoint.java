@@ -7,6 +7,9 @@ import java.util.Set;
 
 @Entity
 @DiscriminatorValue("SOURCE_SYSTEM")
+@Table(
+    uniqueConstraints = @UniqueConstraint(columnNames = {"sync_system_id", "endpointPath", "httpRequestType"})
+)
 public class SourceSystemEndpoint extends SyncSystemEndpoint {
 
     @ManyToOne

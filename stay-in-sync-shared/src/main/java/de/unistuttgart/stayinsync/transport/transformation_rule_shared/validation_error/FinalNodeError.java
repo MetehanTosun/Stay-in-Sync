@@ -2,15 +2,17 @@ package de.unistuttgart.stayinsync.transport.transformation_rule_shared.validati
 
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 /**
  * Represents a validation error related to the graph's terminal node configuration.
  */
 @Getter
+@Setter
 @NoArgsConstructor(force = true)
 public class FinalNodeError implements ValidationError {
 
-    private final String message;
+    private  String message;
 
     public FinalNodeError(String message) {
         this.message = message;

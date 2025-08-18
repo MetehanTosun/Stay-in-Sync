@@ -8,6 +8,8 @@ import de.unistuttgart.stayinsync.core.configuration.rest.dtos.TransformationAss
 import de.unistuttgart.stayinsync.core.configuration.rest.dtos.TransformationShellDTO;
 import de.unistuttgart.stayinsync.core.configuration.rest.dtos.targetsystem.GetRequestConfigurationDTO;
 import de.unistuttgart.stayinsync.core.configuration.rest.dtos.targetsystem.UpdateTransformationRequestConfigurationDTO;
+import de.unistuttgart.stayinsync.transport.domain.JobDeploymentStatus;
+import de.unistuttgart.stayinsync.transport.dto.TransformationDeploymentFeedbackMessageDTO;
 import io.quarkus.logging.Log;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
@@ -16,8 +18,7 @@ import jakarta.ws.rs.core.Response;
 
 import java.util.List;
 import java.util.Optional;
-import java.util.Set;
-import java.util.stream.Collectors;
+ 
 
 import static jakarta.transaction.Transactional.TxType.REQUIRED;
 import static jakarta.transaction.Transactional.TxType.SUPPORTS;
@@ -64,14 +65,11 @@ public class TransformationService {
         TransformationRule rule = TransformationRule.<TransformationRule>findByIdOptional(dto.transformationRuleId())
                 .orElseThrow(() -> new CoreManagementException(Response.Status.BAD_REQUEST, "Invalid Rule ID", "TransformationRule with id %d not found.", dto.transformationRuleId()));
 
-        Set<SourceSystemEndpoint> sourceEndpoints = dto.sourceSystemEndpointIds().stream()
-                .map(id -> SourceSystemEndpoint.<SourceSystemEndpoint>findByIdOptional(id)
-                        .orElseThrow(() -> new CoreManagementException(Response.Status.BAD_REQUEST, "Invalid SourceSystemEndpoint ID", "SourceSystemEndpoint with id %d not found.", id)))
-                .collect(Collectors.toSet());
+        // NOTE: Previously collected SourceSystemEndpoints here; will be replaced with ARC configs when source ARCs are modeled
 
         transformation.transformationScript = script;
         transformation.transformationRule = rule;
-        //TODO: replace with api request configs
+        // NOTE: replace with api request configs
         //transformation.sourceSystemEndpoints = sourceEndpoints;
 
         if (script != null) {
@@ -153,5 +151,17 @@ public class TransformationService {
     public boolean delete(Long id) {
         Log.debugf("Deleting transformation with id %d", id);
         return Transformation.deleteById(id);
+    }
+
+    public void updateDeploymentStatus(TransformationDeploymentFeedbackMessageDTO feedbackMessageDTO) {
+        Optional<Transformation> apiRequestConfigurationById = findById(feedbackMessageDTO.transformationId());
+        if(apiRequestConfigurationById.isEmpty()){
+            Log.warnf("Unable to update deployment status of request configuration with id %d since no transformation was found using id", feedbackMessageDTO.transformationId());
+        } else {
+            Transformation sourceSystemApiRequestConfiguration = apiRequestConfigurationById.get();
+            sourceSystemApiRequestConfiguration.deploymentStatus = feedbackMessageDTO.status();
+            if(apiRequestConfigurationById.get().deploymentStatus.equals(JobDeploymentStatus.DEPLOYED))
+                sourceSystemApiRequestConfiguration.workerHostName = feedbackMessageDTO.syncNode();
+        }
     }
 }

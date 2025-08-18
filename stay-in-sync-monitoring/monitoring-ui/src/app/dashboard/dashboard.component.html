@@ -1,4 +1,4 @@
-<p-splitter [panelSizes]="[50, 50]" [style]="{ height: '100vh' }" styleClass="mb-8">
+<p-splitter [panelSizes]="[60, 40]">
   <ng-template pTemplate="panel">
     <div class="sidebar">
       <div class="sidebar-header">
@@ -9,17 +9,18 @@
     </div>
   </ng-template>
   <ng-template pTemplate="panel">
-    <p-splitter layout="vertical" [panelSizes]="[50, 50]">
-      <ng-template pTemplate="panel">
-        <div class="top-right">
-          <app-metrics-panel></app-metrics-panel>
-        </div>
-      </ng-template>
-      <ng-template pTemplate="panel">
-        <div class="bottom-right">
-          <app-logs-panel [selectedNodeId]="selectedNodeId"></app-logs-panel>
-        </div>
-      </ng-template>
-    </p-splitter>
+    <p-tabs class="w-full flex flex-grow-1">
+      <p-tablist>
+        @for(tab of tabs; track tab.route){
+          <p-tab [value]="tab.route" [routerLink]="tab.route" [queryParams]="{input: selectedNodeId}">
+            <i [class]="tab.icon"></i>
+            <span>{{ tab.label }}</span>
+          </p-tab>
+        }
+      </p-tablist>
+      <div style="height: 100%; overflow: auto;">
+        <router-outlet></router-outlet>
+      </div>
+    </p-tabs>
   </ng-template>
 </p-splitter>

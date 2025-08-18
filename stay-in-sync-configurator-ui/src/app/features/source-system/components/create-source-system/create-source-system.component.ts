@@ -3,17 +3,17 @@ import {FormBuilder, FormGroup, ReactiveFormsModule, Validators} from '@angular/
 import {CommonModule} from '@angular/common';
 import {SourceSystemDTO} from '../../models/sourceSystemDTO';
 
-// PrimeNG
+
 import {DialogModule} from 'primeng/dialog';
 import {DropdownModule} from 'primeng/dropdown';
 import {InputTextModule} from 'primeng/inputtext';
 import {ButtonModule} from 'primeng/button';
 import {TextareaModule} from 'primeng/textarea';
 import {StepsModule} from 'primeng/steps';
-import {FileUploadEvent, FileUploadModule} from 'primeng/fileupload';
+import {FileSelectEvent, FileUploadEvent, FileUploadModule} from 'primeng/fileupload';
 
 
-// Services und DTOs
+
 import {SourceSystemResourceService} from '../../service/sourceSystemResource.service';
 import {CreateSourceSystemDTO} from '../../models/createSourceSystemDTO';
 import {ApiAuthType} from '../../models/apiAuthType';
@@ -52,13 +52,13 @@ export class CreateSourceSystemComponent implements OnInit, OnChanges {
   @Output() visibleChange = new EventEmitter<boolean>();
 
 
- 
+
   steps = [
     {label: 'Metadaten'},
     {label: 'Api Header'},
     {label: 'Endpoints'},
   ];
-  currentStep = 0; 
+  currentStep = 0;
   createdSourceSystemId!: number;
 
   form!: FormGroup;
@@ -148,7 +148,7 @@ export class CreateSourceSystemComponent implements OnInit, OnChanges {
    *
    * @param ev File input change event.
    */
-  onFileSelected(event: FileUploadEvent): void {
+  onFileSelected(event: FileSelectEvent): void {
     this.selectedFile = event.files[0];
     this.fileSelected = true;
     this.form.get('openApiSpec')!.disable();
@@ -179,7 +179,7 @@ save(): void {
 
   const base = {...this.form.getRawValue()} as CreateSourceSystemDTO;
   delete base.authConfig;
-  
+
   const authType = this.form.get('apiAuthType')!.value as ApiAuthType;
   const cfg = this.form.get('authConfig')!.value;
   if (authType === ApiAuthType.Basic) {
@@ -201,7 +201,7 @@ save(): void {
       post();
     };
     reader.readAsText(this.selectedFile);
-    
+
   } else {
     const openApiSpecValue = base.openApiSpec;
     if (openApiSpecValue && typeof openApiSpecValue === 'string' && openApiSpecValue.trim()) {
@@ -213,7 +213,7 @@ save(): void {
     }
   }
 }
-  
+
   /**
    * Performs HTTP POST to persist the Source System and handles Location header parsing.
    *
@@ -223,7 +223,7 @@ save(): void {
     console.log('📤 Sending DTO to backend:', dto);
     console.log('📤 openApiSpec field:', dto.openApiSpec);
     console.log('📤 openApiSpec type:', typeof dto.openApiSpec);
-    
+
     this.sourceSystemService
       .apiConfigSourceSystemPost(dto)
       .subscribe({

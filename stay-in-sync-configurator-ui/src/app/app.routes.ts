@@ -1,7 +1,6 @@
 // biome-ignore lint/style/useImportType: <explanation>
 import { Routes } from '@angular/router';
 import { SyncRulesComponent } from './features/sync-rules/components/sync-rules.component';
-import { ConfigBaseComponent } from './features/configuration/config-base/config-base.component';
 import { ConfigurationscriptsBaseComponent } from './features/configuration/configurationscripts-base/configurationscripts-base.component';
 // neu (relativ zu src/app/app.routes.ts)
 import { SourceSystemBaseComponent } from
@@ -21,13 +20,12 @@ import {
   TransformationScriptSelectionComponent
 } from './features/transformation/components/transformation-script-selection/transformation-script-selection.component';
 
+// Target System
+import { TargetSystemBaseComponent } from './features/target-system/components/target-system-base/target-system-base.component';
 
 export const routes: Routes = [
   // Route für Sync Rules
   { path: 'sync-rules', component: SyncRulesComponent },
-
-  // Route für Configurations
-  { path: 'configs', component: ConfigBaseComponent },
 
   // Route für Transformation Scripts
   { path: 'transformation-scripts', component: ConfigurationscriptsBaseComponent },
@@ -45,6 +43,12 @@ export const routes: Routes = [
         component: CreateSourceSystemComponent
       }
     ]
+  },
+
+  // Route für Target System
+  {
+    path: 'target-system',
+    component: TargetSystemBaseComponent
   },
 
   //Route für Sync Jobs

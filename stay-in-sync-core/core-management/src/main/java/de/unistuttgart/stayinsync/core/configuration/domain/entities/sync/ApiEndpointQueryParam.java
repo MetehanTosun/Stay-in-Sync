@@ -12,7 +12,7 @@ import java.util.Set;
 @Entity
 public class ApiEndpointQueryParam extends PanacheEntity {
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     public SyncSystemEndpoint syncSystemEndpoint;
 
     @Enumerated(EnumType.STRING)
@@ -31,6 +31,7 @@ public class ApiEndpointQueryParam extends PanacheEntity {
     public Set<String> values = new HashSet<>();
 
     public static List<ApiEndpointQueryParam> findByEndpointId(Long endpointId) {
+        // Use a simple query that avoids inheritance issues
         return find("syncSystemEndpoint.id", endpointId).list();
     }
 }
