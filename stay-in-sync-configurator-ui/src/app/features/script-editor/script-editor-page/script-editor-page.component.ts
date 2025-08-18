@@ -7,7 +7,7 @@ import {ScriptEditorService, ScriptPayload,} from '../../../core/services/script
 import {MessagesModule} from 'primeng/messages';
 import {MessageService} from 'primeng/api';
 
-import {ActivatedRoute, Router} from '@angular/router';
+import {ActivatedRoute} from '@angular/router';
 
 import { debounceTime, finalize, Subject, Subscription } from 'rxjs';
 
@@ -100,7 +100,6 @@ export class ScriptEditorPageComponent implements OnInit, OnDestroy {
   private monacoEditorService = inject(MonacoEditorService);
 
   private route = inject(ActivatedRoute);
-  private router = inject(Router);
 
   constructor() {
     this.subscriptions.add(
@@ -425,14 +424,6 @@ function transform(): DirectiveMap {
 
     const errors = diagnostics.filter(d => d.category === ts.DiagnosticCategory.Error);
     return errors.length > 0;
-  }
-
-  private async generateHash(data: string): Promise<string> {
-    // Placeholder, switching to crypto library like `crypto-js` or the browser's SubtleCrypto API.
-    const buffer = new TextEncoder().encode(data);
-    const hashBuffer = await crypto.subtle.digest('SHA-256', buffer);
-    const hashArray = Array.from(new Uint8Array(hashBuffer));
-    return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
   }
 
   ngOnDestroy(): void {

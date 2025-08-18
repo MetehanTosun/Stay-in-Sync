@@ -3,7 +3,6 @@
   <p-treeTable
     [value]="activeArcsTree"
     [loading]="isLoading"
-    size="small"
     styleClass="compact-treetable flex-grow-1"
   >
     <ng-template pTemplate="header">
@@ -48,13 +47,13 @@
 
 <!-- Dialog for Library -->
 <p-dialog header="ARC Library" [(visible)]="displayLibrary" [modal]="true" [style]="{width: '50vw'}">
-  
+
   <!-- Wir verwenden (onOpen), da es mit <p-accordionTab> am zuverlässigsten funktioniert -->
   <p-accordion [multiple]="true" (onOpen)="onTabOpen($event)">
-    
+
     <!-- Wir iterieren über die VOLLE, ungefilterte Liste 'librarySystems' -->
     <p-accordionTab *ngFor="let system of librarySystems" [header]="system.name">
-      
+
       <div *ngIf="system.isLoading" class="text-center p-2">
         <p-progressSpinner styleClass="w-2rem h-2rem"></p-progressSpinner>
       </div>
@@ -65,7 +64,7 @@
 
           <!-- --- NEUE, KONDITIONALE BUTTON-LOGIK --- -->
           <!-- Wir prüfen mit `activeArcIds.has()`, ob der Button deaktiviert sein soll -->
-          <p-button 
+          <p-button
             [label]="activeArcIds.has(arc.id) ? 'Added' : 'Add'"
             [icon]="activeArcIds.has(arc.id) ? 'pi pi-check' : 'pi pi-plus'"
             [styleClass]="'p-button-sm' + (activeArcIds.has(arc.id) ? ' p-button-success' : '')"
@@ -84,8 +83,8 @@
 </p-dialog>
 
 <!-- Target ARC Wizard -->
-<app-target-arc-wizard 
-  *ngIf="isWizardVisible" 
-  [(visible)]="isWizardVisible" 
+<app-target-arc-wizard
+  *ngIf="isWizardVisible"
+  [(visible)]="isWizardVisible"
   (saveSuccess)="onWizardSaveSuccess($event)">
 </app-target-arc-wizard>

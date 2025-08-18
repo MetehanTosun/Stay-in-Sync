@@ -9,7 +9,6 @@ import de.unistuttgart.stayinsync.core.configuration.rest.dtos.typegeneration.Ge
 import de.unistuttgart.stayinsync.core.configuration.rest.dtos.typegeneration.TypeLibraryDTO;
 import de.unistuttgart.stayinsync.transport.domain.TargetApiRequestConfigurationActionRole;
 import io.quarkus.cache.CacheResult;
-import io.quarkus.logging.Log;
 import io.swagger.v3.oas.models.OpenAPI;
 import io.swagger.v3.oas.models.Operation;
 import io.swagger.v3.oas.models.PathItem;
