@@ -109,7 +109,7 @@ class TargetDtsBuilderGeneratorServiceTest {
 
         assertNotNull(response);
         assertNotNull(response.libraries());
-        assertEquals(3, response.libraries().size(), "Should contain shared models, one arc library, and one manifest");
+        assertEquals(5, response.libraries().size(), "Should contain base library, shared models, one arc library, one contract Library and one manifest");
 
         TypeLibraryDTO sharedModelsLibrary = response.libraries().stream()
                 .filter(lib -> lib.filePath().equals("stayinsync/shared/models.d.ts"))
