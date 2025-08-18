@@ -1,6 +1,7 @@
 package de.unistuttgart.stayinsync.transport.transformation_rule_shared.nodes;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import de.unistuttgart.stayinsync.transport.exception.GraphEvaluationException;
 import lombok.Getter;
 import lombok.Setter;
 import java.util.List;
@@ -59,5 +60,5 @@ public abstract class Node {
      * @param dataContext The runtime data context, used for resolving external
      * JSON values in ProviderNodes.
      */
-    public abstract void calculate(Map<String, JsonNode> dataContext);
+    public abstract void calculate(Map<String, JsonNode> dataContext) throws GraphEvaluationException;
 }

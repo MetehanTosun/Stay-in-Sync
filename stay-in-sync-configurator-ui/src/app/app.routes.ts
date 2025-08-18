@@ -1,6 +1,5 @@
 // biome-ignore lint/style/useImportType: <explanation>
 import { Routes } from '@angular/router';
-import { ConfigBaseComponent } from './features/configuration/config-base/config-base.component';
 import { ConfigurationscriptsBaseComponent } from './features/configuration/configurationscripts-base/configurationscripts-base.component';
 // neu (relativ zu src/app/app.routes.ts)
 import { SourceSystemBaseComponent } from
@@ -23,14 +22,13 @@ import { RulesOverviewComponent } from './features/sync-rules/pages/rules-overvi
 import { EditRuleComponent } from './features/sync-rules/pages/edit-rule/edit-rule.component';
 import { EditRuleDeactivateGuard } from './features/sync-rules/pages/edit-rule/edit-rule-deactivate.guard';
 
+// Target System
+import { TargetSystemBaseComponent } from './features/target-system/components/target-system-base/target-system-base.component';
 
 export const routes: Routes = [
   // Route für Sync Rules
   { path: 'sync-rules', component: RulesOverviewComponent },
   { path: 'sync-rules/edit-rule/:id', component: EditRuleComponent, canDeactivate: [EditRuleDeactivateGuard] },
-
-  // Route für Configurations
-  { path: 'configs', component: ConfigBaseComponent },
 
   // Route für Transformation Scripts
   { path: 'transformation-scripts', component: ConfigurationscriptsBaseComponent },
@@ -48,6 +46,12 @@ export const routes: Routes = [
         component: CreateSourceSystemComponent
       }
     ]
+  },
+
+  // Route für Target System
+  {
+    path: 'target-system',
+    component: TargetSystemBaseComponent
   },
 
   //Route für Sync Jobs

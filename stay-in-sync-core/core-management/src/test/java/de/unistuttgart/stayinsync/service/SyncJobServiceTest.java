@@ -21,7 +21,7 @@ import java.util.Optional;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.catchThrowableOfType;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 @QuarkusTest
 public class SyncJobServiceTest {
@@ -53,13 +53,19 @@ public class SyncJobServiceTest {
     }
 
     @Test
-    void deleteSyncJob() {
+    void deleteSyncJob_found() {
+        // Arrange
         PanacheMock.mock(SyncJob.class);
-        when(SyncJob.deleteById(eq(DEFAULT_ID))).thenReturn(true);
 
-        this.syncJobService.deleteSyncJob(DEFAULT_ID);
+        SyncJob mockJob = mock(SyncJob.class);
+        when(SyncJob.findById(eq(DEFAULT_ID))).thenReturn(mockJob);
 
-        PanacheMock.verify(SyncJob.class).deleteById(eq(DEFAULT_ID));
+        // Act
+        syncJobService.deleteSyncJob(DEFAULT_ID);
+
+        // Assert
+        verify(mockJob).delete();
+        PanacheMock.verify(SyncJob.class).findById(eq(DEFAULT_ID));
         PanacheMock.verifyNoMoreInteractions(SyncJob.class);
     }
 

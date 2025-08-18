@@ -4,8 +4,11 @@ import de.unistuttgart.stayinsync.core.configuration.exception.CoreManagementExc
 import de.unistuttgart.stayinsync.core.configuration.mapping.SourceSystemEndpointFullUpdateMapper;
 import de.unistuttgart.stayinsync.core.configuration.rest.dtos.CreateSourceSystemEndpointDTO;
 import de.unistuttgart.stayinsync.core.configuration.rest.dtos.SourceSystemEndpointDTO;
+import de.unistuttgart.stayinsync.core.configuration.rest.dtos.TypeScriptGenerationRequest;
+import de.unistuttgart.stayinsync.core.configuration.rest.dtos.TypeScriptGenerationResponse;
 import de.unistuttgart.stayinsync.core.configuration.service.SourceSystemEndpointService;
 import de.unistuttgart.stayinsync.core.configuration.service.SourceSystemService;
+import de.unistuttgart.stayinsync.core.configuration.util.TypeScriptTypeGenerator;
 import io.quarkus.logging.Log;
 import jakarta.inject.Inject;
 import jakarta.validation.Valid;
@@ -19,7 +22,6 @@ import org.eclipse.microprofile.openapi.annotations.Operation;
 import org.eclipse.microprofile.openapi.annotations.enums.SchemaType;
 import org.eclipse.microprofile.openapi.annotations.headers.Header;
 import org.eclipse.microprofile.openapi.annotations.media.Content;
-import org.eclipse.microprofile.openapi.annotations.media.ExampleObject;
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
 import org.eclipse.microprofile.openapi.annotations.parameters.Parameter;
 import org.eclipse.microprofile.openapi.annotations.parameters.RequestBody;
@@ -44,6 +46,9 @@ public class SourceSystemEndpointResource {
     @Inject
     SourceSystemEndpointFullUpdateMapper fullUpdateMapper;
 
+    @Inject
+    TypeScriptTypeGenerator typeScriptTypeGenerator;
+
     @POST
     @Path("{sourceSystemId}/endpoint")
     @Consumes(APPLICATION_JSON)
@@ -63,8 +68,7 @@ public class SourceSystemEndpointResource {
                     required = true,
                     content = @Content(
                             mediaType = APPLICATION_JSON,
-                            schema = @Schema(type = SchemaType.ARRAY, implementation = CreateSourceSystemEndpointDTO.class),
-                            examples = @ExampleObject(name = "valid_sync_job", value = Examples.VALID_EXAMPLE_ENDPOINT_CREATE)
+                            schema = @Schema(type = SchemaType.ARRAY, implementation = CreateSourceSystemEndpointDTO.class)
                     )
             )
             @PathParam("sourceSystemId") Long sourceSystemId,
@@ -104,8 +108,7 @@ public class SourceSystemEndpointResource {
             description = "Gets a source-system-endpoint for a given id",
             content = @Content(
                     mediaType = APPLICATION_JSON,
-                    schema = @Schema(implementation = SourceSystemEndpointDTO.class),
-                    examples = @ExampleObject(name = "source-system-endpoint", value = Examples.VALID_EXAMPLE_SYNCJOB)
+                    schema = @Schema(implementation = SourceSystemEndpointDTO.class)
             )
     )
     @APIResponse(
@@ -158,8 +161,7 @@ public class SourceSystemEndpointResource {
                                                             required = true,
                                                             content = @Content(
                                                                     mediaType = APPLICATION_JSON,
-                                                                    schema = @Schema(implementation = SourceSystemEndpointDTO.class),
-                                                                    examples = @ExampleObject(name = "valid endpoint", value = Examples.VALID_SOURCE_SYSTEM_ENDPOINT_POST)
+                                                                    schema = @Schema(implementation = SourceSystemEndpointDTO.class)
                                                             )
                                                     )
                                                     @PathParam("id") Long id, @Valid @NotNull CreateSourceSystemEndpointDTO sourceSystemEndpointDTO) {
@@ -173,6 +175,59 @@ public class SourceSystemEndpointResource {
                     Log.debugf("No source-system-endpoint found with id %d", id);
                     return Response.status(Response.Status.NOT_FOUND).build();
                 });
+    }
+
+    @POST
+    @Path("/endpoint/{id}/generate-typescript")
+    @Consumes(APPLICATION_JSON)
+    @Operation(summary = "Generate TypeScript interface from JSON schema")
+    @APIResponse(
+            responseCode = "200",
+            description = "TypeScript interface generated successfully",
+            content = @Content(
+                    mediaType = APPLICATION_JSON,
+                    schema = @Schema(implementation = TypeScriptGenerationResponse.class)
+            )
+    )
+    @APIResponse(
+            responseCode = "400",
+            description = "Invalid JSON schema provided"
+    )
+    @APIResponse(
+            responseCode = "404",
+            description = "Endpoint not found"
+    )
+    public Response generateTypeScriptFromSchema(
+            @Parameter(name = "id", required = true) @PathParam("id") Long id,
+            @RequestBody(
+                    name = "json-schema",
+                    required = true,
+                    content = @Content(
+                            mediaType = APPLICATION_JSON,
+                            schema = @Schema(implementation = TypeScriptGenerationRequest.class)
+                    )
+            )
+            @Valid @NotNull TypeScriptGenerationRequest request) {
+        
+        try {
+            String generatedTypeScript = typeScriptTypeGenerator.generate(request.jsonSchema());
+            
+            TypeScriptGenerationResponse response = new TypeScriptGenerationResponse(
+                generatedTypeScript,
+                null
+            );
+            
+            Log.debugf("TypeScript generated successfully for endpoint %d", id);
+            return Response.ok(response).build();
+            
+        } catch (Exception e) {
+            Log.warnf(e, "Failed to generate TypeScript for endpoint %d", id);
+            TypeScriptGenerationResponse errorResponse = new TypeScriptGenerationResponse(
+                null,
+                "Failed to generate TypeScript: " + e.getMessage()
+            );
+            return Response.status(Response.Status.BAD_REQUEST).entity(errorResponse).build();
+        }
     }
 
 }

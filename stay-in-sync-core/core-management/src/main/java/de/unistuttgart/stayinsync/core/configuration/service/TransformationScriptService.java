@@ -100,7 +100,7 @@ public class TransformationScriptService {
         // Start with fresh set, add present ARCs for graph and script respectively.
 
         // Bind ManyToMany
-        transformation.sourceSystemApiRequestConfigrations = finalArcSet;
+        transformation.sourceSystemApiRequestConfigurations = finalArcSet;
         finalArcSet.forEach(sourceSystemApiRequestConfiguration -> sourceSystemApiRequestConfiguration.transformations.add(transformation));
 
         Log.infof("Final total bound ARCs for transformation %d: %d", transformationId, finalArcSet.size());

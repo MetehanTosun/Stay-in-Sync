@@ -1,6 +1,7 @@
 package de.unistuttgart.stayinsync.transport.transformation_rule_shared.logic_operator.array_predicates;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import de.unistuttgart.stayinsync.transport.exception.OperatorValidationException;
 import de.unistuttgart.stayinsync.transport.transformation_rule_shared.nodes.LogicNode;
 import de.unistuttgart.stayinsync.transport.transformation_rule_shared.nodes.Node; // Import the base class
 import de.unistuttgart.stayinsync.transport.transformation_rule_shared.logic_operator.Operation;
@@ -20,14 +21,14 @@ public abstract class AbstractArrayLengthComparisonOperator implements Operation
      * Validates that the node has exactly two inputs: the array/collection and the expected length.
      *
      * @param node The LogicNode to validate.
-     * @throws IllegalArgumentException if the node does not have exactly two inputs.
+     * @throws OperatorValidationException if the node does not have exactly two inputs.
      */
     @Override
-    public void validateNode(LogicNode node) {
+    public void validateNode(LogicNode node)throws OperatorValidationException {
         // We now access the list of parent Node objects.
         List<Node> inputs = node.getInputNodes();
         if (inputs == null || inputs.size() != 2) {
-            throw new IllegalArgumentException(
+            throw new OperatorValidationException(
                     "Array length comparison for node '" + node.getName() + "' requires exactly 2 inputs: the array/list and the expected length."
             );
         }

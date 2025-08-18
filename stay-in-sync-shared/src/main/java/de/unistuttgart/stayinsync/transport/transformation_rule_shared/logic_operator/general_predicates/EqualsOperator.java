@@ -5,6 +5,7 @@ import de.unistuttgart.stayinsync.transport.transformation_rule_shared.nodes.Con
 import de.unistuttgart.stayinsync.transport.transformation_rule_shared.nodes.LogicNode;
 import de.unistuttgart.stayinsync.transport.transformation_rule_shared.nodes.Node;
 import de.unistuttgart.stayinsync.transport.transformation_rule_shared.logic_operator.Operation;
+import de.unistuttgart.stayinsync.transport.exception.OperatorValidationException;
 
 import java.util.List;
 import java.util.Map;
@@ -20,13 +21,13 @@ public class EqualsOperator implements Operation {
      * input can be a {@link ConstantNode}.
      *
      * @param node The LogicNode to validate.
-     * @throws IllegalArgumentException if the configuration is invalid.
+     * @throws OperatorValidationException if the configuration is invalid.
      */
-    public void validateNode(LogicNode node) {
+    public void validateNode(LogicNode node)throws OperatorValidationException {
         List<Node> inputs = node.getInputNodes();
 
         if (inputs == null || inputs.size() < 2) {
-            throw new IllegalArgumentException(
+            throw new OperatorValidationException(
                     "EQUALS operation for node '" + node.getName() + "' requires at least 2 inputs to compare."
             );
         }
@@ -39,7 +40,7 @@ public class EqualsOperator implements Operation {
         }
 
         if (constantNodeCount > 1) {
-            throw new IllegalArgumentException(
+            throw new OperatorValidationException(
                     "EQUALS operation for node '" + node.getName() + "' is invalid. A maximum of one ConstantNode is allowed as an input. Found: " + constantNodeCount
             );
         }

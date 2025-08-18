@@ -10,10 +10,11 @@ import java.util.List;
  * Represents a validation error indicating that a cycle was detected in the graph.
  */
 @Getter
+@Setter
 @NoArgsConstructor(force = true)
 public class CycleError implements ValidationError {
 
-    private final List<Integer> nodeIdsInCycle;
+    private  List<Integer> nodeIdsInCycle;
 
     public CycleError(List<Integer> nodeIdsInCycle) {
         this.nodeIdsInCycle = nodeIdsInCycle;
