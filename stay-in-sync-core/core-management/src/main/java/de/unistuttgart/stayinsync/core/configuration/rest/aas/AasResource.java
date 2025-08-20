@@ -76,7 +76,17 @@ public class AasResource {
                 .stream()
                 .map(sm -> new SubmodelSummaryDTO(sm.submodelId, sm.submodelIdShort, sm.semanticId, sm.kind))
                 .toList();
-        return Uni.createFrom().item(Response.ok().entity(list).build());
+        if (!list.isEmpty()) {
+            return Uni.createFrom().item(Response.ok().entity(list).build());
+        }
+        var headers = headerBuilder.buildMergedHeaders(ss, de.unistuttgart.stayinsync.core.configuration.service.aas.HttpHeaderBuilder.Mode.READ);
+        return traversal.listSubmodels(ss.apiUrl, ss.aasId, headers).map(resp -> {
+            int sc = resp.statusCode();
+            if (sc >= 200 && sc < 300) {
+                return Response.ok(resp.bodyAsString()).build();
+            }
+            return aasService.mapHttpError(sc, resp.statusMessage(), resp.bodyAsString());
+        });
     }
 
     @GET
@@ -100,7 +110,14 @@ public class AasResource {
         }
         var submodel = AasSubmodelLite.<AasSubmodelLite>find("sourceSystem.id = ?1 and submodelId = ?2", sourceSystemId, smId).firstResult();
         if (submodel == null) {
-            return Uni.createFrom().item(Response.status(Response.Status.NOT_FOUND).entity("Submodel not found in snapshot").build());
+            var headers = headerBuilder.buildMergedHeaders(ss, de.unistuttgart.stayinsync.core.configuration.service.aas.HttpHeaderBuilder.Mode.READ);
+            return traversal.listElements(ss.apiUrl, smId, depth, parentPath, headers).map(resp -> {
+                int sc = resp.statusCode();
+                if (sc >= 200 && sc < 300) {
+                    return Response.ok(resp.bodyAsString()).build();
+                }
+                return aasService.mapHttpError(sc, resp.statusMessage(), resp.bodyAsString());
+            });
         }
         java.util.List<AasElementLite> elements;
         if ("all".equalsIgnoreCase(depth)) {
@@ -133,7 +150,17 @@ public class AasResource {
                 null,
                 null
         )).toList();
-        return Uni.createFrom().item(Response.ok().entity(list).build());
+        if (!list.isEmpty()) {
+            return Uni.createFrom().item(Response.ok().entity(list).build());
+        }
+        var headers = headerBuilder.buildMergedHeaders(ss, de.unistuttgart.stayinsync.core.configuration.service.aas.HttpHeaderBuilder.Mode.READ);
+        return traversal.listElements(ss.apiUrl, smId, depth, parentPath, headers).map(resp -> {
+            int sc = resp.statusCode();
+            if (sc >= 200 && sc < 300) {
+                return Response.ok(resp.bodyAsString()).build();
+            }
+            return aasService.mapHttpError(sc, resp.statusMessage(), resp.bodyAsString());
+        });
     }
 
     @POST
