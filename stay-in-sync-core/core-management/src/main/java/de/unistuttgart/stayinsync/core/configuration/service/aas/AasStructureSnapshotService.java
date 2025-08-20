@@ -138,6 +138,19 @@ public class AasStructureSnapshotService {
             Log.warnf(e, "Failed to apply element create delta for sourceSystemId=%d submodelId=%s", sourceSystemId, submodelId);
         }
     }
+
+    public void applySubmodelDelete(Long sourceSystemId, String submodelId) {
+        var submodel = AasSubmodelLite.<AasSubmodelLite>find("sourceSystem.id = ?1 and submodelId = ?2", sourceSystemId, submodelId).firstResult();
+        if (submodel == null) return;
+        AasElementLite.delete("submodelLite.id", submodel.id);
+        submodel.delete();
+    }
+
+    public void applyElementDelete(Long sourceSystemId, String submodelId, String idShortPath) {
+        var submodel = AasSubmodelLite.<AasSubmodelLite>find("sourceSystem.id = ?1 and submodelId = ?2", sourceSystemId, submodelId).firstResult();
+        if (submodel == null) return;
+        AasElementLite.delete("submodelLite.id = ?1 and (idShortPath = ?2 or idShortPath like ?3)", submodel.id, idShortPath, idShortPath + "/%");
+    }
 }
 
 

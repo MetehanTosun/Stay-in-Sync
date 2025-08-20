@@ -25,7 +25,16 @@ public class SourceSystemAasService {
     }
 
     public Response mapHttpError(int statusCode, String statusMessage, String body) {
-        return Response.status(statusCode).entity(body != null ? body : statusMessage).build();
+        String message = body != null && !body.isBlank() ? body : (statusMessage != null ? statusMessage : "Upstream error");
+        return switch (statusCode) {
+            case 401 -> Response.status(Response.Status.UNAUTHORIZED).entity(message).build();
+            case 403 -> Response.status(Response.Status.FORBIDDEN).entity(message).build();
+            case 404 -> Response.status(Response.Status.NOT_FOUND).entity(message).build();
+            case 405 -> Response.status(Response.Status.METHOD_NOT_ALLOWED).entity(message).build();
+            case 409 -> Response.status(Response.Status.CONFLICT).entity(message).build();
+            case 504 -> Response.status(Response.Status.GATEWAY_TIMEOUT).entity(message).build();
+            default -> Response.status(statusCode).entity(message).build();
+        };
     }
 }
 
