@@ -23,9 +23,9 @@ public abstract class SyncSystem extends PanacheEntity {
     @Lob
     public String description;
     
-    public String apiType; // REST, AAS
+    public String apiType;
 
-    public String aasId; // used when apiType = AAS
+    public String aasId;
 
     @Lob
     public String openApiSpec;
