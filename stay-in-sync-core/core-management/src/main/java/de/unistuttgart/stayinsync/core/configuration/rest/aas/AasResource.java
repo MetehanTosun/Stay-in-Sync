@@ -4,9 +4,10 @@ import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.Source
 import de.unistuttgart.stayinsync.core.configuration.rest.dtos.aas.AasTestResultDTO;
 import de.unistuttgart.stayinsync.core.configuration.rest.dtos.aas.SubmodelElementNodeDTO;
 import de.unistuttgart.stayinsync.core.configuration.rest.dtos.aas.SubmodelSummaryDTO;
-import de.unistuttgart.stayinsync.core.configuration.service.SourceSystemService;
 import de.unistuttgart.stayinsync.core.configuration.service.aas.AasTraversalClient;
 import de.unistuttgart.stayinsync.core.configuration.service.aas.AasStructureSnapshotService;
+import de.unistuttgart.stayinsync.core.configuration.domain.entities.aas.AasSubmodelLite;
+import de.unistuttgart.stayinsync.core.configuration.domain.entities.aas.AasElementLite;
 import de.unistuttgart.stayinsync.core.configuration.service.aas.SourceSystemAasService;
 import io.quarkus.logging.Log;
 import io.smallrye.mutiny.Uni;
@@ -25,8 +26,6 @@ import java.util.Map;
 @Consumes(MediaType.APPLICATION_JSON)
 public class AasResource {
 
-    @Inject
-    SourceSystemService sourceSystemService;
 
     @Inject
     SourceSystemAasService aasService;
@@ -43,7 +42,7 @@ public class AasResource {
     @POST
     @Path("/test")
     public Uni<Response> test(@PathParam("sourceSystemId") Long sourceSystemId) {
-        SourceSystem ss = sourceSystemService.findSourceSystemById(sourceSystemId).orElse(null);
+        SourceSystem ss = SourceSystem.<SourceSystem>findByIdOptional(sourceSystemId).orElse(null);
         ss = aasService.validateAasSource(ss);
         var headers = headerBuilder.buildMergedHeaders(ss, de.unistuttgart.stayinsync.core.configuration.service.aas.HttpHeaderBuilder.Mode.READ);
         Uni<HttpResponse<Buffer>> uni = traversal.getShell(ss.apiUrl, ss.aasId, headers);
@@ -61,7 +60,7 @@ public class AasResource {
     @Path("/submodels")
     public Uni<Response> listSubmodels(@PathParam("sourceSystemId") Long sourceSystemId,
                                   @QueryParam("source") @DefaultValue("SNAPSHOT") String source) {
-        SourceSystem ss = sourceSystemService.findSourceSystemById(sourceSystemId).orElse(null);
+        SourceSystem ss = SourceSystem.<SourceSystem>findByIdOptional(sourceSystemId).orElse(null);
         ss = aasService.validateAasSource(ss);
         if ("LIVE".equalsIgnoreCase(source)) {
             var headers = headerBuilder.buildMergedHeaders(ss, de.unistuttgart.stayinsync.core.configuration.service.aas.HttpHeaderBuilder.Mode.READ);
@@ -73,7 +72,11 @@ public class AasResource {
                 return Response.status(sc).entity(resp.bodyAsString()).build();
             });
         }
-        return Uni.createFrom().item(Response.ok().entity(List.of()).build());
+        var list = AasSubmodelLite.<AasSubmodelLite>list("sourceSystem.id", sourceSystemId)
+                .stream()
+                .map(sm -> new SubmodelSummaryDTO(sm.submodelId, sm.submodelIdShort, sm.semanticId, sm.kind))
+                .toList();
+        return Uni.createFrom().item(Response.ok().entity(list).build());
     }
 
     @GET
@@ -83,7 +86,7 @@ public class AasResource {
                                  @QueryParam("depth") @DefaultValue("shallow") String depth,
                                  @QueryParam("parentPath") String parentPath,
                                  @QueryParam("source") @DefaultValue("SNAPSHOT") String source) {
-        SourceSystem ss = sourceSystemService.findSourceSystemById(sourceSystemId).orElse(null);
+        SourceSystem ss = SourceSystem.<SourceSystem>findByIdOptional(sourceSystemId).orElse(null);
         ss = aasService.validateAasSource(ss);
         if ("LIVE".equalsIgnoreCase(source)) {
             var headers = headerBuilder.buildMergedHeaders(ss, de.unistuttgart.stayinsync.core.configuration.service.aas.HttpHeaderBuilder.Mode.READ);
@@ -95,7 +98,42 @@ public class AasResource {
                 return Response.status(sc).entity(resp.bodyAsString()).build();
             });
         }
-        return Uni.createFrom().item(Response.ok().entity(List.of()).build());
+        var submodel = AasSubmodelLite.<AasSubmodelLite>find("sourceSystem.id = ?1 and submodelId = ?2", sourceSystemId, smId).firstResult();
+        if (submodel == null) {
+            return Uni.createFrom().item(Response.status(Response.Status.NOT_FOUND).entity("Submodel not found in snapshot").build());
+        }
+        java.util.List<AasElementLite> elements;
+        if ("all".equalsIgnoreCase(depth)) {
+            if (parentPath == null || parentPath.isBlank()) {
+                elements = AasElementLite.list("submodelLite.id", submodel.id);
+            } else {
+                String prefix = parentPath.endsWith("/") ? parentPath : parentPath + "/";
+                elements = AasElementLite.list("submodelLite.id = ?1 and (idShortPath = ?2 or idShortPath like ?3)", submodel.id, parentPath, prefix + "%");
+            }
+        } else {
+            if (parentPath == null || parentPath.isBlank()) {
+                elements = AasElementLite.list("submodelLite.id = ?1 and parentPath is null", submodel.id);
+            } else {
+                elements = AasElementLite.list("submodelLite.id = ?1 and parentPath = ?2", submodel.id, parentPath);
+            }
+        }
+        var list = elements.stream().map(e -> new SubmodelElementNodeDTO(
+                e.modelType,
+                e.idShort,
+                e.idShortPath,
+                e.hasChildren,
+                e.valueType,
+                e.semanticId,
+                e.isReference,
+                e.referenceTargetType,
+                e.referenceKeys,
+                e.targetSubmodelId,
+                e.typeValueListElement,
+                e.orderRelevant,
+                null,
+                null
+        )).toList();
+        return Uni.createFrom().item(Response.ok().entity(list).build());
     }
 
     @POST
