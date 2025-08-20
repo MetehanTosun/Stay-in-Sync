@@ -131,8 +131,15 @@ public class AasStructureSnapshotService {
             e.targetSubmodelId = textOrNull(n, "targetSubmodelId");
             e.typeValueListElement = textOrNull(n, "typeValueListElement");
             e.orderRelevant = n.has("orderRelevant") ? n.get("orderRelevant").asBoolean(false) : null;
-            e.inputSignature = null;
-            e.outputSignature = null;
+            if ("Operation".equalsIgnoreCase(e.modelType)) {
+                JsonNode inVars = n.get("inputVariables");
+                JsonNode outVars = n.get("outputVariables");
+                e.inputSignature = (inVars != null && !inVars.isNull()) ? inVars.toString() : null;
+                e.outputSignature = (outVars != null && !outVars.isNull()) ? outVars.toString() : null;
+            } else {
+                e.inputSignature = null;
+                e.outputSignature = null;
+            }
             e.persist();
         } catch (Exception e) {
             Log.warnf(e, "Failed to apply element create delta for sourceSystemId=%d submodelId=%s", sourceSystemId, submodelId);
