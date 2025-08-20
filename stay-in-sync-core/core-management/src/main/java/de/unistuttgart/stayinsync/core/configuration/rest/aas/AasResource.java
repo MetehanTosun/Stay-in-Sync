@@ -6,6 +6,7 @@ import de.unistuttgart.stayinsync.core.configuration.rest.dtos.aas.SubmodelEleme
 import de.unistuttgart.stayinsync.core.configuration.rest.dtos.aas.SubmodelSummaryDTO;
 import de.unistuttgart.stayinsync.core.configuration.service.SourceSystemService;
 import de.unistuttgart.stayinsync.core.configuration.service.aas.AasTraversalClient;
+import de.unistuttgart.stayinsync.core.configuration.service.aas.AasStructureSnapshotService;
 import de.unistuttgart.stayinsync.core.configuration.service.aas.SourceSystemAasService;
 import io.quarkus.logging.Log;
 import io.smallrye.mutiny.Uni;
@@ -33,6 +34,9 @@ public class AasResource {
     @Inject
     AasTraversalClient traversal;
 
+    @Inject
+    AasStructureSnapshotService snapshotService;
+
     @POST
     @Path("/test")
     public Uni<Response> test(@PathParam("sourceSystemId") Long sourceSystemId) {
@@ -51,19 +55,41 @@ public class AasResource {
 
     @GET
     @Path("/submodels")
-    public Response listSubmodels(@PathParam("sourceSystemId") Long sourceSystemId,
+    public Uni<Response> listSubmodels(@PathParam("sourceSystemId") Long sourceSystemId,
                                   @QueryParam("source") @DefaultValue("SNAPSHOT") String source) {
-        return Response.status(Response.Status.NOT_IMPLEMENTED).build();
+        SourceSystem ss = sourceSystemService.findSourceSystemById(sourceSystemId).orElse(null);
+        ss = aasService.validateAasSource(ss);
+        if ("LIVE".equalsIgnoreCase(source)) {
+            return traversal.listSubmodels(ss.apiUrl, ss.aasId, Map.of()).map(resp -> {
+                int sc = resp.statusCode();
+                if (sc >= 200 && sc < 300) {
+                    return Response.ok(resp.bodyAsString()).build();
+                }
+                return Response.status(sc).entity(resp.bodyAsString()).build();
+            });
+        }
+        return Uni.createFrom().item(Response.ok().entity(List.of()).build());
     }
 
     @GET
     @Path("/submodels/{smId}/elements")
-    public Response listElements(@PathParam("sourceSystemId") Long sourceSystemId,
+    public Uni<Response> listElements(@PathParam("sourceSystemId") Long sourceSystemId,
                                  @PathParam("smId") String smId,
                                  @QueryParam("depth") @DefaultValue("shallow") String depth,
                                  @QueryParam("parentPath") String parentPath,
                                  @QueryParam("source") @DefaultValue("SNAPSHOT") String source) {
-        return Response.status(Response.Status.NOT_IMPLEMENTED).build();
+        SourceSystem ss = sourceSystemService.findSourceSystemById(sourceSystemId).orElse(null);
+        ss = aasService.validateAasSource(ss);
+        if ("LIVE".equalsIgnoreCase(source)) {
+            return traversal.listElements(ss.apiUrl, smId, depth, parentPath, Map.of()).map(resp -> {
+                int sc = resp.statusCode();
+                if (sc >= 200 && sc < 300) {
+                    return Response.ok(resp.bodyAsString()).build();
+                }
+                return Response.status(sc).entity(resp.bodyAsString()).build();
+            });
+        }
+        return Uni.createFrom().item(Response.ok().entity(List.of()).build());
     }
 
     @POST
@@ -93,7 +119,8 @@ public class AasResource {
     @POST
     @Path("/snapshot/refresh")
     public Response refreshSnapshot(@PathParam("sourceSystemId") Long sourceSystemId) {
-        return Response.status(Response.Status.NOT_IMPLEMENTED).build();
+        snapshotService.refreshSnapshot(sourceSystemId);
+        return Response.accepted().build();
     }
 }
 
