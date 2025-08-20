@@ -172,7 +172,7 @@ public class AasResource {
         var resp = traversal.createSubmodel(ss.apiUrl, body, headers).await().indefinitely();
         int sc = resp.statusCode();
         if (sc >= 200 && sc < 300) {
-            snapshotService.refreshSnapshot(sourceSystemId);
+            snapshotService.applySubmodelCreate(sourceSystemId, resp.bodyAsString());
             return Response.status(Response.Status.CREATED).entity(resp.bodyAsString()).build();
         }
         return aasService.mapHttpError(sc, resp.statusMessage(), resp.bodyAsString());
@@ -190,7 +190,7 @@ public class AasResource {
         var resp = traversal.createElement(ss.apiUrl, smId, parentPath, body, headers).await().indefinitely();
         int sc = resp.statusCode();
         if (sc >= 200 && sc < 300) {
-            snapshotService.refreshSnapshot(sourceSystemId);
+            snapshotService.applyElementCreate(sourceSystemId, smId, parentPath, resp.bodyAsString());
             return Response.status(Response.Status.CREATED).entity(resp.bodyAsString()).build();
         }
         return aasService.mapHttpError(sc, resp.statusMessage(), resp.bodyAsString());

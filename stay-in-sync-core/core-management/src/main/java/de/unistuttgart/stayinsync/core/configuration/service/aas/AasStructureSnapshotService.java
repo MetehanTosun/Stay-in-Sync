@@ -91,6 +91,53 @@ public class AasStructureSnapshotService {
         JsonNode f = node.get(field);
         return f != null && !f.isNull() ? f.asText() : null;
     }
+
+    public void applySubmodelCreate(Long sourceSystemId, String submodelJson) {
+        var ssOpt = SourceSystem.<SourceSystem>findByIdOptional(sourceSystemId);
+        if (ssOpt.isEmpty()) return;
+        try {
+            JsonNode n = objectMapper.readTree(submodelJson);
+            persistSubmodelLite(ssOpt.get(), n);
+        } catch (Exception e) {
+            Log.warnf(e, "Failed to apply submodel create delta for sourceSystemId=%d", sourceSystemId);
+        }
+    }
+
+    public void applyElementCreate(Long sourceSystemId, String submodelId, String parentPath, String elementJson) {
+        var ssOpt = SourceSystem.<SourceSystem>findByIdOptional(sourceSystemId);
+        if (ssOpt.isEmpty()) return;
+        var submodel = AasSubmodelLite.<AasSubmodelLite>find("sourceSystem.id = ?1 and submodelId = ?2", sourceSystemId, submodelId).firstResult();
+        if (submodel == null) return;
+
+        try {
+            JsonNode n = objectMapper.readTree(elementJson);
+            String idShort = textOrNull(n, "idShort");
+            if (idShort == null) return;
+
+            String idShortPath = parentPath == null || parentPath.isBlank() ? idShort : parentPath + "/" + idShort;
+
+            AasElementLite e = new AasElementLite();
+            e.submodelLite = submodel;
+            e.idShort = idShort;
+            e.modelType = textOrNull(n, "modelType");
+            e.valueType = textOrNull(n, "valueType");
+            e.idShortPath = idShortPath;
+            e.parentPath = parentPath;
+            e.hasChildren = false;
+            e.semanticId = textOrNull(n, "semanticId");
+            e.isReference = n.has("isReference") && n.get("isReference").asBoolean(false);
+            e.referenceTargetType = textOrNull(n, "referenceTargetType");
+            e.referenceKeys = textOrNull(n, "referenceKeys");
+            e.targetSubmodelId = textOrNull(n, "targetSubmodelId");
+            e.typeValueListElement = textOrNull(n, "typeValueListElement");
+            e.orderRelevant = n.has("orderRelevant") ? n.get("orderRelevant").asBoolean(false) : null;
+            e.inputSignature = null;
+            e.outputSignature = null;
+            e.persist();
+        } catch (Exception e) {
+            Log.warnf(e, "Failed to apply element create delta for sourceSystemId=%d submodelId=%s", sourceSystemId, submodelId);
+        }
+    }
 }
 
 
