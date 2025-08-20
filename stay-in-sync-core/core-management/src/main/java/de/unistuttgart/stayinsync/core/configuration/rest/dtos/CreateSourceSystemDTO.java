@@ -7,6 +7,7 @@ import jakarta.validation.constraints.NotNull;
 
 public record CreateSourceSystemDTO(Long id, @NotNull String name, @NotNull String apiUrl, String description,
                                     @NotNull String apiType,
+                                    String aasId,
                                     ApiAuthType apiAuthType,
                                     @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "authType")
                                     @JsonSubTypes({
