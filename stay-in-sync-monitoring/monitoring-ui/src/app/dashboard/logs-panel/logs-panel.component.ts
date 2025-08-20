@@ -25,7 +25,7 @@ export class LogsPanelComponent implements OnInit, OnChanges {
   startTime: string = '';
   endTime: string = '';
   level: string = 'info';
-  stream: 'stdout' | 'stderr' = 'stderr';
+  stream: string = 'fluent-bit';
 
   constructor(private logService: LogService, private route: ActivatedRoute) {
     this.route.queryParams.subscribe(params => {
@@ -48,59 +48,12 @@ export class LogsPanelComponent implements OnInit, OnChanges {
   }
 
   fetchLogs() {
-    const startNs = new Date(this.startTime).getTime() * 1_000_000;
-    const endNs = new Date(this.endTime).getTime() * 1_000_000;
-
-    const nodeId = this.selectedNodeId || '';
-    const level = this.level || '';
-
-    this.logService.getLogs(
-      this.stream,
-      level,
-      nodeId,
-      startNs.toString(),
-      endNs.toString()
-    ).subscribe({
-      next: (logs: any[]) => {
-        this.logs = logs.map((entry: any) => {
-          const rawMessage = entry.message;
-
-          const levelMatch = rawMessage.match(/level=([a-zA-Z]+)/);
-          const level = levelMatch ? levelMatch[1].toLowerCase() : '';
-
-          let message = '';
-          const msgMatch = rawMessage.match(/msg="([^"]+)"/);
-          const messageMatch = rawMessage.match(/message="([^"]+)"/);
-          if (msgMatch) {
-            message = msgMatch[1];
-          } else if (messageMatch) {
-            message = messageMatch[1];
-          }
-
-          const componentMatch = rawMessage.match(/component=([^\s]+)/);
-          const callerMatch = rawMessage.match(/caller=([^\s]+)/);
-
-          return {
-            timestamp: entry.timestamp,
-            message,
-            rawMessage,
-            stream: entry.stream || '',
-            level,
-            caller: callerMatch ? callerMatch[1] : ''
-          } as LogEntry;
-        });
-
-
-        this.filteredLogs = this.logs.sort(
-          (a, b) => Number(new Date(b.timestamp)) - Number(new Date(a.timestamp))
-        );
-        console.log('Logs successfully fetched:', this.filteredLogs);
-      },
-      error: (err) => {
-        console.error('Error fetching logs', err);
-      }
+    this.logService.getLogs(this.selectedNodeId!, this.startTime, this.endTime, this.level).subscribe({
+      next: (logs) => this.filteredLogs = logs,
+      error: (err) => console.error('Error fetching logs', err)
     });
   }
+
 
   onFilterChange() {
     this.fetchLogs();

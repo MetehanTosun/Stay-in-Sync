@@ -110,32 +110,32 @@ services:
     networks:
       - elk
   #context anpassen
-  core-polling-node:
-    build:
-      context: /Users/serhatceri/Desktop/StuPro331/stay-in-sync-core/core-polling-node
-      dockerfile: src/main/docker/Dockerfile.jvm
-    image: stay-in-sync/core-polling-node
-    container_name: core-polling-node
-    environment:
-      - QUARKUS_PROFILE=monitoring
-    depends_on:
-      - fluent-bit
-    networks:
-      - elk
-
-#context anpassen
-  core-sync-node:
-    build:
-      context: /Users/serhatceri/Desktop/StuPro331/stay-in-sync-core/core-sync-node
-      dockerfile: src/main/docker/Dockerfile.jvm
-    image: stay-in-sync/core-sync-node
-    container_name: core-sync-node
-    environment:
-      - QUARKUS_PROFILE=monitoring
-    depends_on:
-      - fluent-bit
-    networks:
-      - elk
+#  core-polling-node:
+#    build:
+#      context: /Users/serhatceri/Desktop/StuPro331/stay-in-sync-core/core-polling-node
+#      dockerfile: src/main/docker/Dockerfile.jvm
+#    image: stay-in-sync/core-polling-node
+#    container_name: core-polling-node
+#    environment:
+#      - QUARKUS_PROFILE=monitoring
+#    depends_on:
+#      - fluent-bit
+#    networks:
+#      - elk
+#
+##context anpassen
+#  core-sync-node:
+#    build:
+#      context: /Users/serhatceri/Desktop/StuPro331/stay-in-sync-core/core-sync-node
+#      dockerfile: src/main/docker/Dockerfile.jvm
+#    image: stay-in-sync/core-sync-node
+#    container_name: core-sync-node
+#    environment:
+#      - QUARKUS_PROFILE=monitoring
+#    depends_on:
+#      - fluent-bit
+#    networks:
+#      - elk
 
 volumes:
   elasticsearch_data:
