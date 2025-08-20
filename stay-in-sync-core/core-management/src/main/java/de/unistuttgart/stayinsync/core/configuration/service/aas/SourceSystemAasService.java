@@ -23,6 +23,10 @@ public class SourceSystemAasService {
         Log.debugf("Validated AAS SourceSystem id=%d", ss.id);
         return ss;
     }
+
+    public Response mapHttpError(int statusCode, String statusMessage, String body) {
+        return Response.status(statusCode).entity(body != null ? body : statusMessage).build();
+    }
 }
 
 

@@ -139,7 +139,16 @@ public class AasResource {
     @POST
     @Path("/submodels")
     public Response createSubmodel(@PathParam("sourceSystemId") Long sourceSystemId, String body) {
-        return Response.status(Response.Status.NOT_IMPLEMENTED).build();
+        SourceSystem ss = SourceSystem.<SourceSystem>findByIdOptional(sourceSystemId).orElse(null);
+        ss = aasService.validateAasSource(ss);
+        var headers = headerBuilder.buildMergedHeaders(ss, de.unistuttgart.stayinsync.core.configuration.service.aas.HttpHeaderBuilder.Mode.WRITE_JSON);
+        var resp = traversal.createSubmodel(ss.apiUrl, body, headers).await().indefinitely();
+        int sc = resp.statusCode();
+        if (sc >= 200 && sc < 300) {
+            snapshotService.refreshSnapshot(sourceSystemId);
+            return Response.status(Response.Status.CREATED).entity(resp.bodyAsString()).build();
+        }
+        return aasService.mapHttpError(sc, resp.statusMessage(), resp.bodyAsString());
     }
 
     @POST
@@ -148,7 +157,16 @@ public class AasResource {
                                   @PathParam("smId") String smId,
                                   @QueryParam("parentPath") String parentPath,
                                   String body) {
-        return Response.status(Response.Status.NOT_IMPLEMENTED).build();
+        SourceSystem ss = SourceSystem.<SourceSystem>findByIdOptional(sourceSystemId).orElse(null);
+        ss = aasService.validateAasSource(ss);
+        var headers = headerBuilder.buildMergedHeaders(ss, de.unistuttgart.stayinsync.core.configuration.service.aas.HttpHeaderBuilder.Mode.WRITE_JSON);
+        var resp = traversal.createElement(ss.apiUrl, smId, parentPath, body, headers).await().indefinitely();
+        int sc = resp.statusCode();
+        if (sc >= 200 && sc < 300) {
+            snapshotService.refreshSnapshot(sourceSystemId);
+            return Response.status(Response.Status.CREATED).entity(resp.bodyAsString()).build();
+        }
+        return aasService.mapHttpError(sc, resp.statusMessage(), resp.bodyAsString());
     }
 
     @PATCH
@@ -157,7 +175,15 @@ public class AasResource {
                                       @PathParam("smId") String smId,
                                       @PathParam("path") String path,
                                       String body) {
-        return Response.status(Response.Status.NOT_IMPLEMENTED).build();
+        SourceSystem ss = SourceSystem.<SourceSystem>findByIdOptional(sourceSystemId).orElse(null);
+        ss = aasService.validateAasSource(ss);
+        var headers = headerBuilder.buildMergedHeaders(ss, de.unistuttgart.stayinsync.core.configuration.service.aas.HttpHeaderBuilder.Mode.WRITE_JSON);
+        var resp = traversal.patchElementValue(ss.apiUrl, smId, path, body, headers).await().indefinitely();
+        int sc = resp.statusCode();
+        if (sc >= 200 && sc < 300) {
+            return Response.noContent().build();
+        }
+        return aasService.mapHttpError(sc, resp.statusMessage(), resp.bodyAsString());
     }
 
     @POST
