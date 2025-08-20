@@ -37,12 +37,16 @@ public class AasResource {
     @Inject
     AasStructureSnapshotService snapshotService;
 
+    @Inject
+    de.unistuttgart.stayinsync.core.configuration.service.aas.HttpHeaderBuilder headerBuilder;
+
     @POST
     @Path("/test")
     public Uni<Response> test(@PathParam("sourceSystemId") Long sourceSystemId) {
         SourceSystem ss = sourceSystemService.findSourceSystemById(sourceSystemId).orElse(null);
         ss = aasService.validateAasSource(ss);
-        Uni<HttpResponse<Buffer>> uni = traversal.getShell(ss.apiUrl, ss.aasId, Map.of());
+        var headers = headerBuilder.buildMergedHeaders(ss, de.unistuttgart.stayinsync.core.configuration.service.aas.HttpHeaderBuilder.Mode.READ);
+        Uni<HttpResponse<Buffer>> uni = traversal.getShell(ss.apiUrl, ss.aasId, headers);
         return uni.map(resp -> {
                     int sc = resp.statusCode();
                     if (sc >= 200 && sc < 300) {
@@ -60,7 +64,8 @@ public class AasResource {
         SourceSystem ss = sourceSystemService.findSourceSystemById(sourceSystemId).orElse(null);
         ss = aasService.validateAasSource(ss);
         if ("LIVE".equalsIgnoreCase(source)) {
-            return traversal.listSubmodels(ss.apiUrl, ss.aasId, Map.of()).map(resp -> {
+            var headers = headerBuilder.buildMergedHeaders(ss, de.unistuttgart.stayinsync.core.configuration.service.aas.HttpHeaderBuilder.Mode.READ);
+            return traversal.listSubmodels(ss.apiUrl, ss.aasId, headers).map(resp -> {
                 int sc = resp.statusCode();
                 if (sc >= 200 && sc < 300) {
                     return Response.ok(resp.bodyAsString()).build();
@@ -81,7 +86,8 @@ public class AasResource {
         SourceSystem ss = sourceSystemService.findSourceSystemById(sourceSystemId).orElse(null);
         ss = aasService.validateAasSource(ss);
         if ("LIVE".equalsIgnoreCase(source)) {
-            return traversal.listElements(ss.apiUrl, smId, depth, parentPath, Map.of()).map(resp -> {
+            var headers = headerBuilder.buildMergedHeaders(ss, de.unistuttgart.stayinsync.core.configuration.service.aas.HttpHeaderBuilder.Mode.READ);
+            return traversal.listElements(ss.apiUrl, smId, depth, parentPath, headers).map(resp -> {
                 int sc = resp.statusCode();
                 if (sc >= 200 && sc < 300) {
                     return Response.ok(resp.bodyAsString()).build();
