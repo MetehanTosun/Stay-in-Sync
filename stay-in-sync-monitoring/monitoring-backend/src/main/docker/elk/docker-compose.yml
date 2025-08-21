@@ -99,6 +99,9 @@ services:
     ports:
       - "5500:5000"
       - "5170:5170"  # Quarkus TCP Log-Port
+      - "5171:5171"  # Quarkus UDP Log-Port
+      - "5172:5172"  # Quarkus UDP Log-Port
+      - "5173:5173"  # Quarkus UDP Log-Port
     volumes:
       - ./fluent-bit/fluent-bit.conf:/fluent-bit/etc/fluent-bit.conf:ro
       - ./fluent-bit/parsers.conf:/fluent-bit/etc/parsers.conf:ro

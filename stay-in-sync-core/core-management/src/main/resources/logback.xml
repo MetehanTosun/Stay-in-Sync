@@ -2,7 +2,7 @@
     <!-- JSON Encoder aus logstash-logback-encoder -->
     <appender name="TCP" class="ch.qos.logback.classic.net.SocketAppender">
         <remoteHost>localhost</remoteHost> <!-- oder "fluentbit", wenn in Docker -->
-        <port>5170</port>
+        <port>5171</port>
         <reconnectionDelay>10000</reconnectionDelay>
         <encoder class="net.logstash.logback.encoder.LogstashEncoder"/>
     </appender>

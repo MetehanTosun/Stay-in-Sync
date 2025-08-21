@@ -1,7 +1,11 @@
--- Funktion zur Erkennung verschachtelter Tabellen
 function parse_nested_log(tag, timestamp, record)
     local log_str = record["log"]
     local parsed = {}
+
+    -- Überprüfen, ob log_str existiert und ein String ist
+    if type(log_str) ~= "string" then
+        return 0, timestamp, record
+    end
 
     -- Extrahiere bekannte Felder aus dem Log-String
     for k, v in string.gmatch(log_str, '([%w_]+)=("[^"]+"|[%w%.%-]+)') do

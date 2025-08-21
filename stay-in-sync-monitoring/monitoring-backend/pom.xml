@@ -88,7 +88,7 @@
         <dependency>
             <groupId>org.json</groupId>
             <artifactId>json</artifactId>
-            <version>20230227</version>
+            <version>20231013</version>
         </dependency>
 
         <!-- Logging & Health -->
@@ -100,6 +100,7 @@
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-logging-json</artifactId>
         </dependency>
+
 
         <dependency>
             <groupId>io.quarkiverse.quinoa</groupId>
@@ -123,6 +124,10 @@
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-rest-client-jackson</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-logging-gelf</artifactId>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
@@ -150,8 +155,8 @@
             <groupId>de.unistuttgart.stayinsync</groupId>
             <artifactId>core-management</artifactId>
             <version>1.0.0-SNAPSHOT</version>
-            <scope>compile</scope>
         </dependency>
+
 
 
         <!-- Optional: Resilience4j (Fallback) -->
