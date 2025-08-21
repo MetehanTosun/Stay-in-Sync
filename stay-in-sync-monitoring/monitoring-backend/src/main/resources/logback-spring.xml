@@ -1,6 +1,8 @@
 <configuration>
+    <!-- Spring Boot Configuration -->
     <include resource="org/springframework/boot/logging/logback/base.xml"/>
 
+    <!-- JSON-Logging zu Fluent Bit / Logstash -->
     <appender name="JSON" class="net.logstash.logback.appender.LogstashTcpSocketAppender">
         <destination>localhost:5000</destination>
         <encoder class="net.logstash.logback.encoder.LoggingEventCompositeJsonEncoder">
@@ -22,7 +24,13 @@
         </encoder>
     </appender>
 
+    <!-- gRPC-Appender -->
+    <appender name="GRPC" class="de.unistuttgart.stayinsync.monitoring.grpc.GrpcLogAppender"/>
+
+    <!-- Root-Logger -->
     <root level="INFO">
         <appender-ref ref="JSON"/>
+        <appender-ref ref="GRPC"/>
     </root>
 </configuration>
+

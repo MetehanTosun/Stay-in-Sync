@@ -1,0 +1,25 @@
+syntax = "proto3";
+
+option java_multiple_files = true;
+option java_package = "de.unistuttgart.stayinsync.monitoring.grpc";
+option java_outer_classname = "LogProto";
+
+
+service LogService {
+  rpc SendLog (LogEntry) returns (LogResponse);
+}
+
+
+message LogEntry {
+  string level = 1;
+  string logger = 2;
+  string message = 3;
+  string thread = 4;
+  int64 timestamp = 5;
+  string stacktrace = 6;
+}
+
+
+message LogResponse {
+  bool success = 1;
+}
