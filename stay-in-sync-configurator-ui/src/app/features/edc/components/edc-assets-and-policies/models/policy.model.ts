@@ -23,8 +23,8 @@ export interface ContractPolicy {
 export interface OdrlPolicyDefinition {
   '@context': any;
   '@id': string;
-  policy: OdrlPolicy;
-
+  policy?: OdrlPolicy;
+  permission?: OdrlPermission[];
 }
 
 export interface OdrlPolicy {
@@ -37,9 +37,11 @@ export interface OdrlPermission {
 }
 
 export interface OdrlConstraint {
-  leftOperand: string;
-  operator: string;
-  rightOperand: any; // Can be a string or an array of strings
+  leftOperand?: string;
+  operator?: string;
+  rightOperand?: any; // Can be a string or an array of strings
+  and?: OdrlConstraint[];
+  or?: OdrlConstraint[];
 }
 
 /**

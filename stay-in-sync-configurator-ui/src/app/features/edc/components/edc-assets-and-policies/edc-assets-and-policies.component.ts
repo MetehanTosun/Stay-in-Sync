@@ -26,7 +26,7 @@ import { MonacoEditorModule } from 'ngx-monaco-editor-v2';
 
 // App imports
 import { Asset } from './models/asset.model';
-import { AccessPolicy, OdrlContractDefinition, ContractPolicy, OdrlPolicyDefinition, OdrlCriterion, OdrlConstraint } from './models/policy.model';
+import { AccessPolicy, OdrlContractDefinition, ContractPolicy, OdrlPolicyDefinition, OdrlCriterion, OdrlConstraint, OdrlPermission } from './models/policy.model';
 import { AssetService } from './services/asset.service';
 import { PolicyService } from './services/policy.service';
 import { EdcInstanceService } from '../edc-instances/services/edc-instance.service';
@@ -90,8 +90,9 @@ export class EdcAssetsAndPoliciesComponent implements OnInit, OnDestroy {
 
   displayEditAccessPolicyDialog: boolean = false;
   policyToEditODRL: OdrlPolicyDefinition | null = null;
-  operatorOptions: { label: string; value: string; }[];
-  actionOptions: { label: string; value: string; }[];
+
+  expertModeTemplateJsonContent: string = ''; // For the template editor
+  expertModePolicyJsonContent: string = '';  // For the actual policy editor
 
   allAccessPolicies: AccessPolicy[] = [];
   allOdrlAccessPolicies: OdrlPolicyDefinition[] = [];
@@ -123,17 +124,22 @@ export class EdcAssetsAndPoliciesComponent implements OnInit, OnDestroy {
   accessPolicyTemplates: { name: string, content: any }[] = [];
   selectedAccessPolicyTemplate: any | null = null;
 
-  // Dynamic form properties for Access Policy dialogs
-  formAction: string = 'use';
-  formConstraints: {
+  // Properties for the fully dynamic Access Policy form
+  dynamicFormControls: {
     label: string;
-    leftOperand: string;
-    operator: string;
-    rightOperand: any;
-    valueLabel: string;
+    value: any;
+    type: 'text' | 'dropdown';
+    options?: { label: string; value: string }[];
+    targetObject: any; // Direct reference to the object in the JSON structure
+    targetKey: string;  // The key for the property to update
   }[] = [];
-  isPolicyJsonComplex: boolean = false;
-  isContractJsonComplex: boolean = false;
+  private currentlyLoadedPolicy: OdrlPolicyDefinition | null = null;
+
+  trackByControlLabel(index: number, control: { label: string }): string {
+    return control.label;
+  }
+
+  isContractJsonComplex: boolean = false; // This is for contract definitions
 
 
   // BPN suggestions
@@ -166,6 +172,8 @@ export class EdcAssetsAndPoliciesComponent implements OnInit, OnDestroy {
   private jsonSyncSubject = new Subject<void>();
   private contractJsonSyncSubscription: Subscription | null = null;
   private contractJsonSyncSubject = new Subject<void>();
+  private templateJsonSyncSubscription: Subscription | null = null;
+  private templateJsonSyncSubject = new Subject<void>();
 
   constructor(
     private assetService: AssetService,
@@ -174,16 +182,7 @@ export class EdcAssetsAndPoliciesComponent implements OnInit, OnDestroy {
     private messageService: MessageService,
     private edcInstanceService: EdcInstanceService
   ) {
-    // initialize dropdown options
-    this.operatorOptions = [
-      { label: 'Equals', value: 'eq' },
-      { label: 'Not Equals', value: 'neq' },
-    ];
-    this.actionOptions = [
-      {label: 'Use', value: 'use'},
-      {label: 'Read', value: 'read'},
-      {label: 'Write', value: 'write'},
-    ];
+
 
     this.jsonSyncSubscription = this.jsonSyncSubject.pipe(
       debounceTime(500) // Wait for 500ms of silence before processing
@@ -195,6 +194,12 @@ export class EdcAssetsAndPoliciesComponent implements OnInit, OnDestroy {
       debounceTime(500) // Wait for 500ms of silence before processing
     ).subscribe(() => {
       this.syncContractFormFromJson(); // Corrected from syncFormFromJson
+    });
+
+    this.templateJsonSyncSubscription = this.templateJsonSyncSubject.pipe(
+      debounceTime(500)
+    ).subscribe(() => {
+      this.syncPolicyFromTemplate();
     });
 
   }
@@ -210,79 +215,111 @@ export class EdcAssetsAndPoliciesComponent implements OnInit, OnDestroy {
   ngOnDestroy(): void {
     this.jsonSyncSubscription?.unsubscribe();
     this.contractJsonSyncSubscription?.unsubscribe();
+    this.templateJsonSyncSubscription?.unsubscribe();
   }
 
 
   private loadAccessPolicyTemplates() {
 
     this.accessPolicyTemplates = [
+
+
       {
         name: 'BPN Access Policy',
         content: {
-          "@context": { "odrl": "http://www.w3.org/ns/odrl/2/" },
-          "@id": "ACCESS_POLICY_ID_1",
+          "@context": [
+            "http://www.w3.org/ns/odrl.jsonld",
+            "https://w3id.org/catenax/2025/9/policy/context.jsonld"
+          ],
+          "@type": "Set",
+          "@id": "POLICY_ID_BPN",
+          "permission": [
+            {
+              "action": "${Action|access,read,write,use}",
+              "constraint": [
+                {
+                  "and": [
+                    {
+                      "leftOperand": "Membership",
+                      "operator": "${Operator|eq,neq}",
+                      "rightOperand": "${Status|active,inactive}"
+                    },
+                    {
+                      "leftOperand": "BusinessPartnerNumber",
+                      "operator": "${Operator|isAnyOf,eq,neq}",
+                      "rightOperand": [
+                        "${BPN-Value}"
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      },
+
+      {
+        name: 'Access Policy',
+        content: {
+          "@context": {"odrl": "http://www.w3.org/ns/odrl/2/"},
+          "@id": "POLICY_ID_BPN",
           "policy": {
             "permission": [{
-              "action": "use",
+              "action": "${Action|use,read,write}",
               "constraint": [{
                 "leftOperand": "BusinessPartnerNumber",
-                "operator": "eq",
-                "rightOperand": "BPN_OF_ALLOWED_PARTNER"
+                "operator": "${Operator|eq,neq}",
+                "rightOperand": "${BPN-Value}"
               }]
             }]
           }
         }
       },
-      {
-        name: 'Membership Policy',
-        content: {
-          "@context": { "odrl": "http://www.w3.org/ns/odrl/2/" },
-          "@id": "MEMBERSHIP_POLICY_ID",
-          "policy": {
-            "permission": [{
-              "action": "use",
-              "constraint": [{
-                "leftOperand": "Membership",
-                "operator": "eq",
-                "rightOperand": "active"
-              }]
-            }]
-          }
-        }
-      },
+
+/*
       {
         name: 'Framework Agreement Policy (Traceability)',
         content: {
           "@context": { "odrl": "http://www.w3.org/ns/odrl/2/" },
-          "@id": "TRACEABILITY_FRAMEWORK_POLICY_ID",
+          "@id": "POLICY_ID_TRACEABILITY",
           "policy": {
             "permission": [{
-              "action": "use",
+              "action": "${Action|use}",
               "constraint": [{
                 "leftOperand": "FrameworkAgreement.traceability",
-                "operator": "eq",
-                "rightOperand": "active"
+                "operator": "${Operator|eq}",
+                "rightOperand": "${Status|active,inactive}"
               }]
             }]
           }
         }
       },
+
+*/
+      /*
       {
         name: 'Multi-Constraint BPN Policy',
         content: {
           "@context": { "odrl": "http://www.w3.org/ns/odrl/2/" },
-          "@id": "MULTI_CONSTRAINT_POLICY_ID",
+          "@id": "POLICY_ID_MULTI_CONSTRAINT",
           "policy": {
             "permission": [{
-              "action": "use",
+              "action": "${Action|use,read}",
               "constraint": [
-                { "leftOperand": "BusinessPartnerNumber", "operator": "eq", "rightOperand": "BPN_OF_ALLOWED_PARTNER" },
-                { "leftOperand": "Membership", "operator": "eq", "rightOperand": "active" }
+                {"leftOperand": "BusinessPartnerNumber",
+                  "operator": "eq",
+                  "rightOperand": "${BPN-Value}"},
+                {"leftOperand": "Membership",
+                  "operator": "eq",
+                  "rightOperand": "${Status|active}"}
               ]
             }]
           }
         }
       }
+*/
+
     ];
   }
 
@@ -677,8 +714,9 @@ export class EdcAssetsAndPoliciesComponent implements OnInit, OnDestroy {
   // Access Policy Methods
 
   openNewAccessPolicyDialog() {
-    this.isPolicyJsonComplex = false;
-    this.policyToEditODRL = null; // Ensure we are in "create" mode
+    this.policyToEditODRL = null; // Ensure we are in "create" mode for saving
+    this.expertModeTemplateJsonContent = ''; // Clear template editor initially
+    this.expertModePolicyJsonContent = ''; // Clear policy editor initially
 
     // Set "BPN Access Policy" as the default template
     const defaultTemplate = this.accessPolicyTemplates.find(t => t.name === 'BPN Access Policy');
@@ -688,7 +726,8 @@ export class EdcAssetsAndPoliciesComponent implements OnInit, OnDestroy {
       this.onAccessPolicyTemplateChange({ value: this.selectedAccessPolicyTemplate });
     } else {
       // Fallback if template is not found
-      this.expertModeJsonContent = JSON.stringify({}, null, 2);
+      this.expertModeTemplateJsonContent = JSON.stringify({}, null, 2);
+      this.expertModePolicyJsonContent = JSON.stringify({}, null, 2);
       this.syncFormFromJson();
     }
 
@@ -702,7 +741,7 @@ export class EdcAssetsAndPoliciesComponent implements OnInit, OnDestroy {
   async saveNewAccessPolicy() {
     let policyJson: OdrlPolicyDefinition;
     try {
-      policyJson = JSON.parse(this.expertModeJsonContent);
+      policyJson = JSON.parse(this.expertModePolicyJsonContent); // Save from the policy editor
       if (!policyJson['@id'] || !policyJson.policy) {
         throw new Error("Invalid policy structure. '@id' and 'policy' are required.");
       }
@@ -726,7 +765,8 @@ export class EdcAssetsAndPoliciesComponent implements OnInit, OnDestroy {
   editAccessPolicy(policy: AccessPolicy) {
     this.policyToEditODRL = this.allOdrlAccessPolicies.find(p => p['@id'] === policy.id) ?? null;
     if (this.policyToEditODRL) {
-      this.expertModeJsonContent = JSON.stringify(this.policyToEditODRL, null, 2);
+      this.expertModePolicyJsonContent = JSON.stringify(this.policyToEditODRL, null, 2); // Load actual policy
+      this.expertModeTemplateJsonContent = ''; // Clear template editor, user can select one if needed
       this.syncFormFromJson();
       this.displayEditAccessPolicyDialog = true;
     } else {
@@ -744,8 +784,8 @@ export class EdcAssetsAndPoliciesComponent implements OnInit, OnDestroy {
       this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Editing context is lost.' });
       return;
     }
-    try {
-      const policyJson = JSON.parse(this.expertModeJsonContent);
+    try { // Save from the policy editor
+      const policyJson = JSON.parse(this.expertModePolicyJsonContent);
       if (policyJson['@id'] !== this.policyToEditODRL['@id']) {
         throw new Error("The '@id' of the policy cannot be changed during an edit.");
       }
@@ -801,9 +841,8 @@ export class EdcAssetsAndPoliciesComponent implements OnInit, OnDestroy {
     const successfulUploads: string[] = [];
     const failedUploads: { name: string; reason: string }[] = [];
 
-    // Get the list of valid values from the component's options
-    const validActions = this.actionOptions.map(opt => opt.value);
-    const validOperators = this.operatorOptions.map(opt => opt.value);
+    const validActions = ['use', 'read', 'write'];
+    const validOperators = ['eq', 'neq'];
 
 
     for (const file of Array.from(fileList)) {
@@ -1365,94 +1404,166 @@ export class EdcAssetsAndPoliciesComponent implements OnInit, OnDestroy {
    * Updates the JSON editor content based on changes in the simple form fields.
    */
   syncJsonFromForm(): void {
-    try {
-      const currentJson: OdrlPolicyDefinition = JSON.parse(this.expertModeJsonContent || '{}');
-      const permission = currentJson.policy?.permission?.[0];
+    if (!this.currentlyLoadedPolicy) return; // Ensure we have a policy object to modify
 
-      if (permission) {
-        permission.action = this.formAction;
+    // Update the in-memory JSON object directly through the references stored in the controls
+    this.dynamicFormControls.forEach(control => {
+      control.targetObject[control.targetKey] = control.value;
+    });
 
-        // Instead of replacing the whole constraint array, update values in place.
-        // This preserves any other data in the constraints that isn't visible in the simple form.
-        if (Array.isArray(permission.constraint)) {
-          this.formConstraints.forEach(formConstraint => {
-            const jsonConstraint = permission.constraint.find(c => c.leftOperand === formConstraint.leftOperand);
-            if (jsonConstraint) {
-              jsonConstraint.operator = formConstraint.operator;
-              jsonConstraint.rightOperand = formConstraint.rightOperand;
-            }
-          });
-        }
-      }
-
-      this.expertModeJsonContent = JSON.stringify(currentJson, null, 2);
-    } catch (e) {
-      // If JSON is invalid, do nothing. This prevents overwriting the user's manual edits.
-      console.warn('syncJsonFromForm: Could not parse JSON, aborting sync to prevent data loss.');
-    }
+    // Re-stringify the updated JSON object into the editor
+    this.expertModePolicyJsonContent = JSON.stringify(this.currentlyLoadedPolicy, null, 2);
   }
 
   /**
    * Updates the simple form fields based on the content of the JSON editor.
+   * This now takes into account both the template JSON and the actual policy JSON.
    */
   syncFormFromJson(): void {
-    this.isPolicyJsonComplex = false; // Assume the JSON is simple until proven otherwise
+     this.dynamicFormControls = []; // Reset the form
+     this.currentlyLoadedPolicy = null; // Reset before parsing
+
+     try {
+       const templatePolicy: OdrlPolicyDefinition = JSON.parse(this.expertModeTemplateJsonContent || '{}');
+       const actualPolicy: OdrlPolicyDefinition = JSON.parse(this.expertModePolicyJsonContent || '{}');
+       this.currentlyLoadedPolicy = actualPolicy; // Set this early for two-way binding
+
+       // Handle different root structures for permissions (some templates have `policy.permission`, others just `permission`)
+       const templatePermissions = templatePolicy.policy?.permission || templatePolicy.permission;
+       const actualPermissions = actualPolicy.policy?.permission || actualPolicy.permission;
+
+       // If no template is provided, or if the template structure is invalid, try to parse the actual policy as a static form
+       if (!templatePermissions || !Array.isArray(templatePermissions) || templatePermissions.length !== 1) {
+         if (actualPermissions && Array.isArray(actualPermissions) && actualPermissions.length === 1) {
+           const permission = actualPermissions[0];
+           this.processJsonNodeForForm(permission, permission, 'action', 'Action');
+           const constraints = this.extractConstraints(permission);
+           constraints.forEach(constraint => {
+             const groupLabel = this.formatConstraintLabel(constraint.leftOperand);
+             this.processJsonNodeForForm(constraint, constraint, 'operator', `${groupLabel} Operator`);
+             this.processJsonNodeForForm(constraint, constraint, 'rightOperand', groupLabel);
+           });
+         }
+         return; // Exit if no valid template to work from
+       }
+
+       // Check for basic structural compatibility between template and actual policy
+       if (!actualPermissions || !Array.isArray(actualPermissions) || actualPermissions.length !== 1) {
+         return;
+       }
+
+       const templatePermission = templatePermissions[0];
+       const actualPermission = actualPermissions[0];
+
+       this.processJsonNodeForForm(templatePermission, actualPermission, 'action', 'Action');
+
+       const templateConstraints = this.extractConstraints(templatePermission);
+       const actualConstraints = this.extractConstraints(actualPermission);
+
+       // Check for constraint array compatibility
+       if (!Array.isArray(templateConstraints) || !Array.isArray(actualConstraints) || templateConstraints.length !== actualConstraints.length) {
+         return;
+       }
+
+       // Process each constraint based on the template structure
+       templateConstraints.forEach((templateConstraint, index) => {
+         const actualConstraint = actualConstraints[index]; // Assuming constraints are in same order
+         if (!actualConstraint || templateConstraint.leftOperand !== actualConstraint.leftOperand) {
+           return; // Skip incompatible constraint
+         }
+         const groupLabel = this.formatConstraintLabel(templateConstraint.leftOperand);
+         this.processJsonNodeForForm(templateConstraint, actualConstraint, 'operator', `${groupLabel} Operator`);
+         this.processJsonNodeForForm(templateConstraint, actualConstraint, 'rightOperand', groupLabel);
+       });
+
+     } catch (e) {
+       // On JSON parse error, the form will be empty, which is correct.
+       this.currentlyLoadedPolicy = null; // Ensure it's null on error
+       this.dynamicFormControls = [];
+     }
+  }
+
+  // Function to extract constraints, handling nested 'and'/'or'
+  private extractConstraints(permission: OdrlPermission): any[] {
+    if (!permission || !permission.constraint || !Array.isArray(permission.constraint)) {
+      return [];
+    }
+    const constraints = permission.constraint;
+    // Check for nested 'and' or 'or' in the first element of the constraint array
+    if (constraints.length === 1 && (constraints[0].and || constraints[0].or)) {
+      return constraints[0].and || constraints[0].or || [];
+    }
+    return constraints; // Return the flat array if not nested
+  }
+
+  // Process nodes for form generation
+  private processJsonNodeForForm(templateObject: any, actualObject: any, key: string, defaultLabel: string) {
+    if (!(key in templateObject) || !(key in actualObject)) return;
+
+    const templateValue = templateObject[key];
+    const actualValue = actualObject[key];
+
+    // Handle case where the template value is an array containing a single placeholder string
+    if (Array.isArray(templateValue) && templateValue.length === 1 && typeof templateValue[0] === 'string') {
+      const parsed = this.parseTemplateVariable(templateValue[0]);
+      if (parsed) {
+        this.dynamicFormControls.push({
+          ...parsed,
+          value: Array.isArray(actualValue) ? actualValue[0] : '',
+          targetObject: actualValue, // The target is the array itself
+          targetKey: '0',            // The key is the index '0'
+        });
+      }
+    } else if (typeof templateValue === 'string') {
+      // Original logic for string-based template values
+      const parsed = this.parseTemplateVariable(templateValue);
+      if (parsed) {
+        this.dynamicFormControls.push({
+          ...parsed,
+          value: actualValue,
+          targetObject: actualObject,
+          targetKey: key,
+        });
+      }
+    }
+  }
+
+  /**
+   * Regenerates the policy JSON from the template JSON.
+   * This is triggered when the template editor's content changes.
+   */
+  syncPolicyFromTemplate(): void {
     try {
-      const odrlPayload: OdrlPolicyDefinition = JSON.parse(this.expertModeJsonContent || '{}');
-      const permissions = odrlPayload.policy?.permission;
-
-      // If there are no permissions or more than one, the form is considered complex or empty.
-      if (!permissions || permissions.length !== 1) {
-        if (permissions && permissions.length > 1) {
-          this.isPolicyJsonComplex = true;
-        }
-        // For no permissions or multiple permissions, the simple form should be empty and disabled (if complex).
-        this.formAction = 'use';
-        this.formConstraints = [];
-        return;
-      }
-
-      const permission = permissions[0];
-      const newConstraints = permission?.constraint || [];
-
-      // Check if the structure of the constraints has changed (number of constraints or their left operands).
-      const structureChanged = newConstraints.length !== this.formConstraints.length ||
-        newConstraints.some((nc, i) => nc.leftOperand !== this.formConstraints[i].leftOperand);
-
-      this.formAction = permission.action || 'use';
-
-      if (structureChanged) {
-        // If structure is different (e.g., new template loaded), rebuild the entire form model.
-        this.formConstraints = newConstraints.map((c: OdrlConstraint) => {
-          const isTemplateVar = typeof c.rightOperand === 'string' && c.rightOperand === c.rightOperand.toUpperCase() && c.rightOperand.includes('_');
-          return {
-            label: this.formatConstraintLabel(c.leftOperand),
-            leftOperand: c.leftOperand,
-            operator: c.operator || 'eq',
-            rightOperand: isTemplateVar ? '' : (c.rightOperand || ''),
-            valueLabel: isTemplateVar ? this.formatValueLabel(c.rightOperand) : 'Value'
-          };
-        });
-      } else {
-        // If structure is the same, only update the values to prevent losing the custom label.
-        newConstraints.forEach((nc, i) => {
-          const isTemplateVar = typeof nc.rightOperand === 'string' && nc.rightOperand === nc.rightOperand.toUpperCase() && nc.rightOperand.includes('_');
-          this.formConstraints[i].operator = nc.operator || 'eq';
-          // If the value from JSON is a template variable, reset the input and update the label.
-          // Otherwise, just update the input's value and leave the label as it was.
-          if (isTemplateVar) {
-            this.formConstraints[i].rightOperand = '';
-            this.formConstraints[i].valueLabel = this.formatValueLabel(nc.rightOperand);
-          } else {
-            this.formConstraints[i].rightOperand = nc.rightOperand || '';
-          }
-        });
-      }
+      const templateContent = JSON.parse(this.expertModeTemplateJsonContent);
+      const newPolicyContent = JSON.parse(JSON.stringify(templateContent)); // Deep copy
+      this.replaceTemplatePlaceholders(newPolicyContent);
+      this.expertModePolicyJsonContent = JSON.stringify(newPolicyContent, null, 2);
     } catch (e) {
-      // If JSON is invalid, it's "complex" and the form should be disabled.
-      this.isPolicyJsonComplex = true;
-      this.formAction = 'use';
-      this.formConstraints = [];
+      // If template JSON is invalid, clear the generated policy.
+      this.expertModePolicyJsonContent = '{}';
+    } finally {
+      // Always attempt to sync the form, which will either show the new state or an empty form on error.
+      this.syncFormFromJson();
+    }
+  }
+
+
+  private parseTemplateVariable(variable: string): { label: string, type: 'text' | 'dropdown', options?: {label: string, value: string}[] } | null {
+    if (typeof variable !== 'string' || !variable.startsWith('${') || !variable.endsWith('}')) {
+      return null;
+    }
+
+    const content = variable.substring(2, variable.length - 1);
+    const parts = content.split('|');
+    const label = parts[0].replace(/-/g, ' ').replace(/^\w/, c => c.toUpperCase());
+
+    if (parts.length > 1) {
+      // Dropdown: e.g., ${Action|use,read}
+      const options = parts[1].split(',').map(opt => ({ label: opt.charAt(0).toUpperCase() + opt.slice(1), value: opt }));
+      return { label, type: 'dropdown', options };
+    } else {
+      // Text input: e.g., ${BPN-Number}
+      return { label, type: 'text' };
     }
   }
 
@@ -1461,24 +1572,40 @@ export class EdcAssetsAndPoliciesComponent implements OnInit, OnDestroy {
     return operand.replace(/([A-Z])/g, ' $1').replace(/([a-z])([A-Z])/g, '$1 $2').replace(/^./, (str) => str.toUpperCase()).trim();
   }
 
-  private formatValueLabel(templateVar: string): string {
-    if (!templateVar || typeof templateVar !== 'string') {
-      return 'Value';
-    }
-    // A simple check if it's a template variable (example ALL_CAPS_WITH_UNDERSCORES)
-    return templateVar
-      .replace(/_/g, ' ')
-      .toLowerCase()
-      .replace(/^\w/, c => c.toUpperCase());
-  }
 
   onAccessPolicyTemplateChange(event: { value: any }) {
     if (event.value) {
-      this.expertModeJsonContent = JSON.stringify(event.value.content, null, 2);
+      const templateContent = event.value.content;
+      this.expertModeTemplateJsonContent = JSON.stringify(templateContent, null, 2);
+
+      // Generate initial policy JSON from template, replacing placeholders with empty strings or defaults
+      const initialPolicyContent = JSON.parse(JSON.stringify(templateContent)); // Deep copy
+      this.replaceTemplatePlaceholders(initialPolicyContent); // Helper to replace ${...} with ""
+      this.expertModePolicyJsonContent = JSON.stringify(initialPolicyContent, null, 2);
+
     } else {
-      this.expertModeJsonContent = '';
+      this.expertModeTemplateJsonContent = '';
+      this.expertModePolicyJsonContent = ''; // Clear policy JSON too
     }
     this.syncFormFromJson();
+  }
+
+  // Replace placeholders in a JSON object
+  private replaceTemplatePlaceholders(obj: any) {
+    for (const key in obj) {
+      if (typeof obj[key] === 'string') {
+        if (obj[key].startsWith('${') && obj[key].endsWith('}')) {
+          const parsed = this.parseTemplateVariable(obj[key]);
+          if (parsed?.type === 'dropdown' && parsed.options && parsed.options.length > 0) {
+            obj[key] = parsed.options[0].value; // Default to first option for dropdowns
+          } else {
+            obj[key] = ''; // Default to empty string for text fields
+          }
+        }
+      } else if (typeof obj[key] === 'object' && obj[key] !== null) {
+        this.replaceTemplatePlaceholders(obj[key]);
+      }
+    }
   }
 
   async onAccessPolicyTemplateFileSelect(event: Event) {
@@ -1491,10 +1618,19 @@ export class EdcAssetsAndPoliciesComponent implements OnInit, OnDestroy {
 
     const file = fileList[0]; // Only one file
     try {
-      this.expertModeJsonContent = await file.text();
+      const templateContent = await file.text();
+      this.expertModeTemplateJsonContent = templateContent; // Load template JSON
+
+      // Generate initial policy JSON from template, replacing placeholders
+      const initialPolicyContent = JSON.parse(templateContent); // Parse template
+      this.replaceTemplatePlaceholders(initialPolicyContent); // Replace placeholders
+      this.expertModePolicyJsonContent = JSON.stringify(initialPolicyContent, null, 2); // Set policy JSON
+
       this.messageService.add({ severity: 'info', summary: 'Template Loaded', detail: `Template from ${file.name} loaded into editor.` });
     } catch (error) {
       this.messageService.add({ severity: 'error', summary: 'Read Error', detail: 'Could not read the selected file.' });
+      this.expertModeTemplateJsonContent = ''; // Clear on error
+      this.expertModePolicyJsonContent = ''; // Clear on error
     } finally {
       element.value = ''; // Reset file input
       this.syncFormFromJson();
@@ -1533,6 +1669,13 @@ export class EdcAssetsAndPoliciesComponent implements OnInit, OnDestroy {
    */
   syncFormFromJsonWithDebounce(): void {
     this.jsonSyncSubject.next();
+  }
+
+  /**
+   * Triggers the debounced synchronization from the template JSON editor to the generated policy editor.
+   */
+  syncPolicyFromTemplateWithDebounce(): void {
+    this.templateJsonSyncSubject.next();
   }
 
   /**
