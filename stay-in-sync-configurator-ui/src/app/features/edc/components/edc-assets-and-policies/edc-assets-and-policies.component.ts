@@ -223,6 +223,23 @@ export class EdcAssetsAndPoliciesComponent implements OnInit, OnDestroy {
 
     this.accessPolicyTemplates = [
 
+      {
+        name: 'Access Policy',
+        content: {
+          "@context": {"odrl": "http://www.w3.org/ns/odrl/2/"},
+          "@id": "POLICY_ID_BPN",
+          "policy": {
+            "permission": [{
+              "action": "${Action|use,read,write}",
+              "constraint": [{
+                "leftOperand": "BusinessPartnerNumber",
+                "operator": "${Operator|eq,neq}",
+                "rightOperand": "${BPN-Value}"
+              }]
+            }]
+          }
+        }
+      },
 
       {
         name: 'BPN Access Policy',
@@ -259,23 +276,6 @@ export class EdcAssetsAndPoliciesComponent implements OnInit, OnDestroy {
         }
       },
 
-      {
-        name: 'Access Policy',
-        content: {
-          "@context": {"odrl": "http://www.w3.org/ns/odrl/2/"},
-          "@id": "POLICY_ID_BPN",
-          "policy": {
-            "permission": [{
-              "action": "${Action|use,read,write}",
-              "constraint": [{
-                "leftOperand": "BusinessPartnerNumber",
-                "operator": "${Operator|eq,neq}",
-                "rightOperand": "${BPN-Value}"
-              }]
-            }]
-          }
-        }
-      },
 
 /*
       {
@@ -718,8 +718,8 @@ export class EdcAssetsAndPoliciesComponent implements OnInit, OnDestroy {
     this.expertModeTemplateJsonContent = ''; // Clear template editor initially
     this.expertModePolicyJsonContent = ''; // Clear policy editor initially
 
-    // Set "BPN Access Policy" as the default template
-    const defaultTemplate = this.accessPolicyTemplates.find(t => t.name === 'BPN Access Policy');
+    // Set the first available template as the default
+    const defaultTemplate = this.accessPolicyTemplates.length > 0 ? this.accessPolicyTemplates[0] : null;
     if (defaultTemplate) {
       this.selectedAccessPolicyTemplate = defaultTemplate;
       // This will set the JSON content and sync the form
