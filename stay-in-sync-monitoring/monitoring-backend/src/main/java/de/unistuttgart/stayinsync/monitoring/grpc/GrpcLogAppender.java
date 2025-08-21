@@ -11,8 +11,8 @@ public class GrpcLogAppender extends AppenderBase<ILoggingEvent> {
     private ManagedChannel channel;
     private LogServiceGrpc.LogServiceBlockingStub blockingStub;
 
-    private String host = "localhost"; //
-    private int port = 9090;           
+    private String host = "localhost";
+    private int port = 9090;
 
     @Override
     public void start() {
