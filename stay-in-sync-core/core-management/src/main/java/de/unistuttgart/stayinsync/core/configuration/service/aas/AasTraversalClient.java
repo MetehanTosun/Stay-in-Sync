@@ -51,6 +51,26 @@ public class AasTraversalClient {
         return http.writeJson(HttpMethod.PATCH, url, body, headers);
     }
 
+    public Uni<HttpResponse<Buffer>> deleteSubmodel(String baseUrl, String submodelId, Map<String, String> headers) {
+        String url = baseUrl + "/submodels/" + encode(submodelId);
+        return http.writeJson(HttpMethod.DELETE, url, "", headers);
+    }
+
+    public Uni<HttpResponse<Buffer>> deleteElement(String baseUrl, String submodelId, String path, Map<String, String> headers) {
+        String url = baseUrl + "/submodels/" + encode(submodelId) + "/submodel-elements/" + path;
+        return http.writeJson(HttpMethod.DELETE, url, "", headers);
+    }
+
+    public Uni<HttpResponse<Buffer>> putSubmodel(String baseUrl, String submodelId, String body, Map<String, String> headers) {
+        String url = baseUrl + "/submodels/" + encode(submodelId);
+        return http.writeJson(HttpMethod.PUT, url, body, headers);
+    }
+
+    public Uni<HttpResponse<Buffer>> putElement(String baseUrl, String submodelId, String path, String body, Map<String, String> headers) {
+        String url = baseUrl + "/submodels/" + encode(submodelId) + "/submodel-elements/" + path;
+        return http.writeJson(HttpMethod.PUT, url, body, headers);
+    }
+
     private String encode(String s) {
         return java.net.URLEncoder.encode(s, java.nio.charset.StandardCharsets.UTF_8);
     }

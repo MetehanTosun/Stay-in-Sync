@@ -195,6 +195,43 @@ public class AasResource {
         return aasService.mapHttpError(sc, resp.statusMessage(), resp.bodyAsString());
     }
 
+    @PUT
+    @Path("/submodels/{smId}")
+    public Response putSubmodel(@PathParam("sourceSystemId") Long sourceSystemId,
+                                @PathParam("smId") String smId,
+                                String body) {
+        SourceSystem ss = SourceSystem.<SourceSystem>findByIdOptional(sourceSystemId).orElse(null);
+        ss = aasService.validateAasSource(ss);
+        var headers = headerBuilder.buildMergedHeaders(ss, de.unistuttgart.stayinsync.core.configuration.service.aas.HttpHeaderBuilder.Mode.WRITE_JSON);
+        Log.infof("PUT submodel LIVE: apiUrl=%s smId=%s", ss.apiUrl, smId);
+        var resp = traversal.putSubmodel(ss.apiUrl, smId, body, headers).await().indefinitely();
+        int sc = resp.statusCode();
+        Log.infof("PUT submodel upstream status=%d msg=%s body=%s", sc, resp.statusMessage(), safeBody(resp));
+        if (sc >= 200 && sc < 300) {
+            snapshotService.applySubmodelCreate(sourceSystemId, resp.bodyAsString());
+            return Response.ok(resp.bodyAsString()).build();
+        }
+        return aasService.mapHttpError(sc, resp.statusMessage(), resp.bodyAsString());
+    }
+
+    @DELETE
+    @Path("/submodels/{smId}")
+    public Response deleteSubmodel(@PathParam("sourceSystemId") Long sourceSystemId,
+                                   @PathParam("smId") String smId) {
+        SourceSystem ss = SourceSystem.<SourceSystem>findByIdOptional(sourceSystemId).orElse(null);
+        ss = aasService.validateAasSource(ss);
+        var headers = headerBuilder.buildMergedHeaders(ss, de.unistuttgart.stayinsync.core.configuration.service.aas.HttpHeaderBuilder.Mode.WRITE_JSON);
+        Log.infof("DELETE submodel LIVE: apiUrl=%s smId=%s", ss.apiUrl, smId);
+        var resp = traversal.deleteSubmodel(ss.apiUrl, smId, headers).await().indefinitely();
+        int sc = resp.statusCode();
+        Log.infof("DELETE submodel upstream status=%d msg=%s body=%s", sc, resp.statusMessage(), safeBody(resp));
+        if (sc >= 200 && sc < 300) {
+            snapshotService.applySubmodelDelete(sourceSystemId, smId);
+            return Response.noContent().build();
+        }
+        return aasService.mapHttpError(sc, resp.statusMessage(), resp.bodyAsString());
+    }
+
     @POST
     @Path("/submodels/{smId}/elements")
     public Response createElement(@PathParam("sourceSystemId") Long sourceSystemId,
@@ -216,6 +253,44 @@ public class AasResource {
         return aasService.mapHttpError(sc, resp.statusMessage(), resp.bodyAsString());
     }
 
+    @PUT
+    @Path("/submodels/{smId}/elements/{path}")
+    public Response putElement(@PathParam("sourceSystemId") Long sourceSystemId,
+                               @PathParam("smId") String smId,
+                               @PathParam("path") String path,
+                               String body) {
+        SourceSystem ss = SourceSystem.<SourceSystem>findByIdOptional(sourceSystemId).orElse(null);
+        ss = aasService.validateAasSource(ss);
+        var headers = headerBuilder.buildMergedHeaders(ss, de.unistuttgart.stayinsync.core.configuration.service.aas.HttpHeaderBuilder.Mode.WRITE_JSON);
+        Log.infof("PUT element LIVE: apiUrl=%s smId=%s path=%s", ss.apiUrl, smId, path);
+        var resp = traversal.putElement(ss.apiUrl, smId, path, body, headers).await().indefinitely();
+        int sc = resp.statusCode();
+        Log.infof("PUT element upstream status=%d msg=%s body=%s", sc, resp.statusMessage(), safeBody(resp));
+        if (sc >= 200 && sc < 300) {
+            // Simple approach: try delta apply (if path corresponds to idShortPath)
+            return Response.ok(resp.bodyAsString()).build();
+        }
+        return aasService.mapHttpError(sc, resp.statusMessage(), resp.bodyAsString());
+    }
+
+    @DELETE
+    @Path("/submodels/{smId}/elements/{path}")
+    public Response deleteElement(@PathParam("sourceSystemId") Long sourceSystemId,
+                                  @PathParam("smId") String smId,
+                                  @PathParam("path") String path) {
+        SourceSystem ss = SourceSystem.<SourceSystem>findByIdOptional(sourceSystemId).orElse(null);
+        ss = aasService.validateAasSource(ss);
+        var headers = headerBuilder.buildMergedHeaders(ss, de.unistuttgart.stayinsync.core.configuration.service.aas.HttpHeaderBuilder.Mode.WRITE_JSON);
+        Log.infof("DELETE element LIVE: apiUrl=%s smId=%s path=%s", ss.apiUrl, smId, path);
+        var resp = traversal.deleteElement(ss.apiUrl, smId, path, headers).await().indefinitely();
+        int sc = resp.statusCode();
+        Log.infof("DELETE element upstream status=%d msg=%s body=%s", sc, resp.statusMessage(), safeBody(resp));
+        if (sc >= 200 && sc < 300) {
+            snapshotService.applyElementDelete(sourceSystemId, smId, path);
+            return Response.noContent().build();
+        }
+        return aasService.mapHttpError(sc, resp.statusMessage(), resp.bodyAsString());
+    }
     @PATCH
     @Path("/submodels/{smId}/elements/{path}/value")
     public Response patchElementValue(@PathParam("sourceSystemId") Long sourceSystemId,
