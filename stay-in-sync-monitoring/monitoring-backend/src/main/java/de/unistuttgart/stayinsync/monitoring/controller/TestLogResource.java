@@ -20,18 +20,15 @@ public class TestLogResource {
         // JSON-Log direkt mit allen gewünschten Feldern
         String jsonLog = String.format(
                 "{" +
-                        "\"level\":\"INFO\"," +
-                        "\"message\":\"Test log message for Loki\"," +
-                        "\"stream\":\"monitoring-backend\"," +
-                        "\"traceID\":\"trace-abc-001\"," +
-                        "\"component\":\"test-controller\"," +
+
+                        "Test log message for Loki\"," +
                         "\"syncJobId\":\"%s\"" +
                         "}",
                 syncJobId
         );
 
         // Direkt als Log ausgeben
-        Log.info(jsonLog);
+        Log.error(jsonLog);
 
 
         return "Sent test log with syncJobId=" + syncJobId;

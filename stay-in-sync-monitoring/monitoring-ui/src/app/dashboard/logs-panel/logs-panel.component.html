@@ -10,14 +10,6 @@
   </label>
 
   <label>
-    Stream:
-    <select [(ngModel)]="stream" (change)="onFilterChange()">
-      <option value="stderr">stderr</option>
-      <option value="stdout">stdout</option>
-    </select>
-  </label>
-
-  <label>
     Level:
     <select [(ngModel)]="level" (change)="onFilterChange()">
       <option value="">All</option>
@@ -30,8 +22,14 @@
   </label>
 </div>
 
+<!-- Loading & Error -->
+<div *ngIf="loading">Loading logs...</div>
+<div *ngIf="errorMessage" class="error">{{ errorMessage }}</div>
+
+<!-- Log Table -->
 <p-table
-  [value]="filteredLogs"
+  *ngIf="!loading && logs.length > 0"
+  [value]="logs"
   [scrollable]="true"
   scrollHeight="flex"
   class="log-table"
@@ -39,29 +37,35 @@
   [style.table-layout]="'fixed'"
   [style.height]="'350px'"
 >
-
   <ng-template pTemplate="header">
     <tr>
       <th>Timestamp</th>
       <th>Level</th>
-      <th>Caller</th>
+      <th>Service</th>
       <th>Message</th>
     </tr>
     <tr>
       <th></th>
       <th></th>
-     <th>
-     </th>
+      <th></th>
       <th>
-        <p-columnFilter type="text" field="message" placeholder="Search by message" ariaLabel="Filter Message"></p-columnFilter>
+        <p-columnFilter
+          type="text"
+          field="message"
+          placeholder="Search by message"
+          ariaLabel="Filter Message"
+        ></p-columnFilter>
       </th>
     </tr>
   </ng-template>
+
   <ng-template pTemplate="body" let-log>
     <tr>
-      <td class="timestamp">{{ log.timestamp | date: 'short' }}</td>
+      <td class="timestamp">{{ (log.timestamp / 1000000) | date: 'short' }}</td>
       <td class="level" [ngClass]="log.level">{{ log.level }}</td>
-      <td style="max-width: 150px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{ log.caller || '-' }}</td>
+      <td style="max-width: 150px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+        {{ log.service || '-' }}
+      </td>
       <td class="message" style="white-space: normal; word-wrap: break-word; max-width: 400px;">
         {{ log.message || buildFallbackMessage(log) }}
       </td>
@@ -69,6 +73,7 @@
   </ng-template>
 </p-table>
 
-<ng-template #noLogs>
+<!-- Empty State -->
+<div *ngIf="!loading && logs.length === 0">
   <p>No logs found for the selected filters.</p>
-</ng-template>
+</div>

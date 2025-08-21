@@ -5,21 +5,31 @@ import {LogEntry} from '../models/log.model';
 
 @Injectable({ providedIn: 'root' })
 export class LogService {
-  private baseUrl = '/loki/api/v1/query_range';
+  private baseUrl = '/logs';
 
   constructor(private http: HttpClient) {}
 
-  getLogs(syncJobId: string | null, startTime: string, endTime: string, level: string) {
+  /**
+   * Logs holen (optional mit syncJobId)
+   */
+  getLogs(
+    startTime: number,
+    endTime: number,
+    level: string = 'info',
+    syncJobId?: string
+  ): Observable<LogEntry[]> {
     let params = new HttpParams()
       .set('startTime', startTime)
       .set('endTime', endTime)
-      .set('level', level)
+      .set('level', level);
 
     if (syncJobId) {
-      params = params.set('syncJobId', syncJobId);
+      // eigener Endpoint: /api/logs/SyncJob/{id}
+      return this.http.get<LogEntry[]>(`${this.baseUrl}/SyncJob/${syncJobId}`, { params });
+    } else {
+      // Standard-Endpoint: /api/logs
+      return this.http.get<LogEntry[]>(this.baseUrl, { params });
     }
-
-    return this.http.get<LogEntry[]>('/api/logs', { params });
   }
 
   // getLogs(

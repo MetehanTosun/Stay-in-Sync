@@ -15,5 +15,15 @@ function parse_nested_log(tag, timestamp, record)
         print("syncJobId nicht gefunden im JSON")
     end
 
+    -- level aus message extrahieren (z. B. "level":"error")
+    local level = string.match(msg_str, '"level"%s*:%s*"([^"]+)"')
+    if level then
+        record["level"] = level
+        -- Optional: Debug-Ausgabe
+        print("level extrahiert: " .. level)
+    else
+        print("level nicht gefunden im JSON")
+    end
+
     return 1, timestamp, record
 end

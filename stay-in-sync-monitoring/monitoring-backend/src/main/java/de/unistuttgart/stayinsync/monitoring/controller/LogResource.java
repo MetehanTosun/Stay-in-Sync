@@ -22,15 +22,25 @@ public class LogResource {
     @GET
     @Path("/")
     public Response getLogs(
-            @QueryParam("syncJobId") String syncJobId,
-            @QueryParam("startTime") String startTime,
-            @QueryParam("endTime") String endTime,
+            @QueryParam("startTime") long startTime,
+            @QueryParam("endTime") long endTime,
             @QueryParam("level") @DefaultValue("info") String level
     ) {
-        long startNs = Instant.parse(startTime + ":00Z").toEpochMilli() * 1_000_000; // oder DateTimeFormatter
-        long endNs   = Instant.parse(endTime + ":00Z").toEpochMilli() * 1_000_000;
 
-        List<LogEntryDto> logs = logService.fetchAndParseLogs(syncJobId, startNs, endNs, level);
+        List<LogEntryDto> logs = logService.fetchAndParseLogs(null, startTime, endTime, level);
+        return Response.ok(logs).build();
+    }
+
+    @GET
+    @Path("/SyncJob/{syncJobId}")
+    public Response getLogsBySyncJob(
+            @PathParam("syncJobId") String syncJobId,
+            @QueryParam("startTime") long startTime,
+            @QueryParam("endTime") long endTime,
+            @QueryParam("level") @DefaultValue("info") String level
+    ) {
+
+        List<LogEntryDto> logs = logService.fetchAndParseLogs(syncJobId, startTime, endTime, level);
         return Response.ok(logs).build();
     }
 

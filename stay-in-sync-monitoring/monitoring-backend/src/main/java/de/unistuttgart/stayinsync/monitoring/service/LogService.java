@@ -1,138 +1,97 @@
 package de.unistuttgart.stayinsync.monitoring.service;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import de.unistuttgart.stayinsync.monitoring.dtos.LogEntryDto;
 import io.quarkus.logging.Log;
 import jakarta.enterprise.context.ApplicationScoped;
-import org.json.JSONArray;
-import org.json.JSONObject;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.net.URI;
-import java.util.*;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.List;
 
 @ApplicationScoped
 public class LogService {
 
-    private static final Logger log = LoggerFactory.getLogger(LogService.class);
+    private static final String LOKI_URL = "http://localhost:3100/loki/api/v1/query_range";
 
-    public List<LogEntryDto> fetchAndParseLogs(String syncJobId, Long startTimeNs, Long endTimeNs, String level) {
-        // 1. Logs aus Loki holen (HTTP Call)
-        JSONArray rawLogs = fetchFromLoki(syncJobId, startTimeNs, endTimeNs, level);
+    private final HttpClient httpClient;
+    private final ObjectMapper objectMapper;
 
-        // 2. Parsen und Filtern
-        if (rawLogs.isEmpty()) {
-            log.info("No logs found for the given query.");
-            return Collections.emptyList();
-        }
-
-        List<LogEntryDto> parsedLogs = new ArrayList<>();
-        for (int i = 0; i < rawLogs.length(); i++) {
-            JSONObject entry = rawLogs.getJSONObject(i);
-            String rawMessage = entry.getString("message");
-
-            // Level extrahieren
-            String entryLevel = Optional.ofNullable(extractValue(rawMessage, "level"))
-                    .map(String::toLowerCase)
-                    .orElse("unknown");
-
-
-            // Message extrahieren
-            String message = extractQuotedValue(rawMessage, "msg");
-            if (message == null) message = extractQuotedValue(rawMessage, "message");
-
-            // Component & Caller
-            String component = extractValue(rawMessage, "component");
-            String caller = extractValue(rawMessage, "caller");
-
-            LogEntryDto logEntry = new LogEntryDto(
-                    entry.getString("timestamp"),
-                    message,
-                    rawMessage,
-                    entryLevel,
-                    caller
-            );
-            parsedLogs.add(logEntry);
-        }
-
-        // 3. Sortieren nach Zeitstempel absteigend
-        parsedLogs.sort(Comparator.comparingLong(LogEntryDto::getTimestamp).reversed());
-
-        return parsedLogs;
+    public LogService() {
+        this.httpClient = HttpClient.newHttpClient();
+        this.objectMapper = new ObjectMapper();
     }
 
-    private JSONArray fetchFromLoki(String nodeId, Long startTimeNs, Long endTimeNs, String level) {
-        // Labels zusammenbauen
-        StringBuilder labelParts = new StringBuilder("agent=\"" + "fluent-bit" + "\"");
-        if (nodeId != null && !nodeId.isEmpty()) {
-            labelParts.append(",nodeId=\"").append(nodeId).append("\"");
-        }
-        String labelSelector = "{" + labelParts + "}";
-
-        // Query zusammensetzen (inkl. optionalem Level)
-        String query = (level != null && !level.isEmpty())
-                ? labelSelector + " |= \"level=" + level + "\""
-                : labelSelector;
-
+    public List<LogEntryDto> fetchAndParseLogs(String syncJobId, long startNs, long endNs, String level) {
         try {
-            // Query encoden, damit Loki sie versteht
-            String encodedQuery = java.net.URLEncoder.encode(query, java.nio.charset.StandardCharsets.UTF_8);
-
-            String params = String.format(
-                    "?query=%s&start=%d&end=%d&limit=1000&direction=backward",
-                    encodedQuery, startTimeNs, endTimeNs
-            );
-
-            String baseUrl = "http://localhost:3100/loki/api/v1/query_range";
-            java.net.URL url = new URI(baseUrl + params).toURL();
-            Log.info("Fetching logs from Loki: " + url);
-
-            java.net.HttpURLConnection conn = (java.net.HttpURLConnection) url.openConnection();
-            conn.setRequestMethod("GET");
-            conn.setRequestProperty("Accept", "application/json");
-
-            try (java.io.BufferedReader in = new java.io.BufferedReader(
-                    new java.io.InputStreamReader(conn.getInputStream()))) {
-
-                StringBuilder response = new StringBuilder();
-                String line;
-                while ((line = in.readLine()) != null) {
-                    response.append(line);
-                }
-
-                JSONObject json = new JSONObject(response.toString());
-                JSONArray result = new JSONArray();
-
-                if (json.has("data") && json.getJSONObject("data").has("result")) {
-                    JSONArray streams = json.getJSONObject("data").getJSONArray("result");
-                    for (int i = 0; i < streams.length(); i++) {
-                        JSONObject streamJson = streams.getJSONObject(i);
-                        JSONArray values = streamJson.getJSONArray("values");
-                        for (int j = 0; j < values.length(); j++) {
-                            JSONArray entry = values.getJSONArray(j);
-                            JSONObject entryObj = new JSONObject();
-                            entryObj.put("timestamp", entry.getString(0)); // ns timestamp
-                            entryObj.put("message", entry.getString(1));   // log line
-                            result.put(entryObj);
-                        }
-                    }
-                }
-
-                return result;
+            // 1️⃣ Labels zusammenbauen
+            List<String> labels = new ArrayList<>();
+            if (syncJobId != null && !syncJobId.isBlank()) {
+                labels.add("syncJobId=\"" + syncJobId + "\"");
+            } else {
+                labels.add("agent=\"fluent-bit\"");
             }
+            if (level != null && !level.isBlank()) {
+                labels.add("level=\"" + level.toUpperCase() + "\"");
+            }
+
+            // 2️⃣ Query: labelSelector + optionales |= "level=..." (falls du zusätzlich filterst)
+            String query = "{" + String.join(",", labels) + "}";
+
+            // 3️⃣ URL bauen
+            String url = String.format("%s?query=%s&start=%d&end=%d&limit=1000&direction=backward",
+                    LOKI_URL,
+                    URLEncoder.encode(query, StandardCharsets.UTF_8),
+                    startNs,
+                    endNs);
+
+            HttpRequest request = HttpRequest.newBuilder()
+                    .uri(URI.create(url))
+                    .GET()
+                    .build();
+
+            Log.info("Request send: " + request);
+
+            HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+
+            if (response.statusCode() != 200) {
+                throw new RuntimeException("Loki call failed: " + response.statusCode() + " - " + response.body());
+            }
+
+            // 4️⃣ JSON parsen
+            JsonNode root = objectMapper.readTree(response.body());
+            JsonNode result = root.path("data").path("result");
+
+            List<LogEntryDto> logs = new ArrayList<>();
+            for (JsonNode stream : result) {
+                String service = stream.path("stream").path("service").asText(null);
+                String lvl     = stream.path("stream").path("level").asText(null);
+
+                for (JsonNode value : stream.path("values")) {
+                   String timestamp = value.get(0).asText();
+                    String messageJson = value.get(1).asText();
+                    String message;
+                    try {
+                        JsonNode messageNode = objectMapper.readTree(messageJson);
+                        message = messageNode.path("message").asText(messageJson);
+                    } catch (Exception ex) {
+                        message = messageJson;
+                    }
+                    logs.add(new LogEntryDto(service, lvl, message, timestamp));
+                }
+            }
+
+            return logs;
+
         } catch (Exception e) {
-            log.error("Error fetching logs from Loki", e);
-            return new JSONArray();
+            Log.error("Fehler");
+            throw new RuntimeException("Error fetching or parsing logs", e);
         }
-    }
-
-    private String extractValue(String text, String key) {
-        var matcher = java.util.regex.Pattern.compile(key + "=(\\S+)").matcher(text);
-        return matcher.find() ? matcher.group(1) : null;
-    }
-
-    private String extractQuotedValue(String text, String key) {
-        var matcher = java.util.regex.Pattern.compile(key + "=\"([^\"]+)\"").matcher(text);
-        return matcher.find() ? matcher.group(1) : null;
     }
 }

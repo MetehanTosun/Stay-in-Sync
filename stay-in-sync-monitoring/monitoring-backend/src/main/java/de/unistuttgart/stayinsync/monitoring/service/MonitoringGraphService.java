@@ -53,7 +53,7 @@ public class MonitoringGraphService {
 
         // 3. SyncJobs + Verbindungen
         for (MonitoringSyncJobDto job : jobs) {
-            String syncNodeId = "SYNC_" + job.id;
+            String syncNodeId =  job.id.toString();
             nodeMap.put(syncNodeId, createNode(syncNodeId, "SyncNode", job.name, job.deployed ? "active" : "inactive"));
 
             if (job.transformations != null) {

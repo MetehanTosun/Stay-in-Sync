@@ -1,6 +1,6 @@
 export interface LogEntry {
   rawMessage?: string;
-  caller?: string;
+  service?: string;
   component?: string;
   level?: string;
   timestamp: string;
