@@ -1,5 +1,5 @@
 import { Pipe, PipeTransform } from '@angular/core';
-import { ApiRequestConfiguration } from '../features/script-editor/models/arc.models';
+import { ApiRequestConfiguration } from '../../script-editor/models/arc.models';
 
 @Pipe({
   name: 'filterByEndpoint',

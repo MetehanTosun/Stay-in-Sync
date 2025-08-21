@@ -29,6 +29,8 @@ public class TransformationJobMessageProducer {
 
     private Channel channel;
 
+    boolean rabbitEnabled = true;
+
     /**
      * The application needs to open a connection and declare the domain specific exchange on startup
      *
@@ -36,6 +38,17 @@ public class TransformationJobMessageProducer {
      */
     void initialize(@Observes StartupEvent startupEvent) {
         try {
+            // Resolve config safely without compile-time ConfigProperty import issues
+            try {
+                var mpConfig = org.eclipse.microprofile.config.ConfigProvider.getConfig();
+                String enabled = mpConfig.getOptionalValue("stayinsync.rabbitmq.enabled", String.class).orElse("true");
+                rabbitEnabled = Boolean.parseBoolean(enabled);
+            } catch (Exception ignored) {
+            }
+            if (!rabbitEnabled) {
+                Log.info("RabbitMQ disabled by config (stayinsync.rabbitmq.enabled=false). Skipping SyncJobMessageProducer init.");
+                return;
+            }
             Log.info("Opening rabbitMQ channel");
             channel = rabbitMQClient.connect().openChannel().orElseThrow(() -> new CoreManagementException("RabbitMQ Error", "Unable to open rabbitMQ Channel"));
             channel.exchangeDeclare("transformation-exchange", "direct", true);
