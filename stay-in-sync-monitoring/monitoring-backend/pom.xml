@@ -42,7 +42,7 @@
     </dependencyManagement>
 
     <dependencies>
-        <!-- Quarkus Core Dependencies -->
+        <!-- Quarkus Core -->
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-arc</artifactId>
@@ -56,7 +56,7 @@
             <artifactId>quarkus-rest-jackson</artifactId>
         </dependency>
 
-        <!-- Database and ORM -->
+        <!-- Database & ORM -->
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-jdbc-mariadb</artifactId>
@@ -72,7 +72,7 @@
             <artifactId>quarkus-container-image-docker</artifactId>
         </dependency>
 
-        <!-- OpenAPI and Validation -->
+        <!-- OpenAPI & Validation -->
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-smallrye-openapi</artifactId>
@@ -82,7 +82,7 @@
             <artifactId>quarkus-hibernate-validator</artifactId>
         </dependency>
 
-        <!-- Micrometer Prometheus Registry -->
+        <!-- Micrometer Prometheus -->
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-micrometer-registry-prometheus</artifactId>
@@ -98,11 +98,11 @@
             <artifactId>quarkus-logging-json</artifactId>
         </dependency>
 
+        <!-- gRPC -->
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-grpc</artifactId>
         </dependency>
-
         <dependency>
             <groupId>io.grpc</groupId>
             <artifactId>grpc-netty-shaded</artifactId>
@@ -118,15 +118,20 @@
             <artifactId>grpc-stub</artifactId>
             <version>${grpc.version}</version>
         </dependency>
+        <dependency>
+            <groupId>com.google.protobuf</groupId>
+            <artifactId>protobuf-java</artifactId>
+            <version>${protobuf.version}</version>
+        </dependency>
 
-        <!-- Logging -->
+        <!-- Logback -->
         <dependency>
             <groupId>ch.qos.logback</groupId>
             <artifactId>logback-classic</artifactId>
             <version>1.5.6</version>
         </dependency>
 
-        <!-- Quinoa UI Integration -->
+        <!-- Quinoa UI -->
         <dependency>
             <groupId>io.quarkiverse.quinoa</groupId>
             <artifactId>quarkus-quinoa</artifactId>
@@ -163,11 +168,35 @@
             <version>5.10.0</version>
             <scope>test</scope>
         </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-micrometer</artifactId>
+            <version>3.21.4</version>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-development-mode-spi</artifactId>
+            <version>3.21.4</version>
+        </dependency>
+        <dependency>
+            <groupId>io.micrometer</groupId>
+            <artifactId>micrometer-core</artifactId>
+            <version>1.14.6</version>
+        </dependency>
     </dependencies>
 
     <build>
+        <extensions>
+
+            <extension>
+                <groupId>kr.motd.maven</groupId>
+                <artifactId>os-maven-plugin</artifactId>
+                <version>1.7.0</version>
+            </extension>
+        </extensions>
+
         <plugins>
-            <!-- Quarkus Plugin -->
+            <!-- Quarkus -->
             <plugin>
                 <groupId>${quarkus.platform.group-id}</groupId>
                 <artifactId>quarkus-maven-plugin</artifactId>
@@ -239,4 +268,5 @@
         </profile>
     </profiles>
 </project>
+
 
