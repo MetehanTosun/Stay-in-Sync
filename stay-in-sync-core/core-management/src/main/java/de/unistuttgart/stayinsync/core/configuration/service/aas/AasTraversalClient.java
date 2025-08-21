@@ -20,17 +20,17 @@ public class AasTraversalClient {
     }
 
     public Uni<HttpResponse<Buffer>> listSubmodels(String baseUrl, String aasId, Map<String, String> headers) {
-        return http.getJson(baseUrl + "/shells/" + encode(aasId) + "/submodels", headers);
+        return http.getJson(baseUrl + "/shells/" + encode(aasId) + "/submodel-refs", headers);
     }
 
     public Uni<HttpResponse<Buffer>> listElements(String baseUrl, String submodelId, String depth, String parentPath, Map<String, String> headers) {
-        String url = baseUrl + "/submodels/" + encode(submodelId) + "/elements";
+        // BaSyx v2: /submodels/{submodelIdentifier}/submodel-elements with query param level=core|deep
+        String url = baseUrl + "/submodels/" + encode(submodelId) + "/submodel-elements";
         if (parentPath != null && !parentPath.isBlank()) {
             url += "/" + parentPath;
         }
-        if (depth != null) {
-            url += (url.contains("?") ? "&" : "?") + "depth=" + encode(depth);
-        }
+        String level = (depth != null && depth.equalsIgnoreCase("all")) ? "deep" : "core";
+        url += (url.contains("?") ? "&" : "?") + "level=" + encode(level);
         return http.getJson(url, headers);
     }
 
@@ -39,7 +39,7 @@ public class AasTraversalClient {
     }
 
     public Uni<HttpResponse<Buffer>> createElement(String baseUrl, String submodelId, String parentPath, String body, Map<String, String> headers) {
-        String url = baseUrl + "/submodels/" + encode(submodelId) + "/elements";
+        String url = baseUrl + "/submodels/" + encode(submodelId) + "/submodel-elements";
         if (parentPath != null && !parentPath.isBlank()) {
             url += "/" + parentPath;
         }
@@ -47,7 +47,7 @@ public class AasTraversalClient {
     }
 
     public Uni<HttpResponse<Buffer>> patchElementValue(String baseUrl, String submodelId, String path, String body, Map<String, String> headers) {
-        String url = baseUrl + "/submodels/" + encode(submodelId) + "/elements/" + path + "/value";
+        String url = baseUrl + "/submodels/" + encode(submodelId) + "/submodel-elements/" + path + "/value";
         return http.writeJson(HttpMethod.PATCH, url, body, headers);
     }
 

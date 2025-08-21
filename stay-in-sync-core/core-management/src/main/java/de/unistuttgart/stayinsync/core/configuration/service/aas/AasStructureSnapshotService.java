@@ -10,6 +10,7 @@ import io.smallrye.mutiny.Uni;
 import io.vertx.mutiny.ext.web.client.HttpResponse;
 import io.vertx.mutiny.core.buffer.Buffer;
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.transaction.Transactional;
 import jakarta.inject.Inject;
 
 import java.util.Map;
@@ -26,10 +27,12 @@ public class AasStructureSnapshotService {
     @Inject
     HttpHeaderBuilder headerBuilder;
 
+    @Transactional
     public void buildInitialSnapshot(Long sourceSystemId) {
         refreshSnapshot(sourceSystemId);
     }
 
+    @Transactional
     public void refreshSnapshot(Long sourceSystemId) {
         var ssOpt = SourceSystem.<SourceSystem>findByIdOptional(sourceSystemId);
         if (ssOpt.isEmpty()) {
@@ -92,6 +95,7 @@ public class AasStructureSnapshotService {
         return f != null && !f.isNull() ? f.asText() : null;
     }
 
+    @Transactional
     public void applySubmodelCreate(Long sourceSystemId, String submodelJson) {
         var ssOpt = SourceSystem.<SourceSystem>findByIdOptional(sourceSystemId);
         if (ssOpt.isEmpty()) return;
@@ -103,6 +107,7 @@ public class AasStructureSnapshotService {
         }
     }
 
+    @Transactional
     public void applyElementCreate(Long sourceSystemId, String submodelId, String parentPath, String elementJson) {
         var ssOpt = SourceSystem.<SourceSystem>findByIdOptional(sourceSystemId);
         if (ssOpt.isEmpty()) return;
@@ -146,6 +151,7 @@ public class AasStructureSnapshotService {
         }
     }
 
+    @Transactional
     public void applySubmodelDelete(Long sourceSystemId, String submodelId) {
         var submodel = AasSubmodelLite.<AasSubmodelLite>find("sourceSystem.id = ?1 and submodelId = ?2", sourceSystemId, submodelId).firstResult();
         if (submodel == null) return;
@@ -153,6 +159,7 @@ public class AasStructureSnapshotService {
         submodel.delete();
     }
 
+    @Transactional
     public void applyElementDelete(Long sourceSystemId, String submodelId, String idShortPath) {
         var submodel = AasSubmodelLite.<AasSubmodelLite>find("sourceSystem.id = ?1 and submodelId = ?2", sourceSystemId, submodelId).firstResult();
         if (submodel == null) return;

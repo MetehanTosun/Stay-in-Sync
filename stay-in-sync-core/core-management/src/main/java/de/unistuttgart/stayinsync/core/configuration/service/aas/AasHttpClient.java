@@ -11,6 +11,7 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 
 import java.util.Map;
+import io.quarkus.logging.Log;
 
 @ApplicationScoped
 public class AasHttpClient {
@@ -26,6 +27,7 @@ public class AasHttpClient {
     }
 
     public Uni<HttpResponse<Buffer>> getJson(String url, Map<String, String> headers) {
+        Log.infof("HTTP GET %s", url);
         var req = webClient.requestAbs(HttpMethod.GET, url);
         if (headers != null) headers.forEach(req.headers()::add);
         if (!req.headers().contains("Accept")) req.putHeader("Accept", "application/json");
@@ -33,6 +35,7 @@ public class AasHttpClient {
     }
 
     public Uni<HttpResponse<Buffer>> writeJson(HttpMethod method, String url, String body, Map<String, String> headers) {
+        Log.infof("HTTP %s %s", method, url);
         var req = webClient.requestAbs(method, url);
         if (headers != null) headers.forEach(req.headers()::add);
         if (!req.headers().contains("Accept")) req.putHeader("Accept", "application/json");

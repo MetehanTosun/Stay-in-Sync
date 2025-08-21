@@ -13,6 +13,7 @@ import io.quarkus.logging.Log;
 import io.smallrye.mutiny.Uni;
 import io.vertx.mutiny.ext.web.client.HttpResponse;
 import io.vertx.mutiny.core.buffer.Buffer;
+import io.smallrye.common.annotation.Blocking;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
@@ -24,6 +25,7 @@ import java.util.Map;
 @Path("/api/config/source-system/{sourceSystemId}/aas")
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
+@Blocking
 public class AasResource {
 
 
@@ -44,10 +46,13 @@ public class AasResource {
     public Uni<Response> test(@PathParam("sourceSystemId") Long sourceSystemId) {
         SourceSystem ss = SourceSystem.<SourceSystem>findByIdOptional(sourceSystemId).orElse(null);
         ss = aasService.validateAasSource(ss);
+        Log.infof("AAS test: sourceSystemId=%d apiUrl=%s aasId=%s", sourceSystemId, ss.apiUrl, ss.aasId);
         var headers = headerBuilder.buildMergedHeaders(ss, de.unistuttgart.stayinsync.core.configuration.service.aas.HttpHeaderBuilder.Mode.READ);
+        Log.debugf("AAS test headers: %s", headers);
         Uni<HttpResponse<Buffer>> uni = traversal.getShell(ss.apiUrl, ss.aasId, headers);
         return uni.map(resp -> {
                     int sc = resp.statusCode();
+                    Log.infof("AAS test upstream status=%d msg=%s body=%s", sc, resp.statusMessage(), safeBody(resp));
                     if (sc >= 200 && sc < 300) {
                         return Response.ok(new AasTestResultDTO("shell", "asset")).build();
                     }
@@ -64,8 +69,11 @@ public class AasResource {
         ss = aasService.validateAasSource(ss);
         if ("LIVE".equalsIgnoreCase(source)) {
             var headers = headerBuilder.buildMergedHeaders(ss, de.unistuttgart.stayinsync.core.configuration.service.aas.HttpHeaderBuilder.Mode.READ);
+            Log.infof("List submodels LIVE: apiUrl=%s aasId=%s", ss.apiUrl, ss.aasId);
+            Log.debugf("LIVE headers: %s", headers);
             return traversal.listSubmodels(ss.apiUrl, ss.aasId, headers).map(resp -> {
                 int sc = resp.statusCode();
+                Log.infof("List submodels upstream status=%d msg=%s", sc, resp.statusMessage());
                 if (sc >= 200 && sc < 300) {
                     return Response.ok(resp.bodyAsString()).build();
                 }
@@ -111,8 +119,11 @@ public class AasResource {
         var submodel = AasSubmodelLite.<AasSubmodelLite>find("sourceSystem.id = ?1 and submodelId = ?2", sourceSystemId, smId).firstResult();
         if (submodel == null) {
             var headers = headerBuilder.buildMergedHeaders(ss, de.unistuttgart.stayinsync.core.configuration.service.aas.HttpHeaderBuilder.Mode.READ);
+            Log.infof("List elements LIVE (no snapshot): apiUrl=%s smId=%s depth=%s parentPath=%s", ss.apiUrl, smId, depth, parentPath);
+            Log.debugf("LIVE headers: %s", headers);
             return traversal.listElements(ss.apiUrl, smId, depth, parentPath, headers).map(resp -> {
                 int sc = resp.statusCode();
+                Log.infof("List elements upstream status=%d msg=%s", sc, resp.statusMessage());
                 if (sc >= 200 && sc < 300) {
                     return Response.ok(resp.bodyAsString()).build();
                 }
@@ -154,8 +165,11 @@ public class AasResource {
             return Uni.createFrom().item(Response.ok().entity(list).build());
         }
         var headers = headerBuilder.buildMergedHeaders(ss, de.unistuttgart.stayinsync.core.configuration.service.aas.HttpHeaderBuilder.Mode.READ);
+        Log.infof("List elements LIVE (fallback): apiUrl=%s smId=%s depth=%s parentPath=%s", ss.apiUrl, smId, depth, parentPath);
+        Log.debugf("LIVE headers: %s", headers);
         return traversal.listElements(ss.apiUrl, smId, depth, parentPath, headers).map(resp -> {
             int sc = resp.statusCode();
+            Log.infof("List elements upstream status=%d msg=%s", sc, resp.statusMessage());
             if (sc >= 200 && sc < 300) {
                 return Response.ok(resp.bodyAsString()).build();
             }
@@ -169,8 +183,11 @@ public class AasResource {
         SourceSystem ss = SourceSystem.<SourceSystem>findByIdOptional(sourceSystemId).orElse(null);
         ss = aasService.validateAasSource(ss);
         var headers = headerBuilder.buildMergedHeaders(ss, de.unistuttgart.stayinsync.core.configuration.service.aas.HttpHeaderBuilder.Mode.WRITE_JSON);
+        Log.infof("Create submodel LIVE: apiUrl=%s", ss.apiUrl);
+        Log.debugf("WRITE headers: %s body=%s", headers, body);
         var resp = traversal.createSubmodel(ss.apiUrl, body, headers).await().indefinitely();
         int sc = resp.statusCode();
+        Log.infof("Create submodel upstream status=%d msg=%s body=%s", sc, resp.statusMessage(), safeBody(resp));
         if (sc >= 200 && sc < 300) {
             snapshotService.applySubmodelCreate(sourceSystemId, resp.bodyAsString());
             return Response.status(Response.Status.CREATED).entity(resp.bodyAsString()).build();
@@ -187,8 +204,11 @@ public class AasResource {
         SourceSystem ss = SourceSystem.<SourceSystem>findByIdOptional(sourceSystemId).orElse(null);
         ss = aasService.validateAasSource(ss);
         var headers = headerBuilder.buildMergedHeaders(ss, de.unistuttgart.stayinsync.core.configuration.service.aas.HttpHeaderBuilder.Mode.WRITE_JSON);
+        Log.infof("Create element LIVE: apiUrl=%s smId=%s parentPath=%s", ss.apiUrl, smId, parentPath);
+        Log.debugf("WRITE headers: %s body=%s", headers, body);
         var resp = traversal.createElement(ss.apiUrl, smId, parentPath, body, headers).await().indefinitely();
         int sc = resp.statusCode();
+        Log.infof("Create element upstream status=%d msg=%s body=%s", sc, resp.statusMessage(), safeBody(resp));
         if (sc >= 200 && sc < 300) {
             snapshotService.applyElementCreate(sourceSystemId, smId, parentPath, resp.bodyAsString());
             return Response.status(Response.Status.CREATED).entity(resp.bodyAsString()).build();
@@ -205,12 +225,25 @@ public class AasResource {
         SourceSystem ss = SourceSystem.<SourceSystem>findByIdOptional(sourceSystemId).orElse(null);
         ss = aasService.validateAasSource(ss);
         var headers = headerBuilder.buildMergedHeaders(ss, de.unistuttgart.stayinsync.core.configuration.service.aas.HttpHeaderBuilder.Mode.WRITE_JSON);
+        Log.infof("Patch element value LIVE: apiUrl=%s smId=%s path=%s", ss.apiUrl, smId, path);
+        Log.debugf("WRITE headers: %s body=%s", headers, body);
         var resp = traversal.patchElementValue(ss.apiUrl, smId, path, body, headers).await().indefinitely();
         int sc = resp.statusCode();
+        Log.infof("Patch element upstream status=%d msg=%s body=%s", sc, resp.statusMessage(), safeBody(resp));
         if (sc >= 200 && sc < 300) {
             return Response.noContent().build();
         }
         return aasService.mapHttpError(sc, resp.statusMessage(), resp.bodyAsString());
+    }
+
+    private String safeBody(HttpResponse<Buffer> resp) {
+        try {
+            String b = resp.bodyAsString();
+            if (b == null) return null;
+            return b.length() > 500 ? b.substring(0, 500) + "..." : b;
+        } catch (Exception e) {
+            return null;
+        }
     }
 
     @POST
