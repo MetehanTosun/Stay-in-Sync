@@ -393,7 +393,10 @@
     </div>
 
     <div class="field col-12">
-      <label for="cdAccessPolicy" class="font-bold block mb-2">Select Access Policy</label>
+      <div class="flex justify-content-between align-items-center mb-2">
+        <label for="cdAccessPolicy" class="font-bold">Select Access Policy</label>
+        <button pButton pRipple type="button" icon="pi pi-plus" class="p-button-text p-button-sm" (click)="openNewAccessPolicyDialog()" pTooltip="Create New Access Policy" tooltipPosition="top"></button>
+      </div>
       <p-autoComplete
         id="cdAccessPolicy"
         [(ngModel)]="newContractPolicy.accessPolicyId"
@@ -415,26 +418,29 @@
     </div>
 
     <div class="field col-12">
-        <label for="cdAssets" class="font-bold block mb-2">Select Assets</label>
-        <p-autoComplete
-          id="cdAssets"
-          [(ngModel)]="selectedAssetsInDialog"
-          [suggestions]="assetIdSuggestions"
-          (completeMethod)="searchAssets($event)"
-          (onSelect)="syncJsonFromContractForm()"
-          (onUnselect)="syncJsonFromContractForm()"
-          (onClear)="syncJsonFromContractForm()"
-          field="name"
-          [multiple]="true"
-          placeholder="Search by Asset Name or ID"
-          styleClass="w-full"
-          inputStyleClass="w-full"
-          [appendTo]="'body'"
-          [disabled]="isContractJsonComplex">
-          <ng-template let-asset pTemplate="item">
-            <div>{{ asset.name }} ({{ asset.assetId }})</div>
-          </ng-template>
-        </p-autoComplete>
+      <div class="flex justify-content-between align-items-center mb-2">
+        <label for="cdAssets" class="font-bold">Select Assets</label>
+        <button pButton pRipple type="button" icon="pi pi-plus" class="p-button-text p-button-sm" (click)="openNewAssetDialog()" pTooltip="Create New Asset" tooltipPosition="top"></button>
+      </div>
+      <p-autoComplete
+        id="cdAssets"
+        [(ngModel)]="selectedAssetsInDialog"
+        [suggestions]="assetIdSuggestions"
+        (completeMethod)="searchAssets($event)"
+        (onSelect)="syncJsonFromContractForm()"
+        (onUnselect)="syncJsonFromContractForm()"
+        (onClear)="syncJsonFromContractForm()"
+        field="name"
+        [multiple]="true"
+        placeholder="Search by Asset Name or ID"
+        styleClass="w-full"
+        inputStyleClass="w-full"
+        [appendTo]="'body'"
+        [disabled]="isContractJsonComplex">
+        <ng-template let-asset pTemplate="item">
+          <div>{{ asset.name }} ({{ asset.assetId }})</div>
+        </ng-template>
+      </p-autoComplete>
     </div>
 
     <div class="field col-12 mt-2">
