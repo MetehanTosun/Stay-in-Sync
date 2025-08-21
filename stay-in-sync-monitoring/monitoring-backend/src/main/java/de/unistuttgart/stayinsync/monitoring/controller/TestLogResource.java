@@ -33,13 +33,6 @@ public class TestLogResource {
         // Direkt als Log ausgeben
         Log.info(jsonLog);
 
-//        try(Socket socket = new Socket("localhost", 5170);
-//            PrintWriter out = new PrintWriter(socket.getOutputStream(), true)) {
-//            out.println(jsonLog);
-//        } catch(Exception e) {
-//            e.printStackTrace();
-//        }
-
 
         return "Sent test log with syncJobId=" + syncJobId;
     }
