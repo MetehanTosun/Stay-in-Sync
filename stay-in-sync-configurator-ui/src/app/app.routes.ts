@@ -19,6 +19,9 @@ import { ScriptEditorPageComponent } from './features/script-editor/script-edito
 import {
   TransformationScriptSelectionComponent
 } from './features/transformation/components/transformation-script-selection/transformation-script-selection.component';
+import {
+  SyncJobDetailsPageComponent
+} from './features/sync-job/components/sync-job-details-page/sync-job-details-page.component';
 
 
 export const routes: Routes = [
@@ -64,6 +67,7 @@ export const routes: Routes = [
     }
   ]
   },
+  { path: 'sync-jobs/:id', component: SyncJobDetailsPageComponent},
 
   // Route für Help mit Children
   {

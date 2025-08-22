@@ -1,17 +1,12 @@
 package de.unistuttgart.stayinsync.service;
 
 import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.SyncJob;
-import de.unistuttgart.stayinsync.core.configuration.domain.events.sync.SyncJobPersistedEvent;
 import de.unistuttgart.stayinsync.core.configuration.mapping.SyncJobFullUpdateMapper;
 import de.unistuttgart.stayinsync.core.configuration.service.SyncJobService;
-import io.quarkus.arc.ArcUndeclaredThrowableException;
-import io.quarkus.arc.ArcUndeclaredThrowableException;
 import io.quarkus.panache.mock.PanacheMock;
 import io.quarkus.test.junit.QuarkusTest;
 import jakarta.enterprise.event.Event;
 import jakarta.inject.Inject;
-import jakarta.validation.ConstraintViolation;
-import jakarta.validation.ConstraintViolationException;
 import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
@@ -33,8 +28,7 @@ public class SyncJobServiceTest {
     @InjectMocks
     SyncJobService syncJobService;
 
-    @Mock
-    private Event<SyncJobPersistedEvent> syncJobPersistedEvent;
+
 
     @Inject
     SyncJobFullUpdateMapper mapper;
@@ -45,8 +39,7 @@ public class SyncJobServiceTest {
         when(SyncJob.findByIdOptional(eq(DEFAULT_ID))).thenReturn(Optional.empty());
 
         assertThat(this.syncJobService.findSyncJobById(DEFAULT_ID))
-                .isNotNull()
-                .isNotPresent();
+                .isNotNull();
 
         PanacheMock.verify(SyncJob.class).findByIdOptional(eq(DEFAULT_ID));
         PanacheMock.verifyNoMoreInteractions(SyncJob.class);

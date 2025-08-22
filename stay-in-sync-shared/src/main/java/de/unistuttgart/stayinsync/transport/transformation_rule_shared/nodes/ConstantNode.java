@@ -1,16 +1,10 @@
 package de.unistuttgart.stayinsync.transport.transformation_rule_shared.nodes;
 
+
 import com.fasterxml.jackson.databind.JsonNode;
-import lombok.Getter;
-import lombok.Setter;
 
 import java.util.Map;
 
-/**
- * A node that holds a constant, predefined value.
- */
-@Getter
-@Setter
 public class ConstantNode extends Node {
 
     /**
@@ -40,5 +34,13 @@ public class ConstantNode extends Node {
     @Override
     public void calculate(Map<String, JsonNode> dataContext) {
         this.setCalculatedResult(this.getValue());
+    }
+
+    public Object getValue() {
+        return value;
+    }
+
+    public void setValue(Object value) {
+        this.value = value;
     }
 }

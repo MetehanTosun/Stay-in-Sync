@@ -1,4 +1,4 @@
-import {Component, Input} from '@angular/core';
+import {Component, EventEmitter, Input, Output} from '@angular/core';
 import {TagModule} from 'primeng/tag';
 
 @Component({
@@ -10,6 +10,10 @@ import {TagModule} from 'primeng/tag';
 })
 export class JobStatusTagComponent {
   @Input() status: JobDeploymentStatus = JobDeploymentStatus.STOPPING;
+
+  @Input() interactive: boolean = false;
+
+  @Output() click = new EventEmitter<void>();
 
   getStatusLabel(status: JobDeploymentStatus): string {
     return status;
@@ -45,6 +49,11 @@ export class JobStatusTagComponent {
       default:
         return 'pi pi-info-circle';
     }
+  }
+
+
+  clicked() {
+
   }
 }
 

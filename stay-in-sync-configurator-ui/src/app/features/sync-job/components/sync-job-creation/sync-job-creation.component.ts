@@ -29,6 +29,7 @@ import {MessageService} from 'primeng/api';
  */
 @Component({
   selector: 'app-sync-job-creation',
+  standalone: true,
   imports: [
     Dialog,
     Button,

@@ -64,4 +64,8 @@ public class Transformation extends PanacheEntity {
     public static List<Transformation> listAllWithSyncJob() {
         return find("syncJob is not null").list();
     }
+
+    public static List<Transformation> findBySyncJobId(Long syncJobId) {
+        return find("syncJob.id", syncJobId).list();
+    }
 }

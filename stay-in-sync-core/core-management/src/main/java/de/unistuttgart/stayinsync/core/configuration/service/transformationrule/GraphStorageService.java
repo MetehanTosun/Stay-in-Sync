@@ -4,17 +4,17 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.LogicGraphEntity;
 import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.TransformationRule;
+import de.unistuttgart.stayinsync.core.configuration.exception.CoreManagementException;
+
 import de.unistuttgart.stayinsync.transport.dto.transformationrule.GraphDTO;
-import de.unistuttgart.stayinsync.transport.transformation_rule_shared.GraphStatus;
-import de.unistuttgart.stayinsync.transport.transformation_rule_shared.ValidationResult;
 import de.unistuttgart.stayinsync.transport.transformation_rule_shared.nodes.Node;
-import de.unistuttgart.stayinsync.transport.transformation_rule_shared.util.GraphMapper;
 import de.unistuttgart.stayinsync.transport.transformation_rule_shared.validation_error.ValidationError;
 import io.quarkus.logging.Log;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
 import jakarta.ws.rs.NotFoundException;
+import jakarta.ws.rs.core.Response;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -38,10 +38,12 @@ public class GraphStorageService {
 
     /**
      * A record to hold the result of a graph persistence operation.
-     * @param entity The persisted database entity.
+     *
+     * @param entity           The persisted database entity.
      * @param validationErrors A list of all found validation errors. Empty if the graph is valid.
      */
-    public record PersistenceResult(TransformationRule entity, List<ValidationError> validationErrors) {}
+    public record PersistenceResult(TransformationRule entity, List<ValidationError> validationErrors) {
+    }
 
     /**
      * Persists a fully prepared TransformationRule entity.
@@ -61,8 +63,12 @@ public class GraphStorageService {
      * @return An Optional containing the found entity.
      */
     @Transactional(SUPPORTS)
-    public Optional<TransformationRule> findRuleById(Long id) {
-        return TransformationRule.findByIdOptional(id);
+    public TransformationRule findRuleById(Long id) {
+        TransformationRule rule = TransformationRule.findById(id);
+        if (rule == null) {
+            throw new CoreManagementException(Response.Status.NOT_FOUND, "Transfromation Rule was not found", "There is no transformation rule with id %d", id);
+        }
+        return rule;
     }
 
     /**

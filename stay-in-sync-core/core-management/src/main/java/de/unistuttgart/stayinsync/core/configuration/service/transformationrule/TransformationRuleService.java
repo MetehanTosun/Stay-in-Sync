@@ -12,7 +12,6 @@ import de.unistuttgart.stayinsync.transport.dto.transformationrule.Transformatio
 import de.unistuttgart.stayinsync.transport.dto.transformationrule.vFlow.VFlowGraphDTO;
 import de.unistuttgart.stayinsync.transport.transformation_rule_shared.GraphStatus;
 import de.unistuttgart.stayinsync.transport.transformation_rule_shared.nodes.Node;
-import de.unistuttgart.stayinsync.transport.transformation_rule_shared.util.GraphMapper;
 import de.unistuttgart.stayinsync.transport.transformation_rule_shared.validation_error.ValidationError;
 import io.quarkus.logging.Log;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -94,8 +93,7 @@ public class TransformationRuleService {
      */
     @Transactional
     public TransformationRule updateRuleMetadata(Long id, TransformationRulePayloadDTO dto) {
-        TransformationRule ruleToUpdate = storageService.findRuleById(id)
-                .orElseThrow(() -> new NotFoundException("Rule with id " + id + " not found."));
+        TransformationRule ruleToUpdate = storageService.findRuleById(id);
 
         ruleToUpdate.name = dto.getName();
         ruleToUpdate.description = dto.getDescription();
@@ -115,8 +113,7 @@ public class TransformationRuleService {
     @Transactional
     public GraphStorageService.PersistenceResult updateRuleGraph(Long id, VFlowGraphDTO vflowDto) {
         // 1. Find the existing rule entity.
-        TransformationRule ruleToUpdate = storageService.findRuleById(id)
-                .orElseThrow(() -> new NotFoundException("Rule with id " + id + " not found."));
+        TransformationRule ruleToUpdate = storageService.findRuleById(id);
 
         // 2. Translate the VFlow format into the internal persistence format (GraphDTO).
         GraphDTO graphDto = mapper.vflowToGraphDto(vflowDto);
@@ -149,8 +146,7 @@ public class TransformationRuleService {
 
     @Transactional
     public List<ValidationError> getValidationErrorsForRule(Long id) {
-        TransformationRule entity = storageService.findRuleById(id)
-                .orElseThrow(() -> new NotFoundException("TransformationRule with id " + id + " not found."));
+        TransformationRule entity = storageService.findRuleById(id);
 
         // ====================== START DEBUGGING ======================
         Log.info("====== PRÜFUNG INNERHALB DER TRANSAKTION ======");

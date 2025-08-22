@@ -117,9 +117,7 @@ public class TransformationRuleResource {
     @Path("/{id}")
     @Operation(summary = "Returns the metadata for a single Transformation Rule")
     public TransformationRuleDTO getTransformationRule(@Parameter(name = "id", required = true) @PathParam("id") Long id) {
-        return graphStorage.findRuleById(id)
-                .map(ruleMapper::toRuleDTO)
-                .orElseThrow(() -> new NotFoundException("TransformationRule with id " + id + " not found."));
+        return ruleMapper.toRuleDTO(graphStorage.findRuleById(id));
     }
 
     /**
@@ -140,8 +138,7 @@ public class TransformationRuleResource {
     @Operation(summary = "Returns the VFlow graph definition and validation errors for a single rule")
     public VflowGraphResponseDTO getGraphForTransformationRule(@Parameter(name = "id", required = true) @PathParam("id") Long id) {
 
-        TransformationRule entity = graphStorage.findRuleById(id)
-                .orElseThrow(() -> new NotFoundException("TransformationRule with id " + id + " not found."));
+        TransformationRule entity = graphStorage.findRuleById(id);
 
         VFlowGraphDTO graphData = ruleMapper.toVFlowDto(entity);
 

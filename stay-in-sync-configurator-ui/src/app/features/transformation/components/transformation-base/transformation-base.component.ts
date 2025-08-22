@@ -172,6 +172,7 @@ export class TransformationBaseComponent implements OnInit {
   add(rowData: any) {
     console.log('Adding transformation:', rowData);
     rowData.added = true;
+    rowData.deploymentStatus = JobDeploymentStatus.DEPLOYING;
     this.tempStore.addTransformation(rowData);
     console.log('Transformations in tempStore:', this.tempStore.getTransformations());
     this.addedTransformations = this.tempStore.getTransformations();
@@ -185,6 +186,12 @@ export class TransformationBaseComponent implements OnInit {
   remove(rowData: any) {
     console.log('Removing transformation:', rowData);
     rowData.added = false;
+    if(rowData.deploymentStatus === JobDeploymentStatus.DEPLOYING)
+    {
+      rowData.deploymentStatus = JobDeploymentStatus.UNDEPLOYED;
+    } else if(rowData.deploymentStatus === JobDeploymentStatus.DEPLOYED) {
+      rowData.deploymentStatus = JobDeploymentStatus.STOPPING;
+    }
     this.tempStore.removeTransformation(rowData);
     console.log('Transformations in tempStore after removal:', this.tempStore.getTransformations());
     this.addedTransformations = this.tempStore.getTransformations();
@@ -310,39 +317,4 @@ export class TransformationBaseComponent implements OnInit {
     this.router.navigate([`/sync-jobs/create`]);
   }
 
-  /**
-   * Removes the script associated with the specified transformation.
-   * @param {any} rowData - Data of the transformation to update.
-   */
-  removeScript(rowData: any) {
-    if (rowData.id !== null) {
-      this.transformationService.getById(rowData.id).subscribe(transformation => {
-        const updateRequest: UpdateTransformationRequest = {
-          id: transformation.id,
-          syncJobId: transformation.syncJobId ?? null,
-          sourceSystemEndpointIds: [],
-          targetSystemEndpointId: transformation.targetSystemEndpointId ?? null,
-          transformationRuleId: transformation.transformationRuleId ?? null,
-          transformationScriptId: null
-        };
-        console.log('UpdateTransformationRequest:', updateRequest);
-        this.transformationService.update(updateRequest).subscribe(updated => {
-          console.log('Update Response:', updated);
-          this.loadTransformationsFromBackend();
-        });
-      });
-    }
-  }
-
-  filterByAddedTransformations = (value: any, filter: boolean, rowData: Transformation): boolean => {
-    if (filter) {
-      // When checkbox is ticked → only show if this row is in addedTransformations
-      return this.addedTransformations.some(t => t.id === rowData.id);
-    }
-    // When unchecked → show all rows
-    return true;
-  };
-
-  protected readonly JobStatusTagComponent = JobStatusTagComponent;
-  protected readonly JobDeploymentStatus = JobDeploymentStatus;
 }

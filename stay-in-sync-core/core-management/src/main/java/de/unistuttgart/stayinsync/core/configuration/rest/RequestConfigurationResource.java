@@ -187,15 +187,7 @@ public class RequestConfigurationResource {
             description = "The api-request-configuration is not found for a given identifier"
     )
     public Response getSourceSystemEndpoint(@Parameter(name = "id", required = true) @PathParam("id") Long id) {
-        return this.sourceSystemApiRequestConfigurationService.findApiRequestConfigurationById(id)
-                .map(sourceSystemApiRequestConfiguration -> {
-                    Log.debugf("Found api-request-configuration: %s", sourceSystemApiRequestConfiguration);
-                    return Response.ok(fullUpdateMapper.mapToDTO(sourceSystemApiRequestConfiguration)).build();
-                })
-                .orElseThrow(() -> {
-                    Log.warnf("No api-request-configuration found using id %d", id);
-                    return new CoreManagementException(Response.Status.NOT_FOUND, "Unable to find api-request-configuration", "No api-request-configuration found using id %d", id);
-                });
+        return Response.ok(fullUpdateMapper.mapToDTO(this.sourceSystemApiRequestConfigurationService.findApiRequestConfigurationById(id))).build();
     }
 
     @DELETE

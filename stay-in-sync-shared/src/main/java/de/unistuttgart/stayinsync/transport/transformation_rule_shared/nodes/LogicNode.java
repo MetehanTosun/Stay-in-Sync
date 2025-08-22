@@ -11,8 +11,7 @@ import java.util.Map;
 /**
  * A node that performs a logical or arithmetic operation on its inputs.
  */
-@Getter
-@Setter
+
 public class LogicNode extends Node {
 
     private LogicOperator operator;
@@ -71,5 +70,13 @@ public class LogicNode extends Node {
 
         // 3. Store the computed result internally.
         this.setCalculatedResult(result);
+    }
+
+    public LogicOperator getOperator() {
+        return operator;
+    }
+
+    public void setOperator(LogicOperator operator) {
+        this.operator = operator;
     }
 }

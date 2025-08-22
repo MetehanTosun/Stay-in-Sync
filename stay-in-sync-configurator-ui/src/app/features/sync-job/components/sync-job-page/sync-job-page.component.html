@@ -1,99 +1,102 @@
-<p-table
-  #dt2
-  [value]="items"
-  dataKey="id"
-  [rows]="10"
-  [rowsPerPageOptions]="[10, 25, 50]"
-  [loading]="loading"
-  [paginator]="true"
-  [globalFilterFields]="['name', 'description', 'status']"
-  [tableStyle]="{ 'min-width': '75rem', 'min-height': '50rem'}"
->
-  <ng-template #header>
-    <tr>
-      <th style="width:25%">Name</th>
-      <th style="width:35%">Description</th>
-      <th style="width:20%">Status</th>
-      <th style="width:20%">Actions</th>
-    </tr>
-    <tr>
-      <th>
-        <p-columnFilter type="text" field="name" placeholder="Search by name" ariaLabel="Filter Name"></p-columnFilter>
-      </th>
-      <th>
-        <p-columnFilter type="text" field="description" placeholder="Search by description" ariaLabel="Filter Description"></p-columnFilter>
-      </th>
-      <th>
-        <p-columnFilter field="isSimulation" matchMode="equals" [showMenu]="false">
-          <ng-template #filter  let-filter="filterCallback">
-            <p-select [(ngModel)]="selectedStatus" [options]="statuses"
-                      (onChange)="filter($event.value)"
-                      placeholder="Select One"
-                      [showClear]="true"
-                      [style]="{ 'min-width': '12rem' }">
-              <ng-template let-option #item>
-                <p-tag [value]="option.label" [severity]="getSeverity(option.value)" />
-              </ng-template>
-            </p-select>
-          </ng-template>
-        </p-columnFilter>
-      </th>
-      <th></th>
-    </tr>
-  </ng-template>
-  <ng-template #body let-item>
-    <tr>
-      <td>
-        {{ item.name }}
-      </td>
-      <td>
-        {{ item.description }}
-      </td>
-      <td>
-        <p-tag [value]="item.isSimulation ? 'In Simulation' : 'active'" [severity]="getSeverity(item.isSimulation)" />
-      </td>
-      <td>
-        <p-button
-          *ngIf="!item.deployed"
-          icon="pi pi-pencil"
-          class="p-button-rounded p-button-text"
-          (click)="edit(item)"
-          styleClass="p-button-rounded p-button-text">
-        </p-button>
-        <p-button
-          *ngIf="!item.deployed"
-          icon="pi pi-trash"
-          class="p-button-rounded p-button-danger p-button-text"
-          (click)="delete(item)"
-          styleClass="p-button-rounded p-button-danger p-button-text">
-        </p-button>
-        <p-button
-          *ngIf="!item.deployed"
-          icon="pi pi-upload"
-          class="p-button-rounded p-button-success p-button-text"
-          [loading]="deployingId === item.id"
-          (click)="deploy(item)"
-          styleClass="p-button-rounded p-button-success p-button-text">
-        </p-button>
-        <p-button
-          *ngIf="item.deployed"
-          icon="pi pi-times"
-          class="p-button-rounded p-button-danger p-button-text"
-          [loading]="undeployingId === item.id"
-          (click)="undeploy(item)"
-          styleClass="p-button-rounded p-button-danger p-button-text">
-        </p-button>
-    </tr>
-  </ng-template>
-  <ng-template #emptymessage>
-    <tr>
-      <td colspan="3">No items found.</td>
-    </tr>
-  </ng-template>
-</p-table>
-<p-button (click)="openCreateDialog()">
-  Create Sync Job
-</p-button>
+<p-card>
+  <p-toolbar>
+    <div class="p-toolbar-group-left">
+      <h3>Sync Jobs</h3>
+    </div>
+    <div class="p-toolbar-group-right">
+      <p-button (click)="openCreateDialog()">
+        Create Sync Job
+      </p-button>
+    </div>
+  </p-toolbar>
+  <p-table
+    #dt2
+    [value]="items"
+    dataKey="id"
+    [rows]="10"
+    [rowsPerPageOptions]="[10, 25, 50]"
+    [loading]="loading"
+    [paginator]="true"
+    [globalFilterFields]="['name', 'description', 'status']"
+    [tableStyle]="{ 'min-width': '75rem', 'min-height': '50rem'}"
+  >
+    <ng-template #header>
+
+      <tr>
+        <th style="width:25%">Name</th>
+        <th style="width:35%">Description</th>
+        <th style="width:20%">Status</th>
+        <th style="width:20%">Actions</th>
+      <tr>
+        <th>
+          <p-columnFilter type="text" field="name" placeholder="Search by name"
+                          ariaLabel="Filter Name"></p-columnFilter>
+        </th>
+        <th>
+          <p-columnFilter type="text" field="description" placeholder="Search by description"
+                          ariaLabel="Filter Description"></p-columnFilter>
+        </th>
+        <th>
+          <p-columnFilter field="isSimulation" matchMode="equals" [showMenu]="false">
+            <ng-template #filter let-filter="filterCallback">
+              <p-select [(ngModel)]="selectedStatus" [options]="statuses"
+                        (onChange)="filter($event.value)"
+                        placeholder="Select One"
+                        [showClear]="true"
+                        [style]="{ 'min-width': '12rem' }">
+                <ng-template let-option #item>
+                  <p-tag [value]="option.label" [severity]="getSeverity(option.value)"/>
+                </ng-template>
+              </p-select>
+            </ng-template>
+          </p-columnFilter>
+        </th>
+        <th></th>
+      </tr>
+    </ng-template>
+    <ng-template #body let-item>
+      <tr>
+        <td>
+          {{ item.name }}
+        </td>
+        <td>
+          {{ item.description }}
+        </td>
+        <td>
+          <p-tag [value]="item.isSimulation ? 'In Simulation' : 'active'" [severity]="getSeverity(item.isSimulation)"/>
+        </td>
+        <td>
+          <p-button
+            *ngIf="!item.deployed"
+            icon="pi pi-pencil"
+            class="p-button-rounded p-button-text"
+            (click)="edit(item)"
+            styleClass="p-button-rounded p-button-text">
+          </p-button>
+          <p-button
+            *ngIf="!item.deployed"
+            icon="pi pi-trash"
+            class="p-button-rounded p-button-danger p-button-text"
+            (click)="delete(item)"
+            styleClass="p-button-rounded p-button-danger p-button-text">
+          </p-button>
+          <p-button
+            *ngIf="item.deployed"
+            icon="pi pi-times"
+            class="p-button-rounded p-button-danger p-button-text"
+            [loading]="undeployingId === item.id"
+            (click)="undeploy(item)"
+            styleClass="p-button-rounded p-button-danger p-button-text">
+          </p-button>
+      </tr>
+    </ng-template>
+    <ng-template #emptymessage>
+      <tr>
+        <td colspan="3">No items found.</td>
+      </tr>
+    </ng-template>
+  </p-table>
+</p-card>
 <app-sync-job-creation
   *ngIf="showCreateDialog"
   [(visible)]="showCreateDialog"

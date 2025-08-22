@@ -1,15 +1,10 @@
 package de.unistuttgart.stayinsync.transport.dto.transformationrule;
 
-import de.unistuttgart.stayinsync.transport.dto.transformationrule.vFlow.VFlowGraphDTO;
-import lombok.Getter;
-import lombok.Setter;
-
 /**
  * A DTO that carries the full payload for creating or updating a TransformationRule.
  * It combines the metadata (name, description) with the full graph definition.
  */
-@Getter
-@Setter
+
 public class TransformationRulePayloadDTO {
 
     /**
@@ -22,5 +17,19 @@ public class TransformationRulePayloadDTO {
      */
     private String description;
 
+    public String getName() {
+        return name;
+    }
 
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public String getDescription() {
+        return description;
+    }
+
+    public void setDescription(String description) {
+        this.description = description;
+    }
 }

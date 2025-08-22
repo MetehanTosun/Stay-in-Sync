@@ -4,7 +4,6 @@ package de.unistuttgart.stayinsync.core.configuration.service.transformationrule
 import de.unistuttgart.stayinsync.transport.transformation_rule_shared.nodes.FinalNode;
 import de.unistuttgart.stayinsync.transport.transformation_rule_shared.nodes.LogicNode;
 import de.unistuttgart.stayinsync.transport.transformation_rule_shared.nodes.Node;
-import de.unistuttgart.stayinsync.transport.transformation_rule_shared.util.GraphTopologicalSorter;
 import de.unistuttgart.stayinsync.transport.transformation_rule_shared.logic_operator.Operation;
 import de.unistuttgart.stayinsync.transport.transformation_rule_shared.validation_error.*;
 import jakarta.enterprise.context.ApplicationScoped;

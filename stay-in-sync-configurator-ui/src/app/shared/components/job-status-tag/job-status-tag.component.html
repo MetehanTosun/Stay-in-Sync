@@ -3,6 +3,8 @@
     [value]="getStatusLabel(status)"
     [severity]="getStatusSeverity(status)"
     [icon]="getStatusIcon(status)"
-    styleClass="status-tag">
+    styleClass="status-tag"
+  (click)="clicked()">
+
   </p-tag>
 </div>

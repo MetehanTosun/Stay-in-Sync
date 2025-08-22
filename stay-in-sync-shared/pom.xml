@@ -28,12 +28,6 @@
             <scope>provided</scope>
         </dependency>
         <dependency>
-            <groupId>com.fasterxml.jackson.core</groupId>
-            <artifactId>jackson-databind</artifactId>
-            <version>2.18.3</version>
-            <scope>compile</scope>
-        </dependency>
-        <dependency>
             <groupId>jakarta.enterprise</groupId>
             <artifactId>jakarta.enterprise.cdi-api</artifactId>
             <version>4.1.0</version>
@@ -43,12 +37,6 @@
             <groupId>com.networknt</groupId>
             <artifactId>json-schema-validator</artifactId>
             <version>1.5.1</version>
-            <scope>compile</scope>
-        </dependency>
-        <dependency>
-            <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-core</artifactId>
-            <version>3.22.3</version>
             <scope>compile</scope>
         </dependency>
     </dependencies>
