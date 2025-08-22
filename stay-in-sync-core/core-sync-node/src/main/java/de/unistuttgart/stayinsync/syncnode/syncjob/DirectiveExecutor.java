@@ -59,10 +59,8 @@ public class DirectiveExecutor {
                         return Uni.createFrom().nullItem();
                     }
                 })
-                .onFailure().invoke(failure -> {
-                    Log.errorf(failure, "TID: %d - A technical error occurred during directive execution for '%s'",
-                            transformationId, directive.get__directiveType());
-                })
+                .onFailure().invoke(failure -> Log.errorf(failure, "TID: %d - A technical error occurred during directive execution for '%s'",
+                        transformationId, directive.get__directiveType()))
                 .replaceWithVoid();
     }
 
@@ -188,12 +186,12 @@ public class DirectiveExecutor {
         return builder.build().toString();
     }
 
-    private String resolvePathParameters(String pathTemplate, Map<String, ? extends Object> pathParameters) {
+    private String resolvePathParameters(String pathTemplate, Map<String, ?> pathParameters) {
         if (pathParameters == null || pathParameters.isEmpty()) {
             return pathTemplate;
         }
         String resolvedPath = pathTemplate;
-        for (Map.Entry<String, ? extends Object> entry : pathParameters.entrySet()) {
+        for (Map.Entry<String, ?> entry : pathParameters.entrySet()) {
             String placeholder = "{" + entry.getKey() + "}";
             Object value = entry.getValue();
             if (value != null) {

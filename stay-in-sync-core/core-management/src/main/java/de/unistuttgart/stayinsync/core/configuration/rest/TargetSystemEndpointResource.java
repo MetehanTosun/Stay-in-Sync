@@ -2,7 +2,6 @@ package de.unistuttgart.stayinsync.core.configuration.rest;
 
 import static jakarta.ws.rs.core.MediaType.APPLICATION_JSON;
 
-import java.net.URI;
 import java.util.List;
 
 import org.eclipse.microprofile.openapi.annotations.Operation;
@@ -28,7 +27,6 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.Context;
-import jakarta.ws.rs.core.HttpHeaders;
 import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.core.UriInfo;
 
