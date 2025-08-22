@@ -18,9 +18,7 @@ import {InputText} from 'primeng/inputtext';
     Button,
     PrimeTemplate,
     TableModule,
-    Dialog,
     FormsModule,
-    InputText
   ],
   templateUrl: './transformation-script-selection.component.html',
   styleUrl: './transformation-script-selection.component.css'
@@ -30,8 +28,6 @@ export class TransformationScriptSelectionComponent {
   @Output() transformationUpdated = new EventEmitter<void>();
   @Input({transform: numberAttribute}) transformationId: number | null = null;
   items: TransformationScript[] = [];
-  displayCreateDialog: boolean = false;
-  newScript: TransformationScript = {};
 
   constructor(private transformationService: TransformationService, private router: Router, private scriptEditorNavigationService: ScriptEditorNavigationService, private transformationScriptService: TransformationScriptService) {
     this.loadScripts();
@@ -66,34 +62,13 @@ export class TransformationScriptSelectionComponent {
 
 
   createNewScript() {
-    this.displayCreateDialog = true;
+    const data = {transformationId: this.transformationId ?? 0};
+    this.scriptEditorNavigationService.navigateToScriptEditor(data)
   }
 
   private loadScripts() {
     this.transformationScriptService.getAll().subscribe(scripts => {
       this.items = scripts;
     })
-  }
-
-  cancelCreateScriptDialog() {
-    this.displayCreateDialog = false;
-  }
-//TODO: Fix
-  createScriptShell() {
-    this.transformationScriptService.create(this.newScript).subscribe(
-      (createdScript) => {
-        console.log('Script created:', createdScript);
-        this.displayCreateDialog = false;
-        this.loadScripts();
-        this.scriptEditorNavigationService.navigateToScriptEditor({
-          id: String(createdScript.id),
-          transformationId: this.transformationId ?? 0,
-          scriptName: createdScript.name
-        });
-      },
-      (error) => {
-        console.error('Error creating script:', error);
-      }
-    );
   }
 }

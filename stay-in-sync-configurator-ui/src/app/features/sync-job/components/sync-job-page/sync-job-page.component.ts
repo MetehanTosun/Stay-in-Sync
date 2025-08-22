@@ -17,6 +17,8 @@ import {Select} from 'primeng/select';
 import {Tag} from 'primeng/tag';
 import {FormsModule} from '@angular/forms';
 import {NgIf} from '@angular/common';
+import {Toast} from 'primeng/toast';
+import {ConfirmDialog} from 'primeng/confirmdialog';
 import {Toolbar} from 'primeng/toolbar';
 import {Card} from 'primeng/card';
 
@@ -37,6 +39,7 @@ import {Card} from 'primeng/card';
     NgIf,
     Toolbar,
     Card
+    NgIf,
   ],
   templateUrl: './sync-job-page.component.html',
   standalone: true,

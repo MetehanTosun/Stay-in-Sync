@@ -16,17 +16,3 @@
     </tr>
   </ng-template>
 </p-table>
-<p-dialog
-  header="New Script"
-  [(visible)]="displayCreateDialog"
-  (onHide)="cancelCreateScriptDialog()"
-  [modal]="true"
-  [style]="{ width: '50vw', maxWidth: '20vw', minHeight: '20vw' }">
-  <div class="p-fluid">
-    <div class="p-field">
-      <label for="name">Name</label>
-      <input id="name" type="text" pInputText [(ngModel)]="newScript.name" />
-    </div>
-    <p-button label="Create" (click)="createScriptShell()"></p-button>
-  </div>
-</p-dialog>

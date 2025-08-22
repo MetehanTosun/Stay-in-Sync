@@ -27,7 +27,7 @@ public class SyncJob extends PanacheEntity {
 
     public boolean isSimulation;
 
-    @OneToMany(mappedBy = "syncJob", cascade = CascadeType.ALL)
+    @OneToMany(mappedBy = "syncJob")
     @JsonManagedReference("syncJob-back-reference")
     public Set<Transformation> transformations = new HashSet<>();
 

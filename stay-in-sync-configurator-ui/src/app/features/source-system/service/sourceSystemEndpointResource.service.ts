@@ -17,6 +17,10 @@ import {Observable} from 'rxjs';
 import {CreateSourceSystemEndpointDTO} from '../models/createSourceSystemEndpointDTO';
 // @ts-ignore
 import {SourceSystemEndpointDTO} from '../models/sourceSystemEndpointDTO';
+// @ts-ignore
+import {TypeScriptGenerationRequest} from '../models/typescriptGenerationRequest';
+// @ts-ignore
+import {TypeScriptGenerationResponse} from '../models/typescriptGenerationResponse';
 
 
 @Injectable({
@@ -160,6 +164,43 @@ export class SourceSystemEndpointResourceService {
     return this.httpClient.request<any>('post', `/api/config/source-system/${sourceSystemId}/endpoint`,
       {
         body: createSourceSystemEndpointDTO,
+      }
+    );
+  }
+
+  /**
+   * Generate TypeScript interface from JSON schema
+   * @param endpointId The ID of the endpoint
+   * @param request The TypeScript generation request
+   * @param observe set whether or not to return the data Observable as the body, response or events. defaults to returning the body.
+   * @param reportProgress flag to report request and response progress.
+   */
+  public generateTypeScript(endpointId: number, request: TypeScriptGenerationRequest, observe?: 'body', reportProgress?: boolean, options?: {
+    httpHeaderAccept?: 'application/json',
+    context?: HttpContext
+  }): Observable<TypeScriptGenerationResponse>;
+  public generateTypeScript(endpointId: number, request: TypeScriptGenerationRequest, observe?: 'response', reportProgress?: boolean, options?: {
+    httpHeaderAccept?: 'application/json',
+    context?: HttpContext
+  }): Observable<HttpResponse<TypeScriptGenerationResponse>>;
+  public generateTypeScript(endpointId: number, request: TypeScriptGenerationRequest, observe?: 'events', reportProgress?: boolean, options?: {
+    httpHeaderAccept?: 'application/json',
+    context?: HttpContext
+  }): Observable<HttpEvent<TypeScriptGenerationResponse>>;
+  public generateTypeScript(endpointId: number, request: TypeScriptGenerationRequest, observe: any = 'body', reportProgress: boolean = false, options?: {
+    httpHeaderAccept?: 'application/json',
+    context?: HttpContext
+  }): Observable<any> {
+    return this.httpClient.request<TypeScriptGenerationResponse>('post', `/api/config/source-system/endpoint/${endpointId}/generate-typescript`,
+      {
+        body: request,
+        context: options?.context,
+        observe: observe,
+        reportProgress: reportProgress,
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': options?.httpHeaderAccept || 'application/json'
+        }
       }
     );
   }

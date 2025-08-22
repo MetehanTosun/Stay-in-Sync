@@ -2,6 +2,7 @@ package de.unistuttgart.stayinsync.transport.transformation_rule_shared.nodes;
 
 import com.fasterxml.jackson.databind.JsonNode;
 
+import de.unistuttgart.stayinsync.transport.exception.GraphEvaluationException;
 import java.util.List;
 import java.util.Map;
 
@@ -106,4 +107,5 @@ public abstract class Node {
     public void setCalculatedResult(Object calculatedResult) {
         this.calculatedResult = calculatedResult;
     }
+    public abstract void calculate(Map<String, JsonNode> dataContext) throws GraphEvaluationException;
 }

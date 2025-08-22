@@ -2,7 +2,11 @@ package de.unistuttgart.stayinsync.transport.transformation_rule_shared.nodes;
 
 import com.fasterxml.jackson.databind.JsonNode;
 
+import de.unistuttgart.stayinsync.transport.exception.GraphEvaluationException;
+
+import java.util.Arrays;
 import java.util.Map;
+import de.unistuttgart.stayinsync.transport.exception.NodeConfigurationException;
 
 /**
  * A node that provides a value by extracting it from an external JSON data source
@@ -29,20 +33,20 @@ public class ProviderNode extends Node {
      * Constructs a new ProviderNode with a specific jsonPath.
      *
      * @param jsonPath The full semantic path to the data source. Cannot be null or empty.
-     * @throws IllegalArgumentException if jsonPath is null or empty.
+     * @throws NodeConfigurationException if jsonPath is null or empty.
      */
-    public ProviderNode(String jsonPath) {
+    public ProviderNode(String jsonPath) throws NodeConfigurationException {
         if (jsonPath == null || jsonPath.trim().isEmpty()) {
-            throw new IllegalArgumentException("jsonPath for ProviderNode cannot be null or empty.");
+            throw new NodeConfigurationException("jsonPath for ProviderNode cannot be null or empty.");
         }
 
         if(!jsonPath.startsWith("source")){
-            throw new IllegalArgumentException("jsonPath for ProviderNode must start with 'source'.");
+            throw new NodeConfigurationException("jsonPath for ProviderNode must start with 'source'.");
         }
 
         String[] parts = jsonPath.split("\\.");
         if (parts.length < 2) {
-            throw new IllegalStateException("Invalid jsonPath format on node " + getId() + ": Must contain 'source.{sourceName}'.");
+            throw new NodeConfigurationException("Invalid jsonPath format on node " + getId() + ": Must contain 'source.{sourceName}'.");
         }
 
         this.jsonPath = jsonPath;
@@ -63,26 +67,43 @@ public class ProviderNode extends Node {
      *
      * @param dataContext A map where keys are logical source names and values are the
      * corresponding root {@link JsonNode} objects.
-     * @throws IllegalStateException if the {@code jsonPath} is malformed or if the
+     * @throws GraphEvaluationException if the {@code jsonPath} is malformed or if the
      * required data source is not found in the dataContext.
      */
     @Override
-    public void calculate(Map<String, JsonNode> dataContext) {
+    public void calculate(Map<String, JsonNode> dataContext) throws GraphEvaluationException {
         String[] jsonPathKeys = jsonPath.split("\\.");
 
         if(!dataContext.containsKey("source")) {
-            throw new IllegalArgumentException("Malformed dataContext, source is not the first scoped key.");
+            throw new GraphEvaluationException(
+                    GraphEvaluationException.ErrorType.DATA_NOT_FOUND,
+                    "Invalid DataContext",
+                    "Malformed dataContext, 'source' is not the first scoped key.",
+                    null
+            );
         }
         JsonNode sourceScope = dataContext.get("source");
 
         if(sourceScope == null) {
-            throw new IllegalArgumentException("Malformed dataContext, no defined sourceSystemNames found.");
+            throw new GraphEvaluationException(
+                    GraphEvaluationException.ErrorType.DATA_NOT_FOUND,
+                    "Invalid DataContext",
+                    "Malformed dataContext, no defined sourceSystemNames found under 'source'.",
+                    null
+            );
         }
 
         for (int i = 0; i < jsonPath.split("\\.").length; i++) {
-            sourceScope = sourceScope.get(jsonPathKeys[i]);
-            if(sourceScope == null) {
-                throw new IllegalArgumentException("Malformed dataContext, no defined keys on path to insertable value.");
+            String key = jsonPathKeys[i];
+            sourceScope = sourceScope.get(key);
+
+            if (sourceScope == null) {
+                throw new GraphEvaluationException(
+                        GraphEvaluationException.ErrorType.DATA_NOT_FOUND,
+                        "Path Not Found",
+                        "Malformed dataContext, key '" + key + "' in path '" + jsonPath + "' does not exist.",
+                        null
+                );
             }
         }
 

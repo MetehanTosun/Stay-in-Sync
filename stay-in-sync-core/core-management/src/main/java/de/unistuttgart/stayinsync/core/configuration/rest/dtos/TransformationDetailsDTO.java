@@ -1,5 +1,9 @@
 package de.unistuttgart.stayinsync.core.configuration.rest.dtos;
 
+import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.SourceSystemApiRequestConfiguration;
+
+import java.util.Set;
+
 import de.unistuttgart.stayinsync.transport.domain.JobDeploymentStatus;
 
 public record TransformationDetailsDTO(
@@ -11,6 +15,7 @@ public record TransformationDetailsDTO(
         // Set<Long> sourceSystemVariableIds,
         JobDeploymentStatus deploymentStatus,
         Long transformationRuleId,
-        TransformationScriptDTO script
+        TransformationScriptDTO script,
+        Set<SourceSystemApiRequestConfiguration> sourceSystemApiRequestConfigurations
 ) {
 }

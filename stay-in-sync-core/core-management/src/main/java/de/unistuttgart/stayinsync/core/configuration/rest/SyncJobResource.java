@@ -6,6 +6,7 @@ import de.unistuttgart.stayinsync.core.configuration.mapping.SyncJobFullUpdateMa
 import de.unistuttgart.stayinsync.core.configuration.rest.dtos.SyncJobCreationDTO;
 import de.unistuttgart.stayinsync.core.configuration.rest.dtos.SyncJobDTO;
 import de.unistuttgart.stayinsync.core.configuration.service.SyncJobService;
+import de.unistuttgart.stayinsync.core.configuration.rest.Examples;
 import io.quarkus.logging.Log;
 import jakarta.inject.Inject;
 import jakarta.validation.Valid;
@@ -25,6 +26,7 @@ import org.eclipse.microprofile.openapi.annotations.parameters.Parameter;
 import org.eclipse.microprofile.openapi.annotations.parameters.RequestBody;
 import org.eclipse.microprofile.openapi.annotations.responses.APIResponse;
 import org.hibernate.engine.spi.Status;
+
 
 import java.net.URI;
 import java.util.List;
@@ -180,20 +182,18 @@ public class SyncJobResource {
                                                        examples = @ExampleObject(name = "valid_sync_job", value = Examples.VALID_EXAMPLE_SYNCJOB)
                                                )
                                        )
-                                       @PathParam("id") Long id, @Valid @NotNull SyncJobDTO syncJobDTO) {
+                                       @PathParam("id") Long id, @Valid @NotNull SyncJobCreationDTO syncJobDTO) {
         if (!Objects.equals(id, syncJobDTO.id())) {
             throw new CoreManagementException(Response.Status.BAD_REQUEST, "Id missmatch", "Make sure that the request body entity id matches the request parameter");
         }
 
-        return this.syncJobService.replaceSyncJob(syncJobDTO)
-                .map(updatedSyncJob -> {
-                    Log.debugf("Sync-job replaced with new values %s", updatedSyncJob);
-                    return Response.noContent().build();
-                })
-                .orElseGet(() -> {
-                    Log.debugf("No sync-job found with id %d", id);
-                    return Response.status(Response.Status.NOT_FOUND).build();
-                });
+        var updatedSyncJob = this.syncJobService.replaceSyncJob(syncJobDTO);
+        if (updatedSyncJob != null) {
+            Log.debugf("Sync-job replaced with new values %s", updatedSyncJob);
+            return Response.noContent().build();
+        } else {
+            Log.debugf("No sync-job found with id %d", id);
+            return Response.status(Response.Status.NOT_FOUND).build();
+        }
     }
-
 }

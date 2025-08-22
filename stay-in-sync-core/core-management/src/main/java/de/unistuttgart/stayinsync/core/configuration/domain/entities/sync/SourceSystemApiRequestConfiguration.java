@@ -12,7 +12,7 @@ import java.util.Set;
 @DiscriminatorValue("SOURCE_SYSTEM")
 public class SourceSystemApiRequestConfiguration extends ApiRequestConfiguration {
 
-    @ManyToMany(mappedBy = "sourceSystemApiRequestConfigrations")
+    @ManyToMany(mappedBy = "sourceSystemApiRequestConfigurations")
     public Set<Transformation> transformations;
 
     @ManyToOne

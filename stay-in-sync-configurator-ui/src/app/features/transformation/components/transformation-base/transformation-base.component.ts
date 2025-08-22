@@ -100,6 +100,8 @@ export class TransformationBaseComponent implements OnInit {
 
   hasSyncJobFilter: boolean = false;
 
+  @Input() selectedSyncJobId: number | undefined;
+
   /**
    * @constructor
    * @param {TransformationService} transformationService - Service for managing transformations.
@@ -131,6 +133,7 @@ export class TransformationBaseComponent implements OnInit {
    * Sets the `added` flag for transformations that are present in the temp store.
    */
   setAddedFlagForIntersection() {
+    this.addedTransformations = this.tempStore.getTransformations();
     const addedIds = this.addedTransformations.map(t => t.id);
     console.log('Added Transformation IDs:', addedIds);
     console.log('All Transformations:', this.transformations);
@@ -145,8 +148,10 @@ export class TransformationBaseComponent implements OnInit {
   loadTransformationsFromBackend() {
     this.transformationService.getAllWithoutSyncJob().subscribe(
       (transformations: Transformation[]) => {
-        this.transformations = transformations;
-        this.addedTransformations = this.tempStore.getTransformations();
+        this.transformations = transformations.filter(t => t.syncJobId == null);
+        console.log('Transformations vor Filterung:', transformations);
+        this.transformations = transformations.filter(t => t.syncJobId === null);
+        console.log('Transformations nach Filterung:', this.transformations);
         this.setAddedFlagForIntersection();
         this.transformationChanged();
         console.log('Transformations from backend loaded:', this.transformations);

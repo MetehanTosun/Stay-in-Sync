@@ -106,7 +106,8 @@ public class DispatcherStateService {
         List<Node> graphNodes = new ArrayList<>();
         if(rule != null)
         {
-        graphNodes = graphMapperService.toNodeGraph(rule.graphDTO());
+            GraphMapper.MappingResult mappingResult = graphMapperService.toNodeGraph(rule.graphDTO());
+            graphNodes = mappingResult.nodes();
         }
 
         TransformJob job = new TransformJob(

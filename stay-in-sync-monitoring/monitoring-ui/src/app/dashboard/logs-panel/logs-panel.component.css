@@ -1,0 +1,66 @@
+::ng-deep .level.info { color: blue !important; }
+::ng-deep .level.warn { color: orange !important; }
+::ng-deep .level.error { color: red !important; }
+::ng-deep .level.debug { color: green !important; }
+::ng-deep .level.trace { color: gray !important; }
+
+
+.log-line {
+  border-left: 4px solid transparent;
+  padding: 8px 12px;
+  margin: 8px 0;
+  background-color: #f9f9f9;
+  border-radius: 6px;
+  font-family: monospace;
+  white-space: pre-wrap;
+  word-break: break-word;
+  box-shadow: 0 0 4px rgba(0,0,0,0.05);
+}
+
+.log-line .meta {
+  display: flex;
+  gap: 12px;
+  font-size: 12px;
+  margin-bottom: 4px;
+  color: #666;
+}
+
+.log-line .level {
+  font-weight: bold;
+  text-transform: uppercase;
+}
+
+.log-line .message {
+  margin: 0;
+  font-size: 13px;
+}
+
+.log-line.info {
+  border-left-color: #007bff;
+}
+
+.log-line.warn {
+  border-left-color: #ff9800;
+  background-color: #fff8e1;
+}
+
+.log-line.error {
+  border-left-color: #f44336;
+  background-color: #ffebee;
+}
+
+.log-line.debug {
+  border-left-color: #4caf50;
+  background-color: #e8f5e9;
+}
+
+.log-line.trace {
+  border-left-color: #9e9e9e;
+  background-color: #f5f5f5;
+}
+
+.no-logs {
+  font-style: italic;
+  color: #999;
+  padding: 12px;
+}

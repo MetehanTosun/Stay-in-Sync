@@ -3,16 +3,18 @@ package de.unistuttgart.stayinsync.core.configuration.rest;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.TransformationRule;
+import de.unistuttgart.stayinsync.core.configuration.exception.CoreManagementException;
 import de.unistuttgart.stayinsync.core.configuration.rest.dtos.OperatorMetadataDTO;
 import de.unistuttgart.stayinsync.core.configuration.rest.dtos.TransformationRuleDTO;
 import de.unistuttgart.stayinsync.core.configuration.service.transformationrule.TransformationRuleMapperService;
 import de.unistuttgart.stayinsync.core.configuration.service.transformationrule.TransformationRuleService;
 import de.unistuttgart.stayinsync.core.configuration.service.transformationrule.GraphStorageService;
-import de.unistuttgart.stayinsync.core.configuration.util.OperatorMetadata;
+import de.unistuttgart.stayinsync.core.configuration.util.OperatorMetadataService;
 import de.unistuttgart.stayinsync.transport.dto.transformationrule.GraphPersistenceResponseDTO;
 import de.unistuttgart.stayinsync.transport.dto.transformationrule.TransformationRulePayloadDTO;
 import de.unistuttgart.stayinsync.transport.dto.transformationrule.vFlow.VFlowGraphDTO;
 import de.unistuttgart.stayinsync.transport.dto.transformationrule.vFlow.VflowGraphResponseDTO;
+import de.unistuttgart.stayinsync.transport.exception.NodeConfigurationException;
 import de.unistuttgart.stayinsync.transport.transformation_rule_shared.validation_error.ValidationError;
 import io.quarkus.logging.Log;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -50,7 +52,7 @@ public class TransformationRuleResource {
     ObjectMapper jsonObjectMapper;
 
     @Inject
-    OperatorMetadata operatorMetadataService;
+    OperatorMetadataService operatorMetadataService;
 
 
     @GET
@@ -66,32 +68,41 @@ public class TransformationRuleResource {
     @Consumes(APPLICATION_JSON)
     @Operation(summary = "Creates a new Transformation Rule shell",
             description = "Creates the initial rule with metadata and a default graph containing only a FinalNode.")
-    public Response createTransformationRule(TransformationRulePayloadDTO dto, @Context UriInfo uriInfo) {
-        if (dto.getName() == null || dto.getName().trim().isEmpty()) {
-            throw new BadRequestException("Rule name must not be empty.");
+    public Response createTransformationRule(TransformationRulePayloadDTO payload, @Context UriInfo uriInfo) {
+        if (payload.getName() == null || payload.getName().trim().isEmpty()) {
+            throw new CoreManagementException(Response.Status.BAD_REQUEST,"Invalid Request",
+                    "Rule name must not be empty");
         }
-
-        GraphStorageService.PersistenceResult result = ruleService.createRule(dto);
-
-        TransformationRule createdRule = result.entity();
-
-        var location = uriInfo.getAbsolutePathBuilder().path(Long.toString(createdRule.id)).build();
-        Log.debugf("New TransformationRule created with URI %s", location);
-
-        return Response.created(location).entity(ruleMapper.toRuleDTO(createdRule)).build();
+        try {
+            GraphStorageService.PersistenceResult result = ruleService.createRule(payload);
+            TransformationRule createdRule = result.entity();
+            var location = uriInfo.getAbsolutePathBuilder().path(Long.toString(createdRule.id)).build();
+            Log.infof("Successfully created TransformationRule '%s' with id %d.", createdRule.name, createdRule.id);
+            return Response.created(location).entity(ruleMapper.toRuleDTO(createdRule)).build();
+        } catch (CoreManagementException e) {
+            Log.warnf("Failed to create transformation rule: %s", e.getMessage());
+            throw e;
+        } catch (Exception e) {
+            Log.errorf(e, "Unexpected error in createTransformationRule for name '%s'", payload.getName());
+            throw new CoreManagementException(Response.Status.INTERNAL_SERVER_ERROR,
+                    "Creation Failed", "An unexpected error occurred while creating the rule.");
+        }
     }
 
     @PUT
     @Path("/{id}")
     @Consumes(APPLICATION_JSON)
     @Operation(summary = "Updates the metadata of an existing Transformation Rule")
-    public Response updateTransformationRuleMetadata(@Parameter(name = "id", required = true) @PathParam("id") Long id, TransformationRulePayloadDTO dto) { // Wir verwenden hier das PayloadDTO, da es name und beschreibung enthält
-
-        TransformationRule updatedRule = ruleService.updateRuleMetadata(id, dto);
-
-        Log.debugf("Metadata for TransformationRule with id %d was updated.", id);
-
-        return Response.ok(ruleMapper.toRuleDTO(updatedRule)).build();
+    public Response updateTransformationRuleMetadata(@Parameter(name = "id", required = true) @PathParam("id") Long id, TransformationRulePayloadDTO payload) {
+        try {
+            TransformationRule updatedRule = ruleService.updateRuleMetadata(id, payload);
+            Log.infof("Successfully updated metadata for rule with id %d.", id);
+            return Response.ok(ruleMapper.toRuleDTO(updatedRule)).build();
+        } catch (Exception e) {
+            Log.errorf(e, "Unexpected error in updateTransformationRuleMetadata for id %d", id);
+            throw new CoreManagementException(Response.Status.INTERNAL_SERVER_ERROR,
+                    "Update Failed", "An unexpected error occurred while updating the rule metadata.");
+        }
     }
 
     @PUT
@@ -99,16 +110,22 @@ public class TransformationRuleResource {
     @Consumes(APPLICATION_JSON)
     @Operation(summary = "Updates the graph of an existing Transformation Rule")
     public Response updateTransformationRuleGraph(@Parameter(name = "id", required = true) @PathParam("id") Long id, VFlowGraphDTO vflowDto) {
+        try {
+            var result = ruleService.updateRuleGraph(id, vflowDto);
 
-        var result = ruleService.updateRuleGraph(id, vflowDto);
+            GraphPersistenceResponseDTO responseDto = new GraphPersistenceResponseDTO(
+                    ruleMapper.toGraphDTO(result.entity()),
+                    result.validationErrors()
+            );
 
-        GraphPersistenceResponseDTO responseDto = new GraphPersistenceResponseDTO(
-                ruleMapper.toGraphDTO(result.entity()),
-                result.validationErrors()
-        );
+            Log.infof("Successfully updated graph for rule with id %d. New status: %s", id, result.entity().graphStatus);
+            return Response.ok(responseDto).build();
 
-        Log.debugf("Graph for TransformationRule with id %d was updated.", id);
-        return Response.ok(responseDto).build();
+        } catch (Exception e) {
+            Log.errorf(e, "Unexpected error in updateTransformationRuleGraph for id %d", id);
+            throw new CoreManagementException(Response.Status.INTERNAL_SERVER_ERROR,
+                    "Update Failed", "An unexpected error occurred while updating the graph.");
+        }
     }
 
 
@@ -117,7 +134,7 @@ public class TransformationRuleResource {
     @Path("/{id}")
     @Operation(summary = "Returns the metadata for a single Transformation Rule")
     public TransformationRuleDTO getTransformationRule(@Parameter(name = "id", required = true) @PathParam("id") Long id) {
-        return ruleMapper.toRuleDTO(graphStorage.findRuleById(id));
+      return ruleMapper.toRuleDTO(graphStorage.findRuleById(id));
     }
 
     /**
@@ -128,7 +145,9 @@ public class TransformationRuleResource {
     @GET
     @Operation(summary = "Returns the metadata for all Transformation Rules")
     public List<TransformationRuleDTO> getAllTransformationRules() {
-        return graphStorage.findAllRules().stream()
+        List<TransformationRule> rules = graphStorage.findAllRules();
+        Log.infof("Found %d transformation rules.", rules.size());
+        return rules.stream()
                 .map(ruleMapper::toRuleDTO)
                 .collect(Collectors.toList());
     }
@@ -141,9 +160,9 @@ public class TransformationRuleResource {
         TransformationRule entity = graphStorage.findRuleById(id);
 
         VFlowGraphDTO graphData = ruleMapper.toVFlowDto(entity);
-
         List<ValidationError> errors = ruleService.getValidationErrorsForRule(id);
 
+        Log.infof("Returning graph for rule '%s' with %d validation errors.", entity.name, errors.size());
         return new VflowGraphResponseDTO(graphData.getNodes(), graphData.getEdges(), errors);
     }
 
@@ -159,10 +178,12 @@ public class TransformationRuleResource {
     public Response deleteTransformationRule(@Parameter(name = "id", required = true) @PathParam("id") Long id) {
         boolean deleted = graphStorage.deleteRuleById(id);
         if (deleted) {
-            Log.debugf("TransformationRule with id %d deleted.", id);
+            Log.infof("Successfully deleted TransformationRule with id %d", id);
             return Response.noContent().build();
         } else {
-            throw new NotFoundException("TransformationRule with id " + id + " not found for deletion.");
+            Log.warnf("Attempted to delete non-existent transformation rule with id %d", id);
+            throw new CoreManagementException(Response.Status.NOT_FOUND,
+                    "Not Found", "TransformationRule with id %d could not be found for deletion.", id);
         }
     }
 }

@@ -3,8 +3,10 @@ package de.unistuttgart.stayinsync.core.configuration.service;
 import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.*;
 import de.unistuttgart.stayinsync.core.configuration.exception.CoreManagementException;
 import de.unistuttgart.stayinsync.core.configuration.mapping.TransformationMapper;
+import de.unistuttgart.stayinsync.core.configuration.mapping.targetsystem.RequestConfigurationMapper;
 import de.unistuttgart.stayinsync.core.configuration.rest.dtos.TransformationAssemblyDTO;
 import de.unistuttgart.stayinsync.core.configuration.rest.dtos.TransformationShellDTO;
+import de.unistuttgart.stayinsync.core.configuration.rest.dtos.targetsystem.GetRequestConfigurationDTO;
 import de.unistuttgart.stayinsync.core.configuration.rest.dtos.TransformationStatusUpdate;
 import de.unistuttgart.stayinsync.core.configuration.rest.dtos.targetsystem.UpdateTransformationRequestConfigurationDTO;
 import de.unistuttgart.stayinsync.core.configuration.service.transformationrule.GraphStorageService;
@@ -21,7 +23,7 @@ import org.eclipse.microprofile.reactive.messaging.Emitter;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
-import java.util.stream.Collectors;
+
 
 import static de.unistuttgart.stayinsync.transport.domain.JobDeploymentStatus.*;
 import static jakarta.transaction.Transactional.TxType.REQUIRED;
@@ -33,6 +35,9 @@ public class TransformationService {
 
     @Inject
     TransformationMapper mapper;
+
+    @Inject
+    RequestConfigurationMapper requestConfigurationMapper;
 
     @Inject
     SyncJobService syncJobService;
@@ -54,6 +59,14 @@ public class TransformationService {
         Log.debugf("Creating new transformation shell with name: %s", dto.name());
         Transformation transformation = new Transformation();
         mapper.updateFromShellDTO(dto, transformation);
+
+        TransformationScript script = new TransformationScript();
+        script.name = dto.name() + " Script";
+        script.typescriptCode = "";
+
+        script.transformation = transformation;
+        transformation.transformationScript = script;
+
         transformation.persist();
         return transformation;
     }
@@ -74,15 +87,12 @@ public class TransformationService {
         TransformationRule rule = TransformationRule.<TransformationRule>findByIdOptional(dto.transformationRuleId())
                 .orElseThrow(() -> new CoreManagementException(Response.Status.BAD_REQUEST, "Invalid Rule ID", "TransformationRule with id %d not found.", dto.transformationRuleId()));
 
-        Set<SourceSystemEndpoint> sourceEndpoints = dto.sourceSystemEndpointIds().stream()
-                .map(id -> SourceSystemEndpoint.<SourceSystemEndpoint>findByIdOptional(id)
-                        .orElseThrow(() -> new CoreManagementException(Response.Status.BAD_REQUEST, "Invalid SourceSystemEndpoint ID", "SourceSystemEndpoint with id %d not found.", id)))
-                .collect(Collectors.toSet());
+        // NOTE: Previously collected SourceSystemEndpoints here; will be replaced with ARC configs when source ARCs are modeled
 
         transformation.syncJob = syncJobService.findSyncJobById(dto.syncJobId());
         transformation.transformationScript = script;
         transformation.transformationRule = rule;
-        //TODO: replace with api request configs
+        // NOTE: replace with api request configs
         //transformation.sourceSystemEndpoints = sourceEndpoints;
 
         if (script != null) {
@@ -94,6 +104,17 @@ public class TransformationService {
         }
 
         return transformation;
+    }
+
+    public List<GetRequestConfigurationDTO> getTargetArcs(Long transformationId){
+        Log.debugf("Getting Target ARCs for Transformation with id %d", transformationId);
+
+        Transformation transformation = Transformation.<Transformation>findByIdOptional(transformationId)
+                .orElseThrow(() -> new CoreManagementException(Response.Status.NOT_FOUND, "Transformation not found", "Transformation with id %d not found.", transformationId));
+
+        Set<TargetSystemApiRequestConfiguration> targetArcs = transformation.targetSystemApiRequestConfigurations;
+        List<TargetSystemApiRequestConfiguration> targetArcsToList =  targetArcs.stream().toList();
+        return requestConfigurationMapper.mapToGetDTOList(targetArcsToList);
     }
 
     @Transactional

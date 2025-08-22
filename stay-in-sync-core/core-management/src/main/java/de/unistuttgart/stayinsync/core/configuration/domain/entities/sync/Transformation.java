@@ -30,7 +30,8 @@ public class Transformation extends PanacheEntity {
     public JobDeploymentStatus deploymentStatus = JobDeploymentStatus.UNDEPLOYED;
 
     public String workerHostName;
-    @OneToOne
+
+    @OneToOne(cascade = CascadeType.ALL)
     public TransformationRule transformationRule;
 
     @ManyToMany(cascade = CascadeType.ALL)
@@ -39,7 +40,7 @@ public class Transformation extends PanacheEntity {
             joinColumns = @JoinColumn(name = "transformation_id"),
             inverseJoinColumns = @JoinColumn(name = "source_system_api_request_configuration_id")
     )
-    public Set<SourceSystemApiRequestConfiguration> sourceSystemApiRequestConfigrations = new HashSet<>();
+    public Set<SourceSystemApiRequestConfiguration> sourceSystemApiRequestConfigurations = new HashSet<>();
 
     @ManyToMany
     @JoinTable(
@@ -68,4 +69,6 @@ public class Transformation extends PanacheEntity {
     public static List<Transformation> findBySyncJobId(Long syncJobId) {
         return find("syncJob.id", syncJobId).list();
     }
+
+
 }
