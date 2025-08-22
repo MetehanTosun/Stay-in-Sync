@@ -1,6 +1,7 @@
 package de.unistuttgart.stayinsync.transport.transformation_rule_shared.logic_operator.number_predicates;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import de.unistuttgart.stayinsync.transport.exception.OperatorValidationException;
 import de.unistuttgart.stayinsync.transport.transformation_rule_shared.nodes.ConstantNode;
 import de.unistuttgart.stayinsync.transport.transformation_rule_shared.nodes.LogicNode;
 import de.unistuttgart.stayinsync.transport.transformation_rule_shared.nodes.Node;
@@ -22,15 +23,15 @@ public class BetweenOperator implements Operation {
      * </ol>
      *
      * @param node The LogicNode to validate.
-     * @throws IllegalArgumentException if the validation fails.
+     * @throws OperatorValidationException if the validation fails.
      */
     @Override
-    public void validateNode(LogicNode node) {
+    public void validateNode(LogicNode node)throws OperatorValidationException {
         List<Node> inputs = node.getInputNodes();
 
         // Rule 1: Must have exactly 3 inputs
         if (inputs == null || inputs.size() != 3) {
-            throw new IllegalArgumentException(
+            throw new OperatorValidationException(
                     "BETWEEN operation for node '" + node.getName() + "' requires exactly 3 inputs: the value to check, the lower bound, and the upper bound."
             );
         }
@@ -39,7 +40,7 @@ public class BetweenOperator implements Operation {
         long constantNodeCount = inputs.stream().filter(input -> input instanceof ConstantNode).count();
 
         if (constantNodeCount == 3) {
-            throw new IllegalArgumentException(
+            throw new OperatorValidationException(
                     "BETWEEN operation for node '" + node.getName() + "' is invalid: all three inputs are constants. This should be simplified to a single ConstantNode(true/false)."
             );
         }

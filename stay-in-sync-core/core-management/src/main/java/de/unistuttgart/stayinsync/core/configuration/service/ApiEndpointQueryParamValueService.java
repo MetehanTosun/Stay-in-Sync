@@ -69,7 +69,7 @@ public class ApiEndpointQueryParamValueService {
         Log.debugf("Replacing endpoint: %s", apiEndpointQueryParam);
 
         Optional<ApiEndpointQueryParamValue> updatedQueryParamValue = apiEndpointQueryParam.findByIdOptional(apiEndpointQueryParam.id)
-                .map(ApiEndpointQueryParamValue.class::cast) // Only here for type erasure within the IDE
+                .map(ApiEndpointQueryParamValue.class::cast)
                 .map(targetQueryParamValue -> {
                     this.mapper.mapFullUpdate(apiEndpointQueryParam, targetQueryParamValue);
                     return targetQueryParamValue;

@@ -1,0 +1,181 @@
+/* Search Highlighting Styles */
+
+/* Default search highlight */
+.search-highlight {
+  background-color: #fff3cd;
+  color: #856404;
+  padding: 1px 2px;
+  border-radius: 2px;
+  font-weight: 500;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+/* Exact match highlighting */
+.search-highlight-exact {
+  background-color: #d4edda;
+  color: #155724;
+  padding: 1px 2px;
+  border-radius: 2px;
+  font-weight: 600;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
+}
+
+/* Partial match highlighting */
+.search-highlight-partial {
+  background-color: #fff3cd;
+  color: #856404;
+  padding: 1px 2px;
+  border-radius: 2px;
+  font-weight: 500;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+/* Name match highlighting */
+.search-highlight-name {
+  background-color: #cce5ff;
+  color: #004085;
+  padding: 1px 2px;
+  border-radius: 2px;
+  font-weight: 600;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
+}
+
+/* URL match highlighting */
+.search-highlight-url {
+  background-color: #d1ecf1;
+  color: #0c5460;
+  padding: 1px 2px;
+  border-radius: 2px;
+  font-weight: 500;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+/* Endpoint match highlighting */
+.search-highlight-endpoint {
+  background-color: #f8d7da;
+  color: #721c24;
+  padding: 1px 2px;
+  border-radius: 2px;
+  font-weight: 500;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+/* Header match highlighting */
+.search-highlight-header {
+  background-color: #e2e3e5;
+  color: #383d41;
+  padding: 1px 2px;
+  border-radius: 2px;
+  font-weight: 500;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+/* Hover effects */
+.search-highlight:hover,
+.search-highlight-exact:hover,
+.search-highlight-partial:hover,
+.search-highlight-name:hover,
+.search-highlight-url:hover,
+.search-highlight-endpoint:hover,
+.search-highlight-header:hover {
+  background-color: #ffc107;
+  color: #212529;
+  transform: scale(1.02);
+  transition: all 0.2s ease;
+}
+
+/* Focus styles for accessibility */
+.search-highlight:focus,
+.search-highlight-exact:focus,
+.search-highlight-partial:focus,
+.search-highlight-name:focus,
+.search-highlight-url:focus,
+.search-highlight-endpoint:focus,
+.search-highlight-header:focus {
+  outline: 2px solid #007bff;
+  outline-offset: 1px;
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+  .search-highlight {
+    background-color: #2c3e50;
+    color: #ecf0f1;
+  }
+
+  .search-highlight-exact {
+    background-color: #27ae60;
+    color: #ffffff;
+  }
+
+  .search-highlight-partial {
+    background-color: #f39c12;
+    color: #ffffff;
+  }
+
+  .search-highlight-name {
+    background-color: #3498db;
+    color: #ffffff;
+  }
+
+  .search-highlight-url {
+    background-color: #17a2b8;
+    color: #ffffff;
+  }
+
+  .search-highlight-endpoint {
+    background-color: #e74c3c;
+    color: #ffffff;
+  }
+
+  .search-highlight-header {
+    background-color: #95a5a6;
+    color: #ffffff;
+  }
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  .search-highlight,
+  .search-highlight-exact,
+  .search-highlight-partial,
+  .search-highlight-name,
+  .search-highlight-url,
+  .search-highlight-endpoint,
+  .search-highlight-header {
+    border: 2px solid #000000;
+    background-color: #ffff00;
+    color: #000000;
+    font-weight: bold;
+  }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  .search-highlight:hover,
+  .search-highlight-exact:hover,
+  .search-highlight-partial:hover,
+  .search-highlight-name:hover,
+  .search-highlight-url:hover,
+  .search-highlight-endpoint:hover,
+  .search-highlight-header:hover {
+    transform: none;
+    transition: none;
+  }
+}
+
+/* Print styles */
+@media print {
+  .search-highlight,
+  .search-highlight-exact,
+  .search-highlight-partial,
+  .search-highlight-name,
+  .search-highlight-url,
+  .search-highlight-endpoint,
+  .search-highlight-header {
+    background-color: #ffff00 !important;
+    color: #000000 !important;
+    box-shadow: none !important;
+    border: 1px solid #000000 !important;
+  }
+}

@@ -6,9 +6,11 @@ import de.unistuttgart.stayinsync.core.configuration.mapping.TransformationScrip
 import de.unistuttgart.stayinsync.core.configuration.rest.dtos.TransformationAssemblyDTO;
 import de.unistuttgart.stayinsync.core.configuration.rest.dtos.TransformationDetailsDTO;
 import de.unistuttgart.stayinsync.core.configuration.rest.dtos.TransformationShellDTO;
+import de.unistuttgart.stayinsync.core.configuration.rest.dtos.targetsystem.UpdateTransformationRequestConfigurationDTO;
 import de.unistuttgart.stayinsync.core.configuration.service.TransformationService;
 import io.quarkus.logging.Log;
 import jakarta.inject.Inject;
+import jakarta.validation.Valid;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.Context;
 import jakarta.ws.rs.core.Response;
@@ -96,6 +98,16 @@ public class TransformationResource {
                     return Response.ok(scriptMapper.mapToDTO(script)).build();
                 })
                 .orElseThrow(() -> new CoreManagementException(Response.Status.NOT_FOUND, "Unable to find transformation script", "No script is assigned to Transformation with id %d", id));
+    }
+
+    @PUT
+    @Path("/{id}/target-arcs")
+    @Consumes(APPLICATION_JSON)
+    @Operation(summary = "Updates the associated Target ARCs for a Transformation",
+            description = "Replaces the entire set of linked Target ARCs for a transformation with the given list of ARC IDs.")
+    public Response updateTransformationTargetArcs(@PathParam("id") Long id, @Valid UpdateTransformationRequestConfigurationDTO dto) {
+        var updated = service.updateTargetArcs(id, dto);
+        return Response.ok(mapper.mapToDetailsDTO(updated)).build();
     }
 
     @DELETE

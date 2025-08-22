@@ -9,6 +9,9 @@ Prerequisites:
 
 - Make sure Docker Desktop is running before starting any services.
 
+- in stay-in-sync-core/core-sync-node: mvn clean install -Dquarkus.package.type=fast-jar
+- in stay-in-sync-core/core-polling-node: mvn clean install -Dquarkus.package.type=fast-jar
+
 Start Quarkus in Development Mode:
 
 cd stay-in-sync-monitoring/monitoring-backend
@@ -31,7 +34,7 @@ Once the containers are running, Prometheus will start scraping the configured t
 
 To start the ELK stack and RabbitMQ, navigate to the following directory and run:
 
-cd stay-in-sync-monitoring/src/main/docker/elk
+cd stay-in-sync-monitoring/monitoring-backend/src/main/docker/elk
 
 docker compose up -d
 

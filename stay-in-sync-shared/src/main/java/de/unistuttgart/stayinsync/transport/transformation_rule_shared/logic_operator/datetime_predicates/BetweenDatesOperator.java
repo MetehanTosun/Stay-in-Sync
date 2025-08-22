@@ -1,6 +1,7 @@
 package de.unistuttgart.stayinsync.transport.transformation_rule_shared.logic_operator.datetime_predicates;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import de.unistuttgart.stayinsync.transport.exception.OperatorValidationException;
 import de.unistuttgart.stayinsync.transport.transformation_rule_shared.logic_operator.Operation;
 import de.unistuttgart.stayinsync.transport.transformation_rule_shared.nodes.LogicNode;
 import de.unistuttgart.stayinsync.transport.transformation_rule_shared.nodes.Node;
@@ -14,13 +15,13 @@ public class BetweenDatesOperator implements Operation {
     /**
      * Validates that the node has exactly three inputs.
      * @param node The LogicNode to validate.
-     * @throws IllegalArgumentException if the node does not have exactly three inputs.
+     * @throws OperatorValidationException if the node does not have exactly three inputs.
      */
     @Override
-    public void validateNode(LogicNode node) {
+    public void validateNode(LogicNode node)throws OperatorValidationException {
         List<Node> inputs = node.getInputNodes();
         if (inputs == null || inputs.size() != 3) {
-            throw new IllegalArgumentException(
+            throw new OperatorValidationException(
                     "BETWEEN_DATES operation for node '" + node.getName() + "' requires exactly 3 inputs: the date to check, the start date, and the end date."
             );
         }

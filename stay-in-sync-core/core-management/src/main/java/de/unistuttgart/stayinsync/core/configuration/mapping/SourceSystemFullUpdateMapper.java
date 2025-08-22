@@ -21,7 +21,6 @@ public interface SourceSystemFullUpdateMapper {
 
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "sourceSystemEndpoints", ignore = true)
-    @Mapping(target = "sourceSystemApiRequestConfigurations", ignore = true)
     SourceSystem mapToEntity(SourceSystemDTO input);
 
     List<SourceSystemDTO> mapToDTOList(List<SourceSystem> input);

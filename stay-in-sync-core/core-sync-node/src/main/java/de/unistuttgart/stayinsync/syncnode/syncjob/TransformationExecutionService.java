@@ -7,6 +7,7 @@ import de.unistuttgart.stayinsync.scriptengine.ScriptEngineService;
 import de.unistuttgart.stayinsync.scriptengine.message.TransformationResult;
 import de.unistuttgart.stayinsync.syncnode.domain.TransformJob;
 import de.unistuttgart.stayinsync.syncnode.logic_engine.LogicGraphEvaluator;
+import de.unistuttgart.stayinsync.transport.exception.GraphEvaluationException;
 import de.unistuttgart.stayinsync.transport.transformation_rule_shared.nodes.Node;
 import io.quarkus.logging.Log;
 import io.smallrye.mutiny.Uni;
@@ -46,7 +47,13 @@ public class TransformationExecutionService {
             Log.infof("Job %s: Evaluating pre-condition logic graph...", job.jobId());
             TypeReference<Map<String, JsonNode>> typeRef = new TypeReference<>() {};
             Map<String, JsonNode> dataContext = objectMapper.convertValue(job.sourceData(), typeRef);
-            return logicGraphEvaluator.evaluateGraph(graphNodes, dataContext);
+            try {
+                return logicGraphEvaluator.evaluateGraph(graphNodes, dataContext);
+            } catch (GraphEvaluationException e) {
+                Log.errorf(e, "Job %s: Graph evaluation failed with error type %s: %s",
+                        job.jobId(), e.getErrorType(), e.getMessage());
+                return false;
+            }
         }).runSubscriptionOn(managedExecutor).onItem().transformToUni(conditionMet -> {
             if (conditionMet) {
                 Log.infof("Job %s: Pre-condition PASSED. Proceeding to script transformation...", job.jobId());

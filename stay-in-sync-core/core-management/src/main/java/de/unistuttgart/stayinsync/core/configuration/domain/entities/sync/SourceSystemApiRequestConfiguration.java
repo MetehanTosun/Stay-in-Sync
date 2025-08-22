@@ -1,5 +1,6 @@
 package de.unistuttgart.stayinsync.core.configuration.domain.entities.sync;
 
+import de.unistuttgart.stayinsync.transport.domain.JobDeploymentStatus;
 import jakarta.persistence.*;
 
 import java.util.Collections;
@@ -11,7 +12,7 @@ import java.util.Set;
 @DiscriminatorValue("SOURCE_SYSTEM")
 public class SourceSystemApiRequestConfiguration extends ApiRequestConfiguration {
 
-    @ManyToMany(mappedBy = "sourceSystemApiRequestConfigrations")
+    @ManyToMany(mappedBy = "sourceSystemApiRequestConfigurations")
     public Set<Transformation> transformations;
 
     @ManyToOne
@@ -22,6 +23,11 @@ public class SourceSystemApiRequestConfiguration extends ApiRequestConfiguration
 
     @Lob
     public String responseDts;
+
+    @Enumerated(EnumType.STRING)
+    public JobDeploymentStatus deploymentStatus;
+
+    public String workerPodName;
 
     public boolean responseIsArray;
 
