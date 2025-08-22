@@ -13,7 +13,6 @@ import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.Target
 import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.TargetSystemVariable;
 import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.ApiHeader;
 import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.ApiEndpointQueryParam;
-
 import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.ApiEndpointQueryParamValue;
 import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.ApiHeaderValue;
 import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.TargetSystemApiRequestConfiguration;
@@ -22,7 +21,6 @@ import de.unistuttgart.stayinsync.core.configuration.exception.CoreManagementExc
 import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.authconfig.SyncSystemAuthConfig;
 import de.unistuttgart.stayinsync.core.configuration.mapping.targetsystem.TargetSystemMapper;
 import de.unistuttgart.stayinsync.core.configuration.rest.dtos.targetsystem.TargetSystemDTO;
-
 import io.quarkus.logging.Log;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
@@ -116,7 +114,6 @@ public class TargetSystemService {
             // Endpoint
             endpoint.delete();
         }
-
 
         List<TargetSystemApiRequestConfiguration> tConfigs = TargetSystemApiRequestConfiguration.list("targetSystem.id", id);
         for (TargetSystemApiRequestConfiguration cfg : tConfigs) {
