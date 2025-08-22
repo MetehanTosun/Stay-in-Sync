@@ -14,6 +14,8 @@ import jakarta.transaction.Transactional;
 import jakarta.inject.Inject;
 
 import java.util.Map;
+import java.util.HashSet;
+import java.util.Set;
 
 @ApplicationScoped
 public class AasStructureSnapshotService {
@@ -68,15 +70,52 @@ public class AasStructureSnapshotService {
             } else {
                 persistSubmodelLite(ss, root);
             }
+
+            // After submodels persisted, load shallow elements for each submodel and persist element metadata
+            var submodels = AasSubmodelLite.list("sourceSystem.id", sourceSystemId);
+            for (Object o : submodels) {
+                AasSubmodelLite sm = (AasSubmodelLite) o;
+                String smIdB64 = toBase64Url(sm.submodelId);
+                if (smIdB64 == null) continue;
+                try {
+                    Uni<HttpResponse<Buffer>> ue = traversalClient.listElements(ss.apiUrl, smIdB64, "shallow", null, headers);
+                    HttpResponse<Buffer> er = ue.await().indefinitely();
+                    if (er.statusCode() >= 200 && er.statusCode() < 300) {
+                        String ejson = er.bodyAsString();
+                        JsonNode en = objectMapper.readTree(ejson);
+                        if (en == null) continue;
+                        Set<String> seen = new HashSet<>();
+                        if (en.isArray()) {
+                            for (JsonNode node : en) {
+                                persistElementLite(sm, null, node, seen);
+                            }
+                        } else if (en.has("result") && en.get("result").isArray()) {
+                            for (JsonNode node : en.get("result")) {
+                                persistElementLite(sm, null, node, seen);
+                            }
+                        }
+                    }
+                } catch (Exception ex) {
+                    Log.warnf(ex, "Failed to persist shallow elements for submodel %s", sm.submodelId);
+                }
+            }
         } catch (Exception e) {
             Log.errorf(e, "Failed to refresh AAS snapshot for sourceSystemId=%d", sourceSystemId);
         }
     }
 
     private void persistSubmodelLite(SourceSystem ss, JsonNode n) {
+        // Accept both full submodel objects and submodel-refs entries
         String id = textOrNull(n, "id");
         if (id == null && n.has("identification")) {
             id = textOrNull(n.get("identification"), "id");
+        }
+        // submodel-refs: { "type": "ModelReference", "keys":[{"type":"Submodel","value":"<ID>"}] }
+        if (id == null && n.has("keys") && n.get("keys").isArray() && n.get("keys").size() > 0) {
+            JsonNode k0 = n.get("keys").get(0);
+            if (k0 != null && "Submodel".equals(textOrNull(k0, "type"))) {
+                id = textOrNull(k0, "value");
+            }
         }
         if (id == null) return;
 
@@ -93,6 +132,63 @@ public class AasStructureSnapshotService {
         if (node == null) return null;
         JsonNode f = node.get(field);
         return f != null && !f.isNull() ? f.asText() : null;
+    }
+
+    private String toBase64Url(String s) {
+        if (s == null) return null;
+        return java.util.Base64.getUrlEncoder().withoutPadding().encodeToString(s.getBytes(java.nio.charset.StandardCharsets.UTF_8));
+    }
+
+    private void persistElementLite(AasSubmodelLite submodel, String parentPath, JsonNode n, Set<String> seen) {
+        String idShort = textOrNull(n, "idShort");
+        if (idShort == null) return;
+        String modelType = textOrNull(n, "modelType");
+        String idShortPath = parentPath == null || parentPath.isBlank() ? idShort : parentPath + "/" + idShort;
+
+        // deduplicate on (submodel, idShortPath)
+        String key = submodel.id + "::" + idShortPath;
+        if (seen != null) {
+            if (seen.contains(key)) return;
+            seen.add(key);
+        }
+
+        AasElementLite e = new AasElementLite();
+        e.submodelLite = submodel;
+        e.idShort = idShort;
+        e.modelType = modelType;
+        e.valueType = textOrNull(n, "valueType");
+        e.idShortPath = idShortPath;
+        e.parentPath = parentPath;
+        e.semanticId = textOrNull(n, "semanticId");
+        e.typeValueListElement = textOrNull(n, "valueTypeListElement");
+        e.orderRelevant = n.has("orderRelevant") ? n.get("orderRelevant").asBoolean(false) : null;
+        // hasChildren heuristic
+        e.hasChildren = "SubmodelElementCollection".equalsIgnoreCase(modelType)
+                || "SubmodelElementList".equalsIgnoreCase(modelType)
+                || "Entity".equalsIgnoreCase(modelType);
+
+        if ("Operation".equalsIgnoreCase(modelType)) {
+            JsonNode inVars = n.get("inputVariables");
+            JsonNode outVars = n.get("outputVariables");
+            e.inputSignature = (inVars != null && !inVars.isNull()) ? inVars.toString() : null;
+            e.outputSignature = (outVars != null && !outVars.isNull()) ? outVars.toString() : null;
+        }
+        if ("ReferenceElement".equalsIgnoreCase(modelType)) {
+            JsonNode val = n.get("value");
+            if (val != null) {
+                e.isReference = true;
+                e.referenceTargetType = textOrNull(val, "type");
+                e.referenceKeys = val.has("keys") ? val.get("keys").toString() : null;
+                // try submodel key target
+                if (val.has("keys") && val.get("keys").isArray() && val.get("keys").size() > 0) {
+                    JsonNode k0 = val.get("keys").get(0);
+                    if (k0 != null && "Submodel".equals(textOrNull(k0, "type"))) {
+                        e.targetSubmodelId = textOrNull(k0, "value");
+                    }
+                }
+            }
+        }
+        e.persist();
     }
 
     @Transactional

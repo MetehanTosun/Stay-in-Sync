@@ -116,7 +116,8 @@ public class AasResource {
                 return Response.status(sc).entity(resp.bodyAsString()).build();
             });
         }
-        var submodel = AasSubmodelLite.<AasSubmodelLite>find("sourceSystem.id = ?1 and submodelId = ?2", sourceSystemId, smId).firstResult();
+        String normalizedSmId = normalizeSubmodelId(smId);
+        var submodel = AasSubmodelLite.<AasSubmodelLite>find("sourceSystem.id = ?1 and submodelId = ?2", sourceSystemId, normalizedSmId).firstResult();
         if (submodel == null) {
             var headers = headerBuilder.buildMergedHeaders(ss, de.unistuttgart.stayinsync.core.configuration.service.aas.HttpHeaderBuilder.Mode.READ);
             Log.infof("List elements LIVE (no snapshot): apiUrl=%s smId=%s depth=%s parentPath=%s", ss.apiUrl, smId, depth, parentPath);
@@ -254,7 +255,7 @@ public class AasResource {
     }
 
     @PUT
-    @Path("/submodels/{smId}/elements/{path}")
+    @Path("/submodels/{smId}/elements/{path:.+}")
     public Response putElement(@PathParam("sourceSystemId") Long sourceSystemId,
                                @PathParam("smId") String smId,
                                @PathParam("path") String path,
@@ -274,7 +275,7 @@ public class AasResource {
     }
 
     @DELETE
-    @Path("/submodels/{smId}/elements/{path}")
+    @Path("/submodels/{smId}/elements/{path:.+}")
     public Response deleteElement(@PathParam("sourceSystemId") Long sourceSystemId,
                                   @PathParam("smId") String smId,
                                   @PathParam("path") String path) {
@@ -318,6 +319,19 @@ public class AasResource {
             return b.length() > 500 ? b.substring(0, 500) + "..." : b;
         } catch (Exception e) {
             return null;
+        }
+    }
+
+    private String normalizeSubmodelId(String smId) {
+        // allow base64url in SNAPSHOT paths: decode to plain id stored in DB
+        if (smId == null) return null;
+        // try base64url decode; if fails, assume already plain
+        try {
+            byte[] decoded = java.util.Base64.getUrlDecoder().decode(smId);
+            String plain = new String(decoded, java.nio.charset.StandardCharsets.UTF_8);
+            return plain;
+        } catch (IllegalArgumentException e) {
+            return smId;
         }
     }
 
