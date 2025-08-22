@@ -230,7 +230,7 @@ public class TransformationService {
     }
 
     private void deployAssociatedRequestConfigs(Transformation transformation) {
-        transformation.sourceSystemApiRequestConfigrations //
+        transformation.sourceSystemApiRequestConfigurations //
                 .stream() //
                 .filter(apiRequestConfiguration -> apiRequestConfiguration.deploymentStatus.equals(UNDEPLOYED))
                 .forEach(apiRequestConfiguration -> sourceRequestConfigService.updateDeploymentStatus(apiRequestConfiguration.id, DEPLOYING));

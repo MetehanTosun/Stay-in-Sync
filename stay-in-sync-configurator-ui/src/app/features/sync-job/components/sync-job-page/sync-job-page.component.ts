@@ -38,7 +38,7 @@ import {Card} from 'primeng/card';
     FormsModule,
     NgIf,
     Toolbar,
-    Card
+    Card,
     NgIf,
   ],
   templateUrl: './sync-job-page.component.html',

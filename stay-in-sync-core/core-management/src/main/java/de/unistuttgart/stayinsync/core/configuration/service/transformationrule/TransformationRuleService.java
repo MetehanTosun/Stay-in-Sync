@@ -6,11 +6,11 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.LogicGraphEntity;
 import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.TransformationRule;
 import de.unistuttgart.stayinsync.core.configuration.exception.CoreManagementException; // Import der korrekten Exception
+import de.unistuttgart.stayinsync.syncnode.logic_engine.GraphMapper;
 import de.unistuttgart.stayinsync.transport.dto.transformationrule.GraphDTO;
 import de.unistuttgart.stayinsync.transport.dto.transformationrule.NodeDTO;
 import de.unistuttgart.stayinsync.transport.dto.transformationrule.TransformationRulePayloadDTO;
 import de.unistuttgart.stayinsync.transport.dto.transformationrule.vFlow.VFlowGraphDTO;
-import de.unistuttgart.stayinsync.transport.exception.NodeConfigurationException;
 import de.unistuttgart.stayinsync.transport.transformation_rule_shared.GraphStatus;
 import de.unistuttgart.stayinsync.transport.transformation_rule_shared.nodes.Node;
 import de.unistuttgart.stayinsync.transport.transformation_rule_shared.validation_error.ValidationError;

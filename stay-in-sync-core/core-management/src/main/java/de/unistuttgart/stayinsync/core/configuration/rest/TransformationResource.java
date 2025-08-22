@@ -9,11 +9,9 @@ import de.unistuttgart.stayinsync.core.configuration.rest.dtos.TransformationDet
 import de.unistuttgart.stayinsync.core.configuration.rest.dtos.TransformationShellDTO;
 import de.unistuttgart.stayinsync.core.configuration.rest.dtos.TransformationStatusUpdate;
 import de.unistuttgart.stayinsync.core.configuration.rest.dtos.targetsystem.UpdateTransformationRequestConfigurationDTO;
-import de.unistuttgart.stayinsync.core.configuration.rest.dtos.typegeneration.GetTypeDefinitionsResponseDTO;
 import de.unistuttgart.stayinsync.core.configuration.service.TargetDtsBuilderGeneratorService;
 import de.unistuttgart.stayinsync.core.configuration.service.TransformationService;
 import de.unistuttgart.stayinsync.transport.domain.JobDeploymentStatus;
-import io.netty.channel.ChannelHandler;
 import io.quarkus.logging.Log;
 import io.smallrye.mutiny.Multi;
 import jakarta.inject.Inject;
@@ -27,10 +25,8 @@ import org.eclipse.microprofile.openapi.annotations.Operation;
 import org.eclipse.microprofile.openapi.annotations.parameters.Parameter;
 import org.eclipse.microprofile.openapi.annotations.tags.Tag;
 import org.eclipse.microprofile.reactive.messaging.Channel;
-import org.jboss.resteasy.reactive.RestSseElementType;
 import org.jboss.resteasy.reactive.RestStreamElementType;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -43,7 +39,7 @@ import static jakarta.ws.rs.core.MediaType.APPLICATION_JSON;
 public class TransformationResource {
 
     @Inject
-    TransformationService service;
+    TransformationService transformationService;
 
     @Inject
     TargetDtsBuilderGeneratorService targetDtsGeneratorService;
@@ -63,7 +59,7 @@ public class TransformationResource {
     @Operation(summary = "Creates a new transformation shell",
             description = "Creates the initial transformation object with basic info like name and description. Returns the created object with its new ID.")
     public Response createTransformationShell(TransformationShellDTO dto, @Context UriInfo uriInfo) {
-        var persisted = service.createTransformation(dto);
+        var persisted = transformationService.createTransformation(dto);
         var builder = uriInfo.getAbsolutePathBuilder().path(Long.toString(persisted.id));
         Log.debugf("New transformation shell created with URI %s", builder.build().toString());
 
@@ -81,7 +77,7 @@ public class TransformationResource {
                     "The ID in the path (%d) does not match the ID in the request body (%d).", id, dto.id());
         }
 
-        var updated = service.updateTransformation(id, dto);
+        var updated = transformationService.updateTransformation(id, dto);
         Log.debugf("Transformation with id %d was assembled.", id);
         return Response.ok(mapper.mapToDetailsDTO(updated)).build();
     }
@@ -90,7 +86,7 @@ public class TransformationResource {
     @Path("/{id}")
     @Operation(summary = "Returns a transformation for a given identifier")
     public Response getTransformation(@Parameter(name = "id", required = true) @PathParam("id") Long id) {
-        return service.findById(id)
+        return transformationService.findById(id)
                 .map(transformation -> {
                     Log.debugf("Found transformation: %s", transformation);
                     return Response.ok(mapper.mapToDetailsDTO(transformation)).build();
@@ -107,11 +103,11 @@ public class TransformationResource {
             throw new CoreManagementException(Response.Status.BAD_REQUEST, "Invalid query params", "Cannot use syncJobId and withSyncJob params together");
         }
         if (withSyncJob.isPresent()) {
-            transformations = withSyncJob.map(this.service::findAllWithSyncJobFilter).orElseGet(service::findAll);
+            transformations = withSyncJob.map(this.transformationService::findAllWithSyncJobFilter).orElseGet(transformationService::findAll);
         } else if (syncJobId.isPresent()) {
-            transformations = service.findAllBySyncjob(syncJobId.get());
+            transformations = transformationService.findAllBySyncjob(syncJobId.get());
         } else {
-            transformations = service.findAll();
+            transformations = transformationService.findAll();
         }
 
 
@@ -125,7 +121,7 @@ public class TransformationResource {
     @Path("/{id}/transformation-script")
     @Operation(summary = "Returns the associated transformation script for this Transformation.")
     public Response getTransformationScript(@Parameter(name = "id", required = true) @PathParam("id") Long id) {
-        return service.findScriptById(id)
+        return transformationService.findScriptById(id)
                 .map(script -> {
                     Log.debugf("Found transformation script: %s", script);
                     return Response.ok(scriptMapper.mapToDTO(script)).build();
@@ -148,7 +144,7 @@ public class TransformationResource {
     @Operation(summary = "Updates the associated Target ARCs for a Transformation",
             description = "Replaces the entire set of linked Target ARCs for a transformation with the given list of ARC IDs.")
     public Response updateTransformationTargetArcs(@PathParam("id") Long id, @Valid UpdateTransformationRequestConfigurationDTO dto) {
-        var updated = service.updateTargetArcs(id, dto);
+        var updated = transformationService.updateTargetArcs(id, dto);
         return Response.ok(mapper.mapToDetailsDTO(updated)).build();
     }
 
@@ -165,7 +161,7 @@ public class TransformationResource {
     @Path("/{id}")
     @Operation(summary = "Deletes an existing transformation")
     public Response deleteTransformation(@Parameter(name = "id", required = true) @PathParam("id") Long id) {
-        boolean deleted = service.delete(id);
+        boolean deleted = transformationService.delete(id);
 
         if (deleted) {
             Log.debugf("Transformation with id %d deleted", id);
@@ -184,7 +180,7 @@ public class TransformationResource {
     @Operation(summary = "Enables deploying or undeploying of transformations",
             description = "Allows managing the deployment status of a transformation transformation")
     public Response manageDeployment(@Parameter(name = "id", required = true) @PathParam("id") Long id, JobDeploymentStatus deploymentStatus) {
-        service.updateDeploymentStatus(id, deploymentStatus);
+        transformationService.updateDeploymentStatus(id, deploymentStatus);
         return Response.noContent().build();
     }
 
@@ -195,7 +191,7 @@ public class TransformationResource {
     @Operation(summary = "Enables managing the rule applied to the transformation execution",
             description = "Updates an existing transformation")
     public Response addRule(@Parameter(name = "id", required = true) @PathParam("id") Long id, @Parameter(name = "ruleId", required = true) @PathParam("ruleId") Long ruleId) {
-        service.addRule(id, ruleId);
+        transformationService.addRule(id, ruleId);
         Log.debugf("Added rule with id %d, to transformation with id: %d", ruleId, id);
         return Response.noContent().build();
     }
@@ -206,7 +202,7 @@ public class TransformationResource {
     @Operation(summary = "Enables managing the rule applied to the transformation execution",
             description = "Updates an existing transformation")
     public Response removeRule(@Parameter(name = "id", required = true) @PathParam("id") Long id) {
-        service.removeRule(id);
+        transformationService.removeRule(id);
         Log.debugf("Removed rule from transformation with id: %d", id);
         return Response.noContent().build();
     }

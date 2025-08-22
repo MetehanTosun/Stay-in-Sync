@@ -141,7 +141,6 @@ public class SyncJobService {
                 .map(SyncJob.class::cast)
                 .map(targetSyncJob -> {
                     this.syncJobFullUpdateMapper.mapFullUpdate(syncJob, targetSyncJob);
-                    syncJobUpdatedEventEvent.fire(new SyncJobUpdatedEvent(targetSyncJob, syncJob));
                     return targetSyncJob;
                 })
                 .orElseThrow(() -> new IllegalArgumentException("SyncJob with ID " + syncJob.id + " not found"));
