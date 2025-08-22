@@ -18,6 +18,11 @@ public class TransformationScript extends PanacheEntity {
 
     public String hash;
 
+    @Lob
+    public String generatedSdkCode;
+
+    public String generatedSdkHash;
+
     @Enumerated(EnumType.STRING)
     public ScriptStatus status = ScriptStatus.DRAFT;
 

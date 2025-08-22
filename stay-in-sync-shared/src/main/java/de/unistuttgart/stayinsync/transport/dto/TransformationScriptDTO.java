@@ -4,6 +4,8 @@ public record TransformationScriptDTO(
         Long id,
         String name,
         String hash,
-        String javascriptCode
+        String javascriptCode,
+        String generatedSdkCode,
+        String generatedSdkHash
 ) {
 }

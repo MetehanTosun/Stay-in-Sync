@@ -125,7 +125,7 @@ public class TransformationResource {
             description = "Replaces the entire set of linked Target ARCs for a transformation with the given list of ARC IDs.")
     public Response updateTransformationTargetArcs(@PathParam("id") Long id, @Valid UpdateTransformationRequestConfigurationDTO dto) {
         var updated = service.updateTargetArcs(id, dto);
-        return Response.ok(mapper.mapToDetailsDTO(updated)).build();
+        return Response.ok(updated).build();
     }
 
     @GET
