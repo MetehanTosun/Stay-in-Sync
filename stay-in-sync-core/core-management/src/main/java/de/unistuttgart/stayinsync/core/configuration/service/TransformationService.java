@@ -3,8 +3,10 @@ package de.unistuttgart.stayinsync.core.configuration.service;
 import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.*;
 import de.unistuttgart.stayinsync.core.configuration.exception.CoreManagementException;
 import de.unistuttgart.stayinsync.core.configuration.mapping.TransformationMapper;
+import de.unistuttgart.stayinsync.core.configuration.mapping.targetsystem.RequestConfigurationMapper;
 import de.unistuttgart.stayinsync.core.configuration.rest.dtos.TransformationAssemblyDTO;
 import de.unistuttgart.stayinsync.core.configuration.rest.dtos.TransformationShellDTO;
+import de.unistuttgart.stayinsync.core.configuration.rest.dtos.targetsystem.GetRequestConfigurationDTO;
 import de.unistuttgart.stayinsync.core.configuration.rest.dtos.targetsystem.UpdateTransformationRequestConfigurationDTO;
 import de.unistuttgart.stayinsync.transport.domain.JobDeploymentStatus;
 import de.unistuttgart.stayinsync.transport.dto.TransformationDeploymentFeedbackMessageDTO;
@@ -16,7 +18,8 @@ import jakarta.ws.rs.core.Response;
 
 import java.util.List;
 import java.util.Optional;
- 
+import java.util.Set;
+
 
 import static jakarta.transaction.Transactional.TxType.REQUIRED;
 import static jakarta.transaction.Transactional.TxType.SUPPORTS;
@@ -28,10 +31,21 @@ public class TransformationService {
     @Inject
     TransformationMapper mapper;
 
+    @Inject
+    RequestConfigurationMapper requestConfigurationMapper;
+
     public Transformation createTransformation(TransformationShellDTO dto) {
         Log.debugf("Creating new transformation shell with name: %s", dto.name());
         Transformation transformation = new Transformation();
         mapper.updateFromShellDTO(dto, transformation);
+
+        TransformationScript script = new TransformationScript();
+        script.name = dto.name() + " Script";
+        script.typescriptCode = "";
+
+        script.transformation = transformation;
+        transformation.transformationScript = script;
+
         transformation.persist();
         return transformation;
     }
@@ -68,6 +82,17 @@ public class TransformationService {
         }
 
         return transformation;
+    }
+
+    public List<GetRequestConfigurationDTO> getTargetArcs(Long transformationId){
+        Log.debugf("Getting Target ARCs for Transformation with id %d", transformationId);
+
+        Transformation transformation = Transformation.<Transformation>findByIdOptional(transformationId)
+                .orElseThrow(() -> new CoreManagementException(Response.Status.NOT_FOUND, "Transformation not found", "Transformation with id %d not found.", transformationId));
+
+        Set<TargetSystemApiRequestConfiguration> targetArcs = transformation.targetSystemApiRequestConfigurations;
+        List<TargetSystemApiRequestConfiguration> targetArcsToList =  targetArcs.stream().toList();
+        return requestConfigurationMapper.mapToGetDTOList(targetArcsToList);
     }
 
     @Transactional

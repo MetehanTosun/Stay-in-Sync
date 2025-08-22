@@ -15,9 +15,11 @@ import jakarta.ws.rs.core.Response;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import static jakarta.transaction.Transactional.TxType.REQUIRED;
 import static jakarta.transaction.Transactional.TxType.SUPPORTS;
 
 @ApplicationScoped
+@Transactional(REQUIRED)
 public class TargetSystemApiRequestConfigurationService {
 
     @Inject
@@ -37,8 +39,6 @@ public class TargetSystemApiRequestConfigurationService {
 
         List<TargetSystemApiRequestConfigurationAction> actions = createAndPersistActions(dto.actions(), newArc, targetSystem);
         newArc.actions = actions;
-
-        createAndPersistStaticHeaders(dto.staticHeaderValues(), newArc, targetSystem);
 
         Log.infof("Successfully created Target ARC '%s' with ID %d", newArc.alias, newArc.id);
         return newArc;
@@ -77,32 +77,6 @@ public class TargetSystemApiRequestConfigurationService {
             persistedActions.add(action);
         }
         return persistedActions;
-    }
-
-    // TODO: Duplicate code from SourceSystemARCs, Use proper service for this behavior
-    private void createAndPersistStaticHeaders(Map<String, String> headerValues, ApiRequestConfiguration arc, SyncSystem system){
-        if (headerValues == null || headerValues.isEmpty()){
-            return;
-        }
-        for (Map.Entry<String, String> entry : headerValues.entrySet()) {
-            String headerName = entry.getKey();
-            String headerValue = entry.getValue();
-
-
-            ApiHeader headerDefinition = ApiHeader
-                    .find("headerName = ?1 and syncSystem = ?2", headerName, system)
-                    .firstResultOptional()
-                    .map(ApiHeader.class::cast) // IDE type erasure
-                    .orElseThrow(() -> new CoreManagementException("Header not defined",
-                            "Header '" + headerName + "' is not defined for this system."));
-
-            ApiHeaderValue headerValueEntity = new ApiHeaderValue();
-            headerValueEntity.requestConfiguration = arc;
-            headerValueEntity.apiHeader = headerDefinition;
-            headerValueEntity.selectedValue = headerValue;
-
-            headerValueEntity.persist();
-        }
     }
 
     private void validateArcDefinition(CreateArcDTO dto) {
