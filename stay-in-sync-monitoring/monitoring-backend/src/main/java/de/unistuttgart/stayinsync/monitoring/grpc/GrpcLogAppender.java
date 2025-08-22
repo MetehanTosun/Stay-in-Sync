@@ -2,6 +2,7 @@ package de.unistuttgart.stayinsync.monitoring.grpc;
 
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.AppenderBase;
+import de.hamstersimulator.objectsfirst.datatypes.LogEntry;
 import io.grpc.StatusRuntimeException;
 import jakarta.inject.Inject;
 
