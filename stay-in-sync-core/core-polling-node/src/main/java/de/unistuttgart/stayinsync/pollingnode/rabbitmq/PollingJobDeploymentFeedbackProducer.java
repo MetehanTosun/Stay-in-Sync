@@ -3,7 +3,7 @@ package de.unistuttgart.stayinsync.pollingnode.rabbitmq;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.rabbitmq.client.*;
 import de.unistuttgart.stayinsync.pollingnode.exceptions.PollingNodeException;
-import de.unistuttgart.stayinsync.pollingnode.execution.controller.PollingJobExecutionController;
+import de.unistuttgart.stayinsync.pollingnode.execution.PollingJobExecutionController;
 import de.unistuttgart.stayinsync.transport.domain.JobDeploymentStatus;
 import de.unistuttgart.stayinsync.transport.dto.PollingJobDeploymentFeedbackMessageDTO;
 import io.quarkiverse.rabbitmqclient.RabbitMQClient;

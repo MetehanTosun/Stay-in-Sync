@@ -44,6 +44,10 @@ public class PollingJobExecutionController {
         }
     }
 
+    public Map<Long, JobKey> getSupportedJobs() {
+        return supportedJobs;
+    }
+
 
     /**
      * Creates new PollingJob, that is scheduled and referenced in supportedJobs with its id and JobKey
@@ -112,6 +116,7 @@ public class PollingJobExecutionController {
     public boolean pollingJobExists(final Long id) {
         return supportedJobs.containsKey(id);
     }
+
 
 
     /**
