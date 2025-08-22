@@ -85,6 +85,53 @@ public class ExtendedLogicGraphTests {
     }
 
     @Test
+    void testChangeDetection_AndMode() throws IOException, GraphEvaluationException {
+        // Test: Trigger, ONLY if temperature AND humidity change (AND-Mode)
+        ProviderNode tempProvider = createProviderNode("source.sensor.temperature", 0);
+        ProviderNode humidityProvider = createProviderNode("source.sensor.humidity", 1);
+        ConfigNode configNode = createConfigNode(2, tempProvider, humidityProvider);
+        configNode.setMode(ConfigNode.ChangeDetectionMode.AND);
+        FinalNode finalNode = createFinalNode(3, configNode);
+        List<Node> graph = Arrays.asList(tempProvider, humidityProvider, configNode, finalNode);
+
+        Map<String, SnapshotEntry> snapshot = Map.of(
+                "source.sensor.temperature", new SnapshotEntry(20.0, 0L),
+                "source.sensor.humidity", new SnapshotEntry(50, 0L)
+        );
+
+        // Fall 1: Nur eine Variable ändert sich -> false
+        Map<String, JsonNode> context1 = createDataContext("{\"temperature\": 21.0, \"humidity\": 50}", snapshot);
+        assertFalse(evaluator.evaluateGraph(graph, context1, dummyJob).finalResult(), "Should be false if only one value changes in AND mode");
+
+        // Fall 2: Keine Variable ändert sich -> false
+        Map<String, JsonNode> context2 = createDataContext("{\"temperature\": 20.0, \"humidity\": 50}", snapshot);
+        assertFalse(evaluator.evaluateGraph(graph, context2, dummyJob).finalResult(), "Should be false if no value changes in AND mode");
+
+        // Fall 3: Beide Variablen ändern sich -> true
+        Map<String, JsonNode> context3 = createDataContext("{\"temperature\": 21.0, \"humidity\": 51}", snapshot);
+        assertTrue(evaluator.evaluateGraph(graph, context3, dummyJob).finalResult(), "Should be true if both values change in AND mode");
+    }
+
+    // ### HINZUGEFÜGTER TEST FÜR BYPASS-SCHALTER ###
+    @Test
+    void testChangeDetection_BypassSwitch() throws IOException, GraphEvaluationException {
+        // Test: The bypass switch on the ConfigNode disables the check
+        ProviderNode tempProvider = createProviderNode("source.sensor.temperature", 0);
+        ConfigNode configNode = createConfigNode(1, tempProvider);
+        configNode.setActive(false); // Bypass is ACTIVE (change detection is OFF)
+        FinalNode finalNode = createFinalNode(2, configNode);
+        List<Node> graph = Arrays.asList(tempProvider, configNode, finalNode);
+
+        // Snapshot says the old value was 20.0
+        Map<String, SnapshotEntry> snapshot = Map.of("source.sensor.temperature", new SnapshotEntry(20.0, 0L));
+        // The new value is 25.0 - a clear change
+        Map<String, JsonNode> context = createDataContext("{\"temperature\": 25.0}", snapshot);
+
+        // Despite the change, the result must be false because the bypass is active
+        assertFalse(evaluator.evaluateGraph(graph, context, dummyJob).finalResult(), "Should be false when bypass is active, even if data changed");
+    }
+
+    @Test
     void testChangeDetection_CombinedWithOperator() throws IOException, GraphEvaluationException {
         // Test-Logik: Trigger, wenn (sich die Temperatur ändert) ODER (der Status "ERROR" ist)
 
