@@ -12,7 +12,7 @@ import jakarta.ws.rs.core.MediaType;
 
 import java.util.List;
 
-@Path("/monitoringgraph")
+@Path("/api/monitoringgraph")
 @Produces(MediaType.APPLICATION_JSON)
 public class MonitoringGraphResource {
     @Inject

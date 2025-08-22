@@ -8,7 +8,7 @@ import jakarta.ws.rs.QueryParam;
 import java.io.PrintWriter;
 import java.net.Socket;
 
-@Path("/test-log")
+@Path("/api/test-log")
 public class TestLogResource {
 
     @GET

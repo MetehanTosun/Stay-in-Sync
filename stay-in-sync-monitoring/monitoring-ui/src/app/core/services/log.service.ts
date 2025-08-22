@@ -1,11 +1,11 @@
-import { Injectable } from '@angular/core';
+import {Injectable, NgZone} from '@angular/core';
 import { Observable, map } from 'rxjs';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import {LogEntry} from '../models/log.model';
 
 @Injectable({ providedIn: 'root' })
 export class LogService {
-  private baseUrl = '/logs';
+  private baseUrl = '/api/logs';
 
   constructor(private http: HttpClient) {}
 

@@ -1,10 +1,11 @@
-import { Component, OnInit } from '@angular/core';
+import {Component, OnDestroy, OnInit} from '@angular/core';
 import { LogEntry } from '../../core/models/log.model';
 import { LogService } from '../../core/services/log.service';
 import { FormsModule } from '@angular/forms';
 import { DatePipe, NgClass, NgIf } from '@angular/common';
 import { TableModule } from 'primeng/table';
 import { ActivatedRoute } from '@angular/router';
+import {NodeMarkerService} from '../../core/services/node-marker.service';
 
 @Component({
   selector: 'app-logs-panel',
@@ -18,8 +19,10 @@ import { ActivatedRoute } from '@angular/router';
   ],
   standalone: true
 })
-export class LogsPanelComponent implements OnInit {
+export class LogsPanelComponent implements OnInit, OnDestroy {
   selectedNodeId?: string;
+
+  private refreshIntervalId?: number;
 
   logs: LogEntry[] = [];
   loading = false;
@@ -29,7 +32,7 @@ export class LogsPanelComponent implements OnInit {
   endTime = '';
   level = 'info';
 
-  constructor(private logService: LogService, private route: ActivatedRoute) {}
+  constructor(private logService: LogService, private route: ActivatedRoute, private nodeMarkerService: NodeMarkerService) {}
 
   ngOnInit() {
     const now = new Date();
@@ -42,13 +45,29 @@ export class LogsPanelComponent implements OnInit {
       this.selectedNodeId = params['input'];
       this.fetchLogs();
     });
+
+    // Alle 10 Sekunden endTime aktualisieren und Logs abrufen
+    this.refreshIntervalId = window.setInterval(() => {
+      this.endTime = this.toDateTimeLocal(new Date());
+      this.fetchLogs();
+    }, 10000);
+  }
+
+  ngOnDestroy() {
+    // Timer bereinigen
+    if (this.refreshIntervalId) {
+      clearInterval(this.refreshIntervalId);
+    }
   }
 
   fetchLogs() {
     this.loading = true;
     this.errorMessage = '';
 
-    // Konvertiere Start/End in Nanosekunden
+    // Scroll-Position speichern
+    const logContainer = document.querySelector('.log-filters');
+    const scrollTop = logContainer ? logContainer.scrollTop : 0;
+
     const startNs = this.toNanoSeconds(new Date(this.startTime));
     const endNs = this.toNanoSeconds(new Date(this.endTime));
 
@@ -56,7 +75,21 @@ export class LogsPanelComponent implements OnInit {
       .subscribe({
         next: logs => {
           this.logs = logs;
+
+          const markedNodes: { [nodeId: string]: boolean } = {};
+          logs.forEach(log => {
+            if (log.level === 'error' && log.syncJobId) {
+              markedNodes[log.syncJobId] = true;
+            }
+          });
+
+          this.nodeMarkerService.updateMarkedNodes(markedNodes);
           this.loading = false;
+
+          // Scroll-Position wiederherstellen
+          if (logContainer) {
+            logContainer.scrollTop = scrollTop;
+          }
         },
         error: err => {
           console.error('Error fetching logs', err);

@@ -30,7 +30,7 @@ public class LogService {
 
     public List<LogEntryDto> fetchAndParseLogs(String syncJobId, long startNs, long endNs, String level) {
         try {
-            // 1️⃣ Labels zusammenbauen
+            // Labels zusammenbauen
             List<String> labels = new ArrayList<>();
             if (syncJobId != null && !syncJobId.isBlank()) {
                 labels.add("syncJobId=\"" + syncJobId + "\"");
@@ -41,10 +41,10 @@ public class LogService {
                 labels.add("level=\"" + level.toUpperCase() + "\"");
             }
 
-            // 2️⃣ Query: labelSelector + optionales |= "level=..." (falls du zusätzlich filterst)
+            // Query: labelSelector + optionales |= "level=..." (falls du zusätzlich filterst)
             String query = "{" + String.join(",", labels) + "}";
 
-            // 3️⃣ URL bauen
+            // URL bauen
             String url = String.format("%s?query=%s&start=%d&end=%d&limit=1000&direction=backward",
                     LOKI_URL,
                     URLEncoder.encode(query, StandardCharsets.UTF_8),
@@ -56,7 +56,7 @@ public class LogService {
                     .GET()
                     .build();
 
-            Log.info("Request send: " + request);
+            //Log.info("Request send: " + request);
 
             HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
 
@@ -64,7 +64,7 @@ public class LogService {
                 throw new RuntimeException("Loki call failed: " + response.statusCode() + " - " + response.body());
             }
 
-            // 4️⃣ JSON parsen
+            // JSON parsen
             JsonNode root = objectMapper.readTree(response.body());
             JsonNode result = root.path("data").path("result");
 

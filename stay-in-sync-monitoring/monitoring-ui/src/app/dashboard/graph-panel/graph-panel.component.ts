@@ -8,6 +8,8 @@ import {
 import {SyncJob} from '../../../../../../stay-in-sync-configurator-ui/src/app/features/source-system/models/syncJob';
 import { firstValueFrom } from 'rxjs';
 import {MonitoringGraphService} from '../../core/services/monitoring-graph.service';
+import {NodeMarkerService} from '../../core/services/node-marker.service';
+import {Router} from '@angular/router';
 
 /**
  * GraphPanelComponent
@@ -33,10 +35,11 @@ export class GraphPanelComponent implements AfterViewInit {
 
   private _searchTerm: string = '';
   private isInitialized: boolean = false;
+  markedNodes: { [nodeId: string]: boolean } = {};
 
 
 
-  constructor(private syncJobService:SyncJobService, private graphService: MonitoringGraphService) {
+  constructor(private nodeMarkerService: NodeMarkerService, private graphService: MonitoringGraphService, private router: Router) {
   }
 
   /**
@@ -67,6 +70,12 @@ export class GraphPanelComponent implements AfterViewInit {
       }else {
         this.links = data.links;
       }
+      // Status der Nodes basierend auf markedNodes aktualisieren
+      this.nodes.forEach(node => {
+        if (this.markedNodes[node.id]) {
+          node.status = 'error';
+        }
+      });
       this.filteredNodes = this.filterNodes(this.searchTerm);
       this.filteredLinks = this.filterLinks();
       this.updateGraph(this.filteredNodes, this.filteredLinks);
@@ -98,24 +107,13 @@ export class GraphPanelComponent implements AfterViewInit {
 
   /**
    * Array of all nodes in the graph.
-   * TODO: Replace with actual data fetching logic.
    */
-  nodes: Node[] = [
-    { id: 'A', type: 'SourceSystem', status: 'active', connections: [], label: 'Source System A' },
-    { id: 'B', type: 'ASS', status: 'active', connections: [], label: 'ASS 1' },
-    { id: 'C', type: 'SyncNode', status: 'active', connections: [], label: 'Sync' },
-    {id: 'D', type: 'TargetSystem', status: 'active', connections: [], label: 'Target' },
-  ];
+  nodes: Node[] = [];
 
   /**
    * Array of all links in the graph.
-   * TODO: Replace with actual data fetching logic.
    */
-  links: NodeConnection[] = [
-    { source: 'A', target: 'C', status: 'active' },
-    { source: 'B', target: 'C', status: 'inactive' },
-    {source: 'C', target: 'D', status: 'active' },
-  ];
+  links: NodeConnection[] = [];
 
   /**
    * Array of filtered links based on the search term.
@@ -132,8 +130,10 @@ export class GraphPanelComponent implements AfterViewInit {
    * Sets up the SVG container, zoom behavior, and renders the initial graph.
    */
 ngAfterViewInit() {
-  this.loadGraphData();
-  // Die Initialisierung erfolgt nach dem Laden der Daten in loadGraphData()
+    // this.nodeMarkerService.markedNodes$.subscribe(markedNodes => {
+    //   this.markedNodes = markedNodes;
+    // });
+    this.loadGraphData();
 }
 
   /**
@@ -265,6 +265,13 @@ ngAfterViewInit() {
       }
     });
 
+    // Klick-Handler für Nodes mit Status "error"
+    nodeGroup.on('click', (event, d) => {
+      if (d.status === 'error') {
+        this.router.navigate(['/replay'], { queryParams: { nodeId: d.id } });
+      }
+    });
+
     this.applyStatusStyles(nodeGroup);
 
     const simulation = this.createSimulation(nodes, links, width, height, link, nodeGroup);
@@ -363,7 +370,7 @@ ngAfterViewInit() {
     return d3.forceSimulation<Node>(nodes)
       .force('link', d3.forceLink<Node, NodeConnection>(links).id(d => d.id).distance(100))
       .force('charge', d3.forceManyBody().strength(-200))
-      .force('center', d3.forceCenter(width / 2, height / 2))  //TODO: Fix center position when filtering ??
+      .force('center', d3.forceCenter(width / 2, height / 2))
       .on('tick', () => {
         link
           .attr('x1', d => (d.source as Node).x ?? 0)

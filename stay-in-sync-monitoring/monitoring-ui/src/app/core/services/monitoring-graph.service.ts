@@ -6,7 +6,7 @@ export class MonitoringGraphService{
   constructor(private http: HttpClient) {}
 
   getMonitoringGraphData() {
-    return this.http.get<any>('/monitoringgraph');
+    return this.http.get<any>('/api/monitoringgraph');
   }
 
 }

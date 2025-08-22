@@ -1,4 +1,5 @@
 export interface LogEntry {
+  syncJobId?: string;
   rawMessage?: string;
   service?: string;
   component?: string;
