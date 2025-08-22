@@ -4,6 +4,8 @@ import de.unistuttgart.stayinsync.pollingnode.entities.RequestBuildingDetails;
 import de.unistuttgart.stayinsync.pollingnode.exceptions.execution.UnsupportedRequestTypeException;
 import de.unistuttgart.stayinsync.pollingnode.exceptions.execution.pollingjob.requestbuilderexceptions.RequestBuildingDetailsNullFieldException;
 import de.unistuttgart.stayinsync.pollingnode.exceptions.execution.pollingjob.requestbuilderexceptions.RequestBuildingException;
+import de.unistuttgart.stayinsync.transport.dto.ApiRequestParameterMessageDTO;
+import de.unistuttgart.stayinsync.transport.dto.ParamType;
 import io.quarkus.logging.Log;
 import io.vertx.ext.web.client.WebClientOptions;
 import io.vertx.mutiny.core.Vertx;
@@ -12,6 +14,7 @@ import io.vertx.mutiny.ext.web.client.HttpRequest;
 import io.vertx.mutiny.ext.web.client.WebClient;
 import jakarta.enterprise.context.ApplicationScoped;
 
+import java.net.URI;
 import java.time.Duration;
 
 import static de.unistuttgart.stayinsync.transport.dto.ParamType.QUERY;
@@ -51,23 +54,22 @@ public class RequestBuilder {
     public HttpRequest<Buffer> buildRequest(final RequestBuildingDetails requestBuildingDetails) throws RequestBuildingException {
         try {
             this.throwExceptionIfRequestBuildingDetailsInvalid(requestBuildingDetails);
-            final String apiCallPath = this.concatPaths(requestBuildingDetails.sourceSystem().apiUrl(), requestBuildingDetails.endpoint().endpointPath());
-            final HttpRequest<Buffer> request = this.prebuildRequestWithRequestType(requestBuildingDetails.endpoint().httpRequestType(), apiCallPath);
+            final String apiCallPath = this.resolveExecutionPath(requestBuildingDetails);
+            final HttpRequest<Buffer> request = this.buildRequestWithSpecificRequestType(requestBuildingDetails.endpoint().httpRequestType(), apiCallPath);
             this.parameterizeRequest(requestBuildingDetails, request);
             return request;
         } catch (RequestBuildingDetailsNullFieldException e) {
             final String exceptionMessage = "Request Not Built! " + e.getMessage();
             Log.errorf(exceptionMessage);
             throw new RequestBuildingException(exceptionMessage, e);
-        } catch (Exception e){
+        } catch (Exception e) {
             final String exceptionMessage = "Request Not Built! An unexpected Exception was thrown in the requestBuildingProcess. RequestBuilder in Pollingcomponent should be reviewed with this Exception";
             Log.errorf(exceptionMessage);
             throw new RequestBuildingException(exceptionMessage, e);
         }
     }
 
-
-    /*@
+     /*@
     @ requires throwExceptionIfRequestBuildingDetailsInvalid(requestBuildingDetails) called before this call.
      */
     /**
@@ -77,17 +79,34 @@ public class RequestBuilder {
      * @param httpRequestType is used to determine the requestType for the build
      * @param apiCallPath     Used to build the request
      * @return built request
+     * @throws RequestBuildingException if the httpRequestType was in wrong format.
      */
-    private HttpRequest<Buffer> prebuildRequestWithRequestType(final String httpRequestType, String apiCallPath) {
-        HttpRequest<Buffer> request;
-        switch (httpRequestType) {
-            case "GET" -> request = webClient.getAbs(apiCallPath);
-            case "POST" -> request = webClient.postAbs(apiCallPath);
-            case "PUT" -> request = webClient.putAbs(apiCallPath);
-            default -> throw new UnsupportedRequestTypeException("The apiRequestType was not 'GET', 'POST', 'PUT'");
+    private HttpRequest<Buffer> buildRequestWithSpecificRequestType(final String httpRequestType, String apiCallPath) throws RequestBuildingException {
+        try {
+            URI uri = new URI(apiCallPath);
+            String host = uri.getHost();
+            int port = uri.getPort();
+            String path = uri.getPath();
+
+            if (port == -1) {
+                port = "https".equalsIgnoreCase(uri.getScheme()) ? 443 : 80;
+            }
+
+            return webClient.request(
+                    io.vertx.core.http.HttpMethod.valueOf(httpRequestType.toUpperCase()),
+                    port,
+                    host,
+                    path
+            ).ssl(true);
+
+        } catch (java.net.URISyntaxException e) {
+
+            throw new RequestBuildingException("The generated apiCallPath is not a valid URI: " + apiCallPath, e);
+        } catch (IllegalArgumentException e) {
+            throw new RequestBuildingException("The apiRequestType '" + httpRequestType + "' is not a valid HTTP method.", e);
         }
-        return request;
     }
+
 
     /*@
     @ requires throwExceptionIfRequestBuildingDetailsInvalid(requestBuildingDetails) called before this call.
@@ -96,7 +115,7 @@ public class RequestBuilder {
      * Parameterizes the request by adding the AuthHeader, other Headers and Parameters to the request.
      *
      * @param requestBuildingDetails the buildingDetails for this specific request
-     * @param request the prebuilt but not parameterized request
+     * @param request                the prebuilt but not parameterized request
      */
     private void parameterizeRequest(final RequestBuildingDetails requestBuildingDetails, final HttpRequest<Buffer> request) {
         request.putHeader("Host", requestBuildingDetails.sourceSystem().apiUrl().replaceFirst("https?://", ""));
@@ -108,7 +127,7 @@ public class RequestBuilder {
                 }
             });
         }
-        if(requestBuildingDetails.requestParameters() != null){
+        if (requestBuildingDetails.requestParameters() != null) {
             requestBuildingDetails.requestParameters().forEach(parameter -> {
                 if (parameter.paramName() != null && parameter.type() != null && parameter.type() == QUERY) {
                     request.addQueryParam(parameter.paramName(), parameter.paramValue());
@@ -121,22 +140,27 @@ public class RequestBuilder {
     @ requires throwExceptionIfRequestBuildingDetailsInvalid(requestBuildingDetails) called before this call.
      */
     /**
-     * Applies second to first path. Changes all "\" to "/" and makes sure, that there are no additional or missing "/" between the seems.
+     * Parameterizes endpointPath with PathParameters, concats them with apiURL and returns them as String.
      *
-     * @param baseUrl      is appended before the other String.
-     * @param endpointPath is appended after the other String.
+     * @param connectionDetails contain endpointPath and requestParameters.
+     * @return ApiUrl and Parameterized endpointPath as one String.
      */
-    private String concatPaths(String baseUrl, String endpointPath) {
-        if (endpointPath == null) endpointPath = "";
-        final String base = baseUrl.replace("\\", "/").replaceAll("/+$", "");
-        final String endpoint = endpointPath.replace("\\", "/").replaceAll("^/+", "");
-        return base + "/" + endpoint;
+    private String resolveExecutionPath(final RequestBuildingDetails connectionDetails) {
+        String pathTemplate = connectionDetails.endpoint().endpointPath();
+        for (ApiRequestParameterMessageDTO parameter : connectionDetails.requestParameters()) {
+            if (parameter.type() == ParamType.PATH) {
+                pathTemplate = pathTemplate.replace("{" + parameter.paramName() + "}", parameter.paramValue());
+            }
+        }
+        return connectionDetails.sourceSystem().apiUrl() + pathTemplate;
     }
+
 
     /*@
     @ requires throwExceptionIfRequestBuildingDetailsInvalid(requestBuildingDetails) called before this call.
     @ ensures apiUrl != null && httpRequestType != null && (apiKey && authHeaderName) != null or == null
      */
+
     /**
      * Throws Exception if the requestBuildingDetails would lead to an invalid request.
      *
@@ -144,7 +168,7 @@ public class RequestBuilder {
      * @throws RequestBuildingDetailsNullFieldException if an important field is null.
      */
     private void throwExceptionIfRequestBuildingDetailsInvalid(final RequestBuildingDetails requestBuildingDetails) throws RequestBuildingDetailsNullFieldException {
-        if(requestBuildingDetails.sourceSystem() == null || requestBuildingDetails.endpoint() == null || requestBuildingDetails.sourceSystem().authDetails() == null){
+        if (requestBuildingDetails.sourceSystem() == null || requestBuildingDetails.endpoint() == null || requestBuildingDetails.sourceSystem().authDetails() == null) {
             final String exceptionMessage = "No SourceSystem, Endpoint or AuthDetails were defined in RequestBuildingDetails";
             Log.errorf(exceptionMessage);
             throw new RequestBuildingDetailsNullFieldException(exceptionMessage);
@@ -181,4 +205,6 @@ public class RequestBuilder {
             Log.debug("WebClient was closed correctly");
         }
     }
+
+
 }

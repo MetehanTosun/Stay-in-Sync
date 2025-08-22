@@ -90,7 +90,7 @@ public class RestClient {
 
     /**
      * Tries to extract the JsonObject of the response. If the response does not contain an object, but an array as the outer entity,
-     * the array is converted to a JsonObject and then returned.
+     * the array is converted to a JsonObject containing it in the field 'entities' and then returned.
      * @param response the response of which teh JsonObject needs to be extracted.
      * @return extracted JsonObject
      * @throws ResponseInvalidFormatException if the body of the response was in a format incompatible to JsonObjects.
@@ -107,5 +107,7 @@ public class RestClient {
         }
     }
 }
+
+
 
 

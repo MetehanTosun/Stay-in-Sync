@@ -20,9 +20,9 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.Set;
 
+import static de.unistuttgart.stayinsync.transport.dto.ParamType.PATH;
 import static de.unistuttgart.stayinsync.transport.dto.ParamType.QUERY;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.fail;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
@@ -64,26 +64,39 @@ public class RequestBuilderTest {
     @Test
     @DisplayName("Tests if all needed methods are called on WebClient to build a Request if exactly the information of the RequestBuildingDetails during 'buildRequest'.")
     void testBuildRequestSuccessful(){
-        // Arrange
         RequestBuildingDetails requestBuildingDetails = createRequestBuildingDetailsWithNullFieldForSpecificValue(0);
 
-        when(webClient.getAbs(anyString())).thenReturn(httpRequest);
+        when(webClient.request(
+                eq(io.vertx.core.http.HttpMethod.GET),
+                eq(443),
+                eq("api.mysystem.com"),
+                eq("/v1/556/projects")
+        )).thenReturn(httpRequest);
+        when(httpRequest.ssl(eq(true))).thenReturn(httpRequest);
         when(httpRequest.putHeader(anyString(), anyString())).thenReturn(httpRequest);
-        when(httpRequest.addQueryParam(anyString(), anyString())).thenReturn(httpRequest);
         when(httpRequest.addQueryParam(anyString(), anyString())).thenReturn(httpRequest);
 
         // Act
+        HttpRequest<Buffer> result = null;
         try {
-            requestBuilder.buildRequest(requestBuildingDetails);
+            result = requestBuilder.buildRequest(requestBuildingDetails);
         } catch(Exception e){
             fail("Exception was thrown during buildRequest call", e);
         }
 
         // Assert
-        verify(webClient).getAbs("https://api.mysystem.com/v1/projects");
+        verify(webClient).request(
+                eq(io.vertx.core.http.HttpMethod.GET),
+                eq(443),
+                eq("api.mysystem.com"),
+                eq("/v1/556/projects")
+        );
+        verify(httpRequest).ssl(eq(true));
         verify(httpRequest).putHeader("Accept", "/application\\json");
         verify(httpRequest).addQueryParam("high", "value");
         verify(httpRequest).addQueryParam("open", "otherValue");
+
+        assertNotNull(result, "The built request should not be null");
     }
 
     @ParameterizedTest
@@ -100,14 +113,16 @@ public class RequestBuilderTest {
         String authType = "Bearer";
         String authToken = "token123";
         String systemName = "MySystem";
-        String systemUrl = "https://api.mysystem.com\\";
+        String systemUrl = "https://api.mysystem.com/";
         String systemType = "REST";
-        String endpointPath = "/v1\\projects";
+        String endpointPath = "v1/{id}/projects";
         String endpointMethod = "GET";
         String paramName1 = "high";
         String paramValue1 = "value";
         String paramName2 = "open";
         String paramValue2 = "otherValue";
+        String paramName3 = "id";
+        String paramValue3 = "556";
         String headerName = "Accept";
         String headerValue = "/application\\json";
         ParamType paramType = QUERY;
@@ -128,9 +143,10 @@ public class RequestBuilderTest {
 
         ApiRequestParameterMessageDTO param1 = new ApiRequestParameterMessageDTO(paramType, paramName1, paramValue1);
         ApiRequestParameterMessageDTO param2 = new ApiRequestParameterMessageDTO(paramType, paramName2, paramValue2);
+        ApiRequestParameterMessageDTO param3 = new ApiRequestParameterMessageDTO(PATH, paramName3, paramValue3);
         ApiRequestHeaderMessageDTO header1 = new ApiRequestHeaderMessageDTO(headerName, headerValue);
 
-        return new RequestBuildingDetails(sourceSystem, endpoint, Set.of(param1, param2), Set.of(header1));
+        return new RequestBuildingDetails(sourceSystem, endpoint, Set.of(param1, param2, param3), Set.of(header1));
     }
 
 }
