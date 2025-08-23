@@ -33,17 +33,21 @@
 <!-- MARK: Main Body -->
 <!-- Graph Canvas -->
 <div class="vflow-wrapper" #vflowWrapper>
-  <app-vflow-canvas (canvasClick)="onCanvasClick($event)" (suggestionSelected)="onNodeSelected($event)">
+  <app-vflow-canvas (canvasClick)="onCanvasClick($event)" (suggestionSelected)="onNodeSelected($event)"
+    (graphErrors)="graphErrors = $event">
   </app-vflow-canvas>
 </div>
 
+<!-- Error Panel -->
+<app-error-panel [errors]="graphErrors"></app-error-panel>
+
+<!-- MARK: Modals -->
 <!-- Provider Modal -->
 <div id="provider-node-modal" *ngIf="showProviderModal">
   <app-provider-node-modal (providerCreated)="onProviderCreated($event)" (modalsClosed)="onModalsClosed()">
   </app-provider-node-modal>
 </div>
 
-<!-- MARK: Modals -->
 <!-- Constant Modal -->
 <div id="constant-node-modal" *ngIf="showConstantModal">
   <app-constant-node-modal (constantCreated)="onConstantCreated($event)" (modalsClosed)="onModalsClosed()">

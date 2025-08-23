@@ -6,6 +6,7 @@ import { CustomVFlowNode, LogicOperatorMeta, NodeMenuItem, NodeType, VFlowGraphD
 import { ConstantNodeComponent, ConstantNodeModalComponent, FinalNodeComponent, LogicNodeComponent, ProviderNodeComponent, ProviderNodeModalComponent } from '..';
 import { CommonModule } from '@angular/common';
 import { SetNodeNameModalComponent } from '../modals/set-node-name-modal/set-node-name-modal.component';
+import { ValidationError } from '../../models/interfaces/validation-error.interface';
 
 /**
  * The canvas of the rule editor on which the rule graph is visualized
@@ -57,6 +58,7 @@ export class VflowCanvasComponent implements OnInit {
 
   @Output() canvasClick = new EventEmitter<{ x: number, y: number }>();
   @Output() suggestionSelected = new EventEmitter<{ nodeType: NodeType, operator: LogicOperatorMeta }>();
+  @Output() graphErrors = new EventEmitter<ValidationError[]>();
 
   constructor(
     private route: ActivatedRoute,
@@ -270,7 +272,6 @@ export class VflowCanvasComponent implements OnInit {
   onSuggestionSelected(selection: LogicOperatorMeta) {
     this.suggestionSelected.emit({ nodeType: NodeType.LOGIC, operator: selection });
     this.closeNodeContextMenu();
-    console.log("creating", selection) // TODO-s delete
   }
   //#endregion
 
@@ -403,7 +404,8 @@ export class VflowCanvasComponent implements OnInit {
           }
         });
 
-        // TODO-s loads errors
+        // emits backend graph errors to the page component
+        this.graphErrors.emit(graph.errors ? graph.errors : []);
       },
       error: (err) => {
         alert(err.error?.message || err.message);  // TODO-s err
@@ -433,6 +435,8 @@ export class VflowCanvasComponent implements OnInit {
         alert('Graph saved successfully'); // TODO-s
         this.hasUnsavedChanges = false;
         console.log('Received graphDTO:', JSON.stringify(res, null, 2)); // TODO-s DELETE
+
+        this.graphErrors.emit(res.errors ? res.errors : []);
       },
       error: (err) => {
         console.error('Error response body:', err.error); // TODO-s DELETE

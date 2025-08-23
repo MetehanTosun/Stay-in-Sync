@@ -4,6 +4,8 @@ import { ConstantNodeModalComponent, NodePaletteComponent, ProviderNodeModalComp
 import { LogicOperatorMeta, NodeType } from '../../models';
 import { CommonModule } from '@angular/common';
 import { TransformationRulesApiService } from '../../service';
+import { ErrorPanelComponent } from '../../components/error-panel/error-panel.component';
+import { ValidationError } from '../../models/interfaces/validation-error.interface';
 
 /**
  * The rule editor page component in which the user can view and edit a transformation rule graph
@@ -15,7 +17,8 @@ import { TransformationRulesApiService } from '../../service';
     VflowCanvasComponent,
     NodePaletteComponent,
     ProviderNodeModalComponent,
-    ConstantNodeModalComponent
+    ConstantNodeModalComponent,
+    ErrorPanelComponent
   ],
   templateUrl: './edit-rule.component.html',
   styleUrl: './edit-rule.component.css'
@@ -34,6 +37,10 @@ export class EditRuleComponent implements OnInit {
   showProviderModal = false;
   showConstantModal = false;
   pendingNodePos: { x: number, y: number } | null = null;
+
+  // Error Panel Attribute
+  //* Needed as an intermediate attribute
+  graphErrors: ValidationError[] = [];
 
   private documentClickListener: any;
 
