@@ -5,6 +5,7 @@ import de.unistuttgart.stayinsync.monitoring.clientinterfaces.SyncJobClient;
 import de.unistuttgart.stayinsync.monitoring.clientinterfaces.TargetSystemClient;
 import de.unistuttgart.stayinsync.monitoring.mapping.MonitoringGraphSyncJobMapper;
 import de.unistuttgart.stayinsync.transport.dto.monitoringgraph.*;
+import io.quarkus.logging.Log;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import org.eclipse.microprofile.rest.client.inject.RestClient;
@@ -41,15 +42,21 @@ public class MonitoringGraphService {
             nodeMap.put("SRC_" + src.id, createNode("SRC_" + src.id, "SourceSystem", src.name, src.status));
         }
 
+        Log.info(nodeMap.toString());
+
         // 2. Alle TargetSystems
         for (MonitoringTargetSystemDto tgt : targetSystemClient.getAll()) {
             nodeMap.put("TGT_" + tgt.id, createNode("TGT_" + tgt.id, "TargetSystem", tgt.name, tgt.status));
         }
 
+        Log.info(nodeMap.toString());
+
         // Mapping Schritt hier
         List<MonitoringSyncJobDto> jobs = syncJobClient.getAll().stream()
                 .map(syncJobMapper::mapToDto) // Entity → DTO
                 .toList();
+
+        Log.info("Jobs: " + jobs);
 
         // 3. SyncJobs + Verbindungen
         for (MonitoringSyncJobDto job : jobs) {
