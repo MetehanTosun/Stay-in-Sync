@@ -8,23 +8,18 @@
     <artifactId>monitoring-backend</artifactId>
     <version>1.0.0-SNAPSHOT</version>
 
-    <parent>
-        <groupId>de.unistuttgart</groupId>
-        <artifactId>stay-in-sync</artifactId>
-        <version>1.0.0-SNAPSHOT</version>
-        <relativePath>../../pom.xml</relativePath>
-    </parent>
-
     <properties>
-        <compiler-plugin.version>3.14.0</compiler-plugin.version>
         <maven.compiler.release>21</maven.compiler.release>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
-        <quarkus.platform.artifact-id>quarkus-bom</quarkus.platform.artifact-id>
+
         <quarkus.platform.group-id>io.quarkus.platform</quarkus.platform.group-id>
-        <quarkus.platform.version>3.21.4</quarkus.platform.version>
-        <skipITs>true</skipITs>
-        <surefire-plugin.version>3.5.2</surefire-plugin.version>
+        <quarkus.platform.artifact-id>quarkus-bom</quarkus.platform.artifact-id>
+        <quarkus.platform.version>3.25.4</quarkus.platform.version>
+
+        <compiler-plugin.version>3.14.0</compiler-plugin.version>
+        <surefire-plugin.version>3.5.3</surefire-plugin.version>
+
         <grpc.version>1.66.0</grpc.version>
         <protobuf.version>3.25.3</protobuf.version>
     </properties>
@@ -42,7 +37,7 @@
     </dependencyManagement>
 
     <dependencies>
-        <!-- Quarkus Core -->
+        <!--  Quarkus Extensions -->
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-arc</artifactId>
@@ -55,8 +50,6 @@
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-rest-jackson</artifactId>
         </dependency>
-
-        <!-- Database & ORM -->
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-jdbc-mariadb</artifactId>
@@ -65,14 +58,10 @@
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-hibernate-orm-panache</artifactId>
         </dependency>
-
-        <!-- Container Image -->
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-container-image-docker</artifactId>
         </dependency>
-
-        <!-- OpenAPI & Validation -->
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-smallrye-openapi</artifactId>
@@ -81,14 +70,10 @@
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-hibernate-validator</artifactId>
         </dependency>
-
-        <!-- Micrometer Prometheus -->
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-micrometer-registry-prometheus</artifactId>
         </dependency>
-
-        <!-- Logging & Health -->
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-smallrye-health</artifactId>
@@ -97,12 +82,27 @@
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-logging-json</artifactId>
         </dependency>
-
-        <!-- gRPC -->
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-grpc</artifactId>
         </dependency>
+        <dependency>
+            <groupId>io.quarkiverse.quinoa</groupId>
+            <artifactId>quarkus-quinoa</artifactId>
+            <version>2.6.2</version>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-junit5</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-micrometer</artifactId>
+        </dependency>
+
+
+        <!-- gRPC / Protobuf -->
         <dependency>
             <groupId>io.grpc</groupId>
             <artifactId>grpc-netty-shaded</artifactId>
@@ -124,18 +124,11 @@
             <version>${protobuf.version}</version>
         </dependency>
 
-        <!-- Logback -->
+        <!-- Logging -->
         <dependency>
             <groupId>ch.qos.logback</groupId>
             <artifactId>logback-classic</artifactId>
             <version>1.5.6</version>
-        </dependency>
-
-        <!-- Quinoa UI -->
-        <dependency>
-            <groupId>io.quarkiverse.quinoa</groupId>
-            <artifactId>quarkus-quinoa</artifactId>
-            <version>2.5.4</version>
         </dependency>
 
         <!-- MapStruct -->
@@ -148,14 +141,17 @@
             <groupId>org.mapstruct</groupId>
             <artifactId>mapstruct-processor</artifactId>
             <version>1.6.3</version>
+            <scope>provided</scope>
+        </dependency>
+
+        <!-- Micrometer Core -->
+        <dependency>
+            <groupId>io.micrometer</groupId>
+            <artifactId>micrometer-core</artifactId>
+            <version>1.14.6</version>
         </dependency>
 
         <!-- Testing -->
-        <dependency>
-            <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-junit5</artifactId>
-            <scope>test</scope>
-        </dependency>
         <dependency>
             <groupId>io.rest-assured</groupId>
             <artifactId>rest-assured</artifactId>
@@ -168,36 +164,13 @@
             <version>5.10.0</version>
             <scope>test</scope>
         </dependency>
-        <dependency>
-            <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-micrometer</artifactId>
-            <version>3.21.4</version>
-        </dependency>
-        <dependency>
-            <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-development-mode-spi</artifactId>
-            <version>3.21.4</version>
-        </dependency>
-        <dependency>
-            <groupId>io.micrometer</groupId>
-            <artifactId>micrometer-core</artifactId>
-            <version>1.14.6</version>
-        </dependency>
-        <dependency>
-            <groupId>de.hamstersimulator.objectsfirst</groupId>
-            <artifactId>core</artifactId>
-            <version>4.3.4</version>
-        </dependency>
-        <dependency>
-            <groupId>de.unistuttgart.stayinsync</groupId>
-            <artifactId>monitoring-backend</artifactId>
-            <version>1.0.0-SNAPSHOT</version>
-        </dependency>
+
+
+
     </dependencies>
 
     <build>
         <extensions>
-
             <extension>
                 <groupId>kr.motd.maven</groupId>
                 <artifactId>os-maven-plugin</artifactId>
@@ -278,5 +251,3 @@
         </profile>
     </profiles>
 </project>
-
-
