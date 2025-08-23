@@ -51,10 +51,14 @@ export class VflowCanvasComponent implements OnInit {
   editJsonPathModalOpen = false;
   editNodeValueModalOpen = false;
   nodeBeingEdited: CustomVFlowNode | null = null;
+  showRemoveEdgesModal: boolean = false;
 
   // Autocomplete Feature
   suggestions: LogicOperatorMeta[] = []
   showSuggestions = false;
+
+  // Pending Stuff
+  pendingNodeValue: string | null = null;
 
   @Output() canvasClick = new EventEmitter<{ x: number, y: number }>();
   @Output() suggestionSelected = new EventEmitter<{ nodeType: NodeType, operator: LogicOperatorMeta }>();
@@ -327,22 +331,43 @@ export class VflowCanvasComponent implements OnInit {
   // TODO-s (kinda verbose so it rerenders automatically)
   onValueSaved(newValue: string) {
     if (this.nodeBeingEdited) {
-      const index = this.nodes.findIndex(n => n.id === this.nodeBeingEdited!.id);
-      if (index !== -1) {
-        const updatedNode = {
-          ...this.nodes[index],
-          data: {
-            ...this.nodes[index].data,
-            value: newValue
-          }
-        };
-        this.nodes = [
-          ...this.nodes.slice(0, index),
-          updatedNode,
-          ...this.nodes.slice(index + 1)
-        ];
-        this.hasUnsavedChanges = true;
+      if (this.inferTypeFromValue(newValue) !== this.nodeBeingEdited.data.outputType) {
+        this.pendingNodeValue = newValue;
+        this.showRemoveEdgesModal = true;
       }
+      else {
+        this.updateNodeValue(newValue);
+      }
+    }
+  }
+
+  // TODO-s
+  updateNodeValue(newValue: string) {
+    if (this.nodeBeingEdited) {
+      const index = this.nodes.findIndex(n => n.id === this.nodeBeingEdited!.id);
+      // Update internal node data
+      const updatedNode = {
+        ...this.nodes[index],
+        data: {
+          ...this.nodes[index].data,
+          value: newValue
+        }
+      };
+
+      // Re-input node into nodes array to rerender
+      this.nodes = [
+        ...this.nodes.slice(0, index),
+        updatedNode,
+        ...this.nodes.slice(index + 1)
+      ];
+      this.hasUnsavedChanges = true;
+
+      // Remove edges if needed
+      const outgoingEdges = this.edges.filter(e => e.source === updatedNode.id);
+      if (this.showRemoveEdgesModal) {
+        this.edges = this.edges.filter(e => !outgoingEdges.includes(e));
+      }
+
       this.editNodeValueModalOpen = false;
       this.nodeBeingEdited = null;
       this.closeNodeContextMenu();
@@ -372,6 +397,19 @@ export class VflowCanvasComponent implements OnInit {
 
     if (this.selectedNode?.id === node.id)
       this.closeNodeContextMenu();
+  }
+
+  // TODO-s Doc
+  confirmRemoveEdges() {
+    this.updateNodeValue(this.pendingNodeValue!);
+    this.showRemoveEdgesModal = false;
+    this.pendingNodeValue = null;
+  }
+
+  // TODO-s Doc
+  cancelRemoveEdges() {
+    this.pendingNodeValue = null;
+    this.showRemoveEdgesModal = false;
   }
   //#endregion
 
