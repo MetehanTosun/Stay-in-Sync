@@ -36,6 +36,16 @@
   </ng-container>
 </div>
 
+<!-- MARK: Node Suggestion Menu -->
+<div *ngIf="showSuggestions" class="suggestions-menu" [style.left.px]="nodeContextMenuPosition.x + 140"
+  [style.top.px]="nodeContextMenuPosition.y">
+  <ul>
+    <li *ngFor="let suggestion of suggestions" (click)="onSuggestionSelected(suggestion)">
+      {{ suggestion.operatorName }}
+    </li>
+  </ul>
+</div>
+
 <!-- MARK: Edge Menu -->
 <div *ngIf="showEdgeContextMenu" class="context-menu" [style.left.px]="edgeContextMenuPosition.x"
   [style.top.px]="edgeContextMenuPosition.y" (click)="$event.stopPropagation()">

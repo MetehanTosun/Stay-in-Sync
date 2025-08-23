@@ -1,7 +1,7 @@
 import { Component, EventEmitter, OnInit, Output } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import { Connection, Edge, EdgeChange, EdgeType, NodeChange, Vflow } from 'ngx-vflow';
-import { GraphAPIService } from '../../service';
+import { GraphAPIService, OperatorNodesApiService } from '../../service';
 import { CustomVFlowNode, LogicOperatorMeta, NodeMenuItem, NodeType, VFlowGraphDTO } from '../../models';
 import { ConstantNodeComponent, ConstantNodeModalComponent, FinalNodeComponent, LogicNodeComponent, ProviderNodeComponent, ProviderNodeModalComponent } from '..';
 import { CommonModule } from '@angular/common';
@@ -51,9 +51,18 @@ export class VflowCanvasComponent implements OnInit {
   editNodeValueModalOpen = false;
   nodeBeingEdited: CustomVFlowNode | null = null;
 
-  @Output() canvasClick = new EventEmitter<{ x: number, y: number }>();
+  // Autocomplete Feature
+  suggestions: LogicOperatorMeta[] = []
+  showSuggestions = false;
 
-  constructor(private route: ActivatedRoute, private graphApi: GraphAPIService) { }
+  @Output() canvasClick = new EventEmitter<{ x: number, y: number }>();
+  @Output() suggestionSelected = new EventEmitter<{ nodeType: NodeType, operator: LogicOperatorMeta }>();
+
+  constructor(
+    private route: ActivatedRoute,
+    private graphApi: GraphAPIService,
+    private nodesApi: OperatorNodesApiService
+  ) { }
 
   ngOnInit(): void {
     const routeId = this.route.snapshot.paramMap.get('id');
@@ -93,17 +102,21 @@ export class VflowCanvasComponent implements OnInit {
       case NodeType.CONSTANT:
         return [
           { label: 'Set Value', action: () => this.startEditingNodeValue(node) },
+          { label: 'Suggestions', action: () => this.openSuggestionsMenu(node) },
           { label: 'Delete Node', action: () => this.deleteNode(node) }
         ];
       case NodeType.PROVIDER:
         return [
           { label: 'Set Name', action: () => this.startEditingNodeName(node) },
           { label: 'Edit JSON Path', action: () => this.startEditingJsonPath(node) },
+          // TODO-s
+          // { label: 'Suggestions', action: () => this.openSuggestionsMenu(node) },
           { label: 'Delete Node', action: () => this.deleteNode(node) }
         ];
       case NodeType.LOGIC:
         return [
           { label: 'Set Name', action: () => this.startEditingNodeName(node) },
+          { label: 'Suggestions', action: () => this.openSuggestionsMenu(node) },
           { label: 'Delete Node', action: () => this.deleteNode(node) }
         ];
       case NodeType.FINAL:
@@ -143,7 +156,8 @@ export class VflowCanvasComponent implements OnInit {
     } else if (nodeType === NodeType.CONSTANT && constantValue !== undefined) {
       nodeData = {
         name: `Constant: ${constantValue}`,
-        value: constantValue
+        value: constantValue,
+        outputType: this.inferTypeFromValue(constantValue)
       }
     } else if (nodeType === NodeType.LOGIC && operatorData) {
       nodeData = {
@@ -250,6 +264,13 @@ export class VflowCanvasComponent implements OnInit {
     } else if (this.selectedEdge?.id === change.id) {
       this.closeEdgeContextMenu();
     }
+  }
+
+  // TODO-s
+  onSuggestionSelected(selection: LogicOperatorMeta) {
+    this.suggestionSelected.emit({ nodeType: NodeType.LOGIC, operator: selection });
+    this.closeNodeContextMenu();
+    console.log("creating", selection) // TODO-s delete
   }
   //#endregion
 
@@ -411,6 +432,7 @@ export class VflowCanvasComponent implements OnInit {
       next: (res) => {
         alert('Graph saved successfully'); // TODO-s
         this.hasUnsavedChanges = false;
+        console.log('Received graphDTO:', JSON.stringify(res, null, 2)); // TODO-s DELETE
       },
       error: (err) => {
         console.error('Error response body:', err.error); // TODO-s DELETE
@@ -421,6 +443,21 @@ export class VflowCanvasComponent implements OnInit {
   //#endregion
 
   //#region Helpers
+  // TODO-s
+  openSuggestionsMenu(node: CustomVFlowNode) {
+    const outputType = node.data.outputType ?? this.inferTypeFromValue(node.data.value);
+    this.nodesApi.getOperators().subscribe({
+      next: (operators: LogicOperatorMeta[]) => {
+        this.suggestions = operators.filter(o => o.inputTypes.includes(outputType));
+        this.showSuggestions = true;
+      },
+      error: (err) => {
+        alert(err); // TODO-s
+        console.error(err);
+      }
+    })
+  }
+
   // TODO-s use find() because of live update bug
   startEditingNodeValue(node: CustomVFlowNode) {
     const latestNode = this.nodes.find(n => n.id === node.id);
@@ -461,6 +498,7 @@ export class VflowCanvasComponent implements OnInit {
   closeNodeContextMenu() {
     this.selectedNode = null;
     this.showNodeContextMenu = false;
+    this.showSuggestions = false;
     this.nodeContextMenuPosition = { x: 0, y: 0 };
   }
 

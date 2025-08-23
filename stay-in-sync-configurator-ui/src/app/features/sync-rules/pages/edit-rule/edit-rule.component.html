@@ -33,7 +33,7 @@
 <!-- MARK: Main Body -->
 <!-- Graph Canvas -->
 <div class="vflow-wrapper" #vflowWrapper>
-  <app-vflow-canvas (canvasClick)="onCanvasClick($event)">
+  <app-vflow-canvas (canvasClick)="onCanvasClick($event)" (suggestionSelected)="onNodeSelected($event)">
   </app-vflow-canvas>
 </div>
 
