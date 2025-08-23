@@ -4,7 +4,7 @@
          xsi:schemaLocation="http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
-    <groupId>de.unistuttgart.stayinsync</groupId>
+    <groupId>org.acme</groupId>
     <artifactId>monitoring-backend</artifactId>
     <version>1.0.0-SNAPSHOT</version>
 
@@ -22,6 +22,7 @@
 
         <grpc.version>1.66.0</grpc.version>
         <protobuf.version>3.25.3</protobuf.version>
+        <logback.version>1.5.6</logback.version>
     </properties>
 
     <dependencyManagement>
@@ -37,7 +38,7 @@
     </dependencyManagement>
 
     <dependencies>
-        <!--  Quarkus Extensions -->
+        <!-- Quarkus Core Extensions -->
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-arc</artifactId>
@@ -101,7 +102,6 @@
             <artifactId>quarkus-micrometer</artifactId>
         </dependency>
 
-
         <!-- gRPC / Protobuf -->
         <dependency>
             <groupId>io.grpc</groupId>
@@ -124,11 +124,11 @@
             <version>${protobuf.version}</version>
         </dependency>
 
-        <!-- Logging -->
+        <!-- Logback -->
         <dependency>
             <groupId>ch.qos.logback</groupId>
             <artifactId>logback-classic</artifactId>
-            <version>1.5.6</version>
+            <version>${logback.version}</version>
         </dependency>
 
         <!-- MapStruct -->
@@ -164,9 +164,6 @@
             <version>5.10.0</version>
             <scope>test</scope>
         </dependency>
-
-
-
     </dependencies>
 
     <build>
@@ -251,3 +248,4 @@
         </profile>
     </profiles>
 </project>
+

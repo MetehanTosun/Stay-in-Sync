@@ -6,6 +6,9 @@ import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
 import jakarta.enterprise.context.ApplicationScoped;
 
+/**
+ * gRPC client to send log entries to remote logging service.
+ */
 @ApplicationScoped
 public class LogServiceClient {
 
@@ -19,14 +22,18 @@ public class LogServiceClient {
 
     @PostConstruct
     void init() {
-        channel = ManagedChannelBuilder
-                .forAddress(config.host(), config.port())
+        // Build gRPC channel using host and port from application.properties
+        channel = ManagedChannelBuilder.forAddress(config.host(), config.port())
                 .usePlaintext()
                 .build();
 
+        // Create blocking stub to send log entries
         blockingStub = LogServiceGrpc.newBlockingStub(channel);
     }
 
+    /**
+     * Sends a log entry to the remote gRPC logging service.
+     */
     public void sendLog(LogEntry entry) {
         blockingStub.sendLog(entry);
     }
@@ -38,4 +45,5 @@ public class LogServiceClient {
         }
     }
 }
+
 

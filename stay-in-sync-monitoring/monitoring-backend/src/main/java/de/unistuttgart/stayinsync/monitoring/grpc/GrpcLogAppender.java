@@ -2,10 +2,11 @@ package de.unistuttgart.stayinsync.monitoring.grpc;
 
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.AppenderBase;
-import de.hamstersimulator.objectsfirst.datatypes.LogEntry;
-import io.grpc.StatusRuntimeException;
 import jakarta.inject.Inject;
 
+/**
+ * Logback appender that sends log events to gRPC logging service.
+ */
 public class GrpcLogAppender extends AppenderBase<ILoggingEvent> {
 
     @Inject
@@ -14,6 +15,7 @@ public class GrpcLogAppender extends AppenderBase<ILoggingEvent> {
     @Override
     protected void append(ILoggingEvent eventObject) {
         try {
+            // Build a LogEntry from the ILoggingEvent
             LogEntry entry = LogEntry.newBuilder()
                     .setLevel(eventObject.getLevel().toString())
                     .setLogger(eventObject.getLoggerName())
@@ -22,12 +24,14 @@ public class GrpcLogAppender extends AppenderBase<ILoggingEvent> {
                     .setTimestamp(eventObject.getTimeStamp())
                     .build();
 
+
             logServiceClient.sendLog(entry);
 
-        } catch (StatusRuntimeException e) {
+        } catch (Exception e) {
             addError("Failed to send log via gRPC", e);
         }
     }
 }
+
 
 
