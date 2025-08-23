@@ -20,7 +20,7 @@ public abstract class MonitoringGraphSyncJobMapper {
         MonitoringSyncJobDto dto = new MonitoringSyncJobDto();
         dto.id = entity.id;
         dto.name = entity.name;
-        dto.deployed = entity.deployed;
+        dto.isSimulation = entity.isSimulation;
 
         if (entity.transformations != null) {
             dto.transformations = entity.transformations.stream()

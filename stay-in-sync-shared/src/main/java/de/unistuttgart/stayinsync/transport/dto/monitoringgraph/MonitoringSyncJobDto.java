@@ -7,5 +7,5 @@ public class MonitoringSyncJobDto {
         public String name;
         public boolean deployed;
         public List<MonitoringTransformationDto> transformations;
-
+        public boolean isSimulation;
 }

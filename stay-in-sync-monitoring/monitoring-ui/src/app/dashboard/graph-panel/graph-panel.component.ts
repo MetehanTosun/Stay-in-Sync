@@ -2,11 +2,6 @@ import {AfterViewInit, Component, EventEmitter, Input, Output} from '@angular/co
 import * as d3 from 'd3';
 import type {Node, NodeConnection} from '../../core/models/node.model';
 import {LegendPanelComponent} from './legend-panel/legend-panel.component';
-import {
-  SyncJobService
-} from '../../../../../../stay-in-sync-configurator-ui/src/app/features/sync-job/services/sync-job.service';
-import {SyncJob} from '../../../../../../stay-in-sync-configurator-ui/src/app/features/source-system/models/syncJob';
-import { firstValueFrom } from 'rxjs';
 import {MonitoringGraphService} from '../../core/services/monitoring-graph.service';
 import {NodeMarkerService} from '../../core/services/node-marker.service';
 import {Router} from '@angular/router';
