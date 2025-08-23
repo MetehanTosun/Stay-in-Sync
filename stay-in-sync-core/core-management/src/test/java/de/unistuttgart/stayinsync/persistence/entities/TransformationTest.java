@@ -49,7 +49,7 @@ public class TransformationTest {
         assertThat(found.syncJob).isNull();
         assertThat(found.transformationScript).isNull();
         assertThat(found.transformationRule).isNull();
-        assertThat(found.sourceSystemApiRequestConfigrations).isEmpty();
+        assertThat(found.sourceSystemApiRequestConfigurations).isEmpty();
         assertThat(found.targetSystemApiRequestConfigurations).isEmpty();
 //        assertThat(found.sourceSystemEndpoints).isNotNull().isEmpty();
     }

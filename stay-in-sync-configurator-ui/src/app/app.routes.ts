@@ -20,6 +20,8 @@ import {
   TransformationScriptSelectionComponent
 } from './features/transformation/components/transformation-script-selection/transformation-script-selection.component';
 
+// Target System
+import { TargetSystemBaseComponent } from './features/target-system/components/target-system-base/target-system-base.component';
 
 export const routes: Routes = [
   // Route für Sync Rules
@@ -41,6 +43,12 @@ export const routes: Routes = [
         component: CreateSourceSystemComponent
       }
     ]
+  },
+
+  // Route für Target System
+  {
+    path: 'target-system',
+    component: TargetSystemBaseComponent
   },
 
   //Route für Sync Jobs

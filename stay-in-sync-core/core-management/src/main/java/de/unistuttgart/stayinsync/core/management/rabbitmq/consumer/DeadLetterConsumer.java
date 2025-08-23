@@ -15,6 +15,7 @@ import io.quarkus.runtime.StartupEvent;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.event.Observes;
 import jakarta.inject.Inject;
+import org.eclipse.microprofile.config.inject.ConfigProperty;
 
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
@@ -32,12 +33,20 @@ public class DeadLetterConsumer {
 
     private Channel channel;
 
+    @ConfigProperty(name = "stayinsync.rabbitmq.enabled", defaultValue = "true")
+    boolean rabbitEnabled;
+
     /**
      * The application needs to bind queues to the domain specific exchanges on startup
      *
      * @param startupEvent
      */
     void initialize(@Observes StartupEvent startupEvent) {
+
+        if (!rabbitEnabled) {
+            Log.info("RabbitMQ disabled by config (stayinsync.rabbitmq.enabled=false). Skipping DeadLetterConsumer init.");
+            return;
+        }
 
         try {
             Log.info("Opening rabbitMQ channel");

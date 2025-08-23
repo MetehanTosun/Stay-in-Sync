@@ -1,6 +1,7 @@
 package de.unistuttgart.stayinsync.core.configuration.service;
 
 import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.SourceSystemApiRequestConfiguration;
+import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.TargetSystemApiRequestConfiguration;
 import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.Transformation;
 import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.TransformationScript;
 import de.unistuttgart.stayinsync.core.configuration.exception.CoreManagementException;
@@ -12,6 +13,10 @@ import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
 import jakarta.ws.rs.core.Response;
 
+import java.math.BigInteger;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
@@ -71,7 +76,9 @@ public class TransformationScriptService {
         script.name = dto.name();
         script.typescriptCode = dto.typescriptCode();
         script.javascriptCode = dto.javascriptCode();
-        script.hash = dto.hash();
+        script.status = dto.status();
+
+        script.hash = generateSha256Hash(dto.javascriptCode());
 
         Set<SourceSystemApiRequestConfiguration> scriptArcs = new HashSet<>();
         if(dto.requiredArcAliases() != null){
@@ -100,10 +107,27 @@ public class TransformationScriptService {
         // Start with fresh set, add present ARCs for graph and script respectively.
 
         // Bind ManyToMany
-        transformation.sourceSystemApiRequestConfigrations = finalArcSet;
+        transformation.sourceSystemApiRequestConfigurations = finalArcSet;
         finalArcSet.forEach(sourceSystemApiRequestConfiguration -> sourceSystemApiRequestConfiguration.transformations.add(transformation));
 
         Log.infof("Final total bound ARCs for transformation %d: %d", transformationId, finalArcSet.size());
+
+        Set<TargetSystemApiRequestConfiguration> targetArcs = new HashSet<>();
+        if (dto.targetArcIds() != null && !dto.targetArcIds().isEmpty()) {
+            List<TargetSystemApiRequestConfiguration> foundTargetArcs = TargetSystemApiRequestConfiguration.list("id in ?1", dto.targetArcIds());
+
+            if (foundTargetArcs.size() != dto.targetArcIds().size()) {
+                // Finde heraus, welche IDs nicht gefunden wurden, für eine bessere Fehlermeldung
+                throw new CoreManagementException(Response.Status.BAD_REQUEST, "Target ARC Not Found",
+                        "One or more specified Target ARC IDs could not be found.");
+            }
+            targetArcs.addAll(foundTargetArcs);
+        }
+
+        transformation.targetSystemApiRequestConfigurations = targetArcs;
+        targetArcs.forEach(arc -> arc.transformations.add(transformation));
+        Log.infof("Bound %d Target ARCs to transformation %d", targetArcs.size(), transformationId);
+
 
         script.persist();
         transformation.persist();
@@ -127,5 +151,28 @@ public class TransformationScriptService {
     public boolean delete(Long id) {
         Log.debugf("Deleting transformation script with id %d", id);
         return TransformationScript.deleteById(id);
+    }
+
+    private String generateSha256Hash(String input) {
+        if (input == null || input.isEmpty()) {
+            return null;
+        }
+        try {
+            MessageDigest md = MessageDigest.getInstance("SHA-256");
+
+            byte[] hashBytes = md.digest(input.getBytes(StandardCharsets.UTF_8));
+
+            BigInteger number = new BigInteger(1, hashBytes);
+            StringBuilder hexString = new StringBuilder(number.toString(16));
+
+            while (hexString.length() < 64) {
+                hexString.insert(0, '0');
+            }
+
+            return hexString.toString();
+        } catch (NoSuchAlgorithmException e) {
+            throw new CoreManagementException(Response.Status.INTERNAL_SERVER_ERROR,
+                    "Hashing algorithm not available", "SHA-256 is not supported on this system.");
+        }
     }
 }

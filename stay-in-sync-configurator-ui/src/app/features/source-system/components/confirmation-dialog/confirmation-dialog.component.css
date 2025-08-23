@@ -1,0 +1,65 @@
+.confirmation-content {
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+  padding: 1rem 0;
+}
+
+.confirmation-icon {
+  flex-shrink: 0;
+  width: 2rem;
+  height: 2rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background-color: var(--surface-100);
+}
+
+.confirmation-icon i {
+  font-size: 1.25rem;
+  color: var(--text-color);
+}
+
+.confirmation-message {
+  flex: 1;
+  line-height: 1.5;
+  color: var(--text-color);
+}
+
+.dialog-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  padding-top: 1rem;
+}
+
+/* Severity-specific icon colors */
+.confirmation-icon .pi-exclamation-triangle {
+  color: var(--orange-500);
+}
+
+.confirmation-icon .pi-info-circle {
+  color: var(--blue-500);
+}
+
+/* Responsive design */
+@media (max-width: 480px) {
+  .confirmation-content {
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+  }
+  
+  .confirmation-icon {
+    margin-bottom: 0.5rem;
+  }
+  
+  .dialog-footer {
+    flex-direction: column;
+  }
+  
+  .dialog-footer button {
+    width: 100%;
+  }
+} 

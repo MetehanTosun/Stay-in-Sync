@@ -25,11 +25,12 @@ public class Transformation extends PanacheEntity {
     @JsonManagedReference("transformationScript-reference")
     public TransformationScript transformationScript;
 
-    @Enumerated(EnumType.STRING)
-    public JobDeploymentStatus deploymentStatus;
+  @Enumerated(EnumType.STRING)
+  public JobDeploymentStatus deploymentStatus;
 
     public String workerHostName;
-    @OneToOne
+
+    @OneToOne(cascade = CascadeType.ALL)
     public TransformationRule transformationRule;
 
     @ManyToMany(cascade = CascadeType.ALL)
@@ -38,7 +39,7 @@ public class Transformation extends PanacheEntity {
             joinColumns = @JoinColumn(name = "transformation_id"),
             inverseJoinColumns = @JoinColumn(name = "source_system_api_request_configuration_id")
     )
-    public Set<SourceSystemApiRequestConfiguration> sourceSystemApiRequestConfigrations = new HashSet<>();
+    public Set<SourceSystemApiRequestConfiguration> sourceSystemApiRequestConfigurations = new HashSet<>();
 
     @ManyToMany
     @JoinTable(
@@ -55,4 +56,6 @@ public class Transformation extends PanacheEntity {
             inverseJoinColumns = @JoinColumn(name = "target_system_api_request_configuration_id")
     )
     public Set<TargetSystemApiRequestConfiguration> targetSystemApiRequestConfigurations = new HashSet<>();
+
+
 }

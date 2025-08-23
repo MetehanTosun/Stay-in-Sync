@@ -39,9 +39,9 @@ public interface TransformationMapper {
      */
     @Mapping(source = "transformationScript", target = "transformationScriptDTO")
     @Mapping(source = "transformationRule", target = "transformationRuleDTO")
-    @Mapping(source = "sourceSystemApiRequestConfigrations", target = "requestConfigurationMessageDTOS")
+    @Mapping(source = "sourceSystemApiRequestConfigurations", target = "requestConfigurationMessageDTOS")
     @Mapping(source = "targetSystemApiRequestConfigurations", target = "targetRequestConfigurationMessageDTOS")
-    @Mapping(source = "sourceSystemApiRequestConfigrations", target = "arcManifest", qualifiedByName = "buildSourceArcManifest")
+    @Mapping(source = "sourceSystemApiRequestConfigurations", target = "arcManifest", qualifiedByName = "buildSourceArcManifest")
     TransformationMessageDTO mapToMessageDTO(Transformation transformation);
 
     /**

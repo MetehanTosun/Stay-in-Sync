@@ -1,5 +1,6 @@
 package de.unistuttgart.stayinsync.core.configuration.rest;
 
+import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.Transformation;
 import de.unistuttgart.stayinsync.core.configuration.exception.CoreManagementException;
 import de.unistuttgart.stayinsync.core.configuration.mapping.TransformationMapper;
 import de.unistuttgart.stayinsync.core.configuration.mapping.TransformationScriptMapper;
@@ -7,6 +8,8 @@ import de.unistuttgart.stayinsync.core.configuration.rest.dtos.TransformationAss
 import de.unistuttgart.stayinsync.core.configuration.rest.dtos.TransformationDetailsDTO;
 import de.unistuttgart.stayinsync.core.configuration.rest.dtos.TransformationShellDTO;
 import de.unistuttgart.stayinsync.core.configuration.rest.dtos.targetsystem.UpdateTransformationRequestConfigurationDTO;
+import de.unistuttgart.stayinsync.core.configuration.rest.dtos.typegeneration.GetTypeDefinitionsResponseDTO;
+import de.unistuttgart.stayinsync.core.configuration.service.TargetDtsBuilderGeneratorService;
 import de.unistuttgart.stayinsync.core.configuration.service.TransformationService;
 import io.quarkus.logging.Log;
 import jakarta.inject.Inject;
@@ -33,10 +36,16 @@ public class TransformationResource {
     TransformationService service;
 
     @Inject
+    TargetDtsBuilderGeneratorService targetDtsGeneratorService;
+
+    @Inject
     TransformationMapper mapper;
 
     @Inject
     TransformationScriptMapper scriptMapper;
+
+    @Inject
+    TransformationService transformationService;
 
     @POST
     @Consumes(APPLICATION_JSON)
@@ -100,6 +109,15 @@ public class TransformationResource {
                 .orElseThrow(() -> new CoreManagementException(Response.Status.NOT_FOUND, "Unable to find transformation script", "No script is assigned to Transformation with id %d", id));
     }
 
+    @GET
+    @Path("/{id}/target-arcs")
+    @Produces(APPLICATION_JSON)
+    @Operation(summary = "Gets the associated Target ARCs for a Transformation",
+            description = "Provides the currently actively bound Target ARCs for a Transformation")
+    public Response getTransformationTargetArcs(@Parameter(name = "id", required = true) @PathParam("id") Long id) {
+        return Response.ok(transformationService.getTargetArcs(id)).build();
+    }
+
     @PUT
     @Path("/{id}/target-arcs")
     @Consumes(APPLICATION_JSON)
@@ -108,6 +126,15 @@ public class TransformationResource {
     public Response updateTransformationTargetArcs(@PathParam("id") Long id, @Valid UpdateTransformationRequestConfigurationDTO dto) {
         var updated = service.updateTargetArcs(id, dto);
         return Response.ok(mapper.mapToDetailsDTO(updated)).build();
+    }
+
+    @GET
+    @Path("/{id}/target-type-definitions")
+    @Produces(APPLICATION_JSON)
+    @Operation(summary = "Returns all necessary TypeScript builder type definitions for the Monaco editor",
+            description = "Provides a structured set of .d.ts libraries for all Target ARCs linked to this transformation.")
+    public Response getTargetTypeDefinitions(@PathParam("id") Long id) {
+        return Response.ok(targetDtsGeneratorService.generateForTransformation(id)).build();
     }
 
     @DELETE
