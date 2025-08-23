@@ -43,10 +43,6 @@
             <artifactId>quarkus-arc</artifactId>
         </dependency>
         <dependency>
-            <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-hibernate-validator</artifactId>
-        </dependency>
-        <dependency>
             <groupId>io.quarkiverse.rabbitmqclient</groupId>
             <artifactId>quarkus-rabbitmq-client</artifactId>
             <version>3.2.1</version>
@@ -107,10 +103,6 @@
 
             <groupId>jakarta.persistence</groupId>
             <artifactId>jakarta.persistence-api</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-hibernate-orm-panache</artifactId>
         </dependency>
         <dependency>
             <groupId>com.networknt</groupId>
