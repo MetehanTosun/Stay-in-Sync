@@ -5,7 +5,7 @@ import jakarta.validation.constraints.NotNull;
 
 import java.util.Map;
 
-public record CreateArcDTO (
+public record CreateSourceArcDTO(
         @NotNull String alias,
 
         @NotNull

@@ -1,0 +1,15 @@
+:host ::ng-deep .compact-treetable .p-treetable-tbody > tr > td {
+  padding-top: 0.3rem;
+  padding-bottom: 0.3rem;
+}
+
+:host ::ng-deep .compact-treetable .p-treetable-toggler {
+  height: 1.5rem;
+  width: 1.5rem;
+  margin-right: 0.25rem;
+}
+
+:host ::ng-deep .compact-treetable .p-treetable-thead > tr > th {
+  padding-top: 0.5rem;
+  padding-bottom: 0.5rem;
+}
