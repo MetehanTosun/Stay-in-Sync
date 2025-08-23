@@ -47,6 +47,9 @@ public class TargetSystemEndpointService {
 
         entity.targetSystem = targetSystem;
         entity.syncSystem = targetSystem;
+
+        targetSystem.syncSystemEndpoints.add(entity);
+
         entity.persist();
         return entity;
     }
