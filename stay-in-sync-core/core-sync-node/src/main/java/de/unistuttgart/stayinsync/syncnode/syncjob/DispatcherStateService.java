@@ -1,10 +1,7 @@
 package de.unistuttgart.stayinsync.syncnode.syncjob;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import de.unistuttgart.stayinsync.syncnode.domain.ExecutionPayload;
 import de.unistuttgart.stayinsync.syncnode.domain.TransformJob;
-import de.unistuttgart.stayinsync.syncnode.logic_engine.StateServiceClient;
 import de.unistuttgart.stayinsync.transport.dto.*;
 import de.unistuttgart.stayinsync.transport.transformation_rule_shared.nodes.Node;
 import de.unistuttgart.stayinsync.transport.transformation_rule_shared.util.GraphMapper;
@@ -21,12 +18,6 @@ public class DispatcherStateService {
 
     @Inject
     GraphMapper graphMapperService;
-
-    @Inject
-    ObjectMapper objectMapper;
-
-    @Inject
-    StateServiceClient stateServiceClient;
 
     private final Map<String, Map<String, Object>> latestArcData = new ConcurrentHashMap<>();
 
@@ -108,26 +99,7 @@ public class DispatcherStateService {
             arcsForSystem.put(arcAlias, arcData);
         }
 
-        // 1. Create the map for the final dataContext
-        Map<String, Object> finalDataContext = new ConcurrentHashMap<>();
-        finalDataContext.put("source", sourceSystemMap);
-
-        // 2. Get the old snapshot from the state service
-        String oldSnapshotJson = "{}"; // Default if nothing is found
-        try {
-             oldSnapshotJson = stateServiceClient.getSnapshot(tx.id());
-            Log.debugf("Successfully fetched snapshot for transformation %d", tx.id());
-        } catch (Exception e) {
-            Log.warnf(e, "Could not fetch snapshot for transformation %d. Proceeding with empty snapshot.", tx.id());
-        }
-
-        // 3. Add the old snapshot to the dataContext
-        try {
-            JsonNode snapshotNode = objectMapper.readTree(oldSnapshotJson);
-            finalDataContext.put("__snapshot", snapshotNode);
-        } catch (Exception e) {
-            Log.errorf(e, "Failed to parse old snapshot JSON for transformation %d. Snapshot will be missing.", tx.id());
-        }
+        Map<String, Object> finalSource = Map.of("source", sourceSystemMap);
 
         TransformationRuleDTO rule = tx.transformationRuleDTO();
         List<Node> graphNodes = new ArrayList<>();
@@ -144,7 +116,7 @@ public class DispatcherStateService {
                 tx.transformationScriptDTO().javascriptCode(),
                 "js", // Placeholder
                 tx.transformationScriptDTO().hash(),
-                finalDataContext);
+                finalSource);
         return new ExecutionPayload(job, graphNodes);
     }
 

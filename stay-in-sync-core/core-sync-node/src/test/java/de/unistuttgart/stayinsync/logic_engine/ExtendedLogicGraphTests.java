@@ -1,4 +1,4 @@
-package de.unistuttgart.stayinsync;
+package de.unistuttgart.stayinsync.logic_engine;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
