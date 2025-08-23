@@ -80,7 +80,7 @@ public class PollingJobDeploymentFeedbackProducer {
         Set<Long> jobIds = pollingJobExecutionController.getSupportedJobs().keySet();
         for(Long jobId : jobIds)
         {
-            publishPollingJobFeedback(jobId, JobDeploymentStatus.STOPPED);
+            publishPollingJobFeedback(jobId, JobDeploymentStatus.UNDEPLOYED);
         }
     }
 

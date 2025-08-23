@@ -54,10 +54,12 @@ public class PollingJobManagement {
             if (apiRequestConfigurationMessage.deploymentStatus().equals(JobDeploymentStatus.STOPPING)) {
                 Log.infof("Undeploying polling for %s at path %s with id %s", apiRequestConfigurationMessage.apiConnectionDetails().sourceSystem().apiUrl(), apiRequestConfigurationMessage.apiConnectionDetails().endpoint().endpointPath(), apiRequestConfigurationMessage.id());
                 pollingJobConsumer.unbindExisitingPollingJobQueue(apiRequestConfigurationMessage);
+                feedbackProducer.publishPollingJobFeedback(apiRequestConfigurationMessage.id(), JobDeploymentStatus.UNDEPLOYED);
             } else if (apiRequestConfigurationMessage.deploymentStatus().equals(JobDeploymentStatus.RECONFIGURING)) {
 
                 Log.infof("Updating polling for %s at path %s with id %s", apiRequestConfigurationMessage.apiConnectionDetails().sourceSystem().apiUrl(), apiRequestConfigurationMessage.apiConnectionDetails().endpoint().endpointPath(), apiRequestConfigurationMessage.id());
                 pollingJobExecutionController.reconfigurePollingJobExecution(apiRequestConfigurationMessage);
+                feedbackProducer.publishPollingJobFeedback(apiRequestConfigurationMessage.id(), JobDeploymentStatus.DEPLOYED);
             }
 
             Log.infof("PollingJob for SourceSystem %s with the id %d was successfully reconfigured", apiRequestConfigurationMessage.apiConnectionDetails().sourceSystem().name(), apiRequestConfigurationMessage.id());

@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+import {Injectable} from '@angular/core';
 import {Observable} from 'rxjs/internal/Observable';
 import {HttpClient} from '@angular/common/http';
 import {SyncJob} from '../models/sync-job.model';
@@ -8,7 +8,8 @@ import {SyncJob} from '../models/sync-job.model';
 })
 export class SyncJobService {
 
-  constructor(readonly httpClient: HttpClient) { }
+  constructor(readonly httpClient: HttpClient) {
+  }
 
 
   getAll(): Observable<SyncJob[]> {
@@ -23,11 +24,19 @@ export class SyncJobService {
     return this.httpClient.post<SyncJob>(`/api/config/sync-job`, syncJob);
   }
 
-  getById(selectedSyncJobId: number) {
+  getById(selectedSyncJobId: number): Observable<SyncJob> {
     return this.httpClient.get<SyncJob>(`/api/config/sync-job/${selectedSyncJobId}`);
   }
 
-  update(selectedSyncJobId: number,syncJob: SyncJob): Observable<SyncJob> {
+  update(selectedSyncJobId: number, syncJob: SyncJob): Observable<SyncJob> {
     return this.httpClient.put<SyncJob>(`/api/config/sync-job/${selectedSyncJobId}`, syncJob);
+  }
+
+  addTransformation(syncJobId: number, transformationId: number): Observable<void> {
+    return this.httpClient.put<void>(`/api/config/sync-job/${syncJobId}/transformation/${transformationId}`, null);
+  }
+
+  removeTransformation(syncJobId: number, transformationId: number): Observable<void> {
+    return this.httpClient.delete<void>(`/api/config/sync-job/${syncJobId}/transformation/${transformationId}`);
   }
 }

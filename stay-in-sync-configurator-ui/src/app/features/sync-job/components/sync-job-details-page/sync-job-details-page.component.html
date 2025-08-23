@@ -1,0 +1,17 @@
+<p-inplace #inplace>
+  <ng-template #display>
+    <h2>{{syncJob?.name}}</h2>
+  </ng-template>
+  <ng-template #content let-closeCallback="closeCallback">
+    <span class="inline-flex gap-2">
+        <input
+          type="text"
+          [(ngModel)]="syncJob!.name"
+          pInputText
+          autofocus
+          (keyup.enter)="closeCallback($event)" />
+    <p-button icon="pi pi-times" aria-label="Save" (click)="closeCallback($event)" text severity="danger"/>
+    </span>
+  </ng-template>
+</p-inplace>
+<app-transformation-by-sync-job-table></app-transformation-by-sync-job-table>

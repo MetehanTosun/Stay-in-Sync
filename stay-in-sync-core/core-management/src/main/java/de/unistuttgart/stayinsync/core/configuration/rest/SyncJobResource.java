@@ -1,5 +1,6 @@
 package de.unistuttgart.stayinsync.core.configuration.rest;
 
+import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.SyncJob;
 import de.unistuttgart.stayinsync.core.configuration.exception.CoreManagementException;
 import de.unistuttgart.stayinsync.core.configuration.mapping.SyncJobFullUpdateMapper;
 import de.unistuttgart.stayinsync.core.configuration.rest.dtos.SyncJobCreationDTO;
@@ -24,6 +25,7 @@ import org.eclipse.microprofile.openapi.annotations.media.Schema;
 import org.eclipse.microprofile.openapi.annotations.parameters.Parameter;
 import org.eclipse.microprofile.openapi.annotations.parameters.RequestBody;
 import org.eclipse.microprofile.openapi.annotations.responses.APIResponse;
+import org.hibernate.engine.spi.Status;
 
 
 import java.net.URI;
@@ -36,6 +38,7 @@ import static jakarta.ws.rs.core.MediaType.APPLICATION_JSON;
 @Path("/api/config/sync-job")
 @Produces(APPLICATION_JSON)
 public class SyncJobResource {
+
     @Inject
     SyncJobService syncJobService;
 
@@ -111,15 +114,7 @@ public class SyncJobResource {
             description = "The sync-job is not found for a given identifier"
     )
     public Response getSyncJob(@Parameter(name = "id", required = true) @PathParam("id") Long id) {
-        return this.syncJobService.findSyncJobById(id)
-                .map(syncJob -> {
-                    Log.debugf("Found sync-job: %s", syncJob);
-                    return Response.ok(fullUpdateMapper.mapToDTO(syncJob)).build();
-                })
-                .orElseThrow(() -> {
-                    Log.warnf("No sync-job found using id %d", id);
-                    return new CoreManagementException(Response.Status.NOT_FOUND, "Unable to find sync-job", "No sync-job found using id %d", id);
-                });
+        return Response.ok(fullUpdateMapper.mapToDTO(this.syncJobService.findSyncJobById(id))).build();
     }
 
     @DELETE
@@ -129,9 +124,36 @@ public class SyncJobResource {
             description = "Delete a sync-job"
     )
     @Path("/{id}")
-    public void deleteSyncJob(@Parameter(name = "id", required = true) @PathParam("id") Long id) {
+    public Response deleteSyncJob(@Parameter(name = "id", required = true) @PathParam("id") Long id) {
         this.syncJobService.deleteSyncJob(id);
         Log.debugf("Sync-job with id %d deleted ", id);
+        return Response.status(204).build();
+    }
+
+    @DELETE
+    @Operation(summary = "Removes a transformation from a sync-job")
+    @APIResponse(
+            responseCode = "204",
+            description = "Removes a transformation"
+    )
+    @Path("/{id}/transformation/{transformationId}")
+    public Response removeTransformation(@Parameter(name = "id", required = true) @PathParam("id") Long id, @Parameter(name = "transformationId", required = true) @PathParam("transformationId") Long transformationId) {
+        this.syncJobService.removeTransformation(id, transformationId);
+        Log.debugf("Removed transformation ", id);
+        return Response.status(204).build();
+    }
+
+    @PUT
+    @Operation(summary = "Adds a transformation to a sync-job")
+    @APIResponse(
+            responseCode = "201",
+            description = "Adds a transformation"
+    )
+    @Path("/{id}/transformation/{transformationId}")
+    public Response addTransformation(@Parameter(name = "id", required = true) @PathParam("id") Long id, @Parameter(name = "transformationId", required = true) @PathParam("transformationId") Long transformationId) {
+        this.syncJobService.addTransformation(id, transformationId);
+        Log.debugf("Added transformation with id %d to syncjob with id %d", transformationId, id);
+        return Response.status(201).build();
     }
 
     @PUT
