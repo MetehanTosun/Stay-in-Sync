@@ -1,5 +1,5 @@
 import {Component, OnInit, ViewChild} from '@angular/core';
-import {ActivatedRoute} from '@angular/router';
+import {ActivatedRoute, Router} from '@angular/router';
 import {TransformationService} from '../../../transformation/services/transformation.service';
 import {SyncJobService} from '../../services/sync-job.service';
 import {SyncJob} from '../../models/sync-job.model';
@@ -33,7 +33,7 @@ export class SyncJobDetailsPageComponent implements OnInit {
   id!: number;
 
   syncJob?: SyncJob;
-  constructor(private readonly route: ActivatedRoute, private readonly transformationService: TransformationService, private readonly syncJobService: SyncJobService) {}
+  constructor(private readonly route: ActivatedRoute, private readonly transformationService: TransformationService, private readonly syncJobService: SyncJobService, private readonly router: Router) {}
 
   ngOnInit(): void {
     const id = Number.parseInt(this.route.snapshot.paramMap.get('id')!);
@@ -60,5 +60,9 @@ export class SyncJobDetailsPageComponent implements OnInit {
 
   closeCallback() {
 
+  }
+
+  goBack() {
+    this.router.navigate(['sync-jobs']);
   }
 }

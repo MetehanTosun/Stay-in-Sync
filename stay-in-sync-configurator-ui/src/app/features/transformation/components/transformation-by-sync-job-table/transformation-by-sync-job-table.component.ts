@@ -16,11 +16,13 @@ import {Card} from "primeng/card";
 import {Toolbar} from "primeng/toolbar";
 import {Dialog} from 'primeng/dialog';
 import {TransformationAddSyncJobComponent} from '../transformation-add-sync-job/transformation-add-sync-job.component';
-import {ActivatedRoute, Router} from '@angular/router';
+import {ActivatedRoute, Router, RouterLink} from '@angular/router';
 import {TransformationService} from '../../services/transformation.service';
 import {MessageService} from 'primeng/api';
 import {HttpErrorService} from '../../../../core/services/http-error.service';
 import {SyncJobService} from '../../../sync-job/services/sync-job.service';
+import {TransformationRuleModel} from '../../models/transformation-rule.model';
+import {forkJoin} from 'rxjs';
 
 @Component({
   selector: 'app-transformation-by-sync-job-table',
@@ -36,12 +38,12 @@ import {SyncJobService} from '../../../sync-job/services/sync-job.service';
     Button,
     Button,
     NgIf,
-    NgIf,
     Card,
     Toolbar,
     Dialog,
     TransformationAddSyncJobComponent,
-    Button
+    Button,
+    RouterLink
   ],
   templateUrl: './transformation-by-sync-job-table.component.html',
   styleUrl: './transformation-by-sync-job-table.component.css'
@@ -56,6 +58,8 @@ export class TransformationBySyncJobTableComponent implements OnInit {
   selectedStatus?: JobDeploymentStatus;
 
   transformations: Transformation[] = [];
+
+  transformationsRules: TransformationRuleModel[] = [];
 
   addTransformationVisible: boolean = false;
 
@@ -72,9 +76,24 @@ export class TransformationBySyncJobTableComponent implements OnInit {
 
   ngOnInit(): void {
     this.syncJobId = Number.parseInt(this.route.snapshot.paramMap.get('id')!);
-    this.loadSyncJobDetails(this.syncJobId)
+    forkJoin({
+      transformations: this.transformationService.getBySyncJobId(this.syncJobId),
+      rules: this.transformationService.getAllRules()
+    }).subscribe({
+      next: ({ transformations, rules }) => {
+        this.transformationsRules = rules;
+        this.transformations = transformations;
 
-
+        transformations.forEach(t => {
+          console.log(`Transformation ${t.id} has transformationScriptId: ${t.transformationScriptId}`);
+          const matchingRule = rules.find(r => r.id === t.transformationScriptId);
+          console.log('Matching rule:', matchingRule);
+        });
+      },
+      error: err => {
+        console.log(err);
+      }
+    });
 
     this.transformationService.watchDeploymentStatus(this.syncJobId).subscribe({
       next: data => {
@@ -92,11 +111,6 @@ export class TransformationBySyncJobTableComponent implements OnInit {
 
   }
 
-
-  addRule(transformation: Transformation) {
-  //  this.router.navigate(['/script-editor', transformation.script.id]);
-  }
-
   openCreateDialog() {
     this.addTransformationVisible = true;
   }
@@ -104,8 +118,6 @@ export class TransformationBySyncJobTableComponent implements OnInit {
   loadSyncJobDetails(id: number): void {
     this.transformationService.getBySyncJobId(id).subscribe({
       next: data => {
-        console.log("DATI");
-        console.log(data);
         this.transformations = data;
       },
       error: err => {
@@ -114,32 +126,37 @@ export class TransformationBySyncJobTableComponent implements OnInit {
     });
   }
 
-  remove(transformation: Transformation) {
-      if(transformation.deploymentStatus !== JobDeploymentStatus.UNDEPLOYED)
-      {
-        this.messageService.add({
-          severity: 'warn',
-          summary: 'Unsupported operation',
-          detail: 'Only undeployed transformations can be removed!',
-          life: 5000
-        });
-        return;
+  loadTransformationRules(): void {
+    this.transformationService.getAllRules().subscribe({
+      next: data => {
+        this.transformationsRules = data;
+      },
+      error: err => {
+        console.log(err);
       }
-
-      this.syncJobService.removeTransformation(this.syncJobId!, transformation.id!).subscribe({
-        next: data => {
-          this.loadSyncJobDetails(this.syncJobId!)
-          this.addTransformationComponent.loadUnanssignedTransformations();
-        },
-        error: err => {
-          console.log(err);
-        }
-      });
+    });
   }
 
-  navigateToScriptPage() {
+  remove(transformation: Transformation) {
+    if (transformation.deploymentStatus !== JobDeploymentStatus.UNDEPLOYED) {
+      this.messageService.add({
+        severity: 'warn',
+        summary: 'Unsupported operation',
+        detail: 'Only undeployed transformations can be removed!',
+        life: 5000
+      });
+      return;
+    }
 
-
+    this.syncJobService.removeTransformation(this.syncJobId!, transformation.id!).subscribe({
+      next: data => {
+        this.loadSyncJobDetails(this.syncJobId!)
+        this.addTransformationComponent.loadUnanssignedTransformations();
+      },
+      error: err => {
+        console.log(err);
+      }
+    });
   }
 
   toggleDeploymentStatus(transformation: Transformation) {
@@ -181,5 +198,25 @@ export class TransformationBySyncJobTableComponent implements OnInit {
     }
 
 
+  }
+
+  onRuleChange(rule: number, transformation: Transformation) {
+    if (rule) {
+      this.transformationService.addRule(transformation.id!, rule!).subscribe({
+        next: data => {
+        },
+        error: err => {
+          this.httpErrorService.handleError(err);
+        }
+      });
+    } else {
+      this.transformationService.removeRule(transformation.id!).subscribe({
+        next: data => {
+        },
+        error: err => {
+          this.httpErrorService.handleError(err);
+        }
+      });
+    }
   }
 }

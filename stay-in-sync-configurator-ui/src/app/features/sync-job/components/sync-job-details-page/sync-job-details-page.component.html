@@ -1,3 +1,9 @@
+<div class="header-row">
+<p-button
+  icon="pi pi-arrow-left"
+  (onClick)="goBack()"
+  styleClass="p-button-secondary">
+</p-button>
 <p-inplace #inplace>
   <ng-template #display>
     <h2>{{syncJob?.name}}</h2>
@@ -14,4 +20,5 @@
     </span>
   </ng-template>
 </p-inplace>
+</div>
 <app-transformation-by-sync-job-table></app-transformation-by-sync-job-table>

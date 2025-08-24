@@ -177,7 +177,6 @@ export class TransformationBaseComponent implements OnInit {
   add(rowData: any) {
     console.log('Adding transformation:', rowData);
     rowData.added = true;
-    rowData.deploymentStatus = JobDeploymentStatus.DEPLOYING;
     this.tempStore.addTransformation(rowData);
     console.log('Transformations in tempStore:', this.tempStore.getTransformations());
     this.addedTransformations = this.tempStore.getTransformations();
@@ -191,12 +190,6 @@ export class TransformationBaseComponent implements OnInit {
   remove(rowData: any) {
     console.log('Removing transformation:', rowData);
     rowData.added = false;
-    if(rowData.deploymentStatus === JobDeploymentStatus.DEPLOYING)
-    {
-      rowData.deploymentStatus = JobDeploymentStatus.UNDEPLOYED;
-    } else if(rowData.deploymentStatus === JobDeploymentStatus.DEPLOYED) {
-      rowData.deploymentStatus = JobDeploymentStatus.STOPPING;
-    }
     this.tempStore.removeTransformation(rowData);
     console.log('Transformations in tempStore after removal:', this.tempStore.getTransformations());
     this.addedTransformations = this.tempStore.getTransformations();

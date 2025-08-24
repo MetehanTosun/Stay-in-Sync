@@ -221,7 +221,7 @@ public class TransformationResource {
                     return matches;
                 })
                 .onItem().invoke(update -> Log.infof("Filtered update being sent to client: %s", update))
-                .onCompletion().invoke(() -> Log.info("SSE stream completed"))
-                .onCancellation().invoke(() -> Log.info("SSE stream cancelled by client"));
+                .onCompletion().invoke(() -> Log.info("Transformation deployment status stream completed"))
+                .onCancellation().invoke(() -> Log.info("Transformation deployment status  stream cancelled by client"));
     }
 }

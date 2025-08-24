@@ -17,6 +17,10 @@ export class TransformationService {
     return this.httpClient.get<Transformation[]>(`/api/config/transformation`);
   }
 
+  getAllRules(): Observable<Transformation[]> {
+    return this.httpClient.get<Transformation[]>(`/api/config/transformation-rule`);
+  }
+
   getAllWithoutSyncJob(): Observable<Transformation[]> {
     const params = new HttpParams().set('withSyncJob', 'false');
     return this.httpClient.get<Transformation[]>(`/api/config/transformation`, {params});
