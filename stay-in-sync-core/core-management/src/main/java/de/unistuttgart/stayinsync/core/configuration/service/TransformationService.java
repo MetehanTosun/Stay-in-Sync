@@ -242,4 +242,38 @@ public class TransformationService {
         return Set.of(JobDeploymentStatus.DEPLOYING, JobDeploymentStatus.RECONFIGURING, JobDeploymentStatus.STOPPING).contains(jobDeploymentStatus);
     }
 
+    @Transactional
+    public void updateSourceArcs(Long transformationId, Set<Long> sourceArcIds) {
+        Log.debugf("Updating Source ARCs for Transformation with id %d", transformationId);
+
+        Transformation transformation = Transformation.<Transformation>findByIdOptional(transformationId)
+                .orElseThrow(() -> new CoreManagementException(
+                        Response.Status.NOT_FOUND,
+                        "Transformation not found",
+                        "Transformation with id %d not found.", transformationId));
+
+        if (sourceArcIds != null && !sourceArcIds.isEmpty()) {
+            List<SourceSystemApiRequestConfiguration> arcsToLink =
+                    SourceSystemApiRequestConfiguration.list("id in ?1", sourceArcIds);
+
+            if (arcsToLink.size() != sourceArcIds.size()) {
+                throw new CoreManagementException(Response.Status.BAD_REQUEST,
+                        "Invalid ARC ID",
+                        "One or more provided Source ARC IDs could not be found.");
+            }
+
+            Log.info(arcsToLink.size());
+
+            transformation.sourceSystemApiRequestConfigurations.addAll(arcsToLink);
+
+            // Rückbeziehung pflegen, falls nötig
+            arcsToLink.forEach(arc -> arc.transformations.add(transformation));
+        }
+
+        Log.infof("Successfully updated Source ARCs for Transformation %d. New count: %d",
+                transformationId, transformation.sourceSystemApiRequestConfigurations.size());
+
+    }
+
+
 }

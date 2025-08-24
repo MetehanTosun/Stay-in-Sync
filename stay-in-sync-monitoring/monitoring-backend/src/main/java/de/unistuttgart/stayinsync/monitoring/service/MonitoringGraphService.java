@@ -3,7 +3,6 @@ package de.unistuttgart.stayinsync.monitoring.service;
 import de.unistuttgart.stayinsync.monitoring.clientinterfaces.SourceSystemClient;
 import de.unistuttgart.stayinsync.monitoring.clientinterfaces.SyncJobClient;
 import de.unistuttgart.stayinsync.monitoring.clientinterfaces.TargetSystemClient;
-import de.unistuttgart.stayinsync.monitoring.mapping.MonitoringGraphSyncJobMapper;
 import de.unistuttgart.stayinsync.transport.dto.monitoringgraph.*;
 import io.quarkus.logging.Log;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -30,8 +29,6 @@ public class MonitoringGraphService {
     @RestClient
     SyncJobClient syncJobClient;
 
-    @Inject
-    MonitoringGraphSyncJobMapper syncJobMapper;
 
     public GraphResponse buildGraph() {
         Map<String, NodeDto> nodeMap = new HashMap<>();
@@ -52,9 +49,7 @@ public class MonitoringGraphService {
         Log.info(nodeMap.toString());
 
         // Mapping Schritt hier
-        List<MonitoringSyncJobDto> jobs = syncJobClient.getAll().stream()
-                .map(syncJobMapper::mapToDto) // Entity → DTO
-                .toList();
+        List<MonitoringSyncJobDto> jobs = syncJobClient.getAll();
 
         Log.info("Jobs: " + jobs);
 
@@ -65,6 +60,11 @@ public class MonitoringGraphService {
 
             if (job.transformations != null) {
                 for (MonitoringTransformationDto tf : job.transformations) {
+                    Log.info(tf.name);
+
+                    Log.info("SourceSystems:" + tf.sourceSystemIds);
+                    Log.info("TargetSystems:" + tf.targetSystemIds);
+                    Log.info("PollingNodes:" + tf.pollingNodes);
 
                     // --- PollingNodes hinzufügen ---
                     if (tf.pollingNodes != null) {

@@ -60,10 +60,10 @@ export class GraphPanelComponent implements AfterViewInit {
     this.graphService.getMonitoringGraphData().subscribe((data) => {
       console.log('Graph data loaded:', data);
       this.nodes = data.nodes;
-      if (data.links === undefined || data.links === null) {
+      if (data.connections === undefined || data.connections === null) {
         this.links = [];
       }else {
-        this.links = data.links;
+        this.links = data.connections;
       }
       // Status der Nodes basierend auf markedNodes aktualisieren
       this.nodes.forEach(node => {

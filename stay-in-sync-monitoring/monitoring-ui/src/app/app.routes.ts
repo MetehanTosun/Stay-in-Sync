@@ -4,10 +4,10 @@ import {MetricsPanelComponent} from './dashboard/metrics-panel/metrics-panel.com
 import {ReplayPanelComponent} from './dashboard/replay-panel/replay-panel.component';
 
 export const routes: Routes = [
-  { path: '', redirectTo: '/log-table', pathMatch: 'full' },
+  //{ path: '', redirectTo: '/log-table', pathMatch: 'full' },
   { path: 'log-table', component: LogsPanelComponent},
   { path: 'metrics-view', component: MetricsPanelComponent},
   { path: 'replay', component: ReplayPanelComponent },
-  { path: '**', redirectTo: '/log-table' }
+  //{ path: '**', redirectTo: '/log-table' }
 
 ];

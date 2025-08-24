@@ -3,17 +3,14 @@ package de.unistuttgart.stayinsync.core.configuration.domain.entities.sync;
 import de.unistuttgart.stayinsync.transport.domain.JobDeploymentStatus;
 import jakarta.persistence.*;
 
-import java.util.Collections;
-import java.util.List;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 
 @Entity
 @DiscriminatorValue("SOURCE_SYSTEM")
 public class SourceSystemApiRequestConfiguration extends ApiRequestConfiguration {
 
     @ManyToMany(mappedBy = "sourceSystemApiRequestConfigurations")
-    public Set<Transformation> transformations;
+    public Set<Transformation> transformations = new HashSet<>();
 
     @ManyToOne
     public SourceSystem sourceSystem;

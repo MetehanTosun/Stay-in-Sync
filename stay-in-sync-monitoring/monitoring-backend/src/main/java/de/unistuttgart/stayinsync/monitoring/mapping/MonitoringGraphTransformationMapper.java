@@ -16,7 +16,7 @@ import java.util.stream.Collectors;
 @Mapper(componentModel = MappingConstants.ComponentModel.JAKARTA_CDI)
 public abstract class MonitoringGraphTransformationMapper {
 
-    public MonitoringTransformationDto mapToDto(Transformation entity) {
+    public MonitoringTransformationDto mapToMonitoringGraphDto(Transformation entity) {
         if (entity == null) {
             Log.warn("MAPPER LOG: Source Transformation entity is null. Returning null DTO.");
             return null;
@@ -26,6 +26,9 @@ public abstract class MonitoringGraphTransformationMapper {
         dto.id = entity.id;
         dto.name = entity.name;
         dto.description = entity.description;
+
+        Log.info("MAPPER LOG: Transformation entity is " + entity.name);
+        Log.info("MAPPER LOG: Transformation sourceSystemApi is " + entity.sourceSystemApiRequestConfigurations);
 
         dto.sourceSystemIds = entity.sourceSystemApiRequestConfigurations != null
                 ? entity.sourceSystemApiRequestConfigurations.stream()
