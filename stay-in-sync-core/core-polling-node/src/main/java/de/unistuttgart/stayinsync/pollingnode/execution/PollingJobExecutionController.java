@@ -2,14 +2,18 @@ package de.unistuttgart.stayinsync.pollingnode.execution;
 
 import de.unistuttgart.stayinsync.pollingnode.entities.PollingJobDetails;
 import de.unistuttgart.stayinsync.pollingnode.entities.RequestBuildingDetails;
+import de.unistuttgart.stayinsync.pollingnode.exceptions.PollingNodeException;
 import de.unistuttgart.stayinsync.pollingnode.exceptions.execution.InactivePollingJobCreationException;
 import de.unistuttgart.stayinsync.pollingnode.exceptions.execution.PollingJobSchedulingException;
 import de.unistuttgart.stayinsync.pollingnode.exceptions.execution.UnsupportedRequestTypeException;
 import de.unistuttgart.stayinsync.pollingnode.execution.pollingjob.PollingJob;
+import de.unistuttgart.stayinsync.pollingnode.rabbitmq.PollingJobDeploymentFeedbackProducer;
+import de.unistuttgart.stayinsync.transport.domain.JobDeploymentStatus;
 import io.quarkus.logging.Log;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
 import org.quartz.*;
 import org.quartz.impl.StdSchedulerFactory;
 
@@ -19,6 +23,9 @@ import java.util.Objects;
 
 @ApplicationScoped
 public class PollingJobExecutionController {
+
+    @Inject
+    PollingJobDeploymentFeedbackProducer feedbackProducer;
 
     private Scheduler scheduler;
     private final Map<Long, JobKey> supportedJobs;
@@ -130,6 +137,8 @@ public class PollingJobExecutionController {
         final Trigger trigger = createTriggerWithPollingJobDetails(pollingJobDetails);
         scheduler.scheduleJob(job, trigger);
         supportedJobs.put(pollingJobDetails.id(), job.getKey());
+        feedbackProducer.publishPollingJobFeedback(pollingJobDetails.id(), JobDeploymentStatus.DEPLOYED);
+
         Log.infof("Polling for Job with id %d was activated with timing %d", pollingJobDetails.id(), pollingJobDetails.pollingIntervallTimeInMs(), job.getKey());
     }
 

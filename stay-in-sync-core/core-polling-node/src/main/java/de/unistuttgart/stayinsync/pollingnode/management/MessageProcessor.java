@@ -9,7 +9,9 @@ import de.unistuttgart.stayinsync.pollingnode.exceptions.management.PollingJobNo
 import de.unistuttgart.stayinsync.pollingnode.exceptions.rabbitmqexceptions.ConsumerQueueBindingException;
 import de.unistuttgart.stayinsync.pollingnode.exceptions.rabbitmqexceptions.ConsumerQueueUnbindingException;
 import de.unistuttgart.stayinsync.pollingnode.execution.PollingJobExecutionController;
+import de.unistuttgart.stayinsync.pollingnode.rabbitmq.PollingJobDeploymentFeedbackProducer;
 import de.unistuttgart.stayinsync.pollingnode.rabbitmq.PollingJobMessageConsumer;
+import de.unistuttgart.stayinsync.transport.domain.JobDeploymentStatus;
 import de.unistuttgart.stayinsync.transport.dto.SourceSystemApiRequestConfigurationMessageDTO;
 import io.quarkus.logging.Log;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -27,6 +29,9 @@ public class MessageProcessor {
     @Inject
     PollingJobMessageConsumer pollingJobConsumer;
 
+    @Inject
+    PollingJobDeploymentFeedbackProducer feedbackProducer;
+
     /**
      * Starts PollingJobCreationProcess and handles any unhandled exceptions thrown in it.
      *
@@ -38,6 +43,7 @@ public class MessageProcessor {
             throwExceptionIfJobDoesExistInExecutionController(pollingJobDetails);
             pollingJobConsumer.bindExisitingPollingJobQueue(apiRequestConfigurationMessage);
             executionController.pollingJobCreation(pollingJobDetails);
+            feedbackProducer.publishPollingJobFeedback(pollingJobDetails.id(), JobDeploymentStatus.DEPLOYED);
             Log.infof("PollingJob for SourceSystem %s with the id %d was successfully created", pollingJobDetails.requestBuildingDetails().sourceSystem().name(), apiRequestConfigurationMessage.id());
         } catch (PollingJobAlreadyExistsException e) {
             Log.error("PollingJob " + pollingJobDetails.name() + " with the id " + pollingJobDetails.id() +" did already exist and therefore can´t be created again. Try to reconfigure the existing one instead.", e);
@@ -62,9 +68,11 @@ public class MessageProcessor {
             throwExceptionIfJobDoesNotExistInExecutionController(pollingJobDetails);
             if (pollingJobDetails.active()) {
                 executionController.pollingJobUpdate(pollingJobDetails);
+                feedbackProducer.publishPollingJobFeedback(pollingJobDetails.id(), JobDeploymentStatus.DEPLOYED);
                 Log.info("PollingJob " + pollingJobDetails.name() + " with the id " + pollingJobDetails.id() + " successfully reconfigured");
             } else {
                 executionController.pollingJobDeletion(pollingJobDetails.id());
+                feedbackProducer.publishPollingJobFeedback(pollingJobDetails.id(), JobDeploymentStatus.UNDEPLOYED);
                 pollingJobConsumer.unbindExisitingPollingJobQueue(pollingJobDetails);
                 Log.info("PollingJob " + pollingJobDetails.name() + " with the id " + pollingJobDetails.id() + " successfully removed");
             }
