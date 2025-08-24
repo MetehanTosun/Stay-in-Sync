@@ -115,10 +115,6 @@ public class DevelopmentDataSeeder {
         transformationService.updateTargetArcs(transformation.id, updateTargetArcsDto);
         Log.info("-> Linked Target ARC to Transformation");
 
-        Log.info(sourceArc.id);
-        transformationService.updateSourceArcs(transformation.id, Set.of(sourceArc.id));
-        Log.info("-> Linked Source ARC to Transformation");
-
         TransformationScriptDTO scriptDTO = createFinalTransformationScriptDTO(transformation.id, sourceArc.alias, targetArc.id);
         transformationScriptService.saveOrUpdateForTransformation(transformation.id, scriptDTO);
         Log.info("-> Created and linked final Transformation Script");

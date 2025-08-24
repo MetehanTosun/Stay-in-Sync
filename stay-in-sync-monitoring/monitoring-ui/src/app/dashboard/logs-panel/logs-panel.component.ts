@@ -6,6 +6,7 @@ import { DatePipe, NgClass, NgIf } from '@angular/common';
 import { TableModule } from 'primeng/table';
 import { ActivatedRoute } from '@angular/router';
 import {NodeMarkerService} from '../../core/services/node-marker.service';
+import {Button} from 'primeng/button';
 
 @Component({
   selector: 'app-logs-panel',
@@ -15,14 +16,13 @@ import {NodeMarkerService} from '../../core/services/node-marker.service';
     DatePipe,
     NgClass,
     NgIf,
-    TableModule
+    TableModule,
+    Button
   ],
   standalone: true
 })
 export class LogsPanelComponent implements OnInit, OnDestroy {
   selectedNodeId?: string;
-
-  private refreshIntervalId?: number;
 
   logs: LogEntry[] = [];
   loading = false;
@@ -33,6 +33,8 @@ export class LogsPanelComponent implements OnInit, OnDestroy {
   level = 'info';
 
   constructor(private logService: LogService, private route: ActivatedRoute, private nodeMarkerService: NodeMarkerService) {}
+
+  private intervalId?: number;
 
   ngOnInit() {
     const now = new Date();
@@ -46,18 +48,22 @@ export class LogsPanelComponent implements OnInit, OnDestroy {
       this.fetchLogs();
     });
 
-    // Alle 10 Sekunden endTime aktualisieren und Logs abrufen
-    this.refreshIntervalId = window.setInterval(() => {
-      this.endTime = this.toDateTimeLocal(new Date());
-      this.fetchLogs();
-    }, 10000);
+    // Intervall starten
+    this.intervalId = window.setInterval(() => {
+      this.checkForErrorLogs();
+    }, 5000);
   }
 
   ngOnDestroy() {
-    // Timer bereinigen
-    if (this.refreshIntervalId) {
-      clearInterval(this.refreshIntervalId);
+    // Intervall bereinigen
+    if (this.intervalId) {
+      clearInterval(this.intervalId);
     }
+  }
+
+  reloadLogs() {
+    this.endTime = this.toDateTimeLocal(new Date());
+    this.fetchLogs();
   }
 
   fetchLogs() {
@@ -75,15 +81,6 @@ export class LogsPanelComponent implements OnInit, OnDestroy {
       .subscribe({
         next: logs => {
           this.logs = logs;
-
-          const markedNodes: { [nodeId: string]: boolean } = {};
-          logs.forEach(log => {
-            if (log.level === 'error' && log.syncJobId) {
-              markedNodes[log.syncJobId] = true;
-            }
-          });
-
-          this.nodeMarkerService.updateMarkedNodes(markedNodes);
           this.loading = false;
 
           // Scroll-Position wiederherstellen
@@ -101,6 +98,28 @@ export class LogsPanelComponent implements OnInit, OnDestroy {
 
   onFilterChange() {
     this.fetchLogs();
+  }
+
+  checkForErrorLogs() {
+    console.log('Checking for error logs to mark nodes...');
+    this.logService.getErrorLogs(this.toNanoSeconds(new Date(this.startTime)), this.toNanoSeconds(new Date())).subscribe(
+      {
+        next: errorIds => {
+          console.log('Error syncJobIds received:', errorIds);
+          const markedNodes: { [nodeId: string]: boolean } = {};
+          errorIds.forEach(id => {
+            if (!markedNodes[id]) {
+              markedNodes[id] = true;
+              console.log('Marking node due to error syncJobId:', id);
+            }
+          });
+          this.nodeMarkerService.updateMarkedNodes(markedNodes);
+        },
+        error: err => {
+          console.error('Error fetching error sync job IDs', err);
+        }
+      }
+    )
   }
 
   buildFallbackMessage(log: LogEntry): string {

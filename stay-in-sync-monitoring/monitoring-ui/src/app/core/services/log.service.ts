@@ -32,6 +32,17 @@ export class LogService {
     }
   }
 
+  getErrorLogs(
+    startTime: number,
+    endTime: number,
+  ): Observable<number[]> {
+    let params = new HttpParams()
+      .set('startTime', startTime)
+      .set('endTime', endTime)
+
+    return this.http.get<number[]>(`${this.baseUrl}/ErrorSyncJobIds`, { params });
+  }
+
   // getLogs(
   //   stream: 'stdout' | 'stderr',
   //   level: string,

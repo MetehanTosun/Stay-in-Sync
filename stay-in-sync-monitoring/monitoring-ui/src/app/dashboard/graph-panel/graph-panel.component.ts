@@ -124,12 +124,31 @@ export class GraphPanelComponent implements AfterViewInit {
    * Lifecycle hook that is called after the view has been initialized.
    * Sets up the SVG container, zoom behavior, and renders the initial graph.
    */
-ngAfterViewInit() {
-    // this.nodeMarkerService.markedNodes$.subscribe(markedNodes => {
-    //   this.markedNodes = markedNodes;
-    // });
+  ngAfterViewInit() {
+    this.nodeMarkerService.markedNodes$.subscribe(markedNodes => {
+      if (!this.nodes || this.nodes.length === 0) {
+        console.warn('Nodes are not initialized yet.');
+        return;
+      }
+
+      this.markedNodes = markedNodes;
+
+      // Status aller Nodes aktualisieren
+      this.nodes.forEach(node => {
+        node.status = this.markedNodes[node.id] ? 'error' : 'active';
+      });
+
+      // Filtered Nodes aktualisieren
+      this.filteredNodes = this.filterNodes(this.searchTerm);
+      this.filteredLinks = this.filterLinks();
+
+      // Graph neu rendern
+      this.updateGraph(this.filteredNodes, this.filteredLinks);
+    });
+
     this.loadGraphData();
-}
+  }
+
 
   /**
    * Filters the nodes based on the provided search term.
@@ -296,21 +315,27 @@ ngAfterViewInit() {
    * @param nodeGroup D3 selection of node groups (<g> elements).
    */
   private applyStatusStyles(nodeGroup: d3.Selection<SVGGElement, Node, any, any>) {
+    nodeGroup.selectAll('.status-circle').remove();
+
     nodeGroup.filter(d => d.status === 'active')
       .append('circle')
+      .attr('class', 'status-circle')
       .attr('r', 8)
       .attr('fill', '#4caf50');
 
     nodeGroup.filter(d => d.status === 'error')
       .append('circle')
+      .attr('class', 'status-circle')
       .attr('r', 8)
       .attr('fill', '#f44336');
 
     nodeGroup.filter(d => d.status === 'inactive')
       .append('circle')
+      .attr('class', 'status-circle')
       .attr('r', 8)
       .attr('fill', '#ffeb3b');
   }
+
 
   /**
    * Adds drag-and-drop behavior to the graph nodes.
@@ -372,7 +397,6 @@ ngAfterViewInit() {
           .attr('y1', d => (d.source as Node).y ?? 0)
           .attr('x2', d => (d.target as Node).x ?? 0)
           .attr('y2', d => (d.target as Node).y ?? 0);
-        console.log('Creating simulation with nodes:', nodes, 'and links:', links);
         nodeGroup
           .attr('transform', d => `translate(${d.x ?? 0},${d.y ?? 0})`);
       });

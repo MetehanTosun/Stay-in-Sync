@@ -14,6 +14,8 @@ import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
+import java.util.stream.Collectors;
 
 @ApplicationScoped
 public class LogService {
@@ -41,7 +43,7 @@ public class LogService {
                 labels.add("level=\"" + level.toUpperCase() + "\"");
             }
 
-            // Query: labelSelector + optionales |= "level=..." (falls du zusätzlich filterst)
+            // Query: labelSelector
             String query = "{" + String.join(",", labels) + "}";
 
             // URL bauen
@@ -56,7 +58,7 @@ public class LogService {
                     .GET()
                     .build();
 
-            //Log.info("Request send: " + request);
+            Log.info("Request send: " + request);
 
             HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
 
@@ -74,24 +76,60 @@ public class LogService {
                 String lvl     = stream.path("stream").path("level").asText(null);
 
                 for (JsonNode value : stream.path("values")) {
-                   String timestamp = value.get(0).asText();
+                    String timestamp = value.get(0).asText();
                     String messageJson = value.get(1).asText();
                     String message;
+                    String parsedSyncJobId = null;
+
                     try {
+                        // Outer JSON im value[1] parsen
                         JsonNode messageNode = objectMapper.readTree(messageJson);
+
+                        // Normale Message übernehmen
                         message = messageNode.path("message").asText(messageJson);
+
+                        // syncJobId direkt auslesen (falls vorhanden)
+                        parsedSyncJobId = messageNode.path("syncJobId").asText(null);
+
+                        // Falls "message" selbst noch JSON enthält → optional nochmal reinschauen
+                        if (message.startsWith("{") && message.endsWith("}")) {
+                            try {
+                                JsonNode innerNode = objectMapper.readTree(message);
+                                if (innerNode.has("syncJobId")) {
+                                    parsedSyncJobId = innerNode.get("syncJobId").asText();
+                                }
+                                message = innerNode.path("message").asText(message);
+                            } catch (Exception ignore) {
+                                // kein valides Inner-JSON → ignorieren
+                            }
+                        }
                     } catch (Exception ex) {
+                        // Falls gar kein JSON → den Rohstring als Message nehmen
                         message = messageJson;
                     }
-                    logs.add(new LogEntryDto(service, lvl, message, timestamp));
+
+                    logs.add(new LogEntryDto(service, lvl, message, timestamp, parsedSyncJobId));
                 }
             }
 
             return logs;
 
         } catch (Exception e) {
-            Log.error("Fehler");
+            Log.error("Fehler", e);
             throw new RuntimeException("Error fetching or parsing logs", e);
         }
     }
+
+
+    public List<String> fetchErrorSyncJobIds(long startNs, long endNs) {
+        List<LogEntryDto> errorLogs = fetchAndParseLogs(null, startNs, endNs, "ERROR");
+        Log.info("Gefundene Error-Logs: " + errorLogs.size());
+
+        return errorLogs.stream()
+                .map(LogEntryDto::parsedSyncJobId)
+                .filter(Objects::nonNull)
+                .distinct()
+                .collect(Collectors.toList());
+    }
+
 }

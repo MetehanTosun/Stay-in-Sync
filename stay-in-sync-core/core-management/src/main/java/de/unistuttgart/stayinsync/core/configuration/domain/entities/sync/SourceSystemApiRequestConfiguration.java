@@ -10,7 +10,7 @@ import java.util.*;
 public class SourceSystemApiRequestConfiguration extends ApiRequestConfiguration {
 
     @ManyToMany(mappedBy = "sourceSystemApiRequestConfigurations")
-    public Set<Transformation> transformations = new HashSet<>();
+    public Set<Transformation> transformations;
 
     @ManyToOne
     public SourceSystem sourceSystem;

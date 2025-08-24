@@ -44,5 +44,16 @@ public class LogResource {
         return Response.ok(logs).build();
     }
 
+    @GET
+    @Path("/ErrorSyncJobIds")
+    public Response getErrorSyncJobIds(
+            @QueryParam("startTime") long startTime,
+            @QueryParam("endTime") long endTime
+    ) {
+        List<String> syncJobIds = logService.fetchErrorSyncJobIds(startTime, endTime);
+        return Response.ok(syncJobIds).build();
+    }
+
+
 }
 
