@@ -1,6 +1,5 @@
 package de.unistuttgart.stayinsync.core.configuration.rest;
 
-import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.Transformation;
 import de.unistuttgart.stayinsync.core.configuration.exception.CoreManagementException;
 import de.unistuttgart.stayinsync.core.configuration.mapping.TransformationMapper;
 import de.unistuttgart.stayinsync.core.configuration.mapping.TransformationScriptMapper;
@@ -8,7 +7,6 @@ import de.unistuttgart.stayinsync.core.configuration.rest.dtos.TransformationAss
 import de.unistuttgart.stayinsync.core.configuration.rest.dtos.TransformationDetailsDTO;
 import de.unistuttgart.stayinsync.core.configuration.rest.dtos.TransformationShellDTO;
 import de.unistuttgart.stayinsync.core.configuration.rest.dtos.targetsystem.UpdateTransformationRequestConfigurationDTO;
-import de.unistuttgart.stayinsync.core.configuration.rest.dtos.typegeneration.GetTypeDefinitionsResponseDTO;
 import de.unistuttgart.stayinsync.core.configuration.service.TargetDtsBuilderGeneratorService;
 import de.unistuttgart.stayinsync.core.configuration.service.TransformationService;
 import io.quarkus.logging.Log;
@@ -125,7 +123,7 @@ public class TransformationResource {
             description = "Replaces the entire set of linked Target ARCs for a transformation with the given list of ARC IDs.")
     public Response updateTransformationTargetArcs(@PathParam("id") Long id, @Valid UpdateTransformationRequestConfigurationDTO dto) {
         var updated = service.updateTargetArcs(id, dto);
-        return Response.ok(mapper.mapToDetailsDTO(updated)).build();
+        return Response.ok(updated).build();
     }
 
     @GET

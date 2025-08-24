@@ -32,6 +32,9 @@ public class TransformationScriptService {
     @Inject
     TransformationScriptMapper mapper;
 
+    @Inject
+    TargetSdkGeneratorService targetSdkGeneratorService;
+
     public TransformationScript create(TransformationScriptDTO dto) {
         Log.debugf("Creating new transformation script with name: %s", dto.name());
         TransformationScript transformationScript = mapper.mapToEntity(dto);
@@ -128,6 +131,10 @@ public class TransformationScriptService {
         targetArcs.forEach(arc -> arc.transformations.add(transformation));
         Log.infof("Bound %d Target ARCs to transformation %d", targetArcs.size(), transformationId);
 
+        // SDK Code Generation for graalJS Context inside SyncNode
+        String generatedSdkCode = targetSdkGeneratorService.generateSdkForTransformation(transformation);
+        script.generatedSdkCode = generatedSdkCode;
+        script.generatedSdkHash = generateSha256Hash(generatedSdkCode);
 
         script.persist();
         transformation.persist();
