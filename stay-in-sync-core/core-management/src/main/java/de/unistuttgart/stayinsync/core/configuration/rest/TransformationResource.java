@@ -1,6 +1,5 @@
 package de.unistuttgart.stayinsync.core.configuration.rest;
 
-import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.Transformation;
 import de.unistuttgart.stayinsync.core.configuration.exception.CoreManagementException;
 import de.unistuttgart.stayinsync.core.configuration.mapping.TransformationMapper;
 import de.unistuttgart.stayinsync.core.configuration.mapping.TransformationScriptMapper;
@@ -145,7 +144,7 @@ public class TransformationResource {
             description = "Replaces the entire set of linked Target ARCs for a transformation with the given list of ARC IDs.")
     public Response updateTransformationTargetArcs(@PathParam("id") Long id, @Valid UpdateTransformationRequestConfigurationDTO dto) {
         var updated = transformationService.updateTargetArcs(id, dto);
-        return Response.ok(mapper.mapToDetailsDTO(updated)).build();
+        return Response.ok(updated).build();
     }
 
     @GET

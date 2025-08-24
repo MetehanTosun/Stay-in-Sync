@@ -5,6 +5,7 @@ import de.unistuttgart.stayinsync.core.configuration.exception.CoreManagementExc
 import de.unistuttgart.stayinsync.core.configuration.mapping.TransformationMapper;
 import de.unistuttgart.stayinsync.core.configuration.mapping.targetsystem.RequestConfigurationMapper;
 import de.unistuttgart.stayinsync.core.configuration.rest.dtos.TransformationAssemblyDTO;
+import de.unistuttgart.stayinsync.core.configuration.rest.dtos.TransformationDetailsDTO;
 import de.unistuttgart.stayinsync.core.configuration.rest.dtos.TransformationShellDTO;
 import de.unistuttgart.stayinsync.core.configuration.rest.dtos.targetsystem.GetRequestConfigurationDTO;
 import de.unistuttgart.stayinsync.core.configuration.rest.dtos.TransformationStatusUpdate;
@@ -118,7 +119,7 @@ public class TransformationService {
     }
 
     @Transactional
-    public Transformation updateTargetArcs(Long transformationId, UpdateTransformationRequestConfigurationDTO dto) {
+    public TransformationDetailsDTO updateTargetArcs(Long transformationId, UpdateTransformationRequestConfigurationDTO dto){
         Log.debugf("Updating Target ARCs for Transformation with id %d", transformationId);
 
         Transformation transformation = Transformation.<Transformation>findByIdOptional(transformationId)
@@ -139,7 +140,7 @@ public class TransformationService {
         Log.infof("Successfully updated Target ARCs for Transformation %d. New count: %d",
                 transformationId, transformation.targetSystemApiRequestConfigurations.size());
 
-        return transformation;
+        return mapper.mapToDetailsDTO(transformation);
     }
 
     @Transactional(SUPPORTS)

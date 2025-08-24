@@ -117,8 +117,10 @@ public class DispatcherStateService {
                 tx.transformationScriptDTO().javascriptCode(),
                 "js", // Placeholder
                 tx.transformationScriptDTO().hash(),
+                tx.transformationScriptDTO().generatedSdkCode(),
+                tx.transformationScriptDTO().generatedSdkHash(),
                 finalSource);
-        return new ExecutionPayload(job, graphNodes);
+        return new ExecutionPayload(job, graphNodes, tx);
     }
 
     public Map<Long, TransformationState> getTransformationRegistry() {
