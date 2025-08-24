@@ -119,12 +119,35 @@ public class AasStructureSnapshotService {
         }
         if (id == null) return;
 
+        String idShort = textOrNull(n, "idShort");
+        String semanticId = textOrNull(n, "semanticId");
+        String kind = textOrNull(n, "kind");
+
+        // If coming from refs, enrich by fetching the full submodel once
+        if (idShort == null || semanticId == null || kind == null) {
+            try {
+                String smIdB64 = toBase64Url(id);
+                var headers = headerBuilder.buildMergedHeaders(ss, HttpHeaderBuilder.Mode.READ);
+                HttpResponse<Buffer> smResp = traversalClient.getSubmodel(ss.apiUrl, smIdB64, headers).await().indefinitely();
+                if (smResp.statusCode() >= 200 && smResp.statusCode() < 300) {
+                    JsonNode smNode = objectMapper.readTree(smResp.bodyAsString());
+                    if (smNode != null) {
+                        if (idShort == null) idShort = textOrNull(smNode, "idShort");
+                        if (semanticId == null) semanticId = textOrNull(smNode, "semanticId");
+                        if (kind == null) kind = textOrNull(smNode, "kind");
+                    }
+                }
+            } catch (Exception ex) {
+                Log.warnf(ex, "Could not enrich submodel %s", id);
+            }
+        }
+
         AasSubmodelLite sm = new AasSubmodelLite();
         sm.sourceSystem = ss;
         sm.submodelId = id;
-        sm.submodelIdShort = textOrNull(n, "idShort");
-        sm.semanticId = textOrNull(n, "semanticId");
-        sm.kind = textOrNull(n, "kind");
+        sm.submodelIdShort = idShort;
+        sm.semanticId = semanticId;
+        sm.kind = kind;
         sm.persist();
     }
 
