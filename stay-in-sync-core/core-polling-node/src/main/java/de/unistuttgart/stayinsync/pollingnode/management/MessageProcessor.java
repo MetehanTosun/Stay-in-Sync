@@ -41,8 +41,8 @@ public class MessageProcessor {
         final PollingJobDetails pollingJobDetails = this.convertSourceSystemApiMessageToPollingJobDetails(apiRequestConfigurationMessage);
         try {
             throwExceptionIfJobDoesExistInExecutionController(pollingJobDetails);
-            pollingJobConsumer.bindExisitingPollingJobQueue(apiRequestConfigurationMessage);
             executionController.pollingJobCreation(pollingJobDetails);
+            pollingJobConsumer.bindExisitingPollingJobQueue(apiRequestConfigurationMessage);
             feedbackProducer.publishPollingJobFeedback(pollingJobDetails.id(), JobDeploymentStatus.DEPLOYED);
             Log.infof("PollingJob for SourceSystem %s with the id %d was successfully created", pollingJobDetails.requestBuildingDetails().sourceSystem().name(), apiRequestConfigurationMessage.id());
         } catch (PollingJobAlreadyExistsException e) {
@@ -66,11 +66,11 @@ public class MessageProcessor {
         final PollingJobDetails pollingJobDetails = this.convertSourceSystemApiMessageToPollingJobDetails(apiRequestConfigurationMessage);
         try {
             throwExceptionIfJobDoesNotExistInExecutionController(pollingJobDetails);
-            if (pollingJobDetails.active()) {
+            if (apiRequestConfigurationMessage.deploymentStatus().equals(JobDeploymentStatus.STOPPING)) {
                 executionController.pollingJobUpdate(pollingJobDetails);
                 feedbackProducer.publishPollingJobFeedback(pollingJobDetails.id(), JobDeploymentStatus.DEPLOYED);
                 Log.info("PollingJob " + pollingJobDetails.name() + " with the id " + pollingJobDetails.id() + " successfully reconfigured");
-            } else {
+            } else if (apiRequestConfigurationMessage.deploymentStatus().equals(JobDeploymentStatus.RECONFIGURING)) {
                 executionController.pollingJobDeletion(pollingJobDetails.id());
                 feedbackProducer.publishPollingJobFeedback(pollingJobDetails.id(), JobDeploymentStatus.UNDEPLOYED);
                 pollingJobConsumer.unbindExisitingPollingJobQueue(pollingJobDetails);
@@ -94,7 +94,7 @@ public class MessageProcessor {
      * @return PollingJobDetails as result of conversion.
      */
     private PollingJobDetails convertSourceSystemApiMessageToPollingJobDetails(final SourceSystemApiRequestConfigurationMessageDTO message){
-        return new PollingJobDetails(message.name(), message.id(), message.pollingIntervallTimeInMs(), message.active(),
+        return new PollingJobDetails(message.name(), message.id(), message.pollingIntervallTimeInMs(),
                 new RequestBuildingDetails(message.apiConnectionDetails().sourceSystem(), message.apiConnectionDetails().endpoint(),
                         message.apiConnectionDetails().requestParameters(), message.apiConnectionDetails().requestHeader()));
     }

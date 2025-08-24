@@ -380,7 +380,7 @@ export class ScriptEditorPageComponent implements OnInit, OnDestroy {
  *                         values are arrays of the corresponding directives.
  */
 function transform(): DirectiveMap {
-    stayinsync.log('Transformation started...');
+    stayinsync.log('Transformation started...', 'INFO');
 
     // --- EXAMPLE WORKFLOW (Commented Out) ---
     /*

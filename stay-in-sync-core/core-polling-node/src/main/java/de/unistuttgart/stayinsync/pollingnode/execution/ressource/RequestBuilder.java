@@ -72,6 +72,7 @@ public class RequestBuilder {
      /*@
     @ requires throwExceptionIfRequestBuildingDetailsInvalid(requestBuildingDetails) called before this call.
      */
+
     /**
      * Builds request with one of these types: GET, POST, PUT.
      * DELETE is not supported.
@@ -111,6 +112,7 @@ public class RequestBuilder {
     /*@
     @ requires throwExceptionIfRequestBuildingDetailsInvalid(requestBuildingDetails) called before this call.
      */
+
     /**
      * Parameterizes the request by adding the AuthHeader, other Headers and Parameters to the request.
      *
@@ -119,7 +121,9 @@ public class RequestBuilder {
      */
     private void parameterizeRequest(final RequestBuildingDetails requestBuildingDetails, final HttpRequest<Buffer> request) {
         request.putHeader("Host", requestBuildingDetails.sourceSystem().apiUrl().replaceFirst("https?://", ""));
-        request.putHeader(requestBuildingDetails.sourceSystem().authDetails().headerName(), requestBuildingDetails.sourceSystem().authDetails().apiKey());
+        if (requestBuildingDetails.sourceSystem().authDetails() != null) {
+            request.putHeader(requestBuildingDetails.sourceSystem().authDetails().headerName(), requestBuildingDetails.sourceSystem().authDetails().apiKey());
+        }
         if (requestBuildingDetails.requestHeader() != null) {
             requestBuildingDetails.requestHeader().forEach(header -> {
                 if (header.headerName() != null) {
@@ -139,6 +143,7 @@ public class RequestBuilder {
     /*@
     @ requires throwExceptionIfRequestBuildingDetailsInvalid(requestBuildingDetails) called before this call.
      */
+
     /**
      * Parameterizes endpointPath with PathParameters, concats them with apiURL and returns them as String.
      *
@@ -168,8 +173,8 @@ public class RequestBuilder {
      * @throws RequestBuildingDetailsNullFieldException if an important field is null.
      */
     private void throwExceptionIfRequestBuildingDetailsInvalid(final RequestBuildingDetails requestBuildingDetails) throws RequestBuildingDetailsNullFieldException {
-        if (requestBuildingDetails.sourceSystem() == null || requestBuildingDetails.endpoint() == null || requestBuildingDetails.sourceSystem().authDetails() == null) {
-            final String exceptionMessage = "No SourceSystem, Endpoint or AuthDetails were defined in RequestBuildingDetails";
+        if (requestBuildingDetails.sourceSystem() == null || requestBuildingDetails.endpoint() == null) {
+            final String exceptionMessage = "No SourceSystem, Endpoint were defined in RequestBuildingDetails";
             Log.errorf(exceptionMessage);
             throw new RequestBuildingDetailsNullFieldException(exceptionMessage);
         }
@@ -183,13 +188,13 @@ public class RequestBuilder {
             Log.errorf(exceptionMessage, requestBuildingDetails.endpoint());
             throw new RequestBuildingDetailsNullFieldException(exceptionMessage, requestBuildingDetails.sourceSystem().name());
         }
-        final String apiKey = requestBuildingDetails.sourceSystem().authDetails().apiKey();
-        final String authHeaderName = requestBuildingDetails.sourceSystem().authDetails().headerName();
-        if ((apiKey == null && authHeaderName != null) || (apiKey != null && authHeaderName == null)) {
-            final String exceptionMessage = "ApiKey and AuthHeaderName either both need to be == null or != null";
-            Log.errorf(exceptionMessage, requestBuildingDetails.sourceSystem().name());
-            throw new RequestBuildingDetailsNullFieldException(exceptionMessage, requestBuildingDetails.sourceSystem().name());
-        }
+//        final String apiKey = requestBuildingDetails.sourceSystem().authDetails().apiKey();
+//        final String authHeaderName = requestBuildingDetails.sourceSystem().authDetails().headerName();
+//        if ((apiKey == null && authHeaderName != null) || (apiKey != null && authHeaderName == null)) {
+//            final String exceptionMessage = "ApiKey and AuthHeaderName either both need to be == null or != null";
+//            Log.errorf(exceptionMessage, requestBuildingDetails.sourceSystem().name());
+//            throw new RequestBuildingDetailsNullFieldException(exceptionMessage, requestBuildingDetails.sourceSystem().name());
+//        }
     }
 
 

@@ -25,7 +25,7 @@ public class SourceSystemApiRequestConfiguration extends ApiRequestConfiguration
     public String responseDts;
 
     @Enumerated(EnumType.STRING)
-    public JobDeploymentStatus deploymentStatus;
+    public JobDeploymentStatus deploymentStatus = JobDeploymentStatus.UNDEPLOYED;
 
     public String workerPodName;
 

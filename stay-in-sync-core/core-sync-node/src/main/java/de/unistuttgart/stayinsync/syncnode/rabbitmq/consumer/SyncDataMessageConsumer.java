@@ -100,6 +100,7 @@ public class SyncDataMessageConsumer {
             try {
                 SyncDataMessageDTO syncData = getSyncDataMessageDTO(delivery);
                 Log.infof("Received syncData for ARC alias: %s", syncData.arcAlias());
+                Log.debugf("JSON: %s", syncData.jsonData());
 
                 List<ExecutionPayload> completedPayloads = dispatcherStateService.processArc(syncData);
 
