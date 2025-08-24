@@ -27,13 +27,14 @@ public class EDCAssetResource {
             .map(EDCAssetMapper::toDto)
             .collect(Collectors.toList());
     }
-
+    
     @GET
     @Path("{id}")
     public EDCAssetDto get(@PathParam("id") UUID id) {
         return service.findById(id)
             .map(EDCAssetMapper::toDto)
             .orElseThrow(() -> new NotFoundException("Asset " + id + " nicht gefunden"));
+            
     }
 
     @POST
@@ -43,7 +44,7 @@ public class EDCAssetResource {
         EDCAsset entity   = EDCAssetMapper.fromDto(dto);
         EDCAsset created  = service.create(entity);
         EDCAssetDto result = EDCAssetMapper.toDto(created);
-
+        
         URI uri = uriInfo.getAbsolutePathBuilder()
                          .path(result.getId().toString())
                          .build();

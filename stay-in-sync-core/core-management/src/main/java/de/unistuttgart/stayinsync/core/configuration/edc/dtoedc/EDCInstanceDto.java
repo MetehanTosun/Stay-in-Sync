@@ -1,29 +1,29 @@
 package de.unistuttgart.stayinsync.core.configuration.edc.dtoedc;
 
-import java.util.Set;
-import java.util.UUID;
 import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.Null;
-import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.NotBlank;
+
 import java.util.Set;
 import java.util.UUID;
 
 public class EDCInstanceDto {
 
-    public UUID id;
+    private UUID id;
 
     @NotBlank
-    public String name;
+    private String name;
 
     @NotBlank
-    public String url;
+    private String url;
 
-    @NotBlank
-    public String apiKey;
+    private String protocolVersion;
+    private String description;
+    private String bpn;
 
-    public Set<UUID> edcAssetIds;
+    private String apiKey; // optional
 
+    private Set<UUID> edcAssetIds;
+
+    // === Getter & Setter ===
     public UUID getId() {
         return id;
     }
@@ -46,6 +46,30 @@ public class EDCInstanceDto {
 
     public void setUrl(String url) {
         this.url = url;
+    }
+
+    public String getProtocolVersion() {
+        return protocolVersion;
+    }
+
+    public void setProtocolVersion(String protocolVersion) {
+        this.protocolVersion = protocolVersion;
+    }
+
+    public String getDescription() {
+        return description;
+    }
+
+    public void setDescription(String description) {
+        this.description = description;
+    }
+
+    public String getBpn() {
+        return bpn;
+    }
+
+    public void setBpn(String bpn) {
+        this.bpn = bpn;
     }
 
     public String getApiKey() {

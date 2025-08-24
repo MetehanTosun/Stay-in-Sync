@@ -2,6 +2,7 @@ package de.unistuttgart.stayinsync.core.configuration.edc;
 
 import de.unistuttgart.stayinsync.core.model.UuidEntity;
 import jakarta.persistence.*;
+
 import java.util.Set;
 
 @Entity
@@ -14,7 +15,16 @@ public class EDCInstance extends UuidEntity {
     @Column(nullable = false)
     public String url;
 
-    @Column(nullable = false)
+    @Column
+    public String protocolVersion;
+
+    @Column
+    public String description;
+
+    @Column
+    public String bpn;
+
+    @Column
     public String apiKey;
 
     @OneToMany(mappedBy = "targetEDC", cascade = CascadeType.ALL, orphanRemoval = true)

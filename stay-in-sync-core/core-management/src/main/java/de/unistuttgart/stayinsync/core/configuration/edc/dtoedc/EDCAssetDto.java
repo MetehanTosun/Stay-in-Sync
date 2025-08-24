@@ -25,6 +25,27 @@ public class EDCAssetDto {
     @NotNull
     public UUID targetEDCId;
 
+        @NotNull
+    private EDCDataAddressDto dataAddress;   // <--- NEU
+
+    private EDCPropertyDto properties; 
+
+    public EDCDataAddressDto getDataAddress() {
+        return dataAddress;
+    }
+
+    public void setDataAddress(EDCDataAddressDto dataAddress) {
+        this.dataAddress = dataAddress;
+    }
+
+    public EDCPropertyDto getProperties() {
+        return properties;
+    }
+
+    public void setProperties(EDCPropertyDto properties) {
+        this.properties = properties;
+    }
+
     public UUID getId() {
         return id;
     }

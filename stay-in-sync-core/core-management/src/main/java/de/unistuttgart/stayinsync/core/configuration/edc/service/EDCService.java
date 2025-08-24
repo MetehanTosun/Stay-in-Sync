@@ -19,16 +19,18 @@ public class EDCService {
     }
 
     public EDCInstance create(EDCInstance edc) {
-        // Persist setzt dank @PrePersist automatisch die UUID, wenn noch keine vergeben ist
         edc.persist();
         return edc;
     }
 
     public Optional<EDCInstance> update(UUID id, EDCInstance updated) {
         return findById(id).map(existing -> {
-            existing.name   = updated.name;
-            existing.url    = updated.url;
-            existing.apiKey = updated.apiKey;
+            existing.name            = updated.name;
+            existing.url             = updated.url;
+            existing.apiKey          = updated.apiKey;
+            existing.protocolVersion = updated.protocolVersion;
+            existing.description     = updated.description;
+            existing.bpn             = updated.bpn;
             return existing;
         });
     }

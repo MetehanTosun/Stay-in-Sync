@@ -29,13 +29,13 @@ public class EDCAsset extends UuidEntity {
     @Column(length = 1024)
     public String description;
 
-    // Relation zur DataAddress (UUID-PK)
-    @ManyToOne(optional = false, fetch = FetchType.LAZY)
+    // Relation zur DataAddress (UUID-PK) – mit Cascade
+    @ManyToOne(optional = false, fetch = FetchType.LAZY, cascade = CascadeType.ALL)
     @JoinColumn(name = "data_address_id", columnDefinition = "CHAR(36)", nullable = false)
     public EDCDataAddress dataAddress;
 
-    // Relation zu Properties (UUID-PK, optional)
-    @ManyToOne(fetch = FetchType.LAZY)
+    // Relation zu Properties (UUID-PK, optional) – mit Cascade
+    @ManyToOne(fetch = FetchType.LAZY, cascade = CascadeType.ALL)
     @JoinColumn(name = "properties_id", columnDefinition = "CHAR(36)")
     public EDCProperty properties;
 

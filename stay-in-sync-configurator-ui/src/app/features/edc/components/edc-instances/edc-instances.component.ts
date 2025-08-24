@@ -64,11 +64,20 @@ export class EdcInstancesComponent implements OnInit {
   ) {}
 
   ngOnInit(): void {
-    this.edcInstanceService.getEdcInstancesLarge().then((data) => {
+  this.loading = true;
+  this.edcInstanceService.getEdcInstances().subscribe({
+    next: (data: EdcInstance[]) => {
       this.edcInstances = data;
       this.loading = false;
-    });
-  }
+    },
+    error: (err) => {
+      console.error('Fehler beim Laden der EDC-Instanzen', err);
+      this.loading = false;
+    }
+  });
+}
+
+
 
   private createEmptyInstance(): EdcInstance {
     return {
@@ -102,18 +111,22 @@ export class EdcInstancesComponent implements OnInit {
     this.displayNewInstanceDialog = false;
   }
 
-  saveNewInstance(): void {
-    // Basic validation
-    if (this.newInstance.name && this.newInstance.url && this.newInstance.bpn) {
-      // the ID would be assigned by the backend
-      this.newInstance.id = 'temp_' + Math.random().toString(36).substring(2, 9);
-      this.edcInstances = [...this.edcInstances, this.newInstance];
-      this.hideNewInstanceDialog();
-    } else {
-
-      console.error('Name, URL, and BPN are required.');
-    }
+saveNewInstance(): void {
+  if (this.newInstance.name && this.newInstance.url && this.newInstance.bpn) {
+    this.edcInstanceService.createEdcInstance(this.newInstance).subscribe({
+      next: (created) => {
+        this.edcInstances = [...this.edcInstances, created];
+        this.hideNewInstanceDialog();
+      },
+      error: (err) => {
+        console.error('Fehler beim Speichern einer neuen Instanz', err);
+      }
+    });
+  } else {
+    console.error('Name, URL, and BPN are required.');
   }
+}
+
 
   editInstance(instance: EdcInstance): void {
     this.instanceToEdit = { ...instance };
@@ -126,26 +139,40 @@ export class EdcInstancesComponent implements OnInit {
   }
 
   saveEditedInstance(): void {
-    if (this.instanceToEdit && this.instanceToEdit.name && this.instanceToEdit.url && this.instanceToEdit.bpn) {
-      this.edcInstances = this.edcInstances.map(instance =>
-        instance.id === this.instanceToEdit!.id ? { ...this.instanceToEdit! } : instance
-      );
-      this.hideEditInstanceDialog();
-    } else {
-      console.error('Name, URL, and BPN are required for edited instance.');
-    }
-  }
-
-  deleteInstance(instance: EdcInstance): void {
-    this.confirmationService.confirm({
-      message: `Are you sure you want to delete the instance "${instance.name}"?`,
-      header: 'Confirm Deletion',
-      icon: 'pi pi-exclamation-triangle',
-      acceptButtonStyleClass: 'p-button-danger',
-      rejectButtonStyleClass: 'p-button-text',
-      accept: () => {
-        this.edcInstances = this.edcInstances.filter(i => i.id !== instance.id);
+  if (this.instanceToEdit && this.instanceToEdit.name && this.instanceToEdit.url && this.instanceToEdit.bpn) {
+    this.edcInstanceService.updateEdcInstance(this.instanceToEdit.id, this.instanceToEdit).subscribe({
+      next: (updated) => {
+        this.edcInstances = this.edcInstances.map(instance =>
+          instance.id === updated.id ? updated : instance
+        );
+        this.hideEditInstanceDialog();
       },
+      error: (err) => {
+        console.error('Fehler beim Aktualisieren der Instanz', err);
+      }
     });
+  } else {
+    console.error('Name, URL, and BPN are required for edited instance.');
   }
+}
+
+deleteInstance(instance: EdcInstance): void {
+  this.confirmationService.confirm({
+    message: `Are you sure you want to delete the instance "${instance.name}"?`,
+    header: 'Confirm Deletion',
+    icon: 'pi pi-exclamation-triangle',
+    acceptButtonStyleClass: 'p-button-danger',
+    rejectButtonStyleClass: 'p-button-text',
+    accept: () => {
+      this.edcInstanceService.deleteEdcInstance(instance.id).subscribe({
+        next: () => {
+          this.edcInstances = this.edcInstances.filter(i => i.id !== instance.id);
+        },
+        error: (err) => {
+          console.error('Fehler beim Löschen der Instanz', err);
+        }
+      });
+    },
+  });
+}
 }

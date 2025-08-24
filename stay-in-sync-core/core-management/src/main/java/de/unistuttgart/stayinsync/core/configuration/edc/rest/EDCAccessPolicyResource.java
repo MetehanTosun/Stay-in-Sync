@@ -41,6 +41,7 @@ public class EDCAccessPolicyResource {
     @POST
     @Transactional
     public Response create(EDCAccessPolicyDto dto, @Context UriInfo uriInfo) {
+        System.out.println("policy");
         var entity     = EDCAccessPolicyMapper.fromDto(dto);
         var created    = service.create(entity);
         var createdDto = EDCAccessPolicyMapper.toDto(created);

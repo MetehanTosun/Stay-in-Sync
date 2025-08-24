@@ -23,12 +23,15 @@ public class EDCInstanceMapper {
         dto.setName(entity.name);
         dto.setUrl(entity.url);
         dto.setApiKey(entity.apiKey);
+        dto.setProtocolVersion(entity.protocolVersion);
+        dto.setDescription(entity.description);
+        dto.setBpn(entity.bpn);
 
         Set<UUID> assetIds = Optional.ofNullable(entity.edcAssets)
-            .orElse(Set.of())
-            .stream()
-            .map(asset -> asset.id)
-            .collect(Collectors.toUnmodifiableSet());
+                .orElse(Set.of())
+                .stream()
+                .map(asset -> asset.id)
+                .collect(Collectors.toUnmodifiableSet());
         dto.setEdcAssetIds(assetIds);
 
         return dto;
@@ -38,18 +41,21 @@ public class EDCInstanceMapper {
         if (dto == null) {
             return null;
         }
-        // Existierende Entity laden oder neu anlegen
         EDCInstance entity = (dto.getId() != null)
-            ? EDCInstance.findById(dto.getId())
-            : new EDCInstance();
+                ? EDCInstance.findById(dto.getId())
+                : new EDCInstance();
         if (entity == null) {
             entity = new EDCInstance();
         }
-        entity.id     = dto.getId();
-        entity.name   = dto.getName();
-        entity.url    = dto.getUrl();
-        entity.apiKey = dto.getApiKey();
-        // edcAssets werden separat verwaltet
+
+        entity.id              = dto.getId();
+        entity.name            = dto.getName();
+        entity.url             = dto.getUrl();
+        entity.apiKey          = dto.getApiKey();
+        entity.protocolVersion = dto.getProtocolVersion();
+        entity.description     = dto.getDescription();
+        entity.bpn             = dto.getBpn();
+
         return entity;
     }
 }

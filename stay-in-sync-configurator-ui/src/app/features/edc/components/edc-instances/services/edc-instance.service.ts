@@ -1,54 +1,39 @@
 import { Injectable } from '@angular/core';
 import { EdcInstance } from '../models/edc-instance.model';
 import { HttpClient } from '@angular/common/http';
-import { Observable, of } from 'rxjs';
+import { Observable } from 'rxjs';
 
 @Injectable({
   providedIn: 'root'
 })
 export class EdcInstanceService {
 
-
-  private mockEdcInstances: EdcInstance[] = [
-    {
-      id: 'instance-1',
-      name: 'EDC 1',
-      url: 'https://edc.dev.catena-x.net/management',
-      protocolVersion: '1.0.0',
-      description: 'lurem ipsum dolor sit',
-      bpn: 'BPNL000000000001',
-      apiKey: 'test-api-key-123',
-    },
-    {
-      id: 'instance-2',
-      name: 'EDC 2',
-      url: 'http://localhost:19193/management',
-      protocolVersion: '1.1.0',
-      description: 'lurem ipsum dolor sit amet, consectetur adipiscing elit.',
-      bpn: 'BPNL000000000002',
-      apiKey: 'local-key-456',
-    },
-    {
-      id: 'instance-3',
-      name: 'EDC 3',
-      url: 'https://partner-a.com/api/v2/data',
-      protocolVersion: '1.0.0',
-      description: 'Connector for data exchange with Partner A.',
-      bpn: 'BPNL000000000ABC',
-      // apiKey is optional
-    },
-  ];
+  private backendUrl = 'http://localhost:8090/api/config/edcs';
 
   constructor(private http: HttpClient) {}
 
-  // Method to get EDC instances
-  getEdcInstancesLarge(): Promise<EdcInstance[]> {
-    return Promise.resolve([...this.mockEdcInstances]); // Return a copy
+  // Alle Instanzen laden
+  getEdcInstances(): Observable<EdcInstance[]> {
+    return this.http.get<EdcInstance[]>(this.backendUrl);
   }
 
-  getEdcInstancesObservable(): Observable<EdcInstance[]> {
-    return of([...this.mockEdcInstances]);
+  // Einzelne Instanz holen
+  getEdcInstance(id: string): Observable<EdcInstance> {
+    return this.http.get<EdcInstance>(`${this.backendUrl}/${id}`);
   }
 
-  // Future methods for CRUD operations would go here
+  // Neue Instanz anlegen
+  createEdcInstance(instance: EdcInstance): Observable<EdcInstance> {
+    return this.http.post<EdcInstance>(this.backendUrl, instance);
+  }
+
+  // Instanz aktualisieren
+  updateEdcInstance(id: string, instance: EdcInstance): Observable<EdcInstance> {
+    return this.http.put<EdcInstance>(`${this.backendUrl}/${id}`, instance);
+  }
+
+  // Instanz löschen
+  deleteEdcInstance(id: string): Observable<void> {
+    return this.http.delete<void>(`${this.backendUrl}/${id}`);
+  }
 }

@@ -33,6 +33,7 @@ import { EdcInstanceService } from '../edc-instances/services/edc-instance.servi
 import {lastValueFrom, Subject, Subscription} from 'rxjs';
 import {debounceTime} from "rxjs/operators";
 import { MultiSelectModule } from 'primeng/multiselect';
+import { forkJoin } from 'rxjs';
 
 @Component({
   selector: 'app-edc-assets-and-policies',
@@ -360,12 +361,19 @@ export class EdcAssetsAndPoliciesComponent implements OnInit, OnDestroy {
   }
 
   private loadAllBpns() {
-    this.edcInstanceService.getEdcInstancesLarge().then(instances => {
-      // Use a Set to get unique BPNs from existing instances
+  this.edcInstanceService.getEdcInstances().subscribe({
+    next: (instances) => {
+      // Set sorgt für eindeutige BPNs
       const bpnSet = new Set(instances.map(i => i.bpn));
       this.allBpns = [...bpnSet];
-    });
-  }
+    },
+    error: (err) => {
+      console.error('Fehler beim Laden der EDC-Instanzen', err);
+      this.allBpns = [];
+    }
+  });
+}
+
 
   /**
    * Filters assets based on user input for the autocomplete component.
@@ -373,12 +381,12 @@ export class EdcAssetsAndPoliciesComponent implements OnInit, OnDestroy {
    * @param event The autocomplete event containing the user's query.
    */
   searchAssets(event: { query: string }) {
-    const query = event.query.toLowerCase();
-    this.assetIdSuggestions = this.assets.filter(asset =>
-      asset.assetId.toLowerCase().includes(query) ||
-      asset.name.toLowerCase().includes(query)
-    );
-  }
+  const query = event.query.toLowerCase();
+  this.assetIdSuggestions = this.assets.filter(asset =>
+    asset.assetId.toLowerCase().includes(query) ||
+    (asset.description && asset.description.toLowerCase().includes(query))
+  );
+}
 
   /**
    * Filters access policies for the autocomplete component.
@@ -394,43 +402,41 @@ export class EdcAssetsAndPoliciesComponent implements OnInit, OnDestroy {
   }
 
   private async loadAssets(): Promise<void> {
-    this.assetLoading = true;
-    try {
-      const [assets, odrlAssets] = await Promise.all<any>([
-        lastValueFrom(this.assetService.getAssets()),
-        this.assetService.getOdrlAssets()
-      ]);
-      this.assets = assets;
-      this.allOdrlAssets = odrlAssets;
-      // If a dialog that uses the asset list is open, refresh its content
-      if (this.displayNewContractPolicyDialog || this.displayEditContractPolicyDialog) {
-        this.refreshAssetsForDialog();
-      }
-    } catch (error) {
-      console.error('Failed to load assets:', error);
-      this.messageService.add({severity: 'error', summary: 'Error', detail: 'Could not load assets.'});
-    } finally {
-      this.assetLoading = false;
+  this.assetLoading = true;
+  try {
+    this.assets = await lastValueFrom(this.assetService.getAssets());
+
+    // Falls ein Dialog geöffnet ist, Liste aktualisieren
+    if (this.displayNewContractPolicyDialog || this.displayEditContractPolicyDialog) {
+      this.refreshAssetsForDialog();
     }
+  } catch (error) {
+    console.error('Failed to load assets:', error);
+    this.messageService.add({
+      severity: 'error',
+      summary: 'Error',
+      detail: 'Could not load assets.'
+    });
+  } finally {
+    this.assetLoading = false;
   }
+}
 
-  async loadPoliciesAndDefinitions() {
-    this.policyLoading = true;
-    try {
-      const [accessPolicies, contractDefinitions, odrlAccessPolicies] = await Promise.all([
-        this.policyService.getAccessPolicies(),
-        this.policyService.getContractDefinitions(),
-        this.policyService.getOdrlPolicyDefinitions(),
-      ]);
 
-      this.allOdrlContractDefinitions = contractDefinitions;
-      this.allOdrlAccessPolicies = odrlAccessPolicies;
+  loadPoliciesAndDefinitions() {
+  this.policyLoading = true;
 
-      // Create a map from policy ID to the policy object for efficient lookup
+  forkJoin({
+    accessPolicies: this.policyService.getAccessPolicies(),
+    contractDefinitions: this.policyService.getContractDefinitions()
+    // odrlAccessPolicies: this.policyService.getOdrlPolicyDefinitions(), // nur wenn Backend bereit
+  }).subscribe({
+    next: ({ accessPolicies, contractDefinitions }) => {
+      // Policy-Map für schnellen Lookup
       const policyMap = new Map<string, AccessPolicy>();
       accessPolicies.forEach(p => policyMap.set(p.id, p));
 
-      // Create list of all contract definitions
+      // Contract Definitions verknüpfen mit Policies
       this.allContractDefinitions = contractDefinitions.map(cd => {
         const parentId = cd.accessPolicyId;
         const parentPolicy = parentId ? policyMap.get(parentId) : undefined;
@@ -442,18 +448,20 @@ export class EdcAssetsAndPoliciesComponent implements OnInit, OnDestroy {
           accessPolicyId: parentId || ''
         };
       });
-      this.filteredContractDefinitions = [...this.allContractDefinitions];
 
+      this.filteredContractDefinitions = [...this.allContractDefinitions];
       this.allAccessPolicies = accessPolicies;
       this.filteredAccessPolicies = [...this.allAccessPolicies];
-
-    } catch (error) {
+    },
+    error: (error) => {
       console.error('Failed to load policies:', error);
       this.messageService.add({severity: 'error', summary: 'Error', detail: 'Failed to load policies.'});
-    } finally {
+    },
+    complete: () => {
       this.policyLoading = false;
     }
-  }
+  });
+}
 
   onGlobalFilter(event: Event, table: Table) {
     const inputElement = event.target as HTMLInputElement;
@@ -538,26 +546,32 @@ export class EdcAssetsAndPoliciesComponent implements OnInit, OnDestroy {
   }
 
   async saveNewAsset() {
-    try {
-      const assetJson = JSON.parse(this.expertModeJsonContent);
-      // Basic validation
-      if (!assetJson['@id'] || !assetJson.properties || !assetJson.dataAddress) {
-        throw new Error("Invalid asset structure. '@id', 'properties', and 'dataAddress' are required.");
-      }
-      // Ensure asset:prop:name and asset:prop:contenttype are present
-      if (!assetJson.properties['asset:prop:name'] || !assetJson.properties['asset:prop:contenttype']) {
-        throw new Error("Invalid asset structure. 'asset:prop:name' and 'asset:prop:contenttype' are required in properties.");
-      }
-      await this.assetService.uploadAsset(assetJson);
-      this.messageService.add({ severity: 'success', summary: 'Success', detail: 'Asset created successfully.' });
-      this.loadAssets();
-      this.hideNewAssetDialog();
-    } catch (error: any) {
-      const detail = error.message.includes('JSON') ? 'Could not parse JSON.' : 'Failed to save asset.';
-      this.messageService.add({ severity: 'error', summary: 'Error', detail });
-      console.error('Failed to save asset:', error);
+  try {
+    const assetJson = JSON.parse(this.expertModeJsonContent);
+
+    // Basic validation
+    if (!assetJson.assetId || !assetJson.type || !assetJson.contentType || !assetJson.dataAddress) {
+      throw new Error("Invalid asset structure. 'assetId', 'type', 'contentType' and 'dataAddress' are required.");
     }
+
+    // DataAddress validation
+    if (!assetJson.dataAddress.type || !assetJson.dataAddress.baseURL) {
+      throw new Error("Invalid dataAddress structure. 'type' and 'baseURL' are required.");
+    }
+
+    await this.assetService.createAsset(assetJson);
+    this.messageService.add({ severity: 'success', summary: 'Success', detail: 'Asset created successfully.' });
+    await this.loadAssets();
+    this.hideNewAssetDialog();
+  } catch (error: any) {
+    const detail = error.message.includes('JSON')
+      ? 'Could not parse JSON.'
+      : error.message || 'Failed to save asset.';
+    this.messageService.add({ severity: 'error', summary: 'Error', detail });
+    console.error('Failed to save asset:', error);
   }
+}
+
 
   addAssetAttribute() {
     this.assetAttributes.push({ key: '', value: '' });
@@ -828,7 +842,7 @@ export class EdcAssetsAndPoliciesComponent implements OnInit, OnDestroy {
             throw new Error("Validation failed: Missing 'asset:prop:description' in properties.");
           }
 
-          await this.assetService.uploadAsset(assetJson);
+          await this.assetService.createAsset(assetJson);
           successfulUploads.push(file.name);
         } catch (error: any) {
           failedUploads.push({name: file.name, reason: error.message || 'Could not process file.'});
@@ -895,7 +909,7 @@ export class EdcAssetsAndPoliciesComponent implements OnInit, OnDestroy {
         throw new Error("The '@id' of the asset cannot be changed during an edit.");
       }
       // The service's uploadAsset handles both create and update
-      await this.assetService.uploadAsset(assetJson);
+     await this.assetService.createAsset(assetJson);
       this.messageService.add({ severity: 'success', summary: 'Success', detail: 'Asset updated successfully.' });
       this.loadAssets();
       this.hideEditAssetDialog();
@@ -908,7 +922,7 @@ export class EdcAssetsAndPoliciesComponent implements OnInit, OnDestroy {
 
   deleteAsset(asset: Asset) {
     this.confirmationService.confirm({
-      message: `Are you sure you want to delete the asset "${asset.name}"?`,
+      message: `Are you sure you want to delete the asset "${asset.assetId}"?`,
       header: 'Confirm Deletion',
       icon: 'pi pi-exclamation-triangle',
       // Make the accept callback async to handle the service call
@@ -1873,17 +1887,15 @@ export class EdcAssetsAndPoliciesComponent implements OnInit, OnDestroy {
   }
 
   viewAssetDetails(event: TableRowSelectEvent): void {
-    this.viewingEntityType = 'asset';
-    const asset = event.data as Asset;
-    const odrlAsset = this.allOdrlAssets.find(a => a['@id'] === asset.assetId);
-    if (odrlAsset) {
-      this.jsonToView = JSON.stringify(odrlAsset, null, 2);
-      this.viewDialogHeader = `Details for Asset: ${asset.name}`;
-      this.displayViewDialog = true;
-    } else {
-      this.messageService.add({ severity: 'warn', summary: 'Not Found', detail: 'Could not find the full ODRL details for this asset.' });
-    }
-  }
+  this.viewingEntityType = 'asset';
+  const asset = event.data as Asset;
+
+  // Direkt das Backend-Asset anzeigen
+  this.jsonToView = JSON.stringify(asset, null, 2);
+  this.viewDialogHeader = `Details for Asset: ${asset.description || asset.assetId}`;
+  this.displayViewDialog = true;
+}
+
 
   viewAccessPolicyDetails(event: TableRowSelectEvent): void {
     this.viewingEntityType = 'policy';
