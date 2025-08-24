@@ -26,7 +26,7 @@ import jakarta.ws.rs.core.Context;
 import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.core.UriInfo;
 
-@Path("/api/target-systems")
+@Path("/api/config/target-systems")
 @Produces(APPLICATION_JSON)
 @Consumes(APPLICATION_JSON)
 @Tag(name = "TargetSystem Configuration", description = "Endpoints for managing TargetSystems")

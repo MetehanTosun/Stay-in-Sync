@@ -1,4 +1,4 @@
-import {ChangeDetectorRef, Component, inject, OnDestroy, OnInit,} from '@angular/core';
+import {ChangeDetectorRef, Component, inject, OnDestroy, OnInit, ViewChild,} from '@angular/core';
 import {FormsModule} from '@angular/forms';
 import {CommonModule} from '@angular/common';
 import type {editor, IDisposable} from 'monaco-editor';
@@ -7,10 +7,9 @@ import {ScriptEditorService, ScriptPayload,} from '../../../core/services/script
 import {MessagesModule} from 'primeng/messages';
 import {MessageService} from 'primeng/api';
 
-import {ActivatedRoute, Router} from '@angular/router';
-import {ScriptEditorData} from '../script-editor-navigation.service';
+import {ActivatedRoute} from '@angular/router';
 
-import {catchError, debounceTime, finalize, of, Subject, Subscription, tap, throwError} from 'rxjs';
+import { debounceTime, finalize, Subject, Subscription } from 'rxjs';
 
 // PrimeNG Modules
 import {PanelModule} from 'primeng/panel';
@@ -30,6 +29,9 @@ import {ArcManagementPanelComponent} from '../arc-management-panel/arc-managemen
 import {ArcWizardComponent} from '../arc-wizard/arc-wizard.component';
 import {InputTextModule} from 'primeng/inputtext';
 import {FloatLabel} from 'primeng/floatlabel';
+import { MonacoEditorService } from '../../../core/services/monaco-editor.service';
+import { TypeDefinitionsResponse } from '../models/target-system.models';
+import { TargetArcPanelComponent } from '../target-arc-panel/target-arc-panel.component';
 
 interface MonacoExtraLib {
   uri: String;
@@ -55,13 +57,15 @@ interface MonacoExtraLib {
     ArcWizardComponent,
     ToastModule,
     InputTextModule,
-    FloatLabel
+    FloatLabel,
+    TargetArcPanelComponent
   ],
 })
 export class ScriptEditorPageComponent implements OnInit, OnDestroy {
+  @ViewChild(TargetArcPanelComponent) targetArcPanel!: TargetArcPanelComponent;
 
   currentTransformationId: string | null = null;
-  preloadedData?: ScriptEditorData;
+  scriptPayload: ScriptPayload | null = null;
 
   editorOptions = {
     theme: 'vs-dark',
@@ -93,18 +97,11 @@ export class ScriptEditorPageComponent implements OnInit, OnDestroy {
   private scriptEditorService = inject(ScriptEditorService);
   private messageService = inject(MessageService);
   private arcStateService = inject(ArcStateService);
+  private monacoEditorService = inject(MonacoEditorService);
+
   private route = inject(ActivatedRoute);
-  private router = inject(Router);
 
   constructor() {
-    const navigation = this.router.getCurrentNavigation();
-    this.preloadedData = navigation?.extras?.state?.['scriptData'];
-    console.log('Preloaded data from state: ', this.preloadedData);
-
-    if (this.preloadedData?.scriptName) {
-      this.loadingMessage = `Loading ${this.preloadedData.scriptName}...`;
-    }
-
     this.subscriptions.add(
       this.onModelChange.pipe(debounceTime(1000)).subscribe(() => this.analyzeEditorContentForTypes())
     );
@@ -132,6 +129,17 @@ export class ScriptEditorPageComponent implements OnInit, OnDestroy {
     this.monaco = monaco;
     console.log('Monaco editor instance initialized', editorInstance);
 
+    console.log('[ScriptEditorPage] Subscribing to type definition updates...');
+    this.subscriptions.add(
+      this.monacoEditorService.typeUpdateRequested$.subscribe(response => {
+        if(!response){
+          return;
+        }
+        console.log('[ScriptEditorPage] Received type update request. Applying to Monaco instance.');
+        this.applyTypeDefinitions(response);
+      })
+    );
+
     monaco.languages.typescript.typescriptDefaults.setCompilerOptions({
       target: monaco.languages.typescript.ScriptTarget.ESNext,
       allowNonTsExtensions: true,
@@ -156,7 +164,7 @@ export class ScriptEditorPageComponent implements OnInit, OnDestroy {
 
     if (this.currentTransformationId) {
       console.log(`Editor is ready. Loading context for Transformation ID: ${this.currentTransformationId}`);
-      this.loadContextForScript(this.currentTransformationId).subscribe();
+      this.loadContextForScript(this.currentTransformationId);
     }
   }
 
@@ -181,30 +189,40 @@ export class ScriptEditorPageComponent implements OnInit, OnDestroy {
     });
   }
 
-  private loadContextForScript(transformationId: string) {
-    if (!transformationId) {
-      return of(null);
+  private applyTypeDefinitions(response: TypeDefinitionsResponse): void {
+    if (!this.monaco){
+      console.error("Cannot apply types, monaco instance is not available.");
+      return;
     }
 
+    if (response && response.libraries) {
+      for (const lib of response.libraries) {
+        this.monaco.languages.typescript.typescriptDefaults.addExtraLib(lib.content, `file:///${lib.filePath}`);
+      }
+      console.log('Target type definitions successfully applied to Monaco editor.');
+    }
+  }
+
+  private loadContextForScript(transformationId: string): void {
     this.isLoading = true;
     this.loadingMessage = `Loading context for Transformation with ID: ${transformationId}...`;
 
-    return this.scriptEditorService.getScriptForTransformation(Number(transformationId)).pipe(
-      catchError(error => {
-        if (error.status === 404) return of(null);
-        return throwError(() => error);
-      }),
-      tap(savedScript => {
-        const scriptName = this.preloadedData?.scriptName;
-        if (savedScript?.typescriptCode) {
-          this.code = savedScript.typescriptCode;
+    this.scriptEditorService.getScriptForTransformation(Number(transformationId))
+      .pipe(
+        finalize(() => this.isLoading = false)
+      )
+      .subscribe({
+        next: (payload) => {
+          this.scriptPayload = payload;
+          this.code = payload.typescriptCode || this.generateDefaultScriptTemplate();
           this.analyzeEditorContentForTypes();
-        } else {
-          this.code = this.generateDefaultScriptTemplate(scriptName);
+        },
+        error: (err) => {
+          console.error('Failed to load script context', err);
+          this.code = `// ERROR: Could not load script context for Transformation ID ${transformationId}.`;
+          this.messageService.add({ severity: 'error', summary: 'Load Error', detail: 'Script context could not be loaded.' });
         }
-      }),
-      finalize(() => this.isLoading = false)
-    );
+      });
   }
 
   async saveScript(): Promise<void> {
@@ -220,14 +238,31 @@ export class ScriptEditorPageComponent implements OnInit, OnDestroy {
       return;
     }
 
-    const hasErrors = await this.hasValidationErrors();
-    if (hasErrors) {
-      this.messageService.add({
+    const activeTargetArcIds = this.targetArcPanel.activeArcs.map(arc => arc.id);
+
+    let scriptStatus: 'DRAFT' | 'VALIDATED' = 'DRAFT';
+    let transpiledCode = '';
+    let hasErrors = true;
+
+    try {
+      hasErrors = await this.hasValidationErrors();
+      if (hasErrors){
+        this.messageService.add({
         severity: 'error',
         summary: 'Validation Failed',
         detail: 'Please fix the TypeScript errors before saving.'
       });
-      return;
+      }
+      const transpileOutput = ts.transpileModule(this.code, {
+        compilerOptions: {module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ESNext},
+      });
+      transpiledCode = transpileOutput.outputText;
+
+      if(!hasErrors){
+        scriptStatus = 'VALIDATED';
+      }
+    } catch (e){
+      scriptStatus = 'DRAFT';
     }
 
     const codeToSave = this.code;
@@ -244,38 +279,23 @@ export class ScriptEditorPageComponent implements OnInit, OnDestroy {
     const requiredArcAliases = Array.from(requiredArcSet);
     console.log('%c[Editor] Extracted ARC dependencies:', 'color: #f97316;', requiredArcAliases);
 
-    try {
-      const transpileOutput = ts.transpileModule(codeToSave, {
-        compilerOptions: {module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ESNext},
-      });
-
-      //https://github.tik.uni-stuttgart.de/st189097/StuPro/issues/245
-      //const jsHash = await this.generateHash(transpileOutput.outputText);
-      const jsHash = "thisIsAHash";
-
-      const payload: ScriptPayload = {
-        name: this.preloadedData?.scriptName,
-        typescriptCode: codeToSave,
-        javascriptCode: transpileOutput.outputText,
-        hash: jsHash,
-        requiredArcAliases: requiredArcAliases
+    const payload: ScriptPayload = {
+        name: this.scriptPayload!.name,
+        typescriptCode: this.code,
+        javascriptCode: transpiledCode,
+        requiredArcAliases: requiredArcAliases,
+        status: scriptStatus,
+        targetArcIds: activeTargetArcIds
       };
 
-      console.log(payload);
-
-      this.isSaving = true;
-
-      this.scriptEditorService.saveScriptForTransformation(Number(this.currentTransformationId), payload).subscribe({
-        next: (savedScript) => {
+    this.isSaving = true;
+    this.scriptEditorService.saveScriptForTransformation(Number(this.currentTransformationId), payload).subscribe({
+        next: () => {
           this.messageService.add({
             severity: 'success',
             summary: 'Saved!',
             detail: 'Script has been saved successfully.'
           });
-
-          if (this.preloadedData) {
-            this.preloadedData.id = savedScript.id;
-          }
 
           this.isSaving = false;
           this.cdr.detectChanges();
@@ -291,16 +311,6 @@ export class ScriptEditorPageComponent implements OnInit, OnDestroy {
           this.cdr.detectChanges();
         }
       });
-
-    } catch (e) {
-      this.messageService.add({
-        severity: 'error',
-        summary: 'Transpilation Error',
-        detail: 'An error occurred during script transpilation.'
-      });
-      console.error('Error in saveScript:', e);
-      this.isSaving = false;
-    }
   }
 
   // --- Helper & Private Methods ---
@@ -350,43 +360,52 @@ export class ScriptEditorPageComponent implements OnInit, OnDestroy {
     this.addExtraLib(stayinsyncApiDts, 'file:///global-stayinsync-api.d.ts');
   }
 
-  private generateDefaultScriptTemplate(scriptName: string | undefined): string {
+  private generateDefaultScriptTemplate(): string {
     return `/**
- * Transformation Script for SyncJob: ${scriptName}
+ * ==========================================================================================
+ * Stay-in-Sync Transformation Script
+ * ==========================================================================================
  *
- * Available API functions:
- *  - stayinsync.log('Your message', 'INFO' | 'WARN' | 'ERROR')
- *  - stayinsync.setOutput({ ... your final JSON object ... })
+ * Your mission is to implement the 'transform' function.
+ * This function reads data from 'source' objects and MUST return a 'DirectiveMap' object,
+ * which contains arrays of directives for your configured target systems.
+ *
+ * Golden Rule: The return value of this function IS the output.
+ *
  */
-async function transformData() {
-    stayinsync.log('Starting transformation for job: ${scriptName}');
 
-    // --- YOUR TRANSFORMATION LOGIC STARTS HERE ---
+/**
+ * Transforms source data into a map of instructions (Directives) for the target systems.
+ * @returns {DirectiveMap} An object where keys are your Target ARC aliases and
+ *                         values are arrays of the corresponding directives.
+ */
+function transform(): DirectiveMap {
+    stayinsync.log('Transformation started...');
 
-    // Example: Accessing data from a source system.
-    // Replace 'crmCustomer' with an alias from your context.
-    // const customer = sourceData.crmCustomer;
+    // --- EXAMPLE WORKFLOW (Commented Out) ---
+    /*
 
-    // if (customer) {
-    //   const output = {
-    //      id: customer.id,
-    //      fullName: customer.name,
-    //      isContactable: customer.isActive && customer.email,
-    //   };
-    //   stayinsync.setOutput(output);
-    // } else {
-    //   stayinsync.log('Source data not found or invalid.', 'WARN');
-    //   stayinsync.setOutput(null); // Explicitly set output to null
-    // }
+    // 1. Get and filter your source data
+    // const activeProducts = source.myCrm.allProducts.payload.filter(p => p.isActive);
 
-    // --- YOUR TRANSFORMATION LOGIC ENDS HERE ---
+    // 2. Map the data to an array of directives for a specific target
+    // const productDirectives = activeProducts.map(product => {
+    //     return targets.synchronizeProducts.defineUpsert()
+    //         .usingCheck(check => check.withQueryParamId(product.id))
+    //         .onCreate(create => create.withPayload({ ...product }))
+    //         .onUpdate(update => update.withPathId(res => res.body.id).withPayload({ ...product }))
+    //         .build();
+    // });
 
-    // Don't forget to call setOutput!
-    stayinsync.setOutput({ message: "Transformation complete. Replace this with your actual output." });
+    */
+
+    // 3. Return the DirectiveMap object. The keys MUST match your target ARC aliases.
+    // Auto-complete will guide you when you type 'return { }'.
+    return {
+        // synchronizeProducts: productDirectives,
+        // anotherArcAlias: []
+    };
 }
-
-// Execute the transformation function.
-transformData();
 `;
   }
 
@@ -405,14 +424,6 @@ transformData();
 
     const errors = diagnostics.filter(d => d.category === ts.DiagnosticCategory.Error);
     return errors.length > 0;
-  }
-
-  private async generateHash(data: string): Promise<string> {
-    // Placeholder, switching to crypto library like `crypto-js` or the browser's SubtleCrypto API.
-    const buffer = new TextEncoder().encode(data);
-    const hashBuffer = await crypto.subtle.digest('SHA-256', buffer);
-    const hashArray = Array.from(new Uint8Array(hashBuffer));
-    return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
   }
 
   ngOnDestroy(): void {

@@ -13,7 +13,6 @@ import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.Target
 import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.TargetSystemVariable;
 import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.ApiHeader;
 import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.ApiEndpointQueryParam;
-import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.ApiRequestConfiguration;
 import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.ApiEndpointQueryParamValue;
 import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.ApiHeaderValue;
 import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.TargetSystemApiRequestConfiguration;
@@ -35,10 +34,15 @@ public class TargetSystemService {
     @Inject
     TargetSystemMapper mapper;
 
+    @Inject
+    OpenApiSpecificationParserService openApiSpecificationParserService;
+
     public TargetSystemDTO createTargetSystem(TargetSystemDTO dto) {
         Log.debugf("Creating new TargetSystem with id: %d", dto.id());
         TargetSystem entity = mapper.toEntity(dto);
         entity.persist();
+        // Synchronize endpoints and configurations from provided OpenAPI specification
+        openApiSpecificationParserService.synchronizeFromSpec(entity);
         return mapper.toDto(entity);
     }
 
@@ -52,6 +56,8 @@ public class TargetSystemService {
                         "TargetSystem with id %d not found.", id));
 
         mapper.updateFromDto(dto, entity);
+        // Re-synchronize from spec in case it changed (method is a no-op if spec is blank)
+        openApiSpecificationParserService.synchronizeFromSpec(entity);
         return mapper.toDto(entity);
     }
 
@@ -109,7 +115,6 @@ public class TargetSystemService {
             endpoint.delete();
         }
 
-        // Target-level request configurations and actions
         List<TargetSystemApiRequestConfiguration> tConfigs = TargetSystemApiRequestConfiguration.list("targetSystem.id", id);
         for (TargetSystemApiRequestConfiguration cfg : tConfigs) {
             List<TargetSystemApiRequestConfigurationAction> actions = TargetSystemApiRequestConfigurationAction.list("targetSystemApiRequestConfiguration.id", cfg.id);

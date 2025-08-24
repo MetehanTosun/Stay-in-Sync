@@ -11,23 +11,23 @@ export class TargetSystemEndpointResourceService {
   constructor(private http: HttpClient) {}
 
   list(targetSystemId: number): Observable<TargetSystemEndpointDTO[]> {
-    return this.http.get<TargetSystemEndpointDTO[]>(`/api/target-systems/${targetSystemId}/endpoint`);
+    return this.http.get<TargetSystemEndpointDTO[]>(`/api/config/target-systems/${targetSystemId}/endpoints`);
     }
 
   create(targetSystemId: number, payload: CreateTargetSystemEndpointDTO[]): Observable<TargetSystemEndpointDTO[]> {
-    return this.http.post<TargetSystemEndpointDTO[]>(`/api/target-systems/${targetSystemId}/endpoint`, payload);
+    return this.http.post<TargetSystemEndpointDTO[]>(`/api/config/target-systems/${targetSystemId}/endpoints`, payload);
   }
 
   getById(id: number): Observable<TargetSystemEndpointDTO> {
-    return this.http.get<TargetSystemEndpointDTO>(`/api/target-systems/endpoint/${id}`);
+    return this.http.get<TargetSystemEndpointDTO>(`/api/config/target-systems/endpoints/${id}`);
   }
 
   replace(id: number, dto: TargetSystemEndpointDTO): Observable<void> {
-    return this.http.put<void>(`/api/target-systems/endpoint/${id}`, dto);
+    return this.http.put<void>(`/api/config/target-systems/endpoints/${id}`, dto);
   }
 
   delete(id: number): Observable<void> {
-    return this.http.delete<void>(`/api/target-systems/endpoint/${id}`);
+    return this.http.delete<void>(`/api/config/target-systems/endpoints/${id}`);
   }
 
   /**
@@ -49,7 +49,7 @@ export class TargetSystemEndpointResourceService {
     httpHeaderAccept?: 'application/json',
     context?: HttpContext
   }): Observable<any> {
-    return this.http.request<TypeScriptGenerationResponse>('post', `/api/target-systems/endpoint/${endpointId}/generate-typescript`, {
+    return this.http.request<TypeScriptGenerationResponse>('post', `/api/config/target-systems/endpoints/${endpointId}/generate-typescript`, {
       body: request,
       context: options?.context,
       observe: observe,
