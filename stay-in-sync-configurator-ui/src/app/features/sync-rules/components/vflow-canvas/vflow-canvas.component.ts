@@ -96,13 +96,19 @@ export class VflowCanvasComponent implements OnInit {
     this.canvasClick.emit({ x, y });
   }
 
+  /**
+   * Closes the modal that displays the data type incompatibility error of a new drawn edge
+   */
   closeTypeIncompatibilityModal() {
     this.showTypeIncompatibilityModal = false;
     this.typeIncompatibilityMessage = '';
     this.lastAttemptedConnection = null;
   }
 
-  // TODO-s
+  /**
+   * @param node
+   * @returns the context menu of the given node
+   */
   private getNodeMenuItems(node: CustomVFlowNode): NodeMenuItem[] {
     switch (node.data.nodeType) {
       case NodeType.CONSTANT:
@@ -219,7 +225,11 @@ export class VflowCanvasComponent implements OnInit {
   //#endregion
 
   //#region Element Selection
-  // TODO-s Doc
+  /**
+   * Opens the context menu of the selected node and closes the existing one if applicable
+   *
+   * @param changes
+   */
   onNodeSelect(changes: NodeChange[]) {
     const change = changes.pop()!;
     if (change.type === 'select' && (change as any).selected) {
@@ -272,7 +282,11 @@ export class VflowCanvasComponent implements OnInit {
     }
   }
 
-  // TODO-s
+  /**
+   * Loads up the node suggestions sub menu
+   *
+   * @param selection
+   */
   onSuggestionSelected(selection: LogicOperatorMeta) {
     this.suggestionSelected.emit({ nodeType: NodeType.LOGIC, operator: selection });
     this.closeNodeContextMenu();
@@ -280,11 +294,16 @@ export class VflowCanvasComponent implements OnInit {
   //#endregion
 
   //#region Element Edit
-  // TODO-s (kinda verbose so it rerenders automatically)
+  /**
+   * Updates the the currently selected node's name with the new value
+   *
+   * @param newName
+   */
   onNodeNameSaved(newName: string) {
     if (this.nodeBeingEdited) {
       const index = this.nodes.findIndex(n => n.id === this.nodeBeingEdited!.id);
       if (index !== -1) {
+        // Update intern node data
         const updatedNode = {
           ...this.nodes[index],
           data: {
@@ -292,6 +311,8 @@ export class VflowCanvasComponent implements OnInit {
             name: newName
           }
         };
+
+        // Re-insert the node into the nodes array to rerender it correctly
         this.nodes = [
           ...this.nodes.slice(0, index),
           updatedNode,
@@ -304,11 +325,17 @@ export class VflowCanvasComponent implements OnInit {
       this.closeNodeContextMenu();
     }
   }
-  // TODO-s (kinda verbose so it rerenders automatically)
+
+  /**
+   * Updates the the currently selected node's JSON path with the new value
+   *
+   * @param newJsonPath
+   */
   onJsonPathSaved(newJsonPath: string) {
     if (this.nodeBeingEdited) {
       const index = this.nodes.findIndex(n => n.id === this.nodeBeingEdited!.id);
       if (index !== -1) {
+        // Update intern node data
         const updatedNode = {
           ...this.nodes[index],
           data: {
@@ -316,6 +343,8 @@ export class VflowCanvasComponent implements OnInit {
             jsonPath: newJsonPath
           }
         };
+
+        // Re-insert the node into the nodes array to rerender it correctly
         this.nodes = [
           ...this.nodes.slice(0, index),
           updatedNode,
@@ -328,7 +357,14 @@ export class VflowCanvasComponent implements OnInit {
       this.closeNodeContextMenu();
     }
   }
-  // TODO-s (kinda verbose so it rerenders automatically)
+
+  /**
+   * Checks if the new value has a different data type from the
+   * current value stored in the node and requests user confirmation
+   * for removing the connected nodes if needed
+   *
+   * @param newValue
+   */
   onValueSaved(newValue: string) {
     if (this.nodeBeingEdited) {
       if (this.inferTypeFromValue(newValue) !== this.nodeBeingEdited.data.outputType) {
@@ -341,7 +377,11 @@ export class VflowCanvasComponent implements OnInit {
     }
   }
 
-  // TODO-s
+  /**
+   * Updates the the currently selected node's value with the new one
+   *
+   * @param newValue
+   */
   updateNodeValue(newValue: string) {
     if (this.nodeBeingEdited) {
       const index = this.nodes.findIndex(n => n.id === this.nodeBeingEdited!.id);
@@ -376,7 +416,11 @@ export class VflowCanvasComponent implements OnInit {
   //#endregion
 
   //#region Element Deletion
-  // TODO-s Doc
+  /**
+   * Removes the selected edge from the edges array
+   *
+   * @param event
+   */
   deleteSelectedEdge(event: MouseEvent) {
     event.stopPropagation();
     if (this.selectedEdge) {
@@ -399,14 +443,18 @@ export class VflowCanvasComponent implements OnInit {
       this.closeNodeContextMenu();
   }
 
-  // TODO-s Doc
+  /**
+   * Proceeds with update of the node value and the removal of all connected edges
+   */
   confirmRemoveEdges() {
     this.updateNodeValue(this.pendingNodeValue!);
     this.showRemoveEdgesModal = false;
     this.pendingNodeValue = null;
   }
 
-  // TODO-s Doc
+  /**
+   * Cancels the update of the node value and the removal of all connected edges
+   */
   cancelRemoveEdges() {
     this.pendingNodeValue = null;
     this.showRemoveEdgesModal = false;
@@ -470,7 +518,6 @@ export class VflowCanvasComponent implements OnInit {
 
     this.graphApi.updateGraph(this.ruleId!, graphDTO).subscribe({
       next: (res) => {
-        alert('Graph saved successfully'); // TODO-s
         this.hasUnsavedChanges = false;
         console.log('Received graphDTO:', JSON.stringify(res, null, 2)); // TODO-s DELETE
 
@@ -485,7 +532,12 @@ export class VflowCanvasComponent implements OnInit {
   //#endregion
 
   //#region Helpers
-  // TODO-s
+  /**
+   * Opens up a sub menu containing suggested nodes that accept
+   * the data type of the given nodes output as their input type
+   *
+   * @param node
+   */
   openSuggestionsMenu(node: CustomVFlowNode) {
     const outputType = node.data.outputType ?? this.inferTypeFromValue(node.data.value);
     this.nodesApi.getOperators().subscribe({
@@ -500,21 +552,30 @@ export class VflowCanvasComponent implements OnInit {
     })
   }
 
-  // TODO-s use find() because of live update bug
+  /**
+   * Caches the node to be edited from the nodes array
+   * and opens up the modal to edit the nodes value
+   */
   startEditingNodeValue(node: CustomVFlowNode) {
     const latestNode = this.nodes.find(n => n.id === node.id);
     this.nodeBeingEdited = latestNode ?? node;
     this.editNodeValueModalOpen = true;
   }
 
-  // TODO-s use find() because of live update bug
+  /**
+   * Caches the node to be edited from the nodes array
+   * and opens up the modal to edit the nodes JSON path
+   */
   startEditingJsonPath(node: CustomVFlowNode) {
     const latestNode = this.nodes.find(n => n.id === node.id);
     this.nodeBeingEdited = latestNode ?? node;
     this.editJsonPathModalOpen = true;
   }
 
-  // TODO-s use find() because of live update bug
+  /**
+   * Caches the node to be edited from the nodes array
+   * and opens up the modal to edit the nodes name
+   */
   startEditingNodeName(node: CustomVFlowNode) {
     const latestNode = this.nodes.find(n => n.id === node.id);
     this.nodeBeingEdited = latestNode ?? node;
@@ -530,13 +591,18 @@ export class VflowCanvasComponent implements OnInit {
     this.lastMousePosition = { x: event.clientX, y: event.clientY };
   }
 
-  // TODO-s
+  /**
+   * Closes all modals
+   */
   closeModals() {
     this.editNodeNameModalOpen = false;
     this.editJsonPathModalOpen = false;
     this.editNodeValueModalOpen = false;
   }
-  // TODO-s
+
+  /**
+   * Closes the current context menu of the previously selected node
+   */
   closeNodeContextMenu() {
     this.selectedNode = null;
     this.showNodeContextMenu = false;
@@ -544,7 +610,9 @@ export class VflowCanvasComponent implements OnInit {
     this.nodeContextMenuPosition = { x: 0, y: 0 };
   }
 
-  // TODO-s
+  /**
+   * Closes the current context menu of the previously selected edge
+   */
   closeEdgeContextMenu() {
     this.selectedEdge = null;
     this.showEdgeContextMenu = false;
@@ -552,7 +620,9 @@ export class VflowCanvasComponent implements OnInit {
   }
 
   /**
-   * TODO-s
+   * Checks if the given to be created edge is valid,
+   * that is connects two nodes with compatible data types.
+   *
    * @param param0
    * @returns
    */
@@ -627,9 +697,8 @@ export class VflowCanvasComponent implements OnInit {
   }
 
   /**
-   * TODO-s
    * @param nodeType
-   * @returns
+   * @returns the code component class of a given node type
    */
   private getNodeType(nodeType: NodeType) {
     switch (nodeType) {

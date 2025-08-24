@@ -1,6 +1,8 @@
 import { Component, EventEmitter, Input, Output } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-// TODO-s all Docs
+/**
+ * This class handles the logic of the modal to set a node's name
+ */
 @Component({
   selector: 'app-set-node-name-modal',
   imports: [FormsModule],
