@@ -1,8 +1,5 @@
-// biome-ignore lint/style/useImportType: <explanation>
 import { Routes } from '@angular/router';
-import { SyncRulesComponent } from './features/sync-rules/components/sync-rules.component';
 import { ConfigurationscriptsBaseComponent } from './features/configuration/configurationscripts-base/configurationscripts-base.component';
-// neu (relativ zu src/app/app.routes.ts)
 import { SourceSystemBaseComponent } from
     './features/source-system/components/source-system-base/source-system-base.component';
 import { CreateSourceSystemComponent } from
@@ -22,13 +19,17 @@ import {
 import {
   SyncJobDetailsPageComponent
 } from './features/sync-job/components/sync-job-details-page/sync-job-details-page.component';
+import { RulesOverviewComponent } from './features/sync-rules/pages/rules-overview/rules-overview.component';
+import { EditRuleComponent } from './features/sync-rules/pages/edit-rule/edit-rule.component';
+import { EditRuleDeactivateGuard } from './features/sync-rules/pages/edit-rule/edit-rule-deactivate.guard';
 
 // Target System
 import { TargetSystemBaseComponent } from './features/target-system/components/target-system-base/target-system-base.component';
 
 export const routes: Routes = [
   // Route für Sync Rules
-  { path: 'sync-rules', component: SyncRulesComponent },
+  { path: 'sync-rules', component: RulesOverviewComponent },
+  { path: 'sync-rules/edit-rule/:id', component: EditRuleComponent, canDeactivate: [EditRuleDeactivateGuard] },
 
   // Route für Transformation Scripts
   { path: 'transformation-scripts', component: ConfigurationscriptsBaseComponent },

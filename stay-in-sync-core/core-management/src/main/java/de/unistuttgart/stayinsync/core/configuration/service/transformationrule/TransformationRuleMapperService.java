@@ -156,7 +156,11 @@ public class TransformationRuleMapperService {
                     edge.setSource(sourceIdStr);
                     edge.setTarget(targetIdStr);
                     edge.setId(sourceIdStr + " -> " + targetIdStr);
-                    edge.setTargetHandle("input-" + inputDto.getOrderIndex());
+
+                    if(targetNodeDto.getInputTypes() != null && targetNodeDto.getInputTypes().size() > 1) {
+                        edge.setTargetHandle("input-" + inputDto.getOrderIndex());
+                    }
+
 
                     vflowEdges.add(edge);
                 }

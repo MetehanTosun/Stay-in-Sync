@@ -1,18 +1,18 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
-import { SyncRulesComponent } from './sync-rules.component';
+import { RulesOverviewComponent } from './rules-overview.component';
 
-describe('SyncRulesComponent', () => {
-  let component: SyncRulesComponent;
-  let fixture: ComponentFixture<SyncRulesComponent>;
+describe('RulesOverviewComponent', () => {
+  let component: RulesOverviewComponent;
+  let fixture: ComponentFixture<RulesOverviewComponent>;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [SyncRulesComponent]
+      imports: [RulesOverviewComponent]
     })
     .compileComponents();
 
-    fixture = TestBed.createComponent(SyncRulesComponent);
+    fixture = TestBed.createComponent(RulesOverviewComponent);
     component = fixture.componentInstance;
     fixture.detectChanges();
   });
