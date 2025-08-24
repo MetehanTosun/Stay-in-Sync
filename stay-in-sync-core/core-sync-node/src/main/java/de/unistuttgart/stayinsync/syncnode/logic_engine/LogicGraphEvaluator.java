@@ -2,12 +2,10 @@ package de.unistuttgart.stayinsync.syncnode.logic_engine;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import de.unistuttgart.stayinsync.transport.exception.GraphEvaluationException;
-import de.unistuttgart.stayinsync.transport.transformation_rule_shared.util.GraphTopologicalSorter;
 import de.unistuttgart.stayinsync.transport.transformation_rule_shared.nodes.Node;
 import io.quarkus.logging.Log;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
-import jakarta.transaction.Transactional;
 
 import java.util.List;
 import java.util.Map;

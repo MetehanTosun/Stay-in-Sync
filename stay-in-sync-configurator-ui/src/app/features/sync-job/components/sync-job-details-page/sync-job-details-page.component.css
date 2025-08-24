@@ -1,0 +1,9 @@
+.header-row {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.header-row h2 {
+  margin: 0;
+}

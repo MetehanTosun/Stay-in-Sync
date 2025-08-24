@@ -8,20 +8,25 @@ import de.unistuttgart.stayinsync.core.configuration.rest.dtos.TransformationAss
 import de.unistuttgart.stayinsync.core.configuration.rest.dtos.TransformationDetailsDTO;
 import de.unistuttgart.stayinsync.core.configuration.rest.dtos.TransformationShellDTO;
 import de.unistuttgart.stayinsync.core.configuration.rest.dtos.targetsystem.GetRequestConfigurationDTO;
+import de.unistuttgart.stayinsync.core.configuration.rest.dtos.TransformationStatusUpdate;
 import de.unistuttgart.stayinsync.core.configuration.rest.dtos.targetsystem.UpdateTransformationRequestConfigurationDTO;
+import de.unistuttgart.stayinsync.core.configuration.service.transformationrule.GraphStorageService;
+import de.unistuttgart.stayinsync.core.management.rabbitmq.producer.TransformationJobMessageProducer;
 import de.unistuttgart.stayinsync.transport.domain.JobDeploymentStatus;
-import de.unistuttgart.stayinsync.transport.dto.TransformationDeploymentFeedbackMessageDTO;
 import io.quarkus.logging.Log;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
 import jakarta.ws.rs.core.Response;
+import org.eclipse.microprofile.reactive.messaging.Channel;
+import org.eclipse.microprofile.reactive.messaging.Emitter;
 
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
 
+import static de.unistuttgart.stayinsync.transport.domain.JobDeploymentStatus.*;
 import static jakarta.transaction.Transactional.TxType.REQUIRED;
 import static jakarta.transaction.Transactional.TxType.SUPPORTS;
 
@@ -34,6 +39,22 @@ public class TransformationService {
 
     @Inject
     RequestConfigurationMapper requestConfigurationMapper;
+
+    @Inject
+    SyncJobService syncJobService;
+
+    @Inject
+    GraphStorageService graphStorageService;
+
+    @Inject
+    TransformationJobMessageProducer transformationMessageProducer;
+
+    @Inject
+    SourceSystemApiRequestConfigurationService sourceRequestConfigService;
+
+    @Inject
+    @Channel("transformation-status-updates")
+    Emitter<TransformationStatusUpdate> statusEmitter;
 
     public Transformation createTransformation(TransformationShellDTO dto) {
         Log.debugf("Creating new transformation shell with name: %s", dto.name());
@@ -69,6 +90,7 @@ public class TransformationService {
 
         // NOTE: Previously collected SourceSystemEndpoints here; will be replaced with ARC configs when source ARCs are modeled
 
+        transformation.syncJob = syncJobService.findSyncJobById(dto.syncJobId());
         transformation.transformationScript = script;
         transformation.transformationRule = rule;
         // NOTE: replace with api request configs
@@ -77,7 +99,7 @@ public class TransformationService {
         if (script != null) {
             script.transformation = transformation;
         }
-        
+
         if (rule != null) {
             rule.transformation = transformation;
         }
@@ -150,20 +172,75 @@ public class TransformationService {
         return Transformation.listAll();
     }
 
+    @Transactional(SUPPORTS)
+    public List<Transformation> findAllBySyncjob(Long syncJobId) {
+        Log.debug("Getting all transformations.");
+        return Transformation.findBySyncJobId(syncJobId);
+    }
+
+    @Transactional(SUPPORTS)
+    public List<Transformation> findAllWithSyncJobFilter(boolean withSyncJob) {
+        if (withSyncJob) {
+            Log.debug("Getting all transformations with sync job.");
+            return Transformation.listAllWithSyncJob();
+        }
+        Log.debug("Getting all transformations without sync job.");
+        return Transformation.listAllWithoutSyncJob();
+    }
+
     public boolean delete(Long id) {
         Log.debugf("Deleting transformation with id %d", id);
         return Transformation.deleteById(id);
     }
 
-    public void updateDeploymentStatus(TransformationDeploymentFeedbackMessageDTO feedbackMessageDTO) {
-        Optional<Transformation> apiRequestConfigurationById = findById(feedbackMessageDTO.transformationId());
-        if(apiRequestConfigurationById.isEmpty()){
-            Log.warnf("Unable to update deployment status of request configuration with id %d since no transformation was found using id", feedbackMessageDTO.transformationId());
+    public void updateDeploymentStatus(Long transformationId, JobDeploymentStatus deploymentStatus) {
+        Transformation transformation = findByIdDirect(transformationId);
+        Log.infof("Settings deployment status of transformation with id %d to %s", transformationId, deploymentStatus);
+
+        if (isTransitioning(transformation.deploymentStatus) && isTransitioning(deploymentStatus)) {
+            Log.warnf("The transformation with id %d is currently in the deployment state of %s and thus can not be deployed or stopped", transformationId, transformation.deploymentStatus);
         } else {
-            Transformation sourceSystemApiRequestConfiguration = apiRequestConfigurationById.get();
-            sourceSystemApiRequestConfiguration.deploymentStatus = feedbackMessageDTO.status();
-            if(apiRequestConfigurationById.get().deploymentStatus.equals(JobDeploymentStatus.DEPLOYED))
-                sourceSystemApiRequestConfiguration.workerHostName = feedbackMessageDTO.syncNode();
+            transformation.deploymentStatus = deploymentStatus;
+            statusEmitter.send(new TransformationStatusUpdate(transformationId, transformation.syncJob.id, deploymentStatus));
+            switch (deploymentStatus) {
+                case DEPLOYING -> {
+                    deployAssociatedRequestConfigs(transformation);
+                    transformationMessageProducer.publishTransformationJob(mapper.mapToMessageDTO(transformation));
+                }
+                case STOPPING, RECONFIGURING -> {
+                    deployAssociatedRequestConfigs(transformation);
+                    transformationMessageProducer.reconfigureDeployedTransformationJob(mapper.mapToMessageDTO(transformation));
+                }
+            }
+            ;
         }
     }
+
+    public void addRule(Long transformationId, Long ruleId) {
+        TransformationRule ruleById = graphStorageService.findRuleById(ruleId);
+        Transformation transformation = findByIdDirect(transformationId);
+        Log.infof("Removing rule with id %d to transformation with id %d", ruleId, transformationId);
+
+        transformation.transformationRule = ruleById;
+    }
+
+    public void removeRule(Long transformationId) {
+        Transformation transformation = findByIdDirect(transformationId);
+        Log.infof("Removing rule from transformation with id %d", transformationId);
+        transformation.transformationRule = null;
+    }
+
+    private void deployAssociatedRequestConfigs(Transformation transformation) {
+        transformation.sourceSystemApiRequestConfigurations //
+                .stream() //
+                .filter(apiRequestConfiguration -> apiRequestConfiguration.deploymentStatus.equals(UNDEPLOYED))
+                .forEach(apiRequestConfiguration -> sourceRequestConfigService.updateDeploymentStatus(apiRequestConfiguration.id, DEPLOYING));
+
+        sourceRequestConfigService.undeployAllUnused();
+    }
+
+    private boolean isTransitioning(JobDeploymentStatus jobDeploymentStatus) {
+        return Set.of(JobDeploymentStatus.DEPLOYING, JobDeploymentStatus.RECONFIGURING, JobDeploymentStatus.STOPPING).contains(jobDeploymentStatus);
+    }
+
 }
