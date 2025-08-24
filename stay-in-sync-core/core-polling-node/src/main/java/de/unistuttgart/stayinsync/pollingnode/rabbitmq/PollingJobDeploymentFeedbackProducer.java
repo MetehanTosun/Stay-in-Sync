@@ -3,7 +3,7 @@ package de.unistuttgart.stayinsync.pollingnode.rabbitmq;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.rabbitmq.client.*;
 import de.unistuttgart.stayinsync.pollingnode.exceptions.PollingNodeException;
-import de.unistuttgart.stayinsync.pollingnode.execution.controller.PollingJobExecutionController;
+import de.unistuttgart.stayinsync.pollingnode.execution.PollingJobExecutionController;
 import de.unistuttgart.stayinsync.transport.domain.JobDeploymentStatus;
 import de.unistuttgart.stayinsync.transport.dto.PollingJobDeploymentFeedbackMessageDTO;
 import io.quarkiverse.rabbitmqclient.RabbitMQClient;
@@ -55,7 +55,7 @@ public class PollingJobDeploymentFeedbackProducer {
      *
      * @param requestConfigId of request config to be confirmed
      */
-    public void publishPollingJobFeedback(Long requestConfigId, JobDeploymentStatus jobDeploymentStatus) throws PollingNodeException {
+    public void publishPollingJobFeedback(Long requestConfigId, JobDeploymentStatus jobDeploymentStatus) {
         try {
             Log.infof("Confirming deployment of request config with id: %s", requestConfigId);
             String messageBody = objectMapper.writeValueAsString(new PollingJobDeploymentFeedbackMessageDTO(jobDeploymentStatus, requestConfigId, System.getenv("HOSTNAME")));
@@ -67,7 +67,7 @@ public class PollingJobDeploymentFeedbackProducer {
             channel.basicPublish("pollingjob-exchange", "feedback", properties,
                     messageBody.getBytes(StandardCharsets.UTF_8));
         } catch (IOException e) {
-            throw new PollingNodeException("Unable to publish Job , Object JSON-serialization failed");
+            Log.errorf("Error sending feedback for polling job details %d", requestConfigId, e);
         }
     }
 

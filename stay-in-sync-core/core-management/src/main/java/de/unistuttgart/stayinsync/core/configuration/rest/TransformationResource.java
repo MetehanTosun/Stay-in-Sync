@@ -145,7 +145,7 @@ public class TransformationResource {
             description = "Replaces the entire set of linked Target ARCs for a transformation with the given list of ARC IDs.")
     public Response updateTransformationTargetArcs(@PathParam("id") Long id, @Valid UpdateTransformationRequestConfigurationDTO dto) {
         var updated = transformationService.updateTargetArcs(id, dto);
-        return Response.ok(mapper.mapToDetailsDTO(updated)).build();
+        return Response.ok(updated).build();
     }
 
     @GET
@@ -221,7 +221,7 @@ public class TransformationResource {
                     return matches;
                 })
                 .onItem().invoke(update -> Log.infof("Filtered update being sent to client: %s", update))
-                .onCompletion().invoke(() -> Log.info("SSE stream completed"))
-                .onCancellation().invoke(() -> Log.info("SSE stream cancelled by client"));
+                .onCompletion().invoke(() -> Log.info("Transformation deployment status stream completed"))
+                .onCancellation().invoke(() -> Log.info("Transformation deployment status  stream cancelled by client"));
     }
 }

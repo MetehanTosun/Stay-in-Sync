@@ -5,6 +5,7 @@ import de.unistuttgart.stayinsync.core.configuration.exception.CoreManagementExc
 import de.unistuttgart.stayinsync.core.configuration.mapping.TransformationMapper;
 import de.unistuttgart.stayinsync.core.configuration.mapping.targetsystem.RequestConfigurationMapper;
 import de.unistuttgart.stayinsync.core.configuration.rest.dtos.TransformationAssemblyDTO;
+import de.unistuttgart.stayinsync.core.configuration.rest.dtos.TransformationDetailsDTO;
 import de.unistuttgart.stayinsync.core.configuration.rest.dtos.TransformationShellDTO;
 import de.unistuttgart.stayinsync.core.configuration.rest.dtos.targetsystem.GetRequestConfigurationDTO;
 import de.unistuttgart.stayinsync.core.configuration.rest.dtos.TransformationStatusUpdate;
@@ -118,7 +119,7 @@ public class TransformationService {
     }
 
     @Transactional
-    public Transformation updateTargetArcs(Long transformationId, UpdateTransformationRequestConfigurationDTO dto) {
+    public TransformationDetailsDTO updateTargetArcs(Long transformationId, UpdateTransformationRequestConfigurationDTO dto){
         Log.debugf("Updating Target ARCs for Transformation with id %d", transformationId);
 
         Transformation transformation = Transformation.<Transformation>findByIdOptional(transformationId)
@@ -139,7 +140,7 @@ public class TransformationService {
         Log.infof("Successfully updated Target ARCs for Transformation %d. New count: %d",
                 transformationId, transformation.targetSystemApiRequestConfigurations.size());
 
-        return transformation;
+        return mapper.mapToDetailsDTO(transformation);
     }
 
     @Transactional(SUPPORTS)
@@ -241,39 +242,5 @@ public class TransformationService {
     private boolean isTransitioning(JobDeploymentStatus jobDeploymentStatus) {
         return Set.of(JobDeploymentStatus.DEPLOYING, JobDeploymentStatus.RECONFIGURING, JobDeploymentStatus.STOPPING).contains(jobDeploymentStatus);
     }
-
-    @Transactional
-    public void updateSourceArcs(Long transformationId, Set<Long> sourceArcIds) {
-        Log.debugf("Updating Source ARCs for Transformation with id %d", transformationId);
-
-        Transformation transformation = Transformation.<Transformation>findByIdOptional(transformationId)
-                .orElseThrow(() -> new CoreManagementException(
-                        Response.Status.NOT_FOUND,
-                        "Transformation not found",
-                        "Transformation with id %d not found.", transformationId));
-
-        if (sourceArcIds != null && !sourceArcIds.isEmpty()) {
-            List<SourceSystemApiRequestConfiguration> arcsToLink =
-                    SourceSystemApiRequestConfiguration.list("id in ?1", sourceArcIds);
-
-            if (arcsToLink.size() != sourceArcIds.size()) {
-                throw new CoreManagementException(Response.Status.BAD_REQUEST,
-                        "Invalid ARC ID",
-                        "One or more provided Source ARC IDs could not be found.");
-            }
-
-            Log.info(arcsToLink.size());
-
-            transformation.sourceSystemApiRequestConfigurations.addAll(arcsToLink);
-
-            // Rückbeziehung pflegen, falls nötig
-            arcsToLink.forEach(arc -> arc.transformations.add(transformation));
-        }
-
-        Log.infof("Successfully updated Source ARCs for Transformation %d. New count: %d",
-                transformationId, transformation.sourceSystemApiRequestConfigurations.size());
-
-    }
-
 
 }

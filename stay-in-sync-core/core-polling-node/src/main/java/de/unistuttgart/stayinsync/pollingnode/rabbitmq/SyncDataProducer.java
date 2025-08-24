@@ -3,7 +3,10 @@ package de.unistuttgart.stayinsync.pollingnode.rabbitmq;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.rabbitmq.client.AMQP;
 import com.rabbitmq.client.Channel;
+import de.unistuttgart.stayinsync.pollingnode.entities.PollingJobDetails;
 import de.unistuttgart.stayinsync.pollingnode.exceptions.PollingNodeException;
+import de.unistuttgart.stayinsync.pollingnode.exceptions.rabbitmqexceptions.ProducerPublishDataException;
+import de.unistuttgart.stayinsync.pollingnode.exceptions.rabbitmqexceptions.ProducerSetUpStreamException;
 import de.unistuttgart.stayinsync.transport.dto.SourceSystemApiRequestConfigurationMessageDTO;
 import de.unistuttgart.stayinsync.transport.dto.SyncDataMessageDTO;
 import io.quarkiverse.rabbitmqclient.RabbitMQClient;
@@ -42,20 +45,22 @@ public class SyncDataProducer {
         }
     }
 
-    public void setupRequestConfigurationStream(SourceSystemApiRequestConfigurationMessageDTO requestConfiguration) throws PollingNodeException {
+    public void setupRequestConfigurationStream(final PollingJobDetails pollingJobDetails) throws ProducerSetUpStreamException {
         try {
             Map<String, Object> queueArgs = new HashMap<>();
             queueArgs.put("x-queue-type", "stream");
             queueArgs.put("x-max-age", "1m");
-            channel.queueDeclare("request-config-" + requestConfiguration.id(), true, false, false, Collections.singletonMap("x-queue-type", "stream"));
-            channel.queueBind("request-config-" + requestConfiguration.id(), "sync-data-exchange", "request-config-" + requestConfiguration.id());
+            channel.queueDeclare("request-config-" + pollingJobDetails.id(), true, false, false, Collections.singletonMap("x-queue-type", "stream"));
+            channel.queueBind("request-config-" + pollingJobDetails.id(), "sync-data-exchange", "request-config-" + pollingJobDetails.id());
 
         } catch (IOException e) {
-            throw new PollingNodeException("Unable to setup stream" + "Failed to setup stream for request config with id: " + requestConfiguration.id() + e);
+            final String exceptionMessage = "Unable to setup stream. " + "Failed to setup stream for request config with id: " + pollingJobDetails.id() + e;
+            Log.errorf(exceptionMessage, e);
+            throw new ProducerSetUpStreamException(exceptionMessage, e);
         }
     }
 
-    public void publishSyncData(SyncDataMessageDTO syncDataMessageDTO) throws PollingNodeException {
+    public void publishSyncData(SyncDataMessageDTO syncDataMessageDTO) throws ProducerPublishDataException {
         try {
             Log.infof("Publishing data for request-config (id: %s)", syncDataMessageDTO.requestConfigId());
             String messageBody = objectMapper.writeValueAsString(syncDataMessageDTO);
@@ -67,7 +72,9 @@ public class SyncDataProducer {
             channel.basicPublish("sync-data-exchange", "request-config-" + syncDataMessageDTO.requestConfigId(), properties,
                     messageBody.getBytes(StandardCharsets.UTF_8));
         } catch (IOException e) {
-            throw new PollingNodeException("Unable to publish Job" + "Object JSON-serialization failed" + e);
+            final String exceptionMessage = "Unable to publish Job." + " Object JSON-serialization failed" + e;
+            Log.errorf(exceptionMessage, e);
+            throw new ProducerPublishDataException(exceptionMessage, e);
         }
     }
 

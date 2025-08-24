@@ -145,7 +145,4 @@ public class SyncJobService {
                 })
                 .orElseThrow(() -> new IllegalArgumentException("SyncJob with ID " + syncJob.id + " not found"));
     }
-
-
-
 }

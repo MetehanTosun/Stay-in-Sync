@@ -18,7 +18,7 @@
     [loading]="loading"
     [paginator]="true"
     [globalFilterFields]="['name', 'description', 'status']"
-    [tableStyle]="{ 'min-width': '75rem', 'min-height': '50rem'}"
+    [tableStyle]="{ 'min-width': '75rem', 'min-height': '45rem'}"
   >
     <ng-template #header>
 
@@ -92,7 +92,14 @@
     </ng-template>
     <ng-template #emptymessage>
       <tr>
-        <td colspan="3">No items found.</td>
+        <td colspan="4">
+          <div class="empty-message" style="text-align: center">
+            <h4>Currently no sync-job available</h4>
+            <p>
+              Create your first sync-job to get started.
+            </p>
+          </div>
+        </td>
       </tr>
     </ng-template>
   </p-table>

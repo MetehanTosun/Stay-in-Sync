@@ -47,17 +47,36 @@
     </ng-template>
     <ng-template pTemplate="body" let-rowData>
       <tr>
-        <td>{{ rowData.script?.name }}</td>
+        <td>
+
+        <a
+          [routerLink]="['/script-editor', rowData.script?.id]">
+          {{ rowData.script?.name }}
+        </a>
+        </td>
         <td>
           <app-job-status-tag [status]="rowData.deploymentStatus" (click)="toggleDeploymentStatus(rowData)"></app-job-status-tag>
         </td>
         <td>
-          <ng-container *ngIf="rowData.transformationRule; else addRuleBtn">
-            {{ rowData.transformationRule }}
-          </ng-container>
-          <ng-template #addRuleBtn>
-            <p-button label="Add Rule" (click)="addRule(rowData)"></p-button>
-          </ng-template>
+          <p-select [options]="transformationsRules"
+                    optionValue="id"
+                    optionLabel="name" [filter]="true"
+                    filterBy="name" [showClear]="true"
+                    placeholder="Select a Rule"
+                    class="w-full md:w-56"
+                    [(ngModel)]="rowData.transformationRuleId"
+                    (ngModelChange)="onRuleChange($event, rowData)">
+            <ng-template #selectedItem let-selectedOption>
+              <div class="flex items-center gap-2">
+                <div>{{ selectedOption.name }}</div>
+              </div>
+            </ng-template>
+            <ng-template let-rule #item>
+              <div class="flex items-center gap-2">
+                <div>{{ rule.name }}</div>
+              </div>
+            </ng-template>
+          </p-select>
         </td>
         <td>
           <p-button
@@ -67,6 +86,18 @@
             [disabled]=" !rowData.script"
             (click)="remove(rowData)">
           </p-button>
+        </td>
+      </tr>
+    </ng-template>
+    <ng-template #emptymessage>
+      <tr>
+        <td colspan="4">
+          <div class="empty-message" style="text-align: center">
+            <h4>Currently no transformation available</h4>
+            <p>
+              Add your first transformation to get started.
+            </p>
+          </div>
         </td>
       </tr>
     </ng-template>
