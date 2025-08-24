@@ -32,6 +32,7 @@ import { PolicyService } from './services/policy.service';
 import { EdcInstanceService } from '../edc-instances/services/edc-instance.service';
 import {lastValueFrom, Subject, Subscription} from 'rxjs';
 import {debounceTime} from "rxjs/operators";
+import { MultiSelectModule } from 'primeng/multiselect';
 
 @Component({
   selector: 'app-edc-assets-and-policies',
@@ -56,6 +57,7 @@ import {debounceTime} from "rxjs/operators";
     MessageModule,
     MonacoEditorModule,
     TabViewModule,
+    MultiSelectModule,
   ],
   templateUrl: './edc-assets-and-policies.component.html',
   styleUrls: ['./edc-assets-and-policies.component.css'],
@@ -116,10 +118,6 @@ export class EdcAssetsAndPoliciesComponent implements OnInit, OnDestroy {
   isComplexSelectorForEdit: boolean = false;
   contractDefinitionToEditODRL: OdrlContractDefinition | null = null;
 
-  // Properties for Asset Templates
-  assetTemplates: { name: string, content: any }[] = [];
-  selectedAssetTemplate: any | null = null;
-
   // Properties for Access Policy Templates
   accessPolicyTemplates: { name: string, content: any }[] = [];
   selectedAccessPolicyTemplate: any | null = null;
@@ -134,6 +132,9 @@ export class EdcAssetsAndPoliciesComponent implements OnInit, OnDestroy {
     targetKey: string;  // The key for the property to update
   }[] = [];
   private currentlyLoadedPolicy: OdrlPolicyDefinition | null = null;
+
+  // Properties for Asset Templates
+  assetTemplates: { name: string; content: any }[] = [];
 
   trackByControlLabel(index: number, control: { label: string }): string {
     return control.label;
@@ -174,6 +175,17 @@ export class EdcAssetsAndPoliciesComponent implements OnInit, OnDestroy {
   private contractJsonSyncSubject = new Subject<void>();
   private templateJsonSyncSubscription: Subscription | null = null;
   private templateJsonSyncSubject = new Subject<void>();
+
+  // New Asset Dialog specific properties
+  selectedEndpoint: string | null = null;
+  endpointSuggestions: string[] = [];
+  assetAttributes: { key: string; value: string }[] = [{ key: '', value: '' }]; // Start with one empty row
+  pathParamId: string = '';
+  queryParams: string[] = [];
+  headerParams: string[] = [];
+  authorizationData: string = '';
+  queryParamOptions: { label: string; value: string }[] = [{ label: 'Limit', value: 'limit' }, { label: 'Offset', value: 'offset' }]; // Mock options
+  headerParamOptions: { label: string; value: string }[] = [{ label: 'X-API-Key', value: 'X-API-Key' }, { label: 'Authorization', value: 'Authorization' }]; // Mock options
 
   constructor(
     private assetService: AssetService,
@@ -330,37 +342,20 @@ export class EdcAssetsAndPoliciesComponent implements OnInit, OnDestroy {
         name: 'Standard HTTP Data Asset',
         content: {
           "@context": { "edc": "https://w3id.org/edc/v0.0.1/ns/" },
-          "@id": "UNIQUE_ASSET_ID",
+          "@id": "",
           "properties": {
-            "asset:prop:name": "HUMAN_READABLE_ASSET_NAME",
-            "asset:prop:description": "A_BRIEF_DESCRIPTION_OF_THE_ASSET",
+            "asset:prop:name": "",
+            "asset:prop:description": "",
             "asset:prop:contenttype": "application/json",
             "asset:prop:version": "1.0.0"
           },
           "dataAddress": {
             "type": "HttpData",
-            "baseUrl": "https://YOUR_BACKEND_ENDPOINT/api/data"
+            "baseUrl": ""
           }
         }
       }
       ,
-      {
-        name: 'Traceability Data Asset (BOM)',
-        content: {
-          "@context": { "edc": "https://w3id.org/edc/v0.0.1/ns/" },
-          "@id": "urn:uuid:A_UNIQUE_UUID_FOR_THE_ASSET",
-          "properties": {
-            "asset:prop:name": "BOM_AS_BUILT_V1.2.3",
-            "asset:prop:description": "BILL_OF_MATERIALS_FOR_A_SPECIFIC_COMPONENT",
-            "asset:prop:contenttype": "application/json",
-            "asset:prop:version": "1.2.3",
-            "asset:prop:standard": "urn:bamm:io.catenax.serial_part:1.1.0#SerialPart"
-          },
-          "dataAddress": {
-            "type": "HttpData",
-          }
-        }
-      }
     ];
   }
 
@@ -506,21 +501,36 @@ export class EdcAssetsAndPoliciesComponent implements OnInit, OnDestroy {
 
   // Asset methods
   openNewAssetDialog() {
-    this.expertModeJsonContent = JSON.stringify({
-      "@context": { "edc": "https://w3id.org/edc/v0.0.1/ns/" },
-      "@id": "asset-id-goes-here",
-      "properties": {
-        "asset:prop:name": "Asset Name",
-        "asset:prop:description": "A description of the asset.",
-        "asset:prop:contenttype": "application/json"
-      },
-      "dataAddress": {
-        "type": "HttpData",
-        "baseUrl": "https://my-backend/api/data"
+    // Find the default template, which is the first in the list
+    const defaultTemplate = this.assetTemplates.length > 0 ? this.assetTemplates[0] : null;
+    if (defaultTemplate) {
+      // Create a deep copy to avoid modifying the master template object
+      const templateContent = JSON.parse(JSON.stringify(defaultTemplate.content));
+
+      // If the template has an empty ID, generate a new one for this new asset.
+      if (!templateContent['@id']) {
+        templateContent['@id'] = `urn:uuid:${this.generateUuid()}`;
       }
-    }, null, 2);
-    this.selectedAssetTemplate = null;
+
+      this.expertModeJsonContent = JSON.stringify(templateContent, null, 2);
+      this.populateAssetFormFromOdrl(templateContent);
+    } else {
+      // Fallback if no templates are loaded, create an empty form
+      this.resetAssetFormFields();
+      this.syncAssetJsonFromForm();
+    }
     this.displayNewAssetDialog = true;
+  }
+
+  // New Asset Dialog specific methods
+  searchEndpoints(event: { query: string }) {
+    // Mock suggestions for now. In a real app, this would come from a service.
+    const allEndpoints = ['http://localhost:8080/api/data', 'https://example.com/data/v1', 'https://my-backend.com/service'];
+    this.endpointSuggestions = allEndpoints.filter(e => e.toLowerCase().includes(event.query.toLowerCase()));
+  }
+
+  onEndpointSelect(event: any) {
+    this.syncAssetJsonFromForm();
   }
 
   hideNewAssetDialog() {
@@ -534,6 +544,10 @@ export class EdcAssetsAndPoliciesComponent implements OnInit, OnDestroy {
       if (!assetJson['@id'] || !assetJson.properties || !assetJson.dataAddress) {
         throw new Error("Invalid asset structure. '@id', 'properties', and 'dataAddress' are required.");
       }
+      // Ensure asset:prop:name and asset:prop:contenttype are present
+      if (!assetJson.properties['asset:prop:name'] || !assetJson.properties['asset:prop:contenttype']) {
+        throw new Error("Invalid asset structure. 'asset:prop:name' and 'asset:prop:contenttype' are required in properties.");
+      }
       await this.assetService.uploadAsset(assetJson);
       this.messageService.add({ severity: 'success', summary: 'Success', detail: 'Asset created successfully.' });
       this.loadAssets();
@@ -542,6 +556,217 @@ export class EdcAssetsAndPoliciesComponent implements OnInit, OnDestroy {
       const detail = error.message.includes('JSON') ? 'Could not parse JSON.' : 'Failed to save asset.';
       this.messageService.add({ severity: 'error', summary: 'Error', detail });
       console.error('Failed to save asset:', error);
+    }
+  }
+
+  addAssetAttribute() {
+    this.assetAttributes.push({ key: '', value: '' });
+    this.syncAssetJsonFromForm();
+  }
+
+  removeAssetAttribute(index: number) {
+    this.assetAttributes.splice(index, 1);
+    this.syncAssetJsonFromForm();
+  }
+
+  /**
+   * Syncs the asset form fields (endpoint, attributes, parameters) to the expertModeJsonContent.
+   * This is the primary mechanism for the form to update the JSON editor for assets.
+   */
+  syncAssetJsonFromForm(): void {
+    let currentAssetJson: any;
+    try {
+      currentAssetJson = JSON.parse(this.expertModeJsonContent || '{}');
+    } catch (e) {
+      // If JSON is invalid, don't try to parse it, just use a basic structure
+      currentAssetJson = {};
+    }
+
+    // Ensure base structure exists
+    if (!currentAssetJson['@context']) {
+      currentAssetJson['@context'] = { "edc": "https://w3id.org/edc/v0.0.1/ns/" };
+    }
+    if (!currentAssetJson['@id']) {
+      currentAssetJson['@id'] = `urn:uuid:${this.generateUuid()}`; // Generate UUID for new assets
+    }
+    if (!currentAssetJson.properties) {
+      currentAssetJson.properties = {};
+    }
+    if (!currentAssetJson.dataAddress) {
+      currentAssetJson.dataAddress = { type: 'HttpData' }; // Default type
+    }
+
+    // Update dataAddress.baseUrl from selectedEndpoint
+    if (this.selectedEndpoint) {
+      currentAssetJson.dataAddress.baseUrl = this.selectedEndpoint;
+    } else {
+      delete currentAssetJson.dataAddress.baseUrl;
+    }
+
+    // Update properties from assetAttributes
+    // Clear existing dynamic properties to avoid stale data, then re-add
+    // Assuming 'asset:prop:' prefix for dynamic attributes
+    for (const propKey in currentAssetJson.properties) {
+      if (propKey.startsWith('asset:prop:custom-')) { // Example prefix for custom attributes
+        delete currentAssetJson.properties[propKey];
+      }
+    }
+    this.assetAttributes.forEach(attr => {
+      // Only add the attribute if both key and value are provided
+      if (attr.key && attr.value) {
+        currentAssetJson.properties[`asset:prop:custom-${attr.key.toLowerCase().replace(/\s/g, '-')}`] = attr.value;
+      }
+    });
+
+    // Update Parameterization fields in dataAddress
+    currentAssetJson.dataAddress.pathParamId = this.pathParamId || undefined;
+    currentAssetJson.dataAddress.queryParams = this.queryParams.length > 0 ? this.queryParams : undefined;
+    currentAssetJson.dataAddress.headerParams = this.headerParams.length > 0 ? this.headerParams : undefined;
+    currentAssetJson.dataAddress.authorizationData = this.authorizationData || undefined;
+
+    this.expertModeJsonContent = JSON.stringify(currentAssetJson, null, 2);
+  }
+
+  private generateUuid(): string {
+    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+      const r = Math.random() * 16 | 0, v = c === 'x' ? r : (r & 0x3 | 0x8);
+      return v.toString(16);
+    });
+  }
+
+  // End New Asset Dialog specific methods
+
+  async onAssetTemplateFileSelect(event: Event) {
+    const element = event.currentTarget as HTMLInputElement;
+    const fileList: FileList | null = element.files;
+
+    if (!fileList || fileList.length === 0) {
+      return;
+    }
+
+    const file = fileList[0];
+    try {
+      const templateContent = await file.text();
+      const parsedContent = JSON.parse(templateContent);
+      this.expertModeJsonContent = JSON.stringify(parsedContent, null, 2);
+      this.populateAssetFormFromOdrl(parsedContent); // Populate form fields from template file
+      this.messageService.add({ severity: 'info', summary: 'Template Loaded', detail: `Template from ${file.name} loaded into editor.` });
+    } catch (error) {
+      this.messageService.add({ severity: 'error', summary: 'Read Error', detail: 'Could not read the selected file or parse JSON.' });
+      this.expertModeJsonContent = ''; // Clear on error
+      this.resetAssetFormFields(); // Clear form fields on error
+    } finally {
+      element.value = '';
+    }
+  }
+
+  private populateAssetFormFromOdrl(odrlAsset: any): void {
+    this.selectedEndpoint = odrlAsset.dataAddress?.baseUrl || null;
+    this.pathParamId = odrlAsset.dataAddress?.pathParamId || '';
+    this.queryParams = odrlAsset.dataAddress?.queryParams || [];
+    this.headerParams = odrlAsset.dataAddress?.headerParams || [];
+    this.authorizationData = odrlAsset.dataAddress?.authorizationData || '';
+
+    this.assetAttributes = [];
+    if (odrlAsset.properties) {
+      for (const key in odrlAsset.properties) {
+        if (key.startsWith('asset:prop:custom-')) { // Assuming custom attributes have this prefix
+          this.assetAttributes.push({
+            key: key.replace('asset:prop:custom-', '').replace(/-/g, ' ').replace(/^\w/, c => c.toUpperCase()),
+            value: odrlAsset.properties[key]
+          });
+        }
+      }
+    }
+    if (this.assetAttributes.length === 0) {
+      this.assetAttributes.push({ key: '', value: '' }); // Ensure at least one empty row
+    }
+  }
+
+  private resetAssetFormFields(): void {
+    this.selectedEndpoint = null;
+    this.assetAttributes = [{ key: '', value: '' }];
+    this.pathParamId = '';
+    this.queryParams = [];
+    this.headerParams = [];
+    this.authorizationData = '';
+  }
+
+  // End Asset Template methods
+
+  /**
+   * Triggers the debounced synchronization from the JSON editor to the form fields.
+   */
+  syncFormFromJsonWithDebounce(): void {
+    this.jsonSyncSubject.next();
+  }
+
+  /**
+   * Triggers the debounced synchronization from the template JSON editor to the generated policy editor.
+   */
+  syncPolicyFromTemplateWithDebounce(): void {
+    this.templateJsonSyncSubject.next();
+  }
+
+  /**
+   * Triggers the debounced synchronization from the contract JSON editor to the form fields.
+   */
+  syncContractFormFromJsonWithDebounce(): void {
+    this.contractJsonSyncSubject.next();
+  }
+
+  /**
+   * Updates the contract definition JSON based on changes in the simple form.
+   */
+  syncJsonFromContractForm(): void {
+    try {
+      const currentJson: OdrlContractDefinition = JSON.parse(this.expertModeJsonContent || '{}');
+      const accessPolicyId = (this.newContractPolicy.accessPolicyId as any)?.id || this.newContractPolicy.accessPolicyId;
+
+      currentJson.accessPolicyId = accessPolicyId;
+      currentJson.contractPolicyId = accessPolicyId; // Keep them in sync for simplicity
+
+      currentJson.assetsSelector = this.buildAssetSelectors();
+      this.expertModeJsonContent = JSON.stringify(currentJson, null, 2);
+    } catch (e) {
+      // If JSON is invalid (e.g., during manual editing), do nothing to avoid overwriting user's work.
+      console.warn('syncJsonFromContractForm: Could not parse JSON, aborting sync to prevent data loss.');
+    }
+  }
+
+  /**
+   * Updates the simple contract definition form based on the JSON editor content.
+   */
+  syncContractFormFromJson(): void {
+    this.isContractJsonComplex = false; // Reset
+    try {
+      const odrlPayload: OdrlContractDefinition = JSON.parse(this.expertModeJsonContent || '{}');
+      const assetSelectors = odrlPayload.assetsSelector || [];
+
+      // A contract is "complex" if it contains criteria that are not simple 'eq' or 'in' selectors on asset ID
+      const isComplex = assetSelectors.some(s =>
+        s.operandLeft !== 'https://w3id.org/edc/v0.0.1/ns/id' ||
+        !['eq', 'in'].includes(s.operator)
+      );
+
+      if (isComplex) {
+        this.isContractJsonComplex = true;
+        // When complex, clear the simple form to avoid confusion
+        this.newContractPolicy.accessPolicyId = '';
+        this.selectedAssetsInDialog = [];
+        return;
+      }
+
+      // Sync Access Policy
+      const accessPolicyObject = this.allAccessPolicies.find(p => p.id === odrlPayload.accessPolicyId);
+      this.newContractPolicy.accessPolicyId = accessPolicyObject as any || '';
+
+      // Sync Asset Selection by flattening the operandRight values
+      const selectedAssetIds = new Set<string>(assetSelectors.map(s => s.operandRight).flat());
+      this.selectedAssetsInDialog = this.assets.filter(asset => selectedAssetIds.has(asset.assetId));
+
+    } catch (e) {
+      this.isContractJsonComplex = true; // Invalid JSON is considered complex
     }
   }
 
@@ -1637,113 +1862,6 @@ export class EdcAssetsAndPoliciesComponent implements OnInit, OnDestroy {
     }
   }
 
-  onAssetTemplateChange(event: { value: any }) {
-    if (event.value) {
-      this.expertModeJsonContent = JSON.stringify(event.value.content, null, 2);
-    } else {
-      this.expertModeJsonContent = '';
-    }
-  }
-
-  async onAssetTemplateFileSelect(event: Event) {
-    const element = event.currentTarget as HTMLInputElement;
-    const fileList: FileList | null = element.files;
-
-    if (!fileList || fileList.length === 0) {
-      return;
-    }
-
-    const file = fileList[0];
-    try {
-      this.expertModeJsonContent = await file.text();
-      this.messageService.add({ severity: 'info', summary: 'Template Loaded', detail: `Template from ${file.name} loaded into editor.` });
-    } catch (error) {
-      this.messageService.add({ severity: 'error', summary: 'Read Error', detail: 'Could not read the selected file.' });
-    } finally {
-      element.value = '';
-    }
-  }
-
-  /**
-   * Triggers the debounced synchronization from the JSON editor to the form fields.
-   */
-  syncFormFromJsonWithDebounce(): void {
-    this.jsonSyncSubject.next();
-  }
-
-  /**
-   * Triggers the debounced synchronization from the template JSON editor to the generated policy editor.
-   */
-  syncPolicyFromTemplateWithDebounce(): void {
-    this.templateJsonSyncSubject.next();
-  }
-
-  /**
-   * Triggers the debounced synchronization from the contract JSON editor to the form fields.
-   */
-  syncContractFormFromJsonWithDebounce(): void {
-    this.contractJsonSyncSubject.next();
-  }
-
-  /**
-   * Updates the contract definition JSON based on changes in the simple form.
-   */
-  syncJsonFromContractForm(): void {
-    try {
-      const currentJson: OdrlContractDefinition = JSON.parse(this.expertModeJsonContent || '{}');
-      const accessPolicyId = (this.newContractPolicy.accessPolicyId as any)?.id || this.newContractPolicy.accessPolicyId;
-
-      currentJson.accessPolicyId = accessPolicyId;
-      currentJson.contractPolicyId = accessPolicyId; // Keep them in sync for simplicity
-
-      currentJson.assetsSelector = this.buildAssetSelectors();
-      this.expertModeJsonContent = JSON.stringify(currentJson, null, 2);
-    } catch (e) {
-      // If JSON is invalid (e.g., during manual editing), do nothing to avoid overwriting user's work.
-      console.warn('syncJsonFromContractForm: Could not parse JSON, aborting sync to prevent data loss.');
-    }
-  }
-
-  /**
-   * Updates the simple contract definition form based on the JSON editor content.
-   */
-  syncContractFormFromJson(): void {
-    this.isContractJsonComplex = false; // Reset
-    try {
-      const odrlPayload: OdrlContractDefinition = JSON.parse(this.expertModeJsonContent || '{}');
-      const assetSelectors = odrlPayload.assetsSelector || [];
-
-      // A contract is "complex" if it contains criteria that are not simple 'eq' or 'in' selectors on asset ID
-      const isComplex = assetSelectors.some(s =>
-        s.operandLeft !== 'https://w3id.org/edc/v0.0.1/ns/id' || !['eq', 'in'].includes(s.operator)
-      );
-
-      if (isComplex) {
-        this.isContractJsonComplex = true;
-        // When complex, clear the simple form to avoid confusion
-        this.newContractPolicy.accessPolicyId = '';
-        this.selectedAssetsInDialog = [];
-        return;
-      }
-
-      // Sync Access Policy
-      const accessPolicyObject = this.allAccessPolicies.find(p => p.id === odrlPayload.accessPolicyId);
-      this.newContractPolicy.accessPolicyId = accessPolicyObject as any || '';
-
-      // Sync Asset Selection
-      const selectedAssetIds = new Set<string>();
-      assetSelectors.forEach(selector => {
-        if (selector.operator === 'eq' && typeof selector.operandRight === 'string') {
-          selectedAssetIds.add(selector.operandRight);
-        } else if (selector.operator === 'in' && Array.isArray(selector.operandRight)) {
-          selector.operandRight.forEach(id => selectedAssetIds.add(id as string));
-        }
-      });
-      this.selectedAssetsInDialog = this.assets.filter(asset => selectedAssetIds.has(asset.assetId));
-    } catch (e) {
-      this.isContractJsonComplex = true; // Invalid JSON is considered complex
-    }
-  }
   // View Details Methods
 
   hideViewDialog() {

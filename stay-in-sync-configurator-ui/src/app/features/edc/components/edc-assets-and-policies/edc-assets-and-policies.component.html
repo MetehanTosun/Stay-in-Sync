@@ -220,24 +220,69 @@
 
 <!-- Asset Dialogs -->
 <p-dialog header="Create New Asset" [(visible)]="displayNewAssetDialog" [modal]="true" [style]="{ width: '50vw' }" (onHide)="hideNewAssetDialog()" [draggable]="false" [resizable]="false">
-  <div class="p-fluid grid pt-3">
-    <div class="field col-12">
-      <button pButton pRipple type="button" label="Create from JSON File" icon="pi pi-upload" class="p-button-secondary w-full" (click)="fileInput.click()"></button>
+  <div class="p-fluid pt-3">
+    <div class="field col-12 mt-3">
+      <label for="targetSystemEndpoint" class="font-bold block mb-2">TargetSystem Endpoint:</label>
+      <p-autoComplete
+        id="targetSystemEndpoint"
+        [(ngModel)]="selectedEndpoint"
+        [suggestions]="endpointSuggestions"
+        (completeMethod)="searchEndpoints($event)"
+        (onSelect)="onEndpointSelect($event)"
+        (onClear)="onEndpointSelect($event)"
+        [forceSelection]="true"
+        placeholder="Type or select an endpoint URL"
+        styleClass="w-full"
+        inputStyleClass="w-full"
+        [appendTo]="'body'"
+      ></p-autoComplete>
     </div>
-    <p-divider align="center" type="dashed" styleClass="my-4">
-      <b>OR</b>
-    </p-divider>
-    <div class="field col-12">
-      <div class="grid">
-        <div class="col-6">
-          <p-dropdown [options]="assetTemplates" [(ngModel)]="selectedAssetTemplate" (onChange)="onAssetTemplateChange($event)" optionLabel="name" placeholder="Select a Template" [showClear]="true" styleClass="w-full"></p-dropdown>
+
+    <div *ngIf="selectedEndpoint" class="dynamic-fields-section">
+      <p-divider align="center" type="dashed" styleClass="my-4">
+        <b>Asset Details</b>
+      </p-divider>
+
+      <div class="field">
+        <div class="flex justify-content-between align-items-center mb-2">
+          <label class="font-bold">Asset Attributes</label>
+          <button pButton pRipple type="button" icon="pi pi-plus" class="p-button-text p-button-sm" (click)="addAssetAttribute()" pTooltip="Add new attribute" tooltipPosition="top"></button>
         </div>
-        <div class="col-6">
-          <button pButton pRipple type="button" label="Upload Template from JSON" icon="pi pi-folder-open" class="p-button-outlined w-full" (click)="assetTemplateFileInput.click()"></button>
+        <div *ngFor="let attr of assetAttributes; let i = index" class="p-inputgroup mb-2">
+          <input type="text" pInputText [(ngModel)]="attr.key" (ngModelChange)="syncAssetJsonFromForm()" placeholder="Attribute Key" class="w-5" />
+          <input type="text" pInputText [(ngModel)]="attr.value" (ngModelChange)="syncAssetJsonFromForm()" placeholder="Attribute Value" class="w-5" />
+          <button pButton pRipple type="button" icon="pi pi-times" class="p-button-danger p-button-text" (click)="removeAssetAttribute(i)" [disabled]="assetAttributes.length === 1"></button>
         </div>
       </div>
+
+      <p-divider align="center" type="dashed" styleClass="my-4">
+        <b>Parameterization</b>
+      </p-divider>
+
+      <div class="field">
+        <label for="pathParamId" class="font-bold block mb-2">PathParam {{'{'}}id{{'}'}}</label>
+        <input id="pathParamId" type="text" pInputText [(ngModel)]="pathParamId" (ngModelChange)="syncAssetJsonFromForm()" placeholder="e.g., {assetId}" class="w-full" />
+      </div>
+
+      <div class="field">
+        <label for="queryParams" class="font-bold block mb-2">Query Parameters</label>
+        <p-multiSelect id="queryParams" [options]="queryParamOptions" [(ngModel)]="queryParams" (ngModelChange)="syncAssetJsonFromForm()" placeholder="Select Query Parameters" styleClass="w-full" [appendTo]="'body'"></p-multiSelect>
+      </div>
+
+      <div class="field">
+        <label for="headerParams" class="font-bold block mb-2">Header Parameters</label>
+        <p-multiSelect id="headerParams" [options]="headerParamOptions" [(ngModel)]="headerParams" (ngModelChange)="syncAssetJsonFromForm()" placeholder="Select Header Parameters" styleClass="w-full" [appendTo]="'body'"></p-multiSelect>
+      </div>
+
+      <div class="field">
+        <label for="authorizationData" class="font-bold block mb-2">Authorization Data</label>
+        <input id="authorizationData" type="text" pInputText [(ngModel)]="authorizationData" (ngModelChange)="syncAssetJsonFromForm()" placeholder="e.g., Bearer Token" class="w-full" />
+      </div>
     </div>
+
     <div class="field col-12 mt-3">
+      <label class="font-bold block mb-2">Asset JSON</label>
+      <button pButton pRipple type="button" label="Upload from JSON" icon="pi pi-upload" class="p-button-outlined w-full mb-2" (click)="assetTemplateFileInput.click()"></button>
       <ngx-monaco-editor id="newAssetJsonEditor" [options]="editorOptions" [(ngModel)]="expertModeJsonContent" style="height: 300px; border: 1px solid var(--surface-d);"></ngx-monaco-editor>
     </div>
   </div>
