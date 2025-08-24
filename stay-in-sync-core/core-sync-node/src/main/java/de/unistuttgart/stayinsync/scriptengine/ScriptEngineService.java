@@ -13,10 +13,12 @@ import org.eclipse.microprofile.context.ManagedExecutor;
 import org.graalvm.polyglot.*;
 import org.jboss.logging.MDC;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
 
 /**
  * A facade service providing well-defined entry points to interact with the script engine.
@@ -140,19 +142,47 @@ public class ScriptEngineService {
             context = contextPool.borrowContext();
             Log.debugf("Borrowed context for job %s (language: %s)", transformJob.jobId(), transformJob.scriptLanguage());
 
-            Source source = getCachedScriptSource(transformJob);
+            Function<String, String> sdkPreprocessor = script -> script;
+            Function<String, String> userScriptPreprocessor = userCode ->
+                    "(function() {\n" +
+                            "  'use strict';\n" +
+                            userCode + "\n" +
+                            "  return transform();\n" +
+                            "})();";
+
+            Source sdkSource = getOrCompileSource(
+                    "sdk-for-tx-" + transformJob.scriptId(),
+                    transformJob.generatedSdkHash(),
+                    transformJob.generatedSdkCode(),
+                    sdkPreprocessor
+            );
+
+            Source userSource = getOrCompileSource(
+                    transformJob.scriptId(),
+                    transformJob.expectedHash(),
+                    transformJob.scriptCode(),
+                    userScriptPreprocessor
+            );
+
             ScriptApi scriptApi = new ScriptApi(transformJob.sourceData(), transformJob.jobId());
 
             setupBindings(context, transformJob, scriptApi);
 
-            context.eval(source);
-
-            Object rawOutput = scriptApi.getOutputData();
-            if (rawOutput == null) {
-                Log.warnf("Script %s did not call %s.setOutput(). OutputData is null for job %s.", transformJob.scriptId(), SCRIPT_API_BINDING_NAME, transformJob.jobId());
+            if(sdkSource != null){
+                context.eval(sdkSource);
             }
 
-            result.setOutputData(extractResult(Value.asValue(rawOutput)));
+            Value rawOutputValue = context.eval(userSource);
+            if (rawOutputValue == null || rawOutputValue.isNull()) {
+                Log.errorf("Script %s did not return a value from its transform() function. Output is null for job %s.", transformJob.scriptId(), transformJob.jobId());
+                throw new ScriptEngineException(
+                        ScriptEngineException.ErrorType.SCRIPT_EXECUTION_ERROR,
+                        "Invalid Script Return",
+                        "The transform() function must return a DirectiveMap object."
+                );
+            }
+
+            result.setOutputData(extractResult(Value.asValue(rawOutputValue)));
             result.setValidExecution(true);
             Log.infof("Script %s executed successfully for job %s.", transformJob.scriptId(), transformJob.jobId());
             return result;
@@ -183,43 +213,50 @@ public class ScriptEngineService {
     }
 
     /**
-     * Retrieves a pre-parsed {@link Source} object for the script specified in the {@link TransformJob}.
+     * Retrieves a pre-parsed {@link Source} object from the cache, or compiles and caches it on demand.
      * <p>
-     * This method first checks the {@link ScriptCache} for an existing, matching script (by ID and hash).
-     * If the script is not found or the hash doesn't match, it compiles the script code from the
-     * {@code transformJob} and stores it in the cache before returning it.
-     * If the script cannot be loaded or retrieved from the cache even after an attempt to compile,
-     * a {@link ScriptEngineException} is thrown.
-     * </p>
+     * This method acts as a generic cache-aware script loader. It first checks the {@link ScriptCache}
+     * for an existing, matching script using its ID and hash.
+     * <p>
+     * If the script is not found in the cache, this method applies a given {@code preprocessor} function
+     * to the raw {@code scriptCode} before compiling it into a {@link Source} object. This allows the
+     * caller to define the transformation strategy, such as wrapping user code in a protective IIFE or
+     * leaving pre-formatted SDK code unmodified.
+     * <p>
+     * The newly compiled {@code Source} is then stored in the cache for subsequent requests and returned.
      *
-     * @param transformJob The job containing script details (ID, hash, code, language).
-     *                     The {@code scriptId} and {@code expectedHash} are used for cache lookups.
-     *                     The {@code scriptCode} is used for compilation if the script is not cached.
-     *                     The {@code scriptLanguage} is used for logging purposes.
-     * @return The {@link Source} object ready for evaluation.
-     * @throws ScriptEngineException if the script cannot be found in or loaded into the cache.
-     *                               This typically occurs if {@link ScriptCache#getScript(String, String)}
-     *                               returns null after an attempt to {@link ScriptCache#putScript(String, String, String)}.
+     * @param scriptId      The unique identifier for the script, used as part of the cache key.
+     * @param scriptHash    The hash of the original script's content, used to version the script in the cache.
+     * @param scriptCode    The raw source code of the script to be compiled if it's not found in the cache.
+     * @param preprocessor  A {@link Function} that defines the pre-processing strategy for the script code
+     *                      before it is compiled.
+     * @return The pre-parsed and cached {@link Source} object, ready for evaluation. Returns {@code null} if
+     *         {@code scriptCode} or {@code scriptHash} is null.
+     * @throws ScriptEngineException if an error occurs during script compilation (e.g., syntax errors) or
+     *                               if the compiled script cannot be stored or retrieved from the cache.
      */
-    private Source getCachedScriptSource(TransformJob transformJob) throws ScriptEngineException {
-        if (!scriptCache.containsScript(transformJob.scriptId(), transformJob.expectedHash())) {
-            Log.infof("Script %s (hash: %s, lang: %s) not in cache. Compiling...",
-                    transformJob.scriptId(), transformJob.expectedHash(), transformJob.scriptLanguage());
-            scriptCache.putScript(transformJob.scriptId(), transformJob.expectedHash(), transformJob.scriptCode());
+    private Source getOrCompileSource(String scriptId, String scriptHash, String scriptCode,
+                                      Function<String, String> preprocessor) throws ScriptEngineException {
+        if (scriptHash == null || scriptCode == null) {
+            return null;
         }
-        Source source = scriptCache.getScript(transformJob.scriptId(), transformJob.expectedHash());
 
-        if (source == null) {
-            String errorMsg = String.format("Script source not found or could not be loaded for: %s (job %s, lang %s)",
-                    transformJob.scriptId(), transformJob.jobId(), transformJob.scriptLanguage());
-            Log.error(errorMsg);
-            throw new ScriptEngineException(
-                    ScriptEngineException.ErrorType.SCRIPT_CACHING_ERROR,
-                    "Script Not Found",
-                    errorMsg
-            );
+        if (scriptCache.containsScript(scriptId, scriptHash)) {
+            return scriptCache.getScript(scriptId, scriptHash);
         }
-        return source;
+
+        Log.infof("Script %s (hash: %s) not in cache. Pre-processing and compiling...", scriptId, scriptHash);
+
+        try {
+            String processedCode = preprocessor.apply(scriptCode);
+            Source source = Source.newBuilder("js", processedCode, scriptId).build();
+
+            scriptCache.putCompiledScript(scriptId, scriptHash, source);
+            return source;
+        } catch (IOException | PolyglotException e) {
+            String errorMsg = String.format("Error parsing/pre-compiling script %s (id: %s): %s", scriptId, scriptHash, e.getMessage());
+            throw new ScriptEngineException(ScriptEngineException.ErrorType.SCRIPT_PARSING_ERROR, "Script Parsing Error", errorMsg, e);
+        }
     }
 
     /**

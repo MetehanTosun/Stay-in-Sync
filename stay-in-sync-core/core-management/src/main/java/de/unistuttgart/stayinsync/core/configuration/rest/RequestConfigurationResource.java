@@ -7,6 +7,7 @@ import de.unistuttgart.stayinsync.core.configuration.rest.dtos.CreateArcDTO;
 import de.unistuttgart.stayinsync.core.configuration.rest.dtos.CreateRequestConfigurationDTO;
 import de.unistuttgart.stayinsync.core.configuration.rest.dtos.GetRequestConfigurationDTO;
 import de.unistuttgart.stayinsync.core.configuration.service.SourceSystemApiRequestConfigurationService;
+import de.unistuttgart.stayinsync.core.configuration.rest.Examples;
 import io.quarkus.logging.Log;
 import jakarta.inject.Inject;
 import jakarta.validation.Valid;
@@ -17,7 +18,6 @@ import org.eclipse.microprofile.openapi.annotations.Operation;
 import org.eclipse.microprofile.openapi.annotations.enums.SchemaType;
 import org.eclipse.microprofile.openapi.annotations.headers.Header;
 import org.eclipse.microprofile.openapi.annotations.media.Content;
-import org.eclipse.microprofile.openapi.annotations.media.ExampleObject;
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
 import org.eclipse.microprofile.openapi.annotations.parameters.Parameter;
 import org.eclipse.microprofile.openapi.annotations.parameters.RequestBody;
@@ -59,8 +59,7 @@ public class RequestConfigurationResource {
                     required = true,
                     content = @Content(
                             mediaType = APPLICATION_JSON,
-                            schema = @Schema(implementation = CreateArcDTO.class),
-                            examples = @ExampleObject(name = "valid request config", value = Examples.VALID_EXAMPLE_REQUEST_CONFIGURATION_CREATE)
+                            schema = @Schema(implementation = CreateArcDTO.class)
                     )
             )
             @Valid CreateArcDTO arcDto,
@@ -178,8 +177,7 @@ public class RequestConfigurationResource {
             description = "Gets a api-request-configuration for a given id",
             content = @Content(
                     mediaType = APPLICATION_JSON,
-                    schema = @Schema(implementation = CreateRequestConfigurationDTO.class),
-                    examples = @ExampleObject(name = "api-request-configuration", value = Examples.VALID_EXAMPLE_SYNCJOB)
+                    schema = @Schema(implementation = CreateRequestConfigurationDTO.class)
             )
     )
     @APIResponse(
@@ -187,15 +185,7 @@ public class RequestConfigurationResource {
             description = "The api-request-configuration is not found for a given identifier"
     )
     public Response getSourceSystemEndpoint(@Parameter(name = "id", required = true) @PathParam("id") Long id) {
-        return this.sourceSystemApiRequestConfigurationService.findApiRequestConfigurationById(id)
-                .map(sourceSystemApiRequestConfiguration -> {
-                    Log.debugf("Found api-request-configuration: %s", sourceSystemApiRequestConfiguration);
-                    return Response.ok(fullUpdateMapper.mapToDTO(sourceSystemApiRequestConfiguration)).build();
-                })
-                .orElseThrow(() -> {
-                    Log.warnf("No api-request-configuration found using id %d", id);
-                    return new CoreManagementException(Response.Status.NOT_FOUND, "Unable to find api-request-configuration", "No api-request-configuration found using id %d", id);
-                });
+        return Response.ok(fullUpdateMapper.mapToDTO(this.sourceSystemApiRequestConfigurationService.findApiRequestConfigurationById(id))).build();
     }
 
     @DELETE
@@ -232,8 +222,7 @@ public class RequestConfigurationResource {
                                                             required = true,
                                                             content = @Content(
                                                                     mediaType = APPLICATION_JSON,
-                                                                    schema = @Schema(implementation = CreateRequestConfigurationDTO.class),
-                                                                    examples = @ExampleObject(name = "valid_sync_job", value = Examples.VALID_EXAMPLE_SYNCJOB)
+                                                                    schema = @Schema(implementation = CreateRequestConfigurationDTO.class)
                                                             )
                                                     )
                                                     @PathParam("id") Long id, @Valid @NotNull CreateRequestConfigurationDTO SourceSystemApiRequestConfigurationDTO) {

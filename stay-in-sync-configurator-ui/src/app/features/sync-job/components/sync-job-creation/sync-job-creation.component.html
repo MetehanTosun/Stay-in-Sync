@@ -79,8 +79,9 @@
         <ng-template #content>
           <div class="flex flex-col h-48 w-full">
             <div class="border-2 border-dashed border-surface-200 dark:border-surface-700 rounded bg-surface-50 dark:bg-surface-950 flex-1 flex justify-center items-center font-medium w-full">
-              <app-transformation-base
+              <app-transformation-base [syncJobId]="selectedSyncJobId"
                 class="w-full"
+                [selectedSyncJobId]="selectedSyncJobId"
                 (transformationsChanged)="onTransformationsChanged($event)"
               ></app-transformation-base>
             </div>
@@ -101,7 +102,8 @@
   </p-stepper>
 
   <!-- 🔽 Navigation Buttons (immer unten rechts) -->
-<div class="syncjob-navigation-buttons">
+<div class="syncjob-navigation-buttons ">
+
   <ng-container [ngSwitch]="activeStep">
     <ng-container *ngSwitchCase="1">
       <p-button label="Next" icon="pi pi-arrow-right" iconPos="right" (onClick)="goToStep(2)" />

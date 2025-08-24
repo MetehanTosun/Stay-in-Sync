@@ -1,8 +1,8 @@
 package de.unistuttgart.stayinsync.transport.transformation_rule_shared.nodes;
 
+
 import com.fasterxml.jackson.databind.JsonNode;
-import lombok.Getter;
-import lombok.Setter;
+import de.unistuttgart.stayinsync.transport.exception.GraphEvaluationException;
 import java.util.List;
 import java.util.Map;
 
@@ -11,8 +11,7 @@ import java.util.Map;
  * It defines the common properties such as a unique ID, optional name,
  * visual position, and input connections.
  */
-@Getter
-@Setter
+
 public abstract class Node {
 
     /**
@@ -59,5 +58,54 @@ public abstract class Node {
      * @param dataContext The runtime data context, used for resolving external
      * JSON values in ProviderNodes.
      */
-    public abstract void calculate(Map<String, JsonNode> dataContext);
+    public abstract void calculate(Map<String, JsonNode> dataContext) throws GraphEvaluationException;
+
+
+    public int getId() {
+        return id;
+    }
+
+    public void setId(int id) {
+        this.id = id;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public double getOffsetX() {
+        return offsetX;
+    }
+
+    public void setOffsetX(double offsetX) {
+        this.offsetX = offsetX;
+    }
+
+    public double getOffsetY() {
+        return offsetY;
+    }
+
+    public void setOffsetY(double offsetY) {
+        this.offsetY = offsetY;
+    }
+
+    public List<Node> getInputNodes() {
+        return inputNodes;
+    }
+
+    public void setInputNodes(List<Node> inputNodes) {
+        this.inputNodes = inputNodes;
+    }
+
+    public Object getCalculatedResult() {
+        return calculatedResult;
+    }
+
+    public void setCalculatedResult(Object calculatedResult) {
+        this.calculatedResult = calculatedResult;
+    }
 }

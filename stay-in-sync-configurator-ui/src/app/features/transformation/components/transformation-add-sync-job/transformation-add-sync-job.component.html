@@ -1,0 +1,53 @@
+<p-table [value]="transformations" [paginator]="true" [rows]="10" [responsiveLayout]="'scroll'"
+         [tableStyle]="{ 'min-height': '30rem'}">
+  <ng-template pTemplate="header">
+    <tr>
+      <th>Name</th>
+      <th>Status</th>
+      <th>Add</th>
+    </tr>
+    <tr>
+      <th>
+        <p-columnFilter type="text" field="script.name" placeholder="Search by name"
+                        ariaLabel="Filter Name"></p-columnFilter>
+      </th>
+      <th>
+        <p-columnFilter field="deploymentStatus" matchMode="equals" [showMenu]="false">
+          <ng-template #filter let-filter="filterCallback">
+            <p-select [(ngModel)]="selectedStatus" [options]="statusOptions"
+                      (onChange)="filter($event.value)"
+                      placeholder="Select One"
+                      [showClear]="true"
+                      [style]="{ 'min-width': '12rem' }">
+              <ng-template let-option #item>
+                <app-job-status-tag [status]="option"></app-job-status-tag>
+              </ng-template>
+            </p-select>
+          </ng-template>
+        </p-columnFilter>
+      </th>
+      <th></th>
+      <th>
+      </th>
+    </tr>
+  </ng-template>
+  <ng-template pTemplate="body" let-rowData>
+    <tr>
+      <td>{{ rowData.script?.name }}</td>
+      <td>
+        <app-job-status-tag [status]="rowData.deploymentStatus"></app-job-status-tag>
+      </td>
+      <td>
+        <p-button
+          [label]="'Add'"
+          [class]="'p-button-rounded p-button-text w-24'"
+          [style]="rowData.added ? {'width': '8rem', 'background-color': '#d32f2f', 'border': '#d32f2f' } : {'width': '8rem'}"
+          [disabled]=" !rowData.script"
+          (click)="add(rowData)">
+        </p-button>
+      </td>
+    </tr>
+  </ng-template>
+</p-table>
+
+

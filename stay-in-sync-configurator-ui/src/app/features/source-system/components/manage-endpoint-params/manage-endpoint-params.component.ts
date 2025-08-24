@@ -65,6 +65,18 @@ export class ManageEndpointParamsComponent implements OnInit, OnChanges {
   ];
 
   /**
+   * Controls whether the component is expanded or collapsed.
+   */
+  isExpanded = true;
+
+  /**
+   * Toggles the expanded/collapsed state of the component.
+   */
+  toggleExpanded() {
+    this.isExpanded = !this.isExpanded;
+  }
+
+  /**
    * Constructor injecting FormBuilder and ApiEndpointQueryParamResourceService.
    * @param fb FormBuilder for creating reactive forms.
    * @param queryParamSvc Service to interact with API endpoint query parameters.

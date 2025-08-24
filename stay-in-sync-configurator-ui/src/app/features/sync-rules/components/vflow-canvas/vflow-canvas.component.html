@@ -1,0 +1,88 @@
+<!-- MARK: VFlow -->
+<div id="vflow-container" (click)="storeMousePosition($event)">
+  <vflow view="auto" [nodes]="nodes" [edges]="edges" [background]="{ type: 'dots' }" (click)="onCanvasClick($event)"
+    (onConnect)="addEdge($event)" (onNodesChange.position)="onNodePositionChange($event)"
+    (onNodesChange.select)="onNodeSelect($event)" (onEdgesChange.select)="onEdgeSelect($event)" />
+</div>
+
+<!-- MARK: Type Error Modal -->
+<div *ngIf="showTypeIncompatibilityModal" class="modal-backdrop"></div>
+<div *ngIf="showTypeIncompatibilityModal" class="error-modal" (click)="closeTypeIncompatibilityModal()">
+  <!-- Modal Header -->
+  <h3>
+    <span>⚠️</span>
+    Type Incompatibility
+  </h3>
+
+  <!-- Modal Body -->
+  <p class="error-message">{{ typeIncompatibilityMessage }}</p>
+  <div *ngIf="lastAttemptedConnection">
+    <div>Source: <b>{{ lastAttemptedConnection!.sourceType }}</b></div>
+    <div>Target: <b>{{ lastAttemptedConnection!.targetType }}</b></div>
+  </div>
+  <p class="error-note">These data types are not compatible.</p>
+
+  <!-- Modal Footer -->
+  <button (click)="closeTypeIncompatibilityModal()">✓ OK</button>
+</div>
+
+<!-- MARK: Node Menu -->
+<div *ngIf="showNodeContextMenu && selectedNode" class="context-menu" [style.left.px]="nodeContextMenuPosition.x"
+  [style.top.px]="nodeContextMenuPosition.y" (click)="$event.stopPropagation()">
+  <ng-container *ngFor="let item of selectedNode.contextMenuItems">
+    <div class="context-menu-item" (click)="item.action()">
+      {{ item.label }}
+    </div>
+  </ng-container>
+</div>
+
+<!-- MARK: Node Suggestion Menu -->
+<div *ngIf="showSuggestions" class="suggestions-menu" [style.left.px]="nodeContextMenuPosition.x + 140"
+  [style.top.px]="nodeContextMenuPosition.y">
+  <ul>
+    <li *ngFor="let suggestion of suggestions" (click)="onSuggestionSelected(suggestion)">
+      {{ suggestion.operatorName }}
+    </li>
+  </ul>
+</div>
+
+<!-- MARK: Edge Menu -->
+<div *ngIf="showEdgeContextMenu" class="context-menu" [style.left.px]="edgeContextMenuPosition.x"
+  [style.top.px]="edgeContextMenuPosition.y" (click)="$event.stopPropagation()">
+  <button id="delete-edge-button" (click)="deleteSelectedEdge($event)">Delete Edge</button>
+</div>
+
+<!-- Modals -->
+<!-- Set Node Name -->
+<app-set-node-name-modal *ngIf="editNodeNameModalOpen" [currentName]="nodeBeingEdited?.data!.name"
+  (save)="onNodeNameSaved($event)" (close)="closeModals()">
+</app-set-node-name-modal>
+
+<!-- Set Provider JSON Path -->
+<app-provider-node-modal *ngIf="editJsonPathModalOpen" [currentJsonPath]="nodeBeingEdited?.data!.jsonPath!"
+  (save)="onJsonPathSaved($event)" (modalsClosed)="closeModals()">
+</app-provider-node-modal>
+
+<!-- Set Constant Value -->
+<app-constant-node-modal *ngIf="editNodeValueModalOpen" [currentValue]="nodeBeingEdited?.data!.value"
+  (save)="onValueSaved($event)" (modalsClosed)="closeModals()">
+</app-constant-node-modal>
+
+<!-- Pending Edge Removal -->
+<div *ngIf="showRemoveEdgesModal" class="modal-backdrop"></div>
+<div id="pending-edge-removal-modal" *ngIf="showRemoveEdgesModal">
+  This action sets a new data type of this node and will remove all connected edges.
+
+  <button (click)="confirmRemoveEdges()">
+    <span class="material-symbols-rounded">
+      check
+    </span>
+    Continue
+  </button>
+  <button (click)="cancelRemoveEdges()">
+    <span class="material-symbols-rounded">
+      cancel
+    </span>
+    Cancel
+  </button>
+</div>
