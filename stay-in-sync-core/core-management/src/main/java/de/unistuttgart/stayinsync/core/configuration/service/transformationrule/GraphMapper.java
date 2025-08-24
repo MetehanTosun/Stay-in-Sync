@@ -1,4 +1,4 @@
-package de.unistuttgart.stayinsync.transport.transformation_rule_shared.util;
+package de.unistuttgart.stayinsync.syncnode.logic_engine;
 
 import de.unistuttgart.stayinsync.transport.dto.transformationrule.GraphDTO;
 import de.unistuttgart.stayinsync.transport.dto.transformationrule.InputDTO;
@@ -140,38 +140,38 @@ public class GraphMapper {
 
         // Pass 1: Create all node instances.
         Log.debug("Pass 1: Creating all Node instances from DTOs.");
-            for (NodeDTO dto : graphDto.getNodes()) {
-                try {
-                    Node node;
-                    switch (dto.getNodeType()) {
-                        case "PROVIDER":
-                            node = new ProviderNode(dto.getJsonPath());
-                            ((ProviderNode) node).setArcId(dto.getArcId());
-                            break;
-                        case "CONSTANT":
-                            node = new ConstantNode(dto.getName(), dto.getValue());
-                            break;
-                        case "LOGIC":
-                            node = new LogicNode(dto.getName(), LogicOperator.valueOf(dto.getOperatorType()));
-                            break;
-                        case "FINAL":
-                            node = new FinalNode();
-                            break;
-                        default:
-                            throw new NodeConfigurationException("Unknown nodeType: " + dto.getNodeType());
-                    }
-                    node.setId(dto.getId());
-                    node.setName(dto.getName());
-                    node.setOffsetX(dto.getOffsetX());
-                    node.setOffsetY(dto.getOffsetY());
-                    createdNodes.put(node.getId(), node);
+        for (NodeDTO dto : graphDto.getNodes()) {
+            try {
+                Node node;
+                switch (dto.getNodeType()) {
+                    case "PROVIDER":
+                        node = new ProviderNode(dto.getJsonPath());
+                        ((ProviderNode) node).setArcId(dto.getArcId());
+                        break;
+                    case "CONSTANT":
+                        node = new ConstantNode(dto.getName(), dto.getValue());
+                        break;
+                    case "LOGIC":
+                        node = new LogicNode(dto.getName(), LogicOperator.valueOf(dto.getOperatorType()));
+                        break;
+                    case "FINAL":
+                        node = new FinalNode();
+                        break;
+                    default:
+                        throw new NodeConfigurationException("Unknown nodeType: " + dto.getNodeType());
                 }
-
-                catch (NodeConfigurationException e) {
-                        Log.warnf(e, "A node with invalid configuration was found (ID: %d). It will be skipped.", dto.getId());
-                        mappingErrors.add(new NodeConfigurationError(dto.getId(), dto.getName(), e.getMessage()));
-                    }
+                node.setId(dto.getId());
+                node.setName(dto.getName());
+                node.setOffsetX(dto.getOffsetX());
+                node.setOffsetY(dto.getOffsetY());
+                createdNodes.put(node.getId(), node);
             }
+
+            catch (NodeConfigurationException e) {
+                Log.warnf(e, "A node with invalid configuration was found (ID: %d). It will be skipped.", dto.getId());
+                mappingErrors.add(new NodeConfigurationError(dto.getId(), dto.getName(), e.getMessage()));
+            }
+        }
 
         Log.debugf("Created %d Node instances.", createdNodes.size());
 

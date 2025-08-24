@@ -1,5 +1,6 @@
 // biome-ignore lint/style/useImportType: <explanation>
 import { Routes } from '@angular/router';
+import { SyncRulesComponent } from './features/sync-rules/components/sync-rules.component';
 import { ConfigurationscriptsBaseComponent } from './features/configuration/configurationscripts-base/configurationscripts-base.component';
 // neu (relativ zu src/app/app.routes.ts)
 import { SourceSystemBaseComponent } from
@@ -18,6 +19,9 @@ import { ScriptEditorPageComponent } from './features/script-editor/script-edito
 import {
   TransformationScriptSelectionComponent
 } from './features/transformation/components/transformation-script-selection/transformation-script-selection.component';
+import {
+  SyncJobDetailsPageComponent
+} from './features/sync-job/components/sync-job-details-page/sync-job-details-page.component';
 import { RulesOverviewComponent } from './features/sync-rules/pages/rules-overview/rules-overview.component';
 import { EditRuleComponent } from './features/sync-rules/pages/edit-rule/edit-rule.component';
 import { EditRuleDeactivateGuard } from './features/sync-rules/pages/edit-rule/edit-rule-deactivate.guard';
@@ -75,6 +79,7 @@ export const routes: Routes = [
     }
   ]
   },
+  { path: 'sync-jobs/:id', component: SyncJobDetailsPageComponent},
 
   // Route für Help mit Children
   {
