@@ -380,13 +380,13 @@ export class ScriptEditorPageComponent implements OnInit, OnDestroy {
  *                         values are arrays of the corresponding directives.
  */
 function transform(): DirectiveMap {
-    stayinsync.log('Transformation started...');
+    stayinsync.log('Transformation started...', 'INFO');
 
     // --- EXAMPLE WORKFLOW (Commented Out) ---
     /*
 
     // 1. Get and filter your source data
-    // const activeProducts = source.myCrm.allProducts.payload.filter(p => p.isActive);
+    // const activeProducts = s0urce.myCrm.allProducts.payload.filter(p => p.isActive);
 
     // 2. Map the data to an array of directives for a specific target
     // const productDirectives = activeProducts.map(product => {

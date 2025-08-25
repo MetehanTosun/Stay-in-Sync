@@ -3,7 +3,10 @@ package de.unistuttgart.stayinsync.core.configuration.mapping;
 import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.SourceSystemApiRequestConfiguration;
 import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.SourceSystemEndpoint;
 import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.Transformation;
+import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.TransformationRule;
 import de.unistuttgart.stayinsync.core.configuration.mapping.targetsystem.RequestConfigurationMessageMapper;
+import de.unistuttgart.stayinsync.core.configuration.rest.dtos.SyncJobTransformationDTO;
+import de.unistuttgart.stayinsync.core.configuration.rest.dtos.SyncJobTransformationRuleDTO;
 import de.unistuttgart.stayinsync.core.configuration.rest.dtos.TransformationDetailsDTO;
 import de.unistuttgart.stayinsync.core.configuration.rest.dtos.TransformationShellDTO;
 import de.unistuttgart.stayinsync.transport.dto.TransformationMessageDTO;
@@ -55,6 +58,12 @@ public interface TransformationMapper {
     @Mapping(target = "transformationScript", ignore = true)
     @Mapping(target = "sourceSystemVariables", ignore = true)
     void updateFromShellDTO(TransformationShellDTO dto, @MappingTarget Transformation transformation);
+
+    @Mapping(target = "name", source = "transformationScript.name")
+    SyncJobTransformationDTO mapToSyncJobDTO(Transformation transformation);
+
+    SyncJobTransformationRuleDTO mapToSyncJobDTO(TransformationRule transformationRule);
+
 
     @Named("mapEndpointsToIds")
     default Set<Long> mapEndpointsToIds(Set<SourceSystemEndpoint> endpoints) {

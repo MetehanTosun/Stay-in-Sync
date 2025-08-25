@@ -1,17 +1,8 @@
 package de.unistuttgart.stayinsync.transport.dto.transformationrule;
 
-import lombok.Getter;
-import lombok.Setter;
-
 import java.util.List;
 
-/**
- * A "flat" Data Transfer Object for a single node in the logic graph.
- * It contains all possible properties for any node type. The 'nodeType' field
- * acts as a discriminator to determine which properties are relevant.
- */
-@Getter
-@Setter
+
 public class NodeDTO {
 
     /**
@@ -88,4 +79,108 @@ public class NodeDTO {
      * A list containing two integers [min, max] defining the required number of inputs.
      */
     private List<Integer> inputLimit;
+
+    public int getId() {
+        return id;
+    }
+
+    public void setId(int id) {
+        this.id = id;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public double getOffsetX() {
+        return offsetX;
+    }
+
+    public void setOffsetX(double offsetX) {
+        this.offsetX = offsetX;
+    }
+
+    public double getOffsetY() {
+        return offsetY;
+    }
+
+    public void setOffsetY(double offsetY) {
+        this.offsetY = offsetY;
+    }
+
+    public String getNodeType() {
+        return nodeType;
+    }
+
+    public void setNodeType(String nodeType) {
+        this.nodeType = nodeType;
+    }
+
+    public List<InputDTO> getInputNodes() {
+        return inputNodes;
+    }
+
+    public void setInputNodes(List<InputDTO> inputNodes) {
+        this.inputNodes = inputNodes;
+    }
+
+    public Integer getArcId() {
+        return arcId;
+    }
+
+    public void setArcId(Integer arcId) {
+        this.arcId = arcId;
+    }
+
+    public String getJsonPath() {
+        return jsonPath;
+    }
+
+    public void setJsonPath(String jsonPath) {
+        this.jsonPath = jsonPath;
+    }
+
+    public Object getValue() {
+        return value;
+    }
+
+    public void setValue(Object value) {
+        this.value = value;
+    }
+
+    public String getOperatorType() {
+        return operatorType;
+    }
+
+    public void setOperatorType(String operatorType) {
+        this.operatorType = operatorType;
+    }
+
+    public List<String> getInputTypes() {
+        return inputTypes;
+    }
+
+    public void setInputTypes(List<String> inputTypes) {
+        this.inputTypes = inputTypes;
+    }
+
+    public String getOutputType() {
+        return outputType;
+    }
+
+    public void setOutputType(String outputType) {
+        this.outputType = outputType;
+    }
+
+    public List<Integer> getInputLimit() {
+        return inputLimit;
+    }
+
+    public void setInputLimit(List<Integer> inputLimit) {
+        this.inputLimit = inputLimit;
+    }
 }

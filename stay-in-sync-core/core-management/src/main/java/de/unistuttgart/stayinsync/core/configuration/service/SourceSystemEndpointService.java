@@ -29,13 +29,7 @@ import static jakarta.transaction.Transactional.TxType.SUPPORTS;
 public class SourceSystemEndpointService {
 
     @Inject
-    Validator validator;
-
-    @Inject
     ObjectMapper objectMapper;
-
-    @Inject
-    SourceSystemEndpointService sourceSystemEndpointService;
 
     @Inject
     SourceSystemService sourceSystemService;

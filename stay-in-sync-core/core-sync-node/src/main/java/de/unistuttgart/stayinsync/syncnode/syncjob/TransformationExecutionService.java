@@ -42,14 +42,18 @@ public class TransformationExecutionService {
      *
      * @param payload An ExecutionPayload that contains TransformationData, GraphNodes and TransformationContext
      * @return A Uni that will eventually contain the TransformationResult, or null if the
-     *         pre-condition check failed.
+     * pre-condition check failed.
      */
     public Uni<TransformationResult> execute(ExecutionPayload payload) {
-        return Uni.createFrom().item(()-> {
+        return Uni.createFrom().item(() -> {
             Log.infof("Job %s: Evaluating pre-condition logic graph...", payload.job().jobId());
-            TypeReference<Map<String, JsonNode>> typeRef = new TypeReference<>() {};
+            TypeReference<Map<String, JsonNode>> typeRef = new TypeReference<>() {
+            };
             Map<String, JsonNode> dataContext = objectMapper.convertValue(payload.job().sourceData(), typeRef);
             try {
+                if (payload.graphNodes() == null || payload.graphNodes().size() == 0) {
+                    return true;
+                }
                 return logicGraphEvaluator.evaluateGraph(payload.graphNodes(), dataContext);
             } catch (GraphEvaluationException e) {
                 Log.errorf(e, "Job %s: Graph evaluation failed with error type %s: %s",

@@ -1,18 +1,44 @@
 <p-button label="Create new Transformation" (click)="openCreateDialog()"></p-button>
-<p-table *ngIf="transformations && transformations.length > 0" [value]="transformations" [paginator]="true" [rows]="10" [responsiveLayout]="'scroll'" [style]="{'min-height': '500px'}">
+<p-table *ngIf="transformations && transformations.length > 0" [value]="transformations" [paginator]="true" [rows]="10" [responsiveLayout]="'scroll'" [style]="{'min-height': '30rem'}">
   <ng-template pTemplate="header">
     <tr>
       <th>Name</th>
-      <th>Description</th>
+      <th>Status</th>
       <th>Transformation Rule</th>
-      <th>Transformation Script</th>
-      <th>Actions</th>
+      <th>Add/Remove</th>
+    </tr>
+    <tr>
+      <th>
+        <p-columnFilter type="text" field="script.name" placeholder="Search by name"
+                        ariaLabel="Filter Name"></p-columnFilter>
+      </th>
+      <th>
+        <p-columnFilter field="deploymentStatus" matchMode="equals" [showMenu]="false">
+          <ng-template #filter let-filter="filterCallback">
+            <p-select [(ngModel)]="selectedStatus" [options]="statusOptions"
+                      (onChange)="filter($event.value)"
+                      placeholder="Select One"
+                      [showClear]="true"
+                      [style]="{ 'min-width': '12rem' }">
+              <ng-template let-option #item>
+                <app-job-status-tag [status]="option"></app-job-status-tag>
+              </ng-template>
+            </p-select>
+          </ng-template>
+        </p-columnFilter>
+      </th>
+      <th></th>
+      <th>
+          Added: <p-columnFilter type="boolean" field="added"></p-columnFilter>
+      </th>
     </tr>
   </ng-template>
   <ng-template pTemplate="body" let-rowData>
     <tr>
-      <td>{{ rowData.name }}</td>
-      <td>{{ rowData.description }}</td>
+      <td>{{ rowData.script.name }}</td>
+      <td>
+        <app-job-status-tag [status]="rowData.deploymentStatus"></app-job-status-tag>
+      </td>
       <td>
         <ng-container *ngIf="rowData.transformationRule; else addRuleBtn">
           {{ rowData.transformationRule }}
@@ -22,26 +48,8 @@
         </ng-template>
       </td>
       <td>
-        <ng-container *ngIf="rowData.script; else addScriptBtn">
-          {{ rowData.script.name }}
-          <p-button
-            label="RemoveScript"
-            [style]="{'width': '8rem', 'background-color': '#d32f2f', 'border': '#d32f2f' }"
-            (click)="removeScript(rowData)"
-            [style.display]="rowData.added ? 'none' : ''">
-          </p-button>
-        </ng-container>
-        <ng-template #addScriptBtn>
-          <p-button
-            label="addScript"
-            (click)="addScript(rowData)"
-            [disabled]="rowData.added">
-          </p-button>
-        </ng-template>
       </td>
       <td>
-        <p-button icon="pi pi-pencil" class="p-button-rounded p-button-text" (click)="edit(rowData)" styleClass="p-button-rounded p-button-text"></p-button>
-        <p-button icon="pi pi-trash" class="p-button-rounded p-button-danger p-button-text" (click)="delete(rowData)" styleClass="p-button-rounded p-button-danger p-button-text"></p-button>
         <p-button
           [label]="rowData.added ? 'Remove' : 'Add'"
           [class]="rowData.added ? 'p-button-rounded p-button-text w-24' : 'p-button-rounded p-button-text w-24'"
@@ -64,16 +72,16 @@
   (onHide)="cancelCreateTransformationDialog()"
   [modal]="true"
   [style]="{ width: '50vw', maxWidth: '20vw', minHeight: '20vw' }">
-<div class="p-fluid">
+  <div class="p-fluid">
     <div class="p-field">
       <label for="name">Name</label>
-      <input id="name" type="text" pInputText [(ngModel)]="newTransformation.name" />
+      <input id="name" type="text" pInputText [(ngModel)]="newTransformation.name"/>
     </div>
     <div class="p-field">
       <label for="description">Description</label>
-      <input id="description" type="text" pInputText [(ngModel)]="newTransformation.description" />
+      <input id="description" type="text" pInputText [(ngModel)]="newTransformation.description"/>
     </div>
-  <p-button label="Create" (click)="createTransformationShell()"></p-button>
+    <p-button label="Create" (click)="createTransformationShell()"></p-button>
   </div>
 </p-dialog>
 
@@ -84,7 +92,8 @@
   [modal]="true"
   [style]="{ width: '50vw', maxWidth: '50vw', minHeight: '40vw' }"
 >
-  <app-transformation-rule-selection (closeDialog)="displayRuleSelectionDialog = false" [transformationId]="transformationId"></app-transformation-rule-selection>
+  <app-transformation-rule-selection (closeDialog)="displayRuleSelectionDialog = false"
+                                     [transformationId]="transformationId"></app-transformation-rule-selection>
 </p-dialog>
 
 <p-dialog
@@ -94,7 +103,9 @@
   [modal]="true"
   [style]="{ width: '50vw', maxWidth: '50vw', minHeight: '40vw' }"
 >
-  <app-transformation-script-selection (closeDialog)="displayScriptSelectionDialog = false" [transformationId]="transformationId" (transformationUpdated)="loadTransformationsFromBackend()" ></app-transformation-script-selection>
+  <app-transformation-script-selection (closeDialog)="displayScriptSelectionDialog = false"
+                                       [transformationId]="transformationId"
+                                       (transformationUpdated)="loadTransformationsFromBackend()"></app-transformation-script-selection>
 </p-dialog>
 
 

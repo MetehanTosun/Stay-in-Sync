@@ -25,7 +25,7 @@ public class SourceSystemApiRequestConfiguration extends ApiRequestConfiguration
     public String responseDts;
 
     @Enumerated(EnumType.STRING)
-    public JobDeploymentStatus deploymentStatus;
+    public JobDeploymentStatus deploymentStatus = JobDeploymentStatus.UNDEPLOYED;
 
     public String workerPodName;
 
@@ -33,16 +33,14 @@ public class SourceSystemApiRequestConfiguration extends ApiRequestConfiguration
 
     public int pollingIntervallTimeInMs;
 
-    public static List<SourceSystemApiRequestConfiguration> listAllWherePollingIsActiveAndUnused() {
+    public static List<SourceSystemApiRequestConfiguration> listAllActiveAndUnused() {
         String query = "SELECT sse FROM SourceSystemApiRequestConfiguration sse " +
-                "WHERE sse.active = true " +
-                "AND NOT EXISTS (" +
-                "    SELECT 1 FROM Transformation t " +
-                "    WHERE sse MEMBER OF t.sourceSystemEndpoints " +
-                "    AND t.syncJob.deployed = true" +
-                ")";
+                "WHERE sse.deploymentStatus IN (:statuses) " +
+                "AND SIZE(sse.transformations) > 0";
 
-        return list(query);
+        return getEntityManager().createQuery(query, SourceSystemApiRequestConfiguration.class)
+                .setParameter("statuses", List.of(JobDeploymentStatus.FAILING, JobDeploymentStatus.DEPLOYED))
+                .getResultList();
     }
 
     public static List<SourceSystemApiRequestConfiguration> findBySourceSystemId(Long sourceSystemId) {

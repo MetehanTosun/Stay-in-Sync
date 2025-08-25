@@ -1,0 +1,16 @@
+<div class="provider-node" selectable>
+  <!-- Node Header -->
+  <div class="node-header">
+    <span class="node-type">Provider</span>
+  </div>
+
+  <!-- Node Body -->
+  <div class="node-content">
+    <div class="node-title">{{ node().data?.name }}</div>
+    <div class="node-path"><strong>Path:</strong> {{ node().data?.jsonPath || 'Not set' }}</div>
+    <div class="arc-id"><small>Arc ID: {{ node().data?.arcId || 'N/A' }}</small></div>
+  </div>
+
+  <!-- I/O Handlers -->
+  <handle type="source" position="right" />
+</div>
