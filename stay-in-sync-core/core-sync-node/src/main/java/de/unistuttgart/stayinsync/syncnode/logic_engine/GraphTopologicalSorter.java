@@ -1,4 +1,4 @@
-package de.unistuttgart.stayinsync.transport.transformation_rule_shared.util;
+package de.unistuttgart.stayinsync.syncnode.logic_engine;
 
 import de.unistuttgart.stayinsync.transport.transformation_rule_shared.nodes.Node;
 import io.quarkus.logging.Log;

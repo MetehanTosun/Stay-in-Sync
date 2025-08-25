@@ -3,6 +3,7 @@ package de.unistuttgart.stayinsync.core.configuration.mapping.targetsystem;
 import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.TargetSystemApiRequestConfiguration;
 import de.unistuttgart.stayinsync.transport.dto.targetsystems.RequestConfigurationMessageDTO;
 import org.mapstruct.Mapper;
+import org.mapstruct.Mapping;
 import org.mapstruct.MappingConstants;
 
 @Mapper(componentModel = MappingConstants.ComponentModel.JAKARTA_CDI,
@@ -16,5 +17,6 @@ public interface RequestConfigurationMessageMapper {
      * @param entity The source entity.
      * @return The DTO for the message queue.
      */
+    @Mapping(source = "targetSystem.apiUrl", target = "baseUrl")
     RequestConfigurationMessageDTO mapToMessageDTO(TargetSystemApiRequestConfiguration entity);
 }

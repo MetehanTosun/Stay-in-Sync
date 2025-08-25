@@ -5,11 +5,10 @@ package de.unistuttgart.stayinsync.transport.domain;
  *
  */
 public enum JobDeploymentStatus {
-
     DEPLOYED,
     DEPLOYING,
-    FAILED,
+    FAILING,
     RECONFIGURING,
     STOPPING,
-    STOPPED
+    UNDEPLOYED
 }

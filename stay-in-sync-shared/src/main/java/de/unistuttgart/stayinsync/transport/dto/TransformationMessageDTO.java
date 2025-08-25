@@ -11,7 +11,7 @@ public record TransformationMessageDTO(
         String name,
         TransformationScriptDTO transformationScriptDTO,
         TransformationRuleDTO transformationRuleDTO,
-        JobDeploymentStatus jobDeploymentStatus,
+        JobDeploymentStatus deploymentStatus,
         Set<SourceSystemApiRequestConfigurationMessageDTO> requestConfigurationMessageDTOS,
         List<String> arcManifest,
         Set<RequestConfigurationMessageDTO> targetRequestConfigurationMessageDTOS

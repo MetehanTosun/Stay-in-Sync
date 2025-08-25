@@ -38,14 +38,16 @@ public class TransformationJobScheduler {
         runningJobs.add(transformation);
     }
 
-    public void reconfigureTransformationExecution(TransformationMessageDTO transformation) throws SyncNodeException {
-        if (!transformation.jobDeploymentStatus().equals(JobDeploymentStatus.STOPPING)) {
+    public JobDeploymentStatus reconfigureTransformationExecution(TransformationMessageDTO transformation) throws SyncNodeException {
+        if (transformation.deploymentStatus().equals(JobDeploymentStatus.STOPPING)) {
             Log.infof("Undeploy transformation with id %s", transformation.id());
             stopConsumingFromUnusedRequestConfigurations();
             transformationJobMessageConsumer.unbindExisitingSyncJobQueue(transformation);
             runningJobs.remove(transformation);
+            return JobDeploymentStatus.UNDEPLOYED;
         } else {
-            Log.infof("Updating deployed transformation %s with id %s", transformation.id());
+            Log.infof("Updating deployed transformation %s with id %d", transformation.name(), transformation.id());
+            return JobDeploymentStatus.DEPLOYED;
         }
     }
 

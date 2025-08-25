@@ -1,41 +1,51 @@
-.script-editor-container {
-    position: relative;
+:host {
+  display: block;
+  height: 100vh;
+  box-sizing: border-box;
+  padding: 0.5rem;
 }
 
-.loading-overlay {
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background-color: rgba(255, 255, 255, 0.7);
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    z-index: 1000;
+.script-editor-layout {
+  display: grid;
+  grid-template-columns: 380px 1fr 380px;
+  height: 100%;
+  gap: 0.75rem;
 }
 
-.loading-overlay p {
-    margin-top: 10px;
-    font-size: 1.1em;
+.side-panel,
+.main-panel {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
 }
 
-.blurred > *:not(.loading-overlay) {
-  filter: blur(2px);
-  pointer-events: none;
+:host app-arc-management-panel,
+:host app-target-arc-panel,
+:host .main-panel > p-panel {
+  flex-grow: 1;
+}
+
+:host ::ng-deep .p-panel {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+:host ::ng-deep .p-panel .p-panel-content {
+  flex-grow: 1;
+  overflow-y: auto;
 }
 
 :host ::ng-deep .editor-panel .p-panel-content {
-    display: flex;
-    flex-direction: column;
-    height: 100%;
-    padding: 0;
+  position: relative;
+  padding: 20rem;
+  overflow: hidden;
 }
 
-.monaco-wrapper {
-    flex: 1 0 auto;
-    height: 550px;
-    min-width: 1200px;
-    padding: 0.5rem 1rem;
+.monaco-editor-wrapper {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
 }

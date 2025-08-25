@@ -3,7 +3,6 @@ package de.unistuttgart.stayinsync.core.configuration.rest;
 import de.unistuttgart.stayinsync.core.configuration.exception.CoreManagementException;
 import de.unistuttgart.stayinsync.core.configuration.mapping.targetsystem.RequestConfigurationMapper;
 import de.unistuttgart.stayinsync.core.configuration.rest.dtos.targetsystem.CreateArcDTO;
-import de.unistuttgart.stayinsync.core.configuration.rest.dtos.targetsystem.GetRequestConfigurationDTO;
 import de.unistuttgart.stayinsync.core.configuration.service.TargetSystemApiRequestConfigurationService;
 import io.quarkus.logging.Log;
 import jakarta.inject.Inject;
@@ -15,11 +14,9 @@ import jakarta.ws.rs.core.UriInfo;
 import org.eclipse.microprofile.openapi.annotations.Operation;
 import org.eclipse.microprofile.openapi.annotations.tags.Tag;
 
-import java.util.List;
-
 import static jakarta.ws.rs.core.MediaType.APPLICATION_JSON;
 
-@Path("/api/config/target-arc")
+@Path("/api/config/target-arcs")
 @Produces(APPLICATION_JSON)
 @Tag(name = "Target ARC Configuration", description = "Endpoints for managing Target System API Request Configurations (ARCs)")
 public class TargetSystemApiRequestConfigurationResource {
@@ -54,9 +51,9 @@ public class TargetSystemApiRequestConfigurationResource {
     @GET
     @Path("/by-system/{targetSystemId}")
     @Operation(summary = "Returns all Target ARCs for a given Target System")
-    public List<GetRequestConfigurationDTO> getArcsByTargetSystem(@PathParam("targetSystemId") Long targetSystemId) {
+    public Response getArcsByTargetSystem(@PathParam("targetSystemId") Long targetSystemId) {
         var arcs = service.findAllByTargetSystemId(targetSystemId);
-        return mapper.mapToGetDTOList(arcs);
+        return Response.ok(mapper.mapToGetDTOList(arcs)).build();
     }
 
     @DELETE

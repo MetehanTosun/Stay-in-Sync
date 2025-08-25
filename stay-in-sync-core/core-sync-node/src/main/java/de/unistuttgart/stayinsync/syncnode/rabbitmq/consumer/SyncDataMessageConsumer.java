@@ -105,7 +105,7 @@ public class SyncDataMessageConsumer {
 
                 for (ExecutionPayload payload : completedPayloads) {
                     Log.infof("Dispatching job %s for conditional execution", payload.job().jobId());
-                    transformationExecutionService.execute(payload.job(), payload.graphNodes())
+                    transformationExecutionService.execute(payload)
                             .subscribe().with(
                                     result -> {
                                         if (result != null) {

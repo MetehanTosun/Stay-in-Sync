@@ -1,10 +1,9 @@
 package de.unistuttgart.stayinsync.transport.transformation_rule_shared.nodes;
 
 import com.fasterxml.jackson.databind.JsonNode;
+
 import de.unistuttgart.stayinsync.transport.exception.GraphEvaluationException;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+
 import java.util.Arrays;
 import java.util.Map;
 import de.unistuttgart.stayinsync.transport.exception.NodeConfigurationException;
@@ -13,10 +12,12 @@ import de.unistuttgart.stayinsync.transport.exception.NodeConfigurationException
  * A node that provides a value by extracting it from an external JSON data source
  * at runtime. It serves as a dynamic input for the graph.
  */
-@Getter
-@Setter
-@NoArgsConstructor // Important for mappers/frameworks
 public class ProviderNode extends Node {
+
+     // Important for mappers/frameworks
+    public ProviderNode() {
+
+    }
 
     /**
      * An optional ID for identifying the source system or component (e.g., an ARC id).
@@ -107,5 +108,21 @@ public class ProviderNode extends Node {
         }
 
         this.setCalculatedResult(sourceScope);
+    }
+
+    public Integer getArcId() {
+        return arcId;
+    }
+
+    public void setArcId(Integer arcId) {
+        this.arcId = arcId;
+    }
+
+    public String getJsonPath() {
+        return jsonPath;
+    }
+
+    public void setJsonPath(String jsonPath) {
+        this.jsonPath = jsonPath;
     }
 }
