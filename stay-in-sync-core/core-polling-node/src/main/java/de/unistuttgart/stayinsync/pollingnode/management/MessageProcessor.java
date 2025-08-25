@@ -58,19 +58,19 @@ public class MessageProcessor {
     }
 
     /**
-     * Reconfigures PollingJob if it already exists. If the "active" boolean in the created pollingJobDetails is set to false,
-     * the existing pollingJob is deleted.
+     * Reconfigures PollingJob if it already exists.
+     * If deploymentStatus is set to RECONFIGURING the existing PollingJob is updated. If deploymentStatus is set to STOPPING the existing PollingJob is deleted.
      * @param apiRequestConfigurationMessage contains data to create PollingJobDetails.
      */
     public void reconfigureSupportOfRequestConfiguration(final SourceSystemApiRequestConfigurationMessageDTO apiRequestConfigurationMessage) {
         final PollingJobDetails pollingJobDetails = this.convertSourceSystemApiMessageToPollingJobDetails(apiRequestConfigurationMessage);
         try {
             throwExceptionIfJobDoesNotExistInExecutionController(pollingJobDetails);
-            if (apiRequestConfigurationMessage.deploymentStatus().equals(JobDeploymentStatus.STOPPING)) {
+            if (apiRequestConfigurationMessage.deploymentStatus().equals(JobDeploymentStatus.RECONFIGURING)) {
                 executionController.pollingJobUpdate(pollingJobDetails);
                 feedbackProducer.publishPollingJobFeedback(pollingJobDetails.id(), JobDeploymentStatus.DEPLOYED);
                 Log.info("PollingJob " + pollingJobDetails.name() + " with the id " + pollingJobDetails.id() + " successfully reconfigured");
-            } else if (apiRequestConfigurationMessage.deploymentStatus().equals(JobDeploymentStatus.RECONFIGURING)) {
+            } else if (apiRequestConfigurationMessage.deploymentStatus().equals(JobDeploymentStatus.STOPPING)) {
                 executionController.pollingJobDeletion(pollingJobDetails.id());
                 feedbackProducer.publishPollingJobFeedback(pollingJobDetails.id(), JobDeploymentStatus.UNDEPLOYED);
                 pollingJobConsumer.unbindExisitingPollingJobQueue(pollingJobDetails);
