@@ -7,7 +7,7 @@ import jakarta.persistence.OneToOne;
 
 import java.util.Set;
 
-import de.unistuttgart.stayinsync.core.configuration.edc.EDCAsset;
+import de.unistuttgart.stayinsync.core.configuration.edc.entities.EDCAsset;
 
 @Entity
 public class TargetSystemEndpoint extends SyncSystemEndpoint {

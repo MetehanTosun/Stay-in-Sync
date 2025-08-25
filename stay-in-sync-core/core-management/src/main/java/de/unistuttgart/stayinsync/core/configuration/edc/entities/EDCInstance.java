@@ -1,4 +1,4 @@
-package de.unistuttgart.stayinsync.core.configuration.edc;
+package de.unistuttgart.stayinsync.core.configuration.edc.entities;
 
 import de.unistuttgart.stayinsync.core.model.UuidEntity;
 import jakarta.persistence.*;

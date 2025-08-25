@@ -1,11 +1,12 @@
 package de.unistuttgart.stayinsync.core.configuration.edc.service;
 
-import de.unistuttgart.stayinsync.core.configuration.edc.EDCInstance;
 import jakarta.enterprise.context.ApplicationScoped;
 
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+
+import de.unistuttgart.stayinsync.core.configuration.edc.entities.EDCInstance;
 
 @ApplicationScoped
 public class EDCService {

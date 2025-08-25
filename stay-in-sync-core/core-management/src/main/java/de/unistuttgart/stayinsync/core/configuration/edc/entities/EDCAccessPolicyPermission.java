@@ -1,4 +1,4 @@
-package de.unistuttgart.stayinsync.core.configuration.edc;
+package de.unistuttgart.stayinsync.core.configuration.edc.entities;
 
 import de.unistuttgart.stayinsync.core.model.UuidEntity;
 import jakarta.persistence.*;
@@ -9,7 +9,7 @@ public class EDCAccessPolicyPermission extends UuidEntity {
 
     @ManyToOne
     @JoinColumn(name = "policy_id", columnDefinition = "CHAR(36)", nullable = false)
-    public EDCAccessPolicy edcAccessPolicy;
+    public EDCPolicy edcAccessPolicy;
 
     @Column(nullable = false)
     public String action;
@@ -23,11 +23,11 @@ public class EDCAccessPolicyPermission extends UuidEntity {
     @Column(name = "constraint_right_operand", nullable = false)
     public String constraintRightOperand;
 
-    public EDCAccessPolicy getEdcAccessPolicy() {
+    public EDCPolicy getEdcAccessPolicy() {
         return edcAccessPolicy;
     }
 
-    public void setEdcAccessPolicy(EDCAccessPolicy edcAccessPolicy) {
+    public void setEdcAccessPolicy(EDCPolicy edcAccessPolicy) {
         this.edcAccessPolicy = edcAccessPolicy;
     }
 

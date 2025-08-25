@@ -1,7 +1,7 @@
 package de.unistuttgart.stayinsync.core.configuration.edc.rest;
 
-import de.unistuttgart.stayinsync.core.configuration.edc.EDCAsset;
 import de.unistuttgart.stayinsync.core.configuration.edc.dtoedc.EDCAssetDto;
+import de.unistuttgart.stayinsync.core.configuration.edc.entities.EDCAsset;
 import de.unistuttgart.stayinsync.core.configuration.edc.mapping.EDCAssetMapper;
 import de.unistuttgart.stayinsync.core.configuration.edc.service.EDCAssetService;
 import jakarta.inject.Inject;

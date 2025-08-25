@@ -1,30 +1,17 @@
 /**
- * Access Policy
+ * ODRL Policy Definition
  */
-export interface AccessPolicy {
-  id: string;
-  bpn: string;
-  contractPolicies: ContractPolicy[];
-  action: string;
-  operator: string;
-}
-
-/**
- * Contract Policy
- */
-export interface ContractPolicy {
-  id:string;
-  assetId: string;
-  bpn: string;
-  accessPolicyId: string;
-}
-
-
 export interface OdrlPolicyDefinition {
   '@context': any;
   '@id': string;
   policy?: OdrlPolicy;
   permission?: OdrlPermission[];
+    bpn?: string;
+   
+   // UI/Backend-Helper-Felder
+  id?: string;    // bleibt für ODRL-@id (UI)
+  dbId?: string;  // neue UUID vom Backend
+  policyId?: string; // Business-Key aus DB
 }
 
 export interface OdrlPolicy {
@@ -39,15 +26,18 @@ export interface OdrlPermission {
 export interface OdrlConstraint {
   leftOperand?: string;
   operator?: string;
-  rightOperand?: any; // Can be a string or an array of strings
+  rightOperand?: any; // String oder Array von Strings
   and?: OdrlConstraint[];
   or?: OdrlConstraint[];
 }
 
 /**
- * Represents the payload for creating a new Contract Definition.
+ * Contract Definition
  */
 export interface OdrlContractDefinition {
+  bpn: any;
+  assetId: any;
+  id: any;
   '@context': any;
   '@id': string;
   accessPolicyId: string;
@@ -56,10 +46,30 @@ export interface OdrlContractDefinition {
 }
 
 /**
- * A single criterion in the assetsSelector.
+ * Criterion für assetsSelector
  */
 export interface OdrlCriterion {
   operandLeft: string;
   operator: string;
-  operandRight: any; // Can be a string for 'eq' or an array of strings for 'in'
+  operandRight: any; // String oder Array von Strings
+}
+
+/**
+ * UI-spezifische Contract Definition
+ */
+export interface UiContractDefinition {
+  id: string;
+  assetId: string;
+  bpn: string;
+  accessPolicyId: string;
+   assetsSelector?: OdrlCriterion[]; // optional, da leer sein kann
+}
+
+/**
+ * UI-spezifische Policy-Darstellung
+ */
+export interface UiPolicy {
+  id: string;
+  bpn?: string;
+  action?: string;
 }
