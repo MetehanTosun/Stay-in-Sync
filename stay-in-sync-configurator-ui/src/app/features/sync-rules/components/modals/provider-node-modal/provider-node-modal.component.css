@@ -9,7 +9,7 @@
 }
 
 .provider-node-modal {
-	background: #fff;
+	background: var(--modal-bg);
 	color: #222;
 	border-radius: 8px;
 	box-shadow: 0 4px 16px rgba(0, 0, 0, 0.10);
@@ -32,7 +32,7 @@
 	margin-bottom: 1.5rem;
 	font-size: 1.4rem;
 	font-weight: 600;
-	color: #222;
+	color: var(--modal-title-color);
 }
 .provider-node-modal .form-actions {
 	display: flex;
@@ -40,6 +40,11 @@
 	justify-content: flex-end;
 	margin-top: 1.5rem;
 }
+
+.provider-node-modal label {
+  color: var(--modal-label-color);
+}
+
 .provider-node-modal input, .provider-node-modal select, .provider-node-modal textarea {
 	width: 100%;
 	padding: 0.5rem 0.75rem;

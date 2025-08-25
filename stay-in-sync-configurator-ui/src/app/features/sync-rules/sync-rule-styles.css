@@ -1,0 +1,63 @@
+:root {
+  --page-header-bg: #f8f9fa;
+  --page-title-color: #222;
+  --table-container-bg: #fff;
+  --rule-description-row-bg: #f9fafb;
+  --rule-description-text-color: #333;
+  --form-input-bg: #f9fafb;
+  --vflow-wrapper-bg: #fff;
+  --node-selection-indicator-bg: #f3f8ff;
+
+  --modal-bg: #fff;
+  --modal-title-color: var(--page-title-color);
+  --modal-label-color: #333;
+  --cancel-button-color: #e5e7eb;
+
+  --error-panel-handler-bg: rgba(255, 255, 255, 0.8);
+  --error-panel-handler-hover-bg: rgba(245, 245, 245, 0.95);
+  --error-panel-header-bg: rgba(255, 255, 255);
+  --error-panel-header-text-color: var(--page-title-color);
+  --error-panel-container-bg: rgba(255, 255, 255, 0.8);
+
+  --node-palette-text-color: #222;
+  --node-palette-description-color: #666;
+  --node-palette-bg: #fff;
+  --node-palette-item-bg: #f8f9fa;
+  --node-palette-item-border-bg: #e5e5e5;
+  --node-context-menu-bg: var(--node-palette-bg);
+  --node-suggestions-submenu-bg: var(--node-palette-bg);
+  --node-suggestions-submenu-item-bg: var(--node-palette-item-bg);
+  --node-suggestions-submenu-item-border-color: var(--node-palette-item-border-bg);
+}
+
+html.my-app-dark {
+  --page-header-bg: #27272a;
+  --page-title-color: #eeeeee;
+  --table-container-bg: #18181b;
+  --rule-description-row-bg: #1f1f24;
+  --rule-description-text-color: #eeeeee;
+  --form-input-bg: #111111;
+  --vflow-wrapper-bg: #444444;
+  --node-selection-indicator-bg: #363333;
+
+  --modal-bg: #1d1d1d;
+  --modal-title-color: var(--page-title-color);
+  --modal-label-color: #dddddd;
+  --cancel-button-color: #3a3a3a;
+
+  --error-panel-handler-bg: rgba(100, 100, 100, 0.8);
+  --error-panel-handler-hover-bg: rgba(71, 71, 71, 0.95);
+  --error-panel-header-bg: var(--page-header-bg);
+  --error-panel-header-text-color: var(--page-title-color);
+  --error-panel-container-bg: rgba(80, 80, 80, 0.8);
+
+  --node-palette-text-color: #ffffff;
+  --node-palette-description-color: #aaaaaa;
+  --node-palette-bg: #222222;
+  --node-palette-item-bg: #333338;
+  --node-palette-item-border-bg: #aaaaaa;
+  --node-context-menu-bg: var(--node-palette-item-bg);
+  --node-suggestions-submenu-bg: var(--node-palette-bg);
+  --node-suggestions-submenu-item-bg: var(--node-palette-item-bg);
+  --node-suggestions-submenu-item-border-color: var(--node-palette-item-border-bg);
+}

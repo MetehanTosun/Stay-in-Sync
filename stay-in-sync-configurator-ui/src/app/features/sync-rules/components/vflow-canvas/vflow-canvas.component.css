@@ -12,6 +12,10 @@ vflow::ng-deep svg {
   height: 100%;
 }
 
+vflow::ng-deep svg.root-svg {
+  background-color: transparent !important;
+}
+
 /* MARK: Error Modal */
 .modal-backdrop {
   position: absolute;
@@ -30,7 +34,7 @@ vflow::ng-deep svg {
   left: 50%;
   transform: translate(-50%, -50%);
   z-index: 1100;
-  background: #fff;
+  background: var(---modal-bg);
   border: 1px solid #ddd;
   border-radius: 10px;
   box-shadow: 0 4px 24px rgba(0, 0, 0, 0.18);
@@ -75,11 +79,15 @@ vflow::ng-deep svg {
   background: #e5e7eb;
 }
 
+#close-incompatibility-modal-button {
+  background: var(--cancel-button-color);
+}
+
 /* MARK: Context Menu */
 .context-menu {
   position: absolute;
   z-index: 1000;
-  background: #fff;
+  background: var(--node-context-menu-bg);
   border: 1px solid #ddd;
   border-radius: 6px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
@@ -112,7 +120,7 @@ vflow::ng-deep svg {
 .suggestions-menu {
   position: absolute;
   z-index: 1001;
-  background: #fff;
+  background: var(--node-suggestions-submenu-bg);
   border-radius: 6px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.10);
   min-width: 160px;
@@ -138,16 +146,15 @@ vflow::ng-deep svg {
 }
 
 .suggestions-menu li {
-  background: #f8f9fa;
+  background: var(--node-suggestions-submenu-item-bg);
   border-radius: 4px;
   padding: 0.5rem 0.7rem;
   font-size: 0.98rem;
   font-weight: 500;
-  color: #222;
   cursor: pointer;
   transition: background 0.13s, color 0.13s, box-shadow 0.13s;
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
-  border: 1px solid #e5e5e5;
+  border: 1px solid var(--node-suggestions-submenu-item-border-color);
   text-align: left;
   word-break: break-word;
   white-space: pre-line;

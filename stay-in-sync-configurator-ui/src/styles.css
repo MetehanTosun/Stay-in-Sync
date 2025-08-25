@@ -1,4 +1,5 @@
 @import "primeicons/primeicons.css";
+@import "./app/features/sync-rules/sync-rule-styles.css";
 :root {
   /* Typografie */
   --p-font-family-base:     'Inter', sans-serif;

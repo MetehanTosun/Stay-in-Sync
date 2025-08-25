@@ -9,7 +9,7 @@
 }
 
 .constant-node-modal {
-	background: #fff;
+	background: var(--modal-bg);
 	color: #222;
 	border-radius: 8px;
 	box-shadow: 0 4px 16px rgba(0, 0, 0, 0.10);
@@ -32,7 +32,7 @@
 	margin-bottom: 1.5rem;
 	font-size: 1.4rem;
 	font-weight: 600;
-	color: #222;
+	color: var(--modal-title-color);
 }
 .constant-node-modal .form-actions {
 	display: flex;
@@ -56,6 +56,11 @@
 	border-color: #007bff;
 	outline: none;
 }
+
+.constant-node-modal label {
+  color: var(--modal-label-color);
+}
+
 #save-button {
 	background: #007bff;
 	color: #fff;
