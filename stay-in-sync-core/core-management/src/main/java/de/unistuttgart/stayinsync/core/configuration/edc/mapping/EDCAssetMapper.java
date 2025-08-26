@@ -1,12 +1,13 @@
 package de.unistuttgart.stayinsync.core.configuration.edc.mapping;
 
-import de.unistuttgart.stayinsync.core.configuration.edc.EDCAsset;
-import de.unistuttgart.stayinsync.core.configuration.edc.EDCDataAddress;
-import de.unistuttgart.stayinsync.core.configuration.edc.EDCInstance;
-import de.unistuttgart.stayinsync.core.configuration.edc.EDCProperty;
 import de.unistuttgart.stayinsync.core.configuration.edc.dtoedc.EDCAssetDto;
 import de.unistuttgart.stayinsync.core.configuration.edc.dtoedc.EDCDataAddressDto;
 import de.unistuttgart.stayinsync.core.configuration.edc.dtoedc.EDCPropertyDto;
+import de.unistuttgart.stayinsync.core.configuration.edc.entities.EDCAsset;
+import de.unistuttgart.stayinsync.core.configuration.edc.entities.EDCInstance;
+import de.unistuttgart.stayinsync.core.configuration.edc.entities.EDCProperty;
+import de.unistuttgart.stayinsync.core.configuration.edc.entities.EDCDataAddress;
+
 
 public class EDCAssetMapper {
 

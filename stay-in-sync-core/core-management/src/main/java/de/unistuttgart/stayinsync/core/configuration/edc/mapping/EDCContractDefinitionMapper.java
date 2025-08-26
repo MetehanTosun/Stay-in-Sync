@@ -1,7 +1,9 @@
 package de.unistuttgart.stayinsync.core.configuration.edc.mapping;
 
-import de.unistuttgart.stayinsync.core.configuration.edc.*;
 import de.unistuttgart.stayinsync.core.configuration.edc.dtoedc.EDCContractDefinitionDto;
+import de.unistuttgart.stayinsync.core.configuration.edc.entities.EDCAsset;
+import de.unistuttgart.stayinsync.core.configuration.edc.entities.EDCContractDefinition;
+import de.unistuttgart.stayinsync.core.configuration.edc.entities.EDCPolicy;
 
 import java.util.UUID;
 
@@ -26,8 +28,8 @@ public class EDCContractDefinitionMapper {
         entity.id                   = dto.getId(); // leer bei create, gesetzt bei update
         entity.contractDefinitionId = dto.getContractDefinitionId();
         entity.asset                = EDCAsset.findById(dto.getAssetId());
-        entity.accessPolicy         = EDCAccessPolicy.findById(dto.getAccessPolicyId());
-        entity.contractPolicy       = EDCAccessPolicy.findById(dto.getContractPolicyId());
+        entity.accessPolicy         = EDCPolicy.findById(dto.getAccessPolicyId());
+        entity.contractPolicy       = EDCPolicy.findById(dto.getContractPolicyId());
         return entity;
     }
 }

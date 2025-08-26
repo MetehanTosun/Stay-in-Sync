@@ -1,7 +1,7 @@
 package de.unistuttgart.stayinsync.core.configuration.edc.mapping;
 
-import de.unistuttgart.stayinsync.core.configuration.edc.EDCProperty;
 import de.unistuttgart.stayinsync.core.configuration.edc.dtoedc.EDCPropertyDto;
+import de.unistuttgart.stayinsync.core.configuration.edc.entities.EDCProperty;
 
 public class EDCPropertyMapper {
 

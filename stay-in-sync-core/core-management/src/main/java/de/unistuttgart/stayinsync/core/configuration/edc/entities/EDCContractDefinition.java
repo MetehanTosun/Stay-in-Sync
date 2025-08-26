@@ -1,4 +1,6 @@
-package de.unistuttgart.stayinsync.core.configuration.edc;
+package de.unistuttgart.stayinsync.core.configuration.edc.entities;
+
+import java.util.UUID;
 
 import de.unistuttgart.stayinsync.core.model.UuidEntity;
 import jakarta.persistence.*;
@@ -24,7 +26,7 @@ public class EDCContractDefinition extends UuidEntity {
         columnDefinition = "CHAR(36)",
         nullable = false
     )
-    public EDCAccessPolicy accessPolicy;
+    public EDCPolicy accessPolicy;
 
     @ManyToOne(optional = false)
     @JoinColumn(
@@ -32,7 +34,7 @@ public class EDCContractDefinition extends UuidEntity {
         columnDefinition = "CHAR(36)",
         nullable = false
     )
-    public EDCAccessPolicy contractPolicy;
+    public EDCPolicy contractPolicy;
 
     public String getContractDefinitionId() {
         return contractDefinitionId;
@@ -50,19 +52,29 @@ public class EDCContractDefinition extends UuidEntity {
         this.asset = asset;
     }
 
-    public EDCAccessPolicy getAccessPolicy() {
+    public EDCPolicy getAccessPolicy() {
         return accessPolicy;
     }
 
-    public void setAccessPolicy(EDCAccessPolicy accessPolicy) {
+    public void setAccessPolicy(EDCPolicy accessPolicy) {
         this.accessPolicy = accessPolicy;
     }
 
-    public EDCAccessPolicy getContractPolicy() {
+    public EDCPolicy getContractPolicy() {
         return contractPolicy;
     }
 
-    public void setContractPolicy(EDCAccessPolicy contractPolicy) {
+    public void setContractPolicy(EDCPolicy contractPolicy) {
         this.contractPolicy = contractPolicy;
+    }
+
+    public UUID getId() {
+        // TODO Auto-generated method stub
+        throw new UnsupportedOperationException("Unimplemented method 'getId'");
+    }
+
+    public void setId(UUID id) {
+        // TODO Auto-generated method stub
+        throw new UnsupportedOperationException("Unimplemented method 'setId'");
     }
 }

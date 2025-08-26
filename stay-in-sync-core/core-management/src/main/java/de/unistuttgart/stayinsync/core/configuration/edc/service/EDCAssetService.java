@@ -1,12 +1,13 @@
 package de.unistuttgart.stayinsync.core.configuration.edc.service;
 
-import de.unistuttgart.stayinsync.core.configuration.edc.EDCAsset;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.transaction.Transactional;
 
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+
+import de.unistuttgart.stayinsync.core.configuration.edc.entities.EDCAsset;
 
 @ApplicationScoped
 public class EDCAssetService {
@@ -38,7 +39,6 @@ public class EDCAssetService {
         existing.description           = newState.description;
         existing.dataAddress           = newState.dataAddress;
         existing.properties            = newState.properties;
-        existing.edcAccessPolicies     = newState.edcAccessPolicies;
         existing.targetSystemEndpoint  = newState.targetSystemEndpoint;
         existing.targetEDC             = newState.targetEDC;
         return Optional.of(existing);

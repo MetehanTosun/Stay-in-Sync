@@ -1,9 +1,9 @@
 package de.unistuttgart.stayinsync.core.configuration.edc.service;
 
-import de.unistuttgart.stayinsync.core.configuration.edc.EDCAccessPolicy;
-import de.unistuttgart.stayinsync.core.configuration.edc.EDCAsset;
-import de.unistuttgart.stayinsync.core.configuration.edc.EDCContractDefinition;
 import de.unistuttgart.stayinsync.core.configuration.edc.dtoedc.EDCContractDefinitionDto;
+import de.unistuttgart.stayinsync.core.configuration.edc.entities.EDCAsset;
+import de.unistuttgart.stayinsync.core.configuration.edc.entities.EDCContractDefinition;
+import de.unistuttgart.stayinsync.core.configuration.edc.entities.EDCPolicy;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.transaction.Transactional;
 
@@ -34,8 +34,8 @@ public class EDCContractDefinitionService {
             // nur die zu ändernden Felder übernehmen
             existing.contractDefinitionId = dto.getContractDefinitionId();
             existing.asset              = EDCAsset.findById(dto.getAssetId());
-            existing.accessPolicy       = EDCAccessPolicy.findById(dto.getAccessPolicyId());
-            existing.contractPolicy     = EDCAccessPolicy.findById(dto.getContractPolicyId());
+            existing.accessPolicy       = EDCPolicy.findById(dto.getAccessPolicyId());
+            existing.contractPolicy     = EDCPolicy.findById(dto.getContractPolicyId());
             return existing;
         });
     }

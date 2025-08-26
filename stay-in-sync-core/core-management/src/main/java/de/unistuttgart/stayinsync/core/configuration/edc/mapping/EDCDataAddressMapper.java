@@ -1,8 +1,8 @@
 package de.unistuttgart.stayinsync.core.configuration.edc.mapping;
 
 
-import de.unistuttgart.stayinsync.core.configuration.edc.EDCDataAddress;
 import de.unistuttgart.stayinsync.core.configuration.edc.dtoedc.EDCDataAddressDto;
+import de.unistuttgart.stayinsync.core.configuration.edc.entities.EDCDataAddress;
 
 public class EDCDataAddressMapper {
 

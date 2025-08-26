@@ -1,4 +1,4 @@
-package de.unistuttgart.stayinsync.core.configuration.edc;
+package de.unistuttgart.stayinsync.core.configuration.edc.entities;
 
 import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.TargetSystemEndpoint;
 import de.unistuttgart.stayinsync.core.model.UuidEntity;
@@ -44,9 +44,7 @@ public class EDCAsset extends UuidEntity {
     @JoinColumn(name = "target_edc_id", columnDefinition = "CHAR(36)", nullable = false)
     public EDCInstance targetEDC;
 
-    // Optional: Access Policies
-    @OneToMany(mappedBy = "edcAsset", cascade = CascadeType.ALL, orphanRemoval = true)
-    public Set<EDCAccessPolicy> edcAccessPolicies;
+    
 
     // Optional: Contract Definitions
     @OneToMany(mappedBy = "asset", cascade = CascadeType.ALL, orphanRemoval = true)

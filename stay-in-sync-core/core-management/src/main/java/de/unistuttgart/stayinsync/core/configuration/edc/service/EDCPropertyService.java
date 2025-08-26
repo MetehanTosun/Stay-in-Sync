@@ -1,12 +1,13 @@
 package de.unistuttgart.stayinsync.core.configuration.edc.service;
 
-import de.unistuttgart.stayinsync.core.configuration.edc.EDCProperty;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.transaction.Transactional;
 
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+
+import de.unistuttgart.stayinsync.core.configuration.edc.entities.EDCProperty;
 
 @ApplicationScoped
 public class EDCPropertyService {

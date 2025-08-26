@@ -1,7 +1,7 @@
 package de.unistuttgart.stayinsync.core.configuration.edc.mapping;
 
-import de.unistuttgart.stayinsync.core.configuration.edc.EDCInstance;
 import de.unistuttgart.stayinsync.core.configuration.edc.dtoedc.EDCInstanceDto;
+import de.unistuttgart.stayinsync.core.configuration.edc.entities.EDCInstance;
 
 import java.util.Optional;
 import java.util.Set;

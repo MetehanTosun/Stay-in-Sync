@@ -1,9 +1,10 @@
 package de.unistuttgart.stayinsync.core.configuration.edc.service;
 
-import de.unistuttgart.stayinsync.core.configuration.edc.EDCDataAddress;
 import jakarta.enterprise.context.ApplicationScoped;
 import java.util.List;
 import java.util.Optional;
+
+import de.unistuttgart.stayinsync.core.configuration.edc.entities.EDCDataAddress;
 
 @ApplicationScoped
 public class EDCDataAddressService {
