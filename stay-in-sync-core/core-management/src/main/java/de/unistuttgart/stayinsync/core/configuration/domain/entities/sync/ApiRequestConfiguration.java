@@ -3,6 +3,7 @@ package de.unistuttgart.stayinsync.core.configuration.domain.entities.sync;
 import io.quarkus.hibernate.orm.panache.PanacheEntity;
 import jakarta.persistence.*;
 
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
@@ -19,10 +20,10 @@ public abstract class ApiRequestConfiguration extends PanacheEntity {
     public SyncSystemEndpoint syncSystemEndpoint;
 
     @OneToMany(mappedBy = "requestConfiguration")
-    public Set<ApiEndpointQueryParamValue> queryParameterValues;
+    public Set<ApiEndpointQueryParamValue> queryParameterValues = new HashSet<>();
 
     @OneToMany(mappedBy = "requestConfiguration")
-    public Set<ApiHeaderValue> apiRequestHeaders;
+    public Set<ApiHeaderValue> apiRequestHeaders = new HashSet<>();
 
     public List<ApiHeaderValue> findRequestHeadersByConfigurationId(Long requestConfigurationId) {
         return ApiHeaderValue.list("requestConfiguration.id", requestConfigurationId);

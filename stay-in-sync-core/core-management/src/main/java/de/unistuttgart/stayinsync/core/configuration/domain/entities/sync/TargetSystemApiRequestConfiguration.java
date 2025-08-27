@@ -3,6 +3,8 @@ package de.unistuttgart.stayinsync.core.configuration.domain.entities.sync;
 import de.unistuttgart.stayinsync.transport.domain.TargetApiRequestConfigurationPatternType;
 import jakarta.persistence.*;
 
+import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
@@ -10,7 +12,7 @@ import java.util.Set;
 public class TargetSystemApiRequestConfiguration extends ApiRequestConfiguration {
 
     @ManyToMany(mappedBy = "targetSystemApiRequestConfigurations")
-    public Set<Transformation> transformations;
+    public Set<Transformation> transformations = new HashSet<>();
 
     @ManyToOne
     public TargetSystem targetSystem;
@@ -29,5 +31,5 @@ public class TargetSystemApiRequestConfiguration extends ApiRequestConfiguration
             fetch = FetchType.EAGER
     )
     @OrderBy("executionOrder ASC")
-    public List<TargetSystemApiRequestConfigurationAction> actions;
+    public List<TargetSystemApiRequestConfigurationAction> actions = new ArrayList<>();
 }

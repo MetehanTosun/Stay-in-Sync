@@ -40,10 +40,9 @@ export class DashboardComponent {
 
   searchTerm = '';
   tabs = [
-    { route: '/dashboard/logs', label: 'Logs Panel', icon: 'pi pi-file' },
-    { route: '/dashboard/metrics', label: 'Metrics Panel', icon: 'pi pi-chart-line' },
-    { route: '/dashboard/snapshots', label: 'Snapshots Panel', icon: 'pi pi-camera' },
-    { route: '/dashboard/replay', label: 'Replay Panel', icon: 'pi pi-refresh' }
+    { route: '/log-table', label: 'Logs Panel', icon: 'pi pi-file' },
+    { route: '/metrics-view', label: 'Metrics Panel', icon: 'pi pi-chart-line' },
+    { route: '/replay', label: 'Replay Panel', icon: 'pi pi-refresh' }
   ];
 
   onSearch(term: string) {
