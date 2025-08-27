@@ -15,7 +15,6 @@ public record TransformationDetailsDTO(
         // Set<Long> sourceSystemVariableIds,
         JobDeploymentStatus deploymentStatus,
         Long transformationRuleId,
-        TransformationScriptDTO script,
-        Set<SourceSystemApiRequestConfiguration> sourceSystemApiRequestConfigurations
+        TransformationScriptDTO script
 ) {
 }
