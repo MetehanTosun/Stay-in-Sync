@@ -351,7 +351,7 @@ save(): void {
         this.isDiscovering = false;
         // handle both list and paged result
         this.submodels = Array.isArray(resp) ? resp : (resp?.result ?? []);
-        this.treeNodes = this.submodels.map(sm => this.mapSubmodelToNode(sm));
+        this.treeNodes = this.submodels.map((sm: any) => this.mapSubmodelToNode(sm));
       },
       error: (err) => {
         this.isDiscovering = false;
@@ -374,7 +374,7 @@ save(): void {
           const list = Array.isArray(resp) ? resp : (resp?.result ?? []);
           this.elementsBySubmodel[submodelId] = list;
           if (attachToNode) {
-            attachToNode.children = list.map(el => this.mapElementToNode(submodelId, el));
+            attachToNode.children = list.map((el: any) => this.mapElementToNode(submodelId, el));
           }
         },
         error: (err) => {
@@ -393,7 +393,7 @@ save(): void {
         next: (resp) => {
           this.childrenLoading[key] = false;
           const list = Array.isArray(resp) ? resp : (resp?.result ?? []);
-          node.children = list.map(el => this.mapElementToNode(submodelId, el));
+          node.children = list.map((el: any) => this.mapElementToNode(submodelId, el));
         },
         error: (err) => {
           this.childrenLoading[key] = false;
