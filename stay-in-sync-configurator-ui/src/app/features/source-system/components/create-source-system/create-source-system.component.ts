@@ -445,6 +445,41 @@ save(): void {
   // Create dialogs
   showSubmodelDialog = false;
   newSubmodelJson = '{\n  "id": "https://example.com/ids/sm/new",\n  "idShort": "NewSubmodel"\n}';
+  minimalSubmodelTemplate: string = `{
+  "id": "https://example.com/ids/sm/new",
+  "idShort": "NewSubmodel",
+  "kind": "Instance"
+}`;
+  propertySubmodelTemplate: string = `{
+  "id": "https://example.com/ids/sm/new",
+  "idShort": "NewSubmodel",
+  "submodelElements": [
+    {
+      "modelType": "Property",
+      "idShort": "Name",
+      "valueType": "xs:string",
+      "value": "Foo"
+    }
+  ]
+}`;
+  collectionSubmodelTemplate: string = `{
+  "id": "https://example.com/ids/sm/new",
+  "idShort": "NewSubmodel",
+  "submodelElements": [
+    {
+      "modelType": "SubmodelElementCollection",
+      "idShort": "address",
+      "value": [
+        { "modelType": "Property", "idShort": "street", "valueType": "xs:string", "value": "Main St" }
+      ]
+    }
+  ]
+}`;
+  setSubmodelTemplate(kind: 'minimal'|'property'|'collection'): void {
+    if (kind === 'minimal') this.newSubmodelJson = this.minimalSubmodelTemplate;
+    if (kind === 'property') this.newSubmodelJson = this.propertySubmodelTemplate;
+    if (kind === 'collection') this.newSubmodelJson = this.collectionSubmodelTemplate;
+  }
   openCreateSubmodel(): void { this.showSubmodelDialog = true; }
   createSubmodel(): void {
     if (!this.createdSourceSystemId) return;
