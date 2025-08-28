@@ -17,6 +17,6 @@ public interface RequestConfigurationMessageMapper {
      * @param entity The source entity.
      * @return The DTO for the message queue.
      */
-    @Mapping(source = "targetSystem.apiUrl", target = "alias")
+    @Mapping(source = "targetSystem.apiUrl", target = "baseUrl")
     RequestConfigurationMessageDTO mapToMessageDTO(TargetSystemApiRequestConfiguration entity);
 }
