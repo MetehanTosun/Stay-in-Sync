@@ -12,6 +12,8 @@ import {ButtonModule} from 'primeng/button';
 import {TextareaModule} from 'primeng/textarea';
 import {StepsModule} from 'primeng/steps';
 import {FileSelectEvent, FileUploadEvent, FileUploadModule} from 'primeng/fileupload';
+import {TreeModule} from 'primeng/tree';
+import {TreeNode} from 'primeng/api';
 
 
 
@@ -47,6 +49,7 @@ import {AasService} from '../../services/aas.service';
     ManageEndpointsComponent,
     StepsModule,
     FileUploadModule,
+    TreeModule,
   ]
 })
 export class CreateSourceSystemComponent implements OnInit, OnChanges {
@@ -336,8 +339,9 @@ save(): void {
     return !this.form.invalid && this.aasTestOk === true;
   }
 
-  // AAS Step 3 basic discover
+  // AAS Step 3 rich tree
   submodels: any[] = [];
+  treeNodes: TreeNode[] = [];
   isDiscovering = false;
   discoverSubmodels(): void {
     if (!this.createdSourceSystemId) return;
@@ -347,6 +351,7 @@ save(): void {
         this.isDiscovering = false;
         // handle both list and paged result
         this.submodels = Array.isArray(resp) ? resp : (resp?.result ?? []);
+        this.treeNodes = this.submodels.map(sm => this.mapSubmodelToNode(sm));
       },
       error: (err) => {
         this.isDiscovering = false;
@@ -359,7 +364,7 @@ save(): void {
   elementsBySubmodel: Record<string, any[]> = {};
   childrenLoading: Record<string, boolean> = {};
 
-  loadRootElements(submodelId: string): void {
+  loadRootElements(submodelId: string, attachToNode?: TreeNode): void {
     if (!this.createdSourceSystemId) return;
     this.childrenLoading[submodelId] = true;
     this.aasService.listElements(this.createdSourceSystemId, submodelId, { depth: 'shallow', source: 'SNAPSHOT' })
@@ -368,6 +373,9 @@ save(): void {
           this.childrenLoading[submodelId] = false;
           const list = Array.isArray(resp) ? resp : (resp?.result ?? []);
           this.elementsBySubmodel[submodelId] = list;
+          if (attachToNode) {
+            attachToNode.children = list.map(el => this.mapElementToNode(submodelId, el));
+          }
         },
         error: (err) => {
           this.childrenLoading[submodelId] = false;
@@ -376,7 +384,7 @@ save(): void {
       });
   }
 
-  loadChildren(submodelId: string, parentPath: string, node: any): void {
+  loadChildren(submodelId: string, parentPath: string, node: TreeNode): void {
     if (!this.createdSourceSystemId) return;
     const key = `${submodelId}::${parentPath}`;
     this.childrenLoading[key] = true;
@@ -385,13 +393,49 @@ save(): void {
         next: (resp) => {
           this.childrenLoading[key] = false;
           const list = Array.isArray(resp) ? resp : (resp?.result ?? []);
-          node.__children = list;
+          node.children = list.map(el => this.mapElementToNode(submodelId, el));
         },
         error: (err) => {
           this.childrenLoading[key] = false;
           this.errorService.handleError(err);
         }
       });
+  }
+
+  // Tree mapping helpers
+  private mapSubmodelToNode(sm: any): TreeNode {
+    const id = sm.id || (sm.keys && sm.keys[0]?.value);
+    const label = sm.idShort || id;
+    return {
+      key: id,
+      label,
+      data: { type: 'submodel', id, raw: sm },
+      leaf: false,
+      children: []
+    } as TreeNode;
+  }
+
+  private mapElementToNode(submodelId: string, el: any): TreeNode {
+    const label = `${el.idShort} (${el.modelType})`;
+    const hasChildren = !!el.hasChildren;
+    return {
+      key: `${submodelId}::${el.idShortPath}`,
+      label,
+      data: { type: 'element', submodelId, idShortPath: el.idShortPath, modelType: el.modelType, raw: el },
+      leaf: !hasChildren,
+      children: []
+    } as TreeNode;
+  }
+
+  onNodeExpand(event: any): void {
+    const node: TreeNode = event.node;
+    if (!node) return;
+    if (node.data?.type === 'submodel') {
+      this.loadRootElements(node.data.id, node);
+    } else if (node.data?.type === 'element') {
+      const { submodelId, idShortPath } = node.data;
+      this.loadChildren(submodelId, idShortPath, node);
+    }
   }
 
   // Create dialogs
