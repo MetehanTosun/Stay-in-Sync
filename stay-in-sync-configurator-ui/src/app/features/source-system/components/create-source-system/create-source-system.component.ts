@@ -283,8 +283,30 @@ save(): void {
   aasPreview: { idShort?: string; assetKind?: string } | null = null;
   aasTestOk: boolean | null = null;
   aasError: string | null = null;
+  // Temp login state for AAS
+  isAasAuthenticated = false;
+  showLoginDialog = false;
+  loginUsername = '';
+  loginPassword = '';
+
+  openLogin(): void {
+    this.showLoginDialog = true;
+  }
+  doLogin(): void {
+    if (this.loginUsername && this.loginPassword) {
+      this.isAasAuthenticated = true;
+      this.showLoginDialog = false;
+    }
+  }
+  logout(): void {
+    this.isAasAuthenticated = false;
+  }
 
   testAasConnection(): void {
+    if (this.isAas() && !this.isAasAuthenticated) {
+      this.openLogin();
+      return;
+    }
     if (!this.createdSourceSystemId) {
       this.save();
       return;
@@ -317,13 +339,17 @@ save(): void {
       return !this.form.invalid;
     }
     // For AAS: require valid form and successful test
-    return !this.form.invalid && this.aasTestOk === true;
+    return !this.form.invalid && this.aasTestOk === true && this.isAasAuthenticated === true;
   }
 
   // AAS Step 3 basic discover
   submodels: any[] = [];
   isDiscovering = false;
   discoverSubmodels(): void {
+    if (this.isAas() && !this.isAasAuthenticated) {
+      this.openLogin();
+      return;
+    }
     if (!this.createdSourceSystemId) return;
     this.isDiscovering = true;
     this.aasService.listSubmodels(this.createdSourceSystemId, 'SNAPSHOT').subscribe({
@@ -344,6 +370,10 @@ save(): void {
   childrenLoading: Record<string, boolean> = {};
 
   loadRootElements(submodelId: string): void {
+    if (this.isAas() && !this.isAasAuthenticated) {
+      this.openLogin();
+      return;
+    }
     if (!this.createdSourceSystemId) return;
     this.childrenLoading[submodelId] = true;
     this.aasService.listElements(this.createdSourceSystemId, submodelId, { depth: 'shallow', source: 'SNAPSHOT' })
@@ -361,6 +391,10 @@ save(): void {
   }
 
   loadChildren(submodelId: string, parentPath: string, node: any): void {
+    if (this.isAas() && !this.isAasAuthenticated) {
+      this.openLogin();
+      return;
+    }
     if (!this.createdSourceSystemId) return;
     const key = `${submodelId}::${parentPath}`;
     this.childrenLoading[key] = true;
@@ -383,6 +417,10 @@ save(): void {
   newSubmodelJson = '{\n  "id": "https://example.com/ids/sm/new",\n  "idShort": "NewSubmodel"\n}';
   openCreateSubmodel(): void { this.showSubmodelDialog = true; }
   createSubmodel(): void {
+    if (this.isAas() && !this.isAasAuthenticated) {
+      this.openLogin();
+      return;
+    }
     if (!this.createdSourceSystemId) return;
     try {
       const body = JSON.parse(this.newSubmodelJson);
@@ -408,6 +446,10 @@ save(): void {
     this.showElementDialog = true;
   }
   createElement(): void {
+    if (this.isAas() && !this.isAasAuthenticated) {
+      this.openLogin();
+      return;
+    }
     if (!this.createdSourceSystemId || !this.targetSubmodelId) return;
     try {
       const body = JSON.parse(this.newElementJson);
@@ -439,6 +481,10 @@ save(): void {
   valueNew = '';
   valueTypeHint = 'xs:string';
   openSetValue(smId: string, element: any): void {
+    if (this.isAas() && !this.isAasAuthenticated) {
+      this.openLogin();
+      return;
+    }
     this.valueSubmodelId = smId;
     this.valueElementPath = element.idShortPath;
     this.valueTypeHint = element.valueType || 'xs:string';
@@ -446,6 +492,10 @@ save(): void {
     this.showValueDialog = true;
   }
   setValue(): void {
+    if (this.isAas() && !this.isAasAuthenticated) {
+      this.openLogin();
+      return;
+    }
     if (!this.createdSourceSystemId || !this.valueSubmodelId || !this.valueElementPath) return;
     const smIdB64 = this.aasService.encodeIdToBase64Url(this.valueSubmodelId);
     const payload = {
