@@ -52,7 +52,7 @@ public class AasTraversalClient {
     }
 
     public Uni<HttpResponse<Buffer>> patchElementValue(String baseUrl, String submodelId, String path, String body, Map<String, String> headers) {
-        String url = baseUrl + "/submodels/" + encode(submodelId) + "/submodel-elements/" + path + "/value";
+        String url = baseUrl + "/submodels/" + encode(submodelId) + "/submodel-elements/" + path + "/$value";
         return http.writeJson(HttpMethod.PATCH, url, body, headers);
     }
 
