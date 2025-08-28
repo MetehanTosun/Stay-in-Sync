@@ -322,6 +322,8 @@ save(): void {
           this.aasPreview = null;
           this.aasTestOk = true;
         }
+        // ensure snapshot contains idShort for submodels by refreshing once after a successful test
+        this.aasService.refreshSnapshot(this.createdSourceSystemId).subscribe({ next: () => {}, error: () => {} });
       },
       error: (err) => {
         this.isTesting = false;
@@ -404,8 +406,8 @@ save(): void {
 
   // Tree mapping helpers
   private mapSubmodelToNode(sm: any): TreeNode {
-    const id = sm.id || (sm.keys && sm.keys[0]?.value);
-    const label = (sm.idShort || sm.submodelIdShort) || id;
+    const id = sm.submodelId || sm.id || (sm.keys && sm.keys[0]?.value);
+    const label = (sm.submodelIdShort || sm.idShort) || id;
     return {
       key: id,
       label,

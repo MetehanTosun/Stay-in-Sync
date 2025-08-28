@@ -11,6 +11,11 @@ export class AasService {
     return this.http.post(url, {});
   }
 
+  refreshSnapshot(sourceSystemId: number): Observable<any> {
+    const url = `/api/config/source-system/${sourceSystemId}/aas/snapshot/refresh`;
+    return this.http.post(url, {});
+  }
+
   listSubmodels(sourceSystemId: number, source: 'SNAPSHOT' | 'LIVE' = 'SNAPSHOT'): Observable<any> {
     const url = `/api/config/source-system/${sourceSystemId}/aas/submodels`;
     const params = new HttpParams().set('source', source);
