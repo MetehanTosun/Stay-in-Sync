@@ -405,7 +405,7 @@ save(): void {
   // Tree mapping helpers
   private mapSubmodelToNode(sm: any): TreeNode {
     const id = sm.id || (sm.keys && sm.keys[0]?.value);
-    const label = sm.idShort || id;
+    const label = (sm.idShort || sm.submodelIdShort) || id;
     return {
       key: id,
       label,
