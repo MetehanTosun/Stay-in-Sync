@@ -172,7 +172,14 @@
     <button pButton type="button" class="p-button-text" label="Cancel" (click)="showSubmodelDialog=false"></button>
     <button pButton type="button" label="Create" (click)="createSubmodel()"></button>
   </ng-template>
-  <button pButton type="button" class="p-button-text" label="Use example" (click)="newSubmodelJson='{}'"></button>
+  <div class="p-mt-2" style="display:flex;gap:.5rem;flex-wrap:wrap;">
+    <button pButton type="button" class="p-button-text" label="Template: Minimal" (click)="newSubmodelJson='{
+  \"id\": \"https://example.com/ids/sm/new\",\n  \"idShort\": \"NewSubmodel\",\n  \"kind\": \"Instance\"\n}'"></button>
+    <button pButton type="button" class="p-button-text" label="Template: With Property" (click)="newSubmodelJson='{
+  \"id\": \"https://example.com/ids/sm/new\",\n  \"idShort\": \"NewSubmodel\",\n  \"submodelElements\": [ {\n    \"modelType\": \"Property\",\n    \"idShort\": \"Name\",\n    \"valueType\": \"xs:string\",\n    \"value\": \"Foo\"\n  } ]\n}'"></button>
+    <button pButton type="button" class="p-button-text" label="Template: With Collection" (click)="newSubmodelJson='{
+  \"id\": \"https://example.com/ids/sm/new\",\n  \"idShort\": \"NewSubmodel\",\n  \"submodelElements\": [ {\n    \"modelType\": \"SubmodelElementCollection\",\n    \"idShort\": \"address\",\n    \"value\": [ { \n      \"modelType\": \"Property\", \n      \"idShort\": \"street\", \n      \"valueType\": \"xs:string\", \n      \"value\": \"Main St\" } ]\n  } ]\n}'"></button>
+  </div>
 </p-dialog>
 
 <!-- Dialog: Create Element -->
