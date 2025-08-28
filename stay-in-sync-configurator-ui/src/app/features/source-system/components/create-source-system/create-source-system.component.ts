@@ -446,10 +446,6 @@ save(): void {
     this.showValueDialog = true;
   }
   setValue(): void {
-    if (this.isAas() && !this.isAasAuthenticated) {
-      this.openLogin();
-      return;
-    }
     if (!this.createdSourceSystemId || !this.valueSubmodelId || !this.valueElementPath) return;
     const smIdB64 = this.aasService.encodeIdToBase64Url(this.valueSubmodelId);
     const payload = {
