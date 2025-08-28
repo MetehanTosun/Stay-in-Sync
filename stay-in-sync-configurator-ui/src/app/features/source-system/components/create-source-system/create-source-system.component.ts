@@ -306,9 +306,7 @@ save(): void {
       },
       error: (err) => {
         this.isTesting = false;
-        this.aasError = this.errorService.extractMessage
-          ? this.errorService.extractMessage(err)
-          : 'Test failed';
+        this.aasError = 'Test failed';
         this.aasTestOk = false;
       }
     });

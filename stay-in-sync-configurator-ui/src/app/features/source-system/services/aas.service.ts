@@ -60,8 +60,10 @@ export class AasService {
 
   encodeIdToBase64Url(id: string): string {
     if (!id) return id;
-    const enc = typeof window !== 'undefined' && (window as any).btoa ? (window as any).btoa : (str: string) => Buffer.from(str, 'utf-8').toString('base64');
-    return enc(id)
+    const b64 = typeof window !== 'undefined' && (window as any).btoa
+      ? (window as any).btoa(unescape(encodeURIComponent(id)))
+      : id; // fallback: return original
+    return b64
       .replace(/=+$/g, '')
       .replace(/\+/g, '-')
       .replace(/\//g, '_');
