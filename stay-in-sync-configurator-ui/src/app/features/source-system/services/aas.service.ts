@@ -28,7 +28,8 @@ export class AasService {
     if (options?.parentPath) {
       params = params.set('parentPath', options.parentPath);
     }
-    const url = `/api/config/source-system/${sourceSystemId}/aas/submodels/${submodelId}/elements`;
+    const submodelIdEnc = this.encodeIdToBase64Url(submodelId);
+    const url = `/api/config/source-system/${sourceSystemId}/aas/submodels/${submodelIdEnc}/elements`;
     return this.http.get(url, { params });
   }
 
