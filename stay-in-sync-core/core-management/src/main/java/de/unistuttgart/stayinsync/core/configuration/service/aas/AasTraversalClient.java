@@ -24,7 +24,6 @@ public class AasTraversalClient {
     }
 
     public Uni<HttpResponse<Buffer>> listElements(String baseUrl, String submodelId, String depth, String parentPath, Map<String, String> headers) {
-        // BaSyx v2: /submodels/{submodelIdentifier}/submodel-elements with query param level=core|deep
         String url = baseUrl + "/submodels/" + encode(submodelId) + "/submodel-elements";
         if (parentPath != null && !parentPath.isBlank()) {
             url += "/" + parentPath;

@@ -13,7 +13,6 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.transaction.Transactional;
 import jakarta.inject.Inject;
 
-import java.util.Map;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -71,7 +70,6 @@ public class AasStructureSnapshotService {
                 persistSubmodelLite(ss, root);
             }
 
-            // After submodels persisted, load shallow elements for each submodel and persist element metadata
             var submodels = AasSubmodelLite.list("sourceSystem.id", sourceSystemId);
             for (Object o : submodels) {
                 AasSubmodelLite sm = (AasSubmodelLite) o;
@@ -105,12 +103,10 @@ public class AasStructureSnapshotService {
     }
 
     private void persistSubmodelLite(SourceSystem ss, JsonNode n) {
-        // Accept both full submodel objects and submodel-refs entries
         String id = textOrNull(n, "id");
         if (id == null && n.has("identification")) {
             id = textOrNull(n.get("identification"), "id");
         }
-        // submodel-refs: { "type": "ModelReference", "keys":[{"type":"Submodel","value":"<ID>"}] }
         if (id == null && n.has("keys") && n.get("keys").isArray() && n.get("keys").size() > 0) {
             JsonNode k0 = n.get("keys").get(0);
             if (k0 != null && "Submodel".equals(textOrNull(k0, "type"))) {
@@ -123,7 +119,6 @@ public class AasStructureSnapshotService {
         String semanticId = textOrNull(n, "semanticId");
         String kind = textOrNull(n, "kind");
 
-        // If coming from refs, enrich by fetching the full submodel once
         if (idShort == null || semanticId == null || kind == null) {
             try {
                 String smIdB64 = toBase64Url(id);
@@ -168,7 +163,6 @@ public class AasStructureSnapshotService {
         String modelType = textOrNull(n, "modelType");
         String idShortPath = parentPath == null || parentPath.isBlank() ? idShort : parentPath + "/" + idShort;
 
-        // deduplicate on (submodel, idShortPath)
         String key = submodel.id + "::" + idShortPath;
         if (seen != null) {
             if (seen.contains(key)) return;
@@ -185,7 +179,6 @@ public class AasStructureSnapshotService {
         e.semanticId = textOrNull(n, "semanticId");
         e.typeValueListElement = textOrNull(n, "valueTypeListElement");
         e.orderRelevant = n.has("orderRelevant") ? n.get("orderRelevant").asBoolean(false) : null;
-        // hasChildren heuristic
         e.hasChildren = "SubmodelElementCollection".equalsIgnoreCase(modelType)
                 || "SubmodelElementList".equalsIgnoreCase(modelType)
                 || "Entity".equalsIgnoreCase(modelType);
@@ -202,7 +195,6 @@ public class AasStructureSnapshotService {
                 e.isReference = true;
                 e.referenceTargetType = textOrNull(val, "type");
                 e.referenceKeys = val.has("keys") ? val.get("keys").toString() : null;
-                // try submodel key target
                 if (val.has("keys") && val.get("keys").isArray() && val.get("keys").size() > 0) {
                     JsonNode k0 = val.get("keys").get(0);
                     if (k0 != null && "Submodel".equals(textOrNull(k0, "type"))) {

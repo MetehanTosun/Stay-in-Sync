@@ -19,8 +19,6 @@ import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 
-import java.util.List;
-import java.util.Map;
 
 @Path("/api/config/source-system/{sourceSystemId}/aas")
 @Produces(MediaType.APPLICATION_JSON)
@@ -268,7 +266,6 @@ public class AasResource {
         int sc = resp.statusCode();
         Log.infof("PUT element upstream status=%d msg=%s body=%s", sc, resp.statusMessage(), safeBody(resp));
         if (sc >= 200 && sc < 300) {
-            // Simple approach: try delta apply (if path corresponds to idShortPath)
             return Response.ok(resp.bodyAsString()).build();
         }
         return aasService.mapHttpError(sc, resp.statusMessage(), resp.bodyAsString());
@@ -323,9 +320,7 @@ public class AasResource {
     }
 
     private String normalizeSubmodelId(String smId) {
-        // allow base64url in SNAPSHOT paths: decode to plain id stored in DB
         if (smId == null) return null;
-        // try base64url decode; if fails, assume already plain
         try {
             byte[] decoded = java.util.Base64.getUrlDecoder().decode(smId);
             String plain = new String(decoded, java.nio.charset.StandardCharsets.UTF_8);
