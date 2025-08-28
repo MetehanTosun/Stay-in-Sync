@@ -119,7 +119,29 @@
       </div>
       <ul>
         <li *ngFor="let sm of submodels">
-          <span>{{ (sm.idShort || sm.id || (sm.keys && sm.keys[0]?.value)) }}</span>
+          <div style="display:flex;align-items:center;gap:.5rem;">
+            <span>{{ (sm.idShort || sm.id || (sm.keys && sm.keys[0]?.value)) }}</span>
+            <button pButton type="button" class="p-button-text" label="Load elements" (click)="loadRootElements((sm.id || (sm.keys && sm.keys[0]?.value)))"></button>
+            <button pButton type="button" class="p-button-text" label="+ Element" (click)="openCreateElement((sm.id || (sm.keys && sm.keys[0]?.value)))"></button>
+          </div>
+          <ul *ngIf="elementsBySubmodel[(sm.id || (sm.keys && sm.keys[0]?.value))] as els">
+            <li *ngFor="let el of els">
+              <div style="display:flex;align-items:center;gap:.5rem;">
+                <span>{{ el.idShort }} <small>({{ el.modelType }})</small></span>
+                <button *ngIf="el.hasChildren" pButton type="button" class="p-button-text" label="Load children" (click)="loadChildren((sm.id || (sm.keys && sm.keys[0]?.value)), el.idShortPath, el)"></button>
+                <button pButton type="button" class="p-button-text" label="+ Element here" (click)="openCreateElement((sm.id || (sm.keys && sm.keys[0]?.value)), el.idShortPath)"></button>
+              </div>
+              <ul *ngIf="el.__children as ch">
+                <li *ngFor="let c of ch">
+                  <div style="display:flex;align-items:center;gap:.5rem;">
+                    <span>{{ c.idShort }} <small>({{ c.modelType }})</small></span>
+                    <button *ngIf="c.hasChildren" pButton type="button" class="p-button-text" label="Load children" (click)="loadChildren((sm.id || (sm.keys && sm.keys[0]?.value)), c.idShortPath, c)"></button>
+                    <button pButton type="button" class="p-button-text" label="+ Element here" (click)="openCreateElement((sm.id || (sm.keys && sm.keys[0]?.value)), c.idShortPath)"></button>
+                  </div>
+                </li>
+              </ul>
+            </li>
+          </ul>
         </li>
       </ul>
     </ng-template>
@@ -156,4 +178,32 @@
       </button>
     </div>
   </ng-template>
+</p-dialog>
+
+<!-- Dialog: Create Submodel -->
+<p-dialog header="Create Submodel" [(visible)]="showSubmodelDialog" [modal]="true" [style]="{width:'40vw'}">
+  <textarea pInputTextarea [(ngModel)]="newSubmodelJson" rows="10" style="width:100%"></textarea>
+  <ng-template pTemplate="footer">
+    <button pButton type="button" class="p-button-text" label="Cancel" (click)="showSubmodelDialog=false"></button>
+    <button pButton type="button" label="Create" (click)="createSubmodel()"></button>
+  </ng-template>
+  <button pButton type="button" class="p-button-text" label="Use example" (click)="newSubmodelJson='{}'"></button>
+</p-dialog>
+
+<!-- Dialog: Create Element -->
+<p-dialog header="Create Element" [(visible)]="showElementDialog" [modal]="true" [style]="{width:'40vw'}">
+  <div class="p-field">
+    <label>Submodel ID</label>
+    <input pInputText [value]="targetSubmodelId" disabled />
+  </div>
+  <div class="p-field">
+    <label>Parent Path</label>
+    <input pInputText [value]="parentPath" disabled />
+  </div>
+  <textarea pInputTextarea [(ngModel)]="newElementJson" rows="10" style="width:100%"></textarea>
+  <ng-template pTemplate="footer">
+    <button pButton type="button" class="p-button-text" label="Cancel" (click)="showElementDialog=false"></button>
+    <button pButton type="button" label="Create" (click)="createElement()"></button>
+  </ng-template>
+  <button pButton type="button" class="p-button-text" label="Use example" (click)="newElementJson='{}'"></button>
 </p-dialog>

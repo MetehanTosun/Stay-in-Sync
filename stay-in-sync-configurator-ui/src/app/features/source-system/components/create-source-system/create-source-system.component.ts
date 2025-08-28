@@ -338,6 +338,98 @@ save(): void {
       }
     });
   }
+
+  // Lazy tree state for elements
+  elementsBySubmodel: Record<string, any[]> = {};
+  childrenLoading: Record<string, boolean> = {};
+
+  loadRootElements(submodelId: string): void {
+    if (!this.createdSourceSystemId) return;
+    this.childrenLoading[submodelId] = true;
+    this.aasService.listElements(this.createdSourceSystemId, submodelId, { depth: 'shallow', source: 'SNAPSHOT' })
+      .subscribe({
+        next: (resp) => {
+          this.childrenLoading[submodelId] = false;
+          const list = Array.isArray(resp) ? resp : (resp?.result ?? []);
+          this.elementsBySubmodel[submodelId] = list;
+        },
+        error: (err) => {
+          this.childrenLoading[submodelId] = false;
+          this.errorService.handleError(err);
+        }
+      });
+  }
+
+  loadChildren(submodelId: string, parentPath: string, node: any): void {
+    if (!this.createdSourceSystemId) return;
+    const key = `${submodelId}::${parentPath}`;
+    this.childrenLoading[key] = true;
+    this.aasService.listElements(this.createdSourceSystemId, submodelId, { depth: 'shallow', parentPath, source: 'SNAPSHOT' })
+      .subscribe({
+        next: (resp) => {
+          this.childrenLoading[key] = false;
+          const list = Array.isArray(resp) ? resp : (resp?.result ?? []);
+          node.__children = list;
+        },
+        error: (err) => {
+          this.childrenLoading[key] = false;
+          this.errorService.handleError(err);
+        }
+      });
+  }
+
+  // Create dialogs
+  showSubmodelDialog = false;
+  newSubmodelJson = '{\n  "id": "https://example.com/ids/sm/new",\n  "idShort": "NewSubmodel"\n}';
+  openCreateSubmodel(): void { this.showSubmodelDialog = true; }
+  createSubmodel(): void {
+    if (!this.createdSourceSystemId) return;
+    try {
+      const body = JSON.parse(this.newSubmodelJson);
+      this.aasService.createSubmodel(this.createdSourceSystemId, body).subscribe({
+        next: () => {
+          this.showSubmodelDialog = false;
+          this.discoverSubmodels();
+        },
+        error: (err) => this.errorService.handleError(err)
+      });
+    } catch (e) {
+      this.errorService.handleError(e as any);
+    }
+  }
+
+  showElementDialog = false;
+  targetSubmodelId = '';
+  parentPath = '';
+  newElementJson = '{\n  "modelType": "Property",\n  "idShort": "NewProp",\n  "valueType": "xs:string",\n  "value": "42"\n}';
+  openCreateElement(smId: string, parent?: string): void {
+    this.targetSubmodelId = smId;
+    this.parentPath = parent || '';
+    this.showElementDialog = true;
+  }
+  createElement(): void {
+    if (!this.createdSourceSystemId || !this.targetSubmodelId) return;
+    try {
+      const body = JSON.parse(this.newElementJson);
+      this.aasService.createElement(this.createdSourceSystemId, this.targetSubmodelId, body, this.parentPath || undefined)
+        .subscribe({
+          next: () => {
+            this.showElementDialog = false;
+            if (this.parentPath) {
+              // refresh children under parent
+              const dummy: any = {};
+              this.loadChildren(this.targetSubmodelId, this.parentPath, dummy);
+            } else {
+              // refresh root elements
+              this.loadRootElements(this.targetSubmodelId);
+            }
+          },
+          error: (err) => this.errorService.handleError(err)
+        });
+    } catch (e) {
+      this.errorService.handleError(e as any);
+    }
+  }
   /**
    * Advances the stepper to the next step.
    * If on first step, saves the Source System before proceeding.
