@@ -249,7 +249,7 @@ save(): void {
    *
    * @param dto Prepared DTO for creation.
    */
-  private postDto(dto: CreateSourceSystemDTO): void {
+  private postDto(dto: CreateSourceSystemDTO, opts?: { advanceStep?: boolean, onSuccess?: (resp: SourceSystemDTO) => void }): void {
     console.log('📤 Sending DTO to backend:', dto);
     console.log('📤 openApiSpec field:', dto.openApiSpec);
     console.log('📤 openApiSpec type:', typeof dto.openApiSpec);
@@ -261,7 +261,12 @@ save(): void {
           console.log('✅ Backend response:', resp);
           console.log('✅ Returned openApiSpec:', resp.openApiSpec);
           this.createdSourceSystemId = resp.id!;
-          this.currentStep = 1;
+          if (opts?.advanceStep !== false) {
+            this.currentStep = 1;
+          }
+          if (opts?.onSuccess) {
+            opts.onSuccess(resp);
+          }
         },
         error: (err) => {
           console.error('❌ CREATE failed:', err);
@@ -286,7 +291,18 @@ save(): void {
 
   testAasConnection(): void {
     if (!this.createdSourceSystemId) {
-      this.save();
+      // create silently (no step advance), then re-run test
+      const base = { ...this.form.getRawValue() } as CreateSourceSystemDTO;
+      delete (base as any).authConfig;
+      const authType = this.form.get('apiAuthType')!.value as ApiAuthType;
+      const cfg = this.form.get('authConfig')!.value;
+      if (authType === ApiAuthType.Basic) {
+        base.authConfig = { authType, username: cfg.username, password: cfg.password } as BasicAuthDTO;
+      } else if (authType === ApiAuthType.ApiKey) {
+        base.authConfig = { authType, apiKey: cfg.apiKey, headerName: cfg.headerName } as ApiKeyAuthDTO;
+      }
+      delete (base as any).openApiSpec;
+      this.postDto(base, { advanceStep: false, onSuccess: () => this.testAasConnection() });
       return;
     }
     this.isTesting = true;
