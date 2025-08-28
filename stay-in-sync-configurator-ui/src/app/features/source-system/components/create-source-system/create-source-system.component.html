@@ -8,7 +8,7 @@
   <!-- Stepper -->
   <p-steps [model]="steps" [activeIndex]="currentStep" class="mb-4"></p-steps>
 
-  <!-- Step 1: Metadata Form -->
+  <!-- Step 1: Metadata Form (REST | AAS) -->
   <ng-container *ngIf="currentStep === 0">
     <form [formGroup]="form" class="p-fluid">
       <div class="p-field">
@@ -18,6 +18,11 @@
       <div class="p-field">
         <label for="apiUrl">Base URL*</label>
         <input id="apiUrl" type="text" pInputText formControlName="apiUrl"/>
+      </div>
+      <!-- AAS-only field -->
+      <div class="p-field" *ngIf="isAas()">
+        <label for="aasId">AAS ID*</label>
+        <input id="aasId" type="text" pInputText formControlName="aasId"/>
       </div>
       <div class="p-field">
         <label for="description">Description</label>
@@ -60,11 +65,11 @@
           </div>
         </ng-container>
       </div>
-      <div class="p-field">
+      <div class="p-field" *ngIf="isRest()">
         <label for="openApiSpec">OpenAPI Spec URL</label>
         <input id="openApiSpec" type="text" pInputText formControlName="openApiSpec" placeholder="https://..."/>
       </div>
-      <div class="p-field">
+      <div class="p-field" *ngIf="isRest()">
         <label>OR Upload File</label>
         <p-fileupload
           #fu
@@ -77,6 +82,19 @@
 
         <small *ngIf="selectedFile">{{ selectedFile.name }}</small>
       </div>
+
+      <!-- AAS: Verbindung testen -->
+      <div class="p-field" *ngIf="isAas()">
+        <button pButton type="button" label="Verbindung testen" (click)="testAasConnection()" [disabled]="isTesting"></button>
+        <span *ngIf="isTesting" class="ml-2">Testing...</span>
+        <div class="mt-2" *ngIf="aasPreview && aasTestOk">
+          <strong>idShort:</strong> {{ aasPreview.idShort }}
+          <span class="ml-3"><strong>assetKind:</strong> {{ aasPreview.assetKind }}</span>
+        </div>
+        <div class="mt-2" *ngIf="aasError && aasTestOk === false" style="color:#d32f2f;">
+          {{ aasError }}
+        </div>
+      </div>
     </form>
   </ng-container>
 
@@ -87,11 +105,22 @@
     </app-manage-api-headers>
   </ng-container>
 
-  <!-- Step 3: Endpoints -->
+  <!-- Step 3: Endpoints (REST) or AAS Submodels (AAS) -->
   <ng-container *ngIf="currentStep === 2">
-    <app-manage-endpoints
-      [sourceSystemId]="createdSourceSystemId">
-    </app-manage-endpoints>
+    <ng-container *ngIf="isRest(); else aasTree">
+      <app-manage-endpoints [sourceSystemId]="createdSourceSystemId"></app-manage-endpoints>
+    </ng-container>
+    <ng-template #aasTree>
+      <div class="p-field">
+        <button pButton type="button" label="Discover Submodels" (click)="discoverSubmodels()" [disabled]="isDiscovering"></button>
+        <span *ngIf="isDiscovering" class="ml-2">Loading...</span>
+      </div>
+      <ul>
+        <li *ngFor="let sm of submodels">
+          <span>{{ (sm.idShort || sm.id || (sm.keys && sm.keys[0]?.value)) }}</span>
+        </li>
+      </ul>
+    </ng-template>
   </ng-container>
 
   <!-- Common Footer -->
@@ -114,7 +143,7 @@
         type="button"
         label="Next"
         (click)="goNext()"
-        [disabled]="currentStep === 0 ? form.invalid : false">
+        [disabled]="currentStep === 0 ? !canProceedFromStep1() : false">
       </button>
       <button
         *ngIf="currentStep === 2"

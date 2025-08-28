@@ -22,6 +22,7 @@ import {ApiKeyAuthDTO} from '../../models/apiKeyAuthDTO';
 import {ManageEndpointsComponent} from '../manage-endpoints/manage-endpoints.component';
 import {ManageApiHeadersComponent} from '../manage-api-headers/manage-api-headers.component';
 import {HttpErrorService} from '../../../../core/services/http-error.service';
+import {AasService} from '../../services/aas.service';
 
 /**
  * Component for creating or editing a Source System.
@@ -83,6 +84,7 @@ export class CreateSourceSystemComponent implements OnInit, OnChanges {
     private fb: FormBuilder,
     private sourceSystemService: SourceSystemResourceService,
     protected errorService: HttpErrorService,
+    private aasService: AasService,
   ) {
   }
 
@@ -97,6 +99,7 @@ export class CreateSourceSystemComponent implements OnInit, OnChanges {
       description: [''],
       apiType: ['REST_OPENAPI', Validators.required],
       apiAuthType: [null],
+      aasId: [''],
       authConfig: this.fb.group({
         username: [''],
         password: [''],
@@ -104,6 +107,31 @@ export class CreateSourceSystemComponent implements OnInit, OnChanges {
         headerName: ['']
       }),
       openApiSpec: [{value: null, disabled: false}]
+    });
+
+    this.form.get('apiType')!.valueChanges.subscribe((apiType: string) => {
+      const aasIdCtrl = this.form.get('aasId')!;
+      const openApiCtrl = this.form.get('openApiSpec')!;
+      if (apiType === 'AAS') {
+        aasIdCtrl.setValidators([Validators.required]);
+        openApiCtrl.disable();
+        openApiCtrl.clearValidators();
+        this.steps = [
+          {label: 'Metadaten & Test'},
+          {label: 'Api Header'},
+          {label: 'AAS Submodels'}
+        ];
+      } else {
+        aasIdCtrl.clearValidators();
+        openApiCtrl.enable();
+        this.steps = [
+          {label: 'Metadaten'},
+          {label: 'Api Header'},
+          {label: 'Endpoints'},
+        ];
+      }
+      aasIdCtrl.updateValueAndValidity();
+      openApiCtrl.updateValueAndValidity();
     });
 
     this.form.get('apiAuthType')!.valueChanges.subscribe((authType: ApiAuthType) => {
@@ -238,6 +266,77 @@ save(): void {
           this.errorService.handleError(err);
         }
       });
+  }
+
+  isAas(): boolean {
+    return this.form.get('apiType')!.value === 'AAS';
+  }
+
+  isRest(): boolean {
+    return this.form.get('apiType')!.value === 'REST_OPENAPI';
+  }
+
+  // AAS Test Preview State
+  isTesting = false;
+  aasPreview: { idShort?: string; assetKind?: string } | null = null;
+  aasTestOk: boolean | null = null;
+  aasError: string | null = null;
+
+  testAasConnection(): void {
+    if (!this.createdSourceSystemId) {
+      this.save();
+      return;
+    }
+    this.isTesting = true;
+    this.aasError = null;
+    this.aasPreview = null;
+    this.aasTestOk = null;
+    this.aasService.aasTest(this.createdSourceSystemId).subscribe({
+      next: (data) => {
+        this.isTesting = false;
+        if (data && data.idShort) {
+          this.aasPreview = { idShort: data.idShort, assetKind: data.assetKind };
+          this.aasTestOk = true;
+        } else {
+          this.aasPreview = null;
+          this.aasTestOk = true;
+        }
+      },
+      error: (err) => {
+        this.isTesting = false;
+        this.aasError = this.errorService.extractMessage
+          ? this.errorService.extractMessage(err)
+          : 'Test failed';
+        this.aasTestOk = false;
+      }
+    });
+  }
+
+  canProceedFromStep1(): boolean {
+    if (this.isRest()) {
+      return !this.form.invalid;
+    }
+    // For AAS: require valid form and successful test
+    return !this.form.invalid && this.aasTestOk === true;
+  }
+
+  // AAS Step 3 basic discover
+  submodels: any[] = [];
+  isDiscovering = false;
+  discoverSubmodels(): void {
+    if (!this.createdSourceSystemId) return;
+    this.isDiscovering = true;
+    this.aasService.listSubmodels(this.createdSourceSystemId, 'SNAPSHOT').subscribe({
+      next: (resp) => {
+        this.isDiscovering = false;
+        // handle both list and paged result
+        this.submodels = Array.isArray(resp) ? resp : (resp?.result ?? []);
+      },
+      error: (err) => {
+        this.isDiscovering = false;
+        this.errorService.handleError(err);
+      }
+    });
   }
   /**
    * Advances the stepper to the next step.
