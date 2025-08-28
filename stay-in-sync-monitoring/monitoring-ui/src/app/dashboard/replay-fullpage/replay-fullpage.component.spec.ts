@@ -1,18 +1,18 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
-import { SnapshotPanelComponent } from './snapshot-panel.component';
+import { ReplayFullpageComponent } from './replay-fullpage.component';
 
-describe('SnapshotPanelComponent', () => {
-  let component: SnapshotPanelComponent;
-  let fixture: ComponentFixture<SnapshotPanelComponent>;
+describe('ReplayFullpageComponent', () => {
+  let component: ReplayFullpageComponent;
+  let fixture: ComponentFixture<ReplayFullpageComponent>;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [SnapshotPanelComponent]
+      imports: [ReplayFullpageComponent]
     })
     .compileComponents();
 
-    fixture = TestBed.createComponent(SnapshotPanelComponent);
+    fixture = TestBed.createComponent(ReplayFullpageComponent);
     component = fixture.componentInstance;
     fixture.detectChanges();
   });

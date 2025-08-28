@@ -1,0 +1,11 @@
+<div *ngIf="!selectedNodeId">
+  <p>Please select a SyncNode</p>
+</div>
+<div *ngIf="selectedNodeId && filteredSnapshots.length === 0">
+  <p>There are no errors</p>
+</div>
+<div *ngIf="selectedNodeId && filteredSnapshots.length > 0">
+  <ul>
+    <li *ngFor="let snapshot of filteredSnapshots">{{ snapshot }}</li>
+  </ul>
+</div>
