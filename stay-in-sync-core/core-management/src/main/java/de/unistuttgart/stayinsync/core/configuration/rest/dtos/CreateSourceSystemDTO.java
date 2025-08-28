@@ -7,6 +7,7 @@ import jakarta.validation.constraints.NotNull;
 
 public record CreateSourceSystemDTO(Long id, @NotNull String name, @NotNull String apiUrl, String description,
                                     @NotNull String apiType,
+                                    String aasId,
                                     ApiAuthType apiAuthType,
                                     @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "authType")
                                     @JsonSubTypes({
@@ -15,4 +16,12 @@ public record CreateSourceSystemDTO(Long id, @NotNull String name, @NotNull Stri
                                     })
                                     ApiAuthConfigurationDTO authConfig,
                                     String openApiSpec) {
+
+    public CreateSourceSystemDTO(Long id, String name, String apiUrl, String description,
+                                 String apiType,
+                                 ApiAuthType apiAuthType,
+                                 ApiAuthConfigurationDTO authConfig,
+                                 String openApiSpec) {
+        this(id, name, apiUrl, description, apiType, null, apiAuthType, authConfig, openApiSpec);
+    }
 }

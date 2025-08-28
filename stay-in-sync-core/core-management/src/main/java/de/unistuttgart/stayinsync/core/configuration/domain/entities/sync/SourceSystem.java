@@ -4,6 +4,8 @@ import jakarta.persistence.CascadeType;
 import jakarta.persistence.DiscriminatorValue;
 import jakarta.persistence.Entity;
 import jakarta.persistence.OneToMany;
+import jakarta.persistence.Table;
+import jakarta.persistence.UniqueConstraint;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -11,6 +13,7 @@ import java.util.Set;
 @Entity
 @DiscriminatorValue("SOURCE_SYSTEM")
 public class SourceSystem extends SyncSystem {
+
 
     @OneToMany(mappedBy = "sourceSystem", cascade = CascadeType.ALL)
     public Set<SourceSystemEndpoint> sourceSystemEndpoints = new HashSet<>();
