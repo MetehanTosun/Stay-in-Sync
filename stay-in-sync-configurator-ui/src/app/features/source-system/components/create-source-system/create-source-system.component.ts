@@ -1,5 +1,6 @@
 import {Component, EventEmitter, Input, OnChanges, OnInit, Output, SimpleChanges} from '@angular/core';
 import {FormBuilder, FormGroup, ReactiveFormsModule, Validators} from '@angular/forms';
+import {FormsModule} from '@angular/forms';
 import {CommonModule} from '@angular/common';
 import {SourceSystemDTO} from '../../models/sourceSystemDTO';
 
@@ -36,6 +37,7 @@ import {AasService} from '../../services/aas.service';
   imports: [
     CommonModule,
     ReactiveFormsModule,
+    FormsModule,
     DialogModule,
     DropdownModule,
     InputTextModule,
@@ -411,7 +413,8 @@ save(): void {
     if (!this.createdSourceSystemId || !this.targetSubmodelId) return;
     try {
       const body = JSON.parse(this.newElementJson);
-      this.aasService.createElement(this.createdSourceSystemId, this.targetSubmodelId, body, this.parentPath || undefined)
+      const smIdB64 = this.aasService.encodeIdToBase64Url(this.targetSubmodelId);
+      this.aasService.createElement(this.createdSourceSystemId, smIdB64, body, this.parentPath || undefined)
         .subscribe({
           next: () => {
             this.showElementDialog = false;
@@ -429,6 +432,37 @@ save(): void {
     } catch (e) {
       this.errorService.handleError(e as any);
     }
+  }
+
+  // PATCH value dialog
+  showValueDialog = false;
+  valueSubmodelId = '';
+  valueElementPath = '';
+  valueNew = '';
+  valueTypeHint = 'xs:string';
+  openSetValue(smId: string, element: any): void {
+    this.valueSubmodelId = smId;
+    this.valueElementPath = element.idShortPath;
+    this.valueTypeHint = element.valueType || 'xs:string';
+    this.valueNew = '';
+    this.showValueDialog = true;
+  }
+  setValue(): void {
+    if (!this.createdSourceSystemId || !this.valueSubmodelId || !this.valueElementPath) return;
+    const smIdB64 = this.aasService.encodeIdToBase64Url(this.valueSubmodelId);
+    const payload = {
+      modelType: 'Property',
+      idShort: this.valueElementPath.split('/').pop(),
+      valueType: this.valueTypeHint,
+      value: this.valueNew
+    };
+    this.aasService.setPropertyValue(this.createdSourceSystemId, smIdB64, this.valueElementPath.replaceAll('/', '.'), payload)
+      .subscribe({
+        next: () => {
+          this.showValueDialog = false;
+        },
+        error: (err) => this.errorService.handleError(err)
+      });
   }
   /**
    * Advances the stepper to the next step.
