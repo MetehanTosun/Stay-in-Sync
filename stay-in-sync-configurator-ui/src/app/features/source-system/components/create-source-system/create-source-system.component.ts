@@ -348,6 +348,8 @@ save(): void {
   discoverSubmodels(): void {
     if (!this.createdSourceSystemId) return;
     this.isDiscovering = true;
+    // Ensure snapshot is fresh so idShorts are available
+    this.aasService.refreshSnapshot(this.createdSourceSystemId).subscribe({ next: () => {}, error: () => {} });
     this.aasService.listSubmodels(this.createdSourceSystemId, 'SNAPSHOT').subscribe({
       next: (resp) => {
         this.isDiscovering = false;
