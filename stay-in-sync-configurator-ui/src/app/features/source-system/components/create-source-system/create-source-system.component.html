@@ -86,8 +86,6 @@
       <!-- AAS: Verbindung testen -->
       <div class="p-field" *ngIf="isAas()">
         <button pButton type="button" label="Verbindung testen" (click)="testAasConnection()" [disabled]="isTesting"></button>
-        <button pButton type="button" class="p-button-text ml-2" label="Login" (click)="openLogin()" *ngIf="!isAasAuthenticated"></button>
-        <span *ngIf="isAasAuthenticated" class="ml-2">Angemeldet</span>
         <span *ngIf="isTesting" class="ml-2">Testing...</span>
         <div class="mt-2" *ngIf="aasPreview && aasTestOk">
           <strong>idShort:</strong> {{ aasPreview.idShort }}
@@ -184,21 +182,6 @@
   </ng-template>
 </p-dialog>
 
-<!-- Dialog: Temp AAS Login -->
-<p-dialog header="AAS Login" [(visible)]="showLoginDialog" [modal]="true" [style]="{width:'30vw'}">
-  <div class="p-field">
-    <label>Username</label>
-    <input pInputText [(ngModel)]="loginUsername" />
-  </div>
-  <div class="p-field">
-    <label>Password</label>
-    <input pInputText type="password" [(ngModel)]="loginPassword" />
-  </div>
-  <ng-template pTemplate="footer">
-    <button pButton type="button" class="p-button-text" label="Cancel" (click)="showLoginDialog=false"></button>
-    <button pButton type="button" label="Login" (click)="doLogin()" [disabled]="!loginUsername || !loginPassword"></button>
-  </ng-template>
-</p-dialog>
 
 <!-- Dialog: Create Submodel -->
 <p-dialog header="Create Submodel" [(visible)]="showSubmodelDialog" [modal]="true" [style]="{width:'40vw'}">
