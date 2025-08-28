@@ -101,7 +101,9 @@
   <!-- Step 2: API Headers -->
   <ng-container *ngIf="currentStep === 1">
     <app-manage-api-headers
-      [syncSystemId]="createdSourceSystemId">
+      [syncSystemId]="createdSourceSystemId"
+      [isAas]="isAas()"
+      (onRetest)="testAasConnection()">
     </app-manage-api-headers>
   </ng-container>
 
