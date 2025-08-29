@@ -1,0 +1,30 @@
+<div class="modal-backdrop"></div>
+<div id="constant-node-modal-container" class="constant-node-modal">
+  <!-- Modal Header -->
+  <h3>Edit Constant Value</h3>
+
+  <!-- Modal Body -->
+  <form (ngSubmit)="submit()">
+    <div class="form-field">
+      <label for="constant-value">Constant Value</label>
+      <input name="constant-value" type="text" [(ngModel)]="constantValue" placeholder="Enter Constant Value"
+        class="form-input" required>
+    </div>
+
+    <!-- Modal Footer -->
+    <div class="form-actions">
+      <button id="save-button" type="submit">
+        <span class="material-symbols-rounded">
+          save
+        </span>
+        Save
+      </button>
+      <button id="cancel-button" type="button" (click)="closeModal()">
+        <span class="material-symbols-rounded">
+          close
+        </span>
+        Cancel
+      </button>
+    </div>
+  </form>
+</div>

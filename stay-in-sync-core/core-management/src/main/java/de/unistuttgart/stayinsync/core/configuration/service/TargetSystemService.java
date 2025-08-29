@@ -6,7 +6,19 @@ import java.util.List;
 import java.util.Optional;
 
 import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.TargetSystem;
+import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.TargetSystemEndpoint;
+import de.unistuttgart.stayinsync.core.configuration.domain.entities.edc.EDCAsset;
+import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.TargetSystemApiQueryParam;
+import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.TargetSystemApiRequestHeader;
+import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.TargetSystemVariable;
+import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.ApiHeader;
+import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.ApiEndpointQueryParam;
+import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.ApiEndpointQueryParamValue;
+import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.ApiHeaderValue;
+import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.TargetSystemApiRequestConfiguration;
+import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.TargetSystemApiRequestConfigurationAction;
 import de.unistuttgart.stayinsync.core.configuration.exception.CoreManagementException;
+import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.authconfig.SyncSystemAuthConfig;
 import de.unistuttgart.stayinsync.core.configuration.mapping.targetsystem.TargetSystemMapper;
 import de.unistuttgart.stayinsync.core.configuration.rest.dtos.targetsystem.TargetSystemDTO;
 import io.quarkus.logging.Log;
@@ -22,10 +34,15 @@ public class TargetSystemService {
     @Inject
     TargetSystemMapper mapper;
 
+    @Inject
+    OpenApiSpecificationParserService openApiSpecificationParserService;
+
     public TargetSystemDTO createTargetSystem(TargetSystemDTO dto) {
         Log.debugf("Creating new TargetSystem with id: %d", dto.id());
         TargetSystem entity = mapper.toEntity(dto);
         entity.persist();
+        // Synchronize endpoints and configurations from provided OpenAPI specification
+        openApiSpecificationParserService.synchronizeFromSpec(entity);
         return mapper.toDto(entity);
     }
 
@@ -39,6 +56,8 @@ public class TargetSystemService {
                         "TargetSystem with id %d not found.", id));
 
         mapper.updateFromDto(dto, entity);
+        // Re-synchronize from spec in case it changed (method is a no-op if spec is blank)
+        openApiSpecificationParserService.synchronizeFromSpec(entity);
         return mapper.toDto(entity);
     }
 
@@ -59,6 +78,64 @@ public class TargetSystemService {
 
     public boolean delete(Long id) {
         Log.debugf("Deleting TargetSystem with id %d", id);
-        return TargetSystem.deleteById(id);
+        Optional<TargetSystem> targetOpt = TargetSystem.findByIdOptional(id);
+        if (targetOpt.isEmpty()) {
+            Log.warnf("No target system found with id %d", id);
+            return false;
+        }
+        TargetSystem target = targetOpt.get();
+
+        // Delete endpoints and their children (instance-based, like SourceSystem)
+        List<TargetSystemEndpoint> endpoints = TargetSystemEndpoint.findByTargetSystemId(id);
+        for (TargetSystemEndpoint endpoint : endpoints) {
+            // Variables
+            List<TargetSystemVariable> variables = TargetSystemVariable.list("targetSystemEndpoint.id", endpoint.id);
+            for (TargetSystemVariable v : variables) v.delete();
+
+            // Param values linked via queryParam.syncSystemEndpoint
+            List<ApiEndpointQueryParamValue> qpv = ApiEndpointQueryParamValue.list("queryParam.syncSystemEndpoint.id", endpoint.id);
+            for (ApiEndpointQueryParamValue val : qpv) val.delete();
+
+            // Generic query params
+            List<ApiEndpointQueryParam> qps = ApiEndpointQueryParam.findByEndpointId(endpoint.id);
+            for (ApiEndpointQueryParam qp : qps) qp.delete();
+
+            // Target-specific query params and endpoint headers
+            List<TargetSystemApiQueryParam> tParams = TargetSystemApiQueryParam.list("targetSystemEndpoint.id", endpoint.id);
+            for (TargetSystemApiQueryParam tp : tParams) tp.delete();
+
+            List<TargetSystemApiRequestHeader> tHeaders = TargetSystemApiRequestHeader.list("targetSystemEndpoint.id", endpoint.id);
+            for (TargetSystemApiRequestHeader th : tHeaders) th.delete();
+
+            // EDC Asset
+            List<EDCAsset> assets = EDCAsset.list("targetSystemEndpoint.id", endpoint.id);
+            for (EDCAsset asset : assets) asset.delete();
+
+            // Endpoint
+            endpoint.delete();
+        }
+
+        List<TargetSystemApiRequestConfiguration> tConfigs = TargetSystemApiRequestConfiguration.list("targetSystem.id", id);
+        for (TargetSystemApiRequestConfiguration cfg : tConfigs) {
+            List<TargetSystemApiRequestConfigurationAction> actions = TargetSystemApiRequestConfigurationAction.list("targetSystemApiRequestConfiguration.id", cfg.id);
+            for (TargetSystemApiRequestConfigurationAction action : actions) action.delete();
+            cfg.delete();
+        }
+
+        // API headers and their values
+        List<ApiHeader> headers = ApiHeader.list("syncSystem.id", id);
+        for (ApiHeader h : headers) {
+            List<ApiHeaderValue> vals = ApiHeaderValue.list("apiHeader.id", h.id);
+            for (ApiHeaderValue hv : vals) hv.delete();
+            h.delete();
+        }
+
+        // Auth config
+        List<SyncSystemAuthConfig> auths = SyncSystemAuthConfig.list("syncSystem.id", id);
+        for (SyncSystemAuthConfig ac : auths) ac.delete();
+
+        // Finally, delete TargetSystem
+        target.delete();
+        return true;
     }
 }

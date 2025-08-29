@@ -38,16 +38,15 @@ public class TransformationRuleMapperService {
         Log.debugf("Mapping entity to TransformationRuleDTO with id: %d", entity != null ? entity.id : null);
         if (entity == null) return null;
 
-        TransformationRuleDTO dto = new TransformationRuleDTO();
-        dto.setId(entity.id);
-        dto.setName(entity.name);
-        dto.setDescription(entity.description);
-        dto.setGraphStatus(entity.graphStatus);
-        if (entity.transformation != null) {
-            dto.setTransformationId(entity.transformation.id);
-        }
+        Long transformationId = entity.transformation != null ? entity.transformation.id : null;
         Log.infof("Successfully mapped entity id %d to TransformationRuleDTO.", entity.id);
-        return dto;
+        return new TransformationRuleDTO(
+                entity.id,
+                entity.name,
+                entity.description,
+                entity.graphStatus,
+                transformationId
+        );
     }
 
     /**
@@ -157,7 +156,11 @@ public class TransformationRuleMapperService {
                     edge.setSource(sourceIdStr);
                     edge.setTarget(targetIdStr);
                     edge.setId(sourceIdStr + " -> " + targetIdStr);
-                    edge.setTargetHandle("input-" + inputDto.getOrderIndex());
+
+                    if(targetNodeDto.getInputTypes() != null && targetNodeDto.getInputTypes().size() > 1) {
+                        edge.setTargetHandle("input-" + inputDto.getOrderIndex());
+                    }
+
 
                     vflowEdges.add(edge);
                 }

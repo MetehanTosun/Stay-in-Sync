@@ -1,4 +1,4 @@
-package de.unistuttgart.stayinsync.scriptengine;
+/*package de.unistuttgart.stayinsync.scriptengine;
 
 import de.unistuttgart.stayinsync.syncnode.domain.TransformJob;
 
@@ -146,3 +146,4 @@ public class SyncJobFactory {
         );
     }
 }
+*/

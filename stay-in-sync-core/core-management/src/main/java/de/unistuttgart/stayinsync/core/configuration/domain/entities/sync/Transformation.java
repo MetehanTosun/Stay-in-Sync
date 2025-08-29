@@ -7,6 +7,7 @@ import io.quarkus.hibernate.orm.panache.PanacheEntity;
 import jakarta.persistence.*;
 
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 //TODO Implementierung
@@ -26,7 +27,7 @@ public class Transformation extends PanacheEntity {
     public TransformationScript transformationScript;
 
     @Enumerated(EnumType.STRING)
-    public JobDeploymentStatus deploymentStatus;
+    public JobDeploymentStatus deploymentStatus = JobDeploymentStatus.UNDEPLOYED;
 
     public String workerHostName;
 
@@ -56,4 +57,18 @@ public class Transformation extends PanacheEntity {
             inverseJoinColumns = @JoinColumn(name = "target_system_api_request_configuration_id")
     )
     public Set<TargetSystemApiRequestConfiguration> targetSystemApiRequestConfigurations = new HashSet<>();
+
+    public static List<Transformation> listAllWithoutSyncJob() {
+        return find("syncJob is null").list();
+    }
+
+    public static List<Transformation> listAllWithSyncJob() {
+        return find("syncJob is not null").list();
+    }
+
+    public static List<Transformation> findBySyncJobId(Long syncJobId) {
+        return find("syncJob.id", syncJobId).list();
+    }
+
+
 }

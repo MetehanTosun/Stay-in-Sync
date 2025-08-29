@@ -5,7 +5,7 @@ import de.unistuttgart.stayinsync.core.configuration.mapping.ApiHeaderFullUpdate
 import de.unistuttgart.stayinsync.core.configuration.rest.dtos.ApiHeaderDTO;
 import de.unistuttgart.stayinsync.core.configuration.rest.dtos.CreateApiHeaderDTO;
 import de.unistuttgart.stayinsync.core.configuration.service.ApiHeaderService;
-import de.unistuttgart.stayinsync.monitoring.core.configuration.rest.Examples;
+import de.unistuttgart.stayinsync.core.configuration.rest.Examples;
 import io.quarkus.logging.Log;
 import jakarta.inject.Inject;
 import jakarta.validation.Valid;

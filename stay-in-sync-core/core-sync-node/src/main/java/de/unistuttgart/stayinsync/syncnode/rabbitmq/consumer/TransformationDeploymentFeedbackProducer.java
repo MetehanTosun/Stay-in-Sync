@@ -87,7 +87,7 @@ public class TransformationDeploymentFeedbackProducer {
         Set<TransformationMessageDTO> runningJobs = transformationJobScheduler.getRunningJobs();
         for(TransformationMessageDTO transformationMessageDTO : runningJobs)
         {
-            publishTransformationFeedback(transformationMessageDTO.id(), JobDeploymentStatus.STOPPED);
+            publishTransformationFeedback(transformationMessageDTO.id(), JobDeploymentStatus.UNDEPLOYED);
         }
     }
 
