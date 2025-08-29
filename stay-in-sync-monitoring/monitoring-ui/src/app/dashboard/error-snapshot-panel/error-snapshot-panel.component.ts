@@ -1,11 +1,10 @@
-import {Component, NgIterable, OnInit} from '@angular/core';
+import {Component, OnInit} from '@angular/core';
 import {ActivatedRoute} from '@angular/router';
 import {NgClass, NgForOf, NgIf, NgStyle} from '@angular/common';
 import {SnapshotModel} from '../../core/models/snapshot.model';
 import {TransformationService} from '../../core/services/transformation.service';
 import {Panel} from 'primeng/panel';
 import {Message} from 'primeng/message';
-import {Card} from 'primeng/card';
 import {PrimeTemplate} from 'primeng/api';
 
 @Component({
@@ -16,7 +15,6 @@ import {PrimeTemplate} from 'primeng/api';
     NgForOf,
     Panel,
     Message,
-    Card,
     NgClass,
     PrimeTemplate,
     NgStyle
