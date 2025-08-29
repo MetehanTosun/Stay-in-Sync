@@ -1,21 +1,7 @@
 <div class="edc-base-container">
-  <div class="sidebar">
-    <div class="sidebar-header">
-      <h3>EDC-Management</h3>
-    </div>
-
-    <nav class="sidebar-nav">
-      <a (click)="setActiveTab('instances')" [class.active]="activeTab === 'instances'">
-        EDC Instances
-      </a>
-      <a (click)="setActiveTab('assets and policies')" [class.active]="activeTab === 'assets and policies'">
-        Assets and Policies
-      </a>
-    </nav>
-  </div>
 
   <div class="content">
-    <app-edc-instances *ngIf="activeTab === 'instances'"></app-edc-instances>
-    <app-edc-assets-and-policies *ngIf="activeTab === 'assets and policies'"></app-edc-assets-and-policies>
+    <app-edc-instances *ngIf="!selectedInstance" (instanceSelected)="onInstanceSelected($event)"></app-edc-instances>
+    <app-edc-assets-and-policies *ngIf="selectedInstance" [instance]="selectedInstance" (back)="onBack()"></app-edc-assets-and-policies>
   </div>
 </div>

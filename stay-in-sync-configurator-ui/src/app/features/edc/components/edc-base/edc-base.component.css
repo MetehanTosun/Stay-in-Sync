@@ -7,68 +7,13 @@
   display: flex;
 }
 
-.sidebar {
-
-  position: fixed;
-  top: 0;
-  height: 100vh;
-
-
-  width: 220px;
-  flex-shrink: 0;
-  display: flex;
-  flex-direction: column;
-  padding: 1rem;
-  background-color: var(--p-surface-color);
-  color: var(--p-text-color);
-  border-right: 1px solid var(--p-surface-d, #dee2e6);
-  transition: background-color 0.2s ease-in-out, color 0.2s ease-in-out, border-color 0.2s ease-in-out;
-  overflow-y: hidden;
-}
+/* Sidebar styles removed as it's no longer part of the layout */
 
 .content {
-  margin-left: 220px;
-
+  /* margin-left removed as sidebar is gone */
   flex: 1;
   padding: 2rem;
 
   overflow-y: auto;
   color: inherit;
 }
-
-.sidebar-header {
-  padding: 0.5rem;
-  margin-bottom: 1rem;
-  font-size: 1.15rem;
-  font-weight: 600;
-  color: var(--p-text-color);
-  border-bottom: 1px solid var(--p-surface-d, #dee2e6);
-  transition: border-color 0.2s ease-in-out, color 0.2s ease-in-out;
-}
-
-.sidebar-nav a {
-  display: block;
-  padding: 0.75rem 1rem;
-  margin-bottom: 0.5rem;
-  border-radius: 6px;
-  cursor: pointer;
-  font-weight: 500;
-  text-decoration: none;
-  border: none;
-  text-align: left;
-  background-color: transparent;
-  color: var(--p-text-color-secondary, var(--p-text-color));
-  transition: background-color 0.2s ease-in-out, color 0.2s ease-in-out;
-}
-
-.sidebar-nav a:hover {
-  background-color: color-mix(in srgb, var(--p-text-color) 10%, transparent);
-  color: var(--p-text-color);
-}
-
-.sidebar-nav a.active {
-  background-color: var(--p-primary-color);
-  color: var(--p-primary-color-text, #ffffff);
-  font-weight: 600;
-}
-

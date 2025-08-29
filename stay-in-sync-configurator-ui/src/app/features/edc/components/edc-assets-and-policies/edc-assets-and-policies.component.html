@@ -1,5 +1,10 @@
 <p-toast></p-toast>
 
+<div class="flex align-items-center mb-4">
+  <button pButton pRipple type="button" icon="pi pi-arrow-left" class="p-button-text mr-2" (click)="goBack()" pTooltip="Back to Instances" tooltipPosition="bottom"></button>
+  <h3 class="m-0">Managing Assets & Policies for: <span class="font-normal">{{ instance.name }}</span></h3>
+</div>
+
 <!-- assets table -->
 <div class="card">
   <p-table

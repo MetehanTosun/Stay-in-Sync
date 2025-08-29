@@ -2,8 +2,7 @@ import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { EdcInstancesComponent } from '../edc-instances/edc-instances.component';
 import { EdcAssetsAndPoliciesComponent } from '../edc-assets-and-policies/edc-assets-and-policies.component';
- 
-type EdcTab = 'instances' | 'assets and policies';
+import { EdcInstance } from '../edc-instances/models/edc-instance.model';
 
 @Component({
   selector: 'app-edc-base',
@@ -17,9 +16,13 @@ type EdcTab = 'instances' | 'assets and policies';
   styleUrls: ['./edc-base.component.css'],
 })
 export class EdcBaseComponent {
-  activeTab: EdcTab = 'instances';
+  selectedInstance: EdcInstance | null = null;
 
-  setActiveTab(tab: EdcTab): void {
-    this.activeTab = tab;
+  onInstanceSelected(instance: EdcInstance): void {
+    this.selectedInstance = instance;
+  }
+
+  onBack(): void {
+    this.selectedInstance = null;
   }
 }
