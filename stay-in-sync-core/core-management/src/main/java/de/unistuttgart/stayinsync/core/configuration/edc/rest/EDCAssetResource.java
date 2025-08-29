@@ -23,45 +23,34 @@ public class EDCAssetResource {
 
     @GET
     public List<EDCAssetDto> list() {
-        return service.listAll().stream()
-            .map(EDCAssetMapper::toDto)
-            .collect(Collectors.toList());
+        return service.listAll();
     }
     
     @GET
     @Path("{id}")
     public EDCAssetDto get(@PathParam("id") UUID id) {
-        return service.findById(id)
-            .map(EDCAssetMapper::toDto)
-            .orElseThrow(() -> new NotFoundException("Asset " + id + " nicht gefunden"));
+        return service.findById(id);
             
     }
 
     @POST
     @Transactional
-    public Response create(EDCAssetDto dto, @Context UriInfo uriInfo) {
-        // dto.getId() kann null sein – neue UUID wird im Entity per @PrePersist gesetzt
-        EDCAsset entity   = EDCAssetMapper.fromDto(dto);
-        EDCAsset created  = service.create(entity);
-        EDCAssetDto result = EDCAssetMapper.toDto(created);
-        
+    public Response create(final EDCAssetDto assetDto, @Context final UriInfo uriInfo) {
+        final EDCAssetDto createdAsset  = service.create(assetDto);
+
         URI uri = uriInfo.getAbsolutePathBuilder()
-                         .path(result.getId().toString())
+                         .path(createdAsset.id().toString())
                          .build();
         return Response.created(uri)
-                       .entity(result)
+                       .entity(createdAsset)
                        .build();
     }
 
     @PUT
     @Path("{id}")
     @Transactional
-    public EDCAssetDto update(@PathParam("id") UUID id, EDCAssetDto dto) {
-        dto.setId(id);
-        EDCAsset newState = EDCAssetMapper.fromDto(dto);
-        return service.update(id, newState)
-            .map(EDCAssetMapper::toDto)
-            .orElseThrow(() -> new NotFoundException("Asset " + id + " nicht gefunden"));
+    public EDCAssetDto update(@PathParam("id") UUID id, final EDCAssetDto assetDto) {
+        return service.update(id, assetDto);
     }
 
     @DELETE
