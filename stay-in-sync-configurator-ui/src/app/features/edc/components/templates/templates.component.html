@@ -20,7 +20,13 @@
     <ng-template pTemplate="caption">
       <div class="flex align-items-center justify-content-between">
         <h5 class="m-0">Manage Templates</h5>
-        <div>
+        <div class="flex align-items-center">
+          <p-iconfield iconPosition="left" class="mr-2">
+            <p-inputicon>
+              <i class="pi pi-search"></i>
+            </p-inputicon>
+            <input pInputText type="text" (input)="onGlobalFilter($event)" placeholder="Search keyword" class="w-full"/>
+          </p-iconfield>
 
           <button pButton pRipple label="New Template" icon="pi pi-plus" class="p-button-success" (click)="openNewTemplateDialog()"></button>
           <button pButton pRipple label="Fast Imports" icon="pi pi-upload" class="p-button-secondary mr-2" (click)="fastImportInput.click()" pTooltip="Import one or more templates from JSON files"></button>
@@ -35,6 +41,20 @@
         <th style="width: 15%" pSortableColumn="type">Role <p-sortIcon field="type"></p-sortIcon></th>
         <th style="width: 45%" pSortableColumn="description">Description <p-sortIcon field="description"></p-sortIcon></th>
         <th style="width: 15%">Actions</th>
+      </tr>
+      <tr>
+        <th>
+          <p-columnFilter type="text" field="name" placeholder="Filter by Name"></p-columnFilter>
+        </th>
+        <th>
+          <p-columnFilter field="type" matchMode="equals" [showMenu]="false">
+            <ng-template pTemplate="filter" let-value let-filter="filterCallback">
+              <p-dropdown [ngModel]="value" [options]="templateTypes" (onChange)="filter($event.value)" placeholder="Any Role" [showClear]="true" optionLabel="label" optionValue="value"></p-dropdown>
+            </ng-template>
+          </p-columnFilter>
+        </th>
+        <th><p-columnFilter type="text" field="description" placeholder="Filter by Description"></p-columnFilter></th>
+        <th></th>
       </tr>
     </ng-template>
 

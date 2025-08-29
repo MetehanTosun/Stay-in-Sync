@@ -16,6 +16,8 @@ import { Template, TemplateType } from '../../models/template.model';
 import { TemplateService } from '../../services/template.service';
 import { DropdownModule } from 'primeng/dropdown';
 import { TagModule } from 'primeng/tag';
+import { IconFieldModule } from 'primeng/iconfield';
+import { InputIconModule } from 'primeng/inputicon';
 
 @Component({
   selector: 'app-templates',
@@ -35,6 +37,8 @@ import { TagModule } from 'primeng/tag';
     MonacoEditorModule,
     DropdownModule,
     TagModule,
+    IconFieldModule,
+    InputIconModule,
   ],
   templateUrl: './templates.component.html',
   styleUrls: ['./templates.component.css'],
@@ -82,6 +86,13 @@ export class TemplatesComponent implements OnInit {
       this.templates = templates;
       this.loading = false;
     });
+  }
+
+  onGlobalFilter(event: Event) {
+    const inputElement = event.target as HTMLInputElement;
+    if (this.dt) {
+      this.dt.filterGlobal(inputElement.value, 'contains');
+    }
   }
 
   openNewTemplateDialog(): void {
