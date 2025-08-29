@@ -1,9 +1,9 @@
-import { Component, OnInit, ViewChild } from '@angular/core';
+import { Component, EventEmitter, OnInit, Output, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms'; // For ngModel
 
 // PrimeNG
-import { Table, TableModule } from 'primeng/table';
+import { Table, TableModule, TableRowSelectEvent } from 'primeng/table';
 import { InputTextModule } from 'primeng/inputtext';
 import { InputTextarea } from 'primeng/inputtextarea';
 import { TagModule } from 'primeng/tag';
@@ -46,6 +46,8 @@ import { EdcInstanceService } from './services/edc-instance.service';
 })
 export class EdcInstancesComponent implements OnInit {
   @ViewChild('dt2') dt2: Table | undefined;
+
+  @Output() instanceSelected = new EventEmitter<EdcInstance>();
 
   edcInstances: EdcInstance[] = [];
   loading: boolean = true;
@@ -175,4 +177,8 @@ deleteInstance(instance: EdcInstance): void {
     },
   });
 }
+
+  onInstanceRowSelect(event: TableRowSelectEvent) {
+    this.instanceSelected.emit(event.data);
+  }
 }

@@ -1,4 +1,4 @@
-import {Component, OnDestroy, OnInit, ViewChild} from '@angular/core';
+import {Component, EventEmitter, Input, OnDestroy, OnInit, Output, ViewChild} from '@angular/core';
 import {CommonModule} from '@angular/common';
 import {FormsModule} from '@angular/forms';
 
@@ -27,6 +27,7 @@ import { MonacoEditorModule } from 'ngx-monaco-editor-v2';
 // App imports
 import { Asset } from './models/asset.model';
 import { OdrlContractDefinition, OdrlPolicyDefinition, OdrlCriterion, OdrlConstraint, OdrlPermission, UiContractDefinition } from './models/policy.model';
+import { EdcInstance } from '../edc-instances/models/edc-instance.model';
 import { AssetService } from './services/asset.service';
 import { PolicyService } from './services/policy.service';
 import { EdcInstanceService } from '../edc-instances/services/edc-instance.service';
@@ -68,6 +69,9 @@ export class EdcAssetsAndPoliciesComponent implements OnInit, OnDestroy {
   @ViewChild('dtAssets') dtAssets!: Table;
   @ViewChild('dtPolicies') dtPolicies!: Table;
   @ViewChild('dtContracts') dtContracts!: Table;
+
+  @Input({ required: true }) instance!: EdcInstance;
+  @Output() back = new EventEmitter<void>();
 
   // Asset properties
   assets: Asset[] = [];
@@ -402,10 +406,14 @@ accessPolicySuggestions: OdrlPolicyDefinition[] = [];
   );
 }
 
+  goBack(): void {
+    this.back.emit();
+  }
+
   private async loadAssets(): Promise<void> {
   this.assetLoading = true;
   try {
-    this.assets = await lastValueFrom(this.assetService.getAssets());
+    this.assets = await lastValueFrom(this.assetService.getAssets(this.instance.id));
 
     // Falls ein Dialog geöffnet ist, Liste aktualisieren
     if (this.displayNewContractPolicyDialog || this.displayEditContractPolicyDialog) {
@@ -428,8 +436,8 @@ accessPolicySuggestions: OdrlPolicyDefinition[] = [];
   this.policyLoading = true;
 
   forkJoin({
-    accessPolicies: this.policyService.getPolicies(), // <-- dein Service heißt jetzt so
-    contractDefinitions: this.policyService.getContractDefinitions()
+    accessPolicies: this.policyService.getPolicies(this.instance.id),
+    contractDefinitions: this.policyService.getContractDefinitions(this.instance.id)
   }).subscribe({
     next: ({ accessPolicies, contractDefinitions }) => {
       // Policy-Map für schnellen Lookup (ODRL-ID => Policy)
@@ -441,6 +449,9 @@ accessPolicySuggestions: OdrlPolicyDefinition[] = [];
       });
 
       // Contract Definitions verknüpfen mit Policies und auf UiContractDefinition mappen
+      // Store the full ODRL contract definitions for later use in edit/view dialogs
+      this.allOdrlContractDefinitions = contractDefinitions;
+
       this.allContractDefinitions = contractDefinitions.map((cd): UiContractDefinition => {
         const parentId = cd.accessPolicyId;
         const parentPolicy = parentId ? policyMap.get(parentId) : undefined;
@@ -587,7 +598,7 @@ accessPolicySuggestions: OdrlPolicyDefinition[] = [];
       throw new Error("Invalid dataAddress structure. 'type' and 'baseURL' are required.");
     }
 
-    await this.assetService.createAsset(assetJson);
+    await this.assetService.createAsset(this.instance.id, assetJson);
     this.messageService.add({ severity: 'success', summary: 'Success', detail: 'Asset created successfully.' });
     await this.loadAssets();
     this.hideNewAssetDialog();
@@ -870,7 +881,7 @@ accessPolicySuggestions: OdrlPolicyDefinition[] = [];
             throw new Error("Validation failed: Missing 'asset:prop:description' in properties.");
           }
 
-          await this.assetService.createAsset(assetJson);
+          await this.assetService.createAsset(this.instance.id, assetJson);
           successfulUploads.push(file.name);
         } catch (error: any) {
           failedUploads.push({name: file.name, reason: error.message || 'Could not process file.'});
@@ -937,7 +948,7 @@ accessPolicySuggestions: OdrlPolicyDefinition[] = [];
         throw new Error("The '@id' of the asset cannot be changed during an edit.");
       }
       // The service's uploadAsset handles both create and update
-     await this.assetService.createAsset(assetJson);
+     await this.assetService.createAsset(this.instance.id, assetJson);
       this.messageService.add({ severity: 'success', summary: 'Success', detail: 'Asset updated successfully.' });
       this.loadAssets();
       this.hideEditAssetDialog();
@@ -957,7 +968,7 @@ accessPolicySuggestions: OdrlPolicyDefinition[] = [];
       accept: async () => {
         try {
           // Call the service to delete the asset
-          await this.assetService.deleteAsset(asset.assetId);
+          await this.assetService.deleteAsset(this.instance.id, asset.assetId);
 
           // if success, update the UI
           this.assets = this.assets.filter((a) => a.assetId !== asset.assetId);
@@ -1022,7 +1033,7 @@ accessPolicySuggestions: OdrlPolicyDefinition[] = [];
 
   // Call:
   try {
-    const resp = await this.policyService.uploadPolicyDefinition(raw).toPromise();
+    const resp = await this.policyService.uploadPolicyDefinition(this.instance.id, raw).toPromise();
 
     // Erfolg nur, wenn Server 2xx und eine ID zurückkommt (oder wenigstens 201)
     const body: any = resp?.body ?? {};
@@ -1087,7 +1098,7 @@ accessPolicySuggestions: OdrlPolicyDefinition[] = [];
       if (policyJson['@id'] !== this.policyToEditODRL['@id']) {
         throw new Error("The '@id' of the policy cannot be changed during an edit.");
       }
-      await this.policyService.uploadPolicyDefinition(policyJson);
+      await this.policyService.uploadPolicyDefinition(this.instance.id, policyJson);
       this.messageService.add({ severity: 'success', summary: 'Success', detail: 'Access Policy updated successfully.' });
       this.loadPoliciesAndDefinitions();
       this.hideEditAccessPolicyDialog();
@@ -1109,7 +1120,7 @@ accessPolicySuggestions: OdrlPolicyDefinition[] = [];
         if (!policy.dbId) {
           throw new Error('Policy has no dbId, cannot delete');
         }
-        await this.policyService.deletePolicy(policy.dbId);
+        await this.policyService.deletePolicy(this.instance.id, policy.dbId);
 
         // Contract Definitions im UI aktualisieren
         this.allContractDefinitions = this.allContractDefinitions.filter(
@@ -1220,7 +1231,7 @@ accessPolicySuggestions: OdrlPolicyDefinition[] = [];
           }
 
 
-          await this.policyService.uploadPolicyDefinition(policyJson);
+          await this.policyService.uploadPolicyDefinition(this.instance.id, policyJson);
           successfulUploads.push(file.name);
         } catch (error: any) {
           failedUploads.push({name: file.name, reason: error.message || 'Could not process file.'});
@@ -1327,7 +1338,7 @@ accessPolicySuggestions: OdrlPolicyDefinition[] = [];
       if (!contractDefJson['@id'] || !contractDefJson.accessPolicyId) {
         throw new Error("Invalid contract definition. '@id' and 'accessPolicyId' are required.");
       }
-      await this.policyService.createContractDefinition(contractDefJson);
+      await this.policyService.createContractDefinition(this.instance.id, contractDefJson);
       this.messageService.add({ severity: 'success', summary: 'Success', detail: 'Contract Definition created successfully.' });
       this.loadPoliciesAndDefinitions();
       this.hideNewContractPolicyDialog();
@@ -1405,7 +1416,7 @@ accessPolicySuggestions: OdrlPolicyDefinition[] = [];
           }
 
 
-          await this.policyService.createContractDefinition(contractDefJson);
+          await this.policyService.createContractDefinition(this.instance.id, contractDefJson);
 
           const parentPolicy = this.allAccessPolicies.find(p => p.id === contractDefJson.accessPolicyId);
           this.allContractDefinitions.unshift({
@@ -1641,7 +1652,7 @@ accessPolicySuggestions: OdrlPolicyDefinition[] = [];
         return;
       }
 
-      await this.policyService.updateContractDefinition(odrlPayload);
+      await this.policyService.updateContractDefinition(this.instance.id, odrlPayload);
 
       // Update the UI model by reloading everything to ensure data consistency
       await this.loadPoliciesAndDefinitions();
@@ -1667,7 +1678,7 @@ accessPolicySuggestions: OdrlPolicyDefinition[] = [];
     icon: 'pi pi-exclamation-triangle',
     accept: async () => {
       try {
-        await this.policyService.deleteContractDefinition(contractPolicy.id);
+        await this.policyService.deleteContractDefinition(this.instance.id, contractPolicy.id);
 
         // UI-Listen aktualisieren
         this.allContractDefinitions = this.allContractDefinitions.filter(cd => cd.id !== contractPolicy.id);

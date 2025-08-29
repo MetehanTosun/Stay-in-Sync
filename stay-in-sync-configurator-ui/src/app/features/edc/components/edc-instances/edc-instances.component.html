@@ -6,10 +6,12 @@
     [rows]="10"
     [rowsPerPageOptions]="[10, 25, 50]"
     [loading]="loading"
+    selectionMode="single"
+    (onRowSelect)="onInstanceRowSelect($event)"
     [paginator]="true"
     [globalFilterFields]="['name', 'url', 'protocolVersion', 'bpn', 'description']"
     [tableStyle]="{ 'min-width': '75rem' }"
-    styleClass="p-datatable-striped p-datatable-gridlines"
+    styleClass="p-datatable-striped p-datatable-gridlines p-datatable-clickable"
     responsiveLayout="scroll"
   >
     <ng-template pTemplate="caption">
@@ -67,8 +69,8 @@
       </tr>
     </ng-template>
 
-    <ng-template pTemplate="body" let-instance>
-      <tr [pTooltip]="instance.description" tooltipPosition="top">
+    <ng-template pTemplate="body" let-instance let-ri="rowIndex">
+      <tr [pSelectableRow]="instance" [pSelectableRowIndex]="ri" [pTooltip]="'Click to view assets and policies for this instance. ' + (instance.description || '')" tooltipPosition="top">
         <td>{{ instance.name }}</td>
         <td>{{ instance.url }}</td>
         <td><p-tag [value]="instance.protocolVersion"></p-tag></td>
@@ -79,7 +81,7 @@
             pRipple
             type="button"
             icon="pi pi-pencil"
-            class="p-button-rounded p-button-text p-button-info mr-2"
+            class="p-button-rounded p-button-text p-button-info"
             (click)="editInstance(instance)"
             pTooltip="Edit Instance"
             tooltipPosition="top"
@@ -89,7 +91,7 @@
             pRipple
             type="button"
             icon="pi pi-trash"
-            class="p-button-rounded p-button-text p-button-danger"
+            class="p-button-rounded p-button-text p-button-danger ml-2"
             (click)="deleteInstance(instance)"
             pTooltip="Delete Instance"
             tooltipPosition="top"
