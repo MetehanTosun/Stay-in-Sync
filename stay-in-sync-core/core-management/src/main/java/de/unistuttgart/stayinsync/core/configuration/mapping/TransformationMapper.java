@@ -98,6 +98,7 @@ public interface TransformationMapper {
         dto.id = entity.id;
         dto.name = entity.name;
         dto.description = entity.description;
+        dto.error = false;
 
          Log.info("SourceSystemApiRequestConfigurations size: " +
                  (entity.sourceSystemApiRequestConfigurations != null ? entity.sourceSystemApiRequestConfigurations.size() : "null"));

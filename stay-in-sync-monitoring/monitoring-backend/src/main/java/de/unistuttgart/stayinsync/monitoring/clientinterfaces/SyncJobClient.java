@@ -4,6 +4,8 @@ import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.SyncJo
 import de.unistuttgart.stayinsync.transport.dto.monitoringgraph.MonitoringSyncJobDto;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
+import jakarta.ws.rs.PathParam;
+import jakarta.ws.rs.QueryParam;
 import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
 
 import java.util.List;
@@ -13,4 +15,8 @@ import java.util.List;
 public interface SyncJobClient {
     @GET
     List<MonitoringSyncJobDto> getAll();
+
+    @GET
+    @Path("/{id}")
+    MonitoringSyncJobDto getById(@PathParam("id") Long id);
 }

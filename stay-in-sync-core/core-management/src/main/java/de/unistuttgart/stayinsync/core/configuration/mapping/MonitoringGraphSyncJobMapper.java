@@ -38,4 +38,23 @@ public abstract class MonitoringGraphSyncJobMapper {
         }).collect(Collectors.toList());
     }
 
+    public MonitoringSyncJobDto mapToDtoSingle(SyncJob entity) {
+        MonitoringSyncJobDto dto = new MonitoringSyncJobDto();
+        dto.id = entity.id;
+        dto.name = entity.name;
+        dto.isSimulation = entity.isSimulation;
+
+        Log.info("MAPPER LOG: Transformation entity is " + entity.transformations);
+
+        if (entity.transformations != null) {
+            dto.transformations = entity.transformations.stream()
+                    .map(transformationMapper::mapToMonitoringGraphDto)
+                    .collect(Collectors.toList());
+        } else {
+            dto.transformations = List.of();
+        }
+
+        return dto;
+    }
+
 }

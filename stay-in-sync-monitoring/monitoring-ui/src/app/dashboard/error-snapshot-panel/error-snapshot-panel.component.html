@@ -1,11 +1,40 @@
-<div *ngIf="!selectedNodeId">
-  <p>Please select a SyncNode</p>
+<!-- Wenn kein Node ausgewählt -->
+<p-message *ngIf="!selectedNodeId" severity="info" text="Please select a SyncNode"></p-message>
+
+<!-- Wenn keine Transformationen -->
+<p-message *ngIf="selectedNodeId && transformations.length === 0" severity="warn" text="There are no transformations"></p-message>
+
+<!-- Wenn Transformationen vorhanden -->
+<div *ngIf="selectedNodeId && transformations.length > 0" class="grid gap-4">
+  <p-panel
+    *ngFor="let transformation of transformations"
+    [toggleable]="true"
+    [styleClass]="transformation.error ? 'border-red-500' : 'border-green-200'">
+
+    <!-- Custom Header mit Icon -->
+    <ng-template pTemplate="header">
+      <i class="pi mr-2"
+         [ngClass]="transformation.error ? 'pi-times-circle' : 'pi-check-circle'"
+         [ngStyle]="{ color: transformation.error ? 'red' : 'green' }">
+      </i>
+      <span class="font-semibold"
+            [ngStyle]="{ color: transformation.error ? 'red' : 'green' }">
+    {{ transformation.name }}
+  </span>
+    </ng-template>
+
+
+    <!-- Beschreibung -->
+    <p class="mb-2" *ngIf="transformation.description">{{ transformation.description }}</p>
+
+    <!-- Snapshots -->
+    <ul class="list-disc pl-5">
+      <li *ngFor="let snapshot of filteredSnapshots">
+        <ng-container *ngIf="snapshot.transformationId === transformation.id">
+          {{ snapshot.message }}
+        </ng-container>
+      </li>
+    </ul>
+  </p-panel>
 </div>
-<div *ngIf="selectedNodeId && filteredSnapshots.length === 0">
-  <p>There are no errors</p>
-</div>
-<div *ngIf="selectedNodeId && filteredSnapshots.length > 0">
-  <ul>
-    <li *ngFor="let snapshot of filteredSnapshots">{{ snapshot }}</li>
-  </ul>
-</div>
+

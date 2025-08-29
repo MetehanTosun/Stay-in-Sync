@@ -122,6 +122,22 @@ public class SyncJobResource {
         return monitoringGraphSyncJobMapper.mapToDto(syncJobs);
     }
 
+    @GET
+    @Path("/for-graph/{id}")
+    @Operation(summary = "Returns all the sync-jobs from the database")
+    @APIResponse(
+            responseCode = "200",
+            description = "Gets a sync-job for a given id",
+            content = @Content(
+                    mediaType = APPLICATION_JSON,
+                    schema = @Schema(implementation = SyncJobDTO.class),
+                    examples = @ExampleObject(name = "sync-job", value = Examples.VALID_EXAMPLE_SYNCJOB)
+            )
+    )
+    public MonitoringSyncJobDto getSyncJobsForGraphWithId(@Parameter(name = "id", required = true) @PathParam("id") Long id) {
+        return monitoringGraphSyncJobMapper.mapToDtoSingle(this.syncJobService.findSyncJobById(id));
+    }
+
 
     @GET
     @Path("/{id}")
