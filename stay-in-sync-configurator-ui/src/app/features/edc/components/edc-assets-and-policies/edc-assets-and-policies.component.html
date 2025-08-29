@@ -80,7 +80,6 @@
 <input #contractDefFileInput type="file" (change)="onContractDefFileSelect($event)" hidden accept=".json" multiple />
 <input #templateFileInput type="file" (change)="onTemplateFileSelect($event)" hidden accept=".json" />
 <input #assetTemplateFileInput type="file" (change)="onAssetTemplateFileSelect($event)" hidden accept=".json" />
-<input #accessPolicyTemplateFileInput type="file" (change)="onAccessPolicyTemplateFileSelect($event)" hidden accept=".json" />
 
 <!-- Policies Table -->
 <div class="card mt-4">
@@ -324,14 +323,8 @@
     <!-- Left Column -->
     <div class="left-column">
       <div class="field">
-        <div class="grid">
-          <div class="col-6">
-            <p-dropdown [options]="accessPolicyTemplates" [(ngModel)]="selectedAccessPolicyTemplate" (onChange)="onAccessPolicyTemplateChange($event)" optionLabel="name" placeholder="Select a Template" [showClear]="true" styleClass="w-full"></p-dropdown>
-          </div>
-          <div class="col-6">
-            <button pButton pRipple type="button" label="Upload Template from JSON" icon="pi pi-folder-open" class="p-button-outlined w-full" (click)="accessPolicyTemplateFileInput.click()"></button>
-          </div>
-        </div>
+        <label for="templateSelectNew" class="font-bold block mb-2">Select a Template</label>
+        <p-dropdown id="templateSelectNew" [options]="accessPolicyTemplates" [(ngModel)]="selectedAccessPolicyTemplate" (onChange)="onAccessPolicyTemplateChange($event)" optionLabel="name" placeholder="Select a Template" [showClear]="true" styleClass="w-full"></p-dropdown>
       </div>
       <div class="grid">
         <ng-container *ngFor="let control of dynamicFormControls; let i = index; trackBy: trackByControlLabel">
@@ -343,8 +336,8 @@
         </ng-container>
       </div>
       <div class="field mt-auto">
-        <label class="font-bold block mb-2">Template JSON Editor</label>
-        <ngx-monaco-editor id="newAccessPolicyTemplateJsonEditor" [options]="editorOptions" [(ngModel)]="expertModeTemplateJsonContent" (ngModelChange)="syncPolicyFromTemplateWithDebounce()" style="height: 250px; border: 1px solid var(--surface-d);"></ngx-monaco-editor>
+        <label class="font-bold block mb-2">Template JSON (Read-only)</label>
+        <ngx-monaco-editor id="newAccessPolicyTemplateJsonEditor" [options]="readOnlyEditorOptions" [(ngModel)]="expertModeTemplateJsonContent" style="height: 250px; border: 1px solid var(--surface-d);"></ngx-monaco-editor>
       </div>
     </div>
     <!-- Right Column -->
@@ -378,14 +371,8 @@
       <!-- Left Column -->
       <div class="left-column">
         <div class="field">
-          <div class="grid">
-            <div class="col-6">
-              <p-dropdown [options]="accessPolicyTemplates" [(ngModel)]="selectedAccessPolicyTemplate" (onChange)="onAccessPolicyTemplateChange($event)" optionLabel="name" placeholder="Select a Template" [showClear]="true" styleClass="w-full"></p-dropdown>
-            </div>
-            <div class="col-6">
-              <button pButton pRipple type="button" label="Upload Template from JSON" icon="pi pi-folder-open" class="p-button-outlined w-full" (click)="accessPolicyTemplateFileInput.click()"></button>
-            </div>
-          </div>
+          <label for="templateSelectEdit" class="font-bold block mb-2">Select a Template</label>
+          <p-dropdown id="templateSelectEdit" [options]="accessPolicyTemplates" [(ngModel)]="selectedAccessPolicyTemplate" (onChange)="onAccessPolicyTemplateChange($event)" optionLabel="name" placeholder="Select a Template to apply it" [showClear]="true" styleClass="w-full"></p-dropdown>
         </div>
         <div class="grid">
           <ng-container *ngFor="let control of dynamicFormControls; let i = index; trackBy: trackByControlLabel">
@@ -397,8 +384,8 @@
           </ng-container>
         </div>
         <div class="field mt-auto">
-          <label class="font-bold block mb-2">Template JSON Editor</label>
-          <ngx-monaco-editor id="editAccessPolicyTemplateJsonEditor" [options]="editorOptions" [(ngModel)]="expertModeTemplateJsonContent" (ngModelChange)="syncPolicyFromTemplateWithDebounce()" style="height: 250px; border: 1px solid var(--surface-d);"></ngx-monaco-editor>
+          <label class="font-bold block mb-2">Template JSON (Read-only)</label>
+          <ngx-monaco-editor id="editAccessPolicyTemplateJsonEditor" [options]="readOnlyEditorOptions" [(ngModel)]="expertModeTemplateJsonContent" style="height: 250px; border: 1px solid var(--surface-d);"></ngx-monaco-editor>
         </div>
       </div>
       <!-- Right Column -->

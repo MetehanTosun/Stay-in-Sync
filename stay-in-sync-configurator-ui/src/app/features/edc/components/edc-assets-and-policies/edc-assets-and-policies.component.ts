@@ -28,6 +28,7 @@ import { MonacoEditorModule } from 'ngx-monaco-editor-v2';
 import { Asset } from './models/asset.model';
 import { OdrlContractDefinition, OdrlPolicyDefinition, OdrlCriterion, OdrlConstraint, OdrlPermission, UiContractDefinition } from './models/policy.model';
 import { EdcInstance } from '../edc-instances/models/edc-instance.model';
+import { Template } from '../../models/template.model';
 import { AssetService } from './services/asset.service';
 import { PolicyService } from './services/policy.service';
 import { EdcInstanceService } from '../edc-instances/services/edc-instance.service';
@@ -35,6 +36,7 @@ import {lastValueFrom, Subject, Subscription} from 'rxjs';
 import {debounceTime} from "rxjs/operators";
 import { MultiSelectModule } from 'primeng/multiselect';
 import { forkJoin } from 'rxjs';
+import { TemplateService } from '../../services/template.service';
 
 @Component({
   selector: 'app-edc-assets-and-policies',
@@ -125,8 +127,8 @@ accessPolicySuggestions: OdrlPolicyDefinition[] = [];
   contractDefinitionToEditODRL: OdrlContractDefinition | null = null;
 
   // Properties for Access Policy Templates
-  accessPolicyTemplates: { name: string, content: any }[] = [];
-  selectedAccessPolicyTemplate: any | null = null;
+  accessPolicyTemplates: Template[] = [];
+  selectedAccessPolicyTemplate: Template | null = null;
 
   // Properties for the fully dynamic Access Policy form
   dynamicFormControls: {
@@ -198,7 +200,8 @@ accessPolicySuggestions: OdrlPolicyDefinition[] = [];
     private policyService: PolicyService,
     private confirmationService: ConfirmationService,
     private messageService: MessageService,
-    private edcInstanceService: EdcInstanceService
+    private edcInstanceService: EdcInstanceService,
+    private templateService: TemplateService
   ) {
 
 
@@ -238,107 +241,10 @@ accessPolicySuggestions: OdrlPolicyDefinition[] = [];
 
 
   private loadAccessPolicyTemplates() {
-
-    this.accessPolicyTemplates = [
-
-      {
-        name: 'Access Policy',
-        content: {
-          "@context": {"odrl": "http://www.w3.org/ns/odrl/2/"},
-          "@id": "POLICY_ID_BPN",
-          "policy": {
-            "permission": [{
-              "action": "${Action|use,read,write}",
-              "constraint": [{
-                "leftOperand": "BusinessPartnerNumber",
-                "operator": "${Operator|eq,neq}",
-                "rightOperand": "${BPN-Value}"
-              }]
-            }]
-          }
-        }
-      },
-
-      {
-        name: 'BPN Access Policy',
-        content: {
-          "@context": [
-            "http://www.w3.org/ns/odrl.jsonld",
-            "https://w3id.org/catenax/2025/9/policy/context.jsonld"
-          ],
-          "@type": "Set",
-          "@id": "POLICY_ID_BPN",
-          "permission": [
-            {
-              "action": "${Action|access,read,write,use}",
-              "constraint": [
-                {
-                  "and": [
-                    {
-                      "leftOperand": "Membership",
-                      "operator": "${Operator|eq,neq}",
-                      "rightOperand": "${Status|active,inactive}"
-                    },
-                    {
-                      "leftOperand": "BusinessPartnerNumber",
-                      "operator": "${Operator|isAnyOf,eq,neq}",
-                      "rightOperand": [
-                        "${BPN-Value}"
-                      ]
-                    }
-                  ]
-                }
-              ]
-            }
-          ]
-        }
-      },
-
-
-/*
-      {
-        name: 'Framework Agreement Policy (Traceability)',
-        content: {
-          "@context": { "odrl": "http://www.w3.org/ns/odrl/2/" },
-          "@id": "POLICY_ID_TRACEABILITY",
-          "policy": {
-            "permission": [{
-              "action": "${Action|use}",
-              "constraint": [{
-                "leftOperand": "FrameworkAgreement.traceability",
-                "operator": "${Operator|eq}",
-                "rightOperand": "${Status|active,inactive}"
-              }]
-            }]
-          }
-        }
-      },
-
-*/
-      /*
-      {
-        name: 'Multi-Constraint BPN Policy',
-        content: {
-          "@context": { "odrl": "http://www.w3.org/ns/odrl/2/" },
-          "@id": "POLICY_ID_MULTI_CONSTRAINT",
-          "policy": {
-            "permission": [{
-              "action": "${Action|use,read}",
-              "constraint": [
-                {"leftOperand": "BusinessPartnerNumber",
-                  "operator": "eq",
-                  "rightOperand": "${BPN-Value}"},
-                {"leftOperand": "Membership",
-                  "operator": "eq",
-                  "rightOperand": "${Status|active}"}
-              ]
-            }]
-          }
-        }
-      }
-*/
-
-    ];
+    this.templateService.getTemplates().subscribe(allTemplates => {
+      // For now, we only care about AccessPolicy templates in this dialog
+      this.accessPolicyTemplates = allTemplates.filter(t => t.type === 'AccessPolicy');
+    });
   }
 
   private loadAssetTemplates() {
@@ -1913,7 +1819,7 @@ accessPolicySuggestions: OdrlPolicyDefinition[] = [];
   }
 
 
-  onAccessPolicyTemplateChange(event: { value: any }) {
+  onAccessPolicyTemplateChange(event: { value: Template | null }) {
     if (event.value) {
       const templateContent = event.value.content;
       this.expertModeTemplateJsonContent = JSON.stringify(templateContent, null, 2);
@@ -1942,38 +1848,15 @@ accessPolicySuggestions: OdrlPolicyDefinition[] = [];
             obj[key] = ''; // Default to empty string for text fields
           }
         }
+      } else if (Array.isArray(obj[key])) {
+        for (let i = 0; i < obj[key].length; i++) {
+          if (typeof obj[key][i] === 'object' && obj[key][i] !== null) {
+            this.replaceTemplatePlaceholders(obj[key][i]);
+          }
+        }
       } else if (typeof obj[key] === 'object' && obj[key] !== null) {
         this.replaceTemplatePlaceholders(obj[key]);
       }
-    }
-  }
-
-  async onAccessPolicyTemplateFileSelect(event: Event) {
-    const element = event.currentTarget as HTMLInputElement;
-    const fileList: FileList | null = element.files;
-
-    if (!fileList || fileList.length === 0) {
-      return;
-    }
-
-    const file = fileList[0]; // Only one file
-    try {
-      const templateContent = await file.text();
-      this.expertModeTemplateJsonContent = templateContent; // Load template JSON
-
-      // Generate initial policy JSON from template, replacing placeholders
-      const initialPolicyContent = JSON.parse(templateContent); // Parse template
-      this.replaceTemplatePlaceholders(initialPolicyContent); // Replace placeholders
-      this.expertModePolicyJsonContent = JSON.stringify(initialPolicyContent, null, 2); // Set policy JSON
-
-      this.messageService.add({ severity: 'info', summary: 'Template Loaded', detail: `Template from ${file.name} loaded into editor.` });
-    } catch (error) {
-      this.messageService.add({ severity: 'error', summary: 'Read Error', detail: 'Could not read the selected file.' });
-      this.expertModeTemplateJsonContent = ''; // Clear on error
-      this.expertModePolicyJsonContent = ''; // Clear on error
-    } finally {
-      element.value = ''; // Reset file input
-      this.syncFormFromJson();
     }
   }
 
