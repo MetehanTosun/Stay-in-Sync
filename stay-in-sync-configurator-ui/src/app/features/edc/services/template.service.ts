@@ -1,5 +1,6 @@
 import { Injectable } from '@angular/core';
 import { Observable, of } from 'rxjs';
+import { HttpClient } from '@angular/common/http';
 import { Template } from '../models/template.model';
 
 @Injectable({
@@ -7,9 +8,19 @@ import { Template } from '../models/template.model';
 })
 export class TemplateService {
   private localStorageKey = 'edc-templates';
+  private backendUrl = 'http://localhost:8090/api/config/templates';
 
+  // UI Testing method. To use the real backend, change this to false!
+  private mockMode = false;
+
+  constructor(private http: HttpClient) {}
+
+  /**
+   * Templates for policies that can be used as a starting point.
+   * @private
+   */
   private getDefaultTemplates(): Template[] {
-    // The original hardcoded templates, now with a 'type'
+
     return [
       {
         id: `template-${this.generateUuid()}`,
@@ -71,22 +82,43 @@ export class TemplateService {
     ];
   }
 
+  /**
+   * Loads templates from backend
+   */
   getTemplates(): Observable<Template[]> {
-    const templatesJson = localStorage.getItem(this.localStorageKey);
-    if (templatesJson) {
-      return of(JSON.parse(templatesJson));
-    } else {
-      const defaultTemplates = this.getDefaultTemplates();
-      this.saveTemplates(defaultTemplates);
-      return of(defaultTemplates);
+    if (this.mockMode) {
+      console.warn('Mock Mode: Fetching templates from localStorage.');
+      const templatesJson = localStorage.getItem(this.localStorageKey);
+      if (templatesJson) {
+        return of(JSON.parse(templatesJson));
+      } else {
+        const defaultTemplates = this.getDefaultTemplates();
+        this.saveTemplates(defaultTemplates); // This will also use the mock mode logic
+        return of(defaultTemplates);
+      }
     }
+
+
+    return this.http.get<Template[]>(this.backendUrl);
   }
 
+  /**
+   * Saves templates to backend
+   */
   saveTemplates(templates: Template[]): Observable<Template[]> {
-    localStorage.setItem(this.localStorageKey, JSON.stringify(templates));
-    return of(templates);
+    if (this.mockMode) {
+      console.warn('Mock Mode: Saving templates to localStorage.');
+      localStorage.setItem(this.localStorageKey, JSON.stringify(templates));
+      return of(templates);
+    }
+
+
+    return this.http.post<Template[]>(this.backendUrl, templates);
   }
 
+  /**
+   * Generates a simple UUID for template IDs.
+   */
   private generateUuid(): string {
     return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
       const r = Math.random() * 16 | 0, v = c === 'x' ? r : (r & 0x3 | 0x8);
