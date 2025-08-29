@@ -129,6 +129,7 @@ accessPolicySuggestions: OdrlPolicyDefinition[] = [];
   // Properties for Access Policy Templates
   accessPolicyTemplates: Template[] = [];
   selectedAccessPolicyTemplate: Template | null = null;
+  showTemplateJson = false;
 
   // Properties for the fully dynamic Access Policy form
   dynamicFormControls: {
@@ -973,10 +974,11 @@ accessPolicySuggestions: OdrlPolicyDefinition[] = [];
 
   editAccessPolicy(policy: OdrlPolicyDefinition) {
   this.policyToEditODRL = this.allAccessPolicies.find(p => p.id === policy.id) ?? null;
+  this.selectedAccessPolicyTemplate = null; // Explicitly clear template selection
 
   if (this.policyToEditODRL) {
-    this.expertModePolicyJsonContent = JSON.stringify(this.policyToEditODRL, null, 2); 
-    this.expertModeTemplateJsonContent = ''; 
+    this.expertModePolicyJsonContent = JSON.stringify(this.policyToEditODRL, null, 2);
+    this.expertModeTemplateJsonContent = '';
     this.syncFormFromJson();
     this.displayEditAccessPolicyDialog = true;
   } else {
@@ -987,6 +989,14 @@ accessPolicySuggestions: OdrlPolicyDefinition[] = [];
     });
   }
 }
+
+  resetEditedPolicy(): void {
+    if (this.policyToEditODRL) {
+      this.expertModePolicyJsonContent = JSON.stringify(this.policyToEditODRL, null, 2);
+      this.syncFormFromJson();
+      this.messageService.add({ severity: 'info', summary: 'Resetted', detail: 'Changes have been reverted to the original state.' });
+    }
+  }
 
 
   hideEditAccessPolicyDialog() {
@@ -1834,6 +1844,29 @@ accessPolicySuggestions: OdrlPolicyDefinition[] = [];
       this.expertModePolicyJsonContent = ''; // Clear policy JSON too
     }
     this.syncFormFromJson();
+  }
+
+  async onPolicyJsonUpload(event: Event) {
+    const element = event.currentTarget as HTMLInputElement;
+    const fileList: FileList | null = element.files;
+
+    if (!fileList || fileList.length === 0) {
+      return;
+    }
+
+    const file = fileList[0]; // Only one file
+    try {
+      const fileContent = await file.text();
+      // We need to pretty-print it for the editor
+      const parsedJson = JSON.parse(fileContent);
+      this.expertModePolicyJsonContent = JSON.stringify(parsedJson, null, 2);
+      this.syncFormFromJson(); // After loading, sync the form from the new JSON
+      this.messageService.add({ severity: 'info', summary: 'Content Loaded', detail: `JSON from ${file.name} loaded into editor.` });
+    } catch (error) {
+      this.messageService.add({ severity: 'error', summary: 'Read Error', detail: 'Could not read or parse the selected file.' });
+    } finally {
+      element.value = ''; // Reset file input
+    }
   }
 
   // Replace placeholders in a JSON object
