@@ -2,13 +2,13 @@ package de.unistuttgart.stayinsync.syncnode.syncjob;
 
 import de.unistuttgart.stayinsync.syncnode.domain.ExecutionPayload;
 import de.unistuttgart.stayinsync.syncnode.domain.TransformJob;
-
 import de.unistuttgart.stayinsync.syncnode.logic_engine.GraphMapper;
 import de.unistuttgart.stayinsync.transport.dto.*;
 import de.unistuttgart.stayinsync.transport.transformation_rule_shared.nodes.Node;
 import io.quarkus.logging.Log;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
+import org.slf4j.MDC;
 
 import java.time.Instant;
 import java.util.*;
@@ -34,8 +34,9 @@ public class DispatcherStateService {
         arcToTransformationMap.clear();
         arcToSystemAliasMap.clear();
 
-
+        MDC.put("transformationId", transformation.id().toString());
         Log.infof("Registering Transformation ID: %d, Manifest: %s", transformation.id(), transformation.arcManifest());
+
         TransformationState state = new TransformationState(transformation);
         transformationRegistry.put(transformation.id(), state);
 
@@ -43,7 +44,6 @@ public class DispatcherStateService {
             for (String arcAlias : transformation.arcManifest()) {
                 arcToTransformationMap.computeIfAbsent(arcAlias, k -> new ArrayList<>()).add(transformation.id());
             }
-
         }
 
         if (transformation.requestConfigurationMessageDTOS() != null) {
@@ -55,7 +55,6 @@ public class DispatcherStateService {
                 }
             }
         }
-
     }
 
     public List<ExecutionPayload> processArc(SyncDataMessageDTO arc) {
@@ -73,6 +72,7 @@ public class DispatcherStateService {
             state.recordArrival(arc.arcAlias());
 
             if (state.isReady()) {
+                MDC.put("transformationId", txId.toString());
                 Log.infof("Transformation %d is ready! Building job.", txId);
                 ExecutionPayload payload = buildExecutionPayload(state.getTransformation());
                 completedPayloads.add(payload);
@@ -89,6 +89,7 @@ public class DispatcherStateService {
         for (String arcAlias : tx.arcManifest()) {
             String systemName = arcToSystemAliasMap.get(arcAlias);
             if (systemName == null) {
+                MDC.put("transformationId", tx.id().toString());
                 Log.warnf("Could not find systemName for arcAlias '%s'. Skipping this ARC in the final payload.", arcAlias);
                 continue;
             }
@@ -104,13 +105,13 @@ public class DispatcherStateService {
 
         TransformationRuleDTO rule = tx.transformationRuleDTO();
         List<Node> graphNodes = new ArrayList<>();
-        if(rule != null)
-        {
+        if (rule != null) {
             GraphMapper.MappingResult mappingResult = graphMapperService.toNodeGraph(rule.graphDTO());
             graphNodes = mappingResult.nodes();
         }
 
         TransformJob job = new TransformJob(
+                tx.id(),
                 "Transformation-" + tx.id(),
                 "job-" + Instant.now().toEpochMilli(),
                 "script-for-" + tx.id(),

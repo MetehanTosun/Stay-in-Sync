@@ -4,6 +4,7 @@ import io.quarkus.runtime.annotations.RegisterForReflection;
 
 @RegisterForReflection
 public record TransformJob(
+        Long transformationId,
         String name,
         String jobId,
         String scriptId,

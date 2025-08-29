@@ -97,7 +97,10 @@ public class ScriptApi {
      *                 The level is case-insensitive.
      */
     @HostAccess.Export
-    public void log(String message, String logLevel) {
+    public void log(String message, String logLevel, Long transformationId) {
+        if (transformationId != null) {
+            MDC.put("transformationId", transformationId.toString());
+        }
         MDC.put("jobId", jobId);
         try {
             Logger.Level level = Logger.Level.INFO;
@@ -111,6 +114,9 @@ public class ScriptApi {
             Log.log(level, message);
         } finally {
             MDC.remove("jobId");
+            if (transformationId != null) {
+                MDC.remove("transformationId");
+            }
         }
     }
 }

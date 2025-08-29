@@ -19,22 +19,36 @@
       </i>
       <span class="font-semibold"
             [ngStyle]="{ color: transformation.error ? 'red' : 'green' }">
-    {{ transformation.name }}
-  </span>
+        {{ transformation.name }}
+      </span>
     </ng-template>
-
 
     <!-- Beschreibung -->
     <p class="mb-2" *ngIf="transformation.description">{{ transformation.description }}</p>
 
     <!-- Snapshots -->
-    <ul class="list-disc pl-5">
-      <li *ngFor="let snapshot of filteredSnapshots">
-        <ng-container *ngIf="snapshot.transformationId === transformation.id">
-          {{ snapshot.message }}
-        </ng-container>
-      </li>
-    </ul>
+    <p-table
+      [value]="getSnapshotsForTransformation(transformation.id)"
+      [paginator]="false"
+      [rows]="10"
+      [responsiveLayout]="'scroll'"
+      styleClass="p-datatable-sm"
+    >
+      <ng-template pTemplate="header">
+        <tr>
+          <th>Message</th>
+          <th>Replay</th>
+        </tr>
+      </ng-template>
+      <ng-template pTemplate="body" let-snapshot>
+        <tr>
+          <td>{{ snapshot.message }}</td>
+          <td>
+            <p-button icon="pi pi-refresh" class="p-button-sm"
+                      (click)="replaySnapshot(snapshot.id)"></p-button>
+          </td>
+        </tr>
+      </ng-template>
+    </p-table>
   </p-panel>
 </div>
-

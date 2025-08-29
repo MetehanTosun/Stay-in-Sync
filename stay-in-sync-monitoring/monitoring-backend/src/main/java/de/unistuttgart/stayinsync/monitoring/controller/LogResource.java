@@ -5,7 +5,7 @@ import de.unistuttgart.stayinsync.monitoring.service.LogService;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
-import java.time.Instant;
+
 import java.util.List;
 
 @Path("/api/logs")
@@ -26,21 +26,22 @@ public class LogResource {
             @QueryParam("endTime") long endTime,
             @QueryParam("level") @DefaultValue("info") String level
     ) {
-
         List<LogEntryDto> logs = logService.fetchAndParseLogs(null, startTime, endTime, level);
         return Response.ok(logs).build();
     }
 
-    @GET
-    @Path("/SyncJob/{syncJobId}")
-    public Response getLogsBySyncJob(
-            @PathParam("syncJobId") String syncJobId,
+    /**
+     * Neuer Endpunkt: Logs für eine Liste von TransformationIds abrufen
+     */
+    @POST
+    @Path("/transformations")
+    public Response getLogsByTransformationIds(
+            List<String> transformationIds,
             @QueryParam("startTime") long startTime,
             @QueryParam("endTime") long endTime,
             @QueryParam("level") @DefaultValue("info") String level
     ) {
-
-        List<LogEntryDto> logs = logService.fetchAndParseLogs(syncJobId, startTime, endTime, level);
+        List<LogEntryDto> logs = logService.fetchAndParseLogsForTransformations(transformationIds, startTime, endTime, level);
         return Response.ok(logs).build();
     }
 
