@@ -13,8 +13,10 @@ import java.net.http.HttpResponse;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 @ApplicationScoped
@@ -132,19 +134,16 @@ public class LogService {
             // Labels für Loki-Abfrage
             List<String> labels = new ArrayList<>();
             labels.add("agent=\"fluent-bit\"");
+
+            // Level-Label nur hinzufügen, wenn ein spezifisches Level gewählt wurde
+
             if (level != null && !level.isBlank()) {
                 labels.add("level=\"" + level.toUpperCase() + "\"");
             }
 
-            // TransformationIds als OR im Loki-Labelfilter
-            StringBuilder transformationFilter = new StringBuilder();
-            transformationFilter.append("(");
-            for (int i = 0; i < transformationIds.size(); i++) {
-                if (i > 0) transformationFilter.append(" or ");
-                transformationFilter.append("transformationId=\"").append(transformationIds.get(i)).append("\"");
-            }
-            transformationFilter.append(")");
-            labels.add(transformationFilter.toString());
+            // TransformationIds als Regex im Loki-Labelfilter
+            String regex = String.join("|", transformationIds);
+            labels.add("transformationId=~\"" + regex + "\"");
 
             // Query zusammenbauen
             String query = "{" + String.join(",", labels) + "}";
@@ -159,6 +158,8 @@ public class LogService {
                     .uri(URI.create(url))
                     .GET()
                     .build();
+
+            Log.info("Generated URL: " + url);
 
             HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
             if (response.statusCode() != 200) {
@@ -189,6 +190,8 @@ public class LogService {
                 }
             }
 
+            logs.sort(Comparator.comparingLong(a -> Long.parseLong(a.timestamp())));
+
             return logs;
         } catch (Exception e) {
             Log.error("Fehler beim Abrufen von Logs für TransformationIds", e);
@@ -196,10 +199,13 @@ public class LogService {
         }
     }
 
+
+
+
+
     //TODO:Fix
     public List<String> fetchErrorSyncJobIds(long startNs, long endNs) {
-        List<LogEntryDto> errorLogs = fetchAndParseLogs(null, startNs, endNs, "ERROR");
-        Log.info("Gefundene Error-Logs: " + errorLogs.size());
+        List<LogEntryDto> errorLogs = null;
 
         return errorLogs.stream()
                 .map(LogEntryDto::transformationId)

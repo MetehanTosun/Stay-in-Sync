@@ -24,7 +24,7 @@ public class LogResource {
     public Response getLogs(
             @QueryParam("startTime") long startTime,
             @QueryParam("endTime") long endTime,
-            @QueryParam("level") @DefaultValue("info") String level
+            @QueryParam("level") String level
     ) {
         List<LogEntryDto> logs = logService.fetchAndParseLogs(null, startTime, endTime, level);
         return Response.ok(logs).build();
@@ -39,7 +39,7 @@ public class LogResource {
             List<String> transformationIds,
             @QueryParam("startTime") long startTime,
             @QueryParam("endTime") long endTime,
-            @QueryParam("level") @DefaultValue("info") String level
+            @QueryParam("level") String level
     ) {
         List<LogEntryDto> logs = logService.fetchAndParseLogsForTransformations(transformationIds, startTime, endTime, level);
         return Response.ok(logs).build();
