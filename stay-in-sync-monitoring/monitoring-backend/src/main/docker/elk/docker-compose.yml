@@ -33,6 +33,33 @@ services:
     depends_on:
       - elasticsearch
       - loki
+      - prometheus
+    networks:
+      - elk
+
+  prometheus:
+    image: prom/prometheus:v2.55.1
+    container_name: prometheus
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.enable-lifecycle'
+    ports:
+      - "9090:9090"
+    networks:
+      - elk
+    depends_on:
+      - blackbox_exporter
+
+  blackbox_exporter:
+    image: prom/blackbox-exporter:v0.25.0
+    container_name: blackbox_exporter
+    ports:
+      - "9115:9115"
+    volumes:
+      - ./blackbox.yml:/etc/blackbox_exporter/blackbox.yml:ro
     networks:
       - elk
 
@@ -112,33 +139,6 @@ services:
       - loki
     networks:
       - elk
-  #context anpassen
-#  core-polling-node:
-#    build:
-#      context: /Users/serhatceri/Desktop/StuPro331/stay-in-sync-core/core-polling-node
-#      dockerfile: src/main/docker/Dockerfile.jvm
-#    image: stay-in-sync/core-polling-node
-#    container_name: core-polling-node
-#    environment:
-#      - QUARKUS_PROFILE=monitoring
-#    depends_on:
-#      - fluent-bit
-#    networks:
-#      - elk
-#
-##context anpassen
-#  core-sync-node:
-#    build:
-#      context: /Users/serhatceri/Desktop/StuPro331/stay-in-sync-core/core-sync-node
-#      dockerfile: src/main/docker/Dockerfile.jvm
-#    image: stay-in-sync/core-sync-node
-#    container_name: core-sync-node
-#    environment:
-#      - QUARKUS_PROFILE=monitoring
-#    depends_on:
-#      - fluent-bit
-#    networks:
-#      - elk
 
 volumes:
   elasticsearch_data:

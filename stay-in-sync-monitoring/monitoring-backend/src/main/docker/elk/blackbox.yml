@@ -1,0 +1,7 @@
+modules:
+  http_2xx:
+    prober: http
+    timeout: 5s
+    http:
+      valid_status_codes: []  # leer = alle 2xx akzeptiert
+      method: GET

@@ -61,7 +61,10 @@
 >
   <ng-template pTemplate="header">
     <tr>
-      <th>Timestamp</th>
+      <th pSortableColumn="timestamp">
+        Timestamp
+        <p-sortIcon field="timestamp"></p-sortIcon>
+      </th>
       <th>Level</th>
       <th>Service</th>
       <th>Message</th>
