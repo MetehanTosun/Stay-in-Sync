@@ -53,10 +53,10 @@ public class EDCContractDefinitionService {
     public Optional<EDCContractDefinition> update(final UUID id, final EDCContractDefinition updatedContractDefinition) {
         return findById(id).map(existing -> {
             // nur die zu ändernden Felder übernehmen
-            existing.contractDefinitionId = updatedContractDefinition.getContractDefinitionId();
-            existing.asset              = EDCAsset.findById(updatedContractDefinition.getAssetId());
-            existing.accessPolicy       = EDCPolicy.findById(updatedContractDefinition.getAccessPolicyId());
-            existing.contractPolicy     = EDCPolicy.findById(updatedContractDefinition.getContractPolicyId());
+            existing.contractDefinitionId = updatedContractDefinition.contractDefinitionId;
+            existing.asset              = EDCAsset.findById(updatedContractDefinition.asset != null ? updatedContractDefinition.asset.id : null);
+            existing.accessPolicy       = EDCPolicy.findById(updatedContractDefinition.accessPolicy != null ? updatedContractDefinition.accessPolicy.id : null);
+            existing.contractPolicy     = EDCPolicy.findById(updatedContractDefinition.contractPolicy != null ? updatedContractDefinition.contractPolicy.id : null);
             return existing;
         });
     }

@@ -23,10 +23,16 @@ public interface EDCAssetMapper {
     EDCAsset assetDtoToAsset(EDCAssetDto assetDto);
 
     default EDCInstance map(UUID targetEDCId) {
-        //TODO Implementiere Mapping in dem die edcId auf eine Instanz gemappt wird.
+        if (targetEDCId == null) {
+            return null;
+        }
+        return EDCInstance.findById(targetEDCId);
     }
 
     default UUID map(EDCInstance targetEDC) {
-        //TODO Implementiere das obere Mapping rückwärts.
+        if (targetEDC == null) {
+            return null;
+        }
+        return targetEDC.id;
     }
 }

@@ -4,6 +4,7 @@ import de.unistuttgart.stayinsync.core.configuration.edc.dtoedc.EDCAssetDto;
 import de.unistuttgart.stayinsync.core.configuration.edc.entities.EDCAsset;
 import de.unistuttgart.stayinsync.core.configuration.edc.mapping.EDCAssetMapper;
 import de.unistuttgart.stayinsync.core.configuration.edc.service.EDCAssetService;
+import de.unistuttgart.stayinsync.transport.exception.CustomException;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
 import jakarta.ws.rs.*;
@@ -28,7 +29,7 @@ public class EDCAssetResource {
     
     @GET
     @Path("{id}")
-    public EDCAssetDto get(@PathParam("id") UUID id) {
+    public EDCAssetDto get(@PathParam("id") UUID id) throws CustomException {
         return service.findById(id);
             
     }
@@ -49,7 +50,7 @@ public class EDCAssetResource {
     @PUT
     @Path("{id}")
     @Transactional
-    public EDCAssetDto update(@PathParam("id") UUID id, final EDCAssetDto assetDto) {
+    public EDCAssetDto update(@PathParam("id") UUID id, final EDCAssetDto assetDto) throws CustomException {
         return service.update(id, assetDto);
     }
 
