@@ -1,10 +1,12 @@
-import { Component, Input, OnChanges, SimpleChanges, OnInit } from '@angular/core';
+import {Component, OnDestroy, OnInit} from '@angular/core';
 import { LogEntry } from '../../core/models/log.model';
 import { LogService } from '../../core/services/log.service';
 import { FormsModule } from '@angular/forms';
-import { DatePipe, NgClass, NgForOf, NgIf } from '@angular/common';
+import { DatePipe, NgClass, NgIf } from '@angular/common';
 import { TableModule } from 'primeng/table';
 import { ActivatedRoute } from '@angular/router';
+import {NodeMarkerService} from '../../core/services/node-marker.service';
+import {Button} from 'primeng/button';
 
 @Component({
   selector: 'app-logs-panel',
@@ -13,103 +15,116 @@ import { ActivatedRoute } from '@angular/router';
     FormsModule,
     DatePipe,
     NgClass,
-    TableModule
-  ]
+    NgIf,
+    TableModule,
+    Button
+  ],
+  standalone: true
 })
-export class LogsPanelComponent implements OnInit, OnChanges {
-  selectedNodeId: string | null = null;
+export class LogsPanelComponent implements OnInit, OnDestroy {
+  selectedNodeId?: string;
 
   logs: LogEntry[] = [];
-  filteredLogs: LogEntry[] = [];
+  loading = false;
+  errorMessage = '';
 
-  startTime: string = '';
-  endTime: string = '';
-  level: string = 'info';
-  stream: 'stdout' | 'stderr' = 'stderr';
+  startTime = '';
+  endTime = '';
+  level = 'info';
 
-  constructor(private logService: LogService, private route: ActivatedRoute) {
-    this.route.queryParams.subscribe(params => {
-      this.selectedNodeId = params['input'];
-      console.log('Selected Node ID from query params:', this.selectedNodeId);
-    });
-  }
+  constructor(private logService: LogService, private route: ActivatedRoute, private nodeMarkerService: NodeMarkerService) {}
+
+  private intervalId?: number;
 
   ngOnInit() {
     const now = new Date();
     const oneHourAgo = new Date(now.getTime() - 60 * 60 * 1000);
     this.startTime = this.toDateTimeLocal(oneHourAgo);
     this.endTime = this.toDateTimeLocal(now);
+
+    // Auf Query-Params hören
+    this.route.queryParams.subscribe(params => {
+      this.selectedNodeId = params['input'];
+      this.fetchLogs();
+    });
+
+    // Intervall starten
+    this.intervalId = window.setInterval(() => {
+      this.checkForErrorLogs();
+    }, 5000);
   }
 
-  ngOnChanges(changes: SimpleChanges) {
-    if (changes['selectedNodeId'] && this.selectedNodeId) {
-      this.fetchLogs();
+  ngOnDestroy() {
+    // Intervall bereinigen
+    if (this.intervalId) {
+      clearInterval(this.intervalId);
     }
   }
 
+  reloadLogs() {
+    this.endTime = this.toDateTimeLocal(new Date());
+    this.fetchLogs();
+  }
+
   fetchLogs() {
-    const startNs = new Date(this.startTime).getTime() * 1_000_000;
-    const endNs = new Date(this.endTime).getTime() * 1_000_000;
+    this.loading = true;
+    this.errorMessage = '';
 
-    const nodeId = this.selectedNodeId || '';
-    const level = this.level || '';
+    // Scroll-Position speichern
+    const logContainer = document.querySelector('.log-filters');
+    const scrollTop = logContainer ? logContainer.scrollTop : 0;
 
-    this.logService.getLogs(
-      this.stream,
-      level,
-      nodeId,
-      startNs.toString(),
-      endNs.toString()
-    ).subscribe({
-      next: (logs: any[]) => {
-        this.logs = logs.map((entry: any) => {
-          const rawMessage = entry.message;
+    const startNs = this.toNanoSeconds(new Date(this.startTime));
+    const endNs = this.toNanoSeconds(new Date(this.endTime));
 
-          const levelMatch = rawMessage.match(/level=([a-zA-Z]+)/);
-          const level = levelMatch ? levelMatch[1].toLowerCase() : '';
+    this.logService.getLogs(startNs, endNs, this.level, this.selectedNodeId)
+      .subscribe({
+        next: logs => {
+          this.logs = logs;
+          this.loading = false;
 
-          let message = '';
-          const msgMatch = rawMessage.match(/msg="([^"]+)"/);
-          const messageMatch = rawMessage.match(/message="([^"]+)"/);
-          if (msgMatch) {
-            message = msgMatch[1];
-          } else if (messageMatch) {
-            message = messageMatch[1];
+          // Scroll-Position wiederherstellen
+          if (logContainer) {
+            logContainer.scrollTop = scrollTop;
           }
-
-          const componentMatch = rawMessage.match(/component=([^\s]+)/);
-          const callerMatch = rawMessage.match(/caller=([^\s]+)/);
-
-          return {
-            timestamp: entry.timestamp,
-            message,
-            rawMessage,
-            stream: entry.stream || '',
-            level,
-            caller: callerMatch ? callerMatch[1] : ''
-          } as LogEntry;
-        });
-
-
-        this.filteredLogs = this.logs.sort(
-          (a, b) => Number(new Date(b.timestamp)) - Number(new Date(a.timestamp))
-        );
-        console.log('Logs successfully fetched:', this.filteredLogs);
-      },
-      error: (err) => {
-        console.error('Error fetching logs', err);
-      }
-    });
+        },
+        error: err => {
+          console.error('Error fetching logs', err);
+          this.errorMessage = 'Fehler beim Laden der Logs';
+          this.loading = false;
+        }
+      });
   }
 
   onFilterChange() {
     this.fetchLogs();
   }
 
-  buildFallbackMessage(log: LogEntry): string {
-    const raw = log.rawMessage || ''; // full log line if message is missing
+  checkForErrorLogs() {
+    console.log('Checking for error logs to mark nodes...');
+    this.logService.getErrorLogs(this.toNanoSeconds(new Date(this.startTime)), this.toNanoSeconds(new Date())).subscribe(
+      {
+        next: errorIds => {
+          console.log('Error syncJobIds received:', errorIds);
+          const markedNodes: { [nodeId: string]: boolean } = {};
+          errorIds.forEach(id => {
+            if (!markedNodes[id]) {
+              markedNodes[id] = true;
+              console.log('Marking node due to error syncJobId:', id);
+            }
+          });
+          this.nodeMarkerService.updateMarkedNodes(markedNodes);
+        },
+        error: err => {
+          console.error('Error fetching error sync job IDs', err);
+        }
+      }
+    )
+  }
 
-    // Try to extract meaningful Loki fields
+  buildFallbackMessage(log: LogEntry): string {
+    const raw = (log as any).rawMessage || '';
+
     const component = this.extractValue(raw, 'component');
     const query = this.extractQuotedValue(raw, 'query');
     const returned = this.extractValue(raw, 'returned_lines');
@@ -121,9 +136,7 @@ export class LogsPanelComponent implements OnInit, OnChanges {
       return `[${component}] Query ${query} returned ${returned || 0} lines (duration=${duration || '-'}, status=${status || '-'})`;
     }
 
-    // Fallback: return caller or component only
-    const parts = [];
-
+    const parts: string[] = [];
     if (component) parts.push(`[${component}]`);
     if (caller) parts.push(`caller=${caller}`);
 
@@ -148,5 +161,9 @@ export class LogsPanelComponent implements OnInit, OnChanges {
     const hh = pad(date.getHours());
     const mm = pad(date.getMinutes());
     return `${yyyy}-${MM}-${dd}T${hh}:${mm}`;
+  }
+
+  private toNanoSeconds(date: Date): number {
+    return date.getTime() * 1_000_000; // ms → ns
   }
 }

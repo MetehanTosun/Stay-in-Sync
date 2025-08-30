@@ -10,6 +10,8 @@ import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
 
+import java.util.HashSet;
+
 @Entity
 @DiscriminatorValue("TARGET_SYSTEM")
 @Table(
@@ -18,13 +20,13 @@ import jakarta.persistence.UniqueConstraint;
 public class TargetSystemEndpoint extends SyncSystemEndpoint {
 
     @OneToMany(mappedBy = "targetSystemEndpoint")
-    public java.util.Set<TargetSystemApiQueryParam> apiQueryParams;
+    public java.util.Set<TargetSystemApiQueryParam> apiQueryParams = new HashSet<>();
 
     @OneToMany(mappedBy = "targetSystemEndpoint")
-    public java.util.Set<TargetSystemApiRequestHeader> apiRequestHeaders;
+    public java.util.Set<TargetSystemApiRequestHeader> apiRequestHeaders = new HashSet<>();
 
     @OneToMany(mappedBy = "targetSystemEndpoint")
-    public java.util.Set<TargetSystemVariable> targetSystemVariable;
+    public java.util.Set<TargetSystemVariable> targetSystemVariable = new HashSet<>();
 
     @ManyToOne
     @JoinColumn(name = "sync_system_id", insertable = false, updatable = false)

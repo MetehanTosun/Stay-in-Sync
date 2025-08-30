@@ -6,12 +6,12 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.*;
 import de.unistuttgart.stayinsync.core.configuration.exception.CoreManagementException;
 import de.unistuttgart.stayinsync.core.configuration.mapping.SourceSystemApiRequestConfigurationFullUpdateMapper;
-import de.unistuttgart.stayinsync.core.configuration.rest.dtos.CreateArcDTO;
+import de.unistuttgart.stayinsync.core.configuration.rest.dtos.CreateSourceArcDTO;
 import de.unistuttgart.stayinsync.core.configuration.rest.dtos.CreateRequestConfigurationDTO;
 import de.unistuttgart.stayinsync.core.configuration.util.TypeScriptTypeGenerator;
+import de.unistuttgart.stayinsync.core.management.rabbitmq.producer.PollingJobMessageProducer;
 import de.unistuttgart.stayinsync.transport.domain.ApiEndpointQueryParamType;
 import de.unistuttgart.stayinsync.transport.domain.JobDeploymentStatus;
-import de.unistuttgart.stayinsync.transport.dto.PollingJobDeploymentFeedbackMessageDTO;
 import io.quarkus.logging.Log;
 import io.smallrye.common.constraint.NotNull;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -25,6 +25,7 @@ import jakarta.ws.rs.core.Response;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 
 import static jakarta.transaction.Transactional.TxType.REQUIRED;
 import static jakarta.transaction.Transactional.TxType.SUPPORTS;
@@ -44,6 +45,9 @@ public class SourceSystemApiRequestConfigurationService {
     @Inject
     SourceSystemApiRequestConfigurationFullUpdateMapper mapper;
 
+    @Inject
+    PollingJobMessageProducer pollingJobMessageProducer;
+
     // TODO: Evaluate if method is necessary since ARC creation has cascading effects
     public SourceSystemApiRequestConfiguration persistApiRequestConfiguration(@NotNull @Valid CreateRequestConfigurationDTO sourceSystemApiRequestConfigurationDTO, Long endpointId) {
         SourceSystemApiRequestConfiguration sourceSystemApiRequestConfiguration = mapper.mapToEntity(sourceSystemApiRequestConfigurationDTO);
@@ -62,17 +66,24 @@ public class SourceSystemApiRequestConfigurationService {
         return sourceSystemApiRequestConfiguration;
     }
 
-    public void updateDeploymentStatus(PollingJobDeploymentFeedbackMessageDTO pollingJobDeploymentFeedbackMessageDTO) {
-        Optional<SourceSystemApiRequestConfiguration> apiRequestConfigurationById = findApiRequestConfigurationById(pollingJobDeploymentFeedbackMessageDTO.requestConfigId());
-        if(apiRequestConfigurationById.isEmpty()){
-            Log.warnf("Unable to update deployment status of request configuration with id %d since no request config was found using id", pollingJobDeploymentFeedbackMessageDTO.requestConfigId());
+    public void updateDeploymentStatus(Long requestConfigId, JobDeploymentStatus jobDeploymentStatus) {
+        SourceSystemApiRequestConfiguration sourceSystemApiRequestConfiguration = findApiRequestConfigurationById(requestConfigId);
+
+        if (isTransitioning(sourceSystemApiRequestConfiguration.deploymentStatus) && isTransitioning(jobDeploymentStatus)) {
+            Log.warnf("The request config with id %d is currently in the deployment state of %s and thus can not be deployed or stopped", requestConfigId, sourceSystemApiRequestConfiguration.deploymentStatus);
         } else {
-            SourceSystemApiRequestConfiguration sourceSystemApiRequestConfiguration = apiRequestConfigurationById.get();
-            sourceSystemApiRequestConfiguration.deploymentStatus = pollingJobDeploymentFeedbackMessageDTO.deploymentStatus();
-            if(apiRequestConfigurationById.get().deploymentStatus.equals(JobDeploymentStatus.DEPLOYED))
-                sourceSystemApiRequestConfiguration.workerPodName = pollingJobDeploymentFeedbackMessageDTO.pollingPod();
+            Log.infof("Settings deployment status of request config with id %d to %s", requestConfigId, jobDeploymentStatus);
+            sourceSystemApiRequestConfiguration.deploymentStatus = jobDeploymentStatus;
+            switch (jobDeploymentStatus) {
+                case DEPLOYING ->
+                        pollingJobMessageProducer.publishPollingJob(mapper.mapToMessageDTO(sourceSystemApiRequestConfiguration));
+                case STOPPING, RECONFIGURING ->
+                        pollingJobMessageProducer.reconfigureDeployedPollingJob(mapper.mapToMessageDTO(sourceSystemApiRequestConfiguration));
+            }
+            ;
         }
     }
+
 
     @Transactional(SUPPORTS)
     public List<SourceSystemApiRequestConfiguration> findAllRequestConfigurationsWithSourceSystemIdLike(Long sourceSystemId) {
@@ -97,9 +108,13 @@ public class SourceSystemApiRequestConfigurationService {
 
 
     @Transactional(SUPPORTS)
-    public Optional<SourceSystemApiRequestConfiguration> findApiRequestConfigurationById(Long id) {
+    public SourceSystemApiRequestConfiguration findApiRequestConfigurationById(Long id) {
         Log.debugf("Finding request-configurations by id = %d", id);
-        return SourceSystemApiRequestConfiguration.findByIdOptional(id);
+        SourceSystemApiRequestConfiguration requestConfigById = SourceSystemApiRequestConfiguration.findById(id);
+        if (requestConfigById == null) {
+            throw new CoreManagementException(Response.Status.NOT_FOUND, "Unable to find api request configuration", "No api request config with id %d exists", id);
+        }
+        return requestConfigById;
     }
 
     public void deleteApiRequestConfigurationById(Long id) {
@@ -120,14 +135,14 @@ public class SourceSystemApiRequestConfigurationService {
     }
 
     @Transactional
-    public SourceSystemApiRequestConfiguration create(CreateArcDTO dto, Long endpointId) {
+    public SourceSystemApiRequestConfiguration create(CreateSourceArcDTO dto, Long endpointId) {
         SourceSystem sourceSystem = SourceSystem.<SourceSystem>findByIdOptional(dto.sourceSystemId())
                 .orElseThrow(() -> new NotFoundException("SourceSystem not found."));
         SourceSystemEndpoint endpoint = SourceSystemEndpoint.<SourceSystemEndpoint>findByIdOptional(endpointId)
                 .orElseThrow(() -> new NotFoundException("SourceSystemEndpoint not found."));
 
         if (!endpoint.sourceSystem.id.equals(sourceSystem.id)) {
-            throw new CoreManagementException("Source System mismatch","Endpoint does not belong to the specified source system.");
+            throw new CoreManagementException("Source System mismatch", "Endpoint does not belong to the specified source system.");
         }
 
         String jsonSample = dto.responseDts();
@@ -135,7 +150,7 @@ public class SourceSystemApiRequestConfigurationService {
         String generatedInterfaces = "";
         try {
             JsonNode rootNode = new ObjectMapper().readTree(jsonSample);
-            if(rootNode.isArray()){
+            if (rootNode.isArray()) {
                 isArray = true;
             }
             generatedInterfaces = typeGenerator.generate(jsonSample);
@@ -176,7 +191,7 @@ public class SourceSystemApiRequestConfigurationService {
             String paramName = entry.getKey();
             String paramValue = entry.getValue();
 
-            ApiEndpointQueryParam paramDefinition =ApiEndpointQueryParam
+            ApiEndpointQueryParam paramDefinition = ApiEndpointQueryParam
                     .find("paramName = ?1 and syncSystemEndpoint = ?2 and queryParamType = ?3",
                             paramName, endpoint, type)
                     .firstResultOptional()
@@ -197,8 +212,8 @@ public class SourceSystemApiRequestConfigurationService {
      * This logic looks up the header definition by its name and associated system.
      *
      * @param headerValues The map of header names to values from the DTO.
-     * @param arc The parent ApiRequestConfiguration that has already been persisted.
-     * @param system The SourceSystem to which the header definitions are linked.
+     * @param arc          The parent ApiRequestConfiguration that has already been persisted.
+     * @param system       The SourceSystem to which the header definitions are linked.
      */
     private void createAndPersistHeaderValues(Map<String, String> headerValues, ApiRequestConfiguration arc, SyncSystem system) {
         if (headerValues == null || headerValues.isEmpty()) {
@@ -225,4 +240,15 @@ public class SourceSystemApiRequestConfigurationService {
             headerValueEntity.persist();
         }
     }
+
+    private boolean isTransitioning(JobDeploymentStatus jobDeploymentStatus) {
+        return Set.of(JobDeploymentStatus.DEPLOYING, JobDeploymentStatus.RECONFIGURING, JobDeploymentStatus.STOPPING).contains(jobDeploymentStatus);
+    }
+
+    public void undeployAllUnused() {
+        List<SourceSystemApiRequestConfiguration> sourceSystemApiRequestConfigurations = SourceSystemApiRequestConfiguration.listAllActiveAndUnused();
+        Log.infof("%d unused polling configurations have been found and will be scheduled for undeployment", sourceSystemApiRequestConfigurations.size());
+        sourceSystemApiRequestConfigurations.stream().forEach(apiRequestConfiguration -> updateDeploymentStatus(apiRequestConfiguration.id, JobDeploymentStatus.STOPPING));
+    }
+
 }

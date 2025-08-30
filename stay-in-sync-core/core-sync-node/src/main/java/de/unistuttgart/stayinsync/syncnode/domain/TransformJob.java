@@ -10,5 +10,7 @@ public record TransformJob(
                 String scriptCode,
                 String scriptLanguage,
                 String expectedHash,
+                String generatedSdkCode,
+                String generatedSdkHash,
                 Object sourceData) {
 }

@@ -54,7 +54,7 @@ public class TargetSystemEndpointResourceTest {
                 .contentType(ContentType.JSON)
                 .body(body)
                 .when()
-                .post("/api/target-systems/" + targetSystemId + "/endpoint")
+                .post("/api/config/target-systems/" + targetSystemId + "/endpoints")
                 .then()
                 .statusCode(201)
                 .body("size()", is(2))
@@ -66,7 +66,7 @@ public class TargetSystemEndpointResourceTest {
         given()
                 .port(8081)
                 .when()
-                .get("/api/target-systems/" + targetSystemId + "/endpoint")
+                .get("/api/config/target-systems/" + targetSystemId + "/endpoints")
                 .then()
                 .statusCode(200)
                 .body("size()", is(2))
@@ -76,7 +76,7 @@ public class TargetSystemEndpointResourceTest {
         given()
                 .port(8081)
                 .when()
-                .get("/api/target-systems/endpoint/" + id)
+                .get("/api/config/target-systems/endpoints/" + id)
                 .then()
                 .statusCode(200)
                 .body("id", is(id.intValue()))
@@ -89,7 +89,7 @@ public class TargetSystemEndpointResourceTest {
                 .contentType(ContentType.JSON)
                 .body(updateBody)
                 .when()
-                .put("/api/target-systems/endpoint/" + id)
+                .put("/api/config/target-systems/endpoints/" + id)
                 .then()
                 .statusCode(anyOf(is(204), is(200)));
 
@@ -97,7 +97,7 @@ public class TargetSystemEndpointResourceTest {
         given()
                 .port(8081)
                 .when()
-                .get("/api/target-systems/endpoint/" + id)
+                .get("/api/config/target-systems/endpoints/" + id)
                 .then()
                 .statusCode(200)
                 .body("httpRequestType", is("PUT"))
@@ -107,7 +107,7 @@ public class TargetSystemEndpointResourceTest {
         given()
                 .port(8081)
                 .when()
-                .delete("/api/target-systems/endpoint/" + id)
+                .delete("/api/config/target-systems/endpoints/" + id)
                 .then()
                 .statusCode(anyOf(is(204), is(200)));
 
@@ -115,7 +115,7 @@ public class TargetSystemEndpointResourceTest {
         given()
                 .port(8081)
                 .when()
-                .get("/api/target-systems/endpoint/" + id)
+                .get("/api/config/target-systems/endpoints/" + id)
                 .then()
                 .statusCode(404);
     }

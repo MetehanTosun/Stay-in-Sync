@@ -100,12 +100,13 @@ public class SyncDataMessageConsumer {
             try {
                 SyncDataMessageDTO syncData = getSyncDataMessageDTO(delivery);
                 Log.infof("Received syncData for ARC alias: %s", syncData.arcAlias());
+                Log.debugf("JSON: %s", syncData.jsonData());
 
                 List<ExecutionPayload> completedPayloads = dispatcherStateService.processArc(syncData);
 
                 for (ExecutionPayload payload : completedPayloads) {
                     Log.infof("Dispatching job %s for conditional execution", payload.job().jobId());
-                    transformationExecutionService.execute(payload.job(), payload.graphNodes())
+                    transformationExecutionService.execute(payload)
                             .subscribe().with(
                                     result -> {
                                         if (result != null) {

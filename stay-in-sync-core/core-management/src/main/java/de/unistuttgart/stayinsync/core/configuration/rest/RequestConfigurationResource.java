@@ -3,11 +3,10 @@ package de.unistuttgart.stayinsync.core.configuration.rest;
 import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.SourceSystemApiRequestConfiguration;
 import de.unistuttgart.stayinsync.core.configuration.exception.CoreManagementException;
 import de.unistuttgart.stayinsync.core.configuration.mapping.SourceSystemApiRequestConfigurationFullUpdateMapper;
-import de.unistuttgart.stayinsync.core.configuration.rest.dtos.CreateArcDTO;
+import de.unistuttgart.stayinsync.core.configuration.rest.dtos.CreateSourceArcDTO;
 import de.unistuttgart.stayinsync.core.configuration.rest.dtos.CreateRequestConfigurationDTO;
 import de.unistuttgart.stayinsync.core.configuration.rest.dtos.GetRequestConfigurationDTO;
 import de.unistuttgart.stayinsync.core.configuration.service.SourceSystemApiRequestConfigurationService;
-import de.unistuttgart.stayinsync.core.configuration.rest.Examples;
 import io.quarkus.logging.Log;
 import jakarta.inject.Inject;
 import jakarta.validation.Valid;
@@ -59,10 +58,10 @@ public class RequestConfigurationResource {
                     required = true,
                     content = @Content(
                             mediaType = APPLICATION_JSON,
-                            schema = @Schema(implementation = CreateArcDTO.class)
+                            schema = @Schema(implementation = CreateSourceArcDTO.class)
                     )
             )
-            @Valid CreateArcDTO arcDto,
+            @Valid CreateSourceArcDTO arcDto,
             @Context UriInfo uriInfo) {
         var persistedApiRequestConfiguration = this.sourceSystemApiRequestConfigurationService.create(arcDto, endpointId);
         var builder = uriInfo.getAbsolutePathBuilder().path(Long.toString(persistedApiRequestConfiguration.id));
@@ -185,15 +184,7 @@ public class RequestConfigurationResource {
             description = "The api-request-configuration is not found for a given identifier"
     )
     public Response getSourceSystemEndpoint(@Parameter(name = "id", required = true) @PathParam("id") Long id) {
-        return this.sourceSystemApiRequestConfigurationService.findApiRequestConfigurationById(id)
-                .map(sourceSystemApiRequestConfiguration -> {
-                    Log.debugf("Found api-request-configuration: %s", sourceSystemApiRequestConfiguration);
-                    return Response.ok(fullUpdateMapper.mapToDTO(sourceSystemApiRequestConfiguration)).build();
-                })
-                .orElseThrow(() -> {
-                    Log.warnf("No api-request-configuration found using id %d", id);
-                    return new CoreManagementException(Response.Status.NOT_FOUND, "Unable to find api-request-configuration", "No api-request-configuration found using id %d", id);
-                });
+        return Response.ok(fullUpdateMapper.mapToDTO(this.sourceSystemApiRequestConfigurationService.findApiRequestConfigurationById(id))).build();
     }
 
     @DELETE

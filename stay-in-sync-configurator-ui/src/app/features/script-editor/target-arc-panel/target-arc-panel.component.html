@@ -47,11 +47,7 @@
 
 <!-- Dialog for Library -->
 <p-dialog header="ARC Library" [(visible)]="displayLibrary" [modal]="true" [style]="{width: '50vw'}">
-
-  <!-- Wir verwenden (onOpen), da es mit <p-accordionTab> am zuverlässigsten funktioniert -->
   <p-accordion [multiple]="true" (onOpen)="onTabOpen($event)">
-
-    <!-- Wir iterieren über die VOLLE, ungefilterte Liste 'librarySystems' -->
     <p-accordionTab *ngFor="let system of librarySystems" [header]="system.name">
 
       <div *ngIf="system.isLoading" class="text-center p-2">
@@ -62,8 +58,6 @@
         <li *ngFor="let arc of system.arcs" class="flex align-items-center justify-content-between p-2 border-bottom-1 surface-border">
           <span>{{ arc.alias }}</span>
 
-          <!-- --- NEUE, KONDITIONALE BUTTON-LOGIK --- -->
-          <!-- Wir prüfen mit `activeArcIds.has()`, ob der Button deaktiviert sein soll -->
           <p-button
             [label]="activeArcIds.has(arc.id) ? 'Added' : 'Add'"
             [icon]="activeArcIds.has(arc.id) ? 'pi pi-check' : 'pi pi-plus'"

@@ -2,9 +2,10 @@ package de.unistuttgart.stayinsync.syncnode.syncjob;
 
 import de.unistuttgart.stayinsync.syncnode.domain.ExecutionPayload;
 import de.unistuttgart.stayinsync.syncnode.domain.TransformJob;
+
+import de.unistuttgart.stayinsync.syncnode.logic_engine.GraphMapper;
 import de.unistuttgart.stayinsync.transport.dto.*;
 import de.unistuttgart.stayinsync.transport.transformation_rule_shared.nodes.Node;
-import de.unistuttgart.stayinsync.transport.transformation_rule_shared.util.GraphMapper;
 import io.quarkus.logging.Log;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
@@ -116,8 +117,10 @@ public class DispatcherStateService {
                 tx.transformationScriptDTO().javascriptCode(),
                 "js", // Placeholder
                 tx.transformationScriptDTO().hash(),
+                tx.transformationScriptDTO().generatedSdkCode(),
+                tx.transformationScriptDTO().generatedSdkHash(),
                 finalSource);
-        return new ExecutionPayload(job, graphNodes);
+        return new ExecutionPayload(job, graphNodes, tx);
     }
 
     public Map<Long, TransformationState> getTransformationRegistry() {

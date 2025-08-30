@@ -4,6 +4,7 @@ import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.authco
 import io.quarkus.hibernate.orm.panache.PanacheEntity;
 import jakarta.persistence.*;
 
+import java.util.HashSet;
 import java.util.Set;
 
 /**
@@ -26,7 +27,7 @@ public abstract class SyncSystem extends PanacheEntity {
     public String openApiSpec;
 
     @OneToMany(mappedBy = "syncSystem")
-    public Set<SyncSystemEndpoint> syncSystemEndpoints;
+    public Set<SyncSystemEndpoint> syncSystemEndpoints = new HashSet<>();
 
     // Removed the @OneToMany relationship to avoid inheritance issues during deletion
     // ApiHeaders are now managed manually in the service layer

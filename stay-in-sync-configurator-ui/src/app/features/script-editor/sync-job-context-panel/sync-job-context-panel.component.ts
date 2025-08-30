@@ -107,7 +107,7 @@ export class SyncJobContextPanelComponent implements OnChanges{
         const propLabel = `${propKey}: ${propSchema.type}${isRequired ? ' (Required)' : ''}`;
         // Set children to not be expanded by default to avoid huge trees
         const childNode = this.convertSchemaToTreeNode(propSchema, `${key}-${propKey}`, propLabel);
-        childNode.expanded = false; 
+        childNode.expanded = false;
         return childNode;
       });
     } else if (schema.type === 'array' && schema.items) {
@@ -116,7 +116,7 @@ export class SyncJobContextPanelComponent implements OnChanges{
       itemNode.expanded = true; // Expand the 'Item' node
       node.children = [itemNode];
     }
-    
+
     return node;
   }
 
