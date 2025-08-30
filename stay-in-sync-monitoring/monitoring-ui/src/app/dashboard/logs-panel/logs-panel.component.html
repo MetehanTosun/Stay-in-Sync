@@ -21,7 +21,26 @@
     </select>
   </label>
 
-  <!-- Reload Button -->
+  <label *ngIf="selectedNodeId">
+    Transformation ID:
+    <select [(ngModel)]="selectedTransformationId" (change)="onFilterChange()" placeholder="Filter by Transformation ID">
+      <option value="">All</option>
+      <option *ngFor="let id of transformationIds" [value]="id">{{ id }}</option>
+    </select>
+  </label>
+
+  <label *ngIf="!selectedNodeId">
+    Service:
+    <select [(ngModel)]="selectedService" (change)="onFilterChange()" placeholder="Filter by Service">
+      <option value="">All</option>
+      <option value="monitoring-backend">monitoring-backend</option>
+      <option value="core-sync-node">core-sync-node</option>
+      <option value="core-polling-node">core-polling-node</option>
+      <option value="core-management">core-management</option>
+      <option value="docker">docker</option>
+    </select>
+  </label>
+
   <p-button (click)="reloadLogs()">Reload Logs</p-button>
 </div>
 

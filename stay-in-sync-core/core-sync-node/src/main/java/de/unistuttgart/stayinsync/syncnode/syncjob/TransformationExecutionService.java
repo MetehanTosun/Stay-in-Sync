@@ -16,7 +16,6 @@ import jakarta.inject.Inject;
 import org.eclipse.microprofile.context.ManagedExecutor;
 import org.slf4j.MDC;
 
-import java.util.List;
 import java.util.Map;
 
 @ApplicationScoped

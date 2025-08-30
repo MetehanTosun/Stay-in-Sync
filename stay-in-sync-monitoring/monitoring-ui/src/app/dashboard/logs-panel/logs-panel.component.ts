@@ -2,7 +2,7 @@ import { Component, OnDestroy, OnInit } from '@angular/core';
 import { LogEntry } from '../../core/models/log.model';
 import { LogService } from '../../core/services/log.service';
 import { FormsModule } from '@angular/forms';
-import { DatePipe, NgClass, NgIf } from '@angular/common';
+import {DatePipe, NgClass, NgForOf, NgIf} from '@angular/common';
 import { TableModule } from 'primeng/table';
 import { ActivatedRoute } from '@angular/router';
 import { NodeMarkerService } from '../../core/services/node-marker.service';
@@ -18,7 +18,8 @@ import { TransformationService } from '../../core/services/transformation.servic
     NgClass,
     NgIf,
     TableModule,
-    Button
+    Button,
+    NgForOf
   ],
   standalone: true
 })
@@ -32,6 +33,7 @@ export class LogsPanelComponent implements OnInit, OnDestroy {
   startTime = '';
   endTime = '';
   level = '';
+  transformationIds: string[] = []; // <-- neu
 
   constructor(
     private logService: LogService,
@@ -41,6 +43,8 @@ export class LogsPanelComponent implements OnInit, OnDestroy {
   ) {}
 
   private intervalId?: number;
+  selectedTransformationId: string = '';
+  selectedService: string = '';
 
   ngOnInit() {
     const now = new Date();
@@ -79,6 +83,11 @@ export class LogsPanelComponent implements OnInit, OnDestroy {
           next: logs => {
             this.logs = logs;
             this.loading = false;
+            if (this.selectedService === '') {
+              return;
+            }
+            this.logs = this.logs.filter(log => log.service === this.selectedService);
+            return;
           },
           error: err => {
             console.error('Error fetching logs', err);
@@ -98,18 +107,21 @@ export class LogsPanelComponent implements OnInit, OnDestroy {
         if (!transformations || transformations.length === 0) {
           this.logs = [];
           this.loading = false;
-          return;
         }
-        const transformationIds = transformations
+         this.transformationIds = transformations
           .map(t => t.id)
           .filter((id): id is number => id !== undefined)
           .map(id => id.toString());
 
         // 2. Logs für alle TransformationIds abrufen
-        this.logService.getLogsByTransformations(transformationIds, startNs, endNs, this.level).subscribe({
+        this.logService.getLogsByTransformations(this.transformationIds, startNs, endNs, this.level).subscribe({
           next: logs => {
             this.logs = logs;
             this.loading = false;
+            if (this.selectedTransformationId === '') {
+              return;
+            }
+            this.logs = this.logs.filter(log => log.transformationId?.toString() === this.selectedTransformationId);
           },
           error: err => {
             console.error('Error fetching logs', err);
