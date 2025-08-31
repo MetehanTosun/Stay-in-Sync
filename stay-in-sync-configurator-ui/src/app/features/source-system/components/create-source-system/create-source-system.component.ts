@@ -320,11 +320,11 @@ save(): void {
         if (data && data.idShort) {
           this.aasPreview = { idShort: data.idShort, assetKind: data.assetKind };
           this.aasTestOk = true;
-          this.messageService.add({ severity: 'success', summary: 'Verbindung erfolgreich', detail: `Shell erreichbar (${data.idShort})`, life: 3000 });
+          this.messageService.add({ severity: 'success', summary: 'Connection successful', detail: `Shell reachable (${data.idShort})`, life: 3000 });
         } else {
           this.aasPreview = null;
           this.aasTestOk = true;
-          this.messageService.add({ severity: 'success', summary: 'Verbindung erfolgreich', detail: 'Shell erreichbar', life: 3000 });
+          this.messageService.add({ severity: 'success', summary: 'Connection successful', detail: 'Shell reachable', life: 3000 });
         }
         // ensure snapshot contains idShort for submodels by refreshing once after a successful test
         this.aasService.refreshSnapshot(this.createdSourceSystemId).subscribe({ next: () => {}, error: () => {} });
@@ -332,15 +332,15 @@ save(): void {
       error: (err) => {
         this.isTesting = false;
         const status = err?.status;
-        let detail = 'Bitte prüfen: Base URL, AAS-ID (Original, nicht Base64 in den Stammdaten), Auth-Konfiguration und erreichbaren BaSyx-Server.';
-        if (status === 401) detail = '401 Unauthorized – Zugangsdaten (Basic/API-Key) prüfen.';
-        else if (status === 403) detail = '403 Forbidden – Berechtigungen/Token prüfen.';
-        else if (status === 404) detail = '404 Not Found – Base URL oder AAS-ID prüfen (AAS existiert nicht oder falsche ID).';
-        else if (status === 405) detail = '405 Method Not Allowed – HTTP-Methode prüfen (hier: POST /test).';
-        else if (status === 409) detail = '409 Conflict – widersprüchliche Angaben oder bereits vorhanden.';
-        else if (status === 504) detail = '504 Gateway Timeout – Upstream nicht erreichbar (BaSyx-Server läuft?).';
-        this.aasError = `Verbindung fehlgeschlagen. ${detail}`;
-        this.messageService.add({ severity: 'error', summary: 'Verbindung fehlgeschlagen', detail, life: 5000 });
+        let detail = 'Please verify: Base URL, AAS ID (original, not Base64 in metadata), auth configuration, and that the BaSyx server is reachable.';
+        if (status === 401) detail = '401 Unauthorized – check Basic/API Key credentials.';
+        else if (status === 403) detail = '403 Forbidden – check permissions/token.';
+        else if (status === 404) detail = '404 Not Found – verify Base URL or AAS ID (AAS does not exist or wrong ID).';
+        else if (status === 405) detail = '405 Method Not Allowed – verify HTTP method (expected: POST /test).';
+        else if (status === 409) detail = '409 Conflict – conflicting input or already exists.';
+        else if (status === 504) detail = '504 Gateway Timeout – upstream not reachable (is BaSyx running?).';
+        this.aasError = `Connection failed. ${detail}`;
+        this.messageService.add({ severity: 'error', summary: 'Connection failed', detail, life: 5000 });
         this.aasTestOk = false;
       }
     });
