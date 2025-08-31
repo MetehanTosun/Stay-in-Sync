@@ -170,6 +170,10 @@
             <artifactId>swagger-parser</artifactId>
             <version>2.1.21</version>
         </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-smallrye-health</artifactId>
+        </dependency>
     </dependencies>
 
     <build>
