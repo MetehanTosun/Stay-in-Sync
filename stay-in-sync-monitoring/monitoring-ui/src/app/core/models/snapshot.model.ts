@@ -1,4 +1,5 @@
 export interface SnapshotModel{
-  message?: string;
   transformationId?: number;
+  snapshotId?: string;
+  createdAt?: string;
 }
