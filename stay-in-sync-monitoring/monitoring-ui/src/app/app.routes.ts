@@ -3,7 +3,7 @@ import { LogsPanelComponent } from './dashboard/logs-panel/logs-panel.component'
 import { MetricsPanelComponent } from './dashboard/metrics-panel/metrics-panel.component';
 import { ErrorSnapshotPanelComponent } from './dashboard/error-snapshot-panel/error-snapshot-panel.component';
 import {DashboardComponent} from './dashboard/dashboard.component';
-import {ReplayFullpageComponent} from './dashboard/replay-fullpage/replay-fullpage.component';
+import {ReplayViewComponent} from './replay/replay-view.component';
 
 export const routes: Routes = [
   {
@@ -18,7 +18,7 @@ export const routes: Routes = [
   },
   {
     path: 'replay',
-    component: ReplayFullpageComponent
+    component: ReplayViewComponent
   },
   { path: '**', redirectTo: '' }
 ];

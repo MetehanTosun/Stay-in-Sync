@@ -119,8 +119,6 @@ public class DevelopmentDataSeeder {
         transformationScriptService.saveOrUpdateForTransformation(transformation.id, scriptDTO);
         Log.info("-> Created and linked final Transformation Script");
 
-        afterSeedRunner.runAfterSeed();
-
         Log.info("====== DATABASE SEEDING FINISHED ======");
     }
 
