@@ -205,7 +205,8 @@
   </div>
   <div class="p-field">
     <label>Parent Path</label>
-    <input pInputText [value]="parentPath" disabled />
+    <input pInputText [(ngModel)]="parentPath" placeholder="e.g. address or address/street" />
+    <small>Optional. Use idShort path with slashes for nesting.</small>
   </div>
   <textarea pInputTextarea [(ngModel)]="newElementJson" rows="10" style="width:100%"></textarea>
   <ng-template pTemplate="footer">
