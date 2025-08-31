@@ -293,6 +293,8 @@ save(): void {
   aasError: string | null = null;
 
   testAasConnection(): void {
+    if (this.isTesting) return;
+    this.isTesting = true;
     if (!this.createdSourceSystemId) {
       // create silently (no step advance), then re-run test
       const base = { ...this.form.getRawValue() } as CreateSourceSystemDTO;
@@ -305,10 +307,9 @@ save(): void {
         base.authConfig = { authType, apiKey: cfg.apiKey, headerName: cfg.headerName } as ApiKeyAuthDTO;
       }
       delete (base as any).openApiSpec;
-      this.postDto(base, { advanceStep: false, onSuccess: () => this.testAasConnection() });
+      this.postDto(base, { advanceStep: false, onSuccess: () => { this.isTesting = false; this.testAasConnection(); } });
       return;
     }
-    this.isTesting = true;
     this.aasError = null;
     this.aasPreview = null;
     this.aasTestOk = null;
