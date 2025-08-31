@@ -3,17 +3,17 @@ global:
   evaluation_interval: 30s
 
 scrape_configs:
-  # --- Lokale Checks (explizite Ports) ---
+  # --- Local Healthchecks ---
   - job_name: 'blackbox_http_local'
     metrics_path: /probe
     params:
       module: [http_2xx]
     static_configs:
       - targets:
-          - http://localhost:8090/q/health   # Core Management
-          - http://localhost:8099/q/health   # Monitoring Backend
-          - http://localhost:8095/q/health   # Polling Node (lokal)
-          - http://localhost:8091/q/health   # Sync Node (lokal)
+          - http://localhost:8090/q/health
+          - http://localhost:8099/q/health
+          - http://localhost:8095/q/health
+          - http://localhost:8091/q/health
     relabel_configs:
       - source_labels: [__address__]
         target_label: __param_target
@@ -31,7 +31,7 @@ scrape_configs:
       - url: http://localhost:8090/api/monitoring/prometheus/flat/sources
         refresh_interval: 30s
     relabel_configs:
-      - source_labels: [__address__]
+      - source_labels: [__meta_http_sd_target]
         target_label: __param_target
       - source_labels: [__param_target]
         target_label: instance
@@ -47,26 +47,47 @@ scrape_configs:
       - url: http://localhost:8090/api/monitoring/prometheus/flat/targets
         refresh_interval: 30s
     relabel_configs:
-      - source_labels: [__address__]
+      - source_labels: [__meta_http_sd_target]
         target_label: __param_target
-      - source_labels: [__param_target]
-        target_label: instance
       - target_label: __address__
         replacement: blackbox_exporter:9115
 
-
+  # --- All endpoints (Source + Target zusammen, wenn /flat/all implementiert) ---
   - job_name: 'blackbox_http_all'
     metrics_path: /probe
     params:
       module: [http_2xx]
     http_sd_configs:
-      - url: http://localhost:8090/api/monitoring/prometheus/flat/sources  
+      - url: http://localhost:8090/api/monitoring/prometheus/flat/all
         refresh_interval: 30s
     relabel_configs:
-      - source_labels: [__address__]
+      - source_labels: [__meta_http_sd_target]
         target_label: __param_target
       - source_labels: [__param_target]
         target_label: instance
       - target_label: __address__
         replacement: blackbox_exporter:9115
+
+  # --- Dummy URLs direkt ---
+  - job_name: 'blackbox_http_dummy'
+    metrics_path: /probe
+    params:
+      module: [http_2xx]
+    static_configs:
+      - targets:
+          - https://dummyjson.com/products
+          - https://dummyjson.com/products/search
+          - https://dummyjson.com/products/categories
+          - https://dummyjson.com/products/category/{category_name}
+          - https://dummyjson.com/products/{product_id}
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: __param_target
+      - target_label: instance
+        replacement: dummy_urls
+      - target_label: __address__
+        replacement: blackbox_exporter:9115
+
+
+
 
