@@ -1,6 +1,9 @@
 export interface TransformationScriptDTO {
-  id: number; // Long in Java → number in TS
+  id: number;
   name: string;
-  typescriptCode: string; // ← we will use this
+  typescriptCode: string;
   javascriptCode: string;
+  requiredArcAliases: string[];
+  status: string; // or a proper enum if you want
+  targetArcIds: number[];
 }

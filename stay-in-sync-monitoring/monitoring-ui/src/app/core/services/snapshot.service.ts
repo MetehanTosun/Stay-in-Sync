@@ -1,10 +1,8 @@
-import {Injectable} from '@angular/core';
-import {HttpClient} from '@angular/common/http';
-import {TransformationModelForSnapshotPanel} from '../models/transformation.model';
-import {SnapshotModel} from '../models/snapshot.model';
-
+import { HttpClient } from '@angular/common/http';
+import { Injectable } from '@angular/core';
+import { SnapshotModel } from '../models/snapshot.model';
 @Injectable({
-  providedIn: 'root'
+  providedIn: 'root',
 })
 export class SnapshotService {
   constructor(private http: HttpClient) {}
@@ -14,16 +12,14 @@ export class SnapshotService {
   getLatestSnapshot(transformationId: string) {
     const url = `${this.baseUrl}/monitoring/snapshots/latest`;
     return this.http.get<SnapshotModel>(url, {
-      params: { transformationId }
+      params: { transformationId },
     });
   }
 
   getLastFiveSnapshots(transformationId: string) {
     const url = `${this.baseUrl}/monitoring/snapshots/list`;
     return this.http.get<SnapshotModel[]>(url, {
-      params: { transformationId }
+      params: { transformationId },
     });
   }
-
-
 }

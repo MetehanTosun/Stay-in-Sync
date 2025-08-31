@@ -6,7 +6,7 @@ import { TransformationScriptDTO } from './models/transformation-script.model';
 
 @Injectable({ providedIn: 'root' })
 export class ScriptService {
-  private readonly baseUrl = '/api/config';
+  private readonly baseUrl = 'http://localhost:8090';
 
   constructor(private http: HttpClient) {}
 
@@ -14,7 +14,7 @@ export class ScriptService {
     transformationId: number | string
   ): Observable<TransformationScriptDTO> {
     return this.http.get<TransformationScriptDTO>(
-      `${this.baseUrl}/transformation/${transformationId}/script`
+      `${this.baseUrl}/api/config/transformation/${transformationId}/script`
     );
   }
 }
