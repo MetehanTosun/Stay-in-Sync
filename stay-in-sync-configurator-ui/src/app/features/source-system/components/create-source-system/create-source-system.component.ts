@@ -455,11 +455,14 @@ save(): void {
     this.loadLiveElementDetails(smId, idShortPath, node);
   }
 
-  private loadLiveElementDetails(smId: string, idShortPath: string, node?: TreeNode): void {
+  private loadLiveElementDetails(smId: string, idShortPath: string | undefined, node?: TreeNode): void {
     if (!this.createdSourceSystemId) return;
     this.selectedLiveLoading = true;
-    const last = idShortPath.split('/').pop() as string;
-    const parent = idShortPath.includes('/') ? idShortPath.substring(0, idShortPath.lastIndexOf('/')) : '';
+    const keyStr = (node && typeof node.key === 'string') ? (node.key as string) : '';
+    const keyPath = keyStr.includes('::') ? keyStr.split('::')[1] : '';
+    const safePath = idShortPath || keyPath || (node?.data?.raw?.idShort || '');
+    const last = safePath.split('/').pop() as string;
+    const parent = safePath.includes('/') ? safePath.substring(0, safePath.lastIndexOf('/')) : '';
     this.aasService
       .listElements(this.createdSourceSystemId, smId, { depth: 'shallow', parentPath: parent || undefined, source: 'LIVE' })
       .subscribe({
@@ -475,7 +478,9 @@ save(): void {
               valueType: (found as any).valueType
             };
             if (node && node.data) {
-              node.data.raw = { ...(node.data.raw || {}), idShortPath, modelType: found.modelType, valueType: found.valueType };
+              const computedPath = safePath || (parent ? `${parent}/${found.idShort}` : found.idShort);
+              node.data.idShortPath = computedPath;
+              node.data.raw = { ...(node.data.raw || {}), idShortPath: computedPath, modelType: found.modelType, valueType: found.valueType };
             }
           } else {
             this.selectedLivePanel = { label: last, type: 'Unknown' };
