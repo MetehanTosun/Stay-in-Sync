@@ -118,27 +118,14 @@
         <button pButton type="button" class="p-button-text ml-2" label="+ Submodel" (click)="openCreateSubmodel()"></button>
         <span *ngIf="isDiscovering" class="ml-2">Loading...</span>
       </div>
-      <p-tree [value]="treeNodes" (onNodeExpand)="onNodeExpand($event)" (onNodeSelect)="onNodeSelect($event)" selectionMode="single">
+      <p-tree [value]="treeNodes" (onNodeExpand)="onNodeExpand($event)" selectionMode="single">
         <ng-template let-node pTemplate="default">
           <div style="display:flex;align-items:center;gap:.5rem;">
             <span>{{ node.label }}</span>
             <button *ngIf="node.data?.type==='submodel'" pButton type="button" class="p-button-text" label="Create element" (click)="openCreateElement(node.data.id)"></button>
-            <button *ngIf="node.data?.type==='element'" pButton type="button" class="p-button-text" label="Create child element" (click)="openCreateElement(node.data.submodelId, node.data.idShortPath)"></button>
-            <button *ngIf="node.data?.type==='element' && node.data?.raw?.modelType==='Property'" pButton type="button" class="p-button-text" label="Set value" (click)="openSetValue(node.data.submodelId, node.data.raw)"></button>
           </div>
         </ng-template>
       </p-tree>
-      <div *ngIf="selectedNode?.data?.type==='element'" class="p-mt-3" style="border:1px solid #ddd;padding:8px;border-radius:6px;">
-        <div *ngIf="selectedLiveLoading">Loading live value…</div>
-        <div *ngIf="!selectedLiveLoading && selectedLivePanel">
-          <div><strong>{{ selectedLivePanel.label }}</strong></div>
-          <div *ngIf="selectedLivePanel.value !== undefined">Value: {{ selectedLivePanel.value }}</div>
-          <div *ngIf="selectedLivePanel.valueType">ValueType: {{ selectedLivePanel.valueType }}</div>
-          <div class="p-mt-2">
-            <button *ngIf="selectedNode?.data?.raw?.modelType==='Property'" pButton type="button" class="p-button-text" label="Edit value" (click)="openSetValue(selectedNode?.data?.submodelId, selectedNode?.data?.raw)"></button>
-          </div>
-        </div>
-      </div>
     </ng-template>
   </ng-container>
 
