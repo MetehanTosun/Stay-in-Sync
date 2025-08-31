@@ -193,8 +193,8 @@ accessPolicySuggestions: OdrlPolicyDefinition[] = [];
   queryParams: string[] = [];
   headerParams: string[] = [];
   authorizationData: string = '';
-  queryParamOptions: { label: string; value: string }[] = [{ label: 'Limit', value: 'limit' }, { label: 'Offset', value: 'offset' }]; // Mock options
-  headerParamOptions: { label: string; value: string }[] = [{ label: 'X-API-Key', value: 'X-API-Key' }, { label: 'Authorization', value: 'Authorization' }]; // Mock options
+  queryParamOptions: { label: string; value: string }[] = [];
+  headerParamOptions: { label: string; value: string }[] = [];
 
   constructor(
     private assetService: AssetService,
@@ -231,6 +231,7 @@ accessPolicySuggestions: OdrlPolicyDefinition[] = [];
     this.loadPoliciesAndDefinitions();
     this.loadAccessPolicyTemplates();
     this.loadAssetTemplates();
+    this.loadParamOptions();
     this.loadAllBpns();
   }
 
@@ -245,6 +246,13 @@ accessPolicySuggestions: OdrlPolicyDefinition[] = [];
     this.templateService.getTemplates().subscribe(allTemplates => {
       // For now, we only care about AccessPolicy templates in this dialog
       this.accessPolicyTemplates = allTemplates.filter(t => t.type === 'AccessPolicy');
+    });
+  }
+
+  private loadParamOptions() {
+    this.assetService.getParamOptions().subscribe(options => {
+      this.queryParamOptions = options.query;
+      this.headerParamOptions = options.header;
     });
   }
 
@@ -478,9 +486,9 @@ accessPolicySuggestions: OdrlPolicyDefinition[] = [];
 
   // New Asset Dialog specific methods
   searchEndpoints(event: { query: string }) {
-    // Mock suggestions for now. In a real app, this would come from a service.
-    const allEndpoints = ['http://localhost:8080/api/data', 'https://example.com/data/v1', 'https://my-backend.com/service'];
-    this.endpointSuggestions = allEndpoints.filter(e => e.toLowerCase().includes(event.query.toLowerCase()));
+    this.assetService.getEndpointSuggestions(event.query).subscribe(suggestions => {
+      this.endpointSuggestions = suggestions;
+    });
   }
 
   onEndpointSelect(event: any) {

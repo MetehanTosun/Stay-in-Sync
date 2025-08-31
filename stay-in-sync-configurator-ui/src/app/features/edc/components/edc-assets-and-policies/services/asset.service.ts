@@ -18,6 +18,8 @@ export class AssetService {
   // 👆 anpassen falls dein Backend woanders läuft
 
   private baseUrl = 'http://localhost:8090/api/config/edcs';
+  private suggestionsUrl = 'http://localhost:8090/api/config/endpoint-suggestions'; // something like that
+  private paramOptionsUrl = 'http://localhost:8090/api/config/param-options'; // something like that
 
   constructor(private http: HttpClient) {}
 
@@ -100,6 +102,44 @@ export class AssetService {
       return this.createAsset(edcId, asset) as Observable<Asset>;
     }
     return this.http.put<Asset>(`${this.baseUrl}/${edcId}/assets/${assetId}`, asset);
+  }
+
+  /**
+   * Fetches endpoint suggestions for the asset creation dialog.
+   * @param query The search query from the user.
+   */
+  getEndpointSuggestions(query: string): Observable<string[]> {
+
+    if (this.mockMode) {
+      console.warn('Mock Mode: Fetching endpoint suggestions.');
+      const allEndpoints = [
+        'http://localhost:8080/api/data',
+        'https://example.com/data/v1',
+        'https://my-backend.com/service'
+      ];
+      const filteredEndpoints = allEndpoints.filter(e => e.toLowerCase().includes(query.toLowerCase()));
+      return of(filteredEndpoints).pipe(delay(100)); // Simulate network delay
+    }
+    // Backend, to check if it works
+    return this.http.get<string[]>(this.suggestionsUrl, { params: { q: query } });
+  }
+
+  /**
+   * Fetches parameter options for the asset creation dialog.
+   */
+  getParamOptions(): Observable<{ query: any[], header: any[] }> {
+
+    if (this.mockMode) {
+      console.warn('Mock Mode: Fetching parameter options.');
+      const mockOptions = {
+        query: [{ label: 'Limit', value: 'limit' }, { label: 'Offset', value: 'offset' }],
+        header: [{ label: 'X-API-Key', value: 'X-API-Key' }, { label: 'Authorization', value: 'Authorization' }]
+      };
+      return of(mockOptions).pipe(delay(100));
+    }
+
+    // Parameter options from backend
+    return this.http.get<{ query: any[], header: any[] }>(this.paramOptionsUrl);
   }
 
   /**
