@@ -561,20 +561,42 @@ save(): void {
         .subscribe({
           next: () => {
             this.showElementDialog = false;
-            if (this.parentPath) {
-              // refresh children under parent
-              const dummy: any = {};
-              this.loadChildren(this.targetSubmodelId, this.parentPath, dummy);
-            } else {
-              // refresh root elements
-              this.loadRootElements(this.targetSubmodelId);
-            }
+            // Ensure snapshot reflects new element, then refresh the tree at the right place
+            this.aasService.refreshSnapshot(this.createdSourceSystemId).subscribe({
+              next: () => this.refreshTreeAfterCreate(),
+              error: () => this.refreshTreeAfterCreate()
+            });
           },
           error: (err) => this.errorService.handleError(err)
         });
     } catch (e) {
       this.errorService.handleError(e as any);
     }
+  }
+
+  private refreshTreeAfterCreate(): void {
+    if (this.parentPath) {
+      const key = `${this.targetSubmodelId}::${this.parentPath}`;
+      const parentNode = this.findNodeByKey(key, this.treeNodes);
+      if (parentNode) {
+        (parentNode as any).expanded = true;
+        this.loadChildren(this.targetSubmodelId, this.parentPath, parentNode);
+      } else {
+        this.loadRootElements(this.targetSubmodelId);
+      }
+    } else {
+      this.loadRootElements(this.targetSubmodelId);
+    }
+  }
+
+  private findNodeByKey(key: string, nodes: TreeNode[] | undefined): TreeNode | null {
+    if (!nodes) return null;
+    for (const n of nodes) {
+      if (n.key === key) return n;
+      const found = this.findNodeByKey(key, n.children as TreeNode[]);
+      if (found) return found;
+    }
+    return null;
   }
 
   // PATCH value dialog
