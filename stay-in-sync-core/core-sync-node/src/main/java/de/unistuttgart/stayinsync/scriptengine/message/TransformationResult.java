@@ -27,7 +27,7 @@ public class TransformationResult {
      * transformationId for searching the snapshots later
      */
     private Object sourceData;
-    private String transformationId;
+    private Long transformationId;
 
     public TransformationResult(String jobId, String scriptId) {
         this.jobId = jobId;
@@ -92,11 +92,11 @@ public class TransformationResult {
         this.sourceData = sourceData;
     }
 
-    public String getTransofrmationId() {
+    public Long getTransformationId() {
         return transformationId;
     }
 
-    public void setTransformationId(String transformationId) {
+    public void setTransformationId(Long transformationId) {
         this.transformationId = transformationId;
     }
 

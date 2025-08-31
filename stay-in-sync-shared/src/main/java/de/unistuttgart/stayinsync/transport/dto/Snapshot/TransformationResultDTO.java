@@ -4,7 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 
 /** Pure-DTO for API and persistence. */
 public class TransformationResultDTO {
-    private String transformationId;
+    private Long transformationId;
 
     private String jobId;
     private String scriptId;
@@ -15,11 +15,11 @@ public class TransformationResultDTO {
 
     private String errorInfo;
 
-    public String getTransformationId() {
+    public Long getTransformationId() {
         return transformationId;
     }
 
-    public void setTransformationId(String transformationId) {
+    public void setTransformationId(Long transformationId) {
         this.transformationId = transformationId;
     }
 
