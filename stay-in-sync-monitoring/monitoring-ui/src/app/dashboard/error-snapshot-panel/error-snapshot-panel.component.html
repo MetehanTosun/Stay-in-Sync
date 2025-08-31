@@ -30,22 +30,23 @@
     <p-table
       [value]="getSnapshotsForTransformation(transformation.id)"
       [paginator]="false"
-      [rows]="10"
       [responsiveLayout]="'scroll'"
       styleClass="p-datatable-sm"
     >
       <ng-template pTemplate="header">
         <tr>
-          <th>Message</th>
+          <th>ID</th>
+          <th>Created At</th>
           <th>Replay</th>
         </tr>
       </ng-template>
       <ng-template pTemplate="body" let-snapshot>
         <tr>
-          <td>{{ snapshot.message }}</td>
+          <td>{{ snapshot.snapshotId }}</td>
+          <td>{{ snapshot.createdAt | date:'short' }}</td>
           <td>
             <p-button icon="pi pi-refresh" class="p-button-sm"
-                      (click)="replaySnapshot(snapshot.id)"></p-button>
+                      (click)="replaySnapshot(snapshot.snapshotId)"></p-button>
           </td>
         </tr>
       </ng-template>
