@@ -1,18 +1,27 @@
 package de.unistuttgart.stayinsync.syncnode.syncjob;
 
+import java.time.Instant;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+
+import org.slf4j.MDC;
+
 import de.unistuttgart.stayinsync.syncnode.domain.ExecutionPayload;
 import de.unistuttgart.stayinsync.syncnode.domain.TransformJob;
 import de.unistuttgart.stayinsync.syncnode.logic_engine.GraphMapper;
-import de.unistuttgart.stayinsync.transport.dto.*;
+import de.unistuttgart.stayinsync.transport.dto.SourceSystemApiRequestConfigurationMessageDTO;
+import de.unistuttgart.stayinsync.transport.dto.SourceSystemMessageDTO;
+import de.unistuttgart.stayinsync.transport.dto.SyncDataMessageDTO;
+import de.unistuttgart.stayinsync.transport.dto.TransformationMessageDTO;
+import de.unistuttgart.stayinsync.transport.dto.TransformationRuleDTO;
 import de.unistuttgart.stayinsync.transport.transformation_rule_shared.nodes.Node;
 import io.quarkus.logging.Log;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
-import org.slf4j.MDC;
-
-import java.time.Instant;
-import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
 
 @ApplicationScoped
 public class DispatcherStateService {
@@ -47,7 +56,8 @@ public class DispatcherStateService {
         }
 
         if (transformation.requestConfigurationMessageDTOS() != null) {
-            for (SourceSystemApiRequestConfigurationMessageDTO reqConfig : transformation.requestConfigurationMessageDTOS()) {
+            for (SourceSystemApiRequestConfigurationMessageDTO reqConfig : transformation
+                    .requestConfigurationMessageDTOS()) {
                 SourceSystemMessageDTO sourceSystem = reqConfig.apiConnectionDetails().sourceSystem();
                 if (reqConfig.name() != null && sourceSystem != null && sourceSystem.name() != null) {
                     Log.debugf("Mapping arcAlias '%s' to systemName '%s'", reqConfig.name(), sourceSystem.name());
@@ -59,7 +69,8 @@ public class DispatcherStateService {
 
     public List<ExecutionPayload> processArc(SyncDataMessageDTO arc) {
         latestArcData.put(arc.arcAlias(), arc.jsonData());
-        List<Long> affectedTransformationIds = arcToTransformationMap.getOrDefault(arc.arcAlias(), Collections.emptyList());
+        List<Long> affectedTransformationIds = arcToTransformationMap.getOrDefault(arc.arcAlias(),
+                Collections.emptyList());
         if (affectedTransformationIds.isEmpty()) {
             return Collections.emptyList();
         }
@@ -90,7 +101,8 @@ public class DispatcherStateService {
             String systemName = arcToSystemAliasMap.get(arcAlias);
             if (systemName == null) {
                 MDC.put("transformationId", tx.id().toString());
-                Log.warnf("Could not find systemName for arcAlias '%s'. Skipping this ARC in the final payload.", arcAlias);
+                Log.warnf("Could not find systemName for arcAlias '%s'. Skipping this ARC in the final payload.",
+                        arcAlias);
                 continue;
             }
             Map<String, Object> arcData = latestArcData.get(arcAlias);
@@ -114,7 +126,7 @@ public class DispatcherStateService {
                 tx.id(),
                 "Transformation-" + tx.id(),
                 "job-" + Instant.now().toEpochMilli(),
-                "script-for-" + tx.id(),
+                tx.transformationScriptDTO().id().toString(),
                 tx.transformationScriptDTO().javascriptCode(),
                 "js", // Placeholder
                 tx.transformationScriptDTO().hash(),
