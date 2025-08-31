@@ -400,7 +400,13 @@ save(): void {
         next: (resp) => {
           this.childrenLoading[key] = false;
           const list = Array.isArray(resp) ? resp : (resp?.result ?? []);
-          node.children = list.map((el: any) => this.mapElementToNode(submodelId, el));
+          const mapped = list.map((el: any) => {
+            if (!el.idShortPath && el.idShort) {
+              el.idShortPath = parentPath ? `${parentPath}/${el.idShort}` : el.idShort;
+            }
+            return this.mapElementToNode(submodelId, el);
+          });
+          node.children = mapped;
         },
         error: (err) => {
           this.childrenLoading[key] = false;
@@ -424,7 +430,8 @@ save(): void {
 
   private mapElementToNode(submodelId: string, el: any): TreeNode {
     const label = `${el.idShort} (${el.modelType})`;
-    const hasChildren = !!el.hasChildren;
+    const typeHasChildren = el?.modelType === 'SubmodelElementCollection' || el?.modelType === 'SubmodelElementList' || el?.modelType === 'Operation';
+    const hasChildren = el?.hasChildren === true || typeHasChildren;
     return {
       key: `${submodelId}::${el.idShortPath}`,
       label,
@@ -614,13 +621,19 @@ save(): void {
         next: (resp) => {
           this.childrenLoading[key] = false;
           const list = Array.isArray(resp) ? resp : (resp?.result ?? []);
+          const mapped = list.map((el: any) => {
+            if (!el.idShortPath && el.idShort) {
+              el.idShortPath = parentPath ? `${parentPath}/${el.idShort}` : el.idShort;
+            }
+            return this.mapElementToNode(submodelId, el);
+          });
           if (node) {
-            node.children = list.map((el: any) => this.mapElementToNode(submodelId, el));
+            node.children = mapped;
           } else {
             // root
             const attachNode = this.findNodeByKey(submodelId, this.treeNodes);
             if (attachNode) {
-              attachNode.children = list.map((el: any) => this.mapElementToNode(submodelId, el));
+              attachNode.children = mapped;
             }
           }
         },
