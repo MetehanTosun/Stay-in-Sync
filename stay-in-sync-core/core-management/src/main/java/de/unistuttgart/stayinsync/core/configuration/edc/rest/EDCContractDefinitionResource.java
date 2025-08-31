@@ -1,6 +1,7 @@
 package de.unistuttgart.stayinsync.core.configuration.edc.rest;
 
 import de.unistuttgart.stayinsync.core.configuration.edc.dtoedc.EDCContractDefinitionDto;
+import de.unistuttgart.stayinsync.core.configuration.edc.entities.EDCContractDefinition;
 import de.unistuttgart.stayinsync.core.configuration.edc.mapping.EDCContractDefinitionMapper;
 import de.unistuttgart.stayinsync.core.configuration.edc.service.EDCContractDefinitionService;
 import jakarta.inject.Inject;
@@ -57,7 +58,8 @@ public class EDCContractDefinitionResource {
     @Transactional
     public EDCContractDefinitionDto update(@PathParam("id") UUID id, EDCContractDefinitionDto dto) {
         dto.setId(id);
-        return service.update(id, dto)
+        EDCContractDefinition entity = EDCContractDefinitionMapper.fromDto(dto);
+        return service.update(id, entity)
             .map(EDCContractDefinitionMapper::toDto)
             .orElseThrow(() -> new NotFoundException("ContractDefinition " + id + " nicht gefunden"));
     }

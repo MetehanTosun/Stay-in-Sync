@@ -7,7 +7,7 @@ import java.util.Optional;
 
 import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.TargetSystem;
 import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.TargetSystemEndpoint;
-import de.unistuttgart.stayinsync.core.configuration.domain.entities.edc.EDCAsset;
+import de.unistuttgart.stayinsync.core.configuration.edc.entities.EDCAsset;
 import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.TargetSystemApiQueryParam;
 import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.TargetSystemApiRequestHeader;
 import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.TargetSystemVariable;
@@ -86,7 +86,7 @@ public class TargetSystemService {
         TargetSystem target = targetOpt.get();
 
         // Delete endpoints and their children (instance-based, like SourceSystem)
-        List<TargetSystemEndpoint> endpoints = TargetSystemEndpoint.findByTargetSystemId(id);
+        List<TargetSystemEndpoint> endpoints = TargetSystemEndpoint.list("targetSystem.id", id);
         for (TargetSystemEndpoint endpoint : endpoints) {
             // Variables
             List<TargetSystemVariable> variables = TargetSystemVariable.list("targetSystemEndpoint.id", endpoint.id);

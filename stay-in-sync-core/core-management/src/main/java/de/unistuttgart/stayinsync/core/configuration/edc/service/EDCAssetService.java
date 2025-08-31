@@ -2,21 +2,19 @@ package de.unistuttgart.stayinsync.core.configuration.edc.service;
 
 import de.unistuttgart.stayinsync.core.configuration.edc.dtoedc.EDCAssetDto;
 import de.unistuttgart.stayinsync.core.configuration.edc.mapping.EDCAssetMapper;
-import io.quarkus.hibernate.orm.panache.PanacheEntityBase;
+import de.unistuttgart.stayinsync.transport.exception.CustomException;
 import io.quarkus.logging.Log;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.transaction.Transactional;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 import java.util.UUID;
 
 import de.unistuttgart.stayinsync.core.configuration.edc.entities.EDCAsset;
 
 @ApplicationScoped
 public class EDCAssetService {
-
 
     /**
      * Returns an asset found in the database with the id.
@@ -29,23 +27,22 @@ public class EDCAssetService {
         if (asset == null) {
             final String exceptionMessage = "No Asset found with id";
             Log.error(exceptionMessage);
-            throw new CustomException(exceptionMessage); //TODO Erstelle eigene Exceptions für Exception Handling
+            throw new CustomException(exceptionMessage);
         }
-        return EDCAssetMapper.assetMapper.assetToAssetDto(EDCAsset.findById(id));
+        return EDCAssetMapper.assetMapper.assetToAssetDto(asset);
     }
 
     /**
-     * Returns a list with all assets saved in the database.
+     * Returns all assets that are currently in the database.
      *
      * @return List with all assets
      */
     public List<EDCAssetDto> listAll() {
-        //TODO finde heraus warum hier die Assets in diesem Format sind: PanacheEntityBase Und fixe es.
         List<EDCAssetDto> assets = new ArrayList<>();
-        for (PanacheEntityBase asset : EDCAsset.listAll()) {
-            EDCAssetMapper.assetMapper.assetToAssetDto(asset);
+        List<EDCAsset> assetList = EDCAsset.<EDCAsset>listAll();
+        for (EDCAsset asset : assetList) {
+            assets.add(EDCAssetMapper.assetMapper.assetToAssetDto(asset));
         }
-
         return assets;
     }
 
@@ -59,7 +56,6 @@ public class EDCAssetService {
     public EDCAssetDto create(EDCAssetDto assetDto) {
         EDCAsset asset = EDCAssetMapper.assetMapper.assetDtoToAsset(assetDto);
         asset.persist();
-
         return EDCAssetMapper.assetMapper.assetToAssetDto(asset);
     }
 
@@ -69,17 +65,17 @@ public class EDCAssetService {
      *
      * @param id              to find the database entry
      * @param updatedAssetDto contains the updated data
-     * @return Optional with the updated asset or an empty Optional if nothing was found.
+     * @return the updated asset
      */
     @Transactional
-    public EDCAssetDto update(UUID id, EDCAssetDto updatedAssetDto) throws CustomException{
+    public EDCAssetDto update(UUID id, EDCAssetDto updatedAssetDto) throws CustomException {
         final EDCAsset persistedAsset = EDCAsset.findById(id);
         final EDCAsset updatedAsset = EDCAssetMapper.assetMapper.assetDtoToAsset(updatedAssetDto);
 
         if (persistedAsset == null) {
             final String exceptionMessage = "No Asset found with id";
             Log.errorf(exceptionMessage);
-            throw new CustomException(exceptionMessage); //TODO Erstelle eigene Exceptions für Exception Handling
+            throw new CustomException(exceptionMessage);
         }
 
         persistedAsset.setAssetId(updatedAsset.getAssetId());
@@ -99,7 +95,7 @@ public class EDCAssetService {
      * Removes the asset from the database
      *
      * @param id used to find asset to be deleted in database
-     * @return the deleted asset
+     * @return true if deletion was successful, false otherwise
      */
     @Transactional
     public boolean delete(final UUID id) {
