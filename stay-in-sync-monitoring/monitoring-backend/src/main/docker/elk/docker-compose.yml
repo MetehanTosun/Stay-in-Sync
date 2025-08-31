@@ -52,6 +52,7 @@ services:
       - elk
     depends_on:
       - blackbox_exporter
+      - quarkus-app
 
   blackbox_exporter:
     image: prom/blackbox-exporter:v0.25.0
@@ -60,6 +61,14 @@ services:
       - "9115:9115"
     volumes:
       - ./blackbox.yml:/etc/blackbox_exporter/blackbox.yml:ro
+    networks:
+      - elk
+
+  quarkus-app:
+    build: ./your-quarkus-app   # Folder with your Quarkus code (must contain Dockerfile)
+    container_name: quarkus-app
+    ports:
+      - "8090:8090"
     networks:
       - elk
 
@@ -125,10 +134,10 @@ services:
     container_name: fluent-bit
     ports:
       - "5500:5000"
-      - "5170:5170"  # Quarkus TCP Log-Port
-      - "5171:5171"  # Quarkus UDP Log-Port
-      - "5172:5172"  # Quarkus UDP Log-Port
-      - "5173:5173"  # Quarkus UDP Log-Port
+      - "5170:5170"
+      - "5171:5171"
+      - "5172:5172"
+      - "5173:5173"
     volumes:
       - ./fluent-bit/fluent-bit.conf:/fluent-bit/etc/fluent-bit.conf:ro
       - ./fluent-bit/parsers.conf:/fluent-bit/etc/parsers.conf:ro

@@ -3,7 +3,7 @@ global:
   evaluation_interval: 30s
 
 scrape_configs:
-  # --- Lokale Checks (explizite Ports) ---
+  # Local Checks
   - job_name: 'blackbox_http_local'
     metrics_path: /probe
     params:
@@ -12,8 +12,8 @@ scrape_configs:
       - targets:
           - http://localhost:8090/q/health   # Core Management
           - http://localhost:8099/q/health   # Monitoring Backend
-          - http://localhost:8095/q/health   # Polling Node (lokal)
-          - http://localhost:8091/q/health   # Sync Node (lokal)
+          - http://localhost:8095/q/health   # Polling Node (local)
+          - http://localhost:8091/q/health   # Sync Node (local)
     relabel_configs:
       - source_labels: [__address__]
         target_label: __param_target
@@ -30,11 +30,9 @@ scrape_configs:
     kubernetes_sd_configs:
       - role: pod
     relabel_configs:
-      # nur Pods mit bestimmten Labels überwachen
       - source_labels: [__meta_kubernetes_pod_label_app]
         action: keep
         regex: (polling-node|sync-node)
-      # Health-Endpoint als Target
       - source_labels: [__meta_kubernetes_pod_ip]
         target_label: __param_target
         replacement: http://$1:8080/q/health
@@ -43,38 +41,34 @@ scrape_configs:
       - target_label: __address__
         replacement: blackbox_exporter:9115
 
+  # --- SourceSystems via Quarkus ---
   - job_name: 'blackbox_http_sourceSystems'
     metrics_path: /probe
     params:
       module: [http_2xx]
     http_sd_configs:
-      - url: http://host.docker.internal:8090/api/prometheus/sourceSystems
+      - url: http://quarkus-app:8090/api/monitoring/prometheus/flat/sources
         refresh_interval: 30s
     relabel_configs:
-      # Die zurückgegebene URL aus dem JSON wird als target gesetzt
       - source_labels: [__address__]
         target_label: __param_target
-      # Setzt das "instance"-Label auf die echte URL (z. B. https://foo.bar/api/health)
       - source_labels: [__param_target]
         target_label: instance
-      # Alle Requests laufen über den Blackbox-Exporter
       - target_label: __address__
         replacement: blackbox_exporter:9115
 
-  - job_name: 'blackbox_http_TargetSystems'
+  # --- TargetSystems via Quarkus ---
+  - job_name: 'blackbox_http_targetSystems'
     metrics_path: /probe
     params:
       module: [http_2xx]
     http_sd_configs:
-      - url: http://host.docker.internal:8090/api/prometheus/targetSystems
+      - url: http://quarkus-app:8090/api/monitoring/prometheus/flat/targets
         refresh_interval: 30s
     relabel_configs:
-      # Die zurückgegebene URL aus dem JSON wird als target gesetzt
       - source_labels: [__address__]
         target_label: __param_target
-      # Setzt das "instance"-Label auf die echte URL (z. B. https://foo.bar/api/health)
       - source_labels: [__param_target]
         target_label: instance
-      # Alle Requests laufen über den Blackbox-Exporter
       - target_label: __address__
         replacement: blackbox_exporter:9115

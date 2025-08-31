@@ -3,5 +3,5 @@ modules:
     prober: http
     timeout: 5s
     http:
-      valid_status_codes: []  # leer = alle 2xx akzeptiert
+      valid_status_codes: []  # empty = all 2xx accepted
       method: GET
