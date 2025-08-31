@@ -1,0 +1,57 @@
+<!-- src/app/replay/replay-view.component.html -->
+<div class="replay-container">
+  <section class="left-pane">
+    <header class="pane-header">
+      <h2>Script (read-only)</h2>
+      <button class="btn btn-secondary" disabled>Replay (stub)</button>
+    </header>
+
+    <!-- Simple read-only code box; you can replace with Monaco later -->
+    <pre class="code-block"><code>{{ demoScript }}</code></pre>
+  </section>
+
+  <section class="right-pane">
+    <header class="tabs">
+      <button
+        class="tab"
+        [class.active]="activeTab === 'source'"
+        (click)="setTab('source')"
+      >
+        SourceData
+      </button>
+      <button
+        class="tab"
+        [class.active]="activeTab === 'vars'"
+        (click)="setTab('vars')"
+      >
+        Variables
+      </button>
+      <button
+        class="tab"
+        [class.active]="activeTab === 'term'"
+        (click)="setTab('term')"
+      >
+        Terminal
+      </button>
+    </header>
+
+    <div class="tab-content">
+      <div *ngIf="activeTab === 'source'">
+        <h3>SourceData</h3>
+        <pre class="json-block">{{ sourceData | json }}</pre>
+      </div>
+
+      <div *ngIf="activeTab === 'vars'">
+        <h3>Variable Snapshot</h3>
+        <pre class="json-block">{{ variableSnapshot | json }}</pre>
+      </div>
+
+      <div *ngIf="activeTab === 'term'">
+        <h3>Terminal</h3>
+        <pre class="terminal"
+          >{{ terminalLines.join("\n") }}
+        </pre>
+      </div>
+    </div>
+  </section>
+</div>
