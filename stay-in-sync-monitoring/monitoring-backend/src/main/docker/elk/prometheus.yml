@@ -3,13 +3,17 @@ global:
   evaluation_interval: 30s
 
 scrape_configs:
+  # --- Lokale Checks (explizite Ports) ---
   - job_name: 'blackbox_http_local'
     metrics_path: /probe
     params:
       module: [http_2xx]
     static_configs:
       - targets:
-          - http://quarkus-app:8090/q/health
+          - http://localhost:8090/q/health   # Core Management
+          - http://localhost:8099/q/health   # Monitoring Backend
+          - http://localhost:8095/q/health   # Polling Node (lokal)
+          - http://localhost:8091/q/health   # Sync Node (lokal)
     relabel_configs:
       - source_labels: [__address__]
         target_label: __param_target
@@ -18,12 +22,13 @@ scrape_configs:
       - target_label: __address__
         replacement: blackbox_exporter:9115
 
+  # --- SourceSystems via Quarkus ---
   - job_name: 'blackbox_http_sourceSystems'
     metrics_path: /probe
     params:
       module: [http_2xx]
     http_sd_configs:
-      - url: http://quarkus-app:8090/api/monitoring/prometheus/flat/sources
+      - url: http://localhost:8090/api/monitoring/prometheus/flat/sources
         refresh_interval: 30s
     relabel_configs:
       - source_labels: [__address__]
@@ -33,12 +38,13 @@ scrape_configs:
       - target_label: __address__
         replacement: blackbox_exporter:9115
 
+  # --- TargetSystems via Quarkus ---
   - job_name: 'blackbox_http_targetSystems'
     metrics_path: /probe
     params:
       module: [http_2xx]
     http_sd_configs:
-      - url: http://quarkus-app:8090/api/monitoring/prometheus/flat/targets
+      - url: http://localhost:8090/api/monitoring/prometheus/flat/targets
         refresh_interval: 30s
     relabel_configs:
       - source_labels: [__address__]

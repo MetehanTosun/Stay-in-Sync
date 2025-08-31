@@ -72,13 +72,13 @@ public class PrometheusResource {
     }
 
     @GET
-    @Path("/flat/targets") // <- Pfad angepasst, vorher "/flat/sources"
+    @Path("/flat/targets")
     @Produces(MediaType.APPLICATION_JSON)
     public List<Map<String, List<String>>> getFlatSourceTargets() {
         List<String> urls = SourceSystemEndpoint.<SourceSystemEndpoint>listAll()
                 .stream()
-                .filter(this::isGet)
-                .filter(e -> e.sourceSystem != null && notBlank(e.sourceSystem.apiUrl))
+                //.filter(this::isGet)
+                //.filter(e -> e.sourceSystem != null && notBlank(e.sourceSystem.apiUrl))
                 .map(e -> normalizeUrl(e.sourceSystem.apiUrl, e.endpointPath))
                 .toList();
 
@@ -96,7 +96,7 @@ public class PrometheusResource {
         List<SourceSystemEndpoint> getEndpoints = endpoints.stream().filter(this::isGet).toList();
 
         return getEndpoints.stream()
-                .filter(e -> e.sourceSystem != null && notBlank(e.sourceSystem.apiUrl) && notBlank(e.endpointPath))
+                //.filter(e -> e.sourceSystem != null && notBlank(e.sourceSystem.apiUrl) && notBlank(e.endpointPath))
                 .collect(Collectors.groupingBy(
                         e -> safeName(e.sourceSystem),
                         Collectors.mapping(
@@ -150,6 +150,10 @@ public class PrometheusResource {
         String left = baseUrl == null ? "" : baseUrl.trim();
         String right = path == null ? "" : path.trim();
 
+        if (!right.isEmpty() && left.endsWith(right)) {
+            return left;
+        }
+
         if (left.endsWith("/") && right.startsWith("/")) {
             return left + right.substring(1);
         } else if (!left.endsWith("/") && !right.startsWith("/")) {
@@ -157,6 +161,7 @@ public class PrometheusResource {
         }
         return left + right;
     }
+
 
     private List<String> concatValues(Map<String, List<String>> a, Map<String, List<String>> b) {
         return new ArrayList<>() {{
