@@ -75,6 +75,12 @@ public class AasTraversalClient {
         return http.writeJson(HttpMethod.PUT, url, body, headers);
     }
 
+    public Uni<HttpResponse<Buffer>> addSubmodelReferenceToShell(String baseUrl, String aasId, String submodelId, Map<String, String> headers) {
+        String url = baseUrl + "/shells/" + encode(aasId) + "/submodel-refs";
+        String body = "{\"type\":\"ModelReference\",\"keys\":[{\"type\":\"Submodel\",\"value\":\"" + submodelId + "\"}]}";
+        return http.writeJson(HttpMethod.POST, url, body, headers);
+    }
+
     private String encode(String s) {
         return java.net.URLEncoder.encode(s, java.nio.charset.StandardCharsets.UTF_8);
     }

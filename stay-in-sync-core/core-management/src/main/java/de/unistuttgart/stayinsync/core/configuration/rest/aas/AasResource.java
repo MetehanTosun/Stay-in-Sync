@@ -188,6 +188,23 @@ public class AasResource {
         int sc = resp.statusCode();
         Log.infof("Create submodel upstream status=%d msg=%s body=%s", sc, resp.statusMessage(), safeBody(resp));
         if (sc >= 200 && sc < 300) {
+            try {
+                String submodelId = io.vertx.core.json.JsonObject.mapFrom(io.vertx.core.json.jackson.DatabindCodec.mapper().readTree(resp.bodyAsString())).getString("id");
+                if (submodelId == null || submodelId.isBlank()) {
+                    // fallback: try from request body
+                    var reqId = io.vertx.core.json.JsonObject.mapFrom(io.vertx.core.json.jackson.DatabindCodec.mapper().readTree(body)).getString("id");
+                    if (reqId != null && !reqId.isBlank()) submodelId = reqId;
+                }
+                if (submodelId != null && !submodelId.isBlank()) {
+                    var refHeaders = headerBuilder.buildMergedHeaders(ss, de.unistuttgart.stayinsync.core.configuration.service.aas.HttpHeaderBuilder.Mode.WRITE_JSON);
+                    var refResp = traversal.addSubmodelReferenceToShell(ss.apiUrl, ss.aasId, submodelId, refHeaders).await().indefinitely();
+                    Log.infof("Add submodel-ref upstream status=%d msg=%s body=%s", refResp.statusCode(), refResp.statusMessage(), safeBody(refResp));
+                } else {
+                    Log.warn("Could not resolve submodelId for auto-referencing");
+                }
+            } catch (Exception e) {
+                Log.warn("Auto-reference add failed", e);
+            }
             snapshotService.applySubmodelCreate(sourceSystemId, resp.bodyAsString());
             return Response.status(Response.Status.CREATED).entity(resp.bodyAsString()).build();
         }
@@ -298,10 +315,9 @@ public class AasResource {
         SourceSystem ss = SourceSystem.<SourceSystem>findByIdOptional(sourceSystemId).orElse(null);
         ss = aasService.validateAasSource(ss);
         var headers = headerBuilder.buildMergedHeaders(ss, de.unistuttgart.stayinsync.core.configuration.service.aas.HttpHeaderBuilder.Mode.WRITE_JSON);
-        String upstreamPath = path != null ? path.replace('.', '/') : path;
-        Log.infof("Patch element value LIVE: apiUrl=%s smId=%s path=%s upstream=%s", ss.apiUrl, smId, path, upstreamPath);
+        Log.infof("Patch element value LIVE: apiUrl=%s smId=%s path=%s", ss.apiUrl, smId, path);
         Log.debugf("WRITE headers: %s body=%s", headers, body);
-        var resp = traversal.patchElementValue(ss.apiUrl, smId, upstreamPath, body, headers).await().indefinitely();
+        var resp = traversal.patchElementValue(ss.apiUrl, smId, path, body, headers).await().indefinitely();
         int sc = resp.statusCode();
         Log.infof("Patch element upstream status=%d msg=%s body=%s", sc, resp.statusMessage(), safeBody(resp));
         if (sc >= 200 && sc < 300) {
