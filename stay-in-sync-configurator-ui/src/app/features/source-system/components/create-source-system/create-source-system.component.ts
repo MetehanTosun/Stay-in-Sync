@@ -367,6 +367,9 @@ save(): void {
   // Lazy tree state for elements
   elementsBySubmodel: Record<string, any[]> = {};
   childrenLoading: Record<string, boolean> = {};
+  selectedLivePanel: { label: string; type: string; value?: any; valueType?: string } | null = null;
+  selectedLiveLoading = false;
+  selectedNode?: TreeNode;
 
   loadRootElements(submodelId: string, attachToNode?: TreeNode): void {
     if (!this.createdSourceSystemId) return;
@@ -440,6 +443,49 @@ save(): void {
       const { submodelId, idShortPath } = node.data;
       this.loadChildren(submodelId, idShortPath, node);
     }
+  }
+
+  onNodeSelect(event: any): void {
+    const node: TreeNode = event.node;
+    this.selectedNode = node;
+    this.selectedLivePanel = null;
+    if (!node || node.data?.type !== 'element') return;
+    const smId: string = node.data.submodelId;
+    const idShortPath: string = node.data.idShortPath;
+    this.loadLiveElementDetails(smId, idShortPath, node);
+  }
+
+  private loadLiveElementDetails(smId: string, idShortPath: string, node?: TreeNode): void {
+    if (!this.createdSourceSystemId) return;
+    this.selectedLiveLoading = true;
+    const last = idShortPath.split('/').pop() as string;
+    const parent = idShortPath.includes('/') ? idShortPath.substring(0, idShortPath.lastIndexOf('/')) : '';
+    this.aasService
+      .listElements(this.createdSourceSystemId, smId, { depth: 'shallow', parentPath: parent || undefined, source: 'LIVE' })
+      .subscribe({
+        next: (resp: any) => {
+          this.selectedLiveLoading = false;
+          const list: any[] = Array.isArray(resp) ? resp : (resp?.result ?? []);
+          const found = list.find((el: any) => el.idShort === last);
+          if (found) {
+            this.selectedLivePanel = {
+              label: `${found.idShort} (${found.modelType})`,
+              type: found.modelType,
+              value: (found as any).value,
+              valueType: (found as any).valueType
+            };
+            if (node && node.data) {
+              node.data.raw = { ...(node.data.raw || {}), idShortPath, modelType: found.modelType, valueType: found.valueType };
+            }
+          } else {
+            this.selectedLivePanel = { label: last, type: 'Unknown' };
+          }
+        },
+        error: (err: any) => {
+          this.selectedLiveLoading = false;
+          this.errorService.handleError(err);
+        }
+      });
   }
 
   // Create dialogs
