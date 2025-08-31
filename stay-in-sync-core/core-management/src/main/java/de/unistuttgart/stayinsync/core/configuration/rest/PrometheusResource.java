@@ -72,10 +72,19 @@ public class PrometheusResource {
     }
 
     @GET
-    @Path("/flat/targets")
+    @Path("/flat/sources")
     @Produces(MediaType.APPLICATION_JSON)
-    public Response getTargetEndpointsFlat() {
-        return Response.ok(flatten(buildTargetSystemUrlsBySystem())).build();
+    public List<Map<String, List<String>>> getFlatSourceTargets() {
+        List<String> urls = SourceSystemEndpoint.<SourceSystemEndpoint>listAll()
+                .stream()
+                .filter(this::isGet)
+                .filter(e -> e.sourceSystem != null && notBlank(e.sourceSystem.apiUrl))
+                .map(e -> normalizeUrl(e.sourceSystem.apiUrl, e.endpointPath))
+                .toList();
+
+        return urls.stream()
+                .map(url -> Map.of("targets", List.of(url)))
+                .toList();
     }
 
     // PRIVATE HELPERS
