@@ -347,7 +347,21 @@ save(): void {
   treeNodes: TreeNode[] = [];
   isDiscovering = false;
   discoverSubmodels(): void {
-    if (!this.createdSourceSystemId) return;
+    if (!this.createdSourceSystemId) {
+      // Ensure we have an ID (if user skipped save and went straight to discover)
+      const base = { ...this.form.getRawValue() } as CreateSourceSystemDTO;
+      delete (base as any).authConfig;
+      const authType = this.form.get('apiAuthType')!.value as ApiAuthType;
+      const cfg = this.form.get('authConfig')!.value;
+      if (authType === ApiAuthType.Basic) {
+        base.authConfig = { authType, username: cfg.username, password: cfg.password } as BasicAuthDTO;
+      } else if (authType === ApiAuthType.ApiKey) {
+        base.authConfig = { authType, apiKey: cfg.apiKey, headerName: cfg.headerName } as ApiKeyAuthDTO;
+      }
+      delete (base as any).openApiSpec;
+      this.postDto(base, { advanceStep: false, onSuccess: () => this.discoverSubmodels() });
+      return;
+    }
     this.isDiscovering = true;
     // Ensure snapshot is fresh so idShorts are available
     this.aasService.refreshSnapshot(this.createdSourceSystemId).subscribe({ next: () => {}, error: () => {} });
@@ -681,6 +695,11 @@ save(): void {
    */
   goNext(): void {
     if (this.currentStep === 0) {
+      // Avoid duplicate creation: if already created (e.g., via Test), just advance
+      if (this.createdSourceSystemId) {
+        this.currentStep = 1;
+        return;
+      }
       this.save();
     } else if (this.currentStep === 1) {
       this.currentStep = 2;
