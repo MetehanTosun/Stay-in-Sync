@@ -75,11 +75,8 @@ scrape_configs:
       module: [http_2xx]
     static_configs:
       - targets:
-          - https://dummyjson.com/products
-          - https://dummyjson.com/products/search
-          - https://dummyjson.com/products/categories
-          - https://dummyjson.com/products/category/{category_name}
-          - https://dummyjson.com/products/{product_id}
+          - http://localhost:8090/api/monitoring/prometheus/flat/targets
+
     relabel_configs:
       - source_labels: [__address__]
         target_label: __param_target
