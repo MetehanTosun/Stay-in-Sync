@@ -24,7 +24,6 @@ import java.util.stream.Collectors;
 /**
  * REST resource that exposes API endpoints for both SourceSystems and TargetSystems,
  * used by Prometheus/Blackbox exporter.
- *
  * - Only HTTP GET endpoints are returned.
  */
 @Path("/api/monitoring/prometheus")
@@ -67,19 +66,11 @@ public class PrometheusResource {
     @GET
     @Path("/flat/sources")
     @Produces(MediaType.APPLICATION_JSON)
-    public Response getSourceEndpointsFlat() {
-        return Response.ok(flatten(buildSourceSystemUrlsBySystem())).build();
-    }
-
-    @GET
-    @Path("/flat/targets")
-    @Produces(MediaType.APPLICATION_JSON)
-    public List<Map<String, List<String>>> getFlatSourceTargets() {
+    public List<Map<String, List<String>>> getFlatSourceEndpoints() {
         List<String> urls = SourceSystemEndpoint.<SourceSystemEndpoint>listAll()
                 .stream()
-                //.filter(this::isGet)
-                //.filter(e -> e.sourceSystem != null && notBlank(e.sourceSystem.apiUrl))
-                .map(e -> normalizeUrl(e.sourceSystem.apiUrl, e.endpointPath))
+                .filter(e -> e.syncSystem != null && notBlank(e.syncSystem.apiUrl) && "GET".equalsIgnoreCase(e.httpRequestType))
+                .map(e -> normalizeUrl(e.syncSystem.apiUrl, e.endpointPath))
                 .toList();
 
         return urls.stream()
@@ -87,16 +78,28 @@ public class PrometheusResource {
                 .toList();
     }
 
+    @GET
+    @Path("/flat/targets")
+    @Produces(MediaType.APPLICATION_JSON)
+    public List<Map<String, List<String>>> getFlatTargetEndpoints() {
+        List<String> urls = TargetSystemEndpoint.<TargetSystemEndpoint>listAll()
+                .stream()
+                .filter(e -> e.syncSystem != null && notBlank(e.syncSystem.apiUrl) && "GET".equalsIgnoreCase(e.httpRequestType))
+                .map(e -> normalizeUrl(e.syncSystem.apiUrl, e.endpointPath))
+                .toList();
+
+        return urls.stream()
+                .map(url -> Map.of("targets", List.of(url)))
+                .toList();
+    }
 
     // PRIVATE HELPERS
 
     private Map<String, List<String>> buildSourceSystemUrlsBySystem() {
-        @SuppressWarnings("unchecked")
         List<SourceSystemEndpoint> endpoints = SourceSystemEndpoint.listAll();
         List<SourceSystemEndpoint> getEndpoints = endpoints.stream().filter(this::isGet).toList();
 
         return getEndpoints.stream()
-                //.filter(e -> e.sourceSystem != null && notBlank(e.sourceSystem.apiUrl) && notBlank(e.endpointPath))
                 .collect(Collectors.groupingBy(
                         e -> safeName(e.sourceSystem),
                         Collectors.mapping(
@@ -107,7 +110,6 @@ public class PrometheusResource {
     }
 
     private Map<String, List<String>> buildTargetSystemUrlsBySystem() {
-        @SuppressWarnings("unchecked")
         List<TargetSystemEndpoint> endpoints = TargetSystemEndpoint.listAll();
         List<TargetSystemEndpoint> getEndpoints = endpoints.stream().filter(this::isGet).toList();
 
@@ -162,7 +164,6 @@ public class PrometheusResource {
         return left + right;
     }
 
-
     private List<String> concatValues(Map<String, List<String>> a, Map<String, List<String>> b) {
         return new ArrayList<>() {{
             a.values().forEach(this::addAll);
@@ -174,11 +175,9 @@ public class PrometheusResource {
         return map.values().stream().flatMap(Collection::stream).distinct().toList();
     }
 
-    /**
-     * Collector that keeps insertion order and removes duplicates.
-     */
     private static <T> Collector<T, LinkedHashSet<T>, List<T>> collectDistinctPreservingOrder() {
         return new Collector<>() {
+
             @Override
             public Supplier<LinkedHashSet<T>> supplier() {
                 return LinkedHashSet::new;
@@ -192,14 +191,12 @@ public class PrometheusResource {
             @Override
             public BinaryOperator<LinkedHashSet<T>> combiner() {
                 return (left, right) -> {
-                    left.addAll(right);
-                    return left;
+                    left.addAll(right); return left;
                 };
             }
-
             @Override
             public Function<LinkedHashSet<T>, List<T>> finisher() {
-                return ArrayList::new; // <-- now valid, returns List<T>
+                return ArrayList::new;
             }
 
             @Override
@@ -208,8 +205,6 @@ public class PrometheusResource {
             }
         };
     }
-
-
 
     public record HealthcheckDiscoveryDTO(
             Map<String, List<String>> sourceSystems,
