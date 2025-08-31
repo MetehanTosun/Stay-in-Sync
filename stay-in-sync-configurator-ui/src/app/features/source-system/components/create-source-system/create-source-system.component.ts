@@ -13,7 +13,7 @@ import {TextareaModule} from 'primeng/textarea';
 import {StepsModule} from 'primeng/steps';
 import {FileSelectEvent, FileUploadEvent, FileUploadModule} from 'primeng/fileupload';
 import {TreeModule} from 'primeng/tree';
-import {TreeNode} from 'primeng/api';
+import {MessageService, TreeNode} from 'primeng/api';
 
 
 
@@ -90,6 +90,7 @@ export class CreateSourceSystemComponent implements OnInit, OnChanges {
     private sourceSystemService: SourceSystemResourceService,
     protected errorService: HttpErrorService,
     private aasService: AasService,
+    private messageService: MessageService,
   ) {
   }
 
@@ -319,16 +320,27 @@ save(): void {
         if (data && data.idShort) {
           this.aasPreview = { idShort: data.idShort, assetKind: data.assetKind };
           this.aasTestOk = true;
+          this.messageService.add({ severity: 'success', summary: 'Verbindung erfolgreich', detail: `Shell erreichbar (${data.idShort})`, life: 3000 });
         } else {
           this.aasPreview = null;
           this.aasTestOk = true;
+          this.messageService.add({ severity: 'success', summary: 'Verbindung erfolgreich', detail: 'Shell erreichbar', life: 3000 });
         }
         // ensure snapshot contains idShort for submodels by refreshing once after a successful test
         this.aasService.refreshSnapshot(this.createdSourceSystemId).subscribe({ next: () => {}, error: () => {} });
       },
       error: (err) => {
         this.isTesting = false;
-        this.aasError = 'Test failed';
+        const status = err?.status;
+        let detail = 'Bitte prüfen: Base URL, AAS-ID (Original, nicht Base64 in den Stammdaten), Auth-Konfiguration und erreichbaren BaSyx-Server.';
+        if (status === 401) detail = '401 Unauthorized – Zugangsdaten (Basic/API-Key) prüfen.';
+        else if (status === 403) detail = '403 Forbidden – Berechtigungen/Token prüfen.';
+        else if (status === 404) detail = '404 Not Found – Base URL oder AAS-ID prüfen (AAS existiert nicht oder falsche ID).';
+        else if (status === 405) detail = '405 Method Not Allowed – HTTP-Methode prüfen (hier: POST /test).';
+        else if (status === 409) detail = '409 Conflict – widersprüchliche Angaben oder bereits vorhanden.';
+        else if (status === 504) detail = '504 Gateway Timeout – Upstream nicht erreichbar (BaSyx-Server läuft?).';
+        this.aasError = `Verbindung fehlgeschlagen. ${detail}`;
+        this.messageService.add({ severity: 'error', summary: 'Verbindung fehlgeschlagen', detail, life: 5000 });
         this.aasTestOk = false;
       }
     });
