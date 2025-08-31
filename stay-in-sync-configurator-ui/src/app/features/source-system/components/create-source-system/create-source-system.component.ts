@@ -580,12 +580,12 @@ save(): void {
       const parentNode = this.findNodeByKey(key, this.treeNodes);
       if (parentNode) {
         (parentNode as any).expanded = true;
-        this.loadChildren(this.targetSubmodelId, this.parentPath, parentNode);
+        this.refreshNodeLive(this.targetSubmodelId, this.parentPath, parentNode);
       } else {
-        this.loadRootElements(this.targetSubmodelId);
+        this.refreshNodeLive(this.targetSubmodelId, '', undefined);
       }
     } else {
-      this.loadRootElements(this.targetSubmodelId);
+      this.refreshNodeLive(this.targetSubmodelId, '', undefined);
     }
   }
 
@@ -597,6 +597,33 @@ save(): void {
       if (found) return found;
     }
     return null;
+  }
+
+  private refreshNodeLive(submodelId: string, parentPath: string, node?: TreeNode): void {
+    if (!this.createdSourceSystemId) return;
+    const key = parentPath ? `${submodelId}::${parentPath}` : submodelId;
+    this.childrenLoading[key] = true;
+    this.aasService
+      .listElements(this.createdSourceSystemId, submodelId, { depth: 'shallow', parentPath: parentPath || undefined, source: 'LIVE' })
+      .subscribe({
+        next: (resp) => {
+          this.childrenLoading[key] = false;
+          const list = Array.isArray(resp) ? resp : (resp?.result ?? []);
+          if (node) {
+            node.children = list.map((el: any) => this.mapElementToNode(submodelId, el));
+          } else {
+            // root
+            const attachNode = this.findNodeByKey(submodelId, this.treeNodes);
+            if (attachNode) {
+              attachNode.children = list.map((el: any) => this.mapElementToNode(submodelId, el));
+            }
+          }
+        },
+        error: (err) => {
+          this.childrenLoading[key] = false;
+          this.errorService.handleError(err);
+        }
+      });
   }
 
   // PATCH value dialog
