@@ -3,17 +3,13 @@ global:
   evaluation_interval: 30s
 
 scrape_configs:
-  # Local Checks
   - job_name: 'blackbox_http_local'
     metrics_path: /probe
     params:
       module: [http_2xx]
     static_configs:
       - targets:
-          - http://localhost:8090/q/health   # Core Management
-          - http://localhost:8099/q/health   # Monitoring Backend
-          - http://localhost:8095/q/health   # Polling Node (local)
-          - http://localhost:8091/q/health   # Sync Node (local)
+          - http://quarkus-app:8090/q/health
     relabel_configs:
       - source_labels: [__address__]
         target_label: __param_target
@@ -22,26 +18,6 @@ scrape_configs:
       - target_label: __address__
         replacement: blackbox_exporter:9115
 
-  # --- Kubernetes Service Discovery ---
-  - job_name: 'blackbox_http_k8s'
-    metrics_path: /probe
-    params:
-      module: [http_2xx]
-    kubernetes_sd_configs:
-      - role: pod
-    relabel_configs:
-      - source_labels: [__meta_kubernetes_pod_label_app]
-        action: keep
-        regex: (polling-node|sync-node)
-      - source_labels: [__meta_kubernetes_pod_ip]
-        target_label: __param_target
-        replacement: http://$1:8080/q/health
-      - source_labels: [__param_target]
-        target_label: instance
-      - target_label: __address__
-        replacement: blackbox_exporter:9115
-
-  # --- SourceSystems via Quarkus ---
   - job_name: 'blackbox_http_sourceSystems'
     metrics_path: /probe
     params:
@@ -57,7 +33,6 @@ scrape_configs:
       - target_label: __address__
         replacement: blackbox_exporter:9115
 
-  # --- TargetSystems via Quarkus ---
   - job_name: 'blackbox_http_targetSystems'
     metrics_path: /probe
     params:

@@ -62,7 +62,7 @@ public class PrometheusResource {
         return Response.ok(buildTargetSystemUrlsBySystem()).build();
     }
 
-    //  Flat endpoints for prometheus
+    // Flat endpoints for Prometheus
 
     @GET
     @Path("/flat/sources")
@@ -72,7 +72,7 @@ public class PrometheusResource {
     }
 
     @GET
-    @Path("/flat/sources")
+    @Path("/flat/targets") // <- Pfad angepasst, vorher "/flat/sources"
     @Produces(MediaType.APPLICATION_JSON)
     public List<Map<String, List<String>>> getFlatSourceTargets() {
         List<String> urls = SourceSystemEndpoint.<SourceSystemEndpoint>listAll()
@@ -86,6 +86,7 @@ public class PrometheusResource {
                 .map(url -> Map.of("targets", List.of(url)))
                 .toList();
     }
+
 
     // PRIVATE HELPERS
 
