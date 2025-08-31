@@ -23,4 +23,6 @@ public class DatabaseHealthCheck implements HealthCheck {
             return HealthCheckResponse.down("Database");
         }
     }
+
+
 }
