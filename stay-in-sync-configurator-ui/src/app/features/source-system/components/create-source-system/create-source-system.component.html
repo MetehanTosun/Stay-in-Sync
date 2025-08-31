@@ -122,18 +122,12 @@
         <ng-template let-node pTemplate="default">
           <div style="display:flex;align-items:center;gap:.5rem;">
             <span>{{ node.label }}</span>
-            <button *ngIf="node.data?.type==='submodel'" pButton type="button" class="p-button-text" label="+ Element" (click)="openCreateElement(node.data.id)"></button>
-            <button *ngIf="node.data?.type==='element'" pButton type="button" class="p-button-text" label="+ Element here" (click)="openCreateElement(node.data.submodelId, node.data.idShortPath)"></button>
+            <button *ngIf="node.data?.type==='submodel'" pButton type="button" class="p-button-text" label="Create element" (click)="openCreateElement(node.data.id)"></button>
+            <button *ngIf="node.data?.type==='element'" pButton type="button" class="p-button-text" label="Create child element" (click)="openCreateElement(node.data.submodelId, node.data.idShortPath)"></button>
             <button *ngIf="node.data?.type==='element' && node.data?.raw?.modelType==='Property'" pButton type="button" class="p-button-text" label="Set value" (click)="openSetValue(node.data.submodelId, node.data.raw)"></button>
           </div>
         </ng-template>
       </p-tree>
-      <div *ngIf="selectedNode?.data?.type==='submodel'" class="p-mt-3" style="border:1px solid #ddd;padding:8px;border-radius:6px;">
-        <div><strong>Submodel:</strong> {{ selectedNode?.label }}</div>
-        <div class="p-mt-2">
-          <button pButton type="button" label="Create element in submodel" (click)="openCreateElement(selectedNode?.data?.id)"></button>
-        </div>
-      </div>
       <div *ngIf="selectedNode?.data?.type==='element'" class="p-mt-3" style="border:1px solid #ddd;padding:8px;border-radius:6px;">
         <div *ngIf="selectedLiveLoading">Loading live value…</div>
         <div *ngIf="!selectedLiveLoading && selectedLivePanel">
@@ -142,7 +136,6 @@
           <div *ngIf="selectedLivePanel.valueType">ValueType: {{ selectedLivePanel.valueType }}</div>
           <div class="p-mt-2">
             <button *ngIf="selectedNode?.data?.raw?.modelType==='Property'" pButton type="button" class="p-button-text" label="Edit value" (click)="openSetValue(selectedNode?.data?.submodelId, selectedNode?.data?.raw)"></button>
-            <button pButton type="button" class="p-button-text ml-2" label="Create child element here" (click)="openCreateElement(selectedNode?.data?.submodelId, selectedNode?.data?.idShortPath)"></button>
           </div>
         </div>
       </div>
