@@ -54,6 +54,72 @@ public class ExtendedLogicGraphTests {
         return dataContext;
     }
 
+    @Test
+    void testChangeDetection_WithTimeWindow() throws IOException, GraphEvaluationException {
+        System.out.println("--- TEST: Zeitfenster-Feature ('Sliding Window') ---");
+
+        // ARRANGE
+        ProviderNode tempProvider = createProviderNode("source.sensor.temperature", 0);
+        ProviderNode humidityProvider = createProviderNode("source.sensor.humidity", 1);
+
+        // AKZEPTANZKRITERIUM 1: User kann Zeitfenster aktivieren und Dauer einstellen
+        ConfigNode configNode = createConfigNode(2, tempProvider, humidityProvider);
+        configNode.setMode(ConfigNode.ChangeDetectionMode.AND);
+        configNode.setTimeWindowEnabled(true);
+        configNode.setTimeWindowMillis(10000); // 10 Sekunden
+        System.out.println("[SETUP] Akzeptanzkriterium 1: ConfigNode erstellt. Modus=AND, Zeitfenster=10s aktiviert.");
+
+        FinalNode finalNode = createFinalNode(3, configNode);
+        List<Node> graph = Arrays.asList(tempProvider, humidityProvider, configNode, finalNode);
+
+        // --- Zeit-Simulation ---
+        long timeRun1 = System.currentTimeMillis();
+        long timeRun2 = timeRun1 + 5000;  // 5 Sekunden nach Lauf 1
+        long timeRun3 = timeRun1 + 12000; // 12 Sekunden nach Lauf 1
+
+        // === RUN 1: Eine von zwei Änderungen findet statt ===
+        System.out.println("\n[RUN 1] Situation: Nur die Temperatur ändert sich.");
+        Map<String, SnapshotEntry> initialSnapshot = Map.of(
+                "source.sensor.temperature", new SnapshotEntry(20.0, timeRun1 - 20000),
+                "source.sensor.humidity", new SnapshotEntry(50, timeRun1 - 20000)
+        );
+        Map<String, JsonNode> context1 = createDataContext("{\"temperature\": 21.0, \"humidity\": 50}", initialSnapshot);
+
+        injectCurrentTime(configNode, timeRun1);
+        EvaluationResult result1 = evaluator.evaluateGraph(graph, context1, dummyJob);
+
+        System.out.println("[RUN 1] ERGEBNIS: Transformation wurde NICHT ausgelöst (false).");
+        assertFalse(result1.finalResult(), "Sollte false sein, da nur ein Wert geändert wurde.");
+
+
+        // === RUN 2: Zweite Änderung INNERHALB des Fensters ===
+        System.out.println("\n[RUN 2] Situation: Zweite Änderung erfolgt 5s später (innerhalb des 10s-Fensters).");
+        Map<String, SnapshotEntry> snapshotForRun2 = result1.newSnapshot();
+        Map<String, JsonNode> context2 = createDataContext("{\"temperature\": 21.0, \"humidity\": 55}", snapshotForRun2);
+
+        injectCurrentTime(configNode, timeRun2);
+        EvaluationResult result2 = evaluator.evaluateGraph(graph, context2, dummyJob);
+
+        System.out.println("[RUN 2] ERGEBNIS: Transformation WURDE ausgelöst (true).");
+        // AKZEPTANZKRITERIUM 2: Transformation wird ausgelöst, wenn alle Änderungen im Fenster liegen
+        assertTrue(result2.finalResult(), "Sollte true sein, da beide Änderungen innerhalb des Fensters stattfanden.");
+        System.out.println("✅ Akzeptanzkriterium 2 erfüllt: Transformation bei Änderungen im Zeitfenster ausgelöst.");
+
+
+        // === RUN 3: Zweite Änderung AUSSERHALB des Fensters ===
+        System.out.println("\n[RUN 3] Situation: Zweite Änderung erfolgt 12s nach der ersten (außerhalb des 10s-Fensters).");
+        Map<String, SnapshotEntry> snapshotForRun3 = result1.newSnapshot(); // Wir gehen vom Zustand nach RUN 1 aus
+        Map<String, JsonNode> context3 = createDataContext("{\"temperature\": 21.0, \"humidity\": 55}", snapshotForRun3);
+
+        injectCurrentTime(configNode, timeRun3);
+        EvaluationResult result3 = evaluator.evaluateGraph(graph, context3, dummyJob);
+
+        System.out.println("[RUN 3] ERGEBNIS: Transformation wurde NICHT ausgelöst (false).");
+        // AKZEPTANZKRITERIUM 3: Transformation wird NICHT ausgelöst, wenn eine Änderung außerhalb des Fensters liegt
+        assertFalse(result3.finalResult(), "Sollte false sein, da die erste Änderung nun außerhalb des Fensters liegt.");
+        System.out.println("✅ Akzeptanzkriterium 3 erfüllt: Transformation bei Änderung außerhalb des Zeitfensters NICHT ausgelöst.");
+    }
+
     // =====================================================================================
     // NEUER TESTFALL FÜR DIE CHANGE DETECTION
     // =====================================================================================
@@ -279,6 +345,11 @@ public class ExtendedLogicGraphTests {
     // =====================================================================================
     // HELFER-METHODEN
     // =====================================================================================
+
+    private void injectCurrentTime(ConfigNode node, long timeMillis) {
+        // This call assumes you have added the `setTestTime` method to your ConfigNode class.
+        node.setTestTime(timeMillis);
+    }
 
     private ProviderNode createProviderNode(String jsonPath, int id) {
         try {

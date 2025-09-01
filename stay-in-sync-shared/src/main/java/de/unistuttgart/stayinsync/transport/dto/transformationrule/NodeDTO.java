@@ -81,6 +81,18 @@ public class NodeDTO {
      */
     private boolean changeDetectionActive;
 
+    /**
+     * Enables or disables the time-window validation feature.
+     * Only used if nodeType is "CONFIG".
+     */
+    private boolean timeWindowEnabled;
+
+    /**
+     * The duration of the sliding window in milliseconds (e.g., 30000 for 30 seconds).
+     * Only used if nodeType is "CONFIG" and timeWindowEnabled is true.
+     */
+    private long timeWindowMillis;
+
     // --- Properties specific to LOGIC nodes ---
     /**
      * The name of the logical operator this node performs (e.g., "ADD",

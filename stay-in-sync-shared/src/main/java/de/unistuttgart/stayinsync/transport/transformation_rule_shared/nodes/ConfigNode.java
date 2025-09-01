@@ -21,8 +21,10 @@ public class ConfigNode extends Node {
 
     private ChangeDetectionMode mode;
     private boolean active;
-
+    private boolean timeWindowEnabled = false;
+    private long timeWindowMillis = 30000;
     private Map<String, SnapshotEntry> newSnapshotData;
+    private Long testTime = null;
 
     /**
      * Default constructor. Initializes with default settings.
@@ -33,53 +35,60 @@ public class ConfigNode extends Node {
     }
 
     /**
+     * Sets a fixed time for testing to make time-based logic predictable.
+     * @param time The timestamp in milliseconds to use as "now".
+     */
+    public void setTestTime(long time) {
+        this.testTime = time;
+    }
+
+    /**
+     * Gets the current time, prioritizing the test time if it has been set.
+     * @return The current timestamp in milliseconds.
+     */
+    private long getCurrentTime() {
+        return testTime != null ? testTime : System.currentTimeMillis();
+    }
+
+    /**
      * Executes the change detection logic for this node.
      * <p>
-     * This method performs four main steps:
-     * <ol>
-     * <li><b>Bypass Check:</b> If the node's bypass switch (`active` flag) is disabled,
-     * it immediately sets its result to {@code false} and builds a new snapshot
-     * from the current live values without performing any comparison.</li>
+     * This method performs a multi-stage evaluation. First, it updates its internal state snapshot by
+     * comparing the live values from its {@link ProviderNode} inputs with a previous snapshot provided
+     * in the {@code dataContext}. Based on this comparison, it performs one of two checks:
+     * <ul>
+     * <li><b>Standard Change Detection:</b> If the time window is disabled, it applies a simple
+     * {@code AND} or {@code OR} logic to the detected changes.</li>
+     * <li><b>Time-Windowed Change Detection:</b> If enabled, it performs a "Sliding Window" check,
+     * verifying that the required changes (AND/OR) occurred within the configured time frame.</li>
+     * </ul>
+     * The method also handles a bypass switch (`active` flag) to disable the check entirely.
+     * The final boolean result is stored, and the newly generated snapshot is made available
+     * to the LogicGraphEvaluator.
      *
-     * <li><b>Snapshot Retrieval:</b> It fetches the previous state (the old snapshot)
-     * from a reserved {@code __snapshot} key within the provided {@code dataContext}.</li>
-     *
-     * <li><b>Comparison Logic:</b> It iterates through its {@link ProviderNode} inputs. For each one,
-     * it compares the current live value with the corresponding value from the old snapshot.</li>
-     *
-     * <li><b>Result Calculation:</b> Based on the configured {@link ChangeDetectionMode} (AND/OR),
-     * it calculates the final boolean result. Simultaneously, it constructs the new snapshot,
-     * updating entries with new values and timestamps where changes were detected,
-     * and carrying over old entries where no change occurred.</li>
-     * </ol>
-     * The calculated boolean result is stored via {@code setCalculatedResult}, and the new snapshot
-     * is stored internally, ready to be retrieved by the LogicGraphEvaluator.
-     *
-     * @param dataContext A map containing the runtime data for the graph evaluation.
-     * This must include the live data under the {@code "source"} key and may
-     * contain the old state under the {@code "__snapshot"} key.
+     * @param dataContext A map containing runtime data, including the old snapshot under the "__snapshot" key.
      */
     @Override
     public void calculate(Map<String, JsonNode> dataContext) {
         this.newSnapshotData = new HashMap<>();
+        long now = getCurrentTime();
 
-        // 1. Check bypass switch
+        // 1. Bypass-Check: Wenn der Knoten deaktiviert ist, ist das Ergebnis immer false.
         if (!active) {
             this.setCalculatedResult(false);
-            // Also create a new snapshot in the bypass to keep the state up to date
             if (this.getInputNodes() != null) {
                 for (Node input : this.getInputNodes()) {
                     if (input instanceof ProviderNode) {
                         ProviderNode pNode = (ProviderNode) input;
                         Object liveValue = pNode.getCalculatedResult();
-                        newSnapshotData.put(pNode.getJsonPath(), new SnapshotEntry(liveValue, System.currentTimeMillis()));
+                        newSnapshotData.put(pNode.getJsonPath(), new SnapshotEntry(liveValue, now));
                     }
                 }
             }
             return;
         }
 
-        // 2. Get old snapshot from the dataContext
+        // 2. Alten Snapshot aus dem dataContext holen
         JsonNode oldSnapshotNode = dataContext.get("__snapshot");
         Map<String, SnapshotEntry> oldSnapshot = new HashMap<>();
         if (oldSnapshotNode != null && !oldSnapshotNode.isNull()) {
@@ -87,7 +96,7 @@ public class ConfigNode extends Node {
             oldSnapshot = new ObjectMapper().convertValue(oldSnapshotNode, typeRef);
         }
 
-        // 3. Comparison logic
+        // 3. Werte vergleichen und neuen Snapshot erstellen
         boolean hasAtLeastOneChange = false;
         int changeCount = 0;
         int providerNodeCount = 0;
@@ -100,13 +109,12 @@ public class ConfigNode extends Node {
                     String key = pNode.getJsonPath();
                     Object liveValue = pNode.getCalculatedResult();
                     SnapshotEntry oldEntry = oldSnapshot.get(key);
-
                     boolean isChanged = (oldEntry == null) || !Objects.equals(oldEntry.value(), liveValue);
 
                     if (isChanged) {
                         hasAtLeastOneChange = true;
                         changeCount++;
-                        newSnapshotData.put(key, new SnapshotEntry(liveValue, System.currentTimeMillis()));
+                        newSnapshotData.put(key, new SnapshotEntry(liveValue, now));
                     } else {
                         newSnapshotData.put(key, oldEntry);
                     }
@@ -114,15 +122,42 @@ public class ConfigNode extends Node {
             }
         }
 
-        // 4. Set result based on mode
-        boolean finalResult = false;
-        if (this.mode == ChangeDetectionMode.OR) {
-            finalResult = hasAtLeastOneChange;
-        } else { // AND
-            finalResult = (providerNodeCount > 0 && changeCount == providerNodeCount);
+        // 4. Finale Entscheidung basierend auf dem Modus treffen
+        if (timeWindowEnabled) {
+            // Logik für das Zeitfenster
+            long windowStart = now - timeWindowMillis;
+            int valuesInWindow = 0;
+
+            for (Node input : this.getInputNodes()) {
+                if (input instanceof ProviderNode) {
+                    ProviderNode pNode = (ProviderNode) input;
+                    SnapshotEntry currentEntry = newSnapshotData.get(pNode.getJsonPath());
+                    if (currentEntry != null && currentEntry.timestamp() >= windowStart) {
+                        valuesInWindow++;
+                    }
+                }
+            }
+
+            boolean timeConditionMet = false;
+            if (mode == ChangeDetectionMode.OR) {
+                timeConditionMet = valuesInWindow > 0;
+            } else { // AND
+                timeConditionMet = (providerNodeCount > 0 && valuesInWindow == providerNodeCount);
+            }
+            this.setCalculatedResult(timeConditionMet);
+
+        } else {
+            // Normale Change-Detection-Logik
+            boolean changeDetected = false;
+            if (this.mode == ChangeDetectionMode.OR) {
+                changeDetected = hasAtLeastOneChange;
+            } else { // AND
+                changeDetected = (providerNodeCount > 0 && changeCount == providerNodeCount);
+            }
+            this.setCalculatedResult(changeDetected);
         }
-        this.setCalculatedResult(finalResult);
     }
+
 
     public Map<String, SnapshotEntry> getNewSnapshotData() {
         return this.newSnapshotData;

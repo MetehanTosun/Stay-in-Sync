@@ -163,6 +163,8 @@ public class GraphMapper {
                             if (dto.getChangeDetectionMode() != null) {
                                 configNode.setMode(ConfigNode.ChangeDetectionMode.valueOf(dto.getChangeDetectionMode()));
                             }
+                            configNode.setTimeWindowEnabled(dto.isTimeWindowEnabled());
+                            configNode.setTimeWindowMillis(dto.getTimeWindowMillis());
                             node = configNode;
                             break;
                         default:
