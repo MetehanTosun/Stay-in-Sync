@@ -67,13 +67,17 @@ export class EdcInstancesComponent implements OnInit {
 
   ngOnInit(): void {
   this.loading = true;
+  console.log('Loading EDC instances from backend...');
   this.edcInstanceService.getEdcInstances().subscribe({
     next: (data: EdcInstance[]) => {
+      console.log('EDC instances loaded:', data);
+      console.log('Number of instances:', data.length);
       this.edcInstances = data;
       this.loading = false;
     },
     error: (err) => {
       console.error('Fehler beim Laden der EDC-Instanzen', err);
+      console.error('Error details:', err);
       this.loading = false;
     }
   });
@@ -179,6 +183,8 @@ deleteInstance(instance: EdcInstance): void {
 }
 
   onInstanceRowSelect(event: TableRowSelectEvent) {
+    console.log('EDC Instance selected:', event.data);
+    console.log('Selected instance ID:', event.data?.id);
     this.instanceSelected.emit(event.data);
   }
 }

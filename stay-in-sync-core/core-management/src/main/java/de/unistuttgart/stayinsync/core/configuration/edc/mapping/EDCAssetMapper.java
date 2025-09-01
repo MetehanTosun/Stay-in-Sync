@@ -18,8 +18,11 @@ public interface EDCAssetMapper {
 
     EDCAssetMapper assetMapper = Mappers.getMapper(EDCAssetMapper.class);
 
+    @Mapping(source = "targetEDC", target = "targetEDCId")
     EDCAssetDto assetToAssetDto(EDCAsset asset);
 
+    @Mapping(source = "targetEDCId", target = "targetEDC")
+    @Mapping(target = "targetSystemEndpoint", ignore = true)
     EDCAsset assetDtoToAsset(EDCAssetDto assetDto);
 
     default EDCInstance map(UUID targetEDCId) {

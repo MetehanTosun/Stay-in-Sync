@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, of, delay } from 'rxjs';
+import { catchError, tap, map } from 'rxjs/operators';
 import { Asset } from '../models/asset.model';
 import { MOCK_ODRL_ASSETS } from '../../../mocks/mock-data';
 
@@ -8,108 +9,144 @@ import { MOCK_ODRL_ASSETS } from '../../../mocks/mock-data';
   providedIn: 'root'
 })
 export class AssetService {
-
-
-  // UI Testing method. To use the real backend, change this to false!
+  // Mock-Modus - immer auf false lassen für echtes Backend
   private mockMode = false;
 
-
-  private backendUrl = 'http://localhost:8090/api/config/edcs/assets';
-  // 👆 anpassen falls dein Backend woanders läuft
-
-  private baseUrl = 'http://localhost:8090/api/config/edcs';
-  private suggestionsUrl = 'http://localhost:8090/api/config/endpoint-suggestions'; // something like that
-  private paramOptionsUrl = 'http://localhost:8090/api/config/param-options'; // something like that
+  // API-URLs
+  private baseUrl = 'http://localhost:8090/api/config/edcs/assets';
+  private suggestionsUrl = 'http://localhost:8090/api/config/endpoint-suggestions';
+  private paramOptionsUrl = 'http://localhost:8090/api/config/param-options';
 
   constructor(private http: HttpClient) {}
 
   /**
-   * Alle Assets vom Backend laden
+   * Lädt alle Assets für eine EDC-Instanz
    */
-  // getAssets(): Observable<Asset[]> {
-  //   return this.http.get<Asset[]>(this.backendUrl);
-
   getAssets(edcId: string): Observable<Asset[]> {
-
     if (this.mockMode) {
       console.warn(`Mock Mode: Fetching assets for EDC ID: ${edcId}`);
       const odrlAssets = MOCK_ODRL_ASSETS[edcId] || [];
-      // The component expects a mapped object for the table view.
       const mappedAssets = odrlAssets.map((asset: any) => ({
         assetId: asset['@id'],
         name: asset.properties['asset:prop:name'],
         description: asset.properties['asset:prop:description'],
         contentType: asset.properties['asset:prop:contenttype'],
         type: asset.dataAddress.type,
-        ...asset, // Pass the full object for the details view
+        ...asset,
       }));
-
-
       return of(mappedAssets as Asset[]).pipe(delay(300));
     }
-    return this.http.get<Asset[]>(`${this.baseUrl}/${edcId}/assets`);
+    
+    // Reale API-Anfrage
+    console.log(`Requesting assets from: ${this.baseUrl}/${edcId}/assets`);
+    return this.http.get<any[]>(`${this.baseUrl}/${edcId}/assets`)
+      .pipe(
+        catchError((error: any) => {
+          console.error('Error fetching assets:', error);
+          throw error;
+        }),
+        tap((response: any) => console.log('Assets response:', response)),
+        map((response: any[]) => {
+          if (!Array.isArray(response)) {
+            console.error('Unexpected response format, expected array but got:', typeof response);
+            return [];
+          }
+          
+          return response.map(item => this.mapBackendResponseToAsset(item));
+        })
+      );
   }
 
   /**
-   * Einzelnes Asset laden
+   * Lädt ein einzelnes Asset
    */
-  // getAsset(id: string): Observable<Asset> {
-  //   return this.http.get<Asset>(`${this.backendUrl}/${id}`);
-
   getAsset(edcId: string, assetId: string): Observable<Asset> {
     if (this.mockMode) {
       console.warn(`Mock Mode: Fetching asset ${assetId} for EDC ID: ${edcId}`);
       const asset = (MOCK_ODRL_ASSETS[edcId] || []).find((a: any) => a['@id'] === assetId);
       return of(asset as Asset).pipe(delay(300));
     }
-    return this.http.get<Asset>(`${this.baseUrl}/${edcId}/assets/${assetId}`);
+    
+    console.log(`Requesting asset from: ${this.baseUrl}/${edcId}/assets/${assetId}`);
+    return this.http.get<Asset>(`${this.baseUrl}/${edcId}/assets/${assetId}`)
+      .pipe(
+        catchError((error: any) => {
+          console.error(`Error fetching asset ${assetId}:`, error);
+          throw error;
+        }),
+        tap((response: any) => console.log('Asset response:', response))
+      );
   }
 
   /**
-   * Neues Asset anlegen
+   * Erstellt ein neues Asset
    */
-  // createAsset(asset: Asset): Observable<Asset> {
-  //   return this.http.post<Asset>(this.backendUrl, asset);
-
   createAsset(edcId: string, asset: any): Observable<any> {
     if (this.mockMode) {
-      console.warn(`Mock Mode: Creating/updating asset for EDC ID: ${edcId}`);
+      console.warn(`Mock Mode: Creating asset for EDC ID: ${edcId}`);
+      const newAsset = { ...asset, '@id': asset['@id'] || `asset-${Date.now()}` };
       if (!MOCK_ODRL_ASSETS[edcId]) {
         MOCK_ODRL_ASSETS[edcId] = [];
       }
-      const existingIndex = MOCK_ODRL_ASSETS[edcId].findIndex(
-        (a: any) => a['@id'] === asset['@id']
-      );
-      if (existingIndex > -1) {
-        MOCK_ODRL_ASSETS[edcId][existingIndex] = asset; // Update
-      } else {
-        MOCK_ODRL_ASSETS[edcId].push(asset); // Create
-      }
-      return of(asset).pipe(delay(300));
+      MOCK_ODRL_ASSETS[edcId].push(newAsset);
+      return of(newAsset).pipe(delay(300));
     }
-    return this.http.post<any>(`${this.baseUrl}/${edcId}/assets`, asset);
+    
+    // Sicherstellen, dass targetEDCId gesetzt ist
+    asset.targetEDCId = edcId;
+    
+    // Stellen sicher, dass keine leeren Felder im Asset sind
+    this.validateAndFixAsset(asset);
+    
+    // Vollständigen Request loggen
+    console.log(`Creating asset at: ${this.baseUrl}/${edcId}/assets`);
+    console.log('Asset payload:', JSON.stringify(asset, null, 2));
+    
+    return this.http.post<any>(`${this.baseUrl}/${edcId}/assets`, asset)
+      .pipe(
+        catchError((error: any) => {
+          console.error(`Error creating asset for EDC ${edcId}:`, error);
+          if (error.error && error.error.details) {
+            console.error('Server error details:', error.error.details);
+          }
+          if (error.error && error.error.message) {
+            console.error('Server error message:', error.error.message);
+          }
+          throw error;
+        }),
+        tap((response: any) => {
+          console.log('Create asset response:', response);
+          // Zusätzliche Validierung der Antwort
+          if (!response || (typeof response === 'object' && Object.keys(response).length === 0)) {
+            console.warn('Server returned empty or invalid response');
+          }
+        })
+      );
   }
 
   /**
-   * Bestehendes Asset aktualisieren
+   * Aktualisiert ein bestehendes Asset
    */
-  // updateAsset(id: string, asset: Asset): Observable<Asset> {
-  //   return this.http.put<Asset>(`${this.backendUrl}/${id}`, asset);
-
   updateAsset(edcId: string, assetId: string, asset: Asset): Observable<Asset> {
     if (this.mockMode) {
-      // The createAsset mock logic handles updates (upsert)
       return this.createAsset(edcId, asset) as Observable<Asset>;
     }
-    return this.http.put<Asset>(`${this.baseUrl}/${edcId}/assets/${assetId}`, asset);
+    
+    console.log(`Updating asset at: ${this.baseUrl}/${edcId}/assets/${assetId}`);
+    return this.http.put<Asset>(`${this.baseUrl}/${edcId}/assets/${assetId}`, asset)
+      .pipe(
+        catchError((error: any) => {
+          console.error(`Error updating asset ${assetId}:`, error);
+          throw error;
+        }),
+        tap((response: any) => console.log('Update asset response:', response))
+      );
   }
 
   /**
-   * Fetches endpoint suggestions for the asset creation dialog.
-   * @param query The search query from the user.
+   * Holt Endpunkt-Vorschläge für den Asset-Dialog
    */
   getEndpointSuggestions(query: string): Observable<string[]> {
-
     if (this.mockMode) {
       console.warn('Mock Mode: Fetching endpoint suggestions.');
       const allEndpoints = [
@@ -118,17 +155,16 @@ export class AssetService {
         'https://my-backend.com/service'
       ];
       const filteredEndpoints = allEndpoints.filter(e => e.toLowerCase().includes(query.toLowerCase()));
-      return of(filteredEndpoints).pipe(delay(100)); // Simulate network delay
+      return of(filteredEndpoints).pipe(delay(100));
     }
-    // Backend, to check if it works
+    
     return this.http.get<string[]>(this.suggestionsUrl, { params: { q: query } });
   }
 
   /**
-   * Fetches parameter options for the asset creation dialog.
+   * Holt Parameter-Optionen für den Asset-Dialog
    */
   getParamOptions(): Observable<{ query: any[], header: any[] }> {
-
     if (this.mockMode) {
       console.warn('Mock Mode: Fetching parameter options.');
       const mockOptions = {
@@ -137,17 +173,13 @@ export class AssetService {
       };
       return of(mockOptions).pipe(delay(100));
     }
-
-    // Parameter options from backend
+    
     return this.http.get<{ query: any[], header: any[] }>(this.paramOptionsUrl);
   }
 
   /**
-   * Asset löschen
+   * Löscht ein Asset
    */
-  // deleteAsset(id: string): Observable<void> {
-  //   return this.http.delete<void>(`${this.backendUrl}/${id}`);
-
   deleteAsset(edcId: string, assetId: string): Observable<void> {
     if (this.mockMode) {
       console.warn(`Mock Mode: Deleting asset ${assetId} for EDC ID: ${edcId}`);
@@ -158,6 +190,92 @@ export class AssetService {
       }
       return of(undefined).pipe(delay(300));
     }
-    return this.http.delete<void>(`${this.baseUrl}/${edcId}/assets/${assetId}`);
+    
+    console.log(`Deleting asset at: ${this.baseUrl}/${edcId}/assets/${assetId}`);
+    return this.http.delete<void>(`${this.baseUrl}/${edcId}/assets/${assetId}`)
+      .pipe(
+        catchError((error: any) => {
+          console.error(`Error deleting asset ${assetId}:`, error);
+          throw error;
+        }),
+        tap(() => console.log(`Asset ${assetId} deleted successfully`))
+      );
+  }
+
+  /**
+   * Mappt die Backend-Antwort auf das Asset-Modell
+   */
+  private mapBackendResponseToAsset(item: any): Asset {
+    return {
+      id: item.id || undefined,
+      assetId: item['@id'] || '',
+      name: item.properties?.['asset:prop:name'] || item['@id'] || 'Unnamed Asset',
+      url: item.url || '',
+      type: item.type || '',
+      contentType: item.contentType || '',
+      description: item.description || item.properties?.['asset:prop:description'] || '',
+      targetEDCId: item.targetEDCId || '',
+      dataAddress: {
+        jsonLDType: item.dataAddress?.jsonLDType || 'DataAddress',
+        type: item.dataAddress?.type || 'HttpData',
+        base_url: item.dataAddress?.base_url || '',
+        proxyPath: item.dataAddress?.proxyPath || true,
+        proxyQueryParams: item.dataAddress?.proxyQueryParams || true
+      },
+      properties: item.properties || { description: '' }
+    };
+  }
+  
+  /**
+   * Validiert und korrigiert ein Asset, stellt sicher, dass keine leeren Pflichtfelder vorhanden sind
+   */
+  private validateAndFixAsset(asset: any): void {
+    // Stellen sicher, dass properties vorhanden sind
+    if (!asset.properties) {
+      asset.properties = {};
+    }
+    
+    // Grundlegende Pflichtfelder überprüfen und einfügen
+    if (!asset.properties['asset:prop:name'] || asset.properties['asset:prop:name'].trim() === '') {
+      asset.properties['asset:prop:name'] = asset['@id'] || `Asset-${Date.now()}`;
+    }
+    
+    // Stelle sicher, dass die Beschreibung nicht leer ist
+    if (!asset.properties['asset:prop:description'] || asset.properties['asset:prop:description'].trim() === '') {
+      asset.properties['asset:prop:description'] = `Beschreibung für ${asset['@id'] || 'Asset'}`;
+    }
+    
+    if (!asset.properties['asset:prop:contenttype']) {
+      asset.properties['asset:prop:contenttype'] = 'application/json';
+    }
+    
+    // DataAddress überprüfen und korrigieren
+    if (!asset.dataAddress) {
+      asset.dataAddress = { type: 'HttpData' };
+    }
+    
+    if (!asset.dataAddress.type) {
+      asset.dataAddress.type = 'HttpData';
+    }
+    
+    // Korrigiere base_url - Feld muss genau so im Backend ankommen
+    if (asset.dataAddress.baseUrl || asset.dataAddress.baseURL) {
+      asset.dataAddress.base_url = asset.dataAddress.baseUrl || asset.dataAddress.baseURL;
+      delete asset.dataAddress.baseUrl;
+      delete asset.dataAddress.baseURL;
+    }
+    
+    if (!asset.dataAddress.base_url || asset.dataAddress.base_url.trim() === '') {
+      asset.dataAddress.base_url = 'https://example.com/api/' + (asset['@id'] || `asset-${Date.now()}`);
+    }
+    
+    // Proxy-Einstellungen hinzufügen, falls nicht vorhanden
+    if (asset.dataAddress.proxyPath === undefined) {
+      asset.dataAddress.proxyPath = true;
+    }
+    
+    if (asset.dataAddress.proxyQueryParams === undefined) {
+      asset.dataAddress.proxyQueryParams = true;
+    }
   }
 }

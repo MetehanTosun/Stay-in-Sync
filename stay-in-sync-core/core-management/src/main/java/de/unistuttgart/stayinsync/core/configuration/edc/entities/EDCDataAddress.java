@@ -3,6 +3,7 @@ package de.unistuttgart.stayinsync.core.configuration.edc.entities;
 import de.unistuttgart.stayinsync.core.model.UuidEntity;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 @Entity
 public class EDCDataAddress extends UuidEntity {
@@ -13,6 +14,7 @@ public class EDCDataAddress extends UuidEntity {
     @Column(name = "type", nullable = false)
     public String type;
 
+    // Hier liegt das Problem: baseURL und base_url müssen übereinstimmen
     @Column(name = "base_url", nullable = false)
     public String baseURL;
 
@@ -44,8 +46,20 @@ public class EDCDataAddress extends UuidEntity {
         return baseURL;
     }
 
+    // Zusätzlicher Getter für base_url (als Alias für baseURL)
+    @JsonProperty("base_url")
+    public String getBaseUrl() {
+        return baseURL;
+    }
+
     public void setBaseURL(String baseURL) {
         this.baseURL = baseURL;
+    }
+
+    // Zusätzlicher Setter für base_url (als Alias für baseURL)
+    @JsonProperty("base_url")
+    public void setBaseUrl(String baseUrl) {
+        this.baseURL = baseUrl;
     }
 
     public boolean isProxyPath() {

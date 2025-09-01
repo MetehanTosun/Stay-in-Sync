@@ -227,8 +227,20 @@ accessPolicySuggestions: OdrlPolicyDefinition[] = [];
   }
 
   ngOnInit(): void {
-    this.loadAssets();
-    this.loadPoliciesAndDefinitions();
+    // Überprüfen, ob instance.id verfügbar ist, bevor wir Assets laden
+    if (this.instance && this.instance.id) {
+      console.log('Initialisiere mit EDC-ID:', this.instance.id);
+      this.loadAssets();
+      this.loadPoliciesAndDefinitions();
+    } else {
+      console.error('Keine gültige EDC-Instance ID gefunden:', this.instance);
+      this.messageService.add({
+        severity: 'error',
+        summary: 'Fehler',
+        detail: 'EDC-Instance nicht korrekt initialisiert.'
+      });
+    }
+    
     this.loadAccessPolicyTemplates();
     this.loadAssetTemplates();
     this.loadParamOptions();
@@ -272,7 +284,7 @@ accessPolicySuggestions: OdrlPolicyDefinition[] = [];
           },
           "dataAddress": {
             "type": "HttpData",
-            "baseUrl": ""
+            "base_url": ""
           }
         }
       }
@@ -326,25 +338,38 @@ accessPolicySuggestions: OdrlPolicyDefinition[] = [];
   }
 
   private async loadAssets(): Promise<void> {
-  this.assetLoading = true;
-  try {
-    this.assets = await lastValueFrom(this.assetService.getAssets(this.instance.id));
+    this.assetLoading = true;
+    try {
+      console.log('Lade Assets für EDC-ID:', this.instance.id);
+      console.log('Full EDC instance:', this.instance);
+      const response = await lastValueFrom(this.assetService.getAssets(this.instance.id));
+      console.log('Assets geladen:', response);
+      console.log('Anzahl geladener Assets:', response.length);
+      this.assets = response;
 
-    // Falls ein Dialog geöffnet ist, Liste aktualisieren
-    if (this.displayNewContractPolicyDialog || this.displayEditContractPolicyDialog) {
-      this.refreshAssetsForDialog();
+      // Falls ein Dialog geöffnet ist, Liste aktualisieren
+      if (this.displayNewContractPolicyDialog || this.displayEditContractPolicyDialog) {
+        this.refreshAssetsForDialog();
+      }
+    } catch (error) {
+      console.error('Failed to load assets:', error);
+      // Detailliertere Fehlermeldung anzeigen
+      let errorMessage = 'Could not load assets.';
+      if (error instanceof Error) {
+        errorMessage += ` Details: ${error.message}`;
+      } else if (typeof error === 'object' && error !== null) {
+        errorMessage += ` Details: ${JSON.stringify(error)}`;
+      }
+      
+      this.messageService.add({
+        severity: 'error',
+        summary: 'Error',
+        detail: errorMessage
+      });
+    } finally {
+      this.assetLoading = false;
     }
-  } catch (error) {
-    console.error('Failed to load assets:', error);
-    this.messageService.add({
-      severity: 'error',
-      summary: 'Error',
-      detail: 'Could not load assets.'
-    });
-  } finally {
-    this.assetLoading = false;
   }
-}
 
 
   loadPoliciesAndDefinitions() {
@@ -468,11 +493,9 @@ accessPolicySuggestions: OdrlPolicyDefinition[] = [];
     if (defaultTemplate) {
       // Create a deep copy to avoid modifying the master template object
       const templateContent = JSON.parse(JSON.stringify(defaultTemplate.content));
-
-      // If the template has an empty ID, generate a new one for this new asset.
-      if (!templateContent['@id']) {
-        templateContent['@id'] = `urn:uuid:${this.generateUuid()}`;
-      }
+      
+      // Lasse die ID leer, damit der Nutzer sie selbst eingeben kann
+      templateContent['@id'] = "";
 
       this.expertModeJsonContent = JSON.stringify(templateContent, null, 2);
       this.populateAssetFormFromOdrl(templateContent);
@@ -503,26 +526,121 @@ accessPolicySuggestions: OdrlPolicyDefinition[] = [];
   try {
     const assetJson = JSON.parse(this.expertModeJsonContent);
 
-    // Basic validation
-    if (!assetJson.assetId || !assetJson.type || !assetJson.contentType || !assetJson.dataAddress) {
-      throw new Error("Invalid asset structure. 'assetId', 'type', 'contentType' and 'dataAddress' are required.");
+    // Stellen sicher, dass eine Asset-ID vorhanden ist - wenn leer, werfen wir einen Fehler
+    if (!assetJson['@id'] || assetJson['@id'].trim() === '') {
+      throw new Error('Bitte eine Asset-ID eingeben. Dies ist ein Pflichtfeld.');
+    }
+    
+    // Wichtig: Setze die target_edc_id auf die ID der aktuellen Instanz
+    assetJson.targetEDCId = this.instance.id;
+
+    // Stellen sicher, dass properties vorhanden sind
+    if (!assetJson.properties) {
+      assetJson.properties = {};
+    }
+    
+    // Grundlegende Pflichtfelder überprüfen und einfügen
+    if (!assetJson.properties['asset:prop:name'] || assetJson.properties['asset:prop:name'].trim() === '') {
+      // Verwende die Asset-ID als Namen, wenn kein Name angegeben wurde
+      assetJson.properties['asset:prop:name'] = assetJson['@id'];
+    }
+    
+    // Stelle sicher, dass die Beschreibung nicht leer ist
+    if (!assetJson.properties['asset:prop:description'] || assetJson.properties['asset:prop:description'].trim() === '') {
+      assetJson.properties['asset:prop:description'] = `Beschreibung für ${assetJson['@id']}`;
+    }
+    
+    if (!assetJson.properties['asset:prop:contenttype']) {
+      assetJson.properties['asset:prop:contenttype'] = 'application/json';
+    }
+    
+    // DataAddress überprüfen und korrigieren
+    if (!assetJson.dataAddress) {
+      assetJson.dataAddress = { type: 'HttpData' };
+    }
+    
+    if (!assetJson.dataAddress.type) {
+      assetJson.dataAddress.type = 'HttpData';
+    }
+    
+    // Korrigiere base_url - Feld muss genau so im Backend ankommen
+    if (assetJson.dataAddress.baseUrl || assetJson.dataAddress.baseURL) {
+      assetJson.dataAddress.base_url = assetJson.dataAddress.baseUrl || assetJson.dataAddress.baseURL;
+      delete assetJson.dataAddress.baseUrl;
+      delete assetJson.dataAddress.baseURL;
+    }
+    
+    if (!assetJson.dataAddress.base_url || assetJson.dataAddress.base_url.trim() === '') {
+      assetJson.dataAddress.base_url = 'https://example.com/api/' + assetJson['@id'];
+    }
+    
+    // Proxy-Einstellungen hinzufügen, falls nicht vorhanden
+    if (assetJson.dataAddress.proxyPath === undefined) {
+      assetJson.dataAddress.proxyPath = true;
+    }
+    
+    if (assetJson.dataAddress.proxyQueryParams === undefined) {
+      assetJson.dataAddress.proxyQueryParams = true;
     }
 
-    // DataAddress validation
-    if (!assetJson.dataAddress.type || !assetJson.dataAddress.baseURL) {
-      throw new Error("Invalid dataAddress structure. 'type' and 'baseURL' are required.");
+    console.log('Sende Asset an Backend:', JSON.stringify(assetJson, null, 2));
+    console.log('Verwende EDC-Instanz-ID:', this.instance.id);
+    try {
+      // Verwende lastValueFrom statt toPromise() für Observables
+      const response = await lastValueFrom(this.assetService.createAsset(this.instance.id, assetJson));
+      console.log('Asset successfully created:', response);
+      this.messageService.add({ 
+        severity: 'success', 
+        summary: 'Success', 
+        detail: 'Asset created successfully.' 
+      });
+      
+      // Dialog schließen vor dem Neuladen
+      this.hideNewAssetDialog();
+      
+      // Längere Verzögerung, um sicherzustellen, dass das Backend die Änderung verarbeitet hat
+      console.log('Waiting for backend to process the changes...');
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      // Mehrfaches Neuladen für bessere Zuverlässigkeit
+      console.log('Reloading assets first time...');
+      await this.loadAssets();
+      
+      // Zweiter Reload nach weiterer Verzögerung
+      setTimeout(async () => {
+        console.log('Reloading assets second time for consistency...');
+        await this.loadAssets();
+        console.log('Assets after second reload:', this.assets);
+      }, 500);
+      
+    } catch (err: any) {
+      console.error('Error creating asset:', err);
+      // Detailliertere Fehlermeldung
+      let detail = 'Failed to save asset.';
+      
+      if (err.error && err.error.message) {
+        detail = `Server error: ${err.error.message}`;
+      } else if (err.message) {
+        detail = err.message;
+      } else if (typeof err === 'object') {
+        detail = JSON.stringify(err);
+      }
+      
+      this.messageService.add({ severity: 'error', summary: 'Error', detail });
     }
-
-    await this.assetService.createAsset(this.instance.id, assetJson);
-    this.messageService.add({ severity: 'success', summary: 'Success', detail: 'Asset created successfully.' });
-    await this.loadAssets();
-    this.hideNewAssetDialog();
   } catch (error: any) {
-    const detail = error.message.includes('JSON')
-      ? 'Could not parse JSON.'
-      : error.message || 'Failed to save asset.';
-    this.messageService.add({ severity: 'error', summary: 'Error', detail });
     console.error('Failed to save asset:', error);
+    
+    // Verbesserte Fehlerbehandlung mit mehr Details
+    let detail = 'Failed to save asset.';
+    
+    if (error.message && error.message.includes('JSON')) {
+      detail = 'Could not parse JSON. Please check the format of your asset data.';
+    } else if (error.message) {
+      detail = error.message;
+    }
+    
+    this.messageService.add({ severity: 'error', summary: 'Error', detail });
   }
 }
 
@@ -564,11 +682,23 @@ accessPolicySuggestions: OdrlPolicyDefinition[] = [];
       currentAssetJson.dataAddress = { type: 'HttpData' }; // Default type
     }
 
-    // Update dataAddress.baseUrl from selectedEndpoint
+    // Update dataAddress.base_url von selectedEndpoint
     if (this.selectedEndpoint) {
-      currentAssetJson.dataAddress.baseUrl = this.selectedEndpoint;
+      currentAssetJson.dataAddress.base_url = this.selectedEndpoint;
     } else {
-      delete currentAssetJson.dataAddress.baseUrl;
+      // Behalte bestehende base_url bei oder setze Standard
+      if (!currentAssetJson.dataAddress.base_url) {
+        currentAssetJson.dataAddress.base_url = '';
+      }
+    }
+
+    // Stelle sicher, dass proxyPath und proxyQueryParams existieren
+    if (currentAssetJson.dataAddress.proxyPath === undefined) {
+      currentAssetJson.dataAddress.proxyPath = true;
+    }
+    
+    if (currentAssetJson.dataAddress.proxyQueryParams === undefined) {
+      currentAssetJson.dataAddress.proxyQueryParams = true;
     }
 
     // Update properties from assetAttributes
@@ -629,7 +759,10 @@ accessPolicySuggestions: OdrlPolicyDefinition[] = [];
   }
 
   private populateAssetFormFromOdrl(odrlAsset: any): void {
-    this.selectedEndpoint = odrlAsset.dataAddress?.baseUrl || null;
+    // Hier liegt ein kritischer Fehler vor: base_url vs. baseUrl
+    // Wir müssen alle möglichen Felder prüfen, da das Backend base_url erwartet, aber das Frontend
+    // möglicherweise andere Bezeichnungen verwendet
+    this.selectedEndpoint = odrlAsset.dataAddress?.base_url || odrlAsset.dataAddress?.baseURL || odrlAsset.dataAddress?.baseUrl || null;
     this.pathParamId = odrlAsset.dataAddress?.pathParamId || '';
     this.queryParams = odrlAsset.dataAddress?.queryParams || [];
     this.headerParams = odrlAsset.dataAddress?.headerParams || [];
@@ -758,44 +891,63 @@ accessPolicySuggestions: OdrlPolicyDefinition[] = [];
       const promise = (async () => {
         try {
           const fileContent = await file.text();
-          const assetJson = JSON.parse(fileContent);
+          let assetJson = JSON.parse(fileContent);
 
-
+          // Korrektur und Validierung des Asset-JSONs
           if (!assetJson['@id']) {
-            throw new Error("Validation failed: The '@id' field is missing or empty.");
+            assetJson['@id'] = `urn:uuid:${this.generateUuid()}`;
+            console.log('Generated new @id for asset:', assetJson['@id']);
           }
+          
           if (!assetJson['@context'] || !assetJson['@context'].edc) {
-            throw new Error("Validation failed: The '@context' with a non-empty 'edc' property is required.");
+            assetJson['@context'] = { "edc": "https://w3id.org/edc/v0.0.1/ns/" };
           }
+          
           if (!assetJson.properties) {
-            throw new Error("Validation failed: The 'properties' object is missing.");
+            assetJson.properties = {};
           }
+          
+          if (!assetJson.properties['asset:prop:name']) {
+            assetJson.properties['asset:prop:name'] = file.name.replace(/\.[^/.]+$/, ""); // Dateiname ohne Erweiterung
+          }
+          
+          if (!assetJson.properties['asset:prop:description']) {
+            assetJson.properties['asset:prop:description'] = '';
+          }
+          
+          if (!assetJson.properties['asset:prop:contenttype']) {
+            assetJson.properties['asset:prop:contenttype'] = 'application/json';
+          }
+          
           if (!assetJson.dataAddress) {
-            throw new Error("Validation failed: The 'dataAddress' object is missing.");
+            assetJson.dataAddress = { type: 'HttpData' };
+          }
+          
+          if (!assetJson.dataAddress.type) {
+            assetJson.dataAddress.type = 'HttpData';
+          }
+          
+          // Korrigiere base_url Format
+          if (assetJson.dataAddress.baseUrl || assetJson.dataAddress.baseURL) {
+            assetJson.dataAddress.base_url = assetJson.dataAddress.baseUrl || assetJson.dataAddress.baseURL;
+            delete assetJson.dataAddress.baseUrl;
+            delete assetJson.dataAddress.baseURL;
+          }
+          
+          if (!assetJson.dataAddress.baseURL) {
+            assetJson.dataAddress.baseURL = 'https://example.com/api';
+          }
+          
+          // Proxy-Einstellungen
+          if (assetJson.dataAddress.proxyPath === undefined) {
+            assetJson.dataAddress.proxyPath = true;
+          }
+          
+          if (assetJson.dataAddress.proxyQueryParams === undefined) {
+            assetJson.dataAddress.proxyQueryParams = true;
           }
 
-          const props = assetJson.properties;
-          const dataAddr = assetJson.dataAddress;
-
-          // These fields must exist and not be empty
-          if (!props['asset:prop:name']) {
-            throw new Error("Validation failed: Missing 'asset:prop:name' in properties.");
-          }
-          if (!props['asset:prop:contenttype']) {
-            throw new Error("Validation failed: Missing 'asset:prop:contenttype' in properties.");
-          }
-          if (!dataAddr.baseUrl) {
-            throw new Error("Validation failed: Missing 'baseUrl' in dataAddress.");
-          }
-          if (!dataAddr.type) {
-            throw new Error("Validation failed: Missing 'type' in dataAddress.");
-          }
-
-          // description must exist, but can be empty
-          if (!('asset:prop:description' in props)) {
-            throw new Error("Validation failed: Missing 'asset:prop:description' in properties.");
-          }
-
+          console.log('Uploading asset:', JSON.stringify(assetJson, null, 2));
           await this.assetService.createAsset(this.instance.id, assetJson);
           successfulUploads.push(file.name);
         } catch (error: any) {
@@ -862,8 +1014,51 @@ accessPolicySuggestions: OdrlPolicyDefinition[] = [];
       if (assetJson['@id'] !== this.assetToEditODRL['@id']) {
         throw new Error("The '@id' of the asset cannot be changed during an edit.");
       }
-      // The service's uploadAsset handles both create and update
-     await this.assetService.createAsset(this.instance.id, assetJson);
+      
+      // Stellen sicher, dass alle erforderlichen Felder korrekt sind
+      if (!assetJson.properties) {
+        assetJson.properties = {};
+      }
+      
+      // Pflichtfelder überprüfen
+      if (!assetJson.properties['asset:prop:name']) {
+        assetJson.properties['asset:prop:name'] = 'Unnamed Asset';
+      }
+      
+      if (!assetJson.properties['asset:prop:contenttype']) {
+        assetJson.properties['asset:prop:contenttype'] = 'application/json';
+      }
+      
+      // DataAddress überprüfen
+      if (!assetJson.dataAddress) {
+        assetJson.dataAddress = { type: 'HttpData' };
+      }
+      
+      if (!assetJson.dataAddress.type) {
+        assetJson.dataAddress.type = 'HttpData';
+      }
+      
+      // Korrigiere baseURL (nicht baseUrl)
+      if (assetJson.dataAddress.baseUrl && !assetJson.dataAddress.baseURL) {
+        assetJson.dataAddress.baseURL = assetJson.dataAddress.baseUrl;
+        delete assetJson.dataAddress.baseUrl;
+      }
+      
+      if (!assetJson.dataAddress.baseURL) {
+        assetJson.dataAddress.baseURL = 'https://example.com/api';
+      }
+      
+      // Proxy-Einstellungen
+      if (assetJson.dataAddress.proxyPath === undefined) {
+        assetJson.dataAddress.proxyPath = true;
+      }
+      
+      if (assetJson.dataAddress.proxyQueryParams === undefined) {
+        assetJson.dataAddress.proxyQueryParams = true;
+      }
+      
+      console.log('Sende bearbeitetes Asset an Backend:', JSON.stringify(assetJson, null, 2));
+      await this.assetService.createAsset(this.instance.id, assetJson);
       this.messageService.add({ severity: 'success', summary: 'Success', detail: 'Asset updated successfully.' });
       this.loadAssets();
       this.hideEditAssetDialog();

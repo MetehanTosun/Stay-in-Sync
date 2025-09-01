@@ -35,6 +35,10 @@ public class EDCContractDefinition extends UuidEntity {
         nullable = false
     )
     public EDCPolicy contractPolicy;
+    
+    @ManyToOne
+    @JoinColumn(name = "edc_instance_id")
+    public EDCInstance edcInstance;
 
     public String getContractDefinitionId() {
         return contractDefinitionId;

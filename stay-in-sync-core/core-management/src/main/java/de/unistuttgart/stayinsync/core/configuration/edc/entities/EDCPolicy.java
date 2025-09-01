@@ -13,9 +13,11 @@ public class EDCPolicy extends UuidEntity {
     public String policyId;
 
     @Lob
-   @Column(columnDefinition = "LONGTEXT", nullable = false)
+    @Column(columnDefinition = "LONGTEXT", nullable = false)
     public String policyJson;
-
-
+    
+    @ManyToOne
+    @JoinColumn(name = "edc_instance_id")
+    public EDCInstance edcInstance;
 
 }

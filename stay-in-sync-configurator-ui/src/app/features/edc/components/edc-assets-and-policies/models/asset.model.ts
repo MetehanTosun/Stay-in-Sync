@@ -2,7 +2,7 @@ export interface EDCDataAddress {
   id?: string;
   jsonLDType: string;
   type: string;
-  baseURL: string;
+  base_url: string;
   proxyPath: boolean;
   proxyQueryParams: boolean;
 }
@@ -15,6 +15,7 @@ export interface EDCProperty {
 export interface Asset {
   id?: string;               // UUID aus dem Backend
   assetId: string;
+  name?: string;            // Name des Assets aus asset:prop:name
   url: string;
   type: string;
   contentType: string;
