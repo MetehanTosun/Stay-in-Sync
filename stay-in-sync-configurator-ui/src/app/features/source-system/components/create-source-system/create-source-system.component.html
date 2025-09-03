@@ -128,6 +128,18 @@
           </div>
         </ng-template>
       </p-tree>
+      <div class="p-card" *ngIf="selectedNode && selectedNode.data?.type==='element'" style="margin-top:1rem;padding:1rem;border:1px solid var(--surface-border);border-radius:4px;">
+        <div class="p-d-flex p-ai-center p-jc-between">
+          <h4 style="margin:0;">Details</h4>
+          <span *ngIf="selectedLiveLoading">Loading...</span>
+        </div>
+        <div *ngIf="selectedLivePanel">
+          <div><strong>Label:</strong> {{ selectedLivePanel.label }}</div>
+          <div><strong>Type:</strong> {{ selectedLivePanel.type }}</div>
+          <div *ngIf="selectedLivePanel.valueType"><strong>valueType:</strong> {{ selectedLivePanel.valueType }}</div>
+          <div *ngIf="selectedLivePanel.value !== undefined"><strong>value:</strong> {{ selectedLivePanel.value }}</div>
+        </div>
+      </div>
     </ng-template>
   </ng-container>
 
