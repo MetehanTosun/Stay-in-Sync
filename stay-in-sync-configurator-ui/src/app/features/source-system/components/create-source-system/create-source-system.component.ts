@@ -704,7 +704,7 @@ save(): void {
   valueTypeHint = 'xs:string';
   openSetValue(smId: string, element: any): void {
     this.valueSubmodelId = smId;
-    this.valueElementPath = element.idShortPath;
+    this.valueElementPath = element.idShortPath || element.data?.idShortPath || element.raw?.idShortPath || element.idShort;
     this.valueTypeHint = element.valueType || 'xs:string';
     // Prefill with current LIVE value if available
     if (this.selectedLivePanel && this.selectedNode && this.selectedNode.data?.idShortPath === this.valueElementPath) {

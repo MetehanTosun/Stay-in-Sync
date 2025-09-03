@@ -674,7 +674,7 @@ export class SourceSystemBaseComponent implements OnInit, OnDestroy {
 
   openAasSetValue(smId: string, element: any): void {
     this.aasValueSubmodelId = smId;
-    this.aasValueElementPath = element.idShortPath;
+    this.aasValueElementPath = element.idShortPath || element.data?.idShortPath || element.raw?.idShortPath || element.idShort;
     this.aasValueTypeHint = element.valueType || 'xs:string';
     if (this.aasSelectedLivePanel && this.selectedAasNode && this.selectedAasNode.data?.idShortPath === this.aasValueElementPath) {
       this.aasValueNew = (this.aasSelectedLivePanel.value ?? '').toString();
