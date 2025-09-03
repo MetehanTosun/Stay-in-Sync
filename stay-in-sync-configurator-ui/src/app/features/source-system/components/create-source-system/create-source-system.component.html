@@ -118,11 +118,13 @@
         <button pButton type="button" class="p-button-text ml-2" label="+ Submodel" (click)="openCreateSubmodel()"></button>
         <span *ngIf="isDiscovering" class="ml-2">Loading...</span>
       </div>
-      <p-tree [value]="treeNodes" (onNodeExpand)="onNodeExpand($event)" selectionMode="single">
+      <p-tree [value]="treeNodes" (onNodeExpand)="onNodeExpand($event)" (onNodeSelect)="onNodeSelect($event)" selectionMode="single">
         <ng-template let-node pTemplate="default">
           <div style="display:flex;align-items:center;gap:.5rem;">
             <span>{{ node.label }}</span>
             <button *ngIf="node.data?.type==='submodel'" pButton type="button" class="p-button-text" label="Create element" (click)="openCreateElement(node.data.id)"></button>
+            <button *ngIf="node.data?.type==='element' && node.data?.modelType!=='Property'" pButton type="button" class="p-button-text" label="Add child" (click)="openCreateElement(node.data.submodelId, node.data.idShortPath)"></button>
+            <button *ngIf="node.data?.type==='element' && node.data?.modelType==='Property'" pButton type="button" class="p-button-text" label="Set value" (click)="openSetValue(node.data.submodelId, node.data.raw)"></button>
           </div>
         </ng-template>
       </p-tree>
