@@ -509,6 +509,9 @@ export class SourceSystemBaseComponent implements OnInit, OnDestroy {
         ...this.selectedSystem,
         ...this.metadataForm.value
       };
+      if ((updatedSystem.apiType || '').toUpperCase().includes('AAS') && updatedSystem.aasId) {
+        updatedSystem.aasId = this.ensureBase64UrlId(updatedSystem.aasId);
+      }
 
       this.api.apiConfigSourceSystemIdPut(this.selectedSystem.id!, updatedSystem).subscribe({
         next: () => {
@@ -521,6 +524,14 @@ export class SourceSystemBaseComponent implements OnInit, OnDestroy {
         }
       });
     }
+  }
+
+  private ensureBase64UrlId(id: string): string {
+    if (!id) return id;
+    const looksLikePlain = id.includes('://') || id.includes('/') || id.includes(':');
+    const base64UrlRegex = /^[A-Za-z0-9_-]+$/;
+    const looksEncoded = base64UrlRegex.test(id) && !looksLikePlain;
+    return looksEncoded ? id : this.aasService.encodeIdToBase64Url(id);
   }
 
   /**
