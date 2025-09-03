@@ -687,12 +687,8 @@ export class SourceSystemBaseComponent implements OnInit, OnDestroy {
   aasSetValue(): void {
     if (!this.selectedSystem?.id || !this.aasValueSubmodelId || !this.aasValueElementPath) return;
     const smIdB64 = this.aasService.encodeIdToBase64Url(this.aasValueSubmodelId);
-    const payload = {
-      modelType: 'Property',
-      idShort: this.aasValueElementPath.split('/').pop(),
-      valueType: this.aasValueTypeHint,
-      value: this.aasValueNew
-    } as any;
+    const parsedValue = this.parseValueForType(this.aasValueNew, this.aasValueTypeHint);
+    const payload = { value: parsedValue } as any;
     this.aasService.setPropertyValue(this.selectedSystem.id, smIdB64, this.aasValueElementPath, payload)
       .subscribe({
         next: () => {
@@ -709,6 +705,24 @@ export class SourceSystemBaseComponent implements OnInit, OnDestroy {
         },
         error: (err) => this.erorrService.handleError(err)
       });
+  }
+
+  private parseValueForType(raw: string, valueType?: string): any {
+    if (!valueType) return raw;
+    const t = valueType.toLowerCase();
+    if (t.includes('boolean')) {
+      if (raw === 'true' || raw === 'false') return raw === 'true';
+      return !!raw;
+    }
+    if (t.includes('int') || t.includes('integer') || t.includes('long')) {
+      const n = parseInt(raw, 10);
+      return isNaN(n) ? raw : n;
+    }
+    if (t.includes('float') || t.includes('double') || t.includes('decimal')) {
+      const n = parseFloat(raw);
+      return isNaN(n) ? raw : n;
+    }
+    return raw;
   }
 
   deleteAasSubmodel(submodelId: string): void {

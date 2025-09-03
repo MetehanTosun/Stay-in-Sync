@@ -717,12 +717,8 @@ save(): void {
   setValue(): void {
     if (!this.createdSourceSystemId || !this.valueSubmodelId || !this.valueElementPath) return;
     const smIdB64 = this.aasService.encodeIdToBase64Url(this.valueSubmodelId);
-    const payload = {
-      modelType: 'Property',
-      idShort: this.valueElementPath.split('/').pop(),
-      valueType: this.valueTypeHint,
-      value: this.valueNew
-    };
+    const parsedValue = this.parseValueForType(this.valueNew, this.valueTypeHint);
+    const payload = { value: parsedValue } as any;
     this.aasService.setPropertyValue(this.createdSourceSystemId, smIdB64, this.valueElementPath, payload)
       .subscribe({
         next: () => {
@@ -740,6 +736,24 @@ save(): void {
         },
         error: (err) => this.errorService.handleError(err)
       });
+  }
+
+  private parseValueForType(raw: string, valueType?: string): any {
+    if (!valueType) return raw;
+    const t = valueType.toLowerCase();
+    if (t.includes('boolean')) {
+      if (raw === 'true' || raw === 'false') return raw === 'true';
+      return !!raw;
+    }
+    if (t.includes('int') || t.includes('integer') || t.includes('long')) {
+      const n = parseInt(raw, 10);
+      return isNaN(n) ? raw : n;
+    }
+    if (t.includes('float') || t.includes('double') || t.includes('decimal')) {
+      const n = parseFloat(raw);
+      return isNaN(n) ? raw : n;
+    }
+    return raw; // default string
   }
   /**
    * Advances the stepper to the next step.
