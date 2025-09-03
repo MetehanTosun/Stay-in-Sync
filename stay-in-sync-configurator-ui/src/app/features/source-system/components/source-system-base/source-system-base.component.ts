@@ -600,6 +600,7 @@ export class SourceSystemBaseComponent implements OnInit, OnDestroy {
       next: (resp) => {
         const list = Array.isArray(resp) ? resp : (resp?.result ?? []);
         attach.children = list.map((el: any) => this.mapElToNode(submodelId, el));
+        this.aasTreeNodes = [...this.aasTreeNodes];
       },
       error: (err) => this.erorrService.handleError(err)
     });
@@ -620,10 +621,12 @@ export class SourceSystemBaseComponent implements OnInit, OnDestroy {
           });
           if (node) {
             node.children = mapped;
+            this.aasTreeNodes = [...this.aasTreeNodes];
           } else {
             const attachNode = this.findAasNodeByKey(submodelId, this.aasTreeNodes);
             if (attachNode) {
               attachNode.children = mapped;
+              this.aasTreeNodes = [...this.aasTreeNodes];
             }
           }
         },
@@ -743,9 +746,9 @@ export class SourceSystemBaseComponent implements OnInit, OnDestroy {
     const typeHasChildren = el?.modelType === 'SubmodelElementCollection' || el?.modelType === 'SubmodelElementList' || el?.modelType === 'Operation';
     const hasChildren = el?.hasChildren === true || typeHasChildren;
     return {
-      key: `${submodelId}::${el.idShortPath}`,
+      key: `${submodelId}::${el.idShortPath || el.idShort}`,
       label,
-      data: { type: 'element', submodelId, idShortPath: el.idShortPath, modelType: el.modelType, raw: el },
+      data: { type: 'element', submodelId, idShortPath: el.idShortPath || el.idShort, modelType: el.modelType, raw: el },
       leaf: !hasChildren,
       children: []
     } as TreeNode;

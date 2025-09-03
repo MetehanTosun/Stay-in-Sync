@@ -409,6 +409,7 @@ save(): void {
           this.elementsBySubmodel[submodelId] = list;
           if (attachToNode) {
             attachToNode.children = list.map((el: any) => this.mapElementToNode(submodelId, el));
+            this.treeNodes = [...this.treeNodes];
           }
         },
         error: (err) => {
@@ -434,6 +435,7 @@ save(): void {
             return this.mapElementToNode(submodelId, el);
           });
           node.children = mapped;
+          this.treeNodes = [...this.treeNodes];
         },
         error: (err) => {
           this.childrenLoading[key] = false;
@@ -462,7 +464,7 @@ save(): void {
     return {
       key: `${submodelId}::${el.idShortPath}`,
       label,
-      data: { type: 'element', submodelId, idShortPath: el.idShortPath, modelType: el.modelType, raw: el },
+      data: { type: 'element', submodelId, idShortPath: el.idShortPath || el.idShort, modelType: el.modelType, raw: el },
       leaf: !hasChildren,
       children: []
     } as TreeNode;
