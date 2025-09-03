@@ -590,6 +590,40 @@ export class SourceSystemBaseComponent implements OnInit, OnDestroy {
       });
   }
 
+  deleteAasSubmodel(submodelId: string): void {
+    if (!this.selectedSystem?.id || !submodelId) return;
+    const smIdB64 = this.aasService.encodeIdToBase64Url(submodelId);
+    this.aasService.deleteSubmodel(this.selectedSystem.id, smIdB64).subscribe({
+      next: () => {
+        this.discoverAasSnapshot();
+      },
+      error: (err) => this.erorrService.handleError(err)
+    });
+  }
+
+  deleteAasElement(submodelId: string, idShortPath: string): void {
+    if (!this.selectedSystem?.id || !submodelId || !idShortPath) return;
+    const smIdB64 = this.aasService.encodeIdToBase64Url(submodelId);
+    this.aasService.deleteElement(this.selectedSystem.id, smIdB64, idShortPath.replaceAll('/', '.')).subscribe({
+      next: () => {
+        const parent = idShortPath.includes('/') ? idShortPath.substring(0, idShortPath.lastIndexOf('/')) : '';
+        const parentNode = parent ? this.findAasNodeByKey(`${submodelId}::${parent}`, this.aasTreeNodes) : this.findAasNodeByKey(submodelId, this.aasTreeNodes);
+        this.loadAasChildren(submodelId, parent || undefined, parentNode || ({} as TreeNode));
+      },
+      error: (err) => this.erorrService.handleError(err)
+    });
+  }
+
+  private findAasNodeByKey(key: string, nodes: TreeNode[] | undefined): TreeNode | null {
+    if (!nodes) return null;
+    for (const n of nodes) {
+      if ((n.key as string) === key) return n;
+      const found = this.findAasNodeByKey(key, n.children as TreeNode[]);
+      if (found) return found;
+    }
+    return null;
+  }
+
   private mapSmToNode(sm: any): TreeNode {
     const id = sm.submodelId || sm.id || (sm.keys && sm.keys[0]?.value);
     const label = (sm.submodelIdShort || sm.idShort) || id;

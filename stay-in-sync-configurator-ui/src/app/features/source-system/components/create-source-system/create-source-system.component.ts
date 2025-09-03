@@ -668,6 +668,32 @@ save(): void {
       });
   }
 
+  deleteSubmodel(submodelId: string): void {
+    if (!this.createdSourceSystemId || !submodelId) return;
+    const smIdB64 = this.aasService.encodeIdToBase64Url(submodelId);
+    this.aasService.deleteSubmodel(this.createdSourceSystemId, smIdB64).subscribe({
+      next: () => {
+        // refresh submodel list
+        this.discoverSubmodels();
+      },
+      error: (err) => this.errorService.handleError(err)
+    });
+  }
+
+  deleteElement(submodelId: string, idShortPath: string): void {
+    if (!this.createdSourceSystemId || !submodelId || !idShortPath) return;
+    const smIdB64 = this.aasService.encodeIdToBase64Url(submodelId);
+    this.aasService.deleteElement(this.createdSourceSystemId, smIdB64, idShortPath.replaceAll('/', '.')).subscribe({
+      next: () => {
+        // refresh parent node live
+        const parent = idShortPath.includes('/') ? idShortPath.substring(0, idShortPath.lastIndexOf('/')) : '';
+        const parentNode = parent ? this.findNodeByKey(`${submodelId}::${parent}`, this.treeNodes) : this.findNodeByKey(submodelId, this.treeNodes);
+        this.refreshNodeLive(submodelId, parent, parentNode || undefined);
+      },
+      error: (err) => this.errorService.handleError(err)
+    });
+  }
+
   // PATCH value dialog
   showValueDialog = false;
   valueSubmodelId = '';

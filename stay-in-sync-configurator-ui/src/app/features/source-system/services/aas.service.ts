@@ -64,6 +64,20 @@ export class AasService {
     return this.http.patch(url, valuePayload);
   }
 
+  deleteSubmodel(sourceSystemId: number, submodelId: string): Observable<any> {
+    const url = `/api/config/source-system/${sourceSystemId}/aas/submodels/${submodelId}`;
+    return this.http.delete(url);
+  }
+
+  deleteElement(
+    sourceSystemId: number,
+    submodelId: string,
+    elementPath: string
+  ): Observable<any> {
+    const url = `/api/config/source-system/${sourceSystemId}/aas/submodels/${submodelId}/elements/${elementPath}`;
+    return this.http.delete(url);
+  }
+
   encodeIdToBase64Url(id: string): string {
     if (!id) return id;
     const b64 = typeof window !== 'undefined' && (window as any).btoa
