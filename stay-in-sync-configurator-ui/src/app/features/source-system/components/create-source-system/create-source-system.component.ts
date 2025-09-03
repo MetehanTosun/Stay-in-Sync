@@ -257,10 +257,7 @@ save(): void {
     console.log('📤 Sending DTO to backend:', dto);
     console.log('📤 openApiSpec field:', dto.openApiSpec);
     console.log('📤 openApiSpec type:', typeof dto.openApiSpec);
-    // Ensure AAS ID is Base64-URL encoded if user entered a plain ID
-    if (dto.apiType === 'AAS' && (dto as any).aasId) {
-      (dto as any).aasId = this.ensureBase64UrlId((dto as any).aasId as string);
-    }
+
     this.sourceSystemService
       .apiConfigSourceSystemPost(dto)
       .subscribe({
@@ -280,16 +277,6 @@ save(): void {
           this.errorService.handleError(err);
         }
       });
-  }
-
-  private ensureBase64UrlId(id: string): string {
-    if (!id) return id;
-    // Heuristic: if it looks like a URL or contains '/' or ':' → encode
-    const looksLikePlain = id.includes('://') || id.includes('/') || id.includes(':');
-    // If it only contains base64url chars, assume it's already encoded
-    const base64UrlRegex = /^[A-Za-z0-9_-]+$/;
-    const looksEncoded = base64UrlRegex.test(id) && !looksLikePlain;
-    return looksEncoded ? id : this.aasService.encodeIdToBase64Url(id);
   }
 
   isAas(): boolean {
