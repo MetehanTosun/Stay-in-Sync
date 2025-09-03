@@ -251,7 +251,7 @@
       </div>
     </form>
     <p-tabView>
-      <p-tabPanel header="Headers & Endpoints">
+      <p-tabPanel *ngIf="!isAasSelected()" header="Headers & Endpoints">
         <div class="p-grid p-m-2">
           <div class="p-col-12 p-md-6">
             <p-card>
