@@ -118,26 +118,30 @@
         <button pButton type="button" class="p-button-text ml-2" label="+ Submodel" (click)="openCreateSubmodel()"></button>
         <span *ngIf="isDiscovering" class="ml-2">Loading...</span>
       </div>
-      <p-tree [value]="treeNodes" (onNodeExpand)="onNodeExpand($event)" (onNodeSelect)="onNodeSelect($event)" selectionMode="single">
-        <ng-template let-node pTemplate="default">
-          <div style="display:flex;align-items:center;gap:.5rem;">
-            <span>{{ node.label }}</span>
-            <button *ngIf="node.data?.type==='submodel'" pButton type="button" class="p-button-text" label="Create element" (click)="openCreateElement(node.data.id)"></button>
-            <button *ngIf="node.data?.type==='element' && node.data?.modelType!=='Property'" pButton type="button" class="p-button-text" label="Add child" (click)="openCreateElement(node.data.submodelId, node.data.idShortPath)"></button>
-            <button *ngIf="node.data?.type==='element' && node.data?.modelType==='Property'" pButton type="button" class="p-button-text" label="Set value" (click)="openSetValue(node.data.submodelId, node.data.raw)"></button>
-          </div>
-        </ng-template>
-      </p-tree>
-      <div class="p-card" *ngIf="selectedNode && selectedNode.data?.type==='element'" style="margin-top:1rem;padding:1rem;border:1px solid var(--surface-border);border-radius:4px;">
-        <div class="p-d-flex p-ai-center p-jc-between">
-          <h4 style="margin:0;">Details</h4>
-          <span *ngIf="selectedLiveLoading">Loading...</span>
+      <div style="display:flex; gap:1rem; align-items:flex-start;">
+        <div style="flex: 1 1 65%; min-width: 0;">
+          <p-tree [value]="treeNodes" (onNodeExpand)="onNodeExpand($event)" (onNodeSelect)="onNodeSelect($event)" selectionMode="single">
+            <ng-template let-node pTemplate="default">
+              <div style="display:flex;align-items:center;gap:.5rem;">
+                <span>{{ node.label }}</span>
+                <button *ngIf="node.data?.type==='submodel'" pButton type="button" class="p-button-text" label="Create element" (click)="openCreateElement(node.data.id)"></button>
+                <button *ngIf="node.data?.type==='element' && node.data?.modelType!=='Property'" pButton type="button" class="p-button-text" label="Add child" (click)="openCreateElement(node.data.submodelId, node.data.idShortPath)"></button>
+                <button *ngIf="node.data?.type==='element' && node.data?.modelType==='Property'" pButton type="button" class="p-button-text" label="Set value" (click)="openSetValue(node.data.submodelId, node.data.raw)"></button>
+              </div>
+            </ng-template>
+          </p-tree>
         </div>
-        <div *ngIf="selectedLivePanel">
-          <div><strong>Label:</strong> {{ selectedLivePanel.label }}</div>
-          <div><strong>Type:</strong> {{ selectedLivePanel.type }}</div>
-          <div *ngIf="selectedLivePanel.valueType"><strong>valueType:</strong> {{ selectedLivePanel.valueType }}</div>
-          <div *ngIf="selectedLivePanel.value !== undefined"><strong>value:</strong> {{ selectedLivePanel.value }}</div>
+        <div class="p-card" *ngIf="selectedNode && selectedNode.data?.type==='element'" style="flex: 0 0 35%; padding:1rem;border:1px solid var(--surface-border);border-radius:4px;">
+          <div class="p-d-flex p-ai-center p-jc-between">
+            <h4 style="margin:0;">Details</h4>
+            <span *ngIf="selectedLiveLoading">Loading...</span>
+          </div>
+          <div *ngIf="selectedLivePanel">
+            <div><strong>Label:</strong> {{ selectedLivePanel.label }}</div>
+            <div><strong>Type:</strong> {{ selectedLivePanel.type }}</div>
+            <div *ngIf="selectedLivePanel.valueType"><strong>valueType:</strong> {{ selectedLivePanel.valueType }}</div>
+            <div *ngIf="selectedLivePanel.value !== undefined"><strong>value:</strong> {{ selectedLivePanel.value }}</div>
+          </div>
         </div>
       </div>
     </ng-template>
