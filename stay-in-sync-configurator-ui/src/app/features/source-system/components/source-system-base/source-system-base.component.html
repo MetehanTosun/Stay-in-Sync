@@ -279,13 +279,26 @@
         </div>
         <button pButton type="button" label="Load Snapshot" (click)="discoverAasSnapshot()" [disabled]="aasTreeLoading"></button>
         <span *ngIf="aasTreeLoading" class="ml-2">Loading...</span>
-        <p-tree [value]="aasTreeNodes" (onNodeExpand)="onAasNodeExpand($event)">
+        <p-tree [value]="aasTreeNodes" (onNodeExpand)="onAasNodeExpand($event)" (onNodeSelect)="onAasNodeSelect($event)" selectionMode="single">
           <ng-template let-node pTemplate="default">
             <div style="display:flex;align-items:center;gap:.5rem;">
               <span>{{ node.label }}</span>
+              <button *ngIf="node.data?.type==='element' && node.data?.modelType==='Property'" pButton type="button" class="p-button-text" label="Set value" (click)="openAasSetValue(node.data.submodelId, node.data.raw)"></button>
             </div>
           </ng-template>
         </p-tree>
+        <div class="p-card" *ngIf="selectedAasNode && selectedAasNode.data?.type==='element'" style="margin-top:1rem;padding:1rem;border:1px solid var(--surface-border);border-radius:4px;">
+          <div class="p-d-flex p-ai-center p-jc-between">
+            <h4 style="margin:0;">Details</h4>
+            <span *ngIf="aasSelectedLiveLoading">Loading...</span>
+          </div>
+          <div *ngIf="aasSelectedLivePanel">
+            <div><strong>Label:</strong> {{ aasSelectedLivePanel.label }}</div>
+            <div><strong>Type:</strong> {{ aasSelectedLivePanel.type }}</div>
+            <div *ngIf="aasSelectedLivePanel.valueType"><strong>valueType:</strong> {{ aasSelectedLivePanel.valueType }}</div>
+            <div *ngIf="aasSelectedLivePanel.value !== undefined"><strong>value:</strong> {{ aasSelectedLivePanel.value }}</div>
+          </div>
+        </div>
       </p-tabPanel>
       <p-tabPanel *ngIf="isAasSelected()" header="AAS Configuration">
         <div class="p-grid p-fluid">

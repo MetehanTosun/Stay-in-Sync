@@ -111,6 +111,14 @@ export class SourceSystemBaseComponent implements OnInit, OnDestroy {
   aasTreeLoading = false;
   aasTestLoading = false;
   aasTestError: string | null = null;
+  selectedAasNode?: TreeNode;
+  aasSelectedLivePanel: { label: string; type: string; value?: any; valueType?: string } | null = null;
+  aasSelectedLiveLoading = false;
+  showAasValueDialog = false;
+  aasValueSubmodelId = '';
+  aasValueElementPath = '';
+  aasValueNew = '';
+  aasValueTypeHint = 'xs:string';
 
   
   /**
@@ -494,6 +502,16 @@ export class SourceSystemBaseComponent implements OnInit, OnDestroy {
     }
   }
 
+  onAasNodeSelect(event: any): void {
+    const node: TreeNode = event.node;
+    this.selectedAasNode = node;
+    this.aasSelectedLivePanel = null;
+    if (!node || node.data?.type !== 'element') return;
+    const smId: string = node.data.submodelId;
+    const idShortPath: string = node.data.idShortPath;
+    this.loadAasLiveElementDetails(smId, idShortPath, node);
+  }
+
   private loadAasChildren(submodelId: string, parentPath: string | undefined, attach: TreeNode): void {
     if (!this.selectedSystem?.id) return;
     this.aasService.listElements(this.selectedSystem.id, submodelId, { depth: 'shallow', parentPath, source: 'SNAPSHOT' }).subscribe({
@@ -503,6 +521,73 @@ export class SourceSystemBaseComponent implements OnInit, OnDestroy {
       },
       error: (err) => this.erorrService.handleError(err)
     });
+  }
+
+  private loadAasLiveElementDetails(smId: string, idShortPath: string | undefined, node?: TreeNode): void {
+    if (!this.selectedSystem?.id) return;
+    this.aasSelectedLiveLoading = true;
+    const keyStr = (node && typeof node.key === 'string') ? (node.key as string) : '';
+    const keyPath = keyStr.includes('::') ? keyStr.split('::')[1] : '';
+    const safePath = idShortPath || keyPath || (node?.data?.raw?.idShort || '');
+    const last = safePath.split('/').pop() as string;
+    const parent = safePath.includes('/') ? safePath.substring(0, safePath.lastIndexOf('/')) : '';
+    this.aasService
+      .listElements(this.selectedSystem.id, smId, { depth: 'shallow', parentPath: parent || undefined, source: 'LIVE' })
+      .subscribe({
+        next: (resp: any) => {
+          this.aasSelectedLiveLoading = false;
+          const list: any[] = Array.isArray(resp) ? resp : (resp?.result ?? []);
+          const found = list.find((el: any) => el.idShort === last);
+          if (found) {
+            this.aasSelectedLivePanel = {
+              label: `${found.idShort} (${found.modelType})`,
+              type: found.modelType,
+              value: (found as any).value,
+              valueType: (found as any).valueType
+            };
+            if (node && node.data) {
+              const computedPath = safePath || (parent ? `${parent}/${found.idShort}` : found.idShort);
+              node.data.idShortPath = computedPath;
+              node.data.raw = { ...(node.data.raw || {}), idShortPath: computedPath, modelType: found.modelType, valueType: found.valueType };
+            }
+          } else {
+            this.aasSelectedLivePanel = { label: last, type: 'Unknown' } as any;
+          }
+        },
+        error: (err: any) => {
+          this.aasSelectedLiveLoading = false;
+          this.erorrService.handleError(err);
+        }
+      });
+  }
+
+  openAasSetValue(smId: string, element: any): void {
+    this.aasValueSubmodelId = smId;
+    this.aasValueElementPath = element.idShortPath;
+    this.aasValueTypeHint = element.valueType || 'xs:string';
+    this.aasValueNew = '';
+    this.showAasValueDialog = true;
+  }
+
+  aasSetValue(): void {
+    if (!this.selectedSystem?.id || !this.aasValueSubmodelId || !this.aasValueElementPath) return;
+    const smIdB64 = this.aasService.encodeIdToBase64Url(this.aasValueSubmodelId);
+    const payload = {
+      modelType: 'Property',
+      idShort: this.aasValueElementPath.split('/').pop(),
+      valueType: this.aasValueTypeHint,
+      value: this.aasValueNew
+    } as any;
+    this.aasService.setPropertyValue(this.selectedSystem.id, smIdB64, this.aasValueElementPath.replaceAll('/', '.'), payload)
+      .subscribe({
+        next: () => {
+          this.showAasValueDialog = false;
+          // refresh live details
+          const node = this.selectedAasNode;
+          if (node?.data) this.loadAasLiveElementDetails(node.data.submodelId, node.data.idShortPath, node);
+        },
+        error: (err) => this.erorrService.handleError(err)
+      });
   }
 
   private mapSmToNode(sm: any): TreeNode {
