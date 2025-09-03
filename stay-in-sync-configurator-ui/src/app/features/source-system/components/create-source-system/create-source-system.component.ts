@@ -718,8 +718,7 @@ save(): void {
     if (!this.createdSourceSystemId || !this.valueSubmodelId || !this.valueElementPath) return;
     const smIdB64 = this.aasService.encodeIdToBase64Url(this.valueSubmodelId);
     const parsedValue = this.parseValueForType(this.valueNew, this.valueTypeHint);
-    const payload = { value: parsedValue } as any;
-    this.aasService.setPropertyValue(this.createdSourceSystemId, smIdB64, this.valueElementPath, payload)
+    this.aasService.setPropertyValue(this.createdSourceSystemId, smIdB64, this.valueElementPath, parsedValue as any)
       .subscribe({
         next: () => {
           this.showValueDialog = false;

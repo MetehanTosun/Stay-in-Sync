@@ -58,10 +58,11 @@ export class AasService {
     sourceSystemId: number,
     submodelId: string,
     elementPath: string,
-    valuePayload: any
+    value: any
   ): Observable<any> {
     const url = `/api/config/source-system/${sourceSystemId}/aas/submodels/${submodelId}/elements/${elementPath}/value`;
-    return this.http.patch(url, valuePayload);
+    // Send raw JSON value to match AAS $value semantics
+    return this.http.patch(url, value);
   }
 
   deleteSubmodel(sourceSystemId: number, submodelId: string): Observable<any> {

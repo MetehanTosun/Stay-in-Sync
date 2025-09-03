@@ -688,8 +688,7 @@ export class SourceSystemBaseComponent implements OnInit, OnDestroy {
     if (!this.selectedSystem?.id || !this.aasValueSubmodelId || !this.aasValueElementPath) return;
     const smIdB64 = this.aasService.encodeIdToBase64Url(this.aasValueSubmodelId);
     const parsedValue = this.parseValueForType(this.aasValueNew, this.aasValueTypeHint);
-    const payload = { value: parsedValue } as any;
-    this.aasService.setPropertyValue(this.selectedSystem.id, smIdB64, this.aasValueElementPath, payload)
+    this.aasService.setPropertyValue(this.selectedSystem.id, smIdB64, this.aasValueElementPath, parsedValue as any)
       .subscribe({
         next: () => {
           this.showAasValueDialog = false;
