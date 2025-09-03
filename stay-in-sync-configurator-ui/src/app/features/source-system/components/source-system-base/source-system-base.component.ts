@@ -578,7 +578,7 @@ export class SourceSystemBaseComponent implements OnInit, OnDestroy {
       valueType: this.aasValueTypeHint,
       value: this.aasValueNew
     } as any;
-    this.aasService.setPropertyValue(this.selectedSystem.id, smIdB64, this.aasValueElementPath.replaceAll('/', '.'), payload)
+    this.aasService.setPropertyValue(this.selectedSystem.id, smIdB64, this.aasValueElementPath, payload)
       .subscribe({
         next: () => {
           this.showAasValueDialog = false;
@@ -604,7 +604,7 @@ export class SourceSystemBaseComponent implements OnInit, OnDestroy {
   deleteAasElement(submodelId: string, idShortPath: string): void {
     if (!this.selectedSystem?.id || !submodelId || !idShortPath) return;
     const smIdB64 = this.aasService.encodeIdToBase64Url(submodelId);
-    this.aasService.deleteElement(this.selectedSystem.id, smIdB64, idShortPath.replaceAll('/', '.')).subscribe({
+    this.aasService.deleteElement(this.selectedSystem.id, smIdB64, idShortPath).subscribe({
       next: () => {
         const parent = idShortPath.includes('/') ? idShortPath.substring(0, idShortPath.lastIndexOf('/')) : '';
         const parentNode = parent ? this.findAasNodeByKey(`${submodelId}::${parent}`, this.aasTreeNodes) : this.findAasNodeByKey(submodelId, this.aasTreeNodes);

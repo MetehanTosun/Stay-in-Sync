@@ -683,7 +683,7 @@ save(): void {
   deleteElement(submodelId: string, idShortPath: string): void {
     if (!this.createdSourceSystemId || !submodelId || !idShortPath) return;
     const smIdB64 = this.aasService.encodeIdToBase64Url(submodelId);
-    this.aasService.deleteElement(this.createdSourceSystemId, smIdB64, idShortPath.replaceAll('/', '.')).subscribe({
+    this.aasService.deleteElement(this.createdSourceSystemId, smIdB64, idShortPath).subscribe({
       next: () => {
         // refresh parent node live
         const parent = idShortPath.includes('/') ? idShortPath.substring(0, idShortPath.lastIndexOf('/')) : '';
@@ -716,7 +716,7 @@ save(): void {
       valueType: this.valueTypeHint,
       value: this.valueNew
     };
-    this.aasService.setPropertyValue(this.createdSourceSystemId, smIdB64, this.valueElementPath.replaceAll('/', '.'), payload)
+    this.aasService.setPropertyValue(this.createdSourceSystemId, smIdB64, this.valueElementPath, payload)
       .subscribe({
         next: () => {
           this.showValueDialog = false;
