@@ -676,7 +676,11 @@ export class SourceSystemBaseComponent implements OnInit, OnDestroy {
     this.aasValueSubmodelId = smId;
     this.aasValueElementPath = element.idShortPath;
     this.aasValueTypeHint = element.valueType || 'xs:string';
-    this.aasValueNew = '';
+    if (this.aasSelectedLivePanel && this.selectedAasNode && this.selectedAasNode.data?.idShortPath === this.aasValueElementPath) {
+      this.aasValueNew = (this.aasSelectedLivePanel.value ?? '').toString();
+    } else {
+      this.aasValueNew = '';
+    }
     this.showAasValueDialog = true;
   }
 
@@ -695,7 +699,13 @@ export class SourceSystemBaseComponent implements OnInit, OnDestroy {
           this.showAasValueDialog = false;
           // refresh live details
           const node = this.selectedAasNode;
-          if (node?.data) this.loadAasLiveElementDetails(node.data.submodelId, node.data.idShortPath, node);
+          if (node?.data) {
+            this.loadAasLiveElementDetails(node.data.submodelId, node.data.idShortPath, node);
+          } else {
+            const parent = this.aasValueElementPath.includes('/') ? this.aasValueElementPath.substring(0, this.aasValueElementPath.lastIndexOf('/')) : '';
+            const parentNode = parent ? this.findAasNodeByKey(`${this.aasValueSubmodelId}::${parent}`, this.aasTreeNodes) : this.findAasNodeByKey(this.aasValueSubmodelId, this.aasTreeNodes);
+            this.refreshAasNodeLive(this.aasValueSubmodelId, parent, parentNode || undefined);
+          }
         },
         error: (err) => this.erorrService.handleError(err)
       });

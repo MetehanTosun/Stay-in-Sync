@@ -706,7 +706,12 @@ save(): void {
     this.valueSubmodelId = smId;
     this.valueElementPath = element.idShortPath;
     this.valueTypeHint = element.valueType || 'xs:string';
-    this.valueNew = '';
+    // Prefill with current LIVE value if available
+    if (this.selectedLivePanel && this.selectedNode && this.selectedNode.data?.idShortPath === this.valueElementPath) {
+      this.valueNew = (this.selectedLivePanel.value ?? '').toString();
+    } else {
+      this.valueNew = '';
+    }
     this.showValueDialog = true;
   }
   setValue(): void {
@@ -722,6 +727,16 @@ save(): void {
       .subscribe({
         next: () => {
           this.showValueDialog = false;
+          // Refresh LIVE details of the selected node if matching
+          if (this.selectedNode && this.selectedNode.data?.idShortPath === this.valueElementPath) {
+            this.loadLiveElementDetails(this.valueSubmodelId, this.valueElementPath, this.selectedNode);
+          } else {
+            // Otherwise refresh parent listing
+            const parent = this.valueElementPath.includes('/') ? this.valueElementPath.substring(0, this.valueElementPath.lastIndexOf('/')) : '';
+            const parentNode = parent ? this.findNodeByKey(`${this.valueSubmodelId}::${parent}`, this.treeNodes) : this.findNodeByKey(this.valueSubmodelId, this.treeNodes);
+            this.refreshNodeLive(this.valueSubmodelId, parent, parentNode || undefined);
+          }
+          this.messageService.add({ severity: 'success', summary: 'Value updated', detail: 'Property value saved', life: 2500 });
         },
         error: (err) => this.errorService.handleError(err)
       });
