@@ -59,6 +59,7 @@ public class SnapshotPollingService {
 
         // Änderungen suchen
         Set<Long> changedJobs = new HashSet<>();
+        Set<Long> changedTransformations = new HashSet<>();
         for (Map.Entry<Long, SnapshotDTO> entry : current.entrySet()) {
             Long transformationId = entry.getKey();
             SnapshotDTO newSnapshot = entry.getValue();
@@ -69,26 +70,37 @@ public class SnapshotPollingService {
                 if (jobId != null) {
                     changedJobs.add(jobId);
                 }
+                changedTransformations.add(transformationId); // zusätzlich TransformationId speichern
             }
         }
 
         // Nur senden, wenn es Änderungen gibt
         if (!changedJobs.isEmpty()) {
-            OutboundSseEvent event = sse.newEventBuilder()
+            // Event mit JobIds
+            OutboundSseEvent jobEvent = sse.newEventBuilder()
                     .name("job-update")
                     .mediaType(MediaType.APPLICATION_JSON_TYPE)
                     .data(changedJobs)
                     .build();
 
+            // Event mit TransformationIds
+            OutboundSseEvent transformationEvent = sse.newEventBuilder()
+                    .name("transformation-update")
+                    .mediaType(MediaType.APPLICATION_JSON_TYPE)
+                    .data(changedTransformations)
+                    .build();
+
             for (SseEventSink sink : clients) {
                 if (!sink.isClosed()) {
-                    sink.send(event);
+                    sink.send(jobEvent);
+                    sink.send(transformationEvent);
                 }
             }
         }
 
         lastSnapshotState = current;
     }
+
 
     private Map<Long, Long> buildTransformationToJobMap(List<MonitoringSyncJobDto> jobs) {
         Map<Long, Long> map = new HashMap<>();

@@ -35,12 +35,14 @@ export class ErrorSnapshotPanelComponent implements OnInit, OnDestroy {
   transformationSnapshots = new Map<number, SnapshotModel[]>();
 
   private routeSub?: Subscription;
+  private sseSub?: Subscription;
+  private sse?: EventSource;
 
   constructor(
     private route: ActivatedRoute,
     private transformationService: TransformationService,
     private router: Router,
-    private snapshotService: SnapshotService
+    private snapshotService: SnapshotService,
   ) {}
 
   ngOnInit() {
@@ -48,12 +50,16 @@ export class ErrorSnapshotPanelComponent implements OnInit, OnDestroy {
       this.selectedNodeId = params['input'];
       if (this.selectedNodeId) {
         this.getTransformations();
+        this.subscribeToSse();
       }
     });
   }
 
   ngOnDestroy() {
     this.routeSub?.unsubscribe();
+    if (this.sse) {
+      this.sse.close();
+    }
   }
 
   getTransformations() {
@@ -86,5 +92,31 @@ export class ErrorSnapshotPanelComponent implements OnInit, OnDestroy {
 
   replaySnapshot(snapshotId: number) {
     this.router.navigate(['/replay'], { queryParams: { snapshotId } });
+  }
+
+  private subscribeToSse() {
+    // SSE-Endpunkt vom Backend
+    this.sse = new EventSource('/events/subscribe');
+
+    // Transformation-Update Events
+    this.sse.addEventListener('transformation-update', (event: any) => {
+      const data = JSON.parse(event.data) as number[]; // Array von TransformationIds
+      this.transformations.forEach(t => {
+        if (data.includes(t.id!)) {
+          t.error = true; // Error-Flag setzen
+        }
+      });
+    });
+
+    // Optional: Job-Update Events, falls du auch JobIds nutzen willst
+    this.sse.addEventListener('job-update', (event: any) => {
+      const jobIds = JSON.parse(event.data) as number[];
+      console.log('Job-Updates:', jobIds);
+    });
+
+    this.sse.onerror = (err) => {
+      console.error('SSE-Fehler', err);
+      this.sse?.close();
+    };
   }
 }

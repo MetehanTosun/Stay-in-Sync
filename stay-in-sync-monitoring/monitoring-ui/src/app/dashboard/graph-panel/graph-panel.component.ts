@@ -3,7 +3,6 @@ import * as d3 from 'd3';
 import type {Node, NodeConnection} from '../../core/models/node.model';
 import {LegendPanelComponent} from './legend-panel/legend-panel.component';
 import {MonitoringGraphService} from '../../core/services/monitoring-graph.service';
-import {NodeMarkerService} from '../../core/services/node-marker.service';
 import {Router} from '@angular/router';
 
 /**
@@ -34,7 +33,7 @@ export class GraphPanelComponent implements AfterViewInit {
 
 
 
-  constructor(private nodeMarkerService: NodeMarkerService, private graphService: MonitoringGraphService, private router: Router) {
+  constructor(private graphService: MonitoringGraphService, private router: Router) {
   }
 
   /**
