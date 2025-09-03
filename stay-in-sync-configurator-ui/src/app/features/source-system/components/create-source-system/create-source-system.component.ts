@@ -600,11 +600,8 @@ save(): void {
         .subscribe({
           next: () => {
             this.showElementDialog = false;
-            // Ensure snapshot reflects new element, then refresh the tree at the right place
-            this.aasService.refreshSnapshot(this.createdSourceSystemId).subscribe({
-              next: () => this.refreshTreeAfterCreate(),
-              error: () => this.refreshTreeAfterCreate()
-            });
+            // Delta refresh: query LIVE under the affected parent and update tree
+            this.refreshTreeAfterCreate();
           },
           error: (err) => this.errorService.handleError(err)
         });
