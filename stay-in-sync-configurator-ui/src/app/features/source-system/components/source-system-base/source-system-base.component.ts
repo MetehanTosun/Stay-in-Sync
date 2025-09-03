@@ -10,6 +10,7 @@ import {ToolbarModule} from 'primeng/toolbar';
 import {MessageModule} from 'primeng/message';
 import {CardModule} from 'primeng/card';
 import {TabViewModule} from 'primeng/tabview';
+import {TreeModule} from 'primeng/tree';
 import {DropdownModule} from 'primeng/dropdown';
 import {InputTextModule} from 'primeng/inputtext';
 import {TextareaModule} from 'primeng/textarea';
@@ -29,6 +30,8 @@ import {SourceSystem} from '../../models/sourceSystem';
 import {HttpErrorService} from '../../../../core/services/http-error.service';
 import { SourceSystemEndpointDTO } from '../../models/sourceSystemEndpointDTO';
 import { SourceSystemEndpointResourceService } from '../../service/sourceSystemEndpointResource.service';
+import { AasService } from '../../services/aas.service';
+import { TreeNode } from 'primeng/api';
 
 /**
  * Base component for displaying, creating, and managing source systems.
@@ -49,6 +52,7 @@ import { SourceSystemEndpointResourceService } from '../../service/sourceSystemE
     MessageModule,
     CardModule,
     TabViewModule,
+    TreeModule,
     DropdownModule,
     InputTextModule,
     TextareaModule,
@@ -102,6 +106,12 @@ export class SourceSystemBaseComponent implements OnInit, OnDestroy {
    * Selected endpoint for parameter management
    */
   selectedEndpointForParams: SourceSystemEndpointDTO | null = null;
+  // AAS Manage Page state
+  aasTreeNodes: TreeNode[] = [];
+  aasTreeLoading = false;
+  aasTestLoading = false;
+  aasTestError: string | null = null;
+
   
   /**
    * List of endpoints for the currently selected system
@@ -208,7 +218,8 @@ export class SourceSystemBaseComponent implements OnInit, OnDestroy {
     private fb: FormBuilder,
     protected erorrService: HttpErrorService,
     private apiEndpointSvc: SourceSystemEndpointResourceService,
-    private searchPipe: SourceSystemSearchPipe
+    private searchPipe: SourceSystemSearchPipe,
+    private aasService: AasService
   ) {
     this.initializeForm();
   }
@@ -450,6 +461,83 @@ export class SourceSystemBaseComponent implements OnInit, OnDestroy {
         }
       });
     }
+  }
+
+  // AAS: Manage Page helpers
+  isAasSelected(): boolean {
+    return (this.selectedSystem?.apiType || '').toUpperCase().includes('AAS');
+  }
+
+  discoverAasSnapshot(): void {
+    if (!this.selectedSystem?.id) return;
+    this.aasTreeLoading = true;
+    this.aasService.listSubmodels(this.selectedSystem.id, 'SNAPSHOT').subscribe({
+      next: (resp) => {
+        const submodels = Array.isArray(resp) ? resp : (resp?.result ?? []);
+        this.aasTreeNodes = submodels.map((sm: any) => this.mapSmToNode(sm));
+        this.aasTreeLoading = false;
+      },
+      error: (err) => {
+        this.aasTreeLoading = false;
+        this.erorrService.handleError(err);
+      }
+    });
+  }
+
+  onAasNodeExpand(event: any): void {
+    const node: TreeNode = event.node;
+    if (!node || !this.selectedSystem?.id) return;
+    if (node.data?.type === 'submodel') {
+      this.loadAasChildren(node.data.id, undefined, node);
+    } else if (node.data?.type === 'element') {
+      this.loadAasChildren(node.data.submodelId, node.data.idShortPath, node);
+    }
+  }
+
+  private loadAasChildren(submodelId: string, parentPath: string | undefined, attach: TreeNode): void {
+    if (!this.selectedSystem?.id) return;
+    this.aasService.listElements(this.selectedSystem.id, submodelId, { depth: 'shallow', parentPath, source: 'SNAPSHOT' }).subscribe({
+      next: (resp) => {
+        const list = Array.isArray(resp) ? resp : (resp?.result ?? []);
+        attach.children = list.map((el: any) => this.mapElToNode(submodelId, el));
+      },
+      error: (err) => this.erorrService.handleError(err)
+    });
+  }
+
+  private mapSmToNode(sm: any): TreeNode {
+    const id = sm.submodelId || sm.id || (sm.keys && sm.keys[0]?.value);
+    const label = (sm.submodelIdShort || sm.idShort) || id;
+    return { key: id, label, data: { type: 'submodel', id, raw: sm }, leaf: false, children: [] } as TreeNode;
+  }
+
+  private mapElToNode(submodelId: string, el: any): TreeNode {
+    const label = `${el.idShort} (${el.modelType})`;
+    const typeHasChildren = el?.modelType === 'SubmodelElementCollection' || el?.modelType === 'SubmodelElementList' || el?.modelType === 'Operation';
+    const hasChildren = el?.hasChildren === true || typeHasChildren;
+    return {
+      key: `${submodelId}::${el.idShortPath}`,
+      label,
+      data: { type: 'element', submodelId, idShortPath: el.idShortPath, modelType: el.modelType, raw: el },
+      leaf: !hasChildren,
+      children: []
+    } as TreeNode;
+  }
+
+  aasTest(): void {
+    if (!this.selectedSystem?.id) return;
+    this.aasTestLoading = true;
+    this.aasTestError = null;
+    this.aasService.aasTest(this.selectedSystem.id).subscribe({
+      next: () => {
+        this.aasTestLoading = false;
+      },
+      error: (err) => {
+        this.aasTestLoading = false;
+        this.aasTestError = 'Connection failed. Please verify Base URL, AAS ID and auth.';
+        this.erorrService.handleError(err);
+      }
+    });
   }
 
   /**
