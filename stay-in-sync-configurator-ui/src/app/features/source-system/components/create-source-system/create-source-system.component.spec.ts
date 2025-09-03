@@ -1,5 +1,5 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { ReactiveFormsModule } from '@angular/forms';
+import { ReactiveFormsModule, FormsModule } from '@angular/forms';
 import { of } from 'rxjs';
 import { HttpResponse } from '@angular/common/http';
 
@@ -44,6 +44,7 @@ describe('CreateSourceSystemComponent', () => {
     await TestBed.configureTestingModule({
       imports: [
         ReactiveFormsModule,
+        FormsModule,
         CreateSourceSystemComponent // Standalone Component
       ],
       providers: [
@@ -180,6 +181,23 @@ describe('CreateSourceSystemComponent', () => {
 
     // Should reset to step 0
     expect(component.currentStep).toBe(0);
+  });
+
+  it('should require aasId when apiType is AAS and block Next until test ok', () => {
+    component.form.patchValue({ apiType: 'AAS', apiUrl: 'http://x', name: 'n' });
+    const aasIdCtrl = component.form.get('aasId');
+    expect(aasIdCtrl?.validator).toBeTruthy();
+    aasIdCtrl?.setValue('');
+    aasIdCtrl?.markAsTouched();
+    expect(aasIdCtrl?.hasError('required')).toBeTrue();
+
+    // Without successful test, cannot proceed
+    component.aasTestOk = null;
+    expect(component.canProceedFromStep1()).toBeFalse();
+    component.aasTestOk = false;
+    expect(component.canProceedFromStep1()).toBeFalse();
+    component.aasTestOk = true;
+    expect(component.canProceedFromStep1()).toBeTrue();
   });
 
   it('should handle save with file upload', () => {
