@@ -127,7 +127,7 @@
                 <button *ngIf="node.data?.type==='submodel'" pButton type="button" class="p-button-text" label="Create element" (click)="openCreateElement(node.data.id)"></button>
                 <button *ngIf="node.data?.type==='submodel'" pButton type="button" class="p-button-text p-button-danger" label="Delete submodel" (click)="deleteSubmodel(node.data.id)"></button>
                 <button *ngIf="node.data?.type==='element' && node.data?.modelType!=='Property'" pButton type="button" class="p-button-text" label="Add child" (click)="openCreateElement(node.data.submodelId, node.data.idShortPath)"></button>
-                <button *ngIf="node.data?.type==='element' && node.data?.modelType==='Property'" pButton type="button" class="p-button-text" label="Set value" (click)="openSetValue(node.data.submodelId, node.data)"></button>
+                <button *ngIf="node.data?.type==='element' && (node.data?.modelType==='Property' || node.data?.raw?.valueType)" pButton type="button" class="p-button-text" label="Set value" (click)="openSetValue(node.data.submodelId, node.data)"></button>
                 <button *ngIf="node.data?.type==='element'" pButton type="button" class="p-button-text p-button-danger" label="Delete" (click)="deleteElement(node.data.submodelId, node.data.idShortPath)"></button>
               </div>
             </ng-template>
