@@ -120,6 +120,88 @@ export class SourceSystemBaseComponent implements OnInit, OnDestroy {
   aasValueNew = '';
   aasValueTypeHint = 'xs:string';
 
+  // AAS create dialogs
+  showAasSubmodelDialog = false;
+  aasNewSubmodelJson = '{\n  "id": "https://example.com/ids/sm/new",\n  "idShort": "NewSubmodel"\n}';
+  aasMinimalSubmodelTemplate: string = `{
+  "id": "https://example.com/ids/sm/new",
+  "idShort": "NewSubmodel",
+  "kind": "Instance"
+}`;
+  aasPropertySubmodelTemplate: string = `{
+  "id": "https://example.com/ids/sm/new",
+  "idShort": "NewSubmodel",
+  "submodelElements": [
+    {
+      "modelType": "Property",
+      "idShort": "Name",
+      "valueType": "xs:string",
+      "value": "Foo"
+    }
+  ]
+}`;
+  aasCollectionSubmodelTemplate: string = `{
+  "id": "https://example.com/ids/sm/new",
+  "idShort": "NewSubmodel",
+  "submodelElements": [
+    {
+      "modelType": "SubmodelElementCollection",
+      "idShort": "address",
+      "value": [
+        { "modelType": "Property", "idShort": "street", "valueType": "xs:string", "value": "Main St" }
+      ]
+    }
+  ]
+}`;
+  setAasSubmodelTemplate(kind: 'minimal'|'property'|'collection'): void {
+    if (kind === 'minimal') this.aasNewSubmodelJson = this.aasMinimalSubmodelTemplate;
+    if (kind === 'property') this.aasNewSubmodelJson = this.aasPropertySubmodelTemplate;
+    if (kind === 'collection') this.aasNewSubmodelJson = this.aasCollectionSubmodelTemplate;
+  }
+  openAasCreateSubmodel(): void { this.showAasSubmodelDialog = true; }
+  aasCreateSubmodel(): void {
+    if (!this.selectedSystem?.id) return;
+    try {
+      const body = JSON.parse(this.aasNewSubmodelJson);
+      this.aasService.createSubmodel(this.selectedSystem.id, body).subscribe({
+        next: () => {
+          this.showAasSubmodelDialog = false;
+          this.discoverAasSnapshot();
+        },
+        error: (err) => this.erorrService.handleError(err)
+      });
+    } catch (e) {
+      this.erorrService.handleError(e as any);
+    }
+  }
+
+  showAasElementDialog = false;
+  aasTargetSubmodelId = '';
+  aasParentPath = '';
+  aasNewElementJson = '{\n  "modelType": "Property",\n  "idShort": "NewProp",\n  "valueType": "xs:string",\n  "value": "42"\n}';
+  openAasCreateElement(smId: string, parent?: string): void {
+    this.aasTargetSubmodelId = smId;
+    this.aasParentPath = parent || '';
+    this.showAasElementDialog = true;
+  }
+  aasCreateElement(): void {
+    if (!this.selectedSystem?.id || !this.aasTargetSubmodelId) return;
+    try {
+      const body = JSON.parse(this.aasNewElementJson);
+      const smIdB64 = this.aasService.encodeIdToBase64Url(this.aasTargetSubmodelId);
+      this.aasService.createElement(this.selectedSystem.id, smIdB64, body, this.aasParentPath || undefined)
+        .subscribe({
+          next: () => {
+            this.showAasElementDialog = false;
+            this.refreshAasNodeLive(this.aasTargetSubmodelId, this.aasParentPath, undefined);
+          },
+          error: (err) => this.erorrService.handleError(err)
+        });
+    } catch (e) {
+      this.erorrService.handleError(e as any);
+    }
+  }
+
   
   /**
    * List of endpoints for the currently selected system
@@ -521,6 +603,32 @@ export class SourceSystemBaseComponent implements OnInit, OnDestroy {
       },
       error: (err) => this.erorrService.handleError(err)
     });
+  }
+  private refreshAasNodeLive(submodelId: string, parentPath: string, node?: TreeNode): void {
+    if (!this.selectedSystem?.id) return;
+    const key = parentPath ? `${submodelId}::${parentPath}` : submodelId;
+    this.aasService
+      .listElements(this.selectedSystem.id, submodelId, { depth: 'shallow', parentPath: parentPath || undefined, source: 'LIVE' })
+      .subscribe({
+        next: (resp) => {
+          const list = Array.isArray(resp) ? resp : (resp?.result ?? []);
+          const mapped = list.map((el: any) => {
+            if (!el.idShortPath && el.idShort) {
+              el.idShortPath = parentPath ? `${parentPath}/${el.idShort}` : el.idShort;
+            }
+            return this.mapElToNode(submodelId, el);
+          });
+          if (node) {
+            node.children = mapped;
+          } else {
+            const attachNode = this.findAasNodeByKey(submodelId, this.aasTreeNodes);
+            if (attachNode) {
+              attachNode.children = mapped;
+            }
+          }
+        },
+        error: (err) => this.erorrService.handleError(err)
+      });
   }
 
   private loadAasLiveElementDetails(smId: string, idShortPath: string | undefined, node?: TreeNode): void {
