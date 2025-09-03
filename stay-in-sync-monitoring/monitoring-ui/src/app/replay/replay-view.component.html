@@ -1,4 +1,3 @@
-<!-- src/app/replay/replay-view.component.html -->
 <div class="replay-container">
   <section class="left-pane">
     <header class="pane-header">
@@ -6,8 +5,11 @@
       <button class="btn btn-secondary" disabled>Replay (stub)</button>
     </header>
 
-    <!-- Simple read-only code box; you can replace with Monaco later -->
-    <pre class="code-block"><code>{{ demoScript }}</code></pre>
+    <ng-container *ngIf="!loading(); else loadingTpl">
+      <ng-container *ngIf="!error(); else errorTpl">
+        <pre class="code-block"><code>{{ scriptDisplay }}</code></pre>
+      </ng-container>
+    </ng-container>
   </section>
 
   <section class="right-pane">
@@ -36,22 +38,38 @@
     </header>
 
     <div class="tab-content">
-      <div *ngIf="activeTab === 'source'">
-        <h3>SourceData</h3>
-        <pre class="json-block">{{ sourceData | json }}</pre>
-      </div>
+      <ng-container *ngIf="!loading(); else loadingTpl">
+        <ng-container *ngIf="!error(); else errorTpl">
+          <div *ngIf="activeTab === 'source'">
+            <h3>SourceData</h3>
+            <pre class="json-block">{{
+              data()?.transformationResult?.sourceData | json
+            }}</pre>
+          </div>
 
-      <div *ngIf="activeTab === 'vars'">
-        <h3>Variable Snapshot</h3>
-        <pre class="json-block">{{ variableSnapshot | json }}</pre>
-      </div>
+          <div *ngIf="activeTab === 'vars'">
+            <h3>Variable Snapshot</h3>
+            <pre class="json-block">
+// Not captured yet. Coming when Truffle/variable dump is integrated.</pre
+            >
+          </div>
 
-      <div *ngIf="activeTab === 'term'">
-        <h3>Terminal</h3>
-        <pre class="terminal"
-          >{{ terminalLines.join("\n") }}
-        </pre>
-      </div>
+          <div *ngIf="activeTab === 'term'">
+            <h3>Terminal</h3>
+            <pre class="terminal">{{
+              data()?.transformationResult?.errorInfo || "No errors."
+            }}</pre>
+          </div>
+        </ng-container>
+      </ng-container>
     </div>
   </section>
 </div>
+
+<ng-template #loadingTpl>
+  <div style="padding: 12px">Loading…</div>
+</ng-template>
+
+<ng-template #errorTpl>
+  <div style="padding: 12px; color: #b00020">{{ error() }}</div>
+</ng-template>
