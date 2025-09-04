@@ -25,6 +25,7 @@ public class PollingJob implements Job {
 
     @Inject
     RestClient restClient;
+
     @Inject
     RequestBuilder requestBuilder;
 
@@ -34,6 +35,7 @@ public class PollingJob implements Job {
     public PollingJob() {
         restClient = CDI.current().select(RestClient.class).get();
         syncDataProducer = CDI.current().select(SyncDataProducer.class).get();
+        requestBuilder = CDI.current().select(RequestBuilder.class).get();
     }
 
     /**
@@ -80,8 +82,6 @@ public class PollingJob implements Job {
      * @return SyncDataMessageDTO created from the JsonObject and the pollingJobDetails.
      */
     private SyncDataMessageDTO convertJsonObjectToSyncDataMessageDTO(final PollingJobDetails pollingJobDetails, final JsonObject jsonObject) {
-        Map<String, Object> map = new HashMap<>();
-        map.put(pollingJobDetails.name(), jsonObject.getMap());
-        return new SyncDataMessageDTO(pollingJobDetails.name(), pollingJobDetails.id(), map);
+        return new SyncDataMessageDTO(pollingJobDetails.name(), pollingJobDetails.id(), jsonObject.getMap());
     }
 }

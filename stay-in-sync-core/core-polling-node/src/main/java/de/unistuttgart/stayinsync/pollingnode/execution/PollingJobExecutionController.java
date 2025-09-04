@@ -65,7 +65,6 @@ public class PollingJobExecutionController {
      */
     public void pollingJobCreation(final PollingJobDetails pollingJobDetails) throws UnsupportedRequestTypeException, InactivePollingJobCreationException, PollingJobSchedulingException {
         throwUnsupportedRequestTypeExceptionIfRequestTypeDoesNotFitApiType(pollingJobDetails);
-        throwInactivePollingJobCreationExceptionIfPollingJobIsSetToInactive(pollingJobDetails);
         try {
             scheduleJob(pollingJobDetails);
         } catch (SchedulerException e) {
@@ -198,18 +197,5 @@ public class PollingJobExecutionController {
         }
     }
 
-    /**
-     * Throws InactivePollingJobCreationException if created PollingJob would be inactive.
-     *
-     * @param pollingJobDetails contain active boolean.
-     * @throws InactivePollingJobCreationException if the pollingJobDetails are set to inactive.
-     */
-    private void throwInactivePollingJobCreationExceptionIfPollingJobIsSetToInactive(final PollingJobDetails pollingJobDetails) throws InactivePollingJobCreationException {
-        if (!pollingJobDetails.active()) {
-            final String exceptionMessage = "PollingJob creation failed for " + pollingJobDetails.name() + " with id " + pollingJobDetails.id() + ": Creation of inactive PollingJobs is not possible";
-            Log.errorf(exceptionMessage);
-            throw new InactivePollingJobCreationException(exceptionMessage);
-        }
-    }
 
 }

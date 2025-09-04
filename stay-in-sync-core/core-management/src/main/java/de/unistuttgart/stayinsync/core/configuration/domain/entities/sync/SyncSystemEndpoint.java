@@ -3,6 +3,7 @@ package de.unistuttgart.stayinsync.core.configuration.domain.entities.sync;
 import io.quarkus.hibernate.orm.panache.PanacheEntity;
 import jakarta.persistence.*;
 
+import java.util.HashSet;
 import java.util.Set;
 
 @Entity
@@ -28,10 +29,10 @@ public abstract class SyncSystemEndpoint extends PanacheEntity {
     public String httpRequestType;
 
     @OneToMany(mappedBy = "syncSystemEndpoint")
-    public Set<ApiEndpointQueryParam> queryParams;
+    public Set<ApiEndpointQueryParam> queryParams = new HashSet<>();
 
     @OneToMany(mappedBy = "syncSystemEndpoint")
-    public Set<ApiRequestConfiguration> apiRequestConfiguration;
+    public Set<ApiRequestConfiguration> apiRequestConfiguration = new HashSet<>();
 
     @ManyToOne
     @JoinColumn(name = "sync_system_id")
