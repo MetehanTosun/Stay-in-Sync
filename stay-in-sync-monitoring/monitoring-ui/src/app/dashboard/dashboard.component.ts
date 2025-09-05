@@ -42,7 +42,7 @@ export class DashboardComponent {
   tabs = [
     { route: '/log-table', label: 'Logs Panel', icon: 'pi pi-file' },
     { route: '/metrics-view', label: 'Metrics Panel', icon: 'pi pi-chart-line' },
-    { route: '/replay', label: 'Replay Panel', icon: 'pi pi-refresh' }
+    { route: '/error-snapshots', label: 'Error Snapshots', icon: 'pi pi-camera' }
   ];
 
   onSearch(term: string) {

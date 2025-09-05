@@ -1,6 +1,44 @@
 version: '3.9'
 
 services:
+  quarkus-app:
+    build: ./stay-in-sync-core
+    container_name: quarkus-app
+    ports:
+      - "8090:8090"
+    environment:
+      - DB_USERNAME=root
+      - DB_PASSWORD=root
+      - DB_HOST=host.docker.internal
+      - RABBITMQ_HOST=rabbitmq
+      - RABBITMQ_USERNAME=guest
+      - RABBITMQ_PASSWORD=guest
+    networks:
+      - elk
+    depends_on:
+      - mariadb
+      - rabbitmq
+
+  mariadb:
+    image: mariadb:10.11
+    container_name: mariadb
+    environment:
+      - MYSQL_ROOT_PASSWORD=root
+      - MYSQL_DATABASE=stayinsync_core
+    ports:
+      - "3306:3306"
+    networks:
+      - elk
+
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: rabbitmq
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    networks:
+      - elk
+
   elasticsearch:
     image: docker.elastic.co/elasticsearch/elasticsearch:8.13.4
     container_name: elasticsearch
@@ -33,6 +71,34 @@ services:
     depends_on:
       - elasticsearch
       - loki
+      - prometheus
+    networks:
+      - elk
+
+  prometheus:
+    image: prom/prometheus:v2.55.1
+    container_name: prometheus
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.enable-lifecycle'
+    ports:
+      - "9090:9090"
+    networks:
+      - elk
+    depends_on:
+      - blackbox_exporter
+      - quarkus-app
+
+  blackbox_exporter:
+    image: prom/blackbox-exporter:v0.25.0
+    container_name: blackbox_exporter
+    ports:
+      - "9115:9115"
+    volumes:
+      - ./blackbox.yml:/etc/blackbox_exporter/blackbox.yml:ro
     networks:
       - elk
 
@@ -98,10 +164,10 @@ services:
     container_name: fluent-bit
     ports:
       - "5500:5000"
-      - "5170:5170"  # Quarkus TCP Log-Port
-      - "5171:5171"  # Quarkus UDP Log-Port
-      - "5172:5172"  # Quarkus UDP Log-Port
-      - "5173:5173"  # Quarkus UDP Log-Port
+      - "5170:5170"
+      - "5171:5171"
+      - "5172:5172"
+      - "5173:5173"
     volumes:
       - ./fluent-bit/fluent-bit.conf:/fluent-bit/etc/fluent-bit.conf:ro
       - ./fluent-bit/parsers.conf:/fluent-bit/etc/parsers.conf:ro
@@ -112,33 +178,6 @@ services:
       - loki
     networks:
       - elk
-  #context anpassen
-#  core-polling-node:
-#    build:
-#      context: /Users/serhatceri/Desktop/StuPro331/stay-in-sync-core/core-polling-node
-#      dockerfile: src/main/docker/Dockerfile.jvm
-#    image: stay-in-sync/core-polling-node
-#    container_name: core-polling-node
-#    environment:
-#      - QUARKUS_PROFILE=monitoring
-#    depends_on:
-#      - fluent-bit
-#    networks:
-#      - elk
-#
-##context anpassen
-#  core-sync-node:
-#    build:
-#      context: /Users/serhatceri/Desktop/StuPro331/stay-in-sync-core/core-sync-node
-#      dockerfile: src/main/docker/Dockerfile.jvm
-#    image: stay-in-sync/core-sync-node
-#    container_name: core-sync-node
-#    environment:
-#      - QUARKUS_PROFILE=monitoring
-#    depends_on:
-#      - fluent-bit
-#    networks:
-#      - elk
 
 volumes:
   elasticsearch_data:

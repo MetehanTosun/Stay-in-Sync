@@ -4,8 +4,10 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * We define a TransformationResult wrapper class in order to have standardized outputData from a script execution
- * runtime. Additionally, there is loggerInformation to be used in Monitoring and further steps after the evaluation
+ * We define a TransformationResult wrapper class in order to have standardized
+ * outputData from a script execution
+ * runtime. Additionally, there is loggerInformation to be used in Monitoring
+ * and further steps after the evaluation
  * of the transformations.
  *
  * @author Maximilian Peresunchak
@@ -19,6 +21,13 @@ public class TransformationResult {
 
     private final List<String> logMessages;
     private String errorInfo;
+
+    /*
+     * NEW: input JSON that the script received (sourceData) and the
+     * transformationId for searching the snapshots later
+     */
+    private Object sourceData;
+    private Long transformationId;
 
     public TransformationResult(String jobId, String scriptId) {
         this.jobId = jobId;
@@ -75,5 +84,20 @@ public class TransformationResult {
         this.errorInfo = errorInfo;
     }
 
+    public Object getSourceData() {
+        return sourceData;
+    }
+
+    public void setSourceData(Object sourceData) {
+        this.sourceData = sourceData;
+    }
+
+    public Long getTransformationId() {
+        return transformationId;
+    }
+
+    public void setTransformationId(Long transformationId) {
+        this.transformationId = transformationId;
+    }
 
 }
