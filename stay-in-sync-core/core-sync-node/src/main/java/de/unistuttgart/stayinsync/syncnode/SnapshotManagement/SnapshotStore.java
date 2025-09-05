@@ -1,12 +1,7 @@
 package de.unistuttgart.stayinsync.syncnode.SnapshotManagement;
 
 import java.time.Instant;
-import java.util.ArrayDeque;
-import java.util.ArrayList;
-import java.util.Deque;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
 import de.unistuttgart.stayinsync.transport.dto.Snapshot.SnapshotDTO;
@@ -83,4 +78,10 @@ public class SnapshotStore {
         return s.getCreatedAt() != null &&
                 (nowEpochSec - s.getCreatedAt().getEpochSecond()) > DEFAULT_TTL_SECONDS;
     }
+
+    public Map<Long, SnapshotDTO> getLatestByAllTransformationIds() {
+        evictExpired();
+        return new HashMap<>(latestByTransformationId);
+    }
+
 }

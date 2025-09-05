@@ -16,6 +16,8 @@ import jakarta.ws.rs.QueryParam;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 
+import java.util.Map;
+
 @Path("/monitoring/snapshots")
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
@@ -71,4 +73,12 @@ public class SnapshotResource {
         }
         return Response.ok(store.listByTransformationId(transformationId, Math.max(1, limit))).build();
     }
+
+    @GET
+    @Path("/latestAll")
+    public Response latestAll() {
+        Map<Long, SnapshotDTO> latestSnapshots = store.getLatestByAllTransformationIds();
+        return Response.ok(latestSnapshots).build();
+    }
+
 }
