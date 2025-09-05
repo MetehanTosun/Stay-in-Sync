@@ -240,7 +240,7 @@ accessPolicySuggestions: OdrlPolicyDefinition[] = [];
         detail: 'EDC-Instance nicht korrekt initialisiert.'
       });
     }
-    
+
     this.loadAccessPolicyTemplates();
     this.loadAssetTemplates();
     this.loadParamOptions();
@@ -256,8 +256,7 @@ accessPolicySuggestions: OdrlPolicyDefinition[] = [];
 
   private loadAccessPolicyTemplates() {
     this.templateService.getTemplates().subscribe(allTemplates => {
-      // For now, we only care about AccessPolicy templates in this dialog
-      this.accessPolicyTemplates = allTemplates.filter(t => t.type === 'AccessPolicy');
+      this.accessPolicyTemplates = allTemplates;
     });
   }
 
@@ -360,7 +359,7 @@ accessPolicySuggestions: OdrlPolicyDefinition[] = [];
       } else if (typeof error === 'object' && error !== null) {
         errorMessage += ` Details: ${JSON.stringify(error)}`;
       }
-      
+
       this.messageService.add({
         severity: 'error',
         summary: 'Error',
@@ -493,7 +492,7 @@ accessPolicySuggestions: OdrlPolicyDefinition[] = [];
     if (defaultTemplate) {
       // Create a deep copy to avoid modifying the master template object
       const templateContent = JSON.parse(JSON.stringify(defaultTemplate.content));
-      
+
       // Lasse die ID leer, damit der Nutzer sie selbst eingeben kann
       templateContent['@id'] = "";
 
@@ -530,7 +529,7 @@ accessPolicySuggestions: OdrlPolicyDefinition[] = [];
     if (!assetJson['@id'] || assetJson['@id'].trim() === '') {
       throw new Error('Bitte eine Asset-ID eingeben. Dies ist ein Pflichtfeld.');
     }
-    
+
     // Wichtig: Setze die target_edc_id auf die ID der aktuellen Instanz
     assetJson.targetEDCId = this.instance.id;
 
@@ -538,47 +537,47 @@ accessPolicySuggestions: OdrlPolicyDefinition[] = [];
     if (!assetJson.properties) {
       assetJson.properties = {};
     }
-    
+
     // Grundlegende Pflichtfelder überprüfen und einfügen
     if (!assetJson.properties['asset:prop:name'] || assetJson.properties['asset:prop:name'].trim() === '') {
       // Verwende die Asset-ID als Namen, wenn kein Name angegeben wurde
       assetJson.properties['asset:prop:name'] = assetJson['@id'];
     }
-    
+
     // Stelle sicher, dass die Beschreibung nicht leer ist
     if (!assetJson.properties['asset:prop:description'] || assetJson.properties['asset:prop:description'].trim() === '') {
       assetJson.properties['asset:prop:description'] = `Beschreibung für ${assetJson['@id']}`;
     }
-    
+
     if (!assetJson.properties['asset:prop:contenttype']) {
       assetJson.properties['asset:prop:contenttype'] = 'application/json';
     }
-    
+
     // DataAddress überprüfen und korrigieren
     if (!assetJson.dataAddress) {
       assetJson.dataAddress = { type: 'HttpData' };
     }
-    
+
     if (!assetJson.dataAddress.type) {
       assetJson.dataAddress.type = 'HttpData';
     }
-    
+
     // Korrigiere base_url - Feld muss genau so im Backend ankommen
     if (assetJson.dataAddress.baseUrl || assetJson.dataAddress.baseURL) {
       assetJson.dataAddress.base_url = assetJson.dataAddress.baseUrl || assetJson.dataAddress.baseURL;
       delete assetJson.dataAddress.baseUrl;
       delete assetJson.dataAddress.baseURL;
     }
-    
+
     if (!assetJson.dataAddress.base_url || assetJson.dataAddress.base_url.trim() === '') {
       assetJson.dataAddress.base_url = 'https://example.com/api/' + assetJson['@id'];
     }
-    
+
     // Proxy-Einstellungen hinzufügen, falls nicht vorhanden
     if (assetJson.dataAddress.proxyPath === undefined) {
       assetJson.dataAddress.proxyPath = true;
     }
-    
+
     if (assetJson.dataAddress.proxyQueryParams === undefined) {
       assetJson.dataAddress.proxyQueryParams = true;
     }
@@ -589,35 +588,35 @@ accessPolicySuggestions: OdrlPolicyDefinition[] = [];
       // Verwende lastValueFrom statt toPromise() für Observables
       const response = await lastValueFrom(this.assetService.createAsset(this.instance.id, assetJson));
       console.log('Asset successfully created:', response);
-      this.messageService.add({ 
-        severity: 'success', 
-        summary: 'Success', 
-        detail: 'Asset created successfully.' 
+      this.messageService.add({
+        severity: 'success',
+        summary: 'Success',
+        detail: 'Asset created successfully.'
       });
-      
+
       // Dialog schließen vor dem Neuladen
       this.hideNewAssetDialog();
-      
+
       // Längere Verzögerung, um sicherzustellen, dass das Backend die Änderung verarbeitet hat
       console.log('Waiting for backend to process the changes...');
       await new Promise(resolve => setTimeout(resolve, 1000));
-      
+
       // Mehrfaches Neuladen für bessere Zuverlässigkeit
       console.log('Reloading assets first time...');
       await this.loadAssets();
-      
+
       // Zweiter Reload nach weiterer Verzögerung
       setTimeout(async () => {
         console.log('Reloading assets second time for consistency...');
         await this.loadAssets();
         console.log('Assets after second reload:', this.assets);
       }, 500);
-      
+
     } catch (err: any) {
       console.error('Error creating asset:', err);
       // Detailliertere Fehlermeldung
       let detail = 'Failed to save asset.';
-      
+
       if (err.error && err.error.message) {
         detail = `Server error: ${err.error.message}`;
       } else if (err.message) {
@@ -625,21 +624,21 @@ accessPolicySuggestions: OdrlPolicyDefinition[] = [];
       } else if (typeof err === 'object') {
         detail = JSON.stringify(err);
       }
-      
+
       this.messageService.add({ severity: 'error', summary: 'Error', detail });
     }
   } catch (error: any) {
     console.error('Failed to save asset:', error);
-    
+
     // Verbesserte Fehlerbehandlung mit mehr Details
     let detail = 'Failed to save asset.';
-    
+
     if (error.message && error.message.includes('JSON')) {
       detail = 'Could not parse JSON. Please check the format of your asset data.';
     } else if (error.message) {
       detail = error.message;
     }
-    
+
     this.messageService.add({ severity: 'error', summary: 'Error', detail });
   }
 }
@@ -696,7 +695,7 @@ accessPolicySuggestions: OdrlPolicyDefinition[] = [];
     if (currentAssetJson.dataAddress.proxyPath === undefined) {
       currentAssetJson.dataAddress.proxyPath = true;
     }
-    
+
     if (currentAssetJson.dataAddress.proxyQueryParams === undefined) {
       currentAssetJson.dataAddress.proxyQueryParams = true;
     }
@@ -898,51 +897,51 @@ accessPolicySuggestions: OdrlPolicyDefinition[] = [];
             assetJson['@id'] = `urn:uuid:${this.generateUuid()}`;
             console.log('Generated new @id for asset:', assetJson['@id']);
           }
-          
+
           if (!assetJson['@context'] || !assetJson['@context'].edc) {
             assetJson['@context'] = { "edc": "https://w3id.org/edc/v0.0.1/ns/" };
           }
-          
+
           if (!assetJson.properties) {
             assetJson.properties = {};
           }
-          
+
           if (!assetJson.properties['asset:prop:name']) {
             assetJson.properties['asset:prop:name'] = file.name.replace(/\.[^/.]+$/, ""); // Dateiname ohne Erweiterung
           }
-          
+
           if (!assetJson.properties['asset:prop:description']) {
             assetJson.properties['asset:prop:description'] = '';
           }
-          
+
           if (!assetJson.properties['asset:prop:contenttype']) {
             assetJson.properties['asset:prop:contenttype'] = 'application/json';
           }
-          
+
           if (!assetJson.dataAddress) {
             assetJson.dataAddress = { type: 'HttpData' };
           }
-          
+
           if (!assetJson.dataAddress.type) {
             assetJson.dataAddress.type = 'HttpData';
           }
-          
+
           // Korrigiere base_url Format
           if (assetJson.dataAddress.baseUrl || assetJson.dataAddress.baseURL) {
             assetJson.dataAddress.base_url = assetJson.dataAddress.baseUrl || assetJson.dataAddress.baseURL;
             delete assetJson.dataAddress.baseUrl;
             delete assetJson.dataAddress.baseURL;
           }
-          
+
           if (!assetJson.dataAddress.baseURL) {
             assetJson.dataAddress.baseURL = 'https://example.com/api';
           }
-          
+
           // Proxy-Einstellungen
           if (assetJson.dataAddress.proxyPath === undefined) {
             assetJson.dataAddress.proxyPath = true;
           }
-          
+
           if (assetJson.dataAddress.proxyQueryParams === undefined) {
             assetJson.dataAddress.proxyQueryParams = true;
           }
@@ -1014,49 +1013,49 @@ accessPolicySuggestions: OdrlPolicyDefinition[] = [];
       if (assetJson['@id'] !== this.assetToEditODRL['@id']) {
         throw new Error("The '@id' of the asset cannot be changed during an edit.");
       }
-      
+
       // Stellen sicher, dass alle erforderlichen Felder korrekt sind
       if (!assetJson.properties) {
         assetJson.properties = {};
       }
-      
+
       // Pflichtfelder überprüfen
       if (!assetJson.properties['asset:prop:name']) {
         assetJson.properties['asset:prop:name'] = 'Unnamed Asset';
       }
-      
+
       if (!assetJson.properties['asset:prop:contenttype']) {
         assetJson.properties['asset:prop:contenttype'] = 'application/json';
       }
-      
+
       // DataAddress überprüfen
       if (!assetJson.dataAddress) {
         assetJson.dataAddress = { type: 'HttpData' };
       }
-      
+
       if (!assetJson.dataAddress.type) {
         assetJson.dataAddress.type = 'HttpData';
       }
-      
+
       // Korrigiere baseURL (nicht baseUrl)
       if (assetJson.dataAddress.baseUrl && !assetJson.dataAddress.baseURL) {
         assetJson.dataAddress.baseURL = assetJson.dataAddress.baseUrl;
         delete assetJson.dataAddress.baseUrl;
       }
-      
+
       if (!assetJson.dataAddress.baseURL) {
         assetJson.dataAddress.baseURL = 'https://example.com/api';
       }
-      
+
       // Proxy-Einstellungen
       if (assetJson.dataAddress.proxyPath === undefined) {
         assetJson.dataAddress.proxyPath = true;
       }
-      
+
       if (assetJson.dataAddress.proxyQueryParams === undefined) {
         assetJson.dataAddress.proxyQueryParams = true;
       }
-      
+
       console.log('Sende bearbeitetes Asset an Backend:', JSON.stringify(assetJson, null, 2));
       await this.assetService.createAsset(this.instance.id, assetJson);
       this.messageService.add({ severity: 'success', summary: 'Success', detail: 'Asset updated successfully.' });

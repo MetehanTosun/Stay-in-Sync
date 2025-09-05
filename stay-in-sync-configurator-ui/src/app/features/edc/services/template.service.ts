@@ -26,7 +26,6 @@ export class TemplateService {
         id: `template-${this.generateUuid()}`,
         name: 'Default BPN Access Policy',
         description: 'A simple policy to grant access based on a Business Partner Number.',
-        type: 'AccessPolicy',
         content: {
           "@context": {"odrl": "http://www.w3.org/ns/odrl/2/"},
           "@id": "POLICY_ID_BPN",
@@ -46,7 +45,6 @@ export class TemplateService {
         id: `template-${this.generateUuid()}`,
         name: 'CX Membership Policy',
         description: 'A Catena-X policy that checks for active membership and a BPN.',
-        type: 'AccessPolicy',
         content: {
           "@context": [
             "http://www.w3.org/ns/odrl.jsonld",

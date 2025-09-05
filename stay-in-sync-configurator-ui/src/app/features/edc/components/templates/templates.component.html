@@ -13,7 +13,7 @@
     [paginator]="true"
     selectionMode="single"
     (onRowSelect)="viewTemplate($event)"
-    [globalFilterFields]="['name', 'description', 'type']"
+    [globalFilterFields]="['name', 'description']"
     [tableStyle]="{ 'min-width': '50rem' }"
     styleClass="p-datatable-striped p-datatable-gridlines p-datatable-clickable"
   >
@@ -28,8 +28,8 @@
             <input pInputText type="text" (input)="onGlobalFilter($event)" placeholder="Search keyword" class="w-full"/>
           </p-iconfield>
 
-          <button pButton pRipple label="New Template" icon="pi pi-plus" class="p-button-success" (click)="openNewTemplateDialog()"></button>
-          <button pButton pRipple label="Fast Imports" icon="pi pi-upload" class="p-button-secondary mr-2" (click)="fastImportInput.click()" pTooltip="Import one or more templates from JSON files"></button>
+          <button pButton pRipple label="New Template" icon="pi pi-plus" class="p-button-success mr-2" (click)="openNewTemplateDialog()"></button>
+          <button pButton pRipple label="Fast Imports" icon="pi pi-upload" class="p-button-secondary" (click)="fastImportInput.click()" pTooltip="Import one or more templates from JSON files"></button>
 
         </div>
       </div>
@@ -37,21 +37,13 @@
 
     <ng-template pTemplate="header">
       <tr>
-        <th style="width: 25%" pSortableColumn="name">Name <p-sortIcon field="name"></p-sortIcon></th>
-        <th style="width: 15%" pSortableColumn="type">Role <p-sortIcon field="type"></p-sortIcon></th>
-        <th style="width: 45%" pSortableColumn="description">Description <p-sortIcon field="description"></p-sortIcon></th>
+        <th style="width: 30%" pSortableColumn="name">Name <p-sortIcon field="name"></p-sortIcon></th>
+        <th style="width: 55%" pSortableColumn="description">Description <p-sortIcon field="description"></p-sortIcon></th>
         <th style="width: 15%">Actions</th>
       </tr>
       <tr>
         <th>
           <p-columnFilter type="text" field="name" placeholder="Filter by Name"></p-columnFilter>
-        </th>
-        <th>
-          <p-columnFilter field="type" matchMode="equals" [showMenu]="false">
-            <ng-template pTemplate="filter" let-value let-filter="filterCallback">
-              <p-dropdown [ngModel]="value" [options]="templateTypes" (onChange)="filter($event.value)" placeholder="Any Role" [showClear]="true" optionLabel="label" optionValue="value"></p-dropdown>
-            </ng-template>
-          </p-columnFilter>
         </th>
         <th><p-columnFilter type="text" field="description" placeholder="Filter by Description"></p-columnFilter></th>
         <th></th>
@@ -61,7 +53,6 @@
     <ng-template pTemplate="body" let-template>
       <tr [pSelectableRow]="template">
         <td>{{ template.name }}</td>
-        <td><p-tag [value]="template.type" [severity]="getSeverityForType(template.type)"></p-tag></td>
         <td>{{ template.description }}</td>
         <td>
           <button pButton pRipple type="button" icon="pi pi-pencil" class="p-button-rounded p-button-text p-button-info mr-2" (click)="editTemplate(template)" pTooltip="Edit Template"></button>
@@ -72,7 +63,7 @@
 
     <ng-template pTemplate="emptymessage">
       <tr>
-        <td [attr.colspan]="4">No templates found. Click "New Template" to create one.</td>
+        <td [attr.colspan]="3">No templates found. Click "New Template" to create one.</td>
       </tr>
     </ng-template>
   </p-table>
@@ -85,11 +76,6 @@
       <div class="field">
         <label for="templateName" class="font-bold">Template Name</label>
         <input id="templateName" type="text" pInputText [(ngModel)]="templateToEdit.name" required autofocus />
-      </div>
-      <div class="field mt-3">
-        <label for="templateType" class="font-bold">Role</label>
-        <p-dropdown id="templateType" [options]="templateTypes" [(ngModel)]="templateToEdit.type" placeholder="Select a Role" [disabled]="!isNewTemplate"></p-dropdown>
-        <small *ngIf="!isNewTemplate" class="p-text-secondary">The role cannot be changed after creation.</small>
       </div>
       <div class="field mt-3">
         <label for="templateDescription" class="font-bold">Description</label>
