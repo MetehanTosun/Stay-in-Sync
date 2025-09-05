@@ -47,38 +47,65 @@ scrape_configs:
       - target_label: __address__
         replacement: blackbox_exporter:9115
 
+  # --- SourceSystems via Quarkus ---
   - job_name: 'blackbox_http_sourceSystems'
     metrics_path: /probe
     params:
       module: [http_2xx]
     http_sd_configs:
-      - url: http://host.docker.internal:8090/api/prometheus/sourceSystems
+      - url: http://localhost:8090/api/monitoring/prometheus/flat/sources
         refresh_interval: 30s
     relabel_configs:
-      # Die zurückgegebene URL aus dem JSON wird als target gesetzt
-      - source_labels: [__address__]
+      - source_labels: [__meta_http_sd_target]
         target_label: __param_target
-      # Setzt das "instance"-Label auf die echte URL (z. B. https://foo.bar/api/health)
       - source_labels: [__param_target]
         target_label: instance
-      # Alle Requests laufen über den Blackbox-Exporter
       - target_label: __address__
         replacement: blackbox_exporter:9115
 
-  - job_name: 'blackbox_http_TargetSystems'
+  # --- TargetSystems via Quarkus ---
+  - job_name: 'blackbox_http_targetSystems'
     metrics_path: /probe
     params:
       module: [http_2xx]
     http_sd_configs:
-      - url: http://host.docker.internal:8090/api/prometheus/targetSystems
+      - url: http://localhost:8090/api/monitoring/prometheus/flat/targets
         refresh_interval: 30s
     relabel_configs:
-      # Die zurückgegebene URL aus dem JSON wird als target gesetzt
-      - source_labels: [__address__]
+      - source_labels: [__meta_http_sd_target]
         target_label: __param_target
-      # Setzt das "instance"-Label auf die echte URL (z. B. https://foo.bar/api/health)
+      - target_label: __address__
+        replacement: blackbox_exporter:9115
+
+  # --- All endpoints (Source + Target zusammen, wenn /flat/all implementiert) ---
+  - job_name: 'blackbox_http_all'
+    metrics_path: /probe
+    params:
+      module: [http_2xx]
+    http_sd_configs:
+      - url: http://localhost:8090/api/monitoring/prometheus/flat/all
+        refresh_interval: 30s
+    relabel_configs:
+      - source_labels: [__meta_http_sd_target]
+        target_label: __param_target
       - source_labels: [__param_target]
         target_label: instance
-      # Alle Requests laufen über den Blackbox-Exporter
+      - target_label: __address__
+        replacement: blackbox_exporter:9115
+
+  # --- Dummy URLs direkt ---
+  - job_name: 'blackbox_http_dummy'
+    metrics_path: /probe
+    params:
+      module: [http_2xx]
+    static_configs:
+      - targets:
+          - http://localhost:8090/api/monitoring/prometheus/flat/targets
+
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: __param_target
+      - target_label: instance
+        replacement: dummy_urls
       - target_label: __address__
         replacement: blackbox_exporter:9115

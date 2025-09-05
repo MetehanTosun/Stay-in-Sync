@@ -8,4 +8,7 @@ import { Component } from '@angular/core';
 })
 export class MetricsPanelComponent {
 
+  selectedSyncJobId = '5678';
+  grafanaUrl = `http://grafana.example.com/d/abcd1234/metrics?var-syncJobId=${this.selectedSyncJobId}`;
+
 }
