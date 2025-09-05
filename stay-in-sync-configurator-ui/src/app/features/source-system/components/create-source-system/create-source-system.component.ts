@@ -333,12 +333,28 @@ save(): void {
         this.isTesting = false;
         const status = err?.status;
         let detail = 'Please verify: Base URL, AAS ID (original, not Base64 in metadata), auth configuration, and that the BaSyx server is reachable.';
-        if (status === 401) detail = '401 Unauthorized – check Basic/API Key credentials.';
-        else if (status === 403) detail = '403 Forbidden – check permissions/token.';
-        else if (status === 404) detail = '404 Not Found – verify Base URL or AAS ID (AAS does not exist or wrong ID).';
-        else if (status === 405) detail = '405 Method Not Allowed – verify HTTP method (expected: POST /test).';
-        else if (status === 409) detail = '409 Conflict – conflicting input or already exists.';
-        else if (status === 504) detail = '504 Gateway Timeout – upstream not reachable (is BaSyx running?).';
+        switch (status) {
+          case 401:
+            detail = '401 Unauthorized – check Basic/API Key credentials.';
+            break;
+          case 403:
+            detail = '403 Forbidden – check permissions/token.';
+            break;
+          case 404:
+            detail = '404 Not Found – verify Base URL or AAS ID (AAS does not exist or wrong ID).';
+            break;
+          case 405:
+            detail = '405 Method Not Allowed – verify HTTP method (expected: POST /test).';
+            break;
+          case 409:
+            detail = '409 Conflict – conflicting input or already exists.';
+            break;
+          case 504:
+            detail = '504 Gateway Timeout – upstream not reachable (is BaSyx running?).';
+            break;
+          default:
+            break;
+        }
         this.aasError = `Connection failed. ${detail}`;
         this.messageService.add({ severity: 'error', summary: 'Connection failed', detail, life: 5000 });
         this.aasTestOk = false;
