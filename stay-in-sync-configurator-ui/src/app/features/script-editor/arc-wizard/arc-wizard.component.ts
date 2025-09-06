@@ -82,6 +82,7 @@ export class ArcWizardComponent implements OnChanges {
   @Input() context!: {
     system: SourceSystem;
     endpoint: SourceSystemEndpoint;
+    arcToEdit?: ApiRequestConfiguration;
     arcToClone?: ApiRequestConfiguration;
   };
   @Output() onHide = new EventEmitter<void>();
@@ -135,28 +136,16 @@ export class ArcWizardComponent implements OnChanges {
   ngOnChanges(changes: SimpleChanges): void {
     if (changes['visible'] && this.visible && this.context) {
       this.resetWizardState();
-      this.fetchAndBuildForm();
+      this.loadInitialData();
     }
   }
 
-  private fetchAndBuildForm(): void {
+  private loadInitialData(): void {
     this.isLoadingDefinitions = true;
     this.errorMessages = [];
 
     this.scriptEditorService
       .getArcWizardContextData(this.context.system.id, this.context.endpoint.id)
-      .pipe(
-        catchError((err) => {
-          this.errorMessages = [
-            {
-              severity: 'error',
-              summary: 'Load Failed',
-              detail: 'Could not load parameter and header definitions.',
-            },
-          ];
-          return of(null);
-        })
-      )
       .subscribe((data) => {
         if (!data) {
           this.isLoadingDefinitions = false;
@@ -192,8 +181,62 @@ export class ArcWizardComponent implements OnChanges {
 
         this.availableHeaders = [...data.headerDefinitions];
 
-        this.isLoadingDefinitions = false;
+        const arcToLoad = this.context.arcToEdit || this.context.arcToClone;
+        if (arcToLoad) {
+          this.scriptEditorService.getArcDetails(arcToLoad.id).subscribe(arcDetails => {
+            this.populateForm(arcDetails);
+            this.isLoadingDefinitions = false;
+          });
+        } else {
+          this.isLoadingDefinitions = false;
+        }
       });
+  }
+
+  private populateForm(arc: ApiRequestConfiguration): void {
+    const isClone = !!this.context.arcToClone;
+    const alias = isClone ? `${arc.alias}_copy` : arc.alias;
+    
+    this.arcForm.patchValue({
+      alias: alias,
+      pollingRate: (arc as any).pollingIntervallTimeInMs || 1000,
+    });
+
+    this.queryParameters.clear();
+    this.headerParameters.clear();
+
+    const queryParamsFromDto = (arc as any).apiRequestParameters || [];
+    queryParamsFromDto.forEach((param: { type: string; paramName: string; paramValue: string }) => {
+      if (param.type === 'QUERY') {
+        const predefined = this.queryParamDefinitions.find(p => p.name === param.paramName);
+        this.queryParameters.push(
+          this.newParam(
+            param.paramName,
+            param.paramValue,
+            !!predefined,
+            predefined?.required || false,
+            predefined?.type || 'string'
+          )
+        );
+        this.availableQueryParams = this.availableQueryParams.filter(p => p.name !== param.paramName);
+      }
+    });
+
+    const headersFromDto = (arc as any).apiRequestHeaders || [];
+    headersFromDto.forEach((header: { headerName: string; values: string[] }) => {
+      const headerValue = header.values && header.values.length > 0 ? header.values[0] : '';
+      const predefined = this.headerDefinitions.find(h => h.headerName === header.headerName);
+      this.headerParameters.push(
+        this.newParam(
+          header.headerName,
+          headerValue,
+          !!predefined,
+          false,
+          'string'
+        )
+      );
+      this.availableHeaders = this.availableHeaders.filter(h => h.headerName !== header.headerName);
+    });
   }
 
   private newParam(
@@ -392,7 +435,8 @@ export class ArcWizardComponent implements OnChanges {
 
     const prunedPayload = this.prunePayloadRecursively(this.testResult.responsePayload);
 
-    const createDto: ArcSaveRequest = {
+    const saveRequest: ArcSaveRequest = {
+      id: this.context.arcToEdit ? this.context.arcToEdit.id : undefined,
       alias: this.alias?.value,
       sourceSystemId: this.context.system.id,
       endpointId: this.context.endpoint.id,
@@ -403,29 +447,26 @@ export class ArcWizardComponent implements OnChanges {
       pollingIntervallTimeInMs: this.arcForm.get('pollingRate')?.value,
     };
 
-    this.http
-      .post<ApiRequestConfiguration>(
-        `/api/config/source-system/endpoint/${this.context.endpoint.id}/request-configuration`, // TODO verifiy endpoint
-        createDto
-      )
-      .pipe(finalize(() => (this.isSaving = false)))
-      .subscribe({
-        next: (savedArc) => {
-          console.log('ARC saved successfully!', savedArc);
-          this.arcStateService.addOrUpdateArc(savedArc);
-          this.onSaveSuccess.emit(savedArc);
-          this.closeDialog();
-        },
-        error: (err) => {
-          this.errorMessages = [
+    this.scriptEditorService.saveArcConfiguration(saveRequest)
+    .pipe(finalize(() => (this.isSaving = false)))
+    .subscribe({
+      next: (savedArc) => {
+        console.log('ARC saved/updated successfully!', savedArc);
+
+        this.arcStateService.addOrUpdateArc(savedArc);
+        this.onSaveSuccess.emit(savedArc);
+        this.closeDialog();
+      },
+      error: (err) => {
+        this.errorMessages = [
             {
               severity: 'error',
               summary: 'Save Failed',
               detail: err.error?.message || 'Could not save the ARC.',
             },
           ];
-        },
-      });
+      },
+    });
   }
 
   closeDialog(): void {

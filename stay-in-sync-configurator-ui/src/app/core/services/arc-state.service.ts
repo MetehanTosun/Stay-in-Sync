@@ -67,6 +67,61 @@ export class ArcStateService {
   }
 
   /**
+   * Fetches all ARCs for a single source system to display in the panel.
+   * This is intended to be called when a user expands a source system accordion.
+   * It is idempotent and avoids re-fetching if data is already present or loading.
+   * @param systemName The name of the source system.
+   * @param systemId The ID of the source system.
+   */
+  public loadArcsForSourceSystem(systemName: string, systemId: number): Observable<void> {
+    const currentState = this.state.getValue();
+    
+    if (currentState.arcsBySystem.has(systemName) || currentState.loadingSystems.has(systemName)) {
+      console.log(`%c[ArcState] ARCs for '${systemName}' are already loaded or in-flight. Skipping fetch.`, 'color: #a1a1aa;');
+      return of(undefined);
+    }
+
+    console.log(`%c[ArcState] Attemping to load ALL ARCs for:`, 'color: #f97316;', systemName);
+
+    const newLoadingSet = new Set(currentState.loadingSystems).add(systemName);
+    this.updateState({ loadingSystems: newLoadingSet });
+
+    return this.scriptEditorService.getArcsForSourceSystem(systemId).pipe(
+      tap((loadedArcs) => {
+        console.groupCollapsed(`%c[ArcState] Received data from API for [${systemName}]`, 'color: #22c55e;');
+        console.log('API Response:', loadedArcs);
+        console.groupEnd();
+        
+        const newState = this.state.getValue();
+        const updatedArcsBySystem = new Map(newState.arcsBySystem);
+
+        const enrichedArcs = loadedArcs.map((arc) => ({
+          ...arc,
+          sourceSystemName: systemName,
+        }));
+        updatedArcsBySystem.set(systemName, enrichedArcs);
+
+        newState.loadingSystems.delete(systemName);
+
+        this.updateState({
+          arcsBySystem: updatedArcsBySystem,
+          loadingSystems: newState.loadingSystems,
+        });
+
+        this.regenerateAllTypeDefinitions();
+      }),
+      map(() => undefined),
+      catchError((err) => {
+        console.error(`Failed to load ARCs for system: ${systemName}`, err);
+        const newState = this.state.getValue();
+        newState.loadingSystems.delete(systemName);
+        this.updateState({ loadingSystems: newState.loadingSystems });
+        return of(undefined);
+      })
+    );
+  }
+
+  /**
    * The primary method for lazy-loading ARCs for multiple source systems by name.
    * It is idempotent and prevents re-fetching data that is already loaded or is in-flight.
    * @param systemNames An array of source system names detected in the editor.
@@ -165,6 +220,34 @@ export class ArcStateService {
     }
 
     updatedArcsBySystem.set(newArc.sourceSystemName, systemArcs);
+    this.updateState({ arcsBySystem: updatedArcsBySystem });
+    this.regenerateAllTypeDefinitions();
+  }
+
+  /**
+   * Call this after an ARC is successfully deleted to remove it from the state.
+   * @param arcToRemove The ARC that was deleted. It MUST include `sourceSystemName`.
+   */
+  public removeArc(arcToRemove: ApiRequestConfiguration): void {
+    console.log('%c[ArcState] removeArc called with:', 'color: #ef4444;', arcToRemove);
+    if (!arcToRemove.sourceSystemName) {
+      console.error('Cannot remove ARC from state: sourceSystemName is missing.', arcToRemove);
+      return;
+    }
+
+    const currentState = this.state.getValue();
+    const updatedArcsBySystem = new Map(currentState.arcsBySystem);
+    const systemArcs = updatedArcsBySystem.get(arcToRemove.sourceSystemName) || [];
+
+    const filteredArcs = systemArcs.filter(a => a.id !== arcToRemove.id);
+
+    if (filteredArcs.length > 0) {
+      updatedArcsBySystem.set(arcToRemove.sourceSystemName, filteredArcs);
+    } else {
+      // If no ARCs are left for this system, remove the system key entirely
+      updatedArcsBySystem.delete(arcToRemove.sourceSystemName);
+    }
+
     this.updateState({ arcsBySystem: updatedArcsBySystem });
     this.regenerateAllTypeDefinitions();
   }
