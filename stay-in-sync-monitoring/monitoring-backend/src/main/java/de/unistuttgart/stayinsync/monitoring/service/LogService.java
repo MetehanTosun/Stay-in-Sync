@@ -199,18 +199,4 @@ public class LogService {
     }
 
 
-
-
-
-    //TODO:Fix
-    public List<String> fetchErrorSyncJobIds(long startNs, long endNs) {
-        List<LogEntryDto> errorLogs = null;
-
-        return errorLogs.stream()
-                .map(LogEntryDto::transformationId)
-                .filter(Objects::nonNull)
-                .distinct()
-                .collect(Collectors.toList());
-    }
-
 }
