@@ -1,14 +1,17 @@
 import { Component } from '@angular/core';
+import {SafeUrlPipe} from './safe.url.pipe';
 
 @Component({
   selector: 'app-metrics-panel',
-  imports: [],
+  standalone: true,
+  imports: [SafeUrlPipe],   // ✅ Pipe lokal importieren
   templateUrl: './metrics-panel.component.html',
-  styleUrl: './metrics-panel.component.css'
+  styleUrls: ['./metrics-panel.component.css']
 })
 export class MetricsPanelComponent {
-
   selectedSyncJobId = '5678';
-  grafanaUrl = `http://grafana.example.com/d/abcd1234/metrics?var-syncJobId=${this.selectedSyncJobId}`;
 
+  get grafanaUrl(): string {
+    return `"http://localhost:3000/d/abcd1234/metrics?var-syncJobId=${this.selectedSyncJobId}`;
+  }
 }
