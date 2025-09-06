@@ -183,8 +183,8 @@ public class RequestConfigurationResource {
             responseCode = "404",
             description = "The api-request-configuration is not found for a given identifier"
     )
-    public Response getSourceSystemEndpoint(@Parameter(name = "id", required = true) @PathParam("id") Long id) {
-        return Response.ok(fullUpdateMapper.mapToDTO(this.sourceSystemApiRequestConfigurationService.findApiRequestConfigurationById(id))).build();
+    public Response getSourceSystemApiRequestConfiguration(@Parameter(name = "id", required = true) @PathParam("id") Long id) {
+        return Response.ok(fullUpdateMapper.mapToDTOGet(this.sourceSystemApiRequestConfigurationService.findApiRequestConfigurationById(id))).build();
     }
 
     @DELETE
@@ -202,37 +202,25 @@ public class RequestConfigurationResource {
     @PUT
     @Path("endpoint/request-configuration/{id}")
     @Consumes(APPLICATION_JSON)
-    @Operation(summary = "Completely updates an existing api-request-configuration by replacing it with the passed-in api-request-configuration")
-    @APIResponse(
-            responseCode = "204",
-            description = "Replaced the api-request-configuration"
-    )
-    @APIResponse(
-            responseCode = "400",
-            description = "Invalid api-request-configuration passed in (or no request body found)"
-    )
-    @APIResponse(
-            responseCode = "404",
-            description = "No api-request-configuration found"
-    )
-    public Response fullyUpdateRequestConfiguration(@Parameter(name = "id", required = true)
-                                                    @RequestBody(
-                                                            name = "api-request-configuration",
-                                                            required = true,
-                                                            content = @Content(
-                                                                    mediaType = APPLICATION_JSON,
-                                                                    schema = @Schema(implementation = CreateRequestConfigurationDTO.class)
-                                                            )
-                                                    )
-                                                    @PathParam("id") Long id, @Valid @NotNull CreateRequestConfigurationDTO SourceSystemApiRequestConfigurationDTO) {
+    @Operation(summary = "Fully updates an existing Source ARC.")
+    @APIResponse(responseCode = "200", description = "ARC updated successfully. The updated ARC is returned.",
+            content = @Content(mediaType = APPLICATION_JSON, schema = @Schema(implementation = GetRequestConfigurationDTO.class)))
+    @APIResponse(responseCode = "400", description = "Invalid data provided.")
+    @APIResponse(responseCode = "404", description = "No ARC found with the given ID.")
+    public Response updateSourceSystemArc(@PathParam("id") Long id,
+                                          @RequestBody(
+                                                  name = "api-request-configuration",
+                                                  required = true,
+                                                  content = @Content(
+                                                          mediaType = APPLICATION_JSON,
+                                                          schema = @Schema(implementation = CreateSourceArcDTO.class)
+                                                  )
+                                          ) @Valid CreateSourceArcDTO arcDto) {
 
-        return this.sourceSystemApiRequestConfigurationService.replaceApiRequestConfiguration(SourceSystemApiRequestConfigurationDTO)
-                .map(updatedSourceSystemEndpoint -> {
-                    Log.debugf("api-request-configuration replaced with new values %s", updatedSourceSystemEndpoint);
-                    return Response.noContent().build();
-                })
+        return this.sourceSystemApiRequestConfigurationService.update(id, arcDto)
+                .map(updatedArcDto -> Response.ok(updatedArcDto).build())
                 .orElseGet(() -> {
-                    Log.debugf("No api-request-configuration found with id %d", id);
+                    Log.debugf("Update failed: No api-request-configuration found with id %d", id);
                     return Response.status(Response.Status.NOT_FOUND).build();
                 });
     }
