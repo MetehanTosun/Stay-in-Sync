@@ -93,7 +93,7 @@ public class TransformationExecutionService {
                                     )
                             );
 
-                            // Record script load (count how many times a script runs)
+                            // Record script load
                             Counter.builder("script_execution_total")
                                     .description("Total number of script executions")
                                     .tag("scriptId", payload.job().scriptId() != null ? payload.job().scriptId() : "unknown")
