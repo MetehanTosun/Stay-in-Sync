@@ -4,7 +4,6 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-
 import de.unistuttgart.stayinsync.scriptengine.ScriptEngineService;
 import de.unistuttgart.stayinsync.scriptengine.message.TransformationResult;
 import de.unistuttgart.stayinsync.syncnode.SnapshotManagement.SnapshotFactory;
@@ -12,6 +11,8 @@ import de.unistuttgart.stayinsync.syncnode.SnapshotManagement.SnapshotStore;
 import de.unistuttgart.stayinsync.syncnode.domain.ExecutionPayload;
 import de.unistuttgart.stayinsync.syncnode.logic_engine.LogicGraphEvaluator;
 import de.unistuttgart.stayinsync.transport.exception.GraphEvaluationException;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.Timer;
 import io.quarkus.logging.Log;
 import io.smallrye.mutiny.Uni;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -42,6 +43,9 @@ public class TransformationExecutionService {
     @Inject
     SnapshotStore snapshotStore;
 
+    @Inject
+    MeterRegistry meterRegistry;
+
     /**
      * Asynchronously evaluates the logic graph and, if the condition passes,
      * executes the script transformation.
@@ -49,8 +53,7 @@ public class TransformationExecutionService {
      * @param payload An ExecutionPayload that contains TransformationData,
      *                GraphNodes and TransformationContext
      * @return A Uni that will eventually contain the TransformationResult, or null
-     *         if the
-     *         pre-condition check failed.
+     *         if the pre-condition check failed.
      */
     public Uni<TransformationResult> execute(ExecutionPayload payload) {
         return Uni.createFrom().item(() -> {
@@ -74,25 +77,36 @@ public class TransformationExecutionService {
             if (conditionMet) {
                 Log.infof("Job %s: Pre-condition PASSED. Proceeding to script transformation...",
                         payload.job().jobId());
+
+                // Start timer for script execution
+                Timer.Sample sample = Timer.start(meterRegistry);
+
                 return scriptEngineService.transformAsync(payload.job())
+                        .invoke(transformationResult -> {
+                            // Stop timer and record metric
+                            sample.stop(
+                                    meterRegistry.timer(
+                                            "script_execution_time_seconds",
+                                            "scriptId", payload.job().scriptId() != null ? payload.job().scriptId() : "unknown",
+                                            "jobId", payload.job().jobId() != null ? payload.job().jobId().toString() : "unknown"
+                                    )
+                            );
+                            Log.infof("Job %s: Script execution completed.", payload.job().jobId());
+                        })
                         .onItem().transformToUni(transformationResult -> {
 
                             // CASE (Failure): If the transformation reported failure → snapshot
                             if (!transformationResult.isValidExecution()
                                     || transformationResult.getErrorInfo() != null) {
-
                                 try {
-
                                     transformationResult.setTransformationId(payload.transformationContext().id());
                                     transformationResult.setSourceData(payload.job().sourceData());
 
-                                    var snapshot = SnapshotFactory.fromTransformationResult(transformationResult,
-                                            objectMapper);
+                                    var snapshot = SnapshotFactory.fromTransformationResult(transformationResult, objectMapper);
                                     snapshotStore.put(snapshot);
                                     Log.infof("Job %s: Stored snapshot id=%s for failed script execution.",
                                             transformationResult.getJobId(), snapshot.getSnapshotId());
                                 } catch (Exception ex) {
-                                    // Never let snapshot creation/storage break the flow
                                     Log.error("Failed to create/store snapshot for failed execution", ex);
                                 }
                             }
@@ -104,16 +118,14 @@ public class TransformationExecutionService {
                                     Log.infof(">>>> SCRIPT OUTPUT DATA (as JSON):\n%s", outputJson);
                                 } catch (JsonProcessingException e) {
                                     Log.error("Script output could not be serialized to JSON", e);
-                                    // snapshot here ?
-
                                 }
                                 return targetSystemWriterService
                                         .processDirectives(transformationResult, payload.transformationContext())
                                         .map(v -> transformationResult);
                             }
                             return Uni.createFrom().item(transformationResult);
-
                         });
+
             } else {
                 try {
                     MDC.put("transformationId", payload.job().transformationId().toString());
@@ -126,3 +138,4 @@ public class TransformationExecutionService {
         });
     }
 }
+
