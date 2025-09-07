@@ -77,7 +77,7 @@ scrape_configs:
       - target_label: __address__
         replacement: blackbox_exporter:9115
 
-  # --- All endpoints (Source + Target zusammen, wenn /flat/all implementiert) ---
+  # --- All endpoints ---
   - job_name: 'blackbox_http_all'
     metrics_path: /probe
     params:
