@@ -13,6 +13,9 @@ import java.util.Set;
 @Entity
 @Inheritance(strategy = InheritanceType.TABLE_PER_CLASS)
 @DiscriminatorColumn(name = "sync_system_type", discriminatorType = DiscriminatorType.STRING)
+@Table(uniqueConstraints = {
+        @UniqueConstraint(name = "uk_syncsystem_apiType_apiUrl_aasId", columnNames = {"apiType", "apiUrl", "aasId"})
+})
 public abstract class SyncSystem extends PanacheEntity {
 
     public String name;
@@ -21,7 +24,9 @@ public abstract class SyncSystem extends PanacheEntity {
     @Lob
     public String description;
     
-    public String apiType; // REST, AAS
+    public String apiType;
+
+    public String aasId;
 
     @Lob
     public String openApiSpec;
