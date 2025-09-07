@@ -5,6 +5,7 @@ import jakarta.persistence.DiscriminatorValue;
 import jakarta.persistence.Entity;
 import jakarta.persistence.OneToMany;
 
+import java.util.HashSet;
 import java.util.Set;
 
 @Entity
@@ -12,7 +13,7 @@ import java.util.Set;
 public class SourceSystem extends SyncSystem {
 
     @OneToMany(mappedBy = "sourceSystem", cascade = CascadeType.ALL)
-    public Set<SourceSystemEndpoint> sourceSystemEndpoints;
+    public Set<SourceSystemEndpoint> sourceSystemEndpoints = new HashSet<>();
 
     // Removed the @OneToMany relationship to avoid inheritance issues during deletion
     // SourceSystemApiRequestConfigurations are now managed manually in the service layer

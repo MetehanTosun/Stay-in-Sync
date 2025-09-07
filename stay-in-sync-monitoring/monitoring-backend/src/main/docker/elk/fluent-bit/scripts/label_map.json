@@ -1,0 +1,10 @@
+{
+  "job": "job",
+  "service": "service",
+  "stream": "$stream",
+  "level": "$level",
+  "severity": "$severity",
+  "traceID": "$traceID",
+  "component": "$component",
+  "syncJobId": "$syncJobId"
+}

@@ -2,11 +2,9 @@ import {AfterViewInit, Component, EventEmitter, Input, Output} from '@angular/co
 import * as d3 from 'd3';
 import type {Node, NodeConnection} from '../../core/models/node.model';
 import {LegendPanelComponent} from './legend-panel/legend-panel.component';
-import {
-  SyncJobService
-} from '../../../../../../stay-in-sync-configurator-ui/src/app/features/sync-job/services/sync-job.service';
-import {SyncJob} from '../../../../../../stay-in-sync-configurator-ui/src/app/features/source-system/models/syncJob';
-import { firstValueFrom } from 'rxjs';
+import {MonitoringGraphService} from '../../core/services/monitoring-graph.service';
+import {NodeMarkerService} from '../../core/services/node-marker.service';
+import {Router} from '@angular/router';
 
 /**
  * GraphPanelComponent
@@ -32,10 +30,11 @@ export class GraphPanelComponent implements AfterViewInit {
 
   private _searchTerm: string = '';
   private isInitialized: boolean = false;
+  markedNodes: { [nodeId: string]: boolean } = {};
 
 
 
-  constructor(private syncJobService:SyncJobService) {
+  constructor(private nodeMarkerService: NodeMarkerService, private graphService: MonitoringGraphService, private router: Router) {
   }
 
   /**
@@ -57,90 +56,59 @@ export class GraphPanelComponent implements AfterViewInit {
     return this._searchTerm;
   }
 
-  uniqueTargetSystems = new Set<string>();
-
-
-async loadSyncjobs() {
-  this.uniqueTargetSystems.clear();
-
-  try {
-    const jobs = await firstValueFrom(this.syncJobService.getAll());
-    const seenSourceSystems = new Map<string, Node>();
-    const seenTargetSystems = new Map<string, Node>();
-    const seenSyncNodes = new Map<string, Node>();
-
-    jobs.forEach((job) => {
-      console.log(`Processing SyncJob: ${job.name}, ID: ${job.id}, SyncNode: ${job.syncNodeIdentifier}`);
-      const syncJobId = job.id?.toString() ?? '';
-
-      const syncNode: Node = {
-        id: syncJobId,
-        label: job.name,
-        type: 'SyncNode',
-        status: job.deployed ? 'active' : 'inactive',
-        connections: [],
-      };
-      this.nodes.push(syncNode);
-      console.log(`Adding SyncNode: ${syncNode.label}, ID: ${syncNode.id}, Status: ${syncNode.status}`);
-      seenSyncNodes.set(syncJobId, syncNode);
-
-      job.transformations?.forEach((transformation) => {
-        transformation.sourceSystemApiRequestConfigurations?.forEach((sourceConfig) => {
-          const sourceSystem = sourceConfig.sourceSystem;
-          const sourceSystemId = sourceSystem?.id?.toString();
-          if (!sourceSystemId) return;
-
-          let sourceNode = seenSourceSystems.get(sourceSystemId);
-          if (!sourceNode) {
-            sourceNode = {
-              id: '1000' + sourceSystemId,
-              label: sourceSystem.name || 'Unknown Source System',
-              type: 'SourceSystem',
-              status: 'active',
-              connections: []
-            };
-            this.nodes.push(sourceNode);
-            seenSourceSystems.set(sourceSystemId, sourceNode);
-          }
-
-          const conn: NodeConnection = {
-            source: sourceSystemId,
-            target: syncJobId,
-            status: 'active'
-          };
-          this.links.push(conn);
-          sourceNode.connections.push(conn);
-          syncNode.connections.push(conn);
-        });
+  loadGraphData() {
+    this.graphService.getMonitoringGraphData().subscribe((data) => {
+      console.log('Graph data loaded:', data);
+      this.nodes = data.nodes;
+      if (data.connections === undefined || data.connections === null) {
+        this.links = [];
+      }else {
+        this.links = data.connections;
+      }
+      // Status der Nodes basierend auf markedNodes aktualisieren
+      this.nodes.forEach(node => {
+        if (this.markedNodes[node.id]) {
+          node.status = 'error';
+        }
       });
+      this.filteredNodes = this.filterNodes(this.searchTerm);
+      this.filteredLinks = this.filterLinks();
+      this.updateGraph(this.filteredNodes, this.filteredLinks);
+      this.isInitialized = true;
+      const svgElement = document.querySelector('svg');
+      const width = svgElement?.clientWidth ?? 400;
+      const height = svgElement?.clientHeight ?? 300;
+
+      const svg = d3.select('svg')
+        .attr('width', '100%')
+        .attr('height', '100%');
+
+      const container = svg.append('g');
+
+      svg.call(
+        d3.zoom<any, unknown>()
+          .scaleExtent([0.5, 5])
+          .on('zoom', (event) => {
+            container.attr('transform', event.transform);
+          })
+      );
+      this.renderGraph(container, this.nodes, this.links, width, height);
+    }, (error) => {
+      console.error('Error loading graph data:', error);
     });
-  } catch (error) {
-    console.error('Error loading sync jobs:', error);
   }
-}
 
 
 
   /**
    * Array of all nodes in the graph.
-   * TODO: Replace with actual data fetching logic.
    */
-  nodes: Node[] = [
-    { id: 'A', type: 'SourceSystem', status: 'active', connections: [], label: 'Source System A' },
-    { id: 'B', type: 'ASS', status: 'active', connections: [], label: 'ASS 1' },
-    { id: 'C', type: 'SyncNode', status: 'active', connections: [], label: 'Sync' },
-    {id: 'D', type: 'TargetSystem', status: 'active', connections: [], label: 'Target' },
-  ];
+  nodes: Node[] = [];
 
   /**
    * Array of all links in the graph.
-   * TODO: Replace with actual data fetching logic.
    */
-  links: NodeConnection[] = [
-    { source: 'A', target: 'C', status: 'active' },
-    { source: 'B', target: 'C', status: 'inactive' },
-    {source: 'C', target: 'D', status: 'active' },
-  ];
+  links: NodeConnection[] = [];
 
   /**
    * Array of filtered links based on the search term.
@@ -156,34 +124,31 @@ async loadSyncjobs() {
    * Lifecycle hook that is called after the view has been initialized.
    * Sets up the SVG container, zoom behavior, and renders the initial graph.
    */
-  async ngAfterViewInit() {
-    await this.loadSyncjobs()
-      .then(() => {
-        this.isInitialized = true;
-        console.log('GraphPanelComponent initialized with nodes:', this.nodes, 'and links:', this.links, 'start with graph');
-        const svgElement = document.querySelector('svg');
-        const width = svgElement?.clientWidth ?? 400;
-        const height = svgElement?.clientHeight ?? 300;
+  ngAfterViewInit() {
+    this.nodeMarkerService.markedNodes$.subscribe(markedNodes => {
+      if (!this.nodes || this.nodes.length === 0) {
+        console.warn('Nodes are not initialized yet.');
+        return;
+      }
 
-        const svg = d3.select('svg')
-          .attr('width', '100%')
-          .attr('height', '100%');
+      this.markedNodes = markedNodes;
 
-        const container = svg.append('g');
-
-        svg.call(
-          d3.zoom<any, unknown>()
-            .scaleExtent([0.5, 5])
-            .on('zoom', (event) => {
-              container.attr('transform', event.transform);
-            })
-        );
-        this.renderGraph(container, this.nodes, this.links, width, height);
-      })
-      .catch((err: any) => {
-        console.error('Error loading sync jobs:', err);
+      // Status aller Nodes aktualisieren
+      this.nodes.forEach(node => {
+        node.status = this.markedNodes[node.id] ? 'error' : 'active';
       });
+
+      // Filtered Nodes aktualisieren
+      this.filteredNodes = this.filterNodes(this.searchTerm);
+      this.filteredLinks = this.filterLinks();
+
+      // Graph neu rendern
+      this.updateGraph(this.filteredNodes, this.filteredLinks);
+    });
+
+    this.loadGraphData();
   }
+
 
   /**
    * Filters the nodes based on the provided search term.
@@ -314,6 +279,13 @@ async loadSyncjobs() {
       }
     });
 
+    // Klick-Handler für Nodes mit Status "error"
+    nodeGroup.on('click', (event, d) => {
+      if (d.status === 'error') {
+        this.router.navigate(['/replay'], { queryParams: { nodeId: d.id } });
+      }
+    });
+
     this.applyStatusStyles(nodeGroup);
 
     const simulation = this.createSimulation(nodes, links, width, height, link, nodeGroup);
@@ -343,21 +315,27 @@ async loadSyncjobs() {
    * @param nodeGroup D3 selection of node groups (<g> elements).
    */
   private applyStatusStyles(nodeGroup: d3.Selection<SVGGElement, Node, any, any>) {
+    nodeGroup.selectAll('.status-circle').remove();
+
     nodeGroup.filter(d => d.status === 'active')
       .append('circle')
+      .attr('class', 'status-circle')
       .attr('r', 8)
       .attr('fill', '#4caf50');
 
     nodeGroup.filter(d => d.status === 'error')
       .append('circle')
+      .attr('class', 'status-circle')
       .attr('r', 8)
       .attr('fill', '#f44336');
 
     nodeGroup.filter(d => d.status === 'inactive')
       .append('circle')
+      .attr('class', 'status-circle')
       .attr('r', 8)
       .attr('fill', '#ffeb3b');
   }
+
 
   /**
    * Adds drag-and-drop behavior to the graph nodes.
@@ -412,14 +390,13 @@ async loadSyncjobs() {
     return d3.forceSimulation<Node>(nodes)
       .force('link', d3.forceLink<Node, NodeConnection>(links).id(d => d.id).distance(100))
       .force('charge', d3.forceManyBody().strength(-200))
-      .force('center', d3.forceCenter(width / 2, height / 2))  //TODO: Fix center position when filtering ??
+      .force('center', d3.forceCenter(width / 2, height / 2))
       .on('tick', () => {
         link
           .attr('x1', d => (d.source as Node).x ?? 0)
           .attr('y1', d => (d.source as Node).y ?? 0)
           .attr('x2', d => (d.target as Node).x ?? 0)
           .attr('y2', d => (d.target as Node).y ?? 0);
-        console.log('Creating simulation with nodes:', nodes, 'and links:', links);
         nodeGroup
           .attr('transform', d => `translate(${d.x ?? 0},${d.y ?? 0})`);
       });

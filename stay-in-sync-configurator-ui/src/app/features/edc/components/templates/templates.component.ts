@@ -12,12 +12,11 @@ import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { ConfirmationService, MessageService } from 'primeng/api';
 import { ToastModule } from 'primeng/toast';
 import { MonacoEditorModule } from 'ngx-monaco-editor-v2';
-import { Template, TemplateType } from '../../models/template.model';
 import { TemplateService } from '../../services/template.service';
-import { DropdownModule } from 'primeng/dropdown';
 import { TagModule } from 'primeng/tag';
 import { IconFieldModule } from 'primeng/iconfield';
 import { InputIconModule } from 'primeng/inputicon';
+import { Template } from '../../models/template.model';
 
 @Component({
   selector: 'app-templates',
@@ -35,7 +34,6 @@ import { InputIconModule } from 'primeng/inputicon';
     ConfirmDialogModule,
     ToastModule,
     MonacoEditorModule,
-    DropdownModule,
     TagModule,
     IconFieldModule,
     InputIconModule,
@@ -63,12 +61,6 @@ export class TemplatesComponent implements OnInit {
   readOnlyEditorOptions = { ...this.editorOptions, readOnly: true };
   templateJsonContent = '';
 
-  // Template Types
-  templateTypes: { label: string; value: TemplateType }[] = [
-    { label: 'Access Policy', value: 'AccessPolicy' },
-    { label: 'Asset', value: 'Asset' },
-    { label: 'Contract Definition', value: 'ContractDefinition' },
-  ];
 
   constructor(
     private templateService: TemplateService,
@@ -97,7 +89,7 @@ export class TemplatesComponent implements OnInit {
 
   openNewTemplateDialog(): void {
     this.isNewTemplate = true;
-    this.templateToEdit = { id: '', name: '', description: '', type: 'AccessPolicy', content: {} };
+    this.templateToEdit = { id: '', name: '', description: '', content: {} };
     this.templateJsonContent = JSON.stringify({}, null, 2);
     this.displayEditDialog = true;
   }
@@ -203,7 +195,7 @@ export class TemplatesComponent implements OnInit {
         const template = JSON.parse(fileContent) as Template;
 
         // Basic validation
-        if (template.name && template.type && template.content) {
+        if (template.name && template.content) {
           template.id = `template-${this.generateUuid()}`; // Assign new ID
           allTemplates.push(template);
           importedCount++;
@@ -232,12 +224,5 @@ export class TemplatesComponent implements OnInit {
     });
   }
 
-  getSeverityForType(type: TemplateType) {
-    switch (type) {
-      case 'AccessPolicy': return 'info';
-      case 'Asset': return 'success';
-      case 'ContractDefinition': return 'warning';
-      default: return 'secondary';
-    }
-  }
+
 }
