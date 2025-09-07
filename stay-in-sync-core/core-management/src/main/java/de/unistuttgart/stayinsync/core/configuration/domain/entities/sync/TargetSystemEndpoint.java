@@ -1,6 +1,6 @@
 package de.unistuttgart.stayinsync.core.configuration.domain.entities.sync;
 
-import de.unistuttgart.stayinsync.core.configuration.domain.entities.edc.EDCAsset;
+import de.unistuttgart.stayinsync.core.configuration.edc.entities.EDCAsset;
 import jakarta.persistence.DiscriminatorValue;
 import jakarta.persistence.Entity;
 import jakarta.persistence.JoinColumn;
