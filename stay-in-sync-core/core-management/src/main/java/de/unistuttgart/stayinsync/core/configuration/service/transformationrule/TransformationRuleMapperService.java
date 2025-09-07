@@ -28,6 +28,11 @@ public class TransformationRuleMapperService {
     @Inject
     ObjectMapper jsonObjectMapper;
 
+    @Inject
+    public TransformationRuleMapperService(ObjectMapper jsonObjectMapper) {
+        this.jsonObjectMapper = jsonObjectMapper;
+    }
+
     /**
      * Maps a TransformationRule entity to a lightweight DTO for list views.
      *

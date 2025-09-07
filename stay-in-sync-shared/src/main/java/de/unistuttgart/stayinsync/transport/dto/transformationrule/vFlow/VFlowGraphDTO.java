@@ -2,6 +2,8 @@ package de.unistuttgart.stayinsync.transport.dto.transformationrule.vFlow;
 
 import lombok.Getter;
 import lombok.Setter;
+
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -22,4 +24,9 @@ public class VFlowGraphDTO {
      * A list of all edges (connections) in the graph.
      */
     private List<VFlowEdgeDTO> edges;
+
+    public VFlowGraphDTO() {
+        this.nodes = new ArrayList<>();
+        this.edges = new ArrayList<>();
+    }
 }
