@@ -8,5 +8,5 @@ export interface LogEntry {
   message: string;
   nodeId?: string;
   labels: { [key: string]: string };
-  stream?: string;
+  transformationId?: string;
 }

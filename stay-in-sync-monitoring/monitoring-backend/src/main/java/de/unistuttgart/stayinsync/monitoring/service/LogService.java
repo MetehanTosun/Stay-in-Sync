@@ -13,6 +13,7 @@ import java.net.http.HttpResponse;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
@@ -120,13 +121,93 @@ public class LogService {
         }
     }
 
+    /**
+     * Neuer Service-Methode: Logs für mehrere TransformationIds abrufen
+     */
+    public List<LogEntryDto> fetchAndParseLogsForTransformations(List<String> transformationIds, long startNs, long endNs, String level) {
+        try {
+            if (transformationIds == null || transformationIds.isEmpty()) {
+                return new ArrayList<>();
+            }
 
+            // Labels für Loki-Abfrage
+            List<String> labels = new ArrayList<>();
+            labels.add("agent=\"fluent-bit\"");
+
+            // Level-Label nur hinzufügen, wenn ein spezifisches Level gewählt wurde
+
+            if (level != null && !level.isBlank()) {
+                labels.add("level=\"" + level.toUpperCase() + "\"");
+            }
+
+            // TransformationIds als Regex im Loki-Labelfilter
+            String regex = String.join("|", transformationIds);
+            labels.add("transformationId=~\"" + regex + "\"");
+
+            // Query zusammenbauen
+            String query = "{" + String.join(",", labels) + "}";
+
+            String url = String.format("%s?query=%s&start=%d&end=%d&limit=1000&direction=backward",
+                    LOKI_URL,
+                    URLEncoder.encode(query, StandardCharsets.UTF_8),
+                    startNs,
+                    endNs);
+
+            HttpRequest request = HttpRequest.newBuilder()
+                    .uri(URI.create(url))
+                    .GET()
+                    .build();
+
+            Log.info("Generated URL: " + url);
+
+            HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+            if (response.statusCode() != 200) {
+                throw new RuntimeException("Loki call failed: " + response.statusCode() + " - " + response.body());
+            }
+
+            // JSON parsen (analog zu fetchAndParseLogs)
+            JsonNode root = objectMapper.readTree(response.body());
+            JsonNode result = root.path("data").path("result");
+
+            List<LogEntryDto> logs = new ArrayList<>();
+            for (JsonNode stream : result) {
+                String service = stream.path("stream").path("service").asText(null);
+                String lvl     = stream.path("stream").path("level").asText(null);
+                String transId = stream.path("stream").path("transformationId").asText(null);
+
+                for (JsonNode value : stream.path("values")) {
+                    String timestamp = value.get(0).asText();
+                    String messageJson = value.get(1).asText();
+                    String message;
+                    try {
+                        JsonNode messageNode = objectMapper.readTree(messageJson);
+                        message = messageNode.path("message").asText(messageJson);
+                    } catch (Exception e) {
+                        message = messageJson;
+                    }
+                    logs.add(new LogEntryDto(service, lvl, message, timestamp, transId));
+                }
+            }
+
+            logs.sort(Comparator.comparingLong(a -> Long.parseLong(a.timestamp())));
+
+            return logs;
+        } catch (Exception e) {
+            Log.error("Fehler beim Abrufen von Logs für TransformationIds", e);
+            throw new RuntimeException(e);
+        }
+    }
+
+
+
+
+
+    //TODO:Fix
     public List<String> fetchErrorSyncJobIds(long startNs, long endNs) {
-        List<LogEntryDto> errorLogs = fetchAndParseLogs(null, startNs, endNs, "ERROR");
-        Log.info("Gefundene Error-Logs: " + errorLogs.size());
+        List<LogEntryDto> errorLogs = null;
 
         return errorLogs.stream()
-                .map(LogEntryDto::parsedSyncJobId)
+                .map(LogEntryDto::transformationId)
                 .filter(Objects::nonNull)
                 .distinct()
                 .collect(Collectors.toList());

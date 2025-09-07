@@ -84,6 +84,7 @@ public class ScriptEngineService {
             try {
                 MDC.put("jobId", job.jobId());
                 MDC.put("scriptId", job.scriptId());
+                MDC.put("transformationId", job.transformationId().toString());
                 Log.infof("Starting async transformation of job: %s, script: %s", job.jobId(), job.scriptId());
 
                 return transformInternal(job);

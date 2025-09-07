@@ -4,8 +4,11 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+
 import de.unistuttgart.stayinsync.scriptengine.ScriptEngineService;
 import de.unistuttgart.stayinsync.scriptengine.message.TransformationResult;
+import de.unistuttgart.stayinsync.syncnode.SnapshotManagement.SnapshotFactory;
+import de.unistuttgart.stayinsync.syncnode.SnapshotManagement.SnapshotStore;
 import de.unistuttgart.stayinsync.syncnode.domain.ExecutionPayload;
 import de.unistuttgart.stayinsync.syncnode.logic_engine.LogicGraphEvaluator;
 import de.unistuttgart.stayinsync.transport.exception.GraphEvaluationException;
@@ -14,6 +17,7 @@ import io.smallrye.mutiny.Uni;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import org.eclipse.microprofile.context.ManagedExecutor;
+import org.slf4j.MDC;
 
 import java.util.Map;
 
@@ -35,23 +39,27 @@ public class TransformationExecutionService {
     @Inject
     ObjectMapper objectMapper;
 
+    @Inject
+    SnapshotStore snapshotStore;
 
     /**
      * Asynchronously evaluates the logic graph and, if the condition passes,
      * executes the script transformation.
      *
-     * @param payload An ExecutionPayload that contains TransformationData, GraphNodes and TransformationContext
-     * @return A Uni that will eventually contain the TransformationResult, or null if the
-     * pre-condition check failed.
+     * @param payload An ExecutionPayload that contains TransformationData,
+     *                GraphNodes and TransformationContext
+     * @return A Uni that will eventually contain the TransformationResult, or null
+     *         if the
+     *         pre-condition check failed.
      */
     public Uni<TransformationResult> execute(ExecutionPayload payload) {
         return Uni.createFrom().item(() -> {
-            Log.infof("Job %s: Evaluating pre-condition logic graph...", payload.job().jobId());
-            TypeReference<Map<String, JsonNode>> typeRef = new TypeReference<>() {
-            };
-            Map<String, JsonNode> dataContext = objectMapper.convertValue(payload.job().sourceData(), typeRef);
             try {
-                if (payload.graphNodes() == null || payload.graphNodes().size() == 0) {
+                MDC.put("transformationId", payload.job().transformationId().toString());
+                Log.infof("Job %s: Evaluating pre-condition logic graph...", payload.job().jobId());
+                TypeReference<Map<String, JsonNode>> typeRef = new TypeReference<>() {};
+                Map<String, JsonNode> dataContext = objectMapper.convertValue(payload.job().sourceData(), typeRef);
+                if (payload.graphNodes() == null || payload.graphNodes().isEmpty()) {
                     return true;
                 }
                 return logicGraphEvaluator.evaluateGraph(payload.graphNodes(), dataContext);
@@ -59,12 +67,36 @@ public class TransformationExecutionService {
                 Log.errorf(e, "Job %s: Graph evaluation failed with error type %s: %s",
                         payload.job().jobId(), e.getErrorType(), e.getMessage());
                 return false;
+            } finally {
+                MDC.remove("transformationId");
             }
         }).runSubscriptionOn(managedExecutor).onItem().transformToUni(conditionMet -> {
             if (conditionMet) {
-                Log.infof("Job %s: Pre-condition PASSED. Proceeding to script transformation...", payload.job().jobId());
+                Log.infof("Job %s: Pre-condition PASSED. Proceeding to script transformation...",
+                        payload.job().jobId());
                 return scriptEngineService.transformAsync(payload.job())
                         .onItem().transformToUni(transformationResult -> {
+
+                            // CASE (Failure): If the transformation reported failure → snapshot
+                            if (!transformationResult.isValidExecution()
+                                    || transformationResult.getErrorInfo() != null) {
+
+                                try {
+
+                                    transformationResult.setTransformationId(payload.transformationContext().id());
+                                    transformationResult.setSourceData(payload.job().sourceData());
+
+                                    var snapshot = SnapshotFactory.fromTransformationResult(transformationResult,
+                                            objectMapper);
+                                    snapshotStore.put(snapshot);
+                                    Log.infof("Job %s: Stored snapshot id=%s for failed script execution.",
+                                            transformationResult.getJobId(), snapshot.getSnapshotId());
+                                } catch (Exception ex) {
+                                    // Never let snapshot creation/storage break the flow
+                                    Log.error("Failed to create/store snapshot for failed execution", ex);
+                                }
+                            }
+
                             if (transformationResult != null && transformationResult.isValidExecution()) {
                                 try {
                                     String outputJson = objectMapper.writerWithDefaultPrettyPrinter()
@@ -72,15 +104,23 @@ public class TransformationExecutionService {
                                     Log.infof(">>>> SCRIPT OUTPUT DATA (as JSON):\n%s", outputJson);
                                 } catch (JsonProcessingException e) {
                                     Log.error("Script output could not be serialized to JSON", e);
-                                }
+                                    // snapshot here ?
 
-                                return targetSystemWriterService.processDirectives(transformationResult, payload.transformationContext())
+                                }
+                                return targetSystemWriterService
+                                        .processDirectives(transformationResult, payload.transformationContext())
                                         .map(v -> transformationResult);
                             }
                             return Uni.createFrom().item(transformationResult);
+
                         });
             } else {
-                Log.infof("Job %s: Pre-condition FAILED. Skipping script transformation...", payload.job().jobId());
+                try {
+                    MDC.put("transformationId", payload.job().transformationId().toString());
+                    Log.infof("Job %s: Pre-condition FAILED. Skipping script transformation...", payload.job().jobId());
+                } finally {
+                    MDC.remove("transformationId");
+                }
                 return Uni.createFrom().nullItem();
             }
         });

@@ -9,4 +9,5 @@ public class MonitoringTransformationDto {
     public String name;
     public String description;
     public List<String> pollingNodes;
+    public boolean error;
 }
