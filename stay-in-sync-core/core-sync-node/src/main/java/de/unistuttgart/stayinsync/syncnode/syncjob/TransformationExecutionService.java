@@ -11,6 +11,7 @@ import de.unistuttgart.stayinsync.syncnode.SnapshotManagement.SnapshotStore;
 import de.unistuttgart.stayinsync.syncnode.domain.ExecutionPayload;
 import de.unistuttgart.stayinsync.syncnode.logic_engine.LogicGraphEvaluator;
 import de.unistuttgart.stayinsync.transport.exception.GraphEvaluationException;
+import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Timer;
 import io.quarkus.logging.Log;
@@ -83,14 +84,23 @@ public class TransformationExecutionService {
 
                 return scriptEngineService.transformAsync(payload.job())
                         .invoke(transformationResult -> {
-                            // Stop timer and record metric
+                            // Stop timer and record metric with transformationId instead of jobId
                             sample.stop(
                                     meterRegistry.timer(
                                             "script_execution_time_seconds",
                                             "scriptId", payload.job().scriptId() != null ? payload.job().scriptId() : "unknown",
-                                            "jobId", payload.job().jobId() != null ? payload.job().jobId().toString() : "unknown"
+                                            "transformationId", payload.job().transformationId() != null ? payload.job().transformationId().toString() : "unknown"
                                     )
                             );
+
+                            // Record script load (count how many times a script runs)
+                            Counter.builder("script_execution_total")
+                                    .description("Total number of script executions")
+                                    .tag("scriptId", payload.job().scriptId() != null ? payload.job().scriptId() : "unknown")
+                                    .tag("transformationId", payload.job().transformationId() != null ? payload.job().transformationId().toString() : "unknown")
+                                    .register(meterRegistry)
+                                    .increment();
+
                             Log.infof("Job %s: Script execution completed.", payload.job().jobId());
                         })
                         .onItem().transformToUni(transformationResult -> {
