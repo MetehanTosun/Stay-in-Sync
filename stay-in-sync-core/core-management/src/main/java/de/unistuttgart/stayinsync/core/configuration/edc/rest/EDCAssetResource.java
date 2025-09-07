@@ -16,6 +16,12 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 import org.jboss.logging.Logger;
 
+/**
+ * REST-Ressource für die Verwaltung von EDC-Assets.
+ * 
+ * Stellt Endpunkte für CRUD-Operationen auf EDC-Assets bereit.
+ * Unterstützt sowohl allgemeine Asset-Operationen als auch EDC-spezifische Asset-Operationen.
+ */
 @Path("/api/config/edcs/assets")
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
@@ -26,22 +32,40 @@ public class EDCAssetResource {
     @Inject
     EDCAssetService service;
 
+    /**
+     * Listet alle verfügbaren Assets auf.
+     * 
+     * @return Liste aller Assets als DTOs
+     */
     @GET
     public List<EDCAssetDto> list() {
         return service.listAll();
     }
     
+    /**
+     * Holt ein spezifisches Asset anhand seiner ID.
+     * 
+     * @param id Die UUID des Assets
+     * @return Das gefundene Asset als DTO
+     * @throws CustomException Wenn das Asset nicht gefunden wird
+     */
     @GET
     @Path("{id}")
     public EDCAssetDto get(@PathParam("id") UUID id) throws CustomException {
         return service.findById(id);
-            
     }
 
+    /**
+     * Erstellt ein neues Asset.
+     * 
+     * @param assetDto Das zu erstellende Asset als DTO
+     * @param uriInfo Kontext-Information für die URI-Erstellung
+     * @return HTTP-Response mit dem erstellten Asset
+     */
     @POST
     @Transactional
     public Response create(final EDCAssetDto assetDto, @Context final UriInfo uriInfo) {
-        final EDCAssetDto createdAsset  = service.create(assetDto);
+        final EDCAssetDto createdAsset = service.create(assetDto);
 
         URI uri = uriInfo.getAbsolutePathBuilder()
                          .path(createdAsset.id().toString())
@@ -51,6 +75,14 @@ public class EDCAssetResource {
                        .build();
     }
 
+    /**
+     * Aktualisiert ein bestehendes Asset.
+     * 
+     * @param id Die UUID des zu aktualisierenden Assets
+     * @param assetDto Das aktualisierte Asset als DTO
+     * @return Das aktualisierte Asset als DTO
+     * @throws CustomException Wenn das Asset nicht gefunden wird
+     */
     @PUT
     @Path("{id}")
     @Transactional
@@ -58,6 +90,12 @@ public class EDCAssetResource {
         return service.update(id, assetDto);
     }
 
+    /**
+     * Löscht ein Asset anhand seiner ID.
+     * 
+     * @param id Die UUID des zu löschenden Assets
+     * @throws NotFoundException Wenn das Asset nicht gefunden wird
+     */
     @DELETE
     @Path("{id}")
     @Transactional
@@ -68,7 +106,14 @@ public class EDCAssetResource {
     }
     
     /**
-     * Create a new asset for a specific EDC instance.
+     * Erstellt ein neues Asset für eine spezifische EDC-Instanz.
+     * Akzeptiert ein Asset im Frontend-Format und konvertiert es in das Backend-Format.
+     * 
+     * @param edcIdStr Die ID der EDC-Instanz als String
+     * @param frontendJson Das Asset im Frontend-Format
+     * @param uriInfo Kontext-Information für die URI-Erstellung
+     * @return HTTP-Response mit dem erstellten Asset
+     * @throws CustomException Wenn die EDC-Instanz nicht gefunden wird
      */
     @POST
     @Path("/{edcId}/assets")
@@ -114,8 +159,12 @@ public class EDCAssetResource {
         }
     }
     
+    
     /**
-     * Get all assets for a specific EDC instance.
+     * Holt alle Assets für eine spezifische EDC-Instanz.
+     * 
+     * @param edcIdStr Die ID der EDC-Instanz als String
+     * @return HTTP-Response mit der Liste der Assets
      */
     @GET
     @Path("/{edcId}/assets")
@@ -145,7 +194,11 @@ public class EDCAssetResource {
     }
     
     /**
-     * Get a specific asset for a specific EDC instance.
+     * Holt ein spezifisches Asset für eine spezifische EDC-Instanz.
+     * 
+     * @param edcIdStr Die ID der EDC-Instanz als String
+     * @param assetIdStr Die ID des Assets als String
+     * @return HTTP-Response mit dem gefundenen Asset
      */
     @GET
     @Path("/{edcId}/assets/{assetId}")
@@ -189,8 +242,15 @@ public class EDCAssetResource {
         }
     }
     
+    
     /**
-     * Update a specific asset for a specific EDC instance.
+     * Aktualisiert ein spezifisches Asset für eine spezifische EDC-Instanz.
+     * Akzeptiert ein Asset im Frontend-Format und konvertiert es in das Backend-Format.
+     * 
+     * @param edcIdStr Die ID der EDC-Instanz als String
+     * @param assetIdStr Die ID des Assets als String
+     * @param frontendJson Das aktualisierte Asset im Frontend-Format
+     * @return HTTP-Response mit dem aktualisierten Asset
      */
     @PUT
     @Path("/{edcId}/assets/{assetId}")
@@ -247,7 +307,11 @@ public class EDCAssetResource {
     }
     
     /**
-     * Delete a specific asset for a specific EDC instance.
+     * Löscht ein spezifisches Asset für eine spezifische EDC-Instanz.
+     * 
+     * @param edcIdStr Die ID der EDC-Instanz als String
+     * @param assetIdStr Die ID des Assets als String
+     * @return HTTP-Response mit dem Status der Löschoperation
      */
     @DELETE
     @Path("/{edcId}/assets/{assetId}")
@@ -286,6 +350,94 @@ public class EDCAssetResource {
             LOG.error("Error deleting asset: " + e.getMessage(), e);
             return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
                           .entity("Failed to delete asset: " + e.getMessage())
+                          .build();
+        }
+    }
+    
+    /**
+     * Startet einen Datentransfer für ein Asset.
+     * 
+     * @param id Die ID des Assets, für das der Datentransfer initiiert werden soll
+     * @param requestData Die Request-Daten mit der Ziel-URL
+     * @return HTTP-Response mit der Transfer-Prozess-ID
+     */
+    @POST
+    @Path("/{id}/transfer")
+    public Response initiateDataTransfer(@PathParam("id") String idStr, Map<String, String> requestData) {
+        try {
+            UUID id;
+            try {
+                id = UUID.fromString(idStr);
+            } catch (IllegalArgumentException e) {
+                LOG.error("Invalid asset ID format: " + idStr);
+                return Response.status(Response.Status.BAD_REQUEST)
+                              .entity("Invalid asset ID format. Expected UUID.")
+                              .build();
+            }
+            
+            // Überprüfe, ob die Ziel-URL im Request enthalten ist
+            String destinationUrl = requestData.get("destinationUrl");
+            if (destinationUrl == null || destinationUrl.isEmpty()) {
+                LOG.error("Missing destinationUrl in request");
+                return Response.status(Response.Status.BAD_REQUEST)
+                              .entity("Missing destinationUrl in request")
+                              .build();
+            }
+            
+            LOG.info("Initiating data transfer for asset: " + id + " to: " + destinationUrl);
+            String transferProcessId = service.initiateDataTransfer(id, destinationUrl);
+            
+            LOG.info("Data transfer initiated, process ID: " + transferProcessId);
+            return Response.ok(Map.of("transferProcessId", transferProcessId)).build();
+        } catch (CustomException e) {
+            LOG.error("Error initiating data transfer: " + e.getMessage());
+            return Response.status(Response.Status.NOT_FOUND)
+                          .entity(e.getMessage())
+                          .build();
+        } catch (Exception e) {
+            LOG.error("Error initiating data transfer: " + e.getMessage(), e);
+            return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
+                          .entity("Failed to initiate data transfer: " + e.getMessage())
+                          .build();
+        }
+    }
+    
+    /**
+     * Überprüft den Status eines Datentransfer-Prozesses.
+     * 
+     * @param id Die ID des Assets
+     * @param transferProcessId Die ID des Transfer-Prozesses
+     * @return HTTP-Response mit dem aktuellen Status des Transfers
+     */
+    @GET
+    @Path("/{id}/transfer/{transferProcessId}")
+    public Response checkTransferStatus(@PathParam("id") String idStr, 
+                                      @PathParam("transferProcessId") String transferProcessId) {
+        try {
+            UUID id;
+            try {
+                id = UUID.fromString(idStr);
+            } catch (IllegalArgumentException e) {
+                LOG.error("Invalid asset ID format: " + idStr);
+                return Response.status(Response.Status.BAD_REQUEST)
+                              .entity("Invalid asset ID format. Expected UUID.")
+                              .build();
+            }
+            
+            LOG.info("Checking transfer status for asset: " + id + ", process: " + transferProcessId);
+            String status = service.checkTransferStatus(id, transferProcessId);
+            
+            LOG.info("Transfer status: " + status);
+            return Response.ok(Map.of("status", status)).build();
+        } catch (CustomException e) {
+            LOG.error("Error checking transfer status: " + e.getMessage());
+            return Response.status(Response.Status.NOT_FOUND)
+                          .entity(e.getMessage())
+                          .build();
+        } catch (Exception e) {
+            LOG.error("Error checking transfer status: " + e.getMessage(), e);
+            return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
+                          .entity("Failed to check transfer status: " + e.getMessage())
                           .build();
         }
     }
