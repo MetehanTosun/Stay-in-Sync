@@ -53,15 +53,16 @@ scrape_configs:
     params:
       module: [http_2xx]
     http_sd_configs:
-      - url: http://localhost:8090/api/monitoring/prometheus/flat/sources
+      - url: http://host.docker.internal:8090/api/monitoring/prometheus/flat/sources
         refresh_interval: 30s
     relabel_configs:
-      - source_labels: [__meta_http_sd_target]
+      - source_labels: [__address__]
         target_label: __param_target
       - source_labels: [__param_target]
         target_label: instance
       - target_label: __address__
         replacement: blackbox_exporter:9115
+
 
   # --- TargetSystems via Quarkus ---
   - job_name: 'blackbox_http_targetSystems'
@@ -69,43 +70,24 @@ scrape_configs:
     params:
       module: [http_2xx]
     http_sd_configs:
-      - url: http://localhost:8090/api/monitoring/prometheus/flat/targets
+      - url: http://host.docker.internal:8090/api/monitoring/prometheus/flat/targets
         refresh_interval: 30s
     relabel_configs:
-      - source_labels: [__meta_http_sd_target]
-        target_label: __param_target
-      - target_label: __address__
-        replacement: blackbox_exporter:9115
-
-  # --- All endpoints (Source + Target zusammen, wenn /flat/all implementiert) ---
-  - job_name: 'blackbox_http_all'
-    metrics_path: /probe
-    params:
-      module: [http_2xx]
-    http_sd_configs:
-      - url: http://localhost:8090/api/monitoring/prometheus/flat/all
-        refresh_interval: 30s
-    relabel_configs:
-      - source_labels: [__meta_http_sd_target]
+      - source_labels: [__address__]
         target_label: __param_target
       - source_labels: [__param_target]
         target_label: instance
       - target_label: __address__
         replacement: blackbox_exporter:9115
 
-  # --- Dummy URLs direkt ---
-  - job_name: 'blackbox_http_dummy'
-    metrics_path: /probe
-    params:
-      module: [http_2xx]
+
+
+  - job_name: 'quarkus_metrics'
+    scrape_interval: 15s
     static_configs:
       - targets:
-          - http://localhost:8090/api/monitoring/prometheus/flat/targets
-
-    relabel_configs:
-      - source_labels: [__address__]
-        target_label: __param_target
-      - target_label: instance
-        replacement: dummy_urls
-      - target_label: __address__
-        replacement: blackbox_exporter:9115
+          - host.docker.internal:8090  # Core Management
+          - host.docker.internal:8099  # Monitoring Backend
+          - host.docker.internal:8095  # Polling Node
+          - host.docker.internal:8091  # Sync Node
+    metrics_path: /q/metrics
