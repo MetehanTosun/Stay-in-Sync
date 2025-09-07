@@ -3,7 +3,6 @@ import * as d3 from 'd3';
 import type {Node, NodeConnection} from '../../core/models/node.model';
 import {LegendPanelComponent} from './legend-panel/legend-panel.component';
 import {MonitoringGraphService} from '../../core/services/monitoring-graph.service';
-import {NodeMarkerService} from '../../core/services/node-marker.service';
 import {Router} from '@angular/router';
 
 /**
@@ -34,7 +33,7 @@ export class GraphPanelComponent implements AfterViewInit {
 
 
 
-  constructor(private nodeMarkerService: NodeMarkerService, private graphService: MonitoringGraphService, private router: Router) {
+  constructor(private graphService: MonitoringGraphService, private router: Router) {
   }
 
   /**
@@ -125,29 +124,26 @@ export class GraphPanelComponent implements AfterViewInit {
    * Sets up the SVG container, zoom behavior, and renders the initial graph.
    */
   ngAfterViewInit() {
-    this.nodeMarkerService.markedNodes$.subscribe(markedNodes => {
-      if (!this.nodes || this.nodes.length === 0) {
-        console.warn('Nodes are not initialized yet.');
-        return;
-      }
+    this.loadGraphData();
 
-      this.markedNodes = markedNodes;
+    // SSE abonnieren
+    const evtSource = new EventSource('/events/subscribe');
+    evtSource.addEventListener('job-update', (e) => {
+      const changedJobIds: number[] = JSON.parse(e.data);
 
-      // Status aller Nodes aktualisieren
+      // markiere Nodes, die zu diesen JobIds gehören
       this.nodes.forEach(node => {
-        node.status = this.markedNodes[node.id] ? 'error' : 'active';
+        if (node.type === 'SyncNode') {
+          node.status = changedJobIds.includes(Number(node.id)) ? 'error' : 'active';
+        }
       });
 
-      // Filtered Nodes aktualisieren
       this.filteredNodes = this.filterNodes(this.searchTerm);
       this.filteredLinks = this.filterLinks();
-
-      // Graph neu rendern
       this.updateGraph(this.filteredNodes, this.filteredLinks);
     });
-
-    this.loadGraphData();
   }
+
 
 
   /**

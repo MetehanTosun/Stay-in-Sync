@@ -4,8 +4,11 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+
 import de.unistuttgart.stayinsync.scriptengine.ScriptEngineService;
 import de.unistuttgart.stayinsync.scriptengine.message.TransformationResult;
+import de.unistuttgart.stayinsync.syncnode.SnapshotManagement.SnapshotFactory;
+import de.unistuttgart.stayinsync.syncnode.SnapshotManagement.SnapshotStore;
 import de.unistuttgart.stayinsync.syncnode.domain.ExecutionPayload;
 import de.unistuttgart.stayinsync.syncnode.logic_engine.LogicGraphEvaluator;
 import de.unistuttgart.stayinsync.transport.exception.GraphEvaluationException;
@@ -36,7 +39,19 @@ public class TransformationExecutionService {
     @Inject
     ObjectMapper objectMapper;
 
+    @Inject
+    SnapshotStore snapshotStore;
 
+    /**
+     * Asynchronously evaluates the logic graph and, if the condition passes,
+     * executes the script transformation.
+     *
+     * @param payload An ExecutionPayload that contains TransformationData,
+     *                GraphNodes and TransformationContext
+     * @return A Uni that will eventually contain the TransformationResult, or null
+     *         if the
+     *         pre-condition check failed.
+     */
     public Uni<TransformationResult> execute(ExecutionPayload payload) {
         return Uni.createFrom().item(() -> {
             try {
@@ -57,25 +72,48 @@ public class TransformationExecutionService {
             }
         }).runSubscriptionOn(managedExecutor).onItem().transformToUni(conditionMet -> {
             if (conditionMet) {
-                try {
-                    MDC.put("transformationId", payload.job().transformationId().toString());
-                    Log.infof("Job %s: Pre-condition PASSED. Proceeding to script transformation...", payload.job().jobId());
-                    return scriptEngineService.transformAsync(payload.job()).onItem().transformToUni(transformationResult -> {
-                        if (transformationResult != null && transformationResult.isValidExecution()) {
-                            try {
-                                String outputJson = objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(transformationResult.getOutputData());
-                                Log.infof(">>>> SCRIPT OUTPUT DATA (as JSON):\n%s", outputJson);
-                            } catch (JsonProcessingException e) {
-                                Log.error("Script output could not be serialized to JSON", e);
+                Log.infof("Job %s: Pre-condition PASSED. Proceeding to script transformation...",
+                        payload.job().jobId());
+                return scriptEngineService.transformAsync(payload.job())
+                        .onItem().transformToUni(transformationResult -> {
+
+                            // CASE (Failure): If the transformation reported failure → snapshot
+                            if (!transformationResult.isValidExecution()
+                                    || transformationResult.getErrorInfo() != null) {
+
+                                try {
+
+                                    transformationResult.setTransformationId(payload.transformationContext().id());
+                                    transformationResult.setSourceData(payload.job().sourceData());
+
+                                    var snapshot = SnapshotFactory.fromTransformationResult(transformationResult,
+                                            objectMapper);
+                                    snapshotStore.put(snapshot);
+                                    Log.infof("Job %s: Stored snapshot id=%s for failed script execution.",
+                                            transformationResult.getJobId(), snapshot.getSnapshotId());
+                                } catch (Exception ex) {
+                                    // Never let snapshot creation/storage break the flow
+                                    Log.error("Failed to create/store snapshot for failed execution", ex);
+                                }
                             }
-                            return targetSystemWriterService.processDirectives(transformationResult, payload.transformationContext())
-                                    .map(v -> transformationResult);
-                        }
-                        return Uni.createFrom().item(transformationResult);
-                    });
-                } finally {
-                    MDC.remove("transformationId");
-                }
+
+                            if (transformationResult != null && transformationResult.isValidExecution()) {
+                                try {
+                                    String outputJson = objectMapper.writerWithDefaultPrettyPrinter()
+                                            .writeValueAsString(transformationResult.getOutputData());
+                                    Log.infof(">>>> SCRIPT OUTPUT DATA (as JSON):\n%s", outputJson);
+                                } catch (JsonProcessingException e) {
+                                    Log.error("Script output could not be serialized to JSON", e);
+                                    // snapshot here ?
+
+                                }
+                                return targetSystemWriterService
+                                        .processDirectives(transformationResult, payload.transformationContext())
+                                        .map(v -> transformationResult);
+                            }
+                            return Uni.createFrom().item(transformationResult);
+
+                        });
             } else {
                 try {
                     MDC.put("transformationId", payload.job().transformationId().toString());

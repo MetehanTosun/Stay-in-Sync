@@ -79,7 +79,7 @@ public class TransformationExecutionIntegrationTest {
     private ExecutionPayload createTestExecutionPayload(String mockApiBaseUrl) {
         TransformationMessageDTO txContext = createTransformationContext(mockApiBaseUrl);
         List<Node> graphNodes = createGraphNodes();
-        TransformJob transformJob = new TransformJob(
+        TransformJob transformJob = new TransformJob(1L,
                 "Test Job", "job-id-1", "test-script", generateUserScript(), "js",
                 "user-script-hash", generateTestSdk(), "sdk-hash", createSourceData()
         );

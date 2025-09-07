@@ -3,20 +3,45 @@ global:
   evaluation_interval: 30s
 
 scrape_configs:
-  # --- Local Healthchecks ---
+  # --- Lokale Checks (explizite Ports) ---
   - job_name: 'blackbox_http_local'
     metrics_path: /probe
     params:
       module: [http_2xx]
     static_configs:
       - targets:
-          - http://localhost:8090/q/health
-          - http://localhost:8099/q/health
-          - http://localhost:8095/q/health
-          - http://localhost:8091/q/health
+          - http://localhost:8090/q/health/live   # Core Management
+          - http://localhost:8099/q/health/live   # Monitoring Backend
+          - http://localhost:8095/q/health/live   # Polling Node (lokal)
+          - http://localhost:8091/q/health/live   # Sync Node (lokal)
+          - http://host.docker.internal:8090/q/health/live   # Core Management
+          - http://host.docker.internal:8099/q/health/live   # Monitoring Backend
+          - http://host.docker.internal:8095/q/health/live   # Polling Node (lokal)
+          - http://host.docker.internal:8091/q/health/live   # Sync Node (lokal)
     relabel_configs:
       - source_labels: [__address__]
         target_label: __param_target
+      - source_labels: [__param_target]
+        target_label: instance
+      - target_label: __address__
+        replacement: blackbox_exporter:9115
+
+  # --- Kubernetes Service Discovery ---
+  - job_name: 'blackbox_http_k8s'
+    metrics_path: /probe
+    params:
+      module: [http_2xx]
+    kubernetes_sd_configs:
+      - role: pod
+    relabel_configs:
+      # nur Pods mit bestimmten Labels überwachen
+      - source_labels: [__meta_kubernetes_pod_label_app]
+        action: keep
+        regex: (polling-node|sync-node)
+      # Health-Endpoint als Target
+      - source_labels: [__meta_kubernetes_pod_ip]
+        target_label: __param_target
+        replacement: http://$1:8080/q/health
       - source_labels: [__param_target]
         target_label: instance
       - target_label: __address__
@@ -84,7 +109,3 @@ scrape_configs:
         replacement: dummy_urls
       - target_label: __address__
         replacement: blackbox_exporter:9115
-
-
-
-
