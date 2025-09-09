@@ -1,7 +1,5 @@
 package de.unistuttgart.stayinsync.core.configuration.edc.entities;
 
-import java.util.UUID;
-
 import de.unistuttgart.stayinsync.core.model.UuidEntity;
 import jakarta.persistence.*;
 
@@ -10,7 +8,7 @@ import jakarta.persistence.*;
 public class EDCContractDefinition extends UuidEntity {
 
     @Column(name = "contract_definition_id", unique = true, nullable = false)
-    public String contractDefinitionId;
+    private String contractDefinitionId;
 
     @ManyToOne(optional = false)
     @JoinColumn(
@@ -18,7 +16,7 @@ public class EDCContractDefinition extends UuidEntity {
         columnDefinition = "CHAR(36)",
         nullable = false
     )
-    public EDCAsset asset;
+    private EDCAsset asset;
 
     @ManyToOne(optional = false)
     @JoinColumn(
@@ -26,7 +24,7 @@ public class EDCContractDefinition extends UuidEntity {
         columnDefinition = "CHAR(36)",
         nullable = false
     )
-    public EDCPolicy accessPolicy;
+    private EDCPolicy accessPolicy;
 
     @ManyToOne(optional = false)
     @JoinColumn(
@@ -34,11 +32,11 @@ public class EDCContractDefinition extends UuidEntity {
         columnDefinition = "CHAR(36)",
         nullable = false
     )
-    public EDCPolicy contractPolicy;
+    private EDCPolicy contractPolicy;
     
     @ManyToOne
     @JoinColumn(name = "edc_instance_id")
-    public EDCInstance edcInstance;
+    private EDCInstance edcInstance;
 
     public String getContractDefinitionId() {
         return contractDefinitionId;
@@ -71,14 +69,12 @@ public class EDCContractDefinition extends UuidEntity {
     public void setContractPolicy(EDCPolicy contractPolicy) {
         this.contractPolicy = contractPolicy;
     }
-
-    public UUID getId() {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'getId'");
+    
+    public EDCInstance getEdcInstance() {
+        return edcInstance;
     }
-
-    public void setId(UUID id) {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'setId'");
+    
+    public void setEdcInstance(EDCInstance edcInstance) {
+        this.edcInstance = edcInstance;
     }
 }

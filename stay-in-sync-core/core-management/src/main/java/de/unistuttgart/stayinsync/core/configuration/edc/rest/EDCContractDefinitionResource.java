@@ -65,7 +65,7 @@ public class EDCContractDefinitionResource {
             }
             
             EDCContractDefinition entity = EDCContractDefinitionMapper.fromDto(dto);
-            entity.edcInstance = edcInstance;
+            entity.setEdcInstance(edcInstance);
             
             EDCContractDefinition created = service.create(entity);
             EDCContractDefinitionDto createdDto = EDCContractDefinitionMapper.toDto(created);
@@ -103,7 +103,7 @@ public class EDCContractDefinitionResource {
             }
             
             EDCContractDefinition entity = EDCContractDefinitionMapper.fromDto(dto);
-            entity.edcInstance = edcInstance;
+            entity.setEdcInstance(edcInstance);
             
             Optional<EDCContractDefinition> updated = service.update(id, entity);
             if (updated.isEmpty()) {

@@ -94,13 +94,13 @@ public class EDCContractDefinitionService {
     @Transactional
     public Optional<EDCContractDefinition> update(final UUID id, final EDCContractDefinition updatedContractDefinition) {
         LOG.info("Updating contract definition: " + id);
-        return findByIdAndEdcId(id, updatedContractDefinition.edcInstance.id).map(existing -> {
+        return findByIdAndEdcId(id, updatedContractDefinition.getEdcInstance().id).map(existing -> {
             // nur die zu ändernden Felder übernehmen
-            existing.contractDefinitionId = updatedContractDefinition.contractDefinitionId;
-            existing.asset              = EDCAsset.findById(updatedContractDefinition.asset != null ? updatedContractDefinition.asset.id : null);
-            existing.accessPolicy       = EDCPolicy.findById(updatedContractDefinition.accessPolicy != null ? updatedContractDefinition.accessPolicy.id : null);
-            existing.contractPolicy     = EDCPolicy.findById(updatedContractDefinition.contractPolicy != null ? updatedContractDefinition.contractPolicy.id : null);
-            existing.edcInstance        = updatedContractDefinition.edcInstance;
+            existing.setContractDefinitionId(updatedContractDefinition.getContractDefinitionId());
+            existing.setAsset(EDCAsset.findById(updatedContractDefinition.getAsset() != null ? updatedContractDefinition.getAsset().id : null));
+            existing.setAccessPolicy(EDCPolicy.findById(updatedContractDefinition.getAccessPolicy() != null ? updatedContractDefinition.getAccessPolicy().id : null));
+            existing.setContractPolicy(EDCPolicy.findById(updatedContractDefinition.getContractPolicy() != null ? updatedContractDefinition.getContractPolicy().id : null));
+            existing.setEdcInstance(updatedContractDefinition.getEdcInstance());
             return existing;
         });
     }

@@ -17,19 +17,32 @@ import jakarta.persistence.*;
 public class EDCPolicy extends UuidEntity {
 
     /**
+     * Sucht eine Policy anhand ihrer policyId (String-ID).
+     * 
+     * @param policyId Die Policy-ID als String
+     * @return Die gefundene Policy oder null, wenn keine Policy mit dieser ID existiert
+     */
+    public static EDCPolicy findByPolicyId(String policyId) {
+        if (policyId == null || policyId.isEmpty()) {
+            return null;
+        }
+        return find("policyId", policyId).firstResult();
+    }
+    
+    /**
      * Die Policy-ID als String, wie sie im EDC verwendet wird.
      * Muss eindeutig innerhalb des Systems sein.
      * Beispiel: "my-policy-id" oder "policy-for-asset-123"
      */
     @Column(nullable = false, unique = true)
-    public String policyId;
+    private String policyId;
     
     /**
      * Ein optionaler Anzeigename für die Policy.
      * Dieser wird im Frontend zur übersichtlicheren Darstellung verwendet.
      */
     @Column
-    public String displayName;
+    private String displayName;
 
     /**
      * Die vollständige Policy-Definition als JSON-String.
@@ -38,7 +51,7 @@ public class EDCPolicy extends UuidEntity {
      */
     @Lob
     @Column(columnDefinition = "LONGTEXT", nullable = false)
-    public String policyJson;
+    private String policyJson;
     
     /**
      * Die zugehörige EDC-Instanz, zu der diese Policy gehört.
@@ -46,7 +59,7 @@ public class EDCPolicy extends UuidEntity {
      */
     @ManyToOne
     @JoinColumn(name = "edc_instance_id")
-    public EDCInstance edcInstance;
+    private EDCInstance edcInstance;
     
     /**
      * Gibt die Policy-ID zurück.

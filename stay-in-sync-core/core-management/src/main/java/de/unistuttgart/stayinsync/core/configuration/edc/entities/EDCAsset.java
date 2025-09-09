@@ -101,4 +101,14 @@ public class EDCAsset extends UuidEntity {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "target_system_endpoint_id", nullable = true)
     private TargetSystemEndpoint targetSystemEndpoint;
+    
+    /**
+     * Findet ein EDCAsset anhand seiner assetId (Business-ID).
+     * 
+     * @param assetId Die Business-ID des Assets
+     * @return Das gefundene Asset oder null, wenn kein Asset mit dieser ID existiert
+     */
+    public static EDCAsset findByAssetId(String assetId) {
+        return find("assetId", assetId).firstResult();
+    }
 }

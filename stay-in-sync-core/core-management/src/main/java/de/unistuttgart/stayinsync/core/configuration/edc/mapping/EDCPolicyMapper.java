@@ -5,8 +5,10 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 import de.unistuttgart.stayinsync.core.configuration.edc.dtoedc.EDCPolicyDto;
 import de.unistuttgart.stayinsync.core.configuration.edc.entities.EDCPolicy;
+import org.jboss.logging.Logger;
 
 import java.util.Map;
+import java.util.Optional;
 
 /**
  * Mapper-Klasse für die Konvertierung zwischen EDCPolicy-Entitäten und DTOs.
@@ -17,6 +19,8 @@ import java.util.Map;
  */
 public class EDCPolicyMapper {
 
+    private static final Logger LOG = Logger.getLogger(EDCPolicyMapper.class);
+    
     /**
      * Einmaliger ObjectMapper für die JSON-Serialisierung/Deserialisierung.
      * Wird statisch erstellt, um Performance zu optimieren.
@@ -31,14 +35,28 @@ public class EDCPolicyMapper {
      * @throws JsonProcessingException Bei Fehlern während der JSON-Serialisierung
      */
     public static EDCPolicy fromDto(EDCPolicyDto dto) throws JsonProcessingException {
+        if (dto == null) {
+            LOG.warn("Versuch, ein null EDCPolicyDto zu konvertieren");
+            return null;
+        }
+        
+        LOG.debug("Konvertiere EDCPolicyDto zu EDCPolicy: " + dto.getId());
         EDCPolicy entity = new EDCPolicy();
         entity.id = dto.getId(); // Dies ist OK, da id in UuidEntity public ist
-        entity.policyId = dto.getPolicyId();
-        entity.displayName = dto.getDisplayName();
+        entity.setPolicyId(dto.getPolicyId());
+        entity.setDisplayName(dto.getDisplayName());
         
         if (dto.getPolicy() != null) {
-            // Policy-Struktur als JSON-String serialisieren
-            entity.policyJson = objectMapper.writeValueAsString(dto.getPolicy());
+            try {
+                // Policy-Struktur als JSON-String serialisieren
+                entity.setPolicyJson(objectMapper.writeValueAsString(dto.getPolicy()));
+                LOG.debug("Policy JSON erfolgreich serialisiert");
+            } catch (JsonProcessingException e) {
+                LOG.error("Fehler bei der Serialisierung der Policy-Map: " + e.getMessage(), e);
+                throw e;
+            }
+        } else {
+            LOG.warn("Policy-Map im DTO ist null, setze policyJson auf null");
         }
         return entity;
     }
@@ -47,21 +65,36 @@ public class EDCPolicyMapper {
      * Konvertiert eine Datenbank-Entität in ein DTO-Objekt.
      * 
      * @param entity Die EDCPolicy-Entität aus der Datenbank
-     * @return Ein neues DTO-Objekt mit den Daten aus der Entität
-     * @throws JsonProcessingException Bei Fehlern während der JSON-Deserialisierung
+     * @return Ein Optional mit dem DTO-Objekt oder empty, wenn die Konvertierung fehlschlägt
      */
-    public static EDCPolicyDto toDto(EDCPolicy entity) throws JsonProcessingException {
-        EDCPolicyDto dto = new EDCPolicyDto();
-        dto.setId(entity.id); // Dies ist OK, da id in UuidEntity public ist
-        dto.setPolicyId(entity.policyId);
-        dto.setDisplayName(entity.displayName);
-        
-        if (entity.policyJson != null) {
-            // JSON-String in Policy-Map-Struktur deserialisieren
-            @SuppressWarnings("unchecked")
-            Map<String, Object> policyMap = objectMapper.readValue(entity.policyJson, Map.class);
-            dto.setPolicy(policyMap);
+    public static Optional<EDCPolicyDto> toDto(EDCPolicy entity) {
+        if (entity == null) {
+            LOG.warn("Versuch, eine null EDCPolicy zu konvertieren");
+            return Optional.empty();
         }
-        return dto;
+        
+        LOG.debug("Konvertiere EDCPolicy zu EDCPolicyDto: " + entity.id);
+        EDCPolicyDto dto = new EDCPolicyDto();
+        dto.setId(entity.id);
+        dto.setPolicyId(entity.getPolicyId());
+        dto.setDisplayName(entity.getDisplayName());
+        
+        if (entity.getPolicyJson() != null && !entity.getPolicyJson().isEmpty()) {
+            try {
+                // JSON-String in Policy-Map-Struktur deserialisieren
+                @SuppressWarnings("unchecked")
+                Map<String, Object> policyMap = objectMapper.readValue(entity.getPolicyJson(), Map.class);
+                dto.setPolicy(policyMap);
+                LOG.debug("Policy JSON erfolgreich deserialisiert");
+            } catch (JsonProcessingException e) {
+                LOG.error("Fehler bei der Deserialisierung des JSON-Strings: " + e.getMessage(), e);
+                // Wir geben trotzdem ein DTO zurück, aber ohne Policy-Map
+                LOG.warn("Gebe DTO ohne Policy-Map zurück aufgrund eines Deserialisierungsfehlers");
+            }
+        } else {
+            LOG.debug("Policy JSON in der Entity ist null oder leer");
+        }
+        
+        return Optional.of(dto);
     }
 }

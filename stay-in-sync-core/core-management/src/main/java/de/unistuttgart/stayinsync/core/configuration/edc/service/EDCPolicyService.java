@@ -100,8 +100,8 @@ public class EDCPolicyService {
         if (policyLinkedToDatabase == null) {
             return Optional.empty();
         }
-        policyLinkedToDatabase.policyId = updatedPolicy.policyId;
-        policyLinkedToDatabase.policyJson = updatedPolicy.policyJson;
+        policyLinkedToDatabase.setPolicyId(updatedPolicy.getPolicyId());
+        policyLinkedToDatabase.setPolicyJson(updatedPolicy.getPolicyJson());
         return Optional.of(policyLinkedToDatabase);
     }
 

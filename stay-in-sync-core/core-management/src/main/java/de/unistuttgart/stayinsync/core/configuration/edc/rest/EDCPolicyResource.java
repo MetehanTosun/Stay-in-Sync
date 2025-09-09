@@ -35,14 +35,11 @@ public class EDCPolicyResource {
     public List<EDCPolicyDto> listPoliciesForEdc(@PathParam("edcId") UUID edcId) {
         LOG.info("Fetching policies for EDC: " + edcId);
         List<EDCPolicyDto> policies = service.listAllByEdcId(edcId).stream()
-                .map(entity -> {
-                    try {
-                        return EDCPolicyMapper.toDto(entity);
-                    } catch (JsonProcessingException e) {
-                        LOG.error("Error converting policy", e);
-                        throw new WebApplicationException("Error converting policy", e, 500);
-                    }
-                })
+                .map(entity -> EDCPolicyMapper.toDto(entity)
+                        .orElseGet(() -> {
+                            LOG.warn("Konnte Policy nicht konvertieren: " + entity.id);
+                            return new EDCPolicyDto();
+                        }))
                 .collect(Collectors.toList());
         LOG.info("Returning " + policies.size() + " policies for EDC: " + edcId);
         return policies;
@@ -53,14 +50,7 @@ public class EDCPolicyResource {
     public EDCPolicyDto getPolicyForEdc(@PathParam("edcId") UUID edcId, @PathParam("id") UUID id) {
         LOG.info("Fetching policy " + id + " for EDC: " + edcId);
         return service.findByIdAndEdcId(id, edcId)
-                .map(entity -> {
-                    try {
-                        return EDCPolicyMapper.toDto(entity);
-                    } catch (JsonProcessingException e) {
-                        LOG.error("Error converting policy", e);
-                        throw new WebApplicationException("Error converting policy", e, 500);
-                    }
-                })
+                .flatMap(entity -> EDCPolicyMapper.toDto(entity))
                 .orElseThrow(() -> new NotFoundException("Policy " + id + " not found for EDC " + edcId));
     }
 
@@ -74,9 +64,9 @@ public class EDCPolicyResource {
           normalizePolicy(dto);
 
           EDCPolicy entity = EDCPolicyMapper.fromDto(dto);
-          entity.edcInstance = EDCInstance.findById(edcId);
+          entity.setEdcInstance(EDCInstance.findById(edcId));
           
-          if (entity.edcInstance == null) {
+          if (entity.getEdcInstance() == null) {
               LOG.error("EDC instance not found: " + edcId);
               return Response.status(Response.Status.NOT_FOUND)
                              .entity("EDC instance not found: " + edcId)
@@ -84,8 +74,17 @@ public class EDCPolicyResource {
           }
           
           EDCPolicy created = service.create(entity);
-          EDCPolicyDto result = EDCPolicyMapper.toDto(created);
-
+          Optional<EDCPolicyDto> resultOpt = EDCPolicyMapper.toDto(created);
+          
+          if (resultOpt.isEmpty()) {
+              LOG.error("Failed to convert created policy to DTO");
+              return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
+                             .entity("Failed to convert created policy to DTO")
+                             .build();
+          }
+          
+          EDCPolicyDto result = resultOpt.get();
+          
           URI uri = uriInfo.getAbsolutePathBuilder()
                   .path(result.getId().toString())
                   .build();
@@ -111,9 +110,9 @@ public class EDCPolicyResource {
           normalizePolicy(dto);
 
           EDCPolicy newState = EDCPolicyMapper.fromDto(dto);
-          newState.edcInstance = EDCInstance.findById(edcId);
+          newState.setEdcInstance(EDCInstance.findById(edcId));
           
-          if (newState.edcInstance == null) {
+          if (newState.getEdcInstance() == null) {
               LOG.error("EDC instance not found: " + edcId);
               return Response.status(Response.Status.NOT_FOUND)
                              .entity("EDC instance not found: " + edcId)
@@ -122,9 +121,9 @@ public class EDCPolicyResource {
           
           Optional<EDCPolicy> updated = service.findByIdAndEdcId(id, edcId)
                   .map(entity -> {
-                      entity.policyId = newState.policyId;
-                      entity.policyJson = newState.policyJson;
-                      entity.edcInstance = newState.edcInstance;
+                      entity.setPolicyId(newState.getPolicyId());
+                      entity.setPolicyJson(newState.getPolicyJson());
+                      entity.setEdcInstance(newState.getEdcInstance());
                       return entity;
                   });
                   
@@ -136,13 +135,21 @@ public class EDCPolicyResource {
           }
           
           try {
-              EDCPolicyDto result = EDCPolicyMapper.toDto(updated.get());
+              Optional<EDCPolicyDto> resultOpt = EDCPolicyMapper.toDto(updated.get());
+              if (resultOpt.isEmpty()) {
+                  LOG.error("Failed to convert updated policy to DTO");
+                  return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
+                                 .entity("Failed to convert updated policy to DTO")
+                                 .build();
+              }
+              
+              EDCPolicyDto result = resultOpt.get();
               LOG.info("Policy updated successfully: " + result.getId());
               return Response.ok(result).build();
-          } catch (JsonProcessingException e) {
-              LOG.error("Error converting policy", e);
+          } catch (Exception e) {
+              LOG.error("Error during policy conversion", e);
               return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
-                             .entity("Error converting policy: " + e.getMessage())
+                             .entity("Error during policy conversion: " + e.getMessage())
                              .build();
           }
       } catch (Exception e) {

@@ -11,14 +11,15 @@ public class EDCContractDefinitionDto {
     @NotBlank
     private String contractDefinitionId;
 
-    @NotNull
-    private UUID assetId;
+    @NotBlank
+    private String assetId;
 
-    @NotNull
+    // Either UUID or String format is required for policy IDs
     private UUID accessPolicyId;      // ID des EDCAccessPolicy–Datensatzes
+    private String accessPolicyIdStr; // String version of policy ID from frontend
 
-    @NotNull
     private UUID contractPolicyId;    // ID der ContractPolicy (ebenfalls EDCAccessPolicy)
+    private String contractPolicyIdStr; // String version of policy ID from frontend
 
     // --- Getter & Fluent-Setter ---
 
@@ -40,11 +41,11 @@ public class EDCContractDefinitionDto {
         return this;
     }
 
-    public UUID getAssetId() {
+    public String getAssetId() {
         return assetId;
     }
 
-    public EDCContractDefinitionDto setAssetId(UUID assetId) {
+    public EDCContractDefinitionDto setAssetId(String assetId) {
         this.assetId = assetId;
         return this;
     }
@@ -58,12 +59,30 @@ public class EDCContractDefinitionDto {
         return this;
     }
 
+    public String getAccessPolicyIdStr() {
+        return accessPolicyIdStr;
+    }
+
+    public EDCContractDefinitionDto setAccessPolicyIdStr(String accessPolicyIdStr) {
+        this.accessPolicyIdStr = accessPolicyIdStr;
+        return this;
+    }
+
     public UUID getContractPolicyId() {
         return contractPolicyId;
     }
 
     public EDCContractDefinitionDto setContractPolicyId(UUID contractPolicyId) {
         this.contractPolicyId = contractPolicyId;
+        return this;
+    }
+
+    public String getContractPolicyIdStr() {
+        return contractPolicyIdStr;
+    }
+
+    public EDCContractDefinitionDto setContractPolicyIdStr(String contractPolicyIdStr) {
+        this.contractPolicyIdStr = contractPolicyIdStr;
         return this;
     }
 }

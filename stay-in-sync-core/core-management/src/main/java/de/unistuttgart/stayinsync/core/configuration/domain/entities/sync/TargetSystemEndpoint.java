@@ -1,6 +1,7 @@
 package de.unistuttgart.stayinsync.core.configuration.domain.entities.sync;
 
-import de.unistuttgart.stayinsync.core.configuration.edc.entities.EDCAsset;
+// Update the import to the correct package where EDCAsset is located
+//import de.unistuttgart.stayinsync.core.configuration.domain.entities.edc.EDCAsset;
 import jakarta.persistence.DiscriminatorValue;
 import jakarta.persistence.Entity;
 import jakarta.persistence.JoinColumn;
@@ -32,7 +33,7 @@ public class TargetSystemEndpoint extends SyncSystemEndpoint {
     @JoinColumn(name = "sync_system_id", insertable = false, updatable = false)
     public TargetSystem targetSystem;
     @OneToOne
-    public EDCAsset asset;
+    //public EDCAsset asset;
 
     public static java.util.List<TargetSystemEndpoint> findByTargetSystemId(Long targetSystemId) {
         return find("targetSystem.id", targetSystemId).list();
