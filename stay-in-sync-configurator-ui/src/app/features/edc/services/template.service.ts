@@ -96,7 +96,6 @@ export class TemplateService {
       }
     }
 
-
     return this.http.get<Template[]>(this.backendUrl);
   }
 

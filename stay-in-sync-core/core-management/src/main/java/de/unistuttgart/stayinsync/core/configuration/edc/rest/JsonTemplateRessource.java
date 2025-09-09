@@ -16,7 +16,7 @@ import java.net.URI;
 import java.util.List;
 import java.util.UUID;
 
-@Path("/api/config/edcs/jsontemplates")
+@Path("/api/config/templates")
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
 public class JsonTemplateRessource {
