@@ -9,7 +9,7 @@ export interface OdrlPolicyDefinition {
     bpn?: string;
    
    // UI/Backend-Helper-Felder
-  id?: string;    // bleibt für ODRL-@id (UI)
+  
   dbId?: string;  // neue UUID vom Backend
   policyId?: string; // Business-Key aus DB
 }

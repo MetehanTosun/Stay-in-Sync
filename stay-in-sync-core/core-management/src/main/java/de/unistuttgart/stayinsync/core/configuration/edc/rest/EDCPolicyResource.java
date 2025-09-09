@@ -62,6 +62,19 @@ public class EDCPolicyResource {
           LOG.info("Creating policy for EDC: " + edcId);
           // Normalisieren bevor gemappt wird (falls verschachtelt übergeben)
           normalizePolicy(dto);
+          
+          // Generiere automatisch eine Policy-ID, wenn keine vorhanden ist
+          if (dto.getPolicyId() == null || dto.getPolicyId().isEmpty()) {
+              String generatedPolicyId = "policy-" + System.currentTimeMillis();
+              LOG.info("No policy ID provided, generating one: " + generatedPolicyId);
+              dto.setPolicyId(generatedPolicyId);
+              
+              // Aktualisiere auch die ID im Policy-Objekt, falls vorhanden
+              if (dto.getPolicy() != null && dto.getPolicy() instanceof Map<?, ?>) {
+                  Map<String, Object> policyMap = (Map<String, Object>) dto.getPolicy();
+                  policyMap.put("@id", generatedPolicyId);
+              }
+          }
 
           EDCPolicy entity = EDCPolicyMapper.fromDto(dto);
           entity.setEdcInstance(EDCInstance.findById(edcId));
@@ -175,8 +188,20 @@ public class EDCPolicyResource {
                          .build();
       }
       
+      EDCPolicy policyEntity = policy.get();
+      LOG.info("Found policy to delete: id=" + policyEntity.id + ", policyId=" + policyEntity.getPolicyId());
+      
       if (service.delete(id)) {
           LOG.info("Policy " + id + " deleted successfully");
+          
+          // Verify the policy is actually gone from the database
+          Optional<EDCPolicy> checkDeleted = service.findByIdAndEdcId(id, edcId);
+          if (checkDeleted.isPresent()) {
+              LOG.error("Policy " + id + " still exists in database after deletion!");
+          } else {
+              LOG.info("Verified policy " + id + " is no longer in database");
+          }
+          
           return Response.noContent().build();
       } else {
           LOG.error("Failed to delete policy " + id);

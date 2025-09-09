@@ -33,7 +33,7 @@ import { AssetService } from './services/asset.service';
 import { PolicyService } from './services/policy.service';
 import { EdcInstanceService } from '../edc-instances/services/edc-instance.service';
 import {lastValueFrom, Subject, Subscription} from 'rxjs';
-import {debounceTime} from "rxjs/operators";
+import {debounceTime, tap} from "rxjs/operators";
 import { MultiSelectModule } from 'primeng/multiselect';
 import { forkJoin } from 'rxjs';
 import { TemplateService } from '../../services/template.service';
@@ -327,7 +327,9 @@ accessPolicySuggestions: OdrlPolicyDefinition[] = [];
   searchAccessPolicies(event: { query: string }) {
   const query = event.query.toLowerCase();
   this.accessPolicySuggestions = this.allAccessPolicies.filter(policy =>
-    (policy.id?.toLowerCase() || '').includes(query) ||
+    (policy.policyId?.toLowerCase() || '').includes(query) ||
+    (policy['@id']?.toLowerCase() || '').includes(query) ||
+    (policy.dbId?.toLowerCase() || '').includes(query) ||
     (policy.bpn?.toLowerCase() || '').includes(query)
   );
 }
@@ -382,8 +384,11 @@ accessPolicySuggestions: OdrlPolicyDefinition[] = [];
       // Policy-Map für schnellen Lookup (ODRL-ID => Policy)
       const policyMap = new Map<string, OdrlPolicyDefinition>();
       accessPolicies.forEach(p => {
-        if (p.id) {
-          policyMap.set(p.id, p);
+        // Verwende policyId (oder @id), wenn verfügbar
+        if (p.policyId) {
+          policyMap.set(p.policyId, p);
+        } else if (p['@id']) {
+          policyMap.set(p['@id'], p);
         }
       });
 
@@ -443,7 +448,9 @@ accessPolicySuggestions: OdrlPolicyDefinition[] = [];
     const parts: string[] = [];
 
     // Top-Level
-    if (policy.id) parts.push(policy.id);
+    if (policy.policyId) parts.push(policy.policyId);
+    if (policy['@id']) parts.push(policy['@id']);
+    if (policy.dbId) parts.push(policy.dbId);
     if (policy.bpn) parts.push(policy.bpn);
 
     // Permissions + Constraints
@@ -858,7 +865,10 @@ accessPolicySuggestions: OdrlPolicyDefinition[] = [];
       }
 
       // Sync Access Policy
-      const accessPolicyObject = this.allAccessPolicies.find(p => p.id === odrlPayload.accessPolicyId);
+      const accessPolicyObject = this.allAccessPolicies.find(p => 
+        p.policyId === odrlPayload.accessPolicyId || 
+        p['@id'] === odrlPayload.accessPolicyId
+      );
       this.newContractPolicy.accessPolicyId = accessPolicyObject as any || '';
 
       // Sync Asset Selection by flattening the operandRight values
@@ -1175,7 +1185,12 @@ accessPolicySuggestions: OdrlPolicyDefinition[] = [];
 
 
   editAccessPolicy(policy: OdrlPolicyDefinition) {
-  this.policyToEditODRL = this.allAccessPolicies.find(p => p.id === policy.id) ?? null;
+  // Suche nach dbId (primär), policyId oder @id
+  this.policyToEditODRL = this.allAccessPolicies.find(p => 
+    (policy.dbId && p.dbId === policy.dbId) || 
+    (policy.policyId && p.policyId === policy.policyId) || 
+    (policy['@id'] && p['@id'] === policy['@id'])
+  ) ?? null;
   this.selectedAccessPolicyTemplate = null; // Explicitly clear template selection
 
   if (this.policyToEditODRL) {
@@ -1216,9 +1231,26 @@ accessPolicySuggestions: OdrlPolicyDefinition[] = [];
       if (policyJson['@id'] !== this.policyToEditODRL['@id']) {
         throw new Error("The '@id' of the policy cannot be changed during an edit.");
       }
-      await this.policyService.uploadPolicyDefinition(this.instance.id, policyJson);
+      
+      // Wichtig: Wir müssen sicherstellen, dass die dbId erhalten bleibt
+      if (!policyJson.dbId && this.policyToEditODRL.dbId) {
+        console.log('Adding dbId to policy JSON:', this.policyToEditODRL.dbId);
+        policyJson.dbId = this.policyToEditODRL.dbId;
+      }
+      
+      console.log('Saving edited policy with dbId:', policyJson.dbId);
+      await lastValueFrom(this.policyService.uploadPolicyDefinition(this.instance.id, policyJson));
+      
+      // Nach dem Speichern die Daten neu laden
+      await lastValueFrom(this.policyService.getPolicies(this.instance.id).pipe(
+        tap((policies: OdrlPolicyDefinition[]) => {
+          console.log('Reloaded policies after edit:', policies);
+          this.allAccessPolicies = policies;
+          this.filteredAccessPolicies = [...this.allAccessPolicies];
+        })
+      ));
+      
       this.messageService.add({ severity: 'success', summary: 'Success', detail: 'Access Policy updated successfully.' });
-      this.loadPoliciesAndDefinitions();
       this.hideEditAccessPolicyDialog();
     } catch (error: any) {
       const detail = error.message.includes('JSON') ? 'Could not parse JSON.' : error.message || 'Failed to save access policy.';
@@ -1228,6 +1260,10 @@ accessPolicySuggestions: OdrlPolicyDefinition[] = [];
   }
 
   deleteAccessPolicy(policy: OdrlPolicyDefinition) {
+  console.log('Attempting to delete policy:', policy);
+  console.log('Policy dbId:', policy.dbId);
+  console.log('Policy @id:', policy['@id']);
+  
   this.confirmationService.confirm({
     message: `Are you sure you want to delete the policy for BPN "${policy.bpn || ''}"? This will also delete all associated contract definitions.`,
     header: 'Confirm Deletion',
@@ -1238,17 +1274,12 @@ accessPolicySuggestions: OdrlPolicyDefinition[] = [];
         if (!policy.dbId) {
           throw new Error('Policy has no dbId, cannot delete');
         }
-        await this.policyService.deletePolicy(this.instance.id, policy.dbId);
-
-        // Contract Definitions im UI aktualisieren
-        this.allContractDefinitions = this.allContractDefinitions.filter(
-          cd => cd.accessPolicyId !== policy.id
-        );
-        this.filteredContractDefinitions = [...this.allContractDefinitions];
-
-        // Access Policies im UI aktualisieren
-        this.allAccessPolicies = this.allAccessPolicies.filter(p => p.id !== policy.id);
-        this.filteredAccessPolicies = [...this.allAccessPolicies];
+        console.log('Deleting policy with dbId:', policy.dbId, 'for EDC:', this.instance.id);
+        await lastValueFrom(this.policyService.deletePolicy(this.instance.id, policy.dbId));
+        
+        console.log('Policy deleted successfully, reloading data from server...');
+        // Nach dem Löschen neu laden, anstatt nur die lokalen Arrays zu filtern
+        this.loadPoliciesAndDefinitions();
 
         this.messageService.add({
           severity: 'success',
@@ -1497,7 +1528,10 @@ accessPolicySuggestions: OdrlPolicyDefinition[] = [];
           if (!contractDefJson.accessPolicyId?.trim()) {
             throw new Error("Validation failed: The 'accessPolicyId' field is missing or empty.");
           }
-          const parentPolicyExists = this.allAccessPolicies.some(p => p.id === contractDefJson.accessPolicyId);
+          const parentPolicyExists = this.allAccessPolicies.some(p => 
+            p.policyId === contractDefJson.accessPolicyId || 
+            p['@id'] === contractDefJson.accessPolicyId
+          );
           if (!parentPolicyExists) {
             throw new Error(`Validation failed: 'accessPolicyId' (${contractDefJson.accessPolicyId}) in file does not correspond to any existing Access Policy.`);
           }
@@ -1536,7 +1570,10 @@ accessPolicySuggestions: OdrlPolicyDefinition[] = [];
 
           await this.policyService.createContractDefinition(this.instance.id, contractDefJson);
 
-          const parentPolicy = this.allAccessPolicies.find(p => p.id === contractDefJson.accessPolicyId);
+          const parentPolicy = this.allAccessPolicies.find(p => 
+            p.policyId === contractDefJson.accessPolicyId || 
+            p['@id'] === contractDefJson.accessPolicyId
+          );
           this.allContractDefinitions.unshift({
             id: contractDefJson['@id'],
             assetId: selector.operandRight,
@@ -1600,7 +1637,10 @@ accessPolicySuggestions: OdrlPolicyDefinition[] = [];
         }
 
         if (this.contractPolicyToEdit) {
-          const accessPolicyObject = this.allAccessPolicies.find(p => p.id === odrlPayload.accessPolicyId);
+          const accessPolicyObject = this.allAccessPolicies.find(p => 
+            p.policyId === odrlPayload.accessPolicyId || 
+            p['@id'] === odrlPayload.accessPolicyId
+          );
           this.contractPolicyToEdit.accessPolicyId = accessPolicyObject as any;
         }
 
@@ -1675,7 +1715,10 @@ accessPolicySuggestions: OdrlPolicyDefinition[] = [];
        return false;
      });
 
-     const accessPolicyObject = this.allAccessPolicies.find(p => p.id === contractPolicy.accessPolicyId);
+     const accessPolicyObject = this.allAccessPolicies.find(p => 
+        p.policyId === contractPolicy.accessPolicyId || 
+        p['@id'] === contractPolicy.accessPolicyId
+     );
 
      this.contractPolicyToEdit = {
        ...contractPolicy,
@@ -2121,11 +2164,15 @@ accessPolicySuggestions: OdrlPolicyDefinition[] = [];
   const policy = event.data as OdrlPolicyDefinition;
 
   // Da du deine allAccessPolicies schon entpackst, reicht direkt die Suche dort
-  const odrlPolicy = this.allAccessPolicies.find(p => p.id === policy.id);
+  const odrlPolicy = this.allAccessPolicies.find(p => 
+    (policy.dbId && p.dbId === policy.dbId) || 
+    (policy.policyId && p.policyId === policy.policyId) || 
+    (policy['@id'] && p['@id'] === policy['@id'])
+  );
 
   if (odrlPolicy) {
     this.jsonToView = JSON.stringify(odrlPolicy, null, 2);
-    this.viewDialogHeader = `Details for Access Policy: ${policy.id}`;
+    this.viewDialogHeader = `Details for Access Policy: ${policy.policyId || policy['@id'] || policy.dbId}`;
     this.displayViewDialog = true;
   } else {
     this.messageService.add({
@@ -2150,8 +2197,10 @@ viewContractDefinitionDetails(event: TableRowSelectEvent): void {
     this.viewDialogHeader = `Details for Contract Definition: ${contractPolicy.id}`;
 
     // Verknüpfte Access Policy suchen
-    this.linkedAccessPolicy =
-      this.allAccessPolicies.find(p => p.id === odrlContractDef.accessPolicyId) || null;
+    this.linkedAccessPolicy = this.allAccessPolicies.find(p => 
+      p.policyId === odrlContractDef.accessPolicyId || 
+      p['@id'] === odrlContractDef.accessPolicyId
+    ) || null;
 
     // Verknüpfte Assets suchen
     const assetIds = new Set(

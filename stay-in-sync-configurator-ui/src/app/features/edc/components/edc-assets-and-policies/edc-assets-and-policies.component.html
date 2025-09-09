@@ -143,7 +143,7 @@
 
     <ng-template pTemplate="body" let-policy>
       <tr [pSelectableRow]="policy">
-        <td>{{ policy.id }}</td>
+        <td>{{ policy.policyId || policy['@id'] }}</td>
         <td>{{ policy.bpn }}</td>
         <td>
           <button pButton pRipple type="button" icon="pi pi-pencil" class="p-button-rounded p-button-text p-button-info mr-2" pTooltip="Edit Access Policy" (click)="editAccessPolicy(policy)" ></button>
@@ -205,7 +205,7 @@
 
     <ng-template pTemplate="body" let-contractPolicy>
       <tr [pSelectableRow]="contractPolicy">
-        <td>{{ contractPolicy.id }}</td>
+        <td>{{ contractPolicy['@id'] }}</td>
         <td>{{ contractPolicy.assetId }}</td>
         <td>{{ contractPolicy.bpn }}</td>
         <td>
@@ -448,7 +448,7 @@
         [appendTo]="'body'"
         [disabled]="isContractJsonComplex">
         <ng-template let-policy pTemplate="item">
-          <div>{{ policy.bpn }} ({{ policy.id }})</div>
+          <div>{{ policy.bpn }} ({{ policy.policyId || policy['@id'] }})</div>
         </ng-template>
       </p-autoComplete>
     </div>
@@ -526,7 +526,7 @@
           inputStyleClass="w-full"
           [appendTo]="'body'">
           <ng-template let-policy pTemplate="item">
-            <div>{{ policy.bpn }} ({{ policy.id }})</div>
+            <div>{{ policy.bpn }} ({{ policy.policyId || policy['@id'] }})</div>
           </ng-template>
         </p-autoComplete>
       </div>
@@ -616,7 +616,7 @@
           <div class="p-4">
             <h5 class="mt-0 mb-3">Linked Access Policy</h5>
             <div *ngIf="linkedAccessPolicy; else noPolicy" class="surface-card p-3 border-round">
-              <div class="font-medium mb-2">ID: <span class="font-normal text-color-secondary">{{ linkedAccessPolicy.id }}</span></div>
+              <div class="font-medium mb-2">ID: <span class="font-normal text-color-secondary">{{ linkedAccessPolicy.policyId || linkedAccessPolicy['@id'] }}</span></div>
               <div class="font-medium">BPN: <span class="font-normal text-color-secondary">{{ linkedAccessPolicy.bpn }}</span></div>
             </div>
             <ng-template #noPolicy><p>No linked access policy found.</p></ng-template>

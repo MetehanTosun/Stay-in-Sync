@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpResponse } from '@angular/common/http';
-import { Observable, map, of, delay } from 'rxjs';
+import { Observable, map, of, delay, tap } from 'rxjs';
 import {
   OdrlPolicyDefinition,
   OdrlContractDefinition,
@@ -35,9 +35,8 @@ export class PolicyService {
       const policies = MOCK_POLICIES[edcId] || [];
       const mapped = policies.map(dto => ({
         ...dto.policy,
-        id: dto.policy?.['@id'],
+        policyId: dto.policy?.['@id'],
         dbId: dto.id,
-        policyId: dto.policyId,
         bpn: dto.policy?.permission?.[0]?.constraint?.[0]?.rightOperand,
       }));
       return of(mapped).pipe(delay(300));
@@ -45,11 +44,13 @@ export class PolicyService {
     return this.http.get<any[]>(`${this.baseUrl}/${edcId}/policies`).pipe(
       map((dtos: any[]) => {
         console.log('Policies DTOs from backend:', dtos);
+        if (dtos && dtos.length > 0) {
+          console.log('Example policy structure:', JSON.stringify(dtos[0], null, 2));
+        }
         return dtos.map(dto => ({
           ...dto.policy,               // entpacke ODRL-Struktur
-          id: dto.policy?.['@id'],     // fürs UI
-          dbId: dto.id,                // DB-UUID
-          policyId: dto.policyId,      // Business-Key
+          policyId: dto.policy?.['@id'],     // fürs UI, ersetzt 'id'
+          dbId: dto.id                 // DB-UUID
         }));
       })
     );
@@ -67,15 +68,14 @@ export class PolicyService {
       if (!dto) {
         return of({} as OdrlPolicyDefinition);
       }
-      const mapped = { ...dto.policy, id: dto.policy?.['@id'], dbId: dto.id, policyId: dto.policyId };
+      const mapped = { ...dto.policy, policyId: dto.policy?.['@id'], dbId: dto.id };
       return of(mapped).pipe(delay(300));
     }
     return this.http.get<any>(`${this.baseUrl}/${edcId}/policies/${dbId}`).pipe(
       map(dto => ({
         ...dto.policy,
-        id: dto.policy?.['@id'],
-        dbId: dto.id,
-        policyId: dto.policyId,
+        policyId: dto.policy?.['@id'],
+        dbId: dto.id
       }))
     );
   }
@@ -83,7 +83,6 @@ export class PolicyService {
   /**
    * Neue Policy anlegen → schickt nur policyId + Policy-Struktur
    */
-// policy.service.ts
 // uploadPolicyDefinition(raw: any) {
   uploadPolicyDefinition(edcId: string, raw: any) {
     if (this.mockMode) {
@@ -100,6 +99,9 @@ export class PolicyService {
       return of(response).pipe(delay(300));
     }
 
+  // Prüfen, ob es sich um ein Update oder eine neue Policy handelt
+  const isUpdate = !!raw.dbId;
+  
   // 1) Robuste Normalisierung aus Editor:
   //    - Erlaube sowohl { permission: [...] } als auch { policy: { permission: [...] } }
   const permission = Array.isArray(raw?.permission)
@@ -108,9 +110,12 @@ export class PolicyService {
       ? raw.policy.permission
       : [];
 
+  // Generiere automatisch eine Policy-ID, wenn keine vorhanden ist
+  const policyId = String(raw?.['@id'] ?? '').trim() || `policy-${Date.now()}`;
+
   const normalizedPolicy = {
     '@context': raw?.['@context'] ?? { odrl: 'http://www.w3.org/ns/odrl/2/' },
-    '@id': String(raw?.['@id'] ?? '').trim(),
+    '@id': policyId,
     permission
   };
 
@@ -118,12 +123,33 @@ export class PolicyService {
     policyId: normalizedPolicy['@id'],
     policy: normalizedPolicy
   };
-
-  console.log('[PolicyService] Uploading DTO ->', dto); // <-- siehst du im Browser
-
-  // 2) POST + Fehlerdetails loggen
-  // return this.http.post(this.backendUrl, dto, { observe: 'response' });
-    return this.http.post(`${this.baseUrl}/${edcId}/policies`, dto, { observe: 'response' });
+  
+  // Wenn dbId vorhanden ist, handelt es sich um ein Update
+  if (isUpdate) {
+    console.log(`[PolicyService] Updating policy with dbId ${raw.dbId} for EDC ${edcId}`);
+    console.log('[PolicyService] Update DTO ->', dto);
+    
+    // PUT request für Update
+    return this.http.put(`${this.baseUrl}/${edcId}/policies/${raw.dbId}`, dto, { observe: 'response' })
+      .pipe(
+        tap(
+          () => console.log(`Successfully updated policy ${raw.dbId}`),
+          (error: any) => console.error(`Error updating policy ${raw.dbId}:`, error)
+        )
+      );
+  } else {
+    console.log('[PolicyService] Creating new policy for EDC', edcId);
+    console.log('[PolicyService] Create DTO ->', dto);
+    
+    // POST request für neue Policy
+    return this.http.post(`${this.baseUrl}/${edcId}/policies`, dto, { observe: 'response' })
+      .pipe(
+        tap(
+          () => console.log(`Successfully created new policy`),
+          (error: any) => console.error(`Error creating policy:`, error)
+        )
+      );
+  }
 }
 
 
@@ -151,10 +177,10 @@ export class PolicyService {
     }
     const dto = {
       id: policy.dbId,
-      policyId: policy['@id'],
+      policyId: policy.policyId || policy['@id'],
       policy: {
         '@context': policy['@context'],
-        '@id': policy['@id'],
+        '@id': policy.policyId || policy['@id'],
         permission: policy.permission || policy.policy?.permission || [],
       },
     };
@@ -175,7 +201,14 @@ export class PolicyService {
       }
       return of(undefined).pipe(delay(300));
     }
-    return this.http.delete<void>(`${this.baseUrl}/${edcId}/policies/${dbId}`);
+    console.log(`Sending DELETE request to ${this.baseUrl}/${edcId}/policies/${dbId}`);
+    return this.http.delete<void>(`${this.baseUrl}/${edcId}/policies/${dbId}`)
+      .pipe(
+        tap(
+          () => console.log(`Successfully deleted policy ${dbId}`),
+          (error: any) => console.error(`Error deleting policy ${dbId}:`, error)
+        )
+      );
   }
 
   // --------------------------------------------------------

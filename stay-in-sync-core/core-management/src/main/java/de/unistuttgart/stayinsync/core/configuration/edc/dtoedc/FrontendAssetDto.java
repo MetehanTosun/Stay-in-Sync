@@ -95,8 +95,8 @@ public class FrontendAssetDto {
         if (this.dataAddress != null) {
             dataAddressDto = new EDCDataAddressDto()
                     .setJsonLDType("DataAddress")
-                    .setType(this.dataAddress.getType())
-                    .setBaseURL(this.dataAddress.getBaseUrl())
+                    .setType(this.dataAddress.type())
+                    .setBaseURL(this.dataAddress.baseUrl())
                     .setProxyPath(true)
                     .setProxyQueryParams(true);
         }
@@ -112,8 +112,8 @@ public class FrontendAssetDto {
         return new EDCAssetDto(
                 null, // ID wird automatisch generiert
                 assetId != null ? assetId : "asset-" + UUID.randomUUID().toString(),
-                this.dataAddress != null ? this.dataAddress.getBaseUrl() : "",
-                this.dataAddress != null ? this.dataAddress.getType() : "HttpData",
+                this.dataAddress != null ? this.dataAddress.baseUrl() : "",
+                this.dataAddress != null ? this.dataAddress.type() : "HttpData",
                 contentType != null ? contentType : "application/json",
                 description,
                 targetEDCId,
@@ -151,9 +151,9 @@ public class FrontendAssetDto {
         frontendDto.setProperties(properties);
         
         // DataAddress in das Frontend-Format konvertieren
-        FrontendDataAddressDto dataAddress = new FrontendDataAddressDto()
-                .setType(backendDto.dataAddress().getType())
-                .setBaseUrl(backendDto.dataAddress().getBaseURL());
+        FrontendDataAddressDto dataAddress = new FrontendDataAddressDto(
+                backendDto.dataAddress().getType(),
+                backendDto.dataAddress().getBaseURL());
         frontendDto.setDataAddress(dataAddress);
         
         return frontendDto;
