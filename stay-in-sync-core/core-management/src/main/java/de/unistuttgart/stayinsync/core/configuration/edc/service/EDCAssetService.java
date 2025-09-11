@@ -106,8 +106,8 @@ public class EDCAssetService {
         try {
             // Asset im EDC erstellen
             JsonObject assetJson = createEdcAssetJson(asset);
-            String edcUrl = asset.getTargetEDC().url;
-            String apiKey = asset.getTargetEDC().apiKey;
+            String edcUrl = asset.getTargetEDC().getUrl();
+            String apiKey = asset.getTargetEDC().getApiKey();
             
             // API-Aufruf zum Erstellen des Assets im EDC
             edcClient.createAsset(edcUrl, apiKey, assetJson);
@@ -193,8 +193,8 @@ public class EDCAssetService {
             // Dann im EDC aktualisieren
             // Hinweis: EDC unterstützt kein direktes Update, daher löschen und neu erstellen
             if (persistedAsset.getTargetEDC() != null) {
-                String edcUrl = persistedAsset.getTargetEDC().url;
-                String apiKey = persistedAsset.getTargetEDC().apiKey;
+                String edcUrl = persistedAsset.getTargetEDC().getUrl();
+                String apiKey = persistedAsset.getTargetEDC().getApiKey();
                 
                 // Versuche das Asset zu löschen, falls es bereits existiert
                 try {
@@ -247,8 +247,8 @@ public class EDCAssetService {
         
         if (asset.getTargetEDC() != null) {
             try {
-                String edcUrl = asset.getTargetEDC().url;
-                String apiKey = asset.getTargetEDC().apiKey;
+                String edcUrl = asset.getTargetEDC().getUrl();
+                String apiKey = asset.getTargetEDC().getApiKey();
                 String assetId = asset.getAssetId();
                 
                 // Löschen des Assets im EDC
@@ -379,8 +379,8 @@ public class EDCAssetService {
             return;
         }
         
-        String edcUrl = asset.getTargetEDC().url;
-        String apiKey = asset.getTargetEDC().apiKey;
+        String edcUrl = asset.getTargetEDC().getUrl();
+        String apiKey = asset.getTargetEDC().getApiKey();
         String assetId = asset.getAssetId();
         
         try {
@@ -467,8 +467,8 @@ public class EDCAssetService {
             return;
         }
         
-        String edcUrl = asset.getTargetEDC().url;
-        String apiKey = asset.getTargetEDC().apiKey;
+        String edcUrl = asset.getTargetEDC().getUrl();
+        String apiKey = asset.getTargetEDC().getApiKey();
         String assetId = asset.getAssetId();
         String contractDefId = "contract-" + assetId;
         String policyId = "policy-" + assetId;
@@ -976,8 +976,8 @@ public class EDCAssetService {
         }
         
         // EDC-Verbindungsinformationen
-        String edcUrl = asset.getTargetEDC().url;
-        String apiKey = asset.getTargetEDC().apiKey;
+        String edcUrl = asset.getTargetEDC().getUrl();
+        String apiKey = asset.getTargetEDC().getApiKey();
         
         try {
             // Zuerst prüfen, ob für dieses Asset bereits eine Contract Definition existiert
@@ -1028,8 +1028,8 @@ public class EDCAssetService {
         }
         
         // EDC-Verbindungsinformationen
-        String edcUrl = asset.getTargetEDC().url;
-        String apiKey = asset.getTargetEDC().apiKey;
+        String edcUrl = asset.getTargetEDC().getUrl();
+        String apiKey = asset.getTargetEDC().getApiKey();
         
         try {
             // Status des Transfer-Prozesses abrufen

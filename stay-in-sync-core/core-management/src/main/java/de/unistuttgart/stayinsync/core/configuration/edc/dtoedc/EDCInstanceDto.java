@@ -15,11 +15,15 @@ public class EDCInstanceDto {
     @NotBlank
     private String url;
 
+    @NotBlank
     private String protocolVersion;
+
     private String description;
+
+    @NotBlank
     private String bpn;
 
-    private String apiKey; // optional
+    private String apiKey; // API-Schlüssel für die Authentifizierung
 
     private Set<UUID> edcAssetIds;
 
