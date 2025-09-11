@@ -59,7 +59,9 @@ public class PollingJob implements Job {
             throw new JobExecutionException(exceptionMessage);
         }
 
-        requestCounter(pollingJobDetails.workerPodName()).increment();
+        if (pollingJobDetails.workerPodName() != null){
+            requestCounter(pollingJobDetails.workerPodName()).increment();
+        }
 
         try {
            final JsonObject jsonObject = restClient.pollJsonObjectFromApi(requestBuilder.buildRequest(pollingJobDetails.requestBuildingDetails()));
