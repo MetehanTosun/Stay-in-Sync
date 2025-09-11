@@ -7,7 +7,8 @@ import { TableModule } from 'primeng/table';
 import { ActivatedRoute } from '@angular/router';
 import { NodeMarkerService } from '../../core/services/node-marker.service';
 import { Button } from 'primeng/button';
-import { TransformationService } from '../../core/services/transformation.service'; // <-- neu
+import { TransformationService } from '../../core/services/transformation.service';
+import {DropdownModule} from 'primeng/dropdown'; // <-- neu
 
 @Component({
   selector: 'app-logs-panel',
@@ -19,7 +20,8 @@ import { TransformationService } from '../../core/services/transformation.servic
     NgIf,
     TableModule,
     Button,
-    NgForOf
+    NgForOf,
+    DropdownModule
   ],
   standalone: true
 })
@@ -33,7 +35,24 @@ export class LogsPanelComponent implements OnInit, OnDestroy {
   startTime = '';
   endTime = '';
   level = '';
-  transformationIds: string[] = []; // <-- neu
+  transformationIds: string[] = [];
+
+  levels = [
+    { label: 'Info', value: 'info' },
+    { label: 'Warn', value: 'warn' },
+    { label: 'Error', value: 'error' },
+    { label: 'Debug', value: 'debug' },
+    { label: 'Trace', value: 'trace' }
+  ];
+
+  services = [
+    { label: 'monitoring-backend', value: 'monitoring-backend' },
+    { label: 'core-sync-node', value: 'core-sync-node' },
+    { label: 'core-polling-node', value: 'core-polling-node' },
+    { label: 'core-management', value: 'core-management' },
+    { label: 'docker', value: 'docker' }
+  ];
+
 
   constructor(
     private logService: LogService,
