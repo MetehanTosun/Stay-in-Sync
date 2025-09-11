@@ -297,8 +297,9 @@ export class GraphPanelComponent implements AfterViewInit {
 
     nodeGroup.on('click', (event, d) => {
       event.stopPropagation();
-      this.nodeSelected.emit(d.id);
-      console.log(`Node ${d.id} selected`);
+      if (d.type === 'PollingNode' || d.type === 'SyncNode') {
+        this.nodeSelected.emit(d.id);
+      }
     });
 
     d3.select('svg').on('click', (event: MouseEvent) => {

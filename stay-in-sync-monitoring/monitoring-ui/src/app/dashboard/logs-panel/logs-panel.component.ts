@@ -96,6 +96,29 @@ export class LogsPanelComponent implements OnInit, OnDestroy {
     const startNs = this.toNanoSeconds(new Date(this.startTime));
     const endNs = this.toNanoSeconds(new Date(this.endTime));
 
+    // Sonderfall: PollingNode
+    if (this.selectedNodeId && this.selectedNodeId.startsWith('POLL')) {
+      this.selectedService = 'core-polling-node';
+      this.loading = true;
+      this.errorMessage = '';
+
+      this.logService.getLogs(startNs, endNs, this.level).subscribe({
+        next: logs => {
+          // keine TransformationId-Filterung, nur Service
+          this.logs = logs.filter(log => log.service === this.selectedService);
+          this.loading = false;
+        },
+        error: err => {
+          console.error('Error fetching logs', err);
+          this.errorMessage = 'Fehler beim Laden der Logs';
+          this.loading = false;
+        }
+      });
+      return;
+    }
+
+    // Kein Node ausgewählt: Alle Logs laden (optional nach Service filtern)
+
     if (!this.selectedNodeId){
       this.logService.getLogs(startNs, endNs, this.level)
         .subscribe({
