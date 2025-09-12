@@ -1,9 +1,0 @@
-package de.unistuttgart.stayinsync.transport.dto;
-
-public record TransformationScriptDTO(
-        Long id,
-        String name,
-        String hash,
-        String javascriptCode
-) {
-}

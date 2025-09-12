@@ -7,7 +7,6 @@ import de.unistuttgart.stayinsync.core.configuration.rest.dtos.CreateArcDTO;
 import de.unistuttgart.stayinsync.core.configuration.rest.dtos.CreateRequestConfigurationDTO;
 import de.unistuttgart.stayinsync.core.configuration.rest.dtos.GetRequestConfigurationDTO;
 import de.unistuttgart.stayinsync.core.configuration.service.SourceSystemApiRequestConfigurationService;
-import de.unistuttgart.stayinsync.core.configuration.rest.Examples;
 import io.quarkus.logging.Log;
 import jakarta.inject.Inject;
 import jakarta.validation.Valid;

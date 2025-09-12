@@ -4,7 +4,6 @@ import de.unistuttgart.stayinsync.core.configuration.exception.CoreManagementExc
 import de.unistuttgart.stayinsync.core.configuration.mapping.ApiHeaderValueMapper;
 import de.unistuttgart.stayinsync.core.configuration.rest.dtos.ApiHeaderValueDTO;
 import de.unistuttgart.stayinsync.core.configuration.service.ApiHeaderValueService;
-import de.unistuttgart.stayinsync.core.configuration.rest.Examples;
 import io.quarkus.logging.Log;
 import jakarta.inject.Inject;
 import jakarta.validation.Valid;

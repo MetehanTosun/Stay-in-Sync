@@ -1,13 +1,13 @@
 package de.unistuttgart.stayinsync.core.configuration.service.transformationrule;
 
-import de.unistuttgart.stayinsync.transport.exception.OperatorValidationException;
-import de.unistuttgart.stayinsync.transport.transformation_rule_shared.nodes.ConfigNode;
-import de.unistuttgart.stayinsync.transport.transformation_rule_shared.nodes.FinalNode;
-import de.unistuttgart.stayinsync.transport.transformation_rule_shared.nodes.LogicNode;
-import de.unistuttgart.stayinsync.transport.transformation_rule_shared.nodes.Node;
-import de.unistuttgart.stayinsync.transport.transformation_rule_shared.logic_operator.Operation;
-import de.unistuttgart.stayinsync.transport.transformation_rule_shared.util.GraphTopologicalSorter;
-import de.unistuttgart.stayinsync.transport.transformation_rule_shared.validation_error.*;
+import de.unistuttgart.graphengine.exception.OperatorValidationException;
+import de.unistuttgart.graphengine.validation_error.*;
+import de.unistuttgart.graphengine.logic_operator.Operation;
+import de.unistuttgart.graphengine.nodes.ConfigNode;
+import de.unistuttgart.graphengine.nodes.FinalNode;
+import de.unistuttgart.graphengine.nodes.LogicNode;
+import de.unistuttgart.graphengine.nodes.Node;
+import de.unistuttgart.graphengine.util.GraphTopologicalSorter;
 import io.quarkus.logging.Log;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;

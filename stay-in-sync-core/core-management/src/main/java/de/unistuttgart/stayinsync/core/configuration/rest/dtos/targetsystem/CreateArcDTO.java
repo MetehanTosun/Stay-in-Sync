@@ -1,6 +1,6 @@
 package de.unistuttgart.stayinsync.core.configuration.rest.dtos.targetsystem;
 
-import de.unistuttgart.stayinsync.transport.domain.TargetApiRequestConfigurationPatternType;
+import de.unistuttgart.stayinsync.core.transport.domain.TargetApiRequestConfigurationPatternType;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 

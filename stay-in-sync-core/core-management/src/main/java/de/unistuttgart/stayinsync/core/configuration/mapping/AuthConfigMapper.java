@@ -6,7 +6,7 @@ import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.authco
 import de.unistuttgart.stayinsync.core.configuration.rest.dtos.ApiAuthConfigurationDTO;
 import de.unistuttgart.stayinsync.core.configuration.rest.dtos.ApiKeyAuthDTO;
 import de.unistuttgart.stayinsync.core.configuration.rest.dtos.BasicAuthDTO;
-import de.unistuttgart.stayinsync.transport.dto.ApiAuthConfigurationMessageDTO;
+import de.unistuttgart.stayinsync.core.transport.dto.ApiAuthConfigurationMessageDTO;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.MappingConstants;

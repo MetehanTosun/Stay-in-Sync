@@ -6,7 +6,7 @@ import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.Transf
 import de.unistuttgart.stayinsync.core.configuration.mapping.targetsystem.RequestConfigurationMessageMapper;
 import de.unistuttgart.stayinsync.core.configuration.rest.dtos.TransformationDetailsDTO;
 import de.unistuttgart.stayinsync.core.configuration.rest.dtos.TransformationShellDTO;
-import de.unistuttgart.stayinsync.transport.dto.TransformationMessageDTO;
+import de.unistuttgart.stayinsync.core.transport.dto.TransformationMessageDTO;
 import org.mapstruct.*;
 
 import java.util.Collections;

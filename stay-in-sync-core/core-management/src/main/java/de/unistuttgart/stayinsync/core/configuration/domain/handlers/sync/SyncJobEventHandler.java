@@ -10,10 +10,10 @@ import de.unistuttgart.stayinsync.core.configuration.mapping.TransformationMappe
 import de.unistuttgart.stayinsync.core.configuration.service.SourceSystemApiRequestConfigurationService;
 import de.unistuttgart.stayinsync.core.management.rabbitmq.producer.PollingJobMessageProducer;
 import de.unistuttgart.stayinsync.core.management.rabbitmq.producer.TransformationJobMessageProducer;
-import de.unistuttgart.stayinsync.transport.domain.JobDeploymentStatus;
-import de.unistuttgart.stayinsync.transport.dto.PollingJobDeploymentFeedbackMessageDTO;
-import de.unistuttgart.stayinsync.transport.dto.SourceSystemApiRequestConfigurationMessageDTO;
-import de.unistuttgart.stayinsync.transport.dto.TransformationMessageDTO;
+import de.unistuttgart.stayinsync.core.transport.domain.JobDeploymentStatus;
+import de.unistuttgart.stayinsync.core.transport.dto.PollingJobDeploymentFeedbackMessageDTO;
+import de.unistuttgart.stayinsync.core.transport.dto.SourceSystemApiRequestConfigurationMessageDTO;
+import de.unistuttgart.stayinsync.core.transport.dto.TransformationMessageDTO;
 import io.quarkus.logging.Log;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.event.Observes;

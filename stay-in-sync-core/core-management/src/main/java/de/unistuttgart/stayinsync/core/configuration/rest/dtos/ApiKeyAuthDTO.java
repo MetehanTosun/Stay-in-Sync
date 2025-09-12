@@ -1,6 +1,6 @@
 package de.unistuttgart.stayinsync.core.configuration.rest.dtos;
 
-import de.unistuttgart.stayinsync.transport.domain.ApiAuthType;
+import de.unistuttgart.stayinsync.core.transport.domain.ApiAuthType;
 import jakarta.validation.constraints.NotNull;
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
 

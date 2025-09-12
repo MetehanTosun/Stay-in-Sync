@@ -5,7 +5,6 @@ import de.unistuttgart.stayinsync.core.configuration.mapping.SyncJobFullUpdateMa
 import de.unistuttgart.stayinsync.core.configuration.rest.dtos.SyncJobCreationDTO;
 import de.unistuttgart.stayinsync.core.configuration.rest.dtos.SyncJobDTO;
 import de.unistuttgart.stayinsync.core.configuration.service.SyncJobService;
-import de.unistuttgart.stayinsync.core.configuration.rest.Examples;
 import io.quarkus.logging.Log;
 import jakarta.inject.Inject;
 import jakarta.validation.Valid;

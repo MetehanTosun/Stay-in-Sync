@@ -2,8 +2,7 @@ package de.unistuttgart.stayinsync.core.configuration.service.transformationrule
 
 import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.TransformationRule;
 import de.unistuttgart.stayinsync.core.configuration.exception.CoreManagementException;
-import de.unistuttgart.stayinsync.transport.transformation_rule_shared.util.GraphMapper;
-import de.unistuttgart.stayinsync.transport.transformation_rule_shared.validation_error.ValidationError;
+import de.unistuttgart.graphengine.validation_error.ValidationError;
 import io.quarkus.logging.Log;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
