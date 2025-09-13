@@ -151,7 +151,6 @@ public class AasStructureSnapshotService {
 
         // Heuristics: consider JSON as Submodel if it declares modelType Submodel or contains submodelElements
         for (ZipJson zj : jsonEntries) {
-            if (!(zj.lowerName.contains("submodel") || zj.lowerName.contains("sub-model"))) continue;
             try {
                 JsonNode root = objectMapper.readTree(zj.json);
                 if (root == null) continue;
@@ -220,10 +219,20 @@ public class AasStructureSnapshotService {
                                 root = (org.w3c.dom.Element) subNodes.item(0);
                             }
                         }
+                        // IDTA templates often use identifier/@id as URN/IRI
                         String id = firstTextByLocalName(root, "id");
                         if (id == null) {
                             var ident = firstChildByLocalName(root, "identification");
                             if (ident != null) id = firstTextByLocalName(ident, "id");
+                            if (id == null) {
+                                // try generic identifier element
+                                var identifier = firstChildByLocalName(root, "identifier");
+                                if (identifier != null) {
+                                    String i1 = identifier.getAttribute("id");
+                                    if (i1 != null && !i1.isBlank()) id = i1;
+                                    if (id == null) id = identifier.getTextContent();
+                                }
+                            }
                         }
                         if (id == null || id.isBlank()) {
                             // fallback to file name
@@ -251,7 +260,10 @@ public class AasStructureSnapshotService {
                         importedSubmodels++;
 
                         // Top-level elements under submodelElements
+                        // IDTA packages sometimes use pluralization or different casing
                         var smEls = firstChildByLocalName(root, "submodelElements");
+                        if (smEls == null) smEls = firstChildByLocalName(root, "subModelElements");
+                        if (smEls == null) smEls = firstChildByLocalName(root, "elements");
                         if (smEls != null) {
                             java.util.Set<String> seen = new java.util.HashSet<>();
                             var children = childElements(smEls);
