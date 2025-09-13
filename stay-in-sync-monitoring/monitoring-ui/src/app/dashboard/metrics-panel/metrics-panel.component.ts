@@ -16,7 +16,8 @@ export class MetricsPanelComponent implements OnInit {
   isPollingNode: boolean = false;
   pollingNodeName: string = '';
   transformationIds: (number | undefined)[] = [];
-  grafanaUrl: string = '';
+  grafanaDashboardUrl: string = '';
+  grafanaSpeicherUrl: string = '';
 
   constructor(
     private route: ActivatedRoute,
@@ -28,38 +29,36 @@ export class MetricsPanelComponent implements OnInit {
       this.selectedNodeId = params['input'] || '';
 
       if (!this.selectedNodeId) {
-        // Keine Node ausgewählt, Standard-URL bauen
-        this.buildGrafanaUrl();
+        this.buildGrafanaUrls();
         return;
       }
 
-      // Prüfen, ob es ein PollingNode ist
       if (this.selectedNodeId.startsWith('POLL_')) {
         this.isPollingNode = true;
         this.pollingNodeName = this.selectedNodeId.replace('POLL_', '');
-        this.buildGrafanaUrl();
+        this.buildGrafanaUrls();
       } else {
-        // Standard: Transformationen holen
         this.isPollingNode = false;
-        this.loadTransformationsAndBuildUrl(this.selectedNodeId);
+        this.loadTransformationsAndBuildUrls(this.selectedNodeId);
       }
     });
   }
 
-  private loadTransformationsAndBuildUrl(nodeId: string) {
+  private loadTransformationsAndBuildUrls(nodeId: string) {
     this.transformationService.getTransformations(nodeId).subscribe({
       next: (transformations) => {
         this.transformationIds = transformations.map(t => t.id);
-        this.buildGrafanaUrl();
+        this.buildGrafanaUrls();
       },
       error: (err) => {
         console.error('Fehler beim Laden der Transformationen', err);
-        this.buildGrafanaUrl(); // URL trotzdem bauen
+        this.buildGrafanaUrls();
       }
     });
   }
 
-  private buildGrafanaUrl() {
+  private buildGrafanaUrls() {
+    //  Haupt-Dashboard
     const baseUrl = 'http://localhost:3000/d/c0d04c42-641e-438b-8592-f1ca577899dd/quarkus-service-monitoring';
     const orgId = 1;
     const from = Date.now() - 60 * 60 * 1000; // letzte Stunde
@@ -69,14 +68,15 @@ export class MetricsPanelComponent implements OnInit {
     let urlParams = `orgId=${orgId}&from=${from}&to=${to}&refresh=${refresh}&theme=light`;
 
     if (this.isPollingNode) {
-      // PollingNode-Parameter
       urlParams += `&var-${this.pollingNodeName}=1`;
     } else if (this.transformationIds.length > 0) {
-      // Transformation IDs
       urlParams += '&' + this.transformationIds.map(id => `var-transformationId=${id}`).join('&');
     }
 
-    this.grafanaUrl = `${baseUrl}?${urlParams}`;
-    console.log('Grafana URL:', this.grafanaUrl);
+    this.grafanaDashboardUrl = `${baseUrl}?${urlParams}`;
+
+
+    this.grafanaSpeicherUrl = `http://localhost:3000/d/a26b9626-8e35-480f-b6e1-cf4e66717bb7/speicher?orgId=1&from=${from}&to=${to}&refresh=${refresh}&theme=light`;
   }
 }
+
