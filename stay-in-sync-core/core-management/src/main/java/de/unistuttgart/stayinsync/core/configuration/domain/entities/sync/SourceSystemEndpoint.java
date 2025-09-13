@@ -2,6 +2,7 @@ package de.unistuttgart.stayinsync.core.configuration.domain.entities.sync;
 
 import jakarta.persistence.*;
 
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
@@ -17,10 +18,10 @@ public class SourceSystemEndpoint extends SyncSystemEndpoint {
     public SourceSystem sourceSystem;
 
     @OneToMany(mappedBy = "sourceSystemEndpoint")
-    public Set<SourceSystemApiRequestConfiguration> apiRequestConfigurations;
+    public Set<SourceSystemApiRequestConfiguration> apiRequestConfigurations = new HashSet<>();
 
     @OneToMany(mappedBy = "sourceSystemEndpoint")
-    public Set<SourceSystemVariable> sourceSystemVariable;
+    public Set<SourceSystemVariable> sourceSystemVariable = new HashSet<>();
 
     public static List<SourceSystemEndpoint> findBySourceSystemId(Long sourceSystemId) {
         return find("sourceSystem.id", sourceSystemId).list();

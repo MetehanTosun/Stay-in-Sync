@@ -14,7 +14,10 @@ export class HttpErrorService {
   constructor(readonly messageService: MessageService) { }
 
   handleError(response: HttpErrorResponse) {
-    this.messageService.add({ severity: 'error', summary: response.error.errorTitle, detail: response.error.errorMessage, life: 3000});
+    const err: any = response?.error || {};
+    const summary = err.errorTitle || err.title || `HTTP ${response.status}`;
+    const detail = err.errorMessage || err.message || (typeof err === 'string' ? err : 'Request failed');
+    this.messageService.add({ severity: 'error', summary, detail, life: 3000});
   }
 
 

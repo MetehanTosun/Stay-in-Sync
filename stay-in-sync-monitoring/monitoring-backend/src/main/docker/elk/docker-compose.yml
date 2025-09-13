@@ -1,20 +1,5 @@
-version: '3.9'
 
 services:
-  elasticsearch:
-    image: docker.elastic.co/elasticsearch/elasticsearch:8.13.4
-    container_name: elasticsearch
-    environment:
-      - discovery.type=single-node
-      - xpack.security.enabled=false
-      - xpack.security.enrollment.enabled=false
-      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
-    ports:
-      - "9200:9200"
-    volumes:
-      - elasticsearch_data:/usr/share/elasticsearch/data
-    networks:
-      - elk
 
   grafana:
     image: grafana/grafana:10.1.5
@@ -30,59 +15,39 @@ services:
       - GF_SECURITY_ALLOW_EMBEDDING=true
     volumes:
       - grafana_data:/var/lib/grafana
+      - ./dashboards:/etc/grafana/provisioning/dashboards/json
+      - ./provisioning/dashboards:/etc/grafana/provisioning/dashboards
     depends_on:
-      - elasticsearch
       - loki
+      - prometheus
     networks:
       - elk
 
-  kibana:
-    image: docker.elastic.co/kibana/kibana:8.13.4
-    container_name: kibana
-    environment:
-      - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
-      - xpack.security.enabled=false
-    ports:
-      - "5601:5601"
-    depends_on:
-      - elasticsearch
-    networks:
-      - elk
-
-  logstash:
-    image: docker.elastic.co/logstash/logstash:8.13.4
-    container_name: logstash
+  prometheus:
+    image: prom/prometheus:v2.55.1
+    container_name: prometheus
     volumes:
-      - ./logstash.conf:/usr/share/logstash/pipeline/logstash.conf:ro
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.enable-lifecycle'
     ports:
-      - "5044:5044"
-      - "5001:5000"
-      - "9600:9600"
-    environment:
-      - "LS_JAVA_OPTS=-Xmx256m -Xms256m"
-    depends_on:
-      - elasticsearch
+      - "9090:9090"
     networks:
       - elk
+    depends_on:
+      - blackbox_exporter
 
-  metricbeat:
-    image: docker.elastic.co/beats/metricbeat:8.13.4
-    container_name: metricbeat
-    user: root
+  blackbox_exporter:
+    image: prom/blackbox-exporter:v0.25.0
+    container_name: blackbox_exporter
+    ports:
+      - "9115:9115"
     volumes:
-      - ./metricbeat.yml:/usr/share/metricbeat/metricbeat.yml:ro
-      - /var/run/docker.sock:/var/run/docker.sock:ro
-      - /sys/fs/cgroup:/hostfs/sys/fs/cgroup:ro
-      - /proc:/hostfs/proc:ro
-      - /:/hostfs:ro
-    environment:
-      - ELASTICSEARCH_HOST=elasticsearch:9200
-      - KIBANA_HOST=kibana:5601
-    depends_on:
-      - elasticsearch
+      - ./blackbox.yml:/etc/blackbox_exporter/blackbox.yml:ro
     networks:
       - elk
-    command: metricbeat -e -strict.perms=false
 
   loki:
     image: grafana/loki:2.9.4
@@ -98,7 +63,10 @@ services:
     container_name: fluent-bit
     ports:
       - "5500:5000"
-      - "5170:5170"  # Quarkus TCP Log-Port
+      - "5170:5170"
+      - "5171:5171"
+      - "5172:5172"
+      - "5173:5173"
     volumes:
       - ./fluent-bit/fluent-bit.conf:/fluent-bit/etc/fluent-bit.conf:ro
       - ./fluent-bit/parsers.conf:/fluent-bit/etc/parsers.conf:ro
@@ -109,36 +77,8 @@ services:
       - loki
     networks:
       - elk
-  #context anpassen
-  core-polling-node:
-    build:
-      context: /Users/serhatceri/Desktop/StuPro331/stay-in-sync-core/core-polling-node
-      dockerfile: src/main/docker/Dockerfile.jvm
-    image: stay-in-sync/core-polling-node
-    container_name: core-polling-node
-    environment:
-      - QUARKUS_PROFILE=monitoring
-    depends_on:
-      - fluent-bit
-    networks:
-      - elk
-
-#context anpassen
-  core-sync-node:
-    build:
-      context: /Users/serhatceri/Desktop/StuPro331/stay-in-sync-core/core-sync-node
-      dockerfile: src/main/docker/Dockerfile.jvm
-    image: stay-in-sync/core-sync-node
-    container_name: core-sync-node
-    environment:
-      - QUARKUS_PROFILE=monitoring
-    depends_on:
-      - fluent-bit
-    networks:
-      - elk
 
 volumes:
-  elasticsearch_data:
   grafana_data:
 
 networks:

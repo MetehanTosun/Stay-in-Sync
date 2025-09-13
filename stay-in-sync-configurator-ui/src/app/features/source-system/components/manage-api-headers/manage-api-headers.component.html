@@ -3,6 +3,11 @@
 <p-card styleClass="p-p-4">
   <h3 style="margin-bottom: 2rem;">Manage API Headers</h3> <!-- Header with spacing -->
 
+  <!-- AAS hint -->
+  <div *ngIf="isAas" class="p-mb-3" style="color:#555;">
+    Accept/Content-Type werden bei AAS automatisch gesetzt und sind hier ausgeblendet.
+  </div>
+
   <!-- Form: Add new API header -->
   <form [formGroup]="form" class="p-fluid p-formgrid p-grid p-mb-4 p-p-4">
     <div class="p-field p-col-8" style="margin-bottom: 1.5rem;"> 
@@ -13,7 +18,7 @@
       <label for="headerType">Type</label>
       <p-dropdown
         id="headerType"
-        [options]="headerTypes"
+        [options]="allowedHeaderTypes"
         optionLabel="label"
         optionValue="value"
         placeholder="Select type"
@@ -27,6 +32,14 @@
         label="Add Header"
         [disabled]="form.invalid"
         (click)="addHeader()">
+      </button>
+      <button
+        *ngIf="isAas"
+        pButton
+        type="button"
+        class="p-ml-2 p-button-text"
+        label="Re-Test"
+        (click)="onRetest.emit()">
       </button>
     </div>
   </form>

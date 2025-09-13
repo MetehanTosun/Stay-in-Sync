@@ -6,7 +6,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.*;
 import de.unistuttgart.stayinsync.core.configuration.exception.CoreManagementException;
 import de.unistuttgart.stayinsync.core.configuration.mapping.SourceSystemApiRequestConfigurationFullUpdateMapper;
-import de.unistuttgart.stayinsync.core.configuration.rest.dtos.CreateArcDTO;
+import de.unistuttgart.stayinsync.core.configuration.rest.dtos.CreateSourceArcDTO;
 import de.unistuttgart.stayinsync.core.configuration.rest.dtos.CreateRequestConfigurationDTO;
 import de.unistuttgart.stayinsync.core.configuration.util.TypeScriptTypeGenerator;
 import de.unistuttgart.stayinsync.core.management.rabbitmq.producer.PollingJobMessageProducer;
@@ -135,7 +135,7 @@ public class SourceSystemApiRequestConfigurationService {
     }
 
     @Transactional
-    public SourceSystemApiRequestConfiguration create(CreateArcDTO dto, Long endpointId) {
+    public SourceSystemApiRequestConfiguration create(CreateSourceArcDTO dto, Long endpointId) {
         SourceSystem sourceSystem = SourceSystem.<SourceSystem>findByIdOptional(dto.sourceSystemId())
                 .orElseThrow(() -> new NotFoundException("SourceSystem not found."));
         SourceSystemEndpoint endpoint = SourceSystemEndpoint.<SourceSystemEndpoint>findByIdOptional(endpointId)

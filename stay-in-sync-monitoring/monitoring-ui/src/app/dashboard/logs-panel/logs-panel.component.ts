@@ -1,10 +1,14 @@
-import { Component, Input, OnChanges, SimpleChanges, OnInit } from '@angular/core';
+import { Component, OnDestroy, OnInit } from '@angular/core';
 import { LogEntry } from '../../core/models/log.model';
 import { LogService } from '../../core/services/log.service';
 import { FormsModule } from '@angular/forms';
-import { DatePipe, NgClass, NgForOf, NgIf } from '@angular/common';
+import {DatePipe, NgClass, NgForOf, NgIf} from '@angular/common';
 import { TableModule } from 'primeng/table';
 import { ActivatedRoute } from '@angular/router';
+import { NodeMarkerService } from '../../core/services/node-marker.service';
+import { Button } from 'primeng/button';
+import { TransformationService } from '../../core/services/transformation.service';
+import {DropdownModule} from 'primeng/dropdown'; // <-- neu
 
 @Component({
   selector: 'app-logs-panel',
@@ -13,91 +17,142 @@ import { ActivatedRoute } from '@angular/router';
     FormsModule,
     DatePipe,
     NgClass,
-    TableModule
-  ]
+    NgIf,
+    TableModule,
+    Button,
+    NgForOf,
+    DropdownModule
+  ],
+  standalone: true
 })
-export class LogsPanelComponent implements OnInit, OnChanges {
-  selectedNodeId: string | null = null;
+export class LogsPanelComponent implements OnInit, OnDestroy {
+  selectedNodeId?: string;
 
   logs: LogEntry[] = [];
-  filteredLogs: LogEntry[] = [];
+  loading = false;
+  errorMessage = '';
 
-  startTime: string = '';
-  endTime: string = '';
-  level: string = 'info';
-  stream: 'stdout' | 'stderr' = 'stderr';
+  startTime = '';
+  endTime = '';
+  level = '';
+  transformationIds: string[] = [];
 
-  constructor(private logService: LogService, private route: ActivatedRoute) {
-    this.route.queryParams.subscribe(params => {
-      this.selectedNodeId = params['input'];
-      console.log('Selected Node ID from query params:', this.selectedNodeId);
-    });
-  }
+  levels = [
+    { label: 'Info', value: 'info' },
+    { label: 'Warn', value: 'warn' },
+    { label: 'Error', value: 'error' },
+    { label: 'Debug', value: 'debug' },
+    { label: 'Trace', value: 'trace' }
+  ];
+
+  services = [
+    { label: 'monitoring-backend', value: 'monitoring-backend' },
+    { label: 'core-sync-node', value: 'core-sync-node' },
+    { label: 'core-polling-node', value: 'core-polling-node' },
+    { label: 'core-management', value: 'core-management' },
+    { label: 'docker', value: 'docker' }
+  ];
+
+
+  constructor(
+    private logService: LogService,
+    private route: ActivatedRoute,
+    private nodeMarkerService: NodeMarkerService,
+    private transformationService: TransformationService // <-- neu
+  ) {}
+
+  private intervalId?: number;
+  selectedTransformationId: string = '';
+  selectedService: string = '';
 
   ngOnInit() {
     const now = new Date();
     const oneHourAgo = new Date(now.getTime() - 60 * 60 * 1000);
     this.startTime = this.toDateTimeLocal(oneHourAgo);
     this.endTime = this.toDateTimeLocal(now);
+
+    this.route.queryParams.subscribe(params => {
+      this.selectedNodeId = params['input'];
+      this.fetchLogs();
+    });
+
+    this.intervalId = window.setInterval(() => {
+      this.checkForErrorLogs();
+    }, 5000);
   }
 
-  ngOnChanges(changes: SimpleChanges) {
-    if (changes['selectedNodeId'] && this.selectedNodeId) {
-      this.fetchLogs();
+  ngOnDestroy() {
+    if (this.intervalId) {
+      clearInterval(this.intervalId);
     }
   }
 
+  reloadLogs() {
+    this.endTime = this.toDateTimeLocal(new Date());
+    this.fetchLogs();
+  }
+
   fetchLogs() {
-    const startNs = new Date(this.startTime).getTime() * 1_000_000;
-    const endNs = new Date(this.endTime).getTime() * 1_000_000;
+    const startNs = this.toNanoSeconds(new Date(this.startTime));
+    const endNs = this.toNanoSeconds(new Date(this.endTime));
 
-    const nodeId = this.selectedNodeId || '';
-    const level = this.level || '';
-
-    this.logService.getLogs(
-      this.stream,
-      level,
-      nodeId,
-      startNs.toString(),
-      endNs.toString()
-    ).subscribe({
-      next: (logs: any[]) => {
-        this.logs = logs.map((entry: any) => {
-          const rawMessage = entry.message;
-
-          const levelMatch = rawMessage.match(/level=([a-zA-Z]+)/);
-          const level = levelMatch ? levelMatch[1].toLowerCase() : '';
-
-          let message = '';
-          const msgMatch = rawMessage.match(/msg="([^"]+)"/);
-          const messageMatch = rawMessage.match(/message="([^"]+)"/);
-          if (msgMatch) {
-            message = msgMatch[1];
-          } else if (messageMatch) {
-            message = messageMatch[1];
+    if (!this.selectedNodeId){
+      this.logService.getLogs(startNs, endNs, this.level)
+        .subscribe({
+          next: logs => {
+            this.logs = logs;
+            this.loading = false;
+            if (this.selectedService === '') {
+              return;
+            }
+            this.logs = this.logs.filter(log => log.service === this.selectedService);
+            return;
+          },
+          error: err => {
+            console.error('Error fetching logs', err);
+            this.errorMessage = 'Fehler beim Laden der Logs';
+            this.loading = false;
           }
-
-          const componentMatch = rawMessage.match(/component=([^\s]+)/);
-          const callerMatch = rawMessage.match(/caller=([^\s]+)/);
-
-          return {
-            timestamp: entry.timestamp,
-            message,
-            rawMessage,
-            stream: entry.stream || '',
-            level,
-            caller: callerMatch ? callerMatch[1] : ''
-          } as LogEntry;
         });
+      return;
+    }
 
+    this.loading = true;
+    this.errorMessage = '';
 
-        this.filteredLogs = this.logs.sort(
-          (a, b) => Number(new Date(b.timestamp)) - Number(new Date(a.timestamp))
-        );
-        console.log('Logs successfully fetched:', this.filteredLogs);
+    // 1. Alle TransformationIds für den SyncJob holen
+    this.transformationService.getTransformations(this.selectedNodeId).subscribe({
+      next: transformations => {
+        if (!transformations || transformations.length === 0) {
+          this.logs = [];
+          this.loading = false;
+        }
+         this.transformationIds = transformations
+          .map(t => t.id)
+          .filter((id): id is number => id !== undefined)
+          .map(id => id.toString());
+
+        // 2. Logs für alle TransformationIds abrufen
+        this.logService.getLogsByTransformations(this.transformationIds, startNs, endNs, this.level).subscribe({
+          next: logs => {
+            this.logs = logs;
+            this.loading = false;
+            if (this.selectedTransformationId === '') {
+              return;
+            }
+            this.logs = this.logs.filter(log => log.transformationId?.toString() === this.selectedTransformationId);
+          },
+          error: err => {
+            console.error('Error fetching logs', err);
+            this.errorMessage = 'Fehler beim Laden der Logs';
+            this.loading = false;
+          }
+        });
       },
-      error: (err) => {
-        console.error('Error fetching logs', err);
+      error: err => {
+        console.error('Error fetching transformationIds', err);
+        this.errorMessage = 'Fehler beim Laden der Transformationen';
+        this.loading = false;
       }
     });
   }
@@ -106,10 +161,19 @@ export class LogsPanelComponent implements OnInit, OnChanges {
     this.fetchLogs();
   }
 
-  buildFallbackMessage(log: LogEntry): string {
-    const raw = log.rawMessage || ''; // full log line if message is missing
+  checkForErrorLogs() {
+    this.logService.getErrorLogs(this.toNanoSeconds(new Date(this.startTime)), this.toNanoSeconds(new Date())).subscribe({
+      next: errorIds => {
+        const markedNodes: { [nodeId: string]: boolean } = {};
+        errorIds.forEach(id => markedNodes[id] = true);
+        this.nodeMarkerService.updateMarkedNodes(markedNodes);
+      },
+      error: err => console.error('Error fetching error sync job IDs', err)
+    });
+  }
 
-    // Try to extract meaningful Loki fields
+  buildFallbackMessage(log: LogEntry): string {
+    const raw = (log as any).rawMessage || '';
     const component = this.extractValue(raw, 'component');
     const query = this.extractQuotedValue(raw, 'query');
     const returned = this.extractValue(raw, 'returned_lines');
@@ -121,12 +185,9 @@ export class LogsPanelComponent implements OnInit, OnChanges {
       return `[${component}] Query ${query} returned ${returned || 0} lines (duration=${duration || '-'}, status=${status || '-'})`;
     }
 
-    // Fallback: return caller or component only
-    const parts = [];
-
+    const parts: string[] = [];
     if (component) parts.push(`[${component}]`);
     if (caller) parts.push(`caller=${caller}`);
-
     return parts.length > 0 ? parts.join(' ') : '(unstructured log entry)';
   }
 
@@ -148,5 +209,9 @@ export class LogsPanelComponent implements OnInit, OnChanges {
     const hh = pad(date.getHours());
     const mm = pad(date.getMinutes());
     return `${yyyy}-${MM}-${dd}T${hh}:${mm}`;
+  }
+
+  private toNanoSeconds(date: Date): number {
+    return date.getTime() * 1_000_000; // ms → ns
   }
 }

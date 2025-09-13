@@ -1,12 +1,11 @@
 import { ApplicationConfig, provideZoneChangeDetection } from '@angular/core';
 import { provideRouter } from '@angular/router';
 
+import { provideHttpClient } from '@angular/common/http';
+import { provideAnimationsAsync } from '@angular/platform-browser/animations/async';
+import { providePrimeNG } from 'primeng/config';
+import { MyPreset } from '../../../../stay-in-sync-configurator-ui/src/app/mypreset';
 import { routes } from './app.routes';
-import {provideAnimationsAsync} from "@angular/platform-browser/animations/async";
-import {providePrimeNG} from "primeng/config";
-import Aura from '@primeng/themes/aura';
-import {MyPreset} from '../../../../stay-in-sync-configurator-ui/src/app/mypreset'
-import {provideHttpClient} from '@angular/common/http';
 
 export const appConfig: ApplicationConfig = {
   providers: [
@@ -14,13 +13,13 @@ export const appConfig: ApplicationConfig = {
     provideZoneChangeDetection({ eventCoalescing: true }),
     provideRouter(routes),
     provideAnimationsAsync(),
-    provideHttpClient(),
     providePrimeNG({
-    theme: {
-      preset: MyPreset,
-      options: {
-        darkModeSelector: '.my-app-dark'
-      }
-    }
-  })]
+      theme: {
+        preset: MyPreset,
+        options: {
+          darkModeSelector: '.my-app-dark',
+        },
+      },
+    }),
+  ],
 };
