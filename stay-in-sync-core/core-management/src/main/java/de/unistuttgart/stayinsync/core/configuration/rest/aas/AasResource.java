@@ -80,7 +80,7 @@ public class AasResource {
         }
         var list = AasSubmodelLite.<AasSubmodelLite>list("sourceSystem.id", sourceSystemId)
                 .stream()
-                .map(sm -> new SubmodelSummaryDTO(sm.submodelId, sm.submodelIdShort, sm.semanticId, sm.kind))
+                .map(sm -> new SubmodelSummaryDTO(sm.submodelId, sm.submodelIdShort, sm.semanticId, sm.kind, sm.id))
                 .toList();
         if (!list.isEmpty()) {
             return Uni.createFrom().item(Response.ok().entity(list).build());
@@ -158,7 +158,8 @@ public class AasResource {
                 e.typeValueListElement,
                 e.orderRelevant,
                 null,
-                null
+                null,
+                e.id
         )).toList();
         if (!list.isEmpty()) {
             return Uni.createFrom().item(Response.ok().entity(list).build());
