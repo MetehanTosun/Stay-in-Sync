@@ -1,9 +1,9 @@
 package de.unistuttgart.stayinsync.pollingnode.execution.ressource;
 
+
 import de.unistuttgart.stayinsync.core.transport.dto.*;
 import de.unistuttgart.stayinsync.pollingnode.entities.RequestBuildingDetails;
 import de.unistuttgart.stayinsync.pollingnode.exceptions.execution.pollingjob.requestbuilderexceptions.RequestBuildingException;
-import de.unistuttgart.stayinsync.transport.dto.*;
 import io.vertx.mutiny.core.Vertx;
 import io.vertx.mutiny.core.buffer.Buffer;
 import io.vertx.mutiny.ext.web.client.HttpRequest;
@@ -43,7 +43,7 @@ public class RequestBuilderTest {
     @Mock
     private HttpRequest<Buffer> httpRequest;
 
-    private de.unistuttgart.stayinsync.pollingnode.execution.ressource.RequestBuilder requestBuilder;
+    private de.unistuttgart.stayinsync.core.pollingnode.execution.ressource.RequestBuilder requestBuilder;
 
     private MockedStatic<WebClient> webClientMockedStatic;
 
@@ -52,7 +52,7 @@ public class RequestBuilderTest {
         webClientMockedStatic = mockStatic(WebClient.class);
         webClientMockedStatic.when(() -> WebClient.create(eq(vertx), any())).thenReturn(webClient);
 
-        requestBuilder = new de.unistuttgart.stayinsync.pollingnode.execution.ressource.RequestBuilder(vertx);
+        requestBuilder = new de.unistuttgart.stayinsync.core.pollingnode.execution.ressource.RequestBuilder(vertx);
     }
 
     @AfterEach

@@ -19,16 +19,8 @@ import java.util.Map;
 @ApplicationScoped
 public class LogicGraphEvaluator {
 
-    @Inject
-    GraphTopologicalSorter sorter;
+    private final GraphTopologicalSorter sorter = new GraphTopologicalSorter();
 
-    /**
-     * Setter for injecting the sorter dependency, primarily for testing purposes.
-     * @param sorter The GraphTopologicalSorter instance.
-     */
-    public void setSorter(GraphTopologicalSorter sorter) {
-        this.sorter = sorter;
-    }
 
     /**
      * A record to hold the complete result of a graph evaluation, containing both

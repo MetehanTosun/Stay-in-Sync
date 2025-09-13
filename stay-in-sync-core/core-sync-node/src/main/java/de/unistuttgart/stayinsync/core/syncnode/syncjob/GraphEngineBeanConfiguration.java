@@ -2,6 +2,7 @@ package de.unistuttgart.stayinsync.core.syncnode.syncjob;
 
 import de.unistuttgart.graphengine.logic_engine.LogicGraphEvaluator;
 import de.unistuttgart.graphengine.util.GraphMapper;
+import de.unistuttgart.graphengine.util.GraphTopologicalSorter;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.inject.Produces;
 
@@ -16,7 +17,7 @@ public class GraphEngineBeanConfiguration {
 
     @Produces
     @ApplicationScoped
-    public LogicGraphEvaluator logicGraphEvaluator() {
-        return new LogicGraphEvaluator();
+    public GraphTopologicalSorter graphTopologicalSorter() {
+        return new GraphTopologicalSorter();
     }
 }

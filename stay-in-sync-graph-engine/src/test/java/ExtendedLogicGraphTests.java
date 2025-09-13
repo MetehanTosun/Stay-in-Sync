@@ -29,9 +29,7 @@ public class ExtendedLogicGraphTests {
 
     @BeforeEach
     void setUp() {
-        GraphTopologicalSorter sorter = new GraphTopologicalSorter();
         evaluator = new LogicGraphEvaluator();
-        evaluator.setSorter(sorter);
     }
 
     private Map<String, JsonNode> createDataContext(String json, Map<String, SnapshotEntry> snapshot) throws IOException {

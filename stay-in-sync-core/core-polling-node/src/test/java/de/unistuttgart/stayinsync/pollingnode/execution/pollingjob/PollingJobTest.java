@@ -6,7 +6,6 @@ import de.unistuttgart.stayinsync.pollingnode.exceptions.execution.pollingjob.re
 import de.unistuttgart.stayinsync.pollingnode.exceptions.execution.pollingjob.restclientexceptions.RequestExecutionException;
 import de.unistuttgart.stayinsync.pollingnode.exceptions.rabbitmqexceptions.ProducerPublishDataException;
 import de.unistuttgart.stayinsync.pollingnode.exceptions.rabbitmqexceptions.ProducerSetUpStreamException;
-import de.unistuttgart.stayinsync.pollingnode.execution.ressource.RequestBuilder;
 import io.vertx.mutiny.core.buffer.Buffer;
 import io.vertx.core.json.JsonObject;
 import org.junit.jupiter.api.BeforeEach;

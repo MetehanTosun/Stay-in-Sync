@@ -1,10 +1,5 @@
 package de.unistuttgart.stayinsync.core.pollingnode.execution.ressource;
 
-import de.unistuttgart.stayinsync.core.pollingnode.exceptions.FaultySourceSystemApiRequestMessageDtoException;
-import de.unistuttgart.stayinsync.core.transport.dto.ApiConnectionDetailsDTO;
-import de.unistuttgart.stayinsync.core.transport.dto.ApiRequestParameterMessageDTO;
-import de.unistuttgart.stayinsync.core.transport.dto.ParamType;
-import de.unistuttgart.stayinsync.core.transport.dto.SourceSystemMessageDTO;
 import de.unistuttgart.stayinsync.pollingnode.exceptions.execution.pollingjob.restclientexceptions.RequestExecutionException;
 import de.unistuttgart.stayinsync.pollingnode.exceptions.execution.pollingjob.restclientexceptions.ResponseInvalidFormatException;
 import de.unistuttgart.stayinsync.pollingnode.exceptions.execution.pollingjob.restclientexceptions.ResponseSubscriptionException;
