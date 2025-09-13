@@ -25,6 +25,8 @@ import org.eclipse.microprofile.openapi.annotations.media.Content;
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
 import org.eclipse.microprofile.openapi.annotations.responses.APIResponse;
 import org.eclipse.microprofile.openapi.annotations.responses.APIResponses;
+import org.jboss.resteasy.reactive.multipart.FileUpload;
+import java.nio.file.Files;
 
 
 @Path("/api/config/source-system/{sourceSystemId}/aas")
@@ -376,15 +378,18 @@ public class AasResource {
             @RequestBody(required = true,
                     content = @Content(mediaType = MediaType.MULTIPART_FORM_DATA,
                             schema = @Schema(implementation = Object.class)))
-            @RestForm("file") byte[] fileBytes,
-            @RestForm("filename") String filename
+            @RestForm("file") FileUpload file
     ) {
         try {
-            if (fileBytes == null || fileBytes.length == 0) {
+            if (file == null || file.size() == 0) {
                 return Response.status(Response.Status.BAD_REQUEST).entity("Missing file").build();
             }
+            String filename = file.fileName();
+            byte[] fileBytes = Files.readAllBytes(file.uploadedFile());
             snapshotService.ingestAasx(sourceSystemId, filename, fileBytes);
             return Response.accepted().build();
+        } catch (java.io.IOException ioe) {
+            return Response.status(Response.Status.BAD_REQUEST).entity("Failed to read uploaded file").build();
         } catch (de.unistuttgart.stayinsync.core.configuration.service.aas.AasStructureSnapshotService.DuplicateIdException e) {
             return Response.status(Response.Status.CONFLICT).entity(e.getMessage()).build();
         } catch (de.unistuttgart.stayinsync.core.configuration.service.aas.AasStructureSnapshotService.InvalidAasxException e) {
