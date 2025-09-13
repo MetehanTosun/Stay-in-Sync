@@ -215,8 +215,8 @@ export class CreateSourceSystemComponent implements OnInit, OnChanges {
           next: () => {
             this.isUploadingAasx = false;
             this.showAasxUpload = false;
-            // Refresh snapshot then rediscover tree
-            this.aasService.refreshSnapshot(this.createdSourceSystemId).subscribe({ next: () => this.discoverSubmodels(), error: () => this.discoverSubmodels() });
+            // Directly rediscover from snapshot (do not refresh: would wipe imported AASX structures)
+            this.discoverSubmodels();
             this.messageService.add({ severity: 'success', summary: 'Upload accepted', detail: 'AASX uploaded. Snapshot refresh started.' });
           },
           error: (err) => {
