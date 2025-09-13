@@ -115,25 +115,188 @@ public class AasStructureSnapshotService {
         if (fileBytes == null || fileBytes.length == 0) {
             throw new InvalidAasxException("Empty file");
         }
+        var ssOpt = SourceSystem.<SourceSystem>findByIdOptional(sourceSystemId);
+        if (ssOpt.isEmpty()) {
+            throw new InvalidAasxException("Unknown source system: " + sourceSystemId);
+        }
+        SourceSystem ss = ssOpt.get();
+
+        int importedSubmodels = 0;
+        boolean foundAnySubmodelPayload = false;
         try (java.util.zip.ZipInputStream zis = new java.util.zip.ZipInputStream(new java.io.ByteArrayInputStream(fileBytes))) {
-            boolean hasPayload = false;
+            boolean hasEntries = false;
             java.util.zip.ZipEntry entry;
             while ((entry = zis.getNextEntry()) != null) {
                 String name = entry.getName();
                 if (name == null) continue;
-                hasPayload = true; // minimal validation that it is a zip with entries
-                // TODO: parse AASX relationships and submodel JSON/XML parts as needed
-                // For initial implementation, we accept the upload and trigger a snapshot refresh from LIVE
+                hasEntries = true;
+                String lower = name.toLowerCase(java.util.Locale.ROOT);
+                // Accept common submodel payloads (json preferred); xml is ignored for now but marks payload as present
+                if (lower.endsWith(".xml") && (lower.contains("submodel") || lower.contains("sub-model"))) {
+                    foundAnySubmodelPayload = true;
+                    // XML parsing not yet implemented; will fall back to LIVE refresh
+                    continue;
+                }
+                if (!lower.endsWith(".json")) continue;
+                if (!(lower.contains("submodel") || lower.contains("sub-model"))) continue;
+
+                // Read JSON
+                String json = new String(zis.readAllBytes(), java.nio.charset.StandardCharsets.UTF_8);
+                JsonNode root;
+                try {
+                    root = objectMapper.readTree(json);
+                } catch (Exception ex) {
+                    // ignore non-json or unrelated entries
+                    continue;
+                }
+
+                // A submodel JSON can be directly the submodel object
+                // Persist submodel lite without live enrichment
+                String id = textOrNull(root, "id");
+                if (id == null && root.has("identification")) {
+                    id = textOrNull(root.get("identification"), "id");
+                }
+                if (id == null) {
+                    // Not a submodel root we recognize
+                    continue;
+                }
+                foundAnySubmodelPayload = true;
+
+                // Duplicate check for submodel id
+                var existingSm = AasSubmodelLite.<AasSubmodelLite>find("sourceSystem.id = ?1 and submodelId = ?2", ss.id, id).firstResult();
+                if (existingSm != null) {
+                    throw new DuplicateIdException("Submodel already exists: " + id);
+                }
+
+                String idShort = textOrNull(root, "idShort");
+                String semanticId = textOrNull(root, "semanticId");
+                String kind = textOrNull(root, "kind");
+
+                AasSubmodelLite sm = new AasSubmodelLite();
+                sm.sourceSystem = ss;
+                sm.submodelId = id;
+                sm.submodelIdShort = idShort;
+                sm.semanticId = semanticId;
+                sm.kind = kind;
+                sm.persist();
+                importedSubmodels++;
+
+                // Elements
+                JsonNode elementsNode = root.get("submodelElements");
+                if (elementsNode != null && elementsNode.isArray()) {
+                    java.util.Set<String> seen = new java.util.HashSet<>();
+                    for (JsonNode el : elementsNode) {
+                        ingestElement(sm, null, el, seen);
+                    }
+                }
             }
-            if (!hasPayload) {
+            if (!hasEntries) {
                 throw new InvalidAasxException("Not a valid AASX: archive has no entries");
             }
         } catch (java.io.IOException e) {
             throw new InvalidAasxException("Failed to read AASX: " + e.getMessage());
         }
-        // For v1: trigger a refresh using existing LIVE-based snapshot builder as a placeholder
-        // Future: replace with actual parsed SubmodelLite/ElementLite persistence from the AASX content
-        refreshSnapshot(sourceSystemId);
+        if (importedSubmodels == 0) {
+            if (foundAnySubmodelPayload) {
+                // Submodel content present but not JSON → accept and refresh from LIVE
+                Log.infof("AASX contained submodel payloads but none imported (non-JSON). Triggering LIVE snapshot refresh for sourceSystemId=%d", sourceSystemId);
+                refreshSnapshot(sourceSystemId);
+                return;
+            } else {
+                // No recognizable submodel payload at all → still accept and trigger LIVE refresh as best-effort
+                Log.infof("AASX contained no recognizable submodel payloads. Triggering LIVE snapshot refresh for sourceSystemId=%d", sourceSystemId);
+                refreshSnapshot(sourceSystemId);
+                return;
+            }
+        }
+    }
+
+    private void ingestElement(AasSubmodelLite submodel, String parentPath, JsonNode n, java.util.Set<String> seen) {
+        String idShort = textOrNull(n, "idShort");
+        if (idShort == null) return;
+        String modelType = textOrNull(n, "modelType");
+        String idShortPath = parentPath == null || parentPath.isBlank() ? idShort : parentPath + "/" + idShort;
+
+        String key = submodel.id + "::" + idShortPath;
+        if (seen != null) {
+            if (seen.contains(key)) return;
+            seen.add(key);
+        }
+
+        // Duplicate check for element path
+        long count = AasElementLite.count("submodelLite.id = ?1 and idShortPath = ?2", submodel.id, idShortPath);
+        if (count > 0) {
+            throw new DuplicateIdException("Element already exists: " + idShortPath);
+        }
+
+        AasElementLite e = new AasElementLite();
+        e.submodelLite = submodel;
+        e.idShort = idShort;
+        e.modelType = modelType;
+        e.valueType = textOrNull(n, "valueType");
+        e.idShortPath = idShortPath;
+        e.parentPath = parentPath;
+        e.semanticId = textOrNull(n, "semanticId");
+        String tvle = textOrNull(n, "typeValueListElement");
+        if (tvle == null) tvle = textOrNull(n, "valueTypeListElement");
+        e.typeValueListElement = tvle;
+        e.orderRelevant = n.has("orderRelevant") ? n.get("orderRelevant").asBoolean(false) : null;
+        e.hasChildren = "SubmodelElementCollection".equalsIgnoreCase(modelType)
+                || "SubmodelElementList".equalsIgnoreCase(modelType)
+                || "Entity".equalsIgnoreCase(modelType);
+
+        if ("Operation".equalsIgnoreCase(modelType)) {
+            JsonNode inVars = n.get("inputVariables");
+            JsonNode outVars = n.get("outputVariables");
+            e.inputSignature = (inVars != null && !inVars.isNull()) ? inVars.toString() : null;
+            e.outputSignature = (outVars != null && !outVars.isNull()) ? outVars.toString() : null;
+        }
+        if ("ReferenceElement".equalsIgnoreCase(modelType)) {
+            JsonNode val = n.get("value");
+            if (val != null) {
+                e.isReference = true;
+                e.referenceTargetType = textOrNull(val, "type");
+                e.referenceKeys = val.has("keys") ? val.get("keys").toString() : null;
+                if (val.has("keys") && val.get("keys").isArray() && val.get("keys").size() > 0) {
+                    JsonNode k0 = val.get("keys").get(0);
+                    if (k0 != null && "Submodel".equals(textOrNull(k0, "type"))) {
+                        e.targetSubmodelId = textOrNull(k0, "value");
+                    }
+                }
+            }
+        }
+        e.persist();
+
+        // Recurse for collections/lists/entities that contain nested elements
+        if (e.hasChildren) {
+            // SubmodelElementCollection: value is array named "value"
+            if ("SubmodelElementCollection".equalsIgnoreCase(modelType)) {
+                JsonNode coll = n.get("value");
+                if (coll != null && coll.isArray()) {
+                    for (JsonNode child : coll) {
+                        ingestElement(submodel, idShortPath, child, seen);
+                    }
+                }
+            }
+            // SubmodelElementList: value is array named "value"
+            else if ("SubmodelElementList".equalsIgnoreCase(modelType)) {
+                JsonNode list = n.get("value");
+                if (list != null && list.isArray()) {
+                    for (JsonNode child : list) {
+                        ingestElement(submodel, idShortPath, child, seen);
+                    }
+                }
+            }
+            // Entity: has statements array
+            else if ("Entity".equalsIgnoreCase(modelType)) {
+                JsonNode stmts = n.get("statements");
+                if (stmts != null && stmts.isArray()) {
+                    for (JsonNode child : stmts) {
+                        ingestElement(submodel, idShortPath, child, seen);
+                    }
+                }
+            }
+        }
     }
 
     private void persistSubmodelLite(SourceSystem ss, JsonNode n) {
