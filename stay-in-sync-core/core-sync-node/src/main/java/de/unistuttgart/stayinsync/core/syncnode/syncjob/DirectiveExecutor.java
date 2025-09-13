@@ -6,7 +6,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import de.unistuttgart.stayinsync.core.syncnode.domain.ApiCallConfiguration;
 import de.unistuttgart.stayinsync.core.syncnode.domain.UpsertDirective;
 import de.unistuttgart.stayinsync.core.transport.domain.TargetApiRequestConfigurationActionRole;
-import de.unistuttgart.stayinsync.core.transport.dto.targetsystems.RequestConfigurationMessageDTO;
+import de.unistuttgart.stayinsync.core.transport.dto.targetsystems.*;
 import io.quarkus.cache.CacheResult;
 import io.quarkus.logging.Log;
 import io.smallrye.mutiny.Uni;

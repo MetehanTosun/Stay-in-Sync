@@ -66,7 +66,9 @@ public class TransformationExecutionService {
                 if (payload.graphNodes() == null || payload.graphNodes().isEmpty()) {
                     return true;
                 }
-                return logicGraphEvaluator.evaluateGraph(payload.graphNodes(), dataContext);
+                LogicGraphEvaluator.EvaluationResult evaluationResult =
+                        logicGraphEvaluator.evaluateGraph(payload.graphNodes(), dataContext);
+                return evaluationResult.finalResult();
             } catch (GraphEvaluationException e) {
                 Log.errorf(e, "Job %s: Graph evaluation failed with error type %s: %s",
                         payload.job().jobId(), e.getErrorType(), e.getMessage());
