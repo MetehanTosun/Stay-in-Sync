@@ -86,6 +86,16 @@ public class AasTraversalClient {
         return http.writeJson(HttpMethod.DELETE, url, "", headers);
     }
 
+    public Uni<HttpResponse<Buffer>> listSubmodelReferences(String baseUrl, String aasId, Map<String, String> headers) {
+        String url = baseUrl + "/shells/" + encode(aasId) + "/submodel-refs";
+        return http.getJson(url, headers);
+    }
+
+    public Uni<HttpResponse<Buffer>> removeSubmodelReferenceFromShellByIndex(String baseUrl, String aasId, int index, Map<String, String> headers) {
+        String url = baseUrl + "/shells/" + encode(aasId) + "/submodel-refs/" + index;
+        return http.writeJson(HttpMethod.DELETE, url, "", headers);
+    }
+
     private String encode(String s) {
         return java.net.URLEncoder.encode(s, java.nio.charset.StandardCharsets.UTF_8);
     }

@@ -247,10 +247,31 @@ public class AasResource {
         ss = aasService.validateAasSource(ss);
         var headers = headerBuilder.buildMergedHeaders(ss, de.unistuttgart.stayinsync.core.configuration.service.aas.HttpHeaderBuilder.Mode.WRITE_JSON);
         Log.infof("DELETE submodel LIVE: apiUrl=%s smId=%s", ss.apiUrl, smId);
-        // Remove reference from shell first (best-effort)
+        // Remove reference from shell first (best-effort). Some servers require index-based delete.
         try {
-            var refDel = traversal.removeSubmodelReferenceFromShell(ss.apiUrl, ss.aasId, smId, headers).await().indefinitely();
-            Log.infof("DELETE submodel-ref upstream status=%d msg=%s body=%s", refDel.statusCode(), refDel.statusMessage(), safeBody(refDel));
+            var listRefs = traversal.listSubmodelReferences(ss.apiUrl, ss.aasId, headers).await().indefinitely();
+            if (listRefs.statusCode() >= 200 && listRefs.statusCode() < 300) {
+                String body = listRefs.bodyAsString();
+                io.vertx.core.json.JsonArray arr = new io.vertx.core.json.JsonArray(body);
+                for (int i = 0; i < arr.size(); i++) {
+                    var ref = arr.getJsonObject(i);
+                    var keys = ref.getJsonArray("keys");
+                    if (keys != null && !keys.isEmpty()) {
+                        var k0 = keys.getJsonObject(0);
+                        String t = k0.getString("type");
+                        String v = k0.getString("value");
+                        if ("Submodel".equalsIgnoreCase(t) && smId.equals(v)) {
+                            var delIdx = traversal.removeSubmodelReferenceFromShellByIndex(ss.apiUrl, ss.aasId, i, headers).await().indefinitely();
+                            Log.infof("DELETE submodel-ref by index upstream status=%d msg=%s body=%s", delIdx.statusCode(), delIdx.statusMessage(), safeBody(delIdx));
+                            break;
+                        }
+                    }
+                }
+            } else {
+                // fallback: try direct delete by submodelId
+                var refDel = traversal.removeSubmodelReferenceFromShell(ss.apiUrl, ss.aasId, smId, headers).await().indefinitely();
+                Log.infof("DELETE submodel-ref upstream status=%d msg=%s body=%s", refDel.statusCode(), refDel.statusMessage(), safeBody(refDel));
+            }
         } catch (Exception e) {
             Log.warn("Failed to remove submodel-ref from shell (continuing)", e);
         }
