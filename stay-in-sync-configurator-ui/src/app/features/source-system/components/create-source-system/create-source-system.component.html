@@ -86,6 +86,7 @@
       <!-- AAS: Test connection -->
       <div class="p-field" *ngIf="isAas()">
         <button pButton type="button" label="Test connection" (click)="testAasConnection()" [disabled]="isTesting"></button>
+        <button pButton type="button" class="p-button-text ml-2" label="Upload AASX" (click)="openAasxUpload()" [disabled]="!createdSourceSystemId && form.invalid"></button>
         <span *ngIf="isTesting" class="ml-2">Testing...</span>
         <div class="mt-2" *ngIf="aasPreview && aasTestOk">
           <strong>idShort:</strong> {{ aasPreview.idShort }}
@@ -191,6 +192,18 @@
     <button pButton type="button" label="Create" (click)="createElement()"></button>
   </ng-template>
   <button pButton type="button" class="p-button-text" label="Use example" (click)="newElementJson='{}'"></button>
+</p-dialog>
+
+<!-- Dialog: Upload AASX -->
+<p-dialog header="Upload AASX" [(visible)]="showAasxUpload" [modal]="true" [style]="{width:'35vw'}">
+  <div class="p-field">
+    <p-fileupload mode="basic" [auto]="false" [showUploadButton]="false" [showCancelButton]="false" accept=".aasx" (onSelect)="onAasxFileSelected($event)"></p-fileupload>
+    <small *ngIf="aasxSelectedFile">{{ aasxSelectedFile.name }}</small>
+  </div>
+  <ng-template pTemplate="footer">
+    <button pButton type="button" class="p-button-text" label="Cancel" (click)="showAasxUpload=false"></button>
+    <button pButton type="button" label="Upload" (click)="uploadAasx()" [disabled]="isUploadingAasx || !aasxSelectedFile"></button>
+  </ng-template>
 </p-dialog>
 
 <!-- Dialog: Set Property Value -->

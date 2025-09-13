@@ -16,6 +16,14 @@ export class AasService {
     return this.http.post(url, {});
   }
 
+  uploadAasx(sourceSystemId: number, file: File): Observable<any> {
+    const url = `/api/config/source-system/${sourceSystemId}/aas/upload`;
+    const form = new FormData();
+    form.append('file', file, file.name);
+    form.append('filename', file.name);
+    return this.http.post(url, form);
+  }
+
   listSubmodels(sourceSystemId: number, source: 'SNAPSHOT' | 'LIVE' = 'SNAPSHOT'): Observable<any> {
     const url = `/api/config/source-system/${sourceSystemId}/aas/submodels`;
     const params = new HttpParams().set('source', source);

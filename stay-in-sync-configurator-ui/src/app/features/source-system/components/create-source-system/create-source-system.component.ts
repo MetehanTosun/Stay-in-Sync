@@ -71,6 +71,11 @@ export class CreateSourceSystemComponent implements OnInit, OnChanges {
   selectedFile: File | null = null;
   fileSelected = false;
 
+  // AASX upload state
+  showAasxUpload = false;
+  aasxSelectedFile: File | null = null;
+  isUploadingAasx = false;
+
   typeOptions = [
     {label: 'REST-OpenAPI', value: 'REST_OPENAPI'},
     {label: 'AAS', value: 'AAS'}
@@ -186,6 +191,55 @@ export class CreateSourceSystemComponent implements OnInit, OnChanges {
     this.selectedFile = event.files[0];
     this.fileSelected = true;
     this.form.get('openApiSpec')!.disable();
+  }
+
+  // AASX upload handlers
+  openAasxUpload(): void {
+    this.showAasxUpload = true;
+    this.aasxSelectedFile = null;
+  }
+  onAasxFileSelected(event: FileSelectEvent): void {
+    this.aasxSelectedFile = event.files?.[0] || null;
+  }
+  uploadAasx(): void {
+    if (this.isUploadingAasx) return;
+    if (!this.aasxSelectedFile) {
+      this.messageService.add({ severity: 'warn', summary: 'No file selected', detail: 'Please choose an .aasx file.' });
+      return;
+    }
+    const proceed = () => {
+      if (!this.createdSourceSystemId) return;
+      this.isUploadingAasx = true;
+      this.aasService.uploadAasx(this.createdSourceSystemId, this.aasxSelectedFile!)
+        .subscribe({
+          next: () => {
+            this.isUploadingAasx = false;
+            this.showAasxUpload = false;
+            // Refresh snapshot then rediscover tree
+            this.aasService.refreshSnapshot(this.createdSourceSystemId).subscribe({ next: () => this.discoverSubmodels(), error: () => this.discoverSubmodels() });
+            this.messageService.add({ severity: 'success', summary: 'Upload accepted', detail: 'AASX uploaded. Snapshot refresh started.' });
+          },
+          error: (err) => {
+            this.isUploadingAasx = false;
+            this.errorService.handleError(err);
+          }
+        });
+    };
+    if (!this.createdSourceSystemId) {
+      const base = { ...this.form.getRawValue() } as CreateSourceSystemDTO;
+      delete (base as any).authConfig;
+      const authType = this.form.get('apiAuthType')!.value as ApiAuthType;
+      const cfg = this.form.get('authConfig')!.value;
+      if (authType === ApiAuthType.Basic) {
+        base.authConfig = { authType, username: cfg.username, password: cfg.password } as BasicAuthDTO;
+      } else if (authType === ApiAuthType.ApiKey) {
+        base.authConfig = { authType, apiKey: cfg.apiKey, headerName: cfg.headerName } as ApiKeyAuthDTO;
+      }
+      delete (base as any).openApiSpec;
+      this.postDto(base, { advanceStep: false, onSuccess: () => proceed() });
+    } else {
+      proceed();
+    }
   }
 
   /**
