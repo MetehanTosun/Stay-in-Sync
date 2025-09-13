@@ -1,6 +1,7 @@
 package de.unistuttgart.stayinsync.pollingnode.execution.ressource;
 
 import com.github.tomakehurst.wiremock.WireMockServer;
+import de.unistuttgart.stayinsync.core.pollingnode.execution.ressource.RestClient;
 import de.unistuttgart.stayinsync.pollingnode.exceptions.execution.pollingjob.restclientexceptions.RequestExecutionException;
 import de.unistuttgart.stayinsync.pollingnode.exceptions.execution.pollingjob.restclientexceptions.ResponseSubscriptionException;
 import io.vertx.core.json.JsonArray;

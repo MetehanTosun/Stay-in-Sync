@@ -1,6 +1,7 @@
 package de.unistuttgart.stayinsync.pollingnode.exceptions.rabbitmqexceptions;
 
-import de.unistuttgart.stayinsync.pollingnode.exceptions.PollingNodeException;
+
+import de.unistuttgart.stayinsync.core.pollingnode.exceptions.PollingNodeException;
 
 public class ProducerPublishDataException extends PollingNodeException {
     public ProducerPublishDataException(String message) {

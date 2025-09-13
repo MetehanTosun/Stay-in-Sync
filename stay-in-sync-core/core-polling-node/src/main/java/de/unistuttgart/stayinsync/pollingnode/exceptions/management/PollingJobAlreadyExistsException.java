@@ -1,6 +1,7 @@
 package de.unistuttgart.stayinsync.pollingnode.exceptions.management;
 
-import de.unistuttgart.stayinsync.pollingnode.exceptions.PollingNodeException;
+
+import de.unistuttgart.stayinsync.core.pollingnode.exceptions.PollingNodeException;
 
 public class PollingJobAlreadyExistsException extends PollingNodeException {
 

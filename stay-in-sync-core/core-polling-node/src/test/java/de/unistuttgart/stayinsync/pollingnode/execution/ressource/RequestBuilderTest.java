@@ -1,5 +1,6 @@
 package de.unistuttgart.stayinsync.pollingnode.execution.ressource;
 
+import de.unistuttgart.stayinsync.core.transport.dto.*;
 import de.unistuttgart.stayinsync.pollingnode.entities.RequestBuildingDetails;
 import de.unistuttgart.stayinsync.pollingnode.exceptions.execution.pollingjob.requestbuilderexceptions.RequestBuildingException;
 import de.unistuttgart.stayinsync.transport.dto.*;
@@ -20,8 +21,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.Set;
 
-import static de.unistuttgart.stayinsync.transport.dto.ParamType.PATH;
-import static de.unistuttgart.stayinsync.transport.dto.ParamType.QUERY;
+import static de.unistuttgart.stayinsync.core.transport.dto.ParamType.PATH;
+import static de.unistuttgart.stayinsync.core.transport.dto.ParamType.QUERY;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
@@ -42,7 +43,7 @@ public class RequestBuilderTest {
     @Mock
     private HttpRequest<Buffer> httpRequest;
 
-    private RequestBuilder requestBuilder;
+    private de.unistuttgart.stayinsync.pollingnode.execution.ressource.RequestBuilder requestBuilder;
 
     private MockedStatic<WebClient> webClientMockedStatic;
 
@@ -51,7 +52,7 @@ public class RequestBuilderTest {
         webClientMockedStatic = mockStatic(WebClient.class);
         webClientMockedStatic.when(() -> WebClient.create(eq(vertx), any())).thenReturn(webClient);
 
-        requestBuilder = new RequestBuilder(vertx);
+        requestBuilder = new de.unistuttgart.stayinsync.pollingnode.execution.ressource.RequestBuilder(vertx);
     }
 
     @AfterEach

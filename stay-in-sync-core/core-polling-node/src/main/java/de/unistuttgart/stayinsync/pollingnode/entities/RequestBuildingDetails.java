@@ -1,9 +1,10 @@
 package de.unistuttgart.stayinsync.pollingnode.entities;
 
-import de.unistuttgart.stayinsync.transport.dto.ApiRequestHeaderMessageDTO;
-import de.unistuttgart.stayinsync.transport.dto.ApiRequestParameterMessageDTO;
-import de.unistuttgart.stayinsync.transport.dto.SourceSystemEndpointMessageDTO;
-import de.unistuttgart.stayinsync.transport.dto.SourceSystemMessageDTO;
+
+import de.unistuttgart.stayinsync.core.transport.dto.ApiRequestHeaderMessageDTO;
+import de.unistuttgart.stayinsync.core.transport.dto.ApiRequestParameterMessageDTO;
+import de.unistuttgart.stayinsync.core.transport.dto.SourceSystemEndpointMessageDTO;
+import de.unistuttgart.stayinsync.core.transport.dto.SourceSystemMessageDTO;
 
 import java.util.Set;
 

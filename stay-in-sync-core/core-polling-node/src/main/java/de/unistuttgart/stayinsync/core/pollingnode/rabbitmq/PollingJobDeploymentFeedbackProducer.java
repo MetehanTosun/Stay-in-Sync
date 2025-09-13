@@ -4,9 +4,10 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.rabbitmq.client.*;
 import de.unistuttgart.stayinsync.core.pollingnode.exceptions.PollingNodeException;
 
+import de.unistuttgart.stayinsync.core.pollingnode.execution.PollingJobExecutionController;
 import de.unistuttgart.stayinsync.core.transport.domain.JobDeploymentStatus;
 import de.unistuttgart.stayinsync.core.transport.dto.PollingJobDeploymentFeedbackMessageDTO;
-import de.unistuttgart.stayinsync.pollingnode.execution.PollingJobExecutionController;
+
 import io.quarkiverse.rabbitmqclient.RabbitMQClient;
 import io.quarkus.logging.Log;
 import io.quarkus.runtime.ShutdownEvent;

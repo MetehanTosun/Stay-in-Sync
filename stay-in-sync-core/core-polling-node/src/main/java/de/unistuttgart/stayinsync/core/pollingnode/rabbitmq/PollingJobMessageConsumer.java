@@ -7,7 +7,6 @@ import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.DeliverCallback;
 import com.rabbitmq.client.Delivery;
 import de.unistuttgart.stayinsync.core.pollingnode.exceptions.PollingNodeException;
-import de.unistuttgart.stayinsync.core.pollingnode.usercontrol.management.PollingJobManagement;
 import de.unistuttgart.stayinsync.core.transport.dto.SourceSystemApiRequestConfigurationMessageDTO;
 import de.unistuttgart.stayinsync.pollingnode.entities.PollingJobDetails;
 import de.unistuttgart.stayinsync.pollingnode.exceptions.rabbitmqexceptions.ConsumerQueueBindingException;

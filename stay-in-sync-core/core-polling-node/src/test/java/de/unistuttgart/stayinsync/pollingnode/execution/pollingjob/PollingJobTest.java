@@ -7,10 +7,6 @@ import de.unistuttgart.stayinsync.pollingnode.exceptions.execution.pollingjob.re
 import de.unistuttgart.stayinsync.pollingnode.exceptions.rabbitmqexceptions.ProducerPublishDataException;
 import de.unistuttgart.stayinsync.pollingnode.exceptions.rabbitmqexceptions.ProducerSetUpStreamException;
 import de.unistuttgart.stayinsync.pollingnode.execution.ressource.RequestBuilder;
-import de.unistuttgart.stayinsync.pollingnode.execution.ressource.RestClient;
-import de.unistuttgart.stayinsync.pollingnode.execution.pollingjob.PollingJob;
-import de.unistuttgart.stayinsync.pollingnode.rabbitmq.SyncDataProducer;
-import de.unistuttgart.stayinsync.transport.dto.SyncDataMessageDTO;
 import io.vertx.mutiny.core.buffer.Buffer;
 import io.vertx.core.json.JsonObject;
 import org.junit.jupiter.api.BeforeEach;
