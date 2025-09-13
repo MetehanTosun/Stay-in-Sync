@@ -123,46 +123,49 @@ public class AasStructureSnapshotService {
 
         int importedSubmodels = 0;
         boolean foundAnySubmodelPayload = false;
+        // First, load all ZIP JSON entries into memory for easier cross-referencing
+        final java.util.List<ZipJson> jsonEntries = new java.util.ArrayList<>();
+        boolean hasEntries = false;
         try (java.util.zip.ZipInputStream zis = new java.util.zip.ZipInputStream(new java.io.ByteArrayInputStream(fileBytes))) {
-            boolean hasEntries = false;
             java.util.zip.ZipEntry entry;
             while ((entry = zis.getNextEntry()) != null) {
                 String name = entry.getName();
                 if (name == null) continue;
                 hasEntries = true;
                 String lower = name.toLowerCase(java.util.Locale.ROOT);
-                // Accept common submodel payloads (json preferred); xml is ignored for now but marks payload as present
                 if (lower.endsWith(".xml") && (lower.contains("submodel") || lower.contains("sub-model"))) {
-                    foundAnySubmodelPayload = true;
-                    // XML parsing not yet implemented; will fall back to LIVE refresh
-                    continue;
+                    foundAnySubmodelPayload = true; // xml present
                 }
                 if (!lower.endsWith(".json")) continue;
-                if (!(lower.contains("submodel") || lower.contains("sub-model"))) continue;
-
-                // Read JSON
-                String json = new String(zis.readAllBytes(), java.nio.charset.StandardCharsets.UTF_8);
-                JsonNode root;
                 try {
-                    root = objectMapper.readTree(json);
-                } catch (Exception ex) {
-                    // ignore non-json or unrelated entries
-                    continue;
-                }
+                    String json = new String(zis.readAllBytes(), java.nio.charset.StandardCharsets.UTF_8);
+                    jsonEntries.add(new ZipJson(name, lower, json));
+                } catch (Exception ignore) { /* skip unreadable */ }
+            }
+        } catch (java.io.IOException e) {
+            throw new InvalidAasxException("Failed to read AASX: " + e.getMessage());
+        }
+        if (!hasEntries) {
+            throw new InvalidAasxException("Not a valid AASX: archive has no entries");
+        }
 
-                // A submodel JSON can be directly the submodel object
-                // Persist submodel lite without live enrichment
+        // Heuristics: consider JSON as Submodel if it declares modelType Submodel or contains submodelElements
+        for (ZipJson zj : jsonEntries) {
+            if (!(zj.lowerName.contains("submodel") || zj.lowerName.contains("sub-model"))) continue;
+            try {
+                JsonNode root = objectMapper.readTree(zj.json);
+                if (root == null) continue;
+                boolean looksLikeSubmodel =
+                        (root.has("modelType") && "Submodel".equalsIgnoreCase(textOrNull(root, "modelType")))
+                        || (root.has("submodelElements") && root.get("submodelElements").isArray());
+                if (!looksLikeSubmodel) continue;
                 String id = textOrNull(root, "id");
                 if (id == null && root.has("identification")) {
                     id = textOrNull(root.get("identification"), "id");
                 }
-                if (id == null) {
-                    // Not a submodel root we recognize
-                    continue;
-                }
+                if (id == null || id.isBlank()) continue;
                 foundAnySubmodelPayload = true;
 
-                // Duplicate check for submodel id
                 var existingSm = AasSubmodelLite.<AasSubmodelLite>find("sourceSystem.id = ?1 and submodelId = ?2", ss.id, id).firstResult();
                 if (existingSm != null) {
                     throw new DuplicateIdException("Submodel already exists: " + id);
@@ -181,7 +184,6 @@ public class AasStructureSnapshotService {
                 sm.persist();
                 importedSubmodels++;
 
-                // Elements
                 JsonNode elementsNode = root.get("submodelElements");
                 if (elementsNode != null && elementsNode.isArray()) {
                     java.util.Set<String> seen = new java.util.HashSet<>();
@@ -189,12 +191,9 @@ public class AasStructureSnapshotService {
                         ingestElement(sm, null, el, seen);
                     }
                 }
+            } catch (Exception ex) {
+                // ignore individual JSON failures
             }
-            if (!hasEntries) {
-                throw new InvalidAasxException("Not a valid AASX: archive has no entries");
-            }
-        } catch (java.io.IOException e) {
-            throw new InvalidAasxException("Failed to read AASX: " + e.getMessage());
         }
         if (importedSubmodels == 0) {
             if (foundAnySubmodelPayload) {
@@ -353,6 +352,8 @@ public class AasStructureSnapshotService {
         if (s == null) return null;
         return java.util.Base64.getUrlEncoder().withoutPadding().encodeToString(s.getBytes(java.nio.charset.StandardCharsets.UTF_8));
     }
+
+    private record ZipJson(String name, String lowerName, String json) { }
 
     private void persistElementLite(AasSubmodelLite submodel, String parentPath, JsonNode n, Set<String> seen) {
         String idShort = textOrNull(n, "idShort");
