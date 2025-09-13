@@ -86,7 +86,6 @@
       <!-- AAS: Test connection -->
       <div class="p-field" *ngIf="isAas()">
         <button pButton type="button" label="Test connection" (click)="testAasConnection()" [disabled]="isTesting"></button>
-        <button pButton type="button" class="p-button-text ml-2" label="Upload AASX" (click)="openAasxUpload()" [disabled]="!createdSourceSystemId && form.invalid"></button>
         <span *ngIf="isTesting" class="ml-2">Testing...</span>
         <div class="mt-2" *ngIf="aasPreview && aasTestOk">
           <strong>idShort:</strong> {{ aasPreview.idShort }}
@@ -116,6 +115,7 @@
     <ng-template #aasTree>
       <div class="p-field">
         <button pButton type="button" label="Discover Submodels" (click)="discoverSubmodels()" [disabled]="isDiscovering"></button>
+        <button pButton type="button" class="p-button-text ml-2" label="Upload AASX" (click)="openAasxUpload()" [disabled]="!createdSourceSystemId"></button>
         <button pButton type="button" class="p-button-text ml-2" label="+ Submodel" (click)="openCreateSubmodel()"></button>
         <span *ngIf="isDiscovering" class="ml-2">Loading...</span>
       </div>
