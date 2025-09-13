@@ -13,31 +13,6 @@
   flex-shrink: 1;
   background: transparent;
 }
-/* MARK: Search Styles */
-
-.search-container {
-  display: flex;
-  justify-content: flex-end;
-  align-items: center;
-  margin: 2.5rem auto 0 auto;
-  max-width: 68%;
-}
-
-.search-container .form-input {
-  width: 320px;
-  max-width: 100%;
-  font-size: 1rem;
-  padding: 0.5rem 0.75rem;
-  border: 1px solid #d1d5db;
-  border-radius: 4px;
-  background: #f9fafb;
-  transition: border 0.2s;
-}
-
-.search-container .form-input:focus {
-  border-color: #007bff;
-  outline: none;
-}
 
 /* MARK: Page Header Styles */
 .page-header {
@@ -45,7 +20,7 @@
   align-items: center;
   justify-content: space-between;
   padding: 1.5rem 2rem 1rem 2rem;
-  background: var(--page-header-bg);
+  background: var(--sr-page-header-bg);
   border-bottom: 1px solid #e5e5e5;
   margin-bottom: 2.5rem;
 }
@@ -54,7 +29,7 @@
   margin: 0;
   font-size: 2rem;
   font-weight: 600;
-  color: var(--page-title-color);
+  color: var(--sr-font-alt-color);
 }
 
 #create-button {
@@ -80,7 +55,7 @@
 .table-container {
   margin: 0.7rem auto 2rem auto;
   max-width: 68%;
-  background: var(--table-container-bg);
+  background: var(--sr-border-highlight);
   border-radius: 8px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
 
@@ -110,10 +85,11 @@
   text-align: left;
 }
 
-.actions .material-symbols-rounded {
+.actions .pi {
   vertical-align: middle;
-  font-size: 2rem;
+  font-size: 1.5rem;
   line-height: 1;
+  margin-top: -10px;
 }
 
 p-table tr {
@@ -153,12 +129,12 @@ p-table tr:last-child {
 
 /* Rule Description */
 .rule-description-row {
-  background: var(--rule-description-row-bg);
+  background: var(--sr-description-bg);
 }
 
 .rule-description {
   padding: 0.5rem 1rem 0.5rem 1.8rem;
-  color: var(--rule-description-text-color);
+  color: var(--sr-font-alt-color);
   font-size: 1rem;
   border-left: 3px solid #007bff;
   border-radius: 0 0 6px 6px;
@@ -198,7 +174,7 @@ p-table tr:last-child {
   background: #e7f1ff;
 }
 
-.material-symbols-rounded {
+.pi {
   vertical-align: middle;
   font-size: 1.3rem;
 }
@@ -218,7 +194,7 @@ p-table tr:last-child {
 }
 
 #create-rule-modal form {
-  background: var(--modal-bg);
+  background: var(--sr-modal-bg);
   border-radius: 8px;
   padding: 2rem 3.5rem 2rem 3.5rem;
   min-width: 500px;
@@ -231,7 +207,7 @@ p-table tr:last-child {
   margin-bottom: 1.5rem;
   font-size: 1.4rem;
   font-weight: 600;
-  color: var(--modal-title-color);
+  color: var(--sr-font-alt-color);
 }
 
 .form-field {
@@ -242,18 +218,19 @@ p-table tr:last-child {
   display: block;
   margin-bottom: 0.4rem;
   font-weight: 500;
-  color: var(--modal-label-color);
+  color: var(--sr-label-color);
 }
 
 .form-input {
   width: 100%;
   padding: 0.5rem 0.75rem;
-  border: 1px solid #d1d5db;
+  border: 1px solid var(--sr-input-border);
   border-radius: 4px;
   font-size: 1rem;
-  background: var(--form-input-bg);
+  background: var(--sr-input-bg);
   transition: border 0.2s;
   resize: vertical;
+  color: var(--sr-font-alt-color);
 }
 
 .form-input:focus {

@@ -1,6 +1,6 @@
 <!-- MARK: VFlow -->
-<div id="vflow-container" (click)="storeMousePosition($event)">
-  <vflow view="auto" [nodes]="nodes" [edges]="edges" [background]="{ type: 'dots' }" (click)="onCanvasClick($event)"
+<div id="vflow-container" (click)="storeMousePosition($event)" #canvasContainer>
+  <vflow view="auto" [nodes]="nodes" [edges]="edges" [background]="{ type: 'dots', backgroundColor: 'var(--sr-canvas-bg)' }" (click)="onCanvasClick($event)"
     (onConnect)="addEdge($event)" (onNodesChange.position)="onNodePositionChange($event)"
     (onNodesChange.select)="onNodeSelect($event)" (onEdgesChange.select)="onEdgeSelect($event)" />
 </div>
@@ -11,7 +11,7 @@
   <!-- Modal Header -->
   <h3>
     <span>⚠️</span>
-    Type Incompatibility
+    {{ lastAttemptedConnection ? 'Type Incompatibility' : 'Source Incompatibility' }}
   </h3>
 
   <!-- Modal Body -->
@@ -20,7 +20,7 @@
     <div>Source: <b>{{ lastAttemptedConnection!.sourceType }}</b></div>
     <div>Target: <b>{{ lastAttemptedConnection!.targetType }}</b></div>
   </div>
-  <p class="error-note">These data types are not compatible.</p>
+  <p class="error-note" *ngIf="lastAttemptedConnection">These data types are not compatible.</p>
 
   <!-- Modal Footer -->
   <button id="close-incompatibility-modal-button" (click)="closeTypeIncompatibilityModal()">✓ OK</button>
@@ -74,15 +74,11 @@
   This action sets a new data type of this node and will remove all connected edges.
 
   <button (click)="confirmRemoveEdges()">
-    <span class="material-symbols-rounded">
-      check
-    </span>
+    <span class="pi pi-verified"></span>
     Continue
   </button>
   <button (click)="cancelRemoveEdges()">
-    <span class="material-symbols-rounded">
-      cancel
-    </span>
+    <span class="pi pi-times-circle"></span>
     Cancel
   </button>
 </div>

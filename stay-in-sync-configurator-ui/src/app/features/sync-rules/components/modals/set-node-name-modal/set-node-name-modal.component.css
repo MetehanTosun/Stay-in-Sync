@@ -11,8 +11,8 @@
 
 /* Modal Container */
 .set-node-name-modal-container {
-	background: var(--modal-bg);
-	color: #222;
+	background: var(--sr-modal-bg);
+	color: var(--sr-font-alt-color);
 	border-radius: 8px;
 	box-shadow: 0 4px 16px rgba(0, 0, 0, 0.10);
 	padding: 2rem 3.5rem 2rem 3.5rem;
@@ -34,7 +34,7 @@
 	margin-bottom: 1.5rem;
 	font-size: 1.4rem;
 	font-weight: 600;
-	color: var(--modal-title-color);
+	color: var(--sr-font-color);
 }
 
 .form-field {
@@ -45,7 +45,7 @@
 }
 .form-field label {
 	font-weight: 500;
-	color: var(--modal-label-color);
+	color: var(--sr-font-alt-color);
 	margin-bottom: 0.2em;
 }
 .form-input {
@@ -54,9 +54,9 @@
 	border: 1px solid #d1d5db;
 	border-radius: 4px;
 	font-size: 1rem;
-	background: #f9fafb;
+	background:var(--sr-input-bg);
 	transition: border 0.2s;
-	color: #222;
+	color: var(--sr-font-color);
 }
 .form-input:focus {
 	border-color: #007bff;

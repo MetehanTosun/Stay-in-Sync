@@ -1,6 +1,9 @@
-import { Component, EventEmitter, Input, OnChanges, Output } from '@angular/core';
+import { Component, EventEmitter, Input, Output } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 
+/**
+ * This component manages the modal for setting the values of a constant node
+ */
 @Component({
   selector: 'app-constant-node-modal',
   imports: [FormsModule],

@@ -3,14 +3,14 @@ import { Component } from '@angular/core';
 import { CustomNodeComponent, HandleComponent, SelectableDirective } from 'ngx-vflow';
 
 /**
- * A node representing a static constant within a vflow graph
+ * A node controlling the logic behavior of the transformation graph
  */
 @Component({
-  selector: 'app-constant-node',
+  selector: 'app-config-node',
   imports: [HandleComponent, SelectableDirective, CommonModule],
-  templateUrl: './constant-node.component.html',
-  styleUrl: './constant-node.component.css'
+  templateUrl: './config-node.component.html',
+  styleUrl: './config-node.component.css'
 })
-export class ConstantNodeComponent extends CustomNodeComponent {
+export class ConfigNodeComponent extends CustomNodeComponent {
   displayTooltips = false;
 }

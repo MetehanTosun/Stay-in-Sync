@@ -20,10 +20,18 @@ export class SetNodeNameModalComponent {
     this.newName = this.currentName;
   }
 
+  /**
+   * Concludes the nodes name change by forwarding the properties to node creation
+   *
+   * @returns
+   */
   submit() {
     this.save.emit(this.newName);
   }
 
+  /**
+   * Closes this modal
+   */
   closeModal() {
     this.close.emit();
   }

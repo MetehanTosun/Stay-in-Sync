@@ -4,7 +4,7 @@
   align-items: center;
   justify-content: space-between;
   padding: 1.5rem 2rem 1rem 2rem;
-  background: var(--page-header-bg);
+  background: var(--sr-page-header-bg);
   border-bottom: 1px solid #e5e5e5;
   gap: 1.5rem;
 }
@@ -13,7 +13,7 @@
   margin: 0;
   font-size: 2rem;
   font-weight: 600;
-  color: var(--page-title-color);
+  color: var(--sr-font-color);
   flex: 1;
 }
 
@@ -69,7 +69,7 @@
   max-width: 85%;
   min-height: 520px;
   height: 78.5vh;
-  background: var(--vflow-wrapper-bg);
+  background: var(--sr-border-highlight);
   border-radius: 10px;
   box-shadow: 0 4px 24px rgba(0, 0, 0, 0.08);
   padding: 0.5rem;
@@ -103,7 +103,7 @@
   color: #007bff;
   font-size: 1.02rem;
   font-weight: 500;
-  background: var(--node-selection-indicator-bg);
+  background: var(--sr-node-selection-indicator);
   border-radius: 4px;
   padding: 0.4rem 1rem;
 }

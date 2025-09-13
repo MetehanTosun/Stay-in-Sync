@@ -1,13 +1,14 @@
 .logic-node {
+  position: relative;
 	background: #1565c0;
 	border: 3px solid #0d47a1;
 	color: #fff;
 	border-radius: 14px;
 	box-shadow: 0 6px 18px rgba(21, 101, 192, 0.18);
-	padding: 20px 28px 16px 28px;
+	padding: 20px 28px 20px 28px;
 	font-size: 1.18rem;
 	font-weight: 700;
-	min-width: 220px;
+	min-width: 320px;
 	min-height: 60px;
 	display: flex;
 	flex-direction: column;
@@ -15,8 +16,6 @@
 	justify-content: center;
 	letter-spacing: 0.01em;
 	gap: 8px;
-		min-width: 380px;
-		height: auto;
 }
 .logic-node .node-header {
 	font-size: 1.1em;
@@ -41,4 +40,55 @@
 	padding: 4px 8px;
 	border-radius: 4px;
 	margin-bottom: 2px;
+}
+
+.input-handles {
+  position: absolute;
+  left: -12px;
+  top: 0;
+  height: 100%;
+  width: 0;
+  pointer-events: none;
+}
+
+.input-handle-wrapper {
+  position: absolute;
+  left: 0;
+  width: 0;
+  transform: translateY(-50%);
+  pointer-events: auto;
+}
+
+.tooltip-input {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  display: flex;
+  flex-direction: row;
+  z-index: 10;
+  background: #e0e0e0;
+  color: #1b1b1b;
+  padding: 2px 6px;
+  border-radius: 6px;
+  font-size: 0.89rem;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.18);
+  white-space: nowrap;
+	font-weight: normal;
+}
+
+.tooltip-output {
+  position: absolute;
+  top: 0;
+  right: 0;
+  display: flex;
+  flex-direction: row;
+  z-index: 10;
+  background: #222;
+  color: #fff;
+  padding: 2px 6px;
+  border-radius: 6px;
+  font-size: 0.89rem;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.18);
+  white-space: nowrap;
+	font-weight: normal;
 }

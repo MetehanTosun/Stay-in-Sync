@@ -2,16 +2,9 @@
 <div class="page-header">
   <h2>Synchronization Rules</h2>
   <div class="header-actions">
-    <input
-      type="text"
-      [(ngModel)]="searchTerm"
-      placeholder="Search by rule name..."
-      class="form-input search-input"
-    />
+    <input type="text" [(ngModel)]="searchTerm" placeholder="Search by rule name..." class="form-input search-input" />
     <button id="create-button" (click)="openCreateRuleModal()">
-      <span class="material-symbols-rounded">
-        add
-      </span>
+      <span class="pi pi-plus"></span>
       Create new Rule
     </button>
   </div>
@@ -23,7 +16,7 @@
     <!-- Table Header -->
     <ng-template #header>
       <tr>
-  <th pSortableColumn="name">Name <p-sortIcon field="name" /></th>
+        <th pSortableColumn="name">Name <p-sortIcon field="name" /></th>
         <th pSortableColumn="graphStatus">Status <p-sortIcon field="graphStatus" /></th>
         <th>Actions</th>
       </tr>
@@ -48,10 +41,10 @@
         <td>
           <div class="actions">
             <button id="edit-rule-button" title="Edit" (click)="editRule(rule.id)">
-              <span class="material-symbols-rounded">edit_square</span>
+              <span class="pi pi-pen-to-square"></span>
             </button>
-            <button id="delete-rule-button" title="Delete">
-              <span class="material-symbols-rounded">delete</span>
+            <button id="delete-rule-button" title="Delete" (click)="deleteRule(rule.id)">
+              <span class="pi pi-trash"></span>
             </button>
           </div>
         </td>
@@ -89,11 +82,11 @@
     <!-- Form Actions -->
     <div class="form-actions">
       <button id="save-button" type="submit">
-        <span class="material-symbols-rounded">save</span>
+        <span class="pi pi-save"></span>
         Save
       </button>
       <button id="cancel-button" type="button" (click)="closeCreateRuleModal()">
-        <span class="material-symbols-rounded">close</span>
+        <span class="pi pi-times-circle"></span>
         Cancel
       </button>
     </div>

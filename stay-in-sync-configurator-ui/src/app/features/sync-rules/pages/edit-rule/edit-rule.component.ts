@@ -87,6 +87,15 @@ export class EditRuleComponent implements OnInit {
       this.nodePalette.closeSubPalettes();
     }
   }
+
+  /**
+   * Moves the canvas view to the node associated with the given node ID
+   *
+   * @param nodeId
+   */
+  onErrorClicked(nodeId: number) {
+    this.canvas.centerOnNode(nodeId);
+  }
   //#endregion
 
   //#region Node Palette

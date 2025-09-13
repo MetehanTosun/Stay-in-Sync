@@ -22,9 +22,7 @@
       </div>
     </div>
     <button id="save-graph-button" (click)="canvas.saveGraph()">
-      <span class="material-symbols-rounded">
-        save
-      </span>
+      <span class="pi pi-save"></span>
       Save Graph
     </button>
   </div>
@@ -39,7 +37,7 @@
 </div>
 
 <!-- Error Panel -->
-<app-error-panel [errors]="graphErrors"></app-error-panel>
+<app-error-panel [errors]="graphErrors" (errorClicked)="onErrorClicked($event)"></app-error-panel>
 
 <!-- MARK: Modals -->
 <!-- Provider Modal -->
