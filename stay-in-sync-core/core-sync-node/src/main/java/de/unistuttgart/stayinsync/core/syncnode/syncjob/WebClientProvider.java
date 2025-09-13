@@ -1,4 +1,4 @@
-package de.unistuttgart.stayinsync.syncnode.syncjob;
+package de.unistuttgart.stayinsync.core.syncnode.syncjob;
 
 import io.vertx.ext.web.client.WebClientOptions;
 import io.vertx.mutiny.core.Vertx;

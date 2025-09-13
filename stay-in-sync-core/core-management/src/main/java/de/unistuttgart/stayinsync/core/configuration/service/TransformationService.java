@@ -21,7 +21,8 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
 import jakarta.ws.rs.core.Response;
-import org.yaml.snakeyaml.emitter.Emitter;
+import org.eclipse.microprofile.reactive.messaging.Channel;
+import org.eclipse.microprofile.reactive.messaging.Emitter;
 
 import java.util.List;
 import java.util.Optional;
@@ -220,7 +221,9 @@ public class TransformationService {
     }
 
     public void addRule(Long transformationId, Long ruleId) {
-        TransformationRule ruleById = graphStorageService.findRuleById(ruleId);
+        TransformationRule ruleById = graphStorageService.findRuleById(ruleId)
+                .orElseThrow(() -> new CoreManagementException(Response.Status.NOT_FOUND,
+                        "Rule not found", "TransformationRule with id %d not found.", ruleId));
         Transformation transformation = findByIdDirect(transformationId);
         Log.infof("Removing rule with id %d to transformation with id %d", ruleId, transformationId);
 

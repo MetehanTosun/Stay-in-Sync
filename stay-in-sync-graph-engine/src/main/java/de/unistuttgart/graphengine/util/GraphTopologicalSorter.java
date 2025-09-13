@@ -1,8 +1,4 @@
-<<<<<<<< HEAD:stay-in-sync-graph-engine/src/main/java/de/unistuttgart/graphengine/util/GraphTopologicalSorter.java
 package de.unistuttgart.graphengine.util;
-========
-package de.unistuttgart.stayinsync.syncnode.logic_engine;
->>>>>>>> main:stay-in-sync-graph-engine/src/main/java/de/unistuttgart/graphengine/logic_engine/GraphTopologicalSorter.java
 
 import de.unistuttgart.graphengine.nodes.Node;
 import org.jboss.logging.Logger;

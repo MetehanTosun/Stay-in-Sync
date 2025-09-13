@@ -119,10 +119,4 @@ public class NodeDTO {
      * inputs.
      */
     private List<Integer> inputLimit;
-
-    /**
-     * Used to Map the calculatedResult of a Node during evaluation, Important for
-     * the Snapshot and reconstruction in the UI
-     */
-    private Object dynamicValue;
 }

@@ -1,7 +1,6 @@
-package de.unistuttgart.stayinsync.syncnode.domain;
+package de.unistuttgart.stayinsync.core.syncnode.domain;
 
 import de.unistuttgart.graphengine.nodes.Node;
-import de.unistuttgart.stayinsync.core.syncnode.domain.TransformJob;
 import de.unistuttgart.stayinsync.core.transport.dto.TransformationMessageDTO;
 
 

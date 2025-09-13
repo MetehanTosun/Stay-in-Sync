@@ -1,4 +1,4 @@
-package de.unistuttgart.stayinsync.syncnode.domain;
+package de.unistuttgart.stayinsync.core.syncnode.domain;
 
 import com.fasterxml.jackson.databind.JsonNode;
 

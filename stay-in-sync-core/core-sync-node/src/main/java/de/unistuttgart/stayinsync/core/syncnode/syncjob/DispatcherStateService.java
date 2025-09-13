@@ -1,12 +1,12 @@
 package de.unistuttgart.stayinsync.core.syncnode.syncjob;
 
+import de.unistuttgart.stayinsync.core.syncnode.domain.ExecutionPayload;
 import de.unistuttgart.stayinsync.core.transport.dto.SourceSystemApiRequestConfigurationMessageDTO;
 import de.unistuttgart.stayinsync.core.transport.dto.SourceSystemMessageDTO;
 import de.unistuttgart.stayinsync.core.transport.dto.SyncDataMessageDTO;
 import de.unistuttgart.stayinsync.core.transport.dto.TransformationMessageDTO;
 import de.unistuttgart.graphengine.dto.transformationrule.TransformationRuleDTO;
 import de.unistuttgart.graphengine.nodes.Node;
-import de.unistuttgart.stayinsync.core.syncnode.domain.ExecutionPayload;
 import de.unistuttgart.stayinsync.core.syncnode.domain.TransformJob;
 import de.unistuttgart.graphengine.util.GraphMapper;
 import java.time.Instant;

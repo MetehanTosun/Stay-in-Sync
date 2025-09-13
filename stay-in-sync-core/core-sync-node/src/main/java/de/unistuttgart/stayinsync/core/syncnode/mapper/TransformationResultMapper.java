@@ -1,4 +1,4 @@
-package de.unistuttgart.stayinsync.syncnode.mapper;
+package de.unistuttgart.stayinsync.core.syncnode.mapper;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 

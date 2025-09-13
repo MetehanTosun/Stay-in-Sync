@@ -1,4 +1,4 @@
-package de.unistuttgart.stayinsync.syncnode.syncjob;
+package de.unistuttgart.stayinsync.core.syncnode.syncjob;
 
 import io.quarkus.cache.CacheKeyGenerator;
 import jakarta.enterprise.context.ApplicationScoped;

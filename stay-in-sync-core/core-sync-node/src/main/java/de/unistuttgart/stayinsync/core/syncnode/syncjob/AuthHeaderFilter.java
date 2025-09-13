@@ -1,4 +1,4 @@
-package de.unistuttgart.stayinsync.syncnode.syncjob;
+package de.unistuttgart.stayinsync.core.syncnode.syncjob;
 
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.ws.rs.client.ClientRequestContext;

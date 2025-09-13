@@ -1,8 +1,9 @@
-package de.unistuttgart.stayinsync.syncnode.SnapshotManagement;
+package de.unistuttgart.stayinsync.core.syncnode.SnapshotManagement;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-import de.unistuttgart.stayinsync.scriptengine.message.TransformationResult;
+
+import de.unistuttgart.stayinsync.core.scriptengine.message.TransformationResult;
 import de.unistuttgart.stayinsync.transport.dto.Snapshot.SnapshotDTO;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.Consumes;

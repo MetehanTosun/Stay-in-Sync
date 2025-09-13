@@ -1,4 +1,4 @@
-package de.unistuttgart.stayinsync.syncnode.SnapshotManagement;
+package de.unistuttgart.stayinsync.core.syncnode.SnapshotManagement;
 
 import java.time.Instant;
 import java.util.UUID;

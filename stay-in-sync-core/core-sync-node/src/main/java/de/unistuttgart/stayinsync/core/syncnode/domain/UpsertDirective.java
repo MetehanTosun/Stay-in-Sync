@@ -1,4 +1,4 @@
-package de.unistuttgart.stayinsync.syncnode.domain;
+package de.unistuttgart.stayinsync.core.syncnode.domain;
 
 public class UpsertDirective {
     private String __directiveType;

@@ -1,4 +1,4 @@
-package de.unistuttgart.stayinsync.monitoring.service;
+package de.unistuttgart.stayinsync.core.monitoring.service;
 
 import de.unistuttgart.stayinsync.monitoring.clientinterfaces.SyncJobClient;
 import de.unistuttgart.stayinsync.monitoring.clientinterfaces.SyncNodeClient;

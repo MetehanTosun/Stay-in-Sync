@@ -9,7 +9,6 @@ import de.unistuttgart.graphengine.util.GraphTopologicalSorter;
 import io.quarkus.logging.Log;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
-import jakarta.transaction.Transactional;
 
 import java.util.List;
 import java.util.Map;

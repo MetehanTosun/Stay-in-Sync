@@ -1,6 +1,8 @@
-package de.unistuttgart.stayinsync.monitoring.controller;
+package de.unistuttgart.stayinsync.core.monitoring.controller;
 
-import de.unistuttgart.stayinsync.monitoring.service.TransformationService;
+
+
+import de.unistuttgart.stayinsync.core.monitoring.service.TransformationService;
 import de.unistuttgart.stayinsync.transport.dto.monitoringgraph.MonitoringTransformationDto;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.GET;

@@ -1,5 +1,6 @@
 package de.unistuttgart.stayinsync.core.configuration.rest;
 
+import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.Transformation;
 import de.unistuttgart.stayinsync.core.configuration.exception.CoreManagementException;
 import de.unistuttgart.stayinsync.core.configuration.mapping.TransformationMapper;
 import de.unistuttgart.stayinsync.core.configuration.mapping.TransformationScriptMapper;
@@ -10,7 +11,7 @@ import de.unistuttgart.stayinsync.core.configuration.rest.dtos.TransformationSta
 import de.unistuttgart.stayinsync.core.configuration.rest.dtos.targetsystem.UpdateTransformationRequestConfigurationDTO;
 import de.unistuttgart.stayinsync.core.configuration.service.TargetDtsBuilderGeneratorService;
 import de.unistuttgart.stayinsync.core.configuration.service.TransformationService;
-import de.unistuttgart.stayinsync.transport.domain.JobDeploymentStatus;
+import de.unistuttgart.stayinsync.core.transport.domain.JobDeploymentStatus;
 import io.quarkus.logging.Log;
 import io.smallrye.mutiny.Multi;
 import jakarta.inject.Inject;

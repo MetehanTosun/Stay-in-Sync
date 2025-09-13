@@ -1,12 +1,12 @@
-package de.unistuttgart.stayinsync.syncnode.syncjob;
+package de.unistuttgart.stayinsync.core.syncnode.syncjob;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import de.unistuttgart.stayinsync.exception.SyncNodeException;
-import de.unistuttgart.stayinsync.scriptengine.message.TransformationResult;
-import de.unistuttgart.stayinsync.syncnode.domain.UpsertDirective;
-import de.unistuttgart.stayinsync.transport.dto.TransformationMessageDTO;
-import de.unistuttgart.stayinsync.transport.dto.targetsystems.RequestConfigurationMessageDTO;
+import de.unistuttgart.stayinsync.core.exception.SyncNodeException;
+import de.unistuttgart.stayinsync.core.scriptengine.message.TransformationResult;
+import de.unistuttgart.stayinsync.core.syncnode.domain.UpsertDirective;
+import de.unistuttgart.stayinsync.core.transport.dto.TransformationMessageDTO;
+import de.unistuttgart.stayinsync.core.transport.dto.targetsystems.RequestConfigurationMessageDTO;
 import io.quarkus.logging.Log;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;

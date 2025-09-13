@@ -1,4 +1,4 @@
-package de.unistuttgart.stayinsync.syncnode.syncjob;
+package de.unistuttgart.stayinsync.core.syncnode.syncjob;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -8,10 +8,9 @@ import de.unistuttgart.graphengine.exception.GraphEvaluationException;
 import de.unistuttgart.graphengine.logic_engine.LogicGraphEvaluator;
 import de.unistuttgart.stayinsync.core.scriptengine.ScriptEngineService;
 import de.unistuttgart.stayinsync.core.scriptengine.message.TransformationResult;
-import de.unistuttgart.stayinsync.core.syncnode.syncjob.TargetSystemWriterService;
-import de.unistuttgart.stayinsync.syncnode.SnapshotManagement.SnapshotFactory;
-import de.unistuttgart.stayinsync.syncnode.SnapshotManagement.SnapshotStore;
-import de.unistuttgart.stayinsync.syncnode.domain.ExecutionPayload;
+import de.unistuttgart.stayinsync.core.syncnode.SnapshotManagement.SnapshotFactory;
+import de.unistuttgart.stayinsync.core.syncnode.SnapshotManagement.SnapshotStore;
+import de.unistuttgart.stayinsync.core.syncnode.domain.ExecutionPayload;
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Timer;
