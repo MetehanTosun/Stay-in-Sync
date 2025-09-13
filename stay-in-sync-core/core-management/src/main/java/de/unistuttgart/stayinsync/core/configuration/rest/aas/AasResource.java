@@ -247,6 +247,13 @@ public class AasResource {
         ss = aasService.validateAasSource(ss);
         var headers = headerBuilder.buildMergedHeaders(ss, de.unistuttgart.stayinsync.core.configuration.service.aas.HttpHeaderBuilder.Mode.WRITE_JSON);
         Log.infof("DELETE submodel LIVE: apiUrl=%s smId=%s", ss.apiUrl, smId);
+        // Remove reference from shell first (best-effort)
+        try {
+            var refDel = traversal.removeSubmodelReferenceFromShell(ss.apiUrl, ss.aasId, smId, headers).await().indefinitely();
+            Log.infof("DELETE submodel-ref upstream status=%d msg=%s body=%s", refDel.statusCode(), refDel.statusMessage(), safeBody(refDel));
+        } catch (Exception e) {
+            Log.warn("Failed to remove submodel-ref from shell (continuing)", e);
+        }
         var resp = traversal.deleteSubmodel(ss.apiUrl, smId, headers).await().indefinitely();
         int sc = resp.statusCode();
         Log.infof("DELETE submodel upstream status=%d msg=%s body=%s", sc, resp.statusMessage(), safeBody(resp));

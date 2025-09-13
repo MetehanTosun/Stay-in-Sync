@@ -157,38 +157,21 @@ public class AasStructureSnapshotService {
                 boolean looksLikeSubmodel =
                         (root.has("modelType") && "Submodel".equalsIgnoreCase(textOrNull(root, "modelType")))
                         || (root.has("submodelElements") && root.get("submodelElements").isArray());
-                if (!looksLikeSubmodel) continue;
-                String id = textOrNull(root, "id");
-                if (id == null && root.has("identification")) {
-                    id = textOrNull(root.get("identification"), "id");
-                }
-                if (id == null || id.isBlank()) continue;
-                foundAnySubmodelPayload = true;
-
-                var existingSm = AasSubmodelLite.<AasSubmodelLite>find("sourceSystem.id = ?1 and submodelId = ?2", ss.id, id).firstResult();
-                if (existingSm != null) {
-                    throw new DuplicateIdException("Submodel already exists: " + id);
-                }
-
-                String idShort = textOrNull(root, "idShort");
-                String semanticId = textOrNull(root, "semanticId");
-                String kind = textOrNull(root, "kind");
-
-                AasSubmodelLite sm = new AasSubmodelLite();
-                sm.sourceSystem = ss;
-                sm.submodelId = id;
-                sm.submodelIdShort = idShort;
-                sm.semanticId = semanticId;
-                sm.kind = kind;
-                sm.persist();
-                importedSubmodels++;
-
-                JsonNode elementsNode = root.get("submodelElements");
-                if (elementsNode != null && elementsNode.isArray()) {
-                    java.util.Set<String> seen = new java.util.HashSet<>();
-                    for (JsonNode el : elementsNode) {
-                        ingestElement(sm, null, el, seen);
+                if (!looksLikeSubmodel) {
+                    // IDTA container JSON: iterate submodels array
+                    if (root.has("submodels") && root.get("submodels").isArray()) {
+                        for (JsonNode smNode : root.get("submodels")) {
+                            if (importSubmodelFromJson(ss, smNode)) {
+                                foundAnySubmodelPayload = true;
+                                importedSubmodels++;
+                            }
+                        }
                     }
+                    continue;
+                }
+                if (importSubmodelFromJson(ss, root)) {
+                    foundAnySubmodelPayload = true;
+                    importedSubmodels++;
                 }
             } catch (Exception ex) {
                 // ignore individual JSON failures
@@ -483,6 +466,56 @@ public class AasStructureSnapshotService {
             if (n instanceof org.w3c.dom.Element e) out.add(e);
         }
         return out;
+    }
+
+    private boolean importSubmodelFromJson(SourceSystem ss, JsonNode smNode) {
+        if (smNode == null || smNode.isNull()) return false;
+        // Expect either a standalone submodel object or an entry within a container
+        JsonNode node = smNode;
+        // Some containers wrap submodel under 'submodel' key
+        if (node.has("submodel")) node = node.get("submodel");
+
+        String id = textOrNull(node, "id");
+        if (id == null && node.has("identification")) {
+            id = textOrNull(node.get("identification"), "id");
+        }
+        if (id == null || id.isBlank()) return false;
+
+        var existingSm = AasSubmodelLite.<AasSubmodelLite>find("sourceSystem.id = ?1 and submodelId = ?2", ss.id, id).firstResult();
+        if (existingSm != null) {
+            return false; // already present; don't duplicate
+        }
+
+        String idShort = textOrNull(node, "idShort");
+        String kind = textOrNull(node, "kind");
+        String semanticId = null;
+        JsonNode semNode = node.get("semanticId");
+        if (semNode != null) {
+            // semanticId may be object or simple value
+            if (semNode.isTextual()) {
+                semanticId = semNode.asText();
+            } else if (semNode.has("keys") && semNode.get("keys").isArray() && semNode.get("keys").size() > 0) {
+                JsonNode k0 = semNode.get("keys").get(0);
+                semanticId = textOrNull(k0, "value");
+            }
+        }
+
+        AasSubmodelLite sm = new AasSubmodelLite();
+        sm.sourceSystem = ss;
+        sm.submodelId = id;
+        sm.submodelIdShort = idShort;
+        sm.semanticId = semanticId;
+        sm.kind = kind;
+        sm.persist();
+
+        JsonNode elementsNode = node.get("submodelElements");
+        if (elementsNode != null && elementsNode.isArray()) {
+            java.util.Set<String> seen = new java.util.HashSet<>();
+            for (JsonNode el : elementsNode) {
+                ingestElement(sm, null, el, seen);
+            }
+        }
+        return true;
     }
 
     private void persistElementLite(AasSubmodelLite submodel, String parentPath, JsonNode n, Set<String> seen) {
