@@ -2,14 +2,12 @@ package de.unistuttgart.stayinsync.core.configuration.service;
 
 import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.SyncJob;
 import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.Transformation;
-import de.unistuttgart.stayinsync.core.configuration.domain.events.sync.SyncJobPersistedEvent;
-import de.unistuttgart.stayinsync.core.configuration.domain.events.sync.SyncJobUpdatedEvent;
+import de.unistuttgart.stayinsync.core.configuration.exception.CoreManagementException;
 import de.unistuttgart.stayinsync.core.configuration.mapping.SyncJobFullUpdateMapper;
 import de.unistuttgart.stayinsync.core.configuration.rest.dtos.SyncJobCreationDTO;
 import io.quarkus.logging.Log;
 import io.smallrye.common.constraint.NotNull;
 import jakarta.enterprise.context.ApplicationScoped;
-import jakarta.enterprise.event.Event;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
 import jakarta.validation.Valid;
@@ -34,11 +32,6 @@ public class SyncJobService {
     @Inject
     SyncJobFullUpdateMapper syncJobFullUpdateMapper;
 
-    @Inject
-    Event<SyncJobPersistedEvent> syncJobPersistedEvent;
-
-    @Inject
-    Event<SyncJobUpdatedEvent> syncJobUpdatedEventEvent;
 
     public SyncJob persistSyncJob(@NotNull @Valid SyncJobCreationDTO syncJobDTO) {
         SyncJob syncJob = syncJobFullUpdateMapper.mapToEntity(syncJobDTO);
@@ -55,7 +48,6 @@ public class SyncJobService {
         Log.debugf("Persisting sync-job: %s", syncJob);
 
         syncJob.persist();
-        syncJobPersistedEvent.fire(new SyncJobPersistedEvent(syncJob));
 
         return syncJob;
     }
@@ -77,10 +69,16 @@ public class SyncJobService {
 
 
     @Transactional(SUPPORTS)
-    public Optional<SyncJob> findSyncJobById(Long id) {
+    public SyncJob findSyncJobById(Long id) {
         Log.debugf("Finding sync-job by id = %d", id);
-        return SyncJob.findByIdOptional(id);
+        return SyncJob.findByIdOptional(id)
+                .map(SyncJob.class::cast)
+                .orElseThrow(() -> {
+                    Log.warnf("There is no sync-job with id: %d", id);
+                    throw new CoreManagementException("Unable to find Sync-job", "There is no sync-job with id: %d", id);
+                });
     }
+
 
     @Transactional(REQUIRED)
     public void deleteSyncJob(Long id) {
@@ -104,6 +102,23 @@ public class SyncJobService {
         }
     }
 
+    public void addTransformation(Long id, Long transformationId) {
+        Log.infof("Adding transformation with id %d to syncjob with id %d", transformationId, id);
+        SyncJob syncJobById = findSyncJobById(id);
+        Transformation transformation = transformationService.findByIdDirect(transformationId);
+        transformation.syncJob = syncJobById;
+        syncJobById.transformations.add(transformation);
+    }
+
+    public void removeTransformation(Long id, Long transformationId) {
+        Log.infof("Removing transformation with id %d to syncjob with id %d", transformationId, id);
+        SyncJob syncJobById = findSyncJobById(id);
+        Transformation transformation = transformationService.findByIdDirect(transformationId);
+        transformation.syncJob = null;
+        syncJobById.transformations.remove(transformation);
+    }
+
+
     @Transactional(REQUIRED)
     public SyncJob replaceSyncJob(@NotNull @Valid SyncJobCreationDTO syncJobDTO) {
         SyncJob syncJob = syncJobFullUpdateMapper.mapToEntity(syncJobDTO);
@@ -122,12 +137,8 @@ public class SyncJobService {
                 .map(SyncJob.class::cast)
                 .map(targetSyncJob -> {
                     this.syncJobFullUpdateMapper.mapFullUpdate(syncJob, targetSyncJob);
-                    syncJobUpdatedEventEvent.fire(new SyncJobUpdatedEvent(targetSyncJob, syncJob));
                     return targetSyncJob;
                 })
                 .orElseThrow(() -> new IllegalArgumentException("SyncJob with ID " + syncJob.id + " not found"));
     }
-
-
-
 }

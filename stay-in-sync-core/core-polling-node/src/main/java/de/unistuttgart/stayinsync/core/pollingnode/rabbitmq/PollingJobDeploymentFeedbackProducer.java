@@ -3,9 +3,10 @@ package de.unistuttgart.stayinsync.core.pollingnode.rabbitmq;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.rabbitmq.client.*;
 import de.unistuttgart.stayinsync.core.pollingnode.exceptions.PollingNodeException;
-import de.unistuttgart.stayinsync.core.pollingnode.execution.controller.PollingJobExecutionController;
+
 import de.unistuttgart.stayinsync.core.transport.domain.JobDeploymentStatus;
 import de.unistuttgart.stayinsync.core.transport.dto.PollingJobDeploymentFeedbackMessageDTO;
+import de.unistuttgart.stayinsync.pollingnode.execution.PollingJobExecutionController;
 import io.quarkiverse.rabbitmqclient.RabbitMQClient;
 import io.quarkus.logging.Log;
 import io.quarkus.runtime.ShutdownEvent;
@@ -55,7 +56,7 @@ public class PollingJobDeploymentFeedbackProducer {
      *
      * @param requestConfigId of request config to be confirmed
      */
-    public void publishPollingJobFeedback(Long requestConfigId, JobDeploymentStatus jobDeploymentStatus) throws PollingNodeException {
+    public void publishPollingJobFeedback(Long requestConfigId, JobDeploymentStatus jobDeploymentStatus) {
         try {
             Log.infof("Confirming deployment of request config with id: %s", requestConfigId);
             String messageBody = objectMapper.writeValueAsString(new PollingJobDeploymentFeedbackMessageDTO(jobDeploymentStatus, requestConfigId, System.getenv("HOSTNAME")));
@@ -67,7 +68,7 @@ public class PollingJobDeploymentFeedbackProducer {
             channel.basicPublish("pollingjob-exchange", "feedback", properties,
                     messageBody.getBytes(StandardCharsets.UTF_8));
         } catch (IOException e) {
-            throw new PollingNodeException("Unable to publish Job , Object JSON-serialization failed");
+            Log.errorf("Error sending feedback for polling job details %d", requestConfigId, e);
         }
     }
 
@@ -80,7 +81,7 @@ public class PollingJobDeploymentFeedbackProducer {
         Set<Long> jobIds = pollingJobExecutionController.getSupportedJobs().keySet();
         for(Long jobId : jobIds)
         {
-            publishPollingJobFeedback(jobId, JobDeploymentStatus.STOPPED);
+            publishPollingJobFeedback(jobId, JobDeploymentStatus.UNDEPLOYED);
         }
     }
 

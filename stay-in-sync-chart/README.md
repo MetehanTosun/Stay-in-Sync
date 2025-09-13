@@ -7,6 +7,8 @@ The stay-in-sync helm chart is supposed to be used for development purposes and 
 - [Prerequisites](#prerequisites)
   * [Post Setup](#post-setup)
 - [Usage](#usage)
+  * [Docker images](#docker-images)
+  * [Helm chart](#helm-chart)
 - [Ingress](#ingress)
   * [Tractus-x](#tractus-x)
     + [Consumer-1 Controlplane](#consumer-1-controlplane)
@@ -17,6 +19,7 @@ The stay-in-sync helm chart is supposed to be used for development purposes and 
     + [PG-Admin](#pg-admin)
     + [SSI Credential Issuer](#ssi-credential-issuer)
   * [Basyx](#basyx)
+  * [Stay-in-Sync](#stay-in-sync)
 
 <!-- tocstop -->
 

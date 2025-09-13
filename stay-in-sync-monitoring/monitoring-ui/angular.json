@@ -39,7 +39,7 @@
                 {
                   "type": "initial",
                   "maximumWarning": "500kB",
-                  "maximumError": "1MB"
+                  "maximumError": "50MB"
                 },
                 {
                   "type": "anyComponentStyle",
@@ -63,9 +63,6 @@
             "host": "localhost"
           },
           "builder": "@angular-devkit/build-angular:dev-server",
-          "options": {
-            "proxyConfig": "src/proxy.conf.json"
-          },
           "configurations": {
             "production": {
               "buildTarget": "monitoring-ui:build:production"

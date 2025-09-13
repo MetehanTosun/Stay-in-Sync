@@ -1,0 +1,55 @@
+<!-- Wenn kein Node ausgewählt -->
+<p-message *ngIf="!selectedNodeId" severity="info" text="Please select a SyncNode"></p-message>
+
+<!-- Wenn keine Transformationen -->
+<p-message *ngIf="selectedNodeId && transformations.length === 0" severity="warn" text="There are no transformations"></p-message>
+
+<!-- Wenn Transformationen vorhanden -->
+<div *ngIf="selectedNodeId && transformations.length > 0" class="grid gap-4">
+  <p-panel
+    *ngFor="let transformation of transformations"
+    [toggleable]="true"
+    [styleClass]="transformation.error ? 'border-red-500' : 'border-green-200'">
+
+    <!-- Custom Header mit Icon -->
+    <ng-template pTemplate="header">
+      <i class="pi mr-2"
+         [ngClass]="transformation.error ? 'pi-times-circle' : 'pi-check-circle'"
+         [ngStyle]="{ color: transformation.error ? 'red' : 'green' }">
+      </i>
+      <span class="font-semibold"
+            [ngStyle]="{ color: transformation.error ? 'red' : 'green' }">
+        {{ transformation.name }}
+      </span>
+    </ng-template>
+
+    <!-- Beschreibung -->
+    <p class="mb-2" *ngIf="transformation.description">{{ transformation.description }}</p>
+
+    <!-- Snapshots -->
+    <p-table
+      [value]="getSnapshotsForTransformation(transformation.id)"
+      [paginator]="false"
+      [responsiveLayout]="'scroll'"
+      styleClass="p-datatable-sm"
+    >
+      <ng-template pTemplate="header">
+        <tr>
+          <th>ID</th>
+          <th>Created At</th>
+          <th>Replay</th>
+        </tr>
+      </ng-template>
+      <ng-template pTemplate="body" let-snapshot>
+        <tr>
+          <td>{{ snapshot.snapshotId }}</td>
+          <td>{{ snapshot.createdAt | date:'short' }}</td>
+          <td>
+            <p-button icon="pi pi-refresh" class="p-button-sm"
+                      (click)="replaySnapshot(snapshot.snapshotId)"></p-button>
+          </td>
+        </tr>
+      </ng-template>
+    </p-table>
+  </p-panel>
+</div>

@@ -4,11 +4,14 @@ import io.quarkus.runtime.annotations.RegisterForReflection;
 
 @RegisterForReflection
 public record TransformJob(
-        String name,
-        String jobId,
-        String scriptId,
-        String scriptCode,
-        String scriptLanguage,
-        String expectedHash,
-        Object sourceData
-) { }
+                Long transformationId,
+                String name,
+                String jobId,
+                String scriptId,
+                String scriptCode,
+                String scriptLanguage,
+                String expectedHash,
+                String generatedSdkCode,
+                String generatedSdkHash,
+                Object sourceData) {
+}

@@ -1,0 +1,9 @@
+modules:
+  http_2xx:
+    prober: http
+    timeout: 5s
+    http:
+      valid_status_codes: []   # empty = all 2xx accepted
+      method: GET
+      tls_config:
+        insecure_skip_verify: true

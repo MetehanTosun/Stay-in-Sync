@@ -1,53 +1,59 @@
 import { Injectable } from '@angular/core';
-import { Observable, map } from 'rxjs';
+import { Observable } from 'rxjs';
 import { HttpClient, HttpParams } from '@angular/common/http';
+import { LogEntry } from '../models/log.model';
 
 @Injectable({ providedIn: 'root' })
 export class LogService {
-  private baseUrl = '/loki/api/v1/query_range';
+  private baseUrl = '/api/logs';
 
   constructor(private http: HttpClient) {}
 
-  getLogs(
-    stream: 'stdout' | 'stderr',
-    level: string,
-    nodeId: string,
-    startTime: string,
-    endTime: string
-  ): Observable<any[]> {
-    // Labels
-    let labelParts = [`stream="${stream}"`];
-    if (nodeId) labelParts.push(`nodeId="${nodeId}"`);
-    const labelSelector = `{${labelParts.join(',')}}`;
+  /**
+   * Logs für eine Liste von TransformationIds abrufen
+   */
+  getLogsByTransformations(
+    transformationIds: string[],
+    startTime: number,
+    endTime: number,
+    level: string
+  ): Observable<LogEntry[]> {
+    let params = new HttpParams()
+      .set('startTime', startTime)
+      .set('endTime', endTime)
+      .set('level', level);
 
-    // Log level
-    const query = level ? `${labelSelector} |= "level=${level}"` : labelSelector;
-
-    const params = new HttpParams()
-      .set('query', query)
-      .set('start', startTime)
-      .set('end', endTime)
-      .set('limit', '1000')
-      .set('direction', 'backward');
-
-    console.log('Loki Query:', query);
-
-    return this.http.get(this.baseUrl, { params, responseType: 'text' }).pipe(
-      map(raw => {
-        const response = JSON.parse(raw);
-        if (!response.data || !response.data.result) return [];
-        return response.data.result.flatMap((stream: any) =>
-          stream.values.map((entry: [string, string]) => {
-            const parsed = JSON.parse(entry[1]);
-            return {
-              timestamp: parsed.time,
-              message: parsed.log
-            };
-          })
-        );
-      })
-    );
+    // POST mit Body = TransformationIds
+    return this.http.post<LogEntry[]>(`${this.baseUrl}/transformations`, transformationIds, { params });
   }
 
+  /**
+   * Alle Logs ohne Filter abrufen (optional, z.B. für globale Suche)
+   */
+  getLogs(
+    startTime: number,
+    endTime: number,
+    level: string
+  ): Observable<LogEntry[]> {
+    let params = new HttpParams()
+      .set('startTime', startTime)
+      .set('endTime', endTime)
+      .set('level', level);
 
+    return this.http.get<LogEntry[]>(this.baseUrl, { params });
+  }
+
+  /**
+   * Liste der SyncJobs mit Error-Logs abrufen
+   */
+  getErrorLogs(
+    startTime: number,
+    endTime: number,
+  ): Observable<number[]> {
+    let params = new HttpParams()
+      .set('startTime', startTime)
+      .set('endTime', endTime);
+
+    return this.http.get<number[]>(`${this.baseUrl}/ErrorSyncJobIds`, { params });
+  }
 }

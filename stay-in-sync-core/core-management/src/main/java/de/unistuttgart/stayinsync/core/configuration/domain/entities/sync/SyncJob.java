@@ -22,8 +22,6 @@ public class SyncJob extends PanacheEntity {
 
     public String syncNodeIdentifier;
 
-    public boolean deployed;
-
     public String description;
 
     public boolean isSimulation;

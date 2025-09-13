@@ -111,6 +111,7 @@ public class SourceSystemResource {
             sourceSystemDTO.apiUrl(),
             sourceSystemDTO.description(),
             sourceSystemDTO.apiType(),
+            sourceSystemDTO.aasId(),
             sourceSystemDTO.apiAuthType(),
             sourceSystemDTO.authConfig(),
             sourceSystemDTO.openApiSpec()

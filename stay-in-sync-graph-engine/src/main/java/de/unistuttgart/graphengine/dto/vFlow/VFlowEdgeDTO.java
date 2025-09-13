@@ -1,14 +1,11 @@
 package de.unistuttgart.graphengine.dto.vFlow;
 
-import lombok.Getter;
-import lombok.Setter;
 
 /**
  * Represents a single edge (connection) from ngx-vflow, including its source,
  * target, and visual styling information.
  */
-@Getter
-@Setter
+
 public class VFlowEdgeDTO {
     /**
      * The unique identifier of the edge (e.g., "0 -> 2").
@@ -31,4 +28,35 @@ public class VFlowEdgeDTO {
      */
     private String targetHandle;
 
+    public String getId() {
+        return id;
+    }
+
+    public void setId(String id) {
+        this.id = id;
+    }
+
+    public String getSource() {
+        return source;
+    }
+
+    public void setSource(String source) {
+        this.source = source;
+    }
+
+    public String getTarget() {
+        return target;
+    }
+
+    public void setTarget(String target) {
+        this.target = target;
+    }
+
+    public String getTargetHandle() {
+        return targetHandle;
+    }
+
+    public void setTargetHandle(String targetHandle) {
+        this.targetHandle = targetHandle;
+    }
 }

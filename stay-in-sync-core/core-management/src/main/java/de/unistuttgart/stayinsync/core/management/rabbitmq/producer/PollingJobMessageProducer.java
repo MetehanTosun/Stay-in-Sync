@@ -47,7 +47,7 @@ public class PollingJobMessageProducer {
 
     public void publishPollingJob(SourceSystemApiRequestConfigurationMessageDTO apiRequestConfiguration) throws CoreManagementException {
         try {
-            Log.infof("Publishing polling-job for %s, polling at %s (id: %s)", apiRequestConfiguration.apiConnectionDetails().sourceSystem().apiUrl(),
+            Log.infof("Publishing job for %s, polling at %s (id: %s)", apiRequestConfiguration.apiConnectionDetails().sourceSystem().apiUrl(),
                     apiRequestConfiguration.apiConnectionDetails().endpoint().endpointPath(), apiRequestConfiguration.id());
             String messageBody = objectMapper.writeValueAsString(apiRequestConfiguration);
             AMQP.BasicProperties properties = new AMQP.BasicProperties.Builder()
@@ -69,7 +69,7 @@ public class PollingJobMessageProducer {
      */
     public void reconfigureDeployedPollingJob(SourceSystemApiRequestConfigurationMessageDTO apiRequestConfiguration) {
         try {
-            Log.infof("Publishing polling-job for %s, polling at %s (id: %s)", apiRequestConfiguration.apiConnectionDetails().sourceSystem().apiUrl(),
+            Log.infof("Publishing job for %s, polling at %s (id: %s)", apiRequestConfiguration.apiConnectionDetails().sourceSystem().apiUrl(),
                     apiRequestConfiguration.apiConnectionDetails().endpoint().endpointPath(), apiRequestConfiguration);
             String messageBody = objectMapper.writeValueAsString(apiRequestConfiguration);
             AMQP.BasicProperties properties = new AMQP.BasicProperties.Builder()

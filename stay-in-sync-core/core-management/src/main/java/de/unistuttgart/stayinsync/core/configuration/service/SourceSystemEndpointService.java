@@ -29,13 +29,7 @@ import static jakarta.transaction.Transactional.TxType.SUPPORTS;
 public class SourceSystemEndpointService {
 
     @Inject
-    Validator validator;
-
-    @Inject
     ObjectMapper objectMapper;
-
-    @Inject
-    SourceSystemEndpointService sourceSystemEndpointService;
 
     @Inject
     SourceSystemService sourceSystemService;
@@ -99,6 +93,9 @@ public class SourceSystemEndpointService {
             
             existing.sourceSystem = sourceSystem;
             existing.syncSystem = sourceSystem;
+
+            sourceSystem.syncSystemEndpoints.add(existing);
+
             existing.persist();
             return existing;
         } else {
@@ -123,6 +120,9 @@ public class SourceSystemEndpointService {
             
             sourceSystemEndpoint.sourceSystem = sourceSystem;
             sourceSystemEndpoint.syncSystem = sourceSystem;
+
+            sourceSystem.syncSystemEndpoints.add(sourceSystemEndpoint);
+
             sourceSystemEndpoint.persist();
             return sourceSystemEndpoint;
         }

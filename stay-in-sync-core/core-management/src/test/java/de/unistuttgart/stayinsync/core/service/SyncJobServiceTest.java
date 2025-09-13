@@ -1,7 +1,7 @@
 package de.unistuttgart.stayinsync.core.service;
 
 import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.SyncJob;
-import de.unistuttgart.stayinsync.core.configuration.domain.events.sync.SyncJobPersistedEvent;
+import de.unistuttgart.stayinsync.core.configuration.exception.CoreManagementException;
 import de.unistuttgart.stayinsync.core.configuration.mapping.SyncJobFullUpdateMapper;
 import de.unistuttgart.stayinsync.core.configuration.service.SyncJobService;
 import io.quarkus.panache.mock.PanacheMock;
@@ -14,8 +14,7 @@ import org.mockito.Mock;
 
 import java.util.Optional;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.catchThrowableOfType;
+import static org.assertj.core.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
@@ -29,8 +28,7 @@ public class SyncJobServiceTest {
     @InjectMocks
     SyncJobService syncJobService;
 
-    @Mock
-    private Event<SyncJobPersistedEvent> syncJobPersistedEvent;
+
 
     @Inject
     SyncJobFullUpdateMapper mapper;
@@ -40,9 +38,9 @@ public class SyncJobServiceTest {
         PanacheMock.mock(SyncJob.class);
         when(SyncJob.findByIdOptional(eq(DEFAULT_ID))).thenReturn(Optional.empty());
 
-        assertThat(this.syncJobService.findSyncJobById(DEFAULT_ID))
-                .isNotNull()
-                .isNotPresent();
+        assertThatThrownBy(() -> this.syncJobService.findSyncJobById(DEFAULT_ID))
+                .isInstanceOf(CoreManagementException.class)
+                .hasMessage("There is no sync-job with id: 1");
 
         PanacheMock.verify(SyncJob.class).findByIdOptional(eq(DEFAULT_ID));
         PanacheMock.verifyNoMoreInteractions(SyncJob.class);

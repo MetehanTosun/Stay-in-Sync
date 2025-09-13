@@ -1,0 +1,83 @@
+/* === Aliases to match the HTML you wrote === */
+.replay-container {
+  /* alias of .replay-layout */
+  display: grid;
+  grid-template-columns: 1fr 420px;
+  gap: 16px;
+  height: calc(100vh - 64px);
+  padding: 16px;
+  box-sizing: border-box;
+}
+
+.left-pane {
+  /* alias of .code-pane */
+  background: var(--surface-card, #fff);
+  border: 1px solid var(--surface-border, #e0e0e0);
+  border-radius: 8px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.right-pane {
+  /* alias of .side-pane */
+  background: var(--surface-card, #fff);
+  border: 1px solid var(--surface-border, #e0e0e0);
+  border-radius: 8px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.pane-header,
+.side-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 12px 8px 12px;
+  border-bottom: 1px solid var(--surface-border, #e0e0e0);
+}
+
+.pane-header h2,
+.pane-header h3,
+.side-header h3 {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+/* Tabs in your HTML use .tabs + .tab */
+.tabs {
+  display: inline-flex;
+  gap: 6px;
+}
+.tab {
+  border: 1px solid var(--surface-border, #e0e0e0);
+  background: #f8f9fb;
+  padding: 6px 10px;
+  font-size: 13px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+.tab.active {
+  background: #eef2ff;
+  border-color: #c7d2fe;
+}
+
+/* Match your <pre class="code-block"> */
+.code-block,
+.code-fallback {
+  margin: 0;
+  padding: 12px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 12px;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  word-break: break-word;
+  height: 100%;
+  overflow: auto;
+  background: #0b1020;
+  color: #e6edf3;
+}
+
+/* Keep your existing json/terminal styles as-is */

@@ -5,7 +5,7 @@ import jakarta.inject.Inject;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
 
-@Path("/test")
+@Path("/api/test")
 @Produces(MediaType.APPLICATION_JSON)
 public class Resource {
 

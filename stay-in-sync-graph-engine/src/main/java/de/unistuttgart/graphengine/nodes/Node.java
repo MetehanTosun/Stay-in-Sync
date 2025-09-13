@@ -61,6 +61,4 @@ public abstract class Node {
      * JSON values in ProviderNodes.
      */
     public abstract void calculate(Map<String, JsonNode> dataContext) throws GraphEvaluationException;
-
-    public abstract Class<?> getOutputType();;
 }

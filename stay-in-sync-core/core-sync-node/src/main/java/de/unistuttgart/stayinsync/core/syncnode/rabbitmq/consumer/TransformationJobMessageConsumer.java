@@ -136,8 +136,9 @@ public class TransformationJobMessageConsumer {
         return (consumerTag, delivery) -> {
             try {
                 TransformationMessageDTO transformation = getTransformation(delivery);
-                Log.infof("Received update for transformation with id %s", transformation.id());
-                transformationJobScheduler.reconfigureTransformationExecution(transformation);
+                Log.infof("Received update for transformation with id %d", transformation.id());
+                JobDeploymentStatus jobDeploymentStatus = transformationJobScheduler.reconfigureTransformationExecution(transformation);
+                feedbackProducer.publishTransformationFeedback(transformation.id(), jobDeploymentStatus);
                 channel.basicAck(delivery.getEnvelope().getDeliveryTag(), false);
             } catch (SyncNodeException e) {
                 Log.errorf("Failed to process transformation configuration update message", e);

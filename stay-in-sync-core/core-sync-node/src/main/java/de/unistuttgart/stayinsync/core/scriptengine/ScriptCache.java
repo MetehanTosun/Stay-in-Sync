@@ -3,10 +3,8 @@ package de.unistuttgart.stayinsync.core.scriptengine;
 import de.unistuttgart.stayinsync.core.exception.ScriptEngineException;
 import io.quarkus.logging.Log;
 import jakarta.enterprise.context.ApplicationScoped;
-import org.graalvm.polyglot.PolyglotException;
 import org.graalvm.polyglot.Source;
 
-import java.io.IOException;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -61,60 +59,20 @@ public class ScriptCache {
     }
 
     /**
-     * Adds a script to the cache. The script code is wrapped in a JavaScript IIFE (Immediately Invoked Function Expression)
-     * with "use strict" enabled before being parsed into a {@link Source} object.
-     * This helps in isolating the script and enforcing stricter JavaScript rules.
+     * Stores a pre-compiled {@link Source} object directly into the cache.
+     * <p>
+     * This method is the primary way to add items to the cache in the current architecture.
+     * It assumes that the provided {@code Source} object has already been parsed from its string
+     * representation and that any necessary pre-processing (such as wrapping user code in an IIFE)
+     * has been performed by the caller.
      *
-     * <p>If parsing or any other error occurs during the process, an error is logged, and the script
-     * might not be added to the cache. The {@code TODO} comment indicates that parsing/compile
-     * errors might require more sophisticated handling in the future.</p>
-     *
-     * @param scriptId   The ID of the script.
-     * @param scriptHash The hash of the script's content, used for versioning.
-     * @param scriptCode The raw source code of the script.
-     * @throws ScriptEngineException if there were issues with I/O processing, script parsing errors or other unexpected
-     *                               errors during script compilation phase.
+     * @param scriptId       The ID of the script, used as part of the cache key.
+     * @param scriptHash     The hash of the original script's content, used for versioning.
+     * @param compiledSource The pre-compiled {@link Source} object to be stored in the cache.
      */
-    public void putScript(String scriptId, String scriptHash, String scriptCode) throws ScriptEngineException {
-        try {
-            String wrappedScriptCode = "(function() {\n" +
-                    "   \"use strict\";\n" +
-                    scriptCode +
-                    "\n})();";
-
-            Source source = Source.newBuilder("js", wrappedScriptCode, scriptId)
-                    .build();
-            cache.put(buildKey(scriptId, scriptHash), source);
-            Log.debugf("Cached script: %s (with hash: %s)", scriptId, scriptHash);
-        } catch (IOException e) {
-            String errorMsg = String.format("IOException while building source for script %s (id: %s)", scriptId, scriptHash);
-            Log.errorf(e, errorMsg);
-            throw new ScriptEngineException(
-                    ScriptEngineException.ErrorType.SCRIPT_CACHING_ERROR,
-                    "Script Caching I/O Error",
-                    errorMsg,
-                    e
-            );
-        } catch (PolyglotException e) {
-            // TODO: Parsing/compile errors might require additional handling / features
-            String errorMsg = String.format("Error parsing/pre-compiling script %s (id: %s): %s", scriptId, scriptHash, e.getMessage());
-            Log.errorf(e, errorMsg);
-            throw new ScriptEngineException(
-                    ScriptEngineException.ErrorType.SCRIPT_PARSING_ERROR,
-                    "Script Parsing Error",
-                    errorMsg,
-                    e
-            );
-        } catch (Exception e) {
-            String errorMsg = String.format("Unexpected error putting script %s (id: %s) into cache: %s", scriptId, scriptHash, e.getMessage());
-            Log.errorf(e, errorMsg);
-            throw new ScriptEngineException(
-                    ScriptEngineException.ErrorType.SCRIPT_CACHING_ERROR,
-                    "Unexpected Script Caching Error",
-                    errorMsg,
-                    e
-            );
-        }
+    public void putCompiledScript(String scriptId, String scriptHash, Source compiledSource){
+        cache.put(buildKey(scriptId, scriptHash), compiledSource);
+        Log.debugf("Cached compiled script: %s (with hash: %s)", scriptId, scriptHash);
     }
 
     /**

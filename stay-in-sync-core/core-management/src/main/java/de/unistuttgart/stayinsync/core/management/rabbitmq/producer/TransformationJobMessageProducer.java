@@ -66,7 +66,7 @@ public class TransformationJobMessageProducer {
      */
     public void publishTransformationJob(TransformationMessageDTO transformationMessageDTO) throws CoreManagementException {
         try {
-            Log.infof("Publishing sync-job %s (id: %s)", transformationMessageDTO.name(), transformationMessageDTO.id());
+            Log.infof("Publishing new job message %s (id: %s)", transformationMessageDTO.name(), transformationMessageDTO.id());
             String messageBody = objectMapper.writeValueAsString(transformationMessageDTO);
             AMQP.BasicProperties properties = new AMQP.BasicProperties.Builder()
                     .contentType("application/json")
@@ -88,7 +88,7 @@ public class TransformationJobMessageProducer {
      */
     public void reconfigureDeployedTransformationJob(TransformationMessageDTO transformationMessageDTO) {
         try {
-            Log.infof("Publishing sync-job %s (id: %s)", transformationMessageDTO.name(), transformationMessageDTO.id());
+            Log.infof("Publishing job reconfiguration message %s (id: %s)", transformationMessageDTO.name(), transformationMessageDTO.id());
             String messageBody = objectMapper.writeValueAsString(transformationMessageDTO);
             AMQP.BasicProperties properties = new AMQP.BasicProperties.Builder()
                     .contentType("application/json")

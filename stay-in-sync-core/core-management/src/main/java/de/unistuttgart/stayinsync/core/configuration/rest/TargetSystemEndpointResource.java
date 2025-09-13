@@ -30,7 +30,7 @@ import jakarta.ws.rs.core.Context;
 import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.core.UriInfo;
 
-@Path("api/target-systems/")
+@Path("api/config/target-systems/")
 @Produces(APPLICATION_JSON)
 @Consumes(APPLICATION_JSON)
 public class TargetSystemEndpointResource {
@@ -45,7 +45,7 @@ public class TargetSystemEndpointResource {
     TypeScriptTypeGenerator typeScriptTypeGenerator;
 
     @POST
-    @Path("{targetSystemId}/endpoint")
+    @Path("{targetSystemId}/endpoints")
     @Operation(summary = "Creates target-system-endpoints for a target system")
     @APIResponse(responseCode = "201", description = "Created", content = @Content(mediaType = APPLICATION_JSON, schema = @Schema(implementation = TargetSystemEndpointDTO.class, type = SchemaType.ARRAY)))
     public Response createTargetSystemEndpoints(@Parameter(name = "targetSystemId", required = true) @PathParam("targetSystemId") Long targetSystemId,
@@ -58,7 +58,7 @@ public class TargetSystemEndpointResource {
     }
 
     @GET
-    @Path("{targetSystemId}/endpoint")
+    @Path("{targetSystemId}/endpoints")
     @Operation(summary = "Returns all target-system-endpoints for a target system")
     @APIResponse(responseCode = "200", description = "OK", content = @Content(mediaType = APPLICATION_JSON, schema = @Schema(implementation = TargetSystemEndpointDTO.class, type = SchemaType.ARRAY)))
     public List<TargetSystemEndpointDTO> getAllTargetSystemEndpoints(@Parameter(name = "targetSystemId", required = true) @PathParam("targetSystemId") Long targetSystemId) {
@@ -68,7 +68,7 @@ public class TargetSystemEndpointResource {
     }
 
     @GET
-    @Path("/endpoint/{id}")
+    @Path("/endpoints/{id}")
     @Operation(summary = "Returns a target-system-endpoint by id")
     @APIResponse(responseCode = "200", description = "OK", content = @Content(mediaType = APPLICATION_JSON, schema = @Schema(implementation = TargetSystemEndpointDTO.class)))
     @APIResponse(responseCode = "404", description = "Not Found")
@@ -82,7 +82,7 @@ public class TargetSystemEndpointResource {
     }
 
     @PUT
-    @Path("/endpoint/{id}")
+    @Path("/endpoints/{id}")
     @Operation(summary = "Replaces a target-system-endpoint")
     @APIResponse(responseCode = "204", description = "No Content")
     @APIResponse(responseCode = "404", description = "Not Found")
@@ -96,7 +96,7 @@ public class TargetSystemEndpointResource {
     }
 
     @DELETE
-    @Path("/endpoint/{id}")
+    @Path("/endpoints/{id}")
     @Operation(summary = "Deletes a target-system-endpoint")
     @APIResponse(responseCode = "204", description = "No Content")
     public void deleteTargetSystemEndpoint(@Parameter(name = "id", required = true) @PathParam("id") Long id) {
@@ -105,7 +105,7 @@ public class TargetSystemEndpointResource {
     }
 
     @POST
-    @Path("/endpoint/{id}/generate-typescript")
+    @Path("/endpoints/{id}/generate-typescript")
     @Consumes(APPLICATION_JSON)
     @Operation(summary = "Generate TypeScript interface from JSON schema for target endpoint")
     @APIResponse(

@@ -36,7 +36,10 @@ import {ConfirmationDialogComponent, ConfirmationDialogData} from '../confirmati
 export class ManageApiHeadersComponent implements OnInit {
   /** ID of the sync system (e.g., sourceSystemId) */
   @Input() syncSystemId!: number;
+  /** When true, hide Accept/Content-Type and show AAS-specific hint */
+  @Input() isAas: boolean = false;
   @Output() onCreated = new EventEmitter<void>();
+  @Output() onRetest = new EventEmitter<void>();
 
   headers: ApiHeaderDTO[] = [];
   form!: FormGroup;
@@ -62,6 +65,11 @@ export class ManageApiHeadersComponent implements OnInit {
     {label: 'Accept-Charset', value: ApiRequestHeaderType.AcceptCharset},
     {label: 'Custom', value: ApiRequestHeaderType.Custom}
   ];
+
+  get allowedHeaderTypes() {
+    if (!this.isAas) return this.headerTypes;
+    return this.headerTypes.filter(h => h.value !== ApiRequestHeaderType.Accept && h.value !== ApiRequestHeaderType.ContentType);
+  }
 
   constructor(
     private fb: FormBuilder,

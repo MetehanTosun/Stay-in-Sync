@@ -1,7 +1,7 @@
 package de.unistuttgart.stayinsync.core.configuration.mapping;
 
 import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.SourceSystemApiRequestConfiguration;
-import de.unistuttgart.stayinsync.core.configuration.rest.dtos.CreateArcDTO;
+import de.unistuttgart.stayinsync.core.configuration.rest.dtos.CreateSourceArcDTO;
 import de.unistuttgart.stayinsync.core.configuration.rest.dtos.CreateRequestConfigurationDTO;
 import de.unistuttgart.stayinsync.core.configuration.rest.dtos.GetRequestConfigurationDTO;
 import de.unistuttgart.stayinsync.core.transport.dto.ApiConnectionDetailsDTO;
@@ -42,7 +42,7 @@ public interface SourceSystemApiRequestConfigurationFullUpdateMapper {
     @Mapping(target = "transformations", ignore = true)
     @Mapping(target = "queryParameterValues", ignore = true)
     @Mapping(target = "apiRequestHeaders", ignore = true)
-    SourceSystemApiRequestConfiguration mapToEntity(CreateArcDTO input);
+    SourceSystemApiRequestConfiguration mapToEntity(CreateSourceArcDTO input);
 
     //demo
 

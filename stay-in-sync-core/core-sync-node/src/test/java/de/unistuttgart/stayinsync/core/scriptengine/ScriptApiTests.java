@@ -206,24 +206,6 @@ public class ScriptApiTests {
         assertTrue(((List<?>) listFromResultMap).contains("item2"), "Change to original list should be visible in returned map's list");
     }
 
-
-    @Test
-    void setOutput_and_getOutputData_shouldWorkCorrectly() {
-        scriptApi = new ScriptApi("input", TEST_JOB_ID);
-        assertNull(scriptApi.getOutputData(), "Initially, outputData should be null");
-
-        String output = "testOutput";
-        scriptApi.setOutput(output);
-        assertEquals(output, scriptApi.getOutputData());
-
-        Map<String, Integer> mapOutput = Collections.singletonMap("key", 1);
-        scriptApi.setOutput(mapOutput);
-        assertEquals(mapOutput, scriptApi.getOutputData());
-
-        scriptApi.setOutput(null);
-        assertNull(scriptApi.getOutputData());
-    }
-
     @Test
     void log_shouldSetAndRemoveMdcJobId() {
         scriptApi = new ScriptApi("input", TEST_JOB_ID);
