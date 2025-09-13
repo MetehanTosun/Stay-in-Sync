@@ -195,6 +195,99 @@ public class AasStructureSnapshotService {
                 // ignore individual JSON failures
             }
         }
+
+        // If no JSON was imported, try to extract minimal info from XML submodel entries (top-level elements)
+        if (importedSubmodels == 0) {
+            try (java.util.zip.ZipInputStream zis2 = new java.util.zip.ZipInputStream(new java.io.ByteArrayInputStream(fileBytes))) {
+                java.util.zip.ZipEntry entry;
+                while ((entry = zis2.getNextEntry()) != null) {
+                    String name = entry.getName();
+                    if (name == null) continue;
+                    String lower = name.toLowerCase(java.util.Locale.ROOT);
+                    if (!(lower.endsWith(".xml") && (lower.contains("submodel") || lower.contains("sub-model")))) continue;
+                    try {
+                        javax.xml.parsers.DocumentBuilderFactory dbf = javax.xml.parsers.DocumentBuilderFactory.newInstance();
+                        dbf.setNamespaceAware(true);
+                        javax.xml.parsers.DocumentBuilder db = dbf.newDocumentBuilder();
+                        org.w3c.dom.Document doc = db.parse(zis2);
+                        org.w3c.dom.Element root = doc.getDocumentElement();
+                        if (root == null) continue;
+                        String rootLocal = root.getLocalName() != null ? root.getLocalName() : root.getNodeName();
+                        if (rootLocal == null || !rootLocal.toLowerCase(java.util.Locale.ROOT).contains("submodel")) {
+                            // try to find a nested submodel element
+                            var subNodes = root.getElementsByTagNameNS("*", "submodel");
+                            if (subNodes.getLength() > 0) {
+                                root = (org.w3c.dom.Element) subNodes.item(0);
+                            }
+                        }
+                        String id = firstTextByLocalName(root, "id");
+                        if (id == null) {
+                            var ident = firstChildByLocalName(root, "identification");
+                            if (ident != null) id = firstTextByLocalName(ident, "id");
+                        }
+                        if (id == null || id.isBlank()) {
+                            // fallback to file name
+                            id = name;
+                        }
+                        foundAnySubmodelPayload = true;
+                        var existingSm = AasSubmodelLite.<AasSubmodelLite>find("sourceSystem.id = ?1 and submodelId = ?2", ss.id, id).firstResult();
+                        if (existingSm != null) {
+                            // skip duplicates
+                            continue;
+                        }
+                        String idShort = firstTextByLocalName(root, "idShort");
+                        String kind = firstTextByLocalName(root, "kind");
+                        String semanticId = null;
+                        var sem = firstChildByLocalName(root, "semanticId");
+                        if (sem != null) semanticId = firstTextByLocalName(sem, "value");
+
+                        AasSubmodelLite sm = new AasSubmodelLite();
+                        sm.sourceSystem = ss;
+                        sm.submodelId = id;
+                        sm.submodelIdShort = idShort;
+                        sm.semanticId = semanticId;
+                        sm.kind = kind;
+                        sm.persist();
+                        importedSubmodels++;
+
+                        // Top-level elements under submodelElements
+                        var smEls = firstChildByLocalName(root, "submodelElements");
+                        if (smEls != null) {
+                            java.util.Set<String> seen = new java.util.HashSet<>();
+                            var children = childElements(smEls);
+                            for (org.w3c.dom.Element el : children) {
+                                String elIdShort = firstTextByLocalName(el, "idShort");
+                                if (elIdShort == null) continue;
+                                String modelType = el.getLocalName() != null ? el.getLocalName() : el.getNodeName();
+                                // Normalize common names
+                                if (modelType != null) {
+                                    String ml = modelType.toLowerCase(java.util.Locale.ROOT);
+                                    if (ml.contains("property")) modelType = "Property";
+                                    else if (ml.contains("submodelelementcollection")) modelType = "SubmodelElementCollection";
+                                    else if (ml.contains("submodelelementlist")) modelType = "SubmodelElementList";
+                                    else if (ml.contains("entity")) modelType = "Entity";
+                                }
+                                // Persist as shallow element
+                                AasElementLite e = new AasElementLite();
+                                e.submodelLite = sm;
+                                e.idShort = elIdShort;
+                                e.modelType = modelType;
+                                e.idShortPath = elIdShort;
+                                e.parentPath = null;
+                                e.hasChildren = "SubmodelElementCollection".equalsIgnoreCase(modelType)
+                                        || "SubmodelElementList".equalsIgnoreCase(modelType)
+                                        || "Entity".equalsIgnoreCase(modelType);
+                                e.persist();
+                            }
+                        }
+                    } catch (Exception ignore) {
+                        // ignore this XML entry
+                    }
+                }
+            } catch (java.io.IOException e) {
+                // ignore
+            }
+        }
         if (importedSubmodels == 0) {
             if (foundAnySubmodelPayload) {
                 // Submodel content present but not JSON → accept and refresh from LIVE
@@ -354,6 +447,31 @@ public class AasStructureSnapshotService {
     }
 
     private record ZipJson(String name, String lowerName, String json) { }
+
+    private static org.w3c.dom.Element firstChildByLocalName(org.w3c.dom.Element parent, String local) {
+        if (parent == null) return null;
+        var list = parent.getElementsByTagNameNS("*", local);
+        if (list == null || list.getLength() == 0) return null;
+        return (org.w3c.dom.Element) list.item(0);
+    }
+
+    private static String firstTextByLocalName(org.w3c.dom.Element parent, String local) {
+        var el = firstChildByLocalName(parent, local);
+        if (el == null) return null;
+        var t = el.getTextContent();
+        return (t != null && !t.isBlank()) ? t.trim() : null;
+    }
+
+    private static java.util.List<org.w3c.dom.Element> childElements(org.w3c.dom.Element parent) {
+        java.util.List<org.w3c.dom.Element> out = new java.util.ArrayList<>();
+        if (parent == null) return out;
+        var nl = parent.getChildNodes();
+        for (int i = 0; i < nl.getLength(); i++) {
+            var n = nl.item(i);
+            if (n instanceof org.w3c.dom.Element e) out.add(e);
+        }
+        return out;
+    }
 
     private void persistElementLite(AasSubmodelLite submodel, String parentPath, JsonNode n, Set<String> seen) {
         String idShort = textOrNull(n, "idShort");
