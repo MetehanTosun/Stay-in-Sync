@@ -625,7 +625,7 @@ public class AasStructureSnapshotService {
 
     @Transactional
     public void applySubmodelDelete(Long sourceSystemId, String submodelId) {
-        var submodel = AasSubmodelLite.<AasSubmodelLite>find("sourceSystem.id = ?1 and submodelId = ?2", sourceSystemId, submodelId).firstResult();
+        var submodel = AasSubmodelLite.<AasSubmodelLite>find("sourceSystem.id = ?1 and submodelId = ?2", sourceSystemId, normalizeSubmodelId(submodelId)).firstResult();
         if (submodel == null) return;
         AasElementLite.delete("submodelLite.id", submodel.id);
         submodel.delete();
@@ -633,9 +633,20 @@ public class AasStructureSnapshotService {
 
     @Transactional
     public void applyElementDelete(Long sourceSystemId, String submodelId, String idShortPath) {
-        var submodel = AasSubmodelLite.<AasSubmodelLite>find("sourceSystem.id = ?1 and submodelId = ?2", sourceSystemId, submodelId).firstResult();
+        var submodel = AasSubmodelLite.<AasSubmodelLite>find("sourceSystem.id = ?1 and submodelId = ?2", sourceSystemId, normalizeSubmodelId(submodelId)).firstResult();
         if (submodel == null) return;
         AasElementLite.delete("submodelLite.id = ?1 and (idShortPath = ?2 or idShortPath like ?3)", submodel.id, idShortPath, idShortPath + "/%");
+    }
+
+    private String normalizeSubmodelId(String smId) {
+        if (smId == null) return null;
+        try {
+            byte[] decoded = java.util.Base64.getUrlDecoder().decode(smId);
+            String plain = new String(decoded, java.nio.charset.StandardCharsets.UTF_8);
+            return plain;
+        } catch (IllegalArgumentException e) {
+            return smId;
+        }
     }
 }
 

@@ -305,7 +305,8 @@ public class AasResource {
         int sc = resp.statusCode();
         Log.infof("Create element upstream status=%d msg=%s body=%s", sc, resp.statusMessage(), safeBody(resp));
         if (sc >= 200 && sc < 300) {
-            snapshotService.applyElementCreate(sourceSystemId, smId, parentPath, resp.bodyAsString());
+            String normalizedSmId = normalizeSubmodelId(smId);
+            snapshotService.applyElementCreate(sourceSystemId, normalizedSmId, parentPath, resp.bodyAsString());
             return Response.status(Response.Status.CREATED).entity(resp.bodyAsString()).build();
         }
         return aasService.mapHttpError(sc, resp.statusMessage(), resp.bodyAsString());
@@ -343,7 +344,8 @@ public class AasResource {
         int sc = resp.statusCode();
         Log.infof("DELETE element upstream status=%d msg=%s body=%s", sc, resp.statusMessage(), safeBody(resp));
         if (sc >= 200 && sc < 300) {
-            snapshotService.applyElementDelete(sourceSystemId, smId, path);
+            String normalizedSmId = normalizeSubmodelId(smId);
+            snapshotService.applyElementDelete(sourceSystemId, normalizedSmId, path);
             return Response.noContent().build();
         }
         return aasService.mapHttpError(sc, resp.statusMessage(), resp.bodyAsString());
