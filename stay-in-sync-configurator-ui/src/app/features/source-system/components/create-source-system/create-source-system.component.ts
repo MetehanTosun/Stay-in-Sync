@@ -458,7 +458,8 @@ save(): void {
   }
 
   private mapElementToNode(submodelId: string, el: any): TreeNode {
-    const label = `${el.idShort} (${el.modelType})`;
+    const computedType = el?.modelType || (el?.valueType ? 'Property' : undefined);
+    const label = computedType ? `${el.idShort} (${computedType})` : el.idShort;
     const typeHasChildren = el?.modelType === 'SubmodelElementCollection' || el?.modelType === 'SubmodelElementList' || el?.modelType === 'Operation';
     const hasChildren = el?.hasChildren === true || typeHasChildren;
     return {
@@ -507,9 +508,10 @@ save(): void {
           const list: any[] = Array.isArray(resp) ? resp : (resp?.result ?? []);
           const found = list.find((el: any) => el.idShort === last);
           if (found) {
+            const liveType = found?.modelType || (found?.valueType ? 'Property' : undefined);
             this.selectedLivePanel = {
-              label: `${found.idShort} (${found.modelType})`,
-              type: found.modelType,
+              label: liveType ? `${found.idShort} (${liveType})` : found.idShort,
+              type: liveType || 'Unknown',
               value: (found as any).value,
               valueType: (found as any).valueType
             };

@@ -83,9 +83,9 @@
         <small *ngIf="selectedFile">{{ selectedFile.name }}</small>
       </div>
 
-      <!-- AAS: Verbindung testen -->
+      <!-- AAS: Test connection -->
       <div class="p-field" *ngIf="isAas()">
-        <button pButton type="button" label="Verbindung testen" (click)="testAasConnection()" [disabled]="isTesting"></button>
+        <button pButton type="button" label="Test connection" (click)="testAasConnection()" [disabled]="isTesting"></button>
         <span *ngIf="isTesting" class="ml-2">Testing...</span>
         <div class="mt-2" *ngIf="aasPreview && aasTestOk">
           <strong>idShort:</strong> {{ aasPreview.idShort }}
@@ -126,7 +126,7 @@
                 <span>{{ node.label }}</span>
                 <button *ngIf="node.data?.type==='submodel'" pButton type="button" class="p-button-text" label="Create element" (click)="openCreateElement(node.data.id)"></button>
                 <button *ngIf="node.data?.type==='submodel'" pButton type="button" class="p-button-text p-button-danger" label="Delete submodel" (click)="deleteSubmodel(node.data.id)"></button>
-                <button *ngIf="node.data?.type==='element' && node.data?.modelType!=='Property'" pButton type="button" class="p-button-text" label="Add child" (click)="openCreateElement(node.data.submodelId, node.data.idShortPath)"></button>
+                <!-- <button *ngIf="node.data?.type==='element' && node.data?.modelType!=='Property'" pButton type="button" class="p-button-text" label="Add child" (click)="openCreateElement(node.data.submodelId, node.data.idShortPath)"></button> -->
                 <button *ngIf="node.data?.type==='element' && (node.data?.modelType==='Property' || node.data?.raw?.valueType)" pButton type="button" class="p-button-text" label="Set value" (click)="openSetValue(node.data.submodelId, node.data)"></button>
                 <button *ngIf="node.data?.type==='element'" pButton type="button" class="p-button-text p-button-danger" label="Delete" (click)="deleteElement(node.data.submodelId, node.data.idShortPath)"></button>
               </div>
@@ -152,32 +152,9 @@
   <!-- Common Footer -->
   <ng-template pTemplate="footer">
     <div class="p-d-flex p-jc-between">
-      <!-- Back Button -->
-      <button
-        pButton
-        type="button"
-        label="Back"
-        class="p-button-text"
-        (click)="goBack()"
-        [disabled]="currentStep === 0">
-      </button>
-
-      <!-- Next or Finish -->
-      <button
-        *ngIf="currentStep === 0 || currentStep === 1"
-        pButton
-        type="button"
-        label="Next"
-        (click)="goNext()"
-        [disabled]="currentStep === 0 ? !canProceedFromStep1() : false">
-      </button>
-      <button
-        *ngIf="currentStep === 2"
-        pButton
-        type="button"
-        label="Finish"
-        (click)="cancel()">
-      </button>
+      <button pButton type="button" label="Back" class="p-button-text" (click)="goBack()" [disabled]="currentStep === 0"></button>
+      <button *ngIf="currentStep === 0 || currentStep === 1" pButton type="button" label="Next" (click)="goNext()" [disabled]="currentStep === 0 ? !canProceedFromStep1() : false"></button>
+      <button *ngIf="currentStep === 2" pButton type="button" label="Finish" (click)="cancel()"></button>
     </div>
   </ng-template>
 </p-dialog>

@@ -280,28 +280,32 @@
         </div>
         <button pButton type="button" label="Load Snapshot" (click)="discoverAasSnapshot()" [disabled]="aasTreeLoading"></button>
         <span *ngIf="aasTreeLoading" class="ml-2">Loading...</span>
-        <p-tree [value]="aasTreeNodes" (onNodeExpand)="onAasNodeExpand($event)" (onNodeSelect)="onAasNodeSelect($event)" selectionMode="single">
-          <ng-template let-node pTemplate="default">
-            <div style="display:flex;align-items:center;gap:.5rem;">
-              <span>{{ node.label }}</span>
-              <button *ngIf="node.data?.type==='submodel'" pButton type="button" class="p-button-text" label="Create element" (click)="openAasCreateElement(node.data.id)"></button>
-              <button *ngIf="node.data?.type==='element' && node.data?.modelType!=='Property'" pButton type="button" class="p-button-text" label="Add child" (click)="openAasCreateElement(node.data.submodelId, node.data.idShortPath)"></button>
-              <button *ngIf="node.data?.type==='submodel'" pButton type="button" class="p-button-text p-button-danger" label="Delete submodel" (click)="deleteAasSubmodel(node.data.id)"></button>
-              <button *ngIf="node.data?.type==='element'" pButton type="button" class="p-button-text p-button-danger" label="Delete" (click)="deleteAasElement(node.data.submodelId, node.data.idShortPath)"></button>
-              <button *ngIf="node.data?.type==='element' && (node.data?.modelType==='Property' || node.data?.raw?.valueType)" pButton type="button" class="p-button-text" label="Set value" (click)="openAasSetValue(node.data.submodelId, node.data)"></button>
-            </div>
-          </ng-template>
-        </p-tree>
-        <div class="p-card" *ngIf="selectedAasNode && selectedAasNode.data?.type==='element'" style="margin-top:1rem;padding:1rem;border:1px solid var(--surface-border);border-radius:4px;">
-          <div class="p-d-flex p-ai-center p-jc-between">
-            <h4 style="margin:0;">Details</h4>
-            <span *ngIf="aasSelectedLiveLoading">Loading...</span>
+        <div style="display:flex; gap:1rem; align-items:flex-start;">
+          <div style="flex: 1 1 65%; min-width: 0;">
+            <p-tree [value]="aasTreeNodes" (onNodeExpand)="onAasNodeExpand($event)" (onNodeSelect)="onAasNodeSelect($event)" selectionMode="single">
+              <ng-template let-node pTemplate="default">
+                <div style="display:flex;align-items:center;gap:.5rem;">
+                  <span>{{ node.label }}</span>
+                  <button *ngIf="node.data?.type==='submodel'" pButton type="button" class="p-button-text" label="Create element" (click)="openAasCreateElement(node.data.id)"></button>
+                  <!-- <button *ngIf="node.data?.type==='element' && node.data?.modelType!=='Property'" pButton type="button" class="p-button-text" label="Add child" (click)="openAasCreateElement(node.data.submodelId, node.data.idShortPath)"></button> -->
+                  <button *ngIf="node.data?.type==='submodel'" pButton type="button" class="p-button-text p-button-danger" label="Delete submodel" (click)="deleteAasSubmodel(node.data.id)"></button>
+                  <button *ngIf="node.data?.type==='element'" pButton type="button" class="p-button-text p-button-danger" label="Delete" (click)="deleteAasElement(node.data.submodelId, node.data.idShortPath)"></button>
+                  <button *ngIf="node.data?.type==='element' && (node.data?.modelType==='Property' || node.data?.raw?.valueType)" pButton type="button" class="p-button-text" label="Set value" (click)="openAasSetValue(node.data.submodelId, node.data)"></button>
+                </div>
+              </ng-template>
+            </p-tree>
           </div>
-          <div *ngIf="aasSelectedLivePanel">
-            <div><strong>Label:</strong> {{ aasSelectedLivePanel.label }}</div>
-            <div><strong>Type:</strong> {{ aasSelectedLivePanel.type }}</div>
-            <div *ngIf="aasSelectedLivePanel.valueType"><strong>valueType:</strong> {{ aasSelectedLivePanel.valueType }}</div>
-            <div *ngIf="aasSelectedLivePanel.value !== undefined"><strong>value:</strong> {{ aasSelectedLivePanel.value }}</div>
+          <div class="p-card" *ngIf="selectedAasNode && selectedAasNode.data?.type==='element'" style="flex: 0 0 35%; padding:1rem;border:1px solid var(--surface-border);border-radius:4px;">
+            <div class="p-d-flex p-ai-center p-jc-between">
+              <h4 style="margin:0;">Details</h4>
+              <span *ngIf="aasSelectedLiveLoading">Loading...</span>
+            </div>
+            <div *ngIf="aasSelectedLivePanel">
+              <div><strong>Label:</strong> {{ aasSelectedLivePanel.label }}</div>
+              <div><strong>Type:</strong> {{ aasSelectedLivePanel.type }}</div>
+              <div *ngIf="aasSelectedLivePanel.valueType"><strong>valueType:</strong> {{ aasSelectedLivePanel.valueType }}</div>
+              <div *ngIf="aasSelectedLivePanel.value !== undefined"><strong>value:</strong> {{ aasSelectedLivePanel.value }}</div>
+            </div>
           </div>
         </div>
       </p-tabPanel>
@@ -328,6 +332,27 @@
         </div>
       </p-tabPanel>
     </p-tabView>
+
+<!-- Dialog: Set Property Value (AAS Manage) -->
+<p-dialog header="Set Property Value" [(visible)]="showAasValueDialog" [modal]="true" [style]="{width:'35vw'}">
+  <div class="p-field">
+    <label>Submodel ID</label>
+    <input pInputText [value]="aasValueSubmodelId" disabled />
+  </div>
+  <div class="p-field">
+    <label>Element Path</label>
+    <input pInputText [value]="aasValueElementPath" disabled />
+  </div>
+  <div class="p-field">
+    <label>New Value</label>
+    <input pInputText [(ngModel)]="aasValueNew" />
+    <small>valueType: {{ aasValueTypeHint }}</small>
+  </div>
+  <ng-template pTemplate="footer">
+    <button pButton type="button" class="p-button-text" label="Cancel" (click)="showAasValueDialog=false"></button>
+    <button pButton type="button" label="Save" (click)="aasSetValue()"></button>
+  </ng-template>
+</p-dialog>
 
 <!-- Dialog: Create Submodel (AAS Manage) -->
 <p-dialog header="Create Submodel" [(visible)]="showAasSubmodelDialog" [modal]="true" [style]="{width:'40vw'}">
