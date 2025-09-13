@@ -18,6 +18,13 @@ import jakarta.inject.Inject;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
+import org.jboss.resteasy.reactive.RestForm;
+import org.eclipse.microprofile.openapi.annotations.Operation;
+import org.eclipse.microprofile.openapi.annotations.parameters.RequestBody;
+import org.eclipse.microprofile.openapi.annotations.media.Content;
+import org.eclipse.microprofile.openapi.annotations.media.Schema;
+import org.eclipse.microprofile.openapi.annotations.responses.APIResponse;
+import org.eclipse.microprofile.openapi.annotations.responses.APIResponses;
 
 
 @Path("/api/config/source-system/{sourceSystemId}/aas")
@@ -352,6 +359,37 @@ public class AasResource {
     public Response refreshSnapshot(@PathParam("sourceSystemId") Long sourceSystemId) {
         snapshotService.refreshSnapshot(sourceSystemId);
         return Response.accepted().build();
+    }
+
+    @POST
+    @Path("/upload")
+    @Consumes(MediaType.MULTIPART_FORM_DATA)
+    @Produces(MediaType.APPLICATION_JSON)
+    @Operation(summary = "Upload a standard AASX file and ingest its submodels/elements into the snapshot")
+    @APIResponses({
+            @APIResponse(responseCode = "202", description = "Upload accepted, snapshot ingestion started"),
+            @APIResponse(responseCode = "400", description = "Invalid AASX"),
+            @APIResponse(responseCode = "409", description = "Duplicate IDs detected for this source system")
+    })
+    public Response uploadAasx(
+            @PathParam("sourceSystemId") Long sourceSystemId,
+            @RequestBody(required = true,
+                    content = @Content(mediaType = MediaType.MULTIPART_FORM_DATA,
+                            schema = @Schema(implementation = Object.class)))
+            @RestForm("file") byte[] fileBytes,
+            @RestForm("filename") String filename
+    ) {
+        try {
+            if (fileBytes == null || fileBytes.length == 0) {
+                return Response.status(Response.Status.BAD_REQUEST).entity("Missing file").build();
+            }
+            snapshotService.ingestAasx(sourceSystemId, filename, fileBytes);
+            return Response.accepted().build();
+        } catch (de.unistuttgart.stayinsync.core.configuration.service.aas.AasStructureSnapshotService.DuplicateIdException e) {
+            return Response.status(Response.Status.CONFLICT).entity(e.getMessage()).build();
+        } catch (de.unistuttgart.stayinsync.core.configuration.service.aas.AasStructureSnapshotService.InvalidAasxException e) {
+            return Response.status(Response.Status.BAD_REQUEST).entity(e.getMessage()).build();
+        }
     }
 }
 

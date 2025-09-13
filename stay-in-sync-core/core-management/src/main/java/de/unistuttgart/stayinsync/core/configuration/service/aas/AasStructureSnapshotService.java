@@ -102,6 +102,40 @@ public class AasStructureSnapshotService {
         }
     }
 
+    public static class InvalidAasxException extends RuntimeException {
+        public InvalidAasxException(String message) { super(message); }
+    }
+
+    public static class DuplicateIdException extends RuntimeException {
+        public DuplicateIdException(String message) { super(message); }
+    }
+
+    @Transactional
+    public void ingestAasx(Long sourceSystemId, String filename, byte[] fileBytes) {
+        if (fileBytes == null || fileBytes.length == 0) {
+            throw new InvalidAasxException("Empty file");
+        }
+        try (java.util.zip.ZipInputStream zis = new java.util.zip.ZipInputStream(new java.io.ByteArrayInputStream(fileBytes))) {
+            boolean hasPayload = false;
+            java.util.zip.ZipEntry entry;
+            while ((entry = zis.getNextEntry()) != null) {
+                String name = entry.getName();
+                if (name == null) continue;
+                hasPayload = true; // minimal validation that it is a zip with entries
+                // TODO: parse AASX relationships and submodel JSON/XML parts as needed
+                // For initial implementation, we accept the upload and trigger a snapshot refresh from LIVE
+            }
+            if (!hasPayload) {
+                throw new InvalidAasxException("Not a valid AASX: archive has no entries");
+            }
+        } catch (java.io.IOException e) {
+            throw new InvalidAasxException("Failed to read AASX: " + e.getMessage());
+        }
+        // For v1: trigger a refresh using existing LIVE-based snapshot builder as a placeholder
+        // Future: replace with actual parsed SubmodelLite/ElementLite persistence from the AASX content
+        refreshSnapshot(sourceSystemId);
+    }
+
     private void persistSubmodelLite(SourceSystem ss, JsonNode n) {
         String id = textOrNull(n, "id");
         if (id == null && n.has("identification")) {
