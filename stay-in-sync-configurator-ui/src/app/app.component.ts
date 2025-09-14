@@ -3,8 +3,6 @@ import {ActivatedRoute, NavigationEnd, Router, RouterOutlet} from '@angular/rout
 import {SidebarMenuComponent} from './features/sidebar-menu/sidebar-menu.component';
 import {ToastModule} from 'primeng/toast';
 import {NgIf, NgStyle} from '@angular/common';
-import {Button} from 'primeng/button';
-import {ToggleSwitch} from 'primeng/toggleswitch';
 import {FormsModule} from '@angular/forms';
 import {filter} from 'rxjs/operators';
 
@@ -12,7 +10,7 @@ import {filter} from 'rxjs/operators';
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [RouterOutlet, SidebarMenuComponent, ToastModule, NgIf, Button, ToggleSwitch, FormsModule, NgStyle],
+  imports: [RouterOutlet, SidebarMenuComponent, ToastModule, NgIf, FormsModule, NgStyle],
   templateUrl: './app.component.html',
   styleUrl: './app.component.css',
 })

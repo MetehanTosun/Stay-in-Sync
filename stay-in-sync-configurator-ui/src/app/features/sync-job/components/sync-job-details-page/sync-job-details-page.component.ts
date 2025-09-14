@@ -10,7 +10,6 @@ import {Inplace} from 'primeng/inplace';
 import {FormsModule} from '@angular/forms';
 import {InputTextModule} from 'primeng/inputtext';
 import {Button} from 'primeng/button';
-import {Skeleton} from 'primeng/skeleton';
 
 @Component({
   selector: 'app-sync-job-details-page',
@@ -21,7 +20,6 @@ import {Skeleton} from 'primeng/skeleton';
     InputTextModule,
     FormsModule,
     Button,
-    Skeleton
   ],
   templateUrl: './sync-job-details-page.component.html',
   styleUrl: './sync-job-details-page.component.css'

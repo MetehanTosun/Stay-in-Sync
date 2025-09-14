@@ -17,9 +17,6 @@ import {Select} from 'primeng/select';
 import {Tag} from 'primeng/tag';
 import {FormsModule} from '@angular/forms';
 import {NgIf} from '@angular/common';
-import {Toast} from 'primeng/toast';
-import {ConfirmDialog} from 'primeng/confirmdialog';
-import {Toolbar} from 'primeng/toolbar';
 import {Card} from 'primeng/card';
 
 /**
@@ -37,7 +34,6 @@ import {Card} from 'primeng/card';
     Tag,
     FormsModule,
     NgIf,
-    Toolbar,
     Card,
     NgIf,
   ],

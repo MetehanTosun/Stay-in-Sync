@@ -1,14 +1,4 @@
 <p-card>
-  <p-toolbar>
-    <div class="p-toolbar-group-left">
-      <h3>Sync Jobs</h3>
-    </div>
-    <div class="p-toolbar-group-right">
-      <p-button (click)="openCreateDialog()">
-        Create Sync Job
-      </p-button>
-    </div>
-  </p-toolbar>
   <p-table
     #dt2
     [value]="items"
@@ -20,6 +10,12 @@
     [globalFilterFields]="['name', 'description', 'status']"
     [tableStyle]="{ 'min-width': '75rem', 'min-height': '45rem'}"
   >
+    <ng-template #caption>
+      <div class="flex items-center justify-between">
+        <span class="text-xl font-bold">Sync-Jobs</span>
+        <p-button (click)="openCreateDialog()">Create Sync Job</p-button>
+      </div>
+    </ng-template>
     <ng-template #header>
 
       <tr>

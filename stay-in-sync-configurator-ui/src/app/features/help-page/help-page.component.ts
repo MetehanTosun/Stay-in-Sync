@@ -15,6 +15,8 @@ import {Button} from 'primeng/button';
 import {HttpClient} from '@angular/common/http';
 import {Listbox, ListboxChangeEvent} from 'primeng/listbox';
 import {NgIf} from '@angular/common';
+import {ToggleSwitch} from 'primeng/toggleswitch';
+import {FormsModule} from '@angular/forms';
 
 @Component({
   selector: 'app-help-page',
@@ -25,6 +27,8 @@ import {NgIf} from '@angular/common';
     NgIf,
     Button,
     Listbox,
+    ToggleSwitch,
+    FormsModule,
   ],
   styleUrl: './help-page.component.css'
 })

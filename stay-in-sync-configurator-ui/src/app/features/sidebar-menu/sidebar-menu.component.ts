@@ -8,7 +8,7 @@ import {MyPreset} from '../../mypreset';
   standalone: true,
   templateUrl: './sidebar-menu.component.html',
   styleUrl: './sidebar-menu.component.css',
-  imports: [RouterLink, RouterLinkActive, NgIf],
+  imports: [RouterLink, RouterLinkActive],
 })
 export class SidebarMenuComponent {
 

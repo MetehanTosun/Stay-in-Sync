@@ -7,9 +7,7 @@ import {TableModule} from 'primeng/table';
 import {Button} from 'primeng/button';
 import {FormsModule, ReactiveFormsModule} from '@angular/forms';
 import {ToggleButtonModule} from 'primeng/togglebutton';
-import {Dialog} from 'primeng/dialog';
 import {Select} from 'primeng/select';
-
 import {CheckboxModule} from 'primeng/checkbox';
 import {Transformation} from '../../models/transformation.model';
 import {TransformationService} from '../../services/transformation.service';
@@ -23,7 +21,6 @@ import {ActivatedRoute} from '@angular/router';
     Button,
     FormsModule,
     ToggleButtonModule,
-    Dialog,
     ReactiveFormsModule,
     Select,
     JobStatusTagComponent,

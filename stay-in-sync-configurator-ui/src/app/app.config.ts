@@ -5,7 +5,7 @@ import { routes } from './app.routes';
 import {provideAnimationsAsync} from "@angular/platform-browser/animations/async";
 import {providePrimeNG} from "primeng/config";
 import { provideHttpClient } from '@angular/common/http';
-import {MessageService} from 'primeng/api';
+import {ConfirmationService, MessageService} from 'primeng/api';
 import {MyPreset} from './mypreset';
 import {provideMarkdown} from 'ngx-markdown';
 
@@ -24,13 +24,14 @@ export const appConfig: ApplicationConfig = {
     provideRouter(routes),
     provideAnimationsAsync(),
     MessageService,
+    ConfirmationService,
     provideMarkdown(),
     importProvidersFrom(MonacoEditorModule.forRoot(monacoConfig)),
     providePrimeNG({
     theme: {
       preset: MyPreset,
       options: {
-        darkModeSelector: '.my-app-dark'
+        darkModeSelector: '.my-app-dark',
       }
     },
   })]
