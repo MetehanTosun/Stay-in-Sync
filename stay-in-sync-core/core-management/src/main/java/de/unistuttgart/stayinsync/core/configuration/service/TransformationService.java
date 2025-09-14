@@ -11,7 +11,7 @@ import de.unistuttgart.stayinsync.core.configuration.rest.dtos.targetsystem.GetR
 import de.unistuttgart.stayinsync.core.configuration.rest.dtos.TransformationStatusUpdate;
 import de.unistuttgart.stayinsync.core.configuration.rest.dtos.targetsystem.UpdateTransformationRequestConfigurationDTO;
 import de.unistuttgart.stayinsync.core.configuration.service.transformationrule.GraphStorageService;
-import de.unistuttgart.stayinsync.core.management.rabbitmq.producer.TransformationJobMessageProducer;
+import de.unistuttgart.stayinsync.core.configuration.rabbitmq.producer.TransformationJobMessageProducer;
 import de.unistuttgart.stayinsync.transport.domain.JobDeploymentStatus;
 import io.quarkus.logging.Log;
 import jakarta.enterprise.context.ApplicationScoped;

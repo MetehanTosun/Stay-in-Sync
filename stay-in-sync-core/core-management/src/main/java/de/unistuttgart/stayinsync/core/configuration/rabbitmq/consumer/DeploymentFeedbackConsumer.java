@@ -1,4 +1,4 @@
-package de.unistuttgart.stayinsync.core.management.rabbitmq.consumer;
+package de.unistuttgart.stayinsync.core.configuration.rabbitmq.consumer;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
