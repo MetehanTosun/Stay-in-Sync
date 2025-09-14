@@ -1,0 +1,86 @@
+<p-dialog
+  [header]="isEditMode ? 'Edit AAS ARC' : 'Create AAS ARC'"
+  [(visible)]="visible"
+  (onHide)="closeDialog()"
+  [modal]="true"
+  [style]="{ width: '40vw' }"
+  [draggable]="false"
+  [resizable]="false"
+>
+  <!-- Context for User -->
+  <ng-container *ngIf="context">
+    <div class="context-header mb-4 p-3 border-round-sm surface-100">
+      <div class="flex justify-content-between">
+        <span class="text-color-secondary">Source System:</span>
+        <span class="font-bold">{{ context.system.name }}</span>
+      </div>
+      <div class="flex justify-content-between mt-1">
+        <span class="text-color-secondary">Submodel:</span>
+        <span class="font-bold font-mono" [pTooltip]="context.submodel.submodelId">{{ context.submodel.idShort }}</span>
+      </div>
+    </div>
+
+    <!-- Form -->
+    <form [formGroup]="arcForm" novalidate>
+      <div class="p-fluid">
+
+        <!-- Alias -->
+        <div class="field">
+          <label for="aas-arc-alias">Alias *</label>
+          <input
+            id="aas-arc-alias"
+            type="text"
+            pInputText
+            placeholder="A unique name for this ARC in your scripts"
+            formControlName="alias"
+          />
+          <small
+            *ngIf="arcForm.get('alias')?.invalid && arcForm.get('alias')?.touched"
+            class="p-error block mt-1"
+          >
+            Alias is a required field.
+          </small>
+        </div>
+
+        <!-- Polling Rate -->
+        <div class="field mt-3">
+          <label for="aas-arc-polling-rate">Polling Rate (in milliseconds) *</label>
+          <p-inputNumber
+            id="aas-arc-polling-rate"
+            formControlName="pollingRate"
+            mode="decimal"
+            [showButtons]="true"
+            [min]="1"
+            suffix=" ms"
+          >
+          </p-inputNumber>
+          <small
+            *ngIf="arcForm.get('pollingRate')?.invalid && arcForm.get('pollingRate')?.touched"
+            class="p-error block mt-1"
+          >
+            A positive polling rate is required.
+          </small>
+        </div>
+      </div>
+    </form>
+  </ng-container>
+
+  <!-- Footer-Buttons -->
+  <ng-template pTemplate="footer">
+    <p-button
+      label="Cancel"
+      icon="pi pi-times"
+      styleClass="p-button-text"
+      (click)="closeDialog()"
+    >
+    </p-button>
+    <p-button
+      [label]="isEditMode ? 'Save Changes' : 'Create ARC'"
+      icon="pi pi-check"
+      (click)="onSaveArc()"
+      [loading]="isSaving"
+      [disabled]="arcForm.invalid"
+    >
+    </p-button>
+  </ng-template>
+</p-dialog>

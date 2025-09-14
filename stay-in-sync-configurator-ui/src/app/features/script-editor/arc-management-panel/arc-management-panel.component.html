@@ -36,7 +36,7 @@
   <p-accordion
     [multiple]="true"
     *ngIf="systems?.length"
-    (onOpen)="onSystemExpand(systems[$event.index])"
+    (onOpen)="onSystemExpand($event.index, systems)"
   >
     <p-accordionTab *ngFor="let system of systems" [header]="system.name">
       <div *ngIf="system.isLoadingEndpoints" class="text-center p-2">
@@ -50,6 +50,7 @@
         <span>No endpoints are defined for this source system.</span>
       </div>
 
+      <ng-container *ngIf="system.apiType === 'REST'">
       <div
         *ngFor="let endpoint of system.endpoints"
         class="endpoint-group mb-3"
@@ -72,7 +73,7 @@
           class="arc-list"
         >
           <div
-            *ngFor="let arc of arcsForSystem | filterByEndpoint : endpoint.id"
+            *ngFor="let arc of arcsForSystem | filterByType : 'REST' | filterByEndpoint : endpoint.id"
             class="arc-item"
           >
             <span class="ml-2 arc-alias">{{ arc.alias }}</span>
@@ -86,7 +87,7 @@
                 pTooltip="Edit ARC"
               ></p-button>
 
-              <!-- CLONE BUTTON (Unchanged but useful for context) -->
+              <!-- CLONE BUTTON -->
               <p-button
                 icon="pi pi-clone"
                 styleClass="p-button-rounded p-button-text p-button-sm"
@@ -105,6 +106,30 @@
           </div>
         </div>
       </div>
+      </ng-container>
+
+      <ng-container *ngIf="system.apiType === 'AAS'">
+        <!-- Für AAS listen wir die Submodels als "Pseudo-Endpunkte" auf -->
+        <div *ngFor="let submodel of system.submodels" class="endpoint-group mb-3">
+          <div class="endpoint-header">
+            <i class="pi pi-database mr-2"></i>
+            <span class="font-bold">{{ submodel.idShort || submodel.id }}</span>
+          </div>
+          <p-button label="Create New ARC" icon="pi pi-plus" styleClass="p-button-sm p-button-text" (click)="onCreateAasArc(system, submodel)"></p-button>
+
+          <div *ngIf="(arcsBySystem$ | async)?.get(system.name) as arcsForSystem" class="arc-list">
+            <!-- Filtere die ARCs, die zu diesem Submodel gehören -->
+            <div *ngFor="let arc of arcsForSystem | filterByType : 'AAS' | filterBySubmodel : submodel.id" class="arc-item">
+              <span class="ml-2 arc-alias">{{ arc.alias }}</span>
+              <div class="arc-actions">
+                <p-button icon="pi pi-pencil" styleClass="p-button-rounded p-button-text p-button-sm" (click)="onEditAasArc(system, submodel, arc)"></p-button>
+                <p-button icon="pi pi-trash" styleClass="p-button-rounded p-button-text p-button-sm p-button-danger" (click)="onDeleteAasArc(arc)"></p-button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </ng-container>
+
     </p-accordionTab>
   </p-accordion>
 </ng-template>

@@ -22,7 +22,7 @@ import {ToastModule} from 'primeng/toast';
 // Monaco Editor Module
 import {MonacoEditorModule} from 'ngx-monaco-editor-v2';
 
-import {ApiRequestConfiguration} from '../models/arc.models';
+import {AasArc, AnyArc, ApiRequestConfiguration, SubmodelDescription} from '../models/arc.models';
 import {ArcStateService} from '../../../core/services/arc-state.service';
 import {SourceSystem, SourceSystemEndpoint} from '../../source-system/models/source-system.models';
 import {ArcManagementPanelComponent} from '../arc-management-panel/arc-management-panel.component';
@@ -33,12 +33,14 @@ import { MonacoEditorService } from '../../../core/services/monaco-editor.servic
 import { TypeDefinitionsResponse } from '../models/target-system.models';
 import { TargetArcPanelComponent } from '../target-arc-panel/target-arc-panel.component';
 import { ConfirmDialog } from 'primeng/confirmdialog';
+import { ArcWizardAasComponent } from '../arc-wizard-aas/arc-wizard-aas.component';
+import { AasService } from '../../source-system/services/aas.service';
 
 interface MonacoExtraLib {
   uri: String;
   disposable: IDisposable;
 }
-
+// 
 @Component({
   selector: 'app-script-editor-step', // might be without step
   providers: [ConfirmationService],
@@ -57,6 +59,7 @@ interface MonacoExtraLib {
     ProgressSpinnerModule,
     ArcManagementPanelComponent,
     ArcWizardComponent,
+    ArcWizardAasComponent,
     ConfirmDialog,
     ToastModule,
     InputTextModule,
@@ -96,6 +99,13 @@ export class ScriptEditorPageComponent implements OnInit, OnDestroy {
     arcToClone?: ApiRequestConfiguration
   } | null | undefined = null;
 
+  isAasWizardVisible = false;
+  aasWizardContext: {
+    system: SourceSystem;
+    submodel: SubmodelDescription;
+    arcToEdit?: AasArc;
+  } | null = null;
+
   private onModelChange = new Subject<void>();
 
   private cdr = inject(ChangeDetectorRef);
@@ -104,6 +114,7 @@ export class ScriptEditorPageComponent implements OnInit, OnDestroy {
   private arcStateService = inject(ArcStateService);
   private monacoEditorService = inject(MonacoEditorService);
   private confirmationService = inject(ConfirmationService);
+  private aasService = inject(AasService);
 
   private route = inject(ActivatedRoute);
 
@@ -262,6 +273,60 @@ export class ScriptEditorPageComponent implements OnInit, OnDestroy {
         summary: 'ARC Saved',
         detail: `Configuration '${savedArc.alias}' is now available.`
       });
+    });
+  }
+
+  handleCreateAasArc(context: { system: SourceSystem; submodel: SubmodelDescription }): void {
+    console.log(context);
+    this.aasWizardContext = {
+        system: context.system,
+        submodel: context.submodel,
+        arcToEdit: undefined
+    };
+    this.isAasWizardVisible = true;
+  }
+
+  handleEditAasArc(context: { system: SourceSystem; submodel: SubmodelDescription; arc: AasArc }): void {
+    this.aasWizardContext = {
+        system: context.system,
+        submodel: context.submodel,
+        arcToEdit: context.arc
+    };
+    this.isAasWizardVisible = true;
+  }
+  
+  handleDeleteAasArc(context: { arc: AasArc }): void {
+    const arc = context.arc;
+    
+    this.confirmationService.confirm({
+      header: 'Confirm Deletion',
+      icon: 'pi pi-exclamation-triangle',
+      message: `Are you sure you want to delete the AAS ARC "${arc.alias}"?`,
+      accept: () => {
+        this.isLoading = true;
+        this.loadingMessage = `Deleting AAS ARC "${arc.alias}"...`;
+        
+        this.aasService.deleteAasArc(arc.id).subscribe({
+          next: () => {
+            this.arcStateService.removeArc(arc);
+            this.messageService.add({ severity: 'success', summary: 'Deleted', detail: 'AAS ARC has been deleted.' });
+            this.isLoading = false;
+          },
+          error: (err) => {
+            this.messageService.add({ severity: 'error', summary: 'Delete Failed', detail: err.error?.message || 'Could not delete the AAS ARC.' });
+            this.isLoading = false;
+          }
+        });
+      }
+    });
+  }
+
+  handleAasArcSave(savedArc: AasArc): void {
+    this.arcStateService.addOrUpdateArc(savedArc as AnyArc);
+    this.messageService.add({
+      severity: 'success',
+      summary: 'AAS ARC Saved',
+      detail: `Configuration '${savedArc.alias}' is now available.`
     });
   }
 

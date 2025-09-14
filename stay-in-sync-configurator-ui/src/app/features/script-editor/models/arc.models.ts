@@ -33,6 +33,7 @@ export interface ApiRequestConfiguration {
   id: number;
   alias: string;
   sourceSystemName: string;
+  arcType: 'REST';
   endpointId: number;
   endpointPath: string;
   httpMethod: 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH';
@@ -41,7 +42,7 @@ export interface ApiRequestConfiguration {
   // TODO: Include other relevant fields as needed for display or cloning.
 }
 
-export type ArcMap = Record<string, ApiRequestConfiguration[]>;
+export type ArcMap = Record<string, AnyArc[]>;
 
 /**
  * The payload sent to the backend to create or update an ARC.
@@ -76,6 +77,35 @@ export interface SourceSystemApiRequestConfiguration extends ApiRequestConfigura
   sourceSystemEndpoint: string; // Name oder ID des Endpoints
   responseDts: string;
   pollingIntervallTimeInMs: number;
+}
+
+export interface AasArc {
+  id: number;
+  alias: string;
+  sourceSystemName: string;
+  responseDts: string;
+  arcType: 'AAS';
+  submodelId: number;
+  submodelIdShort: string;
+  pollingIntervallTimeInMs: number;
+  active: boolean;
+}
+
+export type AnyArc = ApiRequestConfiguration | AasArc;
+
+export interface SubmodelDescription {
+  id: number;
+  submodelId: string;
+  idShort: string;
+}
+
+export interface AasArcSaveRequest {
+  id?: number;
+  alias: string;
+  sourceSystemId: number;
+  submodelId: number;
+  pollingIntervallTimeInMs: number;
+  active: boolean;
 }
 
 export interface ApiHeaderDefinition {

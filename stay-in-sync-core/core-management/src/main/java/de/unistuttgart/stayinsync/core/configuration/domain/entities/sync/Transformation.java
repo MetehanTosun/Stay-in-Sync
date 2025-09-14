@@ -2,6 +2,7 @@ package de.unistuttgart.stayinsync.core.configuration.domain.entities.sync;
 
 import com.fasterxml.jackson.annotation.JsonBackReference;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
+import de.unistuttgart.stayinsync.core.configuration.domain.entities.aas.AasSourceApiRequestConfiguration;
 import de.unistuttgart.stayinsync.transport.domain.JobDeploymentStatus;
 import io.quarkus.hibernate.orm.panache.PanacheEntity;
 import jakarta.persistence.*;
@@ -41,6 +42,14 @@ public class Transformation extends PanacheEntity {
             inverseJoinColumns = @JoinColumn(name = "source_system_api_request_configuration_id")
     )
     public Set<SourceSystemApiRequestConfiguration> sourceSystemApiRequestConfigurations = new HashSet<>();
+
+    @ManyToMany
+    @JoinTable(
+            name = "transformation_aas_arc_config",
+            joinColumns = @JoinColumn(name = "transformation_id"),
+            inverseJoinColumns = @JoinColumn(name = "aas_arc_config_id")
+    )
+    public Set<AasSourceApiRequestConfiguration> aasSourceApiRequestConfigurations = new HashSet<>();
 
     @ManyToMany
     @JoinTable(
