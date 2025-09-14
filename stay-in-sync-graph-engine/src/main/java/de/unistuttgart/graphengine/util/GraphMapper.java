@@ -13,7 +13,7 @@ import de.unistuttgart.graphengine.dto.transformationrule.NodeDTO;
 import de.unistuttgart.graphengine.validation_error.NodeConfigurationError;
 import de.unistuttgart.graphengine.validation_error.ValidationError;
 import jakarta.enterprise.context.ApplicationScoped;
-import org.jboss.logging.Logger;
+import io.quarkus.logging.Log;
 
 import java.util.*;
 
@@ -25,8 +25,6 @@ import java.util.*;
  */
 @ApplicationScoped
 public class GraphMapper {
-
-    private static final Logger logger = Logger.getLogger(GraphMapper.class);
 
     /**
      * A record to hold the result of the mapping process from DTO to Node objects.
@@ -47,12 +45,12 @@ public class GraphMapper {
      * @return The flattened GraphDTO ready for persistence.
      */
     public GraphDTO vflowToGraphDto(VFlowGraphDTO vflowDto) {
-        logger.debug("Starting mapping from VFlowGraphDTO to GraphDTO.");
+        Log.debug("Starting mapping from VFlowGraphDTO to GraphDTO.");
         if (vflowDto == null || vflowDto.getNodes() == null || vflowDto.getNodes().isEmpty()) {
-            logger.debug("Input VFlowGraphDTO is null or empty, returning new GraphDTO.");
+            Log.debug("Input VFlowGraphDTO is null or empty, returning new GraphDTO.");
             return new GraphDTO();
         }
-        logger.debugf("Mapping VFlowGraphDTO with %d nodes and %d edges.", vflowDto.getNodes().size(), vflowDto.getEdges() != null ? vflowDto.getEdges().size() : 0);
+        Log.debugf("Mapping VFlowGraphDTO with %d nodes and %d edges.", vflowDto.getNodes().size(), vflowDto.getEdges() != null ? vflowDto.getEdges().size() : 0);
 
         GraphDTO graphDto = new GraphDTO();
 
@@ -65,7 +63,7 @@ public class GraphMapper {
         }
 
         graphDto.setNodes(new ArrayList<>(nodeDtoMap.values()));
-        logger.infof("Successfully mapped VFlowGraphDTO to GraphDTO with %d nodes.", graphDto.getNodes().size());
+        Log.infof("Successfully mapped VFlowGraphDTO to GraphDTO with %d nodes.", graphDto.getNodes().size());
         return graphDto;
     }
 
@@ -73,7 +71,7 @@ public class GraphMapper {
      * Helper to create a map of flattened NodeDTOs from the VFlowNodeDTO list.
      */
     private Map<String, NodeDTO> mapVFlowNodesToNodeDTOs(List<VFlowNodeDTO> vflowNodes) {
-        logger.debugf("Creating flat NodeDTOs from %d VFlowNodeDTOs.", vflowNodes.size());
+        Log.debugf("Creating flat NodeDTOs from %d VFlowNodeDTOs.", vflowNodes.size());
         Map<String, NodeDTO> nodeDtoMap = new HashMap<>();
         for (VFlowNodeDTO vflowNode : vflowNodes) {
             NodeDTO nodeDto = new NodeDTO();
@@ -95,7 +93,7 @@ public class GraphMapper {
 
             nodeDtoMap.put(vflowNode.getId(), nodeDto);
         }
-        logger.debugf("Created %d NodeDTOs.", nodeDtoMap.size());
+        Log.debugf("Created %d NodeDTOs.", nodeDtoMap.size());
         return nodeDtoMap;
     }
 
@@ -104,12 +102,12 @@ public class GraphMapper {
      * InputDTOs to the target NodeDTOs' `inputNodes` list.
      */
     private void applyVFlowEdgesToInputNodes(Map<String, NodeDTO> nodeDtoMap, List<VFlowEdgeDTO> vflowEdges) {
-        logger.debugf("Applying %d VFlow edges to connect NodeDTOs.", vflowEdges.size());
+        Log.debugf("Applying %d VFlow edges to connect NodeDTOs.", vflowEdges.size());
         int appliedEdges = 0;
         for (VFlowEdgeDTO edge : vflowEdges) {
             NodeDTO targetNodeDto = nodeDtoMap.get(edge.getTarget());
             if (targetNodeDto == null) {
-                logger.warnf("Edge references a non-existent target node with ID: %s", edge.getTarget());
+                Log.warnf("Edge references a non-existent target node with ID: %s", edge.getTarget());
                 continue;
             }
 
@@ -120,7 +118,7 @@ public class GraphMapper {
             targetNodeDto.getInputNodes().add(inputDto);
             appliedEdges++;
         }
-        logger.debugf("Successfully applied %d edges.", appliedEdges);
+        Log.debugf("Successfully applied %d edges.", appliedEdges);
     }
 
     // ==========================================================================================
@@ -132,17 +130,17 @@ public class GraphMapper {
      * in-memory graph of Node objects for validation and evaluation.
      */
     public MappingResult toNodeGraph(GraphDTO graphDto)  {
-        logger.debug("Starting mapping from GraphDTO to internal Node graph.");
+        Log.debug("Starting mapping from GraphDTO to internal Node graph.");
         if (graphDto == null || graphDto.getNodes() == null || graphDto.getNodes().isEmpty()) {
-            logger.debug("Input GraphDTO is null or empty, returning empty list.");
+            Log.debug("Input GraphDTO is null or empty, returning empty list.");
             return new MappingResult(new ArrayList<>(), new ArrayList<>());
         }
-        logger.debugf("Mapping GraphDTO with %d nodes to internal domain model.", graphDto.getNodes().size());
+        Log.debugf("Mapping GraphDTO with %d nodes to internal domain model.", graphDto.getNodes().size());
         Map<Integer, Node> createdNodes = new HashMap<>();
         List<ValidationError> mappingErrors = new ArrayList<>();
 
         // Pass 1: Create all node instances.
-        logger.debug("Pass 1: Creating all Node instances from DTOs.");
+        Log.debug("Pass 1: Creating all Node instances from DTOs.");
             for (NodeDTO dto : graphDto.getNodes()) {
                 try {
                     Node node;
@@ -181,15 +179,15 @@ public class GraphMapper {
                 }
 
                 catch (NodeConfigurationException e) {
-                    logger.warnf(e, "A node with invalid configuration was found (ID: %d). It will be skipped.", dto.getId());
+                    Log.warnf(e, "A node with invalid configuration was found (ID: %d). It will be skipped.", dto.getId());
                         mappingErrors.add(new NodeConfigurationError(dto.getId(), dto.getName(), e.getMessage()));
                     }
             }
 
-        logger.debugf("Created %d Node instances.", createdNodes.size());
+        Log.debugf("Created %d Node instances.", createdNodes.size());
 
         // Pass 2: Apply input connections from the inputNodes property of each NodeDTO.
-        logger.debug("Pass 2: Connecting Node instances based on InputDTOs.");
+        Log.debug("Pass 2: Connecting Node instances based on InputDTOs.");
         for (NodeDTO dto : graphDto.getNodes()) {
             Node targetNode = createdNodes.get(dto.getId());
             if (dto.getInputNodes() != null && !dto.getInputNodes().isEmpty()) {
@@ -202,15 +200,15 @@ public class GraphMapper {
                     if (sourceNode != null) {
                         orderedInputs.add(sourceNode);
                     } else {
-                        logger.warnf("Could not find source node with id %d for target node %d. Connection skipped.", inputDto.getId(), targetNode.getId());
+                        Log.warnf("Could not find source node with id %d for target node %d. Connection skipped.", inputDto.getId(), targetNode.getId());
                     }
                 }
                 targetNode.setInputNodes(orderedInputs);
             }
         }
-        logger.debug("Finished connecting nodes.");
+        Log.debug("Finished connecting nodes.");
 
-        logger.infof("Successfully mapped GraphDTO to an internal graph with %d nodes.", createdNodes.size());
+        Log.infof("Successfully mapped GraphDTO to an internal graph with %d nodes.", createdNodes.size());
         return new MappingResult(new ArrayList<>(createdNodes.values()), mappingErrors);
     }
 
@@ -222,7 +220,7 @@ public class GraphMapper {
             try {
                 return Integer.parseInt(targetHandle.split("-")[1]);
             } catch (Exception e) {
-                logger.warnf(e, "Could not parse orderIndex from targetHandle: '%s'. Defaulting to 0.", targetHandle);
+                Log.warnf(e, "Could not parse orderIndex from targetHandle: '%s'. Defaulting to 0.", targetHandle);
             }
         }
         return 0;
