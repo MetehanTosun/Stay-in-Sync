@@ -642,6 +642,38 @@ save(): void {
           secondRef,
           annotations: annotationsRaw.map(mapAnnotation).filter(Boolean) as AnnotationView[]
         } as any;
+        // Fallback: If AnnotatedRelationshipElement has no annotations in direct payload, load children as annotations
+        if ((liveType === 'AnnotatedRelationshipElement') && (((this.selectedLivePanel?.annotations?.length ?? 0) === 0))) {
+          const pathForChildren = safePath;
+          // Try deep list to get full element (with annotations)
+          this.aasService
+            .listElements(this.createdSourceSystemId!, smId, { depth: 'all', source: 'LIVE' })
+            .subscribe({
+              next: (resp: any) => {
+                const arr: any[] = Array.isArray(resp) ? resp : (resp?.result ?? []);
+                const foundDeep = arr.find((el: any) => (el?.idShortPath || el?.idShort) === pathForChildren);
+                const anns = Array.isArray(foundDeep?.annotations) ? foundDeep.annotations : (Array.isArray(foundDeep?.annotation) ? foundDeep.annotation : []);
+                let annotations: AnnotationView[] = [];
+                if (anns.length) {
+                  annotations = anns.map((a: any) => ({ idShort: a?.idShort, modelType: a?.modelType, valueType: a?.valueType, value: a?.value } as AnnotationView));
+                } else {
+                  // Fallback: treat shallow children as annotations
+                  const list: any[] = arr.filter((el: any) => {
+                    const p = el?.idShortPath || el?.idShort;
+                    if (!p || !p.startsWith(pathForChildren + '/')) return false;
+                    const rest = p.substring((pathForChildren + '/').length);
+                    return rest && !rest.includes('/');
+                  });
+                  annotations = list.map((el: any) => ({ idShort: el?.idShort, modelType: el?.modelType, valueType: el?.valueType, value: el?.value } as AnnotationView));
+                }
+                if (this.selectedLivePanel) {
+                  this.selectedLivePanel = { ...this.selectedLivePanel, annotations };
+                }
+              },
+              error: () => {
+              }
+            });
+        }
         if (node && node.data) {
           const computedPath = safePath;
           node.data.idShortPath = computedPath;
