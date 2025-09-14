@@ -10,6 +10,7 @@ import de.unistuttgart.stayinsync.core.configuration.rest.dtos.TransformationScr
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.quarkus.logging.Log;
+import jakarta.annotation.PostConstruct;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
@@ -40,19 +41,18 @@ public class TransformationScriptService {
     @Inject
     MeterRegistry meterRegistry;
 
-    private final Counter processedMessagesCounter;
+    private Counter processedMessagesCounter;
 
-    @Inject
-    public TransformationScriptService(MeterRegistry meterRegistry) {
-        this.meterRegistry = meterRegistry;
+    @PostConstruct
+    void initMetrics() {
         this.processedMessagesCounter = Counter.builder("transformation_scripts_messages_total")
                 .description("Total number of messages processed across all transformation scripts")
                 .register(meterRegistry);
     }
 
     /**
-     * Increments the global Prometheus counter for processed messages.
-     * This should be called whenever a script successfully processes a message.
+     * Increment Prometheus counter when a message is processed by any transformation script.
+     * This should be invoked in the flow where transformations actually consume or emit messages.
      */
     public void recordProcessedMessage() {
         processedMessagesCounter.increment();
