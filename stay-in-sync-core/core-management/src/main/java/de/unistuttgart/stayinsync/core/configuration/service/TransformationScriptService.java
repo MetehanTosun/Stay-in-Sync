@@ -38,26 +38,7 @@ public class TransformationScriptService {
     @Inject
     TargetSdkGeneratorService targetSdkGeneratorService;
 
-    @Inject
-    MeterRegistry meterRegistry;
 
-    private Counter processedMessagesCounter;
-
-    @PostConstruct
-    void initMetrics() {
-        this.processedMessagesCounter = Counter.builder("transformation_scripts_messages_total")
-                .description("Total number of messages processed across all transformation scripts")
-                .register(meterRegistry);
-    }
-
-    /**
-     * Increment Prometheus counter when a message is processed by any transformation script.
-     * This should be invoked in the flow where transformations actually consume or emit messages.
-     */
-    public void recordProcessedMessage() {
-        processedMessagesCounter.increment();
-        Log.debug("Recorded processed message (global counter for all scripts).");
-    }
 
     public TransformationScript create(TransformationScriptDTO dto) {
         Log.debugf("Creating new transformation script with name: %s", dto.name());
