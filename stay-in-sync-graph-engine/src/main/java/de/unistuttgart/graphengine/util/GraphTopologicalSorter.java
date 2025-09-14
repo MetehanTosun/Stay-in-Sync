@@ -1,6 +1,7 @@
 package de.unistuttgart.graphengine.util;
 
 import de.unistuttgart.graphengine.nodes.Node;
+import jakarta.enterprise.context.ApplicationScoped;
 import org.jboss.logging.Logger;
 
 import java.util.*;
@@ -9,6 +10,7 @@ import java.util.*;
  * A utility class that performs a topological sort on a graph of Nodes
  * and detects the presence and members of cycles.
  */
+@ApplicationScoped
 public class GraphTopologicalSorter {
 
     private static final Logger logger = Logger.getLogger(GraphTopologicalSorter.class);

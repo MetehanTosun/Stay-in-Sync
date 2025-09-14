@@ -14,7 +14,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * of the syncnode application and will be lost upon restart.
  */
 @ApplicationScoped
-public class SnapshotCacheService {
+public class GraphSnapshotCacheService {
 
     /**
      * The underlying concurrent map that stores the cached snapshots.

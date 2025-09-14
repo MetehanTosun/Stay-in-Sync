@@ -12,6 +12,7 @@ import de.unistuttgart.graphengine.dto.transformationrule.InputDTO;
 import de.unistuttgart.graphengine.dto.transformationrule.NodeDTO;
 import de.unistuttgart.graphengine.validation_error.NodeConfigurationError;
 import de.unistuttgart.graphengine.validation_error.ValidationError;
+import jakarta.enterprise.context.ApplicationScoped;
 import org.jboss.logging.Logger;
 
 import java.util.*;
@@ -22,6 +23,7 @@ import java.util.*;
  * - List<Node> (the internal, in-memory domain model)
  * - GraphDTO (the flattened format for database persistence)
  */
+@ApplicationScoped
 public class GraphMapper {
 
     private static final Logger logger = Logger.getLogger(GraphMapper.class);

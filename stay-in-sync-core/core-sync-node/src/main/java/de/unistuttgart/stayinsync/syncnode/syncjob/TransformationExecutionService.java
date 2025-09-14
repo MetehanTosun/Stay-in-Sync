@@ -6,6 +6,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import de.unistuttgart.graphengine.exception.GraphEvaluationException;
 import de.unistuttgart.graphengine.logic_engine.LogicGraphEvaluator;
+import de.unistuttgart.graphengine.logic_engine.GraphSnapshotCacheService;
 import de.unistuttgart.stayinsync.scriptengine.ScriptEngineService;
 import de.unistuttgart.stayinsync.scriptengine.message.TransformationResult;
 import de.unistuttgart.stayinsync.syncnode.SnapshotManagement.SnapshotFactory;
@@ -47,6 +48,9 @@ public class TransformationExecutionService {
     @Inject
     MeterRegistry meterRegistry;
 
+    @Inject
+    GraphSnapshotCacheService snapshotCache;
+
     /**
      * Asynchronously evaluates the logic graph and, if the condition passes,
      * executes the script transformation.
@@ -54,31 +58,52 @@ public class TransformationExecutionService {
      * @param payload An ExecutionPayload that contains TransformationData,
      *                GraphNodes and TransformationContext
      * @return A Uni that will eventually contain the TransformationResult, or null
-     * if the pre-condition check failed.
+     *         if the pre-condition check failed.
      */
     public Uni<TransformationResult> execute(ExecutionPayload payload) {
-        return Uni.createFrom().item(() -> {
+        Uni<LogicGraphEvaluator.EvaluationResult> evaluationUni = Uni.createFrom().item(() -> {
             try {
                 MDC.put("transformationId", payload.job().transformationId().toString());
                 Log.infof("Job %s: Evaluating pre-condition logic graph...", payload.job().jobId());
-                TypeReference<Map<String, JsonNode>> typeRef = new TypeReference<>() {
-                };
+
+                // Fetch the old snapshot from our new cache
+                long transformationId = payload.job().transformationId();
+                JsonNode oldSnapshot = snapshotCache.getSnapshot(transformationId)
+                        .orElse(objectMapper.createObjectNode());
+
+                // Prepare the dataContext and add the snapshot to it
+                TypeReference<Map<String, JsonNode>> typeRef = new TypeReference<>() {};
                 Map<String, JsonNode> dataContext = objectMapper.convertValue(payload.job().sourceData(), typeRef);
+                dataContext.put("__snapshot", oldSnapshot);
+
                 if (payload.graphNodes() == null || payload.graphNodes().isEmpty()) {
-                    return true;
+                    // If there is no graph, the condition is considered passed
+                    return new LogicGraphEvaluator.EvaluationResult(true, null);
                 }
-                LogicGraphEvaluator.EvaluationResult evaluationResult =
-                        logicGraphEvaluator.evaluateGraph(payload.graphNodes(), dataContext);
-                return evaluationResult.finalResult();
+
+                // Return the full result (boolean + new snapshot)
+                return logicGraphEvaluator.evaluateGraph(payload.graphNodes(), dataContext);
+
             } catch (GraphEvaluationException e) {
                 Log.errorf(e, "Job %s: Graph evaluation failed with error type %s: %s",
                         payload.job().jobId(), e.getErrorType(), e.getMessage());
-                return false;
+                return new LogicGraphEvaluator.EvaluationResult(false, null);
             } finally {
                 MDC.remove("transformationId");
             }
-        }).runSubscriptionOn(managedExecutor).onItem().transformToUni(conditionMet -> {
-            if (conditionMet) {
+        }).runSubscriptionOn(managedExecutor);
+
+        return evaluationUni.onItem().transformToUni(evaluationResult -> {
+
+            // ALWAYS save the new snapshot before proceeding.
+            if (evaluationResult.newSnapshot() != null) {
+                long transformationId = Long.parseLong(payload.job().jobId());
+                JsonNode newSnapshotNode = objectMapper.valueToTree(evaluationResult.newSnapshot());
+                snapshotCache.saveSnapshot(transformationId, newSnapshotNode);
+                Log.infof("Job %s: Saving new change-detection snapshot.", payload.job().jobId());
+            }
+
+            if (evaluationResult.finalResult()) {
                 Log.infof("Job %s: Pre-condition PASSED. Proceeding to script transformation...",
                         payload.job().jobId());
 
