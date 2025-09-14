@@ -34,6 +34,7 @@ import { AasService } from '../../services/aas.service';
 import { TreeNode } from 'primeng/api';
 
 interface AasOperationVarView { idShort: string; modelType?: string; valueType?: string }
+interface AasAnnotationView { idShort: string; modelType?: string; valueType?: string; value?: any }
 interface AasElementLivePanel {
   label: string;
   type: string;
@@ -44,6 +45,9 @@ interface AasElementLivePanel {
   inputVariables?: AasOperationVarView[];
   outputVariables?: AasOperationVarView[];
   inoutputVariables?: AasOperationVarView[];
+  firstRef?: string;
+  secondRef?: string;
+  annotations?: AasAnnotationView[];
 }
 
 /**
@@ -666,12 +670,35 @@ export class SourceSystemBaseComponent implements OnInit, OnDestroy {
         const inputVars = Array.isArray((found as any).inputVariables) ? (found as any).inputVariables : [];
         const outputVars = Array.isArray((found as any).outputVariables) ? (found as any).outputVariables : [];
         const inoutVars = Array.isArray((found as any).inoutputVariables) ? (found as any).inoutputVariables : [];
+        const annotationsRaw = Array.isArray((found as any).annotations) ? (found as any).annotations : [];
         const mapVar = (v: any): AasOperationVarView | null => {
           const val = v?.value ?? v;
           const idShort = val?.idShort;
           if (!idShort) return null;
           return { idShort, modelType: val?.modelType, valueType: val?.valueType };
         };
+        const mapAnnotation = (a: any): AasAnnotationView | null => {
+          const val = a?.value ?? a;
+          const idShort = val?.idShort;
+          if (!idShort) return null;
+          return { idShort, modelType: val?.modelType, valueType: val?.valueType, value: val?.value };
+        };
+        const stringifyRef = (ref: any): string | undefined => {
+          if (!ref) return undefined;
+          const keys = ref?.keys;
+          if (Array.isArray(keys) && keys.length) {
+            try {
+              return keys.map((k: any) => `${k?.type ?? ''}:${k?.value ?? ''}`).join(' / ');
+            } catch {
+              return JSON.stringify(ref);
+            }
+          }
+          if (typeof ref === 'string') return ref;
+          if (ref?.value) return String(ref.value);
+          try { return JSON.stringify(ref); } catch { return String(ref); }
+        };
+        const firstRef = stringifyRef((found as any).first || (found as any).firstReference);
+        const secondRef = stringifyRef((found as any).second || (found as any).secondReference);
         this.aasSelectedLivePanel = {
           label: liveType ? `${found.idShort} (${liveType})` : found.idShort,
           type: liveType || 'Unknown',
@@ -681,7 +708,10 @@ export class SourceSystemBaseComponent implements OnInit, OnDestroy {
           max: maxValue,
           inputVariables: inputVars.map(mapVar).filter(Boolean) as AasOperationVarView[],
           outputVariables: outputVars.map(mapVar).filter(Boolean) as AasOperationVarView[],
-          inoutputVariables: inoutVars.map(mapVar).filter(Boolean) as AasOperationVarView[]
+          inoutputVariables: inoutVars.map(mapVar).filter(Boolean) as AasOperationVarView[],
+          firstRef,
+          secondRef,
+          annotations: annotationsRaw.map(mapAnnotation).filter(Boolean) as AasAnnotationView[]
         } as any;
         if (node && node.data) {
           const computedPath = safePath;
@@ -711,6 +741,29 @@ export class SourceSystemBaseComponent implements OnInit, OnDestroy {
                   if (!idShort) return null;
                   return { idShort, modelType: val?.modelType, valueType: val?.valueType };
                 };
+                const annotationsRaw2 = Array.isArray((found2 as any).annotations) ? (found2 as any).annotations : [];
+                const mapAnnotation2 = (a: any): AasAnnotationView | null => {
+                  const val = a?.value ?? a;
+                  const idShort = val?.idShort;
+                  if (!idShort) return null;
+                  return { idShort, modelType: val?.modelType, valueType: val?.valueType, value: val?.value };
+                };
+                const stringifyRef2 = (ref: any): string | undefined => {
+                  if (!ref) return undefined;
+                  const keys = ref?.keys;
+                  if (Array.isArray(keys) && keys.length) {
+                    try {
+                      return keys.map((k: any) => `${k?.type ?? ''}:${k?.value ?? ''}`).join(' / ');
+                    } catch {
+                      return JSON.stringify(ref);
+                    }
+                  }
+                  if (typeof ref === 'string') return ref;
+                  if (ref?.value) return String(ref.value);
+                  try { return JSON.stringify(ref); } catch { return String(ref); }
+                };
+                const firstRef2 = stringifyRef2((found2 as any).first || (found2 as any).firstReference);
+                const secondRef2 = stringifyRef2((found2 as any).second || (found2 as any).secondReference);
                 this.aasSelectedLivePanel = {
                   label: liveType ? `${found2.idShort} (${liveType})` : found2.idShort,
                   type: liveType || 'Unknown',
@@ -720,7 +773,10 @@ export class SourceSystemBaseComponent implements OnInit, OnDestroy {
                   max: maxValue,
                   inputVariables: inputVars2.map(mapVar2).filter(Boolean) as AasOperationVarView[],
                   outputVariables: outputVars2.map(mapVar2).filter(Boolean) as AasOperationVarView[],
-                  inoutputVariables: inoutVars2.map(mapVar2).filter(Boolean) as AasOperationVarView[]
+                  inoutputVariables: inoutVars2.map(mapVar2).filter(Boolean) as AasOperationVarView[],
+                  firstRef: firstRef2,
+                  secondRef: secondRef2,
+                  annotations: annotationsRaw2.map(mapAnnotation2).filter(Boolean) as AasAnnotationView[]
                 } as any;
               } else {
                 this.aasSelectedLivePanel = { label: last, type: 'Unknown' } as any;

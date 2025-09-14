@@ -168,6 +168,16 @@
                 </ul>
               </div>
             </div>
+            <div *ngIf="selectedLivePanel.type==='RelationshipElement' || selectedLivePanel.type==='AnnotatedRelationshipElement'">
+              <div *ngIf="selectedLivePanel.firstRef"><strong>First:</strong> {{ selectedLivePanel.firstRef }}</div>
+              <div *ngIf="selectedLivePanel.secondRef"><strong>Second:</strong> {{ selectedLivePanel.secondRef }}</div>
+              <div *ngIf="selectedLivePanel.type==='AnnotatedRelationshipElement' && selectedLivePanel.annotations?.length">
+                <strong>Annotations:</strong>
+                <ul style="margin:.25rem 0 .5rem 1rem;">
+                  <li *ngFor="let a of selectedLivePanel.annotations">{{ a.idShort }}<span *ngIf="a.valueType"> ({{ a.valueType }})</span><span *ngIf="a.value !== undefined">: {{ a.value }}</span></li>
+                </ul>
+              </div>
+            </div>
           </div>
         </div>
       </div>
