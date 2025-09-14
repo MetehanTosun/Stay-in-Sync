@@ -570,35 +570,51 @@ save(): void {
     const safePath = idShortPath || keyPath || (node?.data?.raw?.idShort || '');
     const last = safePath.split('/').pop() as string;
     const parent = safePath.includes('/') ? safePath.substring(0, safePath.lastIndexOf('/')) : '';
-    this.aasService
-      .listElements(this.createdSourceSystemId, smId, { depth: 'shallow', parentPath: parent || undefined, source: 'LIVE' })
-      .subscribe({
-        next: (resp: any) => {
-          this.selectedLiveLoading = false;
-          const list: any[] = Array.isArray(resp) ? resp : (resp?.result ?? []);
-          const found = list.find((el: any) => el.idShort === last);
-          if (found) {
-            const liveType = found?.modelType || (found?.valueType ? 'Property' : undefined);
-            this.selectedLivePanel = {
-              label: liveType ? `${found.idShort} (${liveType})` : found.idShort,
-              type: liveType || 'Unknown',
-              value: (found as any).value,
-              valueType: (found as any).valueType
-            };
-            if (node && node.data) {
-              const computedPath = safePath || (parent ? `${parent}/${found.idShort}` : found.idShort);
-              node.data.idShortPath = computedPath;
-              node.data.raw = { ...(node.data.raw || {}), idShortPath: computedPath, modelType: found.modelType, valueType: found.valueType };
-            }
-          } else {
-            this.selectedLivePanel = { label: last, type: 'Unknown' };
-          }
-        },
-        error: (err: any) => {
-          this.selectedLiveLoading = false;
-          this.errorService.handleError(err);
+    // Robust load: try direct element endpoint (backend has deep fallback)
+    this.aasService.getElement(this.createdSourceSystemId, smId, safePath, 'LIVE').subscribe({
+      next: (found: any) => {
+        this.selectedLiveLoading = false;
+        const liveType = found?.modelType || (found?.valueType ? 'Property' : undefined);
+        this.selectedLivePanel = {
+          label: liveType ? `${found.idShort} (${liveType})` : found.idShort,
+          type: liveType || 'Unknown',
+          value: (found as any).value,
+          valueType: (found as any).valueType
+        };
+        if (node && node.data) {
+          const computedPath = safePath;
+          node.data.idShortPath = computedPath;
+          node.data.raw = { ...(node.data.raw || {}), idShortPath: computedPath, modelType: found.modelType, valueType: found.valueType };
         }
-      });
+      },
+      error: (_err: any) => {
+        // Fallback: list under parent shallow
+        this.aasService
+          .listElements(this.createdSourceSystemId, smId, { depth: 'shallow', parentPath: parent || undefined, source: 'LIVE' })
+          .subscribe({
+            next: (resp: any) => {
+              this.selectedLiveLoading = false;
+              const list: any[] = Array.isArray(resp) ? resp : (resp?.result ?? []);
+              const found2 = list.find((el: any) => el.idShort === last);
+              if (found2) {
+                const liveType = found2?.modelType || (found2?.valueType ? 'Property' : undefined);
+                this.selectedLivePanel = {
+                  label: liveType ? `${found2.idShort} (${liveType})` : found2.idShort,
+                  type: liveType || 'Unknown',
+                  value: (found2 as any).value,
+                  valueType: (found2 as any).valueType
+                };
+              } else {
+                this.selectedLivePanel = { label: last, type: 'Unknown' };
+              }
+            },
+            error: (err2: any) => {
+              this.selectedLiveLoading = false;
+              this.errorService.handleError(err2);
+            }
+          });
+      }
+    });
   }
 
   // Create dialogs

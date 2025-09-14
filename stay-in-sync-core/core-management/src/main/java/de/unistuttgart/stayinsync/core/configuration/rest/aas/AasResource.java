@@ -159,10 +159,39 @@ public class AasResource {
         ss = aasService.validateAasSource(ss);
         if ("LIVE".equalsIgnoreCase(source)) {
             var headers = headerBuilder.buildMergedHeaders(ss, de.unistuttgart.stayinsync.core.configuration.service.aas.HttpHeaderBuilder.Mode.READ);
-            return traversal.listElements(ss.apiUrl, smId, depth, parentPath, headers).map(resp -> {
+            final String apiUrl = ss.apiUrl;
+            final java.util.Map<String,String> headersLive = headers;
+            return traversal.listElements(apiUrl, smId, depth, parentPath, headersLive).map(resp -> {
                 int sc = resp.statusCode();
                 if (sc >= 200 && sc < 300) {
                     return Response.ok(resp.bodyAsString()).build();
+                }
+                // Fallback for nested collections returning 404 on parent path: fetch deep and filter
+                if (sc == 404 && parentPath != null && !parentPath.isBlank()) {
+                    try {
+                        var all = traversal.listElements(apiUrl, smId, "all", null, headersLive).await().indefinitely();
+                        if (all.statusCode() >= 200 && all.statusCode() < 300) {
+                            String body = all.bodyAsString();
+                            io.vertx.core.json.JsonArray arr = body != null && body.trim().startsWith("{")
+                                    ? new io.vertx.core.json.JsonObject(body).getJsonArray("result", new io.vertx.core.json.JsonArray())
+                                    : new io.vertx.core.json.JsonArray(body);
+                            String prefix = parentPath.endsWith("/") ? parentPath : parentPath + "/";
+                            io.vertx.core.json.JsonArray children = new io.vertx.core.json.JsonArray();
+                            for (int i = 0; i < arr.size(); i++) {
+                                var el = arr.getJsonObject(i);
+                                String p = el.getString("idShortPath", el.getString("idShort"));
+                                if (p == null) continue;
+                                if (p.equals(parentPath)) continue; // skip parent itself
+                                if (p.startsWith(prefix)) {
+                                    String rest = p.substring(prefix.length());
+                                    if (!rest.contains("/")) {
+                                        children.add(el);
+                                    }
+                                }
+                            }
+                            return Response.ok(children.encode()).build();
+                        }
+                    } catch (Exception ignore) {}
                 }
                 return Response.status(sc).entity(resp.bodyAsString()).build();
             });
@@ -427,6 +456,105 @@ public class AasResource {
         } catch (Exception e) {
             return null;
         }
+    }
+
+    // Helper: Resolve a single element LIVE via deep scan if parentPath resolution fails (for view panel)
+    private io.vertx.core.json.JsonObject resolveElementDeep(String apiUrl, String smId, String idShortPath, java.util.Map<String,String> headers) {
+        try {
+            // Try direct GET first (deep)
+            var direct = traversal.getElement(apiUrl, smId, idShortPath, headers).await().indefinitely();
+            if (direct.statusCode() >= 200 && direct.statusCode() < 300) {
+                String body = direct.bodyAsString();
+                if (body != null && !body.isBlank()) {
+                    if (body.trim().startsWith("{")) return new io.vertx.core.json.JsonObject(body);
+                    // if wrapped
+                    return new io.vertx.core.json.JsonObject().put("result", new io.vertx.core.json.JsonArray(body));
+                }
+            }
+        } catch (Exception ignore) {}
+        try {
+            // Fallback: list all (deep) and recursively pick matching idShortPath
+            var all = traversal.listElements(apiUrl, smId, "all", null, headers).await().indefinitely();
+            if (all.statusCode() >= 200 && all.statusCode() < 300) {
+                String body = all.bodyAsString();
+                io.vertx.core.json.JsonArray root = body != null && body.trim().startsWith("{")
+                        ? new io.vertx.core.json.JsonObject(body).getJsonArray("result", new io.vertx.core.json.JsonArray())
+                        : new io.vertx.core.json.JsonArray(body);
+
+                io.vertx.core.json.JsonObject found = findElementByPathRecursive(root, idShortPath);
+                if (found != null) return found;
+            }
+        } catch (Exception ignore) {}
+        return null;
+    }
+
+    private io.vertx.core.json.JsonObject findElementByPathRecursive(io.vertx.core.json.JsonArray elements, String targetPath) {
+        if (elements == null) return null;
+        for (int i = 0; i < elements.size(); i++) {
+            var el = elements.getJsonObject(i);
+            if (el == null) continue;
+            String idShort = el.getString("idShort");
+            if (idShort == null || idShort.isBlank()) continue;
+            // Start recursive descent from this element
+            var found = descendAndMatch(el, idShort, targetPath);
+            if (found != null) return found;
+        }
+        return null;
+    }
+
+    private io.vertx.core.json.JsonObject descendAndMatch(io.vertx.core.json.JsonObject element, String currentPath, String targetPath) {
+        if (targetPath.equals(currentPath)) return element;
+        String modelType = element.getString("modelType");
+        // Collections and Lists: values are arrays of child elements
+        if ("SubmodelElementCollection".equalsIgnoreCase(modelType) || "SubmodelElementList".equalsIgnoreCase(modelType)) {
+            var value = element.getValue("value");
+            if (value instanceof io.vertx.core.json.JsonArray arr) {
+                for (int i = 0; i < arr.size(); i++) {
+                    var child = arr.getJsonObject(i);
+                    if (child == null) continue;
+                    String childIdShort = child.getString("idShort");
+                    if (childIdShort == null) continue;
+                    String childPath = currentPath + "/" + childIdShort;
+                    var found = descendAndMatch(child, childPath, targetPath);
+                    if (found != null) return found;
+                }
+            }
+        }
+        return null;
+    }
+
+    @GET
+    @Path("/submodels/{smId}/elements/{path:.+}")
+    public Response getElement(@PathParam("sourceSystemId") Long sourceSystemId,
+                               @PathParam("smId") String smId,
+                               @PathParam("path") String path,
+                               @QueryParam("source") @DefaultValue("LIVE") String source) {
+        SourceSystem ss = SourceSystem.<SourceSystem>findByIdOptional(sourceSystemId).orElse(null);
+        ss = aasService.validateAasSource(ss);
+        if ("LIVE".equalsIgnoreCase(source)) {
+            var headers = headerBuilder.buildMergedHeaders(ss, de.unistuttgart.stayinsync.core.configuration.service.aas.HttpHeaderBuilder.Mode.READ);
+            var resp = traversal.getElement(ss.apiUrl, smId, path, headers).await().indefinitely();
+            int sc = resp.statusCode();
+            if (sc >= 200 && sc < 300) {
+                return Response.ok(resp.bodyAsString()).build();
+            }
+            var resolved = resolveElementDeep(ss.apiUrl, smId, path, headers);
+            if (resolved != null) return Response.ok(resolved.encode()).build();
+            return Response.status(sc).entity(resp.bodyAsString()).build();
+        }
+        // SNAPSHOT
+        String normalizedSmId = normalizeSubmodelId(smId);
+        var submodel = AasSubmodelLite.<AasSubmodelLite>find("sourceSystem.id = ?1 and submodelId = ?2", sourceSystemId, normalizedSmId).firstResult();
+        if (submodel == null) return Response.status(Response.Status.NOT_FOUND).entity("Submodel not found in snapshot").build();
+        var el = AasElementLite.<AasElementLite>find("submodelLite.id = ?1 and idShortPath = ?2", submodel.id, path).firstResult();
+        if (el == null) return Response.status(Response.Status.NOT_FOUND).entity("Element not found in snapshot").build();
+        io.vertx.core.json.JsonObject json = new io.vertx.core.json.JsonObject()
+                .put("idShort", el.idShort)
+                .put("idShortPath", el.idShortPath)
+                .put("modelType", el.modelType)
+                .put("valueType", el.valueType)
+                .put("semanticId", el.semanticId);
+        return Response.ok(json.encode()).build();
     }
 
     private String normalizeSubmodelId(String smId) {

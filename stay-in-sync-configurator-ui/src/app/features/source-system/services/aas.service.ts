@@ -46,6 +46,19 @@ export class AasService {
     return this.http.get(url, { params });
   }
 
+  getElement(
+    sourceSystemId: number,
+    submodelId: string,
+    idShortPath: string,
+    source: 'SNAPSHOT' | 'LIVE' = 'LIVE'
+  ): Observable<any> {
+    const submodelIdEnc = this.encodeIdToBase64Url(submodelId);
+    const pathEnc = this.encodePathSegments(idShortPath);
+    const url = `/api/config/source-system/${sourceSystemId}/aas/submodels/${submodelIdEnc}/elements/${pathEnc}`;
+    const params = new HttpParams().set('source', source);
+    return this.http.get(url, { params });
+  }
+
   createSubmodel(sourceSystemId: number, submodel: any): Observable<any> {
     const url = `/api/config/source-system/${sourceSystemId}/aas/submodels`;
     return this.http.post(url, submodel);
@@ -68,8 +81,7 @@ export class AasService {
     elementPath: string,
     value: any
   ): Observable<any> {
-    const url = `/api/config/source-system/${sourceSystemId}/aas/submodels/${submodelId}/elements/${elementPath}/value`;
-    // Ensure JSON content type; quote strings as JSON
+    const url = `/api/config/source-system/${sourceSystemId}/aas/submodels/${submodelId}/elements/${this.encodePathSegments(elementPath)}/value`;
     const headers = new HttpHeaders({ 'Content-Type': 'application/json' });
     const body = (typeof value === 'string') ? JSON.stringify(value) : value;
     return this.http.patch(url, body, { headers });
@@ -85,7 +97,7 @@ export class AasService {
     submodelId: string,
     elementPath: string
   ): Observable<any> {
-    const url = `/api/config/source-system/${sourceSystemId}/aas/submodels/${submodelId}/elements/${elementPath}`;
+    const url = `/api/config/source-system/${sourceSystemId}/aas/submodels/${submodelId}/elements/${this.encodePathSegments(elementPath)}`;
     return this.http.delete(url);
   }
 
@@ -98,6 +110,13 @@ export class AasService {
       .replace(/=+$/g, '')
       .replace(/\+/g, '-')
       .replace(/\//g, '_');
+  }
+
+  private encodePathSegments(path: string): string {
+    return path
+      .split('/')
+      .map(seg => encodeURIComponent(seg))
+      .join('/');
   }
 }
 
