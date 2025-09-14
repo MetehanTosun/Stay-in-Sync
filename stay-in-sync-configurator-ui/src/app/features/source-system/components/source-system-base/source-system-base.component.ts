@@ -635,42 +635,59 @@ export class SourceSystemBaseComponent implements OnInit, OnDestroy {
   }
 
   private loadAasLiveElementDetails(smId: string, idShortPath: string | undefined, node?: TreeNode): void {
-    if (!this.selectedSystem?.id) return;
+    const systemId = this.selectedSystem?.id;
+    if (!systemId) return;
     this.aasSelectedLiveLoading = true;
     const keyStr = (node && typeof node.key === 'string') ? (node.key as string) : '';
     const keyPath = keyStr.includes('::') ? keyStr.split('::')[1] : '';
     const safePath = idShortPath || keyPath || (node?.data?.raw?.idShort || '');
     const last = safePath.split('/').pop() as string;
     const parent = safePath.includes('/') ? safePath.substring(0, safePath.lastIndexOf('/')) : '';
-    this.aasService
-      .listElements(this.selectedSystem.id, smId, { depth: 'shallow', parentPath: parent || undefined, source: 'LIVE' })
-      .subscribe({
-        next: (resp: any) => {
-          this.aasSelectedLiveLoading = false;
-          const list: any[] = Array.isArray(resp) ? resp : (resp?.result ?? []);
-          const found = list.find((el: any) => el.idShort === last);
-          if (found) {
-            const liveType = found?.modelType || (found?.valueType ? 'Property' : undefined);
-            this.aasSelectedLivePanel = {
-              label: liveType ? `${found.idShort} (${liveType})` : found.idShort,
-              type: liveType || 'Unknown',
-              value: (found as any).value,
-              valueType: (found as any).valueType
-            };
-            if (node && node.data) {
-              const computedPath = safePath || (parent ? `${parent}/${found.idShort}` : found.idShort);
-              node.data.idShortPath = computedPath;
-              node.data.raw = { ...(node.data.raw || {}), idShortPath: computedPath, modelType: found.modelType, valueType: found.valueType };
-            }
-          } else {
-            this.aasSelectedLivePanel = { label: last, type: 'Unknown' } as any;
-          }
-        },
-        error: (err: any) => {
-          this.aasSelectedLiveLoading = false;
-          this.erorrService.handleError(err);
+    // Robust: try direct element details endpoint (backend has deep fallback)
+    this.aasService.getElement(systemId, smId, safePath, 'LIVE').subscribe({
+      next: (found: any) => {
+        this.aasSelectedLiveLoading = false;
+        const liveType = found?.modelType || (found?.valueType ? 'Property' : undefined);
+        this.aasSelectedLivePanel = {
+          label: liveType ? `${found.idShort} (${liveType})` : found.idShort,
+          type: liveType || 'Unknown',
+          value: (found as any).value,
+          valueType: (found as any).valueType
+        };
+        if (node && node.data) {
+          const computedPath = safePath;
+          node.data.idShortPath = computedPath;
+          node.data.raw = { ...(node.data.raw || {}), idShortPath: computedPath, modelType: found.modelType, valueType: found.valueType };
         }
-      });
+      },
+      error: (_err: any) => {
+        // Fallback: list under parent shallow and pick child
+        this.aasService
+          .listElements(systemId, smId, { depth: 'shallow', parentPath: parent || undefined, source: 'LIVE' })
+          .subscribe({
+            next: (resp: any) => {
+              this.aasSelectedLiveLoading = false;
+              const list: any[] = Array.isArray(resp) ? resp : (resp?.result ?? []);
+              const found2 = list.find((el: any) => el.idShort === last);
+              if (found2) {
+                const liveType = found2?.modelType || (found2?.valueType ? 'Property' : undefined);
+                this.aasSelectedLivePanel = {
+                  label: liveType ? `${found2.idShort} (${liveType})` : found2.idShort,
+                  type: liveType || 'Unknown',
+                  value: (found2 as any).value,
+                  valueType: (found2 as any).valueType
+                };
+              } else {
+                this.aasSelectedLivePanel = { label: last, type: 'Unknown' } as any;
+              }
+            },
+            error: (err2: any) => {
+              this.aasSelectedLiveLoading = false;
+              this.erorrService.handleError(err2);
+            }
+          });
+      }
+    });
   }
 
   openAasSetValue(smId: string, element: any): void {

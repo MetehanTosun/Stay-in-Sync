@@ -86,11 +86,11 @@ public class AasStructureSnapshotService {
                         Set<String> seen = new HashSet<>();
                         if (en.isArray()) {
                             for (JsonNode node : en) {
-                                persistElementLite(sm, null, node, seen);
+                                ingestElement(sm, null, node, seen);
                             }
                         } else if (en.has("result") && en.get("result").isArray()) {
                             for (JsonNode node : en.get("result")) {
-                                persistElementLite(sm, null, node, seen);
+                                ingestElement(sm, null, node, seen);
                             }
                         }
                     }
