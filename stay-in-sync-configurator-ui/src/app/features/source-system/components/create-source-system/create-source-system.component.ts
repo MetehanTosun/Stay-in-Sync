@@ -597,7 +597,9 @@ save(): void {
         const inputVars = Array.isArray((found as any).inputVariables) ? (found as any).inputVariables : [];
         const outputVars = Array.isArray((found as any).outputVariables) ? (found as any).outputVariables : [];
         const inoutVars = Array.isArray((found as any).inoutputVariables) ? (found as any).inoutputVariables : [];
-        const annotationsRaw = Array.isArray((found as any).annotations) ? (found as any).annotations : [];
+        const ann1 = (found as any).annotations;
+        const ann2 = (found as any).annotation;
+        const annotationsRaw = Array.isArray(ann1) ? ann1 : (Array.isArray(ann2) ? ann2 : []);
         const mapVar = (v: any): OperationVarView | null => {
           const val = v?.value ?? v;
           const idShort = val?.idShort;
@@ -668,7 +670,9 @@ save(): void {
                   if (!idShort) return null;
                   return { idShort, modelType: val?.modelType, valueType: val?.valueType };
                 };
-                const annotationsRaw2 = Array.isArray((found2 as any).annotations) ? (found2 as any).annotations : [];
+                const ann1b = (found2 as any).annotations;
+                const ann2b = (found2 as any).annotation;
+                const annotationsRaw2 = Array.isArray(ann1b) ? ann1b : (Array.isArray(ann2b) ? ann2b : []);
                 const mapAnnotation2 = (a: any): AnnotationView | null => {
                   const val = a?.value ?? a;
                   const idShort = val?.idShort;
