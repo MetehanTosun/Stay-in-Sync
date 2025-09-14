@@ -1,7 +1,6 @@
 package de.unistuttgart.stayinsync.pollingnode.execution.ressource;
 
 import com.github.tomakehurst.wiremock.WireMockServer;
-import de.unistuttgart.stayinsync.core.pollingnode.execution.ressource.RestClient;
 import de.unistuttgart.stayinsync.pollingnode.exceptions.execution.pollingjob.restclientexceptions.RequestExecutionException;
 import de.unistuttgart.stayinsync.pollingnode.exceptions.execution.pollingjob.restclientexceptions.ResponseSubscriptionException;
 import io.vertx.core.json.JsonArray;
@@ -113,7 +112,7 @@ public class RestClientTest {
 
     @Test
     @DisplayName("RequestExecutionException thrown because of an invalid Host.")
-    void testRequestWithInvalidHostThrowsRequestExecutionException(){
+    void testRequestWithInvalidHostThrowsRequestExecutionException() {
         //Arrange
         final HttpRequest<Buffer> request = webClient
                 .put(8089, "wronghost", "/api/companies/123/projects/456/tasks")
@@ -126,7 +125,7 @@ public class RestClientTest {
 
     @Test
     @DisplayName("RequestExecutionException thrown because of an invalid Port.")
-    void testRequestWithInvalidPortThrowsRequestExecutionException(){
+    void testRequestWithInvalidPortThrowsRequestExecutionException() {
         //Arrange
         final HttpRequest<Buffer> request = webClient
                 .put(23854, "localhost", "/api/companies/123/projects/456/tasks")
@@ -139,11 +138,12 @@ public class RestClientTest {
 
     /**
      * Tries to call RestClient with the arranged request in a try-catch-block. Should immediately fail if an Exception occurs.
+     *
      * @param arrangedRequest executed in the restClient
      * @return the result of the restClient method call: A polled JsonObject
      */
     private JsonObject actByCallingRestClientAndReturnResultJsonObject(HttpRequest<Buffer> arrangedRequest) {
-        try{
+        try {
             //Act
             return restClient.pollJsonObjectFromApi(arrangedRequest);
         } catch (RequestExecutionException e) {
@@ -158,6 +158,7 @@ public class RestClientTest {
 
     /**
      * Creates three mockServerStubs with same data, QueryParam and Headers for each of the three RequestTypes (GET,POST,PUT)
+     *
      * @param bodyJsonObject contains the String, that is the body the Stub will contain
      */
     private void createMockServerStubsThatContainsGivenJsonObject(final JsonObject bodyJsonObject) {
@@ -186,6 +187,7 @@ public class RestClientTest {
                         .withHeader("X-Response-Time", "150ms")
                         .withBody(bodyJsonObject.toString())));
     }
+
     /**
      * Verifies if mockServers GET Stub was called with the QueryParam and Header
      */
@@ -194,6 +196,7 @@ public class RestClientTest {
                 .withQueryParam("priority", equalTo("high"))
                 .withHeader("Authorization", containing("Bearer")));
     }
+
     /**
      * Verifies if mockServers POST Stub was called with the QueryParam and Header
      */
@@ -202,6 +205,7 @@ public class RestClientTest {
                 .withQueryParam("priority", equalTo("high"))
                 .withHeader("Authorization", containing("Bearer")));
     }
+
     /**
      * Verifies if mockServers PUT Stub was called with the QueryParam and Header
      */
@@ -213,8 +217,9 @@ public class RestClientTest {
 
     /**
      * Asserts that all values of the expectedJsonObject and the resultJsonObject are equal.
+     *
      * @param expectedJsonObject created in arranging process
-     * @param resultJsonObject created in acting process
+     * @param resultJsonObject   created in acting process
      */
     private void assertResultJsonObjectEqualsExpectedJsonObject(final JsonObject resultJsonObject, final JsonObject expectedJsonObject) {
         assertEquals(resultJsonObject.getBoolean("requestMatched"), expectedJsonObject.getBoolean("requestMatched"));

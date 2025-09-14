@@ -1,5 +1,6 @@
 package de.unistuttgart.stayinsync.core.scriptengine;
 
+import de.unistuttgart.stayinsync.scriptengine.ScriptApi;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.QuarkusTestProfile;
 import io.quarkus.test.junit.TestProfile;

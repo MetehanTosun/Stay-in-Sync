@@ -43,7 +43,7 @@ public class RequestBuilderTest {
     @Mock
     private HttpRequest<Buffer> httpRequest;
 
-    private de.unistuttgart.stayinsync.core.pollingnode.execution.ressource.RequestBuilder requestBuilder;
+    private RequestBuilder requestBuilder;
 
     private MockedStatic<WebClient> webClientMockedStatic;
 
@@ -52,7 +52,7 @@ public class RequestBuilderTest {
         webClientMockedStatic = mockStatic(WebClient.class);
         webClientMockedStatic.when(() -> WebClient.create(eq(vertx), any())).thenReturn(webClient);
 
-        requestBuilder = new de.unistuttgart.stayinsync.core.pollingnode.execution.ressource.RequestBuilder(vertx);
+        requestBuilder = new RequestBuilder(vertx);
     }
 
     @AfterEach
@@ -64,7 +64,7 @@ public class RequestBuilderTest {
 
     @Test
     @DisplayName("Tests if all needed methods are called on WebClient to build a Request if exactly the information of the RequestBuildingDetails during 'buildRequest'.")
-    void testBuildRequestSuccessful(){
+    void testBuildRequestSuccessful() {
         RequestBuildingDetails requestBuildingDetails = createRequestBuildingDetailsWithNullFieldForSpecificValue(0);
 
         when(webClient.request(
@@ -81,7 +81,7 @@ public class RequestBuilderTest {
         HttpRequest<Buffer> result = null;
         try {
             result = requestBuilder.buildRequest(requestBuildingDetails);
-        } catch(Exception e){
+        } catch (Exception e) {
             fail("Exception was thrown during buildRequest call", e);
         }
 
@@ -103,7 +103,7 @@ public class RequestBuilderTest {
     @ParameterizedTest
     @ValueSource(ints = {1, 2, 3, 4, 5, 6})
     @DisplayName("Tests if appropriate exceptions are thrown when individual fields are null")
-    void testIfNullFieldsLeadToExceptions(int nullFieldIndex){
+    void testIfNullFieldsLeadToExceptions(int nullFieldIndex) {
         // Arrange
         RequestBuildingDetails invalidRequestBuildingDetails = createRequestBuildingDetailsWithNullFieldForSpecificValue(nullFieldIndex);
         // Act + Assert
@@ -129,13 +129,26 @@ public class RequestBuilderTest {
         ParamType paramType = QUERY;
 
         switch (nullFieldIndex) {
-            case 0: break;
-            case 1: authType = null; break;
-            case 2: authToken = null; break;
-            case 3: systemUrl = null; break;
-            case 4: endpointPath = null; break;
-            case 5: endpointMethod = null; break;
-            case 6: paramType = null; break;
+            case 0:
+                break;
+            case 1:
+                authType = null;
+                break;
+            case 2:
+                authToken = null;
+                break;
+            case 3:
+                systemUrl = null;
+                break;
+            case 4:
+                endpointPath = null;
+                break;
+            case 5:
+                endpointMethod = null;
+                break;
+            case 6:
+                paramType = null;
+                break;
         }
 
         ApiAuthConfigurationMessageDTO authDetails = new ApiAuthConfigurationMessageDTO(authType, authToken);

@@ -1,6 +1,7 @@
 package de.unistuttgart.stayinsync.core.scriptengine;
 
-import de.unistuttgart.stayinsync.core.exception.ScriptEngineException;
+import de.unistuttgart.stayinsync.exception.ScriptEngineException;
+import de.unistuttgart.stayinsync.scriptengine.ContextPool;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.QuarkusTestProfile;
 import io.quarkus.test.junit.TestProfile;
@@ -175,7 +176,7 @@ public class ContextPoolTests {
 
     @Test
     @Timeout(value = BORROW_TIMEOUT_SECONDS + 2)
-    void borrowContext_whenPoolEmpty_shouldBlockAndTimeout() throws InterruptedException, ScriptEngineException  {
+    void borrowContext_whenPoolEmpty_shouldBlockAndTimeout() throws InterruptedException, ScriptEngineException {
         contextPool = new ContextPool(TEST_LANG_ID, 1);
         Context firstContext = contextPool.borrowContext();
         assertNotNull(firstContext);

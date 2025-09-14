@@ -6,9 +6,9 @@ import com.github.tomakehurst.wiremock.client.WireMock;
 import de.unistuttgart.graphengine.dto.transformationrule.GraphDTO;
 import de.unistuttgart.graphengine.nodes.Node;
 import de.unistuttgart.graphengine.util.GraphMapper;
-import de.unistuttgart.stayinsync.core.syncnode.domain.ExecutionPayload;
-import de.unistuttgart.stayinsync.core.syncnode.domain.TransformJob;
-import de.unistuttgart.stayinsync.core.syncnode.syncjob.TransformationExecutionService;
+import de.unistuttgart.stayinsync.syncnode.domain.ExecutionPayload;
+import de.unistuttgart.stayinsync.syncnode.domain.TransformJob;
+import de.unistuttgart.stayinsync.syncnode.syncjob.TransformationExecutionService;
 import de.unistuttgart.stayinsync.core.transport.domain.JobDeploymentStatus;
 import de.unistuttgart.stayinsync.core.transport.domain.TargetApiRequestConfigurationActionRole;
 import de.unistuttgart.stayinsync.core.transport.dto.TransformationMessageDTO;
@@ -85,6 +85,7 @@ public class TransformationExecutionIntegrationTest {
         );
         return new ExecutionPayload(transformJob, graphNodes, txContext);
     }
+
     private TransformationMessageDTO createTransformationContext(String mockApiBaseUrl) {
         Set<RequestConfigurationMessageDTO> targetArcs = Set.of(
                 new RequestConfigurationMessageDTO("synchronizeProducts", mockApiBaseUrl,
