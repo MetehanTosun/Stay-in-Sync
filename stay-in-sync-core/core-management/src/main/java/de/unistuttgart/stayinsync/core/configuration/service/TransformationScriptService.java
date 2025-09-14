@@ -7,6 +7,8 @@ import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.Transf
 import de.unistuttgart.stayinsync.core.configuration.exception.CoreManagementException;
 import de.unistuttgart.stayinsync.core.configuration.mapping.TransformationScriptMapper;
 import de.unistuttgart.stayinsync.core.configuration.rest.dtos.TransformationScriptDTO;
+import io.micrometer.core.instrument.Counter;
+import io.micrometer.core.instrument.MeterRegistry;
 import io.quarkus.logging.Log;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
@@ -34,6 +36,28 @@ public class TransformationScriptService {
 
     @Inject
     TargetSdkGeneratorService targetSdkGeneratorService;
+
+    @Inject
+    MeterRegistry meterRegistry;
+
+    private final Counter processedMessagesCounter;
+
+    @Inject
+    public TransformationScriptService(MeterRegistry meterRegistry) {
+        this.meterRegistry = meterRegistry;
+        this.processedMessagesCounter = Counter.builder("transformation_scripts_messages_total")
+                .description("Total number of messages processed across all transformation scripts")
+                .register(meterRegistry);
+    }
+
+    /**
+     * Increments the global Prometheus counter for processed messages.
+     * This should be called whenever a script successfully processes a message.
+     */
+    public void recordProcessedMessage() {
+        processedMessagesCounter.increment();
+        Log.debug("Recorded processed message (global counter for all scripts).");
+    }
 
     public TransformationScript create(TransformationScriptDTO dto) {
         Log.debugf("Creating new transformation script with name: %s", dto.name());
@@ -103,13 +127,8 @@ public class TransformationScriptService {
         Log.infof("Found %d unique ARCs required by the script", scriptArcs.size());
 
         Set<SourceSystemApiRequestConfiguration> finalArcSet = new HashSet<>();
-
         finalArcSet.addAll(scriptArcs);
 
-        // TODO: Handle Union for ARCs with Graph and Script, since they can have a symmetric difference
-        // Start with fresh set, add present ARCs for graph and script respectively.
-
-        // Bind ManyToMany
         transformation.sourceSystemApiRequestConfigurations = finalArcSet;
         finalArcSet.forEach(sourceSystemApiRequestConfiguration -> sourceSystemApiRequestConfiguration.transformations.add(transformation));
 
@@ -120,7 +139,6 @@ public class TransformationScriptService {
             List<TargetSystemApiRequestConfiguration> foundTargetArcs = TargetSystemApiRequestConfiguration.list("id in ?1", dto.targetArcIds());
 
             if (foundTargetArcs.size() != dto.targetArcIds().size()) {
-                // Finde heraus, welche IDs nicht gefunden wurden, für eine bessere Fehlermeldung
                 throw new CoreManagementException(Response.Status.BAD_REQUEST, "Target ARC Not Found",
                         "One or more specified Target ARC IDs could not be found.");
             }
@@ -166,16 +184,13 @@ public class TransformationScriptService {
         }
         try {
             MessageDigest md = MessageDigest.getInstance("SHA-256");
-
             byte[] hashBytes = md.digest(input.getBytes(StandardCharsets.UTF_8));
-
             BigInteger number = new BigInteger(1, hashBytes);
             StringBuilder hexString = new StringBuilder(number.toString(16));
 
             while (hexString.length() < 64) {
                 hexString.insert(0, '0');
             }
-
             return hexString.toString();
         } catch (NoSuchAlgorithmException e) {
             throw new CoreManagementException(Response.Status.INTERNAL_SERVER_ERROR,
