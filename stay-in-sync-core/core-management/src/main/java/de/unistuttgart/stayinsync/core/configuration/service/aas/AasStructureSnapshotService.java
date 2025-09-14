@@ -76,7 +76,8 @@ public class AasStructureSnapshotService {
                 String smIdB64 = toBase64Url(sm.submodelId);
                 if (smIdB64 == null) continue;
                 try {
-                    Uni<HttpResponse<Buffer>> ue = traversalClient.listElements(ss.apiUrl, smIdB64, "shallow", null, headers);
+                    // Deep import to include nested collections/lists/entities
+                    Uni<HttpResponse<Buffer>> ue = traversalClient.listElements(ss.apiUrl, smIdB64, "all", null, headers);
                     HttpResponse<Buffer> er = ue.await().indefinitely();
                     if (er.statusCode() >= 200 && er.statusCode() < 300) {
                         String ejson = er.bodyAsString();
@@ -302,6 +303,16 @@ public class AasStructureSnapshotService {
         String idShort = textOrNull(n, "idShort");
         if (idShort == null) return;
         String modelType = textOrNull(n, "modelType");
+        // Heuristic: detect MultiLanguageProperty when value is array of {language,text}
+        if (modelType == null || modelType.isBlank()) {
+            JsonNode val = n.get("value");
+            if (val != null && val.isArray() && val.size() > 0) {
+                JsonNode first = val.get(0);
+                if (first != null && first.has("language") && first.has("text")) {
+                    modelType = "MultiLanguageProperty";
+                }
+            }
+        }
         String idShortPath = parentPath == null || parentPath.isBlank() ? idShort : parentPath + "/" + idShort;
 
         String key = submodel.id + "::" + idShortPath;
@@ -522,6 +533,15 @@ public class AasStructureSnapshotService {
         String idShort = textOrNull(n, "idShort");
         if (idShort == null) return;
         String modelType = textOrNull(n, "modelType");
+        if (modelType == null || modelType.isBlank()) {
+            JsonNode val = n.get("value");
+            if (val != null && val.isArray() && val.size() > 0) {
+                JsonNode first = val.get(0);
+                if (first != null && first.has("language") && first.has("text")) {
+                    modelType = "MultiLanguageProperty";
+                }
+            }
+        }
         String idShortPath = parentPath == null || parentPath.isBlank() ? idShort : parentPath + "/" + idShort;
 
         String key = submodel.id + "::" + idShortPath;
