@@ -35,8 +35,14 @@ export class DashboardComponent {
         queryParams: { input: nodeId },
         queryParamsHandling: 'merge',
       });
+    }else {
+      this.router.navigate([], {
+        queryParams: { input: null },
+        queryParamsHandling: 'merge',
+      });
     }
   }
+
 
   searchTerm = '';
   tabs = [
