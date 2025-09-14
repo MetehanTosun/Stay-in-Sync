@@ -16,7 +16,6 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
-import java.util.stream.Collectors;
 
 @ApplicationScoped
 public class LogService {
@@ -29,6 +28,12 @@ public class LogService {
     public LogService() {
         this.httpClient = HttpClient.newHttpClient();
         this.objectMapper = new ObjectMapper();
+    }
+
+    // Für Unit-Tests
+    public LogService(ObjectMapper objectMapper, HttpClient httpClient) {
+        this.objectMapper = Objects.requireNonNull(objectMapper);
+        this.httpClient = Objects.requireNonNull(httpClient);
     }
 
     public List<LogEntryDto> fetchAndParseLogs(String syncJobId, long startNs, long endNs, String level) {
