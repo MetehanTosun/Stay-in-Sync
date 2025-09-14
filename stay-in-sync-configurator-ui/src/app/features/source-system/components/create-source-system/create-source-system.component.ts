@@ -71,6 +71,11 @@ export class CreateSourceSystemComponent implements OnInit, OnChanges {
   selectedFile: File | null = null;
   fileSelected = false;
 
+  // AASX upload state
+  showAasxUpload = false;
+  aasxSelectedFile: File | null = null;
+  isUploadingAasx = false;
+
   typeOptions = [
     {label: 'REST-OpenAPI', value: 'REST_OPENAPI'},
     {label: 'AAS', value: 'AAS'}
@@ -186,6 +191,55 @@ export class CreateSourceSystemComponent implements OnInit, OnChanges {
     this.selectedFile = event.files[0];
     this.fileSelected = true;
     this.form.get('openApiSpec')!.disable();
+  }
+
+  // AASX upload handlers
+  openAasxUpload(): void {
+    this.showAasxUpload = true;
+    this.aasxSelectedFile = null;
+  }
+  onAasxFileSelected(event: FileSelectEvent): void {
+    this.aasxSelectedFile = event.files?.[0] || null;
+  }
+  uploadAasx(): void {
+    if (this.isUploadingAasx) return;
+    if (!this.aasxSelectedFile) {
+      this.messageService.add({ severity: 'warn', summary: 'No file selected', detail: 'Please choose an .aasx file.' });
+      return;
+    }
+    const proceed = () => {
+      if (!this.createdSourceSystemId) return;
+      this.isUploadingAasx = true;
+      this.aasService.uploadAasx(this.createdSourceSystemId, this.aasxSelectedFile!)
+        .subscribe({
+          next: () => {
+            this.isUploadingAasx = false;
+            this.showAasxUpload = false;
+            // Directly rediscover from snapshot (do not refresh: would wipe imported AASX structures)
+            this.discoverSubmodels();
+            this.messageService.add({ severity: 'success', summary: 'Upload accepted', detail: 'AASX uploaded. Snapshot refresh started.' });
+          },
+          error: (err) => {
+            this.isUploadingAasx = false;
+            this.errorService.handleError(err);
+          }
+        });
+    };
+    if (!this.createdSourceSystemId) {
+      const base = { ...this.form.getRawValue() } as CreateSourceSystemDTO;
+      delete (base as any).authConfig;
+      const authType = this.form.get('apiAuthType')!.value as ApiAuthType;
+      const cfg = this.form.get('authConfig')!.value;
+      if (authType === ApiAuthType.Basic) {
+        base.authConfig = { authType, username: cfg.username, password: cfg.password } as BasicAuthDTO;
+      } else if (authType === ApiAuthType.ApiKey) {
+        base.authConfig = { authType, apiKey: cfg.apiKey, headerName: cfg.headerName } as ApiKeyAuthDTO;
+      }
+      delete (base as any).openApiSpec;
+      this.postDto(base, { advanceStep: false, onSuccess: () => proceed() });
+    } else {
+      proceed();
+    }
   }
 
   /**
@@ -425,6 +479,7 @@ save(): void {
           this.elementsBySubmodel[submodelId] = list;
           if (attachToNode) {
             attachToNode.children = list.map((el: any) => this.mapElementToNode(submodelId, el));
+            this.treeNodes = [...this.treeNodes];
           }
         },
         error: (err) => {
@@ -450,6 +505,7 @@ save(): void {
             return this.mapElementToNode(submodelId, el);
           });
           node.children = mapped;
+          this.treeNodes = [...this.treeNodes];
         },
         error: (err) => {
           this.childrenLoading[key] = false;
@@ -472,13 +528,14 @@ save(): void {
   }
 
   private mapElementToNode(submodelId: string, el: any): TreeNode {
-    const label = `${el.idShort} (${el.modelType})`;
+    const computedType = el?.modelType || (el?.valueType ? 'Property' : undefined);
+    const label = computedType ? `${el.idShort} (${computedType})` : el.idShort;
     const typeHasChildren = el?.modelType === 'SubmodelElementCollection' || el?.modelType === 'SubmodelElementList' || el?.modelType === 'Operation';
     const hasChildren = el?.hasChildren === true || typeHasChildren;
     return {
       key: `${submodelId}::${el.idShortPath}`,
       label,
-      data: { type: 'element', submodelId, idShortPath: el.idShortPath, modelType: el.modelType, raw: el },
+      data: { type: 'element', submodelId, idShortPath: el.idShortPath || el.idShort, modelType: el.modelType, raw: el },
       leaf: !hasChildren,
       children: []
     } as TreeNode;
@@ -513,34 +570,51 @@ save(): void {
     const safePath = idShortPath || keyPath || (node?.data?.raw?.idShort || '');
     const last = safePath.split('/').pop() as string;
     const parent = safePath.includes('/') ? safePath.substring(0, safePath.lastIndexOf('/')) : '';
-    this.aasService
-      .listElements(this.createdSourceSystemId, smId, { depth: 'shallow', parentPath: parent || undefined, source: 'LIVE' })
-      .subscribe({
-        next: (resp: any) => {
-          this.selectedLiveLoading = false;
-          const list: any[] = Array.isArray(resp) ? resp : (resp?.result ?? []);
-          const found = list.find((el: any) => el.idShort === last);
-          if (found) {
-            this.selectedLivePanel = {
-              label: `${found.idShort} (${found.modelType})`,
-              type: found.modelType,
-              value: (found as any).value,
-              valueType: (found as any).valueType
-            };
-            if (node && node.data) {
-              const computedPath = safePath || (parent ? `${parent}/${found.idShort}` : found.idShort);
-              node.data.idShortPath = computedPath;
-              node.data.raw = { ...(node.data.raw || {}), idShortPath: computedPath, modelType: found.modelType, valueType: found.valueType };
-            }
-          } else {
-            this.selectedLivePanel = { label: last, type: 'Unknown' };
-          }
-        },
-        error: (err: any) => {
-          this.selectedLiveLoading = false;
-          this.errorService.handleError(err);
+    // Robust load: try direct element endpoint (backend has deep fallback)
+    this.aasService.getElement(this.createdSourceSystemId, smId, safePath, 'LIVE').subscribe({
+      next: (found: any) => {
+        this.selectedLiveLoading = false;
+        const liveType = found?.modelType || (found?.valueType ? 'Property' : undefined);
+        this.selectedLivePanel = {
+          label: liveType ? `${found.idShort} (${liveType})` : found.idShort,
+          type: liveType || 'Unknown',
+          value: (found as any).value,
+          valueType: (found as any).valueType
+        };
+        if (node && node.data) {
+          const computedPath = safePath;
+          node.data.idShortPath = computedPath;
+          node.data.raw = { ...(node.data.raw || {}), idShortPath: computedPath, modelType: found.modelType, valueType: found.valueType };
         }
-      });
+      },
+      error: (_err: any) => {
+        // Fallback: list under parent shallow
+        this.aasService
+          .listElements(this.createdSourceSystemId, smId, { depth: 'shallow', parentPath: parent || undefined, source: 'LIVE' })
+          .subscribe({
+            next: (resp: any) => {
+              this.selectedLiveLoading = false;
+              const list: any[] = Array.isArray(resp) ? resp : (resp?.result ?? []);
+              const found2 = list.find((el: any) => el.idShort === last);
+              if (found2) {
+                const liveType = found2?.modelType || (found2?.valueType ? 'Property' : undefined);
+                this.selectedLivePanel = {
+                  label: liveType ? `${found2.idShort} (${liveType})` : found2.idShort,
+                  type: liveType || 'Unknown',
+                  value: (found2 as any).value,
+                  valueType: (found2 as any).valueType
+                };
+              } else {
+                this.selectedLivePanel = { label: last, type: 'Unknown' };
+              }
+            },
+            error: (err2: any) => {
+              this.selectedLiveLoading = false;
+              this.errorService.handleError(err2);
+            }
+          });
+      }
+    });
   }
 
   // Create dialogs
@@ -616,11 +690,8 @@ save(): void {
         .subscribe({
           next: () => {
             this.showElementDialog = false;
-            // Ensure snapshot reflects new element, then refresh the tree at the right place
-            this.aasService.refreshSnapshot(this.createdSourceSystemId).subscribe({
-              next: () => this.refreshTreeAfterCreate(),
-              error: () => this.refreshTreeAfterCreate()
-            });
+            // Delta refresh: query LIVE under the affected parent and update tree
+            this.refreshTreeAfterCreate();
           },
           error: (err) => this.errorService.handleError(err)
         });
@@ -687,6 +758,49 @@ save(): void {
       });
   }
 
+  deleteSubmodel(submodelId: string): void {
+    // route through confirmation dialog
+    this.deleteSubmodelId = submodelId;
+    this.showDeleteSubmodelDialog = true;
+  }
+
+  deleteElement(submodelId: string, idShortPath: string): void {
+    if (!this.createdSourceSystemId || !submodelId || !idShortPath) return;
+    const smIdB64 = this.aasService.encodeIdToBase64Url(submodelId);
+    this.aasService.deleteElement(this.createdSourceSystemId, smIdB64, idShortPath).subscribe({
+      next: () => {
+        // refresh parent node live
+        const parent = idShortPath.includes('/') ? idShortPath.substring(0, idShortPath.lastIndexOf('/')) : '';
+        const parentNode = parent ? this.findNodeByKey(`${submodelId}::${parent}`, this.treeNodes) : this.findNodeByKey(submodelId, this.treeNodes);
+        this.refreshNodeLive(submodelId, parent, parentNode || undefined);
+      },
+      error: (err) => this.errorService.handleError(err)
+    });
+  }
+
+  // Delete Submodel confirmation
+  showDeleteSubmodelDialog = false;
+  deleteSubmodelId: string | null = null;
+  proceedDeleteSubmodel(): void {
+    if (!this.createdSourceSystemId || !this.deleteSubmodelId) {
+      this.showDeleteSubmodelDialog = false;
+      return;
+    }
+    const smIdB64 = this.aasService.encodeIdToBase64Url(this.deleteSubmodelId);
+    this.aasService.deleteSubmodel(this.createdSourceSystemId, smIdB64).subscribe({
+      next: () => {
+        this.showDeleteSubmodelDialog = false;
+        this.deleteSubmodelId = null;
+        this.discoverSubmodels();
+        this.messageService.add({ severity: 'success', summary: 'Submodel deleted', detail: 'Submodel, elements, and shell reference removed.' });
+      },
+      error: (err) => {
+        this.showDeleteSubmodelDialog = false;
+        this.errorService.handleError(err);
+      }
+    });
+  }
+
   // PATCH value dialog
   showValueDialog = false;
   valueSubmodelId = '';
@@ -695,27 +809,55 @@ save(): void {
   valueTypeHint = 'xs:string';
   openSetValue(smId: string, element: any): void {
     this.valueSubmodelId = smId;
-    this.valueElementPath = element.idShortPath;
+    this.valueElementPath = element.idShortPath || element.data?.idShortPath || element.raw?.idShortPath || element.idShort;
     this.valueTypeHint = element.valueType || 'xs:string';
-    this.valueNew = '';
+    // Prefill with current LIVE value if available
+    if (this.selectedLivePanel && this.selectedNode && this.selectedNode.data?.idShortPath === this.valueElementPath) {
+      this.valueNew = (this.selectedLivePanel.value ?? '').toString();
+    } else {
+      this.valueNew = '';
+    }
     this.showValueDialog = true;
   }
   setValue(): void {
     if (!this.createdSourceSystemId || !this.valueSubmodelId || !this.valueElementPath) return;
     const smIdB64 = this.aasService.encodeIdToBase64Url(this.valueSubmodelId);
-    const payload = {
-      modelType: 'Property',
-      idShort: this.valueElementPath.split('/').pop(),
-      valueType: this.valueTypeHint,
-      value: this.valueNew
-    };
-    this.aasService.setPropertyValue(this.createdSourceSystemId, smIdB64, this.valueElementPath.replaceAll('/', '.'), payload)
+    const parsedValue = this.parseValueForType(this.valueNew, this.valueTypeHint);
+    this.aasService.setPropertyValue(this.createdSourceSystemId, smIdB64, this.valueElementPath, parsedValue as any)
       .subscribe({
         next: () => {
           this.showValueDialog = false;
+          // Refresh LIVE details of the selected node if matching
+          if (this.selectedNode && this.selectedNode.data?.idShortPath === this.valueElementPath) {
+            this.loadLiveElementDetails(this.valueSubmodelId, this.valueElementPath, this.selectedNode);
+          } else {
+            // Otherwise refresh parent listing
+            const parent = this.valueElementPath.includes('/') ? this.valueElementPath.substring(0, this.valueElementPath.lastIndexOf('/')) : '';
+            const parentNode = parent ? this.findNodeByKey(`${this.valueSubmodelId}::${parent}`, this.treeNodes) : this.findNodeByKey(this.valueSubmodelId, this.treeNodes);
+            this.refreshNodeLive(this.valueSubmodelId, parent, parentNode || undefined);
+          }
+          this.messageService.add({ severity: 'success', summary: 'Value updated', detail: 'Property value saved', life: 2500 });
         },
         error: (err) => this.errorService.handleError(err)
       });
+  }
+
+  private parseValueForType(raw: string, valueType?: string): any {
+    if (!valueType) return raw;
+    const t = valueType.toLowerCase();
+    if (t.includes('boolean')) {
+      if (raw === 'true' || raw === 'false') return raw === 'true';
+      return !!raw;
+    }
+    if (t.includes('int') || t.includes('integer') || t.includes('long')) {
+      const n = parseInt(raw, 10);
+      return isNaN(n) ? raw : n;
+    }
+    if (t.includes('float') || t.includes('double') || t.includes('decimal')) {
+      const n = parseFloat(raw);
+      return isNaN(n) ? raw : n;
+    }
+    return raw; // default string
   }
   /**
    * Advances the stepper to the next step.

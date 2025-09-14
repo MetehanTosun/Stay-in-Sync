@@ -18,6 +18,15 @@ import jakarta.inject.Inject;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
+import org.jboss.resteasy.reactive.RestForm;
+import org.eclipse.microprofile.openapi.annotations.Operation;
+import org.eclipse.microprofile.openapi.annotations.parameters.RequestBody;
+import org.eclipse.microprofile.openapi.annotations.media.Content;
+import org.eclipse.microprofile.openapi.annotations.media.Schema;
+import org.eclipse.microprofile.openapi.annotations.responses.APIResponse;
+import org.eclipse.microprofile.openapi.annotations.responses.APIResponses;
+import org.jboss.resteasy.reactive.multipart.FileUpload;
+import java.nio.file.Files;
 
 
 @Path("/api/config/source-system/{sourceSystemId}/aas")
@@ -67,20 +76,64 @@ public class AasResource {
         ss = aasService.validateAasSource(ss);
         if ("LIVE".equalsIgnoreCase(source)) {
             var headers = headerBuilder.buildMergedHeaders(ss, de.unistuttgart.stayinsync.core.configuration.service.aas.HttpHeaderBuilder.Mode.READ);
-            Log.infof("List submodels LIVE: apiUrl=%s aasId=%s", ss.apiUrl, ss.aasId);
-            Log.debugf("LIVE headers: %s", headers);
-            return traversal.listSubmodels(ss.apiUrl, ss.aasId, headers).map(resp -> {
+            final String apiUrl = ss.apiUrl;
+            final String aasId = ss.aasId;
+            final java.util.Map<String,String> headersLive = headers;
+            Log.infof("List submodels LIVE: apiUrl=%s aasId=%s", apiUrl, aasId);
+            Log.debugf("LIVE headers: %s", headersLive);
+            return traversal.listSubmodels(apiUrl, aasId, headersLive).map(resp -> {
                 int sc = resp.statusCode();
                 Log.infof("List submodels upstream status=%d msg=%s", sc, resp.statusMessage());
                 if (sc >= 200 && sc < 300) {
-                    return Response.ok(resp.bodyAsString()).build();
+                    String body = resp.bodyAsString();
+                    try {
+                        // Filter out refs that point to non-existing submodels (404), to avoid stale entries
+                        io.vertx.core.json.JsonArray refs;
+                        boolean wrapped = false;
+                        if (body != null && body.trim().startsWith("{")) {
+                            io.vertx.core.json.JsonObject obj = new io.vertx.core.json.JsonObject(body);
+                            refs = obj.getJsonArray("result", new io.vertx.core.json.JsonArray());
+                            wrapped = true;
+                        } else {
+                            refs = new io.vertx.core.json.JsonArray(body);
+                        }
+                        io.vertx.core.json.JsonArray filtered = new io.vertx.core.json.JsonArray();
+                        for (int i = 0; i < refs.size(); i++) {
+                            var ref = refs.getJsonObject(i);
+                            var keys = ref.getJsonArray("keys");
+                            String smId = null;
+                            if (keys != null && !keys.isEmpty()) {
+                                var k0 = keys.getJsonObject(0);
+                                if ("Submodel".equalsIgnoreCase(k0.getString("type"))) {
+                                    smId = k0.getString("value");
+                                }
+                            }
+                            if (smId == null || smId.isBlank()) continue;
+                            var check = traversal.getSubmodel(apiUrl, smId, headersLive).await().indefinitely();
+                            int csc = check.statusCode();
+                            if (csc >= 200 && csc < 300) {
+                                filtered.add(ref);
+                            } else {
+                                Log.infof("Filtered stale submodel-ref value=%s status=%d", smId, csc);
+                            }
+                        }
+                        if (wrapped) {
+                            io.vertx.core.json.JsonObject out = new io.vertx.core.json.JsonObject().put("result", filtered);
+                            return Response.ok(out.encode()).build();
+                        } else {
+                            return Response.ok(filtered.encode()).build();
+                        }
+                    } catch (Exception e) {
+                        Log.warn("Failed to filter LIVE submodel refs, returning upstream body", e);
+                        return Response.ok(body).build();
+                    }
                 }
                 return Response.status(sc).entity(resp.bodyAsString()).build();
             });
         }
         var list = AasSubmodelLite.<AasSubmodelLite>list("sourceSystem.id", sourceSystemId)
                 .stream()
-                .map(sm -> new SubmodelSummaryDTO(sm.submodelId, sm.submodelIdShort, sm.semanticId, sm.kind))
+                .map(sm -> new SubmodelSummaryDTO(sm.submodelId, sm.submodelIdShort, sm.semanticId, sm.kind, sm.id))
                 .toList();
         if (!list.isEmpty()) {
             return Uni.createFrom().item(Response.ok().entity(list).build());
@@ -106,10 +159,39 @@ public class AasResource {
         ss = aasService.validateAasSource(ss);
         if ("LIVE".equalsIgnoreCase(source)) {
             var headers = headerBuilder.buildMergedHeaders(ss, de.unistuttgart.stayinsync.core.configuration.service.aas.HttpHeaderBuilder.Mode.READ);
-            return traversal.listElements(ss.apiUrl, smId, depth, parentPath, headers).map(resp -> {
+            final String apiUrl = ss.apiUrl;
+            final java.util.Map<String,String> headersLive = headers;
+            return traversal.listElements(apiUrl, smId, depth, parentPath, headersLive).map(resp -> {
                 int sc = resp.statusCode();
                 if (sc >= 200 && sc < 300) {
                     return Response.ok(resp.bodyAsString()).build();
+                }
+                // Fallback for nested collections returning 404 on parent path: fetch deep and filter
+                if (sc == 404 && parentPath != null && !parentPath.isBlank()) {
+                    try {
+                        var all = traversal.listElements(apiUrl, smId, "all", null, headersLive).await().indefinitely();
+                        if (all.statusCode() >= 200 && all.statusCode() < 300) {
+                            String body = all.bodyAsString();
+                            io.vertx.core.json.JsonArray arr = body != null && body.trim().startsWith("{")
+                                    ? new io.vertx.core.json.JsonObject(body).getJsonArray("result", new io.vertx.core.json.JsonArray())
+                                    : new io.vertx.core.json.JsonArray(body);
+                            String prefix = parentPath.endsWith("/") ? parentPath : parentPath + "/";
+                            io.vertx.core.json.JsonArray children = new io.vertx.core.json.JsonArray();
+                            for (int i = 0; i < arr.size(); i++) {
+                                var el = arr.getJsonObject(i);
+                                String p = el.getString("idShortPath", el.getString("idShort"));
+                                if (p == null) continue;
+                                if (p.equals(parentPath)) continue; // skip parent itself
+                                if (p.startsWith(prefix)) {
+                                    String rest = p.substring(prefix.length());
+                                    if (!rest.contains("/")) {
+                                        children.add(el);
+                                    }
+                                }
+                            }
+                            return Response.ok(children.encode()).build();
+                        }
+                    } catch (Exception ignore) {}
                 }
                 return Response.status(sc).entity(resp.bodyAsString()).build();
             });
@@ -158,7 +240,8 @@ public class AasResource {
                 e.typeValueListElement,
                 e.orderRelevant,
                 null,
-                null
+                null,
+                e.id
         )).toList();
         if (!list.isEmpty()) {
             return Uni.createFrom().item(Response.ok().entity(list).build());
@@ -191,7 +274,6 @@ public class AasResource {
             try {
                 String submodelId = io.vertx.core.json.JsonObject.mapFrom(io.vertx.core.json.jackson.DatabindCodec.mapper().readTree(resp.bodyAsString())).getString("id");
                 if (submodelId == null || submodelId.isBlank()) {
-                    // fallback: try from request body
                     var reqId = io.vertx.core.json.JsonObject.mapFrom(io.vertx.core.json.jackson.DatabindCodec.mapper().readTree(body)).getString("id");
                     if (reqId != null && !reqId.isBlank()) submodelId = reqId;
                 }
@@ -238,10 +320,48 @@ public class AasResource {
         ss = aasService.validateAasSource(ss);
         var headers = headerBuilder.buildMergedHeaders(ss, de.unistuttgart.stayinsync.core.configuration.service.aas.HttpHeaderBuilder.Mode.WRITE_JSON);
         Log.infof("DELETE submodel LIVE: apiUrl=%s smId=%s", ss.apiUrl, smId);
+        String normalizedSmId = normalizeSubmodelId(smId);
+        // Remove reference from shell first (best-effort). Some servers require index-based delete.
+        try {
+            var listRefs = traversal.listSubmodelReferences(ss.apiUrl, ss.aasId, headers).await().indefinitely();
+            if (listRefs.statusCode() >= 200 && listRefs.statusCode() < 300) {
+                String body = listRefs.bodyAsString();
+                io.vertx.core.json.JsonArray arr = new io.vertx.core.json.JsonArray(body);
+                java.util.List<Integer> toDelete = new java.util.ArrayList<>();
+                for (int i = 0; i < arr.size(); i++) {
+                    var ref = arr.getJsonObject(i);
+                    var keys = ref.getJsonArray("keys");
+                    if (keys != null && !keys.isEmpty()) {
+                        var k0 = keys.getJsonObject(0);
+                        String t = k0.getString("type");
+                        String v = k0.getString("value");
+                        if ("Submodel".equalsIgnoreCase(t) && normalizedSmId != null && normalizedSmId.equals(v)) {
+                            toDelete.add(i);
+                        }
+                    }
+                }
+                // Delete from highest index to lowest to avoid shifting
+                java.util.Collections.sort(toDelete, java.util.Collections.reverseOrder());
+                for (Integer idx : toDelete) {
+                    var delIdx = traversal.removeSubmodelReferenceFromShellByIndex(ss.apiUrl, ss.aasId, idx, headers).await().indefinitely();
+                    Log.infof("DELETE submodel-ref by index upstream status=%d msg=%s body=%s", delIdx.statusCode(), delIdx.statusMessage(), safeBody(delIdx));
+                }
+            } else {
+                // fallback: try direct delete by submodelId
+                var refDel = traversal.removeSubmodelReferenceFromShell(ss.apiUrl, ss.aasId, normalizedSmId != null ? normalizedSmId : smId, headers).await().indefinitely();
+                Log.infof("DELETE submodel-ref upstream status=%d msg=%s body=%s", refDel.statusCode(), refDel.statusMessage(), safeBody(refDel));
+            }
+        } catch (Exception e) {
+            Log.warn("Failed to remove submodel-ref from shell (continuing)", e);
+        }
         var resp = traversal.deleteSubmodel(ss.apiUrl, smId, headers).await().indefinitely();
         int sc = resp.statusCode();
         Log.infof("DELETE submodel upstream status=%d msg=%s body=%s", sc, resp.statusMessage(), safeBody(resp));
         if (sc >= 200 && sc < 300) {
+            snapshotService.applySubmodelDelete(sourceSystemId, smId);
+            return Response.noContent().build();
+        } else if (sc == 404) {
+            // If submodel not found upstream, still remove from local snapshot
             snapshotService.applySubmodelDelete(sourceSystemId, smId);
             return Response.noContent().build();
         }
@@ -263,7 +383,8 @@ public class AasResource {
         int sc = resp.statusCode();
         Log.infof("Create element upstream status=%d msg=%s body=%s", sc, resp.statusMessage(), safeBody(resp));
         if (sc >= 200 && sc < 300) {
-            snapshotService.applyElementCreate(sourceSystemId, smId, parentPath, resp.bodyAsString());
+            String normalizedSmId = normalizeSubmodelId(smId);
+            snapshotService.applyElementCreate(sourceSystemId, normalizedSmId, parentPath, resp.bodyAsString());
             return Response.status(Response.Status.CREATED).entity(resp.bodyAsString()).build();
         }
         return aasService.mapHttpError(sc, resp.statusMessage(), resp.bodyAsString());
@@ -301,7 +422,8 @@ public class AasResource {
         int sc = resp.statusCode();
         Log.infof("DELETE element upstream status=%d msg=%s body=%s", sc, resp.statusMessage(), safeBody(resp));
         if (sc >= 200 && sc < 300) {
-            snapshotService.applyElementDelete(sourceSystemId, smId, path);
+            String normalizedSmId = normalizeSubmodelId(smId);
+            snapshotService.applyElementDelete(sourceSystemId, normalizedSmId, path);
             return Response.noContent().build();
         }
         return aasService.mapHttpError(sc, resp.statusMessage(), resp.bodyAsString());
@@ -336,6 +458,105 @@ public class AasResource {
         }
     }
 
+    // Helper: Resolve a single element LIVE via deep scan if parentPath resolution fails (for view panel)
+    private io.vertx.core.json.JsonObject resolveElementDeep(String apiUrl, String smId, String idShortPath, java.util.Map<String,String> headers) {
+        try {
+            // Try direct GET first (deep)
+            var direct = traversal.getElement(apiUrl, smId, idShortPath, headers).await().indefinitely();
+            if (direct.statusCode() >= 200 && direct.statusCode() < 300) {
+                String body = direct.bodyAsString();
+                if (body != null && !body.isBlank()) {
+                    if (body.trim().startsWith("{")) return new io.vertx.core.json.JsonObject(body);
+                    // if wrapped
+                    return new io.vertx.core.json.JsonObject().put("result", new io.vertx.core.json.JsonArray(body));
+                }
+            }
+        } catch (Exception ignore) {}
+        try {
+            // Fallback: list all (deep) and recursively pick matching idShortPath
+            var all = traversal.listElements(apiUrl, smId, "all", null, headers).await().indefinitely();
+            if (all.statusCode() >= 200 && all.statusCode() < 300) {
+                String body = all.bodyAsString();
+                io.vertx.core.json.JsonArray root = body != null && body.trim().startsWith("{")
+                        ? new io.vertx.core.json.JsonObject(body).getJsonArray("result", new io.vertx.core.json.JsonArray())
+                        : new io.vertx.core.json.JsonArray(body);
+
+                io.vertx.core.json.JsonObject found = findElementByPathRecursive(root, idShortPath);
+                if (found != null) return found;
+            }
+        } catch (Exception ignore) {}
+        return null;
+    }
+
+    private io.vertx.core.json.JsonObject findElementByPathRecursive(io.vertx.core.json.JsonArray elements, String targetPath) {
+        if (elements == null) return null;
+        for (int i = 0; i < elements.size(); i++) {
+            var el = elements.getJsonObject(i);
+            if (el == null) continue;
+            String idShort = el.getString("idShort");
+            if (idShort == null || idShort.isBlank()) continue;
+            // Start recursive descent from this element
+            var found = descendAndMatch(el, idShort, targetPath);
+            if (found != null) return found;
+        }
+        return null;
+    }
+
+    private io.vertx.core.json.JsonObject descendAndMatch(io.vertx.core.json.JsonObject element, String currentPath, String targetPath) {
+        if (targetPath.equals(currentPath)) return element;
+        String modelType = element.getString("modelType");
+        // Collections and Lists: values are arrays of child elements
+        if ("SubmodelElementCollection".equalsIgnoreCase(modelType) || "SubmodelElementList".equalsIgnoreCase(modelType)) {
+            var value = element.getValue("value");
+            if (value instanceof io.vertx.core.json.JsonArray arr) {
+                for (int i = 0; i < arr.size(); i++) {
+                    var child = arr.getJsonObject(i);
+                    if (child == null) continue;
+                    String childIdShort = child.getString("idShort");
+                    if (childIdShort == null) continue;
+                    String childPath = currentPath + "/" + childIdShort;
+                    var found = descendAndMatch(child, childPath, targetPath);
+                    if (found != null) return found;
+                }
+            }
+        }
+        return null;
+    }
+
+    @GET
+    @Path("/submodels/{smId}/elements/{path:.+}")
+    public Response getElement(@PathParam("sourceSystemId") Long sourceSystemId,
+                               @PathParam("smId") String smId,
+                               @PathParam("path") String path,
+                               @QueryParam("source") @DefaultValue("LIVE") String source) {
+        SourceSystem ss = SourceSystem.<SourceSystem>findByIdOptional(sourceSystemId).orElse(null);
+        ss = aasService.validateAasSource(ss);
+        if ("LIVE".equalsIgnoreCase(source)) {
+            var headers = headerBuilder.buildMergedHeaders(ss, de.unistuttgart.stayinsync.core.configuration.service.aas.HttpHeaderBuilder.Mode.READ);
+            var resp = traversal.getElement(ss.apiUrl, smId, path, headers).await().indefinitely();
+            int sc = resp.statusCode();
+            if (sc >= 200 && sc < 300) {
+                return Response.ok(resp.bodyAsString()).build();
+            }
+            var resolved = resolveElementDeep(ss.apiUrl, smId, path, headers);
+            if (resolved != null) return Response.ok(resolved.encode()).build();
+            return Response.status(sc).entity(resp.bodyAsString()).build();
+        }
+        // SNAPSHOT
+        String normalizedSmId = normalizeSubmodelId(smId);
+        var submodel = AasSubmodelLite.<AasSubmodelLite>find("sourceSystem.id = ?1 and submodelId = ?2", sourceSystemId, normalizedSmId).firstResult();
+        if (submodel == null) return Response.status(Response.Status.NOT_FOUND).entity("Submodel not found in snapshot").build();
+        var el = AasElementLite.<AasElementLite>find("submodelLite.id = ?1 and idShortPath = ?2", submodel.id, path).firstResult();
+        if (el == null) return Response.status(Response.Status.NOT_FOUND).entity("Element not found in snapshot").build();
+        io.vertx.core.json.JsonObject json = new io.vertx.core.json.JsonObject()
+                .put("idShort", el.idShort)
+                .put("idShortPath", el.idShortPath)
+                .put("modelType", el.modelType)
+                .put("valueType", el.valueType)
+                .put("semanticId", el.semanticId);
+        return Response.ok(json.encode()).build();
+    }
+
     private String normalizeSubmodelId(String smId) {
         if (smId == null) return null;
         try {
@@ -352,6 +573,40 @@ public class AasResource {
     public Response refreshSnapshot(@PathParam("sourceSystemId") Long sourceSystemId) {
         snapshotService.refreshSnapshot(sourceSystemId);
         return Response.accepted().build();
+    }
+
+    @POST
+    @Path("/upload")
+    @Consumes(MediaType.MULTIPART_FORM_DATA)
+    @Produces(MediaType.APPLICATION_JSON)
+    @Operation(summary = "Upload a standard AASX file and ingest its submodels/elements into the snapshot")
+    @APIResponses({
+            @APIResponse(responseCode = "202", description = "Upload accepted, snapshot ingestion started"),
+            @APIResponse(responseCode = "400", description = "Invalid AASX"),
+            @APIResponse(responseCode = "409", description = "Duplicate IDs detected for this source system")
+    })
+    public Response uploadAasx(
+            @PathParam("sourceSystemId") Long sourceSystemId,
+            @RequestBody(required = true,
+                    content = @Content(mediaType = MediaType.MULTIPART_FORM_DATA,
+                            schema = @Schema(implementation = Object.class)))
+            @RestForm("file") FileUpload file
+    ) {
+        try {
+            if (file == null || file.size() == 0) {
+                return Response.status(Response.Status.BAD_REQUEST).entity("Missing file").build();
+            }
+            String filename = file.fileName();
+            byte[] fileBytes = Files.readAllBytes(file.uploadedFile());
+            snapshotService.ingestAasx(sourceSystemId, filename, fileBytes);
+            return Response.accepted().build();
+        } catch (java.io.IOException ioe) {
+            return Response.status(Response.Status.BAD_REQUEST).entity("Failed to read uploaded file").build();
+        } catch (de.unistuttgart.stayinsync.core.configuration.service.aas.AasStructureSnapshotService.DuplicateIdException e) {
+            return Response.status(Response.Status.CONFLICT).entity(e.getMessage()).build();
+        } catch (de.unistuttgart.stayinsync.core.configuration.service.aas.AasStructureSnapshotService.InvalidAasxException e) {
+            return Response.status(Response.Status.BAD_REQUEST).entity(e.getMessage()).build();
+        }
     }
 }
 
