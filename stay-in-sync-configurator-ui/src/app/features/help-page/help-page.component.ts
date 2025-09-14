@@ -29,6 +29,10 @@ import {NgIf} from '@angular/common';
   styleUrl: './help-page.component.css'
 })
 export class HelpPageComponent implements OnInit {
+
+  darkModeEnabled: boolean = false;
+
+
   /** Path to the markdown file to be displayed */
   markdownPath = '';
 
@@ -251,5 +255,12 @@ export class HelpPageComponent implements OnInit {
         ]
       }
     ];
+  }
+
+  toggleDarkMode() {
+    const element = document.querySelector('html');
+    if (element) {
+      element.classList.toggle('my-app-dark');
+    }
   }
 }
