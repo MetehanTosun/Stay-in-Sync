@@ -27,6 +27,15 @@ import {ManageApiHeadersComponent} from '../manage-api-headers/manage-api-header
 import {HttpErrorService} from '../../../../core/services/http-error.service';
 import {AasService} from '../../services/aas.service';
 
+interface ElementLivePanel {
+  label: string;
+  type: string;
+  value?: any;
+  valueType?: string;
+  min?: any;
+  max?: any;
+}
+
 /**
  * Component for creating or editing a Source System.
  * Provides a stepper UI for metadata, API headers, and endpoints configuration.
@@ -464,7 +473,7 @@ save(): void {
   // Lazy tree state for elements
   elementsBySubmodel: Record<string, any[]> = {};
   childrenLoading: Record<string, boolean> = {};
-  selectedLivePanel: { label: string; type: string; value?: any; valueType?: string } | null = null;
+  selectedLivePanel: ElementLivePanel | null = null;
   selectedLiveLoading = false;
   selectedNode?: TreeNode;
 
@@ -575,12 +584,16 @@ save(): void {
       next: (found: any) => {
         this.selectedLiveLoading = false;
         const liveType = found?.modelType || (found?.valueType ? 'Property' : undefined);
+        const minValue = (found as any).min ?? (found as any).minValue;
+        const maxValue = (found as any).max ?? (found as any).maxValue;
         this.selectedLivePanel = {
           label: liveType ? `${found.idShort} (${liveType})` : found.idShort,
           type: liveType || 'Unknown',
           value: (found as any).value,
-          valueType: (found as any).valueType
-        };
+          valueType: (found as any).valueType,
+          min: minValue,
+          max: maxValue
+        } as any;
         if (node && node.data) {
           const computedPath = safePath;
           node.data.idShortPath = computedPath;
@@ -598,12 +611,16 @@ save(): void {
               const found2 = list.find((el: any) => el.idShort === last);
               if (found2) {
                 const liveType = found2?.modelType || (found2?.valueType ? 'Property' : undefined);
+                const minValue = (found2 as any).min ?? (found2 as any).minValue;
+                const maxValue = (found2 as any).max ?? (found2 as any).maxValue;
                 this.selectedLivePanel = {
                   label: liveType ? `${found2.idShort} (${liveType})` : found2.idShort,
                   type: liveType || 'Unknown',
                   value: (found2 as any).value,
-                  valueType: (found2 as any).valueType
-                };
+                  valueType: (found2 as any).valueType,
+                  min: minValue,
+                  max: maxValue
+                } as any;
               } else {
                 this.selectedLivePanel = { label: last, type: 'Unknown' };
               }

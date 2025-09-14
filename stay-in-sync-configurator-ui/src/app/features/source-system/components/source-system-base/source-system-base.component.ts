@@ -33,6 +33,15 @@ import { SourceSystemEndpointResourceService } from '../../service/sourceSystemE
 import { AasService } from '../../services/aas.service';
 import { TreeNode } from 'primeng/api';
 
+interface AasElementLivePanel {
+  label: string;
+  type: string;
+  value?: any;
+  valueType?: string;
+  min?: any;
+  max?: any;
+}
+
 /**
  * Base component for displaying, creating, and managing source systems.
  * Provides comprehensive functionality for listing, searching, creating, editing,
@@ -112,7 +121,7 @@ export class SourceSystemBaseComponent implements OnInit, OnDestroy {
   aasTestLoading = false;
   aasTestError: string | null = null;
   selectedAasNode?: TreeNode;
-  aasSelectedLivePanel: { label: string; type: string; value?: any; valueType?: string } | null = null;
+  aasSelectedLivePanel: AasElementLivePanel | null = null;
   aasSelectedLiveLoading = false;
   showAasValueDialog = false;
   aasValueSubmodelId = '';
@@ -648,12 +657,16 @@ export class SourceSystemBaseComponent implements OnInit, OnDestroy {
       next: (found: any) => {
         this.aasSelectedLiveLoading = false;
         const liveType = found?.modelType || (found?.valueType ? 'Property' : undefined);
+        const minValue = (found as any).min ?? (found as any).minValue;
+        const maxValue = (found as any).max ?? (found as any).maxValue;
         this.aasSelectedLivePanel = {
           label: liveType ? `${found.idShort} (${liveType})` : found.idShort,
           type: liveType || 'Unknown',
           value: (found as any).value,
-          valueType: (found as any).valueType
-        };
+          valueType: (found as any).valueType,
+          min: minValue,
+          max: maxValue
+        } as any;
         if (node && node.data) {
           const computedPath = safePath;
           node.data.idShortPath = computedPath;
@@ -671,12 +684,16 @@ export class SourceSystemBaseComponent implements OnInit, OnDestroy {
               const found2 = list.find((el: any) => el.idShort === last);
               if (found2) {
                 const liveType = found2?.modelType || (found2?.valueType ? 'Property' : undefined);
+                const minValue = (found2 as any).min ?? (found2 as any).minValue;
+                const maxValue = (found2 as any).max ?? (found2 as any).maxValue;
                 this.aasSelectedLivePanel = {
                   label: liveType ? `${found2.idShort} (${liveType})` : found2.idShort,
                   type: liveType || 'Unknown',
                   value: (found2 as any).value,
-                  valueType: (found2 as any).valueType
-                };
+                  valueType: (found2 as any).valueType,
+                  min: minValue,
+                  max: maxValue
+                } as any;
               } else {
                 this.aasSelectedLivePanel = { label: last, type: 'Unknown' } as any;
               }

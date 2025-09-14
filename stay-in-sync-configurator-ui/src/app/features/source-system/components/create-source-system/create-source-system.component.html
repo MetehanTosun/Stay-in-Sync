@@ -144,6 +144,10 @@
             <div><strong>Type:</strong> {{ selectedLivePanel.type }}</div>
             <div *ngIf="selectedLivePanel.valueType"><strong>valueType:</strong> {{ selectedLivePanel.valueType }}</div>
             <div *ngIf="selectedLivePanel.value !== undefined"><strong>value:</strong> {{ selectedLivePanel.value }}</div>
+            <div *ngIf="selectedLivePanel.type==='Range' || selectedLivePanel.min !== undefined || selectedLivePanel.max !== undefined">
+              <div><strong>min:</strong> {{ selectedLivePanel.min }}</div>
+              <div><strong>max:</strong> {{ selectedLivePanel.max }}</div>
+            </div>
           </div>
         </div>
       </div>

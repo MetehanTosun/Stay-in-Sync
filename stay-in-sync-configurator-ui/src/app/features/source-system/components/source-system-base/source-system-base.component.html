@@ -305,6 +305,10 @@
               <div><strong>Type:</strong> {{ aasSelectedLivePanel.type }}</div>
               <div *ngIf="aasSelectedLivePanel.valueType"><strong>valueType:</strong> {{ aasSelectedLivePanel.valueType }}</div>
               <div *ngIf="aasSelectedLivePanel.value !== undefined"><strong>value:</strong> {{ aasSelectedLivePanel.value }}</div>
+              <div *ngIf="aasSelectedLivePanel.type==='Range' || aasSelectedLivePanel.min !== undefined || aasSelectedLivePanel.max !== undefined">
+                <div><strong>min:</strong> {{ aasSelectedLivePanel.min }}</div>
+                <div><strong>max:</strong> {{ aasSelectedLivePanel.max }}</div>
+              </div>
             </div>
           </div>
         </div>
