@@ -6,7 +6,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import de.unistuttgart.graphengine.exception.GraphEvaluationException;
 import de.unistuttgart.graphengine.logic_engine.LogicGraphEvaluator;
-import de.unistuttgart.graphengine.logic_engine.GraphSnapshotCacheService;
+import de.unistuttgart.graphengine.service.GraphSnapshotCacheService;
 import de.unistuttgart.stayinsync.scriptengine.ScriptEngineService;
 import de.unistuttgart.stayinsync.scriptengine.message.TransformationResult;
 import de.unistuttgart.stayinsync.syncnode.SnapshotManagement.SnapshotFactory;

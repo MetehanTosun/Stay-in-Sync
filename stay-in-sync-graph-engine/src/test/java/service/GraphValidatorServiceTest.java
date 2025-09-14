@@ -1,9 +1,9 @@
-package de.unistuttgart.stayinsync.core.service.transformationrule;
+package service;
 
 import de.unistuttgart.graphengine.exception.NodeConfigurationException;
 import de.unistuttgart.graphengine.logic_operator.LogicOperator;
 import de.unistuttgart.graphengine.nodes.*;
-import de.unistuttgart.stayinsync.core.configuration.service.transformationrule.GraphValidatorService;
+import de.unistuttgart.graphengine.service.GraphValidatorService;
 import de.unistuttgart.graphengine.validation_error.ConfigNodeError;
 import de.unistuttgart.graphengine.validation_error.CycleError;
 import de.unistuttgart.graphengine.validation_error.FinalNodeError;

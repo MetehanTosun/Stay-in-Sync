@@ -1,4 +1,4 @@
-package de.unistuttgart.stayinsync.core.configuration.service.transformationrule;
+package de.unistuttgart.graphengine.service;
 
 import de.unistuttgart.graphengine.exception.OperatorValidationException;
 import de.unistuttgart.graphengine.validation_error.*;

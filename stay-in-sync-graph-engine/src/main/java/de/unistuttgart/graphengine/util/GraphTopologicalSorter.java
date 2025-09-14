@@ -2,7 +2,7 @@ package de.unistuttgart.graphengine.util;
 
 import de.unistuttgart.graphengine.nodes.Node;
 import jakarta.enterprise.context.ApplicationScoped;
-import org.jboss.logging.Logger;
+import io.quarkus.logging.Log;
 
 import java.util.*;
 
@@ -12,8 +12,6 @@ import java.util.*;
  */
 @ApplicationScoped
 public class GraphTopologicalSorter {
-
-    private static final Logger logger = Logger.getLogger(GraphTopologicalSorter.class);
 
     /**
      * A record to hold the result of the sorting process, containing the
@@ -29,21 +27,21 @@ public class GraphTopologicalSorter {
      * @return A {@link SortResult} containing the sorted list, a cycle flag, and cycle node IDs.
      */
     public SortResult sort(List<Node> graphNodes) {
-        logger.debugf("Starting topological sort for a graph with %d nodes.", graphNodes.size());
+        Log.debugf("Starting topological sort for a graph with %d nodes.", graphNodes.size());
         Map<Node, Integer> nodeInDegree = new HashMap<>();
         Map<Node, List<Node>> childrenList = new HashMap<>();
         Queue<Node> queue = new LinkedList<>();
         List<Node> sortedList = new ArrayList<>();
 
         // Initialization
-        logger.debug("Pass 1: Initializing in-degree and adjacency maps.");
+        Log.debug("Pass 1: Initializing in-degree and adjacency maps.");
         for (Node node : graphNodes) {
             nodeInDegree.put(node, 0);
             childrenList.put(node, new ArrayList<>());
         }
 
         // Dependency Analysis
-        logger.debug("Pass 2: Analyzing dependencies to populate in-degrees and children.");
+        Log.debug("Pass 2: Analyzing dependencies to populate in-degrees and children.");
         for (Node currentNode : graphNodes) {
             if (currentNode.getInputNodes() != null) {
                 nodeInDegree.put(currentNode, currentNode.getInputNodes().size());
@@ -56,16 +54,16 @@ public class GraphTopologicalSorter {
         }
 
         // Find Initial Nodes
-        logger.debug("Pass 3: Finding initial nodes with an in-degree of 0.");
+        Log.debug("Pass 3: Finding initial nodes with an in-degree of 0.");
         for (Map.Entry<Node, Integer> entry : nodeInDegree.entrySet()) {
             if (entry.getValue() == 0) {
                 queue.add(entry.getKey());
             }
         }
-        logger.debugf("Found %d initial nodes to start the sort.", queue.size());
+        Log.debugf("Found %d initial nodes to start the sort.", queue.size());
 
         // Perform Topological Sort
-        logger.debug("Pass 4: Performing topological sort by processing the queue.");
+        Log.debug("Pass 4: Performing topological sort by processing the queue.");
         while (!queue.isEmpty()) {
             Node node = queue.poll();
             sortedList.add(node);
@@ -77,24 +75,24 @@ public class GraphTopologicalSorter {
                 }
             }
         }
-        logger.debugf("Finished processing queue. Sorted list contains %d nodes.", sortedList.size());
+        Log.debugf("Finished processing queue. Sorted list contains %d nodes.", sortedList.size());
 
         // --- Cycle Detection & Node Identification ---
         boolean hasCycle = sortedList.size() != graphNodes.size();
         List<Integer> cycleNodeIds = new ArrayList<>();
 
         if (hasCycle) {
-            logger.warnf("Cycle detected in the graph! Total nodes: %d, sorted nodes: %d.", graphNodes.size(), sortedList.size());
+            Log.warnf("Cycle detected in the graph! Total nodes: %d, sorted nodes: %d.", graphNodes.size(), sortedList.size());
             // If a cycle exists, any node with a remaining in-degree > 0 is part of it.
             for (Map.Entry<Node, Integer> entry : nodeInDegree.entrySet()) {
                 if (entry.getValue() > 0) {
                     cycleNodeIds.add(entry.getKey().getId());
                 }
             }
-            logger.warnf("Identified %d nodes as part of the cycle: %s", cycleNodeIds.size(), cycleNodeIds);
+            Log.warnf("Identified %d nodes as part of the cycle: %s", cycleNodeIds.size(), cycleNodeIds);
         }
 
-        logger.infof("Topological sort completed. Has cycle: %b. Sorted nodes: %d.", hasCycle, sortedList.size());
+        Log.infof("Topological sort completed. Has cycle: %b. Sorted nodes: %d.", hasCycle, sortedList.size());
         return new SortResult(sortedList, hasCycle, cycleNodeIds);
     }
 }

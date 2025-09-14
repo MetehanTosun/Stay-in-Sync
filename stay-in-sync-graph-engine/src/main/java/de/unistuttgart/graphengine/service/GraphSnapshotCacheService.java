@@ -1,4 +1,4 @@
-package de.unistuttgart.graphengine.logic_engine;
+package de.unistuttgart.graphengine.service;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import jakarta.enterprise.context.ApplicationScoped;

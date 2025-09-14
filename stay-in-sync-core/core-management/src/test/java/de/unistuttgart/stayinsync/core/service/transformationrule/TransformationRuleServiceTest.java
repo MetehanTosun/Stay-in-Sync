@@ -10,7 +10,7 @@ import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.LogicG
 import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.TransformationRule;
 import de.unistuttgart.stayinsync.core.configuration.exception.CoreManagementException;
 import de.unistuttgart.stayinsync.core.configuration.service.transformationrule.GraphStorageService;
-import de.unistuttgart.stayinsync.core.configuration.service.transformationrule.GraphValidatorService;
+import de.unistuttgart.graphengine.service.GraphValidatorService;
 import de.unistuttgart.stayinsync.core.configuration.service.transformationrule.TransformationRuleService;
 import de.unistuttgart.graphengine.validation_error.GraphStatus;
 import de.unistuttgart.graphengine.validation_error.ValidationError;
