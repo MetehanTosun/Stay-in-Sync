@@ -273,6 +273,13 @@ export class GraphPanelComponent implements AfterViewInit {
             tooltip.style('visibility', 'hidden');
           });
       }
+      d3.select(this)
+        .append('text')
+        .attr('dy', 35)          // Abstand nach unten
+        .attr('text-anchor', 'middle')
+        .text(d.label ?? d.id)   // Label oder ID anzeigen
+        .style('font-size', '12px')
+        .style('fill', '#333');
     });
 
     // Klick-Handler für Nodes mit Status "error"

@@ -1,14 +1,82 @@
-import { Component } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
+import { SafeUrlPipe } from './safe.url.pipe';
+import { ActivatedRoute } from '@angular/router';
+import { TransformationService } from '../../core/services/transformation.service';
 
 @Component({
   selector: 'app-metrics-panel',
-  imports: [],
+  standalone: true,
+  imports: [SafeUrlPipe],
   templateUrl: './metrics-panel.component.html',
-  styleUrl: './metrics-panel.component.css'
+  styleUrls: ['./metrics-panel.component.css']
 })
-export class MetricsPanelComponent {
+export class MetricsPanelComponent implements OnInit {
 
-  selectedSyncJobId = '5678';
-  grafanaUrl = `http://grafana.example.com/d/abcd1234/metrics?var-syncJobId=${this.selectedSyncJobId}`;
+  selectedNodeId!: string;
+  isPollingNode: boolean = false;
+  pollingNodeName: string = '';
+  transformationIds: (number | undefined)[] = [];
+  grafanaUrl: string = '';
 
+  constructor(
+    private route: ActivatedRoute,
+    private transformationService: TransformationService
+  ) {}
+
+  ngOnInit(): void {
+    this.route.queryParams.subscribe(params => {
+      this.selectedNodeId = params['input'] || '';
+
+      if (!this.selectedNodeId) {
+        // Keine Node ausgewählt, Standard-URL bauen
+        this.buildGrafanaUrl();
+        return;
+      }
+
+      // Prüfen, ob es ein PollingNode ist
+      if (this.selectedNodeId.startsWith('POLL_')) {
+        this.isPollingNode = true;
+        this.pollingNodeName = this.selectedNodeId.replace('POLL_', '');
+        this.buildGrafanaUrl();
+      } else {
+        // Standard: Transformationen holen
+        this.isPollingNode = false;
+        this.loadTransformationsAndBuildUrl(this.selectedNodeId);
+      }
+    });
+  }
+
+  private loadTransformationsAndBuildUrl(nodeId: string) {
+    this.transformationService.getTransformations(nodeId).subscribe({
+      next: (transformations) => {
+        this.transformationIds = transformations.map(t => t.id);
+        this.buildGrafanaUrl();
+      },
+      error: (err) => {
+        console.error('Fehler beim Laden der Transformationen', err);
+        this.buildGrafanaUrl(); // URL trotzdem bauen
+      }
+    });
+  }
+
+  private buildGrafanaUrl() {
+    const baseUrl = 'http://localhost:3000/d/c0d04c42-641e-438b-8592-f1ca577899dd/quarkus-service-monitoring';
+    const orgId = 1;
+    const from = Date.now() - 60 * 60 * 1000; // letzte Stunde
+    const to = Date.now();
+    const refresh = 'auto';
+
+    let urlParams = `orgId=${orgId}&from=${from}&to=${to}&refresh=${refresh}&theme=light`;
+
+    if (this.isPollingNode) {
+      // PollingNode-Parameter
+      urlParams += `&var-${this.pollingNodeName}=1`;
+    } else if (this.transformationIds.length > 0) {
+      // Transformation IDs
+      urlParams += '&' + this.transformationIds.map(id => `var-transformationId=${id}`).join('&');
+    }
+
+    this.grafanaUrl = `${baseUrl}?${urlParams}`;
+    console.log('Grafana URL:', this.grafanaUrl);
+  }
 }

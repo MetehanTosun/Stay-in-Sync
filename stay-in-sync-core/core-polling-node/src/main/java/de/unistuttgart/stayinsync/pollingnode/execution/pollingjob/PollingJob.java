@@ -10,6 +10,8 @@ import de.unistuttgart.stayinsync.pollingnode.execution.ressource.RequestBuilder
 import de.unistuttgart.stayinsync.pollingnode.execution.ressource.RestClient;
 import de.unistuttgart.stayinsync.pollingnode.rabbitmq.SyncDataProducer;
 import de.unistuttgart.stayinsync.transport.dto.SyncDataMessageDTO;
+import io.micrometer.core.instrument.Counter;
+import io.micrometer.core.instrument.MeterRegistry;
 import io.quarkus.logging.Log;
 import io.vertx.core.json.JsonObject;
 
@@ -32,10 +34,14 @@ public class PollingJob implements Job {
     @Inject
     SyncDataProducer syncDataProducer;
 
+    @Inject
+    MeterRegistry registry;
+
     public PollingJob() {
         restClient = CDI.current().select(RestClient.class).get();
         syncDataProducer = CDI.current().select(SyncDataProducer.class).get();
         requestBuilder = CDI.current().select(RequestBuilder.class).get();
+        this.registry = CDI.current().select(MeterRegistry.class).get();
     }
 
     /**
@@ -52,6 +58,11 @@ public class PollingJob implements Job {
             Log.errorf(exceptionMessage);
             throw new JobExecutionException(exceptionMessage);
         }
+
+        if (pollingJobDetails.workerPodName() != null){
+            requestCounter(pollingJobDetails.workerPodName()).increment();
+        }
+
         try {
            final JsonObject jsonObject = restClient.pollJsonObjectFromApi(requestBuilder.buildRequest(pollingJobDetails.requestBuildingDetails()));
            syncDataProducer.setupRequestConfigurationStream(pollingJobDetails);
@@ -84,4 +95,16 @@ public class PollingJob implements Job {
     private SyncDataMessageDTO convertJsonObjectToSyncDataMessageDTO(final PollingJobDetails pollingJobDetails, final JsonObject jsonObject) {
         return new SyncDataMessageDTO(pollingJobDetails.name(), pollingJobDetails.id(), jsonObject.getMap());
     }
+
+   /**
+    * Gibt einen Counter für die Anzahl der Polling-Requests zurück.
+    * Der Counter wird mit dem Namen des Polling-Nodes als Label versehen.
+    *
+    * @param pollingNode Name des Polling-Nodes
+    * @return Counter für die Metrik "polling_requests_total"
+    */
+   private Counter requestCounter(String pollingNode) {
+       return registry.counter("polling_requests_total", "pollingNode", pollingNode);
+   }
+
 }
