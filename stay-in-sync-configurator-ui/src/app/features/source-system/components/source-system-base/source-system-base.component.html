@@ -309,6 +309,26 @@
                 <div><strong>min:</strong> {{ aasSelectedLivePanel.min }}</div>
                 <div><strong>max:</strong> {{ aasSelectedLivePanel.max }}</div>
               </div>
+              <div *ngIf="aasSelectedLivePanel.type==='Operation'">
+                <div *ngIf="aasSelectedLivePanel.inputVariables?.length">
+                  <strong>Inputs:</strong>
+                  <ul style="margin:.25rem 0 .5rem 1rem;">
+                    <li *ngFor="let v of aasSelectedLivePanel.inputVariables">{{ v.idShort }} <span *ngIf="v.valueType">({{ v.valueType }})</span></li>
+                  </ul>
+                </div>
+                <div *ngIf="aasSelectedLivePanel.inoutputVariables?.length">
+                  <strong>In/Out:</strong>
+                  <ul style="margin:.25rem 0 .5rem 1rem;">
+                    <li *ngFor="let v of aasSelectedLivePanel.inoutputVariables">{{ v.idShort }} <span *ngIf="v.valueType">({{ v.valueType }})</span></li>
+                  </ul>
+                </div>
+                <div *ngIf="aasSelectedLivePanel.outputVariables?.length">
+                  <strong>Outputs:</strong>
+                  <ul style="margin:.25rem 0 .5rem 1rem;">
+                    <li *ngFor="let v of aasSelectedLivePanel.outputVariables">{{ v.idShort }} <span *ngIf="v.valueType">({{ v.valueType }})</span></li>
+                  </ul>
+                </div>
+              </div>
             </div>
           </div>
         </div>

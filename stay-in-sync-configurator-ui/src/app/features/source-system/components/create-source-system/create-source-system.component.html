@@ -148,6 +148,26 @@
               <div><strong>min:</strong> {{ selectedLivePanel.min }}</div>
               <div><strong>max:</strong> {{ selectedLivePanel.max }}</div>
             </div>
+            <div *ngIf="selectedLivePanel.type==='Operation'">
+              <div *ngIf="selectedLivePanel.inputVariables?.length">
+                <strong>Inputs:</strong>
+                <ul style="margin:.25rem 0 .5rem 1rem;">
+                  <li *ngFor="let v of selectedLivePanel.inputVariables">{{ v.idShort }} <span *ngIf="v.valueType">({{ v.valueType }})</span></li>
+                </ul>
+              </div>
+              <div *ngIf="selectedLivePanel.inoutputVariables?.length">
+                <strong>In/Out:</strong>
+                <ul style="margin:.25rem 0 .5rem 1rem;">
+                  <li *ngFor="let v of selectedLivePanel.inoutputVariables">{{ v.idShort }} <span *ngIf="v.valueType">({{ v.valueType }})</span></li>
+                </ul>
+              </div>
+              <div *ngIf="selectedLivePanel.outputVariables?.length">
+                <strong>Outputs:</strong>
+                <ul style="margin:.25rem 0 .5rem 1rem;">
+                  <li *ngFor="let v of selectedLivePanel.outputVariables">{{ v.idShort }} <span *ngIf="v.valueType">({{ v.valueType }})</span></li>
+                </ul>
+              </div>
+            </div>
           </div>
         </div>
       </div>

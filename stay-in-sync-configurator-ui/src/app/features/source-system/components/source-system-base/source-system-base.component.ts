@@ -33,6 +33,7 @@ import { SourceSystemEndpointResourceService } from '../../service/sourceSystemE
 import { AasService } from '../../services/aas.service';
 import { TreeNode } from 'primeng/api';
 
+interface AasOperationVarView { idShort: string; modelType?: string; valueType?: string }
 interface AasElementLivePanel {
   label: string;
   type: string;
@@ -40,6 +41,9 @@ interface AasElementLivePanel {
   valueType?: string;
   min?: any;
   max?: any;
+  inputVariables?: AasOperationVarView[];
+  outputVariables?: AasOperationVarView[];
+  inoutputVariables?: AasOperationVarView[];
 }
 
 /**
@@ -659,13 +663,25 @@ export class SourceSystemBaseComponent implements OnInit, OnDestroy {
         const liveType = found?.modelType || (found?.valueType ? 'Property' : undefined);
         const minValue = (found as any).min ?? (found as any).minValue;
         const maxValue = (found as any).max ?? (found as any).maxValue;
+        const inputVars = Array.isArray((found as any).inputVariables) ? (found as any).inputVariables : [];
+        const outputVars = Array.isArray((found as any).outputVariables) ? (found as any).outputVariables : [];
+        const inoutVars = Array.isArray((found as any).inoutputVariables) ? (found as any).inoutputVariables : [];
+        const mapVar = (v: any): AasOperationVarView | null => {
+          const val = v?.value ?? v;
+          const idShort = val?.idShort;
+          if (!idShort) return null;
+          return { idShort, modelType: val?.modelType, valueType: val?.valueType };
+        };
         this.aasSelectedLivePanel = {
           label: liveType ? `${found.idShort} (${liveType})` : found.idShort,
           type: liveType || 'Unknown',
           value: (found as any).value,
           valueType: (found as any).valueType,
           min: minValue,
-          max: maxValue
+          max: maxValue,
+          inputVariables: inputVars.map(mapVar).filter(Boolean) as AasOperationVarView[],
+          outputVariables: outputVars.map(mapVar).filter(Boolean) as AasOperationVarView[],
+          inoutputVariables: inoutVars.map(mapVar).filter(Boolean) as AasOperationVarView[]
         } as any;
         if (node && node.data) {
           const computedPath = safePath;
@@ -686,13 +702,25 @@ export class SourceSystemBaseComponent implements OnInit, OnDestroy {
                 const liveType = found2?.modelType || (found2?.valueType ? 'Property' : undefined);
                 const minValue = (found2 as any).min ?? (found2 as any).minValue;
                 const maxValue = (found2 as any).max ?? (found2 as any).maxValue;
+                const inputVars2 = Array.isArray((found2 as any).inputVariables) ? (found2 as any).inputVariables : [];
+                const outputVars2 = Array.isArray((found2 as any).outputVariables) ? (found2 as any).outputVariables : [];
+                const inoutVars2 = Array.isArray((found2 as any).inoutputVariables) ? (found2 as any).inoutputVariables : [];
+                const mapVar2 = (v: any): AasOperationVarView | null => {
+                  const val = v?.value ?? v;
+                  const idShort = val?.idShort;
+                  if (!idShort) return null;
+                  return { idShort, modelType: val?.modelType, valueType: val?.valueType };
+                };
                 this.aasSelectedLivePanel = {
                   label: liveType ? `${found2.idShort} (${liveType})` : found2.idShort,
                   type: liveType || 'Unknown',
                   value: (found2 as any).value,
                   valueType: (found2 as any).valueType,
                   min: minValue,
-                  max: maxValue
+                  max: maxValue,
+                  inputVariables: inputVars2.map(mapVar2).filter(Boolean) as AasOperationVarView[],
+                  outputVariables: outputVars2.map(mapVar2).filter(Boolean) as AasOperationVarView[],
+                  inoutputVariables: inoutVars2.map(mapVar2).filter(Boolean) as AasOperationVarView[]
                 } as any;
               } else {
                 this.aasSelectedLivePanel = { label: last, type: 'Unknown' } as any;
