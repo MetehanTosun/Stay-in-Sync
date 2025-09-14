@@ -58,13 +58,14 @@
           <app-job-status-tag [status]="rowData.deploymentStatus" (click)="toggleDeploymentStatus(rowData)"></app-job-status-tag>
         </td>
         <td>
-          <p-select [options]="transformationsRules"
+          <p-select [options]="getSelectableTransformationRules(rowData)"
                     optionValue="id"
                     optionLabel="name" [filter]="true"
                     filterBy="name" [showClear]="true"
+                    optionDisabled="disabled"
                     placeholder="Select a Rule"
                     class="w-full md:w-56"
-                    [(ngModel)]="rowData.transformationRuleId"
+                    [(ngModel)]="rowData.transformationRule.id"
                     (ngModelChange)="onRuleChange($event, rowData)">
             <ng-template #selectedItem let-selectedOption>
               <div class="flex items-center gap-2">

@@ -16,6 +16,7 @@ import de.unistuttgart.stayinsync.transport.domain.JobDeploymentStatus;
 import io.quarkus.logging.Log;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
+import jakarta.persistence.EntityManager;
 import jakarta.transaction.Transactional;
 import jakarta.ws.rs.core.Response;
 import org.eclipse.microprofile.reactive.messaging.Channel;
@@ -45,6 +46,9 @@ public class TransformationService {
 
     @Inject
     GraphStorageService graphStorageService;
+
+    @Inject
+    EntityManager entityManager;
 
     @Inject
     TransformationJobMessageProducer transformationMessageProducer;
@@ -107,19 +111,19 @@ public class TransformationService {
         return transformation;
     }
 
-    public List<GetRequestConfigurationDTO> getTargetArcs(Long transformationId){
+    public List<GetRequestConfigurationDTO> getTargetArcs(Long transformationId) {
         Log.debugf("Getting Target ARCs for Transformation with id %d", transformationId);
 
         Transformation transformation = Transformation.<Transformation>findByIdOptional(transformationId)
                 .orElseThrow(() -> new CoreManagementException(Response.Status.NOT_FOUND, "Transformation not found", "Transformation with id %d not found.", transformationId));
 
         Set<TargetSystemApiRequestConfiguration> targetArcs = transformation.targetSystemApiRequestConfigurations;
-        List<TargetSystemApiRequestConfiguration> targetArcsToList =  targetArcs.stream().toList();
+        List<TargetSystemApiRequestConfiguration> targetArcsToList = targetArcs.stream().toList();
         return requestConfigurationMapper.mapToGetDTOList(targetArcsToList);
     }
 
     @Transactional
-    public TransformationDetailsDTO updateTargetArcs(Long transformationId, UpdateTransformationRequestConfigurationDTO dto){
+    public TransformationDetailsDTO updateTargetArcs(Long transformationId, UpdateTransformationRequestConfigurationDTO dto) {
         Log.debugf("Updating Target ARCs for Transformation with id %d", transformationId);
 
         Transformation transformation = Transformation.<Transformation>findByIdOptional(transformationId)
@@ -219,15 +223,24 @@ public class TransformationService {
     public void addRule(Long transformationId, Long ruleId) {
         TransformationRule ruleById = graphStorageService.findRuleById(ruleId);
         Transformation transformation = findByIdDirect(transformationId);
-        Log.infof("Removing rule with id %d to transformation with id %d", ruleId, transformationId);
+        Log.infof("Adding rule with id %d to transformation with id %d", ruleId, transformationId);
 
+        removeRule(transformationId);
         transformation.transformationRule = ruleById;
+        ruleById.transformation = transformation;
     }
 
     public void removeRule(Long transformationId) {
         Transformation transformation = findByIdDirect(transformationId);
         Log.infof("Removing rule from transformation with id %d", transformationId);
-        transformation.transformationRule = null;
+        if (transformation.transformationRule != null) {
+            TransformationRule transformationRule = transformation.transformationRule;
+
+            transformation.transformationRule.transformation = null;
+            transformation.transformationRule = null;
+
+            entityManager.flush();
+        }
     }
 
     private void deployAssociatedRequestConfigs(Transformation transformation) {
