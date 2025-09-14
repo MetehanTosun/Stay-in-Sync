@@ -5,7 +5,6 @@ import { FormsModule } from '@angular/forms';
 import {DatePipe, NgClass, NgForOf, NgIf} from '@angular/common';
 import { TableModule } from 'primeng/table';
 import { ActivatedRoute } from '@angular/router';
-import { NodeMarkerService } from '../../core/services/node-marker.service';
 import { Button } from 'primeng/button';
 import { TransformationService } from '../../core/services/transformation.service';
 import {DropdownModule} from 'primeng/dropdown'; // <-- neu
@@ -20,7 +19,6 @@ import {DropdownModule} from 'primeng/dropdown'; // <-- neu
     NgIf,
     TableModule,
     Button,
-    NgForOf,
     DropdownModule
   ],
   standalone: true
@@ -57,7 +55,6 @@ export class LogsPanelComponent implements OnInit, OnDestroy {
   constructor(
     private logService: LogService,
     private route: ActivatedRoute,
-    private nodeMarkerService: NodeMarkerService,
     private transformationService: TransformationService // <-- neu
   ) {}
 
@@ -75,10 +72,6 @@ export class LogsPanelComponent implements OnInit, OnDestroy {
       this.selectedNodeId = params['input'];
       this.fetchLogs();
     });
-
-    this.intervalId = window.setInterval(() => {
-      this.checkForErrorLogs();
-    }, 5000);
   }
 
   ngOnDestroy() {
@@ -182,17 +175,6 @@ export class LogsPanelComponent implements OnInit, OnDestroy {
 
   onFilterChange() {
     this.fetchLogs();
-  }
-
-  checkForErrorLogs() {
-    this.logService.getErrorLogs(this.toNanoSeconds(new Date(this.startTime)), this.toNanoSeconds(new Date())).subscribe({
-      next: errorIds => {
-        const markedNodes: { [nodeId: string]: boolean } = {};
-        errorIds.forEach(id => markedNodes[id] = true);
-        this.nodeMarkerService.updateMarkedNodes(markedNodes);
-      },
-      error: err => console.error('Error fetching error sync job IDs', err)
-    });
   }
 
   buildFallbackMessage(log: LogEntry): string {

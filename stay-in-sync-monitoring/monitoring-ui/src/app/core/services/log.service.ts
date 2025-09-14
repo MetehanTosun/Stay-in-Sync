@@ -43,17 +43,4 @@ export class LogService {
     return this.http.get<LogEntry[]>(this.baseUrl, { params });
   }
 
-  /**
-   * Liste der SyncJobs mit Error-Logs abrufen
-   */
-  getErrorLogs(
-    startTime: number,
-    endTime: number,
-  ): Observable<number[]> {
-    let params = new HttpParams()
-      .set('startTime', startTime)
-      .set('endTime', endTime);
-
-    return this.http.get<number[]>(`${this.baseUrl}/ErrorSyncJobIds`, { params });
-  }
 }

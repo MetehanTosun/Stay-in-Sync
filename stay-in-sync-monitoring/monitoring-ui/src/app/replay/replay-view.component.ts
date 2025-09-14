@@ -6,11 +6,16 @@ import { SnapshotDTO } from './models/snapshot.model';
 import { TransformationScriptDTO } from './models/transformation-script.model';
 import { ScriptService } from './script.service';
 import { SnapshotService } from './snapshot.service';
+import {LogService} from '../core/services/log.service';
+import {LogEntry} from '../core/models/log.model';
+import {PrimeTemplate} from 'primeng/api';
+import {TableModule} from 'primeng/table';
+import {Tab, TabList, TabPanel, TabPanels, Tabs} from 'primeng/tabs';
 
 @Component({
   selector: 'app-replay-view',
   standalone: true,
-  imports: [CommonModule, NgIf, JsonPipe],
+  imports: [CommonModule, NgIf, JsonPipe, PrimeTemplate, TableModule, Tabs, TabList, Tab, TabPanels, TabPanel],
   templateUrl: './replay-view.component.html',
   styleUrl: './replay-view.component.css',
 })
@@ -18,9 +23,9 @@ export class ReplayViewComponent implements OnInit {
   private route = inject(ActivatedRoute);
   private snapshots = inject(SnapshotService);
   private scripts = inject(ScriptService);
+  private logService = inject(LogService);
 
-  // tabs: 'source' | 'vars' | 'term'
-  activeTab: 'source' | 'vars' | 'term' = 'source';
+
 
   // UI state
   loading = signal<boolean>(true);
@@ -28,6 +33,7 @@ export class ReplayViewComponent implements OnInit {
   data = signal<SnapshotDTO | null>(null);
 
   scriptDisplay = '// loading TypeScript…';
+  logs: LogEntry[] = [];
 
   ngOnInit(): void {
     const id = this.route.snapshot.queryParamMap.get('snapshotId');
@@ -65,6 +71,21 @@ export class ReplayViewComponent implements OnInit {
             this.loading.set(false);
           },
         });
+
+        this.logService.getLogsByTransformations(
+          [transformationId.toString()],
+          this.toNanoSeconds(new Date(Date.now() - 5 * 60 * 1000)), // vor 5 Minuten
+          this.toNanoSeconds(new Date()), // jetzt
+          ""
+        ).subscribe({
+          next: (logs) => {
+            this.logs = logs;
+            console.log('Logs for transformation', transformationId, logs);
+          },
+          error: (err) => {
+            console.error('Failed to load logs for transformation', transformationId, err);
+          }
+        });
       },
       error: (e) => {
         this.error.set(`Failed to load snapshot: ${e?.message ?? e}`);
@@ -73,11 +94,12 @@ export class ReplayViewComponent implements OnInit {
     });
   }
 
-  setTab(tab: 'source' | 'vars' | 'term') {
-    this.activeTab = tab;
-  }
 
   onReplayClick() {
     // stub for later
+  }
+
+  private toNanoSeconds(date: Date) {
+    return date.getTime() * 1_000_000;
   }
 }
