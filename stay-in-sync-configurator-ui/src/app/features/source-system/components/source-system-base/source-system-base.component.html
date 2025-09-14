@@ -335,7 +335,11 @@
                 <div *ngIf="aasSelectedLivePanel.type==='AnnotatedRelationshipElement' && aasSelectedLivePanel.annotations?.length">
                   <strong>Annotations:</strong>
                   <ul style="margin:.25rem 0 .5rem 1rem;">
-                    <li *ngFor="let a of aasSelectedLivePanel.annotations">{{ a.idShort }}<span *ngIf="a.valueType"> ({{ a.valueType }})</span><span *ngIf="a.value !== undefined">: {{ a.value }}</span></li>
+                    <li *ngFor="let a of aasSelectedLivePanel.annotations; let i = index">
+                      <div><strong>{{ a.idShort || ('Annotation ' + (i+1)) }}</strong></div>
+                      <div *ngIf="a.valueType"><em>valueType:</em> {{ a.valueType }}</div>
+                      <div *ngIf="a.value !== undefined"><em>value:</em> {{ (a.value | json) }}</div>
+                    </li>
                   </ul>
                 </div>
               </div>
