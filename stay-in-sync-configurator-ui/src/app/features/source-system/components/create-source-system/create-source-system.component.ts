@@ -743,15 +743,9 @@ save(): void {
   }
 
   deleteSubmodel(submodelId: string): void {
-    if (!this.createdSourceSystemId || !submodelId) return;
-    const smIdB64 = this.aasService.encodeIdToBase64Url(submodelId);
-    this.aasService.deleteSubmodel(this.createdSourceSystemId, smIdB64).subscribe({
-      next: () => {
-        // refresh submodel list
-        this.discoverSubmodels();
-      },
-      error: (err) => this.errorService.handleError(err)
-    });
+    // route through confirmation dialog
+    this.deleteSubmodelId = submodelId;
+    this.showDeleteSubmodelDialog = true;
   }
 
   deleteElement(submodelId: string, idShortPath: string): void {
@@ -765,6 +759,29 @@ save(): void {
         this.refreshNodeLive(submodelId, parent, parentNode || undefined);
       },
       error: (err) => this.errorService.handleError(err)
+    });
+  }
+
+  // Delete Submodel confirmation
+  showDeleteSubmodelDialog = false;
+  deleteSubmodelId: string | null = null;
+  proceedDeleteSubmodel(): void {
+    if (!this.createdSourceSystemId || !this.deleteSubmodelId) {
+      this.showDeleteSubmodelDialog = false;
+      return;
+    }
+    const smIdB64 = this.aasService.encodeIdToBase64Url(this.deleteSubmodelId);
+    this.aasService.deleteSubmodel(this.createdSourceSystemId, smIdB64).subscribe({
+      next: () => {
+        this.showDeleteSubmodelDialog = false;
+        this.deleteSubmodelId = null;
+        this.discoverSubmodels();
+        this.messageService.add({ severity: 'success', summary: 'Submodel deleted', detail: 'Submodel, elements, and shell reference removed.' });
+      },
+      error: (err) => {
+        this.showDeleteSubmodelDialog = false;
+        this.errorService.handleError(err);
+      }
     });
   }
 

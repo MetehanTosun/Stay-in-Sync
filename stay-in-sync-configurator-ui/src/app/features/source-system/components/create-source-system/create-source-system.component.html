@@ -159,6 +159,14 @@
     </div>
   </ng-template>
 </p-dialog>
+<!-- Dialog: Confirm Delete Submodel -->
+<p-dialog header="Delete Submodel" [(visible)]="showDeleteSubmodelDialog" [modal]="true" [style]="{width:'32vw'}">
+  <p>Do you really want to delete this submodel? All its elements and the shell reference will be removed. This action cannot be undone.</p>
+  <ng-template pTemplate="footer">
+    <button pButton type="button" class="p-button-text" label="Cancel" (click)="showDeleteSubmodelDialog=false"></button>
+    <button pButton type="button" class="p-button-danger" label="Delete" (click)="proceedDeleteSubmodel()"></button>
+  </ng-template>
+</p-dialog>
 
 
 <!-- Dialog: Create Submodel -->

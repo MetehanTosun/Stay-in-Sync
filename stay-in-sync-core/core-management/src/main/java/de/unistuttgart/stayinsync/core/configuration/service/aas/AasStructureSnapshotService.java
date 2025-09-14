@@ -399,27 +399,27 @@ public class AasStructureSnapshotService {
         }
         if (id == null) return;
 
+        // Verify submodel exists upstream to avoid persisting stale refs
+        try {
+            String smIdB64 = toBase64Url(id);
+            var headers = headerBuilder.buildMergedHeaders(ss, HttpHeaderBuilder.Mode.READ);
+            HttpResponse<Buffer> smResp = traversalClient.getSubmodel(ss.apiUrl, smIdB64, headers).await().indefinitely();
+            if (smResp.statusCode() < 200 || smResp.statusCode() >= 300) {
+                Log.infof("Skip persisting submodel %s due to upstream status %d", id, smResp.statusCode());
+                return;
+            }
+            // Prefer authoritative payload from upstream
+            n = objectMapper.readTree(smResp.bodyAsString());
+        } catch (Exception e) {
+            Log.warnf(e, "Failed to verify submodel %s existence; skipping", id);
+            return;
+        }
+
         String idShort = textOrNull(n, "idShort");
         String semanticId = textOrNull(n, "semanticId");
         String kind = textOrNull(n, "kind");
 
-        if (idShort == null || semanticId == null || kind == null) {
-            try {
-                String smIdB64 = toBase64Url(id);
-                var headers = headerBuilder.buildMergedHeaders(ss, HttpHeaderBuilder.Mode.READ);
-                HttpResponse<Buffer> smResp = traversalClient.getSubmodel(ss.apiUrl, smIdB64, headers).await().indefinitely();
-                if (smResp.statusCode() >= 200 && smResp.statusCode() < 300) {
-                    JsonNode smNode = objectMapper.readTree(smResp.bodyAsString());
-                    if (smNode != null) {
-                        if (idShort == null) idShort = textOrNull(smNode, "idShort");
-                        if (semanticId == null) semanticId = textOrNull(smNode, "semanticId");
-                        if (kind == null) kind = textOrNull(smNode, "kind");
-                    }
-                }
-            } catch (Exception ex) {
-                Log.warnf(ex, "Could not enrich submodel %s", id);
-            }
-        }
+        // enrichment already done via authoritative payload above
 
         AasSubmodelLite sm = new AasSubmodelLite();
         sm.sourceSystem = ss;

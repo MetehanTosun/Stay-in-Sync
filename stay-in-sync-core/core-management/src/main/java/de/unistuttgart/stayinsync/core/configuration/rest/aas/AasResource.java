@@ -76,13 +76,57 @@ public class AasResource {
         ss = aasService.validateAasSource(ss);
         if ("LIVE".equalsIgnoreCase(source)) {
             var headers = headerBuilder.buildMergedHeaders(ss, de.unistuttgart.stayinsync.core.configuration.service.aas.HttpHeaderBuilder.Mode.READ);
-            Log.infof("List submodels LIVE: apiUrl=%s aasId=%s", ss.apiUrl, ss.aasId);
-            Log.debugf("LIVE headers: %s", headers);
-            return traversal.listSubmodels(ss.apiUrl, ss.aasId, headers).map(resp -> {
+            final String apiUrl = ss.apiUrl;
+            final String aasId = ss.aasId;
+            final java.util.Map<String,String> headersLive = headers;
+            Log.infof("List submodels LIVE: apiUrl=%s aasId=%s", apiUrl, aasId);
+            Log.debugf("LIVE headers: %s", headersLive);
+            return traversal.listSubmodels(apiUrl, aasId, headersLive).map(resp -> {
                 int sc = resp.statusCode();
                 Log.infof("List submodels upstream status=%d msg=%s", sc, resp.statusMessage());
                 if (sc >= 200 && sc < 300) {
-                    return Response.ok(resp.bodyAsString()).build();
+                    String body = resp.bodyAsString();
+                    try {
+                        // Filter out refs that point to non-existing submodels (404), to avoid stale entries
+                        io.vertx.core.json.JsonArray refs;
+                        boolean wrapped = false;
+                        if (body != null && body.trim().startsWith("{")) {
+                            io.vertx.core.json.JsonObject obj = new io.vertx.core.json.JsonObject(body);
+                            refs = obj.getJsonArray("result", new io.vertx.core.json.JsonArray());
+                            wrapped = true;
+                        } else {
+                            refs = new io.vertx.core.json.JsonArray(body);
+                        }
+                        io.vertx.core.json.JsonArray filtered = new io.vertx.core.json.JsonArray();
+                        for (int i = 0; i < refs.size(); i++) {
+                            var ref = refs.getJsonObject(i);
+                            var keys = ref.getJsonArray("keys");
+                            String smId = null;
+                            if (keys != null && !keys.isEmpty()) {
+                                var k0 = keys.getJsonObject(0);
+                                if ("Submodel".equalsIgnoreCase(k0.getString("type"))) {
+                                    smId = k0.getString("value");
+                                }
+                            }
+                            if (smId == null || smId.isBlank()) continue;
+                            var check = traversal.getSubmodel(apiUrl, smId, headersLive).await().indefinitely();
+                            int csc = check.statusCode();
+                            if (csc >= 200 && csc < 300) {
+                                filtered.add(ref);
+                            } else {
+                                Log.infof("Filtered stale submodel-ref value=%s status=%d", smId, csc);
+                            }
+                        }
+                        if (wrapped) {
+                            io.vertx.core.json.JsonObject out = new io.vertx.core.json.JsonObject().put("result", filtered);
+                            return Response.ok(out.encode()).build();
+                        } else {
+                            return Response.ok(filtered.encode()).build();
+                        }
+                    } catch (Exception e) {
+                        Log.warn("Failed to filter LIVE submodel refs, returning upstream body", e);
+                        return Response.ok(body).build();
+                    }
                 }
                 return Response.status(sc).entity(resp.bodyAsString()).build();
             });
@@ -254,6 +298,7 @@ public class AasResource {
             if (listRefs.statusCode() >= 200 && listRefs.statusCode() < 300) {
                 String body = listRefs.bodyAsString();
                 io.vertx.core.json.JsonArray arr = new io.vertx.core.json.JsonArray(body);
+                java.util.List<Integer> toDelete = new java.util.ArrayList<>();
                 for (int i = 0; i < arr.size(); i++) {
                     var ref = arr.getJsonObject(i);
                     var keys = ref.getJsonArray("keys");
@@ -262,11 +307,15 @@ public class AasResource {
                         String t = k0.getString("type");
                         String v = k0.getString("value");
                         if ("Submodel".equalsIgnoreCase(t) && normalizedSmId != null && normalizedSmId.equals(v)) {
-                            var delIdx = traversal.removeSubmodelReferenceFromShellByIndex(ss.apiUrl, ss.aasId, i, headers).await().indefinitely();
-                            Log.infof("DELETE submodel-ref by index upstream status=%d msg=%s body=%s", delIdx.statusCode(), delIdx.statusMessage(), safeBody(delIdx));
-                            break;
+                            toDelete.add(i);
                         }
                     }
+                }
+                // Delete from highest index to lowest to avoid shifting
+                java.util.Collections.sort(toDelete, java.util.Collections.reverseOrder());
+                for (Integer idx : toDelete) {
+                    var delIdx = traversal.removeSubmodelReferenceFromShellByIndex(ss.apiUrl, ss.aasId, idx, headers).await().indefinitely();
+                    Log.infof("DELETE submodel-ref by index upstream status=%d msg=%s body=%s", delIdx.statusCode(), delIdx.statusMessage(), safeBody(delIdx));
                 }
             } else {
                 // fallback: try direct delete by submodelId
