@@ -519,6 +519,20 @@ public class AasResource {
                     if (found != null) return found;
                 }
             }
+        } else if ("Entity".equalsIgnoreCase(modelType)) {
+            // Entities may keep children under 'statements'
+            var statements = element.getValue("statements");
+            if (statements instanceof io.vertx.core.json.JsonArray arr) {
+                for (int i = 0; i < arr.size(); i++) {
+                    var child = arr.getJsonObject(i);
+                    if (child == null) continue;
+                    String childIdShort = child.getString("idShort");
+                    if (childIdShort == null) continue;
+                    String childPath = currentPath + "/" + childIdShort;
+                    var found = descendAndMatch(child, childPath, targetPath);
+                    if (found != null) return found;
+                }
+            }
         }
         return null;
     }

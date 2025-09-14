@@ -922,7 +922,7 @@ export class SourceSystemBaseComponent implements OnInit, OnDestroy {
   private mapElToNode(submodelId: string, el: any): TreeNode {
     const computedType = el?.modelType || (el?.valueType ? 'Property' : undefined);
     const label = computedType ? `${el.idShort} (${computedType})` : el.idShort;
-    const typeHasChildren = el?.modelType === 'SubmodelElementCollection' || el?.modelType === 'SubmodelElementList' || el?.modelType === 'Operation';
+    const typeHasChildren = el?.modelType === 'SubmodelElementCollection' || el?.modelType === 'SubmodelElementList' || el?.modelType === 'Operation' || el?.modelType === 'Entity';
     const hasChildren = el?.hasChildren === true || typeHasChildren;
     return {
       key: `${submodelId}::${el.idShortPath || el.idShort}`,
