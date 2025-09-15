@@ -5,11 +5,11 @@ import { routes } from './app.routes';
 import {provideAnimationsAsync} from "@angular/platform-browser/animations/async";
 import {providePrimeNG} from "primeng/config";
 import { provideHttpClient } from '@angular/common/http';
-import {ConfirmationService, MessageService} from 'primeng/api';
 import {MyPreset} from './mypreset';
 import {provideMarkdown} from 'ngx-markdown';
 
 import { MonacoEditorModule, NgxMonacoEditorConfig } from 'ngx-monaco-editor-v2';
+import {ConfirmationService, MessageService} from 'primeng/api';
 
 const monacoConfig: NgxMonacoEditorConfig = {
   baseUrl: window.location.origin + '/assets/monaco/vs',
@@ -23,8 +23,14 @@ export const appConfig: ApplicationConfig = {
     provideZoneChangeDetection({eventCoalescing: true}),
     provideRouter(routes),
     provideAnimationsAsync(),
-    MessageService,
-    ConfirmationService,
+    {
+      provide: MessageService,
+      useClass: MessageService
+    },
+    {
+      provide: ConfirmationService,
+      useClass: ConfirmationService
+    },
     provideMarkdown(),
     importProvidersFrom(MonacoEditorModule.forRoot(monacoConfig)),
     providePrimeNG({

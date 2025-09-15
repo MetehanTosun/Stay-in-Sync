@@ -5,12 +5,9 @@ import {TableModule} from "primeng/table";
 import {TransformationService} from '../../services/transformation.service';
 import {UpdateTransformationRequest} from '../../models/transformation.model';
 import {Router} from '@angular/router';
-import {ScriptEditorNavigationService} from '../../../script-editor/script-editor-navigation.service';
 import {TransformationScript} from '../../models/transformation-script.model';
 import {TransformationScriptService} from '../../services/transformation-script.service';
-import {Dialog} from 'primeng/dialog';
 import {FormsModule} from '@angular/forms';
-import {InputText} from 'primeng/inputtext';
 
 @Component({
   selector: 'app-transformation-script-selection',
@@ -29,7 +26,9 @@ export class TransformationScriptSelectionComponent {
   @Input({transform: numberAttribute}) transformationId: number | null = null;
   items: TransformationScript[] = [];
 
-  constructor(private transformationService: TransformationService, private router: Router, private scriptEditorNavigationService: ScriptEditorNavigationService, private transformationScriptService: TransformationScriptService) {
+  constructor(private transformationService: TransformationService,
+              private router: Router,
+              private transformationScriptService: TransformationScriptService) {
     this.loadScripts();
   }
 
@@ -62,8 +61,7 @@ export class TransformationScriptSelectionComponent {
 
 
   createNewScript() {
-    const data = {transformationId: this.transformationId ?? 0};
-    this.scriptEditorNavigationService.navigateToScriptEditor(data)
+    this.router.navigate(['/script-editor/', 0]);
   }
 
   private loadScripts() {

@@ -10,9 +10,7 @@ import {ToggleButtonModule} from 'primeng/togglebutton';
 import {Select} from 'primeng/select';
 import {CheckboxModule} from 'primeng/checkbox';
 import {Transformation} from '../../models/transformation.model';
-import {Button} from 'primeng/button';
-import {Card} from "primeng/card";
-import {Toolbar} from "primeng/toolbar";
+import {Button, ButtonDirective} from 'primeng/button';
 import {Dialog} from 'primeng/dialog';
 import {TransformationAddSyncJobComponent} from '../transformation-add-sync-job/transformation-add-sync-job.component';
 import {ActivatedRoute, Router, RouterLink} from '@angular/router';
@@ -27,23 +25,22 @@ import {TransformationRule} from '../../../sync-rules/models';
 @Component({
   selector: 'app-transformation-by-sync-job-table',
   standalone: true,
-  imports: [
-    TableModule,
-    FormsModule,
-    ToggleButtonModule,
-    ReactiveFormsModule,
-    Select,
-    JobStatusTagComponent,
-    CheckboxModule,
-    Button,
-    Button,
-    Card,
-    Toolbar,
-    Dialog,
-    TransformationAddSyncJobComponent,
-    Button,
-    RouterLink
-  ],
+    imports: [
+        TableModule,
+        FormsModule,
+        ToggleButtonModule,
+        ReactiveFormsModule,
+        Select,
+        JobStatusTagComponent,
+        CheckboxModule,
+        Button,
+        Button,
+        Dialog,
+        TransformationAddSyncJobComponent,
+        Button,
+        RouterLink,
+        ButtonDirective
+    ],
   templateUrl: './transformation-by-sync-job-table.component.html',
   styleUrl: './transformation-by-sync-job-table.component.css'
 })
@@ -171,6 +168,7 @@ export class TransformationBySyncJobTableComponent implements OnInit {
   }
 
   toggleDeploymentStatus(transformation: Transformation) {
+    console.log('YAS')
     switch (transformation.deploymentStatus) {
       case JobDeploymentStatus.FAILING:
       case JobDeploymentStatus.DEPLOYED:
