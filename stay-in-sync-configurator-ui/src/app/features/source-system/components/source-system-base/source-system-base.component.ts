@@ -137,6 +137,50 @@ export class SourceSystemBaseComponent implements OnInit, OnDestroy {
   aasValueNew = '';
   aasValueTypeHint = 'xs:string';
 
+  // Cache: submodelId -> (idShortPath -> modelType)
+  private aasTypeCache: Record<string, Record<string, string>> = {};
+  private ensureAasTypeMap(submodelId: string): void {
+    const systemId = this.selectedSystem?.id;
+    if (!systemId) return;
+    if (this.aasTypeCache[submodelId]) {
+      this.applyAasTypeMapToTree(submodelId);
+      return;
+    }
+    this.aasService
+      .listElements(systemId, submodelId, { depth: 'all', source: 'LIVE' })
+      .subscribe({
+        next: (resp) => {
+          const list: any[] = Array.isArray(resp) ? resp : (resp?.result ?? []);
+          const map: Record<string, string> = {};
+          for (const el of list) {
+            const p = el?.idShortPath || el?.idShort;
+            const t = this.inferModelType(el);
+            if (p && t) map[p] = t;
+          }
+          this.aasTypeCache[submodelId] = map;
+          this.applyAasTypeMapToTree(submodelId);
+        },
+        error: () => {}
+      });
+  }
+  private applyAasTypeMapToTree(submodelId: string): void {
+    const map = this.aasTypeCache[submodelId];
+    if (!map) return;
+    const applyMap = (nodes?: TreeNode[]) => {
+      if (!nodes) return;
+      for (const n of nodes) {
+        if (n?.data?.type === 'element' && n.data?.submodelId === submodelId) {
+          const p: string = n.data.idShortPath || n.data.raw?.idShortPath || n.data.raw?.idShort;
+          const mt = map[p];
+          if (mt) n.data.modelType = mt;
+        }
+        if (n.children && n.children.length) applyMap(n.children as TreeNode[]);
+      }
+    };
+    applyMap(this.aasTreeNodes);
+    this.aasTreeNodes = [...this.aasTreeNodes];
+  }
+
   // AAS create dialogs
   showAasSubmodelDialog = false;
   aasNewSubmodelJson = '{\n  "id": "https://example.com/ids/sm/new",\n  "idShort": "NewSubmodel"\n}';
@@ -618,6 +662,8 @@ export class SourceSystemBaseComponent implements OnInit, OnDestroy {
         const list = Array.isArray(resp) ? resp : (resp?.result ?? []);
         attach.children = list.map((el: any) => this.mapElToNode(submodelId, el));
         this.aasTreeNodes = [...this.aasTreeNodes];
+        // hydrate types in background
+        this.ensureAasTypeMap(submodelId);
       },
       error: (err) => this.erorrService.handleError(err)
     });
@@ -702,7 +748,7 @@ export class SourceSystemBaseComponent implements OnInit, OnDestroy {
         const firstRef = stringifyRef((found as any).first || (found as any).firstReference);
         const secondRef = stringifyRef((found as any).second || (found as any).secondReference);
         this.aasSelectedLivePanel = {
-          label: liveType ? `${found.idShort} (${liveType})` : found.idShort,
+          label: found.idShort,
           type: liveType || 'Unknown',
           value: (found as any).value,
           valueType: (found as any).valueType,
@@ -801,7 +847,7 @@ export class SourceSystemBaseComponent implements OnInit, OnDestroy {
                 const firstRef2 = stringifyRef2((found2 as any).first || (found2 as any).firstReference);
                 const secondRef2 = stringifyRef2((found2 as any).second || (found2 as any).secondReference);
                 this.aasSelectedLivePanel = {
-                  label: liveType ? `${found2.idShort} (${liveType})` : found2.idShort,
+                  label: found2.idShort,
                   type: liveType || 'Unknown',
                   value: (found2 as any).value,
                   valueType: (found2 as any).valueType,
@@ -916,21 +962,46 @@ export class SourceSystemBaseComponent implements OnInit, OnDestroy {
   private mapSmToNode(sm: any): TreeNode {
     const id = sm.submodelId || sm.id || (sm.keys && sm.keys[0]?.value);
     const label = (sm.submodelIdShort || sm.idShort) || id;
-    return { key: id, label, data: { type: 'submodel', id, raw: sm }, leaf: false, children: [] } as TreeNode;
+    return { key: id, label, data: { type: 'submodel', id, modelType: 'Submodel', raw: sm }, leaf: false, children: [] } as TreeNode;
   }
 
   private mapElToNode(submodelId: string, el: any): TreeNode {
-    const computedType = el?.modelType || (el?.valueType ? 'Property' : undefined);
-    const label = computedType ? `${el.idShort} (${computedType})` : el.idShort;
+    const computedType = this.inferModelType(el);
+    const label = el.idShort;
     const typeHasChildren = el?.modelType === 'SubmodelElementCollection' || el?.modelType === 'SubmodelElementList' || el?.modelType === 'Operation' || el?.modelType === 'Entity';
     const hasChildren = el?.hasChildren === true || typeHasChildren;
     return {
       key: `${submodelId}::${el.idShortPath || el.idShort}`,
       label,
-      data: { type: 'element', submodelId, idShortPath: el.idShortPath || el.idShort, modelType: el.modelType, raw: el },
+      data: { type: 'element', submodelId, idShortPath: el.idShortPath || el.idShort, modelType: computedType, raw: el },
       leaf: !hasChildren,
       children: []
     } as TreeNode;
+  }
+
+  // Infer a more precise modelType when missing
+  private inferModelType(el: any): string | undefined {
+    if (!el) return undefined;
+    if (el.modelType) return el.modelType;
+    // Detect Range before Property
+    if (el.min !== undefined || el.max !== undefined || el.minValue !== undefined || el.maxValue !== undefined) return 'Range';
+    if (el.valueType) return 'Property';
+    if (Array.isArray(el.inputVariables) || Array.isArray(el.outputVariables) || Array.isArray(el.inoutputVariables)) return 'Operation';
+    if (Array.isArray(el.value)) {
+      const isML = el.value.every((v: any) => v && (v.language !== undefined) && (v.text !== undefined));
+      if (isML) return 'MultiLanguageProperty';
+      if (el.typeValueListElement || el.orderRelevant !== undefined) return 'SubmodelElementList';
+      return 'SubmodelElementCollection';
+    }
+    if (el.first || el.firstReference) {
+      const ann = el.annotations || el.annotation;
+      return Array.isArray(ann) ? 'AnnotatedRelationshipElement' : 'RelationshipElement';
+    }
+    if (Array.isArray(el.annotations) || Array.isArray(el.annotation)) return 'AnnotatedRelationshipElement';
+    if (Array.isArray(el.statements)) return 'Entity';
+    if (Array.isArray(el.keys)) return 'ReferenceElement';
+    if (el.contentType && (el.fileName || el.path)) return 'File';
+    return undefined;
   }
 
   aasTest(): void {

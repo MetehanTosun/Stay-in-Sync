@@ -485,6 +485,49 @@ save(): void {
   selectedLiveLoading = false;
   selectedNode?: TreeNode;
 
+  // Cache: submodelId -> (idShortPath -> modelType)
+  private typeCache: Record<string, Record<string, string>> = {};
+  private ensureTypeMap(submodelId: string): void {
+    if (!this.createdSourceSystemId) return;
+    if (this.typeCache[submodelId]) {
+      this.applyTypeMapToTree(submodelId);
+      return;
+    }
+    this.aasService
+      .listElements(this.createdSourceSystemId, submodelId, { depth: 'all', source: 'LIVE' })
+      .subscribe({
+        next: (resp) => {
+          const list: any[] = Array.isArray(resp) ? resp : (resp?.result ?? []);
+          const map: Record<string, string> = {};
+          for (const el of list) {
+            const p = el?.idShortPath || el?.idShort;
+            const t = this.inferModelType(el);
+            if (p && t) map[p] = t;
+          }
+          this.typeCache[submodelId] = map;
+          this.applyTypeMapToTree(submodelId);
+        },
+        error: () => {}
+      });
+  }
+  private applyTypeMapToTree(submodelId: string): void {
+    const map = this.typeCache[submodelId];
+    if (!map) return;
+    const applyMap = (nodes?: TreeNode[]) => {
+      if (!nodes) return;
+      for (const n of nodes) {
+        if (n?.data?.type === 'element' && n.data?.submodelId === submodelId) {
+          const p: string = n.data.idShortPath || n.data.raw?.idShortPath || n.data.raw?.idShort;
+          const mt = map[p];
+          if (mt) n.data.modelType = mt;
+        }
+        if (n.children && n.children.length) applyMap(n.children as TreeNode[]);
+      }
+    };
+    applyMap(this.treeNodes);
+    this.treeNodes = [...this.treeNodes];
+  }
+
   loadRootElements(submodelId: string, attachToNode?: TreeNode): void {
     if (!this.createdSourceSystemId) return;
     this.childrenLoading[submodelId] = true;
@@ -498,6 +541,8 @@ save(): void {
             attachToNode.children = list.map((el: any) => this.mapElementToNode(submodelId, el));
             this.treeNodes = [...this.treeNodes];
           }
+          // hydrate types in background
+          this.ensureTypeMap(submodelId);
         },
         error: (err) => {
           this.childrenLoading[submodelId] = false;
@@ -523,6 +568,8 @@ save(): void {
           });
           node.children = mapped;
           this.treeNodes = [...this.treeNodes];
+          // hydrate types in background
+          this.ensureTypeMap(submodelId);
         },
         error: (err) => {
           this.childrenLoading[key] = false;
@@ -532,27 +579,50 @@ save(): void {
   }
 
   // Tree mapping helpers
+  private inferModelType(el: any): string | undefined {
+    if (!el) return undefined;
+    if (el.modelType) return el.modelType;
+    // Detect Range before Property (Range often also has valueType for endpoint types)
+    if (el.min !== undefined || el.max !== undefined || el.minValue !== undefined || el.maxValue !== undefined) return 'Range';
+    if (el.valueType) return 'Property';
+    if (Array.isArray(el.inputVariables) || Array.isArray(el.outputVariables) || Array.isArray(el.inoutputVariables)) return 'Operation';
+    if (Array.isArray(el.value)) {
+      const isML = el.value.every((v: any) => v && (v.language !== undefined) && (v.text !== undefined));
+      if (isML) return 'MultiLanguageProperty';
+      if (el.typeValueListElement || el.orderRelevant !== undefined) return 'SubmodelElementList';
+      return 'SubmodelElementCollection';
+    }
+    if (el.first || el.firstReference) {
+      const ann = el.annotations || el.annotation;
+      return Array.isArray(ann) ? 'AnnotatedRelationshipElement' : 'RelationshipElement';
+    }
+    if (Array.isArray(el.annotations) || Array.isArray(el.annotation)) return 'AnnotatedRelationshipElement';
+    if (Array.isArray(el.statements)) return 'Entity';
+    if (Array.isArray(el.keys)) return 'ReferenceElement';
+    if (el.contentType && (el.fileName || el.path)) return 'File';
+    return undefined;
+  }
   private mapSubmodelToNode(sm: any): TreeNode {
     const id = sm.submodelId || sm.id || (sm.keys && sm.keys[0]?.value);
     const label = (sm.submodelIdShort || sm.idShort) || id;
     return {
       key: id,
       label,
-      data: { type: 'submodel', id, raw: sm },
+      data: { type: 'submodel', id, modelType: 'Submodel', raw: sm },
       leaf: false,
       children: []
     } as TreeNode;
   }
 
   private mapElementToNode(submodelId: string, el: any): TreeNode {
-    const computedType = el?.modelType || (el?.valueType ? 'Property' : undefined);
-    const label = computedType ? `${el.idShort} (${computedType})` : el.idShort;
+    const computedType = this.inferModelType(el);
+    const label = el.idShort;
     const typeHasChildren = el?.modelType === 'SubmodelElementCollection' || el?.modelType === 'SubmodelElementList' || el?.modelType === 'Operation' || el?.modelType === 'Entity';
     const hasChildren = el?.hasChildren === true || typeHasChildren;
     return {
       key: `${submodelId}::${el.idShortPath}`,
       label,
-      data: { type: 'element', submodelId, idShortPath: el.idShortPath || el.idShort, modelType: el.modelType, raw: el },
+      data: { type: 'element', submodelId, idShortPath: el.idShortPath || el.idShort, modelType: computedType, raw: el },
       leaf: !hasChildren,
       children: []
     } as TreeNode;
@@ -629,7 +699,7 @@ save(): void {
         const firstRef = stringifyRef((found as any).first || (found as any).firstReference);
         const secondRef = stringifyRef((found as any).second || (found as any).secondReference);
         this.selectedLivePanel = {
-          label: liveType ? `${found.idShort} (${liveType})` : found.idShort,
+          label: found.idShort,
           type: liveType || 'Unknown',
           value: (found as any).value,
           valueType: (found as any).valueType,
@@ -728,7 +798,7 @@ save(): void {
                 const firstRef2 = stringifyRef2((found2 as any).first || (found2 as any).firstReference);
                 const secondRef2 = stringifyRef2((found2 as any).second || (found2 as any).secondReference);
                 this.selectedLivePanel = {
-                  label: liveType ? `${found2.idShort} (${liveType})` : found2.idShort,
+                  label: found2.idShort,
                   type: liveType || 'Unknown',
                   value: (found2 as any).value,
                   valueType: (found2 as any).valueType,
