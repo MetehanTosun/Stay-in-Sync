@@ -4,7 +4,7 @@
   (onClick)="goBack()"
   styleClass="p-button-secondary">
 </p-button>
-<p-inplace #inplace>
+<p-inplace #inplace (onActivate)="onInplaceActivate()">
   <ng-template #display>
     <span class="text-xl font-bold">{{syncJob?.name}}</span>
   </ng-template>
@@ -15,8 +15,9 @@
           [(ngModel)]="syncJob!.name"
           pInputText
           autofocus
-          (keyup.enter)="closeCallback($event)" />
-    <p-button icon="pi pi-times" aria-label="Save" (click)="closeCallback($event)" text severity="danger"/>
+          (keyup.enter)="onSave(closeCallback)" />
+    <p-button icon="pi pi-times" aria-label="Cancel" (click)="onClose(closeCallback)" text severity="danger"/>
+    <p-button icon="pi pi-check" aria-label="Save" (click)="onSave(closeCallback)" text severity="success"/>
     </span>
   </ng-template>
 </p-inplace>

@@ -64,6 +64,7 @@ export class ScriptEditorPageComponent implements OnInit, OnDestroy {
   @ViewChild(TargetArcPanelComponent) targetArcPanel!: TargetArcPanelComponent;
 
   currentTransformationId: string | null = null;
+  originalName: string = '';
   scriptPayload: ScriptPayload | null = null;
 
   editorOptions = {
@@ -432,5 +433,19 @@ function transform(): DirectiveMap {
 
   goBack() {
     this.router.navigate(['transformation-scripts']);
+  }
+
+  onSave(closeCallback: Function) {
+    this.saveScript()
+    closeCallback();
+  }
+
+  onClose(closeCallback: Function) {
+    this.scriptPayload!.name = this.originalName;
+    closeCallback();
+  }
+
+  onActivate() {
+    this.originalName = this.scriptPayload!.name;
   }
 }

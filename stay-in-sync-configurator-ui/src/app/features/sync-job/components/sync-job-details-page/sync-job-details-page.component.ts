@@ -10,6 +10,7 @@ import {Inplace} from 'primeng/inplace';
 import {FormsModule} from '@angular/forms';
 import {InputTextModule} from 'primeng/inputtext';
 import {Button} from 'primeng/button';
+import {HttpErrorService} from '../../../../core/services/http-error.service';
 
 @Component({
   selector: 'app-sync-job-details-page',
@@ -31,7 +32,13 @@ export class SyncJobDetailsPageComponent implements OnInit {
   id!: number;
 
   syncJob?: SyncJob;
-  constructor(private readonly route: ActivatedRoute, private readonly transformationService: TransformationService, private readonly syncJobService: SyncJobService, private readonly router: Router) {}
+  originalName: string = '';
+
+  constructor(private readonly route: ActivatedRoute,
+              private readonly transformationService: TransformationService,
+              private readonly syncJobService: SyncJobService,
+              private readonly httpErorrService: HttpErrorService,
+              private readonly router: Router) {}
 
   ngOnInit(): void {
     const id = Number.parseInt(this.route.snapshot.paramMap.get('id')!);
@@ -55,9 +62,25 @@ export class SyncJobDetailsPageComponent implements OnInit {
        }
      });
   }
+  onInplaceActivate() {
+    this.originalName = this.syncJob?.name || '';
+  }
 
-  closeCallback() {
+  onSave(closeCallback: Function) {
+    this.syncJobService.update(this.id, this.syncJob!).subscribe({
+      next: data => {
+      },
+      error: err => {
+        this.httpErorrService.handleError(err)
+      }
+    });
+    closeCallback();
 
+  }
+
+  onClose(closeCallback: Function) {
+    this.syncJob!.name = this.originalName;
+    closeCallback();
   }
 
   goBack() {
