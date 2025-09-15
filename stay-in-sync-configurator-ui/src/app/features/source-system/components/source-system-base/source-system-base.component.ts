@@ -796,7 +796,9 @@ export class SourceSystemBaseComponent implements OnInit, OnDestroy {
         if (node && node.data) {
           const computedPath = safePath;
           node.data.idShortPath = computedPath;
+          node.data.modelType = liveType || node.data.modelType;
           node.data.raw = { ...(node.data.raw || {}), idShortPath: computedPath, modelType: found.modelType, valueType: found.valueType };
+          this.aasTreeNodes = [...this.aasTreeNodes];
         }
       },
       error: (_err: any) => {
@@ -860,6 +862,10 @@ export class SourceSystemBaseComponent implements OnInit, OnDestroy {
                   secondRef: secondRef2,
                   annotations: annotationsRaw2.map(mapAnnotation2).filter(Boolean) as AasAnnotationView[]
                 } as any;
+                if (node && node.data) {
+                  node.data.modelType = liveType || node.data.modelType;
+                  this.aasTreeNodes = [...this.aasTreeNodes];
+                }
               } else {
                 this.aasSelectedLivePanel = { label: last, type: 'Unknown' } as any;
               }

@@ -747,7 +747,9 @@ save(): void {
         if (node && node.data) {
           const computedPath = safePath;
           node.data.idShortPath = computedPath;
+          node.data.modelType = liveType || node.data.modelType;
           node.data.raw = { ...(node.data.raw || {}), idShortPath: computedPath, modelType: found.modelType, valueType: found.valueType };
+          this.treeNodes = [...this.treeNodes];
         }
       },
       error: (_err: any) => {
@@ -811,6 +813,10 @@ save(): void {
                   secondRef: secondRef2,
                   annotations: annotationsRaw2.map(mapAnnotation2).filter(Boolean) as AnnotationView[]
                 } as any;
+                if (node && node.data) {
+                  node.data.modelType = liveType || node.data.modelType;
+                  this.treeNodes = [...this.treeNodes];
+                }
               } else {
                 this.selectedLivePanel = { label: last, type: 'Unknown' };
               }
