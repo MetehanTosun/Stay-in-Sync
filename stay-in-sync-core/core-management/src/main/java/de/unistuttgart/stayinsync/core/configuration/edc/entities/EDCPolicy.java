@@ -1,9 +1,12 @@
 package de.unistuttgart.stayinsync.core.configuration.edc.entities;
 
 import de.unistuttgart.stayinsync.core.model.UuidEntity;
+import de.unistuttgart.stayinsync.transport.exception.CustomException;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
+
+import java.util.UUID;
 
 /**
  * Entitätsklasse für EDC-Policies in der Datenbank.
@@ -50,4 +53,19 @@ public class EDCPolicy extends UuidEntity {
     @JoinColumn(name = "edc_instance_id")
     private EDCInstance edcInstance;
 
+    /**
+     * Finder-Methode zum Abrufen einer Policy anhand ihrer policyId.
+     * 
+     * @param policyId Die zu suchende Policy-ID
+     * @return Die gefundene EDC-Policy oder null, wenn keine gefunden wurde
+     */
+    public static EDCPolicy findByPolicyId(String policyId) {
+        if (policyId == null || policyId.isEmpty()) {
+            return null;
+        }
+        
+        // Einfache Simulation - in einer echten Implementierung würde hier
+        // ein Datenbankzugriff erfolgen
+        return find("policyId", policyId).firstResult();
+    }
 }

@@ -67,6 +67,7 @@ public class EDCContractDefinitionResource {
             EDCContractDefinition entity = EDCContractDefinitionMapper.fromDto(dto);
             entity.setEdcInstance(edcInstance);
             
+            // Persist with the owning EDC instance set to avoid detached references
             EDCContractDefinition created = service.create(entity);
             EDCContractDefinitionDto createdDto = EDCContractDefinitionMapper.toDto(created);
             

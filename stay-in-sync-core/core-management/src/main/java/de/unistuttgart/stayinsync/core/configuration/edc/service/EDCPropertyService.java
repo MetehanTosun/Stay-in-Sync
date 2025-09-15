@@ -3,68 +3,123 @@ package de.unistuttgart.stayinsync.core.configuration.edc.service;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.transaction.Transactional;
 
+import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 import java.util.UUID;
 
+import de.unistuttgart.stayinsync.core.configuration.edc.dtoedc.EDCPropertyDto;
 import de.unistuttgart.stayinsync.core.configuration.edc.entities.EDCProperty;
+import de.unistuttgart.stayinsync.core.configuration.edc.mapping.EDCPropertyMapper;
+import de.unistuttgart.stayinsync.transport.exception.CustomException;
+import io.quarkus.logging.Log;
 
-//TODO Add documentation explaining the use of this Service (what is a EDCProperty)
+/**
+ * Service-Klasse für die Verwaltung von EDC-Properties.
+ * 
+ * Diese Klasse bietet Methoden zum Erstellen, Lesen, Aktualisieren und Löschen
+ * von EDC-Properties. Properties sind zusätzliche Metadaten für Assets im
+ * Eclipse Dataspace Connector (EDC), wie Name, Version, Content-Type und
+ * Beschreibung.
+ */
 @ApplicationScoped
 public class EDCPropertyService {
 
-
     /**
-     * Returns an edcProperty found in the database with the id.
-     * @param  id used to find the policy
-     * @return found policy
+     * Findet ein EDCProperty anhand seiner ID.
+     * 
+     * @param id Die ID des zu findenden EDCProperty
+     * @return Das gefundene EDCProperty als DTO
+     * @throws CustomException Wenn kein EDCProperty mit der angegebenen ID gefunden wird
      */
-    public Optional<EDCProperty> findById(final UUID id) {
-        return EDCProperty.findByIdOptional(id);
+    public EDCPropertyDto findById(final UUID id) throws CustomException {
+        final EDCProperty property = EDCProperty.findById(id);
+        if (property == null) {
+            final String exceptionMessage = "Keine Property mit ID " + id + " gefunden";
+            Log.error(exceptionMessage);
+            throw new CustomException(exceptionMessage);
+        }
+        return EDCPropertyMapper.toDto(property);
     }
 
     /**
-     * Returns a list with all edcProperties saved in the database.
-     * @return List with all edcProperties
+     * Listet alle EDCProperties auf, die in der Datenbank vorhanden sind.
+     * 
+     * @return Eine Liste aller EDCProperties als DTOs
      */
-    public List<EDCProperty> listAll() {
-        return EDCProperty.listAll();
+    public List<EDCPropertyDto> listAll() {
+        List<EDCPropertyDto> properties = new ArrayList<>();
+        List<EDCProperty> propertyList = EDCProperty.<EDCProperty>listAll();
+        for (EDCProperty property : propertyList) {
+            properties.add(EDCPropertyMapper.toDto(property));
+        }
+        return properties;
     }
 
     /**
-     * Moves edcProperty into the database and returns it to the caller.
-     * @param edcProperty to be persisted.
-     * @return the created edcProperty.
+     * Erstellt ein neues EDCProperty in der Datenbank.
+     * 
+     * @param propertyDto Das zu erstellende EDCProperty als DTO
+     * @return Das erstellte EDCProperty als DTO
      */
     @Transactional
-    public EDCProperty create(final EDCProperty edcProperty) {
-        edcProperty.persist();
-        return edcProperty;
+    public EDCPropertyDto create(final EDCPropertyDto propertyDto) {
+        EDCProperty property = EDCPropertyMapper.fromDto(propertyDto);
+        property.persist();
+        Log.info("EDCProperty mit ID " + property.id + " erstellt");
+        return EDCPropertyMapper.toDto(property);
     }
 
     /**
-     * Searches for database entry with id. The returned object is linked to the database.
-     * Database is updated according to changes after the program flow moves out of this method/transaction.
-     * @param id to find the database entry
-     * @param updatedEdcProperty contains the updated data
-     * @return Optional with the updated EDCProperty or an empty Optional if nothing was found.
+     * Aktualisiert ein bestehendes EDCProperty in der Datenbank.
+     * 
+     * @param id Die ID des zu aktualisierenden EDCProperty
+     * @param updatedPropertyDto Das aktualisierte EDCProperty als DTO
+     * @return Das aktualisierte EDCProperty als DTO
+     * @throws CustomException Wenn kein EDCProperty mit der angegebenen ID gefunden wird
      */
     @Transactional
-    public Optional<EDCProperty> update(final UUID id, final EDCProperty updatedEdcProperty) {
-        return findById(id)
-            .map(existing -> {
-                existing.description = updatedEdcProperty.description;
-                return existing;
-            });
+    public EDCPropertyDto update(final UUID id, final EDCPropertyDto updatedPropertyDto) throws CustomException {
+        final EDCProperty persistedProperty = EDCProperty.findById(id);
+        if (persistedProperty == null) {
+            final String exceptionMessage = "Keine Property mit ID " + id + " gefunden";
+            Log.error(exceptionMessage);
+            throw new CustomException(exceptionMessage);
+        }
+
+        final EDCProperty updatedProperty = EDCPropertyMapper.fromDto(updatedPropertyDto);
+        
+        // Aktualisiere alle Felder der Property
+        persistedProperty.setName(updatedProperty.getName());
+        persistedProperty.setVersion(updatedProperty.getVersion());
+        persistedProperty.setContentType(updatedProperty.getContentType());
+        persistedProperty.setDescription(updatedProperty.getDescription());
+        
+        Log.info("EDCProperty mit ID " + id + " aktualisiert");
+        return EDCPropertyMapper.toDto(persistedProperty);
     }
 
     /**
-     * Removes the edcProperty from the database
-     * @param id used to find edcProperty to be deleted in database
-     * @return the deleted edcProperty
+     * Löscht ein EDCProperty aus der Datenbank.
+     * 
+     * @param id Die ID des zu löschenden EDCProperty
+     * @return true, wenn das EDCProperty erfolgreich gelöscht wurde, false sonst
+     * @throws CustomException Wenn kein EDCProperty mit der angegebenen ID gefunden wird
      */
     @Transactional
-    public boolean delete(final UUID id) {
-        return EDCProperty.deleteById(id);
+    public boolean delete(final UUID id) throws CustomException {
+        final EDCProperty property = EDCProperty.findById(id);
+        if (property == null) {
+            final String exceptionMessage = "Keine Property mit ID " + id + " gefunden";
+            Log.error(exceptionMessage);
+            throw new CustomException(exceptionMessage);
+        }
+        
+        boolean deleted = EDCProperty.deleteById(id);
+        if (deleted) {
+            Log.info("EDCProperty mit ID " + id + " gelöscht");
+        } else {
+            Log.warn("EDCProperty mit ID " + id + " konnte nicht gelöscht werden");
+        }
+        return deleted;
     }
 }

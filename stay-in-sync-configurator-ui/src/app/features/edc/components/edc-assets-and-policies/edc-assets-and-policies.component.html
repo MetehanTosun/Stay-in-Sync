@@ -205,7 +205,7 @@
 
     <ng-template pTemplate="body" let-contractPolicy>
       <tr [pSelectableRow]="contractPolicy">
-        <td>{{ contractPolicy['@id'] }}</td>
+        <td>{{ contractPolicy.id }}</td>
         <td>{{ contractPolicy.assetId }}</td>
         <td>{{ contractPolicy.bpn }}</td>
         <td>

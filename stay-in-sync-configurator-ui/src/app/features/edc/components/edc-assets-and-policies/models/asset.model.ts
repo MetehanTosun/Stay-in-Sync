@@ -1,6 +1,5 @@
 export interface EDCDataAddress {
   id?: string;
-  jsonLDType: string;
   type: string;
   base_url: string;
   proxyPath: boolean;
@@ -14,13 +13,13 @@ export interface EDCProperty {
 
 export interface Asset {
   id?: string;               // UUID aus dem Backend
-  assetId: string;
-  name?: string;            // Name des Assets aus asset:prop:name
-  url: string;
-  type: string;
-  contentType: string;
-  description?: string;
-  targetEDCId: string;       // UUID aus dem Backend
+  assetId: string;           // ID des Assets im EDC
+  name: string;              // Name des Assets
+  description?: string;      // Beschreibung des Assets
+  contentType: string;       // Content-Type (z.B. application/json)
+  type: string;              // Typ des Assets (z.B. HttpData)
+  url: string;               // URL für den Zugriff auf das Asset
+  targetEDCId: string;       // UUID der EDC-Instanz
   dataAddress: EDCDataAddress;
-  properties?: EDCProperty;
+  properties?: EDCProperty[];
 }

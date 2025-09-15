@@ -261,7 +261,7 @@ accessPolicySuggestions: OdrlPolicyDefinition[] = [];
   }
 
   private loadParamOptions() {
-    this.assetService.getParamOptions().subscribe(options => {
+    this.assetService.getParamOptions().subscribe((options: { query: { label: string; value: string }[]; header: { label: string; value: string }[] }) => {
       this.queryParamOptions = options.query;
       this.headerParamOptions = options.header;
     });
@@ -347,6 +347,10 @@ accessPolicySuggestions: OdrlPolicyDefinition[] = [];
       console.log('Assets geladen:', response);
       console.log('Anzahl geladener Assets:', response.length);
       this.assets = response;
+      // Halte zusätzlich die rohen ODRL-Assets, falls Service sie bereitstellt
+      if ((response as any).__rawList) {
+        this.allOdrlAssets = (response as any).__rawList;
+      }
 
       // Falls ein Dialog geöffnet ist, Liste aktualisieren
       if (this.displayNewContractPolicyDialog || this.displayEditContractPolicyDialog) {
@@ -396,21 +400,34 @@ accessPolicySuggestions: OdrlPolicyDefinition[] = [];
       // Store the full ODRL contract definitions for later use in edit/view dialogs
       this.allOdrlContractDefinitions = contractDefinitions;
 
-      this.allContractDefinitions = contractDefinitions.map((cd): UiContractDefinition => {
-        const parentId = cd.accessPolicyId;
-        const parentPolicy = parentId ? policyMap.get(parentId) : undefined;
-        const assetIds =
-          cd.assetsSelector?.map(s => s.operandRight).join(', ') ?? 'Unknown Asset';
+  this.allContractDefinitions = contractDefinitions.map((cd): UiContractDefinition => {
+        const candidates: string[] = [
+          cd.accessPolicyId as any,
+          (cd as any).accessPolicyIdStr,
+          (cd as any).policyId,
+          (cd as any).dbId,
+          cd['@id'] as any
+        ].filter(Boolean);
+
+        let parentPolicy: any | undefined;
+        for (const key of candidates) {
+          parentPolicy = policyMap.get(key) || accessPolicies.find(p => p.dbId === key);
+          if (parentPolicy) break;
+        }
+
+        const assetIds = (cd.assetsSelector && cd.assetsSelector.length)
+          ? cd.assetsSelector.map((s: any) => s.operandRight).join(', ')
+          : (cd as any).assetId || 'Unknown Asset';
 
         return {
           id: cd['@id'],
           assetId: assetIds,
           bpn: parentPolicy?.bpn || 'Unknown BPN',
-          accessPolicyId: parentId || ''
+          accessPolicyId: parentPolicy?.policyId || parentPolicy?.['@id'] || parentPolicy?.dbId || ''
         };
       });
 
-      this.filteredContractDefinitions = [...this.allContractDefinitions];
+  this.filteredContractDefinitions = [...this.allContractDefinitions];
 
       // Policies direkt in State übernehmen
       this.allAccessPolicies = accessPolicies;
@@ -569,15 +586,15 @@ accessPolicySuggestions: OdrlPolicyDefinition[] = [];
       assetJson.dataAddress.type = 'HttpData';
     }
 
-    // Korrigiere base_url - Feld muss genau so im Backend ankommen
-    if (assetJson.dataAddress.baseUrl || assetJson.dataAddress.baseURL) {
-      assetJson.dataAddress.base_url = assetJson.dataAddress.baseUrl || assetJson.dataAddress.baseURL;
-      delete assetJson.dataAddress.baseUrl;
+    // Normalisiere für Backend: camelCase baseUrl verwenden
+    if (assetJson.dataAddress.base_url || assetJson.dataAddress.baseURL) {
+      assetJson.dataAddress.baseUrl = assetJson.dataAddress.base_url || assetJson.dataAddress.baseURL;
+      delete assetJson.dataAddress.base_url;
       delete assetJson.dataAddress.baseURL;
     }
 
-    if (!assetJson.dataAddress.base_url || assetJson.dataAddress.base_url.trim() === '') {
-      assetJson.dataAddress.base_url = 'https://example.com/api/' + assetJson['@id'];
+    if (!assetJson.dataAddress.baseUrl || String(assetJson.dataAddress.baseUrl).trim() === '') {
+      assetJson.dataAddress.baseUrl = 'https://example.com/api/' + assetJson['@id'];
     }
 
     // Proxy-Einstellungen hinzufügen, falls nicht vorhanden
@@ -587,6 +604,11 @@ accessPolicySuggestions: OdrlPolicyDefinition[] = [];
 
     if (assetJson.dataAddress.proxyQueryParams === undefined) {
       assetJson.dataAddress.proxyQueryParams = true;
+    }
+
+    // Backend erwartet ein Array von Properties; bei Objekt zu Array wrappen
+    if (assetJson.properties && !Array.isArray(assetJson.properties)) {
+      assetJson.properties = [assetJson.properties];
     }
 
     console.log('Sende Asset an Backend:', JSON.stringify(assetJson, null, 2));
@@ -828,7 +850,8 @@ accessPolicySuggestions: OdrlPolicyDefinition[] = [];
   syncJsonFromContractForm(): void {
     try {
       const currentJson: OdrlContractDefinition = JSON.parse(this.expertModeJsonContent || '{}');
-      const accessPolicyId = (this.newContractPolicy.accessPolicyId as any)?.id || this.newContractPolicy.accessPolicyId;
+  const sel: any = this.newContractPolicy.accessPolicyId as any;
+  const accessPolicyId = (sel && (sel.policyId || sel['@id'])) || this.newContractPolicy.accessPolicyId;
 
       currentJson.accessPolicyId = accessPolicyId;
       currentJson.contractPolicyId = accessPolicyId; // Keep them in sync for simplicity
@@ -936,15 +959,20 @@ accessPolicySuggestions: OdrlPolicyDefinition[] = [];
             assetJson.dataAddress.type = 'HttpData';
           }
 
-          // Korrigiere base_url Format
-          if (assetJson.dataAddress.baseUrl || assetJson.dataAddress.baseURL) {
-            assetJson.dataAddress.base_url = assetJson.dataAddress.baseUrl || assetJson.dataAddress.baseURL;
-            delete assetJson.dataAddress.baseUrl;
+          // Normalisiere für Backend auf baseUrl (camelCase)
+          if (assetJson.dataAddress.base_url || assetJson.dataAddress.baseURL) {
+            assetJson.dataAddress.baseUrl = assetJson.dataAddress.base_url || assetJson.dataAddress.baseURL;
+            delete assetJson.dataAddress.base_url;
             delete assetJson.dataAddress.baseURL;
           }
 
-          if (!assetJson.dataAddress.baseURL) {
-            assetJson.dataAddress.baseURL = 'https://example.com/api';
+          if (!assetJson.dataAddress.baseUrl) {
+            assetJson.dataAddress.baseUrl = 'https://example.com/api';
+          }
+
+          // Properties ggf. von Objekt zu Array wandeln
+          if (assetJson.properties && !Array.isArray(assetJson.properties)) {
+            assetJson.properties = [assetJson.properties];
           }
 
           // Proxy-Einstellungen
@@ -1003,6 +1031,21 @@ accessPolicySuggestions: OdrlPolicyDefinition[] = [];
     if (this.assetToEditODRL) {
       this.expertModeJsonContent = JSON.stringify(this.assetToEditODRL, null, 2);
       this.displayEditAssetDialog = true;
+      return;
+    }
+
+    // Fallback: Einzelnes Asset vom Backend laden (nutzt UUID id)
+    if (asset.id) {
+      this.assetService.getAssetRaw(this.instance.id, asset.id).subscribe({
+        next: (raw: any) => {
+          this.assetToEditODRL = raw as any;
+          this.expertModeJsonContent = JSON.stringify(this.assetToEditODRL, null, 2);
+          this.displayEditAssetDialog = true;
+        },
+        error: () => {
+          this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Could not find the full ODRL asset to edit.' });
+        }
+      });
     } else {
       this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Could not find the full ODRL asset to edit.' });
     }
@@ -1047,14 +1090,20 @@ accessPolicySuggestions: OdrlPolicyDefinition[] = [];
         assetJson.dataAddress.type = 'HttpData';
       }
 
-      // Korrigiere baseURL (nicht baseUrl)
-      if (assetJson.dataAddress.baseUrl && !assetJson.dataAddress.baseURL) {
-        assetJson.dataAddress.baseURL = assetJson.dataAddress.baseUrl;
-        delete assetJson.dataAddress.baseUrl;
+      // Normalisiere für Backend auf baseUrl (camelCase)
+      if (assetJson.dataAddress.base_url || assetJson.dataAddress.baseURL) {
+        assetJson.dataAddress.baseUrl = assetJson.dataAddress.base_url || assetJson.dataAddress.baseURL;
+        delete assetJson.dataAddress.base_url;
+        delete assetJson.dataAddress.baseURL;
       }
 
-      if (!assetJson.dataAddress.baseURL) {
-        assetJson.dataAddress.baseURL = 'https://example.com/api';
+      if (!assetJson.dataAddress.baseUrl) {
+        assetJson.dataAddress.baseUrl = 'https://example.com/api';
+      }
+
+      // Properties ggf. von Objekt zu Array wandeln
+      if (assetJson.properties && !Array.isArray(assetJson.properties)) {
+        assetJson.properties = [assetJson.properties];
       }
 
       // Proxy-Einstellungen
@@ -1087,7 +1136,9 @@ accessPolicySuggestions: OdrlPolicyDefinition[] = [];
       accept: async () => {
         try {
           // Call the service to delete the asset
-          await this.assetService.deleteAsset(this.instance.id, asset.assetId);
+          // Backend erwartet die interne UUID (id), nicht die @id
+          const deleteId = asset.id || asset.assetId;
+          await this.assetService.deleteAsset(this.instance.id, deleteId);
 
           // if success, update the UI
           this.assets = this.assets.filter((a) => a.assetId !== asset.assetId);
@@ -1482,17 +1533,57 @@ accessPolicySuggestions: OdrlPolicyDefinition[] = [];
    */
   async saveNewContractDefinition() {
     try {
-      const contractDefJson = JSON.parse(this.expertModeJsonContent);
-      // Basic validation
-      if (!contractDefJson['@id'] || !contractDefJson.accessPolicyId) {
-        throw new Error("Invalid contract definition. '@id' and 'accessPolicyId' are required.");
+      const raw = JSON.parse(this.expertModeJsonContent || '{}');
+
+      // Ensure required fields for backend DTO
+      let contractDefinitionId = String(raw['@id'] || '').trim();
+      if (!contractDefinitionId) {
+        contractDefinitionId = `contract-def-${Date.now()}`;
+        raw['@id'] = contractDefinitionId;
       }
-      await this.policyService.createContractDefinition(this.instance.id, contractDefJson);
+
+      // Determine accessPolicyId string from simple form selection or raw JSON
+      const accessPolicyObj = (this.newContractPolicy.accessPolicyId as any) || {};
+      const accessPolicyIdStr = accessPolicyObj.policyId || accessPolicyObj['@id'] || raw.accessPolicyId || '';
+      if (!accessPolicyIdStr) {
+        throw new Error("Invalid contract definition. 'accessPolicyId' is required.");
+      }
+
+      // Determine assetId: prefer selected assets, otherwise from JSON assetsSelector
+      let assetId = '';
+      if (this.selectedAssetsInDialog.length > 0) {
+        assetId = this.selectedAssetsInDialog[0]?.assetId || '';
+      } else if (Array.isArray(raw.assetsSelector) && raw.assetsSelector.length > 0) {
+        // Look for operandRight (eq) or array
+        const firstSelector = raw.assetsSelector[0];
+        if (Array.isArray(firstSelector.operandRight)) {
+          assetId = firstSelector.operandRight[0] || '';
+        } else {
+          assetId = firstSelector.operandRight || '';
+        }
+      }
+      if (!assetId) {
+        // As a safety, take the first available asset from list if any
+        assetId = this.assets[0]?.assetId || '';
+      }
+      if (!assetId) {
+        throw new Error("Invalid contract definition. 'assetId' is required (select at least one asset).");
+      }
+
+      // Build backend DTO shape
+      const dto = {
+        contractDefinitionId,
+        assetId,
+        accessPolicyIdStr: accessPolicyIdStr,
+        contractPolicyIdStr: accessPolicyIdStr,
+      };
+
+  await lastValueFrom(this.policyService.createContractDefinition(this.instance.id, dto as any));
       this.messageService.add({ severity: 'success', summary: 'Success', detail: 'Contract Definition created successfully.' });
       this.loadPoliciesAndDefinitions();
       this.hideNewContractPolicyDialog();
     } catch (error: any) {
-      const detail = error.message.includes('JSON') ? 'Could not parse JSON.' : error.message || 'Failed to save contract definition.';
+      const detail = error?.message?.includes('JSON') ? 'Could not parse JSON.' : error?.message || 'Failed to save contract definition.';
       this.messageService.add({ severity: 'error', summary: 'Error', detail });
       console.error('Failed to save contract definition:', error);
     }
@@ -1568,7 +1659,7 @@ accessPolicySuggestions: OdrlPolicyDefinition[] = [];
           }
 
 
-          await this.policyService.createContractDefinition(this.instance.id, contractDefJson);
+          await lastValueFrom(this.policyService.createContractDefinition(this.instance.id, contractDefJson));
 
           const parentPolicy = this.allAccessPolicies.find(p => 
             p.policyId === contractDefJson.accessPolicyId || 

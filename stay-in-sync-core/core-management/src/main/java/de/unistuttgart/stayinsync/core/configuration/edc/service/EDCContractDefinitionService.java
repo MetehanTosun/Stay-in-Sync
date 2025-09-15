@@ -1,6 +1,5 @@
 package de.unistuttgart.stayinsync.core.configuration.edc.service;
 
-import de.unistuttgart.stayinsync.core.configuration.edc.dtoedc.EDCContractDefinitionDto;
 import de.unistuttgart.stayinsync.core.configuration.edc.entities.EDCAsset;
 import de.unistuttgart.stayinsync.core.configuration.edc.entities.EDCContractDefinition;
 import de.unistuttgart.stayinsync.core.configuration.edc.entities.EDCInstance;
@@ -39,9 +38,13 @@ public class EDCContractDefinitionService {
             return new ArrayList<>();
         }
         
-        TypedQuery<EDCContractDefinition> query = entityManager.createQuery(
-                "SELECT c FROM EDCContractDefinition c WHERE c.edcInstance.id = :edcId", 
-                EDCContractDefinition.class);
+    TypedQuery<EDCContractDefinition> query = entityManager.createQuery(
+        "SELECT c FROM EDCContractDefinition c " +
+        "LEFT JOIN FETCH c.asset " +
+        "LEFT JOIN FETCH c.accessPolicy " +
+        "LEFT JOIN FETCH c.contractPolicy " +
+        "WHERE c.edcInstance.id = :edcId",
+        EDCContractDefinition.class);
         query.setParameter("edcId", edcId);
         
         List<EDCContractDefinition> contractDefinitions = query.getResultList();
@@ -58,9 +61,13 @@ public class EDCContractDefinitionService {
      */
     public Optional<EDCContractDefinition> findByIdAndEdcId(final UUID id, final UUID edcId) {
         LOG.info("Fetching contract definition " + id + " for EDC: " + edcId);
-        TypedQuery<EDCContractDefinition> query = entityManager.createQuery(
-                "SELECT c FROM EDCContractDefinition c WHERE c.id = :id AND c.edcInstance.id = :edcId", 
-                EDCContractDefinition.class);
+    TypedQuery<EDCContractDefinition> query = entityManager.createQuery(
+        "SELECT c FROM EDCContractDefinition c " +
+        "LEFT JOIN FETCH c.asset " +
+        "LEFT JOIN FETCH c.accessPolicy " +
+        "LEFT JOIN FETCH c.contractPolicy " +
+        "WHERE c.id = :id AND c.edcInstance.id = :edcId",
+        EDCContractDefinition.class);
         query.setParameter("id", id);
         query.setParameter("edcId", edcId);
         

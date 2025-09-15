@@ -22,7 +22,7 @@ import org.jboss.logging.Logger;
  * Stellt Endpunkte für CRUD-Operationen auf EDC-Assets bereit.
  * Unterstützt sowohl allgemeine Asset-Operationen als auch EDC-spezifische Asset-Operationen.
  */
-@Path("/api/config/edcs/assets")
+@Path("/api/config/edcs")
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
 public class EDCAssetResource {
@@ -38,6 +38,7 @@ public class EDCAssetResource {
      * @return Liste aller Assets als DTOs
      */
     @GET
+    @Path("/assets")
     public List<EDCAssetDto> list() {
         return service.listAll();
     }
@@ -50,7 +51,7 @@ public class EDCAssetResource {
      * @throws CustomException Wenn das Asset nicht gefunden wird
      */
     @GET
-    @Path("{id}")
+    @Path("/assets/{id}")
     public EDCAssetDto get(@PathParam("id") UUID id) throws CustomException {
         return service.findById(id);
     }
@@ -63,12 +64,13 @@ public class EDCAssetResource {
      * @return HTTP-Response mit dem erstellten Asset
      */
     @POST
+    @Path("/assets")
     @Transactional
     public Response create(final EDCAssetDto assetDto, @Context final UriInfo uriInfo) {
         final EDCAssetDto createdAsset = service.create(assetDto);
 
         URI uri = uriInfo.getAbsolutePathBuilder()
-                         .path(createdAsset.id().toString())
+                         .path(createdAsset.getId().toString())
                          .build();
         return Response.created(uri)
                        .entity(createdAsset)
@@ -84,7 +86,7 @@ public class EDCAssetResource {
      * @throws CustomException Wenn das Asset nicht gefunden wird
      */
     @PUT
-    @Path("{id}")
+    @Path("/assets/{id}")
     @Transactional
     public EDCAssetDto update(@PathParam("id") UUID id, final EDCAssetDto assetDto) throws CustomException {
         return service.update(id, assetDto);
@@ -97,7 +99,7 @@ public class EDCAssetResource {
      * @throws NotFoundException Wenn das Asset nicht gefunden wird
      */
     @DELETE
-    @Path("{id}")
+    @Path("/assets/{id}")
     @Transactional
     public void delete(@PathParam("id") UUID id) {
         if (!service.delete(id)) {
@@ -144,10 +146,10 @@ public class EDCAssetResource {
             final EDCAssetDto createdAsset = service.createForEdc(edcId, assetDto);
 
             URI uri = uriInfo.getAbsolutePathBuilder()
-                             .path(createdAsset.id().toString())
+                             .path(createdAsset.getId().toString())
                              .build();
             
-            LOG.info("Asset created successfully with ID: " + createdAsset.id());
+            LOG.info("Asset created successfully with ID: " + createdAsset.getId());
             return Response.created(uri)
                            .entity(createdAsset)
                            .build();
@@ -227,7 +229,7 @@ public class EDCAssetResource {
             LOG.info("Fetching asset " + assetId + " for EDC: " + edcId);
             EDCAssetDto asset = service.findByIdAndEdcId(edcId, assetId);
             
-            LOG.info("Found asset with ID: " + asset.id());
+            LOG.info("Found asset with ID: " + asset.getId());
             return Response.ok(asset).build();
         } catch (CustomException e) {
             LOG.error("Asset not found: " + e.getMessage());
@@ -291,7 +293,7 @@ public class EDCAssetResource {
             EDCAssetDto assetDto = service.processFrontendAsset(frontendJson, edcId);
             final EDCAssetDto updatedAsset = service.updateForEdc(edcId, assetId, assetDto);
             
-            LOG.info("Asset updated successfully with ID: " + updatedAsset.id());
+            LOG.info("Asset updated successfully with ID: " + updatedAsset.getId());
             return Response.ok(updatedAsset).build();
         } catch (CustomException e) {
             LOG.error("Asset not found: " + e.getMessage());

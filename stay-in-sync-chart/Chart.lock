@@ -11,5 +11,8 @@ dependencies:
 - name: umbrella
   repository: https://eclipse-tractusx.github.io/charts/dev
   version: 2.14.1
-digest: sha256:71d1c3915b9f66c5753e233e01c4e3911f053a315ba61c04e86047473b4c0c5c
-generated: "2025-07-21T15:54:48.540951+02:00"
+- name: tractusx-connector
+  repository: https://eclipse-tractusx.github.io/charts/dev
+  version: 0.10.0
+digest: sha256:71da62adbbb0b35e7087c9086b8f0122650a29a5ec99dd6eff734f1b610c6f98
+generated: "2025-09-14T14:32:56.101201+02:00"

@@ -1,6 +1,8 @@
 package de.unistuttgart.stayinsync.core.configuration.edc.dtoedc;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
@@ -102,23 +104,38 @@ public class FrontendAssetDto {
         }
         
         // Erstelle Properties-Objekt
-        EDCPropertyDto propertyDto = null;
+        List<EDCPropertyDto> propertyDtos = new ArrayList<>();
         if (description != null) {
-            propertyDto = new EDCPropertyDto()
+            EDCPropertyDto propertyDto = new EDCPropertyDto()
                     .setDescription(description);
+            propertyDtos.add(propertyDto);
         }
+        
+        // Name aus Properties ableiten (Fallback: assetId)
+        String name = null;
+        if (this.properties != null) {
+            name = this.properties.get("asset:prop:name");
+        }
+        if (name == null || name.isBlank()) {
+            name = assetId != null ? assetId : "asset";
+        }
+        
+        // URL und Typ aus der Datenadresse ableiten
+        String url = this.dataAddress != null ? this.dataAddress.baseUrl() : "";
+        String type = this.dataAddress != null ? this.dataAddress.type() : "HttpData";
         
         // Erstelle und gib das Backend-DTO zurück
         return new EDCAssetDto(
                 null, // ID wird automatisch generiert
                 assetId != null ? assetId : "asset-" + UUID.randomUUID().toString(),
-                this.dataAddress != null ? this.dataAddress.baseUrl() : "",
-                this.dataAddress != null ? this.dataAddress.type() : "HttpData",
+                name,
+                url,
+                type,
                 contentType != null ? contentType : "application/json",
                 description,
                 targetEDCId,
                 dataAddressDto,
-                propertyDto
+                propertyDtos
         );
     }
     
@@ -138,22 +155,22 @@ public class FrontendAssetDto {
         frontendDto.setContext(context);
         
         // Asset-ID übernehmen
-        frontendDto.setId(backendDto.assetId());
+        frontendDto.setId(backendDto.getAssetId());
         
         // Properties in das Frontend-Format konvertieren
         // Im Frontend werden alle Eigenschaften in einer flachen Map gespeichert
         Map<String, String> properties = Map.of(
-                "asset:prop:name", backendDto.assetId(),
-                "asset:prop:description", backendDto.description() != null ? backendDto.description() : "",
-                "asset:prop:contenttype", backendDto.contentType(),
+                "asset:prop:name", backendDto.getAssetId(),
+                "asset:prop:description", backendDto.getDescription() != null ? backendDto.getDescription() : "",
+                "asset:prop:contenttype", backendDto.getContentType(),
                 "asset:prop:version", "1.0.0"
         );
         frontendDto.setProperties(properties);
         
         // DataAddress in das Frontend-Format konvertieren
         FrontendDataAddressDto dataAddress = new FrontendDataAddressDto(
-                backendDto.dataAddress().getType(),
-                backendDto.dataAddress().getBaseURL());
+                backendDto.getDataAddress().getType(),
+                backendDto.getDataAddress().getBaseURL());
         frontendDto.setDataAddress(dataAddress);
         
         return frontendDto;

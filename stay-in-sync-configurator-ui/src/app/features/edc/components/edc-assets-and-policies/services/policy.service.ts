@@ -47,11 +47,33 @@ export class PolicyService {
         if (dtos && dtos.length > 0) {
           console.log('Example policy structure:', JSON.stringify(dtos[0], null, 2));
         }
-        return dtos.map(dto => ({
-          ...dto.policy,               // entpacke ODRL-Struktur
-          policyId: dto.policy?.['@id'],     // fürs UI, ersetzt 'id'
-          dbId: dto.id                 // DB-UUID
-        }));
+
+        const extractBpn = (policy: any): string | undefined => {
+          const perms = policy?.permission || policy?.policy?.permission || [];
+          const allConstraints = perms.flatMap((p: any) => p?.constraint || []);
+          const flatConstraints = (arr: any[]): any[] => arr.flatMap((c: any) => [
+            c,
+            ...(Array.isArray(c.and) ? flatConstraints(c.and) : []),
+            ...(Array.isArray(c.or) ? flatConstraints(c.or) : []),
+          ]);
+          const constraints = flatConstraints(allConstraints);
+          const hit = constraints.find((c: any) =>
+            typeof c?.leftOperand === 'string' && /bpn|businesspartner/i.test(c.leftOperand)
+          );
+          const ro = hit?.rightOperand;
+          if (Array.isArray(ro)) return ro[0];
+          return typeof ro === 'string' ? ro : undefined;
+        };
+
+        return dtos.map(dto => {
+          const unpacked = { ...dto.policy };
+          return {
+            ...unpacked,                      // entpacke ODRL-Struktur
+            policyId: unpacked?.['@id'],      // fürs UI, ersetzt 'id'
+            dbId: dto.id,                     // DB-UUID
+            bpn: extractBpn(unpacked) || ''   // abgeleitete BPN falls vorhanden
+          };
+        });
       })
     );
   }
@@ -132,6 +154,7 @@ export class PolicyService {
     // PUT request für Update
     return this.http.put(`${this.baseUrl}/${edcId}/policies/${raw.dbId}`, dto, { observe: 'response' })
       .pipe(
+        map((resp) => this.ensurePolicyResponseBody(resp, dto)),
         tap(
           () => console.log(`Successfully updated policy ${raw.dbId}`),
           (error: any) => console.error(`Error updating policy ${raw.dbId}:`, error)
@@ -144,6 +167,7 @@ export class PolicyService {
     // POST request für neue Policy
     return this.http.post(`${this.baseUrl}/${edcId}/policies`, dto, { observe: 'response' })
       .pipe(
+        map((resp) => this.ensurePolicyResponseBody(resp, dto)),
         tap(
           () => console.log(`Successfully created new policy`),
           (error: any) => console.error(`Error creating policy:`, error)
@@ -211,6 +235,39 @@ export class PolicyService {
       );
   }
 
+  // Normalize backend responses for create/update policies: ensure body.id/policyId present
+  private ensurePolicyResponseBody(resp: HttpResponse<any>, sentDto: { policyId: string; policy: any }): HttpResponse<any> {
+    const body = resp?.body || {};
+    let id = body?.id || body?.policyId;
+    if (!id) {
+      const loc = resp.headers?.get('Location') || resp.headers?.get('location');
+      if (loc) {
+        try {
+          id = loc.split('/').filter(Boolean).pop();
+        } catch {
+          id = undefined as any;
+        }
+      }
+    }
+    // Fallback to sent policyId as a usable identifier
+    if (!id) {
+      id = sentDto?.policyId;
+    }
+    const normalizedBody = {
+      ...body,
+      id: body?.id || id,
+      policyId: body?.policyId || sentDto?.policyId,
+    };
+    // Return a cloned HttpResponse with normalized body
+    return new HttpResponse<any>({
+      body: normalizedBody,
+      headers: resp.headers,
+      status: resp.status,
+      statusText: resp.statusText,
+      url: resp.url || undefined,
+    });
+  }
+
   // --------------------------------------------------------
   // CONTRACT DEFINITIONS
   // --------------------------------------------------------
@@ -222,7 +279,26 @@ export class PolicyService {
       console.warn(`Mock Mode: Fetching contract definitions for EDC ID: ${edcId}`);
       return of(MOCK_CONTRACT_DEFINITIONS[edcId] || []).pipe(delay(300));
     }
-    return this.http.get<OdrlContractDefinition[]>(`${this.baseUrl}/${edcId}/contract-definitions`);
+    return this.http.get<any[]>(`${this.baseUrl}/${edcId}/contract-definitions`).pipe(
+      map((dtos) => (dtos || []).map((dto) => {
+  const cdId = dto.contractDefinitionId || dto['@id'] || dto.id || '';
+        const assetId = dto.assetId || '';
+        const accessPolicyId = dto.accessPolicyIdStr || dto.accessPolicyId || '';
+        const assetsSelector = assetId
+          ? [{
+              operandLeft: 'https://w3id.org/edc/v0.0.1/ns/id',
+              operator: 'eq',
+              operandRight: assetId,
+            }]
+          : [];
+        return {
+          ...dto,
+          ['@id']: cdId,
+          assetsSelector,
+          accessPolicyId,
+        } as OdrlContractDefinition;
+      }))
+    );
   }
 
   // createContractDefinition(cd: OdrlContractDefinition): Observable<any> {

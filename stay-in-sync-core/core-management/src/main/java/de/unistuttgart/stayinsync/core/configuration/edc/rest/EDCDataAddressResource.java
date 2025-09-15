@@ -1,15 +1,15 @@
 package de.unistuttgart.stayinsync.core.configuration.edc.rest;
 
 import de.unistuttgart.stayinsync.core.configuration.edc.dtoedc.EDCDataAddressDto;
-import de.unistuttgart.stayinsync.core.configuration.edc.mapping.EDCDataAddressMapper;
 import de.unistuttgart.stayinsync.core.configuration.edc.service.EDCDataAddressService;
+import de.unistuttgart.stayinsync.transport.exception.CustomException;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.*;
 import java.net.URI;
 import java.util.List;
-import java.util.stream.Collectors;
+import java.util.UUID;
 
 @Path("/api/config/edcs/data-addresses")
 @Produces(MediaType.APPLICATION_JSON)
@@ -21,28 +21,27 @@ public class EDCDataAddressResource {
 
     @GET
     public List<EDCDataAddressDto> list() {
-        return service.listAll().stream()
-            .map(EDCDataAddressMapper::toDto)
-            .collect(Collectors.toList());
+        return service.listAll();
     }
 
     @GET @Path("{id}")
-    public EDCDataAddressDto get(@PathParam("id") Long id) {
-        return service.findById(id)
-            .map(EDCDataAddressMapper::toDto)
-            .orElseThrow(() -> new NotFoundException("DataAddress " + id + " nicht gefunden"));
+    public EDCDataAddressDto get(@PathParam("id") UUID id) {
+        try {
+            return service.findById(id);
+        } catch (CustomException e) {
+            throw new NotFoundException("DataAddress " + id + " nicht gefunden");
+        }
     }
 
     @POST @Transactional
     public Response create(EDCDataAddressDto dto, @Context UriInfo uriInfo) {
-        var entity = EDCDataAddressMapper.fromDto(dto);
-        var created = service.create(entity);
-        var createdDto = EDCDataAddressMapper.toDto(created);
+        EDCDataAddressDto created = service.create(dto);
+        
         URI uri = uriInfo.getAbsolutePathBuilder()
-                         .path(createdDto.getId().toString())
+                         .path(created.getId().toString())
                          .build();
         return Response.created(uri)
-                       .entity(createdDto)
+                       .entity(created)
                        .build();
     }
 }

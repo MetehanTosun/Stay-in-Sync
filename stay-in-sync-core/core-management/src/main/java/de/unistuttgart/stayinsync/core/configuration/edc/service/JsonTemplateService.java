@@ -1,6 +1,6 @@
 package de.unistuttgart.stayinsync.core.configuration.edc.service;
 
-import de.unistuttgart.stayinsync.core.configuration.edc.client.EDCClient;
+
 import de.unistuttgart.stayinsync.core.configuration.edc.dtoedc.JsonTemplateDto;
 import de.unistuttgart.stayinsync.core.configuration.edc.entities.JsonTemplate;
 import de.unistuttgart.stayinsync.core.configuration.edc.mapping.JsonTemplateMapper;
@@ -22,8 +22,7 @@ public class JsonTemplateService {
     @PersistenceContext
     EntityManager entityManager;
 
-    @Inject
-    EDCClient edcClient;
+  
 
 
     public JsonTemplateDto fetchJsonTemplateFromDatabase(final UUID id) throws EntityNotFoundException{

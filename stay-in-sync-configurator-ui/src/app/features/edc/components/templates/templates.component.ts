@@ -12,11 +12,11 @@ import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { ConfirmationService, MessageService } from 'primeng/api';
 import { ToastModule } from 'primeng/toast';
 import { MonacoEditorModule } from 'ngx-monaco-editor-v2';
-import { TemplateService } from '../../services/template.service';
+import { TemplateService } from './services/template.service';
 import { TagModule } from 'primeng/tag';
 import { IconFieldModule } from 'primeng/iconfield';
 import { InputIconModule } from 'primeng/inputicon';
-import { Template } from '../../models/template.model';
+import { Template } from './models/template.model';
 
 @Component({
   selector: 'app-templates',
@@ -74,9 +74,16 @@ export class TemplatesComponent implements OnInit {
 
   loadTemplates(): void {
     this.loading = true;
-    this.templateService.getTemplates().subscribe(templates => {
-      this.templates = templates;
-      this.loading = false;
+    this.templateService.getTemplates().subscribe({
+      next: (templates) => {
+        this.templates = templates;
+        this.loading = false;
+      },
+      error: (error) => {
+        console.error('Error loading templates:', error);
+        this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Failed to load templates.' });
+        this.loading = false;
+      }
     });
   }
 
@@ -129,22 +136,37 @@ export class TemplatesComponent implements OnInit {
       return;
     }
 
-    const allTemplates = [...this.templates];
     if (this.isNewTemplate) {
-      this.templateToEdit.id = `template-${this.generateUuid()}`;
-      allTemplates.push(this.templateToEdit);
+      // For new templates, don't set ID - let the backend generate it
+      this.templateToEdit.id = '';
+      this.templateService.createTemplate(this.templateToEdit).subscribe({
+        next: (createdTemplate) => {
+          this.templates.push(createdTemplate);
+          this.messageService.add({ severity: 'success', summary: 'Success', detail: 'Template created successfully.' });
+          this.hideEditDialog();
+        },
+        error: (error) => {
+          console.error('Error creating template:', error);
+          this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Failed to create template.' });
+        }
+      });
     } else {
-      const index = allTemplates.findIndex(t => t.id === this.templateToEdit!.id);
-      if (index > -1) {
-        allTemplates[index] = this.templateToEdit;
-      }
+      // For existing templates, update using the ID
+      this.templateService.updateTemplate(this.templateToEdit).subscribe({
+        next: (updatedTemplate) => {
+          const index = this.templates.findIndex(t => t.id === updatedTemplate.id);
+          if (index > -1) {
+            this.templates[index] = updatedTemplate;
+          }
+          this.messageService.add({ severity: 'success', summary: 'Success', detail: 'Template updated successfully.' });
+          this.hideEditDialog();
+        },
+        error: (error) => {
+          console.error('Error updating template:', error);
+          this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Failed to update template.' });
+        }
+      });
     }
-
-    this.templateService.saveTemplates(allTemplates).subscribe(() => {
-      this.templates = allTemplates;
-      this.messageService.add({ severity: 'success', summary: 'Success', detail: 'Template saved successfully.' });
-      this.hideEditDialog();
-    });
   }
 
   deleteTemplate(template: Template): void {
@@ -153,10 +175,15 @@ export class TemplatesComponent implements OnInit {
       header: 'Confirm Deletion',
       icon: 'pi pi-exclamation-triangle',
       accept: () => {
-        const updatedTemplates = this.templates.filter(t => t.id !== template.id);
-        this.templateService.saveTemplates(updatedTemplates).subscribe(() => {
-          this.templates = updatedTemplates;
-          this.messageService.add({ severity: 'success', summary: 'Success', detail: 'Template deleted successfully.' });
+        this.templateService.deleteTemplate(template.id).subscribe({
+          next: () => {
+            this.templates = this.templates.filter(t => t.id !== template.id);
+            this.messageService.add({ severity: 'success', summary: 'Success', detail: 'Template deleted successfully.' });
+          },
+          error: (error) => {
+            console.error('Error deleting template:', error);
+            this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Failed to delete template.' });
+          }
         });
       },
     });
@@ -186,38 +213,71 @@ export class TemplatesComponent implements OnInit {
     const fileList: FileList | null = element.files;
     if (!fileList || fileList.length === 0) return;
 
-    let importedCount = 0;
-    const allTemplates = [...this.templates];
+    let importPromises: Promise<void>[] = [];
 
     for (const file of Array.from(fileList)) {
-      try {
-        const fileContent = await file.text();
-        const template = JSON.parse(fileContent) as Template;
+      const importPromise = new Promise<void>(async (resolve, reject) => {
+        try {
+          const fileContent = await file.text();
+          const template = JSON.parse(fileContent) as Template;
 
-        // Basic validation
-        if (template.name && template.content) {
-          template.id = `template-${this.generateUuid()}`; // Assign new ID
-          allTemplates.push(template);
-          importedCount++;
+          // Basic validation
+          if (template.name && template.content) {
+            // Don't set ID - let the backend generate it
+            template.id = '';
+            
+            // Create the template using the service
+            this.templateService.createTemplate(template).subscribe({
+              next: (createdTemplate) => {
+                this.templates.push(createdTemplate);
+                this.messageService.add({ 
+                  severity: 'success', 
+                  summary: 'Template Imported', 
+                  detail: `Successfully imported ${template.name}` 
+                });
+                resolve();
+              },
+              error: (error) => {
+                console.error(`Error importing template ${template.name}:`, error);
+                this.messageService.add({ 
+                  severity: 'error', 
+                  summary: 'Import Error', 
+                  detail: `Failed to import ${template.name}` 
+                });
+                reject(error);
+              }
+            });
+          } else {
+            this.messageService.add({ 
+              severity: 'warn', 
+              summary: 'Invalid Template', 
+              detail: `File ${file.name} does not contain a valid template structure` 
+            });
+            resolve();
+          }
+        } catch (e) {
+          console.error(`Could not import file ${file.name}`, e);
+          this.messageService.add({ 
+            severity: 'error', 
+            summary: 'Parse Error', 
+            detail: `Could not parse ${file.name} as JSON` 
+          });
+          resolve(); // Resolve anyway to continue with other files
         }
-      } catch (e) {
-        console.error(`Could not import file ${file.name}`, e);
-      }
+      });
+      
+      importPromises.push(importPromise);
     }
 
-    if (importedCount > 0) {
-      this.templateService.saveTemplates(allTemplates).subscribe(() => {
-        this.templates = allTemplates;
-        this.messageService.add({ severity: 'success', summary: 'Import Complete', detail: `${importedCount} template(s) imported.` });
-      });
-    } else {
-      this.messageService.add({ severity: 'warn', summary: 'Import Failed', detail: 'No valid templates found in selected files.' });
+    // Wait for all imports to complete
+    try {
+      await Promise.all(importPromises);
+    } catch (error) {
+      console.error('Some template imports failed', error);
     }
 
     element.value = ''; // Reset file input
-  }
-
-  private generateUuid(): string {
+  }  private generateUuid(): string {
     return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
       const r = Math.random() * 16 | 0, v = c === 'x' ? r : (r & 0x3 | 0x8);
       return v.toString(16);

@@ -1,8 +1,8 @@
 package de.unistuttgart.stayinsync.core.configuration.edc.rest;
 
 import de.unistuttgart.stayinsync.core.configuration.edc.dtoedc.EDCPropertyDto;
-import de.unistuttgart.stayinsync.core.configuration.edc.mapping.EDCPropertyMapper;
 import de.unistuttgart.stayinsync.core.configuration.edc.service.EDCPropertyService;
+import de.unistuttgart.stayinsync.transport.exception.CustomException;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
 import jakarta.ws.rs.*;
@@ -11,7 +11,6 @@ import jakarta.ws.rs.core.*;
 import java.net.URI;
 import java.util.List;
 import java.util.UUID;
-import java.util.stream.Collectors;
 
 @Path("/api/config/edcs/properties")
 @Produces(MediaType.APPLICATION_JSON)
@@ -23,31 +22,29 @@ public class EDCPropertyResource {
 
     @GET
     public List<EDCPropertyDto> list() {
-        return service.listAll().stream()
-            .map(EDCPropertyMapper::toDto)
-            .collect(Collectors.toList());
+        return service.listAll();
     }
 
     @GET
     @Path("{id}")
     public EDCPropertyDto get(@PathParam("id") UUID id) {
-        return service.findById(id)
-            .map(EDCPropertyMapper::toDto)
-            .orElseThrow(() -> new NotFoundException("EDCProperty " + id + " nicht gefunden"));
+        try {
+            return service.findById(id);
+        } catch (CustomException e) {
+            throw new NotFoundException("EDCProperty " + id + " nicht gefunden");
+        }
     }
 
     @POST
     @Transactional
     public Response create(EDCPropertyDto dto, @Context UriInfo uriInfo) {
-        var entity     = EDCPropertyMapper.fromDto(dto);
-        var created    = service.create(entity);
-        var createdDto = EDCPropertyMapper.toDto(created);
+        EDCPropertyDto created = service.create(dto);
 
         URI uri = uriInfo.getAbsolutePathBuilder()
-                         .path(createdDto.getId().toString())
+                         .path(created.getId().toString())
                          .build();
         return Response.created(uri)
-                       .entity(createdDto)
+                       .entity(created)
                        .build();
     }
 
@@ -56,18 +53,23 @@ public class EDCPropertyResource {
     @Transactional
     public EDCPropertyDto update(@PathParam("id") UUID id, EDCPropertyDto dto) {
         dto.setId(id);
-        var entity = EDCPropertyMapper.fromDto(dto);
-        return service.update(id, entity)
-            .map(EDCPropertyMapper::toDto)
-            .orElseThrow(() -> new NotFoundException("EDCProperty " + id + " nicht gefunden"));
+        try {
+            return service.update(id, dto);
+        } catch (CustomException e) {
+            throw new NotFoundException("EDCProperty " + id + " nicht gefunden");
+        }
     }
 
     @DELETE
     @Path("{id}")
     @Transactional
     public void delete(@PathParam("id") UUID id) {
-        if (!service.delete(id)) {
-            throw new NotFoundException("EDCProperty " + id + " nicht gefunden");
+        try {
+            if (!service.delete(id)) {
+                throw new NotFoundException("EDCProperty " + id + " nicht gefunden");
+            }
+        } catch (CustomException e) {
+            throw new NotFoundException("EDCProperty " + id + " nicht gefunden: " + e.getMessage());
         }
     }
 }

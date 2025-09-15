@@ -20,11 +20,6 @@ import java.util.UUID;
 @Table(name = "json_template")
 public class JsonTemplate extends UuidEntity {
 
-    @Getter
-    @Setter
-    @NotBlank
-    private UUID id;
-
     /**
      * Der Name des Templates für die Anzeige im Frontend.
      */

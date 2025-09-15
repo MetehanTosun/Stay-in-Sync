@@ -86,4 +86,23 @@ public interface EDCAssetMapper {
         }
         return targetEDC.id;
     }
+
+    /**
+     * Helfermethode: mappt eine einzelne EDCProperty zu einer Liste von EDCPropertyDto.
+     * MapStruct benötigt diese Methode, weil das Entity ein einzelnes EDCProperty
+     * und das DTO eine Liste von EDCPropertyDto verwendet.
+     */
+    default java.util.List<de.unistuttgart.stayinsync.core.configuration.edc.dtoedc.EDCPropertyDto> map(de.unistuttgart.stayinsync.core.configuration.edc.entities.EDCProperty properties) {
+        if (properties == null) return null;
+        return java.util.List.of(EDCPropertyMapper.toDto(properties));
+    }
+
+    /**
+     * Helfermethode: mappt eine Liste von EDCPropertyDto auf ein einzelnes EDCProperty.
+     * Dabei wird das erste Element der Liste genutzt (falls vorhanden).
+     */
+    default de.unistuttgart.stayinsync.core.configuration.edc.entities.EDCProperty map(java.util.List<de.unistuttgart.stayinsync.core.configuration.edc.dtoedc.EDCPropertyDto> propertiesDto) {
+        if (propertiesDto == null || propertiesDto.isEmpty()) return null;
+        return EDCPropertyMapper.fromDto(propertiesDto.get(0));
+    }
 }
