@@ -181,6 +181,27 @@ export class SourceSystemBaseComponent implements OnInit, OnDestroy {
     this.aasTreeNodes = [...this.aasTreeNodes];
   }
 
+  private hydrateAasNodeTypesForNodes(submodelId: string, nodes: TreeNode[] | undefined): void {
+    const systemId = this.selectedSystem?.id;
+    if (!systemId || !nodes || nodes.length === 0) return;
+    for (const n of nodes) {
+      if (n?.data?.type === 'element' && n.data?.submodelId === submodelId) {
+        const path: string = n.data.idShortPath || n.data.raw?.idShortPath || n.data.raw?.idShort;
+        if (!path) continue;
+        this.aasService.getElement(systemId, submodelId, path, 'LIVE').subscribe({
+          next: (el: any) => {
+            const liveType = el?.modelType || this.inferModelType(el);
+            if (liveType) {
+              n.data.modelType = liveType;
+              this.aasTreeNodes = [...this.aasTreeNodes];
+            }
+          },
+          error: () => {}
+        });
+      }
+    }
+  }
+
   // AAS create dialogs
   showAasSubmodelDialog = false;
   aasNewSubmodelJson = '{\n  "id": "https://example.com/ids/sm/new",\n  "idShort": "NewSubmodel"\n}';
@@ -662,6 +683,8 @@ export class SourceSystemBaseComponent implements OnInit, OnDestroy {
         const list = Array.isArray(resp) ? resp : (resp?.result ?? []);
         attach.children = list.map((el: any) => this.mapElToNode(submodelId, el));
         this.aasTreeNodes = [...this.aasTreeNodes];
+        // Background precise type hydration via LIVE element details
+        this.hydrateAasNodeTypesForNodes(submodelId, attach.children as TreeNode[]);
         // hydrate types in background
         this.ensureAasTypeMap(submodelId);
       },

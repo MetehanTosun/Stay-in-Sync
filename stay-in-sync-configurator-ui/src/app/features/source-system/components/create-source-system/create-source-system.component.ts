@@ -528,6 +528,26 @@ save(): void {
     this.treeNodes = [...this.treeNodes];
   }
 
+  private hydrateNodeTypesForNodes(submodelId: string, nodes: TreeNode[] | undefined): void {
+    if (!this.createdSourceSystemId || !nodes || nodes.length === 0) return;
+    for (const n of nodes) {
+      if (n?.data?.type === 'element' && n.data?.submodelId === submodelId) {
+        const path: string = n.data.idShortPath || n.data.raw?.idShortPath || n.data.raw?.idShort;
+        if (!path) continue;
+        this.aasService.getElement(this.createdSourceSystemId, submodelId, path, 'LIVE').subscribe({
+          next: (el: any) => {
+            const liveType = el?.modelType || this.inferModelType(el);
+            if (liveType) {
+              n.data.modelType = liveType;
+              this.treeNodes = [...this.treeNodes];
+            }
+          },
+          error: () => {}
+        });
+      }
+    }
+  }
+
   loadRootElements(submodelId: string, attachToNode?: TreeNode): void {
     if (!this.createdSourceSystemId) return;
     this.childrenLoading[submodelId] = true;
@@ -540,6 +560,8 @@ save(): void {
           if (attachToNode) {
             attachToNode.children = list.map((el: any) => this.mapElementToNode(submodelId, el));
             this.treeNodes = [...this.treeNodes];
+            // Background: hydrate precise types via LIVE element details
+            this.hydrateNodeTypesForNodes(submodelId, attachToNode.children as TreeNode[]);
           }
           // hydrate types in background
           this.ensureTypeMap(submodelId);
@@ -568,6 +590,8 @@ save(): void {
           });
           node.children = mapped;
           this.treeNodes = [...this.treeNodes];
+          // Background: hydrate precise types for these children
+          this.hydrateNodeTypesForNodes(submodelId, node.children as TreeNode[]);
           // hydrate types in background
           this.ensureTypeMap(submodelId);
         },
