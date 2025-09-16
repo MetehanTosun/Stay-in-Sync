@@ -74,7 +74,7 @@ export class ReplayViewComponent implements OnInit {
 
         this.logService.getLogsByTransformations(
           [transformationId.toString()],
-          this.toNanoSeconds(new Date(Date.now() - 5 * 60 * 1000)), // vor 5 Minuten
+          this.toNanoSeconds(new Date(Date.now() - 24 * 60 * 60 * 1000)), // vor 24 Stunden
           this.toNanoSeconds(new Date()), // jetzt
           ""
         ).subscribe({
