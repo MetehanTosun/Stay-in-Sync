@@ -125,6 +125,9 @@
             <ng-template let-node pTemplate="default">
               <div style="display:flex;align-items:center;gap:.5rem;">
                 <span>{{ node.label }}</span>
+                <span style="font-size:.75rem;padding:.1rem .4rem;border-radius:999px;border:1px solid var(--surface-border);color:var(--text-color-secondary);">
+                  {{ node.data?.type==='submodel' ? 'Submodel' : (node.data?.modelType || node.data?.raw?.modelType || (node.data?.raw?.valueType ? 'Property' : 'Element')) }}
+                </span>
                 <button *ngIf="node.data?.type==='submodel'" pButton type="button" class="p-button-text" label="Create element" (click)="openCreateElement(node.data.id)"></button>
                 <button *ngIf="node.data?.type==='submodel'" pButton type="button" class="p-button-text p-button-danger" label="Delete submodel" (click)="deleteSubmodel(node.data.id)"></button>
                 <!-- <button *ngIf="node.data?.type==='element' && node.data?.modelType!=='Property'" pButton type="button" class="p-button-text" label="Add child" (click)="openCreateElement(node.data.submodelId, node.data.idShortPath)"></button> -->
@@ -144,6 +147,44 @@
             <div><strong>Type:</strong> {{ selectedLivePanel.type }}</div>
             <div *ngIf="selectedLivePanel.valueType"><strong>valueType:</strong> {{ selectedLivePanel.valueType }}</div>
             <div *ngIf="selectedLivePanel.value !== undefined"><strong>value:</strong> {{ selectedLivePanel.value }}</div>
+            <div *ngIf="selectedLivePanel.type==='Range' || selectedLivePanel.min !== undefined || selectedLivePanel.max !== undefined">
+              <div><strong>min:</strong> {{ selectedLivePanel.min }}</div>
+              <div><strong>max:</strong> {{ selectedLivePanel.max }}</div>
+            </div>
+            <div *ngIf="selectedLivePanel.type==='Operation'">
+              <div *ngIf="selectedLivePanel.inputVariables?.length">
+                <strong>Inputs:</strong>
+                <ul style="margin:.25rem 0 .5rem 1rem;">
+                  <li *ngFor="let v of selectedLivePanel.inputVariables">{{ v.idShort }} <span *ngIf="v.valueType">({{ v.valueType }})</span></li>
+                </ul>
+              </div>
+              <div *ngIf="selectedLivePanel.inoutputVariables?.length">
+                <strong>In/Out:</strong>
+                <ul style="margin:.25rem 0 .5rem 1rem;">
+                  <li *ngFor="let v of selectedLivePanel.inoutputVariables">{{ v.idShort }} <span *ngIf="v.valueType">({{ v.valueType }})</span></li>
+                </ul>
+              </div>
+              <div *ngIf="selectedLivePanel.outputVariables?.length">
+                <strong>Outputs:</strong>
+                <ul style="margin:.25rem 0 .5rem 1rem;">
+                  <li *ngFor="let v of selectedLivePanel.outputVariables">{{ v.idShort }} <span *ngIf="v.valueType">({{ v.valueType }})</span></li>
+                </ul>
+              </div>
+            </div>
+            <div *ngIf="selectedLivePanel.type==='RelationshipElement' || selectedLivePanel.type==='AnnotatedRelationshipElement'">
+              <div *ngIf="selectedLivePanel.firstRef"><strong>First:</strong> {{ selectedLivePanel.firstRef }}</div>
+              <div *ngIf="selectedLivePanel.secondRef"><strong>Second:</strong> {{ selectedLivePanel.secondRef }}</div>
+              <div *ngIf="selectedLivePanel.type==='AnnotatedRelationshipElement' && selectedLivePanel.annotations?.length">
+                <strong>Annotations:</strong>
+                <ul style="margin:.25rem 0 .5rem 1rem;">
+                  <li *ngFor="let a of selectedLivePanel.annotations; let i = index">
+                    <div><strong>{{ a.idShort || ('Annotation ' + (i+1)) }}</strong></div>
+                    <div *ngIf="a.valueType"><em>valueType:</em> {{ a.valueType }}</div>
+                    <div *ngIf="a.value !== undefined"><em>value:</em> {{ (a.value | json) }}</div>
+                  </li>
+                </ul>
+              </div>
+            </div>
           </div>
         </div>
       </div>

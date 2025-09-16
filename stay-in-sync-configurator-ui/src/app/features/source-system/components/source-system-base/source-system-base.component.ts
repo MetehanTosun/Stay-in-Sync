@@ -33,6 +33,23 @@ import { SourceSystemEndpointResourceService } from '../../service/sourceSystemE
 import { AasService } from '../../services/aas.service';
 import { TreeNode } from 'primeng/api';
 
+interface AasOperationVarView { idShort: string; modelType?: string; valueType?: string }
+interface AasAnnotationView { idShort: string; modelType?: string; valueType?: string; value?: any }
+interface AasElementLivePanel {
+  label: string;
+  type: string;
+  value?: any;
+  valueType?: string;
+  min?: any;
+  max?: any;
+  inputVariables?: AasOperationVarView[];
+  outputVariables?: AasOperationVarView[];
+  inoutputVariables?: AasOperationVarView[];
+  firstRef?: string;
+  secondRef?: string;
+  annotations?: AasAnnotationView[];
+}
+
 /**
  * Base component for displaying, creating, and managing source systems.
  * Provides comprehensive functionality for listing, searching, creating, editing,
@@ -112,13 +129,78 @@ export class SourceSystemBaseComponent implements OnInit, OnDestroy {
   aasTestLoading = false;
   aasTestError: string | null = null;
   selectedAasNode?: TreeNode;
-  aasSelectedLivePanel: { label: string; type: string; value?: any; valueType?: string } | null = null;
+  aasSelectedLivePanel: AasElementLivePanel | null = null;
   aasSelectedLiveLoading = false;
   showAasValueDialog = false;
   aasValueSubmodelId = '';
   aasValueElementPath = '';
   aasValueNew = '';
   aasValueTypeHint = 'xs:string';
+
+  // Cache: submodelId -> (idShortPath -> modelType)
+  private aasTypeCache: Record<string, Record<string, string>> = {};
+  private ensureAasTypeMap(submodelId: string): void {
+    const systemId = this.selectedSystem?.id;
+    if (!systemId) return;
+    if (this.aasTypeCache[submodelId]) {
+      this.applyAasTypeMapToTree(submodelId);
+      return;
+    }
+    this.aasService
+      .listElements(systemId, submodelId, { depth: 'all', source: 'LIVE' })
+      .subscribe({
+        next: (resp) => {
+          const list: any[] = Array.isArray(resp) ? resp : (resp?.result ?? []);
+          const map: Record<string, string> = {};
+          for (const el of list) {
+            const p = el?.idShortPath || el?.idShort;
+            const t = this.inferModelType(el);
+            if (p && t) map[p] = t;
+          }
+          this.aasTypeCache[submodelId] = map;
+          this.applyAasTypeMapToTree(submodelId);
+        },
+        error: () => {}
+      });
+  }
+  private applyAasTypeMapToTree(submodelId: string): void {
+    const map = this.aasTypeCache[submodelId];
+    if (!map) return;
+    const applyMap = (nodes?: TreeNode[]) => {
+      if (!nodes) return;
+      for (const n of nodes) {
+        if (n?.data?.type === 'element' && n.data?.submodelId === submodelId) {
+          const p: string = n.data.idShortPath || n.data.raw?.idShortPath || n.data.raw?.idShort;
+          const mt = map[p];
+          if (mt) n.data.modelType = mt;
+        }
+        if (n.children && n.children.length) applyMap(n.children as TreeNode[]);
+      }
+    };
+    applyMap(this.aasTreeNodes);
+    this.aasTreeNodes = [...this.aasTreeNodes];
+  }
+
+  private hydrateAasNodeTypesForNodes(submodelId: string, nodes: TreeNode[] | undefined): void {
+    const systemId = this.selectedSystem?.id;
+    if (!systemId || !nodes || nodes.length === 0) return;
+    for (const n of nodes) {
+      if (n?.data?.type === 'element' && n.data?.submodelId === submodelId) {
+        const path: string = n.data.idShortPath || n.data.raw?.idShortPath || n.data.raw?.idShort;
+        if (!path) continue;
+        this.aasService.getElement(systemId, submodelId, path, 'LIVE').subscribe({
+          next: (el: any) => {
+            const liveType = el?.modelType || this.inferModelType(el);
+            if (liveType) {
+              n.data.modelType = liveType;
+              this.aasTreeNodes = [...this.aasTreeNodes];
+            }
+          },
+          error: () => {}
+        });
+      }
+    }
+  }
 
   // AAS create dialogs
   showAasSubmodelDialog = false;
@@ -601,6 +683,10 @@ export class SourceSystemBaseComponent implements OnInit, OnDestroy {
         const list = Array.isArray(resp) ? resp : (resp?.result ?? []);
         attach.children = list.map((el: any) => this.mapElToNode(submodelId, el));
         this.aasTreeNodes = [...this.aasTreeNodes];
+        // Background precise type hydration via LIVE element details
+        this.hydrateAasNodeTypesForNodes(submodelId, attach.children as TreeNode[]);
+        // hydrate types in background
+        this.ensureAasTypeMap(submodelId);
       },
       error: (err) => this.erorrService.handleError(err)
     });
@@ -648,16 +734,94 @@ export class SourceSystemBaseComponent implements OnInit, OnDestroy {
       next: (found: any) => {
         this.aasSelectedLiveLoading = false;
         const liveType = found?.modelType || (found?.valueType ? 'Property' : undefined);
+        const minValue = (found as any).min ?? (found as any).minValue;
+        const maxValue = (found as any).max ?? (found as any).maxValue;
+        const inputVars = Array.isArray((found as any).inputVariables) ? (found as any).inputVariables : [];
+        const outputVars = Array.isArray((found as any).outputVariables) ? (found as any).outputVariables : [];
+        const inoutVars = Array.isArray((found as any).inoutputVariables) ? (found as any).inoutputVariables : [];
+        const ann1 = (found as any).annotations;
+        const ann2 = (found as any).annotation;
+        const annotationsRaw = Array.isArray(ann1) ? ann1 : (Array.isArray(ann2) ? ann2 : []);
+        const mapVar = (v: any): AasOperationVarView | null => {
+          const val = v?.value ?? v;
+          const idShort = val?.idShort;
+          if (!idShort) return null;
+          return { idShort, modelType: val?.modelType, valueType: val?.valueType };
+        };
+        const mapAnnotation = (a: any): AasAnnotationView | null => {
+          const val = a?.value ?? a;
+          const idShort = val?.idShort;
+          if (!idShort) return null;
+          return { idShort, modelType: val?.modelType, valueType: val?.valueType, value: val?.value };
+        };
+        const stringifyRef = (ref: any): string | undefined => {
+          if (!ref) return undefined;
+          const keys = ref?.keys;
+          if (Array.isArray(keys) && keys.length) {
+            try {
+              return keys.map((k: any) => `${k?.type ?? ''}:${k?.value ?? ''}`).join(' / ');
+            } catch {
+              return JSON.stringify(ref);
+            }
+          }
+          if (typeof ref === 'string') return ref;
+          if (ref?.value) return String(ref.value);
+          try { return JSON.stringify(ref); } catch { return String(ref); }
+        };
+        const firstRef = stringifyRef((found as any).first || (found as any).firstReference);
+        const secondRef = stringifyRef((found as any).second || (found as any).secondReference);
         this.aasSelectedLivePanel = {
-          label: liveType ? `${found.idShort} (${liveType})` : found.idShort,
+          label: found.idShort,
           type: liveType || 'Unknown',
           value: (found as any).value,
-          valueType: (found as any).valueType
-        };
+          valueType: (found as any).valueType,
+          min: minValue,
+          max: maxValue,
+          inputVariables: inputVars.map(mapVar).filter(Boolean) as AasOperationVarView[],
+          outputVariables: outputVars.map(mapVar).filter(Boolean) as AasOperationVarView[],
+          inoutputVariables: inoutVars.map(mapVar).filter(Boolean) as AasOperationVarView[],
+          firstRef,
+          secondRef,
+          annotations: annotationsRaw.map(mapAnnotation).filter(Boolean) as AasAnnotationView[]
+        } as any;
+        // Fallback: If AnnotatedRelationshipElement has no annotations in direct payload, load children as annotations
+        if ((liveType === 'AnnotatedRelationshipElement') && (((this.aasSelectedLivePanel?.annotations?.length ?? 0) === 0))) {
+          const pathForChildren = safePath;
+          // Try deep list to get full element (with annotations)
+          this.aasService
+            .listElements(systemId, smId, { depth: 'all', source: 'LIVE' })
+            .subscribe({
+              next: (resp: any) => {
+                const arr: any[] = Array.isArray(resp) ? resp : (resp?.result ?? []);
+                const foundDeep = arr.find((el: any) => (el?.idShortPath || el?.idShort) === pathForChildren);
+                const anns = Array.isArray(foundDeep?.annotations) ? foundDeep.annotations : (Array.isArray(foundDeep?.annotation) ? foundDeep.annotation : []);
+                let annotations: AasAnnotationView[] = [];
+                if (anns.length) {
+                  annotations = anns.map((a: any) => ({ idShort: a?.idShort, modelType: a?.modelType, valueType: a?.valueType, value: a?.value } as AasAnnotationView));
+                } else {
+                  // Fallback: treat shallow children as annotations
+                  const list: any[] = arr.filter((el: any) => {
+                    const p = el?.idShortPath || el?.idShort;
+                    if (!p || !p.startsWith(pathForChildren + '/')) return false;
+                    const rest = p.substring((pathForChildren + '/').length);
+                    return rest && !rest.includes('/');
+                  });
+                  annotations = list.map((el: any) => ({ idShort: el?.idShort, modelType: el?.modelType, valueType: el?.valueType, value: el?.value } as AasAnnotationView));
+                }
+                if (this.aasSelectedLivePanel) {
+                  this.aasSelectedLivePanel = { ...this.aasSelectedLivePanel, annotations };
+                }
+              },
+              error: () => {
+              }
+            });
+        }
         if (node && node.data) {
           const computedPath = safePath;
           node.data.idShortPath = computedPath;
+          node.data.modelType = liveType || node.data.modelType;
           node.data.raw = { ...(node.data.raw || {}), idShortPath: computedPath, modelType: found.modelType, valueType: found.valueType };
+          this.aasTreeNodes = [...this.aasTreeNodes];
         }
       },
       error: (_err: any) => {
@@ -671,12 +835,60 @@ export class SourceSystemBaseComponent implements OnInit, OnDestroy {
               const found2 = list.find((el: any) => el.idShort === last);
               if (found2) {
                 const liveType = found2?.modelType || (found2?.valueType ? 'Property' : undefined);
+                const minValue = (found2 as any).min ?? (found2 as any).minValue;
+                const maxValue = (found2 as any).max ?? (found2 as any).maxValue;
+                const inputVars2 = Array.isArray((found2 as any).inputVariables) ? (found2 as any).inputVariables : [];
+                const outputVars2 = Array.isArray((found2 as any).outputVariables) ? (found2 as any).outputVariables : [];
+                const inoutVars2 = Array.isArray((found2 as any).inoutputVariables) ? (found2 as any).inoutputVariables : [];
+                const mapVar2 = (v: any): AasOperationVarView | null => {
+                  const val = v?.value ?? v;
+                  const idShort = val?.idShort;
+                  if (!idShort) return null;
+                  return { idShort, modelType: val?.modelType, valueType: val?.valueType };
+                };
+                const ann1b = (found2 as any).annotations;
+                const ann2b = (found2 as any).annotation;
+                const annotationsRaw2 = Array.isArray(ann1b) ? ann1b : (Array.isArray(ann2b) ? ann2b : []);
+                const mapAnnotation2 = (a: any): AasAnnotationView | null => {
+                  const val = a?.value ?? a;
+                  const idShort = val?.idShort;
+                  if (!idShort) return null;
+                  return { idShort, modelType: val?.modelType, valueType: val?.valueType, value: val?.value };
+                };
+                const stringifyRef2 = (ref: any): string | undefined => {
+                  if (!ref) return undefined;
+                  const keys = ref?.keys;
+                  if (Array.isArray(keys) && keys.length) {
+                    try {
+                      return keys.map((k: any) => `${k?.type ?? ''}:${k?.value ?? ''}`).join(' / ');
+                    } catch {
+                      return JSON.stringify(ref);
+                    }
+                  }
+                  if (typeof ref === 'string') return ref;
+                  if (ref?.value) return String(ref.value);
+                  try { return JSON.stringify(ref); } catch { return String(ref); }
+                };
+                const firstRef2 = stringifyRef2((found2 as any).first || (found2 as any).firstReference);
+                const secondRef2 = stringifyRef2((found2 as any).second || (found2 as any).secondReference);
                 this.aasSelectedLivePanel = {
-                  label: liveType ? `${found2.idShort} (${liveType})` : found2.idShort,
+                  label: found2.idShort,
                   type: liveType || 'Unknown',
                   value: (found2 as any).value,
-                  valueType: (found2 as any).valueType
-                };
+                  valueType: (found2 as any).valueType,
+                  min: minValue,
+                  max: maxValue,
+                  inputVariables: inputVars2.map(mapVar2).filter(Boolean) as AasOperationVarView[],
+                  outputVariables: outputVars2.map(mapVar2).filter(Boolean) as AasOperationVarView[],
+                  inoutputVariables: inoutVars2.map(mapVar2).filter(Boolean) as AasOperationVarView[],
+                  firstRef: firstRef2,
+                  secondRef: secondRef2,
+                  annotations: annotationsRaw2.map(mapAnnotation2).filter(Boolean) as AasAnnotationView[]
+                } as any;
+                if (node && node.data) {
+                  node.data.modelType = liveType || node.data.modelType;
+                  this.aasTreeNodes = [...this.aasTreeNodes];
+                }
               } else {
                 this.aasSelectedLivePanel = { label: last, type: 'Unknown' } as any;
               }
@@ -779,21 +991,46 @@ export class SourceSystemBaseComponent implements OnInit, OnDestroy {
   private mapSmToNode(sm: any): TreeNode {
     const id = sm.submodelId || sm.id || (sm.keys && sm.keys[0]?.value);
     const label = (sm.submodelIdShort || sm.idShort) || id;
-    return { key: id, label, data: { type: 'submodel', id, raw: sm }, leaf: false, children: [] } as TreeNode;
+    return { key: id, label, data: { type: 'submodel', id, modelType: 'Submodel', raw: sm }, leaf: false, children: [] } as TreeNode;
   }
 
   private mapElToNode(submodelId: string, el: any): TreeNode {
-    const computedType = el?.modelType || (el?.valueType ? 'Property' : undefined);
-    const label = computedType ? `${el.idShort} (${computedType})` : el.idShort;
-    const typeHasChildren = el?.modelType === 'SubmodelElementCollection' || el?.modelType === 'SubmodelElementList' || el?.modelType === 'Operation';
+    const computedType = this.inferModelType(el);
+    const label = el.idShort;
+    const typeHasChildren = el?.modelType === 'SubmodelElementCollection' || el?.modelType === 'SubmodelElementList' || el?.modelType === 'Operation' || el?.modelType === 'Entity';
     const hasChildren = el?.hasChildren === true || typeHasChildren;
     return {
       key: `${submodelId}::${el.idShortPath || el.idShort}`,
       label,
-      data: { type: 'element', submodelId, idShortPath: el.idShortPath || el.idShort, modelType: el.modelType, raw: el },
+      data: { type: 'element', submodelId, idShortPath: el.idShortPath || el.idShort, modelType: computedType, raw: el },
       leaf: !hasChildren,
       children: []
     } as TreeNode;
+  }
+
+  // Infer a more precise modelType when missing
+  private inferModelType(el: any): string | undefined {
+    if (!el) return undefined;
+    if (el.modelType) return el.modelType;
+    // Detect Range before Property
+    if (el.min !== undefined || el.max !== undefined || el.minValue !== undefined || el.maxValue !== undefined) return 'Range';
+    if (el.valueType) return 'Property';
+    if (Array.isArray(el.inputVariables) || Array.isArray(el.outputVariables) || Array.isArray(el.inoutputVariables)) return 'Operation';
+    if (Array.isArray(el.value)) {
+      const isML = el.value.every((v: any) => v && (v.language !== undefined) && (v.text !== undefined));
+      if (isML) return 'MultiLanguageProperty';
+      if (el.typeValueListElement || el.orderRelevant !== undefined) return 'SubmodelElementList';
+      return 'SubmodelElementCollection';
+    }
+    if (el.first || el.firstReference) {
+      const ann = el.annotations || el.annotation;
+      return Array.isArray(ann) ? 'AnnotatedRelationshipElement' : 'RelationshipElement';
+    }
+    if (Array.isArray(el.annotations) || Array.isArray(el.annotation)) return 'AnnotatedRelationshipElement';
+    if (Array.isArray(el.statements)) return 'Entity';
+    if (Array.isArray(el.keys)) return 'ReferenceElement';
+    if (el.contentType && (el.fileName || el.path)) return 'File';
+    return undefined;
   }
 
   aasTest(): void {
