@@ -53,7 +53,7 @@ public class LogService {
             String query = "{" + String.join(",", labels) + "}";
 
             // URL bauen
-            String url = String.format("%s?query=%s&start=%d&end=%d&limit=1000&direction=backward",
+            String url = String.format("%s?query=%s&start=%d&end=%d&limit=5000&direction=backward",
                     LOKI_URL,
                     URLEncoder.encode(query, StandardCharsets.UTF_8),
                     startNs,
