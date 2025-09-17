@@ -313,7 +313,7 @@
             <div *ngIf="aasSelectedLivePanel.type==='SubmodelElementCollection'">
               <div><strong>Items:</strong> {{ aasSelectedLivePanel.value?.length || 0 }}</div>
               <ul *ngIf="aasSelectedLivePanel.value?.length" style="margin:.25rem 0 .5rem 1rem;">
-                <li *ngFor="let e of (aasSelectedLivePanel.value | slice:0:5)">{{ e?.idShort || '(unnamed)' }} <span *ngIf="e?.modelType">({{ e.modelType }})</span></li>
+                <li *ngFor="let e of (aasSelectedLivePanel.value | slice:0:5)">{{ $any(e)?.idShort || $any(e)?.value?.idShort || '(unnamed)' }} <span *ngIf="$any(e)?.modelType || $any(e)?.value?.modelType">({{ $any(e)?.modelType || $any(e)?.value?.modelType }})</span></li>
               </ul>
               <small *ngIf="(aasSelectedLivePanel.value?.length || 0) > 5">… and {{ aasSelectedLivePanel.value.length - 5 }} more</small>
             </div>
