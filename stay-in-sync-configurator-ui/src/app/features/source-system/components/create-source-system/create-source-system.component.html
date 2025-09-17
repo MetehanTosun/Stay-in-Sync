@@ -146,7 +146,16 @@
             <div><strong>Label:</strong> {{ selectedLivePanel.label }}</div>
             <div><strong>Type:</strong> {{ selectedLivePanel.type }}</div>
             <div *ngIf="selectedLivePanel.valueType"><strong>valueType:</strong> {{ selectedLivePanel.valueType }}</div>
-            <div *ngIf="selectedLivePanel.value !== undefined && selectedLivePanel.type!=='SubmodelElementCollection' && selectedLivePanel.type!=='SubmodelElementList'">
+            <div *ngIf="selectedLivePanel.type==='MultiLanguageProperty' && (selectedLivePanel.value?.length || 0) > 0">
+              <strong>values:</strong>
+              <div style="margin:.25rem 0 .5rem 0;">
+                <div *ngFor="let v of selectedLivePanel.value" style="display:flex;gap:.5rem;align-items:baseline;">
+                  <span style="font-size:.75rem;padding:.1rem .4rem;border:1px solid var(--surface-border);border-radius:999px;color:var(--text-color-secondary);min-width:2.5rem;text-align:center;">{{ v?.language || '-' }}</span>
+                  <span>{{ v?.text || '' }}</span>
+                </div>
+              </div>
+            </div>
+            <div *ngIf="selectedLivePanel.value !== undefined && selectedLivePanel.type!=='SubmodelElementCollection' && selectedLivePanel.type!=='SubmodelElementList' && selectedLivePanel.type!=='MultiLanguageProperty'">
               <strong>value:</strong> {{ (selectedLivePanel.value | json) }}
             </div>
             <div *ngIf="selectedLivePanel.type==='SubmodelElementCollection'">

@@ -307,7 +307,16 @@
               <div><strong>Label:</strong> {{ aasSelectedLivePanel.label }}</div>
               <div><strong>Type:</strong> {{ aasSelectedLivePanel.type }}</div>
               <div *ngIf="aasSelectedLivePanel.valueType"><strong>valueType:</strong> {{ aasSelectedLivePanel.valueType }}</div>
-            <div *ngIf="aasSelectedLivePanel.value !== undefined && aasSelectedLivePanel.type!=='SubmodelElementCollection' && aasSelectedLivePanel.type!=='SubmodelElementList'">
+            <div *ngIf="aasSelectedLivePanel.type==='MultiLanguageProperty' && (aasSelectedLivePanel.value?.length || 0) > 0">
+              <strong>values:</strong>
+              <div style="margin:.25rem 0 .5rem 0;">
+                <div *ngFor="let v of aasSelectedLivePanel.value" style="display:flex;gap:.5rem;align-items:baseline;">
+                  <span style="font-size:.75rem;padding:.1rem .4rem;border:1px solid var(--surface-border);border-radius:999px;color:var(--text-color-secondary);min-width:2.5rem;text-align:center;">{{ v?.language || '-' }}</span>
+                  <span>{{ v?.text || '' }}</span>
+                </div>
+              </div>
+            </div>
+            <div *ngIf="aasSelectedLivePanel.value !== undefined && aasSelectedLivePanel.type!=='SubmodelElementCollection' && aasSelectedLivePanel.type!=='SubmodelElementList' && aasSelectedLivePanel.type!=='MultiLanguageProperty'">
               <strong>value:</strong> {{ (aasSelectedLivePanel.value | json) }}
             </div>
             <div *ngIf="aasSelectedLivePanel.type==='SubmodelElementCollection'">
