@@ -79,7 +79,8 @@ public class AasTraversalClient {
 
     public Uni<HttpResponse<Buffer>> addSubmodelReferenceToShell(String baseUrl, String aasId, String submodelId, Map<String, String> headers) {
         String url = baseUrl + "/shells/" + encode(aasId) + "/submodel-refs";
-        String body = "{\"type\":\"ModelReference\",\"keys\":[{\"type\":\"Submodel\",\"value\":\"" + submodelId + "\"}]}";
+        String idType = inferIdType(submodelId);
+        String body = "{\"type\":\"ModelReference\",\"keys\":[{\"type\":\"Submodel\",\"idType\":\"" + idType + "\",\"value\":\"" + submodelId + "\"}]}";
         return http.writeJson(HttpMethod.POST, url, body, headers);
     }
 
@@ -99,13 +100,24 @@ public class AasTraversalClient {
     }
 
     private String encode(String s) {
-        return java.net.URLEncoder.encode(s, java.nio.charset.StandardCharsets.UTF_8);
+        // RFC3986-ish: encode using URLEncoder, then fix space '+' to '%20'
+        String enc = java.net.URLEncoder.encode(s, java.nio.charset.StandardCharsets.UTF_8);
+        return enc.replace("+", "%20");
     }
 
     private String encodePathSegments(String path) {
         return Arrays.stream(path.split("/"))
                 .map(this::encode)
                 .collect(Collectors.joining("/"));
+    }
+
+    private String inferIdType(String id) {
+        if (id == null) return "Custom";
+        String lower = id.toLowerCase(java.util.Locale.ROOT);
+        if (lower.startsWith("http://") || lower.startsWith("https://") || lower.startsWith("urn:")) {
+            return "IRI";
+        }
+        return "Custom";
     }
 
     public Uni<HttpResponse<Buffer>> getElement(String baseUrl, String submodelId, String path, Map<String, String> headers) {

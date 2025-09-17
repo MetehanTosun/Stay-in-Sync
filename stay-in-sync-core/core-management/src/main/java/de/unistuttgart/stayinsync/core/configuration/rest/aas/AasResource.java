@@ -612,8 +612,15 @@ public class AasResource {
             }
             String filename = file.fileName();
             byte[] fileBytes = Files.readAllBytes(file.uploadedFile());
-            snapshotService.ingestAasx(sourceSystemId, filename, fileBytes);
-            return Response.accepted().build();
+            // Attach only submodels from AASX to existing AAS upstream, then refresh local snapshot
+            Log.infof("AASX upload received: sourceSystemId=%d file=%s size=%d bytes", sourceSystemId, filename, fileBytes.length);
+            int attached = snapshotService.attachSubmodelsLive(sourceSystemId, fileBytes);
+            Log.infof("AASX live attach done: attached=%d. Refreshing snapshot...", attached);
+            snapshotService.refreshSnapshot(sourceSystemId);
+            io.vertx.core.json.JsonObject result = new io.vertx.core.json.JsonObject()
+                    .put("filename", filename)
+                    .put("attachedSubmodels", attached);
+            return Response.accepted(result.encode()).build();
         } catch (java.io.IOException ioe) {
             return Response.status(Response.Status.BAD_REQUEST).entity("Failed to read uploaded file").build();
         } catch (de.unistuttgart.stayinsync.core.configuration.service.aas.AasStructureSnapshotService.DuplicateIdException e) {

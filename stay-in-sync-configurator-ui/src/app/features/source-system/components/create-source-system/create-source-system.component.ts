@@ -212,11 +212,21 @@ export class CreateSourceSystemComponent implements OnInit, OnChanges {
 
   // AASX upload handlers
   openAasxUpload(): void {
+    console.info('[AASX][UI] Open upload dialog');
     this.showAasxUpload = true;
     this.aasxSelectedFile = null;
   }
   onAasxFileSelected(event: FileSelectEvent): void {
     this.aasxSelectedFile = event.files?.[0] || null;
+    if (this.aasxSelectedFile) {
+      console.info('[AASX][UI] File selected', {
+        name: this.aasxSelectedFile.name,
+        size: this.aasxSelectedFile.size,
+        type: this.aasxSelectedFile.type
+      });
+    } else {
+      console.warn('[AASX][UI] File selection cleared');
+    }
   }
   uploadAasx(): void {
     if (this.isUploadingAasx) return;
@@ -226,18 +236,28 @@ export class CreateSourceSystemComponent implements OnInit, OnChanges {
     }
     const proceed = () => {
       if (!this.createdSourceSystemId) return;
+      console.info('[AASX][UI] Starting upload', {
+        sourceSystemId: this.createdSourceSystemId,
+        name: this.aasxSelectedFile?.name,
+        size: this.aasxSelectedFile?.size,
+      });
+      this.messageService.add({ severity: 'info', summary: 'Uploading AASX', detail: `${this.aasxSelectedFile?.name} (${this.aasxSelectedFile?.size} bytes)` });
       this.isUploadingAasx = true;
       this.aasService.uploadAasx(this.createdSourceSystemId, this.aasxSelectedFile!)
         .subscribe({
-          next: () => {
+          next: (resp) => {
+            console.info('[AASX][UI] Upload accepted', resp);
             this.isUploadingAasx = false;
             this.showAasxUpload = false;
             // Directly rediscover from snapshot (do not refresh: would wipe imported AASX structures)
+            console.info('[AASX][UI] Trigger discoverSubmodels after upload');
             this.discoverSubmodels();
             this.messageService.add({ severity: 'success', summary: 'Upload accepted', detail: 'AASX uploaded. Snapshot refresh started.' });
           },
           error: (err) => {
+            console.error('[AASX][UI] Upload failed', err);
             this.isUploadingAasx = false;
+            this.messageService.add({ severity: 'error', summary: 'Upload failed', detail: (err?.message || 'See console for details') });
             this.errorService.handleError(err);
           }
         });

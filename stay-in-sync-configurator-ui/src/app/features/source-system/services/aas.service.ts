@@ -21,6 +21,7 @@ export class AasService {
     const form = new FormData();
     form.append('file', file, file.name);
     form.append('filename', file.name);
+    console.info('[AASX][HTTP] POST', url, { filename: file.name, size: file.size });
     return this.http.post(url, form);
   }
 
