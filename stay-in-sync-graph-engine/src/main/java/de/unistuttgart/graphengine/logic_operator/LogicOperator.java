@@ -13,98 +13,92 @@ import de.unistuttgart.graphengine.logic_operator.boolean_predicates.IsTrueOpera
 
 public enum LogicOperator {
     // General predicates
-    EXISTS("exists", new ExistsOperator()),
-    NOT_EXISTS("notExists", new NotExistsOperator()),
-    IS_NULL("isNull", new IsNullOperator()),
-    IS_NOT_NULL("isNotNull", new IsNotNullOperator()),
-    TYPE_IS("typeIs", new TypeIsOperator()),
-    EQUALS("equals", new EqualsOperator()),
-    NOT_EQUALS("notEquals", new NotEqualsOperator()),
-    IN_SET("inSet", new InSetOperator()),
-    NOTIN_SET("notInSet", new NotInSetOperator()),
-    AND("and", new AndOperator()),
-    ALL_OF("allOf", new AllOfOperator()),
-    ONE_OF("oneOf", new OneOfOperator()),
-    NONE_OF("noneOf", new NoneOfOperator()),
-    OR("or", new OrOperator()),
-    XOR("xor", new XorOperator()),
-    NOT("not", new NotOperator()),
-    MATCHES_SCHEMA("matschesSchema", new MatchesSchemaOperator()),
+    EXISTS(new ExistsOperator()),
+    NOT_EXISTS(new NotExistsOperator()),
+    IS_NULL(new IsNullOperator()),
+    IS_NOT_NULL(new IsNotNullOperator()),
+    TYPE_IS(new TypeIsOperator()),
+    EQUALS(new EqualsOperator()),
+    NOT_EQUALS(new NotEqualsOperator()),
+    IN_SET(new InSetOperator()),
+    NOTIN_SET(new NotInSetOperator()),
+    AND(new AndOperator()),
+    ALL_OF(new AllOfOperator()),
+    ONE_OF(new OneOfOperator()),
+    NONE_OF(new NoneOfOperator()),
+    OR(new OrOperator()),
+    XOR(new XorOperator()),
+    NOT(new NotOperator()),
+    MATCHES_SCHEMA(new MatchesSchemaOperator()),
 
     // Number predicates
-    GREATER_THAN("greaterThan", new GreaterThanOperator()),
-    LESS_THAN("lessThan", new LessThanOperator()),
-    GREATER_OR_EQUAL("greaterOrEqual", new GreaterOrEqualOperator()),
-    LESS_OR_EQUAL("lessOrEqual", new LessOrEqualOperator()),
-    BETWEEN("between", new BetweenOperator()),
-    NOT_BETWEEN("notBetween", new NotBetweenOperator()),
-    ADD("add", new AddOperator()),
+    GREATER_THAN(new GreaterThanOperator()),
+    LESS_THAN(new LessThanOperator()),
+    GREATER_OR_EQUAL(new GreaterOrEqualOperator()),
+    LESS_OR_EQUAL(new LessOrEqualOperator()),
+    BETWEEN(new BetweenOperator()),
+    NOT_BETWEEN(new NotBetweenOperator()),
+    ADD(new AddOperator()),
 
     // String predicates
-    EQUALS_CASE_SENSITIVE("equalsCaseSensitive", new EqualsCaseSensitiveOperator()),
-    EQUALS_IGNORE_CASE("equalsIgnoreCase", new EqualsIgnoreCaseOperator()),
-    STRING_CONTAINS("contains", new StringContainsOperator()),
-    STRING_NOT_CONTAINS("notContains", new StringNotContainsOperator()),
-    STRING_STARTS_WITH("startsWith", new StringStartsWithOperator()),
-    STRING_ENDS_WITH("endsWith", new StringEndsWithOperator()),
-    REGEX_MATCH("regexMatch", new RegexMatchOperator()),
-    STRING_LENGTH_EQUALS("lengthEquals", new StringLengthEqualsOperator()),
-    STRING_LENGTH_GT("lengthGt", new StringLengthGtOperator()),
-    STRING_LENGTH_LT("lengthLt", new StringLengthLtOperator()),
-    STRING_LENGTH_BETWEEN("lengthBetween", new StringLengthBetweenOperator()),
+    EQUALS_CASE_SENSITIVE(new EqualsCaseSensitiveOperator()),
+    EQUALS_IGNORE_CASE(new EqualsIgnoreCaseOperator()),
+    STRING_CONTAINS(new StringContainsOperator()),
+    STRING_NOT_CONTAINS(new StringNotContainsOperator()),
+    STRING_STARTS_WITH(new StringStartsWithOperator()),
+    STRING_ENDS_WITH(new StringEndsWithOperator()),
+    REGEX_MATCH(new RegexMatchOperator()),
+    STRING_LENGTH_EQUALS(new StringLengthEqualsOperator()),
+    STRING_LENGTH_GT(new StringLengthGtOperator()),
+    STRING_LENGTH_LT(new StringLengthLtOperator()),
+    STRING_LENGTH_BETWEEN(new StringLengthBetweenOperator()),
 
     // Boolean predicates (NEU)
-    IS_TRUE("isTrue", new IsTrueOperator()),
-    IS_FALSE("isFalse", new IsFalseOperator()),
+    IS_TRUE(new IsTrueOperator()),
+    IS_FALSE(new IsFalseOperator()),
 
     // Array/List predicates
-    LENGTH_EQUALS("lengthEquals", new LengthEqualsOperator()),
-    LENGTH_GT("lengthGt", new LengthGtOperator()),
-    LENGTH_LT("lengthLt", new LengthLtOperator()),
-    NOT_EMPTY("notEmpty", new NotEmptyOperator()),
-    CONTAINS_ELEMENT("containsElement", new ContainsElementOperator()),
-    NOT_CONTAINS_ELEMENT("notContainsElement", new NotContainsElementOperator()),
-    CONTAINS_ALL("containsAll", new ContainsAllOperator()),
-    CONTAINS_ANY("containsAny", new ContainsAnyOperator()),
-    CONTAINS_NONE("containsNone", new ContainsNoneOperator()),
+    LENGTH_EQUALS(new LengthEqualsOperator()),
+    LENGTH_GT(new LengthGtOperator()),
+    LENGTH_LT(new LengthLtOperator()),
+    NOT_EMPTY(new NotEmptyOperator()),
+    CONTAINS_ELEMENT(new ContainsElementOperator()),
+    NOT_CONTAINS_ELEMENT(new NotContainsElementOperator()),
+    CONTAINS_ALL(new ContainsAllOperator()),
+    CONTAINS_ANY(new ContainsAnyOperator()),
+    CONTAINS_NONE(new ContainsNoneOperator()),
 
     // Aggregate predicates
-    SUM("sum", new SumOperator()),
-    AVG("avg", new AvgOperator()),
-    MIN("min", new MinOperator()),
-    MAX("max", new MaxOperator()),
+    SUM(new SumOperator()),
+    AVG( new AvgOperator()),
+    MIN(new MinOperator()),
+    MAX(new MaxOperator()),
 
     //Object predicates
-    HAS_KEY("hasKey", new HasKeyOperator()),
-    LACKS_KEY("lacksKey", new LacksKeyOperator()),
-    HAS_ALL_KEYS("hasAllKeys", new HasAllKeysOperator()),
-    HAS_ANY_KEY("hasAnyKey", new HasAnyKeyOperator()),
-    HAS_NO_KEYS("hasNoKeys", new HasNoKeysOperator()),
+    HAS_KEY(new HasKeyOperator()),
+    LACKS_KEY(new LacksKeyOperator()),
+    HAS_ALL_KEYS(new HasAllKeysOperator()),
+    HAS_ANY_KEY(new HasAnyKeyOperator()),
+    HAS_NO_KEYS(new HasNoKeysOperator()),
 
     // Date/Time predicates
-    BEFORE("before", new BeforeOperator()),
-    AFTER("after", new AfterOperator()),
-    BETWEEN_DATES("betweenDates", new BetweenDatesOperator()),
-    SAME_DAY("sameDay", new SameDayOperator()),
-    SAME_MONTH("sameMonth", new SameMonthOperator()),
-    SAME_YEAR("sameYear", new SameYearOperator()),
-    WEEKDAY_IS("weekdayIs", new WeekdayIsOperator()),
-    MONTH_IS("monthIs", new MonthIsOperator()),
-    AGE_GREATER_THAN("ageGreaterThan", new AgeGreaterThanOperator()),
-    WITHIN_LAST("withinLast", new WithinLastOperator()),
-    WITHIN_NEXT("withinNext", new WithinNextOperator()),
-    TIMEZONE_OFFSET_EQUALS("timezoneOffsetEquals", new TimezoneOffsetEqualsOperator());
+    BEFORE(new BeforeOperator()),
+    AFTER(new AfterOperator()),
+    BETWEEN_DATES(new BetweenDatesOperator()),
+    SAME_DAY(new SameDayOperator()),
+    SAME_MONTH(new SameMonthOperator()),
+    SAME_YEAR(new SameYearOperator()),
+    WEEKDAY_IS(new WeekdayIsOperator()),
+    MONTH_IS(new MonthIsOperator()),
+    AGE_GREATER_THAN(new AgeGreaterThanOperator()),
+    WITHIN_LAST(new WithinLastOperator()),
+    WITHIN_NEXT(new WithinNextOperator()),
+    TIMEZONE_OFFSET_EQUALS(new TimezoneOffsetEqualsOperator());
 
-    private final String symbol;
     private final Operation operationStrategy;
 
-    LogicOperator(String symbol, Operation operationStrategy) {
-        this.symbol = symbol;
+    LogicOperator(Operation operationStrategy) {
         this.operationStrategy = operationStrategy;
-    }
-
-    public String getSymbol() {
-        return symbol;
     }
 
     public Operation getOperationStrategy() {
