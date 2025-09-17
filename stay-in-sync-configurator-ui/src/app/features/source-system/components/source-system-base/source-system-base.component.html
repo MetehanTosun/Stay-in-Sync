@@ -307,7 +307,19 @@
               <div><strong>Label:</strong> {{ aasSelectedLivePanel.label }}</div>
               <div><strong>Type:</strong> {{ aasSelectedLivePanel.type }}</div>
               <div *ngIf="aasSelectedLivePanel.valueType"><strong>valueType:</strong> {{ aasSelectedLivePanel.valueType }}</div>
-              <div *ngIf="aasSelectedLivePanel.value !== undefined"><strong>value:</strong> {{ aasSelectedLivePanel.value }}</div>
+            <div *ngIf="aasSelectedLivePanel.value !== undefined && aasSelectedLivePanel.type!=='SubmodelElementCollection' && aasSelectedLivePanel.type!=='SubmodelElementList'">
+              <strong>value:</strong> {{ (aasSelectedLivePanel.value | json) }}
+            </div>
+            <div *ngIf="aasSelectedLivePanel.type==='SubmodelElementCollection'">
+              <div><strong>Items:</strong> {{ aasSelectedLivePanel.value?.length || 0 }}</div>
+              <ul *ngIf="aasSelectedLivePanel.value?.length" style="margin:.25rem 0 .5rem 1rem;">
+                <li *ngFor="let e of (aasSelectedLivePanel.value | slice:0:5)">{{ e?.idShort || '(unnamed)' }} <span *ngIf="e?.modelType">({{ e.modelType }})</span></li>
+              </ul>
+              <small *ngIf="(aasSelectedLivePanel.value?.length || 0) > 5">… and {{ aasSelectedLivePanel.value.length - 5 }} more</small>
+            </div>
+            <div *ngIf="aasSelectedLivePanel.type==='SubmodelElementList'">
+              <div><strong>Count:</strong> {{ aasSelectedLivePanel.value?.length || 0 }}</div>
+            </div>
               <div *ngIf="aasSelectedLivePanel.type==='Range' || aasSelectedLivePanel.min !== undefined || aasSelectedLivePanel.max !== undefined">
                 <div><strong>min:</strong> {{ aasSelectedLivePanel.min }}</div>
                 <div><strong>max:</strong> {{ aasSelectedLivePanel.max }}</div>
