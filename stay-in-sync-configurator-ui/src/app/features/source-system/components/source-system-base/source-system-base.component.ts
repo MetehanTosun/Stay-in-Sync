@@ -991,7 +991,10 @@ export class SourceSystemBaseComponent implements OnInit, OnDestroy {
   private mapSmToNode(sm: any): TreeNode {
     const id = sm.submodelId || sm.id || (sm.keys && sm.keys[0]?.value);
     const label = (sm.submodelIdShort || sm.idShort) || id;
-    return { key: id, label, data: { type: 'submodel', id, modelType: 'Submodel', raw: sm }, leaf: false, children: [] } as TreeNode;
+    const kindRaw = (sm.kind || sm.submodelKind || '').toString();
+    const isTemplate = kindRaw && kindRaw.toLowerCase().includes('template');
+    const modelType = isTemplate ? 'Submodel Template' : 'Submodel';
+    return { key: id, label, data: { type: 'submodel', id, modelType, raw: sm }, leaf: false, children: [] } as TreeNode;
   }
 
   private mapElToNode(submodelId: string, el: any): TreeNode {

@@ -649,10 +649,13 @@ save(): void {
   private mapSubmodelToNode(sm: any): TreeNode {
     const id = sm.submodelId || sm.id || (sm.keys && sm.keys[0]?.value);
     const label = (sm.submodelIdShort || sm.idShort) || id;
+    const kindRaw = (sm.kind || sm.submodelKind || '').toString();
+    const isTemplate = kindRaw && kindRaw.toLowerCase().includes('template');
+    const modelType = isTemplate ? 'Submodel Template' : 'Submodel';
     return {
       key: id,
       label,
-      data: { type: 'submodel', id, modelType: 'Submodel', raw: sm },
+      data: { type: 'submodel', id, modelType, raw: sm },
       leaf: false,
       children: []
     } as TreeNode;
