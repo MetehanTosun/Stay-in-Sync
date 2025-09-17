@@ -266,6 +266,23 @@ export class SourceSystemBaseComponent implements OnInit, OnDestroy {
     this.aasParentPath = parent || '';
     this.showAasElementDialog = true;
   }
+  onAasElementJsonFileSelected(event: any): void {
+    const file = event.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      try {
+        const text = String(reader.result || '').trim();
+        if (text) {
+          JSON.parse(text);
+          this.aasNewElementJson = text;
+        }
+      } catch {
+        // ignore parse error and keep current JSON
+      }
+    };
+    reader.readAsText(file);
+  }
   aasCreateElement(): void {
     if (!this.selectedSystem?.id || !this.aasTargetSubmodelId) return;
     try {

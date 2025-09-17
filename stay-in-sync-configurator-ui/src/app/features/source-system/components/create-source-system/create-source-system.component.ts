@@ -941,6 +941,24 @@ save(): void {
     this.parentPath = parent || '';
     this.showElementDialog = true;
   }
+  onElementJsonFileSelected(event: FileSelectEvent): void {
+    const file = event.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      try {
+        const text = String(reader.result || '').trim();
+        // Validate JSON briefly
+        if (text) {
+          JSON.parse(text);
+          this.newElementJson = text;
+        }
+      } catch {
+        // keep existing content on parse failure
+      }
+    };
+    reader.readAsText(file);
+  }
   createElement(): void {
     if (!this.createdSourceSystemId || !this.targetSubmodelId) return;
     try {
