@@ -66,17 +66,15 @@ public class NotInSetOperator implements Operation {
         Object valueToCheck = inputs.get(0).getCalculatedResult();
         Object disallowedValuesObject = inputs.get(1).getCalculatedResult();
 
-        // If the set is invalid, we cannot make a determination and return false.
-        if (!(disallowedValuesObject instanceof Object[])) {
-            return false;
+        Collection<?> disallowedValues;
+        if (disallowedValuesObject instanceof Collection) {
+            disallowedValues = (Collection<?>) disallowedValuesObject;
+        } else if (disallowedValuesObject != null && disallowedValuesObject.getClass().isArray()) {
+            disallowedValues = Arrays.asList((Object[]) disallowedValuesObject);
+        } else {
+            return true;
         }
-        Object[] disallowedValuesArray = (Object[]) disallowedValuesObject;
-
-        // 3. Perform the check using a Set for efficient lookup.
-        Set<Object> disallowedValuesSet = new HashSet<>(Arrays.asList(disallowedValuesArray));
-
-        // The '!disallowedValuesSet.contains()' logic correctly handles all cases,
-        return !disallowedValuesSet.contains(valueToCheck);
+        return !new HashSet<>(disallowedValues).contains(valueToCheck);
     }
 
     @Override

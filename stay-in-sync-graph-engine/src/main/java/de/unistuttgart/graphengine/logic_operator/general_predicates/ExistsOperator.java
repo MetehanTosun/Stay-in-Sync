@@ -39,26 +39,30 @@ public class ExistsOperator implements Operation {
      */
     @Override
     public Object execute(LogicNode node, Map<String, JsonNode> dataContext) {
+        if (dataContext == null || dataContext.isEmpty()) {
+            return false;
+        }
 
         for (Node inputNode : node.getInputNodes()) {
             ProviderNode provider = (ProviderNode) inputNode;
+            String fullPath = provider.getJsonPath(); // z.B. "source.sensor.temperature"
 
-            String fullPath = provider.getJsonPath();
-            if (fullPath == null || !fullPath.startsWith("source.")) { return false; }
+            String[] parts = fullPath.split("\\.", 2);
+            if (parts.length == 0) {
+                return false;
+            }
 
-            String[] parts = fullPath.split("\\.");
-            if (parts.length < 2) { return false; }
-
-            String sourceName = parts[1];
-            String internalJsonPath = (parts.length > 2) ? String.join(".", Arrays.copyOfRange(parts, 2, parts.length)) : "";
-
-            JsonNode sourceObject = dataContext.get(sourceName);
+            String sourceKey = parts[0];
+            JsonNode sourceObject = dataContext.get(sourceKey);
+            if (sourceObject == null) {
+                return false;
+            }
+            String internalJsonPath = (parts.length > 1) ? parts[1] : "";
 
             if (!valueExtractor.pathExists(sourceObject, internalJsonPath)) {
                 return false;
             }
         }
-
         return true;
     }
     @Override

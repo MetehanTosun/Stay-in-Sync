@@ -43,16 +43,14 @@ public class OneOfOperator implements Operation {
      *         {@code false} if all nodes evaluate to {@code false} or throw exceptions
      */
     @Override
-    public Object execute(LogicNode node, Map<String, JsonNode> dataContext){
-        for(Node input: node.getInputNodes()){
-            Object value = input.getCalculatedResult();
-
-            if(Boolean.TRUE.equals(value)){
-                return true;
+    public Object execute(LogicNode node, Map<String, JsonNode> dataContext) {
+        int trueCount = 0;
+        for (Node inputNode : node.getInputNodes()) {
+            if (Boolean.TRUE.equals(inputNode.getCalculatedResult())) {
+                trueCount++;
             }
-
         }
-        return false;
+        return trueCount == 1;
     }
 
     @Override

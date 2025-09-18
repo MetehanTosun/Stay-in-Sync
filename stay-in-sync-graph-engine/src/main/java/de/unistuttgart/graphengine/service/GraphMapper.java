@@ -1,4 +1,4 @@
-package de.unistuttgart.graphengine.util;
+package de.unistuttgart.graphengine.service;
 
 import de.unistuttgart.graphengine.dto.vFlow.VFlowEdgeDTO;
 import de.unistuttgart.graphengine.dto.vFlow.VFlowGraphDTO;

@@ -8,7 +8,7 @@ import de.unistuttgart.graphengine.validation_error.ConfigNodeError;
 import de.unistuttgart.graphengine.validation_error.CycleError;
 import de.unistuttgart.graphengine.validation_error.FinalNodeError;
 import de.unistuttgart.graphengine.validation_error.ValidationError;
-import de.unistuttgart.graphengine.util.GraphTopologicalSorter;
+import de.unistuttgart.graphengine.service.GraphTopologicalSorter;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;

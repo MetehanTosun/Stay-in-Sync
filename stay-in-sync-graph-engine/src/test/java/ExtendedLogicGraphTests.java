@@ -6,7 +6,6 @@ import de.unistuttgart.graphengine.exception.NodeConfigurationException;
 import de.unistuttgart.graphengine.logic_engine.LogicGraphEvaluator;
 import de.unistuttgart.graphengine.logic_operator.LogicOperator;
 import de.unistuttgart.graphengine.nodes.*;
-import de.unistuttgart.graphengine.util.GraphTopologicalSorter;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.BeforeEach;
 

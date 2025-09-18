@@ -54,34 +54,11 @@ public class IsNotNullOperator implements Operation {
     @Override
     public Object execute(LogicNode node, Map<String, JsonNode> dataContext) {
         for (Node inputNode : node.getInputNodes()) {
-            ProviderNode provider = (ProviderNode) inputNode;
-
-            // 1. Parse the path from the ProviderNode
-            String fullPath = provider.getJsonPath();
-            if (fullPath == null || !fullPath.startsWith("source.")) {
-                return false;
-            }
-            String[] parts = fullPath.split("\\.");
-            if (parts.length < 2) {
-                return false;
-            }
-            String sourceName = parts[1];
-            String internalJsonPath = (parts.length > 2) ? String.join(".", Arrays.copyOfRange(parts, 2, parts.length)) : "";
-
-            // 2. Get the source object from the context
-            JsonNode sourceObject = dataContext.get(sourceName);
-
-            // 3. Perform the check: extractValue().isPresent() is true only if the path
-            // exists AND the value is not null. This is exactly what we need.
-            boolean isPresentAndNotNull = valueExtractor.extractValue(sourceObject, internalJsonPath).isPresent();
-
-            if (!isPresentAndNotNull) {
-                // If a single path doesn't exist or its value is null, the AND-conjunction fails.
+            Object value = inputNode.getCalculatedResult();
+            if (value == null) {
                 return false;
             }
         }
-
-        // If the loop completes, all paths existed and had non-null values.
         return true;
     }
 

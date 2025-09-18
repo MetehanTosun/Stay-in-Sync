@@ -63,22 +63,24 @@ public class InSetOperator implements Operation {
     public Object execute(LogicNode node, Map<String, JsonNode> dataContext) {
         List<Node> inputs = node.getInputNodes();
 
-        // 1. Get the pre-calculated value to check from the first input node.
+        // 1. Retrieve the value to be checked
         Object valueToCheck = inputs.get(0).getCalculatedResult();
 
-        // 2. Get the pre-calculated array of allowed values from the second input node.
+        // 2. Retrieve the object with the allowed values
         Object allowedValuesObject = inputs.get(1).getCalculatedResult();
 
-        // A null check is added for safety. The validate() method already ensures it's an array.
-        if (!(allowedValuesObject instanceof Object[])) {
+        // 3. Convert the object into a collection, whether it's an array or a list.
+        Collection<?> allowedValues;
+        if (allowedValuesObject instanceof Collection) {
+            allowedValues = (Collection<?>) allowedValuesObject;
+        } else if (allowedValuesObject instanceof Object[]) {
+            allowedValues = Arrays.asList((Object[]) allowedValuesObject);
+        } else {
             return false;
         }
-        Object[] allowedValuesArray = (Object[]) allowedValuesObject;
 
-        // 3. Perform the check using a Set for efficient lookup.
-        Set<Object> allowedValuesSet = new HashSet<>(Arrays.asList(allowedValuesArray));
-
-        return allowedValuesSet.contains(valueToCheck);
+        // 4. Perform the "contains" check using a set for efficiency.
+        return new HashSet<>(allowedValues).contains(valueToCheck);
     }
 
     @Override

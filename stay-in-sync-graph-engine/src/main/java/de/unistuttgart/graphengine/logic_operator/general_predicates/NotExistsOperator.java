@@ -57,33 +57,33 @@ public class NotExistsOperator implements Operation {
      */
     @Override
     public Object execute(LogicNode node, Map<String, JsonNode> dataContext) {
-        for (Node inputNode : node.getInputNodes()) {
-            ProviderNode provider = (ProviderNode) inputNode;
+        if (dataContext == null) {
+            return true;
+        }
 
-            // 1. Parse the path from the ProviderNode
-            String fullPath = provider.getJsonPath();
-            if (fullPath == null || !fullPath.startsWith("source.")) {
-                // An invalid path cannot exist, so the condition is met for this input.
-                continue;
-            }
-            String[] parts = fullPath.split("\\.");
-            if (parts.length < 2) {
-                continue;
-            }
-            String sourceName = parts[1];
-            String internalJsonPath = (parts.length > 2) ? String.join(".", Arrays.copyOfRange(parts, 2, parts.length)) : "";
+        for (Node input : node.getInputNodes()) {
+            if (input instanceof ProviderNode) {
+                ProviderNode pNode = (ProviderNode) input;
+                String fullPath = pNode.getJsonPath();
 
-            // 2. Get the source object from the context
-            JsonNode sourceObject = dataContext.get(sourceName);
+                String[] parts = fullPath.split("\\.", 2);
+                if (parts.length == 0) continue;
 
-            // 3. Use the pathExists method. If any path exists, the "not exists" condition fails.
-            if (valueExtractor.pathExists(sourceObject, internalJsonPath)) {
-                return false;
+                String sourceKey = parts[0];
+                JsonNode sourceObject = dataContext.get(sourceKey);
+
+                if (sourceObject == null) continue;
+
+                String internalJsonPath = (parts.length > 1) ? parts[1] : "";
+
+                if (valueExtractor.pathExists(sourceObject, internalJsonPath)) {
+                    return false; // Early exit
+                }
             }
         }
-        // If the loop completes, none of the paths existed.
         return true;
     }
+
     @Override
     public Class<?> getReturnType(){
         return Boolean.class;

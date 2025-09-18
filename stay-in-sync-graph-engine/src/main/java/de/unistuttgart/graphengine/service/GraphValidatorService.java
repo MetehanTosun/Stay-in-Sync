@@ -7,7 +7,6 @@ import de.unistuttgart.graphengine.nodes.ConfigNode;
 import de.unistuttgart.graphengine.nodes.FinalNode;
 import de.unistuttgart.graphengine.nodes.LogicNode;
 import de.unistuttgart.graphengine.nodes.Node;
-import de.unistuttgart.graphengine.util.GraphTopologicalSorter;
 import io.quarkus.logging.Log;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;

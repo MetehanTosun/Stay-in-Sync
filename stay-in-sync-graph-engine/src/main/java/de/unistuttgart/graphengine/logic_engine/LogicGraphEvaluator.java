@@ -5,10 +5,9 @@ import de.unistuttgart.graphengine.exception.GraphEvaluationException;
 import de.unistuttgart.graphengine.nodes.ConfigNode;
 import de.unistuttgart.graphengine.nodes.Node;
 import de.unistuttgart.graphengine.nodes.SnapshotEntry;
-import de.unistuttgart.graphengine.util.GraphTopologicalSorter;
+import de.unistuttgart.graphengine.service.GraphTopologicalSorter;
 import io.quarkus.logging.Log;
 import jakarta.enterprise.context.ApplicationScoped;
-import jakarta.inject.Inject;
 
 import java.util.List;
 import java.util.Map;

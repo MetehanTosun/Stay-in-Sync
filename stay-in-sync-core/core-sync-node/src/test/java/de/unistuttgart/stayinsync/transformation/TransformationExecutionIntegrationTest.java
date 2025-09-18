@@ -5,7 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.tomakehurst.wiremock.client.WireMock;
 import de.unistuttgart.graphengine.dto.transformationrule.GraphDTO;
 import de.unistuttgart.graphengine.nodes.Node;
-import de.unistuttgart.graphengine.util.GraphMapper;
+import de.unistuttgart.graphengine.service.GraphMapper;
 import de.unistuttgart.stayinsync.syncnode.domain.ExecutionPayload;
 import de.unistuttgart.stayinsync.syncnode.domain.TransformJob;
 import de.unistuttgart.stayinsync.syncnode.syncjob.TransformationExecutionService;

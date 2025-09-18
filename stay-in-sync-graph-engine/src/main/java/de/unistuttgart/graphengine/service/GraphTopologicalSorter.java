@@ -1,4 +1,4 @@
-package de.unistuttgart.graphengine.util;
+package de.unistuttgart.graphengine.service;
 
 import de.unistuttgart.graphengine.nodes.Node;
 import jakarta.enterprise.context.ApplicationScoped;

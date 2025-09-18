@@ -4,7 +4,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import de.unistuttgart.graphengine.service.GraphValidatorService;
-import de.unistuttgart.graphengine.util.GraphMapper;
+import de.unistuttgart.graphengine.service.GraphMapper;
 import de.unistuttgart.graphengine.dto.transformationrule.GraphDTO;
 import de.unistuttgart.graphengine.dto.transformationrule.InputDTO;
 import de.unistuttgart.graphengine.dto.transformationrule.NodeDTO;

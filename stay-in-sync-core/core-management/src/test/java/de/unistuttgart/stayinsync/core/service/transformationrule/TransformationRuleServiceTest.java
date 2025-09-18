@@ -14,7 +14,7 @@ import de.unistuttgart.graphengine.service.GraphValidatorService;
 import de.unistuttgart.stayinsync.core.configuration.service.transformationrule.TransformationRuleService;
 import de.unistuttgart.graphengine.validation_error.GraphStatus;
 import de.unistuttgart.graphengine.validation_error.ValidationError;
-import de.unistuttgart.graphengine.util.GraphMapper;
+import de.unistuttgart.graphengine.service.GraphMapper;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;

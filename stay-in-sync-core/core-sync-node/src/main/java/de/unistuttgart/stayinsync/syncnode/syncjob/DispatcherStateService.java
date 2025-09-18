@@ -8,7 +8,7 @@ import de.unistuttgart.stayinsync.core.transport.dto.TransformationMessageDTO;
 import de.unistuttgart.graphengine.dto.transformationrule.TransformationRuleDTO;
 import de.unistuttgart.graphengine.nodes.Node;
 import de.unistuttgart.stayinsync.syncnode.domain.TransformJob;
-import de.unistuttgart.graphengine.util.GraphMapper;
+import de.unistuttgart.graphengine.service.GraphMapper;
 
 import java.time.Instant;
 import java.util.ArrayList;
