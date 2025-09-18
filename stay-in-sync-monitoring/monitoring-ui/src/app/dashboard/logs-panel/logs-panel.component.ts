@@ -88,6 +88,7 @@ export class LogsPanelComponent implements OnInit, OnDestroy {
   fetchLogs() {
     const startNs = this.toNanoSeconds(new Date(this.startTime));
     const endNs = this.toNanoSeconds(new Date(this.endTime));
+    const effectiveLevel = this.level || '';
 
     // Sonderfall: PollingNode
     if (this.selectedNodeId && this.selectedNodeId.startsWith('POLL')) {
@@ -95,10 +96,10 @@ export class LogsPanelComponent implements OnInit, OnDestroy {
       this.loading = true;
       this.errorMessage = '';
 
-      this.logService.getLogs(startNs, endNs, this.level).subscribe({
+      // 👉 direkt Service-Endpoint nutzen
+      this.logService.getLogsByService(this.selectedService, startNs, endNs, effectiveLevel).subscribe({
         next: logs => {
-          // keine TransformationId-Filterung, nur Service
-          this.logs = logs.filter(log => log.service === this.selectedService);
+          this.logs = logs;
           this.loading = false;
         },
         error: err => {
@@ -110,26 +111,40 @@ export class LogsPanelComponent implements OnInit, OnDestroy {
       return;
     }
 
-    // Kein Node ausgewählt: Alle Logs laden (optional nach Service filtern)
+    // Kein Node ausgewählt: Nur Service/Level-Filter
+    if (!this.selectedNodeId) {
+      this.loading = true;
+      this.errorMessage = '';
 
-    if (!this.selectedNodeId){
-      this.logService.getLogs(startNs, endNs, this.level)
-        .subscribe({
-          next: logs => {
-            this.logs = logs;
-            this.loading = false;
-            if (this.selectedService === '') {
-              return;
+      if (this.selectedService && this.selectedService !== '') {
+        // 👉 Service-Endpoint
+        this.logService.getLogsByService(this.selectedService, startNs, endNs, effectiveLevel)
+          .subscribe({
+            next: logs => {
+              this.logs = logs;
+              this.loading = false;
+            },
+            error: err => {
+              console.error('Error fetching logs', err);
+              this.errorMessage = 'Fehler beim Laden der Logs';
+              this.loading = false;
             }
-            this.logs = this.logs.filter(log => log.service === this.selectedService);
-            return;
-          },
-          error: err => {
-            console.error('Error fetching logs', err);
-            this.errorMessage = 'Fehler beim Laden der Logs';
-            this.loading = false;
-          }
-        });
+          });
+      } else {
+        // 👉 Fallback: alle Logs (ohne Service-Filter)
+        this.logService.getLogs(startNs, endNs, this.level)
+          .subscribe({
+            next: logs => {
+              this.logs = logs;
+              this.loading = false;
+            },
+            error: err => {
+              console.error('Error fetching logs', err);
+              this.errorMessage = 'Fehler beim Laden der Logs';
+              this.loading = false;
+            }
+          });
+      }
       return;
     }
 
@@ -142,21 +157,22 @@ export class LogsPanelComponent implements OnInit, OnDestroy {
         if (!transformations || transformations.length === 0) {
           this.logs = [];
           this.loading = false;
+          return;
         }
-         this.transformationIds = transformations
+
+        this.transformationIds = transformations
           .map(t => t.id)
           .filter((id): id is number => id !== undefined)
           .map(id => id.toString());
 
-        // 2. Logs für alle TransformationIds abrufen
-        this.logService.getLogsByTransformations(this.transformationIds, startNs, endNs, this.level).subscribe({
+        // 2. Logs für TransformationIds abrufen
+        this.logService.getLogsByTransformations(this.transformationIds, startNs, endNs, effectiveLevel).subscribe({
           next: logs => {
             this.logs = logs;
             this.loading = false;
-            if (this.selectedTransformationId === '') {
-              return;
+            if (this.selectedTransformationId !== '') {
+              this.logs = this.logs.filter(log => log.transformationId?.toString() === this.selectedTransformationId);
             }
-            this.logs = this.logs.filter(log => log.transformationId?.toString() === this.selectedTransformationId);
           },
           error: err => {
             console.error('Error fetching logs', err);
@@ -172,6 +188,7 @@ export class LogsPanelComponent implements OnInit, OnDestroy {
       }
     });
   }
+
 
   onFilterChange() {
     this.fetchLogs();
