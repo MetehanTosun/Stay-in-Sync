@@ -658,6 +658,7 @@ public class AasStructureSnapshotService {
         SourceSystem ss = ssOpt.get();
 
         java.util.Map<String, JsonNode> submodelById = new java.util.HashMap<>();
+        java.util.Map<String, org.w3c.dom.Element> xmlSubmodelById = new java.util.HashMap<>();
         final java.util.List<ZipJson> jsonEntries = new java.util.ArrayList<>();
         try (java.util.zip.ZipInputStream zis = new java.util.zip.ZipInputStream(new java.io.ByteArrayInputStream(fileBytes))) {
             java.util.zip.ZipEntry entry;
@@ -696,6 +697,53 @@ public class AasStructureSnapshotService {
             } catch (Exception ignore) { }
         }
 
+        // Build XML index for fallback (when JSON not available)
+        try (java.util.zip.ZipInputStream zis2 = new java.util.zip.ZipInputStream(new java.util.zip.ZipInputStream(new java.io.ByteArrayInputStream(fileBytes)))) {
+            // nested ZipInputStream to avoid interfering with outer stream position
+        } catch (Exception ignore) { }
+        try (java.util.zip.ZipInputStream zis3 = new java.util.zip.ZipInputStream(new java.io.ByteArrayInputStream(fileBytes))) {
+            java.util.zip.ZipEntry entry;
+            while ((entry = zis3.getNextEntry()) != null) {
+                String name = entry.getName();
+                if (name == null) continue;
+                String lower = name.toLowerCase(java.util.Locale.ROOT);
+                if (!lower.endsWith(".xml")) continue;
+                try {
+                    javax.xml.parsers.DocumentBuilderFactory dbf = javax.xml.parsers.DocumentBuilderFactory.newInstance();
+                    dbf.setNamespaceAware(true);
+                    javax.xml.parsers.DocumentBuilder db = dbf.newDocumentBuilder();
+                    org.w3c.dom.Document doc = db.parse(zis3);
+                    org.w3c.dom.Element root = doc.getDocumentElement();
+                    if (root == null) continue;
+                    String rootLocal = root.getLocalName() != null ? root.getLocalName() : root.getNodeName();
+                    boolean subFound = (rootLocal != null && rootLocal.toLowerCase(java.util.Locale.ROOT).contains("submodel"));
+                    if (!subFound) {
+                        var subNodes = root.getElementsByTagNameNS("*", "submodel");
+                        if (subNodes.getLength() > 0) {
+                            root = (org.w3c.dom.Element) subNodes.item(0);
+                            subFound = true;
+                        }
+                    }
+                    if (!subFound) continue;
+                    String id = firstTextByLocalName(root, "id");
+                    if (id == null) {
+                        var ident = firstChildByLocalName(root, "identification");
+                        if (ident != null) id = firstTextByLocalName(ident, "id");
+                        if (id == null) {
+                            var identifier = firstChildByLocalName(root, "identifier");
+                            if (identifier != null) {
+                                String i1 = identifier.getAttribute("id");
+                                if (i1 != null && !i1.isBlank()) id = i1;
+                                if (id == null) id = identifier.getTextContent();
+                            }
+                        }
+                    }
+                    if (id == null || id.isBlank()) id = name;
+                    xmlSubmodelById.put(id, root);
+                } catch (Exception ignore) { }
+            }
+        } catch (java.io.IOException ignore) { }
+
         var headersWrite = headerBuilder.buildMergedHeaders(ss, HttpHeaderBuilder.Mode.WRITE_JSON);
         var headersRead = headerBuilder.buildMergedHeaders(ss, HttpHeaderBuilder.Mode.READ);
         int attached = 0;
@@ -716,38 +764,53 @@ public class AasStructureSnapshotService {
             }
 
             JsonNode smNode = submodelById.get(id);
-            if (smNode == null) {
-                Log.warnf("attachSelected: submodel id=%s not found in JSON entries, skipping", id);
-                continue; // only JSON-backed selection supported
+            boolean usedJson = (smNode != null);
+            org.w3c.dom.Element xmlRoot = usedJson ? null : xmlSubmodelById.get(id);
+            if (!usedJson && xmlRoot == null) {
+                Log.warnf("attachSelected: submodel id=%s not found in JSON or XML entries, skipping", id);
+                continue;
             }
 
             String payload;
-            if (full || wantedEls.isEmpty()) {
-                payload = buildNormalizedSubmodelPayload(smNode);
+            if (usedJson) {
+                if (full || wantedEls.isEmpty()) {
+                    payload = buildNormalizedSubmodelPayload(smNode);
+                } else {
+                    // Build filtered submodel payload from JSON
+                    com.fasterxml.jackson.databind.node.ObjectNode out = objectMapper.createObjectNode();
+                    String idShort = textOrNull(smNode, "idShort");
+                    out.put("modelType", "Submodel");
+                    if (id != null) out.put("id", id);
+                    if (idShort != null) out.put("idShort", idShort);
+                    com.fasterxml.jackson.databind.node.ArrayNode arrOut = objectMapper.createArrayNode();
+                    JsonNode els = smNode.get("submodelElements");
+                    if (els != null && els.isArray()) {
+                        for (JsonNode el : els) {
+                            String idShortEl = textOrNull(el, "idShort");
+                            if (idShortEl == null) continue;
+                            if (!wantedEls.contains(idShortEl)) continue;
+                            String mt = textOrNull(el, "modelType");
+                            if (mt == null || !(mt.equalsIgnoreCase("SubmodelElementCollection") || mt.equalsIgnoreCase("SubmodelElementList"))) {
+                                continue;
+                            }
+                            arrOut.add(el);
+                        }
+                    }
+                    out.set("submodelElements", arrOut);
+                    payload = out.toString();
+                }
             } else {
-                // Build filtered submodel payload
+                // XML fallback: we can only create minimal submodel; element-level filtering from XML is not yet supported
+                String idShort = firstTextByLocalName(xmlRoot, "idShort");
                 com.fasterxml.jackson.databind.node.ObjectNode out = objectMapper.createObjectNode();
-                String idShort = textOrNull(smNode, "idShort");
                 out.put("modelType", "Submodel");
                 if (id != null) out.put("id", id);
                 if (idShort != null) out.put("idShort", idShort);
-                com.fasterxml.jackson.databind.node.ArrayNode arrOut = objectMapper.createArrayNode();
-                JsonNode els = smNode.get("submodelElements");
-                if (els != null && els.isArray()) {
-                    for (JsonNode el : els) {
-                        String idShortEl = textOrNull(el, "idShort");
-                        if (idShortEl == null) continue;
-                        if (!wantedEls.contains(idShortEl)) continue;
-                        String mt = textOrNull(el, "modelType");
-                        if (mt == null || !(mt.equalsIgnoreCase("SubmodelElementCollection") || mt.equalsIgnoreCase("SubmodelElementList"))) {
-                            // only attach selected collections/lists for now
-                            continue;
-                        }
-                        arrOut.add(el);
-                    }
-                }
-                out.set("submodelElements", arrOut);
+                out.putArray("submodelElements");
                 payload = out.toString();
+                if (!full && !wantedEls.isEmpty()) {
+                    Log.infof("attachSelected: XML-only submodel id=%s selected with elements, creating empty submodel (elements not available from XML)", id);
+                }
             }
 
             // Skip if already exists upstream; if exists, ensure ref
