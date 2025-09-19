@@ -219,6 +219,10 @@ export class HelpPageComponent implements OnInit {
           {
             label: 'Log Aggregation & Filtering',
             command: () => { this.router.navigate(['/help', 'monitoring/monitoring-logs']); }
+          },
+          {
+            label: 'ErrorSnapshots & Replay',
+            command: () => { this.router.navigate(['/help', 'monitoring/monitoring-replay']); }
           }
         ]
       },
