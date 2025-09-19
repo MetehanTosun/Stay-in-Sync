@@ -589,10 +589,15 @@ public class AasStructureSnapshotService {
                         org.w3c.dom.Element root = doc.getDocumentElement();
                         if (root == null) continue;
                         String rootLocal = root.getLocalName() != null ? root.getLocalName() : root.getNodeName();
-                        if (rootLocal == null || !rootLocal.toLowerCase(java.util.Locale.ROOT).contains("submodel")) {
+                        boolean subFound = (rootLocal != null && rootLocal.toLowerCase(java.util.Locale.ROOT).contains("submodel"));
+                        if (!subFound) {
                             var subNodes = root.getElementsByTagNameNS("*", "submodel");
-                            if (subNodes.getLength() > 0) root = (org.w3c.dom.Element) subNodes.item(0);
+                            if (subNodes.getLength() > 0) {
+                                root = (org.w3c.dom.Element) subNodes.item(0);
+                                subFound = true;
+                            }
                         }
+                        if (!subFound) continue; // skip XML entries that are not submodels (e.g. [Content_Types].xml)
                         String id = firstTextByLocalName(root, "id");
                         if (id == null) {
                             var ident = firstChildByLocalName(root, "identification");

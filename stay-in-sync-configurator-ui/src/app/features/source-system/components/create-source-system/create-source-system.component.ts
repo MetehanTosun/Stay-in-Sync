@@ -297,7 +297,7 @@ export class CreateSourceSystemComponent implements OnInit, OnChanges {
       this.messageService.add({ severity: 'info', summary: 'Uploading AASX', detail: `${this.aasxSelectedFile?.name} (${this.aasxSelectedFile?.size} bytes)` });
       this.isUploadingAasx = true;
       // If preview is available and user made a selection, use selective attach; else default upload
-      const hasSelection = (this.aasxSelection?.submodels?.length || 0) > 0;
+      const hasSelection = (this.aasxSelection?.submodels?.some(s => s.full || (s.elements && s.elements.length > 0)) ?? false);
       const req$ = hasSelection ? this.aasService.attachSelectedAasx(this.createdSourceSystemId, this.aasxSelectedFile!, this.aasxSelection) : this.aasService.uploadAasx(this.createdSourceSystemId, this.aasxSelectedFile!);
       req$
         .subscribe({

@@ -679,8 +679,12 @@ public class AasResource {
                 selection = new io.vertx.core.json.JsonObject(selectionJson);
             }
             int attached = snapshotService.attachSelectedFromAasx(sourceSystemId, fileBytes, selection);
+            Log.infof("Attach-selected done: attached=%d → refreshing snapshot", attached);
             snapshotService.refreshSnapshot(sourceSystemId);
-            return Response.accepted(new io.vertx.core.json.JsonObject().put("attachedSubmodels", attached).encode()).build();
+            io.vertx.core.json.JsonObject result = new io.vertx.core.json.JsonObject()
+                    .put("attachedSubmodels", attached)
+                    .put("selection", selection);
+            return Response.accepted(result.encode()).build();
         } catch (java.io.IOException ioe) {
             return Response.status(Response.Status.BAD_REQUEST).entity("Failed to read uploaded file").build();
         } catch (Exception e) {
