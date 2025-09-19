@@ -16,58 +16,64 @@ public class SumOperator implements Operation {
     /**
      * Validates that the node is correctly configured for the SUM operation.
      * <p>
-     * This check ensures that the operator has exactly one input node, which is
-     * expected to deliver the array or collection of numbers.
-     *
+     * This check ensures that the operator has at least one input node and that
+     * all inputs are arrays or collections containing numeric values.
      * @param node The LogicNode to validate.
-     * @throws OperatorValidationException if the node does not have exactly one input.
+     * @throws OperatorValidationException if the node has no inputs.
      */
     @Override
-    public void validateNode(LogicNode node)throws OperatorValidationException {
+    public void validateNode(LogicNode node) throws OperatorValidationException {
         List<Node> inputs = node.getInputNodes();
-        if (inputs == null || inputs.size() != 1) {
+        if (inputs == null || inputs.isEmpty()) {
             throw new OperatorValidationException(
-                    "SUM operation for node '" + node.getName() + "' requires exactly 1 input: the collection of numbers to sum up."
+                    "SUM operation for node '" + node.getName() + "' requires at least 1 array input."
             );
         }
     }
 
     /**
-     * Executes the summation on the pre-calculated result of its input node.
+     * Executes the summation on all numeric values from all array/collection inputs.
+     * <p>
+     * This method processes each input node expecting arrays or collections, and extracts
+     * all numeric values for summation. Non-array/collection inputs are ignored.
      *
      * @param node        The LogicNode being evaluated.
      * @param dataContext The runtime data context.
-     * @return A {@link Double} representing the sum of all numeric elements. Returns 0.0 if the
-     * input is null, not a collection/array, or contains no numeric elements.
+     * @return A {@link Double} representing the sum of all numeric values found across
+     *         all array inputs. Returns 0.0 if no numeric values are found or if no
+     *         valid array inputs are provided.
      */
     @Override
     public Object execute(LogicNode node, Map<String, JsonNode> dataContext) {
-        Node inputNode = node.getInputNodes().get(0);
-
-        Object collectionProvider = inputNode.getCalculatedResult();
-
-        // If the upstream node failed to produce a result, or it's not a valid type, the sum is 0.0.
-        if (collectionProvider == null || (!(collectionProvider instanceof Collection) && !collectionProvider.getClass().isArray())) {
-            return 0.0;
-        }
-
+        List<Node> inputs = node.getInputNodes();
         double sum = 0.0;
 
-        // Logic for Collections
-        if (collectionProvider instanceof Collection) {
-            for (Object item : (Collection<?>) collectionProvider) {
-                if (item instanceof Number) {
-                    sum += ((Number) item).doubleValue();
+        // Process each input node
+        for (Node inputNode : inputs) {
+            Object result = inputNode.getCalculatedResult();
+
+            if (result == null) {
+                continue; // Skip null results
+            }
+
+            // Handle Collections (Lists, Sets, etc.)
+            if (result instanceof Collection) {
+                Collection<?> collection = (Collection<?>) result;
+                for (Object item : collection) {
+                    if (item instanceof Number) {
+                        sum += ((Number) item).doubleValue();
+                    }
+                    // Non-numeric items are silently ignored
                 }
             }
-        }
-        // Logic for Arrays
-        else {
-            int length = Array.getLength(collectionProvider);
-            for (int i = 0; i < length; i++) {
-                Object item = Array.get(collectionProvider, i);
-                if (item instanceof Number) {
-                    sum += ((Number) item).doubleValue();
+            // Handle Arrays
+            else if (result.getClass().isArray()) {
+                int length = Array.getLength(result);
+                for (int i = 0; i < length; i++) {
+                    Object item = Array.get(result, i);
+                    if (item instanceof Number) {
+                        sum += ((Number) item).doubleValue();
+                    }
                 }
             }
         }

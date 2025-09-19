@@ -14,75 +14,92 @@ import java.util.Map;
 public class MinOperator implements Operation {
 
     /**
-     * Validates that the node is correctly configured for the MIN operation.
+     * Validates that the LogicNode is correctly configured for the MIN operation.
      * <p>
-     * This check ensures that the operator has exactly one input node, which is
-     * expected to deliver the array or collection of numbers.
+     * This method performs structural validation to ensure the node has at least one input
+     * before the graph execution begins. It does not validate the actual content types
+     * of the inputs, as those are checked during runtime execution.
+     * <p>
+     * Requirements:
+     * <ul>
+     *     <li>The node must have at least 1 input connection</li>
+     *     <li>Each input should provide an array or collection of values</li>
+     * </ul>
      *
-     * @param node The LogicNode to validate.
-     * @throws OperatorValidationException if the node does not have exactly one input.
+     * @param node The LogicNode to validate for structural correctness
+     * @throws OperatorValidationException if the node has no inputs or if the inputs list is null
      */
     @Override
-    public void validateNode(LogicNode node)throws OperatorValidationException {
+    public void validateNode(LogicNode node) throws OperatorValidationException {
         List<Node> inputs = node.getInputNodes();
-        if (inputs == null || inputs.size() != 1) {
+        if (inputs == null || inputs.isEmpty()) {
             throw new OperatorValidationException(
-                    "MIN operation for node '" + node.getName() + "' requires exactly 1 input."
+                    "MIN operation for node '" + node.getName() + "' requires at least 1 array input."
             );
         }
     }
 
     /**
-     * Executes the minimum-finding logic on the pre-calculated result of its input node.
+     * Executes the minimum-finding operation on all numeric values from all array/collection inputs.
      * <p>
-     * It iterates through all elements of the input, considering only those that are
-     * instances of {@link Number}. The internal comparison is done using double values.
+     * This method processes each input node expecting arrays or collections, and compares
+     * all numeric values to find the smallest one. The comparison follows these rules:
+     * <ul>
+     *     <li>Only numeric values (instances of {@link Number}) are considered for comparison</li>
+     *     <li>Non-numeric values are silently ignored</li>
+     *     <li>Null inputs are skipped</li>
+     *     <li>Non-array/collection inputs are ignored</li>
+     *     <li>Empty arrays or collections contribute no values to the comparison</li>
+     *     <li>All numeric comparisons are performed using double-precision arithmetic</li>
+     * </ul>
+     * <p>
+     * If no numeric values are found across all inputs, returns 0.0 as a sensible default.
      *
-     * @param node        The LogicNode being evaluated.
-     * @param dataContext The runtime data context.
-     * @return A {@link Double} representing the minimum value found. If the input is
-     * null, not a collection/array, or contains no numeric elements,
-     * it returns {@code 0.0} as a default value.
+     * @param node The LogicNode being evaluated, containing references to input nodes
+     * @param dataContext The runtime data context (may be null, not used in this operation)
+     * @return A {@link Double} representing the smallest numeric value found across
+     *         all array inputs. Returns 0.0 if no numeric values are found.
      */
     @Override
     public Object execute(LogicNode node, Map<String, JsonNode> dataContext) {
-        Node inputNode = node.getInputNodes().get(0);
+        List<Node> inputs = node.getInputNodes();
+        Double minValue = null;
 
-        Object collectionProvider = inputNode.getCalculatedResult();
+        // Process each input node
+        for (Node inputNode : inputs) {
+            Object result = inputNode.getCalculatedResult();
 
-        if (collectionProvider == null || (!(collectionProvider instanceof Collection) && !collectionProvider.getClass().isArray())) {
-            return 0.0;
-        }
+            if (result == null) {
+                continue; // Skip null results
+            }
 
-        Double min = null;
-
-        // Handle Collections
-        if (collectionProvider instanceof Collection) {
-            for (Object item : (Collection<?>) collectionProvider) {
-                if (item instanceof Number) {
-                    double currentValue = ((Number) item).doubleValue();
-                    if (min == null || currentValue < min) {
-                        min = currentValue;
+            // Handle Collections (Lists, Sets, etc.)
+            if (result instanceof Collection) {
+                Collection<?> collection = (Collection<?>) result;
+                for (Object item : collection) {
+                    if (item instanceof Number) {
+                        double currentValue = ((Number) item).doubleValue();
+                        if (minValue == null || currentValue < minValue) {
+                            minValue = currentValue;
+                        }
+                    }
+                }
+            }
+            // Handle Arrays
+            else if (result.getClass().isArray()) {
+                int length = Array.getLength(result);
+                for (int i = 0; i < length; i++) {
+                    Object item = Array.get(result, i);
+                    if (item instanceof Number) {
+                        double currentValue = ((Number) item).doubleValue();
+                        if (minValue == null || currentValue < minValue) {
+                            minValue = currentValue;
+                        }
                     }
                 }
             }
         }
-        // Handle native Java arrays
-        else {
-            int length = Array.getLength(collectionProvider);
-            for (int i = 0; i < length; i++) {
-                Object item = Array.get(collectionProvider, i);
-                if (item instanceof Number) {
-                    double currentValue = ((Number) item).doubleValue();
-                    if (min == null || currentValue < min) {
-                        min = currentValue;
-                    }
-                }
-            }
-        }
-
-        // If no numbers were found, min is still null. Return 0.0 in that case.
-        return (min == null) ? 0.0 : min;
+        return minValue != null ? minValue : 0.0;
     }
 
     @Override

@@ -13,68 +13,89 @@ import java.util.Map;
 
 public class AvgOperator implements Operation {
 
+
     /**
-     * Validates that the node is correctly configured for the AVG (average) operation.
+     * Validates that the LogicNode is correctly configured for the AVG operation.
      * <p>
-     * This structural check ensures that the operator is provided with exactly one input,
-     * which should be the array or collection for which the average is to be calculated.
+     * This method performs structural validation to ensure the node has at least one input
+     * before the graph execution begins. It does not validate the actual content types
+     * of the inputs, as those are checked during runtime execution.
+     * <p>
+     * Requirements:
+     * <ul>
+     *     <li>The node must have at least 1 input connection</li>
+     *     <li>Each input should provide an array or collection of values</li>
+     * </ul>
      *
-     * @param node The LogicNode to validate.
-     * @throws OperatorValidationException if the node does not have exactly one input.
+     * @param node The LogicNode to validate for structural correctness
+     * @throws OperatorValidationException if the node has no inputs or if the inputs list is null
      */
     @Override
     public void validateNode(LogicNode node) throws OperatorValidationException {
         List<Node> inputs = node.getInputNodes();
-        if (inputs == null || inputs.size() != 1) {
+        if (inputs == null || inputs.isEmpty()) {
             throw new OperatorValidationException(
-                    "AVG operation for node '" + node.getName() + "' requires exactly 1 input: the collection of numbers."
+                    "AVG operation for node '" + node.getName() + "' requires at least 1 array input."
             );
         }
     }
 
     /**
-     * Executes the average calculation on the pre-calculated result of its input node.
+     * Executes the average calculation on all numeric values from all array/collection inputs.
+     * <p>
+     * This method processes each input node expecting arrays or collections, and extracts
+     * all numeric values for average calculation. The calculation follows these rules:
+     * <ul>
+     *     <li>Only numeric values (instances of {@link Number}) are included in the calculation</li>
+     *     <li>Non-numeric values are silently ignored</li>
+     *     <li>Null inputs are skipped</li>
+     *     <li>Non-array/collection inputs are ignored</li>
+     *     <li>Empty arrays or collections contribute no values to the calculation</li>
+     * </ul>
+     * <p>
+     * The average is computed as: sum of all numeric values / count of numeric values.
+     * If no numeric values are found, returns 0.0 to prevent division by zero.
      *
-     * @param node        The LogicNode being evaluated.
-     * @param dataContext The runtime data context.
-     * @return A {@link Double} representing the average. Returns 0.0 if the input is missing,
-     * null, not a collection/array, or contains no numeric elements.
+     * @param node The LogicNode being evaluated, containing references to input nodes
+     * @param dataContext The runtime data context (may be null, not used in this operation)
+     * @return A {@link Double} representing the arithmetic average of all numeric values
+     *         found across all array inputs. Returns 0.0 if no numeric values are found.
      */
     @Override
     public Object execute(LogicNode node, Map<String, JsonNode> dataContext) {
-        // Get the single input node.
-        Node inputNode = node.getInputNodes().get(0);
-
-        // Get the pre-calculated result, which should be a collection or an array.
-        Object collectionProvider = inputNode.getCalculatedResult();
-
-        // If the upstream node failed to produce a result, or it is not a collection/array, the average is 0.0.
-        if (collectionProvider == null || (!(collectionProvider instanceof Collection) && !collectionProvider.getClass().isArray())) {
-            return 0.0;
-        }
-
+        List<Node> inputs = node.getInputNodes();
         double sum = 0.0;
         int count = 0;
 
-        if (collectionProvider instanceof Collection) {
-            for (Object item : (Collection<?>) collectionProvider) {
-                if (item instanceof Number) {
-                    sum += ((Number) item).doubleValue();
-                    count++;
+        for (Node inputNode : inputs) {
+            Object result = inputNode.getCalculatedResult();
+
+            if (result == null) {
+                continue; // Skip null results
+            }
+
+            // Handle Collections (Lists, Sets, etc.)
+            if (result instanceof Collection) {
+                Collection<?> collection = (Collection<?>) result;
+                for (Object item : collection) {
+                    if (item instanceof Number) {
+                        sum += ((Number) item).doubleValue();
+                        count++;
+                    }
                 }
             }
-        } else {
-            int length = Array.getLength(collectionProvider);
-            for (int i = 0; i < length; i++) {
-                Object item = Array.get(collectionProvider, i);
-                if (item instanceof Number) {
-                    sum += ((Number) item).doubleValue();
-                    count++;
+            // Handle Arrays
+            else if (result.getClass().isArray()) {
+                int length = Array.getLength(result);
+                for (int i = 0; i < length; i++) {
+                    Object item = Array.get(result, i);
+                    if (item instanceof Number) {
+                        sum += ((Number) item).doubleValue();
+                        count++;
+                    }
                 }
             }
         }
-
-        // Avoid division by zero.
         return (count == 0) ? 0.0 : sum / count;
     }
 
