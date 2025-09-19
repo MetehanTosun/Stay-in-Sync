@@ -246,6 +246,39 @@ export class CreateSourceSystemComponent implements OnInit, OnChanges {
       console.warn('[AASX][UI] File selection cleared');
     }
   }
+
+  // AASX selective attach helpers
+  private getSmId(sm: any): string {
+    return sm?.id || sm?.submodelId || '';
+  }
+  getOrInitAasxSelFor(sm: any): { id: string; full: boolean; elements: string[] } {
+    const id = this.getSmId(sm);
+    let found = this.aasxSelection.submodels.find((s) => s.id === id);
+    if (!found) {
+      found = { id, full: true, elements: [] };
+      this.aasxSelection.submodels.push(found);
+    }
+    return found;
+  }
+  toggleAasxSubmodelFull(sm: any, checked: boolean): void {
+    const sel = this.getOrInitAasxSelFor(sm);
+    sel.full = !!checked;
+    if (sel.full) sel.elements = [];
+  }
+  isAasxElementSelected(sm: any, idShort: string): boolean {
+    const sel = this.getOrInitAasxSelFor(sm);
+    return sel.elements.includes(idShort);
+  }
+  toggleAasxElement(sm: any, idShort: string, checked: boolean): void {
+    const sel = this.getOrInitAasxSelFor(sm);
+    sel.full = false;
+    const exists = sel.elements.includes(idShort);
+    if (checked) {
+      if (!exists) sel.elements.push(idShort);
+    } else {
+      if (exists) sel.elements = sel.elements.filter((x) => x !== idShort);
+    }
+  }
   uploadAasx(): void {
     if (this.isUploadingAasx) return;
     if (!this.aasxSelectedFile) {
