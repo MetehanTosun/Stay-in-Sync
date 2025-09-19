@@ -1,7 +1,7 @@
 package predicates.boolean_predicates;
 
 import de.unistuttgart.graphengine.exception.OperatorValidationException;
-import de.unistuttgart.graphengine.logic_operator.boolean_predicates.IsFalseOperator;
+import de.unistuttgart.graphengine.logic_operator.boolean_predicates.IsTrueOperator;
 import de.unistuttgart.graphengine.nodes.LogicNode;
 import de.unistuttgart.graphengine.nodes.Node;
 import org.junit.jupiter.api.BeforeEach;
@@ -17,13 +17,13 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.when;
 
 /**
- * Unit tests for the IsFalseOperator.
+ * Unit tests for the IsTrueOperator.
  */
 @ExtendWith(MockitoExtension.class)
-@DisplayName("Operation: IS_FALSE")
-public class IsFalseOperatorTest {
+@DisplayName("Operation: IS_TRUE")
+public class IsTrueOperatorTest {
 
-    private IsFalseOperator operation;
+    private IsTrueOperator operation;
 
     @Mock
     private LogicNode mockLogicNode;
@@ -36,17 +36,17 @@ public class IsFalseOperatorTest {
 
     @BeforeEach
     void setUp() {
-        operation = new IsFalseOperator();
+        operation = new IsTrueOperator();
     }
 
     // ===== SINGLE INPUT TESTS =====
 
     @Test
-    @DisplayName("should return true when single input is Boolean.FALSE")
-    void testExecute_WhenSingleInputIsFalse_ShouldReturnTrue() {
+    @DisplayName("should return true when single input is Boolean.TRUE")
+    void testExecute_WhenSingleInputIsTrue_ShouldReturnTrue() {
         // ARRANGE
         when(mockLogicNode.getInputNodes()).thenReturn(List.of(mockInputNode1));
-        when(mockInputNode1.getCalculatedResult()).thenReturn(Boolean.FALSE);
+        when(mockInputNode1.getCalculatedResult()).thenReturn(Boolean.TRUE);
 
         // ACT
         Object result = operation.execute(mockLogicNode, null);
@@ -56,11 +56,11 @@ public class IsFalseOperatorTest {
     }
 
     @Test
-    @DisplayName("should return false when single input is Boolean.TRUE")
-    void testExecute_WhenSingleInputIsTrue_ShouldReturnFalse() {
+    @DisplayName("should return false when single input is Boolean.FALSE")
+    void testExecute_WhenSingleInputIsFalse_ShouldReturnFalse() {
         // ARRANGE
         when(mockLogicNode.getInputNodes()).thenReturn(List.of(mockInputNode1));
-        when(mockInputNode1.getCalculatedResult()).thenReturn(Boolean.TRUE);
+        when(mockInputNode1.getCalculatedResult()).thenReturn(Boolean.FALSE);
 
         // ACT
         Object result = operation.execute(mockLogicNode, null);
@@ -70,11 +70,11 @@ public class IsFalseOperatorTest {
     }
 
     @Test
-    @DisplayName("should return true when single input is primitive false")
-    void testExecute_WhenSingleInputIsPrimitiveFalse_ShouldReturnTrue() {
+    @DisplayName("should return true when single input is primitive true")
+    void testExecute_WhenSingleInputIsPrimitiveTrue_ShouldReturnTrue() {
         // ARRANGE
         when(mockLogicNode.getInputNodes()).thenReturn(List.of(mockInputNode1));
-        when(mockInputNode1.getCalculatedResult()).thenReturn(false); // primitive boolean
+        when(mockInputNode1.getCalculatedResult()).thenReturn(true); // primitive boolean
 
         // ACT
         Object result = operation.execute(mockLogicNode, null);
@@ -84,11 +84,11 @@ public class IsFalseOperatorTest {
     }
 
     @Test
-    @DisplayName("should return false when single input is primitive true")
-    void testExecute_WhenSingleInputIsPrimitiveTrue_ShouldReturnFalse() {
+    @DisplayName("should return false when single input is primitive false")
+    void testExecute_WhenSingleInputIsPrimitiveFalse_ShouldReturnFalse() {
         // ARRANGE
         when(mockLogicNode.getInputNodes()).thenReturn(List.of(mockInputNode1));
-        when(mockInputNode1.getCalculatedResult()).thenReturn(true); // primitive boolean
+        when(mockInputNode1.getCalculatedResult()).thenReturn(false); // primitive boolean
 
         // ACT
         Object result = operation.execute(mockLogicNode, null);
@@ -100,13 +100,13 @@ public class IsFalseOperatorTest {
     // ===== MULTIPLE INPUT TESTS (AND-conjunction) =====
 
     @Test
-    @DisplayName("should return true when all inputs are Boolean.FALSE")
-    void testExecute_WhenAllInputsAreFalse_ShouldReturnTrue() {
+    @DisplayName("should return true when all inputs are Boolean.TRUE")
+    void testExecute_WhenAllInputsAreTrue_ShouldReturnTrue() {
         // ARRANGE
         when(mockLogicNode.getInputNodes()).thenReturn(List.of(mockInputNode1, mockInputNode2, mockInputNode3));
-        when(mockInputNode1.getCalculatedResult()).thenReturn(Boolean.FALSE);
-        when(mockInputNode2.getCalculatedResult()).thenReturn(Boolean.FALSE);
-        when(mockInputNode3.getCalculatedResult()).thenReturn(Boolean.FALSE);
+        when(mockInputNode1.getCalculatedResult()).thenReturn(Boolean.TRUE);
+        when(mockInputNode2.getCalculatedResult()).thenReturn(Boolean.TRUE);
+        when(mockInputNode3.getCalculatedResult()).thenReturn(Boolean.TRUE);
 
         // ACT
         Object result = operation.execute(mockLogicNode, null);
@@ -116,12 +116,12 @@ public class IsFalseOperatorTest {
     }
 
     @Test
-    @DisplayName("should return false when one input is Boolean.TRUE and others are FALSE")
-    void testExecute_WhenOneInputIsTrue_ShouldReturnFalse() {
+    @DisplayName("should return false when one input is Boolean.FALSE and others are TRUE")
+    void testExecute_WhenOneInputIsFalse_ShouldReturnFalse() {
         // ARRANGE
         when(mockLogicNode.getInputNodes()).thenReturn(List.of(mockInputNode1, mockInputNode2, mockInputNode3));
-        when(mockInputNode1.getCalculatedResult()).thenReturn(Boolean.FALSE);
-        when(mockInputNode2.getCalculatedResult()).thenReturn(Boolean.TRUE); // This one is true
+        when(mockInputNode1.getCalculatedResult()).thenReturn(Boolean.TRUE);
+        when(mockInputNode2.getCalculatedResult()).thenReturn(Boolean.FALSE); // This one is false - Early Exit
         // mockInputNode3 wird nie aufgerufen wegen Early Exit
 
         // ACT
@@ -132,11 +132,11 @@ public class IsFalseOperatorTest {
     }
 
     @Test
-    @DisplayName("should return false when first input is Boolean.TRUE")
-    void testExecute_WhenFirstInputIsTrue_ShouldReturnFalse() {
+    @DisplayName("should return false when first input is Boolean.FALSE")
+    void testExecute_WhenFirstInputIsFalse_ShouldReturnFalse() {
         // ARRANGE
         when(mockLogicNode.getInputNodes()).thenReturn(List.of(mockInputNode1, mockInputNode2));
-        when(mockInputNode1.getCalculatedResult()).thenReturn(Boolean.TRUE); // First one fails
+        when(mockInputNode1.getCalculatedResult()).thenReturn(Boolean.FALSE); // First one fails - Early Exit
         // mockInputNode2 wird nie aufgerufen wegen Early Exit
 
         // ACT
@@ -147,12 +147,12 @@ public class IsFalseOperatorTest {
     }
 
     @Test
-    @DisplayName("should return false when last input is Boolean.TRUE")
-    void testExecute_WhenLastInputIsTrue_ShouldReturnFalse() {
+    @DisplayName("should return false when last input is Boolean.FALSE")
+    void testExecute_WhenLastInputIsFalse_ShouldReturnFalse() {
         // ARRANGE
         when(mockLogicNode.getInputNodes()).thenReturn(List.of(mockInputNode1, mockInputNode2));
-        when(mockInputNode1.getCalculatedResult()).thenReturn(Boolean.FALSE);
-        when(mockInputNode2.getCalculatedResult()).thenReturn(Boolean.TRUE); // Last one fails
+        when(mockInputNode1.getCalculatedResult()).thenReturn(Boolean.TRUE);
+        when(mockInputNode2.getCalculatedResult()).thenReturn(Boolean.FALSE); // Last one fails
 
         // ACT
         Object result = operation.execute(mockLogicNode, null);
@@ -162,13 +162,13 @@ public class IsFalseOperatorTest {
     }
 
     @Test
-    @DisplayName("should return true when all inputs are mix of Boolean.FALSE and primitive false")
-    void testExecute_WhenMixOfFalseTypes_ShouldReturnTrue() {
+    @DisplayName("should return true when all inputs are mix of Boolean.TRUE and primitive true")
+    void testExecute_WhenMixOfTrueTypes_ShouldReturnTrue() {
         // ARRANGE
         when(mockLogicNode.getInputNodes()).thenReturn(List.of(mockInputNode1, mockInputNode2, mockInputNode3));
-        when(mockInputNode1.getCalculatedResult()).thenReturn(Boolean.FALSE);
-        when(mockInputNode2.getCalculatedResult()).thenReturn(false); // primitive
-        when(mockInputNode3.getCalculatedResult()).thenReturn(Boolean.FALSE);
+        when(mockInputNode1.getCalculatedResult()).thenReturn(Boolean.TRUE);
+        when(mockInputNode2.getCalculatedResult()).thenReturn(true); // primitive
+        when(mockInputNode3.getCalculatedResult()).thenReturn(Boolean.TRUE);
 
         // ACT
         Object result = operation.execute(mockLogicNode, null);
@@ -178,20 +178,6 @@ public class IsFalseOperatorTest {
     }
 
     // ===== NON-BOOLEAN INPUT TESTS =====
-
-    @Test
-    @DisplayName("should return false when input is String 'false'")
-    void testExecute_WhenInputIsStringFalse_ShouldReturnFalse() {
-        // ARRANGE
-        when(mockLogicNode.getInputNodes()).thenReturn(List.of(mockInputNode1));
-        when(mockInputNode1.getCalculatedResult()).thenReturn("false"); // String, not Boolean
-
-        // ACT
-        Object result = operation.execute(mockLogicNode, null);
-
-        // ASSERT
-        assertFalse((Boolean) result);
-    }
 
     @Test
     @DisplayName("should return false when input is String 'true'")
@@ -208,11 +194,11 @@ public class IsFalseOperatorTest {
     }
 
     @Test
-    @DisplayName("should return false when input is integer 0")
-    void testExecute_WhenInputIsZero_ShouldReturnFalse() {
+    @DisplayName("should return false when input is String 'false'")
+    void testExecute_WhenInputIsStringFalse_ShouldReturnFalse() {
         // ARRANGE
         when(mockLogicNode.getInputNodes()).thenReturn(List.of(mockInputNode1));
-        when(mockInputNode1.getCalculatedResult()).thenReturn(0); // Integer, not Boolean
+        when(mockInputNode1.getCalculatedResult()).thenReturn("false"); // String, not Boolean
 
         // ACT
         Object result = operation.execute(mockLogicNode, null);
@@ -227,6 +213,20 @@ public class IsFalseOperatorTest {
         // ARRANGE
         when(mockLogicNode.getInputNodes()).thenReturn(List.of(mockInputNode1));
         when(mockInputNode1.getCalculatedResult()).thenReturn(1); // Integer, not Boolean
+
+        // ACT
+        Object result = operation.execute(mockLogicNode, null);
+
+        // ASSERT
+        assertFalse((Boolean) result);
+    }
+
+    @Test
+    @DisplayName("should return false when input is integer 0")
+    void testExecute_WhenInputIsZero_ShouldReturnFalse() {
+        // ARRANGE
+        when(mockLogicNode.getInputNodes()).thenReturn(List.of(mockInputNode1));
+        when(mockInputNode1.getCalculatedResult()).thenReturn(0); // Integer, not Boolean
 
         // ACT
         Object result = operation.execute(mockLogicNode, null);
@@ -280,12 +280,12 @@ public class IsFalseOperatorTest {
     // ===== MIXED INPUT SCENARIOS =====
 
     @Test
-    @DisplayName("should return false when mix of false and non-boolean inputs")
-    void testExecute_WhenMixOfFalseAndNonBoolean_ShouldReturnFalse() {
+    @DisplayName("should return false when mix of true and non-boolean inputs")
+    void testExecute_WhenMixOfTrueAndNonBoolean_ShouldReturnFalse() {
         // ARRANGE
         when(mockLogicNode.getInputNodes()).thenReturn(List.of(mockInputNode1, mockInputNode2, mockInputNode3));
-        when(mockInputNode1.getCalculatedResult()).thenReturn(Boolean.FALSE);
-        when(mockInputNode2.getCalculatedResult()).thenReturn("false"); // String, not Boolean - fails here
+        when(mockInputNode1.getCalculatedResult()).thenReturn(Boolean.TRUE);
+        when(mockInputNode2.getCalculatedResult()).thenReturn("true"); // String, not Boolean - Early Exit
         // mockInputNode3 wird nie aufgerufen wegen Early Exit
 
         // ACT
@@ -296,11 +296,11 @@ public class IsFalseOperatorTest {
     }
 
     @Test
-    @DisplayName("should return false when mix of false and null inputs")
-    void testExecute_WhenMixOfFalseAndNull_ShouldReturnFalse() {
+    @DisplayName("should return false when mix of true and null inputs")
+    void testExecute_WhenMixOfTrueAndNull_ShouldReturnFalse() {
         // ARRANGE
         when(mockLogicNode.getInputNodes()).thenReturn(List.of(mockInputNode1, mockInputNode2));
-        when(mockInputNode1.getCalculatedResult()).thenReturn(Boolean.FALSE);
+        when(mockInputNode1.getCalculatedResult()).thenReturn(Boolean.TRUE);
         when(mockInputNode2.getCalculatedResult()).thenReturn(null);
 
         // ACT
@@ -315,7 +315,7 @@ public class IsFalseOperatorTest {
     void testExecute_WhenAllInputsNonBoolean_ShouldReturnFalse() {
         // ARRANGE
         when(mockLogicNode.getInputNodes()).thenReturn(List.of(mockInputNode1, mockInputNode2, mockInputNode3));
-        when(mockInputNode1.getCalculatedResult()).thenReturn("false"); // Fails here - Early Exit
+        when(mockInputNode1.getCalculatedResult()).thenReturn("true"); // Fails here - Early Exit
         // mockInputNode2 und mockInputNode3 werden nie aufgerufen
 
         // ACT
@@ -328,13 +328,13 @@ public class IsFalseOperatorTest {
     // ===== MANY INPUTS TESTS =====
 
     @Test
-    @DisplayName("should handle many false inputs correctly")
-    void testExecute_WhenManyFalseInputs_ShouldReturnTrue() {
+    @DisplayName("should handle many true inputs correctly")
+    void testExecute_WhenManyTrueInputs_ShouldReturnTrue() {
         // ARRANGE
         when(mockLogicNode.getInputNodes()).thenReturn(List.of(mockInputNode1, mockInputNode2, mockInputNode3, mockInputNode1, mockInputNode2));
-        when(mockInputNode1.getCalculatedResult()).thenReturn(Boolean.FALSE);
-        when(mockInputNode2.getCalculatedResult()).thenReturn(false);
-        when(mockInputNode3.getCalculatedResult()).thenReturn(Boolean.FALSE);
+        when(mockInputNode1.getCalculatedResult()).thenReturn(Boolean.TRUE);
+        when(mockInputNode2.getCalculatedResult()).thenReturn(true);
+        when(mockInputNode3.getCalculatedResult()).thenReturn(Boolean.TRUE);
 
         // ACT
         Object result = operation.execute(mockLogicNode, null);
@@ -344,12 +344,12 @@ public class IsFalseOperatorTest {
     }
 
     @Test
-    @DisplayName("should return false when many inputs with one true")
-    void testExecute_WhenManyInputsWithOneTrue_ShouldReturnFalse() {
+    @DisplayName("should return false when many inputs with one false")
+    void testExecute_WhenManyInputsWithOneFalse_ShouldReturnFalse() {
         // ARRANGE
         when(mockLogicNode.getInputNodes()).thenReturn(List.of(mockInputNode1, mockInputNode2, mockInputNode3, mockInputNode1, mockInputNode2));
-        when(mockInputNode1.getCalculatedResult()).thenReturn(Boolean.FALSE);
-        when(mockInputNode2.getCalculatedResult()).thenReturn(Boolean.TRUE); // This one fails - Early Exit
+        when(mockInputNode1.getCalculatedResult()).thenReturn(Boolean.TRUE);
+        when(mockInputNode2.getCalculatedResult()).thenReturn(Boolean.FALSE); // This one fails - Early Exit
         // mockInputNode3 wird nie aufgerufen wegen Early Exit
 
         // ACT
@@ -372,7 +372,7 @@ public class IsFalseOperatorTest {
             operation.validateNode(mockLogicNode);
         });
 
-        assertTrue(exception.getMessage().contains("IS_FALSE"));
+        assertTrue(exception.getMessage().contains("IS_TRUE"));
         assertTrue(exception.getMessage().contains("requires at least 1 input"));
     }
 
@@ -387,7 +387,7 @@ public class IsFalseOperatorTest {
             operation.validateNode(mockLogicNode);
         });
 
-        assertTrue(exception.getMessage().contains("IS_FALSE"));
+        assertTrue(exception.getMessage().contains("IS_TRUE"));
         assertTrue(exception.getMessage().contains("requires at least 1 input"));
     }
 
