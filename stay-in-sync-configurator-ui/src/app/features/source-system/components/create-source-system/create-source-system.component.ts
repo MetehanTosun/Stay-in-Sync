@@ -6,6 +6,7 @@ import {SourceSystemDTO} from '../../models/sourceSystemDTO';
 
 
 import {DialogModule} from 'primeng/dialog';
+import {CheckboxModule} from 'primeng/checkbox';
 import {DropdownModule} from 'primeng/dropdown';
 import {InputTextModule} from 'primeng/inputtext';
 import {ButtonModule} from 'primeng/button';
@@ -67,6 +68,7 @@ interface ElementLivePanel {
     StepsModule,
     FileUploadModule,
     TreeModule,
+    CheckboxModule,
   ]
 })
 export class CreateSourceSystemComponent implements OnInit, OnChanges {

@@ -270,25 +270,25 @@
     <p-fileupload mode="basic" [auto]="false" [showUploadButton]="false" [showCancelButton]="false" accept=".aasx" (onSelect)="onAasxFileSelected($event)"></p-fileupload>
     <small *ngIf="aasxSelectedFile">{{ aasxSelectedFile.name }}</small>
   </div>
-  <div *ngIf="aasxPreview?.length" class="p-mt-2">
-    <strong>Select items to attach:</strong>
-    <div *ngFor="let sm of aasxPreview" class="p-mt-2" style="border:1px solid var(--surface-border);padding:.5rem;border-radius:4px;">
+  <div *ngIf="aasxPreview?.length" class="p-mt-3">
+    <div *ngFor="let sm of aasxPreview" class="p-mb-2">
       <div style="display:flex;align-items:center;gap:.5rem;">
-        <input type="checkbox" [ngModel]="getOrInitAasxSelFor(sm).full" (ngModelChange)="toggleAasxSubmodelFull(sm, $event)" />
-        <span>{{ sm.idShort || sm.id }}</span>
+        <p-checkbox binary="true" [ngModel]="getOrInitAasxSelFor(sm).full" (ngModelChange)="toggleAasxSubmodelFull(sm, $event)"></p-checkbox>
+        <span class="font-bold">{{ sm.idShort || sm.id }}</span>
         <span style="font-size:.75rem;padding:.1rem .4rem;border:1px solid var(--surface-border);border-radius:999px;color:var(--text-color-secondary);">Submodel</span>
       </div>
-      <div *ngIf="!getOrInitAasxSelFor(sm).full && (sm.elements?.length)" style="margin-left:1.5rem;margin-top:.5rem;">
-        <div *ngFor="let el of sm.elements" style="display:flex;align-items:center;gap:.5rem;">
-          <input type="checkbox"
-                 [ngModel]="isAasxElementSelected(sm, el.idShort)"
-                 (ngModelChange)="toggleAasxElement(sm, el.idShort, $event)" />
-          <span>{{ el.idShort }}</span>
-          <span style="font-size:.7rem;padding:.05rem .3rem;border:1px solid var(--surface-border);border-radius:999px;color:var(--text-color-secondary);">{{ el.modelType }}</span>
-        </div>
+      <div *ngIf="!getOrInitAasxSelFor(sm).full && (sm.elements?.length)" style="margin-left:2rem;margin-top:.5rem;display:flex;flex-wrap:wrap;gap:.5rem;">
+        <p-checkbox *ngFor="let el of sm.elements"
+                    binary="true"
+                    [ngModel]="isAasxElementSelected(sm, el.idShort)"
+                    (ngModelChange)="toggleAasxElement(sm, el.idShort, $event)"
+                    [label]="el.idShort"
+        ></p-checkbox>
+      </div>
+      <div *ngIf="!getOrInitAasxSelFor(sm).full && !(sm.elements?.length)" style="margin-left:2rem;color:var(--text-color-secondary);">
+        <small>No selectable collections/lists found.</small>
       </div>
     </div>
-    <small class="p-d-block p-mt-1">Haken bei Submodel = komplett anhängen. Haken entfernen, dann einzelne Collections/Listen auswählen.</small>
   </div>
   <ng-template pTemplate="footer">
     <button pButton type="button" class="p-button-text" label="Cancel" (click)="showAasxUpload=false"></button>
