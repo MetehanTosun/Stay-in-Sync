@@ -180,6 +180,8 @@ mariadb:
 umbrella:
   dataconsumerOne:
     enabled: true
+    secrets:
+      edc-wallet-secret: changeme
     # -- uncomment the following for persistence
     # postgresql:
     #   primary:
@@ -192,6 +194,8 @@ umbrella:
   tx-data-provider:
     seedTestdata: true
     enabled: true
+    secrets:
+      edc-wallet-secret: changeme
     # -- uncomment the following for persistence
     # postgresql:
     #   primary:
