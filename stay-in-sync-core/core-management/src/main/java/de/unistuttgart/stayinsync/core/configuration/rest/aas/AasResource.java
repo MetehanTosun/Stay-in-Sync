@@ -629,6 +629,64 @@ public class AasResource {
             return Response.status(Response.Status.BAD_REQUEST).entity(e.getMessage()).build();
         }
     }
+
+    @POST
+    @Path("/upload/preview")
+    @Consumes(MediaType.MULTIPART_FORM_DATA)
+    @Produces(MediaType.APPLICATION_JSON)
+    @Operation(summary = "Preview attachable items (submodels and top-level collections/lists) from an AASX file")
+    public Response previewAasx(
+            @PathParam("sourceSystemId") Long sourceSystemId,
+            @RequestBody(required = true,
+                    content = @Content(mediaType = MediaType.MULTIPART_FORM_DATA,
+                            schema = @Schema(implementation = Object.class)))
+            @RestForm("file") FileUpload file
+    ) {
+        try {
+            if (file == null || file.size() == 0) {
+                return Response.status(Response.Status.BAD_REQUEST).entity("Missing file").build();
+            }
+            byte[] fileBytes = Files.readAllBytes(file.uploadedFile());
+            var preview = snapshotService.previewAasx(fileBytes);
+            return Response.ok(preview.encode()).build();
+        } catch (java.io.IOException ioe) {
+            return Response.status(Response.Status.BAD_REQUEST).entity("Failed to read uploaded file").build();
+        } catch (Exception e) {
+            return Response.status(Response.Status.BAD_REQUEST).entity(e.getMessage()).build();
+        }
+    }
+
+    @POST
+    @Path("/upload/attach-selected")
+    @Consumes(MediaType.MULTIPART_FORM_DATA)
+    @Produces(MediaType.APPLICATION_JSON)
+    @Operation(summary = "Attach only selected submodels or top-level collections/lists from an AASX file")
+    public Response attachSelected(
+            @PathParam("sourceSystemId") Long sourceSystemId,
+            @RequestBody(required = true,
+                    content = @Content(mediaType = MediaType.MULTIPART_FORM_DATA,
+                            schema = @Schema(implementation = Object.class)))
+            @RestForm("file") FileUpload file,
+            @RestForm("selection") String selectionJson
+    ) {
+        try {
+            if (file == null || file.size() == 0) {
+                return Response.status(Response.Status.BAD_REQUEST).entity("Missing file").build();
+            }
+            byte[] fileBytes = Files.readAllBytes(file.uploadedFile());
+            io.vertx.core.json.JsonObject selection = null;
+            if (selectionJson != null && !selectionJson.isBlank()) {
+                selection = new io.vertx.core.json.JsonObject(selectionJson);
+            }
+            int attached = snapshotService.attachSelectedFromAasx(sourceSystemId, fileBytes, selection);
+            snapshotService.refreshSnapshot(sourceSystemId);
+            return Response.accepted(new io.vertx.core.json.JsonObject().put("attachedSubmodels", attached).encode()).build();
+        } catch (java.io.IOException ioe) {
+            return Response.status(Response.Status.BAD_REQUEST).entity("Failed to read uploaded file").build();
+        } catch (Exception e) {
+            return Response.status(Response.Status.BAD_REQUEST).entity(e.getMessage()).build();
+        }
+    }
 }
 
 

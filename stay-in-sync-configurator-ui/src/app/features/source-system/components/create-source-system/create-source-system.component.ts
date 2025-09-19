@@ -92,6 +92,8 @@ export class CreateSourceSystemComponent implements OnInit, OnChanges {
   showAasxUpload = false;
   aasxSelectedFile: File | null = null;
   isUploadingAasx = false;
+  aasxPreview: any = null;
+  aasxSelection: { submodels: Array<{ id: string; full: boolean; elements: string[] }> } = { submodels: [] };
 
   typeOptions = [
     {label: 'REST-OpenAPI', value: 'REST_OPENAPI'},
@@ -224,6 +226,22 @@ export class CreateSourceSystemComponent implements OnInit, OnChanges {
         size: this.aasxSelectedFile.size,
         type: this.aasxSelectedFile.type
       });
+      // Load preview to enable selective attach
+      if (this.createdSourceSystemId) {
+        this.aasService.previewAasx(this.createdSourceSystemId, this.aasxSelectedFile).subscribe({
+          next: (resp) => {
+            this.aasxPreview = resp?.submodels || (resp?.result ?? []);
+            // Normalize to array of {id,idShort,kind,elements:[{idShort,modelType}]}
+            const arr = Array.isArray(this.aasxPreview) ? this.aasxPreview : (this.aasxPreview?.submodels ?? []);
+            this.aasxSelection = { submodels: (arr || []).map((sm: any) => ({ id: sm.id || sm.submodelId, full: true, elements: (sm.elements || []).map((e: any) => e.idShort) })) };
+          },
+          error: (err) => {
+            console.warn('[AASX][UI] Preview failed', err);
+            this.aasxPreview = null;
+            this.aasxSelection = { submodels: [] };
+          }
+        });
+      }
     } else {
       console.warn('[AASX][UI] File selection cleared');
     }
@@ -243,7 +261,10 @@ export class CreateSourceSystemComponent implements OnInit, OnChanges {
       });
       this.messageService.add({ severity: 'info', summary: 'Uploading AASX', detail: `${this.aasxSelectedFile?.name} (${this.aasxSelectedFile?.size} bytes)` });
       this.isUploadingAasx = true;
-      this.aasService.uploadAasx(this.createdSourceSystemId, this.aasxSelectedFile!)
+      // If preview is available and user made a selection, use selective attach; else default upload
+      const hasSelection = (this.aasxSelection?.submodels?.length || 0) > 0;
+      const req$ = hasSelection ? this.aasService.attachSelectedAasx(this.createdSourceSystemId, this.aasxSelectedFile!, this.aasxSelection) : this.aasService.uploadAasx(this.createdSourceSystemId, this.aasxSelectedFile!);
+      req$
         .subscribe({
           next: (resp) => {
             console.info('[AASX][UI] Upload accepted', resp);

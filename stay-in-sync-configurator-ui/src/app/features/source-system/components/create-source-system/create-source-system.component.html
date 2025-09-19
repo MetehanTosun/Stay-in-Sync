@@ -270,6 +270,26 @@
     <p-fileupload mode="basic" [auto]="false" [showUploadButton]="false" [showCancelButton]="false" accept=".aasx" (onSelect)="onAasxFileSelected($event)"></p-fileupload>
     <small *ngIf="aasxSelectedFile">{{ aasxSelectedFile.name }}</small>
   </div>
+  <div *ngIf="aasxPreview?.length" class="p-mt-2">
+    <strong>Select items to attach:</strong>
+    <div *ngFor="let sm of aasxPreview" class="p-mt-2" style="border:1px solid var(--surface-border);padding:.5rem;border-radius:4px;">
+      <div style="display:flex;align-items:center;gap:.5rem;">
+        <input type="checkbox" [(ngModel)]="aasxSelection.submodels.find(s=>s.id===(sm.id||sm.submodelId)).full" />
+        <span>{{ sm.idShort || sm.id }}</span>
+        <span style="font-size:.75rem;padding:.1rem .4rem;border:1px solid var(--surface-border);border-radius:999px;color:var(--text-color-secondary);">Submodel</span>
+      </div>
+      <div *ngIf="!(aasxSelection.submodels.find(s=>s.id===(sm.id||sm.submodelId)).full) && (sm.elements?.length)" style="margin-left:1.5rem;margin-top:.5rem;">
+        <div *ngFor="let el of sm.elements" style="display:flex;align-items:center;gap:.5rem;">
+          <input type="checkbox"
+                 [ngModel]="aasxSelection.submodels.find(s=>s.id===(sm.id||sm.submodelId)).elements.includes(el.idShort)"
+                 (ngModelChange)="$event ? aasxSelection.submodels.find(s=>s.id===(sm.id||sm.submodelId)).elements.push(el.idShort) : (aasxSelection.submodels.find(s=>s.id===(sm.id||sm.submodelId)).elements = aasxSelection.submodels.find(s=>s.id===(sm.id||sm.submodelId)).elements.filter((x:string)=>x!==el.idShort))" />
+          <span>{{ el.idShort }}</span>
+          <span style="font-size:.7rem;padding:.05rem .3rem;border:1px solid var(--surface-border);border-radius:999px;color:var(--text-color-secondary);">{{ el.modelType }}</span>
+        </div>
+      </div>
+    </div>
+    <small class="p-d-block p-mt-1">Haken bei Submodel = komplett anhängen. Haken entfernen, dann einzelne Collections/Listen auswählen.</small>
+  </div>
   <ng-template pTemplate="footer">
     <button pButton type="button" class="p-button-text" label="Cancel" (click)="showAasxUpload=false"></button>
     <button pButton type="button" label="Upload" (click)="uploadAasx()" [disabled]="isUploadingAasx || !aasxSelectedFile"></button>
