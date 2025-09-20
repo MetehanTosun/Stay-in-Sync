@@ -22,6 +22,10 @@ public class NodeConfigurationError implements ValidationError {
         this.message = message;
     }
 
+    public int getNodeId() {
+        return this.nodeId;
+    }
+
     @Override
     public String getErrorCode() {
         return "NODE_CONFIG_ERROR";
