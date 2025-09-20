@@ -15,6 +15,7 @@ export interface SourceSystemDTO {
     apiUrl: string;
     description?: string;
     apiType: string;
+    aasId?: string;
     openApiSpec?: string;
 }
 

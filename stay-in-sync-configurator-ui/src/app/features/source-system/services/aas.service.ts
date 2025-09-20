@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { HttpClient, HttpParams } from '@angular/common/http';
+import { HttpClient, HttpParams, HttpHeaders } from '@angular/common/http';
 import { Observable } from 'rxjs';
 
 @Injectable({ providedIn: 'root' })
@@ -58,10 +58,27 @@ export class AasService {
     sourceSystemId: number,
     submodelId: string,
     elementPath: string,
-    valuePayload: any
+    value: any
   ): Observable<any> {
     const url = `/api/config/source-system/${sourceSystemId}/aas/submodels/${submodelId}/elements/${elementPath}/value`;
-    return this.http.patch(url, valuePayload);
+    // Ensure JSON content type; quote strings as JSON
+    const headers = new HttpHeaders({ 'Content-Type': 'application/json' });
+    const body = (typeof value === 'string') ? JSON.stringify(value) : value;
+    return this.http.patch(url, body, { headers });
+  }
+
+  deleteSubmodel(sourceSystemId: number, submodelId: string): Observable<any> {
+    const url = `/api/config/source-system/${sourceSystemId}/aas/submodels/${submodelId}`;
+    return this.http.delete(url);
+  }
+
+  deleteElement(
+    sourceSystemId: number,
+    submodelId: string,
+    elementPath: string
+  ): Observable<any> {
+    const url = `/api/config/source-system/${sourceSystemId}/aas/submodels/${submodelId}/elements/${elementPath}`;
+    return this.http.delete(url);
   }
 
   encodeIdToBase64Url(id: string): string {
