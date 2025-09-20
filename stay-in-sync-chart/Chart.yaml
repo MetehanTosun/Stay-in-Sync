@@ -34,7 +34,7 @@ dependencies:
     version: 16.5.11
     repository: https://charts.bitnami.com/bitnami
   - name: umbrella
-    version: 2.14.1
+    version: 3.6.3
     repository: https://eclipse-tractusx.github.io/charts/dev
   - name: core-management
     version: 1.0.0-SNAPSHOT
