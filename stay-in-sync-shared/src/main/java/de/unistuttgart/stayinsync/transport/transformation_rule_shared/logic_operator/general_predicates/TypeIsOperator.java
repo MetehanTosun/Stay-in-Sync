@@ -1,6 +1,7 @@
 package de.unistuttgart.stayinsync.transport.transformation_rule_shared.logic_operator.general_predicates;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import de.unistuttgart.stayinsync.transport.exception.OperatorValidationException;
 import de.unistuttgart.stayinsync.transport.transformation_rule_shared.nodes.ConstantNode;
 import de.unistuttgart.stayinsync.transport.transformation_rule_shared.nodes.LogicNode;
 import de.unistuttgart.stayinsync.transport.transformation_rule_shared.nodes.Node;
@@ -19,20 +20,20 @@ public class TypeIsOperator implements Operation {
      * It requires at least two inputs: a ConstantNode specifying the type, and one or more nodes to check.
      *
      * @param node The LogicNode to validate.
-     * @throws IllegalArgumentException if the node's configuration is invalid.
+     * @throws OperatorValidationException if the node's configuration is invalid.
      */
     @Override
-    public void validateNode(LogicNode node) {
+    public void validateNode(LogicNode node)throws OperatorValidationException {
         List<Node> inputs = node.getInputNodes();
 
         if (inputs == null || inputs.size() < 2) {
-            throw new IllegalArgumentException(
+            throw new OperatorValidationException(
                     "TYPE_IS operation for node '" + node.getName() + "' requires at least 2 inputs: a type constant and at least one value to check."
             );
         }
 
         if (!(inputs.get(0) instanceof ConstantNode)) {
-            throw new IllegalArgumentException(
+            throw new OperatorValidationException(
                     "TYPE_IS operation requires the first input (the expected type) to be a ConstantNode."
             );
         }
@@ -41,14 +42,14 @@ public class TypeIsOperator implements Operation {
         Object typeValue = typeConstant.getValue();
 
         if (!(typeValue instanceof String)) {
-            throw new IllegalArgumentException(
+            throw new OperatorValidationException(
                     "The ConstantNode for TYPE_IS must contain a String, but found " + (typeValue == null ? "null" : typeValue.getClass().getName())
             );
         }
 
         String typeString = ((String) typeValue).toLowerCase();
         if (!ALLOWED_TYPES.contains(typeString)) {
-            throw new IllegalArgumentException(
+            throw new OperatorValidationException(
                     "Invalid type '" + typeString + "' specified. Allowed types are: " + ALLOWED_TYPES
             );
         }

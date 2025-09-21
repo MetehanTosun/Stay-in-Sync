@@ -5,24 +5,27 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.LogicGraphEntity;
 import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.TransformationRule;
-
+import de.unistuttgart.stayinsync.core.configuration.exception.CoreManagementException; // Import der korrekten Exception
+import de.unistuttgart.stayinsync.syncnode.logic_engine.GraphMapper;
 import de.unistuttgart.stayinsync.transport.dto.transformationrule.GraphDTO;
 import de.unistuttgart.stayinsync.transport.dto.transformationrule.NodeDTO;
 import de.unistuttgart.stayinsync.transport.dto.transformationrule.TransformationRulePayloadDTO;
 import de.unistuttgart.stayinsync.transport.dto.transformationrule.vFlow.VFlowGraphDTO;
 import de.unistuttgart.stayinsync.transport.transformation_rule_shared.GraphStatus;
 import de.unistuttgart.stayinsync.transport.transformation_rule_shared.nodes.Node;
-import de.unistuttgart.stayinsync.transport.transformation_rule_shared.util.GraphMapper;
 import de.unistuttgart.stayinsync.transport.transformation_rule_shared.validation_error.ValidationError;
 import io.quarkus.logging.Log;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
 import jakarta.ws.rs.NotFoundException;
+import jakarta.ws.rs.core.Response;
 
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+
+import static jakarta.transaction.Transactional.TxType.SUPPORTS;
 
 /**
  * The central service for managing Transformation Rules.
@@ -42,137 +45,129 @@ public class TransformationRuleService {
 
     /**
      * Creates a new TransformationRule with a default graph.
-     * The default graph contains only a single FinalNode, which defaults to 'true'.
-     * The rule is immediately marked as FINALIZED.
-     *
-     * @param dto The DTO containing the metadata for the new rule.
-     * @return A PersistenceResult containing the newly created entity and an empty validation list.
      */
     @Transactional
-    public GraphStorageService.PersistenceResult createRule(TransformationRulePayloadDTO dto) {
-        Log.debugf("Creating new rule with name: %s", dto.getName());
+    public GraphStorageService.PersistenceResult createRule(TransformationRulePayloadDTO payload) {
+        Log.debugf("Creating a new rule with name: %s", payload.getName());
 
-        // 1. Create the default graph structure.
-        NodeDTO finalNodeDto = new NodeDTO();
-        finalNodeDto.setId(0);
-        finalNodeDto.setName("Final Result");
-        finalNodeDto.setNodeType("FINAL");
-
-        GraphDTO defaultGraphDto = new GraphDTO();
-        defaultGraphDto.setNodes(Collections.singletonList(finalNodeDto));
-
-        // 2. Create the database entities.
-        TransformationRule rule = new TransformationRule();
-        rule.name = dto.getName();
-        rule.description = dto.getDescription();
-        rule.graphStatus = GraphStatus.FINALIZED; // A default graph is always valid.
-
-        LogicGraphEntity graphEntity = new LogicGraphEntity();
-        try {
-            graphEntity.graphDefinitionJson = jsonObjectMapper.writeValueAsString(defaultGraphDto);
-        } catch (JsonProcessingException e) {
-            throw new RuntimeException("Failed to serialize default graph.", e);
+        if (storageService.findRuleByName(payload.getName()).isPresent()) {
+            throw new CoreManagementException(Response.Status.CONFLICT,
+                    "Duplicate Name",
+                    "A TransformationRule with the name '%s' already exists.", payload.getName());
         }
 
-        rule.graph = graphEntity;
+        try {
+            NodeDTO finalNodeDto = new NodeDTO();
+            finalNodeDto.setId(0);
+            finalNodeDto.setName("Final Result");
+            finalNodeDto.setNodeType("FINAL");
 
-        // 3. Persist the new rule.
-        storageService.persistRule(rule);
+            GraphDTO defaultGraphDto = new GraphDTO();
+            defaultGraphDto.setNodes(Collections.singletonList(finalNodeDto));
 
-        // 4. Return the result. The validation error list is empty.
-        return new GraphStorageService.PersistenceResult(rule, new ArrayList<>());
+            TransformationRule rule = new TransformationRule();
+            rule.name = payload.getName();
+            rule.description = payload.getDescription();
+            rule.graphStatus = GraphStatus.FINALIZED;
+
+            LogicGraphEntity graphEntity = new LogicGraphEntity();
+            graphEntity.graphDefinitionJson = jsonObjectMapper.writeValueAsString(defaultGraphDto);
+            rule.graph = graphEntity;
+
+            storageService.persistRule(rule);
+
+            Log.infof("Successfully created new rule '%s' with id %d.", rule.name, rule.id);
+            rule.graph = graphEntity;
+            return new GraphStorageService.PersistenceResult(rule, new ArrayList<>());
+
+        } catch (JsonProcessingException e) {
+            Log.errorf(e, "Failed to serialize default graph for new rule '%s'", payload.getName());
+            throw new CoreManagementException(Response.Status.INTERNAL_SERVER_ERROR,
+                    "Serialization Error", "Failed to create default graph.", e);
+        }
     }
 
     /**
-     * Updates only the metadata (name and description) of an existing TransformationRule.
-     * The graph definition and its status remain unchanged.
-     *
-     * @param id  The ID of the rule to update.
-     * @param dto The DTO containing the new metadata.
-     * @return The updated TransformationRule entity.
-     * @throws NotFoundException if no rule with the given ID is found.
+     * Updates the metadata of an existing TransformationRule.
      */
     @Transactional
     public TransformationRule updateRuleMetadata(Long id, TransformationRulePayloadDTO dto) {
-        TransformationRule ruleToUpdate = storageService.findRuleById(id)
-                .orElseThrow(() -> new NotFoundException("Rule with id " + id + " not found."));
+        Log.debugf("Updating rule metadata with id: %d", id);
+
+        TransformationRule ruleToUpdate = storageService.findRuleById(id);
 
         ruleToUpdate.name = dto.getName();
         ruleToUpdate.description = dto.getDescription();
 
-        Log.debugf("Metadata for TransformationRule with id %d was updated.", id);
+        Log.infof("Successfully updated metadata for rule with id %d.", id);
         return ruleToUpdate;
     }
 
     /**
      * Updates the graph of an existing TransformationRule.
-     * This method orchestrates the entire process of mapping, validating, and persisting the new graph structure.
-     *
-     * @param id       The ID of the rule whose graph is to be updated.
-     * @param vflowDto The DTO from the frontend containing the new graph structure.
-     * @return A PersistenceResult object with the updated entity and the validation result.
+     * This method will now always persist the graph, even if it's invalid.
+     * It combines errors from the mapping process (structural errors) and the validation
+     * process (logical errors) into a single list.
      */
     @Transactional
     public GraphStorageService.PersistenceResult updateRuleGraph(Long id, VFlowGraphDTO vflowDto) {
-        // 1. Find the existing rule entity.
-        TransformationRule ruleToUpdate = storageService.findRuleById(id)
-                .orElseThrow(() -> new NotFoundException("Rule with id " + id + " not found."));
+        Log.debugf("Updating graph with ruleId: %d", id);
 
-        // 2. Translate the VFlow format into the internal persistence format (GraphDTO).
-        GraphDTO graphDto = mapper.vflowToGraphDto(vflowDto);
-
-        // 3. Create the "intelligent" domain objects for validation.
-        List<Node> nodeGraph = mapper.toNodeGraph(graphDto);
-
-        // 4. Validate the new graph structure.
-        List<ValidationError> validationErrors = validator.validateGraph(nodeGraph);
-        GraphStatus status = validationErrors.isEmpty() ? GraphStatus.FINALIZED : GraphStatus.DRAFT;
-
-        // 5. Update the entity's properties.
-        ruleToUpdate.graphStatus = status;
-
+        TransformationRule ruleToUpdate = storageService.findRuleById(id);
         try {
-            ruleToUpdate.graph.graphDefinitionJson = jsonObjectMapper.writeValueAsString(graphDto);
-            if (!validationErrors.isEmpty()) {
-                ruleToUpdate.validationErrorsJson = jsonObjectMapper.writeValueAsString(validationErrors);
-            } else {
-                ruleToUpdate.validationErrorsJson = null; // Clear old errors if the graph is now valid
-            }
-        } catch (JsonProcessingException e) {
-            throw new RuntimeException("Failed to serialize graph or errors to JSON.", e);
-        }
+            GraphDTO graphDto = mapper.vflowToGraphDto(vflowDto);
 
-        // The entity is managed, so changes will be persisted.
-        return new GraphStorageService.PersistenceResult(ruleToUpdate, validationErrors);
+            GraphMapper.MappingResult mappingResult = mapper.toNodeGraph(graphDto);
+            List<Node> successfullyMappedNodes = mappingResult.nodes();
+            List<ValidationError> allErrors = new ArrayList<>(mappingResult.mappingErrors());
+
+            int originalNodeCount = vflowDto.getNodes() != null ? vflowDto.getNodes().size() : 0;
+            List<ValidationError> validationErrors = validator.validateGraph(successfullyMappedNodes, originalNodeCount);
+            allErrors.addAll(validationErrors);
+
+            GraphStatus status = allErrors.isEmpty() ? GraphStatus.FINALIZED : GraphStatus.DRAFT;
+
+            ruleToUpdate.graphStatus = status;
+            ruleToUpdate.graph.graphDefinitionJson = jsonObjectMapper.writeValueAsString(graphDto);
+
+            if (!allErrors.isEmpty()) {
+                ruleToUpdate.validationErrorsJson = jsonObjectMapper.writeValueAsString(allErrors);
+            } else {
+                ruleToUpdate.validationErrorsJson = null;
+            }
+
+            Log.infof("Successfully updated graph for rule '%s' (id: %d). New status: %s. Total errors: %d",
+                    ruleToUpdate.name, id, status, allErrors.size());
+
+            return new GraphStorageService.PersistenceResult(ruleToUpdate, allErrors);
+
+        } catch (JsonProcessingException e) {
+            Log.errorf(e, "Failed to serialize graph or errors for rule with id %d", id);
+            throw new CoreManagementException(Response.Status.INTERNAL_SERVER_ERROR,
+                    "Serialization Error", "Failed to serialize graph for update.", e);
+        }
     }
 
-
-    @Transactional
+    /**
+     * Retrieves the list of validation errors for a specific rule.
+     *
+     * @param id The ID of the rule.
+     * @return A list of {@link ValidationError} objects. The list is empty if the rule is finalized or has no errors.
+     */
+    @Transactional(SUPPORTS)
     public List<ValidationError> getValidationErrorsForRule(Long id) {
-        TransformationRule entity = storageService.findRuleById(id)
-                .orElseThrow(() -> new NotFoundException("TransformationRule with id " + id + " not found."));
-
-        // ====================== START DEBUGGING ======================
-        Log.info("====== PRÜFUNG INNERHALB DER TRANSAKTION ======");
-        if (entity.validationErrorsJson == null) {
-            Log.info("Feld 'validationErrorsJson' ist hier NULL.");
-        } else {
-            Log.infof("Feld 'validationErrorsJson' ist NICHT NULL. Länge: %d", entity.validationErrorsJson.length());
-            Log.infof("Inhalt: %s", entity.validationErrorsJson);
-        }
-        Log.info("=================================================");
-        // ======================= END DEBUGGING =======================
+        TransformationRule entity = storageService.findRuleById(id);
 
         List<ValidationError> errors = new ArrayList<>();
-        // Füge zur Sicherheit eine Prüfung auf einen leeren String hinzu
-        if (entity.graphStatus == GraphStatus.DRAFT && entity.validationErrorsJson != null && !entity.validationErrorsJson.trim().isEmpty()) {
+
+        if (entity.graphStatus == GraphStatus.DRAFT && entity.validationErrorsJson != null) {
             try {
                 errors = jsonObjectMapper.readValue(entity.validationErrorsJson, new TypeReference<>() {});
-                Log.info("DESERIALISIERUNG ERFOLGREICH. GEFUNDENE FEHLER: " + errors.size());
             } catch (JsonProcessingException e) {
-                Log.error("FEHLER BEI DER DESERIALISIERUNG!", e);
+                Log.errorf(e, "Failed to parse validation errors for entity id %d", entity.id);
             }
         }
+
         return errors;
     }
 }

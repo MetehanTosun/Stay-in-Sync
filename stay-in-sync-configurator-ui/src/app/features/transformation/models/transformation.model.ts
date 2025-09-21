@@ -1,6 +1,9 @@
 import {SourceSystemApiRequestConfiguration} from '../../script-editor/models/arc.models';
+import {JobDeploymentStatus} from '../../../shared/components/job-status-tag/job-status-tag.component';
+import {ScriptPayload} from '../../../core/services/script-editor.service';
+import {TransformationScript} from './transformation-script.model';
 
-export interface Transformation{
+export interface Transformation {
   transformationRuleId?: number | null;
   targetSystemEndpointId?: number | null;
   sourceSystemApiRequestConfigurations?: SourceSystemApiRequestConfiguration[];
@@ -10,9 +13,10 @@ export interface Transformation{
   name?: string;
   description?: string;
   transformationRule?: string;
-  script?: string;
+  script?: TransformationScript;
   syncJobId?: number;
   transformationScriptId?: number;
+  deploymentStatus?: JobDeploymentStatus;
   added?: boolean;
 }
 

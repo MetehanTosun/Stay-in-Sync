@@ -1,4 +1,4 @@
-<p-card header="Sync Job Overview" class="sync-job-card" [style.width.%]="100">
+<p-card header="Sync Job Overview" class="sync-job-card" [style]="{ width: '100rem' }">
   <div class="p-fluid">
     <div class="p-field">
       <label for="name"><strong>Name:</strong></label>
@@ -31,14 +31,18 @@
       </ul>
     </div>
 
-    <div class="p-field">
-      <label><strong>Transformations:</strong></label>
-      <ul class="p-list">
-        <li *ngFor="let transformation of syncJob.transformations">
-          <strong>{{ transformation.name }}:</strong> {{ transformation.transformationRule }}, {{transformation.script}}
-        </li>
-      </ul>
-    </div>
+<div class="p-field">
+  <label><strong>Transformations:</strong></label>
+  <ul class="p-list">
+    <li *ngFor="let transformation of syncJob.transformations">
+      <div class="transformation-item">
+        <span class="transformation-name"><strong>{{ transformation.name }}</strong></span>
+        <span class="transformation-rule">Rule: {{ transformation.transformationRule }}</span>
+        <span *ngIf="transformation.script?.name" class="transformation-script">Script: {{ transformation.script?.name }}</span>
+      </div>
+    </li>
+  </ul>
+</div>
 
     <div class="p-field">
       <label><strong>Simulation Mode:</strong></label>

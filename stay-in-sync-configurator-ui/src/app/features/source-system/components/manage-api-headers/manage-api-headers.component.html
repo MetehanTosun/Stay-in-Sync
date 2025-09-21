@@ -1,19 +1,24 @@
 <!-- Component: Manage API Headers -->
 <!-- Allows creating, listing, and deleting API header templates for a source system -->
 <p-card styleClass="p-p-4">
-  <h3 style="margin-bottom: 2rem;">Manage API Headers</h3> <!-- Überschrift mit Abstand -->
+  <h3 style="margin-bottom: 2rem;">Manage API Headers</h3> <!-- Header with spacing -->
+
+  <!-- AAS hint -->
+  <div *ngIf="isAas" class="p-mb-3" style="color:#555;">
+    Accept/Content-Type werden bei AAS automatisch gesetzt und sind hier ausgeblendet.
+  </div>
 
   <!-- Form: Add new API header -->
   <form [formGroup]="form" class="p-fluid p-formgrid p-grid p-mb-4 p-p-4">
-    <div class="p-field p-col-8" style="margin-bottom: 1.5rem;"> <!-- Abstand zwischen den Eingabefeldern -->
+    <div class="p-field p-col-8" style="margin-bottom: 1.5rem;"> 
       <label for="headerName">Header Name</label>
       <input id="headerName" pInputText formControlName="headerName" />
     </div>
-    <div class="p-field p-col-4" style="margin-bottom: 1.5rem;"> <!-- Abstand zwischen den Eingabefeldern -->
+    <div class="p-field p-col-4" style="margin-bottom: 1.5rem;">
       <label for="headerType">Type</label>
       <p-dropdown
         id="headerType"
-        [options]="headerTypes"
+        [options]="allowedHeaderTypes"
         optionLabel="label"
         optionValue="value"
         placeholder="Select type"
@@ -27,6 +32,14 @@
         label="Add Header"
         [disabled]="form.invalid"
         (click)="addHeader()">
+      </button>
+      <button
+        *ngIf="isAas"
+        pButton
+        type="button"
+        class="p-ml-2 p-button-text"
+        label="Re-Test"
+        (click)="onRetest.emit()">
       </button>
     </div>
   </form>
@@ -50,10 +63,20 @@
             type="button"
             icon="pi pi-trash"
             class="p-button-text"
-            (click)="deleteHeader(h.id!)">
+            (click)="deleteHeader(h)">
           </button>
         </td>
       </tr>
     </ng-template>
   </p-table>
 </p-card>
+
+<!--
+  Confirmation dialog for deletion
+-->
+<app-confirmation-dialog
+  [(visible)]="showConfirmationDialog"
+  [data]="confirmationData"
+  (confirmed)="onConfirmationConfirmed()"
+  (cancelled)="onConfirmationCancelled()">
+</app-confirmation-dialog>

@@ -2,6 +2,8 @@ import {AfterViewInit, Component, EventEmitter, Input, Output} from '@angular/co
 import * as d3 from 'd3';
 import type {Node, NodeConnection} from '../../core/models/node.model';
 import {LegendPanelComponent} from './legend-panel/legend-panel.component';
+import {MonitoringGraphService} from '../../core/services/monitoring-graph.service';
+import {Router} from '@angular/router';
 
 /**
  * GraphPanelComponent
@@ -26,6 +28,13 @@ export class GraphPanelComponent implements AfterViewInit {
   @Output() nodeSelected = new EventEmitter<string | null>();
 
   private _searchTerm: string = '';
+  private isInitialized: boolean = false;
+  markedNodes: { [nodeId: string]: boolean } = {};
+
+
+
+  constructor(private graphService: MonitoringGraphService, private router: Router) {
+  }
 
   /**
    * Input property for the search term.
@@ -34,32 +43,71 @@ export class GraphPanelComponent implements AfterViewInit {
   @Input()
   set searchTerm(value: string) {
     this._searchTerm = value;
-    this.filteredNodes = this.filterNodes(this._searchTerm);
-    this.filteredLinks = this.filterLinks();
-    this.updateGraph(this.filteredNodes, this.filteredLinks);
+
+    // Filter nur anwenden, wenn die Komponente bereits initialisiert ist
+    if (this.isInitialized) {
+      this.filteredNodes = this.filterNodes(this._searchTerm);
+      this.filteredLinks = this.filterLinks();
+      this.updateGraph(this.filteredNodes, this.filteredLinks);
+    }
   }
   get searchTerm(): string {
     return this._searchTerm;
   }
 
+  loadGraphData() {
+    this.graphService.getMonitoringGraphData().subscribe((data) => {
+      console.log('Graph data loaded:', data);
+      this.nodes = data.nodes;
+      if (data.connections === undefined || data.connections === null) {
+        this.links = [];
+      }else {
+        this.links = data.connections;
+      }
+      // Status der Nodes basierend auf markedNodes aktualisieren
+      this.nodes.forEach(node => {
+        if (this.markedNodes[node.id]) {
+          node.status = 'error';
+        }
+      });
+      this.filteredNodes = this.filterNodes(this.searchTerm);
+      this.filteredLinks = this.filterLinks();
+      this.updateGraph(this.filteredNodes, this.filteredLinks);
+      this.isInitialized = true;
+      const svgElement = document.querySelector('svg');
+      const width = svgElement?.clientWidth ?? 400;
+      const height = svgElement?.clientHeight ?? 300;
+
+      const svg = d3.select('svg')
+        .attr('width', '100%')
+        .attr('height', '100%');
+
+      const container = svg.append('g');
+
+      svg.call(
+        d3.zoom<any, unknown>()
+          .scaleExtent([0.5, 5])
+          .on('zoom', (event) => {
+            container.attr('transform', event.transform);
+          })
+      );
+      this.renderGraph(container, this.nodes, this.links, width, height);
+    }, (error) => {
+      console.error('Error loading graph data:', error);
+    });
+  }
+
+
+
   /**
    * Array of all nodes in the graph.
-   * TODO: Replace with actual data fetching logic.
    */
-  nodes: Node[] = [
-    { id: 'A', type: 'API', status: 'active', connections: [] },
-    { id: 'B', type: 'ASS', status: 'active', connections: [] },
-    { id: 'C', type: 'Syncnode', status: 'inactive', connections: [] }
-  ];
+  nodes: Node[] = [];
 
   /**
    * Array of all links in the graph.
-   * TODO: Replace with actual data fetching logic.
    */
-  links: NodeConnection[] = [
-    { source: this.nodes[0], target: this.nodes[1], status: "active" },
-    { source: this.nodes[1], target: this.nodes[2], status: "inactive" },
-  ];
+  links: NodeConnection[] = [];
 
   /**
    * Array of filtered links based on the search term.
@@ -76,26 +124,27 @@ export class GraphPanelComponent implements AfterViewInit {
    * Sets up the SVG container, zoom behavior, and renders the initial graph.
    */
   ngAfterViewInit() {
-    const svgElement = document.querySelector('svg');
-    const width = svgElement?.clientWidth ?? 400;
-    const height = svgElement?.clientHeight ?? 300;
+    this.loadGraphData();
 
-    const svg = d3.select('svg')
-      .attr('width', '100%')
-      .attr('height', '100%');
+    // SSE abonnieren
+    const evtSource = new EventSource('/events/subscribe');
+    evtSource.addEventListener('job-update', (e) => {
+      const changedJobIds: number[] = JSON.parse(e.data);
 
-    const container = svg.append('g');
+      // markiere Nodes, die zu diesen JobIds gehören
+      this.nodes.forEach(node => {
+        if (node.type === 'SyncNode') {
+          node.status = changedJobIds.includes(Number(node.id)) ? 'error' : 'active';
+        }
+      });
 
-    svg.call(
-      d3.zoom<any, unknown>()
-        .scaleExtent([0.5, 5])
-        .on('zoom', (event) => {
-          container.attr('transform', event.transform);
-        })
-    );
-
-    this.renderGraph(container, this.nodes, this.links, width, height);
+      this.filteredNodes = this.filterNodes(this.searchTerm);
+      this.filteredLinks = this.filterLinks();
+      this.updateGraph(this.filteredNodes, this.filteredLinks);
+    });
   }
+
+
 
   /**
    * Filters the nodes based on the provided search term.
@@ -144,7 +193,7 @@ export class GraphPanelComponent implements AfterViewInit {
     container.selectAll('g').remove();
 
     const svgNode = svg.node();
-    const width = (svgNode instanceof SVGSVGElement) ? window.innerWidth * 1.5 : 400;
+    const width = (svgNode instanceof SVGSVGElement) ? window.innerWidth : 400;
     const height = (svgNode instanceof SVGSVGElement) ? svgNode.clientHeight : 300;
 
     this.renderGraph(container, newNodes, newLinks, width, height);
@@ -172,6 +221,9 @@ export class GraphPanelComponent implements AfterViewInit {
     width: number,
     height: number
   ) {
+    const tooltip = d3.select('#tooltip');
+    console.log(`Rendering graph with ${nodes.length} nodes and ${links.length} links`);
+
     const link = container.append('g')
       .selectAll('line')
       .data(links)
@@ -183,13 +235,61 @@ export class GraphPanelComponent implements AfterViewInit {
       .data(nodes)
       .enter().append('g');
 
-    nodeGroup.append('circle')
-      .attr('r', 20)
-      .attr('fill', '#888');
+    nodeGroup.each(function (d: Node) {
+      let shape: any;
+      if (d.type === 'SourceSystem' || d.type === 'ASS') {
+        shape = d3.select(this)
+          .append('polygon')
+          .attr('points', '-25,20 25,20 0,-35') // Größeres Dreieck
+          .attr('fill', '#888');
+      } else if (d.type === 'TargetSystem') {
+        shape = d3.select(this)
+          .append('rect')
+          .attr('width', 40)
+          .attr('height', 40)
+          .attr('x', -20)
+          .attr('y', -20)
+          .attr('fill', '#888');
+      } else {
+        shape = d3.select(this)
+          .append('circle')
+          .attr('r', 20)
+          .attr('fill', '#888');
+      }
+      if (shape) {
+        shape
+          .on('mouseover', (event: MouseEvent, d: Node) => {
+            tooltip.style('visibility', 'visible')
+              .text(d.label)
+              .style('position', 'absolute')
+              .style('top', `${event.pageY + 10}px`)
+              .style('left', `${event.pageX + 10}px`);
+          })
+          .on('mousemove', (event: MouseEvent) => {
+            tooltip.style('top', `${event.pageY + 10}px`)
+              .style('left', `${event.pageX + 10}px`);
+          })
+          .on('mouseout', () => {
+            tooltip.style('visibility', 'hidden');
+          });
+      }
+      d3.select(this)
+        .append('text')
+        .attr('dy', 35)          // Abstand nach unten
+        .attr('text-anchor', 'middle')
+        .text(d.label ?? d.id)   // Label oder ID anzeigen
+        .style('font-size', '12px')
+        .style('fill', '#333');
+    });
+
+    // Klick-Handler für Nodes mit Status "error"
+    nodeGroup.on('click', (event, d) => {
+      if (d.status === 'error') {
+        this.router.navigate(['/replay'], { queryParams: { nodeId: d.id } });
+      }
+    });
 
     this.applyStatusStyles(nodeGroup);
-
-    console.log('width:', width, 'height:', height);
 
     const simulation = this.createSimulation(nodes, links, width, height, link, nodeGroup);
 
@@ -218,21 +318,27 @@ export class GraphPanelComponent implements AfterViewInit {
    * @param nodeGroup D3 selection of node groups (<g> elements).
    */
   private applyStatusStyles(nodeGroup: d3.Selection<SVGGElement, Node, any, any>) {
+    nodeGroup.selectAll('.status-circle').remove();
+
     nodeGroup.filter(d => d.status === 'active')
       .append('circle')
+      .attr('class', 'status-circle')
       .attr('r', 8)
       .attr('fill', '#4caf50');
 
     nodeGroup.filter(d => d.status === 'error')
       .append('circle')
+      .attr('class', 'status-circle')
       .attr('r', 8)
       .attr('fill', '#f44336');
 
     nodeGroup.filter(d => d.status === 'inactive')
       .append('circle')
+      .attr('class', 'status-circle')
       .attr('r', 8)
       .attr('fill', '#ffeb3b');
   }
+
 
   /**
    * Adds drag-and-drop behavior to the graph nodes.
@@ -287,14 +393,13 @@ export class GraphPanelComponent implements AfterViewInit {
     return d3.forceSimulation<Node>(nodes)
       .force('link', d3.forceLink<Node, NodeConnection>(links).id(d => d.id).distance(100))
       .force('charge', d3.forceManyBody().strength(-200))
-      .force('center', d3.forceCenter(width / 2, height / 2))  //TODO: Fix center position when filtering ??
+      .force('center', d3.forceCenter(width / 2, height / 2))
       .on('tick', () => {
         link
           .attr('x1', d => (d.source as Node).x ?? 0)
           .attr('y1', d => (d.source as Node).y ?? 0)
           .attr('x2', d => (d.target as Node).x ?? 0)
           .attr('y2', d => (d.target as Node).y ?? 0);
-
         nodeGroup
           .attr('transform', d => `translate(${d.x ?? 0},${d.y ?? 0})`);
       });

@@ -1,23 +1,59 @@
-import { Injectable} from '@angular/core';
-import {Observable} from 'rxjs';
-import {LogEntry} from '../models/log.model';
+import { Injectable } from '@angular/core';
+import { Observable } from 'rxjs';
+import { HttpClient, HttpParams } from '@angular/common/http';
+import { LogEntry } from '../models/log.model';
 
 @Injectable({ providedIn: 'root' })
 export class LogService {
-  getLogs(): Observable<LogEntry[]> {
+  private baseUrl = '/api/logs';
 
-    const mockLogs: LogEntry[] = [
-      { timestamp: '2024-06-01T12:00:00Z', message: 'Node A gestartet', nodeId: 'A' },
-      { timestamp: '2024-06-01T12:01:00Z', message: 'Node B verbunden', nodeId: 'B' },
-      { timestamp: '2024-06-01T12:02:00Z', message: 'Node C Fehler', nodeId: 'C' },
-      { timestamp: '2024-06-01T12:03:00Z', message: 'System läuft stabil' }
-    ];
-    return new Observable<LogEntry[]>(observer => {
-      observer.next(mockLogs);
-      observer.complete();
-    });
+  constructor(private http: HttpClient) {}
+
+  /**
+   * Logs für eine Liste von TransformationIds abrufen
+   */
+  getLogsByTransformations(
+    transformationIds: string[],
+    startTime: number,
+    endTime: number,
+    level: string
+  ): Observable<LogEntry[]> {
+    let params = new HttpParams()
+      .set('startTime', startTime)
+      .set('endTime', endTime)
+      .set('level', level);
+
+    // POST mit Body = TransformationIds
+    return this.http.post<LogEntry[]>(`${this.baseUrl}/transformations`, transformationIds, { params });
+  }
+
+  /**
+   * Alle Logs ohne Filter abrufen (optional, z.B. für globale Suche)
+   */
+  getLogs(
+    startTime: number,
+    endTime: number,
+    level: string
+  ): Observable<LogEntry[]> {
+    let params = new HttpParams()
+      .set('startTime', startTime)
+      .set('endTime', endTime)
+      .set('level', level);
+
+    return this.http.get<LogEntry[]>(this.baseUrl, { params });
+  }
+
+  /**
+   * Liste der SyncJobs mit Error-Logs abrufen
+   */
+  getErrorLogs(
+    startTime: number,
+    endTime: number,
+  ): Observable<number[]> {
+    let params = new HttpParams()
+      .set('startTime', startTime)
+      .set('endTime', endTime);
+
+    return this.http.get<number[]>(`${this.baseUrl}/ErrorSyncJobIds`, { params });
   }
 }
-
-
-

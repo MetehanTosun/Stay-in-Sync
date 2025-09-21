@@ -1,9 +1,5 @@
-// biome-ignore lint/style/useImportType: <explanation>
 import { Routes } from '@angular/router';
-import { SyncRulesComponent } from './features/sync-rules/components/sync-rules.component';
-import { ConfigBaseComponent } from './features/configuration/config-base/config-base.component';
 import { ConfigurationscriptsBaseComponent } from './features/configuration/configurationscripts-base/configurationscripts-base.component';
-// neu (relativ zu src/app/app.routes.ts)
 import { SourceSystemBaseComponent } from
     './features/source-system/components/source-system-base/source-system-base.component';
 import { CreateSourceSystemComponent } from
@@ -20,14 +16,20 @@ import { ScriptEditorPageComponent } from './features/script-editor/script-edito
 import {
   TransformationScriptSelectionComponent
 } from './features/transformation/components/transformation-script-selection/transformation-script-selection.component';
+import {
+  SyncJobDetailsPageComponent
+} from './features/sync-job/components/sync-job-details-page/sync-job-details-page.component';
+import { RulesOverviewComponent } from './features/sync-rules/pages/rules-overview/rules-overview.component';
+import { EditRuleComponent } from './features/sync-rules/pages/edit-rule/edit-rule.component';
+import { EditRuleDeactivateGuard } from './features/sync-rules/pages/edit-rule/edit-rule-deactivate.guard';
 
+// Target System
+import { TargetSystemBaseComponent } from './features/target-system/components/target-system-base/target-system-base.component';
 
 export const routes: Routes = [
   // Route für Sync Rules
-  { path: 'sync-rules', component: SyncRulesComponent },
-
-  // Route für Configurations
-  { path: 'configs', component: ConfigBaseComponent },
+  { path: 'sync-rules', component: RulesOverviewComponent },
+  { path: 'sync-rules/edit-rule/:id', component: EditRuleComponent, canDeactivate: [EditRuleDeactivateGuard] },
 
   // Route für Transformation Scripts
   { path: 'transformation-scripts', component: ConfigurationscriptsBaseComponent },
@@ -45,6 +47,12 @@ export const routes: Routes = [
         component: CreateSourceSystemComponent
       }
     ]
+  },
+
+  // Route für Target System
+  {
+    path: 'target-system',
+    component: TargetSystemBaseComponent
   },
 
   //Route für Sync Jobs
@@ -68,6 +76,7 @@ export const routes: Routes = [
     }
   ]
   },
+  { path: 'sync-jobs/:id', component: SyncJobDetailsPageComponent},
 
   // Route für Help mit Children
   {

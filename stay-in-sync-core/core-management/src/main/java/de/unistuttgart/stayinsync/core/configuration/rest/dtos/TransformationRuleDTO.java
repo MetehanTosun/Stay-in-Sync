@@ -1,6 +1,7 @@
 package de.unistuttgart.stayinsync.core.configuration.rest.dtos;
 
 import de.unistuttgart.stayinsync.transport.transformation_rule_shared.GraphStatus;
+import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -10,6 +11,7 @@ import lombok.Setter;
  */
 @Getter
 @Setter
+@AllArgsConstructor
 public class TransformationRuleDTO {
 
     /**
@@ -36,4 +38,6 @@ public class TransformationRuleDTO {
      * The ID of the parent transformation this rule belongs to.
      */
     private Long transformationId;
+
+    public TransformationRuleDTO() {}
 }

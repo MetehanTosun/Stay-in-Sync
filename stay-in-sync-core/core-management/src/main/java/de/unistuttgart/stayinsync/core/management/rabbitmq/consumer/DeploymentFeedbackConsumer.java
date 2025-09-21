@@ -7,6 +7,7 @@ import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.DeliverCallback;
 import com.rabbitmq.client.Delivery;
 import de.unistuttgart.stayinsync.core.configuration.exception.CoreManagementException;
+import de.unistuttgart.stayinsync.core.configuration.rest.dtos.TransformationStatusUpdate;
 import de.unistuttgart.stayinsync.core.configuration.service.SourceSystemApiRequestConfigurationService;
 import de.unistuttgart.stayinsync.core.configuration.service.TransformationService;
 import de.unistuttgart.stayinsync.transport.dto.PollingJobDeploymentFeedbackMessageDTO;
@@ -15,6 +16,7 @@ import io.quarkiverse.rabbitmqclient.RabbitMQClient;
 import io.quarkus.logging.Log;
 import io.quarkus.runtime.StartupEvent;
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.event.Event;
 import jakarta.enterprise.event.Observes;
 import jakarta.inject.Inject;
 
@@ -23,11 +25,15 @@ import java.io.UnsupportedEncodingException;
 
 @ApplicationScoped
 public class DeploymentFeedbackConsumer {
+
     @Inject
     RabbitMQClient rabbitMQClient;
 
     @Inject
     ObjectMapper objectMapper;
+
+    @Inject
+    Event<TransformationStatusUpdate> feedbackEvent;
 
     @Inject
     TransformationService transformationService;
@@ -80,7 +86,7 @@ public class DeploymentFeedbackConsumer {
         return (consumerTag, delivery) -> {
             TransformationDeploymentFeedbackMessageDTO transformationMessageDTO = extractTransformation(delivery);
             Log.infof("Received deployment feedback for transformation (id: %s)", transformationMessageDTO.transformationId());
-            transformationService.updateDeploymentStatus(transformationMessageDTO);
+            transformationService.updateDeploymentStatus(transformationMessageDTO.transformationId(), transformationMessageDTO.status());
         };
     }
 
@@ -93,7 +99,7 @@ public class DeploymentFeedbackConsumer {
         return (consumerTag, delivery) -> {
             PollingJobDeploymentFeedbackMessageDTO sourceSystemApiRequestConfigurationMessageDTO = extractPollingJob(delivery);
             Log.infof("Received deployment feedback for polling-job id: %s", sourceSystemApiRequestConfigurationMessageDTO.requestConfigId());
-            sourceSystemApiRequestConfigurationService.updateDeploymentStatus(sourceSystemApiRequestConfigurationMessageDTO);
+            sourceSystemApiRequestConfigurationService.updateDeploymentStatus(sourceSystemApiRequestConfigurationMessageDTO.requestConfigId(), sourceSystemApiRequestConfigurationMessageDTO.deploymentStatus());
         };
     }
 

@@ -1,4 +1,4 @@
-import {Component, EventEmitter, Input, OnInit, Output} from '@angular/core';
+import {Component, EventEmitter, Input, OnInit, Output, OnDestroy} from '@angular/core';
 import {CommonModule} from '@angular/common';
 import {
   AbstractControl,
@@ -18,20 +18,25 @@ import {CardModule} from 'primeng/card';
 import {CheckboxModule} from 'primeng/checkbox';
 import {DialogModule} from 'primeng/dialog';
 import {ProgressSpinnerModule} from 'primeng/progressspinner';
+import {TabViewModule} from 'primeng/tabview';
+import { MonacoEditorModule, NgxEditorModel } from 'ngx-monaco-editor-v2';
+import { DragDropModule } from '@angular/cdk/drag-drop';
 
 import {SourceSystemEndpointResourceService} from '../../service/sourceSystemEndpointResource.service';
 import {HttpClient} from '@angular/common/http';
 import {SourceSystemResourceService} from '../../service/sourceSystemResource.service';
+import {TypeScriptGenerationRequest} from '../../models/typescriptGenerationRequest';
+import {TypeScriptGenerationResponse} from '../../models/typescriptGenerationResponse';
 
-import {ApiEndpointQueryParamResourceService} from '../../service/apiEndpointQueryParamResource.service';
 import {SourceSystemEndpointDTO} from '../../models/sourceSystemEndpointDTO';
-import {ApiEndpointQueryParamDTO} from '../../models/apiEndpointQueryParamDTO';
 import {ApiEndpointQueryParamType} from '../../models/apiEndpointQueryParamType';
-import {CreateSourceSystemEndpointDTO} from '../../models/createSourceSystemEndpointDTO';
 
 import { load as parseYAML } from 'js-yaml';
 import { SourceSystemDTO } from '../../models/sourceSystemDTO';
 import { ManageEndpointParamsComponent } from '../manage-endpoint-params/manage-endpoint-params.component';
+import { ResponsePreviewModalComponent } from '../response-preview-modal/response-preview-modal.component';
+import { ConfirmationDialogComponent, ConfirmationDialogData } from '../confirmation-dialog/confirmation-dialog.component';
+import { OpenApiImportService } from '../../../../core/services/openapi-import.service';
 
 
 /**
@@ -51,85 +56,149 @@ import { ManageEndpointParamsComponent } from '../manage-endpoint-params/manage-
     CheckboxModule,
     DialogModule,
     ProgressSpinnerModule,
-    ManageEndpointParamsComponent
+    TabViewModule,
+    ManageEndpointParamsComponent,
+    ResponsePreviewModalComponent,
+    ConfirmationDialogComponent,
+    MonacoEditorModule,
+    DragDropModule,
   ],
   templateUrl: './manage-endpoints.component.html',
   styleUrls: ['./manage-endpoints.component.css']
 })
-export class ManageEndpointsComponent implements OnInit {
-  /**
-   * Expose QueryParamType enum to the template.
-   */
+export class ManageEndpointsComponent implements OnInit, OnDestroy {
   public ApiEndpointQueryParamType = ApiEndpointQueryParamType;
-  /**
-   * ID of the source system whose endpoints are managed.
-   */
   @Input() sourceSystemId!: number;
   @Output() backStep = new EventEmitter<void>();
   @Output() finish = new EventEmitter<void>();
-
-  /**
-   * List of endpoints fetched from the backend.
-   */
   endpoints: SourceSystemEndpointDTO[] = [];
-  /**
-   * Reactive form for creating new endpoints.
-   */
   endpointForm!: FormGroup;
-  /**
-   * Indicator whether endpoints are currently loading.
-   */
   loading = false;
-
-  /**
-   * Currently selected endpoint for detail management or editing.
-   */
   selectedEndpoint: SourceSystemEndpointDTO | null = null;
-
-  /**
-   * Available HTTP methods for endpoints.
-   */
   httpRequestTypes = [
     {label: 'GET', value: 'GET'},
     {label: 'POST', value: 'POST'},
     {label: 'PUT', value: 'PUT'},
     {label: 'DELETE', value: 'DELETE'}
   ];
-
-  /**
-   * Base API URL of the source system, used for importing endpoints.
-   */
   apiUrl: string | null = null;
-  /**
-   * Flag indicating whether an import of endpoints is in progress.
-   */
   importing = false;
-
-  /**
-   * Controls visibility of the edit endpoint dialog.
-   */
   editDialog: boolean = false;
-  /**
-   * Endpoint currently being edited.
-   */
   editingEndpoint: SourceSystemEndpointDTO | null = null;
-  /**
-   * Reactive form for editing an existing endpoint.
-   */
   editForm!: FormGroup;
+  jsonEditorOptions = { 
+    theme: 'vs-dark', 
+    language: 'json', 
+    automaticLayout: true,
+    minimap: { enabled: false },
+    scrollBeyondLastLine: false,
+    wordWrap: 'on',
+    folding: true,
+    lineNumbers: 'on',
+    formatOnPaste: true,
+    formatOnType: true
+  };
+  
+  typescriptEditorOptions = { 
+    theme: 'vs-dark', 
+    language: 'typescript', 
+    automaticLayout: true,
+    minimap: { enabled: false },
+    scrollBeyondLastLine: false,
+    wordWrap: 'on',
+    folding: true,
+    lineNumbers: 'on',
+    readOnly: true,
+    // Enhanced TypeScript syntax highlighting options
+    bracketPairColorization: { enabled: true },
+    colorDecorators: true,
+    contextmenu: false, // Disable context menu for readonly
+    copyWithSyntaxHighlighting: true,
+    cursorBlinking: 'solid',
+    cursorStyle: 'line',
+    fontSize: 13,
+    fontFamily: 'Consolas, "Courier New", monospace',
+    fontWeight: 'normal',
+    letterSpacing: 0,
+    lineHeight: 20,
+    // TypeScript-specific options
+    suggest: { enabled: false }, // Disable suggestions for readonly
+    quickSuggestions: false, // Disable quick suggestions for readonly
+    parameterHints: { enabled: false }, // Disable parameter hints for readonly
+    hover: { enabled: true }, // Keep hover for type information
+    // Code formatting options
+    formatOnPaste: false,
+    formatOnType: false,
+    // Selection and navigation
+    selectOnLineNumbers: true,
+    roundedSelection: false,
+    // Performance options
+    renderWhitespace: 'none',
+    renderControlCharacters: false,
+    renderLineHighlight: 'all',
+    // Performance optimizations
+    largeFileOptimizations: true,
+    maxTokenizationLineLength: 20000,
+    maxTokenizationLineNumber: 1000,
+    // Memory optimizations
+    maxMemoryUsage: 512, // MB
+    // Accessibility
+    accessibilitySupport: 'auto'
+  };
+  jsonError: string | null = null;
+  editJsonError: string | null = null;
+  requestBodyEditorEndpoint: SourceSystemEndpointDTO | null = null;
+  requestBodyEditorModel: NgxEditorModel = { value: '', language: 'json' };
+  requestBodyEditorError: string | null = null;
+  
+  // Response Preview Modal properties
+  responsePreviewModalVisible: boolean = false;
+  selectedResponsePreviewEndpoint: SourceSystemEndpointDTO | null = null;
+  
+  // TypeScript generation properties
+  generatedTypeScript: string = '';
+  editGeneratedTypeScript: string = '';
+  
+  // Monaco Editor models for TypeScript
+  typescriptModel: NgxEditorModel = { value: '', language: 'typescript' };
+  editTypeScriptModel: NgxEditorModel = { value: '', language: 'typescript' };
+  
+  // Tab state management
+  activeTabIndex: number = 0;
+  editActiveTabIndex: number = 0;
+  
+  // Loading states for TypeScript generation
+  isGeneratingTypeScript: boolean = false;
+  isGeneratingEditTypeScript: boolean = false;
+  
+  // Error states for TypeScript generation
+  typescriptError: string | null = null;
+  editTypeScriptError: string | null = null;
 
+  // Confirmation dialog properties
+  showConfirmationDialog = false;
+  confirmationData: ConfirmationDialogData = {
+    title: 'Delete Endpoint',
+    message: 'Are you sure you want to delete this endpoint? This action cannot be undone.',
+    confirmLabel: 'Delete',
+    cancelLabel: 'Cancel',
+    severity: 'warning'
+  };
+  endpointToDelete: SourceSystemEndpointDTO | null = null;
+  
+  // Performance and timeout settings
+  private readonly TYPESCRIPT_GENERATION_TIMEOUT = 30000; // 30 seconds
+  private readonly MAX_JSON_SCHEMA_SIZE = 1024 * 1024; // 1MB
+  private typescriptGenerationTimeout: any = null;
+  private editTypeScriptGenerationTimeout: any = null;
 
-  /**
-   * Injects FormBuilder, endpoint and source system services, and HttpClient.
-   */
   constructor(
     private fb: FormBuilder,
     private endpointSvc: SourceSystemEndpointResourceService,
     private sourceSystemService: SourceSystemResourceService,
     private http: HttpClient,
-    private queryParamSvc: ApiEndpointQueryParamResourceService,
-  ) {
-  }
+    private openapi: OpenApiImportService,
+  ) {}
 
   /**
    * Initialize forms and load endpoints and source system API URL.
@@ -137,46 +206,72 @@ export class ManageEndpointsComponent implements OnInit {
   ngOnInit(): void {
     this.endpointForm = this.fb.group({
       endpointPath: ['', Validators.required],
-      httpRequestType: ['GET', Validators.required]
+      httpRequestType: ['GET', Validators.required],
+      requestBodySchema: [''],
+      responseBodySchema: ['']
     });
-
     this.editForm = this.fb.group({
       endpointPath: ['', Validators.required],
-      httpRequestType: ['GET', Validators.required]
+      httpRequestType: ['GET', Validators.required],
+      requestBodySchema: [''],
+      responseBodySchema: ['']
     });
-
+    
+    // Listen for changes in responseBodySchema to update TypeScript
+    this.endpointForm.get('responseBodySchema')?.valueChanges.subscribe(value => {
+      this.loadTypeScriptForMainForm();
+    });
+    
+    this.editForm.get('responseBodySchema')?.valueChanges.subscribe(value => {
+      this.loadTypeScriptForEditForm();
+    });
+    
+    // Reset tab indices when forms are reset
+    this.endpointForm.valueChanges.subscribe(() => {
+      // Keep track of form state for tab management
+    });
+    
     this.loadSourceSystemAndSetApiUrl();
-   
+  }
+  
+  /**
+   * Clean up resources when component is destroyed
+   */
+  ngOnDestroy(): void {
+    // Clear all timeouts
+    this.clearTypeScriptGenerationTimeout(false);
+    this.clearTypeScriptGenerationTimeout(true);
   }
 
+  /**
+   * Loads the source system and sets the API URL.
+   */
   private loadSourceSystemAndSetApiUrl(): void {
     this.sourceSystemService.apiConfigSourceSystemIdGet(this.sourceSystemId)
       .subscribe({
         next: (sourceSystem: SourceSystemDTO) => {
-          console.log('Loaded source system:', sourceSystem);
-          console.log('openApiSpec field:', sourceSystem.openApiSpec);
-          console.log('openApiSpec type:', typeof sourceSystem.openApiSpec);
-          
           if (sourceSystem.openApiSpec && typeof sourceSystem.openApiSpec === 'string') {
             if (sourceSystem.openApiSpec.startsWith('http')) {
               this.apiUrl = sourceSystem.openApiSpec.trim();
-              console.log('✅ Found OpenAPI URL in source system:', this.apiUrl);
+              this.currentOpenApiSpec = '';
             } else {
+              // Spec was provided as raw content (uploaded file). Keep a local copy to parse client-side.
+              this.currentOpenApiSpec = sourceSystem.openApiSpec;
               this.apiUrl = sourceSystem.apiUrl!;
             }
           } else {
+            this.currentOpenApiSpec = '';
             this.apiUrl = sourceSystem.apiUrl!;
-            console.log('ℹ️ No OpenAPI spec found, using API URL:', this.apiUrl);
           }
         },
-        error: (err: any) => {
-          console.error('Failed to load source system:', err);
-          this.apiUrl = 'https://petstore.swagger.io/v2';
+        error: () => {
+          this.apiUrl = null;
         }
       });
   }
+
   /**
-   * Load endpoints for the current source system from the backend.
+   * Loads endpoints for the current source system from the backend.
    */
   loadEndpoints() {
     if (!this.sourceSystemId) return;
@@ -185,59 +280,663 @@ export class ManageEndpointsComponent implements OnInit {
       .apiConfigSourceSystemSourceSystemIdEndpointGet(this.sourceSystemId)
       .subscribe({
         next: (eps: SourceSystemEndpointDTO[]) => {
+          console.log('[Backend-Response] Endpoints:', eps);
+          eps.forEach((ep, idx) => {
+            console.log(`[Endpoint ${idx}] responseBodySchema:`, ep.responseBodySchema);
+            console.log(`[Endpoint ${idx}] responseDts:`, ep.responseDts);
+          });
           this.endpoints = eps;
           this.loading = false;
+          // Reset tab indices when endpoints are reloaded
+          this.activeTabIndex = 0;
+          this.editActiveTabIndex = 0;
+          // Reset loading states
+          this.isGeneratingTypeScript = false;
+          this.isGeneratingEditTypeScript = false;
+          // Reset error states
+          this.typescriptError = null;
+          this.editTypeScriptError = null;
+          // Clear timeouts
+          this.clearTypeScriptGenerationTimeout(false);
+          this.clearTypeScriptGenerationTimeout(true);
         },
-        error: (err: any) => {
-          console.error(err);
+        error: () => {
           this.loading = false;
         }
       });
+  }
+  
+  /**
+   * Load TypeScript data for the main form with comprehensive error handling
+   */
+  loadTypeScriptForMainForm() {
+    const responseBodySchema = this.endpointForm.get('responseBodySchema')?.value;
+    this.typescriptError = null; // Clear previous errors
+    this.clearTypeScriptGenerationTimeout(false);
+    
+    if (responseBodySchema) {
+      // Validate JSON schema first
+      const validation = this.validateJsonSchema(responseBodySchema);
+      if (!validation.isValid) {
+        this.typescriptError = validation.error || 'Invalid JSON schema';
+        this.generatedTypeScript = this.getTypeScriptErrorFallback(responseBodySchema);
+        return;
+      }
+      
+      this.isGeneratingTypeScript = true;
+      this.generatedTypeScript = '';
+      
+      // Set timeout for generation
+      this.handleTypeScriptGenerationTimeout(false);
+      
+      // Use backend service for TypeScript generation
+      const request: TypeScriptGenerationRequest = {
+        jsonSchema: responseBodySchema
+      };
+      
+      // For now, use a temporary endpoint ID (0) since we don't have a real endpoint yet
+      // In the future, this should use the actual endpoint ID when editing existing endpoints
+      this.endpointSvc.generateTypeScript(0, request).subscribe({
+        next: (response: TypeScriptGenerationResponse) => {
+          this.clearTypeScriptGenerationTimeout(false);
+          
+          if (response.error) {
+            this.typescriptError = this.formatErrorMessage(response.error, 'Backend generation failed');
+            this.generatedTypeScript = this.getTypeScriptErrorFallback(responseBodySchema);
+          } else if (response.generatedTypeScript) {
+            this.generatedTypeScript = response.generatedTypeScript;
+            this.typescriptModel = { value: this.generatedTypeScript, language: 'typescript' };
+          } else {
+            this.typescriptError = 'No TypeScript generated from backend';
+            this.generatedTypeScript = this.getTypeScriptErrorFallback(responseBodySchema);
+            this.typescriptModel = { value: this.generatedTypeScript, language: 'typescript' };
+          }
+        },
+        error: (error) => {
+          this.clearTypeScriptGenerationTimeout(false);
+          this.typescriptError = this.formatErrorMessage(error.message || 'Unknown error', 'Backend communication failed');
+          this.generatedTypeScript = this.getTypeScriptErrorFallback(responseBodySchema);
+          this.typescriptModel = { value: this.generatedTypeScript, language: 'typescript' };
+        },
+        complete: () => {
+          this.clearTypeScriptGenerationTimeout(false);
+          this.isGeneratingTypeScript = false;
+        }
+      });
+    } else {
+      this.generatedTypeScript = '';
+      this.typescriptModel = { value: '', language: 'typescript' };
+      this.isGeneratingTypeScript = false;
+    }
+  }
+  
+  /**
+   * Load TypeScript data for the edit form with comprehensive error handling
+   */
+  loadTypeScriptForEditForm() {
+    const responseBodySchema = this.editForm.get('responseBodySchema')?.value;
+    this.editTypeScriptError = null; // Clear previous errors
+    this.clearTypeScriptGenerationTimeout(true);
+    
+    if (responseBodySchema) {
+      // Validate JSON schema first
+      const validation = this.validateJsonSchema(responseBodySchema);
+      if (!validation.isValid) {
+        this.editTypeScriptError = validation.error || 'Invalid JSON schema';
+        this.editGeneratedTypeScript = this.getTypeScriptErrorFallback(responseBodySchema);
+        return;
+      }
+      
+      this.isGeneratingEditTypeScript = true;
+      this.editGeneratedTypeScript = '';
+      
+      // Set timeout for generation
+      this.handleTypeScriptGenerationTimeout(true);
+      
+      // Use backend service for TypeScript generation
+      const request: TypeScriptGenerationRequest = {
+        jsonSchema: responseBodySchema
+      };
+      
+      // Use the actual endpoint ID if available, otherwise use 0
+      const endpointId = this.editingEndpoint?.id || 0;
+      
+      this.endpointSvc.generateTypeScript(endpointId, request).subscribe({
+        next: (response: TypeScriptGenerationResponse) => {
+          this.clearTypeScriptGenerationTimeout(true);
+          
+          if (response.error) {
+            this.editTypeScriptError = this.formatErrorMessage(response.error, 'Backend generation failed');
+            this.editGeneratedTypeScript = this.getTypeScriptErrorFallback(responseBodySchema);
+          } else if (response.generatedTypeScript) {
+            this.editGeneratedTypeScript = response.generatedTypeScript;
+            this.editTypeScriptModel = { value: this.editGeneratedTypeScript, language: 'typescript' };
+          } else {
+            this.editTypeScriptError = 'No TypeScript generated from backend';
+            this.editGeneratedTypeScript = this.getTypeScriptErrorFallback(responseBodySchema);
+            this.editTypeScriptModel = { value: this.editGeneratedTypeScript, language: 'typescript' };
+          }
+        },
+        error: (error) => {
+          this.clearTypeScriptGenerationTimeout(true);
+          this.editTypeScriptError = this.formatErrorMessage(error.message || 'Unknown error', 'Backend communication failed');
+          this.editGeneratedTypeScript = this.getTypeScriptErrorFallback(responseBodySchema);
+          this.editTypeScriptModel = { value: this.editGeneratedTypeScript, language: 'typescript' };
+        },
+        complete: () => {
+          this.clearTypeScriptGenerationTimeout(true);
+          this.isGeneratingEditTypeScript = false;
+        }
+      });
+    } else {
+      this.editGeneratedTypeScript = '';
+      this.editTypeScriptModel = { value: '', language: 'typescript' };
+      this.isGeneratingEditTypeScript = false;
+    }
+  }
+  
+  /**
+   * Load TypeScript data from backend responseDts (when available)
+   */
+  loadTypeScriptFromBackend(endpoint: SourceSystemEndpointDTO) {
+    // This method will be used when the backend provides responseDts
+    // For now, it's a placeholder for future implementation
+    if (endpoint.responseDts) {
+      return endpoint.responseDts;
+    }
+    return null;
+  }
+  
+  /**
+   * Comprehensive JSON validation with size and format checks
+   */
+  private validateJsonSchema(jsonSchema: string): { isValid: boolean; error?: string } {
+    // Check if schema is empty
+    if (!jsonSchema || jsonSchema.trim().length === 0) {
+      return { isValid: false, error: 'JSON schema is empty' };
+    }
+    
+    // Check schema size
+    if (jsonSchema.length > this.MAX_JSON_SCHEMA_SIZE) {
+      return { 
+        isValid: false, 
+        error: `JSON schema is too large (${(jsonSchema.length / 1024).toFixed(1)}KB). Maximum size is ${(this.MAX_JSON_SCHEMA_SIZE / 1024).toFixed(0)}KB.` 
+      };
+    }
+    
+    // Validate JSON syntax
+    try {
+      const parsed = JSON.parse(jsonSchema);
+      
+      // Check if it's a valid JSON Schema structure
+      if (typeof parsed !== 'object' || parsed === null) {
+        return { isValid: false, error: 'JSON schema must be an object' };
+      }
+      
+      // Basic JSON Schema validation
+      if (!this.isValidJsonSchemaStructure(parsed)) {
+        return { isValid: false, error: 'Invalid JSON Schema structure. Expected properties like "type", "properties", or "$schema"' };
+      }
+      
+      return { isValid: true };
+    } catch (e) {
+      return { isValid: false, error: `Invalid JSON syntax: ${e instanceof Error ? e.message : 'Unknown error'}` };
+    }
+  }
+  
+  /**
+   * Check if parsed JSON has valid JSON Schema structure
+   */
+  private isValidJsonSchemaStructure(schema: any): boolean {
+    // Check for common JSON Schema properties
+    const hasType = schema.hasOwnProperty('type');
+    const hasProperties = schema.hasOwnProperty('properties');
+    const hasSchema = schema.hasOwnProperty('$schema');
+    const hasRef = schema.hasOwnProperty('$ref');
+    const hasItems = schema.hasOwnProperty('items');
+    const hasEnum = schema.hasOwnProperty('enum');
+    
+    // Must have at least one of these properties to be a valid schema
+    return hasType || hasProperties || hasSchema || hasRef || hasItems || hasEnum;
+  }
+  
+  /**
+   * Legacy method for backward compatibility
+   */
+  private isValidJson(str: string): boolean {
+    return this.validateJsonSchema(str).isValid;
+  }
+  
+  /**
+   * Handle timeout for TypeScript generation
+   */
+  private handleTypeScriptGenerationTimeout(isEditForm: boolean = false): void {
+    const timeoutId = isEditForm ? this.editTypeScriptGenerationTimeout : this.typescriptGenerationTimeout;
+    
+    if (timeoutId) {
+      clearTimeout(timeoutId);
+    }
+    
+    const newTimeoutId = setTimeout(() => {
+      if (isEditForm) {
+        this.editTypeScriptError = 'TypeScript generation timed out. Please try again or check your JSON schema.';
+        this.isGeneratingEditTypeScript = false;
+      } else {
+        this.typescriptError = 'TypeScript generation timed out. Please try again or check your JSON schema.';
+        this.isGeneratingTypeScript = false;
+      }
+    }, this.TYPESCRIPT_GENERATION_TIMEOUT);
+    
+    if (isEditForm) {
+      this.editTypeScriptGenerationTimeout = newTimeoutId;
+    } else {
+      this.typescriptGenerationTimeout = newTimeoutId;
+    }
+  }
+  
+  /**
+   * Clear timeout for TypeScript generation
+   */
+  private clearTypeScriptGenerationTimeout(isEditForm: boolean = false): void {
+    const timeoutId = isEditForm ? this.editTypeScriptGenerationTimeout : this.typescriptGenerationTimeout;
+    
+    if (timeoutId) {
+      clearTimeout(timeoutId);
+      if (isEditForm) {
+        this.editTypeScriptGenerationTimeout = null;
+      } else {
+        this.typescriptGenerationTimeout = null;
+      }
+    }
+  }
+  
+  /**
+   * Format error messages for better user experience
+   */
+  private formatErrorMessage(error: string, context: string): string {
+    // Remove technical details and make error more user-friendly
+    let formattedError = error;
+    
+    // Common error patterns
+    if (error.includes('HttpErrorResponse')) {
+      formattedError = 'Network error: Unable to connect to the server';
+    } else if (error.includes('timeout')) {
+      formattedError = 'Request timed out. Please try again.';
+    } else if (error.includes('JSON')) {
+      formattedError = 'Invalid JSON format in schema';
+    } else if (error.includes('schema')) {
+      formattedError = 'Invalid schema structure';
+    } else if (error.includes('size') || error.includes('large')) {
+      formattedError = 'Schema is too large to process';
+    }
+    
+    return `${context}: ${formattedError}`;
+  }
+  
+  /**
+   * Get TypeScript error fallback content
+   */
+  private getTypeScriptErrorFallback(jsonSchema: string): string {
+    return `// Error: Unable to generate TypeScript interface
+// Please check your JSON Schema format
+
+// Original JSON Schema:
+${jsonSchema}
+
+// Common issues:
+// - Invalid JSON syntax
+// - Missing required schema properties
+// - Unsupported schema types
+// - Circular references
+
+// Please fix the JSON Schema and try again.`;
+  }
+  
+  /**
+   * Generate a placeholder TypeScript interface from JSON schema
+   * This is a temporary implementation until we get the real responseDts from backend
+   */
+  private generateTypeScriptPlaceholder(jsonSchema: string): string {
+    try {
+      const schema = JSON.parse(jsonSchema);
+      return this.convertJsonSchemaToTypeScript(schema);
+    } catch (e) {
+      return '// Invalid JSON Schema\n// Unable to generate TypeScript interface';
+    }
+  }
+  
+  /**
+   * Convert JSON Schema to TypeScript interface
+   */
+  private convertJsonSchemaToTypeScript(schema: any): string {
+    if (!schema || typeof schema !== 'object') {
+      return '// Invalid schema';
+    }
+    
+    let result = '// Generated TypeScript interface from JSON Schema\n';
+    result += '// Auto-generated by Stay-in-Sync Configurator\n\n';
+    
+    if (schema.type === 'object' && schema.properties) {
+      result += '/**\n';
+      result += ' * Response body interface generated from JSON Schema\n';
+      if (schema.description) {
+        result += ` * ${schema.description}\n`;
+      }
+      result += ' */\n';
+      result += 'interface ResponseBody {\n';
+      
+      for (const [key, prop] of Object.entries(schema.properties)) {
+        const propSchema = prop as any;
+        const type = this.getTypeScriptType(propSchema);
+        const required = schema.required?.includes(key) ? '' : '?';
+        
+        // Add JSDoc comment for the property
+        if (propSchema.description) {
+          result += `  /** ${propSchema.description} */\n`;
+        }
+        
+        result += `  ${key}${required}: ${type};\n`;
+      }
+      result += '}\n\n';
+      result += 'export default ResponseBody;';
+    } else if (schema.type === 'array' && schema.items) {
+      result += '/**\n';
+      result += ' * Response body type for array data\n';
+      if (schema.description) {
+        result += ` * ${schema.description}\n`;
+      }
+      result += ' */\n';
+      result += 'type ResponseBody = ';
+      result += this.getTypeScriptType(schema.items);
+      result += '[];\n\n';
+      result += 'export default ResponseBody;';
+    } else {
+      result += '/**\n';
+      result += ' * Response body type\n';
+      if (schema.description) {
+        result += ` * ${schema.description}\n`;
+      }
+      result += ' */\n';
+      result += 'type ResponseBody = ';
+      result += this.getTypeScriptType(schema);
+      result += ';\n\n';
+      result += 'export default ResponseBody;';
+    }
+    
+    return result;
+  }
+  
+  /**
+   * Get TypeScript type from JSON Schema type
+   */
+  private getTypeScriptType(schema: any): string {
+    if (!schema || typeof schema !== 'object') {
+      return 'any';
+    }
+    
+    const type = schema.type;
+    
+    switch (type) {
+      case 'string':
+        // Handle string enums
+        if (schema.enum && Array.isArray(schema.enum)) {
+          const enumValues = schema.enum.map((v: string) => `'${v}'`).join(' | ');
+          return enumValues;
+        }
+        // Handle string format
+        if (schema.format === 'date-time') {
+          return 'string'; // Could be 'Date' but string is more flexible
+        }
+        if (schema.format === 'email') {
+          return 'string';
+        }
+        if (schema.format === 'uri') {
+          return 'string';
+        }
+        return 'string';
+        
+      case 'number':
+      case 'integer':
+        // Handle number enums
+        if (schema.enum && Array.isArray(schema.enum)) {
+          const enumValues = schema.enum.join(' | ');
+          return enumValues;
+        }
+        return 'number';
+        
+      case 'boolean':
+        return 'boolean';
+        
+      case 'array':
+        if (schema.items) {
+          const itemType = this.getTypeScriptType(schema.items);
+          return `${itemType}[]`;
+        }
+        return 'any[]';
+        
+      case 'object':
+        if (schema.properties) {
+          let result = '{\n';
+          for (const [key, prop] of Object.entries(schema.properties)) {
+            const propSchema = prop as any;
+            const propType = this.getTypeScriptType(propSchema);
+            const required = schema.required?.includes(key) ? '' : '?';
+            result += `    ${key}${required}: ${propType};\n`;
+          }
+          result += '  }';
+          return result;
+        }
+        return 'object';
+        
+      case 'null':
+        return 'null';
+        
+      default:
+        // Handle $ref or other complex types
+        if (schema.$ref) {
+          return 'any'; // Could be enhanced to resolve references
+        }
+        return 'any';
+    }
   }
 
   /**
    * Create a new endpoint using form data and refresh list upon success.
    */
   addEndpoint() {
-    if (this.endpointForm.invalid) return;
-    const dto = this.endpointForm.value as CreateSourceSystemEndpointDTO;
-    this.endpointSvc
-      .apiConfigSourceSystemSourceSystemIdEndpointPost(this.sourceSystemId, [dto])
-      .subscribe({
-        next: () => {
-          this.endpointForm.reset({ endpointPath: '', httpRequestType: 'GET' });
-          this.loadEndpoints();
-        },
-        error: console.error
-      });
+    let requestBodySchema = this.endpointForm.get('requestBodySchema')?.value || '';
+    let resolvedSchema = requestBodySchema;
+    try {
+      const parsed = JSON.parse(requestBodySchema);
+      if (parsed && parsed.$ref && this.currentOpenApiSpec) {
+        const openApi = typeof this.currentOpenApiSpec === 'string'
+          ? JSON.parse(this.currentOpenApiSpec)
+          : this.currentOpenApiSpec;
+        const schemas = openApi.components?.schemas || {};
+        const resolved = this.resolveRefs(parsed, schemas);
+        resolvedSchema = JSON.stringify(resolved, null, 2);
+      }
+    } catch {
+      // Kein JSON, lasse wie es ist
+    }
+
+    // Validate response body schema
+    let responseBodySchema = this.endpointForm.get('responseBodySchema')?.value || '';
+    if (responseBodySchema) {
+      try {
+        JSON.parse(responseBodySchema);
+      } catch (e) {
+        this.jsonError = 'Response-Body-Schema ist kein valides JSON.';
+        return;
+      }
+    }
+
+    const dto: any = {
+      endpointPath: this.endpointForm.get('endpointPath')?.value,
+      httpRequestType: this.endpointForm.get('httpRequestType')?.value,
+      requestBodySchema: resolvedSchema,
+      responseBodySchema: responseBodySchema
+    };
+    this.endpointSvc.apiConfigSourceSystemSourceSystemIdEndpointPost(
+      this.sourceSystemId,
+      [dto]
+    ).subscribe({
+      next: () => {
+        this.loadEndpoints();
+        this.endpointForm.reset({
+          endpointPath: '',
+          httpRequestType: 'GET',
+          requestBodySchema: '',
+          responseBodySchema: ''
+        });
+        // Clear TypeScript when form is reset
+        this.generatedTypeScript = '';
+        this.activeTabIndex = 0; // Reset to JSON tab
+        this.isGeneratingTypeScript = false; // Reset loading state
+        this.typescriptError = null; // Reset error state
+        
+        // Clear timeouts
+        this.clearTypeScriptGenerationTimeout(false);
+        
+        // Ensure proper tab integration after form reset
+        this.resetTabIntegration();
+      },
+      error: () => {}
+    });
   }
 
   /**
-   * Delete an endpoint by its ID and remove it from the list.
-   * @param id ID of the endpoint to delete.
+   * Show confirmation dialog for deleting an endpoint.
    */
-  deleteEndpoint(id: number) {
-    this.endpointSvc
-      .apiConfigSourceSystemEndpointIdDelete(id)
-      .subscribe({
-        next: () => this.endpoints = this.endpoints.filter(e => e.id !== id),
-        error: console.error
-      });
+  deleteEndpoint(endpoint: SourceSystemEndpointDTO) {
+    this.endpointToDelete = endpoint;
+    this.confirmationData = {
+      title: 'Delete Endpoint',
+      message: `Are you sure you want to delete the endpoint "${endpoint.endpointPath}" (${endpoint.httpRequestType})? This action cannot be undone and will also delete all associated query parameters.`,
+      confirmLabel: 'Delete',
+      cancelLabel: 'Cancel',
+      severity: 'warning'
+    };
+    this.showConfirmationDialog = true;
   }
 
+  /**
+   * Handle confirmation dialog events.
+   */
+  onConfirmationConfirmed(): void {
+    if (this.endpointToDelete && this.endpointToDelete.id) {
+      this.endpointSvc
+        .apiConfigSourceSystemEndpointIdDelete(this.endpointToDelete.id)
+        .subscribe({
+          next: () => {
+            this.endpoints = this.endpoints.filter(e => e.id !== this.endpointToDelete!.id);
+            this.endpointToDelete = null;
+          },
+          error: () => {
+            this.endpointToDelete = null;
+          }
+        });
+    }
+  }
+
+  onConfirmationCancelled(): void {
+    this.endpointToDelete = null;
+  }
 
   /**
    * Open the edit dialog pre-filled with endpoint data.
-   * @param endpoint Endpoint to edit.
    */
   openEditDialog(endpoint: SourceSystemEndpointDTO) {
-    console.log('Opening edit dialog for endpoint', endpoint);
     this.editingEndpoint = endpoint;
     this.editForm.patchValue({
       endpointPath: endpoint.endpointPath,
-      httpRequestType: endpoint.httpRequestType
+      httpRequestType: endpoint.httpRequestType,
+      requestBodySchema: endpoint.requestBodySchema || '',
+      responseBodySchema: endpoint.responseBodySchema || ''
     });
     this.editDialog = true;
+    this.editJsonError = null;
+    this.editActiveTabIndex = 0; // Reset to JSON tab
+    
+    // Load TypeScript for the edit form
+    this.loadTypeScriptForEditForm();
+    
+    // Ensure proper tab integration
+    this.initializeTabIntegration();
+  }
+  
+  /**
+   * Initialize tab integration and ensure proper state
+   */
+  private initializeTabIntegration() {
+    // Small delay to ensure DOM is ready
+    setTimeout(() => {
+      // Trigger change detection for tab state
+      this.editActiveTabIndex = this.editActiveTabIndex;
+    }, 100);
+  }
+
+  /**
+   * Close the edit dialog and clear TypeScript data.
+   */
+  closeEditDialog() {
+    this.editDialog = false;
+    this.editGeneratedTypeScript = '';
+    this.editTypeScriptModel = { value: '', language: 'typescript' };
+    this.editJsonError = null;
+    this.editActiveTabIndex = 0; // Reset to JSON tab
+    this.isGeneratingEditTypeScript = false; // Reset loading state
+    this.editTypeScriptError = null; // Reset error state
+    
+    // Clear timeouts
+    this.clearTypeScriptGenerationTimeout(true);
+    this.clearTypeScriptGenerationTimeout(false);
+    
+    // Clean up tab integration
+    this.cleanupTabIntegration();
+  }
+  
+  /**
+   * Clean up tab integration state
+   */
+  private cleanupTabIntegration() {
+    // Reset any tab-specific state
+    this.editActiveTabIndex = 0;
+    this.activeTabIndex = 0;
+  }
+  
+  /**
+   * Reset tab integration after form reset
+   */
+  private resetTabIntegration() {
+    // Ensure tab state is properly reset
+    this.activeTabIndex = 0;
+    this.generatedTypeScript = '';
+    this.typescriptModel = { value: '', language: 'typescript' };
+    this.typescriptError = null;
+    this.isGeneratingTypeScript = false;
+  }
+  
+  /**
+   * Handle tab change in main form
+   */
+  onTabChange(event: any) {
+    this.activeTabIndex = event.index;
+    // If switching to TypeScript tab and no TypeScript is generated yet, generate it
+    if (event.index === 1 && !this.generatedTypeScript && !this.isGeneratingTypeScript) {
+      this.loadTypeScriptForMainForm();
+    }
+  }
+  
+  /**
+   * Handle tab change in edit form
+   */
+  onEditTabChange(event: any) {
+    this.editActiveTabIndex = event.index;
+    // If switching to TypeScript tab and no TypeScript is generated yet, generate it
+    if (event.index === 1 && !this.editGeneratedTypeScript && !this.isGeneratingEditTypeScript) {
+      this.loadTypeScriptForEditForm();
+    }
   }
 
   /**
@@ -247,246 +946,480 @@ export class ManageEndpointsComponent implements OnInit {
     if (!this.editingEndpoint || this.editForm.invalid) {
       return;
     }
-    console.log('saveEdit called, editingEndpoint:', this.editingEndpoint);
+    this.editJsonError = null;
     const dto: SourceSystemEndpointDTO = {
       id: this.editingEndpoint.id!,
       sourceSystemId: this.sourceSystemId,
       endpointPath: this.editForm.value.endpointPath,
-      httpRequestType: this.editForm.value.httpRequestType
+      httpRequestType: this.editForm.value.httpRequestType,
+      requestBodySchema: this.editForm.value.requestBodySchema,
+      responseBodySchema: this.editForm.value.responseBodySchema
     };
-    console.log('saveEdit DTO to send:', dto);
+    if (dto.requestBodySchema) {
+      try {
+        JSON.parse(dto.requestBodySchema);
+      } catch (e) {
+        this.editJsonError = 'Request-Body-Schema ist kein valides JSON.';
+        return;
+      }
+    }
+    if (dto.responseBodySchema) {
+      try {
+        JSON.parse(dto.responseBodySchema);
+      } catch (e) {
+        this.editJsonError = 'Response-Body-Schema ist kein valides JSON.';
+        return;
+      }
+    }
     this.endpointSvc
       .apiConfigSourceSystemEndpointIdPut(this.editingEndpoint.id!, dto, 'body')
       .subscribe({
         next: () => {
-          console.log('saveEdit success for id', this.editingEndpoint?.id);
-          this.editDialog = false;
+          this.closeEditDialog();
           this.loadEndpoints();
         },
-        error: err => {
-          console.error('saveEdit error', err);
-        }
+        error: () => {}
       });
   }
 
   /**
-   * Navigate back to the previous wizard step.
+   * Show the request body editor for a given endpoint.
+   */
+  showRequestBodyEditor(endpoint: SourceSystemEndpointDTO) {
+    this.requestBodyEditorEndpoint = endpoint;
+    if (!endpoint.requestBodySchema) {
+      this.requestBodyEditorModel = {
+        value: JSON.stringify({
+          error: 'No request body schema defined for this endpoint',
+          endpoint: endpoint.endpointPath,
+          method: endpoint.httpRequestType,
+          note: 'This endpoint does not require a request body or no schema is defined in the OpenAPI specification.'
+        }, null, 2),
+        language: 'json'
+      };
+      return;
+    }
+    const resolved = this.resolveSchemaReference(endpoint.requestBodySchema);
+    this.requestBodyEditorModel = {
+      value: resolved,
+      language: 'json'
+    };
+  }
+
+  /**
+   * Show the response preview modal for a given endpoint.
+   */
+  showResponsePreviewModal(endpoint: SourceSystemEndpointDTO) {
+    try {
+      // Validate endpoint data
+      if (!endpoint) {
+        return;
+      }
+
+      if (!endpoint.id) {
+        return;
+      }
+
+      // Set the selected endpoint and open modal
+      this.selectedResponsePreviewEndpoint = endpoint;
+      this.responsePreviewModalVisible = true;
+    } catch (error) {
+      // In a real application, you might want to show a toast notification here
+    }
+  }
+
+  /**
+   * Close the response preview modal and clean up data.
+   */
+  closeResponsePreviewModal() {
+    this.responsePreviewModalVisible = false;
+    this.selectedResponsePreviewEndpoint = null;
+  }
+
+  /**
+   * Handle response preview modal visibility changes.
+   */
+  onResponsePreviewModalVisibleChange(visible: boolean) {
+    if (!visible) {
+      // Modal is being closed, clean up data
+      this.closeResponsePreviewModal();
+    }
+  }
+
+  /**
+   * Cleans a JSON schema by removing null values and unnecessary properties and resolving schema references.
+   */
+  private cleanJsonSchema(schema: any): any {
+    if (!schema || typeof schema !== 'object') {
+      return schema;
+    }
+    if (schema.$ref) {
+      const resolvedSchemaStr = this.resolveSchemaReference(schema);
+      try {
+        const resolvedSchema = JSON.parse(resolvedSchemaStr);
+        return this.cleanJsonSchema(resolvedSchema);
+      } catch {
+        return schema;
+      }
+    }
+    const cleaned: any = {};
+    const relevantProps = [
+      'type', 'properties', 'required', 'items', 'allOf', 'anyOf', 'oneOf', 
+      'not', 'additionalProperties', 'description', 'format', '$ref', 
+      'nullable', 'readOnly', 'writeOnly', 'example', 'deprecated', 
+      'xml', 'discriminator', 'enum', 'const', 'default', 'minItems', 
+      'maxItems', 'uniqueItems', 'minProperties', 'maxProperties',
+      'minLength', 'maxLength', 'pattern', 'minimum', 'maximum',
+      'exclusiveMinimum', 'exclusiveMaximum', 'multipleOf'
+    ];
+    for (const prop of relevantProps) {
+      if (schema[prop] !== null && schema[prop] !== undefined) {
+        if (typeof schema[prop] === 'object' && !Array.isArray(schema[prop])) {
+          cleaned[prop] = this.cleanJsonSchema(schema[prop]);
+        } else if (Array.isArray(schema[prop])) {
+          cleaned[prop] = schema[prop].map((item: any) => 
+            typeof item === 'object' ? this.cleanJsonSchema(item) : item
+          );
+        } else {
+          cleaned[prop] = schema[prop];
+        }
+      }
+    }
+    return cleaned;
+  }
+
+  /**
+   * Resolves a schema reference ($ref) in the OpenAPI spec and returns the resolved schema as a string.
+   */
+  private resolveSchemaReference(schemaInput: any): string {
+    try {
+      let schemaObj = typeof schemaInput === 'string' ? JSON.parse(schemaInput) : schemaInput;
+      if (schemaObj && schemaObj.$ref && this.currentOpenApiSpec) {
+        const openApi = typeof this.currentOpenApiSpec === 'string'
+          ? JSON.parse(this.currentOpenApiSpec)
+          : this.currentOpenApiSpec;
+        if (schemaObj.$ref.startsWith('#/components/schemas/')) {
+          const schemaName = schemaObj.$ref.replace('#/components/schemas/', '');
+          const resolved = openApi.components?.schemas?.[schemaName];
+          if (resolved) {
+            if (resolved.$ref) {
+              return this.resolveSchemaReference(resolved);
+            }
+            return JSON.stringify(resolved, null, 2);
+          }
+        }
+      }
+    } catch (e) {}
+    return typeof schemaInput === 'string' ? schemaInput : JSON.stringify(schemaInput, null, 2);
+  }
+
+  /**
+   * Parses the OpenAPI spec (JSON or YAML) and resolves the schema reference.
+   */
+  private parseAndResolveSchema(specText: string | undefined, ref: string): void {
+    if (!specText) {
+      this.requestBodyEditorModel = {
+        value: JSON.stringify({ $ref: ref, error: 'No OpenAPI spec available' }, null, 2),
+        language: 'json'
+      };
+      return;
+    }
+    try {
+      let spec: any;
+      try {
+        spec = JSON.parse(specText);
+      } catch (jsonError) {
+        try {
+          spec = this.parseYamlToJson(specText);
+        } catch (yamlError) {
+          throw new Error('Failed to parse OpenAPI spec as JSON or YAML');
+        }
+      }
+      const schemas = spec.components?.schemas || {};
+      const schemaName = ref.replace('#/components/schemas/', '');
+      const schema = schemas[schemaName];
+      if (schema) {
+        const resolvedSchema = this.resolveRefs(schema, schemas);
+        this.requestBodyEditorModel = {
+          value: JSON.stringify(resolvedSchema, null, 2),
+          language: 'json'
+        };
+      } else {
+        this.requestBodyEditorModel = {
+          value: JSON.stringify({ $ref: ref, error: 'Schema not found in OpenAPI spec' }, null, 2),
+          language: 'json'
+        };
+      }
+    } catch (e) {
+      this.requestBodyEditorModel = {
+        value: JSON.stringify({ $ref: ref, error: 'Failed to parse OpenAPI spec' }, null, 2),
+        language: 'json'
+      };
+    }
+  }
+
+  /**
+   * Converts YAML to JSON for basic OpenAPI specs.
+   */
+  private parseYamlToJson(yamlText: string): any {
+    try {
+      const cleanedYaml = this.cleanYaml(yamlText);
+      const result = this.simpleYamlParse(cleanedYaml);
+      return result;
+    } catch (e) {
+      throw new Error('YAML parsing failed');
+    }
+  }
+
+  /**
+   * Removes comments and unnecessary characters from YAML text.
+   */
+  private cleanYaml(yamlText: string): string {
+    const lines = yamlText.split('\n');
+    const cleanedLines = lines.map(line => {
+      const commentIndex = line.indexOf('#');
+      if (commentIndex >= 0) {
+        line = line.substring(0, commentIndex);
+      }
+      return line;
+    });
+    return cleanedLines.join('\n');
+  }
+
+  /**
+   * Simple YAML parsing implementation for OpenAPI specs.
+   */
+  private simpleYamlParse(yamlText: string): any {
+    const lines = yamlText.split('\n').filter(line => line.trim() !== '');
+    const result: any = {};
+    const path: string[] = [];
+    const stack: any[] = [result];
+    for (const line of lines) {
+      const indent = this.getIndentLevel(line);
+      const content = line.trim();
+      if (content === '') continue;
+      while (path.length > indent / 2) {
+        path.pop();
+        stack.pop();
+      }
+      if (content.includes(':')) {
+        const colonIndex = content.indexOf(':');
+        const key = content.substring(0, colonIndex).trim();
+        const value = content.substring(colonIndex + 1).trim();
+        if (value === '') {
+          const newObj: any = {};
+          this.setNestedValue(result, [...path, key], newObj);
+          path.push(key);
+          stack.push(newObj);
+        } else {
+          this.setNestedValue(result, [...path, key], this.parseValue(value));
+        }
+      } else if (content.startsWith('- ')) {
+        const value = content.substring(2);
+        const currentPath = [...path];
+        const parentKey = currentPath.pop();
+        if (parentKey) {
+          const parent = this.getNestedValue(result, currentPath);
+          if (!Array.isArray(parent[parentKey])) {
+            parent[parentKey] = [];
+          }
+          parent[parentKey].push(this.parseValue(value));
+        }
+      }
+    }
+    return result;
+  }
+
+  /**
+   * Sets a value in a nested object.
+   */
+  private setNestedValue(obj: any, path: string[], value: any): void {
+    let current = obj;
+    for (let i = 0; i < path.length - 1; i++) {
+      if (!current[path[i]]) {
+        current[path[i]] = {};
+      }
+      current = current[path[i]];
+    }
+    current[path[path.length - 1]] = value;
+  }
+
+  /**
+   * Gets a value from a nested object.
+   */
+  private getNestedValue(obj: any, path: string[]): any {
+    let current = obj;
+    for (const key of path) {
+      if (current && typeof current === 'object' && key in current) {
+        current = current[key];
+      } else {
+        return undefined;
+      }
+    }
+    return current;
+  }
+
+  /**
+   * Determines the indentation level of a line.
+   */
+  private getIndentLevel(line: string): number {
+    let level = 0;
+    for (let i = 0; i < line.length; i++) {
+      if (line[i] === ' ' || line[i] === '\t') {
+        level++;
+      } else {
+        break;
+      }
+    }
+    return level;
+  }
+
+  /**
+   * Parses a single YAML value.
+   */
+  private parseValue(value: string): any {
+    value = value.trim();
+    if (value === 'true') return true;
+    if (value === 'false') return false;
+    if (value === 'null' || value === '') return null;
+    if (!isNaN(Number(value))) {
+      return Number(value);
+    }
+    if ((value.startsWith('"') && value.endsWith('"')) || 
+        (value.startsWith("'") && value.endsWith("'"))) {
+      return value.slice(1, -1);
+    }
+    return value;
+  }
+
+  /**
+   * Closes the request body editor.
+   */
+  closeRequestBodyEditor() {
+    this.requestBodyEditorEndpoint = null;
+    this.requestBodyEditorModel = { value: '', language: 'json' };
+    this.requestBodyEditorError = null;
+  }
+
+  /**
+   * Saves the request body schema from the editor.
+   */
+  saveRequestBodySchema() {
+    if (!this.requestBodyEditorEndpoint) return;
+    let schemaValue = this.requestBodyEditorModel.value;
+    schemaValue = this.resolveSchemaReference(schemaValue);
+    this.requestBodyEditorEndpoint.requestBodySchema = schemaValue;
+    this.closeRequestBodyEditor();
+  }
+
+  /**
+   * Handles changes in the request body editor model.
+   */
+  onRequestBodyModelChange(event: any) {
+    let value: string = '';
+    if (typeof event === 'string') {
+      value = event;
+    } else if (event && typeof event.detail === 'string') {
+      value = event.detail;
+    } else if (event && event.target && typeof event.target.value === 'string') {
+      value = event.target.value;
+    } else {
+      value = String(event);
+    }
+    this.requestBodyEditorModel = {
+      ...this.requestBodyEditorModel,
+      value
+    };
+  }
+
+  /**
+   * Navigates back to the previous wizard step.
    */
   onBack() {
     this.backStep.emit();
   }
 
   /**
-   * Finish the wizard and emit completion event.
+   * Finishes the wizard and emits the completion event.
    */
   onFinish() {
     this.finish.emit();
   }
 
+  /**
+   * Imports endpoints from the OpenAPI spec.
+   */
   async importEndpoints(): Promise<void> {
-    if (!this.apiUrl) {
-      console.error('No API URL available for import');
-      return;
-    }
     this.importing = true;
     try {
-      await this.tryImportFromUrl();
-    } catch (err) {
-      console.error('Import failed:', err);
+      let spec: any | null = null;
+      let endpoints: any[] = [];
+
+      // 1) Prefer locally stored spec content (uploaded file case)
+      if (this.currentOpenApiSpec && typeof this.currentOpenApiSpec === 'string' && this.currentOpenApiSpec.trim()) {
+        try {
+          try {
+            spec = JSON.parse(this.currentOpenApiSpec);
+          } catch {
+            spec = parseYAML(this.currentOpenApiSpec as string);
+          }
+          endpoints = this.openapi.discoverEndpointsFromSpec(spec);
+        } catch {
+          spec = null;
+          endpoints = [];
+        }
+      }
+
+      // 2) Fallback to URL discovery when no local spec is available
+      if ((!spec || endpoints.length === 0) && this.apiUrl) {
+        endpoints = await this.openapi.discoverEndpointsFromSpecUrl(this.apiUrl);
+        spec = await this.loadSpecCandidates(this.apiUrl);
+      }
+
+      // 3) Persist endpoints and discovered params if available
+      const paramsByKey = spec ? this.openapi.discoverParamsFromSpec(spec) : {};
+      if (endpoints.length) {
+        const created = await this.endpointSvc.apiConfigSourceSystemSourceSystemIdEndpointPost(this.sourceSystemId, endpoints as any).toPromise();
+        const createdList = (created as any[]) || [];
+        for (const ep of createdList) {
+          const key = `${ep.httpRequestType} ${ep.endpointPath}`;
+          const params = paramsByKey[key] || [];
+          if (ep.id && params.length) await this.openapi.persistParamsForEndpoint(ep.id, params);
+        }
+        this.loadEndpoints();
+      }
+    } finally {
       this.importing = false;
     }
   }
 
-  /**
-   * Attempts to import the OpenAPI spec from the apiUrl, using direct and fallback URLs.
-   */
-  private async tryImportFromUrl(): Promise<void> {
-    if (!this.apiUrl) {
-      throw new Error('No API URL available for import');
-    }
-    if (
-      this.apiUrl.includes('swagger.json') ||
-      this.apiUrl.includes('openapi.json') ||
-      this.apiUrl.endsWith('.yaml') ||
-      this.apiUrl.endsWith('.yml')
-    ) {
-      console.log('Using direct OpenAPI URL:', this.apiUrl);
+  private async loadSpecCandidates(baseUrl: string): Promise<any> {
+    const urls = [
+      baseUrl,
+      `${baseUrl}/swagger.json`,
+      `${baseUrl}/openapi.json`,
+      `${baseUrl}/v2/swagger.json`,
+      `${baseUrl}/api/v3/openapi.json`,
+      `${baseUrl}/swagger/v1/swagger.json`,
+      `${baseUrl}/api-docs`,
+      `${baseUrl}/openapi.yaml`,
+      `${baseUrl}/openapi.yml`
+    ];
+    for (const url of urls) {
       try {
-        const openApiSpec = await this.http.get(this.apiUrl).toPromise();
-        console.log('✅ Loaded OpenAPI spec from direct URL');
-        const parsed = this.parseOpenApiSpec(openApiSpec);
-        this.endpoints = parsed.map(item => item.endpoint);
-        this.saveDiscoveredEndpoints(parsed);
-        this.importing = false;
-      } catch (err) {
-        console.error('Failed to load OpenAPI spec from direct URL:', err);
-        this.importing = false;
-        throw err;
-      }
-    } else {
-      try {
-        const openApiSpec = await this.http.get(this.apiUrl + '/swagger.json').toPromise();
-        console.log('✅ Loaded OpenAPI spec from /swagger.json');
-        this.processOpenApiSpec(openApiSpec);
-      } catch (err) {
-        console.log('ℹ️ /swagger.json not found, trying alternative URLs...');
-        this.tryAlternativeOpenApiUrls();
-      }
+        const isJson = url.endsWith('.json') || (!url.endsWith('.yaml') && !url.endsWith('.yml'));
+        const raw = await this.http.get(url, { responseType: isJson ? 'json' : 'text' as 'json' }).toPromise();
+        const spec: any = isJson ? raw : parseYAML(raw as string);
+        if (spec && spec.paths) return spec;
+      } catch { /* try next */ }
     }
+    return null;
   }
 
-
-private tryAlternativeOpenApiUrls() {
-  const alternativeUrls = [
-    `${this.apiUrl}/v2/swagger.json`,
-    `${this.apiUrl}/api/v3/openapi.json`,
-    `${this.apiUrl}/swagger/v1/swagger.json`,
-    `${this.apiUrl}/api-docs`,
-    `${this.apiUrl}/openapi.json`,
-    `${this.apiUrl}/docs/swagger.json`,
-    `${this.apiUrl}/openapi.yaml`,   
-    `${this.apiUrl}/openapi.yml`,     
-    
-  ];
-  console.log('🔍 Trying alternative OpenAPI URLs...');
-  this.loadOpenApiFromUrls(alternativeUrls, 0);
-}
-
-
- 
-
-
-private loadOpenApiFromUrls(urls: string[], index: number) {
-  if (index >= urls.length) {
-    console.error('❌ Could not load OpenAPI spec from any URL');
-    this.importing = false;
-    return;
-  }
-  const url = urls[index];
-  console.log(`⏳ Trying: ${url}`);
-
-  const isJson = url.endsWith('.json');
-  this.http.get(url, {
-    responseType: isJson ? 'json' : 'text' as 'json'
-  }).subscribe({
-    next: (raw: any) => {
-      console.log(`✅ SUCCESS! Loaded OpenAPI spec from: ${url}`);
-      let spec: any;
-      if (isJson) {
-        spec = raw;
-      } else {
-        try {
-          spec = parseYAML(raw as string);
-        } catch (e) {
-          console.error('Failed to parse YAML', e);
-          this.loadOpenApiFromUrls(urls, index + 1);
-          return;
-        }
-      }
-      this.processOpenApiSpec(spec);
-    },
-    error: () => {
-      console.log(`❌ Not found or invalid spec at: ${url}`);
-      this.loadOpenApiFromUrls(urls, index + 1);
-    }
-  });
-}
-
-
-
-
- private async processOpenApiSpec(spec: any): Promise<void> {
-  try {
-    const endpointsToCreate: CreateSourceSystemEndpointDTO[] = [];
-
-    if (spec.paths) {
-      for (const [path, pathItem] of Object.entries(spec.paths)) {
-        for (const [method, operation] of Object.entries(pathItem as any)) {
-          if (['get', 'post', 'put', 'delete', 'patch', 'head', 'options'].includes(method.toLowerCase())) {
-            const operationDetails = operation as any;
-            
-            const pathLevelParams = (pathItem as any).parameters || [];
-            const operationLevelParams = operationDetails.parameters || [];
-            const allParameters = [...pathLevelParams, ...operationLevelParams];
-            
-            const formattedPath = this.formatPathWithParameters(path, allParameters);
-            
-            const endpoint: CreateSourceSystemEndpointDTO = {
-              endpointPath: formattedPath,
-              httpRequestType: method.toUpperCase()
-            };
-
-            endpointsToCreate.push(endpoint);
-          }
-        }
-      }
-    }
-
-    if (endpointsToCreate.length > 0) {
-      this.endpointSvc.apiConfigSourceSystemSourceSystemIdEndpointPost(this.sourceSystemId, endpointsToCreate)
-        .subscribe({
-          next: () => {
-            this.loadEndpoints();
-            console.log(`${endpointsToCreate.length} Endpoints erfolgreich importiert`);
-          },
-          error: (error) => {
-            console.error('Fehler beim Speichern der Endpoints:', error);
-          }
-        });
-    }
-  } catch (error) {
-    console.error('Fehler beim Verarbeiten der OpenAPI Spec:', error);
-  } finally {
-    this.importing = false;
-  }
-}
+  // Removed legacy OpenAPI import and processing methods in favor of shared OpenApiImportService
 
   /**
-   * Parse OpenAPI specification and extract endpoints with their parameters
-   */
-  private parseOpenApiSpec(spec: any): Array<{endpoint: CreateSourceSystemEndpointDTO, pathParams: string[]}> {
-    const endpoints: Array<{endpoint: CreateSourceSystemEndpointDTO, pathParams: string[]}> = [];
-    
-    if (!spec.paths) {
-      console.warn('No paths found in OpenAPI specification');
-      return endpoints;
-    }
-
-    
-    Object.keys(spec.paths).forEach(path => {
-      const pathItem = spec.paths[path];
-      
-      
-      const httpMethods = ['get', 'post', 'put', 'delete', 'patch', 'options', 'head'];
-      
-      
-      Object.keys(pathItem).forEach(method => {
-        if (httpMethods.includes(method.toLowerCase())) {
-          const operation = pathItem[method];
-          
-        
-          const endpoint: CreateSourceSystemEndpointDTO = {
-            endpointPath: path,
-            httpRequestType: method.toUpperCase()
-          };
-
-          
-          const pathParams = this.extractPathParameters(path);
-
-          endpoints.push({
-            endpoint,
-            pathParams
-          });
-        }
-      });
-    });
-
-    return endpoints;
-  }
-
-
-  /**
-   * Utility: Ensure a parameter name is wrapped in curly braces {paramName}
+   * Ensures a parameter name is wrapped in curly braces {paramName}.
    */
   private ensureBraces(paramName: string): string {
     const cleanName = paramName.replace(/[{}]/g, '');
@@ -494,19 +1427,15 @@ private loadOpenApiFromUrls(urls: string[], index: number) {
   }
 
   /**
-   * Extract path parameter names from an endpoint path.
-   * Example: "/users/{userId}/posts/{postId}" -> ["{userId}", "{postId}"]
-   * Jetzt: Gibt immer {paramName} zurück, auch wenn nur userId gefunden wird.
+   * Extracts path parameter names from an endpoint path.
    */
   private extractPathParameters(endpointPath: string): string[] {
-    // Suche nach {paramName}
     const pathParamRegex = /\{([^}]+)\}/g;
     const matches: string[] = [];
     let match: RegExpExecArray | null;
     while ((match = pathParamRegex.exec(endpointPath)) !== null) {
       matches.push(this.ensureBraces(match[1]));
     }
-    // Suche nach :paramName, <paramName>, [paramName] und /:paramName
     const altPatterns = [
       /:(\w+)/g,
       /<(\w+)>/g,
@@ -525,28 +1454,22 @@ private loadOpenApiFromUrls(urls: string[], index: number) {
   }
 
   /**
-   * Save discovered endpoints to the backend
+   * Saves discovered endpoints to the backend.
    */
-  private saveDiscoveredEndpoints(discoveredEndpoints: Array<{endpoint: CreateSourceSystemEndpointDTO, pathParams: string[]}>) {
+  private saveDiscoveredEndpoints(discoveredEndpoints: Array<{endpoint: any, pathParams: string[]}>) {
     if (discoveredEndpoints.length === 0) {
-      console.warn('No endpoints discovered');
       this.importing = false;
       return;
     }
-
-   
     const endpointDTOs = discoveredEndpoints.map(item => item.endpoint);
     this.endpointSvc
       .apiConfigSourceSystemSourceSystemIdEndpointPost(this.sourceSystemId, endpointDTOs)
       .subscribe({
         next: () => {
-          console.log(`Successfully created ${endpointDTOs.length} endpoints`);
           this.loadEndpoints();
-          setTimeout(() => {
-          }, 1000);
+          setTimeout(() => {}, 1000);
         },
-        error: (err) => {
-          console.error('Failed to create endpoints:', err);
+        error: () => {
           this.importing = false;
         }
       });
@@ -557,9 +1480,7 @@ private loadOpenApiFromUrls(urls: string[], index: number) {
    */
   private pathParamFormatValidator(): ValidatorFn {
     return (control: AbstractControl): ValidationErrors | null => {
-      const parent = control.parent;
       const val = control.value as string;
-     
       if (typeof val === 'string' && val.match(/^\{[A-Za-z0-9_]+\}$/)) {
         return null;
       }
@@ -567,14 +1488,14 @@ private loadOpenApiFromUrls(urls: string[], index: number) {
     };
   }
 
+  /**
+   * Formats a path with parameters.
+   */
   private formatPathWithParameters(path: string, parameters: any[]): string {
     let formattedPath = path;
-    
     const pathParams = parameters?.filter(param => param.in === 'path') || [];
-    
     pathParams.forEach(param => {
       const paramName = param.name;
-      
       const patterns = [
         { regex: new RegExp(`:${paramName}\\b`, 'g'), replacement: `{${paramName}}` },
         { regex: new RegExp(`<${paramName}>`, 'g'), replacement: `{${paramName}}` },
@@ -588,7 +1509,84 @@ private loadOpenApiFromUrls(urls: string[], index: number) {
         formattedPath = formattedPath.replace(pattern.regex, pattern.replacement);
       });
     });
-    
     return formattedPath;
+  }
+
+  /**
+   * Recursively resolves $ref in OpenAPI schemas.
+   */
+  private resolveRefs(schema: any, schemas: any, seen = new Set()): any {
+    if (!schema) return schema;
+    if (schema.$ref) {
+      if (seen.has(schema.$ref)) return {};
+      seen.add(schema.$ref);
+      const refPath = schema.$ref.replace(/^#\//, '').split('/');
+      let resolved = schemas;
+      for (const part of refPath.slice(2)) {
+        resolved = resolved?.[part];
+      }
+      if (!resolved) return {};
+      return this.resolveRefs(resolved, schemas, seen);
+    }
+    if (schema.properties) {
+      const newProps: any = {};
+      for (const [key, value] of Object.entries(schema.properties)) {
+        newProps[key] = this.resolveRefs(value, schemas, seen);
+      }
+      return { ...schema, properties: newProps };
+    }
+    if (schema.items) {
+      return { ...schema, items: this.resolveRefs(schema.items, schemas, seen) };
+    }
+    for (const keyword of ['allOf', 'anyOf', 'oneOf']) {
+      if (schema[keyword]) {
+        return {
+          ...schema,
+          [keyword]: schema[keyword].map((s: any) => this.resolveRefs(s, schemas, seen))
+        };
+      }
+    }
+    if (typeof schema.additionalProperties === 'object' && schema.additionalProperties !== null) {
+      return {
+        ...schema,
+        additionalProperties: this.resolveRefs(schema.additionalProperties, schemas, seen)
+      };
+    }
+    return schema;
+  }
+
+  public currentOpenApiSpec: string | any = '';
+
+  /**
+   * Resolves a $ref schema from the current OpenAPI spec (recursively).
+   */
+  private resolveSchemaFromOpenApi(schemaRef: any): any {
+    if (!this.currentOpenApiSpec || !schemaRef.includes('$ref')) {
+      try {
+        return typeof schemaRef === 'string' ? JSON.parse(schemaRef) : schemaRef;
+      } catch {
+        return schemaRef;
+      }
+    }
+    try {
+      const openApiJson = typeof this.currentOpenApiSpec === 'string'
+        ? JSON.parse(this.currentOpenApiSpec)
+        : this.currentOpenApiSpec;
+      const ref = typeof schemaRef === 'string'
+        ? JSON.parse(schemaRef).$ref
+        : schemaRef.$ref;
+      if (ref && ref.startsWith('#/components/schemas/')) {
+        const schemaName = ref.replace('#/components/schemas/', '');
+        const schema = openApiJson.components?.schemas?.[schemaName];
+        if (schema) {
+          if (schema.$ref) {
+            return this.resolveSchemaFromOpenApi(JSON.stringify(schema));
+          }
+          return schema;
+        }
+      }
+    } catch (e) {}
+    return schemaRef;
+    
   }
 }

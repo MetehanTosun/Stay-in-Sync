@@ -1,0 +1,55 @@
+<!-- MARK: Page Header -->
+<div class="page-header">
+  <button class="return-button" (click)="return()">
+    Back to Rules
+  </button>
+  <h2>Rule Editor - {{ ruleName }}</h2>
+
+  <!-- MARK: Toolbar -->
+  <div class="toolbar">
+    <div style="display: flex; align-items: center; gap: 0.5rem;">
+      <div id="node-selection-indicator" *ngIf="selectedNodeType">
+        Selected: {{ selectedNodeType }} - Click on canvas to place
+      </div>
+      <div class="node-palette-trigger-wrapper" style="position: relative; display: inline-block;">
+        <button id="node-palette-button" (click)="openMainNodePalette()">
+          Add Node
+        </button>
+        <div #nodePalette>
+          <app-node-palette [showMainNodePalette]="showMainNodePalette" (nodeSelected)="onNodeSelected($event)">
+          </app-node-palette>
+        </div>
+      </div>
+    </div>
+    <button id="save-graph-button" (click)="canvas.saveGraph()">
+      <span class="material-symbols-rounded">
+        save
+      </span>
+      Save Graph
+    </button>
+  </div>
+</div>
+
+<!-- MARK: Main Body -->
+<!-- Graph Canvas -->
+<div class="vflow-wrapper" #vflowWrapper>
+  <app-vflow-canvas (canvasClick)="onCanvasClick($event)" (suggestionSelected)="onNodeSelected($event)"
+    (graphErrors)="graphErrors = $event">
+  </app-vflow-canvas>
+</div>
+
+<!-- Error Panel -->
+<app-error-panel [errors]="graphErrors"></app-error-panel>
+
+<!-- MARK: Modals -->
+<!-- Provider Modal -->
+<div id="provider-node-modal" *ngIf="showProviderModal">
+  <app-provider-node-modal (providerCreated)="onProviderCreated($event)" (modalsClosed)="onModalsClosed()">
+  </app-provider-node-modal>
+</div>
+
+<!-- Constant Modal -->
+<div id="constant-node-modal" *ngIf="showConstantModal">
+  <app-constant-node-modal (constantCreated)="onConstantCreated($event)" (modalsClosed)="onModalsClosed()">
+  </app-constant-node-modal>
+</div>

@@ -1,13 +1,11 @@
 package de.unistuttgart.stayinsync.transport.dto.transformationrule.vFlow;
 
-import lombok.Getter;
-import lombok.Setter;
+
 
 /**
  * Represents a single node from ngx-vflow.
  */
-@Getter
-@Setter
+
 public class VFlowNodeDTO {
     /**
      * The unique identifier of the node, typically a string.
@@ -38,4 +36,52 @@ public class VFlowNodeDTO {
      * The data payload containing specific information for the logic engine.
      */
     private VFlowNodeDataDTO data;
+
+    public String getId() {
+        return id;
+    }
+
+    public void setId(String id) {
+        this.id = id;
+    }
+
+    public PointDTO getPoint() {
+        return point;
+    }
+
+    public void setPoint(PointDTO point) {
+        this.point = point;
+    }
+
+    public String getType() {
+        return type;
+    }
+
+    public void setType(String type) {
+        this.type = type;
+    }
+
+    public double getWidth() {
+        return width;
+    }
+
+    public void setWidth(double width) {
+        this.width = width;
+    }
+
+    public double getHeight() {
+        return height;
+    }
+
+    public void setHeight(double height) {
+        this.height = height;
+    }
+
+    public VFlowNodeDataDTO getData() {
+        return data;
+    }
+
+    public void setData(VFlowNodeDataDTO data) {
+        this.data = data;
+    }
 }

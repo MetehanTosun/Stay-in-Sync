@@ -1,0 +1,10 @@
+<div class="status-container">
+  <p-tag
+    [value]="getStatusLabel(status)"
+    [severity]="getStatusSeverity(status)"
+    [icon]="getStatusIcon(status)"
+    styleClass="status-tag"
+  (click)="clicked()">
+
+  </p-tag>
+</div>

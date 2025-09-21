@@ -60,12 +60,13 @@
 
 .syncjob-navigation-buttons {
   display: flex;
-  justify-content: flex-end;
-  gap: 0.5rem;
+  gap: 85rem;
   padding-top: 0;
   margin-top: 15%;
   border-top: 1px solid var(-p-surface-200);
-  position: absolute;
+  position: fixed;
+  bottom: 2rem;
+  right: 2rem;
   background-color: var(-p-surface-0, #fff);
   z-index: 10;
 }

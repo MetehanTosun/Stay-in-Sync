@@ -1,6 +1,7 @@
 package de.unistuttgart.stayinsync.transport.transformation_rule_shared.logic_operator.general_predicates;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import de.unistuttgart.stayinsync.transport.exception.OperatorValidationException;
 import de.unistuttgart.stayinsync.transport.transformation_rule_shared.nodes.ConstantNode;
 import de.unistuttgart.stayinsync.transport.transformation_rule_shared.nodes.LogicNode;
 import de.unistuttgart.stayinsync.transport.transformation_rule_shared.logic_operator.Operation;
@@ -23,14 +24,14 @@ public class NotEqualsOperator implements Operation {
      * while preventing redundant static comparisons (constant vs. constant).
      *
      * @param node The LogicNode to validate.
-     * @throws IllegalArgumentException if the configuration is invalid.
+     * @throws OperatorValidationException if the configuration is invalid.
      */
     @Override
-    public void validateNode(LogicNode node) {
+    public void validateNode(LogicNode node)throws OperatorValidationException {
         List<Node> inputs = node.getInputNodes();
 
         if (inputs == null || inputs.size() < 2) {
-            throw new IllegalArgumentException(
+            throw new OperatorValidationException(
                     "EQUALS operation for node '" + node.getName() + "' requires at least 2 inputs to compare."
             );
         }
@@ -43,7 +44,7 @@ public class NotEqualsOperator implements Operation {
         }
 
         if (constantNodeCount > 1) {
-            throw new IllegalArgumentException(
+            throw new OperatorValidationException(
                     "EQUALS operation for node '" + node.getName() + "' is invalid. A maximum of one ConstantNode is allowed as an input. Found: " + constantNodeCount
             );
         }

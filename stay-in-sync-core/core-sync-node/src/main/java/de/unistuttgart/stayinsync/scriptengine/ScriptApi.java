@@ -29,7 +29,6 @@ import java.util.Map;
  */
 public class ScriptApi {
     private final Object inputData;
-    private Object outputData;
     private final String jobId;
 
     // TODO: Implement a proper way to assign ExecutionContext
@@ -80,29 +79,6 @@ public class ScriptApi {
         } else {
             return inputData;
         }
-    }
-
-    /**
-     * Allows the script to set its output data.
-     * This method is exposed to the script environment via the {@link HostAccess.Export} annotation.
-     * The host application can then retrieve this data using {@link #getOutputData()}.
-     *
-     * @param outputData The data to be set as the script's output.
-     */
-    @HostAccess.Export
-    public void setOutput(Object outputData) {
-        this.outputData = outputData;
-    }
-
-    /**
-     * Retrieves the output data that was set by the script.
-     * This method is intended for use by the host Java application, not directly by the script,
-     * hence it is not annotated with {@link HostAccess.Export}.
-     *
-     * @return The output data set by the script via {@link #setOutput(Object)}, or {@code null} if no output was set.
-     */
-    public Object getOutputData() {
-        return outputData;
     }
 
     /**

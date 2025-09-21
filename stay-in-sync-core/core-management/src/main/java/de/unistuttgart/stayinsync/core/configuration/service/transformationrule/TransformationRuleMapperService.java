@@ -3,6 +3,7 @@ package de.unistuttgart.stayinsync.core.configuration.service.transformationrule
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.TransformationRule;
+import de.unistuttgart.stayinsync.core.configuration.exception.CoreManagementException;
 import de.unistuttgart.stayinsync.core.configuration.rest.dtos.TransformationRuleDTO;
 import de.unistuttgart.stayinsync.transport.dto.transformationrule.GraphDTO;
 import de.unistuttgart.stayinsync.transport.dto.transformationrule.InputDTO;
@@ -11,6 +12,7 @@ import de.unistuttgart.stayinsync.transport.dto.transformationrule.vFlow.*;
 import io.quarkus.logging.Log;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
+import jakarta.ws.rs.core.Response;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -28,32 +30,34 @@ public class TransformationRuleMapperService {
 
     /**
      * Maps a TransformationRule entity to a lightweight DTO for list views.
+     *
+     * @param entity The TransformationRule entity from the database.
+     * @return The corresponding TransformationRuleDTO without the full graph.
      */
     public TransformationRuleDTO toRuleDTO(TransformationRule entity) {
+        Log.debugf("Mapping entity to TransformationRuleDTO with id: %d", entity != null ? entity.id : null);
         if (entity == null) return null;
 
-        TransformationRuleDTO dto = new TransformationRuleDTO();
-        dto.setId(entity.id);
-        dto.setName(entity.name);
-        dto.setDescription(entity.description);
-        dto.setGraphStatus(entity.graphStatus);
-        if (entity.transformation != null) {
-            dto.setTransformationId(entity.transformation.id);
-        }
-        return dto;
+        Long transformationId = entity.transformation != null ? entity.transformation.id : null;
+        Log.infof("Successfully mapped entity id %d to TransformationRuleDTO.", entity.id);
+        return new TransformationRuleDTO(
+                entity.id,
+                entity.name,
+                entity.description,
+                entity.graphStatus,
+                transformationId
+        );
     }
 
-    // ==========================================================================================
-    // HIER IST DIE FEHLENDE METHODE
-    // ==========================================================================================
     /**
      * Maps a persisted TransformationRule entity to a full GraphDTO.
-     * This is used by the API layer to build a detailed response for POST/PUT requests.
      *
      * @param entity The TransformationRule entity from the database.
      * @return The corresponding GraphDTO, including id, name, status, and node structure.
+     * @throws CoreManagementException if parsing the graph JSON from the entity fails.
      */
     public GraphDTO toGraphDTO(TransformationRule entity) {
+        Log.debugf("Mapping entity to GraphDTO with id: %d", entity != null ? entity.id : null);
         if (entity == null || entity.graph == null || entity.graph.graphDefinitionJson == null) {
             return null;
         }
@@ -61,11 +65,12 @@ public class TransformationRuleMapperService {
         try {
             // 1. Deserialize the JSON string into the basic GraphDTO structure (containing nodes).
             GraphDTO dto = jsonObjectMapper.readValue(entity.graph.graphDefinitionJson, GraphDTO.class);
+            Log.infof("Successfully mapped entity id %d to GraphDTO.", entity.id);
             return dto;
 
         } catch (JsonProcessingException e) {
             Log.errorf(e, "Failed to parse graph JSON for TransformationRule with id %d", entity.id);
-            throw new RuntimeException("Failed to create GraphDTO from entity JSON.", e);
+            throw new CoreManagementException(Response.Status.INTERNAL_SERVER_ERROR, "Mapping Error", "Failed to create GraphDTO from entity JSON.", e);
         }
     }
 
@@ -75,8 +80,10 @@ public class TransformationRuleMapperService {
      *
      * @param entity The TransformationRule entity from the database.
      * @return The VFlowGraphDTO with separate lists for nodes and edges.
+     * @throws CoreManagementException if parsing the graph JSON from the entity fails.
      */
     public VFlowGraphDTO toVFlowDto(TransformationRule entity) {
+        Log.debugf("Mapping entity to VFlowGraphDTO with id: %d", entity != null ? entity.id : null);
         if (entity == null || entity.graph == null || entity.graph.graphDefinitionJson == null) {
             return new VFlowGraphDTO();
         }
@@ -88,12 +95,13 @@ public class TransformationRuleMapperService {
 
             vflowDto.setNodes(mapNodeDTOsToVFlowNodes(persistenceDto.getNodes()));
             vflowDto.setEdges(createVFlowEdgesFromNodeDTOs(persistenceDto.getNodes()));
+            Log.infof("Successfully mapped entity id %d to VFlowGraphDTO.", entity.id);
 
             return vflowDto;
 
         } catch (JsonProcessingException e) {
             Log.errorf(e, "Failed to parse graph JSON for TransformationRule with id %d", entity.id);
-            throw new RuntimeException("Failed to create VFlowGraphDTO from entity JSON.", e);
+            throw new CoreManagementException(Response.Status.INTERNAL_SERVER_ERROR, "Mapping Error", "Failed to create VFlowGraphDTO from entity JSON.", e);
         }
     }
 
@@ -148,7 +156,11 @@ public class TransformationRuleMapperService {
                     edge.setSource(sourceIdStr);
                     edge.setTarget(targetIdStr);
                     edge.setId(sourceIdStr + " -> " + targetIdStr);
-                    edge.setTargetHandle("input-" + inputDto.getOrderIndex());
+
+                    if(targetNodeDto.getInputTypes() != null && targetNodeDto.getInputTypes().size() > 1) {
+                        edge.setTargetHandle("input-" + inputDto.getOrderIndex());
+                    }
+
 
                     vflowEdges.add(edge);
                 }

@@ -11,7 +11,7 @@ import org.jboss.logging.Logger;
 
 //http://localhost:8093/q/swagger-ui/#/
 
-@Path("/simulate-error")
+@Path("/api/simulate-error")
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
 public class ErrorSimulationResource {

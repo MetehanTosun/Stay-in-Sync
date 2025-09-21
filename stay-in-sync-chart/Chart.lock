@@ -8,18 +8,9 @@ dependencies:
 - name: mongodb
   repository: https://charts.bitnami.com/bitnami
   version: 16.5.11
-- name: grafana
-  repository: https://charts.bitnami.com/bitnami
-  version: 12.1.2
-- name: prometheus
-  repository: https://charts.bitnami.com/bitnami
-  version: 2.1.16
-- name: fluent-bit
-  repository: https://charts.bitnami.com/bitnami
-  version: 3.1.11
 - name: umbrella
   repository: https://eclipse-tractusx.github.io/charts/dev
-  version: 2.14.1
+  version: 3.6.3
 - name: core-management
   repository: file://../stay-in-sync-core/core-management/target/helm/kubernetes/core-management
   version: 1.0.0-SNAPSHOT
@@ -29,5 +20,5 @@ dependencies:
 - name: core-sync-node
   repository: file://../stay-in-sync-core/core-sync-node/target/helm/kubernetes/core-sync-node
   version: 1.0.0-SNAPSHOT
-digest: sha256:87d7b0aaa8e4bc2cb25ed426264592a555544354b7861098acd0faaeff8587f9
-generated: "2025-08-07T20:08:16.552362519+02:00"
+digest: sha256:c023a33b817d42dbc06d09a66a7b28d6edf886b3a6b856f337cb22116644306f
+generated: "2025-09-19T16:23:38.591844883+02:00"

@@ -5,7 +5,7 @@
  * as handling interactions with transformation rules and scripts.
  */
 
-import {Component, EventEmitter, OnInit, Output} from '@angular/core';
+import {Component, EventEmitter, Input, OnInit, Output} from '@angular/core';
 import {TableModule} from 'primeng/table';
 import {Transformation, UpdateTransformationRequest} from '../../models/transformation.model';
 import {Button} from 'primeng/button';
@@ -19,6 +19,12 @@ import {NgIf} from '@angular/common';
 import {Router} from '@angular/router';
 import {TransformationScriptSelectionComponent} from '../transformation-script-selection/transformation-script-selection.component';
 import {TransformationRuleSelectionComponent} from '../transformation-rule-selection/transformation-rule-selection.component';
+import {
+  JobDeploymentStatus,
+  JobStatusTagComponent
+} from '../../../../shared/components/job-status-tag/job-status-tag.component';
+import {Select} from 'primeng/select';
+import {CheckboxModule} from 'primeng/checkbox';
 
 /**
  * @class TransformationBaseComponent
@@ -36,13 +42,18 @@ import {TransformationRuleSelectionComponent} from '../transformation-rule-selec
     ReactiveFormsModule,
     InputText,
     NgIf,
+    Select,
     TransformationScriptSelectionComponent,
-    TransformationRuleSelectionComponent
+    TransformationRuleSelectionComponent,
+    JobStatusTagComponent,
+    CheckboxModule
   ],
   templateUrl: './transformation-base.component.html',
   styleUrl: './transformation-base.component.css'
 })
 export class TransformationBaseComponent implements OnInit {
+  @Input() syncJobId?: number;
+
   /**
    * @event transformationsChanged - Emits changes to the list of added transformations.
    */
@@ -83,6 +94,14 @@ export class TransformationBaseComponent implements OnInit {
    */
   newTransformation: Transformation = {};
 
+  statusOptions = Object.values(JobDeploymentStatus);
+
+  selectedStatus?: JobDeploymentStatus;
+
+  hasSyncJobFilter: boolean = false;
+
+  @Input() selectedSyncJobId: number | undefined;
+
   /**
    * @constructor
    * @param {TransformationService} transformationService - Service for managing transformations.
@@ -96,7 +115,7 @@ export class TransformationBaseComponent implements OnInit {
    * Loads transformations from the backend and initializes the component state.
    */
   ngOnInit() {
-    this.transformationService.getAll().subscribe(
+    this.transformationService.getAllWithoutSyncJob().subscribe(
       (transformations: Transformation[]) => {
         this.transformations = transformations;
         this.addedTransformations = this.tempStore.getTransformations();
@@ -114,6 +133,7 @@ export class TransformationBaseComponent implements OnInit {
    * Sets the `added` flag for transformations that are present in the temp store.
    */
   setAddedFlagForIntersection() {
+    this.addedTransformations = this.tempStore.getTransformations();
     const addedIds = this.addedTransformations.map(t => t.id);
     console.log('Added Transformation IDs:', addedIds);
     console.log('All Transformations:', this.transformations);
@@ -126,10 +146,12 @@ export class TransformationBaseComponent implements OnInit {
    * Reloads transformations from the backend and updates the component state.
    */
   loadTransformationsFromBackend() {
-    this.transformationService.getAll().subscribe(
+    this.transformationService.getAllWithoutSyncJob().subscribe(
       (transformations: Transformation[]) => {
-        this.transformations = transformations;
-        this.addedTransformations = this.tempStore.getTransformations();
+        this.transformations = transformations.filter(t => t.syncJobId == null);
+        console.log('Transformations vor Filterung:', transformations);
+        this.transformations = transformations.filter(t => t.syncJobId === null);
+        console.log('Transformations nach Filterung:', this.transformations);
         this.setAddedFlagForIntersection();
         this.transformationChanged();
         console.log('Transformations from backend loaded:', this.transformations);
@@ -146,18 +168,6 @@ export class TransformationBaseComponent implements OnInit {
    */
   edit(rowData: any) {
     console.log('Edit transformation:', rowData);
-  }
-
-  /**
-   * Deletes the specified transformation.
-   * @param {any} rowData - Data of the transformation to delete.
-   */
-  delete(rowData: any) {
-    this.transformationService.delete(rowData).subscribe({
-      next: () => this.loadTransformationsFromBackend(),
-      error: (error: any) => console.error('Error deleting transformation:', error)
-    });
-    console.log('Delete transformation:', rowData);
   }
 
   /**
@@ -305,27 +315,4 @@ export class TransformationBaseComponent implements OnInit {
     this.router.navigate([`/sync-jobs/create`]);
   }
 
-  /**
-   * Removes the script associated with the specified transformation.
-   * @param {any} rowData - Data of the transformation to update.
-   */
-  removeScript(rowData: any) {
-    if (rowData.id !== null) {
-      this.transformationService.getById(rowData.id).subscribe(transformation => {
-        const updateRequest: UpdateTransformationRequest = {
-          id: transformation.id,
-          syncJobId: transformation.syncJobId ?? null,
-          sourceSystemEndpointIds: [],
-          targetSystemEndpointId: transformation.targetSystemEndpointId ?? null,
-          transformationRuleId: transformation.transformationRuleId ?? null,
-          transformationScriptId: null
-        };
-        console.log('UpdateTransformationRequest:', updateRequest);
-        this.transformationService.update(updateRequest).subscribe(updated => {
-          console.log('Update Response:', updated);
-          this.loadTransformationsFromBackend();
-        });
-      });
-    }
-  }
 }

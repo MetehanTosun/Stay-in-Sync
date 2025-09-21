@@ -1,0 +1,111 @@
+<p-card>
+  <p-toolbar>
+    <div class="p-toolbar-group-left">
+      <h3>Transformations</h3>
+    </div>
+    <div class="p-toolbar-group-right">
+      <p-button (click)="openCreateDialog()">
+        Add Transformation
+      </p-button>
+    </div>
+  </p-toolbar>
+  <p-table [value]="transformations" [paginator]="true" [rows]="10" [responsiveLayout]="'scroll'"
+           [tableStyle]="{ 'min-width': '75rem', 'min-height': '46rem'}"
+  >
+    <ng-template pTemplate="header">
+
+      <tr>
+        <th>Name</th>
+        <th>Status</th>
+        <th>Transformation Rule</th>
+        <th>Remove</th>
+      </tr>
+      <tr>
+        <th>
+          <p-columnFilter type="text" field="script.name" placeholder="Search by name"
+                          ariaLabel="Filter Name"></p-columnFilter>
+        </th>
+        <th>
+          <p-columnFilter field="deploymentStatus" matchMode="equals" [showMenu]="false">
+            <ng-template #filter let-filter="filterCallback">
+              <p-select [(ngModel)]="selectedStatus" [options]="statusOptions"
+                        (onChange)="filter($event.value)"
+                        placeholder="Select One"
+                        [showClear]="true"
+                        [style]="{ 'min-width': '12rem' }">
+                <ng-template let-option #item>
+                  <app-job-status-tag [status]="option"></app-job-status-tag>
+                </ng-template>
+              </p-select>
+            </ng-template>
+          </p-columnFilter>
+        </th>
+        <th></th>
+        <th>
+        </th>
+      </tr>
+    </ng-template>
+    <ng-template pTemplate="body" let-rowData>
+      <tr>
+        <td>
+
+        <a
+          [routerLink]="['/script-editor', rowData.script?.id]">
+          {{ rowData.script?.name }}
+        </a>
+        </td>
+        <td>
+          <app-job-status-tag [status]="rowData.deploymentStatus" (click)="toggleDeploymentStatus(rowData)"></app-job-status-tag>
+        </td>
+        <td>
+          <p-select [options]="transformationsRules"
+                    optionValue="id"
+                    optionLabel="name" [filter]="true"
+                    filterBy="name" [showClear]="true"
+                    placeholder="Select a Rule"
+                    class="w-full md:w-56"
+                    [(ngModel)]="rowData.transformationRuleId"
+                    (ngModelChange)="onRuleChange($event, rowData)">
+            <ng-template #selectedItem let-selectedOption>
+              <div class="flex items-center gap-2">
+                <div>{{ selectedOption.name }}</div>
+              </div>
+            </ng-template>
+            <ng-template let-rule #item>
+              <div class="flex items-center gap-2">
+                <div>{{ rule.name }}</div>
+              </div>
+            </ng-template>
+          </p-select>
+        </td>
+        <td>
+          <p-button
+            [label]="'Remove'"
+            [class]="'p-button-rounded p-button-text w-24' "
+            [style]="{'width': '8rem', 'background-color': '#d32f2f', 'border': '#d32f2f' }"
+            [disabled]=" !rowData.script"
+            (click)="remove(rowData)">
+          </p-button>
+        </td>
+      </tr>
+    </ng-template>
+    <ng-template #emptymessage>
+      <tr>
+        <td colspan="4">
+          <div class="empty-message" style="text-align: center">
+            <h4>Currently no transformation available</h4>
+            <p>
+              Add your first transformation to get started.
+            </p>
+          </div>
+        </td>
+      </tr>
+    </ng-template>
+  </p-table>
+</p-card>
+
+<p-dialog header="Add Transformations" [modal]="true" [(visible)]="addTransformationVisible" >
+  <app-transformation-add-sync-job (transformationAdded)="loadSyncJobDetails(this.syncJobId!)"></app-transformation-add-sync-job>
+</p-dialog>
+
+
