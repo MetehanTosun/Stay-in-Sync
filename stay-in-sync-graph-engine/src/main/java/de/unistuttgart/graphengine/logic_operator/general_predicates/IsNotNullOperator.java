@@ -1,6 +1,5 @@
 package de.unistuttgart.graphengine.logic_operator.general_predicates;
 
-import com.fasterxml.jackson.databind.JsonNode;
 import de.unistuttgart.graphengine.exception.OperatorValidationException;
 import de.unistuttgart.graphengine.logic_operator.Operation;
 import de.unistuttgart.graphengine.nodes.JsonPathValueExtractor;
@@ -8,7 +7,6 @@ import de.unistuttgart.graphengine.nodes.LogicNode;
 import de.unistuttgart.graphengine.nodes.Node;
 import de.unistuttgart.graphengine.nodes.ProviderNode;
 
-import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
@@ -52,7 +50,7 @@ public class IsNotNullOperator implements Operation {
      * @return {@code true} if all paths exist and their values are not null, otherwise {@code false}.
      */
     @Override
-    public Object execute(LogicNode node, Map<String, JsonNode> dataContext) {
+    public Object execute(LogicNode node, Map<String, Object> dataContext) {
         for (Node inputNode : node.getInputNodes()) {
             Object value = inputNode.getCalculatedResult();
             if (value == null) {

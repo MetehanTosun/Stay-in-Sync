@@ -1,6 +1,5 @@
 package de.unistuttgart.graphengine.logic_operator.general_predicates;
 
-import com.fasterxml.jackson.databind.JsonNode;
 import de.unistuttgart.graphengine.exception.GraphEvaluationException;
 import de.unistuttgart.graphengine.exception.OperatorValidationException;
 import de.unistuttgart.graphengine.logic_operator.Operation;
@@ -40,7 +39,7 @@ public class OrOperator implements Operation {
      * @throws GraphEvaluationException if any resolved input value is not a Boolean.
      */
     @Override
-    public Object execute(LogicNode node, Map<String, JsonNode> dataContext) throws GraphEvaluationException {
+    public Object execute(LogicNode node, Map<String, Object> dataContext) throws GraphEvaluationException {
         for (Node inputProvider : node.getInputNodes()) {
             Object value = inputProvider.getCalculatedResult();
 

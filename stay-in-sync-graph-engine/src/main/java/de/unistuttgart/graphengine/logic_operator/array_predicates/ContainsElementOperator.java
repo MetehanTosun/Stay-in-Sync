@@ -1,6 +1,5 @@
 package de.unistuttgart.graphengine.logic_operator.array_predicates;
 
-import com.fasterxml.jackson.databind.JsonNode;
 import de.unistuttgart.graphengine.exception.OperatorValidationException;
 import de.unistuttgart.graphengine.logic_operator.Operation;
 import de.unistuttgart.graphengine.nodes.LogicNode;
@@ -40,7 +39,7 @@ public class ContainsElementOperator implements Operation {
      * or the element is not found.
      */
     @Override
-    public Object execute(LogicNode node, Map<String, JsonNode> dataContext) {
+    public Object execute(LogicNode node, Map<String, Object> dataContext) {
         List<Node> inputs = node.getInputNodes();
 
         Object arrayOrCollectionProvider = inputs.get(0).getCalculatedResult();

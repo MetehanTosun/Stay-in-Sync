@@ -1,6 +1,5 @@
 package de.unistuttgart.graphengine.logic_operator.array_predicates;
 
-import com.fasterxml.jackson.databind.JsonNode;
 import de.unistuttgart.graphengine.exception.OperatorValidationException;
 import de.unistuttgart.graphengine.logic_operator.Operation;
 import de.unistuttgart.graphengine.nodes.LogicNode;
@@ -38,7 +37,7 @@ public class NotEmptyOperator implements Operation {
      * Returns {@code false} if the input is null, not an array/collection, or is empty.
      */
     @Override
-    public Object execute(LogicNode node, Map<String, JsonNode> dataContext) {
+    public Object execute(LogicNode node, Map<String, Object> dataContext) {
         Node inputNode = node.getInputNodes().get(0);
 
         Object arrayOrCollectionProvider = inputNode.getCalculatedResult();

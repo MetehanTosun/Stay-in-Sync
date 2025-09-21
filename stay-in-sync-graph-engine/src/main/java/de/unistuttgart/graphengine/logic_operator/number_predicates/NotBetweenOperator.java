@@ -1,6 +1,5 @@
 package de.unistuttgart.graphengine.logic_operator.number_predicates;
 
-import com.fasterxml.jackson.databind.JsonNode;
 import de.unistuttgart.graphengine.exception.OperatorValidationException;
 import de.unistuttgart.graphengine.logic_operator.Operation;
 import de.unistuttgart.graphengine.nodes.ConstantNode;
@@ -55,7 +54,7 @@ public class NotBetweenOperator implements Operation {
      * Returns {@code false} if any provided value is null or not a number.
      */
     @Override
-    public Object execute(LogicNode node, Map<String, JsonNode> dataContext) {
+    public Object execute(LogicNode node, Map<String, Object> dataContext) {
         List<Node> inputs = node.getInputNodes();
 
         Object valueToCheck = inputs.get(0).getCalculatedResult();

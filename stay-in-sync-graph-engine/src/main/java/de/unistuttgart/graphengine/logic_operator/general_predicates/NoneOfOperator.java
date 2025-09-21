@@ -1,6 +1,5 @@
 package de.unistuttgart.graphengine.logic_operator.general_predicates;
 
-import com.fasterxml.jackson.databind.JsonNode;
 import de.unistuttgart.graphengine.exception.OperatorValidationException;
 import de.unistuttgart.graphengine.logic_operator.Operation;
 import de.unistuttgart.graphengine.nodes.LogicNode;
@@ -38,7 +37,7 @@ public class NoneOfOperator implements Operation {
      * {@code Boolean.TRUE}, otherwise returns {@code false}.
      */
     @Override
-    public Object execute(LogicNode node, Map<String, JsonNode> dataContext) {
+    public Object execute(LogicNode node, Map<String, Object> dataContext) {
         List<Node> inputs = node.getInputNodes();
 
         for (Node inputNode : inputs) {

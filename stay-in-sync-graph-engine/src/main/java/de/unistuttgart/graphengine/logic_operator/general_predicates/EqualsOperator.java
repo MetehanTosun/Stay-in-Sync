@@ -1,6 +1,5 @@
 package de.unistuttgart.graphengine.logic_operator.general_predicates;
 
-import com.fasterxml.jackson.databind.JsonNode;
 import de.unistuttgart.graphengine.exception.OperatorValidationException;
 import de.unistuttgart.graphengine.logic_operator.Operation;
 import de.unistuttgart.graphengine.nodes.ConstantNode;
@@ -55,7 +54,7 @@ public class EqualsOperator implements Operation {
      * @return {@code true} if all values are equal, otherwise {@code false}.
      */
     @Override
-    public Object execute(LogicNode node, Map<String, JsonNode> dataContext) {
+    public Object execute(LogicNode node, Map<String, Object> dataContext) {
         List<Node> inputs = node.getInputNodes();
 
         Object referenceValue = inputs.get(0).getCalculatedResult();

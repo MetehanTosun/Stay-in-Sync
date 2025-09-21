@@ -8,7 +8,6 @@ import de.unistuttgart.graphengine.nodes.LogicNode;
 import de.unistuttgart.graphengine.nodes.Node;
 import de.unistuttgart.graphengine.nodes.ProviderNode;
 
-import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
@@ -38,14 +37,14 @@ public class ExistsOperator implements Operation {
      * @return {@code true} if all paths defined in the input ProviderNodes exist, otherwise {@code false}.
      */
     @Override
-    public Object execute(LogicNode node, Map<String, JsonNode> dataContext) {
+    public Object execute(LogicNode node, Map<String, Object> dataContext) {
         if (dataContext == null || dataContext.isEmpty()) {
             return false;
         }
 
         for (Node inputNode : node.getInputNodes()) {
             ProviderNode provider = (ProviderNode) inputNode;
-            String fullPath = provider.getJsonPath(); // z.B. "source.sensor.temperature"
+            String fullPath = provider.getJsonPath();
 
             String[] parts = fullPath.split("\\.", 2);
             if (parts.length == 0) {
@@ -53,10 +52,17 @@ public class ExistsOperator implements Operation {
             }
 
             String sourceKey = parts[0];
-            JsonNode sourceObject = dataContext.get(sourceKey);
-            if (sourceObject == null) {
+
+            Object sourceDataAsObject = dataContext.get(sourceKey);
+            if (sourceDataAsObject == null) {
                 return false;
             }
+
+            // Type check before casting
+            if (!(sourceDataAsObject instanceof JsonNode)) {
+                return false;
+            }
+            JsonNode sourceObject = (JsonNode) sourceDataAsObject;
             String internalJsonPath = (parts.length > 1) ? parts[1] : "";
 
             if (!valueExtractor.pathExists(sourceObject, internalJsonPath)) {

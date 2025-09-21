@@ -1,6 +1,5 @@
 package de.unistuttgart.graphengine.nodes;
 
-import com.fasterxml.jackson.databind.JsonNode;
 import de.unistuttgart.graphengine.exception.GraphEvaluationException;
 import de.unistuttgart.graphengine.exception.NodeConfigurationException;
 import de.unistuttgart.graphengine.logic_operator.LogicOperator;
@@ -65,7 +64,7 @@ public class LogicNode extends Node {
      * (e.g., due to a type mismatch).
      */
     @Override
-    public void calculate(Map<String, JsonNode> dataContext) throws GraphEvaluationException {
+    public void calculate(Map<String, Object> dataContext) throws GraphEvaluationException {
         Operation strategy = this.getOperator().getOperationStrategy();
 
         try {

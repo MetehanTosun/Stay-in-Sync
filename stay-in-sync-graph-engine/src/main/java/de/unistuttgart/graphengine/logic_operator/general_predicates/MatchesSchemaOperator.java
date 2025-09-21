@@ -95,7 +95,7 @@ public class MatchesSchemaOperator implements Operation {
      *                                  an unexpected error during execution
      */
     @Override
-    public Object execute(LogicNode node, Map<String, JsonNode> dataContext) throws GraphEvaluationException {
+    public Object execute(LogicNode node, Map<String, Object> dataContext) throws GraphEvaluationException {
         // Extract the calculated results from both input nodes
         Object jsonInput = node.getInputNodes().get(0).getCalculatedResult();
         Object schemaInput = node.getInputNodes().get(1).getCalculatedResult();

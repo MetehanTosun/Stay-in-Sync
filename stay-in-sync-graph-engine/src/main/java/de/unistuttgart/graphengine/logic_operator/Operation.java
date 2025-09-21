@@ -1,6 +1,5 @@
 package de.unistuttgart.graphengine.logic_operator;
 
-import com.fasterxml.jackson.databind.JsonNode;
 import de.unistuttgart.graphengine.exception.GraphEvaluationException;
 import de.unistuttgart.graphengine.exception.OperatorValidationException;
 import de.unistuttgart.graphengine.nodes.LogicNode;
@@ -20,7 +19,7 @@ public interface Operation {
      * @param dataContext The runtime data context.
      * @return The result of the calculation.
      */
-    Object execute(LogicNode node, Map<String, JsonNode> dataContext) throws GraphEvaluationException;
+    Object execute(LogicNode node, Map<String, Object> dataContext) throws GraphEvaluationException;
 
     /**
      * Validates the node to ensure it is correctly configured for this operation

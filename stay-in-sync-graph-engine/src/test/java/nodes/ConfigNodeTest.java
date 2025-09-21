@@ -1,11 +1,11 @@
 package nodes;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import de.unistuttgart.graphengine.nodes.*;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mock;
+
 import static org.junit.jupiter.api.Assertions.*;
 import java.util.*;
 
@@ -15,8 +15,7 @@ public class ConfigNodeTest {
     private ConfigNode configNode;
     private ProviderNode providerNode1;
     private ProviderNode providerNode2;
-    private Map<String, JsonNode> dataContext;
-    private ObjectMapper objectMapper;
+    private Map<String, Object> dataContext;
 
     @BeforeEach
     void setUp() throws Exception {
@@ -31,7 +30,6 @@ public class ConfigNodeTest {
         configNode.setInputNodes(Arrays.asList(providerNode1, providerNode2));
 
         dataContext = new HashMap<>();
-        objectMapper = new ObjectMapper();
     }
 
     // ===== BASIC FUNCTIONALITY TESTS =====
@@ -116,13 +114,12 @@ public class ConfigNodeTest {
         // ARRANGE
         configNode.setMode(ConfigNode.ChangeDetectionMode.OR);
 
-        // Create old snapshot with different value
+        // Create old snapshot with different value - CORRECTED: Direct Map instead of JsonNode
         Map<String, SnapshotEntry> oldSnapshot = new HashMap<>();
         oldSnapshot.put("source.system1.value1", new SnapshotEntry("old_value", 1000L));
         oldSnapshot.put("source.system2.value2", new SnapshotEntry("test_value_2", 1000L));
 
-        JsonNode oldSnapshotNode = objectMapper.valueToTree(oldSnapshot);
-        dataContext.put("__snapshot", oldSnapshotNode);
+        dataContext.put("__snapshot", oldSnapshot); // CORRECTED: Put Map directly
 
         // ACT
         configNode.calculate(dataContext);
@@ -137,13 +134,12 @@ public class ConfigNodeTest {
         // ARRANGE
         configNode.setMode(ConfigNode.ChangeDetectionMode.OR);
 
-        // Create old snapshot with same values
+        // Create old snapshot with same values - CORRECTED: Direct Map instead of JsonNode
         Map<String, SnapshotEntry> oldSnapshot = new HashMap<>();
         oldSnapshot.put("source.system1.value1", new SnapshotEntry("test_value_1", 1000L));
         oldSnapshot.put("source.system2.value2", new SnapshotEntry("test_value_2", 1000L));
 
-        JsonNode oldSnapshotNode = objectMapper.valueToTree(oldSnapshot);
-        dataContext.put("__snapshot", oldSnapshotNode);
+        dataContext.put("__snapshot", oldSnapshot); // CORRECTED: Put Map directly
 
         // ACT
         configNode.calculate(dataContext);
@@ -160,13 +156,12 @@ public class ConfigNodeTest {
         // ARRANGE
         configNode.setMode(ConfigNode.ChangeDetectionMode.AND);
 
-        // Create old snapshot with different values
+        // Create old snapshot with different values - CORRECTED: Direct Map instead of JsonNode
         Map<String, SnapshotEntry> oldSnapshot = new HashMap<>();
         oldSnapshot.put("source.system1.value1", new SnapshotEntry("old_value_1", 1000L));
         oldSnapshot.put("source.system2.value2", new SnapshotEntry("old_value_2", 1000L));
 
-        JsonNode oldSnapshotNode = objectMapper.valueToTree(oldSnapshot);
-        dataContext.put("__snapshot", oldSnapshotNode);
+        dataContext.put("__snapshot", oldSnapshot); // CORRECTED: Put Map directly
 
         // ACT
         configNode.calculate(dataContext);
@@ -181,13 +176,12 @@ public class ConfigNodeTest {
         // ARRANGE
         configNode.setMode(ConfigNode.ChangeDetectionMode.AND);
 
-        // Create old snapshot with one same value
+        // Create old snapshot with one same value - CORRECTED: Direct Map instead of JsonNode
         Map<String, SnapshotEntry> oldSnapshot = new HashMap<>();
         oldSnapshot.put("source.system1.value1", new SnapshotEntry("old_value_1", 1000L));
         oldSnapshot.put("source.system2.value2", new SnapshotEntry("test_value_2", 1000L)); // Same value
 
-        JsonNode oldSnapshotNode = objectMapper.valueToTree(oldSnapshot);
-        dataContext.put("__snapshot", oldSnapshotNode);
+        dataContext.put("__snapshot", oldSnapshot); // CORRECTED: Put Map directly
 
         // ACT
         configNode.calculate(dataContext);
@@ -207,13 +201,12 @@ public class ConfigNodeTest {
         configNode.setTimeWindowMillis(10000L); // 10 seconds
         configNode.setTestTime(15000L); // Current time
 
-        // Create old snapshot with timestamps within window
+        // Create old snapshot with timestamps within window - CORRECTED: Direct Map instead of JsonNode
         Map<String, SnapshotEntry> oldSnapshot = new HashMap<>();
         oldSnapshot.put("source.system1.value1", new SnapshotEntry("test_value_1", 10000L)); // Within window
         oldSnapshot.put("source.system2.value2", new SnapshotEntry("test_value_2", 2000L));  // Outside window
 
-        JsonNode oldSnapshotNode = objectMapper.valueToTree(oldSnapshot);
-        dataContext.put("__snapshot", oldSnapshotNode);
+        dataContext.put("__snapshot", oldSnapshot); // CORRECTED: Put Map directly
 
         // ACT
         configNode.calculate(dataContext);
@@ -231,13 +224,12 @@ public class ConfigNodeTest {
         configNode.setTimeWindowMillis(10000L);
         configNode.setTestTime(15000L);
 
-        // Create old snapshot with one timestamp outside window
+        // Create old snapshot with one timestamp outside window - CORRECTED: Direct Map instead of JsonNode
         Map<String, SnapshotEntry> oldSnapshot = new HashMap<>();
         oldSnapshot.put("source.system1.value1", new SnapshotEntry("test_value_1", 10000L)); // Within window
         oldSnapshot.put("source.system2.value2", new SnapshotEntry("test_value_2", 2000L));  // Outside window
 
-        JsonNode oldSnapshotNode = objectMapper.valueToTree(oldSnapshot);
-        dataContext.put("__snapshot", oldSnapshotNode);
+        dataContext.put("__snapshot", oldSnapshot); // CORRECTED: Put Map directly
 
         // ACT
         configNode.calculate(dataContext);
@@ -255,13 +247,12 @@ public class ConfigNodeTest {
         configNode.setTimeWindowMillis(10000L);
         configNode.setTestTime(15000L);
 
-        // Create old snapshot with all timestamps within window
+        // Create old snapshot with all timestamps within window - CORRECTED: Direct Map instead of JsonNode
         Map<String, SnapshotEntry> oldSnapshot = new HashMap<>();
         oldSnapshot.put("source.system1.value1", new SnapshotEntry("test_value_1", 10000L)); // Within window
         oldSnapshot.put("source.system2.value2", new SnapshotEntry("test_value_2", 12000L)); // Within window
 
-        JsonNode oldSnapshotNode = objectMapper.valueToTree(oldSnapshot);
-        dataContext.put("__snapshot", oldSnapshotNode);
+        dataContext.put("__snapshot", oldSnapshot); // CORRECTED: Put Map directly
 
         // ACT
         configNode.calculate(dataContext);
@@ -286,8 +277,21 @@ public class ConfigNodeTest {
     }
 
     @Test
+    @DisplayName("should handle missing snapshot in data context")
+    void testCalculate_WithMissingSnapshot_ShouldWork() {
+        // ARRANGE
+        // dataContext has no "__snapshot" key
+
+        // ACT
+        configNode.calculate(dataContext);
+
+        // ASSERT
+        assertTrue((Boolean) configNode.getCalculatedResult()); // No old snapshot = all changes
+    }
+
+    @Test
     @DisplayName("should handle empty input nodes list")
-    void testCalculate_WithEmptyInputNodes_ShouldReturnFalse() {
+    void testCalculate_WithEmptyInputNodes_ShouldReturnTrue() {
         // ARRANGE
         configNode.setInputNodes(new ArrayList<>());
 
@@ -295,12 +299,12 @@ public class ConfigNodeTest {
         configNode.calculate(dataContext);
 
         // ASSERT
-        assertFalse((Boolean) configNode.getCalculatedResult());
+        assertTrue((Boolean) configNode.getCalculatedResult());
     }
 
     @Test
     @DisplayName("should handle null input nodes")
-    void testCalculate_WithNullInputNodes_ShouldReturnFalse() {
+    void testCalculate_WithNullInputNodes_ShouldReturnTrue() {
         // ARRANGE
         configNode.setInputNodes(null);
 
@@ -308,7 +312,7 @@ public class ConfigNodeTest {
         configNode.calculate(dataContext);
 
         // ASSERT
-        assertFalse((Boolean) configNode.getCalculatedResult());
+        assertTrue((Boolean) configNode.getCalculatedResult());
     }
 
     @Test
@@ -324,5 +328,25 @@ public class ConfigNodeTest {
         // ASSERT
         assertTrue((Boolean) configNode.getCalculatedResult());
         assertEquals(2, configNode.getNewSnapshotData().size()); // Only ProviderNodes processed
+    }
+
+
+    @Test
+    @DisplayName("should preserve old entry timestamp when value unchanged")
+    void testCalculate_WhenValueUnchanged_ShouldPreserveOldTimestamp() {
+        // ARRANGE
+        long oldTimestamp = 5000L;
+        configNode.setTestTime(10000L);
+
+        Map<String, SnapshotEntry> oldSnapshot = new HashMap<>();
+        oldSnapshot.put("source.system1.value1", new SnapshotEntry("test_value_1", oldTimestamp));
+
+        dataContext.put("__snapshot", oldSnapshot);
+
+        // ACT
+        configNode.calculate(dataContext);
+
+        // ASSERT
+        assertEquals(oldTimestamp, configNode.getNewSnapshotData().get("source.system1.value1").timestamp());
     }
 }

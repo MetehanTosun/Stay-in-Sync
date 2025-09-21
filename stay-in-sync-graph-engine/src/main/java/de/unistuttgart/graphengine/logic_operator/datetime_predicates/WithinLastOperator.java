@@ -1,6 +1,5 @@
 package de.unistuttgart.graphengine.logic_operator.datetime_predicates;
 
-import com.fasterxml.jackson.databind.JsonNode;
 import de.unistuttgart.graphengine.exception.OperatorValidationException;
 import de.unistuttgart.graphengine.logic_operator.Operation;
 import de.unistuttgart.graphengine.nodes.LogicNode;
@@ -39,7 +38,7 @@ public class WithinLastOperator implements Operation {
      * @return {@code true} if the timestamp is within the specified window.
      */
     @Override
-    public Object execute(LogicNode node, Map<String, JsonNode> dataContext) {
+    public Object execute(LogicNode node, Map<String, Object> dataContext) {
         List<Node> inputs = node.getInputNodes();
 
         Object timestampProvider = inputs.get(0).getCalculatedResult();

@@ -37,7 +37,7 @@ public class LacksKeyOperator implements Operation {
      * Returns {@code false} if the key is present.
      */
     @Override
-    public Object execute(LogicNode node, Map<String, JsonNode> dataContext) {
+    public Object execute(LogicNode node, Map<String, Object> dataContext) {
         List<Node> inputs = node.getInputNodes();
 
         Object objectProvider = inputs.get(0).getCalculatedResult();

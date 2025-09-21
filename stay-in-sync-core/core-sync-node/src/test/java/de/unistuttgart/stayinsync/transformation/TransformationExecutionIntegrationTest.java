@@ -101,10 +101,34 @@ public class TransformationExecutionIntegrationTest {
     }
 
     private List<Node> createGraphNodes() {
-        String graphJson = "{\"nodes\":[{\"id\":0,\"name\":\"Final Result\",\"offsetX\":0.0,\"offsetY\":0.0,\"nodeType\":\"FINAL\",\"inputNodes\":null,\"arcId\":null,\"jsonPath\":null,\"value\":null,\"operatorType\":null,\"inputTypes\":null,\"outputType\":null,\"inputLimit\":null}]}";
-
+        String defaultGraphJson = """
+        {
+          "nodes": [
+            {
+              "id": 0,
+              "name": "Change Detection",
+              "offsetX": 50.0,
+              "offsetY": 50.0,
+              "nodeType": "CONFIG",
+              "changeDetectionActive": true,
+              "changeDetectionMode": "OR",
+              "inputNodes": []
+            },
+            {
+              "id": 1,
+              "name": "Final Result",
+              "offsetX": 250.0,
+              "offsetY": 50.0,
+              "nodeType": "FINAL",
+              "inputNodes": [
+                {"nodeId": 0}
+              ]
+            }
+          ]
+        }
+        """;
         try {
-            GraphDTO graphDto = objectMapper.readValue(graphJson, GraphDTO.class);
+            GraphDTO graphDto = objectMapper.readValue(defaultGraphJson, GraphDTO.class);
             GraphMapper.MappingResult mappingResult = graphMapper.toNodeGraph(graphDto);
 
             if (!mappingResult.mappingErrors().isEmpty()) {

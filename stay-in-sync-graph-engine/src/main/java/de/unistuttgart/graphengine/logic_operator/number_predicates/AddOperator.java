@@ -1,6 +1,5 @@
 package de.unistuttgart.graphengine.logic_operator.number_predicates;
 
-import com.fasterxml.jackson.databind.JsonNode;
 import de.unistuttgart.graphengine.exception.OperatorValidationException;
 import de.unistuttgart.graphengine.logic_operator.Operation;
 import de.unistuttgart.graphengine.nodes.LogicNode;
@@ -38,7 +37,7 @@ public class AddOperator implements Operation {
      * @throws IllegalArgumentException if any provided input value is not a Number.
      */
     @Override
-    public Object execute(LogicNode node, Map<String, JsonNode> dataContext) {
+    public Object execute(LogicNode node, Map<String, Object> dataContext) {
         List<Node> inputs = node.getInputNodes();
         double sum = 0.0;
 

@@ -1,6 +1,5 @@
 package de.unistuttgart.graphengine.logic_operator.array_predicates;
 
-import com.fasterxml.jackson.databind.JsonNode;
 import de.unistuttgart.graphengine.exception.OperatorValidationException;
 import de.unistuttgart.graphengine.logic_operator.Operation;
 import de.unistuttgart.graphengine.nodes.LogicNode;
@@ -61,7 +60,7 @@ public class MinOperator implements Operation {
      *         all array inputs. Returns 0.0 if no numeric values are found.
      */
     @Override
-    public Object execute(LogicNode node, Map<String, JsonNode> dataContext) {
+    public Object execute(LogicNode node, Map<String, Object> dataContext) {
         List<Node> inputs = node.getInputNodes();
         Double minValue = null;
 

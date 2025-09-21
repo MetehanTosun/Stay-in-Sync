@@ -9,7 +9,6 @@ import de.unistuttgart.graphengine.nodes.LogicNode;
 import de.unistuttgart.graphengine.nodes.Node;
 import de.unistuttgart.graphengine.nodes.ProviderNode;
 
-import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
@@ -56,7 +55,7 @@ public class NotExistsOperator implements Operation {
      * @return {@code true} if none of the paths exist, otherwise {@code false}.
      */
     @Override
-    public Object execute(LogicNode node, Map<String, JsonNode> dataContext) {
+    public Object execute(LogicNode node, Map<String, Object> dataContext) {
         if (dataContext == null) {
             return true;
         }
@@ -70,17 +69,27 @@ public class NotExistsOperator implements Operation {
                 if (parts.length == 0) continue;
 
                 String sourceKey = parts[0];
-                JsonNode sourceObject = dataContext.get(sourceKey);
+                Object sourceDataAsObject = dataContext.get(sourceKey);
 
-                if (sourceObject == null) continue;
+                // If the source key itself doesn't exist, the path doesn't exist. Continue.
+                if (sourceDataAsObject == null) {
+                    continue;
+                }
+
+                // If the data for the source key is not a JsonNode, the path can't exist within it. Continue.
+                if (!(sourceDataAsObject instanceof JsonNode)) {
+                    continue;
+                }
+                JsonNode sourceObject = (JsonNode) sourceDataAsObject;
 
                 String internalJsonPath = (parts.length > 1) ? parts[1] : "";
 
                 if (valueExtractor.pathExists(sourceObject, internalJsonPath)) {
-                    return false; // Early exit
+                    return false;
                 }
             }
         }
+        // If the loop completes, no path was found to exist.
         return true;
     }
 

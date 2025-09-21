@@ -17,8 +17,7 @@ import static org.junit.jupiter.api.Assertions.*;
 @DisplayName("ProviderNode Tests")
 public class ProviderNodeTest {
 
-    private ProviderNode providerNode;
-    private Map<String, JsonNode> dataContext;
+    private Map<String, Object> dataContext;
     private ObjectMapper objectMapper;
 
     @BeforeEach
@@ -117,7 +116,8 @@ public class ProviderNodeTest {
         });
 
         assertEquals(GraphEvaluationException.ErrorType.DATA_NOT_FOUND, exception.getErrorType());
-        assertTrue(exception.getMessage().contains("'source' is not the first scoped key"));
+        // CORRECTED: Updated to match new exception message
+        assertTrue(exception.getMessage().contains("The dataContext must contain a non-null entry for the key 'source'"));
     }
 
     @Test
@@ -133,7 +133,25 @@ public class ProviderNodeTest {
         });
 
         assertEquals(GraphEvaluationException.ErrorType.DATA_NOT_FOUND, exception.getErrorType());
-        assertTrue(exception.getMessage().contains("no defined sourceSystemNames found under 'source'"));
+        // CORRECTED: Updated to match new exception message
+        assertTrue(exception.getMessage().contains("The dataContext must contain a non-null entry for the key 'source'"));
+    }
+
+    @Test
+    @DisplayName("should throw exception when source value is not a JsonNode")
+    void testCalculate_WithNonJsonNodeSource_ShouldThrowException() throws Exception {
+        // ARRANGE
+        ProviderNode node = new ProviderNode("source.system1.value");
+        dataContext.put("source", "not a json node"); // String instead of JsonNode
+
+        // ACT & ASSERT
+        GraphEvaluationException exception = assertThrows(GraphEvaluationException.class, () -> {
+            node.calculate(dataContext);
+        });
+
+        assertEquals(GraphEvaluationException.ErrorType.TYPE_MISMATCH, exception.getErrorType());
+        assertTrue(exception.getMessage().contains("The value for 'source' in dataContext must be a JsonNode"));
+        assertTrue(exception.getMessage().contains("java.lang.String"));
     }
 
     @Test
@@ -202,5 +220,77 @@ public class ProviderNodeTest {
 
         // ASSERT
         assertEquals("found_it", node.getCalculatedResult());
+    }
+
+    // ===== ADDITIONAL COVERAGE TESTS =====
+
+    @Test
+    @DisplayName("should handle empty object in source")
+    void testCalculate_WithEmptySource_ShouldSetNull() throws Exception {
+        // ARRANGE
+        ProviderNode node = new ProviderNode("source.system1.value");
+
+        JsonNode sourceNode = objectMapper.createObjectNode(); // Empty JSON object
+        dataContext.put("source", sourceNode);
+
+        // ACT
+        node.calculate(dataContext);
+
+        // ASSERT
+        assertNull(node.getCalculatedResult());
+    }
+
+    @Test
+    @DisplayName("should handle different value types correctly")
+    void testCalculate_WithDifferentValueTypes_ShouldWork() throws Exception {
+        // Test String value
+        ProviderNode stringNode = new ProviderNode("source.data.stringValue");
+        Map<String, Object> stringData = Map.of("data", Map.of("stringValue", "test"));
+        JsonNode stringSource = objectMapper.valueToTree(stringData);
+        dataContext.put("source", stringSource);
+        stringNode.calculate(dataContext);
+        assertEquals("test", stringNode.getCalculatedResult());
+
+        // Test Integer value
+        ProviderNode intNode = new ProviderNode("source.data.intValue");
+        Map<String, Object> intData = Map.of("data", Map.of("intValue", 42));
+        JsonNode intSource = objectMapper.valueToTree(intData);
+        dataContext.put("source", intSource);
+        intNode.calculate(dataContext);
+        assertEquals(42, intNode.getCalculatedResult());
+
+        // Test Boolean value
+        ProviderNode boolNode = new ProviderNode("source.data.boolValue");
+        Map<String, Object> boolData = Map.of("data", Map.of("boolValue", true));
+        JsonNode boolSource = objectMapper.valueToTree(boolData);
+        dataContext.put("source", boolSource);
+        boolNode.calculate(dataContext);
+        assertEquals(true, boolNode.getCalculatedResult());
+    }
+
+    @Test
+    @DisplayName("should handle minimal valid jsonPath")
+    void testConstructor_WithMinimalValidPath_ShouldSucceed() throws Exception {
+        // ARRANGE & ACT
+        ProviderNode node = new ProviderNode("source.sys");
+
+        // ASSERT
+        assertEquals("source.sys", node.getJsonPath());
+    }
+
+    @Test
+    @DisplayName("should handle arcId getter and setter")
+    void testArcIdHandling() throws Exception {
+        // ARRANGE
+        ProviderNode node = new ProviderNode("source.system1.value");
+
+        // ACT & ASSERT
+        assertNull(node.getArcId()); // Default should be null
+
+        node.setArcId(123);
+        assertEquals(Integer.valueOf(123), node.getArcId());
+
+        node.setArcId(null);
+        assertNull(node.getArcId());
     }
 }

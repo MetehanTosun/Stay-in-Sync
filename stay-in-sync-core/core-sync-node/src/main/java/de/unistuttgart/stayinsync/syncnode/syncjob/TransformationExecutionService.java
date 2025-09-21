@@ -5,10 +5,11 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import de.unistuttgart.graphengine.exception.GraphEvaluationException;
-import de.unistuttgart.graphengine.logic_engine.LogicGraphEvaluator;
-import de.unistuttgart.graphengine.service.GraphSnapshotCacheService;
+import de.unistuttgart.graphengine.nodes.Node; // Wichtiger Import
 import de.unistuttgart.stayinsync.scriptengine.ScriptEngineService;
 import de.unistuttgart.stayinsync.scriptengine.message.TransformationResult;
+import de.unistuttgart.stayinsync.syncnode.LogicGraph.GraphInstanceCache;
+import de.unistuttgart.stayinsync.syncnode.LogicGraph.StatefulLogicGraph;
 import de.unistuttgart.stayinsync.syncnode.SnapshotManagement.SnapshotFactory;
 import de.unistuttgart.stayinsync.syncnode.SnapshotManagement.SnapshotStore;
 import de.unistuttgart.stayinsync.syncnode.domain.ExecutionPayload;
@@ -22,13 +23,14 @@ import jakarta.inject.Inject;
 import org.eclipse.microprofile.context.ManagedExecutor;
 import org.slf4j.MDC;
 
+import java.util.List;
 import java.util.Map;
 
 @ApplicationScoped
 public class TransformationExecutionService {
 
     @Inject
-    LogicGraphEvaluator logicGraphEvaluator;
+    GraphInstanceCache graphCache;
 
     @Inject
     ScriptEngineService scriptEngineService;
@@ -48,9 +50,6 @@ public class TransformationExecutionService {
     @Inject
     MeterRegistry meterRegistry;
 
-    @Inject
-    GraphSnapshotCacheService snapshotCache;
-
     /**
      * Asynchronously evaluates the logic graph and, if the condition passes,
      * executes the script transformation.
@@ -61,49 +60,37 @@ public class TransformationExecutionService {
      *         if the pre-condition check failed.
      */
     public Uni<TransformationResult> execute(ExecutionPayload payload) {
-        Uni<LogicGraphEvaluator.EvaluationResult> evaluationUni = Uni.createFrom().item(() -> {
+        return Uni.createFrom().item(() -> {
             try {
                 MDC.put("transformationId", payload.job().transformationId().toString());
                 Log.infof("Job %s: Evaluating pre-condition logic graph...", payload.job().jobId());
 
-                // Fetch the old snapshot from our new cache
-                long transformationId = payload.job().transformationId();
-                JsonNode oldSnapshot = snapshotCache.getSnapshot(transformationId)
-                        .orElse(objectMapper.createObjectNode());
-
-                // Prepare the dataContext and add the snapshot to it
                 TypeReference<Map<String, JsonNode>> typeRef = new TypeReference<>() {};
-                Map<String, JsonNode> dataContext = objectMapper.convertValue(payload.job().sourceData(), typeRef);
-                dataContext.put("__snapshot", oldSnapshot);
+                Map<String, JsonNode> dataConext = objectMapper.convertValue(payload.job().sourceData(), typeRef);
 
-                if (payload.graphNodes() == null || payload.graphNodes().isEmpty()) {
-                    // If there is no graph, the condition is considered passed
-                    return new LogicGraphEvaluator.EvaluationResult(true, null);
+                List<Node> graphDefinition = payload.graphNodes();
+
+                if (graphDefinition == null || graphDefinition.isEmpty()) {
+                    Log.warnf("Job %s: No graph definition found in payload, defaulting to 'true'.", payload.job().jobId());
+                    return true;
                 }
 
-                // Return the full result (boolean + new snapshot)
-                return logicGraphEvaluator.evaluateGraph(payload.graphNodes(), dataContext);
+                StatefulLogicGraph graphInstance = graphCache.getOrCreate(
+                        payload.job().transformationId(),
+                        graphDefinition
+                );
+
+                return graphInstance.evaluate(dataConext);
 
             } catch (GraphEvaluationException e) {
                 Log.errorf(e, "Job %s: Graph evaluation failed with error type %s: %s",
                         payload.job().jobId(), e.getErrorType(), e.getMessage());
-                return new LogicGraphEvaluator.EvaluationResult(false, null);
+                return false;
             } finally {
                 MDC.remove("transformationId");
             }
-        }).runSubscriptionOn(managedExecutor);
-
-        return evaluationUni.onItem().transformToUni(evaluationResult -> {
-
-            // ALWAYS save the new snapshot before proceeding.
-            if (evaluationResult.newSnapshot() != null) {
-                long transformationId = Long.parseLong(payload.job().jobId());
-                JsonNode newSnapshotNode = objectMapper.valueToTree(evaluationResult.newSnapshot());
-                snapshotCache.saveSnapshot(transformationId, newSnapshotNode);
-                Log.infof("Job %s: Saving new change-detection snapshot.", payload.job().jobId());
-            }
-
-            if (evaluationResult.finalResult()) {
+        }).runSubscriptionOn(managedExecutor).onItem().transformToUni(conditionMet -> {
+            if (conditionMet) {
                 Log.infof("Job %s: Pre-condition PASSED. Proceeding to script transformation...",
                         payload.job().jobId());
 
@@ -176,4 +163,3 @@ public class TransformationExecutionService {
         });
     }
 }
-

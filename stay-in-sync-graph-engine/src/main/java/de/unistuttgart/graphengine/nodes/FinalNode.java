@@ -1,6 +1,5 @@
 package de.unistuttgart.graphengine.nodes;
 
-import com.fasterxml.jackson.databind.JsonNode;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -29,7 +28,7 @@ public class FinalNode extends Node {
      * @param dataContext The runtime data context, which is not directly used by this node.
      */
     @Override
-    public void calculate(Map<String, JsonNode> dataContext) {
+    public void calculate(Map<String, Object> dataContext) {
         // Check if an input node is connected
         if (this.getInputNodes() != null && !this.getInputNodes().isEmpty()) {
             // Pass through the result from the single input node.

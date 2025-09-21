@@ -39,7 +39,7 @@ public class HasAnyKeyOperator implements Operation {
      * matching a name in the provided key collection. Returns {@code false} otherwise.
      */
     @Override
-    public Object execute(LogicNode node, Map<String, JsonNode> dataContext) {
+    public Object execute(LogicNode node, Map<String, Object> dataContext) {
         List<Node> inputs = node.getInputNodes();
 
         Object objectProvider = inputs.get(0).getCalculatedResult();

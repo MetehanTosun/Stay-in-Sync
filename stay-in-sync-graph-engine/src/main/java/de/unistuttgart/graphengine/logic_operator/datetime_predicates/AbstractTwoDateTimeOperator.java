@@ -1,6 +1,5 @@
 package de.unistuttgart.graphengine.logic_operator.datetime_predicates;
 
-import com.fasterxml.jackson.databind.JsonNode;
 import de.unistuttgart.graphengine.exception.OperatorValidationException;
 import de.unistuttgart.graphengine.logic_operator.Operation;
 import de.unistuttgart.graphengine.nodes.LogicNode;
@@ -41,7 +40,7 @@ public abstract class AbstractTwoDateTimeOperator implements Operation {
      * @return A {@code Boolean} result. Returns {@code false} if results are null or cannot be parsed.
      */
     @Override
-    public Object execute(LogicNode node, Map<String, JsonNode> dataContext) {
+    public Object execute(LogicNode node, Map<String, Object> dataContext) {
         List<Node> inputs = node.getInputNodes();
 
         Object dateTimeProvider1 = inputs.get(0).getCalculatedResult();

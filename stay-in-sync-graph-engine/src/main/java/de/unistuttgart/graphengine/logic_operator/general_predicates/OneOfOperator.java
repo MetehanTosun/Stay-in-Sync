@@ -1,6 +1,5 @@
 package de.unistuttgart.graphengine.logic_operator.general_predicates;
 
-import com.fasterxml.jackson.databind.JsonNode;
 import de.unistuttgart.graphengine.exception.OperatorValidationException;
 import de.unistuttgart.graphengine.logic_operator.Operation;
 import de.unistuttgart.graphengine.nodes.LogicNode;
@@ -43,7 +42,7 @@ public class OneOfOperator implements Operation {
      *         {@code false} if all nodes evaluate to {@code false} or throw exceptions
      */
     @Override
-    public Object execute(LogicNode node, Map<String, JsonNode> dataContext) {
+    public Object execute(LogicNode node, Map<String, Object> dataContext) {
         int trueCount = 0;
         for (Node inputNode : node.getInputNodes()) {
             if (Boolean.TRUE.equals(inputNode.getCalculatedResult())) {

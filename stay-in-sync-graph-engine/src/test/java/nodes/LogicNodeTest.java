@@ -1,6 +1,5 @@
 package nodes;
 
-import com.fasterxml.jackson.databind.JsonNode;
 import de.unistuttgart.graphengine.exception.GraphEvaluationException;
 import de.unistuttgart.graphengine.exception.NodeConfigurationException;
 import de.unistuttgart.graphengine.logic_operator.LogicOperator;
@@ -37,7 +36,7 @@ public class LogicNodeTest {
     @Mock
     private Node mockInputNode2;
 
-    private Map<String, JsonNode> dataContext;
+    private Map<String, Object> dataContext; // CORRECTED: Changed from JsonNode to Object
 
     @BeforeEach
     void setUp() {
@@ -271,5 +270,35 @@ public class LogicNodeTest {
         // ASSERT
         assertEquals("result", node.getCalculatedResult());
         verify(mockOperation).execute(node, null);
+    }
+
+
+    @Test
+    @DisplayName("should handle operation returning null result")
+    void testCalculate_WhenOperationReturnsNull_ShouldSetNullResult() throws Exception {
+        // ARRANGE
+        LogicNode node = new LogicNode("TestNode", mockOperator);
+        when(mockOperation.execute(node, dataContext)).thenReturn(null);
+
+        // ACT
+        node.calculate(dataContext);
+
+        // ASSERT
+        assertNull(node.getCalculatedResult());
+        verify(mockOperation).execute(node, dataContext);
+    }
+
+
+    @Test
+    @DisplayName("should handle getReturnType when operation strategy is null")
+    void testGetOutputType_WhenOperationStrategyIsNull_ShouldReturnObjectClass() throws Exception {
+        // ARRANGE
+        LogicNode node = new LogicNode("TestNode", mockOperator);
+        when(mockOperator.getOperationStrategy()).thenReturn(null);
+
+        // ACT & ASSERT
+        assertThrows(NullPointerException.class, () -> {
+            node.getOutputType();
+        });
     }
 }

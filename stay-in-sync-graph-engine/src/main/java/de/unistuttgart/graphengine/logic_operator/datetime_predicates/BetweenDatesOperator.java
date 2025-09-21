@@ -1,6 +1,5 @@
 package de.unistuttgart.graphengine.logic_operator.datetime_predicates;
 
-import com.fasterxml.jackson.databind.JsonNode;
 import de.unistuttgart.graphengine.exception.OperatorValidationException;
 import de.unistuttgart.graphengine.logic_operator.Operation;
 import de.unistuttgart.graphengine.nodes.LogicNode;
@@ -34,7 +33,7 @@ public class BetweenDatesOperator implements Operation {
      * @return {@code true} if the first date is on or after the second date AND on or before the third date.
      */
     @Override
-    public Object execute(LogicNode node, Map<String, JsonNode> dataContext) {
+    public Object execute(LogicNode node, Map<String, Object> dataContext) {
         List<Node> inputs = node.getInputNodes();
 
         Object dateToCheckProvider = inputs.get(0).getCalculatedResult();

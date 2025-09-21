@@ -1,6 +1,5 @@
 package de.unistuttgart.graphengine.nodes;
 
-import com.fasterxml.jackson.databind.JsonNode;
 import de.unistuttgart.graphengine.exception.NodeConfigurationException;
 import lombok.Getter;
 import lombok.Setter;
@@ -38,7 +37,7 @@ public class ConstantNode extends Node {
     }
 
     @Override
-    public void calculate(Map<String, JsonNode> dataContext) {
+    public void calculate(Map<String, Object> dataContext) {
         this.setCalculatedResult(this.getValue());
     }
 

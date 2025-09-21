@@ -1,6 +1,5 @@
 package de.unistuttgart.graphengine.nodes;
 
-import com.fasterxml.jackson.databind.JsonNode;
 import de.unistuttgart.graphengine.exception.GraphEvaluationException;
 import lombok.Getter;
 import lombok.Setter;
@@ -60,7 +59,7 @@ public abstract class Node {
      * @param dataContext The runtime data context, used for resolving external
      * JSON values in ProviderNodes.
      */
-    public abstract void calculate(Map<String, JsonNode> dataContext) throws GraphEvaluationException;
+    public abstract void calculate(Map<String, Object> dataContext) throws GraphEvaluationException;
 
     public abstract Class<?> getOutputType();
 }

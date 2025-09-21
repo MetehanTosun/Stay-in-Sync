@@ -54,47 +54,48 @@ public class ProviderNode extends Node {
     }
 
     /**
-     * Calculates the value for this node by parsing its {@code jsonPath} and
-     * extracting the corresponding value from the provided data context.
+     * Calculates the value for this node by extracting it from the data context.
      * <p>
-     * This method expects the {@code jsonPath} to follow a specific format:
-     * {@code "source.{sourceName}.{path.within.source}"}. It parses this path
-     * to determine the {@code sourceName}, which it uses as a key to retrieve the
-     * correct root {@link JsonNode} from the dataContext. The remainder of the
-     * path is then used to extract the final value from that {@code JsonNode}.
+     * This method expects the {@code dataContext} to contain a {@link JsonNode} under the key "source".
+     * It then uses the node's {@code jsonPath} (e.g., "source.sensor.temperature") to navigate
+     * within this {@code JsonNode} to find and extract the final value.
      * <p>
-     * If the final path does not resolve to a value within the source JSON,
-     * the node's calculated result will be set to {@code null}.
+     * If the path does not resolve to a value, the node's calculated result is set to {@code null}.
      *
-     * @param dataContext A map where keys are logical source names and values are the
-     * corresponding root {@link JsonNode} objects.
-     * @throws GraphEvaluationException if the {@code jsonPath} is malformed or if the
-     * required data source is not found in the dataContext.
+     * @param dataContext A map where keys are logical names (like "source") and values are the
+     * corresponding data objects.
+     * @throws GraphEvaluationException if the "source" key is missing from the dataContext or if the
+     * corresponding value is not a {@link JsonNode}.
      */
     @Override
-    public void calculate(Map<String, JsonNode> dataContext) throws GraphEvaluationException {
+    public void calculate(Map<String, Object> dataContext) throws GraphEvaluationException {
+
+        // Safely get the source data object from the context
+        Object sourceObject = dataContext.get("source");
+
+        if (sourceObject == null) {
+            throw new GraphEvaluationException(
+                    GraphEvaluationException.ErrorType.DATA_NOT_FOUND,
+                    "DataContext Missing 'source'",
+                    "The dataContext must contain a non-null entry for the key 'source'.",
+                    null
+            );
+        }
+
+        // Check the type before casting to prevent ClassCastException
+        if (!(sourceObject instanceof JsonNode)) {
+            throw new GraphEvaluationException(
+                    GraphEvaluationException.ErrorType.TYPE_MISMATCH,
+                    "Invalid DataContext Type",
+                    "The value for 'source' in dataContext must be a JsonNode, but was " + sourceObject.getClass().getName(),
+                    null
+            );
+        }
+
+        JsonNode sourceScope = (JsonNode) sourceObject;
+
+        // Create the internal path (without the first "source" part)
         String[] jsonPathKeys = jsonPath.split("\\.");
-
-        if(!dataContext.containsKey("source")) {
-            throw new GraphEvaluationException(
-                    GraphEvaluationException.ErrorType.DATA_NOT_FOUND,
-                    "Invalid DataContext",
-                    "Malformed dataContext, 'source' is not the first scoped key.",
-                    null
-            );
-        }
-        JsonNode sourceScope = dataContext.get("source");
-
-        if(sourceScope == null) {
-            throw new GraphEvaluationException(
-                    GraphEvaluationException.ErrorType.DATA_NOT_FOUND,
-                    "Invalid DataContext",
-                    "Malformed dataContext, no defined sourceSystemNames found under 'source'.",
-                    null
-            );
-        }
-
-        // Create the internal path (without the first "source")
         String[] remainingPathParts = Arrays.copyOfRange(jsonPathKeys, 1, jsonPathKeys.length);
         String internalPath = String.join(".", remainingPathParts);
 
@@ -102,13 +103,9 @@ public class ProviderNode extends Node {
         JsonPathValueExtractor extractor = new JsonPathValueExtractor();
         Optional<Object> result = extractor.extractValue(sourceScope, internalPath);
 
-        if (result.isPresent()) {
-            this.setCalculatedResult(result.get());
-        } else {
-            // Path does not exist or value is null
-            this.setCalculatedResult(null);
-        }
+        this.setCalculatedResult(result.orElse(null));
     }
+
 
     @Override
     public Class<?> getOutputType() {

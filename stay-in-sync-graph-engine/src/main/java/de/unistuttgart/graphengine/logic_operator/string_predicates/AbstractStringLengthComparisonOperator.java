@@ -1,6 +1,5 @@
 package de.unistuttgart.graphengine.logic_operator.string_predicates;
 
-import com.fasterxml.jackson.databind.JsonNode;
 import de.unistuttgart.graphengine.exception.OperatorValidationException;
 import de.unistuttgart.graphengine.logic_operator.Operation;
 import de.unistuttgart.graphengine.nodes.LogicNode;
@@ -39,7 +38,7 @@ public abstract class AbstractStringLengthComparisonOperator implements Operatio
      * @return A {@code Boolean} result. Returns {@code false} if inputs are null or have incorrect types.
      */
     @Override
-    public Object execute(LogicNode node, Map<String, JsonNode> dataContext) {
+    public Object execute(LogicNode node, Map<String, Object> dataContext) {
         List<Node> inputs = node.getInputNodes();
 
         Object stringProvider = inputs.get(0).getCalculatedResult();
