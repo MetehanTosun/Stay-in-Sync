@@ -992,6 +992,92 @@ save(): void {
   targetSubmodelId = '';
   parentPath = '';
   newElementJson = '{\n  "modelType": "Property",\n  "idShort": "NewProp",\n  "valueType": "xs:string",\n  "value": "42"\n}';
+  // Element templates
+  elementTemplateProperty: string = `{
+  "modelType": "Property",
+  "idShort": "NewProp",
+  "valueType": "xs:string",
+  "value": "Foo"
+}`;
+  elementTemplateRange: string = `{
+  "modelType": "Range",
+  "idShort": "NewRange",
+  "valueType": "xs:double",
+  "min": 0,
+  "max": 100
+}`;
+  elementTemplateMLP: string = `{
+  "modelType": "MultiLanguageProperty",
+  "idShort": "Title",
+  "value": [ { "language": "en", "text": "Example" } ]
+}`;
+  elementTemplateRef: string = `{
+  "modelType": "ReferenceElement",
+  "idShort": "Ref",
+  "value": {
+    "type": "GlobalReference",
+    "keys": [ { "type": "Submodel", "value": "https://example.com/ids/sm" } ]
+  }
+}`;
+  elementTemplateRel: string = `{
+  "modelType": "RelationshipElement",
+  "idShort": "Rel",
+  "first":  { "type": "SubmodelElement", "keys": [ { "type": "Submodel", "value": "urn:first" } ] },
+  "second": { "type": "SubmodelElement", "keys": [ { "type": "Submodel", "value": "urn:second" } ] }
+}`;
+  elementTemplateAnnRel: string = `{
+  "modelType": "AnnotatedRelationshipElement",
+  "idShort": "AnnRel",
+  "first":  { "type": "SubmodelElement", "keys": [ { "type": "Submodel", "value": "urn:first" } ] },
+  "second": { "type": "SubmodelElement", "keys": [ { "type": "Submodel", "value": "urn:second" } ] },
+  "annotations": [ { "modelType": "Property", "idShort": "note", "valueType": "xs:string", "value": "Hello" } ]
+}`;
+  elementTemplateCollection: string = `{
+  "modelType": "SubmodelElementCollection",
+  "idShort": "group",
+  "value": []
+}`;
+  elementTemplateList: string = `{
+  "modelType": "SubmodelElementList",
+  "idShort": "items",
+  "typeValueListElement": "Property",
+  "valueTypeListElement": "xs:string",
+  "value": []
+}`;
+  elementTemplateFile: string = `{
+  "modelType": "File",
+  "idShort": "file1",
+  "contentType": "text/plain",
+  "value": "path-or-url.txt"
+}`;
+  elementTemplateOperation: string = `{
+  "modelType": "Operation",
+  "idShort": "Op",
+  "inputVariables": [ { "value": { "modelType": "Property", "idShort": "in", "valueType": "xs:string" } } ],
+  "outputVariables": []
+}`;
+  elementTemplateEntity: string = `{
+  "modelType": "Entity",
+  "idShort": "Ent",
+  "entityType": "SelfManagedEntity",
+  "statements": []
+}`;
+  setElementTemplate(kind: string): void {
+    switch (kind) {
+      case 'property': this.newElementJson = this.elementTemplateProperty; break;
+      case 'range': this.newElementJson = this.elementTemplateRange; break;
+      case 'mlp': this.newElementJson = this.elementTemplateMLP; break;
+      case 'ref': this.newElementJson = this.elementTemplateRef; break;
+      case 'rel': this.newElementJson = this.elementTemplateRel; break;
+      case 'annrel': this.newElementJson = this.elementTemplateAnnRel; break;
+      case 'collection': this.newElementJson = this.elementTemplateCollection; break;
+      case 'list': this.newElementJson = this.elementTemplateList; break;
+      case 'file': this.newElementJson = this.elementTemplateFile; break;
+      case 'operation': this.newElementJson = this.elementTemplateOperation; break;
+      case 'entity': this.newElementJson = this.elementTemplateEntity; break;
+      default: this.newElementJson = '{}';
+    }
+  }
   openCreateElement(smId: string, parent?: string): void {
     this.targetSubmodelId = smId;
     this.parentPath = parent || '';

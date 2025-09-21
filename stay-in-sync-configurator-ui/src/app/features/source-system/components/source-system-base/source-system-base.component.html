@@ -446,7 +446,19 @@
     <button pButton type="button" class="p-button-text" label="Cancel" (click)="showAasElementDialog=false"></button>
     <button pButton type="button" label="Create" (click)="aasCreateElement()"></button>
   </ng-template>
-  <button pButton type="button" class="p-button-text" label="Use example" (click)="aasNewElementJson='{}'"></button>
+  <div class="p-mt-2" style="display:flex;gap:.5rem;flex-wrap:wrap;">
+    <button pButton type="button" class="p-button-text" label="Template: Property" (click)="setAasElementTemplate('property')"></button>
+    <button pButton type="button" class="p-button-text" label="Template: Range" (click)="setAasElementTemplate('range')"></button>
+    <button pButton type="button" class="p-button-text" label="Template: MultiLanguageProperty" (click)="setAasElementTemplate('mlp')"></button>
+    <button pButton type="button" class="p-button-text" label="Template: ReferenceElement" (click)="setAasElementTemplate('ref')"></button>
+    <button pButton type="button" class="p-button-text" label="Template: RelationshipElement" (click)="setAasElementTemplate('rel')"></button>
+    <button pButton type="button" class="p-button-text" label="Template: AnnotatedRelationshipElement" (click)="setAasElementTemplate('annrel')"></button>
+    <button pButton type="button" class="p-button-text" label="Template: Collection" (click)="setAasElementTemplate('collection')"></button>
+    <button pButton type="button" class="p-button-text" label="Template: List" (click)="setAasElementTemplate('list')"></button>
+    <button pButton type="button" class="p-button-text" label="Template: File" (click)="setAasElementTemplate('file')"></button>
+    <button pButton type="button" class="p-button-text" label="Template: Operation" (click)="setAasElementTemplate('operation')"></button>
+    <button pButton type="button" class="p-button-text" label="Template: Entity" (click)="setAasElementTemplate('entity')"></button>
+  </div>
 </p-dialog>
   </ng-container>
 </p-dialog>
