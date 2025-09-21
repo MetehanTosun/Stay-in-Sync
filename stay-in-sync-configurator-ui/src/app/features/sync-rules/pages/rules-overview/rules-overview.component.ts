@@ -6,6 +6,10 @@ import { Router } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { HttpResponse } from '@angular/common/http';
+import {Button} from 'primeng/button';
+import {Dialog} from 'primeng/dialog';
+import {InputText} from 'primeng/inputtext';
+import {Toolbar} from 'primeng/toolbar';
 
 /**
  * The page component responsible for viewing the list of transformation rule graphs
@@ -15,7 +19,11 @@ import { HttpResponse } from '@angular/common/http';
   imports: [
     CommonModule,
     FormsModule,
-    TableModule
+    TableModule,
+    Button,
+    Dialog,
+    InputText,
+    Toolbar
   ],
   templateUrl: './rules-overview.component.html',
   styleUrl: './rules-overview.component.css'

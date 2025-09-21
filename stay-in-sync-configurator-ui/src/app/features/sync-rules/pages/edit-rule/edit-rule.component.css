@@ -4,7 +4,7 @@
   align-items: center;
   justify-content: space-between;
   padding: 1.5rem 2rem 1rem 2rem;
-  background: #f8f9fa;
+  background: var(--p-surface-color);
   border-bottom: 1px solid #e5e5e5;
   gap: 1.5rem;
 }
@@ -13,26 +13,10 @@
   margin: 0;
   font-size: 2rem;
   font-weight: 600;
-  color: #222;
+  color: var(--p-text-color);
   flex: 1;
 }
 
-.return-button {
-  background: none;
-  border: none;
-  color: #007bff;
-  font-size: 1.05rem;
-  font-weight: 500;
-  padding: 0.5rem 1.1rem;
-  border-radius: 4px;
-  cursor: pointer;
-  transition: background 0.15s, color 0.15s;
-}
-
-.return-button:hover {
-  background: #e7f1ff;
-  color: #0056b3;
-}
 
 /* MARK: Toolbar */
 .toolbar {
