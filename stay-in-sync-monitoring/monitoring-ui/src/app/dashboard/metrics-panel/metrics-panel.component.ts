@@ -60,7 +60,7 @@ export class MetricsPanelComponent implements OnInit {
   }
 
   private buildGrafanaUrl() {
-    const baseUrl = 'http://localhost:3000/d/c0d04c42-641e-438b-8592-f1ca577899dd/quarkus-service-monitoring';
+    const baseUrl = 'http://localhost:3000/d/abd0d0fc-75cf-4a29-abeb-7c96b57a1629/stayinsync-monitoring-metrics';
     const orgId = 1;
     const from = Date.now() - 60 * 60 * 1000; // letzte Stunde
     const to = Date.now();

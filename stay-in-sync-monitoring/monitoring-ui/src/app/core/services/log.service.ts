@@ -16,44 +16,56 @@ export class LogService {
     transformationIds: string[],
     startTime: number,
     endTime: number,
-    level: string
+    level?: string
   ): Observable<LogEntry[]> {
-    let params = new HttpParams()
-      .set('startTime', startTime)
-      .set('endTime', endTime)
-      .set('level', level);
-
-    // POST mit Body = TransformationIds
-    return this.http.post<LogEntry[]>(`${this.baseUrl}/transformations`, transformationIds, { params });
-  }
-
-  /**
-   * Alle Logs ohne Filter abrufen (optional, z.B. für globale Suche)
-   */
-  getLogs(
-    startTime: number,
-    endTime: number,
-    level: string
-  ): Observable<LogEntry[]> {
-    let params = new HttpParams()
-      .set('startTime', startTime)
-      .set('endTime', endTime)
-      .set('level', level);
-
-    return this.http.get<LogEntry[]>(this.baseUrl, { params });
-  }
-
-  /**
-   * Liste der SyncJobs mit Error-Logs abrufen
-   */
-  getErrorLogs(
-    startTime: number,
-    endTime: number,
-  ): Observable<number[]> {
     let params = new HttpParams()
       .set('startTime', startTime)
       .set('endTime', endTime);
 
-    return this.http.get<number[]>(`${this.baseUrl}/ErrorSyncJobIds`, { params });
+    if (level) {
+      params = params.set('level', level);
+    }
+
+    return this.http.post<LogEntry[]>(`${this.baseUrl}/transformations`, transformationIds, { params });
   }
+
+
+  /**
+   * Alle Logs ohne Filter abrufen
+   */
+  getLogs(
+    startTime: number,
+    endTime: number,
+    level?: string
+  ): Observable<LogEntry[]> {
+    let params = new HttpParams()
+      .set('startTime', startTime)
+      .set('endTime', endTime);
+
+    if (level) {
+      params = params.set('level', level);
+    }
+
+    return this.http.get<LogEntry[]>(this.baseUrl, { params });
+  }
+
+  getLogsByService(
+    service: string,
+    startTime: number,
+    endTime: number,
+    level?: string
+  ): Observable<LogEntry[]> {
+    let params = new HttpParams()
+      .set('service', service)
+      .set('startTime', startTime)
+      .set('endTime', endTime);
+
+    if (level) {
+      params = params.set('level', level);
+    }
+
+    return this.http.get<LogEntry[]>(`${this.baseUrl}/service`, { params });
+  }
+
 }
+
