@@ -10,7 +10,7 @@ dependencies:
   version: 16.5.11
 - name: umbrella
   repository: https://eclipse-tractusx.github.io/charts/dev
-  version: 2.14.1
+  version: 3.6.3
 - name: core-management
   repository: file://../stay-in-sync-core/core-management/target/helm/kubernetes/core-management
   version: 1.0.0-SNAPSHOT
@@ -20,5 +20,5 @@ dependencies:
 - name: core-sync-node
   repository: file://../stay-in-sync-core/core-sync-node/target/helm/kubernetes/core-sync-node
   version: 1.0.0-SNAPSHOT
-digest: sha256:14460e20aff47867c1604a35c03b7a878399a3763e53173779786ce3cd319373
-generated: "2025-07-27T15:21:20.663484234+02:00"
+digest: sha256:c023a33b817d42dbc06d09a66a7b28d6edf886b3a6b856f337cb22116644306f
+generated: "2025-09-19T16:23:38.591844883+02:00"

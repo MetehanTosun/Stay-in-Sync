@@ -16,10 +16,7 @@ import org.eclipse.microprofile.openapi.annotations.responses.APIResponse;
 
 import java.net.URI;
 import java.util.List;
-/**
- * REST resource for fetching application logs.
- * Provides endpoints to query logs either by time range and log level, or by specific transformation IDs.
- */
+
 @Path("/api/logs")
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
@@ -31,14 +28,6 @@ public class LogResource {
         this.logService = logService;
     }
 
-    /**
-     * Fetch all logs within a given time range, optionally filtered by log level.
-     *
-     * @param startTime start time in epoch milliseconds
-     * @param endTime   end time in epoch milliseconds
-     * @param level     optional log level filter (e.g., INFO, ERROR)
-     * @return Response containing a list of LogEntryDto objects
-     */
     @GET
     @Operation(
             summary = "Fetch all logs within a given time range and optional log level",
@@ -63,13 +52,7 @@ public class LogResource {
     }
 
     /**
-     * Fetch logs for a list of transformation IDs within a given time range, optionally filtered by log level.
-     *
-     * @param transformationIds list of transformation IDs
-     * @param startTime         start time in epoch milliseconds
-     * @param endTime           end time in epoch milliseconds
-     * @param level             optional log level filter (e.g., INFO, ERROR)
-     * @return Response containing a list of LogEntryDto objects
+     * Neuer Endpunkt: Logs für eine Liste von TransformationIds abrufen
      */
     @POST
     @Path("/transformations")
@@ -108,4 +91,32 @@ public class LogResource {
         List<LogEntryDto> logs = logService.fetchAndParseLogsForTransformations(transformationIds, startTime, endTime, level);
         return Response.ok(logs).build();
     }
+
+
+    @GET
+    @Path("/service")
+    @Operation(
+            summary = "Fetch logs for a specific service and optional log level",
+            description = "Returns logs for the given service within the specified time range."
+    )
+    @APIResponse(
+            responseCode = "200",
+            description = "List of logs for the given service",
+            content = @Content(mediaType = MediaType.APPLICATION_JSON,
+                    schema = @Schema(implementation = LogEntryDto.class))
+    )
+    public Response getLogsByService(
+            @Parameter(description = "Service name", required = true, in = ParameterIn.QUERY)
+            @QueryParam("service") String service,
+            @Parameter(description = "Start time (epoch millis)", in = ParameterIn.QUERY)
+            @QueryParam("startTime") long startTime,
+            @Parameter(description = "End time (epoch millis)", in = ParameterIn.QUERY)
+            @QueryParam("endTime") long endTime,
+            @Parameter(description = "Log level filter (e.g., INFO, ERROR)", in = ParameterIn.QUERY)
+            @QueryParam("level") String level
+    ) {
+        List<LogEntryDto> logs = logService.fetchAndParseLogsForService(service, startTime, endTime, level);
+        return Response.ok(logs).build();
+    }
+
 }
