@@ -11,5 +11,6 @@ public interface AasApiRequestConfigurationMapper {
     @Mapping(target = "arcType", constant = "AAS")
     @Mapping(source = "submodel.id", target = "submodelId")
     @Mapping(source = "submodel.submodelIdShort", target = "submodelIdShort")
+    @Mapping(source = "sourceSystem.name", target = "sourceSystemName")
     AasArcDTO mapToDto(AasSourceApiRequestConfiguration entity);
 }

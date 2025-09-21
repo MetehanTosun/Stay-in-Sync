@@ -43,87 +43,64 @@
         <p-progressSpinner styleClass="w-2rem h-2rem"></p-progressSpinner>
       </div>
 
-      <div
-        *ngIf="!system.isLoadingEndpoints && system.endpoints.length === 0"
-        class="p-2 text-muted"
-      >
-        <span>No endpoints are defined for this source system.</span>
-      </div>
-
-      <ng-container *ngIf="system.apiType === 'REST'">
-      <div
-        *ngFor="let endpoint of system.endpoints"
-        class="endpoint-group mb-3"
-      >
-        <div class="endpoint-header">
-          <span class="font-bold"
-            >{{ endpoint.httpRequestType }} {{ endpoint.endpointPath }}</span
-          >
+      <ng-container *ngIf="system.apiType !== 'AAS'">
+        <!-- Meldung für REST, wenn keine Endpunkte da sind -->
+        <div *ngIf="!system.isLoading && (!system.endpoints || system.endpoints.length === 0)" class="p-2 text-muted">
+          <span>No endpoints are defined for this source system.</span>
         </div>
 
-        <p-button
-          label="Create New ARC"
-          icon="pi pi-plus"
-          styleClass="p-button-sm p-button-text"
-          (click)="onCreateArc(system, endpoint)"
-        ></p-button>
-
-        <div
-          *ngIf="(arcsBySystem$ | async)?.get(system.name) as arcsForSystem"
-          class="arc-list"
-        >
-          <div
-            *ngFor="let arc of arcsForSystem | filterByType : 'REST' | filterByEndpoint : endpoint.id"
-            class="arc-item"
-          >
-            <span class="ml-2 arc-alias">{{ arc.alias }}</span>
-            <div class="arc-actions">
-
-              <!-- EDIT BUTTON -->
-              <p-button
-                icon="pi pi-pencil"
-                styleClass="p-button-rounded p-button-text p-button-sm"
-                (click)="onEditArc(system, endpoint, arc)"
-                pTooltip="Edit ARC"
-              ></p-button>
-
-              <!-- CLONE BUTTON -->
-              <p-button
-                icon="pi pi-clone"
-                styleClass="p-button-rounded p-button-text p-button-sm"
-                (click)="onCloneArc(system, endpoint, arc)"
-                pTooltip="Clone & Edit"
-              ></p-button>
-
-              <!-- DELETE BUTTON -->
-              <p-button
-                icon="pi pi-trash"
-                styleClass="p-button-rounded p-button-text p-button-sm p-button-danger"
-                (click)="onDeleteArc(arc)"
-                pTooltip="Delete ARC"
-              ></p-button>
+        <!-- Liste der Endpunkte und ARCs für REST (dein bisheriger Code) -->
+        <div *ngFor="let endpoint of system.endpoints" class="endpoint-group mb-3">
+          <div class="endpoint-header">
+            <span class="font-bold">{{ endpoint.httpRequestType }} {{ endpoint.endpointPath }}</span>
+          </div>
+          <p-button label="Create New ARC" (click)="onCreateArc(system, endpoint)"></p-button>
+          
+          <div *ngIf="(arcsBySystem$ | async)?.get(system.name) as arcsForSystem" class="arc-list">
+            <div *ngFor="let arc of arcsForSystem | filterByType : 'REST' | filterByEndpoint : endpoint.id" class="arc-item">
+              <span class="ml-2 arc-alias">{{ arc.alias }}</span>
+              <div class="arc-actions">
+                <p-button icon="pi pi-pencil" (click)="onEditArc(system, endpoint, arc)"></p-button>
+                <p-button icon="pi pi-clone" (click)="onCloneArc(system, endpoint, arc)"></p-button>
+                <p-button icon="pi pi-trash" (click)="onDeleteArc(arc)"></p-button>
+              </div>
             </div>
           </div>
         </div>
-      </div>
       </ng-container>
 
       <ng-container *ngIf="system.apiType === 'AAS'">
-        <!-- Für AAS listen wir die Submodels als "Pseudo-Endpunkte" auf -->
+        <div *ngIf="!system.isLoading && (!system.submodels || system.submodels.length === 0)" class="p-2 text-muted">
+          <span>No submodels found for this AAS. Click "Discover" in the Source System configuration.</span>
+        </div>
+        
+        <!-- Liste der Submodels und AAS ARCs -->
         <div *ngFor="let submodel of system.submodels" class="endpoint-group mb-3">
           <div class="endpoint-header">
             <i class="pi pi-database mr-2"></i>
-            <span class="font-bold">{{ submodel.idShort || submodel.id }}</span>
+            <span class="font-bold" [pTooltip]="submodel.id">{{ submodel.idShort }}</span>
           </div>
           <p-button label="Create New ARC" icon="pi pi-plus" styleClass="p-button-sm p-button-text" (click)="onCreateAasArc(system, submodel)"></p-button>
 
           <div *ngIf="(arcsBySystem$ | async)?.get(system.name) as arcsForSystem" class="arc-list">
-            <!-- Filtere die ARCs, die zu diesem Submodel gehören -->
             <div *ngFor="let arc of arcsForSystem | filterByType : 'AAS' | filterBySubmodel : submodel.id" class="arc-item">
               <span class="ml-2 arc-alias">{{ arc.alias }}</span>
               <div class="arc-actions">
-                <p-button icon="pi pi-pencil" styleClass="p-button-rounded p-button-text p-button-sm" (click)="onEditAasArc(system, submodel, arc)"></p-button>
-                <p-button icon="pi pi-trash" styleClass="p-button-rounded p-button-text p-button-sm p-button-danger" (click)="onDeleteAasArc(arc)"></p-button>
+                <!-- EDIT BUTTON für AAS ARC -->
+                <p-button
+                  icon="pi pi-pencil"
+                  styleClass="p-button-rounded p-button-text p-button-sm"
+                  (click)="onEditAasArc(system, submodel, arc)"
+                  pTooltip="Edit AAS ARC"
+                ></p-button>
+
+                <!-- DELETE BUTTON für AAS ARC -->
+                <p-button
+                  icon="pi pi-trash"
+                  styleClass="p-button-rounded p-button-text p-button-sm p-button-danger"
+                  (click)="onDeleteAasArc(arc)"
+                  pTooltip="Delete AAS ARC"
+                ></p-button>
               </div>
             </div>
           </div>

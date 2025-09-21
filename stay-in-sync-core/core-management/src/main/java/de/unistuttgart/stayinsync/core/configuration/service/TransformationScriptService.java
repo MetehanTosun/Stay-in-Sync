@@ -1,5 +1,6 @@
 package de.unistuttgart.stayinsync.core.configuration.service;
 
+import de.unistuttgart.stayinsync.core.configuration.domain.entities.aas.AasSourceApiRequestConfiguration;
 import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.SourceSystemApiRequestConfiguration;
 import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.TargetSystemApiRequestConfiguration;
 import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.Transformation;
@@ -83,7 +84,9 @@ public class TransformationScriptService {
 
         script.hash = generateSha256Hash(dto.javascriptCode());
 
-        Set<SourceSystemApiRequestConfiguration> scriptArcs = new HashSet<>();
+        Set<SourceSystemApiRequestConfiguration> requiredRestArcs = new HashSet<>();
+        Set<AasSourceApiRequestConfiguration> requiredAasArcs = new HashSet<>();
+
         if(dto.requiredArcAliases() != null){
             for (String combinedAlias : dto.requiredArcAliases()) {
                 String[] parts = combinedAlias.split("\\.",2);
@@ -91,20 +94,34 @@ public class TransformationScriptService {
                     String systemName = parts[0];
                     String arcName = parts[1];
 
-                    Log.infof("Found systemName: %s and arcName: %s", systemName, arcName);
+                    Log.infof("Resolving ARC: system='%s', alias='%s'", systemName, arcName);
 
-                    SourceSystemApiRequestConfiguration foundArc = SourceSystemApiRequestConfiguration.findBySourceSystemAndArcName(systemName, arcName)
-                            .orElseThrow(() -> new CoreManagementException(Response.Status.BAD_REQUEST, "ARC Not Found",
-                                    "The ARC specified in the script '%s' could not be found.", combinedAlias));
-                    scriptArcs.add(foundArc);
+                    Optional<SourceSystemApiRequestConfiguration> restArcOpt = SourceSystemApiRequestConfiguration
+                            .findBySourceSystemAndArcName(systemName, arcName);
+
+                    if (restArcOpt.isPresent()) {
+                        requiredRestArcs.add(restArcOpt.get());
+                        continue;
+                    }
+
+                    Optional<AasSourceApiRequestConfiguration> aasArcOpt = AasSourceApiRequestConfiguration
+                            .findBySourceSystemAndArcName(systemName, arcName);
+
+                    if (aasArcOpt.isPresent()) {
+                        requiredAasArcs.add(aasArcOpt.get());
+                        continue;
+                    }
+
+                    throw new CoreManagementException(Response.Status.BAD_REQUEST, "ARC Not Found",
+                            "The ARC specified in the script '%s' could not be found as a REST or AAS ARC.", combinedAlias);
                 }
             }
         }
-        Log.infof("Found %d unique ARCs required by the script", scriptArcs.size());
+        Log.infof("Found %d unique ARCs required by the script", requiredRestArcs.size());
 
         Set<SourceSystemApiRequestConfiguration> finalArcSet = new HashSet<>();
 
-        finalArcSet.addAll(scriptArcs);
+        finalArcSet.addAll(requiredRestArcs);
 
         // TODO: Handle Union for ARCs with Graph and Script, since they can have a symmetric difference
         // Start with fresh set, add present ARCs for graph and script respectively.
@@ -112,8 +129,11 @@ public class TransformationScriptService {
         // Bind ManyToMany
         transformation.sourceSystemApiRequestConfigurations = finalArcSet;
         finalArcSet.forEach(sourceSystemApiRequestConfiguration -> sourceSystemApiRequestConfiguration.transformations.add(transformation));
+        Log.infof("Bound %d REST ARCs to transformation %d", requiredRestArcs.size(), transformationId);
 
-        Log.infof("Final total bound ARCs for transformation %d: %d", transformationId, finalArcSet.size());
+        transformation.aasSourceApiRequestConfigurations = requiredAasArcs;
+        requiredAasArcs.forEach(arc -> arc.transformations.add(transformation));
+        Log.infof("Bound %d AAS ARCs to transformation %d", requiredAasArcs.size(), transformationId);
 
         Set<TargetSystemApiRequestConfiguration> targetArcs = new HashSet<>();
         if (dto.targetArcIds() != null && !dto.targetArcIds().isEmpty()) {

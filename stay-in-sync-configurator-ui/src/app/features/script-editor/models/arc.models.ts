@@ -97,6 +97,7 @@ export interface SubmodelDescription {
   id: number;
   submodelId: string;
   idShort: string;
+  coreEntityId: number;
 }
 
 export interface AasArcSaveRequest {

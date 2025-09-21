@@ -109,6 +109,8 @@ export class ArcStateService {
           arcsBySystem: updatedArcsBySystem,
           loadingSystems: newState.loadingSystems,
         });
+        console.log("here arcs");
+        console.log(this.arcsBySystem$);
 
         this.regenerateAllTypeDefinitions();
       }),

@@ -170,12 +170,12 @@ public class RequestConfigurationResource {
                     schema = @Schema(implementation = GetRequestConfigurationDTO.class, type = SchemaType.ARRAY)
             )
     )
-    public List<GetRequestConfigurationDTO> getAllSourceSystemRequestConfigurationsBySourceSystemId(@Parameter(name = "source_system_filter", description = "An optional filter parameter to filter results by source system id") @PathParam("sourceSystemId") Long sourceSystemId) {
+    public List<Object> getAllSourceSystemRequestConfigurationsBySourceSystemId(@Parameter(name = "source_system_filter", description = "An optional filter parameter to filter results by source system id") @PathParam("sourceSystemId") Long sourceSystemId) {
         var apiRequestConfigurations = sourceSystemApiRequestConfigurationService.findAllRequestConfigurationsWithSourceSystemIdLike(sourceSystemId);
 
         Log.debugf("Total number of api request configurations by source-system: %d", apiRequestConfigurations.size());
 
-        return fullUpdateMapper.mapToDTOList(apiRequestConfigurations);
+        return apiRequestConfigurations;
     }
 
 

@@ -6,6 +6,7 @@ import de.unistuttgart.stayinsync.transport.domain.JobDeploymentStatus;
 import io.quarkus.hibernate.orm.panache.PanacheEntity;
 import jakarta.persistence.*;
 import java.util.HashSet;
+import java.util.Optional;
 import java.util.Set;
 
 @Entity
@@ -33,4 +34,11 @@ public class AasSourceApiRequestConfiguration extends PanacheEntity {
 
     @ManyToMany(mappedBy = "aasSourceApiRequestConfigurations")
     public Set<Transformation> transformations = new HashSet<>();
+
+    /**
+     * Finds an AAS ARC by its unique combination of Source System name and ARC alias.
+     */
+    public static Optional<AasSourceApiRequestConfiguration> findBySourceSystemAndArcName(String sourceSystemName, String arcName) {
+        return find("sourceSystem.name = ?1 and alias = ?2", sourceSystemName, arcName).firstResultOptional();
+    }
 }

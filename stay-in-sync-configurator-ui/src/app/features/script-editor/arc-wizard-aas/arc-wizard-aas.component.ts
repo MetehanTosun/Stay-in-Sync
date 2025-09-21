@@ -90,11 +90,11 @@ export class ArcWizardAasComponent implements OnChanges {
 
     this.isSaving = true;
     const formValue = this.arcForm.getRawValue();
-
+    
     const saveRequest: AasArcSaveRequest = {
       id: this.context.arcToEdit?.id,
       sourceSystemId: this.context.system.id!,
-      submodelId: this.context.submodel.id,
+      submodelId: this.context.submodel.coreEntityId,
       alias: formValue.alias,
       pollingIntervallTimeInMs: formValue.pollingRate,
       active: formValue.active,
@@ -113,7 +113,11 @@ export class ArcWizardAasComponent implements OnChanges {
             summary: 'Success',
             detail: `AAS ARC '${savedArc.alias}' has been saved.`,
           });
-          this.arcStateService.addOrUpdateArc(savedArc);
+          const arcForState : AasArc = {
+            ...savedArc,
+            sourceSystemName: this.context.system.name
+          };
+          this.arcStateService.addOrUpdateArc(arcForState);
           this.onSaveSuccess.emit(savedArc);
           this.closeDialog();
         },

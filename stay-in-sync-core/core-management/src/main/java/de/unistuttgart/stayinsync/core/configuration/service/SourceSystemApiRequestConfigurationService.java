@@ -3,8 +3,10 @@ package de.unistuttgart.stayinsync.core.configuration.service;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import de.unistuttgart.stayinsync.core.configuration.domain.entities.aas.AasSourceApiRequestConfiguration;
 import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.*;
 import de.unistuttgart.stayinsync.core.configuration.exception.CoreManagementException;
+import de.unistuttgart.stayinsync.core.configuration.mapping.AasApiRequestConfigurationMapper;
 import de.unistuttgart.stayinsync.core.configuration.mapping.SourceSystemApiRequestConfigurationFullUpdateMapper;
 import de.unistuttgart.stayinsync.core.configuration.rest.dtos.CreateSourceArcDTO;
 import de.unistuttgart.stayinsync.core.configuration.rest.dtos.CreateRequestConfigurationDTO;
@@ -23,10 +25,7 @@ import jakarta.validation.Validator;
 import jakarta.ws.rs.NotFoundException;
 import jakarta.ws.rs.core.Response;
 
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 
 import static jakarta.transaction.Transactional.TxType.REQUIRED;
 import static jakarta.transaction.Transactional.TxType.SUPPORTS;
@@ -45,6 +44,9 @@ public class SourceSystemApiRequestConfigurationService {
 
     @Inject
     SourceSystemApiRequestConfigurationFullUpdateMapper fullUpdateMapper;
+
+    @Inject
+    AasApiRequestConfigurationMapper aasArcMapper;
 
     @Inject
     PollingJobMessageProducer pollingJobMessageProducer;
@@ -87,10 +89,16 @@ public class SourceSystemApiRequestConfigurationService {
 
 
     @Transactional(SUPPORTS)
-    public List<SourceSystemApiRequestConfiguration> findAllRequestConfigurationsWithSourceSystemIdLike(Long sourceSystemId) {
-        Log.debugf("Finding all request-configurations of source system with id = %s", sourceSystemId);
-        return Optional.ofNullable(SourceSystemApiRequestConfiguration.findBySourceSystemId(sourceSystemId))
-                .orElseGet(List::of);
+    public List<Object> findAllRequestConfigurationsWithSourceSystemIdLike(Long sourceSystemId) {
+        List<SourceSystemApiRequestConfiguration> restArcs = SourceSystemApiRequestConfiguration.findBySourceSystemId(sourceSystemId);
+        List<AasSourceApiRequestConfiguration> aasArcs = AasSourceApiRequestConfiguration.list("sourceSystem.id", sourceSystemId);
+        Log.debugf("Found %d REST ARCs and %d AAS ARCs for source-system: %d", restArcs.size(), aasArcs.size(), sourceSystemId);
+
+        List<Object> combinedDtos = new ArrayList<>();
+        combinedDtos.addAll(fullUpdateMapper.mapToDTOList(restArcs));
+        combinedDtos.addAll(aasArcs.stream().map(aasArcMapper::mapToDto).toList());
+
+        return combinedDtos;
     }
 
     @Transactional(SUPPORTS)
