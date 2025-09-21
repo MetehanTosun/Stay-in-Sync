@@ -774,6 +774,12 @@ export class SourceSystemBaseComponent implements OnInit, OnDestroy {
     const smId: string = node.data.submodelId;
     const idShortPath: string = node.data.idShortPath;
     this.loadAasLiveElementDetails(smId, idShortPath, node);
+    setTimeout(() => {
+      const el = document.getElementById('aas-element-details');
+      if (el && el.scrollIntoView) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    }, 0);
   }
 
   private loadAasChildren(submodelId: string, parentPath: string | undefined, attach: TreeNode): void {

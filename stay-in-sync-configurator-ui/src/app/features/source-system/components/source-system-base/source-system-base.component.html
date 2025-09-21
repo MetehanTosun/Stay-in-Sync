@@ -298,7 +298,7 @@
               </ng-template>
             </p-tree>
           </div>
-          <div class="p-card" *ngIf="selectedAasNode && selectedAasNode.data?.type==='element'" style="flex: 0 0 35%; padding:1rem;border:1px solid var(--surface-border);border-radius:4px;">
+          <div id="aas-element-details" class="p-card" *ngIf="selectedAasNode && selectedAasNode.data?.type==='element'" style="flex: 0 0 35%; padding:1rem;border:1px solid var(--surface-border);border-radius:4px; position: sticky; top: .5rem; align-self: flex-start; max-height: calc(100vh - 1rem); overflow: auto;">
             <div class="p-d-flex p-ai-center p-jc-between">
               <h4 style="margin:0;">Details</h4>
               <span *ngIf="aasSelectedLiveLoading">Loading...</span>

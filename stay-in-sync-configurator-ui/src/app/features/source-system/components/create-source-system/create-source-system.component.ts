@@ -750,6 +750,13 @@ save(): void {
     const smId: string = node.data.submodelId;
     const idShortPath: string = node.data.idShortPath;
     this.loadLiveElementDetails(smId, idShortPath, node);
+    // Smooth scroll details into view
+    setTimeout(() => {
+      const el = document.getElementById('element-details');
+      if (el && el.scrollIntoView) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    }, 0);
   }
 
   private loadLiveElementDetails(smId: string, idShortPath: string | undefined, node?: TreeNode): void {
