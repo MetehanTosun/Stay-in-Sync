@@ -17,7 +17,7 @@ import java.util.stream.Collectors;
 @Mapper(componentModel = "cdi")
 public interface EDCInstanceMapper {
     
-    EDCInstanceMapper INSTANCE = Mappers.getMapper(EDCInstanceMapper.class);
+    EDCInstanceMapper mapper = Mappers.getMapper(EDCInstanceMapper.class);
     
     /**
      * Konvertiert eine EDCInstance-Entität in ein DTO.
@@ -26,7 +26,6 @@ public interface EDCInstanceMapper {
      * @return Das erzeugte DTO oder null, wenn die Entität null ist
      */
     @Mapping(source = "id", target = "id")
-    @Mapping(target = "edcAssetIds", ignore = true) 
     EDCInstanceDto toDto(EDCInstance entity);
     
     /**
@@ -37,44 +36,6 @@ public interface EDCInstanceMapper {
      * @return Die erzeugte oder aktualisierte Entität oder null, wenn das DTO null ist
      */
     @Mapping(source = "id", target = "id")
-    @Mapping(target = "edcAssets", ignore = true) // Wird nicht automatisch gemappt
     EDCInstance fromDto(EDCInstanceDto dto);
-    
-    /**
-     * Nachbearbeitungsmethode, um die Asset-IDs korrekt zu mappen.
-     * Diese Methode wird nach dem automatischen Mapping aufgerufen.
-     */
-    default EDCInstanceDto postProcessToDto(EDCInstanceDto dto, EDCInstance entity) {
-        if (entity == null || dto == null) {
-            return dto;
-        }
-        
-        Set<UUID> assetIds = Optional.ofNullable(entity.getEdcAssets())
-                .orElse(Set.of())
-                .stream()
-                .map(asset -> asset.id)
-                .collect(Collectors.toUnmodifiableSet());
-        dto.setEdcAssetIds(assetIds);
-        
-        return dto;
-    }
-    
-    /**
-     * Findet oder erstellt eine Entität basierend auf der DTO-ID.
-     */
-    default EDCInstance findOrCreateEntity(EDCInstanceDto dto) {
-        if (dto == null) {
-            return null;
-        }
-        
-        EDCInstance entity = (dto.getId() != null)
-                ? EDCInstance.findById(dto.getId())
-                : new EDCInstance();
-                
-        if (entity == null) {
-            entity = new EDCInstance();
-        }
-        
-        return entity;
-    }
+
 }
