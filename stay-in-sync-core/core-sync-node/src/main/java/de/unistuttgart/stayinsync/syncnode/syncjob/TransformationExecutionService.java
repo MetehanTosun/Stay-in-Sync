@@ -8,6 +8,7 @@ import de.unistuttgart.graphengine.exception.GraphEvaluationException;
 import de.unistuttgart.graphengine.nodes.Node; // Wichtiger Import
 import de.unistuttgart.stayinsync.scriptengine.ScriptEngineService;
 import de.unistuttgart.stayinsync.scriptengine.message.TransformationResult;
+import de.unistuttgart.stayinsync.syncnode.LogicGraph.GraphHasher;
 import de.unistuttgart.stayinsync.syncnode.LogicGraph.GraphInstanceCache;
 import de.unistuttgart.stayinsync.syncnode.LogicGraph.StatefulLogicGraph;
 import de.unistuttgart.stayinsync.syncnode.SnapshotManagement.SnapshotFactory;
@@ -50,6 +51,9 @@ public class TransformationExecutionService {
     @Inject
     MeterRegistry meterRegistry;
 
+    @Inject
+    GraphHasher graphHasher;
+
     /**
      * Asynchronously evaluates the logic graph and, if the condition passes,
      * executes the script transformation.
@@ -66,7 +70,7 @@ public class TransformationExecutionService {
                 Log.infof("Job %s: Evaluating pre-condition logic graph...", payload.job().jobId());
 
                 TypeReference<Map<String, JsonNode>> typeRef = new TypeReference<>() {};
-                Map<String, JsonNode> dataConext = objectMapper.convertValue(payload.job().sourceData(), typeRef);
+                Map<String, JsonNode> dataContext = objectMapper.convertValue(payload.job().sourceData(), typeRef);
 
                 List<Node> graphDefinition = payload.graphNodes();
 
@@ -74,13 +78,15 @@ public class TransformationExecutionService {
                     Log.warnf("Job %s: No graph definition found in payload, defaulting to 'true'.", payload.job().jobId());
                     return true;
                 }
+                String graphHash = graphHasher.hash(graphDefinition);
 
                 StatefulLogicGraph graphInstance = graphCache.getOrCreate(
                         payload.job().transformationId(),
+                        graphHash,
                         graphDefinition
                 );
 
-                return graphInstance.evaluate(dataConext);
+                return graphInstance.evaluate(dataContext);
 
             } catch (GraphEvaluationException e) {
                 Log.errorf(e, "Job %s: Graph evaluation failed with error type %s: %s",
