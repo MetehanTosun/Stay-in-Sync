@@ -288,14 +288,14 @@ export class SourceSystemBaseComponent implements OnInit, OnDestroy {
   aasElementTemplateRel: string = `{
   "modelType": "RelationshipElement",
   "idShort": "Rel",
-  "first":  { "type": "SubmodelElement", "keys": [ { "type": "Submodel", "value": "urn:first" } ] },
-  "second": { "type": "SubmodelElement", "keys": [ { "type": "Submodel", "value": "urn:second" } ] }
+  "first":  { "type": "ModelReference", "keys": [ { "type": "Submodel", "value": "https://example.com/ids/sm1" } ] },
+  "second": { "type": "ModelReference", "keys": [ { "type": "Submodel", "value": "https://example.com/ids/sm2" } ] }
 }`;
   aasElementTemplateAnnRel: string = `{
   "modelType": "AnnotatedRelationshipElement",
   "idShort": "AnnRel",
-  "first":  { "type": "SubmodelElement", "keys": [ { "type": "Submodel", "value": "urn:first" } ] },
-  "second": { "type": "SubmodelElement", "keys": [ { "type": "Submodel", "value": "urn:second" } ] },
+  "first":  { "type": "ModelReference", "keys": [ { "type": "Submodel", "value": "https://example.com/ids/sm1" } ] },
+  "second": { "type": "ModelReference", "keys": [ { "type": "Submodel", "value": "https://example.com/ids/sm2" } ] },
   "annotations": [ { "modelType": "Property", "idShort": "note", "valueType": "xs:string", "value": "Hello" } ]
 }`;
   aasElementTemplateCollection: string = `{
