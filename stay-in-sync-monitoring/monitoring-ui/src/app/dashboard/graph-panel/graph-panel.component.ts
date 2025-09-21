@@ -16,8 +16,7 @@ import {Button} from 'primeng/button';
   selector: 'app-graph-panel',
   templateUrl: './graph-panel.component.html',
   imports: [
-    LegendPanelComponent,
-    Button
+    LegendPanelComponent
   ],
   styleUrl: './graph-panel.component.css'
 })
