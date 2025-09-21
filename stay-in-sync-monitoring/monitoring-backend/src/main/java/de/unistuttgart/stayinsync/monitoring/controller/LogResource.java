@@ -16,7 +16,10 @@ import org.eclipse.microprofile.openapi.annotations.responses.APIResponse;
 
 import java.net.URI;
 import java.util.List;
-
+/**
+ * REST resource for fetching application logs.
+ * Provides endpoints to query logs either by time range and log level, or by specific transformation IDs.
+ */
 @Path("/api/logs")
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
@@ -28,6 +31,14 @@ public class LogResource {
         this.logService = logService;
     }
 
+    /**
+     * Fetch all logs within a given time range, optionally filtered by log level.
+     *
+     * @param startTime start time in epoch milliseconds
+     * @param endTime   end time in epoch milliseconds
+     * @param level     optional log level filter (e.g., INFO, ERROR)
+     * @return Response containing a list of LogEntryDto objects
+     */
     @GET
     @Operation(
             summary = "Fetch all logs within a given time range and optional log level",
@@ -52,7 +63,13 @@ public class LogResource {
     }
 
     /**
-     * Neuer Endpunkt: Logs für eine Liste von TransformationIds abrufen
+     * Fetch logs for a list of transformation IDs within a given time range, optionally filtered by log level.
+     *
+     * @param transformationIds list of transformation IDs
+     * @param startTime         start time in epoch milliseconds
+     * @param endTime           end time in epoch milliseconds
+     * @param level             optional log level filter (e.g., INFO, ERROR)
+     * @return Response containing a list of LogEntryDto objects
      */
     @POST
     @Path("/transformations")

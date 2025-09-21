@@ -9,8 +9,10 @@ import jakarta.ws.rs.core.Response;
 import org.jboss.logging.Logger;
 
 
-//http://localhost:8093/q/swagger-ui/#/
-
+/**
+ * REST resource for simulating errors based on a given error type.
+ * Useful for testing error handling and monitoring pipelines.
+ */
 @Path("/api/simulate-error")
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
@@ -19,10 +21,13 @@ public class ErrorSimulationResource {
     private static final Logger LOG = Logger.getLogger(ErrorSimulationResource.class);
 
     @Inject
-    ErrorLogicService errorLogicService;
+    private ErrorLogicService errorLogicService;
 
     /**
-     * Simulates an error based on the type No error triggered
+     * Simulates an error based on the provided error type.
+     *
+     * @param type the type of error to simulate
+     * @return JSON response indicating success or failure
      */
     @GET
     public Response simulate(@QueryParam("type") ErrorType type) {
@@ -33,13 +38,13 @@ public class ErrorSimulationResource {
                     .build();
         }
 
-        LOG.infof("Simulate errors of type: %s", type);
+        LOG.infof("Simulating error of type: %s", type);
 
         try {
             errorLogicService.simulateErrorByType(type);
             return Response.ok(new StatusResponse("ok", "No error triggered")).build();
         } catch (Exception e) {
-            LOG.error("Error at simulateErrorByType", e);
+            LOG.error("Exception occurred while simulating error", e);
             return Response.serverError()
                     .entity(new StatusResponse("error", e.getMessage()))
                     .build();
@@ -47,9 +52,10 @@ public class ErrorSimulationResource {
     }
 
     /**
-     * Simple status response as JSON object
+     * Simple DTO for status responses.
      */
     public static class StatusResponse {
+
         public String status;
         public String message;
 

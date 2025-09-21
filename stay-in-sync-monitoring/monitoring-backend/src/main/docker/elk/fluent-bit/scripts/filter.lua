@@ -1,60 +1,60 @@
 function parse_nested_log(tag, timestamp, record)
-    -- Prüfen, ob message existiert
+    -- Check whether message exists
     local msg_str = record["message"]
     if type(msg_str) ~= "string" then
         return 1, timestamp, record
     end
 
-    -- syncJobId aus message extrahieren
+    -- Extract syncJobId from message
     local syncJobId = string.match(msg_str, '"syncJobId"%s*:%s*"([^"]+)"')
     if syncJobId then
         record["syncJobId"] = syncJobId
-        print("syncJobId extrahiert: " .. syncJobId)
+        print("syncJobId extracted: " .. syncJobId)
     else
-        print("syncJobId nicht gefunden im JSON")
+        print("syncJobId not found in JSON")
     end
 
-    -- level aus message extrahieren
+    -- extract level from message
     local level = string.match(msg_str, '"level"%s*:%s*"([^"]+)"')
     if level then
         record["level"] = level
         print("level extrahiert: " .. level)
     else
-        print("level nicht gefunden im JSON")
+        print("Level not found in JSON")
     end
 
-    -- mdc auswerten
+    -- evaluate mdc
     local mdc = record["mdc"]
     if type(mdc) == "table" then
-        -- scriptId extrahieren und anpassen
+        -- Extract and customize scriptId
         local scriptId = mdc["scriptId"]
         if scriptId then
             local adjustedScriptId = string.match(scriptId, "script%-for%-(%d+)")
             if adjustedScriptId then
                 record["scriptId"] = adjustedScriptId
-                print("scriptId angepasst: " .. adjustedScriptId)
+                print("scriptId adjusted: " .. adjustedScriptId)
             else
-                print("scriptId konnte nicht angepasst werden")
+                print("scriptId could not be customized")
             end
         else
-            print("scriptId nicht gefunden im mdc")
+            print("scriptId not found in mdc")
         end
 
-        -- transformationId extrahieren
+        -- Extract transformationId
         local transformationId = mdc["transformationId"]
         if transformationId then
             local adjustedTransformationId = string.match(transformationId, "(%d+)")
             if adjustedTransformationId then
                 record["transformationId"] = adjustedTransformationId
-                print("transformationId extrahiert: " .. adjustedTransformationId)
+                print("transformationId extracted: " .. adjustedTransformationId)
             else
-                print("transformationId konnte nicht angepasst werden")
+                print("transformationId could not be customized")
             end
         else
-            print("transformationId nicht gefunden im mdc")
+            print("transformationId not found in mdc")
         end
     else
-        print("mdc ist nicht vorhanden oder kein Table")
+        print("mdc does not exist or is not a table")
     end
 
     return 1, timestamp, record
