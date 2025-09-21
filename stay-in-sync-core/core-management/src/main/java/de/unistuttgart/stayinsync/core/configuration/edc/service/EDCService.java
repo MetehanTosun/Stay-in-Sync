@@ -1,13 +1,18 @@
 package de.unistuttgart.stayinsync.core.configuration.edc.service;
 
 import de.unistuttgart.stayinsync.core.configuration.edc.dtoedc.EDCInstanceDto;
+import de.unistuttgart.stayinsync.core.configuration.edc.exception.EntityUpdateFailedException;
+import de.unistuttgart.stayinsync.core.configuration.edc.service.edcconnector.EDCInstanceConnector;
 import de.unistuttgart.stayinsync.core.configuration.edc.entities.EDCInstance;
+import de.unistuttgart.stayinsync.core.configuration.edc.exception.ConnectionToEdcFailedException;
+import de.unistuttgart.stayinsync.core.configuration.edc.exception.EntityCreationFailedException;
 import de.unistuttgart.stayinsync.core.configuration.edc.mapping.EDCInstanceMapper;
 import de.unistuttgart.stayinsync.transport.exception.CustomException;
 import io.quarkus.logging.Log;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
+import org.apache.http.ConnectionClosedException;
 
 import java.util.List;
 import java.util.UUID;
@@ -22,6 +27,9 @@ public class EDCService {
     @Inject
     EDCInstanceMapper mapper;
 
+    @Inject
+    EDCInstanceConnector edcConnector;
+
     /**
      * Findet eine EDC-Instanz anhand ihrer ID.
      * 
@@ -33,6 +41,7 @@ public class EDCService {
         Log.info("Suche nach EDC-Instanz mit ID: " + id);
         
         final EDCInstance instance = EDCInstance.findById(id);
+
         if (instance == null) {
             final String exceptionMessage = "Keine EDC-Instanz mit ID " + id + " gefunden";
             Log.error(exceptionMessage);
@@ -61,20 +70,25 @@ public class EDCService {
     }
 
     /**
-     * Erstellt eine neue EDC-Instanz in der Datenbank.
+     * Persists EdcInstance in database if connection to referenced edc is possible.
      * 
-     * @param dto Die zu erstellende EDC-Instanz als DTO
-     * @return Die erstellte EDC-Instanz als DTO
+     * @param edcInstanceDto contains data for the created EdcInstance
+     * @return persisted edcInstance as Dto
      */
     @Transactional
-    public EDCInstanceDto create(final EDCInstanceDto dto) {
-        Log.info("Erstellen einer neuen EDC-Instanz: " + dto.getName());
-        
-        EDCInstance instance = mapper.fromDto(dto);
-        instance.persist();
-        
-        Log.info("EDC-Instanz erfolgreich erstellt mit ID: " + instance.id);
-        return mapper.toDto(instance);
+    public EDCInstanceDto create(final EDCInstanceDto edcInstanceDto) throws EntityCreationFailedException{
+        Log.debugf("Creation of EdcInstance started.", edcInstanceDto.name());
+        final EDCInstance edcInstance = EDCInstanceMapper.mapper.fromDto(edcInstanceDto);
+        try{
+            edcConnector.tryConnectingInstanceToExistingEdc(edcInstance);
+            Log.debugf("Connection tested. EDCInstance is persisted in database");
+            edcInstance.persist();
+            return EDCInstanceMapper.mapper.toDto(edcInstance);
+        } catch(ConnectionToEdcFailedException e){
+            final String exceptionMessage = "EdcInstance creation failed because of connectionError:" + e.getMessage();
+            Log.errorf(exceptionMessage);
+            throw new EntityCreationFailedException(exceptionMessage);
+        }
     }
 
     /**
@@ -86,27 +100,37 @@ public class EDCService {
      * @throws CustomException wenn keine EDC-Instanz mit der angegebenen ID gefunden wurde
      */
     @Transactional
-    public EDCInstanceDto update(final UUID id, final EDCInstanceDto updatedDto) throws CustomException {
-        Log.info("Aktualisieren der EDC-Instanz mit ID: " + id);
-        
+    public EDCInstanceDto update(final UUID id, final EDCInstanceDto updatedDto) throws EntityUpdateFailedException {
+        Log.debug("Aktualisieren der EDC-Instanz mit ID: " + id);
         final EDCInstance persistedInstance = EDCInstance.findById(id);
         final EDCInstance updatedInstance = mapper.fromDto(updatedDto);
-        
         if (persistedInstance == null) {
             final String exceptionMessage = "Keine EDC-Instanz mit ID " + id + " für Update gefunden";
             Log.error(exceptionMessage);
-            throw new CustomException(exceptionMessage);
+            throw new EntityUpdateFailedException(exceptionMessage);
         }
-        
-        persistedInstance.setName(updatedInstance.getName());
-        persistedInstance.setUrl(updatedInstance.getUrl());
-        persistedInstance.setApiKey(updatedInstance.getApiKey());
-        persistedInstance.setProtocolVersion(updatedInstance.getProtocolVersion());
-        persistedInstance.setDescription(updatedInstance.getDescription());
-        persistedInstance.setBpn(updatedInstance.getBpn());
-        
-        Log.info("EDC-Instanz mit ID " + id + " erfolgreich aktualisiert");
-        return mapper.toDto(persistedInstance);
+
+        try{
+            edcConnector.tryConnectingInstanceToExistingEdc(updatedInstance);
+            persistedInstance.setName(updatedInstance.getName());
+            persistedInstance.setControlPlaneManagementUrl(updatedInstance.getControlPlaneManagementUrl());
+            persistedInstance.setApiKey(updatedInstance.getApiKey());
+            persistedInstance.setProtocolVersion(updatedInstance.getProtocolVersion());
+            persistedInstance.setDescription(updatedInstance.getDescription());
+            persistedInstance.setBpn(updatedInstance.getBpn());
+            persistedInstance.setEdcAssetEndpoint(updatedInstance.getEdcAssetEndpoint());
+            persistedInstance.setEdcPolicyEndpoint(updatedInstance.getEdcPolicyEndpoint());
+            persistedInstance.setEdcContractDefinitionEndpoint(updatedInstance.getEdcContractDefinitionEndpoint());
+
+            Log.info("EDC-Instanz mit ID " + id + " erfolgreich aktualisiert");
+            return mapper.toDto(persistedInstance);
+        } catch(ConnectionToEdcFailedException e) {
+            final String exceptionMessage = "EdcInstance update failed because of connectionError:" + e.getMessage();
+            Log.errorf(exceptionMessage);
+            throw new EntityUpdateFailedException(exceptionMessage);
+        }
+
+
     }
 
     /**
@@ -130,40 +154,5 @@ public class EDCService {
         return deleted;
     }
     
-    /**
-     * Hilfsmethode zum Abrufen einer EDC-Instanz ohne DTO-Konvertierung.
-     * 
-     * @param id Die ID der zu findenden EDC-Instanz
-     * @return Die gefundene EDC-Instanz
-     * @throws CustomException wenn keine EDC-Instanz mit der angegebenen ID gefunden wurde
-     */
-    public EDCInstance getEntityById(final UUID id) throws CustomException {
-        Log.info("Abrufen der EDC-Instanz-Entität mit ID: " + id);
-        
-        final EDCInstance instance = EDCInstance.findById(id);
-        if (instance == null) {
-            final String exceptionMessage = "Keine EDC-Instanz mit ID " + id + " gefunden";
-            Log.error(exceptionMessage);
-            throw new CustomException(exceptionMessage);
-        }
-        
-        return instance;
-    }
-    
-    /**
-     * Erstellt eine EDC-Instanz direkt aus einer Entity.
-     * Wird intern verwendet.
-     *
-     * @param entity Die zu erstellende EDC-Instanz-Entity
-     * @return Die erstellte EDC-Instanz-Entity
-     */
-    @Transactional
-    public EDCInstance createEntity(final EDCInstance entity) {
-        Log.info("Erstellen einer neuen EDC-Instanz-Entity: " + entity.getName());
-        
-        entity.persist();
-        
-        Log.info("EDC-Instanz-Entity erfolgreich erstellt mit ID: " + entity.id);
-        return entity;
-    }
+
 }

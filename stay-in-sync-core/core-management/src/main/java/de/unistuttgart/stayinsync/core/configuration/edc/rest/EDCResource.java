@@ -1,7 +1,8 @@
 package de.unistuttgart.stayinsync.core.configuration.edc.rest;
 
 import de.unistuttgart.stayinsync.core.configuration.edc.dtoedc.EDCInstanceDto;
-import de.unistuttgart.stayinsync.core.configuration.edc.mapping.EDCInstanceMapper;
+import de.unistuttgart.stayinsync.core.configuration.edc.exception.EntityCreationFailedException;
+import de.unistuttgart.stayinsync.core.configuration.edc.exception.EntityUpdateFailedException;
 import de.unistuttgart.stayinsync.core.configuration.edc.service.EDCService;
 import de.unistuttgart.stayinsync.transport.exception.CustomException;
 import jakarta.inject.Inject;
@@ -22,9 +23,9 @@ public class EDCResource {
 
     @Inject
     public EDCService service;
+
     
-    @Inject
-    EDCInstanceMapper mapper;
+
 
     @GET
     public List<EDCInstanceDto> list() {
@@ -46,16 +47,16 @@ public class EDCResource {
 
     @POST
     @Transactional
-    public Response create(@Valid EDCInstanceDto dto, @Context UriInfo uriInfo) {
-        Log.info("Erstellen einer neuen EDC-Instanz: " + dto.getName());
+    public Response createConnectionToExistingPartnerEdcInstance(@Valid EDCInstanceDto edcInstanceToCreate, @Context UriInfo uriInfo) {
+        Log.infof("POST EdcInstance request");
         try {
-            var created = service.create(dto);
+            EDCInstanceDto createdEdcInstance = service.create(edcInstanceToCreate);
             URI uri = uriInfo.getAbsolutePathBuilder()
-                    .path(created.getId().toString())
+                    .path(createdEdcInstance.id().toString())
                     .build();
-            Log.info("EDC-Instanz erfolgreich erstellt mit ID: " + created.getId());
-            return Response.created(uri).entity(created).build();
-        } catch (Exception e) {
+            Log.infof("POST EDCInstance request successfully completed");
+            return Response.created(uri).entity(edcInstanceToCreate).build();
+        } catch (EntityCreationFailedException e) {
             Log.error("Fehler beim Erstellen der EDC-Instanz: " + e.getMessage());
             throw new WebApplicationException("Fehler beim Erstellen der EDC-Instanz: " + e.getMessage(), 
                     Response.Status.BAD_REQUEST);
@@ -67,10 +68,9 @@ public class EDCResource {
     @Transactional
     public EDCInstanceDto update(@PathParam("id") UUID id, @Valid EDCInstanceDto dto) {
         Log.info("Aktualisieren der EDC-Instanz mit ID: " + id);
-        dto.setId(id);
         try {
             return service.update(id, dto);
-        } catch (CustomException e) {
+        } catch (EntityUpdateFailedException e) {
             Log.info("EDC-Instanz mit ID " + id + " für Update nicht gefunden");
             throw new NotFoundException(e.getMessage());
         }
