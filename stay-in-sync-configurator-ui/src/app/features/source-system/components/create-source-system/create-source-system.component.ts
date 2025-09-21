@@ -1015,7 +1015,7 @@ save(): void {
   "modelType": "ReferenceElement",
   "idShort": "Ref",
   "value": {
-    "type": "GlobalReference",
+    "type": "ModelReference",
     "keys": [ { "type": "Submodel", "value": "https://example.com/ids/sm" } ]
   }
 }`;

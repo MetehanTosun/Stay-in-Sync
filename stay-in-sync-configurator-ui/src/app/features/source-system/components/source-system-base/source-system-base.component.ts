@@ -283,7 +283,7 @@ export class SourceSystemBaseComponent implements OnInit, OnDestroy {
   aasElementTemplateRef: string = `{
   "modelType": "ReferenceElement",
   "idShort": "Ref",
-  "value": { "type": "GlobalReference", "keys": [ { "type": "Submodel", "value": "https://example.com/ids/sm" } ] }
+  "value": { "type": "ModelReference", "keys": [ { "type": "Submodel", "value": "https://example.com/ids/sm" } ] }
 }`;
   aasElementTemplateRel: string = `{
   "modelType": "RelationshipElement",
