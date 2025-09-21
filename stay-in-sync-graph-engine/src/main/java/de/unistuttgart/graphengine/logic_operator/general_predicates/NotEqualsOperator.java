@@ -32,7 +32,7 @@ public class NotEqualsOperator implements Operation {
 
         if (inputs == null || inputs.size() < 2) {
             throw new OperatorValidationException(
-                    "EQUALS operation for node '" + node.getName() + "' requires at least 2 inputs to compare."
+                    "NOT_EQUALS operation for node '" + node.getName() + "' requires at least 2 inputs to compare."
             );
         }
 
@@ -45,7 +45,7 @@ public class NotEqualsOperator implements Operation {
 
         if (constantNodeCount > 1) {
             throw new OperatorValidationException(
-                    "EQUALS operation for node '" + node.getName() + "' is invalid. A maximum of one ConstantNode is allowed as an input. Found: " + constantNodeCount
+                    "NOT_EQUALS operation for node '" + node.getName() + "' is invalid. A maximum of one ConstantNode is allowed as an input. Found: " + constantNodeCount
             );
         }
     }

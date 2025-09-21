@@ -1,6 +1,7 @@
 package predicates.object_predicates;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import de.unistuttgart.graphengine.exception.OperatorValidationException;
 import de.unistuttgart.graphengine.logic_operator.object_predicates.HasAnyKeyOperator;
@@ -13,7 +14,9 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.util.Collections;
 import java.util.List;
+import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.when;
@@ -95,5 +98,227 @@ public class HasAnyKeyOperatorTest {
     @DisplayName("should declare its return type as Boolean")
     void getReturnType_ShouldReturnBooleanClass() {
         assertEquals(Boolean.class, operation.getReturnType());
+    }
+
+    @Test
+    @DisplayName("should return false when object input is null")
+    void testExecute_WhenObjectInputIsNull_ShouldReturnFalse() {
+        // ARRANGE
+        when(mockLogicNode.getInputNodes()).thenReturn(List.of(mockObjectInput, mockKeysInput));
+        when(mockObjectInput.getCalculatedResult()).thenReturn(null);
+        when(mockKeysInput.getCalculatedResult()).thenReturn(List.of("key1", "key2"));
+
+        // ACT
+        Object result = operation.execute(mockLogicNode, null);
+
+        // ASSERT
+        assertFalse((Boolean) result);
+    }
+
+    @Test
+    @DisplayName("should return false when keys input is null")
+    void testExecute_WhenKeysInputIsNull_ShouldReturnFalse() {
+        // ARRANGE
+        when(mockLogicNode.getInputNodes()).thenReturn(List.of(mockObjectInput, mockKeysInput));
+
+        ObjectNode jsonObject = objectMapper.createObjectNode();
+        jsonObject.put("key1", "value1");
+
+        when(mockObjectInput.getCalculatedResult()).thenReturn(jsonObject);
+        when(mockKeysInput.getCalculatedResult()).thenReturn(null);
+
+        // ACT
+        Object result = operation.execute(mockLogicNode, null);
+
+        // ASSERT
+        assertFalse((Boolean) result);
+    }
+
+    // ==================== NON-JSONNODE INPUT TESTS ====================
+
+    @Test
+    @DisplayName("should return false when object input is not a JsonNode")
+    void testExecute_WhenObjectInputIsNotJsonNode_ShouldReturnFalse() {
+        // ARRANGE
+        when(mockLogicNode.getInputNodes()).thenReturn(List.of(mockObjectInput, mockKeysInput));
+        when(mockObjectInput.getCalculatedResult()).thenReturn("not a json node");
+        when(mockKeysInput.getCalculatedResult()).thenReturn(List.of("key1"));
+
+        // ACT
+        Object result = operation.execute(mockLogicNode, null);
+
+        // ASSERT
+        assertFalse((Boolean) result);
+    }
+
+    @Test
+    @DisplayName("should return false when JsonNode is not an object")
+    void testExecute_WhenJsonNodeIsNotObject_ShouldReturnFalse() {
+        // ARRANGE
+        when(mockLogicNode.getInputNodes()).thenReturn(List.of(mockObjectInput, mockKeysInput));
+
+        ArrayNode jsonArray = objectMapper.createArrayNode();
+        jsonArray.add("value1");
+
+        when(mockObjectInput.getCalculatedResult()).thenReturn(jsonArray);
+        when(mockKeysInput.getCalculatedResult()).thenReturn(List.of("key1"));
+
+        // ACT
+        Object result = operation.execute(mockLogicNode, null);
+
+        // ASSERT
+        assertFalse((Boolean) result);
+    }
+
+    // ==================== NON-COLLECTION KEYS TESTS ====================
+
+    @Test
+    @DisplayName("should return false when keys input is not a Collection")
+    void testExecute_WhenKeysInputIsNotCollection_ShouldReturnFalse() {
+        // ARRANGE
+        when(mockLogicNode.getInputNodes()).thenReturn(List.of(mockObjectInput, mockKeysInput));
+
+        ObjectNode jsonObject = objectMapper.createObjectNode();
+        jsonObject.put("key1", "value1");
+
+        when(mockObjectInput.getCalculatedResult()).thenReturn(jsonObject);
+        when(mockKeysInput.getCalculatedResult()).thenReturn("not a collection");
+
+        // ACT
+        Object result = operation.execute(mockLogicNode, null);
+
+        // ASSERT
+        assertFalse((Boolean) result);
+    }
+
+    // ==================== COLLECTION WITH NON-STRING KEYS ====================
+
+    @Test
+    @DisplayName("should skip non-string keys and continue checking")
+    void testExecute_WhenCollectionContainsNonStringKeys_ShouldSkipAndContinue() {
+        // ARRANGE
+        when(mockLogicNode.getInputNodes()).thenReturn(List.of(mockObjectInput, mockKeysInput));
+
+        ObjectNode jsonObject = objectMapper.createObjectNode();
+        jsonObject.put("key2", "value2");
+
+        when(mockObjectInput.getCalculatedResult()).thenReturn(jsonObject);
+        when(mockKeysInput.getCalculatedResult()).thenReturn(List.of(123, "key2", Boolean.TRUE));
+
+        // ACT
+        Object result = operation.execute(mockLogicNode, null);
+
+        // ASSERT
+        assertTrue((Boolean) result); // Should find "key2" and skip non-string keys
+    }
+
+    @Test
+    @DisplayName("should return false when all keys in collection are non-strings")
+    void testExecute_WhenAllKeysAreNonStrings_ShouldReturnFalse() {
+        // ARRANGE
+        when(mockLogicNode.getInputNodes()).thenReturn(List.of(mockObjectInput, mockKeysInput));
+
+        ObjectNode jsonObject = objectMapper.createObjectNode();
+        jsonObject.put("key1", "value1");
+
+        when(mockObjectInput.getCalculatedResult()).thenReturn(jsonObject);
+        when(mockKeysInput.getCalculatedResult()).thenReturn(List.of(123, Boolean.TRUE, 45.6));
+
+        // ACT
+        Object result = operation.execute(mockLogicNode, null);
+
+        // ASSERT
+        assertFalse((Boolean) result);
+    }
+
+    // ==================== EMPTY COLLECTION TESTS ====================
+
+    @Test
+    @DisplayName("should return false when keys collection is empty")
+    void testExecute_WhenKeysCollectionIsEmpty_ShouldReturnFalse() {
+        // ARRANGE
+        when(mockLogicNode.getInputNodes()).thenReturn(List.of(mockObjectInput, mockKeysInput));
+
+        ObjectNode jsonObject = objectMapper.createObjectNode();
+        jsonObject.put("key1", "value1");
+
+        when(mockObjectInput.getCalculatedResult()).thenReturn(jsonObject);
+        when(mockKeysInput.getCalculatedResult()).thenReturn(Collections.emptyList());
+
+        // ACT
+        Object result = operation.execute(mockLogicNode, null);
+
+        // ASSERT
+        assertFalse((Boolean) result);
+    }
+
+    // ==================== DIFFERENT COLLECTION TYPES ====================
+
+    @Test
+    @DisplayName("should work with Set as keys collection")
+    void testExecute_WithSetAsKeysCollection_ShouldWork() {
+        // ARRANGE
+        when(mockLogicNode.getInputNodes()).thenReturn(List.of(mockObjectInput, mockKeysInput));
+
+        ObjectNode jsonObject = objectMapper.createObjectNode();
+        jsonObject.put("key2", "value2");
+
+        when(mockObjectInput.getCalculatedResult()).thenReturn(jsonObject);
+        when(mockKeysInput.getCalculatedResult()).thenReturn(Set.of("key1", "key2", "key3"));
+
+        // ACT
+        Object result = operation.execute(mockLogicNode, null);
+
+        // ASSERT
+        assertTrue((Boolean) result);
+    }
+
+    // ==================== VALIDATION TESTS ====================
+
+    @Test
+    @DisplayName("should throw exception when inputs list is null")
+    void testValidateNode_WhenInputsListIsNull_ShouldThrowException() {
+        // ARRANGE
+        when(mockLogicNode.getInputNodes()).thenReturn(null);
+
+        // ACT & ASSERT
+        assertThrows(OperatorValidationException.class, () -> {
+            operation.validateNode(mockLogicNode);
+        });
+    }
+
+    @Test
+    @DisplayName("should throw exception when there are too many inputs")
+    void testValidateNode_WhenTooManyInputs_ShouldThrowException() {
+        // ARRANGE
+        when(mockLogicNode.getInputNodes()).thenReturn(List.of(mockObjectInput, mockKeysInput, mockObjectInput));
+
+        // ACT & ASSERT
+        assertThrows(OperatorValidationException.class, () -> {
+            operation.validateNode(mockLogicNode);
+        });
+    }
+
+    // ==================== EDGE CASES ====================
+
+    @Test
+    @DisplayName("should handle collection with null elements")
+    void testExecute_WithCollectionContainingNullElements_ShouldSkipNulls() {
+        // ARRANGE
+        when(mockLogicNode.getInputNodes()).thenReturn(List.of(mockObjectInput, mockKeysInput));
+
+        ObjectNode jsonObject = objectMapper.createObjectNode();
+        jsonObject.put("key2", "value2");
+
+        when(mockObjectInput.getCalculatedResult()).thenReturn(jsonObject);
+
+        // KORREKTUR: Ersetze List.of() durch eine Methode, die null-Werte erlaubt.
+        when(mockKeysInput.getCalculatedResult()).thenReturn(java.util.Arrays.asList(null, "key2", null));
+
+        // ACT
+        Object result = operation.execute(mockLogicNode, null);
+
+        // ASSERT
+        assertTrue((Boolean) result); // Should find "key2" and skip nulls
     }
 }

@@ -2,6 +2,7 @@ package predicates.general_predicates;
 
 import de.unistuttgart.graphengine.exception.OperatorValidationException;
 import de.unistuttgart.graphengine.logic_operator.general_predicates.NotEqualsOperator;
+import de.unistuttgart.graphengine.nodes.ConstantNode;
 import de.unistuttgart.graphengine.nodes.LogicNode;
 import de.unistuttgart.graphengine.nodes.Node;
 import org.junit.jupiter.api.BeforeEach;
@@ -33,6 +34,10 @@ public class NotEqualsOperatorTest {
     private Node mockInputNode2;
     @Mock
     private Node mockInputNode3;
+    @Mock
+    private ConstantNode mockConstantNode1;
+    @Mock
+    private ConstantNode mockConstantNode2;
 
     @BeforeEach
     void setUp() {
@@ -72,6 +77,21 @@ public class NotEqualsOperatorTest {
     }
 
     @Test
+    @DisplayName("should return true when comparing different types (e.g., number and string)")
+    void testExecute_WhenComparingDifferentTypes_ShouldReturnTrue() {
+        // ARRANGE
+        when(mockLogicNode.getInputNodes()).thenReturn(List.of(mockInputNode1, mockInputNode2));
+        when(mockInputNode1.getCalculatedResult()).thenReturn(123);
+        when(mockInputNode2.getCalculatedResult()).thenReturn("123");
+
+        // ACT
+        Object result = operation.execute(mockLogicNode, null);
+
+        // ASSERT
+        assertTrue((Boolean) result);
+    }
+
+    @Test
     @DisplayName("should handle null values correctly")
     void testExecute_WithNullValues_ShouldBehaveCorrectly() {
         // ARRANGE
@@ -92,6 +112,8 @@ public class NotEqualsOperatorTest {
         assertFalse((Boolean) result2, "Two nulls should be considered equal, so notEquals is false.");
     }
 
+    // ==================== VALIDATION TESTS ====================
+
     @Test
     @DisplayName("should throw exception if input count is less than 2")
     void testValidateNode_WithLessThanTwoInputs_ShouldThrowException() {
@@ -99,9 +121,28 @@ public class NotEqualsOperatorTest {
         when(mockLogicNode.getInputNodes()).thenReturn(List.of(mockInputNode1));
 
         // ACT & ASSERT
-        assertThrows(OperatorValidationException.class, () -> {
-            operation.validateNode(mockLogicNode);
-        });
+        assertThrows(OperatorValidationException.class, () -> operation.validateNode(mockLogicNode));
+    }
+
+    @Test
+    @DisplayName("should pass validation with zero or one ConstantNode")
+    void testValidateNode_WithValidConstantNodeCount_ShouldPass() {
+        // ARRANGE
+        when(mockLogicNode.getInputNodes()).thenReturn(List.of(mockInputNode1, mockInputNode2)); // 0 ConstantNodes
+        assertDoesNotThrow(() -> operation.validateNode(mockLogicNode));
+
+        when(mockLogicNode.getInputNodes()).thenReturn(List.of(mockInputNode1, mockConstantNode1)); // 1 ConstantNode
+        assertDoesNotThrow(() -> operation.validateNode(mockLogicNode));
+    }
+
+    @Test
+    @DisplayName("should throw exception with more than one ConstantNode")
+    void testValidateNode_WithTooManyConstantNodes_ShouldThrowException() {
+        // ARRANGE
+        when(mockLogicNode.getInputNodes()).thenReturn(List.of(mockConstantNode1, mockConstantNode2)); // 2 ConstantNodes
+
+        // ACT & ASSERT
+        assertThrows(OperatorValidationException.class, () -> operation.validateNode(mockLogicNode));
     }
 
     @Test

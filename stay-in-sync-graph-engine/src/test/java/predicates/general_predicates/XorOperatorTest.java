@@ -32,6 +32,8 @@ public class XorOperatorTest {
     private Node mockInputNode1;
     @Mock
     private Node mockInputNode2;
+    @Mock
+    private Node mockInputNode3;
 
     @BeforeEach
     void setUp() {
@@ -40,41 +42,65 @@ public class XorOperatorTest {
 
     @Test
     @DisplayName("should return true when exactly one input is true")
-    void testExecute_WhenOneInputIsTrue_ShouldReturnTrue() {
+    void testExecute_WhenOneInputIsTrue_ShouldReturnTrue() throws GraphEvaluationException {
         // ARRANGE
         when(mockLogicNode.getInputNodes()).thenReturn(List.of(mockInputNode1, mockInputNode2));
         when(mockInputNode1.getCalculatedResult()).thenReturn(true);
         when(mockInputNode2.getCalculatedResult()).thenReturn(false);
 
-        // ACT & ASSERT
-        assertDoesNotThrow(() -> {
-            Object result = operation.execute(mockLogicNode, null);
-            assertTrue((Boolean) result);
-        });
+        // ACT
+        Object result = operation.execute(mockLogicNode, null);
+
+        // ASSERT
+        assertTrue((Boolean) result);
     }
 
     @Test
     @DisplayName("should return false when both inputs are the same")
-    void testExecute_WhenBothInputsAreSame_ShouldReturnFalse() {
+    void testExecute_WhenBothInputsAreSame_ShouldReturnFalse() throws GraphEvaluationException {
         // ARRANGE
         when(mockLogicNode.getInputNodes()).thenReturn(List.of(mockInputNode1, mockInputNode2));
 
+        // Fall 1: Beide sind true
+        when(mockInputNode1.getCalculatedResult()).thenReturn(true);
+        when(mockInputNode2.getCalculatedResult()).thenReturn(true);
+        Object result1 = operation.execute(mockLogicNode, null);
+
+        // Fall 2: Beide sind false
+        when(mockInputNode1.getCalculatedResult()).thenReturn(false);
+        when(mockInputNode2.getCalculatedResult()).thenReturn(false);
+        Object result2 = operation.execute(mockLogicNode, null);
+
+        // ASSERT
+        assertFalse((Boolean) result1, "Should be false when both are true.");
+        assertFalse((Boolean) result2, "Should be false when both are false.");
+    }
+
+    @Test
+    @DisplayName("should throw GraphEvaluationException when input is not a boolean")
+    void testExecute_WhenInputIsNotBoolean_ShouldThrowException() {
+        // ARRANGE
+        when(mockLogicNode.getInputNodes()).thenReturn(List.of(mockInputNode1));
+        when(mockInputNode1.getCalculatedResult()).thenReturn("true"); // Falscher Typ
+
         // ACT & ASSERT
-        assertDoesNotThrow(() -> {
-            // Fall 1: Beide sind true
-            when(mockInputNode1.getCalculatedResult()).thenReturn(true);
-            when(mockInputNode2.getCalculatedResult()).thenReturn(true);
-            Object result1 = operation.execute(mockLogicNode, null);
+        assertThrows(GraphEvaluationException.class, () -> operation.execute(mockLogicNode, null));
+    }
 
-            // Fall 2: Beide sind false
-            when(mockInputNode1.getCalculatedResult()).thenReturn(false);
-            when(mockInputNode2.getCalculatedResult()).thenReturn(false);
-            Object result2 = operation.execute(mockLogicNode, null);
+    @Test
+    @DisplayName("should ignore null inputs")
+    void testExecute_WhenInputIsNull_ShouldBeIgnored() throws GraphEvaluationException {
+        // ARRANGE
+        when(mockLogicNode.getInputNodes()).thenReturn(List.of(mockInputNode1, mockInputNode2, mockInputNode3));
+        when(mockInputNode1.getCalculatedResult()).thenReturn(true);
+        when(mockInputNode2.getCalculatedResult()).thenReturn(false);
+        when(mockInputNode3.getCalculatedResult()).thenReturn(null);
 
-            // ASSERT
-            assertFalse((Boolean) result1, "Should be false when both are true.");
-            assertFalse((Boolean) result2, "Should be false when both are false.");
-        });
+        // ACT
+        Object result = operation.execute(mockLogicNode, null);
+
+        // ASSERT
+        assertTrue((Boolean) result);
     }
 
     @Test
@@ -84,9 +110,7 @@ public class XorOperatorTest {
         when(mockLogicNode.getInputNodes()).thenReturn(List.of(mockInputNode1));
 
         // ACT & ASSERT
-        assertThrows(OperatorValidationException.class, () -> {
-            operation.validateNode(mockLogicNode);
-        });
+        assertThrows(OperatorValidationException.class, () -> operation.validateNode(mockLogicNode));
     }
 
     @Test

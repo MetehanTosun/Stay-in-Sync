@@ -12,6 +12,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.util.Collections;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -40,32 +41,44 @@ public class AndOperatorTest {
 
     @Test
     @DisplayName("should return true when all inputs are true")
-    void testExecute_WhenAllInputsAreTrue_ShouldReturnTrue() {
+    void testExecute_WhenAllInputsAreTrue_ShouldReturnTrue() throws GraphEvaluationException {
         // ARRANGE
         when(mockLogicNode.getInputNodes()).thenReturn(List.of(mockInputNode1, mockInputNode2));
         when(mockInputNode1.getCalculatedResult()).thenReturn(true);
         when(mockInputNode2.getCalculatedResult()).thenReturn(true);
 
-        // ACT & ASSERT: Wir fügen einen try-catch-Block hinzu, obwohl wir hier keine Exception erwarten.
-        assertDoesNotThrow(() -> {
-            Object result = operation.execute(mockLogicNode, null);
-            assertTrue((Boolean) result);
-        });
+        // ACT
+        Object result = operation.execute(mockLogicNode, null);
+
+        // ASSERT
+        assertTrue((Boolean) result);
     }
 
     @Test
     @DisplayName("should return false when any input is false")
-    void testExecute_WhenAnyInputIsFalse_ShouldReturnFalse() {
+    void testExecute_WhenAnyInputIsFalse_ShouldReturnFalse() throws GraphEvaluationException {
         // ARRANGE
         when(mockLogicNode.getInputNodes()).thenReturn(List.of(mockInputNode1, mockInputNode2));
         when(mockInputNode1.getCalculatedResult()).thenReturn(true);
         when(mockInputNode2.getCalculatedResult()).thenReturn(false);
 
+        // ACT
+        Object result = operation.execute(mockLogicNode, null);
+
+        // ASSERT
+        assertFalse((Boolean) result);
+    }
+
+    @Test
+    @DisplayName("should throw GraphEvaluationException when input is not a boolean")
+    void testExecute_WhenInputIsNotBoolean_ShouldThrowException() {
+        // ARRANGE
+        when(mockLogicNode.getInputNodes()).thenReturn(List.of(mockInputNode1, mockInputNode2));
+        when(mockInputNode1.getCalculatedResult()).thenReturn(true);
+        when(mockInputNode2.getCalculatedResult()).thenReturn("not a boolean"); // Falscher Typ
+
         // ACT & ASSERT
-        assertDoesNotThrow(() -> {
-            Object result = operation.execute(mockLogicNode, null);
-            assertFalse((Boolean) result);
-        });
+        assertThrows(GraphEvaluationException.class, () -> operation.execute(mockLogicNode, null));
     }
 
     @Test
@@ -73,11 +86,13 @@ public class AndOperatorTest {
     void testValidateNode_WithLessThanTwoInputs_ShouldThrowException() {
         // ARRANGE
         when(mockLogicNode.getInputNodes()).thenReturn(List.of(mockInputNode1));
+        assertThrows(OperatorValidationException.class, () -> operation.validateNode(mockLogicNode));
 
-        // ACT & ASSERT
-        assertThrows(OperatorValidationException.class, () -> {
-            operation.validateNode(mockLogicNode);
-        });
+        when(mockLogicNode.getInputNodes()).thenReturn(Collections.emptyList());
+        assertThrows(OperatorValidationException.class, () -> operation.validateNode(mockLogicNode));
+
+        when(mockLogicNode.getInputNodes()).thenReturn(null);
+        assertThrows(OperatorValidationException.class, () -> operation.validateNode(mockLogicNode));
     }
 
     @Test

@@ -1,6 +1,7 @@
 package predicates.object_predicates;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import de.unistuttgart.graphengine.exception.OperatorValidationException;
 import de.unistuttgart.graphengine.logic_operator.object_predicates.LacksKeyOperator;
@@ -45,10 +46,8 @@ public class LacksKeyOperationTest {
     void testExecute_WhenKeyDoesNotExist_ShouldReturnTrue() {
         // ARRANGE
         when(mockLogicNode.getInputNodes()).thenReturn(List.of(mockObjectInput, mockKeyInput));
-
         ObjectNode jsonObject = objectMapper.createObjectNode();
         jsonObject.put("humidity", 50);
-
         when(mockObjectInput.getCalculatedResult()).thenReturn(jsonObject);
         when(mockKeyInput.getCalculatedResult()).thenReturn("temperature");
 
@@ -64,10 +63,8 @@ public class LacksKeyOperationTest {
     void testExecute_WhenKeyExists_ShouldReturnFalse() {
         // ARRANGE
         when(mockLogicNode.getInputNodes()).thenReturn(List.of(mockObjectInput, mockKeyInput));
-
         ObjectNode jsonObject = objectMapper.createObjectNode();
         jsonObject.put("temperature", 25);
-
         when(mockObjectInput.getCalculatedResult()).thenReturn(jsonObject);
         when(mockKeyInput.getCalculatedResult()).thenReturn("temperature");
 
@@ -78,6 +75,89 @@ public class LacksKeyOperationTest {
         assertFalse((Boolean) result);
     }
 
+    // ==================== INPUT VALIDATION TESTS ====================
+
+    @Test
+    @DisplayName("should return true when object input is null")
+    void testExecute_WhenObjectInputIsNull_ShouldReturnTrue() {
+        // ARRANGE
+        when(mockLogicNode.getInputNodes()).thenReturn(List.of(mockObjectInput, mockKeyInput));
+        when(mockObjectInput.getCalculatedResult()).thenReturn(null);
+        when(mockKeyInput.getCalculatedResult()).thenReturn("temperature");
+
+        // ACT
+        Object result = operation.execute(mockLogicNode, null);
+
+        // ASSERT
+        assertTrue((Boolean) result);
+    }
+
+    @Test
+    @DisplayName("should return true when object input is not a JsonNode")
+    void testExecute_WhenObjectInputIsNotJsonNode_ShouldReturnTrue() {
+        // ARRANGE
+        when(mockLogicNode.getInputNodes()).thenReturn(List.of(mockObjectInput, mockKeyInput));
+        when(mockObjectInput.getCalculatedResult()).thenReturn("a plain string");
+        when(mockKeyInput.getCalculatedResult()).thenReturn("temperature");
+
+        // ACT
+        Object result = operation.execute(mockLogicNode, null);
+
+        // ASSERT
+        assertTrue((Boolean) result);
+    }
+
+    @Test
+    @DisplayName("should return true when JsonNode is not an object (e.g., an array)")
+    void testExecute_WhenJsonNodeIsNotAnObject_ShouldReturnTrue() {
+        // ARRANGE
+        when(mockLogicNode.getInputNodes()).thenReturn(List.of(mockObjectInput, mockKeyInput));
+        ArrayNode jsonArray = objectMapper.createArrayNode();
+        when(mockObjectInput.getCalculatedResult()).thenReturn(jsonArray);
+        when(mockKeyInput.getCalculatedResult()).thenReturn("temperature");
+
+        // ACT
+        Object result = operation.execute(mockLogicNode, null);
+
+        // ASSERT
+        assertTrue((Boolean) result);
+    }
+
+    @Test
+    @DisplayName("should return false when key input is null")
+    void testExecute_WhenKeyInputIsNull_ShouldReturnFalse() {
+        // ARRANGE
+        when(mockLogicNode.getInputNodes()).thenReturn(List.of(mockObjectInput, mockKeyInput));
+        ObjectNode jsonObject = objectMapper.createObjectNode();
+        jsonObject.put("temperature", 25);
+        when(mockObjectInput.getCalculatedResult()).thenReturn(jsonObject);
+        when(mockKeyInput.getCalculatedResult()).thenReturn(null);
+
+        // ACT
+        Object result = operation.execute(mockLogicNode, null);
+
+        // ASSERT
+        assertFalse((Boolean) result);
+    }
+
+    @Test
+    @DisplayName("should return false when key input is not a String")
+    void testExecute_WhenKeyInputIsNotAString_ShouldReturnFalse() {
+        // ARRANGE
+        when(mockLogicNode.getInputNodes()).thenReturn(List.of(mockObjectInput, mockKeyInput));
+        ObjectNode jsonObject = objectMapper.createObjectNode();
+        when(mockObjectInput.getCalculatedResult()).thenReturn(jsonObject);
+        when(mockKeyInput.getCalculatedResult()).thenReturn(123); // Integer statt String
+
+        // ACT
+        Object result = operation.execute(mockLogicNode, null);
+
+        // ASSERT
+        assertFalse((Boolean) result);
+    }
+
+    // ==================== NODE VALIDATION TESTS ====================
+
     @Test
     @DisplayName("should throw exception if input count is not exactly 2")
     void testValidateNode_WithIncorrectInputCount_ShouldThrowException() {
@@ -85,9 +165,7 @@ public class LacksKeyOperationTest {
         when(mockLogicNode.getInputNodes()).thenReturn(List.of(mockObjectInput));
 
         // ACT & ASSERT
-        assertThrows(OperatorValidationException.class, () -> {
-            operation.validateNode(mockLogicNode);
-        });
+        assertThrows(OperatorValidationException.class, () -> operation.validateNode(mockLogicNode));
     }
 
     @Test

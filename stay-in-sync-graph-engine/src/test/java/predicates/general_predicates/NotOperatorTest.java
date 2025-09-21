@@ -12,6 +12,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.util.Collections;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -38,42 +39,54 @@ public class NotOperatorTest {
 
     @Test
     @DisplayName("should return true when input is false")
-    void testExecute_WhenInputIsFalse_ShouldReturnTrue() {
+    void testExecute_WhenInputIsFalse_ShouldReturnTrue() throws GraphEvaluationException {
         // ARRANGE
         when(mockLogicNode.getInputNodes()).thenReturn(List.of(mockInputNode));
         when(mockInputNode.getCalculatedResult()).thenReturn(false);
 
-        // ACT & ASSERT
-        assertDoesNotThrow(() -> {
-            Object result = operation.execute(mockLogicNode, null);
-            assertTrue((Boolean) result);
-        });
+        // ACT
+        Object result = operation.execute(mockLogicNode, null);
+
+        // ASSERT
+        assertTrue((Boolean) result);
     }
 
     @Test
     @DisplayName("should return false when input is true")
-    void testExecute_WhenInputIsTrue_ShouldReturnFalse() {
+    void testExecute_WhenInputIsTrue_ShouldReturnFalse() throws GraphEvaluationException {
         // ARRANGE
         when(mockLogicNode.getInputNodes()).thenReturn(List.of(mockInputNode));
         when(mockInputNode.getCalculatedResult()).thenReturn(true);
 
+        // ACT
+        Object result = operation.execute(mockLogicNode, null);
+
+        // ASSERT
+        assertFalse((Boolean) result);
+    }
+
+    @Test
+    @DisplayName("should throw GraphEvaluationException when input is not a boolean")
+    void testExecute_WhenInputIsNotBoolean_ShouldThrowException() {
+        // ARRANGE
+        when(mockLogicNode.getInputNodes()).thenReturn(List.of(mockInputNode));
+        when(mockInputNode.getCalculatedResult()).thenReturn(null); // z.B. null ist kein Boolean
+
         // ACT & ASSERT
-        assertDoesNotThrow(() -> {
-            Object result = operation.execute(mockLogicNode, null);
-            assertFalse((Boolean) result);
-        });
+        assertThrows(GraphEvaluationException.class, () -> operation.execute(mockLogicNode, null));
     }
 
     @Test
     @DisplayName("should throw exception if input count is not exactly 1")
     void testValidateNode_WithIncorrectInputCount_ShouldThrowException() {
         // ARRANGE
-        // Fall 1: Keine Inputs
-        when(mockLogicNode.getInputNodes()).thenReturn(List.of());
+        when(mockLogicNode.getInputNodes()).thenReturn(Collections.emptyList()); // 0 Inputs
         assertThrows(OperatorValidationException.class, () -> operation.validateNode(mockLogicNode));
 
-        // Fall 2: Mehr als ein Input
-        when(mockLogicNode.getInputNodes()).thenReturn(List.of(mockInputNode, mockInputNode));
+        when(mockLogicNode.getInputNodes()).thenReturn(List.of(mockInputNode, mockInputNode)); // 2 Inputs
+        assertThrows(OperatorValidationException.class, () -> operation.validateNode(mockLogicNode));
+
+        when(mockLogicNode.getInputNodes()).thenReturn(null);
         assertThrows(OperatorValidationException.class, () -> operation.validateNode(mockLogicNode));
     }
 

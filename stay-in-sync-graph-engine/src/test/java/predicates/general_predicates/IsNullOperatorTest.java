@@ -4,6 +4,7 @@ import de.unistuttgart.graphengine.exception.OperatorValidationException;
 import de.unistuttgart.graphengine.logic_operator.general_predicates.IsNullOperator;
 import de.unistuttgart.graphengine.nodes.LogicNode;
 import de.unistuttgart.graphengine.nodes.Node;
+import de.unistuttgart.graphengine.nodes.ProviderNode;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -11,6 +12,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.util.Collections;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -28,9 +30,11 @@ public class IsNullOperatorTest {
     @Mock
     private LogicNode mockLogicNode;
     @Mock
-    private Node mockInputNode1;
+    private ProviderNode mockInputNode1;
     @Mock
-    private Node mockInputNode2;
+    private ProviderNode mockInputNode2;
+    @Mock
+    private Node mockInvalidInputNode;
 
     @BeforeEach
     void setUp() {
@@ -93,6 +97,39 @@ public class IsNullOperatorTest {
 
         // ASSERT
         assertFalse((Boolean) result);
+    }
+
+    // ==================== NODE VALIDATION TESTS ====================
+
+    @Test
+    @DisplayName("should throw exception when inputs list is null")
+    void testValidateNode_WhenInputsListIsNull_ShouldThrowException() {
+        // ARRANGE
+        when(mockLogicNode.getInputNodes()).thenReturn(null);
+
+        // ACT & ASSERT
+        assertThrows(OperatorValidationException.class, () -> operation.validateNode(mockLogicNode));
+    }
+
+    @Test
+    @DisplayName("should throw exception when inputs list is empty")
+    void testValidateNode_WhenInputsListIsEmpty_ShouldThrowException() {
+        // ARRANGE
+        when(mockLogicNode.getInputNodes()).thenReturn(Collections.emptyList());
+
+        // ACT & ASSERT
+        assertThrows(OperatorValidationException.class, () -> operation.validateNode(mockLogicNode));
+    }
+
+    @Test
+    @DisplayName("should throw exception when an input is not a ProviderNode")
+    void testValidateNode_WhenInputIsNotProviderNode_ShouldThrowException() {
+        // ARRANGE
+        // Wichtig: mockInvalidInputNode ist vom Typ Node, nicht ProviderNode
+        when(mockLogicNode.getInputNodes()).thenReturn(List.of(mockInputNode1, mockInvalidInputNode));
+
+        // ACT & ASSERT
+        assertThrows(OperatorValidationException.class, () -> operation.validateNode(mockLogicNode));
     }
 
     @Test

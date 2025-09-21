@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import de.unistuttgart.graphengine.exception.OperatorValidationException;
 import de.unistuttgart.graphengine.logic_operator.general_predicates.NotExistsOperator;
 import de.unistuttgart.graphengine.nodes.LogicNode;
+import de.unistuttgart.graphengine.nodes.Node;
 import de.unistuttgart.graphengine.nodes.ProviderNode;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -13,6 +14,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -25,6 +27,8 @@ public class NotExistsOperatorTest {
 
     private NotExistsOperator operation;
     private final ObjectMapper objectMapper = new ObjectMapper();
+    private Map<String, JsonNode> dataContext;
+
 
     @Mock
     private LogicNode mockLogicNode;
@@ -32,10 +36,18 @@ public class NotExistsOperatorTest {
     private ProviderNode mockInputNode1;
     @Mock
     private ProviderNode mockInputNode2;
+    @Mock
+    private Node mockInvalidInputNode;
 
     @BeforeEach
     void setUp() {
         operation = new NotExistsOperator();
+        JsonNode dataContextNode = objectMapper.createObjectNode().set("source",
+                objectMapper.createObjectNode().set("sensor",
+                        objectMapper.createObjectNode().put("temperature", 25)
+                )
+        );
+        dataContext = Map.of("source", dataContextNode.get("source"));
     }
 
     @Test
@@ -44,13 +56,6 @@ public class NotExistsOperatorTest {
         // ARRANGE
         when(mockLogicNode.getInputNodes()).thenReturn(List.of(mockInputNode1));
         when(mockInputNode1.getJsonPath()).thenReturn("source.sensor.pressure");
-
-        JsonNode dataContextNode = objectMapper.createObjectNode().set("source",
-                objectMapper.createObjectNode().set("sensor",
-                        objectMapper.createObjectNode().put("temperature", 25)
-                )
-        );
-        Map<String, JsonNode> dataContext = Map.of("source", dataContextNode.get("source"));
 
         // ACT
         Object result = operation.execute(mockLogicNode, dataContext);
@@ -65,13 +70,6 @@ public class NotExistsOperatorTest {
         // ARRANGE
         when(mockLogicNode.getInputNodes()).thenReturn(List.of(mockInputNode1));
         when(mockInputNode1.getJsonPath()).thenReturn("source.sensor.temperature");
-
-        JsonNode dataContextNode = objectMapper.createObjectNode().set("source",
-                objectMapper.createObjectNode().set("sensor",
-                        objectMapper.createObjectNode().put("temperature", 25)
-                )
-        );
-        Map<String, JsonNode> dataContext = Map.of("source", dataContextNode.get("source"));
 
         // ACT
         Object result = operation.execute(mockLogicNode, dataContext);
@@ -88,18 +86,74 @@ public class NotExistsOperatorTest {
         when(mockInputNode1.getJsonPath()).thenReturn("source.sensor.pressure"); // existiert nicht
         when(mockInputNode2.getJsonPath()).thenReturn("source.sensor.temperature"); // existiert
 
-        JsonNode dataContextNode = objectMapper.createObjectNode().set("source",
-                objectMapper.createObjectNode().set("sensor",
-                        objectMapper.createObjectNode().put("temperature", 25)
-                )
-        );
-        Map<String, JsonNode> dataContext = Map.of("source", dataContextNode.get("source"));
-
         // ACT
         Object result = operation.execute(mockLogicNode, dataContext);
 
         // ASSERT
         assertFalse((Boolean) result, "Should return false as soon as one path is found.");
+    }
+
+    @Test
+    @DisplayName("should return true when ALL of multiple paths do not exist")
+    void testExecute_WhenAllMultiplePathsDoNotExist_ShouldReturnTrue() {
+        // ARRANGE
+        when(mockLogicNode.getInputNodes()).thenReturn(List.of(mockInputNode1, mockInputNode2));
+        when(mockInputNode1.getJsonPath()).thenReturn("source.sensor.pressure"); // existiert nicht
+        when(mockInputNode2.getJsonPath()).thenReturn("source.sensor.humidity"); // existiert nicht
+
+        // ACT
+        Object result = operation.execute(mockLogicNode, dataContext);
+
+        // ASSERT
+        assertTrue((Boolean) result);
+    }
+
+    // ==================== EDGE CASE TESTS ====================
+
+    @Test
+    @DisplayName("should return true when dataContext is null")
+    void testExecute_WhenDataContextIsNull_ShouldReturnTrue() {
+        // KORREKTUR: Die Mocks wurden entfernt, da die Methode sofort aussteigt.
+        assertTrue((Boolean) operation.execute(mockLogicNode, null));
+    }
+
+    @Test
+    @DisplayName("should return true when dataContext is empty")
+    void testExecute_WhenDataContextIsEmpty_ShouldReturnTrue() {
+        when(mockLogicNode.getInputNodes()).thenReturn(List.of(mockInputNode1));
+        when(mockInputNode1.getJsonPath()).thenReturn("source.sensor.temperature");
+        assertTrue((Boolean) operation.execute(mockLogicNode, Collections.emptyMap()));
+    }
+
+    @Test
+    @DisplayName("should return true when source key does not exist in dataContext")
+    void testExecute_WhenSourceKeyIsMissing_ShouldReturnTrue() {
+        when(mockLogicNode.getInputNodes()).thenReturn(List.of(mockInputNode1));
+        when(mockInputNode1.getJsonPath()).thenReturn("wrong_source.sensor.temperature");
+        assertTrue((Boolean) operation.execute(mockLogicNode, dataContext));
+    }
+
+    // ==================== NODE VALIDATION TESTS ====================
+
+    @Test
+    @DisplayName("should throw exception when inputs list is null")
+    void testValidateNode_WhenInputsListIsNull_ShouldThrowException() {
+        when(mockLogicNode.getInputNodes()).thenReturn(null);
+        assertThrows(OperatorValidationException.class, () -> operation.validateNode(mockLogicNode));
+    }
+
+    @Test
+    @DisplayName("should throw exception when inputs list is empty")
+    void testValidateNode_WhenInputsListIsEmpty_ShouldThrowException() {
+        when(mockLogicNode.getInputNodes()).thenReturn(Collections.emptyList());
+        assertThrows(OperatorValidationException.class, () -> operation.validateNode(mockLogicNode));
+    }
+
+    @Test
+    @DisplayName("should throw exception when an input is not a ProviderNode")
+    void testValidateNode_WhenInputIsNotProviderNode_ShouldThrowException() {
+        when(mockLogicNode.getInputNodes()).thenReturn(List.of(mockInputNode1, mockInvalidInputNode));
+        assertThrows(OperatorValidationException.class, () -> operation.validateNode(mockLogicNode));
     }
 
     @Test

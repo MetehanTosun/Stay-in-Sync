@@ -2,6 +2,7 @@ package predicates.number_predicates;
 
 import de.unistuttgart.graphengine.exception.OperatorValidationException;
 import de.unistuttgart.graphengine.logic_operator.number_predicates.BetweenOperator;
+import de.unistuttgart.graphengine.nodes.ConstantNode;
 import de.unistuttgart.graphengine.nodes.LogicNode;
 import de.unistuttgart.graphengine.nodes.Node;
 import org.junit.jupiter.api.BeforeEach;
@@ -28,11 +29,18 @@ public class BetweenOperatorTest {
     @Mock
     private LogicNode mockLogicNode;
     @Mock
-    private Node mockValueNode; // Der zu prüfende Wert
+    private Node mockValueNode;
     @Mock
-    private Node mockLowerBoundNode; // Die untere Grenze
+    private Node mockLowerBoundNode;
     @Mock
-    private Node mockUpperBoundNode; // Die obere Grenze
+    private Node mockUpperBoundNode;
+
+    @Mock
+    private ConstantNode mockConstantValueNode;
+    @Mock
+    private ConstantNode mockConstantLowerBoundNode;
+    @Mock
+    private ConstantNode mockConstantUpperBoundNode;
 
     @BeforeEach
     void setUp() {
@@ -113,5 +121,219 @@ public class BetweenOperatorTest {
     @DisplayName("should declare its return type as Boolean")
     void getReturnType_ShouldReturnBooleanClass() {
         assertEquals(Boolean.class, operation.getReturnType());
+    }
+
+    @Test
+    @DisplayName("should return false when value is null")
+    void testExecute_WhenValueIsNull_ShouldReturnFalse() {
+        // ARRANGE
+        when(mockLogicNode.getInputNodes()).thenReturn(List.of(mockValueNode, mockLowerBoundNode, mockUpperBoundNode));
+        when(mockValueNode.getCalculatedResult()).thenReturn(null);
+        when(mockLowerBoundNode.getCalculatedResult()).thenReturn(10.0);
+        when(mockUpperBoundNode.getCalculatedResult()).thenReturn(20.0);
+
+        // ACT
+        Object result = operation.execute(mockLogicNode, null);
+
+        // ASSERT
+        assertFalse((Boolean) result);
+    }
+
+    @Test
+    @DisplayName("should return false when lower bound is null")
+    void testExecute_WhenLowerBoundIsNull_ShouldReturnFalse() {
+        // ARRANGE
+        when(mockLogicNode.getInputNodes()).thenReturn(List.of(mockValueNode, mockLowerBoundNode, mockUpperBoundNode));
+        when(mockValueNode.getCalculatedResult()).thenReturn(15.0);
+        when(mockLowerBoundNode.getCalculatedResult()).thenReturn(null);
+        when(mockUpperBoundNode.getCalculatedResult()).thenReturn(20.0);
+
+        // ACT
+        Object result = operation.execute(mockLogicNode, null);
+
+        // ASSERT
+        assertFalse((Boolean) result);
+    }
+
+    @Test
+    @DisplayName("should return false when upper bound is null")
+    void testExecute_WhenUpperBoundIsNull_ShouldReturnFalse() {
+        // ARRANGE
+        when(mockLogicNode.getInputNodes()).thenReturn(List.of(mockValueNode, mockLowerBoundNode, mockUpperBoundNode));
+        when(mockValueNode.getCalculatedResult()).thenReturn(15.0);
+        when(mockLowerBoundNode.getCalculatedResult()).thenReturn(10.0);
+        when(mockUpperBoundNode.getCalculatedResult()).thenReturn(null);
+
+        // ACT
+        Object result = operation.execute(mockLogicNode, null);
+
+        // ASSERT
+        assertFalse((Boolean) result);
+    }
+
+    // ==================== NON-NUMBER INPUT TESTS ====================
+
+    @Test
+    @DisplayName("should return false when value is not a number")
+    void testExecute_WhenValueIsNotNumber_ShouldReturnFalse() {
+        // ARRANGE
+        when(mockLogicNode.getInputNodes()).thenReturn(List.of(mockValueNode, mockLowerBoundNode, mockUpperBoundNode));
+        when(mockValueNode.getCalculatedResult()).thenReturn("not a number");
+        when(mockLowerBoundNode.getCalculatedResult()).thenReturn(10.0);
+        when(mockUpperBoundNode.getCalculatedResult()).thenReturn(20.0);
+
+        // ACT
+        Object result = operation.execute(mockLogicNode, null);
+
+        // ASSERT
+        assertFalse((Boolean) result);
+    }
+
+    @Test
+    @DisplayName("should return false when lower bound is not a number")
+    void testExecute_WhenLowerBoundIsNotNumber_ShouldReturnFalse() {
+        // ARRANGE
+        when(mockLogicNode.getInputNodes()).thenReturn(List.of(mockValueNode, mockLowerBoundNode, mockUpperBoundNode));
+        when(mockValueNode.getCalculatedResult()).thenReturn(15.0);
+        when(mockLowerBoundNode.getCalculatedResult()).thenReturn("not a number");
+        when(mockUpperBoundNode.getCalculatedResult()).thenReturn(20.0);
+
+        // ACT
+        Object result = operation.execute(mockLogicNode, null);
+
+        // ASSERT
+        assertFalse((Boolean) result);
+    }
+
+    @Test
+    @DisplayName("should return false when upper bound is not a number")
+    void testExecute_WhenUpperBoundIsNotNumber_ShouldReturnFalse() {
+        // ARRANGE
+        when(mockLogicNode.getInputNodes()).thenReturn(List.of(mockValueNode, mockLowerBoundNode, mockUpperBoundNode));
+        when(mockValueNode.getCalculatedResult()).thenReturn(15.0);
+        when(mockLowerBoundNode.getCalculatedResult()).thenReturn(10.0);
+        when(mockUpperBoundNode.getCalculatedResult()).thenReturn("not a number");
+
+        // ACT
+        Object result = operation.execute(mockLogicNode, null);
+
+        // ASSERT
+        assertFalse((Boolean) result);
+    }
+
+    // ==================== VALIDATION TESTS ====================
+
+    @Test
+    @DisplayName("should throw exception when inputs list is null")
+    void testValidateNode_WhenInputsListIsNull_ShouldThrowException() {
+        // ARRANGE
+        when(mockLogicNode.getInputNodes()).thenReturn(null);
+
+        // ACT & ASSERT
+        assertThrows(OperatorValidationException.class, () -> {
+            operation.validateNode(mockLogicNode);
+        });
+    }
+
+    @Test
+    @DisplayName("should throw exception when all three inputs are ConstantNodes")
+    void testValidateNode_WhenAllInputsAreConstants_ShouldThrowException() {
+        // ARRANGE
+        when(mockLogicNode.getInputNodes()).thenReturn(List.of(mockConstantValueNode, mockConstantLowerBoundNode, mockConstantUpperBoundNode));
+
+        // ACT & ASSERT
+        assertThrows(OperatorValidationException.class, () -> {
+            operation.validateNode(mockLogicNode);
+        });
+    }
+
+    @Test
+    @DisplayName("should pass validation when two inputs are ConstantNodes")
+    void testValidateNode_WhenTwoInputsAreConstants_ShouldPass() {
+        // ARRANGE
+        when(mockLogicNode.getInputNodes()).thenReturn(List.of(mockValueNode, mockConstantLowerBoundNode, mockConstantUpperBoundNode));
+
+        // ACT & ASSERT
+        assertDoesNotThrow(() -> {
+            operation.validateNode(mockLogicNode);
+        });
+    }
+
+    @Test
+    @DisplayName("should pass validation when one input is ConstantNode")
+    void testValidateNode_WhenOneInputIsConstant_ShouldPass() {
+        // ARRANGE
+        when(mockLogicNode.getInputNodes()).thenReturn(List.of(mockConstantValueNode, mockLowerBoundNode, mockUpperBoundNode));
+
+        // ACT & ASSERT
+        assertDoesNotThrow(() -> {
+            operation.validateNode(mockLogicNode);
+        });
+    }
+
+    // ==================== DIFFERENT NUMBER TYPES TESTS ====================
+
+    @Test
+    @DisplayName("should work with Integer types")
+    void testExecute_WithIntegerTypes_ShouldWork() {
+        // ARRANGE
+        when(mockLogicNode.getInputNodes()).thenReturn(List.of(mockValueNode, mockLowerBoundNode, mockUpperBoundNode));
+        when(mockValueNode.getCalculatedResult()).thenReturn(15);
+        when(mockLowerBoundNode.getCalculatedResult()).thenReturn(10);
+        when(mockUpperBoundNode.getCalculatedResult()).thenReturn(20);
+
+        // ACT
+        Object result = operation.execute(mockLogicNode, null);
+
+        // ASSERT
+        assertTrue((Boolean) result);
+    }
+
+    @Test
+    @DisplayName("should work with Long types")
+    void testExecute_WithLongTypes_ShouldWork() {
+        // ARRANGE
+        when(mockLogicNode.getInputNodes()).thenReturn(List.of(mockValueNode, mockLowerBoundNode, mockUpperBoundNode));
+        when(mockValueNode.getCalculatedResult()).thenReturn(15L);
+        when(mockLowerBoundNode.getCalculatedResult()).thenReturn(10L);
+        when(mockUpperBoundNode.getCalculatedResult()).thenReturn(20L);
+
+        // ACT
+        Object result = operation.execute(mockLogicNode, null);
+
+        // ASSERT
+        assertTrue((Boolean) result);
+    }
+
+    @Test
+    @DisplayName("should work with Float types")
+    void testExecute_WithFloatTypes_ShouldWork() {
+        // ARRANGE
+        when(mockLogicNode.getInputNodes()).thenReturn(List.of(mockValueNode, mockLowerBoundNode, mockUpperBoundNode));
+        when(mockValueNode.getCalculatedResult()).thenReturn(15.5f);
+        when(mockLowerBoundNode.getCalculatedResult()).thenReturn(10.0f);
+        when(mockUpperBoundNode.getCalculatedResult()).thenReturn(20.0f);
+
+        // ACT
+        Object result = operation.execute(mockLogicNode, null);
+
+        // ASSERT
+        assertTrue((Boolean) result);
+    }
+
+    @Test
+    @DisplayName("should work with mixed number types")
+    void testExecute_WithMixedNumberTypes_ShouldWork() {
+        // ARRANGE
+        when(mockLogicNode.getInputNodes()).thenReturn(List.of(mockValueNode, mockLowerBoundNode, mockUpperBoundNode));
+        when(mockValueNode.getCalculatedResult()).thenReturn(15.0); // Double
+        when(mockLowerBoundNode.getCalculatedResult()).thenReturn(10); // Integer
+        when(mockUpperBoundNode.getCalculatedResult()).thenReturn(20L); // Long
+
+        // ACT
+        Object result = operation.execute(mockLogicNode, null);
+
+        // ASSERT
+        assertTrue((Boolean) result);
     }
 }

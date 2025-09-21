@@ -13,6 +13,8 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -45,12 +47,9 @@ public class HasNoKeysOperatorTest {
     void testExecute_WhenNoKeysExist_ShouldReturnTrue() {
         // ARRANGE
         when(mockLogicNode.getInputNodes()).thenReturn(List.of(mockObjectInput, mockKeysInput));
-
         ObjectNode jsonObject = objectMapper.createObjectNode();
         jsonObject.put("status", "OK");
-
         when(mockObjectInput.getCalculatedResult()).thenReturn(jsonObject);
-        // Das Objekt hat keinen der Schlüssel aus dieser Liste
         when(mockKeysInput.getCalculatedResult()).thenReturn(List.of("temperature", "humidity"));
 
         // ACT
@@ -65,13 +64,10 @@ public class HasNoKeysOperatorTest {
     void testExecute_WhenAtLeastOneKeyExists_ShouldReturnFalse() {
         // ARRANGE
         when(mockLogicNode.getInputNodes()).thenReturn(List.of(mockObjectInput, mockKeysInput));
-
         ObjectNode jsonObject = objectMapper.createObjectNode();
         jsonObject.put("temperature", 25);
         jsonObject.put("status", "OK");
-
         when(mockObjectInput.getCalculatedResult()).thenReturn(jsonObject);
-        // Das Objekt hat "temperature" aus der Liste
         when(mockKeysInput.getCalculatedResult()).thenReturn(List.of("temperature", "humidity"));
 
         // ACT
@@ -81,16 +77,131 @@ public class HasNoKeysOperatorTest {
         assertFalse((Boolean) result);
     }
 
+    // ==================== INPUT VALIDATION TESTS ====================
+
+    @Test
+    @DisplayName("should return true when object input is null")
+    void testExecute_WhenObjectInputIsNull_ShouldReturnTrue() {
+        // ARRANGE
+        when(mockLogicNode.getInputNodes()).thenReturn(List.of(mockObjectInput, mockKeysInput));
+        when(mockObjectInput.getCalculatedResult()).thenReturn(null);
+        when(mockKeysInput.getCalculatedResult()).thenReturn(List.of("temperature"));
+
+        // ACT
+        Object result = operation.execute(mockLogicNode, null);
+
+        // ASSERT
+        assertTrue((Boolean) result);
+    }
+
+    @Test
+    @DisplayName("should return true when object input is not a JsonNode")
+    void testExecute_WhenObjectInputIsNotJsonNode_ShouldReturnTrue() {
+        // ARRANGE
+        when(mockLogicNode.getInputNodes()).thenReturn(List.of(mockObjectInput, mockKeysInput));
+        when(mockObjectInput.getCalculatedResult()).thenReturn("a plain string");
+        when(mockKeysInput.getCalculatedResult()).thenReturn(List.of("temperature"));
+
+        // ACT
+        Object result = operation.execute(mockLogicNode, null);
+
+        // ASSERT
+        assertTrue((Boolean) result);
+    }
+
+    @Test
+    @DisplayName("should return true when keys input is null")
+    void testExecute_WhenKeysInputIsNull_ShouldReturnTrue() {
+        // ARRANGE
+        when(mockLogicNode.getInputNodes()).thenReturn(List.of(mockObjectInput, mockKeysInput));
+        ObjectNode jsonObject = objectMapper.createObjectNode();
+        jsonObject.put("temperature", 25);
+        when(mockObjectInput.getCalculatedResult()).thenReturn(jsonObject);
+        when(mockKeysInput.getCalculatedResult()).thenReturn(null);
+
+        // ACT
+        Object result = operation.execute(mockLogicNode, null);
+
+        // ASSERT
+        assertTrue((Boolean) result);
+    }
+
+    @Test
+    @DisplayName("should return true when keys input is not a Collection")
+    void testExecute_WhenKeysInputIsNotACollection_ShouldReturnTrue() {
+        // ARRANGE
+        when(mockLogicNode.getInputNodes()).thenReturn(List.of(mockObjectInput, mockKeysInput));
+        ObjectNode jsonObject = objectMapper.createObjectNode();
+        jsonObject.put("temperature", 25);
+        when(mockObjectInput.getCalculatedResult()).thenReturn(jsonObject);
+        when(mockKeysInput.getCalculatedResult()).thenReturn("not-a-collection");
+
+        // ACT
+        Object result = operation.execute(mockLogicNode, null);
+
+        // ASSERT
+        assertTrue((Boolean) result);
+    }
+
+    @Test
+    @DisplayName("should return true when keys collection is empty")
+    void testExecute_WhenKeysCollectionIsEmpty_ShouldReturnTrue() {
+        // ARRANGE
+        when(mockLogicNode.getInputNodes()).thenReturn(List.of(mockObjectInput, mockKeysInput));
+        ObjectNode jsonObject = objectMapper.createObjectNode();
+        jsonObject.put("temperature", 25);
+        when(mockObjectInput.getCalculatedResult()).thenReturn(jsonObject);
+        when(mockKeysInput.getCalculatedResult()).thenReturn(Collections.emptyList());
+
+        // ACT
+        Object result = operation.execute(mockLogicNode, null);
+
+        // ASSERT
+        assertTrue((Boolean) result);
+    }
+
+    @Test
+    @DisplayName("should ignore non-string elements in keys collection and return true")
+    void testExecute_WhenKeysCollectionHasNonStringsAndNoMatch_ShouldReturnTrue() {
+        // ARRANGE
+        when(mockLogicNode.getInputNodes()).thenReturn(List.of(mockObjectInput, mockKeysInput));
+        ObjectNode jsonObject = objectMapper.createObjectNode();
+        jsonObject.put("status", "OK");
+        when(mockObjectInput.getCalculatedResult()).thenReturn(jsonObject);
+        when(mockKeysInput.getCalculatedResult()).thenReturn(Arrays.asList("temperature", 123, null));
+
+        // ACT
+        Object result = operation.execute(mockLogicNode, null);
+
+        // ASSERT
+        assertTrue((Boolean) result);
+    }
+
+    @Test
+    @DisplayName("should ignore non-string elements and return false if a string key matches")
+    void testExecute_WhenKeysCollectionHasNonStringsAndAMatch_ShouldReturnFalse() {
+        // ARRANGE
+        when(mockLogicNode.getInputNodes()).thenReturn(List.of(mockObjectInput, mockKeysInput));
+        ObjectNode jsonObject = objectMapper.createObjectNode();
+        jsonObject.put("temperature", 25);
+        when(mockObjectInput.getCalculatedResult()).thenReturn(jsonObject);
+        when(mockKeysInput.getCalculatedResult()).thenReturn(Arrays.asList(123, "temperature", null));
+
+        // ACT
+        Object result = operation.execute(mockLogicNode, null);
+
+        // ASSERT
+        assertFalse((Boolean) result);
+    }
+
+    // ==================== NODE VALIDATION TESTS ====================
+
     @Test
     @DisplayName("should throw exception if input count is not exactly 2")
     void testValidateNode_WithIncorrectInputCount_ShouldThrowException() {
         // ARRANGE
         when(mockLogicNode.getInputNodes()).thenReturn(List.of(mockObjectInput)); // Nur ein Input
-
-        // ACT & ASSERT
-        assertThrows(OperatorValidationException.class, () -> {
-            operation.validateNode(mockLogicNode);
-        });
+        assertThrows(OperatorValidationException.class, () -> operation.validateNode(mockLogicNode));
     }
 
     @Test
