@@ -379,7 +379,32 @@ public class AasResource {
         var headers = headerBuilder.buildMergedHeaders(ss, de.unistuttgart.stayinsync.core.configuration.service.aas.HttpHeaderBuilder.Mode.WRITE_JSON);
         Log.infof("Create element LIVE: apiUrl=%s smId=%s parentPath=%s", ss.apiUrl, smId, parentPath);
         Log.debugf("WRITE headers: %s body=%s", headers, body);
-        var resp = traversal.createElement(ss.apiUrl, smId, parentPath, body, headers).await().indefinitely();
+        String effectiveParentPath = parentPath;
+        // Adjust parent path for types that require sub-paths in BaSyx (collections/lists: /value, entity: /statements)
+        if (parentPath != null && !parentPath.isBlank()) {
+            try {
+                var parentResp = traversal.getElement(ss.apiUrl, smId, parentPath, headers).await().indefinitely();
+                if (parentResp != null && parentResp.statusCode() >= 200 && parentResp.statusCode() < 300) {
+                    String pb = parentResp.bodyAsString();
+                    io.vertx.core.json.JsonObject pobj = pb != null && pb.trim().startsWith("{")
+                            ? new io.vertx.core.json.JsonObject(pb)
+                            : null;
+                    if (pobj != null) {
+                        String mt = pobj.getString("modelType");
+                        if (mt != null) {
+                            if ("SubmodelElementCollection".equalsIgnoreCase(mt) || "SubmodelElementList".equalsIgnoreCase(mt)) {
+                                effectiveParentPath = parentPath.endsWith("/value") ? parentPath : parentPath + "/value";
+                            } else if ("Entity".equalsIgnoreCase(mt)) {
+                                effectiveParentPath = parentPath.endsWith("/statements") ? parentPath : parentPath + "/statements";
+                            }
+                        }
+                    }
+                }
+            } catch (Exception e) {
+                Log.warnf("Could not inspect parent element for path suffix resolution: %s", e.getMessage());
+            }
+        }
+        var resp = traversal.createElement(ss.apiUrl, smId, effectiveParentPath, body, headers).await().indefinitely();
         int sc = resp.statusCode();
         Log.infof("Create element upstream status=%d msg=%s body=%s", sc, resp.statusMessage(), safeBody(resp));
         if (sc >= 200 && sc < 300) {
