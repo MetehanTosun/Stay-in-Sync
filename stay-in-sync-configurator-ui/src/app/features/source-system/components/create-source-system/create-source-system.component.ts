@@ -216,18 +216,13 @@ export class CreateSourceSystemComponent implements OnInit, OnChanges {
 
   // AASX upload handlers
   openAasxUpload(): void {
-    console.info('[AASX][UI] Open upload dialog');
     this.showAasxUpload = true;
     this.aasxSelectedFile = null;
   }
   onAasxFileSelected(event: FileSelectEvent): void {
     this.aasxSelectedFile = event.files?.[0] || null;
     if (this.aasxSelectedFile) {
-      console.info('[AASX][UI] File selected', {
-        name: this.aasxSelectedFile.name,
-        size: this.aasxSelectedFile.size,
-        type: this.aasxSelectedFile.type
-      });
+      
       // Load preview to enable selective attach
       if (this.createdSourceSystemId) {
         this.aasService.previewAasx(this.createdSourceSystemId, this.aasxSelectedFile).subscribe({
@@ -238,14 +233,14 @@ export class CreateSourceSystemComponent implements OnInit, OnChanges {
             this.aasxSelection = { submodels: (arr || []).map((sm: any) => ({ id: sm.id || sm.submodelId, full: true, elements: (sm.elements || []).map((e: any) => e.idShort) })) };
           },
           error: (err) => {
-            console.warn('[AASX][UI] Preview failed', err);
+            
             this.aasxPreview = null;
             this.aasxSelection = { submodels: [] };
           }
         });
       }
     } else {
-      console.warn('[AASX][UI] File selection cleared');
+      
     }
   }
 
@@ -289,11 +284,7 @@ export class CreateSourceSystemComponent implements OnInit, OnChanges {
     }
     const proceed = () => {
       if (!this.createdSourceSystemId) return;
-      console.info('[AASX][UI] Starting upload', {
-        sourceSystemId: this.createdSourceSystemId,
-        name: this.aasxSelectedFile?.name,
-        size: this.aasxSelectedFile?.size,
-      });
+      
       this.messageService.add({ severity: 'info', summary: 'Uploading AASX', detail: `${this.aasxSelectedFile?.name} (${this.aasxSelectedFile?.size} bytes)` });
       this.isUploadingAasx = true;
       // If preview is available and user made a selection, use selective attach; else default upload
@@ -302,16 +293,16 @@ export class CreateSourceSystemComponent implements OnInit, OnChanges {
       req$
         .subscribe({
           next: (resp) => {
-            console.info('[AASX][UI] Upload accepted', resp);
+            
             this.isUploadingAasx = false;
             this.showAasxUpload = false;
             // Directly rediscover from snapshot (do not refresh: would wipe imported AASX structures)
-            console.info('[AASX][UI] Trigger discoverSubmodels after upload');
+            
             this.discoverSubmodels();
             this.messageService.add({ severity: 'success', summary: 'Upload accepted', detail: 'AASX uploaded. Snapshot refresh started.' });
           },
           error: (err) => {
-            console.error('[AASX][UI] Upload failed', err);
+            
             this.isUploadingAasx = false;
             this.messageService.add({ severity: 'error', summary: 'Upload failed', detail: (err?.message || 'See console for details') });
             this.errorService.handleError(err);
@@ -401,16 +392,14 @@ save(): void {
    * @param dto Prepared DTO for creation.
    */
   private postDto(dto: CreateSourceSystemDTO, opts?: { advanceStep?: boolean, onSuccess?: (resp: SourceSystemDTO) => void }): void {
-    console.log('📤 Sending DTO to backend:', dto);
-    console.log('📤 openApiSpec field:', dto.openApiSpec);
-    console.log('📤 openApiSpec type:', typeof dto.openApiSpec);
-
+    
+    
     this.sourceSystemService
       .apiConfigSourceSystemPost(dto)
       .subscribe({
         next: (resp: SourceSystemDTO) => {
-          console.log('✅ Backend response:', resp);
-          console.log('✅ Returned openApiSpec:', resp.openApiSpec);
+          
+          
           this.createdSourceSystemId = resp.id!;
           if (opts?.advanceStep !== false) {
             this.currentStep = 1;
@@ -420,7 +409,7 @@ save(): void {
           }
         },
         error: (err) => {
-          console.error('❌ CREATE failed:', err);
+          
           this.errorService.handleError(err);
         }
       });
