@@ -1,94 +1,120 @@
-<!-- MARK: Page Header -->
-<p-toolbar class="mb-3">
-  <div class="p-toolbar-group-left">
-    <h2>Synchronization Rules</h2>
-  </div>
-  <div class="p-toolbar-group-right flex gap-2">
-    <input
-      pInputText
-      type="text"
-      [(ngModel)]="searchTerm"
-      placeholder="Search by rule name..."
-    />
-    <p-button
-      label="Create new Rule"
-      icon="pi pi-plus"
-      (click)="openCreateRuleModal()"
-      id="create-button"
-    ></p-button>
-  </div>
-</p-toolbar>
-
 <!-- MARK: Table -->
+<div style="height: 60rem;">
 <p-table
+  #dt
   [value]="filteredRules"
+  dataKey="id"
+  [rows]="10"
   [loading]="isLoading"
   [paginator]="true"
-  [rows]="10"
-  responsiveLayout="scroll"
+  paginatorPosition="bottom"
+  [scrollable]="true"
+  scrollHeight="flex"
+  [globalFilterFields]="['name', 'description', 'graphStatus']"
 >
-  <!-- Table Header -->
-  <ng-template pTemplate="header">
+
+  <ng-template #caption>
+    <div class="flex items-center justify-between">
+      <div class="p-toolbar-group-left">
+        <span class="text-xl font-bold">Synchronization Rules</span>
+      </div>
+      <div class="p-toolbar-group-right flex gap-2">
+<!--        <input-->
+<!--          pInputText-->
+<!--          type="text"-->
+<!--          [(ngModel)]="searchTerm"-->
+<!--          placeholder="Search by rule name..."-->
+<!--        />-->
+        <p-button
+          label="Create new Rule"
+          icon="pi pi-plus"
+          (click)="openCreateRuleModal()"
+          id="create-button"
+        ></p-button>
+      </div>
+    </div>
+  </ng-template>
+
+  <ng-template #header>
     <tr>
-      <th pSortableColumn="name">
-        Name <p-sortIcon field="name"></p-sortIcon>
+      <th style="width:25%">Name</th>
+      <th style="width:35%">Description</th>
+      <th style="width:20%">Status</th>
+      <th style="width:20%">Actions</th>
+    </tr>
+    <tr>
+      <th>
+        <p-columnFilter type="text" field="name" placeholder="Search by name" ariaLabel="Filter Name"></p-columnFilter>
       </th>
-      <th pSortableColumn="graphStatus">
-        Status <p-sortIcon field="graphStatus"></p-sortIcon>
+      <th>
+        <p-columnFilter type="text" field="description" placeholder="Search by description" ariaLabel="Filter Description"></p-columnFilter>
       </th>
-      <th>Actions</th>
+      <th>
+        <p-columnFilter field="graphStatus" matchMode="equals" [showMenu]="false">
+          <ng-template #filter let-filter="filterCallback">
+            <p-select [(ngModel)]="selectedStatus"
+                      [options]="[{label: 'Draft', value: 'DRAFT'}, {label: 'Finalized', value: 'FINALIZED'}]"
+                      (onChange)="filter($event.value)"
+                      placeholder="Select Status"
+                      [showClear]="true"
+                      [style]="{ 'min-width': '12rem' }">
+              <ng-template let-option #item>
+                <p-tag [value]="option.label" [severity]="option.value === 'FINALIZED' ? 'success' : 'warning'"></p-tag>
+              </ng-template>
+            </p-select>
+          </ng-template>
+        </p-columnFilter>
+      </th>
+      <th></th>
     </tr>
   </ng-template>
 
-  <!-- Table Body -->
-  <ng-template pTemplate="body" let-rule>
+  <ng-template #body let-rule>
     <tr>
       <td>
-        <a
-          href="javascript:void(0)"
-          class="rule-name-hitbox"
-          (click)="expandedRuleId = expandedRuleId === rule.id ? null : rule.id"
-        >
+        <a href="javascript:void(0)"
+           class="rule-name-hitbox"
+           (click)="expandedRuleId = expandedRuleId === rule.id ? null : rule.id">
           {{ rule.name }}
         </a>
       </td>
       <td>
-        <span
-          [ngClass]="{
-            'status-finalized': rule.graphStatus === 'FINALIZED',
-            'status-draft': rule.graphStatus === 'DRAFT'
-          }"
-        >
-          {{ rule.graphStatus === 'FINALIZED' ? 'Finalized' : 'Draft' }}
-        </span>
+        {{ rule.description }}
+      </td>
+      <td>
+        <p-tag [value]="rule.graphStatus === 'FINALIZED' ? 'Finalized' : 'Draft'"
+               [severity]="getSeverity(rule.graphStatus)">
+        </p-tag>
       </td>
       <td>
         <p-button
-          id="edit-rule-button"
           icon="pi pi-pencil"
-          class="p-button-text p-button-sm"
+          class="p-button-rounded p-button-text"
           (click)="editRule(rule.id)"
-          title="Edit"
-        ></p-button>
+          styleClass="p-button-rounded p-button-text">
+        </p-button>
         <p-button
-          id="delete-rule-button"
           icon="pi pi-trash"
-          class="p-button-text p-button-sm p-button-danger"
-          title="Delete"
-          [style]="{ 'background-color': '#f44336', 'border-color': '#f44336', 'color': '#fff' }"
+          class="p-button-rounded p-button-danger p-button-text"
           (click)="deleteRule(rule.id)"
-        ></p-button>
+          styleClass="p-button-rounded p-button-danger p-button-text">
+        </p-button>
       </td>
     </tr>
-    <tr *ngIf="expandedRuleId === rule.id">
-      <td colspan="3" class="rule-description-row">
-        <div class="rule-description">
-          {{ rule.description }}
+  </ng-template>
+
+  <ng-template #emptymessage>
+    <tr>
+      <td colspan="4">
+        <div class="empty-message" style="text-align: center">
+          <h4>No rules available</h4>
+          <p>Create your first rule to get started.</p>
         </div>
       </td>
     </tr>
   </ng-template>
 </p-table>
+</div>
 
 <!-- MARK: Create Rule Modal -->
 <p-dialog
