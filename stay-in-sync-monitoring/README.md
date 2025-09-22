@@ -1,9 +1,9 @@
-###Stay-in-Sync Monitoring Backend
+### Stay-in-Sync Monitoring Backend
 
 This module provides the backend for central monitoring. 
 It is based on Quarkus and integrates tools such as Prometheus, Grafana, ELK-Stack and RabbitMQ.
 
-###Local Development Start
+### Local Development Start
 
 Prerequisites: 
 
@@ -30,7 +30,7 @@ Grafana monitoring dashboards Login credentials	 Username: admin | Password: adm
 
 Once the containers are running, Prometheus will start scraping the configured targets and Grafana will visualize available metrics accordingly.
 
-###Start ELK Stack & RabbitMQ
+### Start ELK Stack & RabbitMQ
 
 To start the ELK stack and RabbitMQ, navigate to the following directory and run:
 

@@ -115,15 +115,16 @@ helm dependency update
 ```
 
 Installing the helm chart from within its folder with the release name **stay-in-sync**:
-
+- <span style="color:red">Since this helmchart makes use of the edc umbrella chart we currently recommend installing in the chart umbrella namespace
+  in order to avoid issues with the edc setup</span>
 ```shell
-helm install stay-in-sync ./
+helm install test ./ --namespace umbrella
 ```
 
 Uninstalling the helm chart using its release name:
 
 ```shell
-helm uninstall stay-in-sync
+helm uninstall test  --namespace umbrella
 ```
 
 ## Ingress

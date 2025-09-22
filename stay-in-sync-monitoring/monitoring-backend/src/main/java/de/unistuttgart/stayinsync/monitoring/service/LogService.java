@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import de.unistuttgart.stayinsync.monitoring.dtos.LogEntryDto;
 import io.quarkus.logging.Log;
 import jakarta.enterprise.context.ApplicationScoped;
+import org.eclipse.microprofile.config.inject.ConfigProperty;
 
 import java.net.URI;
 import java.net.http.HttpClient;
@@ -20,7 +21,9 @@ import java.util.Objects;
 @ApplicationScoped
 public class LogService {
 
-    private static final String LOKI_URL = "http://localhost:3100/loki/api/v1/query_range";
+
+    @ConfigProperty(name = "loki.url")
+    String LOKI_URL;
 
     private final HttpClient httpClient;
     private final ObjectMapper objectMapper;
