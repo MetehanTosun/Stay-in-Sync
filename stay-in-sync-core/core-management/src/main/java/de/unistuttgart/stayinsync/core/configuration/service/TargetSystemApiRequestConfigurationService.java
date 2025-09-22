@@ -1,11 +1,14 @@
 package de.unistuttgart.stayinsync.core.configuration.service;
 
-import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.*;
+import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.TargetSystem;
+import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.TargetSystemApiRequestConfiguration;
+import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.TargetSystemApiRequestConfigurationAction;
+import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.TargetSystemEndpoint;
 import de.unistuttgart.stayinsync.core.configuration.exception.CoreManagementException;
 import de.unistuttgart.stayinsync.core.configuration.mapping.targetsystem.RequestConfigurationMapper;
 import de.unistuttgart.stayinsync.core.configuration.rest.dtos.targetsystem.CreateArcDTO;
 import de.unistuttgart.stayinsync.core.configuration.rest.dtos.targetsystem.ActionDefinitionDTO;
-import de.unistuttgart.stayinsync.transport.domain.TargetApiRequestConfigurationActionRole;
+import de.unistuttgart.stayinsync.core.transport.domain.TargetApiRequestConfigurationActionRole;
 import io.quarkus.logging.Log;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;

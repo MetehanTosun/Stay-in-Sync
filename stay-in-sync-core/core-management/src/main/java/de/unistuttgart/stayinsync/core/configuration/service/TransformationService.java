@@ -1,6 +1,9 @@
 package de.unistuttgart.stayinsync.core.configuration.service;
 
-import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.*;
+import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.TargetSystemApiRequestConfiguration;
+import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.Transformation;
+import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.TransformationRule;
+import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.TransformationScript;
 import de.unistuttgart.stayinsync.core.configuration.exception.CoreManagementException;
 import de.unistuttgart.stayinsync.core.configuration.mapping.TransformationMapper;
 import de.unistuttgart.stayinsync.core.configuration.mapping.targetsystem.RequestConfigurationMapper;
@@ -10,9 +13,9 @@ import de.unistuttgart.stayinsync.core.configuration.rest.dtos.TransformationShe
 import de.unistuttgart.stayinsync.core.configuration.rest.dtos.targetsystem.GetRequestConfigurationDTO;
 import de.unistuttgart.stayinsync.core.configuration.rest.dtos.TransformationStatusUpdate;
 import de.unistuttgart.stayinsync.core.configuration.rest.dtos.targetsystem.UpdateTransformationRequestConfigurationDTO;
+import de.unistuttgart.stayinsync.core.transport.domain.JobDeploymentStatus;
 import de.unistuttgart.stayinsync.core.configuration.service.transformationrule.GraphStorageService;
 import de.unistuttgart.stayinsync.core.management.rabbitmq.producer.TransformationJobMessageProducer;
-import de.unistuttgart.stayinsync.transport.domain.JobDeploymentStatus;
 import io.quarkus.logging.Log;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
@@ -26,7 +29,8 @@ import java.util.Optional;
 import java.util.Set;
 
 
-import static de.unistuttgart.stayinsync.transport.domain.JobDeploymentStatus.*;
+import static de.unistuttgart.stayinsync.core.transport.domain.JobDeploymentStatus.DEPLOYING;
+import static de.unistuttgart.stayinsync.core.transport.domain.JobDeploymentStatus.UNDEPLOYED;
 import static jakarta.transaction.Transactional.TxType.REQUIRED;
 import static jakarta.transaction.Transactional.TxType.SUPPORTS;
 
@@ -217,7 +221,9 @@ public class TransformationService {
     }
 
     public void addRule(Long transformationId, Long ruleId) {
-        TransformationRule ruleById = graphStorageService.findRuleById(ruleId);
+        TransformationRule ruleById = graphStorageService.findRuleById(ruleId)
+                .orElseThrow(() -> new CoreManagementException(Response.Status.NOT_FOUND,
+                        "Rule not found", "TransformationRule with id %d not found.", ruleId));
         Transformation transformation = findByIdDirect(transformationId);
         Log.infof("Removing rule with id %d to transformation with id %d", ruleId, transformationId);
 
@@ -240,7 +246,7 @@ public class TransformationService {
     }
 
     private boolean isTransitioning(JobDeploymentStatus jobDeploymentStatus) {
-        return Set.of(JobDeploymentStatus.DEPLOYING, JobDeploymentStatus.RECONFIGURING, JobDeploymentStatus.STOPPING).contains(jobDeploymentStatus);
+        return Set.of(DEPLOYING, JobDeploymentStatus.RECONFIGURING, JobDeploymentStatus.STOPPING).contains(jobDeploymentStatus);
     }
 
 }

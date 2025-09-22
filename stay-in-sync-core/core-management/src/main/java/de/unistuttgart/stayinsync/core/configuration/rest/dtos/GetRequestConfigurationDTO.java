@@ -1,7 +1,7 @@
 package de.unistuttgart.stayinsync.core.configuration.rest.dtos;
 
-import de.unistuttgart.stayinsync.transport.domain.JobDeploymentStatus;
-import de.unistuttgart.stayinsync.transport.dto.ApiRequestParameterMessageDTO;
+import de.unistuttgart.stayinsync.core.transport.domain.JobDeploymentStatus;
+import de.unistuttgart.stayinsync.core.transport.dto.ApiRequestParameterMessageDTO;
 import jakarta.validation.constraints.NotNull;
 
 import java.util.Set;

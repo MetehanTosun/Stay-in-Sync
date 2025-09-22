@@ -1,6 +1,6 @@
 package de.unistuttgart.stayinsync.core.configuration.domain.entities.sync;
 
-import de.unistuttgart.stayinsync.transport.domain.TargetApiRequestConfigurationActionRole;
+import de.unistuttgart.stayinsync.core.transport.domain.TargetApiRequestConfigurationActionRole;
 import io.quarkus.hibernate.orm.panache.PanacheEntity;
 import jakarta.persistence.*;
 

@@ -1,6 +1,6 @@
 package de.unistuttgart.stayinsync.core.configuration.domain.entities.sync;
 
-import de.unistuttgart.stayinsync.transport.domain.JobDeploymentStatus;
+import de.unistuttgart.stayinsync.core.transport.domain.JobDeploymentStatus;
 import jakarta.persistence.*;
 
 import java.util.*;

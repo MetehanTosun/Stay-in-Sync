@@ -1,7 +1,6 @@
 package de.unistuttgart.stayinsync.core.configuration.domain.entities.sync;
 
-import de.unistuttgart.stayinsync.transport.dto.transformationrule.GraphDTO;
-import de.unistuttgart.stayinsync.transport.transformation_rule_shared.GraphStatus;
+import de.unistuttgart.graphengine.dto.transformationrule.GraphDTO;
 import io.quarkus.hibernate.orm.panache.PanacheEntity;
 import jakarta.persistence.*;
 import lombok.Getter;

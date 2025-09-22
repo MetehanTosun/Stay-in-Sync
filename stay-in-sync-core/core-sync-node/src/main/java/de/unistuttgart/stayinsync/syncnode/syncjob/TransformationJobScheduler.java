@@ -3,9 +3,9 @@ package de.unistuttgart.stayinsync.syncnode.syncjob;
 import de.unistuttgart.stayinsync.exception.SyncNodeException;
 import de.unistuttgart.stayinsync.syncnode.rabbitmq.consumer.SyncDataMessageConsumer;
 import de.unistuttgart.stayinsync.syncnode.rabbitmq.consumer.TransformationJobMessageConsumer;
-import de.unistuttgart.stayinsync.transport.domain.JobDeploymentStatus;
-import de.unistuttgart.stayinsync.transport.dto.SourceSystemApiRequestConfigurationMessageDTO;
-import de.unistuttgart.stayinsync.transport.dto.TransformationMessageDTO;
+import de.unistuttgart.stayinsync.core.transport.domain.JobDeploymentStatus;
+import de.unistuttgart.stayinsync.core.transport.dto.SourceSystemApiRequestConfigurationMessageDTO;
+import de.unistuttgart.stayinsync.core.transport.dto.TransformationMessageDTO;
 import io.quarkus.logging.Log;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
@@ -75,7 +75,8 @@ public class TransformationJobScheduler {
     }
 
     //TODO implement this method
-    private void stopConsumingFromUnusedRequestConfigurations() {}
+    private void stopConsumingFromUnusedRequestConfigurations() {
+    }
 
     public Set<TransformationMessageDTO> getRunningJobs() {
         return runningJobs;

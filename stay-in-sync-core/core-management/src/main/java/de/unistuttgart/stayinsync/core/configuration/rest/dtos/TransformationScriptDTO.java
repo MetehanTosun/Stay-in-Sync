@@ -1,6 +1,6 @@
 package de.unistuttgart.stayinsync.core.configuration.rest.dtos;
 
-import de.unistuttgart.stayinsync.transport.ScriptStatus;
+import de.unistuttgart.stayinsync.core.transport.ScriptStatus;
 
 import java.util.Set;
 

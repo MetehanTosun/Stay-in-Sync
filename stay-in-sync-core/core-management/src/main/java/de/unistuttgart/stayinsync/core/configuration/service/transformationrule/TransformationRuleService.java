@@ -3,17 +3,20 @@ package de.unistuttgart.stayinsync.core.configuration.service.transformationrule
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import de.unistuttgart.graphengine.service.GraphValidatorService;
+import de.unistuttgart.graphengine.service.GraphMapper;
+import de.unistuttgart.graphengine.dto.transformationrule.GraphDTO;
+import de.unistuttgart.graphengine.dto.transformationrule.InputDTO;
+import de.unistuttgart.graphengine.dto.transformationrule.NodeDTO;
+import de.unistuttgart.graphengine.dto.transformationrule.TransformationRulePayloadDTO;
+import de.unistuttgart.graphengine.dto.vFlow.VFlowGraphDTO;
+import de.unistuttgart.graphengine.nodes.Node;
 import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.LogicGraphEntity;
 import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.TransformationRule;
-import de.unistuttgart.stayinsync.core.configuration.exception.CoreManagementException; // Import der korrekten Exception
-import de.unistuttgart.stayinsync.syncnode.logic_engine.GraphMapper;
-import de.unistuttgart.stayinsync.transport.dto.transformationrule.GraphDTO;
-import de.unistuttgart.stayinsync.transport.dto.transformationrule.NodeDTO;
-import de.unistuttgart.stayinsync.transport.dto.transformationrule.TransformationRulePayloadDTO;
-import de.unistuttgart.stayinsync.transport.dto.transformationrule.vFlow.VFlowGraphDTO;
-import de.unistuttgart.stayinsync.transport.transformation_rule_shared.GraphStatus;
-import de.unistuttgart.stayinsync.transport.transformation_rule_shared.nodes.Node;
-import de.unistuttgart.stayinsync.transport.transformation_rule_shared.validation_error.ValidationError;
+import de.unistuttgart.stayinsync.core.configuration.exception.CoreManagementException;
+import de.unistuttgart.graphengine.validation_error.GraphStatus;
+import de.unistuttgart.graphengine.validation_error.ValidationError;
+
 import io.quarkus.logging.Log;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
@@ -22,6 +25,7 @@ import jakarta.ws.rs.NotFoundException;
 import jakarta.ws.rs.core.Response;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
@@ -57,13 +61,27 @@ public class TransformationRuleService {
         }
 
         try {
+            NodeDTO configNodeDto = new NodeDTO();
+            configNodeDto.setId(0);
+            configNodeDto.setName("Change Detection");
+            configNodeDto.setNodeType("CONFIG");
+            configNodeDto.setChangeDetectionActive(true);
+            configNodeDto.setChangeDetectionMode("OR");
+
+
             NodeDTO finalNodeDto = new NodeDTO();
-            finalNodeDto.setId(0);
+            finalNodeDto.setId(1);
             finalNodeDto.setName("Final Result");
             finalNodeDto.setNodeType("FINAL");
 
+            InputDTO connection = new InputDTO();
+            connection.setId(configNodeDto.getId());
+            connection.setOrderIndex(0);
+            finalNodeDto.setInputNodes(Collections.singletonList(connection));
+
             GraphDTO defaultGraphDto = new GraphDTO();
-            defaultGraphDto.setNodes(Collections.singletonList(finalNodeDto));
+            defaultGraphDto.setNodes(Arrays.asList(configNodeDto, finalNodeDto));
+
 
             TransformationRule rule = new TransformationRule();
             rule.name = payload.getName();
@@ -94,7 +112,9 @@ public class TransformationRuleService {
     public TransformationRule updateRuleMetadata(Long id, TransformationRulePayloadDTO dto) {
         Log.debugf("Updating rule metadata with id: %d", id);
 
-        TransformationRule ruleToUpdate = storageService.findRuleById(id);
+        TransformationRule ruleToUpdate = storageService.findRuleById(id)
+                .orElseThrow(() -> new CoreManagementException(Response.Status.NOT_FOUND,
+                        "Not Found", "Rule with id %d not found.", id));
 
         ruleToUpdate.name = dto.getName();
         ruleToUpdate.description = dto.getDescription();
@@ -113,7 +133,10 @@ public class TransformationRuleService {
     public GraphStorageService.PersistenceResult updateRuleGraph(Long id, VFlowGraphDTO vflowDto) {
         Log.debugf("Updating graph with ruleId: %d", id);
 
-        TransformationRule ruleToUpdate = storageService.findRuleById(id);
+        TransformationRule ruleToUpdate = storageService.findRuleById(id)
+                .orElseThrow(() -> new CoreManagementException(Response.Status.NOT_FOUND,
+                        "Not Found", "Rule with id %d not found.", id));
+
         try {
             GraphDTO graphDto = mapper.vflowToGraphDto(vflowDto);
 
@@ -156,7 +179,8 @@ public class TransformationRuleService {
      */
     @Transactional(SUPPORTS)
     public List<ValidationError> getValidationErrorsForRule(Long id) {
-        TransformationRule entity = storageService.findRuleById(id);
+        TransformationRule entity = storageService.findRuleById(id)
+                .orElseThrow(() -> new NotFoundException("TransformationRule with id " + id + " not found."));
 
         List<ValidationError> errors = new ArrayList<>();
 

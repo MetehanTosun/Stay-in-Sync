@@ -10,7 +10,8 @@ import de.unistuttgart.stayinsync.exception.SyncNodeException;
 import de.unistuttgart.stayinsync.syncnode.domain.ExecutionPayload;
 import de.unistuttgart.stayinsync.syncnode.syncjob.DispatcherStateService;
 import de.unistuttgart.stayinsync.syncnode.syncjob.TransformationExecutionService;
-import de.unistuttgart.stayinsync.transport.dto.*;
+import de.unistuttgart.stayinsync.core.transport.dto.SourceSystemApiRequestConfigurationMessageDTO;
+import de.unistuttgart.stayinsync.core.transport.dto.SyncDataMessageDTO;
 import io.quarkiverse.rabbitmqclient.RabbitMQClient;
 import io.quarkus.logging.Log;
 import io.quarkus.runtime.StartupEvent;
@@ -134,7 +135,6 @@ public class SyncDataMessageConsumer {
             }
         };
     }
-
 
 
     public void startConsumingSyncData(SourceSystemApiRequestConfigurationMessageDTO requestConfigurationMessageDTO) {

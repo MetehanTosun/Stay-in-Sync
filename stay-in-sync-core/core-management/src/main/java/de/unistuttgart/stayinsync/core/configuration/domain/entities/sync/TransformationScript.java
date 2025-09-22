@@ -1,7 +1,7 @@
 package de.unistuttgart.stayinsync.core.configuration.domain.entities.sync;
 
 import com.fasterxml.jackson.annotation.JsonBackReference;
-import de.unistuttgart.stayinsync.transport.ScriptStatus;
+import de.unistuttgart.stayinsync.core.transport.ScriptStatus;
 import io.quarkus.hibernate.orm.panache.PanacheEntity;
 import jakarta.persistence.*;
 

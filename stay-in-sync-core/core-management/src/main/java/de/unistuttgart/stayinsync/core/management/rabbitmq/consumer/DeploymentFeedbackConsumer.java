@@ -10,8 +10,8 @@ import de.unistuttgart.stayinsync.core.configuration.exception.CoreManagementExc
 import de.unistuttgart.stayinsync.core.configuration.rest.dtos.TransformationStatusUpdate;
 import de.unistuttgart.stayinsync.core.configuration.service.SourceSystemApiRequestConfigurationService;
 import de.unistuttgart.stayinsync.core.configuration.service.TransformationService;
-import de.unistuttgart.stayinsync.transport.dto.PollingJobDeploymentFeedbackMessageDTO;
-import de.unistuttgart.stayinsync.transport.dto.TransformationDeploymentFeedbackMessageDTO;
+import de.unistuttgart.stayinsync.core.transport.dto.PollingJobDeploymentFeedbackMessageDTO;
+import de.unistuttgart.stayinsync.core.transport.dto.TransformationDeploymentFeedbackMessageDTO;
 import io.quarkiverse.rabbitmqclient.RabbitMQClient;
 import io.quarkus.logging.Log;
 import io.quarkus.runtime.StartupEvent;

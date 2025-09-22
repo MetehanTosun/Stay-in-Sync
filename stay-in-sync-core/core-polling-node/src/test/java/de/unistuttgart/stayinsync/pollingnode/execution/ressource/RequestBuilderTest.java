@@ -1,8 +1,9 @@
 package de.unistuttgart.stayinsync.pollingnode.execution.ressource;
 
+
+import de.unistuttgart.stayinsync.core.transport.dto.*;
 import de.unistuttgart.stayinsync.pollingnode.entities.RequestBuildingDetails;
 import de.unistuttgart.stayinsync.pollingnode.exceptions.execution.pollingjob.requestbuilderexceptions.RequestBuildingException;
-import de.unistuttgart.stayinsync.transport.dto.*;
 import io.vertx.mutiny.core.Vertx;
 import io.vertx.mutiny.core.buffer.Buffer;
 import io.vertx.mutiny.ext.web.client.HttpRequest;
@@ -20,8 +21,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.Set;
 
-import static de.unistuttgart.stayinsync.transport.dto.ParamType.PATH;
-import static de.unistuttgart.stayinsync.transport.dto.ParamType.QUERY;
+import static de.unistuttgart.stayinsync.core.transport.dto.ParamType.PATH;
+import static de.unistuttgart.stayinsync.core.transport.dto.ParamType.QUERY;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
@@ -63,7 +64,7 @@ public class RequestBuilderTest {
 
     @Test
     @DisplayName("Tests if all needed methods are called on WebClient to build a Request if exactly the information of the RequestBuildingDetails during 'buildRequest'.")
-    void testBuildRequestSuccessful(){
+    void testBuildRequestSuccessful() {
         RequestBuildingDetails requestBuildingDetails = createRequestBuildingDetailsWithNullFieldForSpecificValue(0);
 
         when(webClient.request(
@@ -80,7 +81,7 @@ public class RequestBuilderTest {
         HttpRequest<Buffer> result = null;
         try {
             result = requestBuilder.buildRequest(requestBuildingDetails);
-        } catch(Exception e){
+        } catch (Exception e) {
             fail("Exception was thrown during buildRequest call", e);
         }
 
@@ -102,7 +103,7 @@ public class RequestBuilderTest {
     @ParameterizedTest
     @ValueSource(ints = {1, 2, 3, 4, 5, 6})
     @DisplayName("Tests if appropriate exceptions are thrown when individual fields are null")
-    void testIfNullFieldsLeadToExceptions(int nullFieldIndex){
+    void testIfNullFieldsLeadToExceptions(int nullFieldIndex) {
         // Arrange
         RequestBuildingDetails invalidRequestBuildingDetails = createRequestBuildingDetailsWithNullFieldForSpecificValue(nullFieldIndex);
         // Act + Assert
@@ -128,13 +129,26 @@ public class RequestBuilderTest {
         ParamType paramType = QUERY;
 
         switch (nullFieldIndex) {
-            case 0: break;
-            case 1: authType = null; break;
-            case 2: authToken = null; break;
-            case 3: systemUrl = null; break;
-            case 4: endpointPath = null; break;
-            case 5: endpointMethod = null; break;
-            case 6: paramType = null; break;
+            case 0:
+                break;
+            case 1:
+                authType = null;
+                break;
+            case 2:
+                authToken = null;
+                break;
+            case 3:
+                systemUrl = null;
+                break;
+            case 4:
+                endpointPath = null;
+                break;
+            case 5:
+                endpointMethod = null;
+                break;
+            case 6:
+                paramType = null;
+                break;
         }
 
         ApiAuthConfigurationMessageDTO authDetails = new ApiAuthConfigurationMessageDTO(authType, authToken);

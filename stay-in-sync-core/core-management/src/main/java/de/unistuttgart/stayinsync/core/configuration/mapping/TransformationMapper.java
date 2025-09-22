@@ -9,7 +9,7 @@ import de.unistuttgart.stayinsync.core.configuration.rest.dtos.SyncJobTransforma
 import de.unistuttgart.stayinsync.core.configuration.rest.dtos.SyncJobTransformationRuleDTO;
 import de.unistuttgart.stayinsync.core.configuration.rest.dtos.TransformationDetailsDTO;
 import de.unistuttgart.stayinsync.core.configuration.rest.dtos.TransformationShellDTO;
-import de.unistuttgart.stayinsync.transport.dto.TransformationMessageDTO;
+import de.unistuttgart.stayinsync.core.transport.dto.TransformationMessageDTO;
 import de.unistuttgart.stayinsync.transport.dto.monitoringgraph.MonitoringTransformationDto;
 import io.quarkus.logging.Log;
 import org.mapstruct.*;

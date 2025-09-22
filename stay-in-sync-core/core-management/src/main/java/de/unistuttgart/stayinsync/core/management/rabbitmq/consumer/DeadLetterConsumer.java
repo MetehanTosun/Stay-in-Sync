@@ -7,8 +7,8 @@ import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.DeliverCallback;
 import com.rabbitmq.client.Delivery;
 import de.unistuttgart.stayinsync.core.configuration.exception.CoreManagementException;
-import de.unistuttgart.stayinsync.transport.dto.SourceSystemApiRequestConfigurationMessageDTO;
-import de.unistuttgart.stayinsync.transport.dto.TransformationMessageDTO;
+import de.unistuttgart.stayinsync.core.transport.dto.SourceSystemApiRequestConfigurationMessageDTO;
+import de.unistuttgart.stayinsync.core.transport.dto.TransformationMessageDTO;
 import io.quarkiverse.rabbitmqclient.RabbitMQClient;
 import io.quarkus.logging.Log;
 import io.quarkus.runtime.StartupEvent;
@@ -17,7 +17,6 @@ import jakarta.enterprise.event.Observes;
 import jakarta.inject.Inject;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 
-import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 
 /**

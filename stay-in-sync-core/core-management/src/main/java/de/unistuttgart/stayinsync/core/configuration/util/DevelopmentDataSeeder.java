@@ -9,10 +9,10 @@ import de.unistuttgart.stayinsync.core.configuration.rest.dtos.targetsystem.Crea
 import de.unistuttgart.stayinsync.core.configuration.rest.dtos.targetsystem.TargetSystemDTO;
 import de.unistuttgart.stayinsync.core.configuration.rest.dtos.targetsystem.UpdateTransformationRequestConfigurationDTO;
 import de.unistuttgart.stayinsync.core.configuration.service.*;
-import de.unistuttgart.stayinsync.transport.ScriptStatus;
-import de.unistuttgart.stayinsync.transport.domain.ApiAuthType;
-import de.unistuttgart.stayinsync.transport.domain.TargetApiRequestConfigurationActionRole;
-import de.unistuttgart.stayinsync.transport.domain.TargetApiRequestConfigurationPatternType;
+import de.unistuttgart.stayinsync.core.transport.ScriptStatus;
+import de.unistuttgart.stayinsync.core.transport.domain.ApiAuthType;
+import de.unistuttgart.stayinsync.core.transport.domain.TargetApiRequestConfigurationActionRole;
+import de.unistuttgart.stayinsync.core.transport.domain.TargetApiRequestConfigurationPatternType;
 import io.quarkus.logging.Log;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;

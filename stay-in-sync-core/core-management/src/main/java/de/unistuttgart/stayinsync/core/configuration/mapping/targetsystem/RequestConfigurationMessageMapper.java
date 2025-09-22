@@ -1,7 +1,7 @@
 package de.unistuttgart.stayinsync.core.configuration.mapping.targetsystem;
 
 import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.TargetSystemApiRequestConfiguration;
-import de.unistuttgart.stayinsync.transport.dto.targetsystems.RequestConfigurationMessageDTO;
+import de.unistuttgart.stayinsync.core.transport.dto.targetsystems.RequestConfigurationMessageDTO;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.MappingConstants;

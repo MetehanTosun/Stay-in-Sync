@@ -2,7 +2,7 @@ package de.unistuttgart.stayinsync.core.configuration.rest.dtos;
 
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
-import de.unistuttgart.stayinsync.transport.domain.ApiAuthType;
+import de.unistuttgart.stayinsync.core.transport.domain.ApiAuthType;
 
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "authType", include = JsonTypeInfo.As.EXISTING_PROPERTY)
 @JsonSubTypes({

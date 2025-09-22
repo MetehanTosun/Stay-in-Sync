@@ -250,25 +250,141 @@
                 [disabled]="metadataForm.invalid"></button>
       </div>
     </form>
-    <div class="p-grid p-m-2">
-      <div class="p-col-12 p-md-6">
-        <!--
-          Section: Manage API request headers for the selected system
-        -->
-        <p-card>
-          <h4>API Headers</h4>
-          <app-manage-api-headers [syncSystemId]="selectedSystem!.id!"></app-manage-api-headers>
-        </p-card>
-      </div>
-      <div class="p-col-12 p-md-6">
-        <!--
-          Section: Manage endpoints for the selected system
-        -->
-        <p-card>
-          <h4>Endpoints</h4>
-          <app-manage-endpoints [sourceSystemId]="selectedSystem!.id!"></app-manage-endpoints>
-        </p-card>
-      </div>
-    </div>
+    <p-tabView>
+      <p-tabPanel *ngIf="!isAasSelected()" header="Headers & Endpoints">
+        <div class="p-grid p-m-2">
+          <div class="p-col-12 p-md-6">
+            <p-card>
+              <h4>API Headers</h4>
+              <app-manage-api-headers [syncSystemId]="selectedSystem!.id!"></app-manage-api-headers>
+            </p-card>
+          </div>
+          <div class="p-col-12 p-md-6">
+            <p-card>
+              <h4>Endpoints</h4>
+              <app-manage-endpoints [sourceSystemId]="selectedSystem!.id!"></app-manage-endpoints>
+            </p-card>
+          </div>
+        </div>
+      </p-tabPanel>
+      <p-tabPanel *ngIf="isAasSelected()" header="AAS Snapshot">
+        <div class="p-d-flex p-ai-center p-jc-between" style="margin-bottom: .5rem;">
+          <div>
+            <strong>Base URL:</strong> {{ selectedSystem.apiUrl }}
+            <span class="ml-3"><strong>AAS ID:</strong> {{ selectedSystem.aasId || '-' }}</span>
+          </div>
+          <div>
+            <button pButton type="button" label="Refresh Snapshot" class="p-button-text" (click)="discoverAasSnapshot()" [disabled]="aasTreeLoading"></button>
+            <button pButton type="button" label="+ Submodel" class="p-button-text" (click)="openAasCreateSubmodel()"></button>
+          </div>
+        </div>
+        <button pButton type="button" label="Load Snapshot" (click)="discoverAasSnapshot()" [disabled]="aasTreeLoading"></button>
+        <span *ngIf="aasTreeLoading" class="ml-2">Loading...</span>
+        <div style="display:flex; gap:1rem; align-items:flex-start;">
+          <div style="flex: 1 1 65%; min-width: 0;">
+            <p-tree [value]="aasTreeNodes" (onNodeExpand)="onAasNodeExpand($event)" (onNodeSelect)="onAasNodeSelect($event)" selectionMode="single">
+              <ng-template let-node pTemplate="default">
+                <div style="display:flex;align-items:center;gap:.5rem;">
+                  <span>{{ node.label }}</span>
+                  <button *ngIf="node.data?.type==='submodel'" pButton type="button" class="p-button-text" label="Create element" (click)="openAasCreateElement(node.data.id)"></button>
+                  <!-- <button *ngIf="node.data?.type==='element' && node.data?.modelType!=='Property'" pButton type="button" class="p-button-text" label="Add child" (click)="openAasCreateElement(node.data.submodelId, node.data.idShortPath)"></button> -->
+                  <button *ngIf="node.data?.type==='submodel'" pButton type="button" class="p-button-text p-button-danger" label="Delete submodel" (click)="deleteAasSubmodel(node.data.id)"></button>
+                  <button *ngIf="node.data?.type==='element'" pButton type="button" class="p-button-text p-button-danger" label="Delete" (click)="deleteAasElement(node.data.submodelId, node.data.idShortPath)"></button>
+                  <button *ngIf="node.data?.type==='element' && (node.data?.modelType==='Property' || node.data?.raw?.valueType)" pButton type="button" class="p-button-text" label="Set value" (click)="openAasSetValue(node.data.submodelId, node.data)"></button>
+                </div>
+              </ng-template>
+            </p-tree>
+          </div>
+          <div class="p-card" *ngIf="selectedAasNode && selectedAasNode.data?.type==='element'" style="flex: 0 0 35%; padding:1rem;border:1px solid var(--surface-border);border-radius:4px;">
+            <div class="p-d-flex p-ai-center p-jc-between">
+              <h4 style="margin:0;">Details</h4>
+              <span *ngIf="aasSelectedLiveLoading">Loading...</span>
+            </div>
+            <div *ngIf="aasSelectedLivePanel">
+              <div><strong>Label:</strong> {{ aasSelectedLivePanel.label }}</div>
+              <div><strong>Type:</strong> {{ aasSelectedLivePanel.type }}</div>
+              <div *ngIf="aasSelectedLivePanel.valueType"><strong>valueType:</strong> {{ aasSelectedLivePanel.valueType }}</div>
+              <div *ngIf="aasSelectedLivePanel.value !== undefined"><strong>value:</strong> {{ aasSelectedLivePanel.value }}</div>
+            </div>
+          </div>
+        </div>
+      </p-tabPanel>
+      <p-tabPanel *ngIf="isAasSelected()" header="AAS Configuration">
+        <div class="p-grid p-fluid">
+          <div class="p-col-12 p-md-6">
+            <label>Base URL</label>
+            <input pInputText [value]="selectedSystem.apiUrl" disabled />
+          </div>
+          <div class="p-col-12 p-md-6">
+            <label>AAS ID</label>
+            <input pInputText [(ngModel)]="selectedSystem.aasId" placeholder="AAS Identifier" />
+          </div>
+        </div>
+        <div class="p-d-flex p-ai-center" style="margin-top: .75rem; gap: .5rem;">
+          <button pButton type="button" label="Test" (click)="aasTest()" [disabled]="aasTestLoading"></button>
+          <span *ngIf="aasTestLoading">Testing...</span>
+          <small *ngIf="aasTestError" style="color:#d32f2f;">{{ aasTestError }}</small>
+        </div>
+      </p-tabPanel>
+      <p-tabPanel *ngIf="isAasSelected()" header="AAS Actions">
+        <div class="p-d-flex p-ai-center" style="gap: .75rem;">
+          <button pButton type="button" label="Refresh Snapshot" (click)="discoverAasSnapshot()" [disabled]="aasTreeLoading"></button>
+        </div>
+      </p-tabPanel>
+    </p-tabView>
+
+<!-- Dialog: Set Property Value (AAS Manage) -->
+<p-dialog header="Set Property Value" [(visible)]="showAasValueDialog" [modal]="true" [style]="{width:'35vw'}">
+  <div class="p-field">
+    <label>Submodel ID</label>
+    <input pInputText [value]="aasValueSubmodelId" disabled />
+  </div>
+  <div class="p-field">
+    <label>Element Path</label>
+    <input pInputText [value]="aasValueElementPath" disabled />
+  </div>
+  <div class="p-field">
+    <label>New Value</label>
+    <input pInputText [(ngModel)]="aasValueNew" />
+    <small>valueType: {{ aasValueTypeHint }}</small>
+  </div>
+  <ng-template pTemplate="footer">
+    <button pButton type="button" class="p-button-text" label="Cancel" (click)="showAasValueDialog=false"></button>
+    <button pButton type="button" label="Save" (click)="aasSetValue()"></button>
+  </ng-template>
+</p-dialog>
+
+<!-- Dialog: Create Submodel (AAS Manage) -->
+<p-dialog header="Create Submodel" [(visible)]="showAasSubmodelDialog" [modal]="true" [style]="{width:'40vw'}">
+  <textarea pInputTextarea [(ngModel)]="aasNewSubmodelJson" rows="10" style="width:100%"></textarea>
+  <ng-template pTemplate="footer">
+    <button pButton type="button" class="p-button-text" label="Cancel" (click)="showAasSubmodelDialog=false"></button>
+    <button pButton type="button" label="Create" (click)="aasCreateSubmodel()"></button>
+  </ng-template>
+  <div class="p-mt-2" style="display:flex;gap:.5rem;flex-wrap:wrap;">
+    <button pButton type="button" class="p-button-text" label="Template: Minimal" (click)="setAasSubmodelTemplate('minimal')"></button>
+    <button pButton type="button" class="p-button-text" label="Template: With Property" (click)="setAasSubmodelTemplate('property')"></button>
+    <button pButton type="button" class="p-button-text" label="Template: With Collection" (click)="setAasSubmodelTemplate('collection')"></button>
+  </div>
+</p-dialog>
+
+<!-- Dialog: Create Element (AAS Manage) -->
+<p-dialog header="Create Element" [(visible)]="showAasElementDialog" [modal]="true" [style]="{width:'40vw'}">
+  <div class="p-field">
+    <label>Submodel ID</label>
+    <input pInputText [value]="aasTargetSubmodelId" disabled />
+  </div>
+  <div class="p-field">
+    <label>Parent Path</label>
+    <input pInputText [(ngModel)]="aasParentPath" placeholder="e.g. address or address/street" />
+    <small>Optional. Use idShort path with slashes for nesting.</small>
+  </div>
+  <textarea pInputTextarea [(ngModel)]="aasNewElementJson" rows="10" style="width:100%"></textarea>
+  <ng-template pTemplate="footer">
+    <button pButton type="button" class="p-button-text" label="Cancel" (click)="showAasElementDialog=false"></button>
+    <button pButton type="button" label="Create" (click)="aasCreateElement()"></button>
+  </ng-template>
+  <button pButton type="button" class="p-button-text" label="Use example" (click)="aasNewElementJson='{}'"></button>
+</p-dialog>
   </ng-container>
 </p-dialog>

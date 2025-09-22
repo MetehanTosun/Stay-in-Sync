@@ -5,9 +5,8 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import de.unistuttgart.stayinsync.syncnode.domain.ApiCallConfiguration;
 import de.unistuttgart.stayinsync.syncnode.domain.UpsertDirective;
-import de.unistuttgart.stayinsync.transport.domain.TargetApiRequestConfigurationActionRole;
-import de.unistuttgart.stayinsync.transport.dto.targetsystems.ActionMessageDTO;
-import de.unistuttgart.stayinsync.transport.dto.targetsystems.RequestConfigurationMessageDTO;
+import de.unistuttgart.stayinsync.core.transport.domain.TargetApiRequestConfigurationActionRole;
+import de.unistuttgart.stayinsync.core.transport.dto.targetsystems.*;
 import io.quarkus.cache.CacheResult;
 import io.quarkus.logging.Log;
 import io.smallrye.mutiny.Uni;
@@ -236,7 +235,7 @@ public class DirectiveExecutor {
         return resolvedParams;
     }
 
-    private Optional<String> findPathForAction(RequestConfigurationMessageDTO arcConfig, TargetApiRequestConfigurationActionRole role){
+    private Optional<String> findPathForAction(RequestConfigurationMessageDTO arcConfig, TargetApiRequestConfigurationActionRole role) {
         return arcConfig.actions().stream()
                 .filter(action -> action.actionRole() == role)
                 .map(ActionMessageDTO::path)
