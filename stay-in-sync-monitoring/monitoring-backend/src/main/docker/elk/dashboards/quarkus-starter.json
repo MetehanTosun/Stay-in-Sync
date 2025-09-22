@@ -18,7 +18,7 @@
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 0,
-  "id": 3,
+  "id": 4,
   "links": [],
   "liveNow": false,
   "panels": [
@@ -72,311 +72,73 @@
                 "value": null
               },
               {
+                "color": "yellow",
+                "value": 70
+              },
+              {
                 "color": "red",
-                "value": 80
+                "value": 90
+              }
+            ]
+          },
+          "unit": "percent"
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "host.docker.internal:8090"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "core-management"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "host.docker.internal:8091"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "SyncNode"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "host.docker.internal:8095"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "PollingNode"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "host.docker.internal:8099"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "Monitoring"
               }
             ]
           }
-        },
-        "overrides": []
+        ]
       },
       "gridPos": {
         "h": 8,
         "w": 12,
         "x": 0,
         "y": 0
-      },
-      "id": 6,
-      "options": {
-        "legend": {
-          "calcs": [],
-          "displayMode": "list",
-          "placement": "bottom",
-          "showLegend": true
-        },
-        "tooltip": {
-          "mode": "single",
-          "sort": "none"
-        }
-      },
-      "targets": [
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "ae47b3b1-0ce0-46a1-8caa-a53916523828"
-          },
-          "disableTextWrap": false,
-          "editorMode": "builder",
-          "expr": "polling_requests_total{pollingNode=\"$WorkerpodName\"}",
-          "fullMetaSearch": false,
-          "includeNullMetadata": true,
-          "legendFormat": "__auto",
-          "range": true,
-          "refId": "A",
-          "useBackend": false
-        }
-      ],
-      "title": "Polling Request Anzahl",
-      "type": "timeseries"
-    },
-    {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "ae47b3b1-0ce0-46a1-8caa-a53916523828"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "palette-classic"
-          },
-          "custom": {
-            "axisCenteredZero": false,
-            "axisColorMode": "text",
-            "axisLabel": "",
-            "axisPlacement": "auto",
-            "barAlignment": 0,
-            "drawStyle": "line",
-            "fillOpacity": 0,
-            "gradientMode": "none",
-            "hideFrom": {
-              "legend": false,
-              "tooltip": false,
-              "viz": false
-            },
-            "insertNulls": false,
-            "lineInterpolation": "linear",
-            "lineWidth": 1,
-            "pointSize": 5,
-            "scaleDistribution": {
-              "type": "linear"
-            },
-            "showPoints": "auto",
-            "spanNulls": false,
-            "stacking": {
-              "group": "A",
-              "mode": "none"
-            },
-            "thresholdsStyle": {
-              "mode": "off"
-            }
-          },
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": null
-              },
-              {
-                "color": "red",
-                "value": 80
-              }
-            ]
-          }
-        },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 6,
-        "w": 10,
-        "x": 14,
-        "y": 0
-      },
-      "id": 4,
-      "options": {
-        "legend": {
-          "calcs": [],
-          "displayMode": "list",
-          "placement": "bottom",
-          "showLegend": true
-        },
-        "tooltip": {
-          "mode": "single",
-          "sort": "none"
-        }
-      },
-      "pluginVersion": "10.1.5",
-      "targets": [
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "ae47b3b1-0ce0-46a1-8caa-a53916523828"
-          },
-          "disableTextWrap": false,
-          "editorMode": "builder",
-          "expr": "script_execution_time_seconds_count{transformationId=\"$TransformationId\"}",
-          "fullMetaSearch": false,
-          "includeNullMetadata": true,
-          "legendFormat": "__auto",
-          "range": true,
-          "refId": "A",
-          "useBackend": false
-        }
-      ],
-      "title": "Script",
-      "type": "timeseries"
-    },
-    {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "ae47b3b1-0ce0-46a1-8caa-a53916523828"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "palette-classic"
-          },
-          "custom": {
-            "axisCenteredZero": false,
-            "axisColorMode": "text",
-            "axisLabel": "",
-            "axisPlacement": "auto",
-            "barAlignment": 0,
-            "drawStyle": "line",
-            "fillOpacity": 0,
-            "gradientMode": "none",
-            "hideFrom": {
-              "legend": false,
-              "tooltip": false,
-              "viz": false
-            },
-            "insertNulls": false,
-            "lineInterpolation": "linear",
-            "lineWidth": 1,
-            "pointSize": 5,
-            "scaleDistribution": {
-              "type": "linear"
-            },
-            "showPoints": "auto",
-            "spanNulls": false,
-            "stacking": {
-              "group": "A",
-              "mode": "none"
-            },
-            "thresholdsStyle": {
-              "mode": "off"
-            }
-          },
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": null
-              },
-              {
-                "color": "red",
-                "value": 80
-              }
-            ]
-          }
-        },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 8,
-        "w": 10,
-        "x": 14,
-        "y": 6
-      },
-      "id": 5,
-      "options": {
-        "legend": {
-          "calcs": [],
-          "displayMode": "list",
-          "placement": "bottom",
-          "showLegend": true
-        },
-        "tooltip": {
-          "mode": "single",
-          "sort": "none"
-        }
-      },
-      "targets": [
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "ae47b3b1-0ce0-46a1-8caa-a53916523828"
-          },
-          "disableTextWrap": false,
-          "editorMode": "builder",
-          "expr": "http_server_errors_total{job=\"quarkus_metrics\"}",
-          "fullMetaSearch": false,
-          "includeNullMetadata": true,
-          "legendFormat": "__auto",
-          "range": true,
-          "refId": "A",
-          "useBackend": false
-        }
-      ],
-      "title": "Error Rate",
-      "type": "timeseries"
-    },
-    {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "ae47b3b1-0ce0-46a1-8caa-a53916523828"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "palette-classic"
-          },
-          "custom": {
-            "axisCenteredZero": false,
-            "axisColorMode": "text",
-            "axisLabel": "",
-            "axisPlacement": "auto",
-            "barAlignment": 0,
-            "drawStyle": "line",
-            "fillOpacity": 0,
-            "gradientMode": "none",
-            "hideFrom": {
-              "legend": false,
-              "tooltip": false,
-              "viz": false
-            },
-            "insertNulls": false,
-            "lineInterpolation": "linear",
-            "lineWidth": 1,
-            "pointSize": 5,
-            "scaleDistribution": {
-              "type": "linear"
-            },
-            "showPoints": "auto",
-            "spanNulls": false,
-            "stacking": {
-              "group": "A",
-              "mode": "none"
-            },
-            "thresholdsStyle": {
-              "mode": "off"
-            }
-          },
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": null
-              },
-              {
-                "color": "red",
-                "value": 80
-              }
-            ]
-          }
-        },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 12,
-        "w": 12,
-        "x": 0,
-        "y": 8
       },
       "id": 1,
       "options": {
@@ -387,25 +149,15 @@
           "showLegend": true
         },
         "tooltip": {
-          "mode": "single",
+          "mode": "allSeries",
           "sort": "none"
         }
       },
       "targets": [
         {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "ae47b3b1-0ce0-46a1-8caa-a53916523828"
-          },
-          "disableTextWrap": false,
-          "editorMode": "builder",
-          "expr": "process_cpu_usage{job=\"quarkus_metrics\"}",
-          "fullMetaSearch": false,
-          "includeNullMetadata": true,
-          "legendFormat": "__auto",
-          "range": true,
-          "refId": "A",
-          "useBackend": false
+          "expr": "process_cpu_usage{job=\"quarkus_metrics\"} * 100",
+          "legendFormat": "{{instance}}",
+          "refId": "A"
         }
       ],
       "title": "CPU Usage",
@@ -419,6 +171,147 @@
       "fieldConfig": {
         "defaults": {
           "color": {
+            "mode": "thresholds"
+          },
+          "custom": {
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 0,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 0.7
+              },
+              {
+                "color": "red",
+                "value": 0.9
+              }
+            ]
+          },
+          "unit": "bytes"
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "host.docker.internal:8090"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "core-management"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "host.docker.internal:8091"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "SyncNode"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "host.docker.internal:8095"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "PollingNode"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "host.docker.internal:8099"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "Monitoring"
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 0
+      },
+      "id": 2,
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "allSeries",
+          "sort": "none"
+        }
+      },
+      "targets": [
+        {
+          "expr": "jvm_memory_usage_after_gc{job=\"quarkus_metrics\"}",
+          "legendFormat": "{{instance}}",
+          "refId": "A"
+        }
+      ],
+      "title": "Heap Memory Usage",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "ae47b3b1-0ce0-46a1-8caa-a53916523828"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
             "mode": "palette-classic"
           },
           "custom": {
@@ -470,10 +363,245 @@
         "overrides": []
       },
       "gridPos": {
-        "h": 7,
-        "w": 11,
-        "x": 13,
-        "y": 14
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 8
+      },
+      "id": 5,
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "allSeries",
+          "sort": "none"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "ae47b3b1-0ce0-46a1-8caa-a53916523828"
+          },
+          "editorMode": "code",
+          "expr": "rate(polling_requests_total{pollingNode=\"$WorkerpodName\"}[1m]) * 60",
+          "legendFormat": "{{pollingNode}}",
+          "range": true,
+          "refId": "A"
+        }
+      ],
+      "title": "Polling Requests per Minute",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "ae47b3b1-0ce0-46a1-8caa-a53916523828"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 0,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 8
+      },
+      "id": 6,
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "allSeries",
+          "sort": "none"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "ae47b3b1-0ce0-46a1-8caa-a53916523828"
+          },
+          "editorMode": "code",
+          "expr": "rate(script_execution_time_seconds_count{transformationId=~\"$transformationId\"}[1m]) * 60",
+          "legendFormat": "{{transformationId}}",
+          "range": true,
+          "refId": "A"
+        }
+      ],
+      "title": "Script Executions per minute",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "ae47b3b1-0ce0-46a1-8caa-a53916523828"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 0,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "host.docker.internal:8090"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "core-management"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "host.docker.internal:8091"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "SyncNode"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "host.docker.internal:8095"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "PollingNode"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "host.docker.internal:8099"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "Monitoring"
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 16
       },
       "id": 3,
       "options": {
@@ -484,32 +612,233 @@
           "showLegend": true
         },
         "tooltip": {
-          "mode": "single",
+          "mode": "allSeries",
           "sort": "none"
         }
       },
       "targets": [
         {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "ae47b3b1-0ce0-46a1-8caa-a53916523828"
+          "expr": "jvm_threads_daemon_threads{job=\"quarkus_metrics\"}",
+          "legendFormat": "{{instance}}",
+          "refId": "A"
+        }
+      ],
+      "title": "Active Threads",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "ae47b3b1-0ce0-46a1-8caa-a53916523828"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
           },
-          "disableTextWrap": false,
-          "editorMode": "builder",
-          "expr": "http_client_requests_seconds_count{job=\"quarkus_metrics\"}",
-          "fullMetaSearch": false,
-          "includeNullMetadata": true,
-          "legendFormat": "__auto",
-          "range": true,
-          "refId": "A",
-          "useBackend": false
+          "custom": {
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 0,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "host.docker.internal:8090"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "core-management"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "host.docker.internal:8091"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "SyncNode"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "host.docker.internal:8095"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "PollingNode"
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 16
+      },
+      "id": 7,
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "allSeries",
+          "sort": "none"
+        }
+      },
+      "targets": [
+        {
+          "expr": "rabbitmq_connections{name=\"<default>\"}",
+          "legendFormat": "{{instance}}",
+          "refId": "A"
+        }
+      ],
+      "title": "RabbitMQ Connections",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "ae47b3b1-0ce0-46a1-8caa-a53916523828"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 0,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 24
+      },
+      "id": 4,
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "allSeries",
+          "sort": "none"
+        }
+      },
+      "targets": [
+        {
+          "expr": "rate(http_client_requests_seconds_count{job=\"quarkus_metrics\"}[1m])",
+          "legendFormat": "{{instance}}",
+          "refId": "A"
         }
       ],
       "title": "HTTP Requests per Second",
       "type": "timeseries"
     }
   ],
-  "refresh": "",
+  "refresh": "30s",
   "schemaVersion": 38,
   "style": "dark",
   "tags": [],
@@ -517,54 +846,44 @@
     "list": [
       {
         "current": {
-          "selected": true,
-          "text": [
-            "None"
-          ],
-          "value": [
-            ""
-          ]
+          "selected": false,
+          "text": "All",
+          "value": "$__all"
         },
         "datasource": {
           "type": "prometheus",
           "uid": "ae47b3b1-0ce0-46a1-8caa-a53916523828"
         },
-        "definition": "label_values(script_execution_time_seconds_count,transformationId)",
+        "definition": "",
         "hide": 0,
-        "includeAll": false,
+        "includeAll": true,
         "multi": true,
-        "name": "TransformationId",
+        "name": "WorkerpodName",
         "options": [],
-        "query": {
-          "query": "label_values(script_execution_time_seconds_count,transformationId)",
-          "refId": "PrometheusVariableQueryEditor-VariableQuery"
-        },
+        "query": "label_values(polling_requests_total,pollingNode)",
         "refresh": 1,
-        "regex": "\n",
+        "regex": "",
         "skipUrlSync": false,
         "sort": 0,
         "type": "query"
       },
       {
         "current": {
-          "selected": true,
-          "text": "PollingNode",
-          "value": "PollingNode"
+          "selected": false,
+          "text": "All",
+          "value": "$__all"
         },
         "datasource": {
           "type": "prometheus",
           "uid": "ae47b3b1-0ce0-46a1-8caa-a53916523828"
         },
-        "definition": "label_values(polling_requests_total,pollingNode)",
+        "definition": "",
         "hide": 0,
-        "includeAll": false,
-        "multi": false,
-        "name": "WorkerpodName",
+        "includeAll": true,
+        "multi": true,
+        "name": "transformationId",
         "options": [],
-        "query": {
-          "query": "label_values(polling_requests_total,pollingNode)",
-          "refId": "PrometheusVariableQueryEditor-VariableQuery"
-        },
+        "query": "label_values(script_execution_time_seconds_count,transformationId)",
         "refresh": 1,
         "regex": "",
         "skipUrlSync": false,
@@ -579,8 +898,8 @@
   },
   "timepicker": {},
   "timezone": "",
-  "title": "Quarkus Service Monitoring",
-  "uid": "c0d04c42-641e-438b-8592-f1ca577899dd",
-  "version": 3,
+  "title": "StayInSync Monitoring Metrics",
+  "uid": "abd0d0fc-75cf-4a29-abeb-7c96b57a1629",
+  "version": 14,
   "weekStart": ""
 }

@@ -12,12 +12,17 @@ export interface Transformation {
   id?: number;
   name?: string;
   description?: string;
-  transformationRule?: string;
+  transformationRule?: TransformationRule;
   script?: TransformationScript;
   syncJobId?: number;
   transformationScriptId?: number;
   deploymentStatus?: JobDeploymentStatus;
   added?: boolean;
+}
+
+export interface TransformationRule {
+  id?: number;
+  name?: string;
 }
 
 export interface UpdateTransformationRequest {

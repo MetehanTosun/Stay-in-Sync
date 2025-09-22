@@ -124,7 +124,7 @@ class TransformationRuleServiceTest {
         TransformationRule existingRule = createTestRule();
         TransformationRulePayloadDTO updatePayload = createPayload("Updated Name", "Updated Description");
 
-        when(storageService.findRuleById(ruleId)).thenReturn(Optional.of(existingRule));
+        when(storageService.findRuleById(ruleId)).thenReturn(existingRule);
 
         // Act
         TransformationRule result = ruleService.updateRuleMetadata(ruleId, updatePayload);
@@ -140,7 +140,7 @@ class TransformationRuleServiceTest {
         // Arrange
         Long nonExistentId = 999L;
         TransformationRulePayloadDTO payload = createPayload("Name", "Description");
-        when(storageService.findRuleById(nonExistentId)).thenReturn(Optional.empty());
+        when(storageService.findRuleById(nonExistentId)).thenReturn(null);
 
         // Act & Assert
         CoreManagementException exception = assertThrows(CoreManagementException.class, () -> {
@@ -163,7 +163,7 @@ class TransformationRuleServiceTest {
         TransformationRule existingRule = createTestRule();
 
         setupValidGraphMocks();
-        when(storageService.findRuleById(ruleId)).thenReturn(Optional.of(existingRule));
+        when(storageService.findRuleById(ruleId)).thenReturn(existingRule);
 
         // Act
         GraphStorageService.PersistenceResult result = ruleService.updateRuleGraph(ruleId, vflowGraph);
@@ -189,7 +189,7 @@ class TransformationRuleServiceTest {
         List<ValidationError> validationErrors = List.of(mock(ValidationError.class));
 
         setupInvalidGraphMocks(validationErrors);
-        when(storageService.findRuleById(ruleId)).thenReturn(Optional.of(existingRule));
+        when(storageService.findRuleById(ruleId)).thenReturn(existingRule);
 
         // Act
         GraphStorageService.PersistenceResult result = ruleService.updateRuleGraph(ruleId, vflowGraph);
@@ -208,7 +208,7 @@ class TransformationRuleServiceTest {
         // Arrange
         Long nonExistentId = 999L;
         VFlowGraphDTO vflowGraph = new VFlowGraphDTO();
-        when(storageService.findRuleById(nonExistentId)).thenReturn(Optional.empty());
+        when(storageService.findRuleById(nonExistentId)).thenReturn(null);
 
         // Act & Assert
         CoreManagementException exception = assertThrows(CoreManagementException.class, () -> {
@@ -228,7 +228,7 @@ class TransformationRuleServiceTest {
         VFlowGraphDTO vflowGraph = new VFlowGraphDTO();
         TransformationRule existingRule = createTestRule();
 
-        when(storageService.findRuleById(ruleId)).thenReturn(Optional.of(existingRule));
+        when(storageService.findRuleById(ruleId)).thenReturn(existingRule);
         when(mapper.vflowToGraphDto(any())).thenReturn(new GraphDTO());
         when(mapper.toNodeGraph(any())).thenReturn(
                 new GraphMapper.MappingResult(List.of(mock(Node.class)), Collections.emptyList())
@@ -260,7 +260,7 @@ class TransformationRuleServiceTest {
 
         List<ValidationError> expectedErrors = List.of(mock(ValidationError.class));
 
-        when(storageService.findRuleById(ruleId)).thenReturn(Optional.of(draftRule));
+        when(storageService.findRuleById(ruleId)).thenReturn(draftRule);
         when(jsonObjectMapper.readValue(eq(draftRule.validationErrorsJson), any(com.fasterxml.jackson.core.type.TypeReference.class)))
                 .thenReturn(expectedErrors);
 
@@ -279,7 +279,7 @@ class TransformationRuleServiceTest {
         TransformationRule finalizedRule = createTestRule();
         finalizedRule.graphStatus = GraphStatus.FINALIZED;
 
-        when(storageService.findRuleById(ruleId)).thenReturn(Optional.of(finalizedRule));
+        when(storageService.findRuleById(ruleId)).thenReturn(finalizedRule);
 
         // Act
         List<ValidationError> result = ruleService.getValidationErrorsForRule(ruleId);

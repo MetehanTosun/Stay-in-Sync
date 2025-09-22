@@ -4,7 +4,7 @@ import type {Node, NodeConnection} from '../../core/models/node.model';
 import {LegendPanelComponent} from './legend-panel/legend-panel.component';
 import {MonitoringGraphService} from '../../core/services/monitoring-graph.service';
 import {Router} from '@angular/router';
-
+import {Button} from 'primeng/button';
 /**
  * GraphPanelComponent
  *
@@ -16,7 +16,8 @@ import {Router} from '@angular/router';
   selector: 'app-graph-panel',
   templateUrl: './graph-panel.component.html',
   imports: [
-    LegendPanelComponent
+    LegendPanelComponent,
+    Button
   ],
   styleUrl: './graph-panel.component.css'
 })
@@ -297,12 +298,14 @@ export class GraphPanelComponent implements AfterViewInit {
 
     nodeGroup.on('click', (event, d) => {
       event.stopPropagation();
-      this.nodeSelected.emit(d.id);
-      console.log(`Node ${d.id} selected`);
+      if (d.type === 'PollingNode' || d.type === 'SyncNode') {
+        this.nodeSelected.emit(d.id);
+      }
     });
 
     d3.select('svg').on('click', (event: MouseEvent) => {
-      if ((event.target as SVGElement).tagName === 'svg') {
+      // Prüfe, ob direkt auf das SVG-Element (und nicht auf ein Kind) geklickt wurde
+      if (event.target === event.currentTarget) {
         this.nodeSelected.emit(null);
       }
     });

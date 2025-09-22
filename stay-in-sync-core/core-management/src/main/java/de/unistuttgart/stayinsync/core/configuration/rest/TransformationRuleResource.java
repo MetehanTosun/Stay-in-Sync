@@ -25,6 +25,7 @@ import org.eclipse.microprofile.openapi.annotations.parameters.Parameter;
 import org.eclipse.microprofile.openapi.annotations.tags.Tag;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 import static jakarta.ws.rs.core.MediaType.APPLICATION_JSON;
@@ -128,10 +129,7 @@ public class TransformationRuleResource {
     @Path("/{id}")
     @Operation(summary = "Returns the metadata for a single Transformation Rule")
     public TransformationRuleDTO getTransformationRule(@Parameter(name = "id", required = true) @PathParam("id") Long id) {
-        return graphStorage.findRuleById(id)
-                .map(ruleMapper::toRuleDTO)
-                .orElseThrow(() -> new CoreManagementException(Response.Status.NOT_FOUND,
-                        "Not Found", "TransformationRule with id %d not found.", id));
+        return ruleMapper.toRuleDTO(graphStorage.findRuleById(id));
     }
 
     /**
@@ -141,8 +139,17 @@ public class TransformationRuleResource {
      */
     @GET
     @Operation(summary = "Returns the metadata for all Transformation Rules")
-    public List<TransformationRuleDTO> getAllTransformationRules() {
+    public List<TransformationRuleDTO> getAllTransformationRules(
+            @Parameter(name = "unassigned", description = "An optional filter receive only unassiged rules") @QueryParam("unassigned") Optional<Boolean> unassigned
+    ) {
         List<TransformationRule> rules = graphStorage.findAllRules();
+        if(unassigned.isPresent())
+        {
+            rules = rules.stream()
+                    .filter(rule -> unassigned.get() ? rule.transformation == null : rule.transformation != null)
+                    .collect(Collectors.toList());
+        }
+
         Log.infof("Found %d transformation rules.", rules.size());
         return rules.stream()
                 .map(ruleMapper::toRuleDTO)
@@ -154,9 +161,7 @@ public class TransformationRuleResource {
     @Operation(summary = "Returns the VFlow graph definition and validation errors for a single rule")
     public VflowGraphResponseDTO getGraphForTransformationRule(@Parameter(name = "id", required = true) @PathParam("id") Long id) {
 
-        TransformationRule entity = graphStorage.findRuleById(id)
-                .orElseThrow(() -> new CoreManagementException(Response.Status.NOT_FOUND,
-                        "Not Found", "TransformationRule with id %d not found.", id));
+        TransformationRule entity = graphStorage.findRuleById(id);
 
         VFlowGraphDTO graphData = ruleMapper.toVFlowDto(entity);
         List<ValidationError> errors = ruleService.getValidationErrorsForRule(id);

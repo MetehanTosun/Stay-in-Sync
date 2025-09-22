@@ -41,10 +41,10 @@ public class GraphStorageServiceTest {
 
         // ASSERT
         assertNotNull(newRule.id, "ID should be generated after persisting.");
-        Optional<TransformationRule> foundRuleOpt = storageService.findRuleById(newRule.id);
+        TransformationRule foundRuleOpt = storageService.findRuleById(newRule.id);
 
-        assertTrue(foundRuleOpt.isPresent(), "Rule should be found by its new ID.");
-        assertEquals("Test Rule 1", foundRuleOpt.get().name);
+        assertNotNull(foundRuleOpt, "Rule should be found by its new ID.");
+        assertEquals("Test Rule 1", foundRuleOpt.name);
     }
 
     @Test
@@ -70,14 +70,14 @@ public class GraphStorageServiceTest {
         storageService.persistRule(ruleToDelete);
         Long id = ruleToDelete.id;
 
-        assertTrue(storageService.findRuleById(id).isPresent(), "Rule should exist before deletion.");
+        assertNotNull(storageService.findRuleById(id), "Rule should exist before deletion.");
 
         // ACT
         boolean wasDeleted = storageService.deleteRuleById(id);
 
         // ASSERT
         assertTrue(wasDeleted);
-        assertTrue(storageService.findRuleById(id).isEmpty(), "Rule should be gone after deletion.");
+        assertNull(storageService.findRuleById(id), "Rule should be gone after deletion.");
     }
 
     @Test
