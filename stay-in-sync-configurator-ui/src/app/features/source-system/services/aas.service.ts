@@ -24,6 +24,21 @@ export class AasService {
     return this.http.post(url, form);
   }
 
+  previewAasx(sourceSystemId: number, file: File): Observable<any> {
+    const url = `/api/config/source-system/${sourceSystemId}/aas/upload/preview`;
+    const form = new FormData();
+    form.append('file', file, file.name);
+    return this.http.post(url, form);
+  }
+
+  attachSelectedAasx(sourceSystemId: number, file: File, selection: any): Observable<any> {
+    const url = `/api/config/source-system/${sourceSystemId}/aas/upload/attach-selected`;
+    const form = new FormData();
+    form.append('file', file, file.name);
+    form.append('selection', JSON.stringify(selection));
+    return this.http.post(url, form);
+  }
+
   listSubmodels(sourceSystemId: number, source: 'SNAPSHOT' | 'LIVE' = 'SNAPSHOT'): Observable<any> {
     const url = `/api/config/source-system/${sourceSystemId}/aas/submodels`;
     const params = new HttpParams().set('source', source);

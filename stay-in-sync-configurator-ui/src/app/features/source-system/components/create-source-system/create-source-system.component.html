@@ -126,18 +126,18 @@
               <div style="display:flex;align-items:center;gap:.5rem;">
                 <span>{{ node.label }}</span>
                 <span style="font-size:.75rem;padding:.1rem .4rem;border-radius:999px;border:1px solid var(--surface-border);color:var(--text-color-secondary);">
-                  {{ node.data?.type==='submodel' ? 'Submodel' : (node.data?.modelType || node.data?.raw?.modelType || (node.data?.raw?.valueType ? 'Property' : 'Element')) }}
+                  {{ node.data?.type==='submodel' ? (node.data?.modelType || (node.data?.raw?.kind?.toLowerCase?.().includes('template') ? 'Submodel Template' : 'Submodel')) : (node.data?.modelType || node.data?.raw?.modelType || (node.data?.raw?.valueType ? 'Property' : 'Element')) }}
                 </span>
                 <button *ngIf="node.data?.type==='submodel'" pButton type="button" class="p-button-text" label="Create element" (click)="openCreateElement(node.data.id)"></button>
                 <button *ngIf="node.data?.type==='submodel'" pButton type="button" class="p-button-text p-button-danger" label="Delete submodel" (click)="deleteSubmodel(node.data.id)"></button>
-                <!-- <button *ngIf="node.data?.type==='element' && node.data?.modelType!=='Property'" pButton type="button" class="p-button-text" label="Add child" (click)="openCreateElement(node.data.submodelId, node.data.idShortPath)"></button> -->
+                <button *ngIf="node.data?.type==='element' && (node.data?.modelType==='SubmodelElementCollection' || node.data?.modelType==='SubmodelElementList' || node.data?.modelType==='Entity')" pButton type="button" class="p-button-text" label="Add child" (click)="openCreateElement(node.data.submodelId, node.data.idShortPath)"></button>
                 <button *ngIf="node.data?.type==='element' && (node.data?.modelType==='Property' || node.data?.raw?.valueType)" pButton type="button" class="p-button-text" label="Set value" (click)="openSetValue(node.data.submodelId, node.data)"></button>
                 <button *ngIf="node.data?.type==='element'" pButton type="button" class="p-button-text p-button-danger" label="Delete" (click)="deleteElement(node.data.submodelId, node.data.idShortPath)"></button>
               </div>
             </ng-template>
           </p-tree>
         </div>
-        <div class="p-card" *ngIf="selectedNode && selectedNode.data?.type==='element'" style="flex: 0 0 35%; padding:1rem;border:1px solid var(--surface-border);border-radius:4px;">
+        <div id="element-details" class="p-card" *ngIf="selectedNode && selectedNode.data?.type==='element'" style="flex: 0 0 35%; padding:1rem;border:1px solid var(--surface-border);border-radius:4px; position: sticky; top: .5rem; align-self: flex-start; max-height: calc(100vh - 1rem); overflow: auto;">
           <div class="p-d-flex p-ai-center p-jc-between">
             <h4 style="margin:0;">Details</h4>
             <span *ngIf="selectedLiveLoading">Loading...</span>
@@ -146,7 +146,24 @@
             <div><strong>Label:</strong> {{ selectedLivePanel.label }}</div>
             <div><strong>Type:</strong> {{ selectedLivePanel.type }}</div>
             <div *ngIf="selectedLivePanel.valueType"><strong>valueType:</strong> {{ selectedLivePanel.valueType }}</div>
-            <div *ngIf="selectedLivePanel.value !== undefined"><strong>value:</strong> {{ selectedLivePanel.value }}</div>
+            <div *ngIf="selectedLivePanel.type==='MultiLanguageProperty' && (selectedLivePanel.value?.length || 0) > 0">
+              <strong>values:</strong>
+              <div style="margin:.25rem 0 .5rem 0;">
+                <div *ngFor="let v of selectedLivePanel.value" style="display:flex;gap:.5rem;align-items:baseline;">
+                  <span style="font-size:.75rem;padding:.1rem .4rem;border:1px solid var(--surface-border);border-radius:999px;color:var(--text-color-secondary);min-width:2.5rem;text-align:center;">{{ v?.language || '-' }}</span>
+                  <span>{{ v?.text || '' }}</span>
+                </div>
+              </div>
+            </div>
+            <div *ngIf="selectedLivePanel.value !== undefined && selectedLivePanel.type!=='SubmodelElementCollection' && selectedLivePanel.type!=='SubmodelElementList' && selectedLivePanel.type!=='MultiLanguageProperty'">
+              <strong>value:</strong> {{ (selectedLivePanel.value | json) }}
+            </div>
+            <div *ngIf="selectedLivePanel.type==='SubmodelElementCollection'">
+              <div><strong>Items:</strong> {{ selectedLivePanel.value?.length || 0 }}</div>
+            </div>
+            <div *ngIf="selectedLivePanel.type==='SubmodelElementList'">
+              <div><strong>Count:</strong> {{ selectedLivePanel.value?.length || 0 }}</div>
+            </div>
             <div *ngIf="selectedLivePanel.type==='Range' || selectedLivePanel.min !== undefined || selectedLivePanel.max !== undefined">
               <div><strong>min:</strong> {{ selectedLivePanel.min }}</div>
               <div><strong>max:</strong> {{ selectedLivePanel.max }}</div>
@@ -235,12 +252,28 @@
     <input pInputText [(ngModel)]="parentPath" placeholder="e.g. address or address/street" />
     <small>Optional. Use idShort path with slashes for nesting.</small>
   </div>
+  <div class="p-field">
+    <label>Import JSON</label>
+    <p-fileupload mode="basic" [auto]="false" [showUploadButton]="false" [showCancelButton]="false" accept=".json" (onSelect)="onElementJsonFileSelected($event)"></p-fileupload>
+  </div>
   <textarea pInputTextarea [(ngModel)]="newElementJson" rows="10" style="width:100%"></textarea>
   <ng-template pTemplate="footer">
     <button pButton type="button" class="p-button-text" label="Cancel" (click)="showElementDialog=false"></button>
     <button pButton type="button" label="Create" (click)="createElement()"></button>
   </ng-template>
-  <button pButton type="button" class="p-button-text" label="Use example" (click)="newElementJson='{}'"></button>
+  <div class="p-mt-2" style="display:flex;gap:.5rem;flex-wrap:wrap;">
+    <button pButton type="button" class="p-button-text" label="Template: Property" (click)="setElementTemplate('property')"></button>
+    <button pButton type="button" class="p-button-text" label="Template: Range" (click)="setElementTemplate('range')"></button>
+    <button pButton type="button" class="p-button-text" label="Template: MultiLanguageProperty" (click)="setElementTemplate('mlp')"></button>
+    <button pButton type="button" class="p-button-text" label="Template: ReferenceElement" (click)="setElementTemplate('ref')"></button>
+    <button pButton type="button" class="p-button-text" label="Template: RelationshipElement" (click)="setElementTemplate('rel')"></button>
+    <button pButton type="button" class="p-button-text" label="Template: AnnotatedRelationshipElement" (click)="setElementTemplate('annrel')"></button>
+    <button pButton type="button" class="p-button-text" label="Template: Collection" (click)="setElementTemplate('collection')"></button>
+    <button pButton type="button" class="p-button-text" label="Template: List" (click)="setElementTemplate('list')"></button>
+    <button pButton type="button" class="p-button-text" label="Template: File" (click)="setElementTemplate('file')"></button>
+    <button pButton type="button" class="p-button-text" label="Template: Operation" (click)="setElementTemplate('operation')"></button>
+    <button pButton type="button" class="p-button-text" label="Template: Entity" (click)="setElementTemplate('entity')"></button>
+  </div>
 </p-dialog>
 
 <!-- Dialog: Upload AASX -->
@@ -248,6 +281,29 @@
   <div class="p-field">
     <p-fileupload mode="basic" [auto]="false" [showUploadButton]="false" [showCancelButton]="false" accept=".aasx" (onSelect)="onAasxFileSelected($event)"></p-fileupload>
     <small *ngIf="aasxSelectedFile">{{ aasxSelectedFile.name }}</small>
+  </div>
+  <div *ngIf="aasxPreview?.length" class="p-mt-3">
+    <div *ngFor="let sm of aasxPreview" class="p-mb-2">
+      <div style="display:flex;align-items:center;gap:.5rem;">
+        <p-checkbox binary="true" [ngModel]="getOrInitAasxSelFor(sm).full" (ngModelChange)="toggleAasxSubmodelFull(sm, $event)"></p-checkbox>
+        <span class="font-bold">{{ sm.idShort || sm.id }}</span>
+        <span style="font-size:.75rem;padding:.1rem .4rem;border:1px solid var(--surface-border);border-radius:999px;color:var(--text-color-secondary);">Submodel</span>
+      </div>
+      <div *ngIf="!getOrInitAasxSelFor(sm).full && (sm.elements?.length)" style="margin-left:2rem;margin-top:.5rem;display:flex;flex-wrap:wrap;gap:.75rem;align-items:center;">
+        <ng-container *ngFor="let el of sm.elements">
+          <div style="display:flex;align-items:center;gap:.4rem;border:1px solid var(--surface-border);padding:.25rem .5rem;border-radius:999px;">
+            <p-checkbox binary="true"
+                        [ngModel]="isAasxElementSelected(sm, el.idShort)"
+                        (ngModelChange)="toggleAasxElement(sm, el.idShort, $event)">
+            </p-checkbox>
+            <span>{{ el.idShort }}</span>
+          </div>
+        </ng-container>
+      </div>
+      <div *ngIf="!getOrInitAasxSelFor(sm).full && !(sm.elements?.length)" style="margin-left:2rem;color:var(--text-color-secondary);">
+        <small>No selectable collections/lists found.</small>
+      </div>
+    </div>
   </div>
   <ng-template pTemplate="footer">
     <button pButton type="button" class="p-button-text" label="Cancel" (click)="showAasxUpload=false"></button>

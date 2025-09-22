@@ -261,10 +261,110 @@ export class SourceSystemBaseComponent implements OnInit, OnDestroy {
   aasTargetSubmodelId = '';
   aasParentPath = '';
   aasNewElementJson = '{\n  "modelType": "Property",\n  "idShort": "NewProp",\n  "valueType": "xs:string",\n  "value": "42"\n}';
+  // Element templates (AAS manage)
+  aasElementTemplateProperty: string = `{
+  "modelType": "Property",
+  "idShort": "NewProp",
+  "valueType": "xs:string",
+  "value": "Foo"
+}`;
+  aasElementTemplateRange: string = `{
+  "modelType": "Range",
+  "idShort": "NewRange",
+  "valueType": "xs:double",
+  "min": 0,
+  "max": 100
+}`;
+  aasElementTemplateMLP: string = `{
+  "modelType": "MultiLanguageProperty",
+  "idShort": "Title",
+  "value": [ { "language": "en", "text": "Example" } ]
+}`;
+  aasElementTemplateRef: string = `{
+  "modelType": "ReferenceElement",
+  "idShort": "Ref",
+  "value": { "type": "ModelReference", "keys": [ { "type": "Submodel", "value": "https://example.com/ids/sm" } ] }
+}`;
+  aasElementTemplateRel: string = `{
+  "modelType": "RelationshipElement",
+  "idShort": "Rel",
+  "first":  { "type": "ModelReference", "keys": [ { "type": "Submodel", "value": "https://example.com/ids/sm1" } ] },
+  "second": { "type": "ModelReference", "keys": [ { "type": "Submodel", "value": "https://example.com/ids/sm2" } ] }
+}`;
+  aasElementTemplateAnnRel: string = `{
+  "modelType": "AnnotatedRelationshipElement",
+  "idShort": "AnnRel",
+  "first":  { "type": "ModelReference", "keys": [ { "type": "Submodel", "value": "https://example.com/ids/sm1" } ] },
+  "second": { "type": "ModelReference", "keys": [ { "type": "Submodel", "value": "https://example.com/ids/sm2" } ] },
+  "annotations": [ { "modelType": "Property", "idShort": "note", "valueType": "xs:string", "value": "Hello" } ]
+}`;
+  aasElementTemplateCollection: string = `{
+  "modelType": "SubmodelElementCollection",
+  "idShort": "group",
+  "value": []
+}`;
+  aasElementTemplateList: string = `{
+  "modelType": "SubmodelElementList",
+  "idShort": "items",
+  "typeValueListElement": "Property",
+  "valueTypeListElement": "xs:string",
+  "value": []
+}`;
+  aasElementTemplateFile: string = `{
+  "modelType": "File",
+  "idShort": "file1",
+  "contentType": "text/plain",
+  "value": "path-or-url.txt"
+}`;
+  aasElementTemplateOperation: string = `{
+  "modelType": "Operation",
+  "idShort": "Op",
+  "inputVariables": [ { "value": { "modelType": "Property", "idShort": "in", "valueType": "xs:string" } } ],
+  "outputVariables": []
+}`;
+  aasElementTemplateEntity: string = `{
+  "modelType": "Entity",
+  "idShort": "Ent",
+  "entityType": "SelfManagedEntity",
+  "statements": []
+}`;
+  setAasElementTemplate(kind: string): void {
+    switch (kind) {
+      case 'property': this.aasNewElementJson = this.aasElementTemplateProperty; break;
+      case 'range': this.aasNewElementJson = this.aasElementTemplateRange; break;
+      case 'mlp': this.aasNewElementJson = this.aasElementTemplateMLP; break;
+      case 'ref': this.aasNewElementJson = this.aasElementTemplateRef; break;
+      case 'rel': this.aasNewElementJson = this.aasElementTemplateRel; break;
+      case 'annrel': this.aasNewElementJson = this.aasElementTemplateAnnRel; break;
+      case 'collection': this.aasNewElementJson = this.aasElementTemplateCollection; break;
+      case 'list': this.aasNewElementJson = this.aasElementTemplateList; break;
+      case 'file': this.aasNewElementJson = this.aasElementTemplateFile; break;
+      case 'operation': this.aasNewElementJson = this.aasElementTemplateOperation; break;
+      case 'entity': this.aasNewElementJson = this.aasElementTemplateEntity; break;
+      default: this.aasNewElementJson = '{}';
+    }
+  }
   openAasCreateElement(smId: string, parent?: string): void {
     this.aasTargetSubmodelId = smId;
     this.aasParentPath = parent || '';
     this.showAasElementDialog = true;
+  }
+  onAasElementJsonFileSelected(event: any): void {
+    const file = event.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      try {
+        const text = String(reader.result || '').trim();
+        if (text) {
+          JSON.parse(text);
+          this.aasNewElementJson = text;
+        }
+      } catch {
+        // ignore parse error and keep current JSON
+      }
+    };
+    reader.readAsText(file);
   }
   aasCreateElement(): void {
     if (!this.selectedSystem?.id || !this.aasTargetSubmodelId) return;
@@ -674,6 +774,12 @@ export class SourceSystemBaseComponent implements OnInit, OnDestroy {
     const smId: string = node.data.submodelId;
     const idShortPath: string = node.data.idShortPath;
     this.loadAasLiveElementDetails(smId, idShortPath, node);
+    setTimeout(() => {
+      const el = document.getElementById('aas-element-details');
+      if (el && el.scrollIntoView) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    }, 0);
   }
 
   private loadAasChildren(submodelId: string, parentPath: string | undefined, attach: TreeNode): void {
@@ -991,7 +1097,10 @@ export class SourceSystemBaseComponent implements OnInit, OnDestroy {
   private mapSmToNode(sm: any): TreeNode {
     const id = sm.submodelId || sm.id || (sm.keys && sm.keys[0]?.value);
     const label = (sm.submodelIdShort || sm.idShort) || id;
-    return { key: id, label, data: { type: 'submodel', id, modelType: 'Submodel', raw: sm }, leaf: false, children: [] } as TreeNode;
+    const kindRaw = (sm.kind || sm.submodelKind || '').toString();
+    const isTemplate = kindRaw && kindRaw.toLowerCase().includes('template');
+    const modelType = isTemplate ? 'Submodel Template' : 'Submodel';
+    return { key: id, label, data: { type: 'submodel', id, modelType, raw: sm }, leaf: false, children: [] } as TreeNode;
   }
 
   private mapElToNode(submodelId: string, el: any): TreeNode {

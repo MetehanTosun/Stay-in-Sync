@@ -6,6 +6,7 @@ import {SourceSystemDTO} from '../../models/sourceSystemDTO';
 
 
 import {DialogModule} from 'primeng/dialog';
+import {CheckboxModule} from 'primeng/checkbox';
 import {DropdownModule} from 'primeng/dropdown';
 import {InputTextModule} from 'primeng/inputtext';
 import {ButtonModule} from 'primeng/button';
@@ -67,6 +68,7 @@ interface ElementLivePanel {
     StepsModule,
     FileUploadModule,
     TreeModule,
+    CheckboxModule,
   ]
 })
 export class CreateSourceSystemComponent implements OnInit, OnChanges {
@@ -92,6 +94,8 @@ export class CreateSourceSystemComponent implements OnInit, OnChanges {
   showAasxUpload = false;
   aasxSelectedFile: File | null = null;
   isUploadingAasx = false;
+  aasxPreview: any = null;
+  aasxSelection: { submodels: Array<{ id: string; full: boolean; elements: string[] }> } = { submodels: [] };
 
   typeOptions = [
     {label: 'REST-OpenAPI', value: 'REST_OPENAPI'},
@@ -217,6 +221,60 @@ export class CreateSourceSystemComponent implements OnInit, OnChanges {
   }
   onAasxFileSelected(event: FileSelectEvent): void {
     this.aasxSelectedFile = event.files?.[0] || null;
+    if (this.aasxSelectedFile) {
+      
+      // Load preview to enable selective attach
+      if (this.createdSourceSystemId) {
+        this.aasService.previewAasx(this.createdSourceSystemId, this.aasxSelectedFile).subscribe({
+          next: (resp) => {
+            this.aasxPreview = resp?.submodels || (resp?.result ?? []);
+            // Normalize to array of {id,idShort,kind,elements:[{idShort,modelType}]}
+            const arr = Array.isArray(this.aasxPreview) ? this.aasxPreview : (this.aasxPreview?.submodels ?? []);
+            this.aasxSelection = { submodels: (arr || []).map((sm: any) => ({ id: sm.id || sm.submodelId, full: true, elements: (sm.elements || []).map((e: any) => e.idShort) })) };
+          },
+          error: (err) => {
+            
+            this.aasxPreview = null;
+            this.aasxSelection = { submodels: [] };
+          }
+        });
+      }
+    } else {
+      
+    }
+  }
+
+  // AASX selective attach helpers
+  private getSmId(sm: any): string {
+    return sm?.id || sm?.submodelId || '';
+  }
+  getOrInitAasxSelFor(sm: any): { id: string; full: boolean; elements: string[] } {
+    const id = this.getSmId(sm);
+    let found = this.aasxSelection.submodels.find((s) => s.id === id);
+    if (!found) {
+      found = { id, full: true, elements: [] };
+      this.aasxSelection.submodels.push(found);
+    }
+    return found;
+  }
+  toggleAasxSubmodelFull(sm: any, checked: boolean): void {
+    const sel = this.getOrInitAasxSelFor(sm);
+    sel.full = !!checked;
+    if (sel.full) sel.elements = [];
+  }
+  isAasxElementSelected(sm: any, idShort: string): boolean {
+    const sel = this.getOrInitAasxSelFor(sm);
+    return sel.elements.includes(idShort);
+  }
+  toggleAasxElement(sm: any, idShort: string, checked: boolean): void {
+    const sel = this.getOrInitAasxSelFor(sm);
+    sel.full = false;
+    const exists = sel.elements.includes(idShort);
+    if (checked) {
+      if (!exists) sel.elements.push(idShort);
+    } else {
+      if (exists) sel.elements = sel.elements.filter((x) => x !== idShort);
+    }
   }
   uploadAasx(): void {
     if (this.isUploadingAasx) return;
@@ -226,18 +284,27 @@ export class CreateSourceSystemComponent implements OnInit, OnChanges {
     }
     const proceed = () => {
       if (!this.createdSourceSystemId) return;
+      
+      this.messageService.add({ severity: 'info', summary: 'Uploading AASX', detail: `${this.aasxSelectedFile?.name} (${this.aasxSelectedFile?.size} bytes)` });
       this.isUploadingAasx = true;
-      this.aasService.uploadAasx(this.createdSourceSystemId, this.aasxSelectedFile!)
+      // If preview is available and user made a selection, use selective attach; else default upload
+      const hasSelection = (this.aasxSelection?.submodels?.some(s => s.full || (s.elements && s.elements.length > 0)) ?? false);
+      const req$ = hasSelection ? this.aasService.attachSelectedAasx(this.createdSourceSystemId, this.aasxSelectedFile!, this.aasxSelection) : this.aasService.uploadAasx(this.createdSourceSystemId, this.aasxSelectedFile!);
+      req$
         .subscribe({
-          next: () => {
+          next: (resp) => {
+            
             this.isUploadingAasx = false;
             this.showAasxUpload = false;
             // Directly rediscover from snapshot (do not refresh: would wipe imported AASX structures)
+            
             this.discoverSubmodels();
             this.messageService.add({ severity: 'success', summary: 'Upload accepted', detail: 'AASX uploaded. Snapshot refresh started.' });
           },
           error: (err) => {
+            
             this.isUploadingAasx = false;
+            this.messageService.add({ severity: 'error', summary: 'Upload failed', detail: (err?.message || 'See console for details') });
             this.errorService.handleError(err);
           }
         });
@@ -325,16 +392,14 @@ save(): void {
    * @param dto Prepared DTO for creation.
    */
   private postDto(dto: CreateSourceSystemDTO, opts?: { advanceStep?: boolean, onSuccess?: (resp: SourceSystemDTO) => void }): void {
-    console.log('📤 Sending DTO to backend:', dto);
-    console.log('📤 openApiSpec field:', dto.openApiSpec);
-    console.log('📤 openApiSpec type:', typeof dto.openApiSpec);
-
+    
+    
     this.sourceSystemService
       .apiConfigSourceSystemPost(dto)
       .subscribe({
         next: (resp: SourceSystemDTO) => {
-          console.log('✅ Backend response:', resp);
-          console.log('✅ Returned openApiSpec:', resp.openApiSpec);
+          
+          
           this.createdSourceSystemId = resp.id!;
           if (opts?.advanceStep !== false) {
             this.currentStep = 1;
@@ -344,7 +409,7 @@ save(): void {
           }
         },
         error: (err) => {
-          console.error('❌ CREATE failed:', err);
+          
           this.errorService.handleError(err);
         }
       });
@@ -629,10 +694,13 @@ save(): void {
   private mapSubmodelToNode(sm: any): TreeNode {
     const id = sm.submodelId || sm.id || (sm.keys && sm.keys[0]?.value);
     const label = (sm.submodelIdShort || sm.idShort) || id;
+    const kindRaw = (sm.kind || sm.submodelKind || '').toString();
+    const isTemplate = kindRaw && kindRaw.toLowerCase().includes('template');
+    const modelType = isTemplate ? 'Submodel Template' : 'Submodel';
     return {
       key: id,
       label,
-      data: { type: 'submodel', id, modelType: 'Submodel', raw: sm },
+      data: { type: 'submodel', id, modelType, raw: sm },
       leaf: false,
       children: []
     } as TreeNode;
@@ -671,6 +739,13 @@ save(): void {
     const smId: string = node.data.submodelId;
     const idShortPath: string = node.data.idShortPath;
     this.loadLiveElementDetails(smId, idShortPath, node);
+    // Smooth scroll details into view
+    setTimeout(() => {
+      const el = document.getElementById('element-details');
+      if (el && el.scrollIntoView) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    }, 0);
   }
 
   private loadLiveElementDetails(smId: string, idShortPath: string | undefined, node?: TreeNode): void {
@@ -913,10 +988,114 @@ save(): void {
   targetSubmodelId = '';
   parentPath = '';
   newElementJson = '{\n  "modelType": "Property",\n  "idShort": "NewProp",\n  "valueType": "xs:string",\n  "value": "42"\n}';
+  // Element templates
+  elementTemplateProperty: string = `{
+  "modelType": "Property",
+  "idShort": "NewProp",
+  "valueType": "xs:string",
+  "value": "Foo"
+}`;
+  elementTemplateRange: string = `{
+  "modelType": "Range",
+  "idShort": "NewRange",
+  "valueType": "xs:double",
+  "min": 0,
+  "max": 100
+}`;
+  elementTemplateMLP: string = `{
+  "modelType": "MultiLanguageProperty",
+  "idShort": "Title",
+  "value": [ { "language": "en", "text": "Example" } ]
+}`;
+  elementTemplateRef: string = `{
+  "modelType": "ReferenceElement",
+  "idShort": "Ref",
+  "value": {
+    "type": "ModelReference",
+    "keys": [ { "type": "Submodel", "value": "https://example.com/ids/sm" } ]
+  }
+}`;
+  elementTemplateRel: string = `{
+  "modelType": "RelationshipElement",
+  "idShort": "Rel",
+  "first":  { "type": "ModelReference", "keys": [ { "type": "Submodel", "value": "https://example.com/ids/sm1" } ] },
+  "second": { "type": "ModelReference", "keys": [ { "type": "Submodel", "value": "https://example.com/ids/sm2" } ] }
+}`;
+  elementTemplateAnnRel: string = `{
+  "modelType": "AnnotatedRelationshipElement",
+  "idShort": "AnnRel",
+  "first":  { "type": "ModelReference", "keys": [ { "type": "Submodel", "value": "https://example.com/ids/sm1" } ] },
+  "second": { "type": "ModelReference", "keys": [ { "type": "Submodel", "value": "https://example.com/ids/sm2" } ] },
+  "annotations": [ { "modelType": "Property", "idShort": "note", "valueType": "xs:string", "value": "Hello" } ]
+}`;
+  elementTemplateCollection: string = `{
+  "modelType": "SubmodelElementCollection",
+  "idShort": "group",
+  "value": []
+}`;
+  elementTemplateList: string = `{
+  "modelType": "SubmodelElementList",
+  "idShort": "items",
+  "typeValueListElement": "Property",
+  "valueTypeListElement": "xs:string",
+  "value": []
+}`;
+  elementTemplateFile: string = `{
+  "modelType": "File",
+  "idShort": "file1",
+  "contentType": "text/plain",
+  "value": "path-or-url.txt"
+}`;
+  elementTemplateOperation: string = `{
+  "modelType": "Operation",
+  "idShort": "Op",
+  "inputVariables": [ { "value": { "modelType": "Property", "idShort": "in", "valueType": "xs:string" } } ],
+  "outputVariables": []
+}`;
+  elementTemplateEntity: string = `{
+  "modelType": "Entity",
+  "idShort": "Ent",
+  "entityType": "SelfManagedEntity",
+  "statements": []
+}`;
+  setElementTemplate(kind: string): void {
+    switch (kind) {
+      case 'property': this.newElementJson = this.elementTemplateProperty; break;
+      case 'range': this.newElementJson = this.elementTemplateRange; break;
+      case 'mlp': this.newElementJson = this.elementTemplateMLP; break;
+      case 'ref': this.newElementJson = this.elementTemplateRef; break;
+      case 'rel': this.newElementJson = this.elementTemplateRel; break;
+      case 'annrel': this.newElementJson = this.elementTemplateAnnRel; break;
+      case 'collection': this.newElementJson = this.elementTemplateCollection; break;
+      case 'list': this.newElementJson = this.elementTemplateList; break;
+      case 'file': this.newElementJson = this.elementTemplateFile; break;
+      case 'operation': this.newElementJson = this.elementTemplateOperation; break;
+      case 'entity': this.newElementJson = this.elementTemplateEntity; break;
+      default: this.newElementJson = '{}';
+    }
+  }
   openCreateElement(smId: string, parent?: string): void {
     this.targetSubmodelId = smId;
     this.parentPath = parent || '';
     this.showElementDialog = true;
+  }
+  onElementJsonFileSelected(event: FileSelectEvent): void {
+    const file = event.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      try {
+        const text = String(reader.result || '').trim();
+        // Validate JSON briefly
+        if (text) {
+          JSON.parse(text);
+          this.newElementJson = text;
+        }
+      } catch {
+        // keep existing content on parse failure
+      }
+    };
+    reader.readAsText(file);
   }
   createElement(): void {
     if (!this.createdSourceSystemId || !this.targetSubmodelId) return;

@@ -379,7 +379,32 @@ public class AasResource {
         var headers = headerBuilder.buildMergedHeaders(ss, de.unistuttgart.stayinsync.core.configuration.service.aas.HttpHeaderBuilder.Mode.WRITE_JSON);
         Log.infof("Create element LIVE: apiUrl=%s smId=%s parentPath=%s", ss.apiUrl, smId, parentPath);
         Log.debugf("WRITE headers: %s body=%s", headers, body);
-        var resp = traversal.createElement(ss.apiUrl, smId, parentPath, body, headers).await().indefinitely();
+        String effectiveParentPath = parentPath;
+        // Adjust parent path for types that require sub-paths in BaSyx (collections/lists: /value, entity: /statements)
+        if (parentPath != null && !parentPath.isBlank()) {
+            try {
+                var parentResp = traversal.getElement(ss.apiUrl, smId, parentPath, headers).await().indefinitely();
+                if (parentResp != null && parentResp.statusCode() >= 200 && parentResp.statusCode() < 300) {
+                    String pb = parentResp.bodyAsString();
+                    io.vertx.core.json.JsonObject pobj = pb != null && pb.trim().startsWith("{")
+                            ? new io.vertx.core.json.JsonObject(pb)
+                            : null;
+                    if (pobj != null) {
+                        String mt = pobj.getString("modelType");
+                        if (mt != null) {
+                            if ("SubmodelElementCollection".equalsIgnoreCase(mt) || "SubmodelElementList".equalsIgnoreCase(mt)) {
+                                effectiveParentPath = parentPath.endsWith("/value") ? parentPath : parentPath + "/value";
+                            } else if ("Entity".equalsIgnoreCase(mt)) {
+                                effectiveParentPath = parentPath.endsWith("/statements") ? parentPath : parentPath + "/statements";
+                            }
+                        }
+                    }
+                }
+            } catch (Exception e) {
+                Log.warnf("Could not inspect parent element for path suffix resolution: %s", e.getMessage());
+            }
+        }
+        var resp = traversal.createElement(ss.apiUrl, smId, effectiveParentPath, body, headers).await().indefinitely();
         int sc = resp.statusCode();
         Log.infof("Create element upstream status=%d msg=%s body=%s", sc, resp.statusMessage(), safeBody(resp));
         if (sc >= 200 && sc < 300) {
@@ -612,13 +637,82 @@ public class AasResource {
             }
             String filename = file.fileName();
             byte[] fileBytes = Files.readAllBytes(file.uploadedFile());
-            snapshotService.ingestAasx(sourceSystemId, filename, fileBytes);
-            return Response.accepted().build();
+            // Attach only submodels from AASX to existing AAS upstream, then refresh local snapshot
+            Log.infof("AASX upload received: sourceSystemId=%d file=%s size=%d bytes", sourceSystemId, filename, fileBytes.length);
+            int attached = snapshotService.attachSubmodelsLive(sourceSystemId, fileBytes);
+            Log.infof("AASX live attach done: attached=%d. Refreshing snapshot...", attached);
+            snapshotService.refreshSnapshot(sourceSystemId);
+            io.vertx.core.json.JsonObject result = new io.vertx.core.json.JsonObject()
+                    .put("filename", filename)
+                    .put("attachedSubmodels", attached);
+            return Response.accepted(result.encode()).build();
         } catch (java.io.IOException ioe) {
             return Response.status(Response.Status.BAD_REQUEST).entity("Failed to read uploaded file").build();
         } catch (de.unistuttgart.stayinsync.core.configuration.service.aas.AasStructureSnapshotService.DuplicateIdException e) {
             return Response.status(Response.Status.CONFLICT).entity(e.getMessage()).build();
         } catch (de.unistuttgart.stayinsync.core.configuration.service.aas.AasStructureSnapshotService.InvalidAasxException e) {
+            return Response.status(Response.Status.BAD_REQUEST).entity(e.getMessage()).build();
+        }
+    }
+
+    @POST
+    @Path("/upload/preview")
+    @Consumes(MediaType.MULTIPART_FORM_DATA)
+    @Produces(MediaType.APPLICATION_JSON)
+    @Operation(summary = "Preview attachable items (submodels and top-level collections/lists) from an AASX file")
+    public Response previewAasx(
+            @PathParam("sourceSystemId") Long sourceSystemId,
+            @RequestBody(required = true,
+                    content = @Content(mediaType = MediaType.MULTIPART_FORM_DATA,
+                            schema = @Schema(implementation = Object.class)))
+            @RestForm("file") FileUpload file
+    ) {
+        try {
+            if (file == null || file.size() == 0) {
+                return Response.status(Response.Status.BAD_REQUEST).entity("Missing file").build();
+            }
+            byte[] fileBytes = Files.readAllBytes(file.uploadedFile());
+            var preview = snapshotService.previewAasx(fileBytes);
+            return Response.ok(preview.encode()).build();
+        } catch (java.io.IOException ioe) {
+            return Response.status(Response.Status.BAD_REQUEST).entity("Failed to read uploaded file").build();
+        } catch (Exception e) {
+            return Response.status(Response.Status.BAD_REQUEST).entity(e.getMessage()).build();
+        }
+    }
+
+    @POST
+    @Path("/upload/attach-selected")
+    @Consumes(MediaType.MULTIPART_FORM_DATA)
+    @Produces(MediaType.APPLICATION_JSON)
+    @Operation(summary = "Attach only selected submodels or top-level collections/lists from an AASX file")
+    public Response attachSelected(
+            @PathParam("sourceSystemId") Long sourceSystemId,
+            @RequestBody(required = true,
+                    content = @Content(mediaType = MediaType.MULTIPART_FORM_DATA,
+                            schema = @Schema(implementation = Object.class)))
+            @RestForm("file") FileUpload file,
+            @RestForm("selection") String selectionJson
+    ) {
+        try {
+            if (file == null || file.size() == 0) {
+                return Response.status(Response.Status.BAD_REQUEST).entity("Missing file").build();
+            }
+            byte[] fileBytes = Files.readAllBytes(file.uploadedFile());
+            io.vertx.core.json.JsonObject selection = null;
+            if (selectionJson != null && !selectionJson.isBlank()) {
+                selection = new io.vertx.core.json.JsonObject(selectionJson);
+            }
+            int attached = snapshotService.attachSelectedFromAasx(sourceSystemId, fileBytes, selection);
+            Log.infof("Attach-selected done: attached=%d → refreshing snapshot", attached);
+            snapshotService.refreshSnapshot(sourceSystemId);
+            io.vertx.core.json.JsonObject result = new io.vertx.core.json.JsonObject()
+                    .put("attachedSubmodels", attached)
+                    .put("selection", selection);
+            return Response.accepted(result.encode()).build();
+        } catch (java.io.IOException ioe) {
+            return Response.status(Response.Status.BAD_REQUEST).entity("Failed to read uploaded file").build();
+        } catch (Exception e) {
             return Response.status(Response.Status.BAD_REQUEST).entity(e.getMessage()).build();
         }
     }

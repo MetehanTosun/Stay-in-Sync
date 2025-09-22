@@ -31,7 +31,8 @@ public class AasHttpClient {
         var req = webClient.requestAbs(HttpMethod.GET, url);
         if (headers != null) headers.forEach(req.headers()::add);
         if (!req.headers().contains("Accept")) req.putHeader("Accept", "application/json");
-        return req.send();
+        return req.send()
+                .invoke(resp -> Log.infof("HTTP GET <- %d %s body=%s", resp.statusCode(), resp.statusMessage(), safeBody(resp)));
     }
 
     public Uni<HttpResponse<Buffer>> writeJson(HttpMethod method, String url, String body, Map<String, String> headers) {
@@ -40,7 +41,23 @@ public class AasHttpClient {
         if (headers != null) headers.forEach(req.headers()::add);
         if (!req.headers().contains("Accept")) req.putHeader("Accept", "application/json");
         if (!req.headers().contains("Content-Type")) req.putHeader("Content-Type", "application/json");
-        return req.sendBuffer(Buffer.newInstance(io.vertx.core.buffer.Buffer.buffer(body)));
+        Log.debugf("HTTP %s payload: %s", method, truncate(body));
+        return req.sendBuffer(Buffer.newInstance(io.vertx.core.buffer.Buffer.buffer(body)))
+                .invoke(resp -> Log.infof("HTTP %s <- %d %s body=%s", method, resp.statusCode(), resp.statusMessage(), safeBody(resp)));
+    }
+
+    private static String safeBody(HttpResponse<Buffer> resp) {
+        try {
+            String b = resp.bodyAsString();
+            return truncate(b);
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    private static String truncate(String s) {
+        if (s == null) return null;
+        return s.length() > 500 ? s.substring(0, 500) + "..." : s;
     }
 }
 

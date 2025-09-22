@@ -287,10 +287,10 @@
                 <div style="display:flex;align-items:center;gap:.5rem;">
                   <span>{{ node.label }}</span>
                   <span style="font-size:.75rem;padding:.1rem .4rem;border-radius:999px;border:1px solid var(--surface-border);color:var(--text-color-secondary);">
-                    {{ node.data?.type==='submodel' ? 'Submodel' : (node.data?.modelType || node.data?.raw?.modelType || (node.data?.raw?.valueType ? 'Property' : 'Element')) }}
+                    {{ node.data?.type==='submodel' ? (node.data?.modelType || (node.data?.raw?.kind?.toLowerCase?.().includes('template') ? 'Submodel Template' : 'Submodel')) : (node.data?.modelType || node.data?.raw?.modelType || (node.data?.raw?.valueType ? 'Property' : 'Element')) }}
                   </span>
                   <button *ngIf="node.data?.type==='submodel'" pButton type="button" class="p-button-text" label="Create element" (click)="openAasCreateElement(node.data.id)"></button>
-                  <!-- <button *ngIf="node.data?.type==='element' && node.data?.modelType!=='Property'" pButton type="button" class="p-button-text" label="Add child" (click)="openAasCreateElement(node.data.submodelId, node.data.idShortPath)"></button> -->
+                  <button *ngIf="node.data?.type==='element' && (node.data?.modelType==='SubmodelElementCollection' || node.data?.modelType==='SubmodelElementList' || node.data?.modelType==='Entity')" pButton type="button" class="p-button-text" label="Add child" (click)="openAasCreateElement(node.data.submodelId, node.data.idShortPath)"></button>
                   <button *ngIf="node.data?.type==='submodel'" pButton type="button" class="p-button-text p-button-danger" label="Delete submodel" (click)="deleteAasSubmodel(node.data.id)"></button>
                   <button *ngIf="node.data?.type==='element'" pButton type="button" class="p-button-text p-button-danger" label="Delete" (click)="deleteAasElement(node.data.submodelId, node.data.idShortPath)"></button>
                   <button *ngIf="node.data?.type==='element' && (node.data?.modelType==='Property' || node.data?.raw?.valueType)" pButton type="button" class="p-button-text" label="Set value" (click)="openAasSetValue(node.data.submodelId, node.data)"></button>
@@ -298,7 +298,7 @@
               </ng-template>
             </p-tree>
           </div>
-          <div class="p-card" *ngIf="selectedAasNode && selectedAasNode.data?.type==='element'" style="flex: 0 0 35%; padding:1rem;border:1px solid var(--surface-border);border-radius:4px;">
+          <div id="aas-element-details" class="p-card" *ngIf="selectedAasNode && selectedAasNode.data?.type==='element'" style="flex: 0 0 35%; padding:1rem;border:1px solid var(--surface-border);border-radius:4px; position: sticky; top: .5rem; align-self: flex-start; max-height: calc(100vh - 1rem); overflow: auto;">
             <div class="p-d-flex p-ai-center p-jc-between">
               <h4 style="margin:0;">Details</h4>
               <span *ngIf="aasSelectedLiveLoading">Loading...</span>
@@ -307,7 +307,24 @@
               <div><strong>Label:</strong> {{ aasSelectedLivePanel.label }}</div>
               <div><strong>Type:</strong> {{ aasSelectedLivePanel.type }}</div>
               <div *ngIf="aasSelectedLivePanel.valueType"><strong>valueType:</strong> {{ aasSelectedLivePanel.valueType }}</div>
-              <div *ngIf="aasSelectedLivePanel.value !== undefined"><strong>value:</strong> {{ aasSelectedLivePanel.value }}</div>
+            <div *ngIf="aasSelectedLivePanel.type==='MultiLanguageProperty' && (aasSelectedLivePanel.value?.length || 0) > 0">
+              <strong>values:</strong>
+              <div style="margin:.25rem 0 .5rem 0;">
+                <div *ngFor="let v of aasSelectedLivePanel.value" style="display:flex;gap:.5rem;align-items:baseline;">
+                  <span style="font-size:.75rem;padding:.1rem .4rem;border:1px solid var(--surface-border);border-radius:999px;color:var(--text-color-secondary);min-width:2.5rem;text-align:center;">{{ v?.language || '-' }}</span>
+                  <span>{{ v?.text || '' }}</span>
+                </div>
+              </div>
+            </div>
+            <div *ngIf="aasSelectedLivePanel.value !== undefined && aasSelectedLivePanel.type!=='SubmodelElementCollection' && aasSelectedLivePanel.type!=='SubmodelElementList' && aasSelectedLivePanel.type!=='MultiLanguageProperty'">
+              <strong>value:</strong> {{ (aasSelectedLivePanel.value | json) }}
+            </div>
+            <div *ngIf="aasSelectedLivePanel.type==='SubmodelElementCollection'">
+              <div><strong>Items:</strong> {{ aasSelectedLivePanel.value?.length || 0 }}</div>
+            </div>
+            <div *ngIf="aasSelectedLivePanel.type==='SubmodelElementList'">
+              <div><strong>Count:</strong> {{ aasSelectedLivePanel.value?.length || 0 }}</div>
+            </div>
               <div *ngIf="aasSelectedLivePanel.type==='Range' || aasSelectedLivePanel.min !== undefined || aasSelectedLivePanel.max !== undefined">
                 <div><strong>min:</strong> {{ aasSelectedLivePanel.min }}</div>
                 <div><strong>max:</strong> {{ aasSelectedLivePanel.max }}</div>
@@ -420,12 +437,28 @@
     <input pInputText [(ngModel)]="aasParentPath" placeholder="e.g. address or address/street" />
     <small>Optional. Use idShort path with slashes for nesting.</small>
   </div>
+  <div class="p-field">
+    <label>Import JSON</label>
+    <p-fileupload mode="basic" [auto]="false" [showUploadButton]="false" [showCancelButton]="false" accept=".json" (onSelect)="onAasElementJsonFileSelected($event)"></p-fileupload>
+  </div>
   <textarea pInputTextarea [(ngModel)]="aasNewElementJson" rows="10" style="width:100%"></textarea>
   <ng-template pTemplate="footer">
     <button pButton type="button" class="p-button-text" label="Cancel" (click)="showAasElementDialog=false"></button>
     <button pButton type="button" label="Create" (click)="aasCreateElement()"></button>
   </ng-template>
-  <button pButton type="button" class="p-button-text" label="Use example" (click)="aasNewElementJson='{}'"></button>
+  <div class="p-mt-2" style="display:flex;gap:.5rem;flex-wrap:wrap;">
+    <button pButton type="button" class="p-button-text" label="Template: Property" (click)="setAasElementTemplate('property')"></button>
+    <button pButton type="button" class="p-button-text" label="Template: Range" (click)="setAasElementTemplate('range')"></button>
+    <button pButton type="button" class="p-button-text" label="Template: MultiLanguageProperty" (click)="setAasElementTemplate('mlp')"></button>
+    <button pButton type="button" class="p-button-text" label="Template: ReferenceElement" (click)="setAasElementTemplate('ref')"></button>
+    <button pButton type="button" class="p-button-text" label="Template: RelationshipElement" (click)="setAasElementTemplate('rel')"></button>
+    <button pButton type="button" class="p-button-text" label="Template: AnnotatedRelationshipElement" (click)="setAasElementTemplate('annrel')"></button>
+    <button pButton type="button" class="p-button-text" label="Template: Collection" (click)="setAasElementTemplate('collection')"></button>
+    <button pButton type="button" class="p-button-text" label="Template: List" (click)="setAasElementTemplate('list')"></button>
+    <button pButton type="button" class="p-button-text" label="Template: File" (click)="setAasElementTemplate('file')"></button>
+    <button pButton type="button" class="p-button-text" label="Template: Operation" (click)="setAasElementTemplate('operation')"></button>
+    <button pButton type="button" class="p-button-text" label="Template: Entity" (click)="setAasElementTemplate('entity')"></button>
+  </div>
 </p-dialog>
   </ng-container>
 </p-dialog>
