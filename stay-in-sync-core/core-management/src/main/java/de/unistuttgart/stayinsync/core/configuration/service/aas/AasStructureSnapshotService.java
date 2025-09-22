@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import de.unistuttgart.stayinsync.core.configuration.domain.entities.aas.AasSubmodelLite;
 import de.unistuttgart.stayinsync.core.configuration.domain.entities.aas.AasElementLite;
 import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.SourceSystem;
+import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.TargetSystem;
 import io.quarkus.logging.Log;
 import io.smallrye.mutiny.Uni;
 import io.vertx.mutiny.ext.web.client.HttpResponse;
@@ -498,6 +499,96 @@ public class AasStructureSnapshotService {
     }
 
     /**
+     * Same as attachSubmodelsLive but for TargetSystem by id. Does not touch snapshots.
+     */
+    @Transactional
+    public int attachSubmodelsLiveToTarget(Long targetSystemId, byte[] fileBytes) {
+        if (fileBytes == null || fileBytes.length == 0) {
+            throw new InvalidAasxException("Empty file");
+        }
+        var tsOpt = TargetSystem.<TargetSystem>findByIdOptional(targetSystemId);
+        if (tsOpt.isEmpty()) {
+            throw new InvalidAasxException("Unknown target system: " + targetSystemId);
+        }
+        TargetSystem ts = tsOpt.get();
+
+        int attached = 0;
+        final java.util.List<ZipJson> jsonEntries = new java.util.ArrayList<>();
+        boolean hasEntries = false;
+        try (java.util.zip.ZipInputStream zis = new java.util.zip.ZipInputStream(new java.io.ByteArrayInputStream(fileBytes))) {
+            java.util.zip.ZipEntry entry;
+            while ((entry = zis.getNextEntry()) != null) {
+                String name = entry.getName();
+                if (name == null) continue;
+                hasEntries = true;
+                String lower = name.toLowerCase(java.util.Locale.ROOT);
+                if (!lower.endsWith(".json")) continue;
+                try {
+                    String json = new String(zis.readAllBytes(), java.nio.charset.StandardCharsets.UTF_8);
+                    jsonEntries.add(new ZipJson(name, lower, json));
+                } catch (Exception ignore) { }
+            }
+        } catch (java.io.IOException e) {
+            throw new InvalidAasxException("Failed to read AASX: " + e.getMessage());
+        }
+        if (!hasEntries) {
+            throw new InvalidAasxException("Not a valid AASX: archive has no entries");
+        }
+
+        Log.infof("Live attach (target): discovered %d JSON entries in AASX", jsonEntries.size());
+
+        var headersWrite = headerBuilder.buildMergedHeaders(ts, HttpHeaderBuilder.Mode.WRITE_JSON);
+        var headersRead = headerBuilder.buildMergedHeaders(ts, HttpHeaderBuilder.Mode.READ);
+
+        for (ZipJson zj : jsonEntries) {
+            try {
+                JsonNode root = objectMapper.readTree(zj.json);
+                if (root == null) continue;
+                java.util.List<JsonNode> candidates = new java.util.ArrayList<>();
+                if ((root.has("modelType") && "Submodel".equalsIgnoreCase(textOrNull(root, "modelType")))
+                        || (root.has("submodelElements") && root.get("submodelElements").isArray())) {
+                    candidates.add(root);
+                }
+                if (root.has("submodel")) candidates.add(root.get("submodel"));
+                if (root.has("submodels") && root.get("submodels").isArray()) {
+                    for (JsonNode sm : root.get("submodels")) candidates.add(sm);
+                }
+                for (JsonNode smNode : candidates) {
+                    String id = textOrNull(smNode, "id");
+                    if (id == null && smNode.has("identification")) id = textOrNull(smNode.get("identification"), "id");
+                    if (id == null || id.isBlank()) continue;
+                    try {
+                        String smIdB64 = java.util.Base64.getUrlEncoder().withoutPadding().encodeToString(id.getBytes(java.nio.charset.StandardCharsets.UTF_8));
+                        var check = traversalClient.getSubmodel(ts.apiUrl, smIdB64, headersRead).await().indefinitely();
+                        if (check.statusCode() >= 200 && check.statusCode() < 300) {
+                            if (tryAddSubmodelRef(ts, id, headersWrite, headersRead)) attached++;
+                            continue;
+                        }
+                    } catch (Exception ignore) { }
+                    String payload = buildNormalizedSubmodelPayload(smNode);
+                    var createResp = traversalClient.createSubmodel(ts.apiUrl, payload, headersWrite).await().indefinitely();
+                    if (createResp.statusCode() >= 200 && createResp.statusCode() < 300) {
+                        String createdId = id;
+                        try {
+                            String b = createResp.bodyAsString();
+                            if (b != null && !b.isBlank() && b.trim().startsWith("{")) {
+                                JsonNode created = objectMapper.readTree(b);
+                                String cid = textOrNull(created, "id");
+                                if (cid != null && !cid.isBlank()) createdId = cid;
+                            }
+                        } catch (Exception ignore) { }
+                        if (tryAddSubmodelRef(ts, createdId, headersWrite, headersRead)) attached++;
+                    }
+                }
+            } catch (Exception ignore) { }
+        }
+        if (attached == 0) {
+            Log.info("Live attach (target): No submodels attached from JSON, XML fallback not implemented for target");
+        }
+        return attached;
+    }
+
+    /**
      * Build a lightweight preview of attachable items from an AASX file.
      * Returns a JSON object: { "submodels": [ { id, idShort, kind, from: "json"|"xml", elements: [ { idShort, modelType } ] } ] }
      */
@@ -842,6 +933,134 @@ public class AasStructureSnapshotService {
         return attached;
     }
 
+    /**
+     * Attach only selected parts from an AASX to a TargetSystem by id.
+     */
+    @Transactional
+    public int attachSelectedFromAasxToTarget(Long targetSystemId, byte[] fileBytes, io.vertx.core.json.JsonObject selection) {
+        if (fileBytes == null || fileBytes.length == 0) throw new InvalidAasxException("Empty file");
+        var tsOpt = TargetSystem.<TargetSystem>findByIdOptional(targetSystemId);
+        if (tsOpt.isEmpty()) throw new InvalidAasxException("Unknown target system: " + targetSystemId);
+        TargetSystem ts = tsOpt.get();
+
+        java.util.Map<String, JsonNode> submodelById = new java.util.HashMap<>();
+        final java.util.List<ZipJson> jsonEntries = new java.util.ArrayList<>();
+        try (java.util.zip.ZipInputStream zis = new java.util.zip.ZipInputStream(new java.io.ByteArrayInputStream(fileBytes))) {
+            java.util.zip.ZipEntry entry;
+            while ((entry = zis.getNextEntry()) != null) {
+                String name = entry.getName();
+                if (name == null) continue;
+                String lower = name.toLowerCase(java.util.Locale.ROOT);
+                if (!lower.endsWith(".json")) continue;
+                try {
+                    String json = new String(zis.readAllBytes(), java.nio.charset.StandardCharsets.UTF_8);
+                    jsonEntries.add(new ZipJson(name, lower, json));
+                } catch (Exception ignore) { }
+            }
+        } catch (java.io.IOException e) {
+            throw new InvalidAasxException("Failed to read AASX: " + e.getMessage());
+        }
+        for (ZipJson zj : jsonEntries) {
+            try {
+                JsonNode root = objectMapper.readTree(zj.json);
+                if (root == null) continue;
+                java.util.List<JsonNode> candidates = new java.util.ArrayList<>();
+                if ((root.has("modelType") && "Submodel".equalsIgnoreCase(textOrNull(root, "modelType")))
+                        || (root.has("submodelElements") && root.get("submodelElements").isArray())) {
+                    candidates.add(root);
+                }
+                if (root.has("submodel")) candidates.add(root.get("submodel"));
+                if (root.has("submodels") && root.get("submodels").isArray()) {
+                    for (JsonNode sm : root.get("submodels")) candidates.add(sm);
+                }
+                for (JsonNode smNode : candidates) {
+                    String id = textOrNull(smNode, "id");
+                    if (id == null && smNode.has("identification")) id = textOrNull(smNode.get("identification"), "id");
+                    if (id == null || id.isBlank()) continue;
+                    submodelById.put(id, smNode);
+                }
+            } catch (Exception ignore) { }
+        }
+
+        var headersWrite = headerBuilder.buildMergedHeaders(ts, HttpHeaderBuilder.Mode.WRITE_JSON);
+        var headersRead = headerBuilder.buildMergedHeaders(ts, HttpHeaderBuilder.Mode.READ);
+        int attached = 0;
+        io.vertx.core.json.JsonArray subs = selection != null ? selection.getJsonArray("submodels", new io.vertx.core.json.JsonArray()) : new io.vertx.core.json.JsonArray();
+        for (int i = 0; i < subs.size(); i++) {
+            io.vertx.core.json.JsonObject sel = subs.getJsonObject(i);
+            if (sel == null) continue;
+            String id = sel.getString("id");
+            if (id == null || id.isBlank()) continue;
+            boolean full = sel.getBoolean("full", false);
+            java.util.Set<String> wantedEls = new java.util.HashSet<>();
+            io.vertx.core.json.JsonArray elArr = sel.getJsonArray("elements");
+            if (elArr != null) {
+                for (int j = 0; j < elArr.size(); j++) {
+                    String p = elArr.getString(j);
+                    if (p != null && !p.isBlank()) wantedEls.add(p);
+                }
+            }
+
+            JsonNode smNode = submodelById.get(id);
+            if (smNode == null) {
+                Log.warnf("attachSelected(target): submodel id=%s not found in JSON entries, skipping", id);
+                continue;
+            }
+            String payload;
+            if (full || wantedEls.isEmpty()) {
+                payload = buildNormalizedSubmodelPayload(smNode);
+            } else {
+                com.fasterxml.jackson.databind.node.ObjectNode out = objectMapper.createObjectNode();
+                String idShort = textOrNull(smNode, "idShort");
+                out.put("modelType", "Submodel");
+                if (id != null) out.put("id", id);
+                if (idShort != null) out.put("idShort", idShort);
+                com.fasterxml.jackson.databind.node.ArrayNode arrOut = objectMapper.createArrayNode();
+                JsonNode els = smNode.get("submodelElements");
+                if (els != null && els.isArray()) {
+                    for (JsonNode el : els) {
+                        String idShortEl = textOrNull(el, "idShort");
+                        if (idShortEl == null) continue;
+                        if (!wantedEls.contains(idShortEl)) continue;
+                        String mt = textOrNull(el, "modelType");
+                        if (mt == null || !(mt.equalsIgnoreCase("SubmodelElementCollection") || mt.equalsIgnoreCase("SubmodelElementList"))) {
+                            continue;
+                        }
+                        arrOut.add(el);
+                    }
+                }
+                out.set("submodelElements", arrOut);
+                payload = out.toString();
+            }
+
+            try {
+                String smIdB64 = java.util.Base64.getUrlEncoder().withoutPadding().encodeToString(id.getBytes(java.nio.charset.StandardCharsets.UTF_8));
+                var check = traversalClient.getSubmodel(ts.apiUrl, smIdB64, headersRead).await().indefinitely();
+                if (check.statusCode() >= 200 && check.statusCode() < 300) {
+                    if (tryAddSubmodelRef(ts, id, headersWrite, headersRead)) attached++;
+                    continue;
+                }
+            } catch (Exception ignore) { }
+
+            var createResp = traversalClient.createSubmodel(ts.apiUrl, payload, headersWrite).await().indefinitely();
+            if (createResp.statusCode() >= 200 && createResp.statusCode() < 300) {
+                String createdId = id;
+                try {
+                    String b = createResp.bodyAsString();
+                    if (b != null && !b.isBlank() && b.trim().startsWith("{")) {
+                        JsonNode created = objectMapper.readTree(b);
+                        String cid = textOrNull(created, "id");
+                        if (cid != null && !cid.isBlank()) createdId = cid;
+                    }
+                } catch (Exception ignore) { }
+                if (tryAddSubmodelRef(ts, createdId, headersWrite, headersRead)) attached++;
+            } else {
+                Log.warnf("attachSelected(target): failed to create submodel id=%s upstream: %d %s", id, createResp.statusCode(), createResp.statusMessage());
+            }
+        }
+        return attached;
+    }
+
     private boolean tryAddSubmodelRef(SourceSystem ss, String submodelId, java.util.Map<String,String> headersWrite, java.util.Map<String,String> headersRead) {
         try {
             // Check if ref already present
@@ -897,6 +1116,41 @@ public class AasStructureSnapshotService {
             }
         } catch (Exception e) {
             Log.warnf(e, "Failed to add submodel-ref for id=%s to shell=%s", submodelId, ss.aasId);
+        }
+        return false;
+    }
+
+    private boolean tryAddSubmodelRef(TargetSystem ts, String submodelId, java.util.Map<String,String> headersWrite, java.util.Map<String,String> headersRead) {
+        try {
+            var refsResp = traversalClient.listSubmodelReferences(ts.apiUrl, ts.aasId, headersRead).await().indefinitely();
+            if (refsResp.statusCode() >= 200 && refsResp.statusCode() < 300) {
+                String body = refsResp.bodyAsString();
+                io.vertx.core.json.JsonArray arr;
+                if (body != null && body.trim().startsWith("{")) {
+                    io.vertx.core.json.JsonObject obj = new io.vertx.core.json.JsonObject(body);
+                    arr = obj.getJsonArray("result", new io.vertx.core.json.JsonArray());
+                } else {
+                    arr = new io.vertx.core.json.JsonArray(body);
+                }
+                for (int i = 0; i < arr.size(); i++) {
+                    var ref = arr.getJsonObject(i);
+                    var keys = ref.getJsonArray("keys");
+                    if (keys != null && !keys.isEmpty()) {
+                        var k0 = keys.getJsonObject(0);
+                        if ("Submodel".equalsIgnoreCase(k0.getString("type")) && submodelId.equals(k0.getString("value"))) {
+                            return true;
+                        }
+                    }
+                }
+            }
+            var add = traversalClient.addSubmodelReferenceToShell(ts.apiUrl, ts.aasId, submodelId, headersWrite).await().indefinitely();
+            if (add.statusCode() >= 200 && add.statusCode() < 300) {
+                return true;
+            } else {
+                Log.warnf("Add submodel-ref failed (target) id=%s: %d %s", submodelId, add.statusCode(), add.statusMessage());
+            }
+        } catch (Exception e) {
+            Log.warnf(e, "Failed to add submodel-ref for id=%s to target shell=%s", submodelId, ts.aasId);
         }
         return false;
     }
