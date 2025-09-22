@@ -1,1 +1,89 @@
-<p-button label="Create Tranformation Script!" (onClick)="onCreateScript()"/>
+<div style="height: 60rem">
+  <p-table
+    [value]="items"
+    [paginator]="true"
+    paginatorPosition="bottom"
+    [rows]="10"
+    [scrollable]="true"
+    scrollHeight="flex">
+
+    <ng-template #caption>
+      <div class="flex items-center justify-between">
+        <span class="text-xl font-bold">Transformation Scripts</span>
+        <p-button label="Create Tranformation Script!" (onClick)="onCreateScript()"/>
+      </div>
+    </ng-template>
+    <ng-template pTemplate="header">
+
+      <tr>
+        <th style="width:25%">Name</th>
+        <th style="width:35%">Sync-Job</th>
+        <th style="width:20%">Status</th>
+        <th style="width:20%">Actions</th>
+      <tr>
+        <th>
+          <p-columnFilter type="text" field="name" placeholder="Search by name"
+                          ariaLabel="Filter Name"></p-columnFilter>
+        </th>
+        <th>
+          <p-columnFilter type="text" field="description" placeholder="Search by Sync-Job"
+                          ariaLabel="Filter Description"></p-columnFilter>
+        </th>
+        <th>
+          <p-columnFilter field="script.status" matchMode="equals" [showMenu]="false">
+            <ng-template #filter let-filter="filterCallback">
+              <p-select [(ngModel)]="selectedStatus" [options]="stati"
+                        (onChange)="filter($event.value)"
+                        placeholder="Select One"
+                        [showClear]="true"
+                        [style]="{ 'min-width': '12rem' }">
+                <ng-template let-option #item>
+                  <p-tag [value]="option" [severity]="getSeverity(option)"/>
+                </ng-template>
+              </p-select>
+            </ng-template>
+          </p-columnFilter>
+        </th>
+        <th></th>
+      </tr>
+    </ng-template>
+    <ng-template pTemplate="body" let-item>
+      <tr>
+        <td>
+          {{ item.name }}
+        </td>
+        <td>
+          {{ item.description }}
+        </td>
+        <td>
+          <p-tag [value]="item.script.status" [severity]="getSeverity(item.script.status)"/>
+        </td>
+        <td>
+          <p-button
+            icon="pi pi-pencil"
+            class="p-button-rounded p-button-text"
+            (click)="edit(item)"
+            styleClass="p-button-rounded p-button-text">
+          </p-button>
+          <p-button
+            icon="pi pi-trash"
+            class="p-button-rounded p-button-danger p-button-text"
+            (click)="delete(item)"
+            styleClass="p-button-rounded p-button-danger p-button-text">
+          </p-button>
+      </tr>
+    </ng-template>
+    <ng-template #emptymessage>
+      <tr>
+        <td colspan="4">
+          <div class="empty-message" style="text-align: center">
+            <h4>Currently no transformation scripts available</h4>
+            <p>
+              Create your first transformation script to get started.
+            </p>
+          </div>
+        </td>
+      </tr>
+    </ng-template>
+  </p-table>
+</div>
