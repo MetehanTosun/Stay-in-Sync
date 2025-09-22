@@ -9,7 +9,7 @@ import de.unistuttgart.stayinsync.core.configuration.mapping.SourceSystemApiRequ
 import de.unistuttgart.stayinsync.core.configuration.rest.dtos.CreateSourceArcDTO;
 import de.unistuttgart.stayinsync.core.configuration.rest.dtos.CreateRequestConfigurationDTO;
 import de.unistuttgart.stayinsync.core.configuration.util.TypeScriptTypeGenerator;
-import de.unistuttgart.stayinsync.core.management.rabbitmq.producer.PollingJobMessageProducer;
+import de.unistuttgart.stayinsync.core.configuration.rabbitmq.producer.PollingJobMessageProducer;
 import de.unistuttgart.stayinsync.transport.domain.ApiEndpointQueryParamType;
 import de.unistuttgart.stayinsync.transport.domain.JobDeploymentStatus;
 import io.quarkus.logging.Log;

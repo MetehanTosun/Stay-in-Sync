@@ -17,17 +17,17 @@ import {
   SourceSystem,
   SourceSystemEndpoint,
 } from '../../features/source-system/models/source-system.models';
-import { 
-  CreateTargetArcDTO, 
-  EndpointSuggestion, 
-  TargetArcConfiguration, 
-  TargetSystem, 
-  TypeDefinitionsResponse 
+import {
+  CreateTargetArcDTO,
+  EndpointSuggestion,
+  TargetArcConfiguration,
+  TargetSystem,
+  TypeDefinitionsResponse
 } from '../../features/script-editor/models/target-system.models';
 
 export interface ScriptPayload {
   id?: string;
-  name: string | null | undefined;
+  name: string;
   typescriptCode: string;
   javascriptCode?: string;
   requiredArcAliases?: string[];
