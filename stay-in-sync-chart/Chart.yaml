@@ -31,14 +31,11 @@ dependencies:
     version: 20.5.6
     repository: https://charts.bitnami.com/bitnami
   - name: mongodb
-    version: 16.5.11
+    version: 16.5.45
     repository: https://charts.bitnami.com/bitnami
-  - name: grafana
-    version: 12.1.2
-    repository: https://charts.bitnami.com/bitnami
-  - name: prometheus
-    version: 2.1.16
-    repository: https://charts.bitnami.com/bitnami
+  - name: kube-prometheus-stack
+    version: 77.10.0
+    repository: https://prometheus-community.github.io/helm-charts
   - name: fluent-bit
     version: 3.1.11
     repository: https://charts.bitnami.com/bitnami
@@ -54,3 +51,6 @@ dependencies:
   - name: core-sync-node
     version: 1.0.0-SNAPSHOT
     repository: "file://../stay-in-sync-core/core-sync-node/target/helm/kubernetes/core-sync-node"
+  - name: monitoring-backend
+    version: 1.0.0-SNAPSHOT
+    repository: "file://../stay-in-sync-monitoring/monitoring-backend/target/helm/kubernetes/monitoring-backend"

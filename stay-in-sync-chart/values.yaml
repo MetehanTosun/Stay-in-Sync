@@ -137,6 +137,11 @@ core-sync-node:
     envs:
       RABBITMQ_HOST: stay-in-sync-rabbitmq
 
+kube-prometheus-stack:
+  prometheus:
+    prometheusSpec:
+      maximumStartupDurationSeconds: 600
+
 mongodb:
   auth:
     rootUser: root
