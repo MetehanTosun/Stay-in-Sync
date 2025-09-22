@@ -1,16 +1,17 @@
 package de.unistuttgart.graphengine.validation_error;
 
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
-
 /**
  * Represents a validation error related to the graph's terminal node configuration.
  */
-@Getter
-@Setter
-@NoArgsConstructor(force = true)
+
 public class FinalNodeError implements ValidationError {
+
+    public void setMessage(String message) {
+        this.message = message;
+    }
+
+    public FinalNodeError() {
+    }
 
     private  String message;
 

@@ -1,17 +1,21 @@
 package de.unistuttgart.graphengine.nodes;
 
 import de.unistuttgart.graphengine.exception.NodeConfigurationException;
-import lombok.Getter;
-import lombok.Setter;
 
 import java.util.Map;
 
 /**
  * A node that holds a constant, predefined value.
  */
-@Getter
-@Setter
+
 public class ConstantNode extends Node {
+    public Object getValue() {
+        return value;
+    }
+
+    public void setValue(Object value) {
+        this.value = value;
+    }
 
     /**
      * The static value of the constant.
