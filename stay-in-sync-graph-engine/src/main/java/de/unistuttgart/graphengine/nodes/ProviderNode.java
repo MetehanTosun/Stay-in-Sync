@@ -3,9 +3,7 @@ package de.unistuttgart.graphengine.nodes;
 import com.fasterxml.jackson.databind.JsonNode;
 import de.unistuttgart.graphengine.exception.GraphEvaluationException;
 import de.unistuttgart.graphengine.exception.NodeConfigurationException;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+
 import java.util.Arrays;
 import java.util.Map;
 import java.util.Optional;
@@ -15,10 +13,26 @@ import java.util.Optional;
  * A node that provides a value by extracting it from an external JSON data source
  * at runtime. It serves as a dynamic input for the graph.
  */
-@Getter
-@Setter
-@NoArgsConstructor // Important for mappers/frameworks
+// Important for mappers/frameworks
 public class ProviderNode extends Node {
+    public ProviderNode() {
+    }
+
+    public Integer getArcId() {
+        return arcId;
+    }
+
+    public void setArcId(Integer arcId) {
+        this.arcId = arcId;
+    }
+
+    public String getJsonPath() {
+        return jsonPath;
+    }
+
+    public void setJsonPath(String jsonPath) {
+        this.jsonPath = jsonPath;
+    }
 
     /**
      * An optional ID for identifying the source system or component (e.g., an ARC id).

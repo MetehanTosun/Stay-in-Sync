@@ -16,7 +16,6 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
-import java.util.stream.Collectors;
 
 @ApplicationScoped
 public class LogService {
@@ -29,6 +28,12 @@ public class LogService {
     public LogService() {
         this.httpClient = HttpClient.newHttpClient();
         this.objectMapper = new ObjectMapper();
+    }
+
+    // Für Unit-Tests
+    public LogService(ObjectMapper objectMapper, HttpClient httpClient) {
+        this.objectMapper = Objects.requireNonNull(objectMapper);
+        this.httpClient = Objects.requireNonNull(httpClient);
     }
 
     public List<LogEntryDto> fetchAndParseLogs(String syncJobId, long startNs, long endNs, String level) {
@@ -48,7 +53,7 @@ public class LogService {
             String query = "{" + String.join(",", labels) + "}";
 
             // URL bauen
-            String url = String.format("%s?query=%s&start=%d&end=%d&limit=1000&direction=backward",
+            String url = String.format("%s?query=%s&start=%d&end=%d&limit=5000&direction=backward",
                     LOKI_URL,
                     URLEncoder.encode(query, StandardCharsets.UTF_8),
                     startNs,
@@ -147,7 +152,7 @@ public class LogService {
             // Query zusammenbauen
             String query = "{" + String.join(",", labels) + "}";
 
-            String url = String.format("%s?query=%s&start=%d&end=%d&limit=1000&direction=backward",
+            String url = String.format("%s?query=%s&start=%d&end=%d&limit=5000&direction=backward",
                     LOKI_URL,
                     URLEncoder.encode(query, StandardCharsets.UTF_8),
                     startNs,
@@ -197,6 +202,74 @@ public class LogService {
             throw new RuntimeException(e);
         }
     }
+
+
+    public List<LogEntryDto> fetchAndParseLogsForService(String service, long startNs, long endNs, String level) {
+        try {
+            if (service == null || service.isBlank()) {
+                return new ArrayList<>();
+            }
+
+            // Labels für Loki-Abfrage
+            List<String> labels = new ArrayList<>();
+            labels.add("agent=\"fluent-bit\"");
+            labels.add("service=\"" + service + "\"");
+
+            if (level != null && !level.isBlank()) {
+                labels.add("level=\"" + level.toUpperCase() + "\"");
+            }
+
+            String query = "{" + String.join(",", labels) + "}";
+
+            String url = String.format("%s?query=%s&start=%d&end=%d&limit=5000&direction=backward",
+                    LOKI_URL,
+                    URLEncoder.encode(query, StandardCharsets.UTF_8),
+                    startNs,
+                    endNs);
+
+            HttpRequest request = HttpRequest.newBuilder()
+                    .uri(URI.create(url))
+                    .GET()
+                    .build();
+
+            Log.info("Generated URL for service logs: " + url);
+
+            HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+            if (response.statusCode() != 200) {
+                throw new RuntimeException("Loki call failed: " + response.statusCode() + " - " + response.body());
+            }
+
+            JsonNode root = objectMapper.readTree(response.body());
+            JsonNode result = root.path("data").path("result");
+
+            List<LogEntryDto> logs = new ArrayList<>();
+            for (JsonNode stream : result) {
+                String srv  = stream.path("stream").path("service").asText(null);
+                String lvl  = stream.path("stream").path("level").asText(null);
+
+                for (JsonNode value : stream.path("values")) {
+                    String timestamp = value.get(0).asText();
+                    String messageJson = value.get(1).asText();
+                    String message;
+                    try {
+                        JsonNode messageNode = objectMapper.readTree(messageJson);
+                        message = messageNode.path("message").asText(messageJson);
+                    } catch (Exception e) {
+                        message = messageJson;
+                    }
+                    logs.add(new LogEntryDto(srv, lvl, message, timestamp, null));
+                }
+            }
+
+            logs.sort(Comparator.comparingLong(a -> Long.parseLong(a.timestamp())));
+            return logs;
+
+        } catch (Exception e) {
+            Log.error("Fehler beim Abrufen von Logs für Service", e);
+            throw new RuntimeException(e);
+        }
+    }
+
 
 
 }

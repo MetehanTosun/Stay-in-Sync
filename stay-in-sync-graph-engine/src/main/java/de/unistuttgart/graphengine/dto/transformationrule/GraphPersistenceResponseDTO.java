@@ -1,8 +1,6 @@
 package de.unistuttgart.graphengine.dto.transformationrule;
 
 import de.unistuttgart.graphengine.validation_error.ValidationError;
-import lombok.Getter;
-import lombok.Setter;
 
 import java.util.List;
 
@@ -10,8 +8,7 @@ import java.util.List;
  * A Data Transfer Object representing the result of a graph persistence operation (create or update).
  * It contains the graph's data and a list of any validation errors that occurred.
  */
-@Getter
-@Setter
+
 public class GraphPersistenceResponseDTO {
 
     /**
@@ -29,6 +26,22 @@ public class GraphPersistenceResponseDTO {
 
     public GraphPersistenceResponseDTO(GraphDTO graph, List<ValidationError> errors) {
         this.graph = graph;
+        this.errors = errors;
+    }
+
+    public GraphDTO getGraph() {
+        return graph;
+    }
+
+    public void setGraph(GraphDTO graph) {
+        this.graph = graph;
+    }
+
+    public List<ValidationError> getErrors() {
+        return errors;
+    }
+
+    public void setErrors(List<ValidationError> errors) {
         this.errors = errors;
     }
 }

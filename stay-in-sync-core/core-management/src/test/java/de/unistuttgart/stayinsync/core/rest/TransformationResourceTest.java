@@ -115,7 +115,7 @@ public class TransformationResourceTest {
 
         assertThat(resultingDto.id()).isEqualTo(DEFAULT_TRANSFORMATION_ID);
         assertThat(resultingDto.syncJobId()).isEqualTo(DEFAULT_SYNC_JOB_ID);
-        assertThat(resultingDto.transformationRuleId()).isEqualTo(DEFAULT_RULE_ID);
+        assertThat(resultingDto.transformationRule().id()).isEqualTo(DEFAULT_RULE_ID);
         assertThat(resultingDto.script().id()).isEqualTo(DEFAULT_SCRIPT_ID);
 //        assertThat(resultingDto.sourceSystemEndpointIds()).containsExactlyInAnyOrderElementsOf(DEFAULT_SOURCE_ENDPOINT_IDS);
 

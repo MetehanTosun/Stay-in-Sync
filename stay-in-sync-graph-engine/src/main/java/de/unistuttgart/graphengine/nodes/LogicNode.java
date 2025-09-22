@@ -4,16 +4,14 @@ import de.unistuttgart.graphengine.exception.GraphEvaluationException;
 import de.unistuttgart.graphengine.exception.NodeConfigurationException;
 import de.unistuttgart.graphengine.logic_operator.LogicOperator;
 import de.unistuttgart.graphengine.logic_operator.Operation;
-import lombok.Getter;
-import lombok.Setter;
+
 import java.util.Arrays;
 import java.util.Map;
 
 /**
  * A node that performs a logical or arithmetic operation on its inputs.
  */
-@Getter
-@Setter
+
 public class LogicNode extends Node {
 
     private LogicOperator operator;
@@ -88,5 +86,13 @@ public class LogicNode extends Node {
             return Object.class;
         }
         return getOperator().getOperationStrategy().getReturnType();
+    }
+
+    public LogicOperator getOperator() {
+        return operator;
+    }
+
+    public void setOperator(LogicOperator operator) {
+        this.operator = operator;
     }
 }

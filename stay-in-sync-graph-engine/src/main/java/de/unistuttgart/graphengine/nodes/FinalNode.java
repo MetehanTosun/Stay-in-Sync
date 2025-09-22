@@ -1,7 +1,6 @@
 package de.unistuttgart.graphengine.nodes;
 
-import lombok.Getter;
-import lombok.Setter;
+
 
 import java.util.Map;
 
@@ -10,8 +9,7 @@ import java.util.Map;
  * Every valid graph must contain exactly one FinalNode.
  * It provides the final boolean result of the entire graph evaluation.
  */
-@Getter
-@Setter
+
 public class FinalNode extends Node {
 
     /**

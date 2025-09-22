@@ -91,4 +91,32 @@ public class LogResource {
         List<LogEntryDto> logs = logService.fetchAndParseLogsForTransformations(transformationIds, startTime, endTime, level);
         return Response.ok(logs).build();
     }
+
+
+    @GET
+    @Path("/service")
+    @Operation(
+            summary = "Fetch logs for a specific service and optional log level",
+            description = "Returns logs for the given service within the specified time range."
+    )
+    @APIResponse(
+            responseCode = "200",
+            description = "List of logs for the given service",
+            content = @Content(mediaType = MediaType.APPLICATION_JSON,
+                    schema = @Schema(implementation = LogEntryDto.class))
+    )
+    public Response getLogsByService(
+            @Parameter(description = "Service name", required = true, in = ParameterIn.QUERY)
+            @QueryParam("service") String service,
+            @Parameter(description = "Start time (epoch millis)", in = ParameterIn.QUERY)
+            @QueryParam("startTime") long startTime,
+            @Parameter(description = "End time (epoch millis)", in = ParameterIn.QUERY)
+            @QueryParam("endTime") long endTime,
+            @Parameter(description = "Log level filter (e.g., INFO, ERROR)", in = ParameterIn.QUERY)
+            @QueryParam("level") String level
+    ) {
+        List<LogEntryDto> logs = logService.fetchAndParseLogsForService(service, startTime, endTime, level);
+        return Response.ok(logs).build();
+    }
+
 }

@@ -1,17 +1,58 @@
 package de.unistuttgart.graphengine.nodes;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import lombok.Getter;
-import lombok.Setter;
+
 
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
-@Getter
-@Setter
+
 public class ConfigNode extends Node {
+    public ChangeDetectionMode getMode() {
+        return mode;
+    }
+
+    public void setMode(ChangeDetectionMode mode) {
+        this.mode = mode;
+    }
+
+    public boolean isActive() {
+        return active;
+    }
+
+    public void setActive(boolean active) {
+        this.active = active;
+    }
+
+    public boolean isTimeWindowEnabled() {
+        return timeWindowEnabled;
+    }
+
+    public void setTimeWindowEnabled(boolean timeWindowEnabled) {
+        this.timeWindowEnabled = timeWindowEnabled;
+    }
+
+    public long getTimeWindowMillis() {
+        return timeWindowMillis;
+    }
+
+    public void setTimeWindowMillis(long timeWindowMillis) {
+        this.timeWindowMillis = timeWindowMillis;
+    }
+
+    public void setNewSnapshotData(Map<String, SnapshotEntry> newSnapshotData) {
+        this.newSnapshotData = newSnapshotData;
+    }
+
+    public Long getTestTime() {
+        return testTime;
+    }
+
+    public void setTestTime(Long testTime) {
+        this.testTime = testTime;
+    }
 
     public enum ChangeDetectionMode { AND, OR }
 

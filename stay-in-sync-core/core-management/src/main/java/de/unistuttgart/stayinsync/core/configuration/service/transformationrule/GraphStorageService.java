@@ -1,8 +1,11 @@
 package de.unistuttgart.stayinsync.core.configuration.service.transformationrule;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import de.unistuttgart.graphengine.service.GraphMapper;
+import de.unistuttgart.graphengine.validation_error.ValidationError;
 import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.TransformationRule;
 import de.unistuttgart.stayinsync.core.configuration.exception.CoreManagementException;
-import de.unistuttgart.graphengine.validation_error.ValidationError;
+
 import io.quarkus.logging.Log;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
@@ -18,14 +21,22 @@ import static jakarta.transaction.Transactional.TxType.SUPPORTS;
 public class GraphStorageService {
 
     @Inject
+    GraphMapper mapper;
+
+    @Inject
+    ObjectMapper jsonObjectMapper;
+
+    @Inject
     GraphCompilerService graphCompilerService;
 
     /**
      * A record to hold the result of a graph persistence operation.
-     * @param entity The persisted database entity.
+     *
+     * @param entity           The persisted database entity.
      * @param validationErrors A list of all found validation errors. Empty if the graph is valid.
      */
-    public record PersistenceResult(TransformationRule entity, List<ValidationError> validationErrors) {}
+    public record PersistenceResult(TransformationRule entity, List<ValidationError> validationErrors) {
+    }
 
     /**
      * Persists a fully prepared TransformationRule entity.
@@ -53,9 +64,13 @@ public class GraphStorageService {
      * @return An Optional containing the found entity.
      */
     @Transactional(SUPPORTS)
-    public Optional<TransformationRule> findRuleById(Long id) {
+    public TransformationRule findRuleById(Long id) {
         Log.debugf("Finding TransformationRule entity with id: %d", id);
-        return TransformationRule.findByIdOptional(id);
+        TransformationRule rule = TransformationRule.findById(id);
+        if (rule == null) {
+            throw new CoreManagementException(Response.Status.NOT_FOUND, "Transfromation Rule was not found", "There is no transformation rule with id %d", id);
+        }
+        return rule;
     }
 
     /**
@@ -97,22 +112,19 @@ public class GraphStorageService {
      * A private helper method to "hydrate" a graph entity into an executable list of nodes.
      * It centralizes the mapping and compiling logic for loading a graph.
 
-    private List<Node> hydrateGraph(LogicGraphEntity entity) {
-        try {
-            GraphDTO dto = jsonObjectMapper.readValue(entity.graphDefinitionJson, GraphDTO.class);
+     private List<Node> hydrateGraph(LogicGraphEntity entity) {
+     try {
+     GraphDTO dto = jsonObjectMapper.readValue(entity.graphDefinitionJson, GraphDTO.class);
 
-            List<Node> rawGraph = mapper.toNodeGraph(dto);
+     List<Node> rawGraph = mapper.toNodeGraph(dto);
 
-            List<Node> compiledGraph = graphCompilerService.compile(rawGraph);
+     List<Node> compiledGraph = graphCompilerService.compile(rawGraph);
 
-            return compiledGraph;
+     return compiledGraph;
 
-        } catch (IOException e) {
-            throw new RuntimeException("Failed to deserialize graph from JSON.", e);
-        }
-    }
+     } catch (IOException e) {
+     throw new RuntimeException("Failed to deserialize graph from JSON.", e);
+     }
+     }
      */
-
 }
-
-

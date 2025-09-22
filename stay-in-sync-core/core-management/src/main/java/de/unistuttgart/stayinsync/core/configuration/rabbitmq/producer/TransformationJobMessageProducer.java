@@ -1,10 +1,10 @@
-package de.unistuttgart.stayinsync.core.management.rabbitmq.producer;
+package de.unistuttgart.stayinsync.core.configuration.rabbitmq.producer;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.rabbitmq.client.AMQP;
 import com.rabbitmq.client.Channel;
 import de.unistuttgart.stayinsync.core.configuration.exception.CoreManagementException;
-import de.unistuttgart.stayinsync.core.transport.dto.SourceSystemApiRequestConfigurationMessageDTO;
+import de.unistuttgart.stayinsync.core.transport.dto.TransformationMessageDTO;
 import io.quarkiverse.rabbitmqclient.RabbitMQClient;
 import io.quarkus.logging.Log;
 import io.quarkus.runtime.StartupEvent;
@@ -16,10 +16,10 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 
 /**
- * RabbitMQ Message Producer for Polling-Jobs
+ * RabbitMQ Message Producer for SyncJobs
  */
 @ApplicationScoped
-public class PollingJobMessageProducer {
+public class TransformationJobMessageProducer {
 
     @Inject
     RabbitMQClient rabbitMQClient;
@@ -29,6 +29,8 @@ public class PollingJobMessageProducer {
 
     private Channel channel;
 
+    boolean rabbitEnabled = true;
+
     /**
      * The application needs to open a connection and declare the domain specific exchange on startup
      *
@@ -36,26 +38,42 @@ public class PollingJobMessageProducer {
      */
     void initialize(@Observes StartupEvent startupEvent) {
         try {
+            // Resolve config safely without compile-time ConfigProperty import issues
+            try {
+                var mpConfig = org.eclipse.microprofile.config.ConfigProvider.getConfig();
+                String enabled = mpConfig.getOptionalValue("stayinsync.rabbitmq.enabled", String.class).orElse("true");
+                rabbitEnabled = Boolean.parseBoolean(enabled);
+            } catch (Exception ignored) {
+            }
+            if (!rabbitEnabled) {
+                Log.info("RabbitMQ disabled by config (stayinsync.rabbitmq.enabled=false). Skipping SyncJobMessageProducer init.");
+                return;
+            }
             Log.info("Opening rabbitMQ channel");
             channel = rabbitMQClient.connect().openChannel().orElseThrow(() -> new CoreManagementException("RabbitMQ Error", "Unable to open rabbitMQ Channel"));
-            channel.exchangeDeclare("pollingjob-exchange", "direct", true);
+            channel.exchangeDeclare("transformation-exchange", "direct", true);
         } catch (Exception e) {
             Log.errorf("Error initialising rabbitMQ message producer: %s %s", e.getClass(),e.getMessage());
             throw new CoreManagementException("RabbitMQ error", "Could not initiliaze producer", e);
         }
     }
 
-    public void publishPollingJob(SourceSystemApiRequestConfigurationMessageDTO apiRequestConfiguration) throws CoreManagementException {
+    /**
+     * Sends a message to the worker queue
+     *
+     * @param transformationMessageDTO user defined transformation entity
+     * @throws CoreManagementException
+     */
+    public void publishTransformationJob(TransformationMessageDTO transformationMessageDTO) throws CoreManagementException {
         try {
-            Log.infof("Publishing job for %s, polling at %s (id: %s)", apiRequestConfiguration.apiConnectionDetails().sourceSystem().apiUrl(),
-                    apiRequestConfiguration.apiConnectionDetails().endpoint().endpointPath(), apiRequestConfiguration.id());
-            String messageBody = objectMapper.writeValueAsString(apiRequestConfiguration);
+            Log.infof("Publishing new job message %s (id: %s)", transformationMessageDTO.name(), transformationMessageDTO.id());
+            String messageBody = objectMapper.writeValueAsString(transformationMessageDTO);
             AMQP.BasicProperties properties = new AMQP.BasicProperties.Builder()
                     .contentType("application/json")
                     .deliveryMode(2) // persistent
                     .build();
 
-            channel.basicPublish("pollingjob-exchange", "", properties,
+            channel.basicPublish("transformation-exchange", "", properties,
                     messageBody.getBytes(StandardCharsets.UTF_8));
         } catch (IOException e) {
             throw new CoreManagementException("Unable to publish Job", "Object JSON-serialization failed", e);
@@ -63,21 +81,21 @@ public class PollingJobMessageProducer {
     }
 
     /**
-     * Sends message to a sync node that has bound its queue with the deployed entities routing key
+     * Sends a message to a worker that has bound its queue with that specific routing-key
      *
-     * @param apiRequestConfiguration
+     * @param syncJob user defined sync-job entity
+     * @throws CoreManagementException
      */
-    public void reconfigureDeployedPollingJob(SourceSystemApiRequestConfigurationMessageDTO apiRequestConfiguration) {
+    public void reconfigureDeployedTransformationJob(TransformationMessageDTO transformationMessageDTO) {
         try {
-            Log.infof("Publishing job for %s, polling at %s (id: %s)", apiRequestConfiguration.apiConnectionDetails().sourceSystem().apiUrl(),
-                    apiRequestConfiguration.apiConnectionDetails().endpoint().endpointPath(), apiRequestConfiguration);
-            String messageBody = objectMapper.writeValueAsString(apiRequestConfiguration);
+            Log.infof("Publishing job reconfiguration message %s (id: %s)", transformationMessageDTO.name(), transformationMessageDTO.id());
+            String messageBody = objectMapper.writeValueAsString(transformationMessageDTO);
             AMQP.BasicProperties properties = new AMQP.BasicProperties.Builder()
                     .contentType("application/json")
                     .deliveryMode(2) // persistent
                     .build();
 
-            channel.basicPublish("pollingjob-exchange", "polling-job-" + apiRequestConfiguration.id(), properties,
+            channel.basicPublish("transformation-exchange", "transformation-" + transformationMessageDTO.id(), properties,
                     messageBody.getBytes(StandardCharsets.UTF_8));
         } catch (IOException e) {
             throw new CoreManagementException("Unable to publish Job", "Object JSON-serialization failed", e);

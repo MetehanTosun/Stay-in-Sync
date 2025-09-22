@@ -1,16 +1,12 @@
 package de.unistuttgart.graphengine.validation_error;
 
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+
 
 /**
  * Represents a validation error indicating that a specific node is incorrectly
  * configured for its assigned operator.
  */
-@Getter
-@Setter
-@NoArgsConstructor(force = true)
+
 public class OperatorConfigurationError implements ValidationError {
 
     private  int nodeId;
@@ -21,6 +17,29 @@ public class OperatorConfigurationError implements ValidationError {
         this.nodeId = nodeId;
         this.nodeName = nodeName;
         this.message = message;
+    }
+
+    public int getNodeId() {
+        return nodeId;
+    }
+
+    public void setNodeId(int nodeId) {
+        this.nodeId = nodeId;
+    }
+
+    public String getNodeName() {
+        return nodeName;
+    }
+
+    public void setNodeName(String nodeName) {
+        this.nodeName = nodeName;
+    }
+
+    public void setMessage(String message) {
+        this.message = message;
+    }
+
+    public OperatorConfigurationError() {
     }
 
     @Override

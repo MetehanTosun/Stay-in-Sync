@@ -1,4 +1,4 @@
-import { HttpClient, HttpResponse } from "@angular/common/http";
+import {HttpClient, HttpParams, HttpResponse} from "@angular/common/http";
 import { Injectable } from "@angular/core";
 import { RuleCreationDTO, TransformationRule } from "../../models";
 import { Observable } from "rxjs";
@@ -49,6 +49,16 @@ export class TransformationRulesApiService {
     return this.http.get<TransformationRule[]>(this.apiUrl);
   }
   //#endregion
+
+  getAllUnassignedRules(): Observable<TransformationRule[]> {
+    const params = new HttpParams().set('unassigned', 'true');
+    return this.http.get<TransformationRule[]>(`/api/config/transformation-rule`, {params});
+  }
+
+  getAllAssignedRules(): Observable<TransformationRule[]> {
+    const params = new HttpParams().set('unassigned', 'false');
+    return this.http.get<TransformationRule[]>(`/api/config/transformation-rule`, {params});
+  }
 
   //#region Update Operations
   /**

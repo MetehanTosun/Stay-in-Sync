@@ -6,6 +6,7 @@ import { FormsModule } from '@angular/forms';
  */
 @Component({
   selector: 'app-provider-node-modal',
+  standalone: true,
   imports: [FormsModule],
   templateUrl: './provider-node-modal.component.html',
   styleUrl: './provider-node-modal.component.css'

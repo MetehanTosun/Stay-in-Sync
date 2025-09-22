@@ -23,7 +23,7 @@
     </p-dropdown>
   </label>
 
-  <label *ngIf="selectedNodeId">
+  <label *ngIf="selectedNodeId && !selectedNodeId.startsWith('POLL')">
     Transformation ID:
     <p-dropdown
       [options]="transformationIds"
@@ -35,7 +35,7 @@
     </p-dropdown>
   </label>
 
-  <label *ngIf="!selectedNodeId">
+  <label *ngIf="!selectedNodeId || selectedNodeId.startsWith('POLL')">
     Service:
     <p-dropdown
       [options]="services"
@@ -46,6 +46,7 @@
       [filter]="true">
     </p-dropdown>
   </label>
+
 
   <p-button (click)="reloadLogs()">Reload Logs</p-button>
 </div>

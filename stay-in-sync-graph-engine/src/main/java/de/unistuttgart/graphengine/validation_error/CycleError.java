@@ -1,18 +1,22 @@
 package de.unistuttgart.graphengine.validation_error;
 
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
-
 import java.util.List;
 
 /**
  * Represents a validation error indicating that a cycle was detected in the graph.
  */
-@Getter
-@Setter
-@NoArgsConstructor(force = true)
+
 public class CycleError implements ValidationError {
+    public List<Integer> getNodeIdsInCycle() {
+        return nodeIdsInCycle;
+    }
+
+    public void setNodeIdsInCycle(List<Integer> nodeIdsInCycle) {
+        this.nodeIdsInCycle = nodeIdsInCycle;
+    }
+
+    public CycleError() {
+    }
 
     private  List<Integer> nodeIdsInCycle;
 

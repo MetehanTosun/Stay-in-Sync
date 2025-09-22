@@ -14,6 +14,7 @@ import { ConfigNodeComponent } from '../nodes/config-node/config-node.component'
  */
 @Component({
   selector: 'app-vflow-canvas',
+  standalone: true,
   imports: [
     Vflow,
     CommonModule,
