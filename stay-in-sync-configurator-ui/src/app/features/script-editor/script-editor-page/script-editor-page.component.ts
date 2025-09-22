@@ -7,7 +7,7 @@ import {ScriptEditorService, ScriptPayload,} from '../../../core/services/script
 import {MessagesModule} from 'primeng/messages';
 import {MessageService} from 'primeng/api';
 
-import {ActivatedRoute} from '@angular/router';
+import {ActivatedRoute, Router} from '@angular/router';
 
 import { debounceTime, finalize, Subject, Subscription } from 'rxjs';
 
@@ -28,10 +28,10 @@ import {SourceSystem, SourceSystemEndpoint} from '../../source-system/models/sou
 import {ArcManagementPanelComponent} from '../arc-management-panel/arc-management-panel.component';
 import {ArcWizardComponent} from '../arc-wizard/arc-wizard.component';
 import {InputTextModule} from 'primeng/inputtext';
-import {FloatLabel} from 'primeng/floatlabel';
 import { MonacoEditorService } from '../../../core/services/monaco-editor.service';
 import { TypeDefinitionsResponse } from '../models/target-system.models';
 import { TargetArcPanelComponent } from '../target-arc-panel/target-arc-panel.component';
+import {Inplace} from 'primeng/inplace';
 
 interface MonacoExtraLib {
   uri: String;
@@ -54,17 +54,17 @@ interface MonacoExtraLib {
     MessagesModule,
     ProgressSpinnerModule,
     ArcManagementPanelComponent,
-    ArcWizardComponent,
     ToastModule,
     InputTextModule,
-    FloatLabel,
-    TargetArcPanelComponent
+    TargetArcPanelComponent,
+    Inplace
   ],
 })
 export class ScriptEditorPageComponent implements OnInit, OnDestroy {
   @ViewChild(TargetArcPanelComponent) targetArcPanel!: TargetArcPanelComponent;
 
   currentTransformationId: string | null = null;
+  originalName: string = '';
   scriptPayload: ScriptPayload | null = null;
 
   editorOptions = {
@@ -101,7 +101,7 @@ export class ScriptEditorPageComponent implements OnInit, OnDestroy {
 
   private route = inject(ActivatedRoute);
 
-  constructor() {
+  constructor(private router: Router) {
     this.subscriptions.add(
       this.onModelChange.pipe(debounceTime(1000)).subscribe(() => this.analyzeEditorContentForTypes())
     );
@@ -429,5 +429,23 @@ function transform(): DirectiveMap {
   ngOnDestroy(): void {
     this.subscriptions.unsubscribe();
     this.currentExtraLibs.forEach(lib => lib.disposable.dispose());
+  }
+
+  goBack() {
+    this.router.navigate(['transformation-scripts']);
+  }
+
+  onSave(closeCallback: Function) {
+    this.saveScript()
+    closeCallback();
+  }
+
+  onClose(closeCallback: Function) {
+    this.scriptPayload!.name = this.originalName;
+    closeCallback();
+  }
+
+  onActivate() {
+    this.originalName = this.scriptPayload!.name;
   }
 }
