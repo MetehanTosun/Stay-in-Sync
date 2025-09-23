@@ -9,7 +9,7 @@ import {MessageService} from 'primeng/api';
 
 import {ActivatedRoute, Router} from '@angular/router';
 
-import { debounceTime, finalize, Subject, Subscription } from 'rxjs';
+import {debounceTime, finalize, Subject, Subscription} from 'rxjs';
 
 // PrimeNG Modules
 import {PanelModule} from 'primeng/panel';
@@ -28,9 +28,9 @@ import {SourceSystem, SourceSystemEndpoint} from '../../source-system/models/sou
 import {ArcManagementPanelComponent} from '../arc-management-panel/arc-management-panel.component';
 import {ArcWizardComponent} from '../arc-wizard/arc-wizard.component';
 import {InputTextModule} from 'primeng/inputtext';
-import { MonacoEditorService } from '../../../core/services/monaco-editor.service';
-import { TypeDefinitionsResponse } from '../models/target-system.models';
-import { TargetArcPanelComponent } from '../target-arc-panel/target-arc-panel.component';
+import {MonacoEditorService} from '../../../core/services/monaco-editor.service';
+import {TypeDefinitionsResponse} from '../models/target-system.models';
+import {TargetArcPanelComponent} from '../target-arc-panel/target-arc-panel.component';
 import {Inplace} from 'primeng/inplace';
 
 interface MonacoExtraLib {
@@ -57,7 +57,8 @@ interface MonacoExtraLib {
     ToastModule,
     InputTextModule,
     TargetArcPanelComponent,
-    Inplace
+    Inplace,
+    ArcWizardComponent
   ],
 })
 export class ScriptEditorPageComponent implements OnInit, OnDestroy {
@@ -132,7 +133,7 @@ export class ScriptEditorPageComponent implements OnInit, OnDestroy {
     console.log('[ScriptEditorPage] Subscribing to type definition updates...');
     this.subscriptions.add(
       this.monacoEditorService.typeUpdateRequested$.subscribe(response => {
-        if(!response){
+        if (!response) {
           return;
         }
         console.log('[ScriptEditorPage] Received type update request. Applying to Monaco instance.');
@@ -190,7 +191,7 @@ export class ScriptEditorPageComponent implements OnInit, OnDestroy {
   }
 
   private applyTypeDefinitions(response: TypeDefinitionsResponse): void {
-    if (!this.monaco){
+    if (!this.monaco) {
       console.error("Cannot apply types, monaco instance is not available.");
       return;
     }
@@ -220,7 +221,11 @@ export class ScriptEditorPageComponent implements OnInit, OnDestroy {
         error: (err) => {
           console.error('Failed to load script context', err);
           this.code = `// ERROR: Could not load script context for Transformation ID ${transformationId}.`;
-          this.messageService.add({ severity: 'error', summary: 'Load Error', detail: 'Script context could not be loaded.' });
+          this.messageService.add({
+            severity: 'error',
+            summary: 'Load Error',
+            detail: 'Script context could not be loaded.'
+          });
         }
       });
   }
@@ -246,22 +251,22 @@ export class ScriptEditorPageComponent implements OnInit, OnDestroy {
 
     try {
       hasErrors = await this.hasValidationErrors();
-      if (hasErrors){
+      if (hasErrors) {
         this.messageService.add({
-        severity: 'error',
-        summary: 'Validation Failed',
-        detail: 'Please fix the TypeScript errors before saving.'
-      });
+          severity: 'error',
+          summary: 'Validation Failed',
+          detail: 'Please fix the TypeScript errors before saving.'
+        });
       }
       const transpileOutput = ts.transpileModule(this.code, {
         compilerOptions: {module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ESNext},
       });
       transpiledCode = transpileOutput.outputText;
 
-      if(!hasErrors){
+      if (!hasErrors) {
         scriptStatus = 'VALIDATED';
       }
-    } catch (e){
+    } catch (e) {
       scriptStatus = 'DRAFT';
     }
 
@@ -270,7 +275,7 @@ export class ScriptEditorPageComponent implements OnInit, OnDestroy {
     const matches = codeToSave.matchAll(arcPattern);
 
     const requiredArcSet = new Set<string>();
-    for (const match of matches){
+    for (const match of matches) {
       const systemName = match[1];
       const arcName = match[2];
       requiredArcSet.add(`${systemName}.${arcName}`);
@@ -280,37 +285,37 @@ export class ScriptEditorPageComponent implements OnInit, OnDestroy {
     console.log('%c[Editor] Extracted ARC dependencies:', 'color: #f97316;', requiredArcAliases);
 
     const payload: ScriptPayload = {
-        name: this.scriptPayload!.name,
-        typescriptCode: this.code,
-        javascriptCode: transpiledCode,
-        requiredArcAliases: requiredArcAliases,
-        status: scriptStatus,
-        targetArcIds: activeTargetArcIds
-      };
+      name: this.scriptPayload!.name,
+      typescriptCode: this.code,
+      javascriptCode: transpiledCode,
+      requiredArcAliases: requiredArcAliases,
+      status: scriptStatus,
+      targetArcIds: activeTargetArcIds
+    };
 
     this.isSaving = true;
     this.scriptEditorService.saveScriptForTransformation(Number(this.currentTransformationId), payload).subscribe({
-        next: () => {
-          this.messageService.add({
-            severity: 'success',
-            summary: 'Saved!',
-            detail: 'Script has been saved successfully.'
-          });
+      next: () => {
+        this.messageService.add({
+          severity: 'success',
+          summary: 'Saved!',
+          detail: 'Script has been saved successfully.'
+        });
 
-          this.isSaving = false;
-          this.cdr.detectChanges();
-        },
-        error: (err) => {
-          this.messageService.add({
-            severity: 'error',
-            summary: 'Save Failed',
-            detail: 'Could not save the script to the server.'
-          });
-          console.error('Save script error:', err);
-          this.isSaving = false;
-          this.cdr.detectChanges();
-        }
-      });
+        this.isSaving = false;
+        this.cdr.detectChanges();
+      },
+      error: (err) => {
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Save Failed',
+          detail: 'Could not save the script to the server.'
+        });
+        console.error('Save script error:', err);
+        this.isSaving = false;
+        this.cdr.detectChanges();
+      }
+    });
   }
 
   // --- Helper & Private Methods ---
