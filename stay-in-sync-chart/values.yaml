@@ -147,6 +147,16 @@ kube-prometheus-stack:
   prometheus:
     prometheusSpec:
       maximumStartupDurationSeconds: 600
+      serviceMonitorSelector:
+        matchLabels:
+          app.kubernetes.io/managed-by: Helm
+      serviceMonitorNamespaceSelector:
+        matchNames:
+          - umbrella
+      podMonitorSelector:
+        matchLabels:
+          app.kubernetes.io/managed-by: Helm
+      podMonitorNamespaceSelector: { }
 loki:
   fullnameOverride: loki
   deploymentMode: SingleBinary
