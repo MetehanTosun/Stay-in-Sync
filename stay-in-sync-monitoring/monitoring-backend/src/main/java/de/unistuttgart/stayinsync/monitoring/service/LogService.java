@@ -37,6 +37,7 @@ public class LogService {
     public LogService(ObjectMapper objectMapper, HttpClient httpClient) {
         this.objectMapper = Objects.requireNonNull(objectMapper);
         this.httpClient = Objects.requireNonNull(httpClient);
+        this.LOKI_URL = "http://localhost:3100";
     }
 
     public List<LogEntryDto> fetchAndParseLogs(String syncJobId, long startNs, long endNs, String level) {
