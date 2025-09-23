@@ -2,8 +2,6 @@ package de.unistuttgart.stayinsync.monitoring.controller;
 
 import de.unistuttgart.stayinsync.monitoring.service.MonitoringGraphService;
 import de.unistuttgart.stayinsync.transport.dto.monitoringgraph.GraphResponse;
-import de.unistuttgart.stayinsync.transport.dto.monitoringgraph.NodeDto;
-import io.quarkus.logging.Log;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;

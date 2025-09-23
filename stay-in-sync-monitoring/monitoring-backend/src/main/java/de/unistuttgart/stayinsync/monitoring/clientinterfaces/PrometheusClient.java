@@ -5,6 +5,7 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.json.Json;
 import jakarta.json.JsonArray;
 import jakarta.json.JsonObject;
+import org.eclipse.microprofile.config.inject.ConfigProperty;
 
 import java.io.StringReader;
 import java.net.URI;
@@ -18,11 +19,14 @@ import java.nio.charset.StandardCharsets;
 public class PrometheusClient {
     private final HttpClient client = HttpClient.newHttpClient();
 
+
+    @ConfigProperty(name = "prometheus.url")
+    String prometheusUrl;
+
     public boolean isUp(String targetUrl) {
         try {
             String query = URLEncoder.encode("probe_success{instance=\"" + targetUrl + "\"}", StandardCharsets.UTF_8);
             // anpassen
-            String prometheusUrl = "http://localhost:9090";
             HttpRequest request = HttpRequest.newBuilder()
                     .uri(URI.create(prometheusUrl + "/api/v1/query?query=" + query))
                     .GET()

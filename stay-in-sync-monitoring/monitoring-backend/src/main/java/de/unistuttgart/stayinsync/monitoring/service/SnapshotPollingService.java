@@ -46,7 +46,7 @@ public class SnapshotPollingService {
         clients.add(sink);
     }
 
-    @Scheduled(every = "10s")
+//    @Scheduled(every = "10s")
     public void pollSyncNode() {
         Map<Long, SnapshotDTO> current = syncNodeClient.getLatestAll();
         if (current.isEmpty()) {
