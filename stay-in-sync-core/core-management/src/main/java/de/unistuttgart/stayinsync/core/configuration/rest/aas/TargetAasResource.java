@@ -232,6 +232,43 @@ public class TargetAasResource {
                     int sc = resp.statusCode();
                     Log.infof("Target listElements upstream status=%d msg=%s", sc, resp.statusMessage());
                     if (sc >= 200 && sc < 300) {
+                        // If a specific parentPath was requested and server returned the parent element object,
+                        // unwrap its direct children (value/statements) to mirror Source behaviour
+                        if (parentPathFinal != null && !parentPathFinal.isBlank()) {
+                            try {
+                                String body = resp.bodyAsString();
+                                if (body != null && body.trim().startsWith("{")) {
+                                    io.vertx.core.json.JsonObject obj = new io.vertx.core.json.JsonObject(body);
+                                    String modelType = obj.getString("modelType");
+                                    io.vertx.core.json.JsonArray directChildren = null;
+                                    if ("SubmodelElementCollection".equalsIgnoreCase(modelType) || "SubmodelElementList".equalsIgnoreCase(modelType)) {
+                                        var v = obj.getValue("value");
+                                        if (v instanceof io.vertx.core.json.JsonArray arr) {
+                                            directChildren = arr;
+                                        }
+                                    } else if ("Entity".equalsIgnoreCase(modelType)) {
+                                        var st = obj.getValue("statements");
+                                        if (st instanceof io.vertx.core.json.JsonArray arr) {
+                                            directChildren = arr;
+                                        }
+                                    }
+                                    if (directChildren != null) {
+                                        io.vertx.core.json.JsonArray out = new io.vertx.core.json.JsonArray();
+                                        for (int i = 0; i < directChildren.size(); i++) {
+                                            var el = directChildren.getJsonObject(i);
+                                            if (el == null) continue;
+                                            String idShort = el.getString("idShort");
+                                            if (idShort != null && !idShort.isBlank()) {
+                                                String p = parentPathFinal + "/" + idShort;
+                                                el.put("idShortPath", p);
+                                            }
+                                            out.add(el);
+                                        }
+                                        return Response.ok(out.encode()).build();
+                                    }
+                                }
+                            } catch (Exception ignore) { }
+                        }
                         // If depth=shallow and server fails to return roots correctly, try to detect via GET submodel deep and use submodelElements
                         if ((parentPathFinal == null || parentPathFinal.isBlank()) && (depth == null || depth.equalsIgnoreCase("shallow"))) {
                             try {
@@ -272,6 +309,40 @@ public class TargetAasResource {
                                 if (body != null && body.trim().startsWith("{")) {
                                     io.vertx.core.json.JsonObject obj = new io.vertx.core.json.JsonObject(body);
                                     // Prefer BaSyx deep structure under 'submodelElements' if available
+                                    arr = obj.getJsonArray("submodelElements");
+                                    if (arr == null) arr = obj.getJsonArray("result");
+                                    if (arr == null) arr = new io.vertx.core.json.JsonArray();
+                                } else {
+                                    arr = new io.vertx.core.json.JsonArray(body);
+                                }
+                                String prefix = parentPathFinal.endsWith("/") ? parentPathFinal : parentPathFinal + "/";
+                                io.vertx.core.json.JsonArray children = new io.vertx.core.json.JsonArray();
+                                for (int i = 0; i < arr.size(); i++) {
+                                    var el = arr.getJsonObject(i);
+                                    String p = el.getString("idShortPath", el.getString("idShort"));
+                                    if (p == null) continue;
+                                    if (p.equals(parentPathFinal)) continue;
+                                    if (p.startsWith(prefix)) {
+                                        String rest = p.substring(prefix.length());
+                                        if (!rest.contains("/")) {
+                                            children.add(el);
+                                        }
+                                    }
+                                }
+                                return Response.ok(children.encode()).build();
+                            }
+                        } catch (Exception ignore) {}
+                    }
+                    // Some servers return 400 instead of 404 for parentPath shallow; treat like 404
+                    if (sc == 400 && parentPathFinal != null && !parentPathFinal.isBlank()) {
+                        try {
+                            var all = traversal.listElements(apiUrlFinal, smIdFinal, "all", null, headersFinal).await().indefinitely();
+                            Log.infof("Target listElements Fallback(400,parent): deep upstream status=%d msg=%s", all.statusCode(), all.statusMessage());
+                            if (all.statusCode() >= 200 && all.statusCode() < 300) {
+                                String body = all.bodyAsString();
+                                io.vertx.core.json.JsonArray arr;
+                                if (body != null && body.trim().startsWith("{")) {
+                                    io.vertx.core.json.JsonObject obj = new io.vertx.core.json.JsonObject(body);
                                     arr = obj.getJsonArray("submodelElements");
                                     if (arr == null) arr = obj.getJsonArray("result");
                                     if (arr == null) arr = new io.vertx.core.json.JsonArray();
