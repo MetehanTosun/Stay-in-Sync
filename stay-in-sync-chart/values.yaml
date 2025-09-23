@@ -430,5 +430,9 @@ umbrella:
         dataplane:
           env:
             TX_IAM_IATP_CREDENTIALSERVICE_URL: http://ssi-dim-wallet-service/api
+    digital-twin-bundle:
+      enabled: false
+
+
 
 
