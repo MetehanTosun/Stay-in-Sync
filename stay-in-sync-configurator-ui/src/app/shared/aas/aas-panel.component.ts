@@ -9,7 +9,7 @@ import { CheckboxModule } from 'primeng/checkbox';
 import { TreeModule } from 'primeng/tree';
 import { InputTextModule } from 'primeng/inputtext';
 import { TextareaModule } from 'primeng/textarea';
-import { TreeNode } from 'primeng/api';
+import { MessageService, TreeNode } from 'primeng/api';
 import { AasClientService, AasSystemType } from '../../features/source-system/services/aas-client.service';
 
 @Component({
@@ -327,7 +327,7 @@ export class AasPanelComponent {
   "statements": []
 }`;
 
-  constructor(private aas: AasClientService) {}
+  constructor(private aas: AasClientService, private messageService: MessageService) {}
 
   onTest(): void {
     this.loading = true;
@@ -358,11 +358,19 @@ export class AasPanelComponent {
     if (!this.selectedFile) return;
     const selection = this.buildSelectionPayload();
     this.aas.attachSelectedAasx(this.systemType, this.systemId, this.selectedFile, selection).subscribe({
-      next: () => {
+      next: (res) => {
         // After attach, show latest LIVE structure immediately
         this.onDiscover('LIVE');
+        // Optional short retry in case upstream finishes async
+        setTimeout(() => this.onDiscover('LIVE'), 1200);
+        this.messageService.add({ severity: 'success', summary: 'Upload accepted', detail: 'AASX attached', life: 3000 });
+        this.preview = null;
+        this.selectedFile = null;
       },
-      error: () => {}
+      error: (err) => {
+        const detail = err?.error || err?.message || 'See console for details';
+        this.messageService.add({ severity: 'error', summary: 'Upload failed', detail });
+      }
     });
   }
 
