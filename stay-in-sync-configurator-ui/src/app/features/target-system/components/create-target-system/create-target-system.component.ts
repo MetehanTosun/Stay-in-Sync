@@ -61,6 +61,7 @@ export class CreateTargetSystemComponent implements OnInit, OnChanges {
   form!: FormGroup;
   selectedFile: File | null = null;
   fileSelected = false;
+  private isCreating = false;
 
   typeOptions = [
     { label: 'REST-OpenAPI', value: 'REST_OPENAPI' },
@@ -173,7 +174,8 @@ export class CreateTargetSystemComponent implements OnInit, OnChanges {
       this.form.markAllAsTouched();
       return;
     }
-
+    if (this.isCreating || this.createdTargetSystemId) { return; }
+    this.isCreating = true;
     const base: any = { ...this.form.getRawValue() };
 
     const post = (payload: TargetSystemDTO) => {
@@ -183,10 +185,12 @@ export class CreateTargetSystemComponent implements OnInit, OnChanges {
           this.currentStep = 1;
           this.messageService.add({ severity: 'success', summary: 'Created', detail: 'Target system created', life: 2500 });
           this.created.emit(resp);
+          this.isCreating = false;
         },
         error: (err) => {
           this.errorService.handleError(err);
           this.messageService.add({ severity: 'error', summary: 'Create failed', detail: err?.message || 'See console for details', life: 4000 });
+          this.isCreating = false;
         }
       });
     };
@@ -237,12 +241,13 @@ export class CreateTargetSystemComponent implements OnInit, OnChanges {
     if (this.isTesting) return;
     this.isTesting = true;
     if (!this.createdTargetSystemId) {
-      // create first then test
+      if (this.isCreating) { return; }
       const base = { ...this.form.getRawValue() } as any;
-      delete base.authConfig; // keep payload minimal per backend DTO
+      delete base.authConfig;
+      this.isCreating = true;
       this.api.create(base).subscribe({
-        next: (resp) => { this.createdTargetSystemId = resp.id!; this.isTesting = false; this.testAasConnection(); },
-        error: (err) => { this.isTesting = false; this.errorService.handleError(err); }
+        next: (resp) => { this.createdTargetSystemId = resp.id!; this.isCreating = false; this.isTesting = false; this.testAasConnection(); },
+        error: (err) => { this.isCreating = false; this.isTesting = false; this.errorService.handleError(err); }
       });
       return;
     }
@@ -358,14 +363,7 @@ export class CreateTargetSystemComponent implements OnInit, OnChanges {
 
   discoverSubmodels(): void {
     // Ensure system exists before discovery (mirror Source behavior)
-    if (!this.createdTargetSystemId) {
-      const base: any = { ...this.form.getRawValue() };
-      const val = base.openApiSpec;
-      if (typeof val === 'string' && val.trim()) { base.openAPI = val; }
-      delete base.openApiSpec; delete base.apiAuthType; delete base.authConfig;
-      this.api.create(base).subscribe({ next: (resp) => { this.createdTargetSystemId = resp.id!; this.discoverSubmodels(); }, error: () => {} });
-      return;
-    }
+    if (!this.createdTargetSystemId) { if (!this.isCreating) { this.save(); } return; }
     this.isDiscovering = true;
     console.log('[TargetCreate] discoverSubmodels -> targetId=', this.createdTargetSystemId);
     this.aasClient.listSubmodels('target', this.createdTargetSystemId, {}).subscribe({
