@@ -33,4 +33,4 @@ dependencies:
   repository: file://../stay-in-sync-monitoring/monitoring-backend/target/helm/kubernetes/monitoring-backend
   version: 1.0.0-SNAPSHOT
 digest: sha256:8998e9826a659695577ec798a42e073fd4ccf4248a1ab01dac54227f751ad442
-generated: "2025-09-22T11:54:04.751818221+02:00"
+generated: "2025-09-22T18:16:12.3283109+02:00"

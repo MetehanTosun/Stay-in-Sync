@@ -124,6 +124,7 @@ affinity: { }
 core-management:
   app:
     envs:
+      FLUENT_BIT_ADDRESS: fluent-bit:5171
       DB_HOST: stay-in-sync-mariadb
       DB_PASSWORD: root
       DB_USERNAME: root
@@ -131,15 +132,17 @@ core-management:
 core-polling-node:
   app:
     envs:
+      FLUENT_BIT_ADDRESS: fluent-bit:5172
       RABBITMQ_HOST: stay-in-sync-rabbitmq
 core-sync-node:
   app:
     envs:
+      FLUENT_BIT_ADDRESS: fluent-bit:5173
       RABBITMQ_HOST: stay-in-sync-rabbitmq
 monitoring-backend:
   app:
     envs:
-      FLUENT_BIT_ADDRESS: fluent-bit:5171
+      FLUENT_BIT_ADDRESS: fluent-bit:5170
       CORE_MANAGEMENT_ADDRESS: http://stay-in-sync-management.test
       PROMETHEUS_URL: test-kube-prometheus-stack-prometheus:9090
       LOKI_URL: http://loki:3100/loki/api/v1/query_range
@@ -240,16 +243,6 @@ fluent-bit:
   fullnameOverride: fluent-bit
   config:
     inputs: |
-      # Docker Container Logs
-      [INPUT]
-          Name              tail
-          Tag               docker.*
-          Path              /var/lib/docker/containers/*/*.log
-          Parser            docker
-          Docker_Mode       On
-          Mem_Buf_Limit     5MB
-          Skip_Long_Lines   On
-
       # TCP Input für generische Logs
       [INPUT]
           Name              tcp
@@ -346,8 +339,13 @@ fluent-bit:
           Host    loki
           Port    3100
           Labels  agent=fluent-bit
-          label_keys  $service,$job,${syncJobId:empty},$level,${scriptId:empty},${transformationId:empty}
+          label_keys  $service,$job,$syncJobId,$level,$scriptId,$transformationId
           Uri     /loki/api/v1/push
+      
+      #Standardausgabe
+      [OUTPUT]
+          Name   stdout
+          Match  *
 
   containerPorts:
     http: 2020
