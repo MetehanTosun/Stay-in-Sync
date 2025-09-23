@@ -218,6 +218,7 @@ export class CreateTargetSystemComponent implements OnInit, OnChanges {
 
   goNext(): void {
     if (this.currentStep === 0) {
+      if (this.createdTargetSystemId) { this.currentStep = 1; return; }
       this.save();
     } else if (this.currentStep === 1) {
       this.currentStep = 2;
