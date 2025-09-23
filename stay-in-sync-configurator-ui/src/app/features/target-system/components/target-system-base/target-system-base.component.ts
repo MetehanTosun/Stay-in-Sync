@@ -17,6 +17,7 @@ import { CreateTargetSystemComponent } from '../create-target-system/create-targ
 import { ManageTargetEndpointsComponent } from '../manage-target-endpoints/manage-target-endpoints.component';
 import { ManageApiHeadersComponent } from '../../../source-system/components/manage-api-headers/manage-api-headers.component';
 import { SearchBarComponent } from '../../../source-system/components/search-bar/search-bar.component';
+import { AasPanelComponent } from '../../../../shared/aas/aas-panel.component';
 
 @Component({
   standalone: true,
@@ -91,7 +92,7 @@ import { SearchBarComponent } from '../../../source-system/components/search-bar
       </ng-template>
     </p-dialog>
     
-    <app-create-target-system [(visible)]="wizardVisible"></app-create-target-system>
+    <app-create-target-system [(visible)]="wizardVisible" (created)="onCreated($event)"></app-create-target-system>
 
     <p-dialog [(visible)]="showDetailDialog" [modal]="true" [style]="{ width: '80vw', height: '80vh' }" header="Manage Target System">
       <div class="p-grid p-dir-col">
@@ -129,6 +130,10 @@ import { SearchBarComponent } from '../../../source-system/components/search-bar
           <h3 class="p-mb-2">Endpoints</h3>
           <app-manage-target-endpoints *ngIf="selectedSystem" [targetSystemId]="selectedSystem.id!" (finish)="onManageFinished()"></app-manage-target-endpoints>
         </div>
+        <div class="p-col p-mt-4">
+          <h3 class="p-mb-2">AAS</h3>
+          <app-aas-panel *ngIf="selectedSystem && selectedSystem.apiType==='AAS'" [systemType]="'target'" [systemId]="selectedSystem.id!"></app-aas-panel>
+        </div>
       </div>
     </p-dialog>
     <app-confirmation-dialog
@@ -153,7 +158,8 @@ import { SearchBarComponent } from '../../../source-system/components/search-bar
     ManageApiHeadersComponent,
     SearchBarComponent,
     TextareaModule,
-    ConfirmationDialogComponent
+    ConfirmationDialogComponent,
+    AasPanelComponent
   ],
   providers: [ConfirmationService, MessageService],
   styleUrls: ['./target-system-base.component.css']
@@ -227,6 +233,11 @@ export class TargetSystemBaseComponent implements OnInit {
   openCreate(): void {
     this.editing = null;
     this.wizardVisible = true;
+  }
+
+  onCreated(_: TargetSystemDTO): void {
+    // refresh list immediately so the newly created system appears without manual reload
+    this.load();
   }
 
   edit(row: TargetSystemDTO): void {

@@ -12,12 +12,15 @@ import de.unistuttgart.stayinsync.core.configuration.rest.dtos.targetsystem.Targ
 public interface TargetSystemMapper {
 
     @Mapping(target = "openApiSpec", source = "openAPI")
+    @Mapping(target = "aasId", source = "aasId")
     TargetSystem toEntity(TargetSystemDTO dto);
 
     @Mapping(target = "openAPI", source = "openApiSpec")
+    @Mapping(target = "aasId", source = "aasId")
     TargetSystemDTO toDto(TargetSystem entity);
 
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "openApiSpec", source = "openAPI")
+    @Mapping(target = "aasId", source = "aasId")
     void updateFromDto(TargetSystemDTO dto, @MappingTarget TargetSystem entity);
 }

@@ -55,7 +55,7 @@ public class OpenApiSynchronizationTest {
                           description: created
                 """;
 
-        var ts = targetSystemService.createTargetSystem(new TargetSystemDTO(null, "TS-OAS", "http://ts", null, "REST", minimalOpenApi, java.util.Set.of()));
+        var ts = targetSystemService.createTargetSystem(new TargetSystemDTO(null, "TS-OAS", "http://ts", null, "REST", null, minimalOpenApi, java.util.Set.of()));
         targetSystemId = ts.id();
     }
 

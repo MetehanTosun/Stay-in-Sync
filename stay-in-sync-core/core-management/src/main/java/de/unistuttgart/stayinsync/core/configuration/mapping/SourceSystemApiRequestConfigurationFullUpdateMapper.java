@@ -19,9 +19,16 @@ public interface SourceSystemApiRequestConfigurationFullUpdateMapper {
 
     CreateRequestConfigurationDTO mapToDTO(SourceSystemApiRequestConfiguration input);
 
-    @Mapping(target = "name", source = "alias")
-    @Mapping(target = "apiConnectionDetails", source = ".", qualifiedByName = "mapToApiConnectionDetails")
-    SourceSystemApiRequestConfigurationMessageDTO mapToMessageDTO(SourceSystemApiRequestConfiguration entity);
+    default SourceSystemApiRequestConfigurationMessageDTO mapToMessageDTO(SourceSystemApiRequestConfiguration entity) {
+        ApiConnectionDetailsDTO conn = mapToApiConnectionDetails(entity);
+        return new SourceSystemApiRequestConfigurationMessageDTO(
+                entity.alias,
+                entity.id,
+                entity.pollingIntervallTimeInMs,
+                entity.deploymentStatus,
+                conn
+        );
+    }
 
     SourceSystemApiRequestConfiguration mapToEntity(CreateRequestConfigurationDTO input);
 

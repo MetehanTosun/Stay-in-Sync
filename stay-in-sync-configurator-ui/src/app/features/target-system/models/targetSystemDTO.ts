@@ -4,6 +4,7 @@ export interface TargetSystemDTO {
   apiUrl: string;
   description?: string;
   apiType: string;
+  aasId?: string;
   openAPI?: string;
 }
 
