@@ -72,3 +72,12 @@
     ></app-target-arc-panel>
   </div>
 </div>
+
+<app-arc-wizard
+  *ngIf="isWizardVisible && wizardContext"
+  [visible]="isWizardVisible"
+  [context]="wizardContext"
+  (onHide)="isWizardVisible = false"
+  (onSaveSuccess)="handleArcSave($event)"
+>
+</app-arc-wizard>
