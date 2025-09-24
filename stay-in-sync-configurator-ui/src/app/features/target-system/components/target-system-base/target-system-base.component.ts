@@ -14,6 +14,8 @@ import { TreeModule } from 'primeng/tree';
 import { TreeNode } from 'primeng/api';
 import { ConfirmationService, MessageService } from 'primeng/api';
 import { HttpClient } from '@angular/common/http';
+import { AasClientService } from '../../../source-system/services/aas-client.service';
+import { HttpErrorService } from '../../../../core/services/http-error.service';
 import { ConfirmationDialogComponent, ConfirmationDialogData } from '../../../source-system/components/confirmation-dialog/confirmation-dialog.component';
 import { TargetSystemResourceService } from '../../service/targetSystemResource.service';
 import { TargetSystemDTO } from '../../models/targetSystemDTO';
@@ -50,14 +52,14 @@ interface AasElementLivePanel {
         (clear)="onSearchClear()">
       </app-search-bar>
 
-      <p-toolbar>
-        <div class="p-toolbar-group-left">
-          <h3>Target Systems</h3>
-        </div>
-        <div class="p-toolbar-group-right">
-          <button pButton type="button" label="Create Target System" icon="pi pi-plus" (click)="openCreate()"></button>
-        </div>
-      </p-toolbar>
+    <p-toolbar>
+      <div class="p-toolbar-group-left">
+        <h3>Target Systems</h3>
+      </div>
+      <div class="p-toolbar-group-right">
+        <button pButton type="button" label="Create Target System" icon="pi pi-plus" (click)="openCreate()"></button>
+      </div>
+    </p-toolbar>
 
     <p-table [value]="displaySystems" [loading]="loading">
       <ng-template pTemplate="header">
@@ -358,7 +360,9 @@ export class TargetSystemBaseComponent implements OnInit {
     private fb: FormBuilder,
     private confirm: ConfirmationService,
     private http: HttpClient,
-    private messageService: MessageService
+    private messageService: MessageService,
+    private aasClientService: AasClientService,
+    private errorService: HttpErrorService
   ) {}
 
   ngOnInit(): void {
@@ -521,38 +525,17 @@ export class TargetSystemBaseComponent implements OnInit {
     this.aasTreeLoading = true;
     this.aasTreeNodes = [];
     
-    this.http.get<any>(`/api/config/target-system/${this.selectedSystem.id}/aas/submodels`).subscribe({
+    // Use AasClientService for consistent behavior with Source system
+    this.aasClientService.listSubmodels('target', this.selectedSystem.id).subscribe({
       next: (response) => {
-        // Handle both array and wrapped object responses
-        let submodels: any[] = [];
-        if (Array.isArray(response)) {
-          submodels = response;
-        } else if (response && response.result && Array.isArray(response.result)) {
-          submodels = response.result;
-        } else {
-          console.warn('Unexpected submodels response format:', response);
-          submodels = [];
-        }
-        
-        const nodes: TreeNode[] = submodels.map(sm => ({
-          label: sm.idShort || sm.id || 'Submodel',
-          data: {
-            type: 'submodel',
-            id: sm.id,
-            raw: sm,
-            modelType: sm.modelType
-          },
-          leaf: false,
-          children: [],
-          expandedIcon: 'pi pi-folder-open',
-          collapsedIcon: 'pi pi-folder'
-        }));
-        this.aasTreeNodes = nodes;
+        // Handle both array and wrapped object responses (same as Source system)
+        const submodels = Array.isArray(response) ? response : (response?.result ?? []);
+        this.aasTreeNodes = submodels.map((sm: any) => this.mapSmToNode(sm));
         this.aasTreeLoading = false;
       },
-      error: () => {
+      error: (error) => {
         this.aasTreeLoading = false;
-        this.messageService.add({severity: 'error', summary: 'Error', detail: 'Failed to load AAS snapshot'});
+        this.errorService.handleError(error);
       }
     });
   }
@@ -576,7 +559,8 @@ export class TargetSystemBaseComponent implements OnInit {
   private loadSubmodelElements(node: TreeNode): void {
     if (!this.selectedSystem?.id || !node.data?.id) return;
     
-    this.http.get<any>(`/api/config/target-system/${this.selectedSystem.id}/aas/submodels/${btoa(node.data.id)}/elements`).subscribe({
+    const smIdB64 = btoa(node.data.id);
+    this.aasClientService.listElements('target', this.selectedSystem.id, smIdB64).subscribe({
       next: (response) => {
         // Handle both array and wrapped object responses
         let elements: any[] = [];
@@ -605,8 +589,8 @@ export class TargetSystemBaseComponent implements OnInit {
         }));
         this.aasTreeNodes = [...this.aasTreeNodes];
       },
-      error: () => {
-        this.messageService.add({severity: 'error', summary: 'Error', detail: 'Failed to load submodel elements'});
+      error: (error) => {
+        this.errorService.handleError(error);
       }
     });
   }
@@ -617,7 +601,7 @@ export class TargetSystemBaseComponent implements OnInit {
     const smId = btoa(node.data.submodelId);
     const parentPath = node.data.idShortPath;
     
-    this.http.get<any>(`/api/config/target-system/${this.selectedSystem.id}/aas/submodels/${smId}/elements?parentPath=${encodeURIComponent(parentPath)}`).subscribe({
+    this.aasClientService.listElements('target', this.selectedSystem.id, smId, 'shallow', parentPath).subscribe({
       next: (response) => {
         // Handle both array and wrapped object responses
         let children: any[] = [];
@@ -646,8 +630,8 @@ export class TargetSystemBaseComponent implements OnInit {
         }));
         this.aasTreeNodes = [...this.aasTreeNodes];
       },
-      error: () => {
-        this.messageService.add({severity: 'error', summary: 'Error', detail: 'Failed to load element children'});
+      error: (error) => {
+        this.errorService.handleError(error);
       }
     });
   }
@@ -659,7 +643,7 @@ export class TargetSystemBaseComponent implements OnInit {
     const smId = btoa(node.data.submodelId);
     const path = node.data.idShortPath;
     
-    this.http.get<any>(`/api/config/target-system/${this.selectedSystem.id}/aas/submodels/${smId}/elements/${encodeURIComponent(path)}`).subscribe({
+    this.aasClientService.getElement('target', this.selectedSystem.id, smId, path).subscribe({
       next: (element) => {
         this.aasSelectedLivePanel = {
           label: element.idShort || 'Element',
@@ -692,9 +676,9 @@ export class TargetSystemBaseComponent implements OnInit {
         };
         this.aasSelectedLiveLoading = false;
       },
-      error: () => {
+      error: (error) => {
         this.aasSelectedLiveLoading = false;
-        this.messageService.add({severity: 'error', summary: 'Error', detail: 'Failed to load element details'});
+        this.errorService.handleError(error);
       }
     });
   }
@@ -737,6 +721,16 @@ export class TargetSystemBaseComponent implements OnInit {
       return 'No matching target systems found';
     }
     return 'No target systems available';
+  }
+
+  // Helper method for AAS functionality (copied from Source system)
+  private mapSmToNode(sm: any): TreeNode {
+    const id = sm.submodelId || sm.id || (sm.keys && sm.keys[0]?.value);
+    const label = (sm.submodelIdShort || sm.idShort) || id;
+    const kindRaw = (sm.kind || sm.submodelKind || '').toString();
+    const isTemplate = kindRaw && kindRaw.toLowerCase().includes('template');
+    const modelType = isTemplate ? 'Submodel Template' : 'Submodel';
+    return { key: id, label, data: { type: 'submodel', id, modelType, raw: sm }, leaf: false, children: [] } as TreeNode;
   }
 }
 
