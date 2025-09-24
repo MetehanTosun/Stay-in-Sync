@@ -671,7 +671,6 @@ public class AasResource {
     private io.vertx.core.json.JsonObject descendAndMatch(io.vertx.core.json.JsonObject element, String currentPath, String targetPath) {
         if (targetPath.equals(currentPath)) return element;
         String modelType = element.getString("modelType");
-        // Collections and Lists: values are arrays of child elements
         if ("SubmodelElementCollection".equalsIgnoreCase(modelType) || "SubmodelElementList".equalsIgnoreCase(modelType)) {
             var value = element.getValue("value");
             if (value instanceof io.vertx.core.json.JsonArray arr) {
@@ -679,14 +678,42 @@ public class AasResource {
                     var child = arr.getJsonObject(i);
                     if (child == null) continue;
                     String childIdShort = child.getString("idShort");
-                    if (childIdShort == null) continue;
+                    // For SubmodelElementList, children might not have idShort, use index
+                    if (childIdShort == null || childIdShort.isBlank()) {
+                        if ("SubmodelElementList".equalsIgnoreCase(modelType)) {
+                            childIdShort = Integer.toString(i);
+                        } else {
+                            continue;
+                        }
+                    }
                     String childPath = currentPath + "/" + childIdShort;
                     var found = descendAndMatch(child, childPath, targetPath);
                     if (found != null) return found;
+                    
+                    // Special handling for SubmodelElementList: check if child has nested value array
+                    if ("SubmodelElementList".equalsIgnoreCase(modelType)) {
+                        var nestedValue = child.getValue("value");
+                        if (nestedValue instanceof io.vertx.core.json.JsonArray nestedArr) {
+                            for (int j = 0; j < nestedArr.size(); j++) {
+                                var nestedChild = nestedArr.getJsonObject(j);
+                                if (nestedChild == null) continue;
+                                String nestedIdShort = nestedChild.getString("idShort");
+                                if (nestedIdShort != null && !nestedIdShort.isBlank()) {
+                                    String nestedPath = childPath + "/" + nestedIdShort;
+                                    var nestedFound = descendAndMatch(nestedChild, nestedPath, targetPath);
+                                    if (nestedFound != null) return nestedFound;
+                                } else {
+                                    // Handle cases where nested child has no idShort (use index)
+                                    String nestedPath = childPath + "/" + j;
+                                    var nestedFound = descendAndMatch(nestedChild, nestedPath, targetPath);
+                                    if (nestedFound != null) return nestedFound;
+                                }
+                            }
+                        }
+                    }
                 }
             }
         } else if ("Entity".equalsIgnoreCase(modelType)) {
-            // Entities may keep children under 'statements'
             var statements = element.getValue("statements");
             if (statements instanceof io.vertx.core.json.JsonArray arr) {
                 for (int i = 0; i < arr.size(); i++) {
@@ -718,8 +745,18 @@ public class AasResource {
             if (sc >= 200 && sc < 300) {
                 return Response.ok(resp.bodyAsString()).build();
             }
-            var resolved = resolveElementDeep(ss.apiUrl, smId, path, headers);
-            if (resolved != null) return Response.ok(resolved.encode()).build();
+            // Fallback: try deep resolve like Target system
+            try {
+                var all = traversal.listElements(ss.apiUrl, smId, "all", null, headers).await().indefinitely();
+                if (all.statusCode() >= 200 && all.statusCode() < 300) {
+                    String body = all.bodyAsString();
+                    io.vertx.core.json.JsonArray root = body != null && body.trim().startsWith("{")
+                            ? new io.vertx.core.json.JsonObject(body).getJsonArray("result", new io.vertx.core.json.JsonArray())
+                            : new io.vertx.core.json.JsonArray(body);
+                    io.vertx.core.json.JsonObject found = findElementByPathRecursive(root, path);
+                    if (found != null) return Response.ok(found.encode()).build();
+                }
+            } catch (Exception ignore) {}
             return Response.status(sc).entity(resp.bodyAsString()).build();
         }
         // SNAPSHOT
