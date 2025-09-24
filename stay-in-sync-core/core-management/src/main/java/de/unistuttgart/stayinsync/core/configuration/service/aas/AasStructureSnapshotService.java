@@ -557,16 +557,20 @@ public class AasStructureSnapshotService {
                     String id = textOrNull(smNode, "id");
                     if (id == null && smNode.has("identification")) id = textOrNull(smNode.get("identification"), "id");
                     if (id == null || id.isBlank()) continue;
+                    Log.infof("attachSubmodelsLiveToTarget: candidate id=%s (JSON)", id);
                     try {
                         String smIdB64 = java.util.Base64.getUrlEncoder().withoutPadding().encodeToString(id.getBytes(java.nio.charset.StandardCharsets.UTF_8));
                         var check = traversalClient.getSubmodel(ts.apiUrl, smIdB64, headersRead).await().indefinitely();
+                        Log.infof("attachSubmodelsLiveToTarget: GET submodel check status=%d", check.statusCode());
                         if (check.statusCode() >= 200 && check.statusCode() < 300) {
                             if (tryAddSubmodelRef(ts, id, headersWrite, headersRead)) attached++;
                             continue;
                         }
                     } catch (Exception ignore) { }
                     String payload = buildNormalizedSubmodelPayload(smNode);
+                    Log.debugf("attachSubmodelsLiveToTarget: create payload=%s", payload);
                     var createResp = traversalClient.createSubmodel(ts.apiUrl, payload, headersWrite).await().indefinitely();
+                    Log.infof("attachSubmodelsLiveToTarget: create status=%d", createResp.statusCode());
                     if (createResp.statusCode() >= 200 && createResp.statusCode() < 300) {
                         String createdId = id;
                         try {
@@ -577,13 +581,88 @@ public class AasStructureSnapshotService {
                                 if (cid != null && !cid.isBlank()) createdId = cid;
                             }
                         } catch (Exception ignore) { }
-                        if (tryAddSubmodelRef(ts, createdId, headersWrite, headersRead)) attached++;
+                        boolean added = tryAddSubmodelRef(ts, createdId, headersWrite, headersRead);
+                        Log.infof("attachSubmodelsLiveToTarget: add-ref result=%s", added);
+                        if (added) attached++;
                     }
                 }
             } catch (Exception ignore) { }
         }
         if (attached == 0) {
-            Log.info("Live attach (target): No submodels attached from JSON, XML fallback not implemented for target");
+            Log.info("Live attach (target): No submodels attached from JSON, trying XML fallback");
+            try (java.util.zip.ZipInputStream zis2 = new java.util.zip.ZipInputStream(new java.io.ByteArrayInputStream(fileBytes))) {
+                java.util.zip.ZipEntry entry;
+                while ((entry = zis2.getNextEntry()) != null) {
+                    String name = entry.getName();
+                    if (name == null) continue;
+                    String lower = name.toLowerCase(java.util.Locale.ROOT);
+                    if (!lower.endsWith(".xml")) continue;
+                    try {
+                        javax.xml.parsers.DocumentBuilderFactory dbf = javax.xml.parsers.DocumentBuilderFactory.newInstance();
+                        dbf.setNamespaceAware(true);
+                        javax.xml.parsers.DocumentBuilder db = dbf.newDocumentBuilder();
+                        org.w3c.dom.Document doc = db.parse(zis2);
+                        org.w3c.dom.Element root = doc.getDocumentElement();
+                        if (root == null) continue;
+                        String rootLocal = root.getLocalName() != null ? root.getLocalName() : root.getNodeName();
+                        if (rootLocal == null || !rootLocal.toLowerCase(java.util.Locale.ROOT).contains("submodel")) {
+                            var subNodes = root.getElementsByTagNameNS("*", "submodel");
+                            if (subNodes.getLength() > 0) {
+                                root = (org.w3c.dom.Element) subNodes.item(0);
+                            }
+                        }
+                        String id = firstTextByLocalName(root, "id");
+                        if (id == null) {
+                            var ident = firstChildByLocalName(root, "identification");
+                            if (ident != null) id = firstTextByLocalName(ident, "id");
+                            if (id == null) {
+                                var identifier = firstChildByLocalName(root, "identifier");
+                                if (identifier != null) {
+                                    String i1 = identifier.getAttribute("id");
+                                    if (i1 != null && !i1.isBlank()) id = i1;
+                                    if (id == null) id = identifier.getTextContent();
+                                }
+                            }
+                        }
+                        if (id == null || id.isBlank()) id = name;
+                        try {
+                            String smIdB64 = java.util.Base64.getUrlEncoder().withoutPadding().encodeToString(id.getBytes(java.nio.charset.StandardCharsets.UTF_8));
+                            var check = traversalClient.getSubmodel(ts.apiUrl, smIdB64, headersRead).await().indefinitely();
+                            Log.infof("attachSubmodelsLiveToTarget(XML): GET submodel check status=%d", check.statusCode());
+                            if (check.statusCode() >= 200 && check.statusCode() < 300) {
+                                if (tryAddSubmodelRef(ts, id, headersWrite, headersRead)) attached++;
+                                continue;
+                            }
+                        } catch (Exception ignore) { }
+                        String idShort = firstTextByLocalName(root, "idShort");
+                        com.fasterxml.jackson.databind.node.ObjectNode out = objectMapper.createObjectNode();
+                        out.put("modelType", "Submodel");
+                        out.put("id", id);
+                        if (idShort != null) out.put("idShort", idShort);
+                        out.putArray("submodelElements");
+                        var createResp = traversalClient.createSubmodel(ts.apiUrl, out.toString(), headersWrite).await().indefinitely();
+                        Log.infof("attachSubmodelsLiveToTarget(XML): create status=%d", createResp.statusCode());
+                        if (createResp.statusCode() >= 200 && createResp.statusCode() < 300) {
+                            String createdId = id;
+                            try {
+                                String b = createResp.bodyAsString();
+                                if (b != null && !b.isBlank() && b.trim().startsWith("{")) {
+                                    JsonNode created = objectMapper.readTree(b);
+                                    String cid = textOrNull(created, "id");
+                                    if (cid != null && !cid.isBlank()) createdId = cid;
+                                }
+                            } catch (Exception ignore) { }
+                            boolean added = tryAddSubmodelRef(ts, createdId, headersWrite, headersRead);
+                            Log.infof("attachSubmodelsLiveToTarget(XML): add-ref result=%s", added);
+                            if (added) attached++;
+                        } else {
+                            Log.warnf("Live attach (target): failed to create submodel from XML id=%s upstream: %d %s", id, createResp.statusCode(), createResp.statusMessage());
+                        }
+                    } catch (Exception ignore) { }
+                }
+            } catch (java.io.IOException e) {
+                // ignore
+            }
         }
         return attached;
     }
@@ -982,6 +1061,51 @@ public class AasStructureSnapshotService {
             } catch (Exception ignore) { }
         }
 
+        // Build XML index for fallback (when JSON is not available)
+        java.util.Map<String, org.w3c.dom.Element> xmlSubmodelById = new java.util.HashMap<>();
+        try (java.util.zip.ZipInputStream zis2 = new java.util.zip.ZipInputStream(new java.io.ByteArrayInputStream(fileBytes))) {
+            java.util.zip.ZipEntry entry;
+            while ((entry = zis2.getNextEntry()) != null) {
+                String name = entry.getName();
+                if (name == null) continue;
+                String lower = name.toLowerCase(java.util.Locale.ROOT);
+                if (!lower.endsWith(".xml")) continue;
+                try {
+                    javax.xml.parsers.DocumentBuilderFactory dbf = javax.xml.parsers.DocumentBuilderFactory.newInstance();
+                    dbf.setNamespaceAware(true);
+                    javax.xml.parsers.DocumentBuilder db = dbf.newDocumentBuilder();
+                    org.w3c.dom.Document doc = db.parse(zis2);
+                    org.w3c.dom.Element root = doc.getDocumentElement();
+                    if (root == null) continue;
+                    String rootLocal = root.getLocalName() != null ? root.getLocalName() : root.getNodeName();
+                    boolean subFound = (rootLocal != null && rootLocal.toLowerCase(java.util.Locale.ROOT).contains("submodel"));
+                    if (!subFound) {
+                        var subNodes = root.getElementsByTagNameNS("*", "submodel");
+                        if (subNodes.getLength() > 0) {
+                            root = (org.w3c.dom.Element) subNodes.item(0);
+                            subFound = true;
+                        }
+                    }
+                    if (!subFound) continue;
+                    String id = firstTextByLocalName(root, "id");
+                    if (id == null) {
+                        var ident = firstChildByLocalName(root, "identification");
+                        if (ident != null) id = firstTextByLocalName(ident, "id");
+                        if (id == null) {
+                            var identifier = firstChildByLocalName(root, "identifier");
+                            if (identifier != null) {
+                                String i1 = identifier.getAttribute("id");
+                                if (i1 != null && !i1.isBlank()) id = i1;
+                                if (id == null) id = identifier.getTextContent();
+                            }
+                        }
+                    }
+                    if (id == null || id.isBlank()) id = name;
+                    xmlSubmodelById.put(id, root);
+                } catch (Exception ignore) { }
+            }
+        } catch (java.io.IOException ignore) { }
+
         var headersWrite = headerBuilder.buildMergedHeaders(ts, HttpHeaderBuilder.Mode.WRITE_JSON);
         var headersRead = headerBuilder.buildMergedHeaders(ts, HttpHeaderBuilder.Mode.READ);
         int attached = 0;
@@ -1002,35 +1126,53 @@ public class AasStructureSnapshotService {
             }
 
             JsonNode smNode = submodelById.get(id);
-            if (smNode == null) {
-                Log.warnf("attachSelected(target): submodel id=%s not found in JSON entries, skipping", id);
-                continue;
-            }
             String payload;
-            if (full || wantedEls.isEmpty()) {
-                payload = buildNormalizedSubmodelPayload(smNode);
-            } else {
-                com.fasterxml.jackson.databind.node.ObjectNode out = objectMapper.createObjectNode();
-                String idShort = textOrNull(smNode, "idShort");
-                out.put("modelType", "Submodel");
-                if (id != null) out.put("id", id);
-                if (idShort != null) out.put("idShort", idShort);
-                com.fasterxml.jackson.databind.node.ArrayNode arrOut = objectMapper.createArrayNode();
-                JsonNode els = smNode.get("submodelElements");
-                if (els != null && els.isArray()) {
-                    for (JsonNode el : els) {
-                        String idShortEl = textOrNull(el, "idShort");
-                        if (idShortEl == null) continue;
-                        if (!wantedEls.contains(idShortEl)) continue;
-                        String mt = textOrNull(el, "modelType");
-                        if (mt == null || !(mt.equalsIgnoreCase("SubmodelElementCollection") || mt.equalsIgnoreCase("SubmodelElementList"))) {
-                            continue;
+            if (smNode != null) {
+                if (full || wantedEls.isEmpty()) {
+                    payload = buildNormalizedSubmodelPayload(smNode);
+                } else {
+                    com.fasterxml.jackson.databind.node.ObjectNode out = objectMapper.createObjectNode();
+                    String idShort = textOrNull(smNode, "idShort");
+                    out.put("modelType", "Submodel");
+                    if (id != null) out.put("id", id);
+                    if (idShort != null) out.put("idShort", idShort);
+                    com.fasterxml.jackson.databind.node.ArrayNode arrOut = objectMapper.createArrayNode();
+                    JsonNode els = smNode.get("submodelElements");
+                    if (els != null && els.isArray()) {
+                        for (JsonNode el : els) {
+                            String idShortEl = textOrNull(el, "idShort");
+                            if (idShortEl == null) continue;
+                            if (!wantedEls.contains(idShortEl)) continue;
+                            String mt = textOrNull(el, "modelType");
+                            if (mt == null || !(mt.equalsIgnoreCase("SubmodelElementCollection") || mt.equalsIgnoreCase("SubmodelElementList"))) {
+                                continue;
+                            }
+                            arrOut.add(el);
                         }
-                        arrOut.add(el);
                     }
+                    out.set("submodelElements", arrOut);
+                    payload = out.toString();
                 }
-                out.set("submodelElements", arrOut);
-                payload = out.toString();
+            } else {
+                // Fallback: try XML index
+                org.w3c.dom.Element xmlRoot = xmlSubmodelById.get(id);
+                if (xmlRoot != null) {
+                    String idShort = firstTextByLocalName(xmlRoot, "idShort");
+                    com.fasterxml.jackson.databind.node.ObjectNode out = objectMapper.createObjectNode();
+                    out.put("modelType", "Submodel");
+                    if (id != null) out.put("id", id);
+                    if (idShort != null) out.put("idShort", idShort);
+                    out.putArray("submodelElements");
+                    payload = out.toString();
+                } else {
+                    // Best-effort: create minimal submodel from selected id
+                    com.fasterxml.jackson.databind.node.ObjectNode out = objectMapper.createObjectNode();
+                    out.put("modelType", "Submodel");
+                    out.put("id", id);
+                    out.put("idShort", deriveIdShortFromId(id));
+                    out.putArray("submodelElements");
+                    payload = out.toString();
+                }
             }
 
             try {
@@ -1145,7 +1287,30 @@ public class AasStructureSnapshotService {
             }
             var add = traversalClient.addSubmodelReferenceToShell(ts.apiUrl, ts.aasId, submodelId, headersWrite).await().indefinitely();
             if (add.statusCode() >= 200 && add.statusCode() < 300) {
-                return true;
+                // Verify presence like Source implementation
+                try {
+                    var refsResp2 = traversalClient.listSubmodelReferences(ts.apiUrl, ts.aasId, headersRead).await().indefinitely();
+                    if (refsResp2.statusCode() >= 200 && refsResp2.statusCode() < 300) {
+                        String body2 = refsResp2.bodyAsString();
+                        io.vertx.core.json.JsonArray arr2;
+                        if (body2 != null && body2.trim().startsWith("{")) {
+                            io.vertx.core.json.JsonObject obj2 = new io.vertx.core.json.JsonObject(body2);
+                            arr2 = obj2.getJsonArray("result", new io.vertx.core.json.JsonArray());
+                        } else {
+                            arr2 = new io.vertx.core.json.JsonArray(body2);
+                        }
+                        for (int i = 0; i < arr2.size(); i++) {
+                            var ref = arr2.getJsonObject(i);
+                            var keys = ref.getJsonArray("keys");
+                            if (keys != null && !keys.isEmpty()) {
+                                var k0 = keys.getJsonObject(0);
+                                if ("Submodel".equalsIgnoreCase(k0.getString("type")) && submodelId.equals(k0.getString("value"))) {
+                                    return true;
+                                }
+                            }
+                        }
+                    }
+                } catch (Exception ignore) { }
             } else {
                 Log.warnf("Add submodel-ref failed (target) id=%s: %d %s", submodelId, add.statusCode(), add.statusMessage());
             }
@@ -1354,6 +1519,30 @@ public class AasStructureSnapshotService {
             if (n instanceof org.w3c.dom.Element e) out.add(e);
         }
         return out;
+    }
+
+    private String deriveIdShortFromId(String id) {
+        if (id == null) return null;
+        String s = id;
+        String[] parts = s.split("/");
+        if (parts.length >= 3) {
+            String last = parts[parts.length - 1];
+            String prev = parts[parts.length - 2];
+            String prev2 = parts[parts.length - 3];
+            boolean lastNum = last.matches("\\d+");
+            boolean prevNum = prev.matches("\\d+");
+            if (lastNum && prevNum) {
+                return prev2;
+            }
+            if (lastNum && !prevNum) {
+                return prev;
+            }
+        }
+        int hash = s.lastIndexOf('#');
+        int slash = s.lastIndexOf('/');
+        int idx = Math.max(hash, slash);
+        if (idx >= 0 && idx < s.length() - 1) return s.substring(idx + 1);
+        return s;
     }
 
     private boolean importSubmodelFromJson(SourceSystem ss, JsonNode smNode) {

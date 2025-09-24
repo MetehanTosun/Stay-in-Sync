@@ -348,8 +348,10 @@ export class CreateTargetSystemComponent implements OnInit, OnChanges {
         this.showAasxUpload = false;
         // Reflect immediately: list LIVE and refresh roots for selected IDs
         this.onDiscover('LIVE', selectedIds);
-        // Short retry in case upstream finishes async
+        // Short retries in case upstream processing is async
         setTimeout(() => this.onDiscover('LIVE', selectedIds), 1200);
+        setTimeout(() => this.onDiscover('LIVE', selectedIds), 2500);
+        setTimeout(() => this.onDiscover('LIVE', selectedIds), 5000);
         this.messageService.add({ severity: 'success', summary: 'Upload accepted', detail: 'AASX uploaded and attached', life: 3000 });
       },
       error: (err) => {
