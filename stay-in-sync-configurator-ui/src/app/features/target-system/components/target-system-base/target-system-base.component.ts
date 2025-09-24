@@ -740,10 +740,30 @@ export class TargetSystemBaseComponent implements OnInit {
     if (this.selectedSystem.apiUrl) {
       try {
         const url = new URL(this.selectedSystem.apiUrl);
-        // For localhost, use a default AAS ID
+        
+        // For localhost, try to extract AAS ID from path or use system name
         if (url.hostname === 'localhost' || url.hostname === '127.0.0.1') {
+          // Try to extract AAS ID from path (e.g., /aas/12345/...)
+          const pathMatch = url.pathname.match(/\/aas\/([^\/]+)/);
+          if (pathMatch && pathMatch[1]) {
+            return pathMatch[1];
+          }
+          
+          // Try to extract from query parameters
+          const aasIdParam = url.searchParams.get('aasId') || url.searchParams.get('id');
+          if (aasIdParam) {
+            return aasIdParam;
+          }
+          
+          // Use system name as AAS ID if available
+          if (this.selectedSystem.name && this.selectedSystem.name.trim() !== '') {
+            return this.selectedSystem.name;
+          }
+          
+          // Final localhost fallback
           return 'Default AAS';
         }
+        
         // For other hosts, use hostname as AAS ID
         return url.hostname;
       } catch (e) {
