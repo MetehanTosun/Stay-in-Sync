@@ -148,13 +148,13 @@ interface AasElementLivePanel {
               <div class="p-col-12 p-md-6">
                 <p-card>
                   <h4>API Headers</h4>
-                  <app-manage-api-headers *ngIf="selectedSystem" [syncSystemId]="selectedSystem.id!"></app-manage-api-headers>
+          <app-manage-api-headers *ngIf="selectedSystem" [syncSystemId]="selectedSystem.id!"></app-manage-api-headers>
                 </p-card>
-              </div>
+        </div>
               <div class="p-col-12 p-md-6">
                 <p-card>
                   <h4>Endpoints</h4>
-                  <app-manage-target-endpoints *ngIf="selectedSystem" [targetSystemId]="selectedSystem.id!" (finish)="onManageFinished()"></app-manage-target-endpoints>
+          <app-manage-target-endpoints *ngIf="selectedSystem" [targetSystemId]="selectedSystem.id!" (finish)="onManageFinished()"></app-manage-target-endpoints>
                 </p-card>
               </div>
             </div>
@@ -253,7 +253,7 @@ interface AasElementLivePanel {
                   </div>
                 </div>
               </div>
-            </div>
+        </div>
           </p-tabPanel>
         </p-tabView>
       </div>
@@ -474,8 +474,19 @@ export class TargetSystemBaseComponent implements OnInit {
     this.aasTreeLoading = true;
     this.aasTreeNodes = [];
     
-    this.http.get<any[]>(`/api/config/target-system/${this.selectedSystem.id}/aas/submodels`).subscribe({
-      next: (submodels) => {
+    this.http.get<any>(`/api/config/target-system/${this.selectedSystem.id}/aas/submodels`).subscribe({
+      next: (response) => {
+        // Handle both array and wrapped object responses
+        let submodels: any[] = [];
+        if (Array.isArray(response)) {
+          submodels = response;
+        } else if (response && response.result && Array.isArray(response.result)) {
+          submodels = response.result;
+        } else {
+          console.warn('Unexpected submodels response format:', response);
+          submodels = [];
+        }
+        
         const nodes: TreeNode[] = submodels.map(sm => ({
           label: sm.idShort || sm.id || 'Submodel',
           data: {
@@ -518,8 +529,19 @@ export class TargetSystemBaseComponent implements OnInit {
   private loadSubmodelElements(node: TreeNode): void {
     if (!this.selectedSystem?.id || !node.data?.id) return;
     
-    this.http.get<any[]>(`/api/config/target-system/${this.selectedSystem.id}/aas/submodels/${btoa(node.data.id)}/elements`).subscribe({
-      next: (elements) => {
+    this.http.get<any>(`/api/config/target-system/${this.selectedSystem.id}/aas/submodels/${btoa(node.data.id)}/elements`).subscribe({
+      next: (response) => {
+        // Handle both array and wrapped object responses
+        let elements: any[] = [];
+        if (Array.isArray(response)) {
+          elements = response;
+        } else if (response && response.result && Array.isArray(response.result)) {
+          elements = response.result;
+        } else {
+          console.warn('Unexpected elements response format:', response);
+          elements = [];
+        }
+        
         node.children = elements.map(el => ({
           label: el.idShort || 'Element',
           data: {
@@ -548,8 +570,19 @@ export class TargetSystemBaseComponent implements OnInit {
     const smId = btoa(node.data.submodelId);
     const parentPath = node.data.idShortPath;
     
-    this.http.get<any[]>(`/api/config/target-system/${this.selectedSystem.id}/aas/submodels/${smId}/elements?parentPath=${encodeURIComponent(parentPath)}`).subscribe({
-      next: (children) => {
+    this.http.get<any>(`/api/config/target-system/${this.selectedSystem.id}/aas/submodels/${smId}/elements?parentPath=${encodeURIComponent(parentPath)}`).subscribe({
+      next: (response) => {
+        // Handle both array and wrapped object responses
+        let children: any[] = [];
+        if (Array.isArray(response)) {
+          children = response;
+        } else if (response && response.result && Array.isArray(response.result)) {
+          children = response.result;
+        } else {
+          console.warn('Unexpected children response format:', response);
+          children = [];
+        }
+        
         node.children = children.map(el => ({
           label: el.idShort || 'Element',
           data: {
