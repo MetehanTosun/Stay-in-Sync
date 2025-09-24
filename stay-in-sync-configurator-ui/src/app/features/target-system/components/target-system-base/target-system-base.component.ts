@@ -9,7 +9,11 @@ import { InputTextModule } from 'primeng/inputtext';
 import { TextareaModule } from 'primeng/textarea';
 import { ToolbarModule } from 'primeng/toolbar';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
+import { TabViewModule } from 'primeng/tabview';
+import { TreeModule } from 'primeng/tree';
+import { TreeNode } from 'primeng/api';
 import { ConfirmationService, MessageService } from 'primeng/api';
+import { HttpClient } from '@angular/common/http';
 import { ConfirmationDialogComponent, ConfirmationDialogData } from '../../../source-system/components/confirmation-dialog/confirmation-dialog.component';
 import { TargetSystemResourceService } from '../../service/targetSystemResource.service';
 import { TargetSystemDTO } from '../../models/targetSystemDTO';
@@ -17,7 +21,23 @@ import { CreateTargetSystemComponent } from '../create-target-system/create-targ
 import { ManageTargetEndpointsComponent } from '../manage-target-endpoints/manage-target-endpoints.component';
 import { ManageApiHeadersComponent } from '../../../source-system/components/manage-api-headers/manage-api-headers.component';
 import { SearchBarComponent } from '../../../source-system/components/search-bar/search-bar.component';
-import { AasPanelComponent } from '../../../../shared/aas/aas-panel.component';
+
+interface AasOperationVarView { idShort: string; modelType?: string; valueType?: string }
+interface AasAnnotationView { idShort: string; modelType?: string; valueType?: string; value?: any }
+interface AasElementLivePanel {
+  label: string;
+  type: string;
+  value?: any;
+  valueType?: string;
+  min?: any;
+  max?: any;
+  inputVariables?: AasOperationVarView[];
+  outputVariables?: AasOperationVarView[];
+  inoutputVariables?: AasOperationVarView[];
+  firstRef?: string;
+  secondRef?: string;
+  annotations?: AasAnnotationView[];
+}
 
 @Component({
   standalone: true,
@@ -122,18 +142,120 @@ import { AasPanelComponent } from '../../../../shared/aas/aas-panel.component';
             </div>
           </form>
         </div>
-        <div class="p-col p-mt-4">
-          <h3 class="p-mb-2">API Headers</h3>
-          <app-manage-api-headers *ngIf="selectedSystem" [syncSystemId]="selectedSystem.id!"></app-manage-api-headers>
-        </div>
-        <div class="p-col p-mt-4">
-          <h3 class="p-mb-2">Endpoints</h3>
-          <app-manage-target-endpoints *ngIf="selectedSystem" [targetSystemId]="selectedSystem.id!" (finish)="onManageFinished()"></app-manage-target-endpoints>
-        </div>
-        <div class="p-col p-mt-4">
-          <h3 class="p-mb-2">AAS</h3>
-          <app-aas-panel *ngIf="selectedSystem && selectedSystem.apiType==='AAS'" [systemType]="'target'" [systemId]="selectedSystem.id!"></app-aas-panel>
-        </div>
+        <p-tabView>
+          <p-tabPanel *ngIf="!isAasSelected()" header="Headers & Endpoints">
+            <div class="p-grid p-m-2">
+              <div class="p-col-12 p-md-6">
+                <p-card>
+                  <h4>API Headers</h4>
+                  <app-manage-api-headers *ngIf="selectedSystem" [syncSystemId]="selectedSystem.id!"></app-manage-api-headers>
+                </p-card>
+              </div>
+              <div class="p-col-12 p-md-6">
+                <p-card>
+                  <h4>Endpoints</h4>
+                  <app-manage-target-endpoints *ngIf="selectedSystem" [targetSystemId]="selectedSystem.id!" (finish)="onManageFinished()"></app-manage-target-endpoints>
+                </p-card>
+              </div>
+            </div>
+          </p-tabPanel>
+          <p-tabPanel *ngIf="isAasSelected()" header="AAS Management">
+            <div class="p-d-flex p-ai-center p-jc-between" style="margin-bottom: .5rem;">
+              <div>
+                <strong>Base URL:</strong> {{ selectedSystem?.apiUrl }}
+                <span class="ml-3"><strong>AAS ID:</strong> {{ selectedSystem?.aasId || '-' }}</span>
+              </div>
+              <div>
+                <button pButton type="button" label="Refresh Snapshot" class="p-button-text" (click)="discoverAasSnapshot()" [disabled]="aasTreeLoading"></button>
+                <button pButton type="button" label="+ Submodel" class="p-button-text" (click)="openAasCreateSubmodel()"></button>
+              </div>
+            </div>
+            <button pButton type="button" label="Load Snapshot" (click)="discoverAasSnapshot()" [disabled]="aasTreeLoading"></button>
+            <span *ngIf="aasTreeLoading" class="ml-2">Loading...</span>
+            <div style="display:flex; gap:1rem; align-items:flex-start;">
+              <div style="flex: 1 1 65%; min-width: 0;">
+                <p-tree [value]="aasTreeNodes" (onNodeExpand)="onAasNodeExpand($event)" (onNodeSelect)="onAasNodeSelect($event)" selectionMode="single">
+                  <ng-template let-node pTemplate="default">
+                    <div style="display:flex;align-items:center;gap:.5rem;">
+                      <span>{{ node.label }}</span>
+                      <span style="font-size:.75rem;padding:.1rem .4rem;border-radius:999px;border:1px solid var(--surface-border);color:var(--text-color-secondary);">
+                        {{ node.data?.type==='submodel' ? (node.data?.modelType || (node.data?.raw?.kind?.toLowerCase?.().includes('template') ? 'Submodel Template' : 'Submodel')) : (node.data?.modelType || node.data?.raw?.modelType || (node.data?.raw?.valueType ? 'Property' : 'Element')) }}
+                      </span>
+                      <button *ngIf="node.data?.type==='submodel'" pButton type="button" class="p-button-text" label="Create element" (click)="openAasCreateElement(node.data.id)"></button>
+                      <button *ngIf="node.data?.type==='element' && (node.data?.modelType==='SubmodelElementCollection' || node.data?.modelType==='SubmodelElementList' || node.data?.modelType==='Entity')" pButton type="button" class="p-button-text" label="Add child" (click)="openAasCreateElement(node.data.submodelId, node.data.idShortPath)"></button>
+                      <button *ngIf="node.data?.type==='submodel'" pButton type="button" class="p-button-text p-button-danger" label="Delete submodel" (click)="deleteAasSubmodel(node.data.id)"></button>
+                      <button *ngIf="node.data?.type==='element'" pButton type="button" class="p-button-text p-button-danger" label="Delete" (click)="deleteAasElement(node.data.submodelId, node.data.idShortPath)"></button>
+                      <button *ngIf="node.data?.type==='element' && (node.data?.modelType==='Property' || node.data?.raw?.valueType)" pButton type="button" class="p-button-text" label="Set value" (click)="openAasSetValue(node.data.submodelId, node.data)"></button>
+                    </div>
+                  </ng-template>
+                </p-tree>
+              </div>
+              <div id="aas-element-details" class="p-card" *ngIf="selectedAasNode && selectedAasNode.data?.type==='element'" style="flex: 0 0 35%; padding:1rem;border:1px solid var(--surface-border);border-radius:4px; position: sticky; top: .5rem; align-self: flex-start; max-height: calc(100vh - 1rem); overflow: auto;">
+                <div class="p-d-flex p-ai-center p-jc-between">
+                  <h4 style="margin:0;">Details</h4>
+                  <span *ngIf="aasSelectedLiveLoading">Loading...</span>
+                </div>
+                <div *ngIf="aasSelectedLivePanel">
+                  <div><strong>Label:</strong> {{ aasSelectedLivePanel.label }}</div>
+                  <div><strong>Type:</strong> {{ aasSelectedLivePanel.type }}</div>
+                  <div *ngIf="aasSelectedLivePanel.valueType"><strong>valueType:</strong> {{ aasSelectedLivePanel.valueType }}</div>
+                  <div *ngIf="aasSelectedLivePanel.type==='MultiLanguageProperty' && (aasSelectedLivePanel.value?.length || 0) > 0">
+                    <strong>values:</strong>
+                    <div style="margin:.25rem 0 .5rem 0;">
+                      <div *ngFor="let v of aasSelectedLivePanel.value" style="display:flex;gap:.5rem;align-items:baseline;">
+                        <span style="font-size:.75rem;padding:.1rem .4rem;border:1px solid var(--surface-border);border-radius:999px;color:var(--text-color-secondary);min-width:2.5rem;text-align:center;">{{ v?.language || '-' }}</span>
+                        <span>{{ v?.text || '' }}</span>
+                      </div>
+                    </div>
+                  </div>
+                  <div *ngIf="aasSelectedLivePanel.value !== undefined && aasSelectedLivePanel.type!=='SubmodelElementCollection' && aasSelectedLivePanel.type!=='SubmodelElementList' && aasSelectedLivePanel.type!=='MultiLanguageProperty'">
+                    <strong>value:</strong> {{ (aasSelectedLivePanel.value | json) }}
+                  </div>
+                  <div *ngIf="aasSelectedLivePanel.type==='SubmodelElementCollection'">
+                    <div><strong>Items:</strong> {{ aasSelectedLivePanel.value?.length || 0 }}</div>
+                  </div>
+                  <div *ngIf="aasSelectedLivePanel.type==='SubmodelElementList'">
+                    <div><strong>Count:</strong> {{ aasSelectedLivePanel.value?.length || 0 }}</div>
+                  </div>
+                  <div *ngIf="aasSelectedLivePanel.type==='Range' || aasSelectedLivePanel.min !== undefined || aasSelectedLivePanel.max !== undefined">
+                    <div><strong>min:</strong> {{ aasSelectedLivePanel.min }}</div>
+                    <div><strong>max:</strong> {{ aasSelectedLivePanel.max }}</div>
+                  </div>
+                  <div *ngIf="aasSelectedLivePanel.type==='Operation'">
+                    <div *ngIf="aasSelectedLivePanel.inputVariables?.length">
+                      <strong>Inputs:</strong>
+                      <ul style="margin:.25rem 0 .5rem 1rem;">
+                        <li *ngFor="let v of aasSelectedLivePanel.inputVariables">{{ v.idShort }} <span *ngIf="v.valueType">({{ v.valueType }})</span></li>
+                      </ul>
+                    </div>
+                    <div *ngIf="aasSelectedLivePanel.inoutputVariables?.length">
+                      <strong>In/Out:</strong>
+                      <ul style="margin:.25rem 0 .5rem 1rem;">
+                        <li *ngFor="let v of aasSelectedLivePanel.inoutputVariables">{{ v.idShort }} <span *ngIf="v.valueType">({{ v.valueType }})</span></li>
+                      </ul>
+                    </div>
+                    <div *ngIf="aasSelectedLivePanel.outputVariables?.length">
+                      <strong>Outputs:</strong>
+                      <ul style="margin:.25rem 0 .5rem 1rem;">
+                        <li *ngFor="let v of aasSelectedLivePanel.outputVariables">{{ v.idShort }} <span *ngIf="v.valueType">({{ v.valueType }})</span></li>
+                      </ul>
+                    </div>
+                  </div>
+                  <div *ngIf="aasSelectedLivePanel.annotations?.length">
+                    <strong>Annotations:</strong>
+                    <ul style="margin:.25rem 0 .5rem 1rem;">
+                      <li *ngFor="let anno of aasSelectedLivePanel.annotations">
+                        <strong>{{ anno.idShort }}</strong>
+                        <span *ngIf="anno.modelType"> ({{ anno.modelType }})</span>:
+                        {{ anno.value || '-' }}
+                      </li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </p-tabPanel>
+        </p-tabView>
       </div>
     </p-dialog>
     <app-confirmation-dialog
@@ -153,13 +275,14 @@ import { AasPanelComponent } from '../../../../shared/aas/aas-panel.component';
     InputTextModule,
     ToolbarModule,
     ConfirmDialogModule,
+    TabViewModule,
+    TreeModule,
     CreateTargetSystemComponent,
     ManageTargetEndpointsComponent,
     ManageApiHeadersComponent,
     SearchBarComponent,
     TextareaModule,
-    ConfirmationDialogComponent,
-    AasPanelComponent
+    ConfirmationDialogComponent
   ],
   providers: [ConfirmationService, MessageService],
   styleUrls: ['./target-system-base.component.css']
@@ -178,10 +301,19 @@ export class TargetSystemBaseComponent implements OnInit {
   selectedSystem: TargetSystemDTO | null = null;
   manageForm!: FormGroup;
 
+  // AAS-related properties
+  aasTreeNodes: TreeNode[] = [];
+  aasTreeLoading = false;
+  selectedAasNode: TreeNode | null = null;
+  aasSelectedLivePanel: AasElementLivePanel | null = null;
+  aasSelectedLiveLoading = false;
+
   constructor(
     private api: TargetSystemResourceService,
     private fb: FormBuilder,
     private confirm: ConfirmationService,
+    private http: HttpClient,
+    private messageService: MessageService
   ) {}
 
   ngOnInit(): void {
@@ -330,6 +462,187 @@ export class TargetSystemBaseComponent implements OnInit {
     if (!this.selectedSystem || this.manageForm.invalid) return;
     const payload: TargetSystemDTO = { ...this.selectedSystem, ...this.manageForm.value } as TargetSystemDTO;
     this.api.update(this.selectedSystem.id!, payload).subscribe({ next: () => { this.load(); } });
+  }
+
+  // AAS-related methods
+  isAasSelected(): boolean {
+    return this.selectedSystem?.apiType === 'AAS';
+  }
+
+  discoverAasSnapshot(): void {
+    if (!this.selectedSystem?.id) return;
+    this.aasTreeLoading = true;
+    this.aasTreeNodes = [];
+    
+    this.http.get<any[]>(`/api/config/target-system/${this.selectedSystem.id}/aas/submodels`).subscribe({
+      next: (submodels) => {
+        const nodes: TreeNode[] = submodels.map(sm => ({
+          label: sm.idShort || sm.id || 'Submodel',
+          data: {
+            type: 'submodel',
+            id: sm.id,
+            raw: sm,
+            modelType: sm.modelType
+          },
+          leaf: false,
+          children: [],
+          expandedIcon: 'pi pi-folder-open',
+          collapsedIcon: 'pi pi-folder'
+        }));
+        this.aasTreeNodes = nodes;
+        this.aasTreeLoading = false;
+      },
+      error: () => {
+        this.aasTreeLoading = false;
+        this.messageService.add({severity: 'error', summary: 'Error', detail: 'Failed to load AAS snapshot'});
+      }
+    });
+  }
+
+  onAasNodeExpand(event: any): void {
+    const node = event.node;
+    if (node.data?.type === 'submodel' && (!node.children || node.children.length === 0)) {
+      this.loadSubmodelElements(node);
+    } else if (node.data?.type === 'element' && (!node.children || node.children.length === 0)) {
+      this.loadElementChildren(node);
+    }
+  }
+
+  onAasNodeSelect(event: any): void {
+    this.selectedAasNode = event.node;
+    if (event.node?.data?.type === 'element') {
+      this.loadElementDetails(event.node);
+    }
+  }
+
+  private loadSubmodelElements(node: TreeNode): void {
+    if (!this.selectedSystem?.id || !node.data?.id) return;
+    
+    this.http.get<any[]>(`/api/config/target-system/${this.selectedSystem.id}/aas/submodels/${btoa(node.data.id)}/elements`).subscribe({
+      next: (elements) => {
+        node.children = elements.map(el => ({
+          label: el.idShort || 'Element',
+          data: {
+            type: 'element',
+            submodelId: node.data.id,
+            idShortPath: el.idShortPath || el.idShort,
+            raw: el,
+            modelType: el.modelType
+          },
+          leaf: this.isLeafElement(el),
+          children: [],
+          expandedIcon: 'pi pi-folder-open',
+          collapsedIcon: 'pi pi-folder'
+        }));
+        this.aasTreeNodes = [...this.aasTreeNodes];
+      },
+      error: () => {
+        this.messageService.add({severity: 'error', summary: 'Error', detail: 'Failed to load submodel elements'});
+      }
+    });
+  }
+
+  private loadElementChildren(node: TreeNode): void {
+    if (!this.selectedSystem?.id || !node.data?.submodelId || !node.data?.idShortPath) return;
+    
+    const smId = btoa(node.data.submodelId);
+    const parentPath = node.data.idShortPath;
+    
+    this.http.get<any[]>(`/api/config/target-system/${this.selectedSystem.id}/aas/submodels/${smId}/elements?parentPath=${encodeURIComponent(parentPath)}`).subscribe({
+      next: (children) => {
+        node.children = children.map(el => ({
+          label: el.idShort || 'Element',
+          data: {
+            type: 'element',
+            submodelId: node.data.submodelId,
+            idShortPath: el.idShortPath || el.idShort,
+            raw: el,
+            modelType: el.modelType
+          },
+          leaf: this.isLeafElement(el),
+          children: [],
+          expandedIcon: 'pi pi-folder-open',
+          collapsedIcon: 'pi pi-folder'
+        }));
+        this.aasTreeNodes = [...this.aasTreeNodes];
+      },
+      error: () => {
+        this.messageService.add({severity: 'error', summary: 'Error', detail: 'Failed to load element children'});
+      }
+    });
+  }
+
+  private loadElementDetails(node: TreeNode): void {
+    if (!this.selectedSystem?.id || !node.data?.submodelId || !node.data?.idShortPath) return;
+    
+    this.aasSelectedLiveLoading = true;
+    const smId = btoa(node.data.submodelId);
+    const path = node.data.idShortPath;
+    
+    this.http.get<any>(`/api/config/target-system/${this.selectedSystem.id}/aas/submodels/${smId}/elements/${encodeURIComponent(path)}`).subscribe({
+      next: (element) => {
+        this.aasSelectedLivePanel = {
+          label: element.idShort || 'Element',
+          type: element.modelType || 'Unknown',
+          value: element.value,
+          valueType: element.valueType,
+          min: element.min,
+          max: element.max,
+          inputVariables: element.inputVariables?.map((v: any) => ({
+            idShort: v.idShort,
+            modelType: v.modelType,
+            valueType: v.valueType
+          })),
+          outputVariables: element.outputVariables?.map((v: any) => ({
+            idShort: v.idShort,
+            modelType: v.modelType,
+            valueType: v.valueType
+          })),
+          inoutputVariables: element.inoutputVariables?.map((v: any) => ({
+            idShort: v.idShort,
+            modelType: v.modelType,
+            valueType: v.valueType
+          })),
+          annotations: element.annotations?.map((a: any) => ({
+            idShort: a.idShort,
+            modelType: a.modelType,
+            valueType: a.valueType,
+            value: a.value
+          }))
+        };
+        this.aasSelectedLiveLoading = false;
+      },
+      error: () => {
+        this.aasSelectedLiveLoading = false;
+        this.messageService.add({severity: 'error', summary: 'Error', detail: 'Failed to load element details'});
+      }
+    });
+  }
+
+  private isLeafElement(element: any): boolean {
+    const type = element.modelType;
+    return type !== 'SubmodelElementCollection' && type !== 'SubmodelElementList' && type !== 'Entity';
+  }
+
+  // AAS Management methods (stubs for now)
+  openAasCreateSubmodel(): void {
+    this.messageService.add({severity: 'info', summary: 'Info', detail: 'Create submodel functionality coming soon'});
+  }
+
+  openAasCreateElement(submodelId: string, parentPath?: string): void {
+    this.messageService.add({severity: 'info', summary: 'Info', detail: 'Create element functionality coming soon'});
+  }
+
+  deleteAasSubmodel(submodelId: string): void {
+    this.messageService.add({severity: 'info', summary: 'Info', detail: 'Delete submodel functionality coming soon'});
+  }
+
+  deleteAasElement(submodelId: string, elementPath: string): void {
+    this.messageService.add({severity: 'info', summary: 'Info', detail: 'Delete element functionality coming soon'});
+  }
+
+  openAasSetValue(submodelId: string, elementData: any): void {
+    this.messageService.add({severity: 'info', summary: 'Info', detail: 'Set value functionality coming soon'});
   }
 }
 
