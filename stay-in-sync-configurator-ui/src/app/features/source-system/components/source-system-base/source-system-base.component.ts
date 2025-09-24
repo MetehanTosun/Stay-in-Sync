@@ -2132,7 +2132,7 @@ export class SourceSystemBaseComponent implements OnInit, OnDestroy {
   }
 
   // Get AAS ID with fallback logic
-  getAasId(): string {
+  public getAasId(): string {
     if (!this.selectedSystem) return '-';
     
     // If aasId is explicitly set, use it

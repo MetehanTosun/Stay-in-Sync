@@ -728,7 +728,7 @@ export class TargetSystemBaseComponent implements OnInit {
   }
 
   // Get AAS ID with fallback logic
-  getAasId(): string {
+  public getAasId(): string {
     if (!this.selectedSystem) return '-';
     
     // If aasId is explicitly set, use it
