@@ -30,6 +30,9 @@ import java.nio.file.Files;
 @Blocking
 public class TargetAasResource {
 
+    // Cache for loaded parent elements to avoid Vert.x blocking issues
+    private final java.util.concurrent.ConcurrentHashMap<String, io.vertx.core.json.JsonObject> parentElementCache = new java.util.concurrent.ConcurrentHashMap<>();
+
     @Inject
     TargetSystemAasService aasService;
 
@@ -196,10 +199,12 @@ public class TargetAasResource {
 		final java.util.Map<String,String> headersLive = headers;
 		return traversal.listElements(apiUrl, smId, depth, parentPath, headersLive).map(resp -> {
 			int sc = resp.statusCode();
+			Log.infof("Target listElements MAIN: status=%d depth=%s parentPath=%s", sc, depth, parentPath);
 			if (sc >= 200 && sc < 300) {
 				if (parentPath != null && !parentPath.isBlank()) {
 					try {
 						String body = resp.bodyAsString();
+						Log.infof("Target listElements MAIN: parentPath response body=%s", body != null ? body.substring(0, Math.min(100, body.length())) : "null");
 						if (body != null && body.trim().startsWith("{")) {
 							io.vertx.core.json.JsonObject obj = new io.vertx.core.json.JsonObject(body);
 							String modelType = obj.getString("modelType");
@@ -212,6 +217,24 @@ public class TargetAasResource {
 								if (st instanceof io.vertx.core.json.JsonArray arr) directChildren = arr;
 							}
                                     if (directChildren != null) {
+                                        Log.infof("Target listElements: parent modelType=%s children=%d parentPath=%s", modelType, directChildren.size(), parentPath);
+                                        
+                                        // Cache this parent object for nested lookups
+                                        String cacheKey = smId + ":" + parentPath;
+                                        parentElementCache.put(cacheKey, obj);
+                                        Log.infof("Target listElements: cached parent %s", cacheKey);
+                                        
+                                        // Cache each child for direct access
+                                        for (Object childObj : directChildren) {
+                                            if (childObj instanceof io.vertx.core.json.JsonObject child) {
+                                                String childId = child.getString("idShort");
+                                                if (childId != null) {
+                                                    String childCacheKey = smId + ":" + parentPath + "/" + childId;
+                                                    parentElementCache.put(childCacheKey, child);
+                                                }
+                                            }
+                                        }
+                                        
                                         if ("SubmodelElementList".equalsIgnoreCase(modelType)) {
                                             io.vertx.core.json.JsonArray flattened = new io.vertx.core.json.JsonArray();
                                             for (int i = 0; i < directChildren.size(); i++) {
@@ -244,6 +267,7 @@ public class TargetAasResource {
                                     if (idShort != null && !idShort.isBlank()) el.put("idShortPath", parentPath + "/" + idShort);
 									out.add(el);
 								}
+								Log.infof("Target listElements: returning %d direct children", out.size());
 								return Response.ok(out.encode()).build();
 							}
 						}
@@ -261,7 +285,9 @@ public class TargetAasResource {
 							}
 						}
 						if (empty) {
+							Log.infof("Target listElements empty-success-fallback: parentPath=%s", parentPath);
 							var parentResp = traversal.getElement(apiUrl, smId, parentPath, headersLive).await().indefinitely();
+							Log.infof("Target listElements empty-success-fallback: parent request status=%d", parentResp.statusCode());
 							if (parentResp != null && parentResp.statusCode() >= 200 && parentResp.statusCode() < 300) {
 								String pb = parentResp.bodyAsString();
 								if (pb != null && pb.trim().startsWith("{")) {
@@ -276,7 +302,32 @@ public class TargetAasResource {
 										if (st instanceof io.vertx.core.json.JsonArray arr) directChildren = arr;
 									}
                                     if (directChildren != null) {
-                                        // For lists that wrap collections, flatten one level to expose collection children
+                                        Log.infof("Target listElements empty-success-fallback: parent modelType=%s children=%d", mt, directChildren.size());
+                                        // Apply same flattening logic as success path for SubmodelElementList
+                                        if ("SubmodelElementList".equalsIgnoreCase(mt)) {
+                                            io.vertx.core.json.JsonArray flattened = new io.vertx.core.json.JsonArray();
+                                            for (int i = 0; i < directChildren.size(); i++) {
+                                                var listItem = directChildren.getJsonObject(i);
+                                                if (listItem == null) continue;
+                                                String idxId = listItem.getString("idShort");
+                                                if (idxId == null || idxId.isBlank()) idxId = Integer.toString(i);
+                                                Object itemVal = listItem.getValue("value");
+                                                if (itemVal instanceof io.vertx.core.json.JsonArray carr) {
+                                                    for (int j = 0; j < carr.size(); j++) {
+                                                        var child = carr.getJsonObject(j);
+                                                        if (child == null) continue;
+                                                        String cid = child.getString("idShort");
+                                                        if (cid != null && !cid.isBlank()) child.put("idShortPath", parentPath + "/" + idxId + "/" + cid);
+                                                        flattened.add(child);
+                                                    }
+                                                }
+                                            }
+                                            if (!flattened.isEmpty()) {
+                                                Log.infof("Target listElements empty-success-fallback: returning %d flattened children", flattened.size());
+                                                return Response.ok(flattened.encode()).build();
+                                            }
+                                        }
+                                        // For lists that wrap collections, flatten one level to expose collection children (original logic)
                                         if ("SubmodelElementList".equalsIgnoreCase(mt)) {
                                             io.vertx.core.json.JsonArray flattened = new io.vertx.core.json.JsonArray();
                                             for (int i = 0; i < directChildren.size(); i++) {
@@ -407,8 +458,136 @@ public class TargetAasResource {
 				return Response.ok(resp.bodyAsString()).build();
 			}
 			if ((sc == 404 || sc == 400) && parentPath != null && !parentPath.isBlank()) {
+				Log.infof("Target listElements 404-fallback: cache-based smart traversal for parentPath=%s", parentPath);
+				String[] segments = parentPath.split("/");
+				if (segments.length >= 2) {
+					String grandParentPath = segments[0]; // e.g., "AssetSpecificProperties"
+					String nestedElementId = segments[1]; // e.g., "GuidelineSpecificProperties"
+					Log.infof("Target listElements 404-fallback: trying cached grandParent=%s nestedElement=%s", grandParentPath, nestedElementId);
+					
+					// Try to get the cached grandparent
+					String grandParentCacheKey = smId + ":" + grandParentPath;
+					io.vertx.core.json.JsonObject cachedGrandParent = parentElementCache.get(grandParentCacheKey);
+					if (cachedGrandParent != null) {
+						Log.infof("Target listElements 404-fallback: found cached grandParent %s", grandParentPath);
+						var gpval = cachedGrandParent.getValue("value");
+						if (gpval instanceof io.vertx.core.json.JsonArray gpChildren) {
+							for (Object child : gpChildren) {
+								if (child instanceof io.vertx.core.json.JsonObject childObj) {
+									String childId = childObj.getString("idShort");
+									if (nestedElementId.equals(childId)) {
+										Log.infof("Target listElements 404-fallback: found nested element %s in cache", nestedElementId);
+										String childType = childObj.getString("modelType");
+										if ("SubmodelElementList".equalsIgnoreCase(childType)) {
+											var childVal = childObj.getValue("value");
+											if (childVal instanceof io.vertx.core.json.JsonArray directChildren) {
+												Log.infof("Target listElements 404-fallback: cached SubmodelElementList with %d children", directChildren.size());
+												io.vertx.core.json.JsonArray flattened = new io.vertx.core.json.JsonArray();
+												for (int i = 0; i < directChildren.size(); i++) {
+													var listItem = directChildren.getJsonObject(i);
+													if (listItem == null) continue;
+													String idxId = listItem.getString("idShort");
+													if (idxId == null || idxId.isBlank()) idxId = Integer.toString(i);
+													Object itemVal = listItem.getValue("value");
+													if (itemVal instanceof io.vertx.core.json.JsonArray carr) {
+														for (int j = 0; j < carr.size(); j++) {
+															var gchild = carr.getJsonObject(j);
+															if (gchild == null) continue;
+															String cid = gchild.getString("idShort");
+															if (cid != null && !cid.isBlank()) gchild.put("idShortPath", parentPath + "/" + idxId + "/" + cid);
+															flattened.add(gchild);
+														}
+													}
+												}
+												if (!flattened.isEmpty()) {
+													Log.infof("Target listElements 404-fallback: returning %d flattened cached children", flattened.size());
+													return Response.ok(flattened.encode()).build();
+												}
+											}
+										} else {
+											// Regular collection/entity - return direct children
+											var directChildVal = childObj.getValue("value");
+											if (directChildVal instanceof io.vertx.core.json.JsonArray directChildren) {
+												Log.infof("Target listElements 404-fallback: returning %d direct cached children", directChildren.size());
+												return Response.ok(directChildren.encode()).build();
+											}
+										}
+										break;
+									}
+								}
+							}
+						}
+					} else {
+						Log.infof("Target listElements 404-fallback: no cached grandParent for %s", grandParentPath);
+					}
+				}
+				
+				// OLD FALLBACK CODE (keep as backup)
 				try {
+					// For SubmodelElementList in SubmodelElementCollection: directly GET parent instead of slow deep-list
+					var parentResp = traversal.getElement(apiUrl, smId, parentPath, headersLive).await().indefinitely();
+					Log.infof("Target listElements 404-fallback: direct parent request status=%d parentPath=%s", parentResp.statusCode(), parentPath);
+					if (parentResp != null && parentResp.statusCode() >= 200 && parentResp.statusCode() < 300) {
+						String pb = parentResp.bodyAsString();
+						if (pb != null && pb.trim().startsWith("{")) {
+							io.vertx.core.json.JsonObject pobj = new io.vertx.core.json.JsonObject(pb);
+							String mt = pobj.getString("modelType");
+							io.vertx.core.json.JsonArray directChildren = null;
+							if ("SubmodelElementCollection".equalsIgnoreCase(mt) || "SubmodelElementList".equalsIgnoreCase(mt)) {
+								var v = pobj.getValue("value");
+								if (v instanceof io.vertx.core.json.JsonArray arr) directChildren = arr;
+							} else if ("Entity".equalsIgnoreCase(mt)) {
+								var st = pobj.getValue("statements");
+								if (st instanceof io.vertx.core.json.JsonArray arr) directChildren = arr;
+							}
+							if (directChildren != null) {
+								Log.infof("Target listElements 404-fallback: parent modelType=%s children=%d parentPath=%s", mt, directChildren.size(), parentPath);
+								// Apply same flattening logic as success path for SubmodelElementList
+								if ("SubmodelElementList".equalsIgnoreCase(mt)) {
+									io.vertx.core.json.JsonArray flattened = new io.vertx.core.json.JsonArray();
+									for (int i = 0; i < directChildren.size(); i++) {
+										var listItem = directChildren.getJsonObject(i);
+										if (listItem == null) continue;
+										String idxId = listItem.getString("idShort");
+										if (idxId == null || idxId.isBlank()) idxId = Integer.toString(i);
+										Object itemVal = listItem.getValue("value");
+										if (itemVal instanceof io.vertx.core.json.JsonArray carr) {
+											for (int j = 0; j < carr.size(); j++) {
+												var child = carr.getJsonObject(j);
+												if (child == null) continue;
+												String cid = child.getString("idShort");
+												if (cid != null && !cid.isBlank()) child.put("idShortPath", parentPath + "/" + idxId + "/" + cid);
+												flattened.add(child);
+											}
+										}
+									}
+									if (!flattened.isEmpty()) {
+										Log.infof("Target listElements 404-fallback: returning %d flattened children", flattened.size());
+										return Response.ok(flattened.encode()).build();
+									}
+								}
+								// Regular direct children extraction for Collections/Entities
+								io.vertx.core.json.JsonArray out = new io.vertx.core.json.JsonArray();
+								for (int i = 0; i < directChildren.size(); i++) {
+									var el = directChildren.getJsonObject(i);
+									if (el == null) continue;
+									String idShort = el.getString("idShort");
+									if ((idShort == null || idShort.isBlank()) && "SubmodelElementList".equalsIgnoreCase(mt)) {
+										idShort = Integer.toString(i);
+										el.put("idShort", idShort);
+									}
+									if (idShort != null && !idShort.isBlank()) el.put("idShortPath", parentPath + "/" + idShort);
+									out.add(el);
+								}
+								Log.infof("Target listElements 404-fallback: returning %d direct children", out.size());
+								return Response.ok(out.encode()).build();
+							}
+						}
+					}
+					
+					// Fallback to slow deep-list if direct parent GET failed
 					var all = traversal.listElements(apiUrl, smId, "all", null, headersLive).await().indefinitely();
+					Log.infof("Target listElements 404-fallback: deep-request status=%d parentPath=%s", all.statusCode(), parentPath);
 					if (all.statusCode() >= 200 && all.statusCode() < 300) {
 						String body = all.bodyAsString();
 						io.vertx.core.json.JsonArray arr;
@@ -417,6 +596,7 @@ public class TargetAasResource {
 							arr = obj.getJsonArray("result");
 							if (arr == null) arr = obj.getJsonArray("submodelElements");
 							if (arr == null) arr = new io.vertx.core.json.JsonArray();
+							Log.infof("Target listElements 404-fallback: deep-response elements=%d", arr.size());
 						} else {
 							arr = new io.vertx.core.json.JsonArray(body);
 						}
@@ -434,19 +614,55 @@ public class TargetAasResource {
 								}
 							}
 						}
+							Log.infof("Target listElements 404-fallback: filtered children=%d", children.size());
 							if (children.size() > 0) {
 								return Response.ok(children.encode()).build();
 							}
                     }
-                    // Deep-list failed or returned empty: try direct GET parent and unwrap
-					var parentResp = traversal.getElement(apiUrl, smId, parentPath, headersLive).await().indefinitely();
-					if (parentResp != null && parentResp.statusCode() >= 200 && parentResp.statusCode() < 300) {
-						String pb = parentResp.bodyAsString();
+                    // Deep-list failed or returned empty: try direct GET parent and unwrap with SubmodelElementList support
+					var parentResp2 = traversal.getElement(apiUrl, smId, parentPath, headersLive).await().indefinitely();
+					if (parentResp2 != null && parentResp2.statusCode() >= 200 && parentResp2.statusCode() < 300) {
+						String pb = parentResp2.bodyAsString();
 						if (pb != null && pb.trim().startsWith("{")) {
 							io.vertx.core.json.JsonObject pobj = new io.vertx.core.json.JsonObject(pb);
 							String mt = pobj.getString("modelType");
-							Object v = "Entity".equalsIgnoreCase(mt) ? pobj.getValue("statements") : pobj.getValue("value");
-							if (v instanceof io.vertx.core.json.JsonArray arr) {
+							io.vertx.core.json.JsonArray directChildren = null;
+							if ("SubmodelElementCollection".equalsIgnoreCase(mt) || "SubmodelElementList".equalsIgnoreCase(mt)) {
+								var v = pobj.getValue("value");
+								if (v instanceof io.vertx.core.json.JsonArray arr) directChildren = arr;
+							} else if ("Entity".equalsIgnoreCase(mt)) {
+								var st = pobj.getValue("statements");
+								if (st instanceof io.vertx.core.json.JsonArray arr) directChildren = arr;
+							}
+							if (directChildren != null) {
+								Log.infof("Target listElements 404-fallback: parent modelType=%s children=%d parentPath=%s", mt, directChildren.size(), parentPath);
+								// Apply same flattening logic as success path for SubmodelElementList
+								if ("SubmodelElementList".equalsIgnoreCase(mt)) {
+									io.vertx.core.json.JsonArray flattened = new io.vertx.core.json.JsonArray();
+									for (int i = 0; i < directChildren.size(); i++) {
+										var listItem = directChildren.getJsonObject(i);
+										if (listItem == null) continue;
+										String idxId = listItem.getString("idShort");
+										if (idxId == null || idxId.isBlank()) idxId = Integer.toString(i);
+										Object itemVal = listItem.getValue("value");
+										if (itemVal instanceof io.vertx.core.json.JsonArray carr) {
+											for (int j = 0; j < carr.size(); j++) {
+												var child = carr.getJsonObject(j);
+												if (child == null) continue;
+												String cid = child.getString("idShort");
+												if (cid != null && !cid.isBlank()) child.put("idShortPath", parentPath + "/" + idxId + "/" + cid);
+												flattened.add(child);
+											}
+										}
+									}
+									if (!flattened.isEmpty()) {
+										Log.infof("Target listElements 404-fallback: returning %d flattened children", flattened.size());
+										return Response.ok(flattened.encode()).build();
+									}
+								}
+								// Regular direct children extraction
+								Object v = "Entity".equalsIgnoreCase(mt) ? pobj.getValue("statements") : pobj.getValue("value");
+								if (v instanceof io.vertx.core.json.JsonArray arr) {
 								io.vertx.core.json.JsonArray out = new io.vertx.core.json.JsonArray();
 								for (int i = 0; i < arr.size(); i++) {
 									var el = arr.getJsonObject(i);
@@ -460,6 +676,7 @@ public class TargetAasResource {
 									out.add(el);
 								}
 								return Response.ok(out.encode()).build();
+								}
 							}
 						}
 					}
@@ -522,12 +739,75 @@ public class TargetAasResource {
                             }
                         }
                     } catch (Exception ignore4) {}
-				} catch (Exception ignore) {}
+				} catch (Exception ignore) {
+					Log.infof("Target listElements 404-fallback: exception in fallback processing: %s", ignore.getMessage());
+				}
 			}
 			// Final safety: don't propagate 404 to UI for children queries; return empty array
 			if ((sc == 404 || sc == 400) && parentPath != null && !parentPath.isBlank()) {
+				Log.infof("Target listElements 404-fallback: smart parent traversal for parentPath=%s", parentPath);
+				// Smart fallback: try to get parent-of-parent and extract the nested element directly
+				String[] segments = parentPath.split("/");
+				if (segments.length >= 2) {
+					String grandParentPath = segments[0]; // e.g., "AssetSpecificProperties"
+					String nestedElementId = segments[1]; // e.g., "GuidelineSpecificProperties"
+					Log.infof("Target listElements 404-fallback: trying grandParent=%s nestedElement=%s", grandParentPath, nestedElementId);
+					try {
+						var grandParentResp = traversal.getElement(apiUrl, smId, grandParentPath, headersLive).await().atMost(java.time.Duration.ofSeconds(3));
+						if (grandParentResp != null && grandParentResp.statusCode() >= 200 && grandParentResp.statusCode() < 300) {
+							String gpb = grandParentResp.bodyAsString();
+							if (gpb != null && gpb.trim().startsWith("{")) {
+								io.vertx.core.json.JsonObject gpobj = new io.vertx.core.json.JsonObject(gpb);
+								var gpval = gpobj.getValue("value");
+								if (gpval instanceof io.vertx.core.json.JsonArray gpChildren) {
+									for (Object child : gpChildren) {
+										if (child instanceof io.vertx.core.json.JsonObject childObj) {
+											String childId = childObj.getString("idShort");
+											if (nestedElementId.equals(childId)) {
+												Log.infof("Target listElements 404-fallback: found nested element %s", nestedElementId);
+												String childType = childObj.getString("modelType");
+												if ("SubmodelElementList".equalsIgnoreCase(childType)) {
+													var childVal = childObj.getValue("value");
+													if (childVal instanceof io.vertx.core.json.JsonArray directChildren) {
+														Log.infof("Target listElements 404-fallback: nested SubmodelElementList with %d children", directChildren.size());
+														io.vertx.core.json.JsonArray flattened = new io.vertx.core.json.JsonArray();
+														for (int i = 0; i < directChildren.size(); i++) {
+															var listItem = directChildren.getJsonObject(i);
+															if (listItem == null) continue;
+															String idxId = listItem.getString("idShort");
+															if (idxId == null || idxId.isBlank()) idxId = Integer.toString(i);
+															Object itemVal = listItem.getValue("value");
+															if (itemVal instanceof io.vertx.core.json.JsonArray carr) {
+																for (int j = 0; j < carr.size(); j++) {
+																	var gchild = carr.getJsonObject(j);
+																	if (gchild == null) continue;
+																	String cid = gchild.getString("idShort");
+																	if (cid != null && !cid.isBlank()) gchild.put("idShortPath", parentPath + "/" + idxId + "/" + cid);
+																	flattened.add(gchild);
+																}
+															}
+														}
+														if (!flattened.isEmpty()) {
+															Log.infof("Target listElements 404-fallback: returning %d flattened nested children", flattened.size());
+															return Response.ok(flattened.encode()).build();
+														}
+													}
+												}
+												break;
+											}
+										}
+									}
+								}
+							}
+						}
+					} catch (Exception e) {
+						Log.infof("Target listElements 404-fallback: exception in smart traversal %s", e.getMessage());
+					}
+				}
+				Log.infof("Target listElements 404-fallback: returning final empty array for parentPath=%s", parentPath);
 				return Response.ok("[]").build();
 			}
+			Log.infof("Target listElements MAIN: final return status=%d", sc);
 			return Response.status(sc).entity(resp.bodyAsString()).build();
 		});
 	}
@@ -609,6 +889,11 @@ public class TargetAasResource {
                                 String nestedIdShort = nestedChild.getString("idShort");
                                 if (nestedIdShort != null && !nestedIdShort.isBlank()) {
                                     String nestedPath = childPath + "/" + nestedIdShort;
+                                    var nestedFound = descendAndMatch(nestedChild, nestedPath, targetPath);
+                                    if (nestedFound != null) return nestedFound;
+                                } else {
+                                    // Handle cases where nested child has no idShort (use index)
+                                    String nestedPath = childPath + "/" + j;
                                     var nestedFound = descendAndMatch(nestedChild, nestedPath, targetPath);
                                     if (nestedFound != null) return nestedFound;
                                 }
