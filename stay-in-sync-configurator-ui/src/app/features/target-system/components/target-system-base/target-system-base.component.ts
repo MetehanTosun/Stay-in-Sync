@@ -43,20 +43,21 @@ interface AasElementLivePanel {
   standalone: true,
   selector: 'app-target-system-base',
   template: `
-    <app-search-bar
-      [customPlaceholder]="'Search target systems by name, description, API URL...'"
-      (search)="onSearchChange($event)"
-      (clear)="onSearchClear()">
-    </app-search-bar>
+    <p-card>
+      <app-search-bar
+        [customPlaceholder]="'Search target systems by name, description, API URL...'"
+        (search)="onSearchChange($event)"
+        (clear)="onSearchClear()">
+      </app-search-bar>
 
-    <p-toolbar>
-      <div class="p-toolbar-group-left">
-        <h3>Target Systems</h3>
-      </div>
-      <div class="p-toolbar-group-right">
-        <button pButton type="button" label="Create Target System" icon="pi pi-plus" (click)="openCreate()"></button>
-      </div>
-    </p-toolbar>
+      <p-toolbar>
+        <div class="p-toolbar-group-left">
+          <h3>Target Systems</h3>
+        </div>
+        <div class="p-toolbar-group-right">
+          <button pButton type="button" label="Create Target System" icon="pi pi-plus" (click)="openCreate()"></button>
+        </div>
+      </p-toolbar>
 
     <p-table [value]="displaySystems" [loading]="loading">
       <ng-template pTemplate="header">
@@ -307,6 +308,7 @@ interface AasElementLivePanel {
       (confirmed)="onConfirmationConfirmed()"
       (cancelled)="onConfirmationCancelled()">
     </app-confirmation-dialog>
+    </p-card>
   `,
   imports: [
     CommonModule,
