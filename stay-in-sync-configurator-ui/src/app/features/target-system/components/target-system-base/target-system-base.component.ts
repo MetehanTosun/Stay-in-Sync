@@ -116,28 +116,26 @@ interface AasElementLivePanel {
 
     <p-dialog [(visible)]="showDetailDialog" [modal]="true" [style]="{ width: '80vw', height: '80vh' }" header="Manage Target System">
       <div class="p-grid p-dir-col">
-        <div class="p-col">
-          <h3 class="p-mb-2">Metadata</h3>
-          <form *ngIf="manageForm" [formGroup]="manageForm" class="p-fluid p-formgrid p-grid" (ngSubmit)="saveManagedMetadata()">
-            <div class="p-field p-col-12 p-md-6">
-              <label for="m_name">Name</label>
+        <div class="p-col" style="margin-bottom: 2rem;">
+          <h3 style="margin-bottom: 1.5rem;">Metadata</h3>
+          <form *ngIf="manageForm" [formGroup]="manageForm" class="p-fluid" (ngSubmit)="saveManagedMetadata()">
+            <div class="p-field">
+              <label for="m_name">Name*</label>
               <input id="m_name" pInputText formControlName="name" />
             </div>
-            <div class="p-field p-col-12 p-md-6">
-              <label for="m_apiUrl">API URL</label>
+            <div class="p-field">
+              <label for="m_apiUrl">API URL*</label>
               <input id="m_apiUrl" pInputText formControlName="apiUrl" />
             </div>
-            <!-- spacer row between metadata rows -->
-            <div class="p-col-12" style="height: 1rem;"></div>
-            <div class="p-field p-col-12 p-md-6">
-              <label for="m_apiType">API Type</label>
+            <div class="p-field">
+              <label for="m_apiType">API Type*</label>
               <input id="m_apiType" pInputText formControlName="apiType" />
             </div>
-            <div class="p-field p-col-12">
+            <div class="p-field">
               <label for="m_description">Description</label>
-              <textarea id="m_description" pInputTextarea rows="3" formControlName="description"></textarea>
+              <textarea id="m_description" pInputTextarea rows="3" formControlName="description" style="width: 100%"></textarea>
             </div>
-            <div class="p-col-12">
+            <div class="p-field">
               <button pButton type="submit" label="Save Metadata" [disabled]="manageForm.invalid"></button>
             </div>
           </form>
