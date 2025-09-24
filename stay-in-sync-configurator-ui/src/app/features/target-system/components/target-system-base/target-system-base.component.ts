@@ -205,7 +205,7 @@ interface AasElementLivePanel {
             <div class="p-d-flex p-ai-center p-jc-between" style="margin-bottom: .5rem;">
               <div>
                 <strong>Base URL:</strong> {{ selectedSystem?.apiUrl }}
-                <span class="ml-3"><strong>AAS ID:</strong> {{ selectedSystem?.aasId || '-' }}</span>
+                <span class="ml-3"><strong>AAS ID:</strong> {{ getAasId() }}</span>
               </div>
               <div>
                 <button pButton type="button" label="Refresh Snapshot" class="p-button-text" (click)="discoverAasSnapshot()" [disabled]="aasTreeLoading"></button>
@@ -725,6 +725,33 @@ export class TargetSystemBaseComponent implements OnInit {
     const isTemplate = kindRaw && kindRaw.toLowerCase().includes('template');
     const modelType = isTemplate ? 'Submodel Template' : 'Submodel';
     return { key: id, label, data: { type: 'submodel', id, modelType, raw: sm }, leaf: false, children: [] } as TreeNode;
+  }
+
+  // Get AAS ID with fallback logic
+  getAasId(): string {
+    if (!this.selectedSystem) return '-';
+    
+    // If aasId is explicitly set, use it
+    if (this.selectedSystem.aasId && this.selectedSystem.aasId.trim() !== '') {
+      return this.selectedSystem.aasId;
+    }
+    
+    // Fallback: try to extract from API URL or use a default
+    if (this.selectedSystem.apiUrl) {
+      try {
+        const url = new URL(this.selectedSystem.apiUrl);
+        // For localhost, use a default AAS ID
+        if (url.hostname === 'localhost' || url.hostname === '127.0.0.1') {
+          return 'Default AAS';
+        }
+        // For other hosts, use hostname as AAS ID
+        return url.hostname;
+      } catch (e) {
+        return 'Unknown';
+      }
+    }
+    
+    return '-';
   }
 }
 

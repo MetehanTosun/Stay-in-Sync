@@ -2130,4 +2130,31 @@ export class SourceSystemBaseComponent implements OnInit, OnDestroy {
       openApiSpec: ['']
     });
   }
+
+  // Get AAS ID with fallback logic
+  getAasId(): string {
+    if (!this.selectedSystem) return '-';
+    
+    // If aasId is explicitly set, use it
+    if (this.selectedSystem.aasId && this.selectedSystem.aasId.trim() !== '') {
+      return this.selectedSystem.aasId;
+    }
+    
+    // Fallback: try to extract from API URL or use a default
+    if (this.selectedSystem.apiUrl) {
+      try {
+        const url = new URL(this.selectedSystem.apiUrl);
+        // For localhost, use a default AAS ID
+        if (url.hostname === 'localhost' || url.hostname === '127.0.0.1') {
+          return 'Default AAS';
+        }
+        // For other hosts, use hostname as AAS ID
+        return url.hostname;
+      } catch (e) {
+        return 'Unknown';
+      }
+    }
+    
+    return '-';
+  }
 }

@@ -262,7 +262,7 @@
         <div class="p-d-flex p-ai-center p-jc-between" style="margin-bottom: .5rem;">
           <div>
             <strong>Base URL:</strong> {{ selectedSystem.apiUrl }}
-            <span class="ml-3"><strong>AAS ID:</strong> {{ selectedSystem.aasId || '-' }}</span>
+            <span class="ml-3"><strong>AAS ID:</strong> {{ getAasId() }}</span>
           </div>
           <div>
             <button pButton type="button" label="Refresh Snapshot" class="p-button-text" (click)="discoverAasSnapshot()" [disabled]="aasTreeLoading"></button>
