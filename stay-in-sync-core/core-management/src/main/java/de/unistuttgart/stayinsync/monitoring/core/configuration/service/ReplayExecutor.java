@@ -107,6 +107,12 @@ public class ReplayExecutor {
                                 .build())
                 .build();
 
+        // Provide a minimal global `stayinsync.log` so scripts that call it do not
+        // crash during replay.
+        context.eval("js",
+                "var stayinsync = (typeof stayinsync !== 'undefined') ? stayinsync : {};\n" +
+                        "if (typeof stayinsync.log !== 'function') { stayinsync.log = function(msg, level) { /* no-op in replay */ }; }\n");
+
         // 4) Start a Debugger session. The SuspendedEvent callback fires when we hit
         // `debugger;`.
         Debugger debugger = Debugger.find(engine);
@@ -133,6 +139,9 @@ public class ReplayExecutor {
             // 6) Convert the JSON input into a JS value (Graal maps Maps/Lists/POJOs
             // automatically).
             Object sourcePojo = om.convertValue(sourceData, Object.class);
+
+            // Also bind `source` globally so scripts that read a global `source` work, too.
+            context.getBindings("js").putMember("source", sourcePojo);
 
             // 7) Call the driver. It returns a small record { ok: boolean, value? or error?
             // }.
