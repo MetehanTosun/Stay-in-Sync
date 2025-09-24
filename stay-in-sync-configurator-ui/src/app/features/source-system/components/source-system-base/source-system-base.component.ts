@@ -667,6 +667,14 @@ export class SourceSystemBaseComponent implements OnInit, OnDestroy {
    */
   viewSourceSystem(system: SourceSystemDTO): void {
     this.selectedSystem = system;
+    // Initialize form with current system values
+    this.metadataForm = this.fb.group({
+      name: [system.name || '', [Validators.required, Validators.minLength(2)]],
+      description: [system.description || ''],
+      apiUrl: [system.apiUrl || '', [Validators.required, Validators.pattern('https?://.+')]],
+      apiType: [system.apiType || 'REST', Validators.required],
+      openApiSpec: [system.openApiSpec || '']
+    });
     this.loadEndpointsForSelectedSystem();
     this.showDetailDialog = true;
   }
