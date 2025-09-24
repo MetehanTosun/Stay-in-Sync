@@ -176,10 +176,6 @@ interface AasElementLivePanel {
               <input id="m_apiUrl" pInputText formControlName="apiUrl" />
             </div>
             <div class="p-field">
-              <label for="m_apiType">API Type*</label>
-              <input id="m_apiType" pInputText formControlName="apiType" />
-            </div>
-            <div class="p-field">
               <label for="m_description">Description</label>
               <textarea id="m_description" pInputTextarea rows="3" formControlName="description" style="width: 100%"></textarea>
             </div>
@@ -377,7 +373,6 @@ export class TargetSystemBaseComponent implements OnInit {
     this.manageForm = this.fb.group({
       name: ['', Validators.required],
       apiUrl: ['', [Validators.required, Validators.pattern('https?://.+')]],
-      apiType: ['', Validators.required],
       description: ['']
     });
   }
@@ -473,7 +468,6 @@ export class TargetSystemBaseComponent implements OnInit {
     this.manageForm = this.fb.group({
       name: [row.name || '', Validators.required],
       apiUrl: [row.apiUrl || '', [Validators.required, Validators.pattern('https?://.+')]],
-      apiType: [row.apiType || '', Validators.required],
       description: [row.description || '']
     });
     this.showDetailDialog = true;
