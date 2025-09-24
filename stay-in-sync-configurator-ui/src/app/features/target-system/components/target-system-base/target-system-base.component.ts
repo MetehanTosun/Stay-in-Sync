@@ -85,6 +85,51 @@ interface AasElementLivePanel {
           </td>
         </tr>
       </ng-template>
+
+      <!-- Empty state message when no data is available -->
+      <ng-template pTemplate="emptymessage">
+        <tr>
+          <td colspan="4">
+            <div class="empty-state">
+              <div class="empty-icon">
+                <i class="pi pi-search" *ngIf="isSearchActive"></i>
+                <i class="pi pi-database" *ngIf="!isSearchActive"></i>
+              </div>
+              <div class="empty-message">
+                <h4>{{ getEmptyMessage() }}</h4>
+                <p *ngIf="isSearchActive">
+                  No target systems found matching "{{ searchTerm }}"
+                </p>
+                <p *ngIf="!isSearchActive">
+                  No target systems available. Create your first target system to get started.
+                </p>
+              </div>
+              <div class="empty-actions" *ngIf="isSearchActive">
+                <button pButton
+                        type="button"
+                        label="Clear Search"
+                        class="p-button-text"
+                        (click)="onSearchClear()">
+                </button>
+                <button pButton
+                        type="button"
+                        label="Show All"
+                        class="p-button-text"
+                        (click)="onSearchClear()">
+                </button>
+              </div>
+              <div class="empty-actions" *ngIf="!isSearchActive">
+                <button pButton
+                        type="button"
+                        label="Create Target System"
+                        icon="pi pi-plus"
+                        (click)="openCreate()">
+                </button>
+              </div>
+            </div>
+          </td>
+        </tr>
+      </ng-template>
     </p-table>
 
     <p-dialog [(visible)]="showDialog" [modal]="true" [style]="{width: '900px'}" [header]="dialogTitle">
@@ -341,11 +386,13 @@ export class TargetSystemBaseComponent implements OnInit {
 
   onSearchChange(term: string): void {
     this.searchTerm = term || '';
+    this.isSearchActive = this.searchTerm.trim().length > 0;
     this.applyFilter();
   }
 
   onSearchClear(): void {
     this.searchTerm = '';
+    this.isSearchActive = false;
     this.applyFilter();
   }
 
@@ -674,6 +721,20 @@ export class TargetSystemBaseComponent implements OnInit {
 
   openAasSetValue(submodelId: string, elementData: any): void {
     this.messageService.add({severity: 'info', summary: 'Info', detail: 'Set value functionality coming soon'});
+  }
+
+  // Empty state functionality
+  isSearchActive: boolean = false;
+
+  /**
+   * Get appropriate empty state message
+   * @returns Message to display when no results are found
+   */
+  getEmptyMessage(): string {
+    if (this.isSearchActive) {
+      return 'No matching target systems found';
+    }
+    return 'No target systems available';
   }
 }
 
