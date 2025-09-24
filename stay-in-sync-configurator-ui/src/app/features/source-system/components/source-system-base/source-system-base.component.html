@@ -221,35 +221,26 @@
     <!--
       Metadata edit form for selected source system
     -->
-    <form [formGroup]="metadataForm" (ngSubmit)="saveMetadata()">
-      <div style="margin-bottom: 2rem;"></div>
-      <!-- Metadata edit form -->
+    <div style="margin-bottom: 2rem;">
       <h3 style="margin-bottom: 1.5rem;">Metadata</h3>
-
-      <div class="p-col-12 p-md-3" style="margin-bottom: 1.5rem;">
-        <label for="metaName">Name</label>
-        <input id="metaName" pInputText formControlName="name" />
-      </div>
-
-      <div class="p-col-12 p-md-3" style="margin-bottom: 1.5rem;">
-        <label for="metaUrl">API URL</label>
-        <input id="metaUrl" pInputText formControlName="apiUrl" />
-      </div>
-
-      <div class="p-col-12 p-md-3" style="margin-bottom: 1.5rem;">
-        <label for="metaDesc" class="p-d-block">Description</label>
-        <textarea id="metaDesc" pInputTextarea formControlName="description" rows="3" class="p-inputtextarea p-d-block"></textarea>
-      </div>
-
-
-      <div style="margin-bottom: 2rem;"></div>
-
-      <div class="p-col-12 p-md-3 p-d-flex p-ai-end p-jc-end">
-        <button pButton label="Save Metadata"
-                type="submit"
-                [disabled]="metadataForm.invalid"></button>
-      </div>
-    </form>
+      <form [formGroup]="metadataForm" class="p-fluid" (ngSubmit)="saveMetadata()">
+        <div class="p-field">
+          <label for="metaName">Name*</label>
+          <input id="metaName" pInputText formControlName="name" />
+        </div>
+        <div class="p-field">
+          <label for="metaUrl">API URL*</label>
+          <input id="metaUrl" pInputText formControlName="apiUrl" />
+        </div>
+        <div class="p-field">
+          <label for="metaDesc">Description</label>
+          <textarea id="metaDesc" pInputTextarea formControlName="description" rows="3" style="width: 100%"></textarea>
+        </div>
+        <div class="p-field">
+          <button pButton label="Save Metadata" type="submit" [disabled]="metadataForm.invalid"></button>
+        </div>
+      </form>
+    </div>
     <p-tabView>
       <p-tabPanel *ngIf="!isAasSelected()" header="Headers & Endpoints">
         <div class="p-grid p-m-2">
