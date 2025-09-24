@@ -197,10 +197,124 @@ public class TargetAasResource {
 		return traversal.listElements(apiUrl, smId, depth, parentPath, headersLive).map(resp -> {
 			int sc = resp.statusCode();
 			if (sc >= 200 && sc < 300) {
+				// If a specific parentPath was requested and server returned the parent element object,
+				// unwrap its direct children (value/statements) to mirror Source behaviour in practice
+				if (parentPath != null && !parentPath.isBlank()) {
+					try {
+						String body = resp.bodyAsString();
+						if (body != null && body.trim().startsWith("{")) {
+							io.vertx.core.json.JsonObject obj = new io.vertx.core.json.JsonObject(body);
+							String modelType = obj.getString("modelType");
+							io.vertx.core.json.JsonArray directChildren = null;
+							if ("SubmodelElementCollection".equalsIgnoreCase(modelType) || "SubmodelElementList".equalsIgnoreCase(modelType)) {
+								var v = obj.getValue("value");
+								if (v instanceof io.vertx.core.json.JsonArray arr) {
+									directChildren = arr;
+								}
+							} else if ("Entity".equalsIgnoreCase(modelType)) {
+								var st = obj.getValue("statements");
+								if (st instanceof io.vertx.core.json.JsonArray arr) {
+									directChildren = arr;
+								}
+							}
+							if (directChildren != null) {
+								io.vertx.core.json.JsonArray out = new io.vertx.core.json.JsonArray();
+								for (int i = 0; i < directChildren.size(); i++) {
+									var el = directChildren.getJsonObject(i);
+									if (el == null) continue;
+									String idShort = el.getString("idShort");
+									if (idShort != null && !idShort.isBlank()) {
+										String p = parentPath + "/" + idShort;
+										el.put("idShortPath", p);
+									}
+									out.add(el);
+								}
+								return Response.ok(out.encode()).build();
+							}
+						}
+					} catch (Exception ignore) {}
+				}
+				// Additional fallback: some servers return 200 with empty list for parent lists/collections
+				if (parentPath != null && !parentPath.isBlank()) {
+					try {
+						String body = resp.bodyAsString();
+						boolean empty = false;
+						if (body != null && !body.isBlank()) {
+							if (body.trim().startsWith("{")) {
+								io.vertx.core.json.JsonObject obj = new io.vertx.core.json.JsonObject(body);
+								io.vertx.core.json.JsonArray arr = obj.getJsonArray("result");
+								empty = (arr == null || arr.isEmpty());
+							} else {
+								empty = "[]".equals(body.trim());
+							}
+						}
+						if (empty) {
+							var parentResp = traversal.getElement(apiUrl, smId, parentPath, headersLive).await().indefinitely();
+							if (parentResp != null && parentResp.statusCode() >= 200 && parentResp.statusCode() < 300) {
+								String pb = parentResp.bodyAsString();
+								if (pb != null && pb.trim().startsWith("{")) {
+									io.vertx.core.json.JsonObject pobj = new io.vertx.core.json.JsonObject(pb);
+									String mt = pobj.getString("modelType");
+									io.vertx.core.json.JsonArray directChildren = null;
+									if ("SubmodelElementCollection".equalsIgnoreCase(mt) || "SubmodelElementList".equalsIgnoreCase(mt)) {
+										var v = pobj.getValue("value");
+										if (v instanceof io.vertx.core.json.JsonArray arr) {
+											directChildren = arr;
+										}
+									} else if ("Entity".equalsIgnoreCase(mt)) {
+										var st = pobj.getValue("statements");
+										if (st instanceof io.vertx.core.json.JsonArray arr) {
+											directChildren = arr;
+										}
+									}
+									if (directChildren != null) {
+										io.vertx.core.json.JsonArray out = new io.vertx.core.json.JsonArray();
+										for (int i = 0; i < directChildren.size(); i++) {
+											var el = directChildren.getJsonObject(i);
+											if (el == null) continue;
+											String idShort = el.getString("idShort");
+											if (idShort != null && !idShort.isBlank()) {
+												el.put("idShortPath", parentPath + "/" + idShort);
+											}
+											out.add(el);
+										}
+										return Response.ok(out.encode()).build();
+								}
+							}
+						}
+					} catch (Exception ignore) {}
+				}
 				return Response.ok(resp.bodyAsString()).build();
 			}
 			// Fallback for nested collections returning 404 on parent path: fetch deep and filter
 			if (sc == 404 && parentPath != null && !parentPath.isBlank()) {
+				try {
+					var all = traversal.listElements(apiUrl, smId, "all", null, headersLive).await().indefinitely();
+					if (all.statusCode() >= 200 && all.statusCode() < 300) {
+						String body = all.bodyAsString();
+						io.vertx.core.json.JsonArray arr = body != null && body.trim().startsWith("{")
+								? new io.vertx.core.json.JsonObject(body).getJsonArray("result", new io.vertx.core.json.JsonArray())
+								: new io.vertx.core.json.JsonArray(body);
+						String prefix = parentPath.endsWith("/") ? parentPath : parentPath + "/";
+						io.vertx.core.json.JsonArray children = new io.vertx.core.json.JsonArray();
+						for (int i = 0; i < arr.size(); i++) {
+							var el = arr.getJsonObject(i);
+							String p = el.getString("idShortPath", el.getString("idShort"));
+							if (p == null) continue;
+							if (p.equals(parentPath)) continue;
+							if (p.startsWith(prefix)) {
+								String rest = p.substring(prefix.length());
+								if (!rest.contains("/")) {
+									children.add(el);
+								}
+							}
+						}
+						return Response.ok(children.encode()).build();
+					}
+				} catch (Exception ignore) {}
+			}
+			// Some servers return 400 instead of 404 for parentPath shallow; treat like 404
+			if (sc == 400 && parentPath != null && !parentPath.isBlank()) {
 				try {
 					var all = traversal.listElements(apiUrl, smId, "all", null, headersLive).await().indefinitely();
 					if (all.statusCode() >= 200 && all.statusCode() < 300) {
