@@ -186,6 +186,17 @@ export class CreateTargetSystemComponent implements OnInit, OnChanges {
           this.messageService.add({ severity: 'success', summary: 'Created', detail: 'Target system created', life: 2500 });
           this.created.emit(resp);
           this.isCreating = false;
+          
+          // Auto-close wizard after successful creation with small delay to show success message
+          setTimeout(() => {
+            this.visible = false;
+            this.visibleChange.emit(false);
+            this.form.reset({ apiType: 'REST_OPENAPI' });
+            this.selectedFile = null;
+            this.fileSelected = false;
+            this.form.get('openApiSpec')!.enable();
+            this.currentStep = 0;
+          }, 1500);
         },
         error: (err) => {
           this.errorService.handleError(err);
