@@ -457,16 +457,8 @@ export class CreateTargetSystemComponent implements OnInit, OnChanges {
     // Use shallow; backend will deep-fallback when needed
     this.aasClient.listElements('target', this.createdTargetSystemId, smIdEnc, 'shallow', parentPath).subscribe({
       next: (resp) => { const list = Array.isArray(resp) ? resp : (resp?.result ?? []); console.log('[TargetCreate] loadChildren respCount=', list.length, 'rawResp=', resp);
-        const prefix = parentPath ? (parentPath.endsWith('/') ? parentPath : parentPath + '/') : '';
-        const children = list.filter((el: any) => {
-          const p = el?.idShortPath || el?.idShort;
-          if (!p) return false;
-          if (!parentPath) return !String(p).includes('/');
-          if (!String(p).startsWith(prefix)) return false;
-          const rest = String(p).substring(prefix.length);
-          return rest && !rest.includes('/');
-        });
-        node.children = children.map((el: any) => {
+        // Backend already returns correct direct children, no filtering needed
+        node.children = list.map((el: any) => {
           if (!el.idShortPath && el.idShort) { el.idShortPath = parentPath ? `${parentPath}/${el.idShort}` : el.idShort; }
           return this.mapElementToNode(submodelId, el);
         });
@@ -480,14 +472,13 @@ export class CreateTargetSystemComponent implements OnInit, OnChanges {
           this.aasClient.listElements('target', this.createdTargetSystemId!, smIdEnc, 'all').subscribe({
             next: (resp2) => {
               const arr: any[] = Array.isArray(resp2) ? resp2 : (resp2?.result ?? []);
+              // Backend filtering should handle this, but keep minimal direct child filtering for fallback
               const prefix = parentPath ? (parentPath.endsWith('/') ? parentPath : parentPath + '/') : '';
               const children = arr.filter((el: any) => {
                 const p = el?.idShortPath || el?.idShort;
                 if (!p) return false;
                 if (!parentPath) return !String(p).includes('/');
-                if (!String(p).startsWith(prefix)) return false;
-                const rest = String(p).substring(prefix.length);
-                return rest && !rest.includes('/');
+                return String(p).startsWith(prefix);
               });
               node.children = children.map((el: any) => {
                 if (!el.idShortPath && el.idShort) { el.idShortPath = parentPath ? `${parentPath}/${el.idShort}` : el.idShort; }

@@ -198,7 +198,6 @@ public class TargetAasResource {
 			int sc = resp.statusCode();
 			if (sc >= 200 && sc < 300) {
 				if (parentPath != null && !parentPath.isBlank()) {
-					// Success-path unwrap: server returned parent object
 					try {
 						String body = resp.bodyAsString();
 						if (body != null && body.trim().startsWith("{")) {
@@ -212,20 +211,43 @@ public class TargetAasResource {
 								var st = obj.getValue("statements");
 								if (st instanceof io.vertx.core.json.JsonArray arr) directChildren = arr;
 							}
-							if (directChildren != null) {
+                                    if (directChildren != null) {
+                                        if ("SubmodelElementList".equalsIgnoreCase(modelType)) {
+                                            io.vertx.core.json.JsonArray flattened = new io.vertx.core.json.JsonArray();
+                                            for (int i = 0; i < directChildren.size(); i++) {
+                                                var listItem = directChildren.getJsonObject(i);
+                                                if (listItem == null) continue;
+                                                String idxId = listItem.getString("idShort");
+                                                if (idxId == null || idxId.isBlank()) idxId = Integer.toString(i);
+                                                Object itemVal = listItem.getValue("value");
+                                                if (itemVal instanceof io.vertx.core.json.JsonArray carr) {
+                                                    for (int j = 0; j < carr.size(); j++) {
+                                                        var child = carr.getJsonObject(j);
+                                                        if (child == null) continue;
+                                                        String cid = child.getString("idShort");
+                                                        if (cid != null && !cid.isBlank()) child.put("idShortPath", parentPath + "/" + idxId + "/" + cid);
+                                                        flattened.add(child);
+                                                    }
+                                                }
+                                            }
+                                            if (!flattened.isEmpty()) return Response.ok(flattened.encode()).build();
+                                        }
 								io.vertx.core.json.JsonArray out = new io.vertx.core.json.JsonArray();
 								for (int i = 0; i < directChildren.size(); i++) {
 									var el = directChildren.getJsonObject(i);
 									if (el == null) continue;
 									String idShort = el.getString("idShort");
-									if (idShort != null && !idShort.isBlank()) el.put("idShortPath", parentPath + "/" + idShort);
+                                    if ((idShort == null || idShort.isBlank()) && "SubmodelElementList".equalsIgnoreCase(modelType)) {
+                                        idShort = Integer.toString(i);
+                                        el.put("idShort", idShort);
+                                    }
+                                    if (idShort != null && !idShort.isBlank()) el.put("idShortPath", parentPath + "/" + idShort);
 									out.add(el);
 								}
 								return Response.ok(out.encode()).build();
 							}
 						}
 					} catch (Exception ignore) {}
-					// Success-path empty-list fallback: fetch parent and unwrap
 					try {
 						String body = resp.bodyAsString();
 						boolean empty = false;
@@ -253,47 +275,258 @@ public class TargetAasResource {
 										var st = pobj.getValue("statements");
 										if (st instanceof io.vertx.core.json.JsonArray arr) directChildren = arr;
 									}
-									if (directChildren != null) {
-										io.vertx.core.json.JsonArray out = new io.vertx.core.json.JsonArray();
-										for (int i = 0; i < directChildren.size(); i++) {
-											var el = directChildren.getJsonObject(i);
-											if (el == null) continue;
-											String idShort = el.getString("idShort");
-											if (idShort != null && !idShort.isBlank()) el.put("idShortPath", parentPath + "/" + idShort);
-											out.add(el);
-										}
-										return Response.ok(out.encode()).build();
+                                    if (directChildren != null) {
+                                        // For lists that wrap collections, flatten one level to expose collection children
+                                        if ("SubmodelElementList".equalsIgnoreCase(mt)) {
+                                            io.vertx.core.json.JsonArray flattened = new io.vertx.core.json.JsonArray();
+                                            for (int i = 0; i < directChildren.size(); i++) {
+                                                var listItem = directChildren.getJsonObject(i);
+                                                if (listItem == null) continue;
+                                                String idxId = listItem.getString("idShort");
+                                                if (idxId == null || idxId.isBlank()) idxId = Integer.toString(i);
+                                                Object itemVal = listItem.getValue("value");
+                                                if (itemVal instanceof io.vertx.core.json.JsonArray carr) {
+                                                    for (int j = 0; j < carr.size(); j++) {
+                                                        var child = carr.getJsonObject(j);
+                                                        if (child == null) continue;
+                                                        String cid = child.getString("idShort");
+                                                        if (cid != null && !cid.isBlank()) child.put("idShortPath", parentPath + "/" + idxId + "/" + cid);
+                                                        flattened.add(child);
+                                                    }
+                                                }
+                                            }
+                                            if (!flattened.isEmpty()) return Response.ok(flattened.encode()).build();
+                                        }
+                                        io.vertx.core.json.JsonArray out = new io.vertx.core.json.JsonArray();
+                                        for (int i = 0; i < directChildren.size(); i++) {
+                                            var el = directChildren.getJsonObject(i);
+                                            if (el == null) continue;
+                                            String idShort = el.getString("idShort");
+                                            if ((idShort == null || idShort.isBlank()) && "SubmodelElementList".equalsIgnoreCase(mt)) {
+                                                idShort = Integer.toString(i);
+                                                el.put("idShort", idShort);
+                                            }
+                                            if (idShort != null && !idShort.isBlank()) el.put("idShortPath", parentPath + "/" + idShort);
+                                            out.add(el);
+                                        }
+                                        return Response.ok(out.encode()).build();
+                                    }
+                                }
+                            }
+							// Try explicit child sub-paths
+							try {
+								String pv = parentPath.endsWith("/value") ? parentPath : parentPath + "/value";
+								var vResp = traversal.listElements(apiUrl, smId, "shallow", pv, headersLive).await().indefinitely();
+								if (vResp != null && vResp.statusCode() >= 200 && vResp.statusCode() < 300) {
+									return Response.ok(vResp.bodyAsString()).build();
 								}
-							}
-						}
-					} catch (Exception ignore) {}
+							} catch (Exception ignoreV) {}
+							try {
+								String ps = parentPath.endsWith("/statements") ? parentPath : parentPath + "/statements";
+								var sResp = traversal.listElements(apiUrl, smId, "shallow", ps, headersLive).await().indefinitely();
+								if (sResp != null && sResp.statusCode() >= 200 && sResp.statusCode() < 300) {
+									return Response.ok(sResp.bodyAsString()).build();
+								}
+							} catch (Exception ignoreS) {}
+							// Structural parent-of-parent unwrap
+							try {
+								int lastSlash = parentPath.lastIndexOf('/');
+								if (lastSlash > 0) {
+									String baseParent = parentPath.substring(0, lastSlash);
+									String childId = parentPath.substring(lastSlash + 1);
+									var baseResp = traversal.getElement(apiUrl, smId, baseParent, headersLive).await().indefinitely();
+									if (baseResp != null && baseResp.statusCode() >= 200 && baseResp.statusCode() < 300) {
+										String bb = baseResp.bodyAsString();
+										if (bb != null && bb.trim().startsWith("{")) {
+											io.vertx.core.json.JsonObject bobj = new io.vertx.core.json.JsonObject(bb);
+											String bmt = bobj.getString("modelType");
+											Object bv = "Entity".equalsIgnoreCase(bmt) ? bobj.getValue("statements") : bobj.getValue("value");
+											if (bv instanceof io.vertx.core.json.JsonArray barr) {
+												io.vertx.core.json.JsonObject child = null;
+												for (int i = 0; i < barr.size(); i++) {
+													var el = barr.getJsonObject(i);
+													if (el == null) continue;
+													if (childId.equals(el.getString("idShort"))) { child = el; break; }
+												}
+												if (child != null) {
+													String cmt = child.getString("modelType");
+													Object cv = "Entity".equalsIgnoreCase(cmt) ? child.getValue("statements") : child.getValue("value");
+													if (cv instanceof io.vertx.core.json.JsonArray carr) {
+														io.vertx.core.json.JsonArray out = new io.vertx.core.json.JsonArray();
+														for (int i = 0; i < carr.size(); i++) {
+															var cel = carr.getJsonObject(i);
+															if (cel == null) continue;
+															String idShort = cel.getString("idShort");
+															if ((idShort == null || idShort.isBlank()) && "SubmodelElementList".equalsIgnoreCase(cmt)) {
+																idShort = Integer.toString(i);
+																cel.put("idShort", idShort);
+															}
+															if (idShort != null && !idShort.isBlank()) cel.put("idShortPath", parentPath + "/" + idShort);
+															out.add(cel);
+														}
+														return Response.ok(out.encode()).build();
+													}
+												}
+											}
+										}
+                                    }
+                                }
+								} catch (Exception ignoreP) {}
+							// Deep-list filter as final fallback (mirror 404 handler)
+							try {
+								var all = traversal.listElements(apiUrl, smId, "all", null, headersLive).await().indefinitely();
+								if (all.statusCode() >= 200 && all.statusCode() < 300) {
+									String abody = all.bodyAsString();
+									io.vertx.core.json.JsonArray arr;
+									if (abody != null && abody.trim().startsWith("{")) {
+										io.vertx.core.json.JsonObject objA = new io.vertx.core.json.JsonObject(abody);
+										arr = objA.getJsonArray("result");
+										if (arr == null) arr = objA.getJsonArray("submodelElements");
+										if (arr == null) arr = new io.vertx.core.json.JsonArray();
+									} else {
+										arr = new io.vertx.core.json.JsonArray(abody);
+									}
+									String prefix = parentPath.endsWith("/") ? parentPath : parentPath + "/";
+									io.vertx.core.json.JsonArray children = new io.vertx.core.json.JsonArray();
+									for (int i = 0; i < arr.size(); i++) {
+										var el = arr.getJsonObject(i);
+										String p = el.getString("idShortPath", el.getString("idShort"));
+										if (p == null) continue;
+										if (p.equals(parentPath)) continue;
+										if (p.startsWith(prefix)) {
+											String rest = p.substring(prefix.length());
+											if (!rest.contains("/")) children.add(el);
+										}
+									}
+									if (children.size() > 0) return Response.ok(children.encode()).build();
+								}
+							} catch (Exception ignoreA) {}
+                        }
+                    } catch (Exception ignore) {}
 				}
 				return Response.ok(resp.bodyAsString()).build();
 			}
-			// Fallback for nested collections returning 404 on parent path: fetch deep and filter
 			if ((sc == 404 || sc == 400) && parentPath != null && !parentPath.isBlank()) {
 				try {
 					var all = traversal.listElements(apiUrl, smId, "all", null, headersLive).await().indefinitely();
 					if (all.statusCode() >= 200 && all.statusCode() < 300) {
 						String body = all.bodyAsString();
-						io.vertx.core.json.JsonArray arr = body != null && body.trim().startsWith("{")
-								? new io.vertx.core.json.JsonObject(body).getJsonArray("result", new io.vertx.core.json.JsonArray())
-								: new io.vertx.core.json.JsonArray(body);
+						io.vertx.core.json.JsonArray arr;
+						if (body != null && body.trim().startsWith("{")) {
+							io.vertx.core.json.JsonObject obj = new io.vertx.core.json.JsonObject(body);
+							arr = obj.getJsonArray("result");
+							if (arr == null) arr = obj.getJsonArray("submodelElements");
+							if (arr == null) arr = new io.vertx.core.json.JsonArray();
+						} else {
+							arr = new io.vertx.core.json.JsonArray(body);
+						}
 						String prefix = parentPath.endsWith("/") ? parentPath : parentPath + "/";
 						io.vertx.core.json.JsonArray children = new io.vertx.core.json.JsonArray();
-						for (int i = 0; i < arr.size(); i++) {
+							for (int i = 0; i < arr.size(); i++) {
 							var el = arr.getJsonObject(i);
 							String p = el.getString("idShortPath", el.getString("idShort"));
 							if (p == null) continue;
 							if (p.equals(parentPath)) continue;
 							if (p.startsWith(prefix)) {
 								String rest = p.substring(prefix.length());
-								if (!rest.contains("/")) children.add(el);
+								if (!rest.contains("/")) {
+									children.add(el);
+								}
 							}
 						}
-						return Response.ok(children.encode()).build();
+							if (children.size() > 0) {
+								return Response.ok(children.encode()).build();
+							}
+                    }
+                    // Deep-list failed or returned empty: try direct GET parent and unwrap
+					var parentResp = traversal.getElement(apiUrl, smId, parentPath, headersLive).await().indefinitely();
+					if (parentResp != null && parentResp.statusCode() >= 200 && parentResp.statusCode() < 300) {
+						String pb = parentResp.bodyAsString();
+						if (pb != null && pb.trim().startsWith("{")) {
+							io.vertx.core.json.JsonObject pobj = new io.vertx.core.json.JsonObject(pb);
+							String mt = pobj.getString("modelType");
+							Object v = "Entity".equalsIgnoreCase(mt) ? pobj.getValue("statements") : pobj.getValue("value");
+							if (v instanceof io.vertx.core.json.JsonArray arr) {
+								io.vertx.core.json.JsonArray out = new io.vertx.core.json.JsonArray();
+								for (int i = 0; i < arr.size(); i++) {
+									var el = arr.getJsonObject(i);
+									if (el == null) continue;
+									String idShort = el.getString("idShort");
+									if ((idShort == null || idShort.isBlank()) && "SubmodelElementList".equalsIgnoreCase(mt)) {
+										idShort = Integer.toString(i);
+										el.put("idShort", idShort);
+									}
+									if (idShort != null && !idShort.isBlank()) el.put("idShortPath", parentPath + "/" + idShort);
+									out.add(el);
+								}
+								return Response.ok(out.encode()).build();
+							}
+						}
 					}
+                    // Try BaSyx child arrays via explicit sub-paths
+                    try {
+                        String pv = parentPath.endsWith("/value") ? parentPath : parentPath + "/value";
+                        var vResp = traversal.listElements(apiUrl, smId, "shallow", pv, headersLive).await().indefinitely();
+                        if (vResp != null && vResp.statusCode() >= 200 && vResp.statusCode() < 300) {
+                            return Response.ok(vResp.bodyAsString()).build();
+                        }
+                    } catch (Exception ignore2) {}
+                    try {
+                        String ps = parentPath.endsWith("/statements") ? parentPath : parentPath + "/statements";
+                        var sResp = traversal.listElements(apiUrl, smId, "shallow", ps, headersLive).await().indefinitely();
+                        if (sResp != null && sResp.statusCode() >= 200 && sResp.statusCode() < 300) {
+                            return Response.ok(sResp.bodyAsString()).build();
+                        }
+                    } catch (Exception ignore3) {}
+                    // Final structural fallback: fetch parent-of-parent, locate child by idShort, unwrap its children
+                    try {
+                        int lastSlash = parentPath.lastIndexOf('/');
+                        if (lastSlash > 0) {
+                            String baseParent = parentPath.substring(0, lastSlash);
+                            String childId = parentPath.substring(lastSlash + 1);
+                            var baseResp = traversal.getElement(apiUrl, smId, baseParent, headersLive).await().indefinitely();
+                            if (baseResp != null && baseResp.statusCode() >= 200 && baseResp.statusCode() < 300) {
+                                String bb = baseResp.bodyAsString();
+                                if (bb != null && bb.trim().startsWith("{")) {
+                                    io.vertx.core.json.JsonObject bobj = new io.vertx.core.json.JsonObject(bb);
+                                    String bmt = bobj.getString("modelType");
+                                    Object bv = "Entity".equalsIgnoreCase(bmt) ? bobj.getValue("statements") : bobj.getValue("value");
+                                    if (bv instanceof io.vertx.core.json.JsonArray barr) {
+                                        io.vertx.core.json.JsonObject child = null;
+                                        for (int i = 0; i < barr.size(); i++) {
+                                            var el = barr.getJsonObject(i);
+                                            if (el == null) continue;
+                                            if (childId.equals(el.getString("idShort"))) { child = el; break; }
+                                        }
+                                        if (child != null) {
+                                            String cmt = child.getString("modelType");
+                                            Object cv = "Entity".equalsIgnoreCase(cmt) ? child.getValue("statements") : child.getValue("value");
+                                            if (cv instanceof io.vertx.core.json.JsonArray carr) {
+                                                io.vertx.core.json.JsonArray out = new io.vertx.core.json.JsonArray();
+                                                for (int i = 0; i < carr.size(); i++) {
+                                                    var cel = carr.getJsonObject(i);
+                                                    if (cel == null) continue;
+                                                    String idShort = cel.getString("idShort");
+                                                    if ((idShort == null || idShort.isBlank()) && "SubmodelElementList".equalsIgnoreCase(cmt)) {
+                                                        idShort = Integer.toString(i);
+                                                        cel.put("idShort", idShort);
+                                                    }
+                                                    if (idShort != null && !idShort.isBlank()) cel.put("idShortPath", parentPath + "/" + idShort);
+                                                    out.add(cel);
+                                                }
+                                                return Response.ok(out.encode()).build();
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    } catch (Exception ignore4) {}
 				} catch (Exception ignore) {}
+			}
+			// Final safety: don't propagate 404 to UI for children queries; return empty array
+			if ((sc == 404 || sc == 400) && parentPath != null && !parentPath.isBlank()) {
+				return Response.ok("[]").build();
 			}
 			return Response.status(sc).entity(resp.bodyAsString()).build();
 		});
@@ -354,10 +587,34 @@ public class TargetAasResource {
                     var child = arr.getJsonObject(i);
                     if (child == null) continue;
                     String childIdShort = child.getString("idShort");
-                    if (childIdShort == null) continue;
+                    // For SubmodelElementList, children might not have idShort, use index
+                    if (childIdShort == null || childIdShort.isBlank()) {
+                        if ("SubmodelElementList".equalsIgnoreCase(modelType)) {
+                            childIdShort = Integer.toString(i);
+                        } else {
+                            continue;
+                        }
+                    }
                     String childPath = currentPath + "/" + childIdShort;
                     var found = descendAndMatch(child, childPath, targetPath);
                     if (found != null) return found;
+                    
+                    // Special handling for SubmodelElementList: check if child has nested value array
+                    if ("SubmodelElementList".equalsIgnoreCase(modelType)) {
+                        var nestedValue = child.getValue("value");
+                        if (nestedValue instanceof io.vertx.core.json.JsonArray nestedArr) {
+                            for (int j = 0; j < nestedArr.size(); j++) {
+                                var nestedChild = nestedArr.getJsonObject(j);
+                                if (nestedChild == null) continue;
+                                String nestedIdShort = nestedChild.getString("idShort");
+                                if (nestedIdShort != null && !nestedIdShort.isBlank()) {
+                                    String nestedPath = childPath + "/" + nestedIdShort;
+                                    var nestedFound = descendAndMatch(nestedChild, nestedPath, targetPath);
+                                    if (nestedFound != null) return nestedFound;
+                                }
+                            }
+                        }
+                    }
                 }
             }
         } else if ("Entity".equalsIgnoreCase(modelType)) {
