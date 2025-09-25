@@ -52,6 +52,8 @@ minikube addons enable ingress
 minikube addons enable ingress-dns
 ```
 And add following to your hosts file: 
+
+<span style="color:red">On mac please use 127.0.0.1 instead of minikube ip</span>
 ```
 <your minikube ip> centralidp.tx.test
 <your minikube ip> sharedidp.tx.test
@@ -73,6 +75,7 @@ And add following to your hosts file:
 <your minikube ip> ssi-dim-wallet-stub.tx.test
 <your minikube ip> smtp.tx.test
 <your minikube ip> stay-in-sync-management.test
+<your minikube ip> stay-in-sync-monitoring.test
 ```
 
 If you are having issues with resolving ingresses after successfully deploying the chart, please try following the
@@ -116,14 +119,16 @@ helm dependency update
 
 Installing the helm chart from within its folder with the release name **stay-in-sync**:
 
+<span style="color:red">Since this helmchart makes use of the edc umbrella chart we currently recommend installing in the chart umbrella namespace
+  in order to avoid issues with the edc setup</span>
 ```shell
-helm install stay-in-sync ./
+helm install test ./ --namespace umbrella
 ```
 
 Uninstalling the helm chart using its release name:
 
 ```shell
-helm uninstall stay-in-sync
+helm uninstall test  --namespace umbrella
 ```
 
 ## Ingress
@@ -175,7 +180,7 @@ In the current state the helm chart exposes following addresses:
 - http://basyx-aas-registry.test
 - http://basyx-submodel-registry.test
 - http://basyx-aas-env.test
-- 
+
 ### Stay-in-Sync
 
 - http://stay-in-sync-management.test/sync-rules

@@ -3,6 +3,7 @@ import { FormsModule } from '@angular/forms';
 // TODO-s all Docs
 @Component({
   selector: 'app-set-node-name-modal',
+  standalone: true,
   imports: [FormsModule],
   templateUrl: './set-node-name-modal.component.html',
   styleUrl: './set-node-name-modal.component.css'

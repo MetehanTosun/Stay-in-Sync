@@ -127,16 +127,6 @@ public class SyncJobService {
     public SyncJob replaceSyncJob(@NotNull @Valid SyncJobCreationDTO syncJobDTO) {
         SyncJob syncJob = syncJobFullUpdateMapper.mapToEntity(syncJobDTO);
 
-        List<Transformation> transformations = syncJobDTO.transformationIds().stream()
-                .map(transformationId -> {
-                    Transformation transformation = transformationService.findByIdDirect(transformationId);
-                    transformation.syncJob = syncJob;
-                    return transformation;
-                }).toList();
-
-        syncJob.transformations.clear();
-        syncJob.transformations.addAll(transformations);
-
         return SyncJob.findByIdOptional(syncJob.id)
                 .map(SyncJob.class::cast)
                 .map(targetSyncJob -> {

@@ -13,6 +13,7 @@ import { ValidationError } from '../../models/interfaces/validation-error.interf
  */
 @Component({
   selector: 'app-vflow-canvas',
+  standalone: true,
   imports: [
     Vflow,
     CommonModule,

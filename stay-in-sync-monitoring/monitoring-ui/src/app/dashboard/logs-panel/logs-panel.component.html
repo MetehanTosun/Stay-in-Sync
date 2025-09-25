@@ -11,35 +11,42 @@
 
   <label>
     Level:
-    <select [(ngModel)]="level" (change)="onFilterChange()">
-      <option value="">All</option>
-      <option value="info">Info</option>
-      <option value="warn">Warn</option>
-      <option value="error">Error</option>
-      <option value="debug">Debug</option>
-      <option value="trace">Trace</option>
-    </select>
+    <p-dropdown
+      [options]="levels"
+      [(ngModel)]="level"
+      (onChange)="onFilterChange()"
+      placeholder="All"
+      [showClear]="true"
+      [filter]="true"
+      optionLabel="label"
+      optionValue="value">
+    </p-dropdown>
   </label>
 
-  <label *ngIf="selectedNodeId">
+  <label *ngIf="selectedNodeId && !selectedNodeId.startsWith('POLL')">
     Transformation ID:
-    <select [(ngModel)]="selectedTransformationId" (change)="onFilterChange()" placeholder="Filter by Transformation ID">
-      <option value="">All</option>
-      <option *ngFor="let id of transformationIds" [value]="id">{{ id }}</option>
-    </select>
+    <p-dropdown
+      [options]="transformationIds"
+      [(ngModel)]="selectedTransformationId"
+      (onChange)="onFilterChange()"
+      placeholder="All"
+      [showClear]="true"
+      [filter]="true">
+    </p-dropdown>
   </label>
 
-  <label *ngIf="!selectedNodeId">
+  <label *ngIf="!selectedNodeId || selectedNodeId.startsWith('POLL')">
     Service:
-    <select [(ngModel)]="selectedService" (change)="onFilterChange()" placeholder="Filter by Service">
-      <option value="">All</option>
-      <option value="monitoring-backend">monitoring-backend</option>
-      <option value="core-sync-node">core-sync-node</option>
-      <option value="core-polling-node">core-polling-node</option>
-      <option value="core-management">core-management</option>
-      <option value="docker">docker</option>
-    </select>
+    <p-dropdown
+      [options]="services"
+      [(ngModel)]="selectedService"
+      (onChange)="onFilterChange()"
+      placeholder="All"
+      [showClear]="true"
+      [filter]="true">
+    </p-dropdown>
   </label>
+
 
   <p-button (click)="reloadLogs()">Reload Logs</p-button>
 </div>

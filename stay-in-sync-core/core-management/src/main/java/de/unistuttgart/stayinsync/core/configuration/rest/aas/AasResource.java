@@ -80,7 +80,7 @@ public class AasResource {
         }
         var list = AasSubmodelLite.<AasSubmodelLite>list("sourceSystem.id", sourceSystemId)
                 .stream()
-                .map(sm -> new SubmodelSummaryDTO(sm.submodelId, sm.submodelIdShort, sm.semanticId, sm.kind))
+                .map(sm -> new SubmodelSummaryDTO(sm.submodelId, sm.submodelIdShort, sm.semanticId, sm.kind, sm.id))
                 .toList();
         if (!list.isEmpty()) {
             return Uni.createFrom().item(Response.ok().entity(list).build());
@@ -158,7 +158,8 @@ public class AasResource {
                 e.typeValueListElement,
                 e.orderRelevant,
                 null,
-                null
+                null,
+                e.id
         )).toList();
         if (!list.isEmpty()) {
             return Uni.createFrom().item(Response.ok().entity(list).build());
@@ -191,7 +192,6 @@ public class AasResource {
             try {
                 String submodelId = io.vertx.core.json.JsonObject.mapFrom(io.vertx.core.json.jackson.DatabindCodec.mapper().readTree(resp.bodyAsString())).getString("id");
                 if (submodelId == null || submodelId.isBlank()) {
-                    // fallback: try from request body
                     var reqId = io.vertx.core.json.JsonObject.mapFrom(io.vertx.core.json.jackson.DatabindCodec.mapper().readTree(body)).getString("id");
                     if (reqId != null && !reqId.isBlank()) submodelId = reqId;
                 }

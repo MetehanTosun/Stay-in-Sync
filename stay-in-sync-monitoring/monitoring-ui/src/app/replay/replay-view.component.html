@@ -13,57 +13,112 @@
   </section>
 
   <section class="right-pane">
-    <header class="tabs">
-      <button
-        class="tab"
-        [class.active]="activeTab === 'source'"
-        (click)="setTab('source')"
-      >
-        SourceData
-      </button>
-      <button
-        class="tab"
-        [class.active]="activeTab === 'vars'"
-        (click)="setTab('vars')"
-      >
-        Variables
-      </button>
-      <button
-        class="tab"
-        [class.active]="activeTab === 'term'"
-        (click)="setTab('term')"
-      >
-        Terminal
-      </button>
-    </header>
+    <p-tabs>
 
-    <div class="tab-content">
-      <ng-container *ngIf="!loading(); else loadingTpl">
-        <ng-container *ngIf="!error(); else errorTpl">
-          <div *ngIf="activeTab === 'source'">
-            <h3>SourceData</h3>
-            <pre class="json-block">{{
-              data()?.transformationResult?.sourceData | json
-            }}</pre>
-          </div>
+      <p-tablist>
+        <p-tab value="0">SourceData</p-tab>
+        <p-tab value="1">Variables</p-tab>
+        <p-tab value="2">Terminal</p-tab>
+        <p-tab value="3">Logs</p-tab>
+      </p-tablist>
 
-          <div *ngIf="activeTab === 'vars'">
-            <h3>Variable Snapshot</h3>
-            <pre class="json-block">
-// Not captured yet. Coming when Truffle/variable dump is integrated.</pre
-            >
-          </div>
+      <p-tabpanels>
+        <p-tabpanel value="0">
+          <ng-container *ngIf="!loading(); else loadingTpl">
+            <ng-container *ngIf="!error(); else errorTpl">
+              <h3>SourceData</h3>
+              <pre class="json-block">{{
+                  data()?.transformationResult?.sourceData | json
+                }}</pre>
+            </ng-container>
+          </ng-container>
+        </p-tabpanel>
+        <p-tabpanel value="1">
+          <ng-container *ngIf="!loading(); else loadingTpl">
+            <ng-container *ngIf="!error(); else errorTpl">
+              <h3>Variable Snapshot</h3>
+              <pre class="json-block">
+          </pre>
+            </ng-container>
+          </ng-container>
+        </p-tabpanel>
+        <p-tabpanel value="2">
+          <ng-container *ngIf="!loading(); else loadingTpl">
+            <ng-container *ngIf="!error(); else errorTpl">
+              <h3>Terminal</h3>
+              <pre class="terminal">{{
+                  data()?.transformationResult?.errorInfo || "No errors."
+                }}</pre>
+            </ng-container>
+          </ng-container>
+        </p-tabpanel>
+        <p-tabpanel value="3">
+          <ng-container *ngIf="!loading(); else loadingTpl">
+            <ng-container *ngIf="!error(); else errorTpl">
+              <h3>Logs</h3>
+              <p-table
+                [value]="logs"
+                [scrollable]="true"
+                scrollHeight="flex"
+                class="log-table"
+                [style.width]="'100%'"
+                [style.table-layout]="'fixed'"
+                [style.height]="'350px'"
+              >
+                <ng-template pTemplate="header">
+                  <tr>
+                    <th pSortableColumn="timestamp">
+                      Timestamp
+                      <p-sortIcon field="timestamp"></p-sortIcon>
+                    </th>
+                    <th>Level</th>
+                    <th>Service</th>
+                    <th>Message</th>
+                  </tr>
+                  <tr>
+                    <th></th>
+                    <th></th>
+                    <th></th>
+                    <th>
+                      <p-columnFilter
+                        type="text"
+                        field="message"
+                        placeholder="Search by message"
+                        ariaLabel="Filter Message"
+                      ></p-columnFilter>
+                    </th>
+                  </tr>
+                </ng-template>
 
-          <div *ngIf="activeTab === 'term'">
-            <h3>Terminal</h3>
-            <pre class="terminal">{{
-              data()?.transformationResult?.errorInfo || "No errors."
-            }}</pre>
-          </div>
-        </ng-container>
-      </ng-container>
-    </div>
+                <ng-template pTemplate="body" let-log>
+                  <tr>
+                    <td class="timestamp">{{ (log.timestamp / 1000000) | date: 'short' }}</td>
+                    <td class="level" [ngClass]="log.level">{{ log.level }}</td>
+                    <td style="max-width: 150px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                      {{ log.service || '-' }}
+                    </td>
+                    <td class="message" style="white-space: normal; word-wrap: break-word; max-width: 400px;">
+                      {{ log.message }}
+                    </td>
+                  </tr>
+                </ng-template>
+              </p-table>
+            </ng-container>
+          </ng-container>
+        </p-tabpanel>
+      </p-tabpanels>
+    </p-tabs>
   </section>
+
+  <!-- deine Templates -->
+  <ng-template #loadingTpl>
+    <p>Loading...</p>
+  </ng-template>
+
+  <ng-template #errorTpl>
+    <p class="error">Error loading data</p>
+  </ng-template>
+
 </div>
 
 <ng-template #loadingTpl>

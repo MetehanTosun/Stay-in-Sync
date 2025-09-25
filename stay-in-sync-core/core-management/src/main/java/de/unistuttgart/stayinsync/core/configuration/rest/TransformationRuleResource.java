@@ -27,6 +27,7 @@ import org.eclipse.microprofile.openapi.annotations.parameters.Parameter;
 import org.eclipse.microprofile.openapi.annotations.tags.Tag;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 import static jakarta.ws.rs.core.MediaType.APPLICATION_JSON;
@@ -143,8 +144,17 @@ public class TransformationRuleResource {
      */
     @GET
     @Operation(summary = "Returns the metadata for all Transformation Rules")
-    public List<TransformationRuleDTO> getAllTransformationRules() {
+    public List<TransformationRuleDTO> getAllTransformationRules(
+            @Parameter(name = "unassigned", description = "An optional filter receive only unassiged rules") @QueryParam("unassigned") Optional<Boolean> unassigned
+    ) {
         List<TransformationRule> rules = graphStorage.findAllRules();
+        if(unassigned.isPresent())
+        {
+            rules = rules.stream()
+                    .filter(rule -> unassigned.get() ? rule.transformation == null : rule.transformation != null)
+                    .collect(Collectors.toList());
+        }
+
         Log.infof("Found %d transformation rules.", rules.size());
         return rules.stream()
                 .map(ruleMapper::toRuleDTO)
