@@ -13,8 +13,9 @@ import { InputIconModule } from 'primeng/inputicon';
 import { RippleModule } from 'primeng/ripple';
 import { TooltipModule } from 'primeng/tooltip';
 import { DialogModule } from 'primeng/dialog';
+import { ToastModule } from 'primeng/toast';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
-import { ConfirmationService } from 'primeng/api';
+import { ConfirmationService, MessageService } from 'primeng/api';
 import { PasswordModule } from 'primeng/password';
 
 import { EdcInstance } from './models/edc-instance.model';
@@ -38,11 +39,12 @@ import { EdcInstanceService } from './services/edc-instance.service';
     TooltipModule,
     DialogModule,
     ConfirmDialogModule,
+    ToastModule,
     PasswordModule,
   ],
   templateUrl: './edc-instances.component.html',
   styleUrl: './edc-instances.component.css',
-  providers: [ConfirmationService],
+  providers: [ConfirmationService, MessageService],
 })
 export class EdcInstancesComponent implements OnInit {
   @ViewChild('dt2') dt2: Table | undefined;
@@ -62,22 +64,20 @@ export class EdcInstancesComponent implements OnInit {
 
   constructor(
     private edcInstanceService: EdcInstanceService,
-    private confirmationService: ConfirmationService
+    private confirmationService: ConfirmationService,
+    private messageService: MessageService
   ) {}
 
   ngOnInit(): void {
   this.loading = true;
-  console.log('Loading EDC instances from backend...');
   this.edcInstanceService.getEdcInstances().subscribe({
     next: (data: EdcInstance[]) => {
-      console.log('EDC instances loaded:', data);
-      console.log('Number of instances:', data.length);
       this.edcInstances = data;
       this.loading = false;
     },
     error: (err) => {
       console.error('Fehler beim Laden der EDC-Instanzen', err);
-      console.error('Error details:', err);
+      this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Could not load EDC instances.' });
       this.loading = false;
     }
   });
@@ -122,14 +122,16 @@ saveNewInstance(): void {
     this.edcInstanceService.createEdcInstance(this.newInstance).subscribe({
       next: (created) => {
         this.edcInstances = [...this.edcInstances, created];
+        this.messageService.add({ severity: 'success', summary: 'Success', detail: 'Instance created successfully.' });
         this.hideNewInstanceDialog();
       },
       error: (err) => {
         console.error('Fehler beim Speichern einer neuen Instanz', err);
+        this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Failed to create instance.' });
       }
     });
   } else {
-    console.error('Name, URL, and BPN are required.');
+    this.messageService.add({ severity: 'warn', summary: 'Validation Error', detail: 'Name, URL, and BPN are required.' });
   }
 }
 
@@ -151,14 +153,16 @@ saveNewInstance(): void {
         this.edcInstances = this.edcInstances.map(instance =>
           instance.id === updated.id ? updated : instance
         );
+        this.messageService.add({ severity: 'success', summary: 'Success', detail: 'Instance updated successfully.' });
         this.hideEditInstanceDialog();
       },
       error: (err) => {
         console.error('Fehler beim Aktualisieren der Instanz', err);
+        this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Failed to update instance.' });
       }
     });
   } else {
-    console.error('Name, URL, and BPN are required for edited instance.');
+    this.messageService.add({ severity: 'warn', summary: 'Validation Error', detail: 'Name, URL, and BPN are required.' });
   }
 }
 
@@ -173,9 +177,11 @@ deleteInstance(instance: EdcInstance): void {
       this.edcInstanceService.deleteEdcInstance(instance.id).subscribe({
         next: () => {
           this.edcInstances = this.edcInstances.filter(i => i.id !== instance.id);
+          this.messageService.add({ severity: 'success', summary: 'Success', detail: 'Instance deleted successfully.' });
         },
         error: (err) => {
           console.error('Fehler beim Löschen der Instanz', err);
+          this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Failed to delete instance.' });
         }
       });
     },
@@ -183,8 +189,6 @@ deleteInstance(instance: EdcInstance): void {
 }
 
   onInstanceRowSelect(event: TableRowSelectEvent) {
-    console.log('EDC Instance selected:', event.data);
-    console.log('Selected instance ID:', event.data?.id);
     this.instanceSelected.emit(event.data);
   }
 }
