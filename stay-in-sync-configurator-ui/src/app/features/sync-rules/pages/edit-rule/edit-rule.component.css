@@ -17,6 +17,12 @@
   flex: 1;
 }
 
+#config-button .pi {
+  font-size: 1.5rem;
+  color: var(--sr-font-alt-color);
+  cursor: pointer;
+}
+
 .return-button {
   background: none;
   border: none;

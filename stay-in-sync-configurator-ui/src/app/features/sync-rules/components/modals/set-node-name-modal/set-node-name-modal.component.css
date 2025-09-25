@@ -56,7 +56,7 @@
 	font-size: 1rem;
 	background:var(--sr-input-bg);
 	transition: border 0.2s;
-	color: var(--sr-font-color);
+	color: var(--sr-font-alt-color);
 }
 .form-input:focus {
 	border-color: #007bff;

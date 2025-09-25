@@ -8,7 +8,7 @@
 	z-index: 1000;
 }
 
-.provider-node-modal {
+#rule-configuration-modal {
 	background: var(--sr-modal-bg);
 	color: var(--sr-font-alt-color);
 	border-radius: 8px;
@@ -27,25 +27,25 @@
 	gap: 1.2rem;
 }
 
-.provider-node-modal h2, .provider-node-modal h3 {
+#rule-configuration-modal h2, #rule-configuration-modal h3 {
 	margin-top: 0;
 	margin-bottom: 1.5rem;
 	font-size: 1.4rem;
 	font-weight: 600;
 	color: var(--sr-font-color);
 }
-.provider-node-modal .form-actions {
+#rule-configuration-modal .form-actions {
 	display: flex;
 	gap: 0.75rem;
 	justify-content: flex-end;
 	margin-top: 1.5rem;
 }
 
-.provider-node-modal label {
+#rule-configuration-modal label {
   color: var(--modal-label-color);
 }
 
-.provider-node-modal input, .provider-node-modal select, .provider-node-modal textarea {
+#rule-configuration-modal input, #rule-configuration-modal select, #rule-configuration-modal textarea {
 	width: 100%;
 	padding: 0.5rem 0.75rem;
 	border: 1px solid #d1d5db;
@@ -57,7 +57,7 @@
 	color: var(--sr-font-alt-color);
 	margin-bottom: 1em;
 }
-.provider-node-modal input:focus {
+#rule-configuration-modal input:focus {
 	border-color: #007bff;
 	outline: none;
 }
@@ -88,21 +88,4 @@
 }
 #cancel-button:hover {
 	background: #cbd5e1;
-}
-
-/* Ensure 'source.' and input are on one line */
-#json-path-input-line {
-	display: flex;
-	align-items: center;
-	gap: 0.3em;
-}
-#json-path-input-line span {
-	white-space: nowrap;
-	font-weight: 600;
-	color: #007bff;
-	font-size: 1.08em;
-}
-#json-path-input-line input {
-	flex: 1 1 0;
-	margin-bottom: 0;
 }

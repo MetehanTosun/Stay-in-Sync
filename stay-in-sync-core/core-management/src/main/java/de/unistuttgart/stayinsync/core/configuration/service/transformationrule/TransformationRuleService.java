@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import de.unistuttgart.graphengine.dto.transformationrule.GraphDTO;
+import de.unistuttgart.graphengine.dto.transformationrule.InputDTO;
 import de.unistuttgart.graphengine.dto.transformationrule.NodeDTO;
 import de.unistuttgart.graphengine.dto.transformationrule.TransformationRulePayloadDTO;
 import de.unistuttgart.graphengine.dto.vFlow.VFlowGraphDTO;
@@ -62,8 +63,24 @@ public class TransformationRuleService {
             finalNodeDto.setName("Final Result");
             finalNodeDto.setNodeType("FINAL");
 
+            NodeDTO configNodeDto = new NodeDTO();
+            configNodeDto.setId(1);
+            configNodeDto.setName("Configuration");
+            configNodeDto.setNodeType("CONFIG");
+            configNodeDto.setChangeDetectionMode("OR");
+            configNodeDto.setInputTypes(List.of("ANY"));
+            configNodeDto.setOutputType("BOOLEAN");
+
+            InputDTO initialEdge = new InputDTO();
+            initialEdge.setId(1);
+            initialEdge.setOrderIndex(0);
+            finalNodeDto.setInputNodes(List.of(initialEdge));
+
             GraphDTO defaultGraphDto = new GraphDTO();
-            defaultGraphDto.setNodes(Collections.singletonList(finalNodeDto));
+            List<NodeDTO> nodes = new ArrayList<>();
+            nodes.add(finalNodeDto);
+            nodes.add(configNodeDto);
+            defaultGraphDto.setNodes(nodes);
 
             TransformationRule rule = new TransformationRule();
             rule.name = payload.getName();

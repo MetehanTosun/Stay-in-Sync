@@ -1,5 +1,5 @@
 <!-- MARK: VFlow -->
-<div id="vflow-container" (click)="storeMousePosition($event)" #canvasContainer>
+<div id="vflow-container" (click)="storeMousePosition($event)"  (contextmenu)="onCanvasRightClick($event)" #canvasContainer>
   <vflow view="auto" [nodes]="nodes" [edges]="edges" [background]="{ type: 'dots', backgroundColor: 'var(--sr-canvas-bg)' }" (click)="onCanvasClick($event)"
     (onConnect)="addEdge($event)" (onNodesChange.position)="onNodePositionChange($event)"
     (onNodesChange.select)="onNodeSelect($event)" (onEdgesChange.select)="onEdgeSelect($event)" />

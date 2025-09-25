@@ -137,6 +137,8 @@ public class TransformationRuleMapperService {
             data.setInputTypes(nodeDto.getInputTypes());
             data.setOutputType(nodeDto.getOutputType());
             data.setInputLimit(nodeDto.getInputLimit());
+            data.setChangeDetectionMode(nodeDto.getChangeDetectionMode());
+            data.setChangeDetectionActive(nodeDto.isChangeDetectionActive());
 
             vflowNode.setData(data);
             vflowNodes.add(vflowNode);

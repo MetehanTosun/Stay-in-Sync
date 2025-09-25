@@ -6,9 +6,9 @@
 
   <!-- Node Body -->
   <div class="node-content">
-    <div class="node-mode">Configuration: {{ node().data?.mode }}</div>
-    <div class="node-active" [ngClass]="node().data?.active ? 'active-enabled' : 'active-disabled'">
-      {{ node().data?.active ? 'Enabled' : 'Disabled' }}
+    <div class="node-mode">Configuration: {{ node().data?.changeDetectionMode }}</div>
+    <div class="node-active" [ngClass]="node().data?.changeDetectionActive ? 'active-enabled' : 'active-disabled'">
+      {{ node().data?.changeDetectionActive ? 'Enabled' : 'Disabled' }}
     </div>
   </div>
 

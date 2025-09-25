@@ -1,4 +1,4 @@
-import { Component, ElementRef, EventEmitter, OnInit, output, Output, ViewChild } from '@angular/core';
+import { Component, ElementRef, EventEmitter, OnInit, Output, ViewChild } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import { Connection, Edge, EdgeChange, EdgeType, NodeChange, Vflow, VflowComponent } from 'ngx-vflow';
 import { GraphAPIService, OperatorNodesApiService } from '../../service';
@@ -63,6 +63,10 @@ export class VflowCanvasComponent implements OnInit {
   pendingNodeValue: string | null = null;
 
   @Output() canvasClick = new EventEmitter<{ x: number, y: number }>();
+  @Output() canvasRightClick = new EventEmitter<{
+    viewportPos: { x: number, y: number },
+    canvasPos: { x: number, y: number }
+  }>();
   @Output() suggestionSelected = new EventEmitter<{ nodeType: NodeType, operator: LogicOperatorMeta }>();
   @Output() graphErrors = new EventEmitter<ValidationError[]>();
 
@@ -99,6 +103,27 @@ export class VflowCanvasComponent implements OnInit {
     const y = mouseEvent.clientY - rect.top;
 
     this.canvasClick.emit({ x, y });
+  }
+
+  /**
+ * Calculates and emits the mouse position (in viewport and canvas coordinates) for right-click
+ * @param mouseEvent
+ */
+  onCanvasRightClick(mouseEvent: MouseEvent) {
+    mouseEvent.preventDefault();
+
+    // Calculate both viewport and canvas coordinates
+    const rect = (mouseEvent.currentTarget as HTMLElement).getBoundingClientRect();
+    const canvasPos = {
+      x: mouseEvent.clientX - rect.left,
+      y: mouseEvent.clientY - rect.top
+    };
+    const viewportPos = {
+      x: mouseEvent.clientX,
+      y: mouseEvent.clientY
+    };
+
+    this.canvasRightClick.emit({ viewportPos, canvasPos });
   }
 
   /**
@@ -142,7 +167,8 @@ export class VflowCanvasComponent implements OnInit {
         ];
       case NodeType.CONFIG:
         return [
-          { label: 'Empty Menu', action: () => { } }
+          { label: 'Toggle Mode', action: () => { this.toggleConfiguration("MODE") } },
+          { label: 'Toggle Status', action: () => { this.toggleConfiguration("STATUS") } }
         ];
     }
   }
@@ -170,7 +196,7 @@ export class VflowCanvasComponent implements OnInit {
 
     if (nodeType === NodeType.PROVIDER && providerJsonPath) {
       nodeData = {
-        name: providerJsonPath, // TODO-s real json paths are gonna be real long
+        name: providerJsonPath,
         arcId: 0, // TODO-s get arcId from JSON path
         jsonPath: providerJsonPath
       }
@@ -248,6 +274,9 @@ export class VflowCanvasComponent implements OnInit {
   onNodeSelect(changes: NodeChange[]) {
     const change = changes.pop()!;
     if (change.type === 'select' && (change as any).selected) {
+      this.closeNodeContextMenu();
+      this.closeEdgeContextMenu();
+
       const node = this.nodes.find(e => e.id === change.id);
       if (node) {
         this.selectedNode = node;
@@ -447,6 +476,32 @@ export class VflowCanvasComponent implements OnInit {
       this.closeNodeContextMenu();
     }
   }
+
+  /**
+   * Toggles the settings of the config node
+   *
+   * @param configuration
+   */
+  toggleConfiguration(configuration: "MODE" | "STATUS") {
+    //* The config node should always be on the index 1
+    const configNode = this.nodes.at(1)!;
+    const configData = configNode.data;
+
+    if (configuration === "MODE") {
+      configData.mode === "AND" ? configData.mode = "OR" : configData.mode = "AND";
+    } else {
+      configData.active != configData.active;
+    }
+
+    // Re-insert the node into the nodes array to rerender it correctly
+    this.nodes = [
+      ...this.nodes.slice(0, 1),
+      configNode,
+      ...this.nodes.slice(2)
+    ];
+    this.hasUnsavedChanges = true;
+    this.closeNodeContextMenu();
+  }
   //#endregion
 
   //#region Element Deletion
@@ -526,32 +581,6 @@ export class VflowCanvasComponent implements OnInit {
           }
         });
 
-        // TODO-s Delete Mock Block
-        const configNode: CustomVFlowNode = {
-          id: (++this.lastNodeId).toString(),
-          point: { x: 100, y: 100 },
-          type: ConfigNodeComponent,
-          width: this.getDefaultNodeSize(NodeType.CONFIG).width,
-          height: this.getDefaultNodeSize(NodeType.CONFIG).height,
-          data: {
-            name: 'Config',
-            nodeType: NodeType.CONFIG,
-            inputTypes: ['ANY'],
-            outputType: 'BOOLEAN',
-            mode: 'AND',
-            active: true
-          },
-          contextMenuItems: []
-        };
-        configNode.contextMenuItems = this.getNodeMenuItems(configNode);
-        this.nodes = [...this.nodes, configNode];
-        const edge: Edge = {
-          id: `${this.lastNodeId} -> 0`,
-          source: `${this.lastNodeId}`,
-          target: `0`
-        }
-        this.edges.push(edge)
-
         // emits backend graph errors to the page component
         this.graphErrors.emit(graph.errors ? graph.errors : []);
 
@@ -570,12 +599,10 @@ export class VflowCanvasComponent implements OnInit {
    */
   saveGraph() {
     const graphDTO: VFlowGraphDTO = {
-      nodes: this.nodes
-        .filter(node => node.data.nodeType !== NodeType.CONFIG)  // TODO-s DELETE Mock
-        .map(node => ({
-          ...node,
-          type: node.data.nodeType
-        })),
+      nodes: this.nodes.map(node => ({
+        ...node,
+        type: node.data.nodeType
+      })),
       edges: this.edges.map(edge => ({
         ...edge,
         type: edge.type as string

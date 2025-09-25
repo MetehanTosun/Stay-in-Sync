@@ -3,7 +3,12 @@
   <button class="return-button" (click)="return()">
     Back to Rules
   </button>
-  <h2>Rule Editor - {{ ruleName }}</h2>
+  <h2>
+    Rule Editor - {{ ruleName }}
+    <button id="config-button" (click)="openRuleConfiguration()">
+      <span class="pi pi-cog"></span>
+    </button>
+  </h2>
 
   <!-- MARK: Toolbar -->
   <div class="toolbar">
@@ -15,7 +20,10 @@
         <button id="node-palette-button" (click)="openMainNodePalette()">
           Add Node
         </button>
-        <div #nodePalette>
+        <div #nodePalette [style.position]="showMainNodePalette && nodePalettePosition.x > 0 ? 'fixed' : 'relative'"
+          [style.left.px]="showMainNodePalette && nodePalettePosition.x > 0 ? nodePalettePosition.x : null"
+          [style.top.px]="showMainNodePalette && nodePalettePosition.x > 0 ? nodePalettePosition.y : null"
+          [style.z-index]="showMainNodePalette && nodePalettePosition.x > 0 ? '1000' : null">
           <app-node-palette [showMainNodePalette]="showMainNodePalette" (nodeSelected)="onNodeSelected($event)">
           </app-node-palette>
         </div>
@@ -31,8 +39,8 @@
 <!-- MARK: Main Body -->
 <!-- Graph Canvas -->
 <div class="vflow-wrapper" #vflowWrapper>
-  <app-vflow-canvas (canvasClick)="onCanvasClick($event)" (suggestionSelected)="onNodeSelected($event)"
-    (graphErrors)="graphErrors = $event">
+  <app-vflow-canvas (canvasClick)="onCanvasClick($event)" (canvasRightClick)="onCanvasRightClick($event)"
+    (suggestionSelected)="onNodeSelected($event)" (graphErrors)="graphErrors = $event">
   </app-vflow-canvas>
 </div>
 
@@ -51,3 +59,8 @@
   <app-constant-node-modal (constantCreated)="onConstantCreated($event)" (modalsClosed)="onModalsClosed()">
   </app-constant-node-modal>
 </div>
+
+<!-- Rule Configuration -->
+<app-rule-configuration *ngIf="showRuleConfiguration" [ruleName]="ruleName" [ruleDescription]="ruleDescription"
+  (close)="onModalsClosed()" (save)="onRuleConfigurationSaved($event)">
+</app-rule-configuration>
