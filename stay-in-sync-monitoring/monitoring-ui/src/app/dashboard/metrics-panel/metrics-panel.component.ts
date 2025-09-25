@@ -2,6 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import { SafeUrlPipe } from './safe.url.pipe';
 import { ActivatedRoute } from '@angular/router';
 import { TransformationService } from '../../core/services/transformation.service';
+import { ConfigService } from '../../core/services/config.service';
 
 @Component({
   selector: 'app-metrics-panel',
@@ -11,35 +12,36 @@ import { TransformationService } from '../../core/services/transformation.servic
   styleUrls: ['./metrics-panel.component.css']
 })
 export class MetricsPanelComponent implements OnInit {
-
   selectedNodeId!: string;
   isPollingNode: boolean = false;
   pollingNodeName: string = '';
   transformationIds: (number | undefined)[] = [];
   grafanaUrl: string = '';
+  grafanaBaseUrl: string = '';
 
   constructor(
     private route: ActivatedRoute,
-    private transformationService: TransformationService
+    private transformationService: TransformationService,
+    private configService: ConfigService
   ) {}
 
-  ngOnInit(): void {
+  async ngOnInit(): Promise<void> {
+    // BaseUrl zuerst vom Backend holen
+    this.grafanaBaseUrl = await this.configService.getGrafanaBaseUrl();
+
     this.route.queryParams.subscribe(params => {
       this.selectedNodeId = params['input'] || '';
 
       if (!this.selectedNodeId) {
-        // Keine Node ausgewählt, Standard-URL bauen
         this.buildGrafanaUrl();
         return;
       }
 
-      // Prüfen, ob es ein PollingNode ist
       if (this.selectedNodeId.startsWith('POLL_')) {
         this.isPollingNode = true;
         this.pollingNodeName = this.selectedNodeId.replace('POLL_', '');
         this.buildGrafanaUrl();
       } else {
-        // Standard: Transformationen holen
         this.isPollingNode = false;
         this.loadTransformationsAndBuildUrl(this.selectedNodeId);
       }
@@ -54,29 +56,26 @@ export class MetricsPanelComponent implements OnInit {
       },
       error: (err) => {
         console.error('Fehler beim Laden der Transformationen', err);
-        this.buildGrafanaUrl(); // URL trotzdem bauen
+        this.buildGrafanaUrl();
       }
     });
   }
 
   private buildGrafanaUrl() {
-    const baseUrl = 'http://localhost:3000/d/abd0d0fc-75cf-4a29-abeb-7c96b57a1629/stayinsync-monitoring-metrics';
     const orgId = 1;
-    const from = Date.now() - 60 * 60 * 1000; // letzte Stunde
+    const from = Date.now() - 60 * 60 * 1000;
     const to = Date.now();
     const refresh = 'auto';
 
     let urlParams = `orgId=${orgId}&from=${from}&to=${to}&refresh=${refresh}&theme=light`;
 
     if (this.isPollingNode) {
-      // PollingNode-Parameter
       urlParams += `&var-${this.pollingNodeName}=1`;
     } else if (this.transformationIds.length > 0) {
-      // Transformation IDs
       urlParams += '&' + this.transformationIds.map(id => `var-transformationId=${id}`).join('&');
     }
 
-    this.grafanaUrl = `${baseUrl}?${urlParams}`;
+    this.grafanaUrl = `${this.grafanaBaseUrl}?${urlParams}`;
     console.log('Grafana URL:', this.grafanaUrl);
   }
 }
