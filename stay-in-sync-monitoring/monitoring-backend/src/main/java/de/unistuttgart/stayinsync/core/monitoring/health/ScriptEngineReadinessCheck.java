@@ -6,7 +6,7 @@ import org.eclipse.microprofile.health.Readiness;
 
 import jakarta.enterprise.context.ApplicationScoped;
 
-@Readiness
+//@Readiness
 @ApplicationScoped
 public class ScriptEngineReadinessCheck implements HealthCheck {
 

@@ -5,7 +5,7 @@ import jakarta.enterprise.context.ApplicationScoped;
 import io.micrometer.core.instrument.Metrics;
 import java.util.concurrent.atomic.AtomicInteger;
 
-@Readiness
+//@Readiness
 @ApplicationScoped
 public class DatabaseHealthCheck implements HealthCheck {
 
