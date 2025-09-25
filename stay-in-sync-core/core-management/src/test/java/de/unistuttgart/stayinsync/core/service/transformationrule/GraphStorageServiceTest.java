@@ -2,6 +2,7 @@ package de.unistuttgart.stayinsync.core.service.transformationrule;
 
 import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.LogicGraphEntity;
 import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.TransformationRule;
+import de.unistuttgart.stayinsync.core.configuration.exception.CoreManagementException;
 import de.unistuttgart.stayinsync.core.configuration.service.transformationrule.GraphStorageService;
 import io.quarkus.test.junit.QuarkusTest;
 import jakarta.inject.Inject;
@@ -77,7 +78,9 @@ public class GraphStorageServiceTest {
 
         // ASSERT
         assertTrue(wasDeleted);
-        assertNull(storageService.findRuleById(id), "Rule should be gone after deletion.");
+        assertThrows(CoreManagementException.class, () -> {
+            storageService.findRuleById(id);
+        }, "Rule should be gone after deletion and findById should throw exception.");
     }
 
     @Test
