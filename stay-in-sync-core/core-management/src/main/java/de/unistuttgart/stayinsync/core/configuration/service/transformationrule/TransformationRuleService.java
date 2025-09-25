@@ -112,6 +112,11 @@ public class TransformationRuleService {
         Log.debugf("Updating rule metadata with id: %d", id);
 
         TransformationRule ruleToUpdate = storageService.findRuleById(id);
+        if (ruleToUpdate == null) {
+            throw new CoreManagementException(Response.Status.NOT_FOUND,
+                    "Rule Not Found", 
+                    String.format("Rule ID %d was not found", id));
+        }
 
         ruleToUpdate.name = dto.getName();
         ruleToUpdate.description = dto.getDescription();
@@ -131,6 +136,11 @@ public class TransformationRuleService {
         Log.debugf("Updating graph with ruleId: %d", id);
 
         TransformationRule ruleToUpdate = storageService.findRuleById(id);
+        if (ruleToUpdate == null) {
+            throw new CoreManagementException(Response.Status.NOT_FOUND,
+                    "Rule Not Found", 
+                    String.format("Rule ID %d was not found", id));
+        }
         try {
             GraphDTO graphDto = mapper.vflowToGraphDto(vflowDto);
 
