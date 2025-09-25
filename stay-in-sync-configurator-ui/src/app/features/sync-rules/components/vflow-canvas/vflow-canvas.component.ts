@@ -97,12 +97,12 @@ export class VflowCanvasComponent implements OnInit {
    * @param mouseEvent
    */
   onCanvasClick(mouseEvent: MouseEvent) {
-    // Gets the canvas element's position and size relative to the viewport
+    // Calculate screen position relative to canvas
     const rect = (mouseEvent.currentTarget as HTMLElement).getBoundingClientRect();
     const x = mouseEvent.clientX - rect.left;
     const y = mouseEvent.clientY - rect.top;
 
-    this.canvasClick.emit({ x, y });
+    this.canvasClick.emit(this.screenToVFlowCoordinate(x, y));
   }
 
   /**
@@ -112,12 +112,12 @@ export class VflowCanvasComponent implements OnInit {
   onCanvasRightClick(mouseEvent: MouseEvent) {
     mouseEvent.preventDefault();
 
-    // Calculate both viewport and canvas coordinates
+    // Calculate screen position relative to canvas
     const rect = (mouseEvent.currentTarget as HTMLElement).getBoundingClientRect();
-    const canvasPos = {
-      x: mouseEvent.clientX - rect.left,
-      y: mouseEvent.clientY - rect.top
-    };
+    const screenX = mouseEvent.clientX - rect.left;
+    const screenY = mouseEvent.clientY - rect.top;
+
+    const canvasPos = this.screenToVFlowCoordinate(screenX, screenY);
     const viewportPos = {
       x: mouseEvent.clientX,
       y: mouseEvent.clientY
@@ -218,8 +218,9 @@ export class VflowCanvasComponent implements OnInit {
 
     const size = this.getDefaultNodeSize(nodeType);
     const nodeCenter = {
-      x: pos.x - size.width * (nodeType === NodeType.LOGIC ? 1.4 : nodeType === NodeType.PROVIDER ? 1.4 : 1.7),
-      y: pos.y - size.height * (nodeType === NodeType.LOGIC ? 4.75 : nodeType === NodeType.PROVIDER ? 4.3 : 4.4)
+      x: pos.x - size.width / 2,
+      y: pos.y - size.height * (nodeType === NodeType.LOGIC ? 1.4 : nodeType === NodeType.PROVIDER ? 1.2 : 1.1)
+
     }
 
     // Create and add new node
@@ -627,6 +628,21 @@ export class VflowCanvasComponent implements OnInit {
   //#endregion
 
   //#region Helpers
+  /**
+ * Converts screen coordinates to VFlow coordinates
+ * @param screenX
+ * @param screenY
+ * @returns VFlow coordinates
+ */
+  private screenToVFlowCoordinate(screenX: number, screenY: number): { x: number, y: number } {
+    const viewport = this.vflowInstance.viewport();
+
+    const flowX = (screenX - viewport.x) / viewport.zoom;
+    const flowY = (screenY - viewport.y) / viewport.zoom;
+
+    return { x: flowX, y: flowY };
+  }
+
   /**
    * @param nodeType
    * @returns the default node size of given node type
