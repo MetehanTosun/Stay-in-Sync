@@ -144,8 +144,10 @@ monitoring-backend:
     envs:
       FLUENT_BIT_ADDRESS: fluent-bit:5170
       CORE_MANAGEMENT_ADDRESS: http://stay-in-sync-management.test
+      SYNCNODE_ADDRESS: http://core-sync-node:80
       PROMETHEUS_URL: test-kube-prometheus-stack-prometheus:9090
       LOKI_URL: http://loki:3100/loki/api/v1/query_range
+      GRAFANA_BASE_URL: http://test-grafana/d/abd0d0fc-75cf-4a29-abeb-7c96b57a1629/stayinsync-monitoring-metrics
 kube-prometheus-stack:
   prometheus:
     prometheusSpec:
