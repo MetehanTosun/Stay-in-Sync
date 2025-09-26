@@ -1,6 +1,6 @@
-# Monitoring Graph and Metrics
+# Monitoring Graph & Metrics
 
-The **Monitoring Graph** provides a visual overview of:
+Der **Monitoring Graph** bietet eine visuelle Übersicht über:
 
 - **Source systems**
 - **Target systems**
@@ -8,52 +8,56 @@ The **Monitoring Graph** provides a visual overview of:
 - **SyncNodes**
 - **Connections** between these nodes
 
-## Health Checks & Visualization
-Source systems, target systems, and polling nodes are continuously monitored via health checks.  
-Node status is represented with color codes:
+---
 
-- **Green (#4caf50)** → active
-- **Red (#f44336)** → error
-- **Yellow (#ffeb3b)** → inactive
+## 🩺 Health Checks & Visualization
+Alle Systeme (Source, Target, PollingNodes) werden kontinuierlich überwacht.  
+Der Status der Knoten wird durch **Farbcodes** dargestellt:
 
-An **expandable legend** explains shapes and colors:
+- 🟩 **Grün** → aktiv
+- 🟥 **Rot** → Fehler
+- 🟨 **Gelb** → inaktiv
 
-- **Shapes**
-  - Circle → SyncNode / PollingNode
-  - Triangle → SourceSystem / ASS
-  - Square → TargetSystem
+### 🔎 Legende
+Die Legende ist **ein- und ausklappbar** und erklärt Formen & Farben:
 
-- **Colors**
-  - Green → active
-  - Red → error
-  - Yellow → inactive
+**Formen**
 
-The legend can be toggled open and closed at any time.
+- 🔵 **Kreis** → SyncNode / PollingNode
+- 🔺 **Dreieck** → SourceSystem / ASS
+- 🟦 **Quadrat** → TargetSystem
 
-## Metrics
-A **Metrics tab** displays system-level statistics for all active services.  
-This is powered by an **embedded Grafana dashboard**, which allows free navigation, filtering, and custom chart creation.
-
-- **General metrics**:
-  - CPU usage
-  - Thread count
-  - RabbitMQ channels
-  - Heap memory
-
-- **PollingNodes**:
-  - Request count
-
-- **SyncNodes**:
-  - Script load
-  - Execution times
-
-## Filtering via Graph
-Filtering can be done directly in the graph:
-
-- Click on a **PollingNode** → shows only its request count
-- Click on a **SyncNode** → shows only its script-related metrics
-- Click on empty space next to the graph → removes filter
+**Farben**
+- 🟩 Grün → aktiv
+- 🟥 Rot → Fehler
+- 🟨 Gelb → inaktiv
 
 ---
 
+## 📈 Metrics
+Im **Metrics Tab** werden Systemstatistiken aller aktiven Services angezeigt.  
+Dies erfolgt über ein **eingebettetes Grafana-Dashboard** mit freier Navigation, Filterung und individuellen Diagrammen.
 
+### 🔧 Allgemeine Metriken
+- CPU-Auslastung
+- Thread-Anzahl
+- RabbitMQ-Channels
+- Heap-Memory
+
+### 📡 PollingNodes
+- Request-Anzahl
+
+### ⚙️ SyncNodes
+- Script Load
+- Ausführungszeiten
+
+---
+
+## 🔍 Filtering im Graph
+Die Filterung kann direkt über den Graphen erfolgen:
+
+- Klick auf einen **PollingNode** → zeigt nur dessen Request-Anzahl
+- Klick auf einen **SyncNode** → zeigt nur scriptbezogene Metriken
+- Klick auf **freien Bereich** → Filter wird entfernt
+
+---

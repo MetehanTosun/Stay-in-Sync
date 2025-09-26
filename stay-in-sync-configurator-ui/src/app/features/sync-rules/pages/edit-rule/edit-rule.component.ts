@@ -6,6 +6,8 @@ import { CommonModule } from '@angular/common';
 import { TransformationRulesApiService } from '../../service';
 import { ErrorPanelComponent } from '../../components/error-panel/error-panel.component';
 import { ValidationError } from '../../models/interfaces/validation-error.interface';
+import {Button} from 'primeng/button';
+import {Toolbar} from 'primeng/toolbar';
 
 /**
  * The rule editor page component in which the user can view and edit a transformation rule graph
@@ -18,7 +20,9 @@ import { ValidationError } from '../../models/interfaces/validation-error.interf
     NodePaletteComponent,
     ProviderNodeModalComponent,
     ConstantNodeModalComponent,
-    ErrorPanelComponent
+    ErrorPanelComponent,
+    Button,
+    Toolbar
   ],
   templateUrl: './edit-rule.component.html',
   styleUrl: './edit-rule.component.css'

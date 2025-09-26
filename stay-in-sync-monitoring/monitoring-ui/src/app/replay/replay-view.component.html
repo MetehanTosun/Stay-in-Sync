@@ -1,6 +1,18 @@
-<div class="replay-container">
-  <section class="left-pane">
-    <header class="pane-header">
+<div class="replay-container" style="display: flex; gap: 1rem; height: 100%">
+  <!-- Linke Seite: Monaco Editor mit fester Breite -->
+  <section
+    class="left-pane"
+    style="width: 55%; display: flex; flex-direction: column"
+  >
+    <header
+      class="pane-header"
+      style="
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 0.5rem;
+      "
+    >
       <h2>Script (read-only)</h2>
       <button class="btn btn-secondary" (click)="onReplayClick()">
         Replay
@@ -9,12 +21,32 @@
 
     <ng-container *ngIf="!loading(); else loadingTpl">
       <ng-container *ngIf="!error(); else errorTpl">
-        <pre class="code-block"><code>{{ scriptDisplay }}</code></pre>
+        <ngx-monaco-editor
+          [options]="{
+            readOnly: true,
+            language: 'javascript',
+            automaticLayout: true,
+            minimap: { enabled: false },
+            lineNumbers: 'on'
+          }"
+          [ngModel]="scriptDisplay"
+          style="
+            flex: 1;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            overflow: hidden;
+          "
+        >
+        </ngx-monaco-editor>
       </ng-container>
     </ng-container>
   </section>
 
-  <section class="right-pane">
+  <!-- Rechte Seite: Tabs bleiben wie vorher -->
+  <section
+    class="right-pane"
+    style="flex: 1; display: flex; flex-direction: column"
+  >
     <p-tabs>
       <p-tablist>
         <p-tab value="0">SourceData</p-tab>
@@ -39,6 +71,7 @@
           <ng-container *ngIf="!loading(); else loadingTpl">
             <ng-container *ngIf="!error(); else errorTpl">
               <h3>Variable Snapshot</h3>
+              <pre class="json-block">{{ variables | json }}</pre>
               <pre class="json-block">{{ variables | json }}</pre>
             </ng-container>
           </ng-container>
@@ -70,13 +103,11 @@
                 class="log-table"
                 [style.width]="'100%'"
                 [style.table-layout]="'fixed'"
-                [style.height]="'350px'"
               >
                 <ng-template pTemplate="header">
                   <tr>
                     <th pSortableColumn="timestamp">
-                      Timestamp
-                      <p-sortIcon field="timestamp"></p-sortIcon>
+                      Timestamp <p-sortIcon field="timestamp"></p-sortIcon>
                     </th>
                     <th>Level</th>
                     <th>Service</th>
@@ -91,12 +122,10 @@
                         type="text"
                         field="message"
                         placeholder="Search by message"
-                        ariaLabel="Filter Message"
                       ></p-columnFilter>
                     </th>
                   </tr>
                 </ng-template>
-
                 <ng-template pTemplate="body" let-log>
                   <tr>
                     <td class="timestamp">
@@ -133,7 +162,7 @@
     </p-tabs>
   </section>
 
-  <!-- deine Templates -->
+  <!-- Templates für Loading & Error -->
   <ng-template #loadingTpl>
     <p>Loading...</p>
   </ng-template>
@@ -142,11 +171,3 @@
     <p class="error">Error loading data</p>
   </ng-template>
 </div>
-
-<ng-template #loadingTpl>
-  <div style="padding: 12px">Loading…</div>
-</ng-template>
-
-<ng-template #errorTpl>
-  <div style="padding: 12px; color: #b00020">{{ error() }}</div>
-</ng-template>

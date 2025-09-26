@@ -51,6 +51,7 @@ export class ReplayViewComponent implements OnInit {
 
   scriptDisplay = '// loading TypeScript…';
   logs: LogEntry[] = [];
+  variables: string = '';
 
   ngOnInit(): void {
     this.snapshotId = this.route.snapshot.queryParamMap.get('snapshotId');
