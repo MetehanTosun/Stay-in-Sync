@@ -2,7 +2,9 @@
   <section class="left-pane">
     <header class="pane-header">
       <h2>Script (read-only)</h2>
-      <button class="btn btn-secondary" disabled>Replay (stub)</button>
+      <button class="btn btn-secondary" (click)="onReplayClick()">
+        Replay
+      </button>
     </header>
 
     <ng-container *ngIf="!loading(); else loadingTpl">
@@ -14,12 +16,12 @@
 
   <section class="right-pane">
     <p-tabs>
-
       <p-tablist>
         <p-tab value="0">SourceData</p-tab>
         <p-tab value="1">Variables</p-tab>
-        <p-tab value="2">Terminal</p-tab>
-        <p-tab value="3">Logs</p-tab>
+        <p-tab value="2">Errors</p-tab>
+        <p-tab value="3">OutputData</p-tab>
+        <p-tab value="4">Logs</p-tab>
       </p-tablist>
 
       <p-tabpanels>
@@ -28,8 +30,8 @@
             <ng-container *ngIf="!error(); else errorTpl">
               <h3>SourceData</h3>
               <pre class="json-block">{{
-                  data()?.transformationResult?.sourceData | json
-                }}</pre>
+                data()?.transformationResult?.sourceData | json
+              }}</pre>
             </ng-container>
           </ng-container>
         </p-tabpanel>
@@ -37,22 +39,27 @@
           <ng-container *ngIf="!loading(); else loadingTpl">
             <ng-container *ngIf="!error(); else errorTpl">
               <h3>Variable Snapshot</h3>
-              <pre class="json-block">
-          </pre>
+              <pre class="json-block">{{ variables | json }}</pre>
             </ng-container>
           </ng-container>
         </p-tabpanel>
         <p-tabpanel value="2">
           <ng-container *ngIf="!loading(); else loadingTpl">
             <ng-container *ngIf="!error(); else errorTpl">
-              <h3>Terminal</h3>
-              <pre class="terminal">{{
-                  data()?.transformationResult?.errorInfo || "No errors."
-                }}</pre>
+              <h3>Errors</h3>
+              <pre class="terminal">{{ errorInfo | json }}</pre>
             </ng-container>
           </ng-container>
         </p-tabpanel>
         <p-tabpanel value="3">
+          <ng-container *ngIf="!loading(); else loadingTpl">
+            <ng-container *ngIf="!error(); else errorTpl">
+              <h3>OutputData</h3>
+              <pre class="terminal">{{ outputData | json }}</pre>
+            </ng-container>
+          </ng-container>
+        </p-tabpanel>
+        <p-tabpanel value="4">
           <ng-container *ngIf="!loading(); else loadingTpl">
             <ng-container *ngIf="!error(); else errorTpl">
               <h3>Logs</h3>
@@ -92,12 +99,28 @@
 
                 <ng-template pTemplate="body" let-log>
                   <tr>
-                    <td class="timestamp">{{ (log.timestamp / 1000000) | date: 'short' }}</td>
-                    <td class="level" [ngClass]="log.level">{{ log.level }}</td>
-                    <td style="max-width: 150px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
-                      {{ log.service || '-' }}
+                    <td class="timestamp">
+                      {{ log.timestamp / 1000000 | date : "short" }}
                     </td>
-                    <td class="message" style="white-space: normal; word-wrap: break-word; max-width: 400px;">
+                    <td class="level" [ngClass]="log.level">{{ log.level }}</td>
+                    <td
+                      style="
+                        max-width: 150px;
+                        overflow: hidden;
+                        text-overflow: ellipsis;
+                        white-space: nowrap;
+                      "
+                    >
+                      {{ log.service || "-" }}
+                    </td>
+                    <td
+                      class="message"
+                      style="
+                        white-space: normal;
+                        word-wrap: break-word;
+                        max-width: 400px;
+                      "
+                    >
                       {{ log.message }}
                     </td>
                   </tr>
@@ -118,7 +141,6 @@
   <ng-template #errorTpl>
     <p class="error">Error loading data</p>
   </ng-template>
-
 </div>
 
 <ng-template #loadingTpl>
