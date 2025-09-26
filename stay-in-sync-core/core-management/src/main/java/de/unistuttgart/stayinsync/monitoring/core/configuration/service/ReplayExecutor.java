@@ -19,6 +19,8 @@ import com.oracle.truffle.api.debug.Debugger;
 import com.oracle.truffle.api.debug.DebuggerSession;
 import com.oracle.truffle.api.debug.SuspendedEvent;
 
+import jakarta.enterprise.context.ApplicationScoped;
+
 /**
  * Runs a transformation script in a sandboxed GraalJS context, captures
  * variables
@@ -28,6 +30,7 @@ import com.oracle.truffle.api.debug.SuspendedEvent;
  * Contract: The user script defines a function:
  * function transform(source) { ... return <any>; }
  */
+@ApplicationScoped
 public class ReplayExecutor {
 
     public record Result(
