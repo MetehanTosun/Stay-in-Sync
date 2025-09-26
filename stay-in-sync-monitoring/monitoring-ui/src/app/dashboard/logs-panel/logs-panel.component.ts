@@ -1,12 +1,13 @@
-import {Component, OnDestroy, OnInit} from '@angular/core';
+import { Component, OnDestroy, OnInit } from '@angular/core';
 import { LogEntry } from '../../core/models/log.model';
 import { LogService } from '../../core/services/log.service';
 import { FormsModule } from '@angular/forms';
-import { DatePipe, NgClass, NgIf } from '@angular/common';
+import {DatePipe, NgClass, NgForOf, NgIf} from '@angular/common';
 import { TableModule } from 'primeng/table';
 import { ActivatedRoute } from '@angular/router';
-import {NodeMarkerService} from '../../core/services/node-marker.service';
-import {Button} from 'primeng/button';
+import { Button } from 'primeng/button';
+import { TransformationService } from '../../core/services/transformation.service';
+import {DropdownModule} from 'primeng/dropdown'; // <-- neu
 
 @Component({
   selector: 'app-logs-panel',
@@ -17,7 +18,8 @@ import {Button} from 'primeng/button';
     NgClass,
     NgIf,
     TableModule,
-    Button
+    Button,
+    DropdownModule
   ],
   standalone: true
 })
@@ -30,11 +32,35 @@ export class LogsPanelComponent implements OnInit, OnDestroy {
 
   startTime = '';
   endTime = '';
-  level = 'info';
+  level = '';
+  transformationIds: string[] = [];
 
-  constructor(private logService: LogService, private route: ActivatedRoute, private nodeMarkerService: NodeMarkerService) {}
+  levels = [
+    { label: 'Info', value: 'info' },
+    { label: 'Warn', value: 'warn' },
+    { label: 'Error', value: 'error' },
+    { label: 'Debug', value: 'debug' },
+    { label: 'Trace', value: 'trace' }
+  ];
+
+  services = [
+    { label: 'monitoring-backend', value: 'monitoring-backend' },
+    { label: 'core-sync-node', value: 'core-sync-node' },
+    { label: 'core-polling-node', value: 'core-polling-node' },
+    { label: 'core-management', value: 'core-management' },
+    { label: 'docker', value: 'docker' }
+  ];
+
+
+  constructor(
+    private logService: LogService,
+    private route: ActivatedRoute,
+    private transformationService: TransformationService // <-- neu
+  ) {}
 
   private intervalId?: number;
+  selectedTransformationId: string = '';
+  selectedService: string = '';
 
   ngOnInit() {
     const now = new Date();
@@ -42,20 +68,13 @@ export class LogsPanelComponent implements OnInit, OnDestroy {
     this.startTime = this.toDateTimeLocal(oneHourAgo);
     this.endTime = this.toDateTimeLocal(now);
 
-    // Auf Query-Params hören
     this.route.queryParams.subscribe(params => {
       this.selectedNodeId = params['input'];
       this.fetchLogs();
     });
-
-    // Intervall starten
-    this.intervalId = window.setInterval(() => {
-      this.checkForErrorLogs();
-    }, 5000);
   }
 
   ngOnDestroy() {
-    // Intervall bereinigen
     if (this.intervalId) {
       clearInterval(this.intervalId);
     }
@@ -67,26 +86,21 @@ export class LogsPanelComponent implements OnInit, OnDestroy {
   }
 
   fetchLogs() {
-    this.loading = true;
-    this.errorMessage = '';
-
-    // Scroll-Position speichern
-    const logContainer = document.querySelector('.log-filters');
-    const scrollTop = logContainer ? logContainer.scrollTop : 0;
-
     const startNs = this.toNanoSeconds(new Date(this.startTime));
     const endNs = this.toNanoSeconds(new Date(this.endTime));
+    const effectiveLevel = this.level || '';
 
-    this.logService.getLogs(startNs, endNs, this.level, this.selectedNodeId)
-      .subscribe({
+    // Sonderfall: PollingNode
+    if (this.selectedNodeId && this.selectedNodeId.startsWith('POLL')) {
+      this.selectedService = 'core-polling-node';
+      this.loading = true;
+      this.errorMessage = '';
+
+      // 👉 direkt Service-Endpoint nutzen
+      this.logService.getLogsByService(this.selectedService, startNs, endNs, effectiveLevel).subscribe({
         next: logs => {
           this.logs = logs;
           this.loading = false;
-
-          // Scroll-Position wiederherstellen
-          if (logContainer) {
-            logContainer.scrollTop = scrollTop;
-          }
         },
         error: err => {
           console.error('Error fetching logs', err);
@@ -94,37 +108,94 @@ export class LogsPanelComponent implements OnInit, OnDestroy {
           this.loading = false;
         }
       });
+      return;
+    }
+
+    // Kein Node ausgewählt: Nur Service/Level-Filter
+    if (!this.selectedNodeId) {
+      this.loading = true;
+      this.errorMessage = '';
+
+      if (this.selectedService && this.selectedService !== '') {
+        // 👉 Service-Endpoint
+        this.logService.getLogsByService(this.selectedService, startNs, endNs, effectiveLevel)
+          .subscribe({
+            next: logs => {
+              this.logs = logs;
+              this.loading = false;
+            },
+            error: err => {
+              console.error('Error fetching logs', err);
+              this.errorMessage = 'Fehler beim Laden der Logs';
+              this.loading = false;
+            }
+          });
+      } else {
+        // 👉 Fallback: alle Logs (ohne Service-Filter)
+        this.logService.getLogs(startNs, endNs, this.level)
+          .subscribe({
+            next: logs => {
+              this.logs = logs;
+              this.loading = false;
+            },
+            error: err => {
+              console.error('Error fetching logs', err);
+              this.errorMessage = 'Fehler beim Laden der Logs';
+              this.loading = false;
+            }
+          });
+      }
+      return;
+    }
+
+    this.loading = true;
+    this.errorMessage = '';
+
+    // 1. Alle TransformationIds für den SyncJob holen
+    this.transformationService.getTransformations(this.selectedNodeId).subscribe({
+      next: transformations => {
+        if (!transformations || transformations.length === 0) {
+          this.logs = [];
+          this.loading = false;
+          return;
+        }
+
+        this.transformationIds = transformations
+          .map(t => t.id)
+          .filter((id): id is number => id !== undefined)
+          .map(id => id.toString());
+
+        // 2. Logs für TransformationIds abrufen
+        this.logService.getLogsByTransformations(this.transformationIds, startNs, endNs, effectiveLevel).subscribe({
+          next: logs => {
+            this.logs = logs;
+            this.loading = false;
+            if (this.selectedTransformationId !== '') {
+              this.logs = this.logs.filter(log => log.transformationId?.toString() === this.selectedTransformationId);
+            }
+          },
+          error: err => {
+            console.error('Error fetching logs', err);
+            this.errorMessage = 'Fehler beim Laden der Logs';
+            this.loading = false;
+          }
+        });
+      },
+      error: err => {
+        console.error('Error fetching transformationIds', err);
+        this.errorMessage = 'Fehler beim Laden der Transformationen';
+        this.loading = false;
+      }
+    });
   }
+
 
   onFilterChange() {
     this.fetchLogs();
   }
 
-  checkForErrorLogs() {
-    console.log('Checking for error logs to mark nodes...');
-    this.logService.getErrorLogs(this.toNanoSeconds(new Date(this.startTime)), this.toNanoSeconds(new Date())).subscribe(
-      {
-        next: errorIds => {
-          console.log('Error syncJobIds received:', errorIds);
-          const markedNodes: { [nodeId: string]: boolean } = {};
-          errorIds.forEach(id => {
-            if (!markedNodes[id]) {
-              markedNodes[id] = true;
-              console.log('Marking node due to error syncJobId:', id);
-            }
-          });
-          this.nodeMarkerService.updateMarkedNodes(markedNodes);
-        },
-        error: err => {
-          console.error('Error fetching error sync job IDs', err);
-        }
-      }
-    )
-  }
-
   buildFallbackMessage(log: LogEntry): string {
     const raw = (log as any).rawMessage || '';
-
     const component = this.extractValue(raw, 'component');
     const query = this.extractQuotedValue(raw, 'query');
     const returned = this.extractValue(raw, 'returned_lines');
@@ -139,7 +210,6 @@ export class LogsPanelComponent implements OnInit, OnDestroy {
     const parts: string[] = [];
     if (component) parts.push(`[${component}]`);
     if (caller) parts.push(`caller=${caller}`);
-
     return parts.length > 0 ? parts.join(' ') : '(unstructured log entry)';
   }
 

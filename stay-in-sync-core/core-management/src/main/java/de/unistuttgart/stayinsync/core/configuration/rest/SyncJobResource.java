@@ -1,13 +1,11 @@
 package de.unistuttgart.stayinsync.core.configuration.rest;
 
-import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.SyncJob;
 import de.unistuttgart.stayinsync.core.configuration.exception.CoreManagementException;
 import de.unistuttgart.stayinsync.core.configuration.mapping.MonitoringGraphSyncJobMapper;
 import de.unistuttgart.stayinsync.core.configuration.mapping.SyncJobFullUpdateMapper;
 import de.unistuttgart.stayinsync.core.configuration.rest.dtos.SyncJobCreationDTO;
 import de.unistuttgart.stayinsync.core.configuration.rest.dtos.SyncJobDTO;
 import de.unistuttgart.stayinsync.core.configuration.service.SyncJobService;
-import de.unistuttgart.stayinsync.core.configuration.rest.Examples;
 import de.unistuttgart.stayinsync.transport.dto.monitoringgraph.MonitoringSyncJobDto;
 import io.quarkus.logging.Log;
 import jakarta.inject.Inject;
@@ -27,7 +25,6 @@ import org.eclipse.microprofile.openapi.annotations.media.Schema;
 import org.eclipse.microprofile.openapi.annotations.parameters.Parameter;
 import org.eclipse.microprofile.openapi.annotations.parameters.RequestBody;
 import org.eclipse.microprofile.openapi.annotations.responses.APIResponse;
-import org.hibernate.engine.spi.Status;
 
 
 import java.net.URI;
@@ -120,6 +117,22 @@ public class SyncJobResource {
         Log.debugf("Total number of sync-jobs: %d", syncJobs.size());
 
         return monitoringGraphSyncJobMapper.mapToDto(syncJobs);
+    }
+
+    @GET
+    @Path("/for-graph/{id}")
+    @Operation(summary = "Returns all the sync-jobs from the database")
+    @APIResponse(
+            responseCode = "200",
+            description = "Gets a sync-job for a given id",
+            content = @Content(
+                    mediaType = APPLICATION_JSON,
+                    schema = @Schema(implementation = SyncJobDTO.class),
+                    examples = @ExampleObject(name = "sync-job", value = Examples.VALID_EXAMPLE_SYNCJOB)
+            )
+    )
+    public MonitoringSyncJobDto getSyncJobsForGraphWithId(@Parameter(name = "id", required = true) @PathParam("id") Long id) {
+        return monitoringGraphSyncJobMapper.mapToDtoSingle(this.syncJobService.findSyncJobById(id));
     }
 
 

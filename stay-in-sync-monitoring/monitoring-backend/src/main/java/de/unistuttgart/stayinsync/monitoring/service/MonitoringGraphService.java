@@ -1,5 +1,6 @@
 package de.unistuttgart.stayinsync.monitoring.service;
 
+import de.unistuttgart.stayinsync.monitoring.clientinterfaces.PrometheusClient;
 import de.unistuttgart.stayinsync.monitoring.clientinterfaces.SourceSystemClient;
 import de.unistuttgart.stayinsync.monitoring.clientinterfaces.SyncJobClient;
 import de.unistuttgart.stayinsync.monitoring.clientinterfaces.TargetSystemClient;
@@ -29,6 +30,9 @@ public class MonitoringGraphService {
     @RestClient
     SyncJobClient syncJobClient;
 
+    @Inject
+    PrometheusClient prometheusClient;
+
 
     public GraphResponse buildGraph() {
         Map<String, NodeDto> nodeMap = new HashMap<>();
@@ -36,14 +40,16 @@ public class MonitoringGraphService {
 
         // 1. Alle SourceSystems
         for (MonitoringSourceSystemDto src : sourceSystemClient.getAll()) {
-            nodeMap.put("SRC_" + src.id, createNode("SRC_" + src.id, "SourceSystem", src.name, src.status));
+            boolean isHealthy = prometheusClient.isUp(src.apiUrl);
+            nodeMap.put("SRC_" + src.id, createNode("SRC_" + src.id, "SourceSystem", src.name, isHealthy ? "active" : "error"));
         }
 
         Log.info(nodeMap.toString());
 
         // 2. Alle TargetSystems
         for (MonitoringTargetSystemDto tgt : targetSystemClient.getAll()) {
-            nodeMap.put("TGT_" + tgt.id, createNode("TGT_" + tgt.id, "TargetSystem", tgt.name, tgt.status));
+            boolean isHealthy = prometheusClient.isUp(tgt.apiUrl);
+            nodeMap.put("TGT_" + tgt.id, createNode("TGT_" + tgt.id, "TargetSystem", tgt.name, isHealthy ? "active" : "error"));
         }
 
         Log.info(nodeMap.toString());
@@ -56,7 +62,7 @@ public class MonitoringGraphService {
         // 3. SyncJobs + Verbindungen
         for (MonitoringSyncJobDto job : jobs) {
             String syncNodeId =  job.id.toString();
-            nodeMap.put(syncNodeId, createNode(syncNodeId, "SyncNode", job.name, job.deployed ? "active" : "inactive"));
+            nodeMap.put(syncNodeId, createNode(syncNodeId, "SyncNode", job.name, "active"));
 
             if (job.transformations != null) {
                 for (MonitoringTransformationDto tf : job.transformations) {
@@ -70,7 +76,9 @@ public class MonitoringGraphService {
                     if (tf.pollingNodes != null) {
                         for (String pollingNodeName : tf.pollingNodes) {
                             String pollingNodeId = "POLL_" + pollingNodeName;
-                            nodeMap.putIfAbsent(pollingNodeId, createNode(pollingNodeId, "PollingNode", pollingNodeName, "active"));
+                            //TODO: Mit WorkerPodName machen, wenn auf kubernetes läuft
+                            boolean isHealthy = prometheusClient.isUp("http://host.docker.internal:8095/q/health/live"); // Platzhalter
+                            nodeMap.putIfAbsent(pollingNodeId, createNode(pollingNodeId, "PollingNode", pollingNodeName, isHealthy ? "active" : "error"));
 
                             // SourceSystem → PollingNode
                             for (Long srcId : tf.sourceSystemIds) {

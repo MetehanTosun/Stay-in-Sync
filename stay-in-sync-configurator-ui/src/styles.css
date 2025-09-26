@@ -1,4 +1,8 @@
-@import "primeicons/primeicons.css";
+@import 'primeicons/primeicons.css';
+@import "tailwindcss";
+@import "tailwindcss-primeui";
+
+
 :root {
   /* Typografie */
   --p-font-family-base:     'Inter', sans-serif;

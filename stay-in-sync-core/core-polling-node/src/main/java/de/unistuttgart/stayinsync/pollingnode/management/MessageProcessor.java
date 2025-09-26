@@ -94,7 +94,7 @@ public class MessageProcessor {
      * @return PollingJobDetails as result of conversion.
      */
     private PollingJobDetails convertSourceSystemApiMessageToPollingJobDetails(final SourceSystemApiRequestConfigurationMessageDTO message){
-        return new PollingJobDetails(message.name(), message.id(), message.pollingIntervallTimeInMs(),
+        return new PollingJobDetails(message.name(), message.id(), message.pollingIntervallTimeInMs(), message.workerPodName(),
                 new RequestBuildingDetails(message.apiConnectionDetails().sourceSystem(), message.apiConnectionDetails().endpoint(),
                         message.apiConnectionDetails().requestParameters(), message.apiConnectionDetails().requestHeader()));
     }
