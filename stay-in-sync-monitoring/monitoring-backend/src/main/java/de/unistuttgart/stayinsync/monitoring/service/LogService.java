@@ -17,28 +17,51 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
 
+/**
+ * Service class responsible for fetching and parsing log entries
+ * from a Loki server via its HTTP API.
+ *
+ * This service converts Loki's JSON response into structured {@link LogEntryDto} objects,
+ * which can then be used by other components in the system.
+ */
 @ApplicationScoped
 public class LogService {
 
+    // Base URL of the Loki query_range API endpoint
     private static final String LOKI_URL = "http://localhost:3100/loki/api/v1/query_range";
 
     private final HttpClient httpClient;
     private final ObjectMapper objectMapper;
 
+    /**
+     * Default constructor: initializes a standard HttpClient and ObjectMapper.
+     */
     public LogService() {
         this.httpClient = HttpClient.newHttpClient();
         this.objectMapper = new ObjectMapper();
     }
 
-    // Für Unit-Tests
+    /**
+     * Alternative constructor, mainly for unit testing.
+     * Allows injecting mock {@link ObjectMapper} and {@link HttpClient}.
+     */
     public LogService(ObjectMapper objectMapper, HttpClient httpClient) {
         this.objectMapper = Objects.requireNonNull(objectMapper);
         this.httpClient = Objects.requireNonNull(httpClient);
     }
 
+    /**
+     * Fetches logs from Loki filtered by a syncJobId (if provided) and log level.
+     *
+     * @param syncJobId The sync job identifier (optional).
+     * @param startNs   Start time in nanoseconds.
+     * @param endNs     End time in nanoseconds.
+     * @param level     Log level filter (e.g., INFO, ERROR) (optional).
+     * @return A list of {@link LogEntryDto} parsed from Loki logs.
+     */
     public List<LogEntryDto> fetchAndParseLogs(String syncJobId, long startNs, long endNs, String level) {
         try {
-            // Labels zusammenbauen
+            // Build Loki label selectors
             List<String> labels = new ArrayList<>();
             if (syncJobId != null && !syncJobId.isBlank()) {
                 labels.add("syncJobId=\"" + syncJobId + "\"");
@@ -49,10 +72,10 @@ public class LogService {
                 labels.add("level=\"" + level.toUpperCase() + "\"");
             }
 
-            // Query: labelSelector
+            // Query with label selector
             String query = "{" + String.join(",", labels) + "}";
 
-            // URL bauen
+            // Build Loki API request URL
             String url = String.format("%s?query=%s&start=%d&end=%d&limit=5000&direction=backward",
                     LOKI_URL,
                     URLEncoder.encode(query, StandardCharsets.UTF_8),
@@ -68,11 +91,12 @@ public class LogService {
 
             HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
 
+            // Ensure request was successful
             if (response.statusCode() != 200) {
                 throw new RuntimeException("Loki call failed: " + response.statusCode() + " - " + response.body());
             }
 
-            // JSON parsen
+            // Parse JSON response
             JsonNode root = objectMapper.readTree(response.body());
             JsonNode result = root.path("data").path("result");
 
@@ -88,16 +112,16 @@ public class LogService {
                     String parsedSyncJobId = null;
 
                     try {
-                        // Outer JSON im value[1] parsen
+                        // Parse outer JSON from Loki value
                         JsonNode messageNode = objectMapper.readTree(messageJson);
 
-                        // Normale Message übernehmen
+                        // Extract message field if available
                         message = messageNode.path("message").asText(messageJson);
 
-                        // syncJobId direkt auslesen (falls vorhanden)
+                        // Extract syncJobId if present
                         parsedSyncJobId = messageNode.path("syncJobId").asText(null);
 
-                        // Falls "message" selbst noch JSON enthält → optional nochmal reinschauen
+                        // Handle case where message contains nested JSON
                         if (message.startsWith("{") && message.endsWith("}")) {
                             try {
                                 JsonNode innerNode = objectMapper.readTree(message);
@@ -106,11 +130,11 @@ public class LogService {
                                 }
                                 message = innerNode.path("message").asText(message);
                             } catch (Exception ignore) {
-                                // kein valides Inner-JSON → ignorieren
+                                // Not valid inner JSON → ignore
                             }
                         }
                     } catch (Exception ex) {
-                        // Falls gar kein JSON → den Rohstring als Message nehmen
+                        // If value is not JSON → use raw string
                         message = messageJson;
                     }
 
@@ -121,13 +145,19 @@ public class LogService {
             return logs;
 
         } catch (Exception e) {
-            Log.error("Fehler", e);
+            Log.error("Error fetching logs", e);
             throw new RuntimeException("Error fetching or parsing logs", e);
         }
     }
 
     /**
-     * Neuer Service-Methode: Logs für mehrere TransformationIds abrufen
+     * Fetch logs for multiple transformationIds using Loki.
+     *
+     * @param transformationIds List of transformation IDs to query for.
+     * @param startNs           Start time in nanoseconds.
+     * @param endNs             End time in nanoseconds.
+     * @param level             Log level filter (optional).
+     * @return A list of {@link LogEntryDto} for the given transformationIds.
      */
     public List<LogEntryDto> fetchAndParseLogsForTransformations(List<String> transformationIds, long startNs, long endNs, String level) {
         try {
@@ -135,21 +165,20 @@ public class LogService {
                 return new ArrayList<>();
             }
 
-            // Labels für Loki-Abfrage
+            // Loki label filters
             List<String> labels = new ArrayList<>();
             labels.add("agent=\"fluent-bit\"");
 
-            // Level-Label nur hinzufügen, wenn ein spezifisches Level gewählt wurde
-
+            // Add log level filter if provided
             if (level != null && !level.isBlank()) {
                 labels.add("level=\"" + level.toUpperCase() + "\"");
             }
 
-            // TransformationIds als Regex im Loki-Labelfilter
+            // Add transformationIds using regex match
             String regex = String.join("|", transformationIds);
             labels.add("transformationId=~\"" + regex + "\"");
 
-            // Query zusammenbauen
+            // Build Loki query
             String query = "{" + String.join(",", labels) + "}";
 
             String url = String.format("%s?query=%s&start=%d&end=%d&limit=5000&direction=backward",
@@ -170,7 +199,7 @@ public class LogService {
                 throw new RuntimeException("Loki call failed: " + response.statusCode() + " - " + response.body());
             }
 
-            // JSON parsen (analog zu fetchAndParseLogs)
+            // Parse JSON response
             JsonNode root = objectMapper.readTree(response.body());
             JsonNode result = root.path("data").path("result");
 
@@ -194,31 +223,42 @@ public class LogService {
                 }
             }
 
+            // Sort logs by timestamp ascending
             logs.sort(Comparator.comparingLong(a -> Long.parseLong(a.timestamp())));
 
             return logs;
         } catch (Exception e) {
-            Log.error("Fehler beim Abrufen von Logs für TransformationIds", e);
+            Log.error("Error fetching logs for transformationIds", e);
             throw new RuntimeException(e);
         }
     }
 
-
+    /**
+     * Fetch logs for a specific service.
+     *
+     * @param service The service name.
+     * @param startNs Start time in nanoseconds.
+     * @param endNs   End time in nanoseconds.
+     * @param level   Log level filter (optional).
+     * @return A list of {@link LogEntryDto} for the given service.
+     */
     public List<LogEntryDto> fetchAndParseLogsForService(String service, long startNs, long endNs, String level) {
         try {
             if (service == null || service.isBlank()) {
                 return new ArrayList<>();
             }
 
-            // Labels für Loki-Abfrage
+            // Loki label filters
             List<String> labels = new ArrayList<>();
             labels.add("agent=\"fluent-bit\"");
             labels.add("service=\"" + service + "\"");
 
+            // Add log level filter if provided
             if (level != null && !level.isBlank()) {
                 labels.add("level=\"" + level.toUpperCase() + "\"");
             }
 
+            // Build Loki query
             String query = "{" + String.join(",", labels) + "}";
 
             String url = String.format("%s?query=%s&start=%d&end=%d&limit=5000&direction=backward",
@@ -239,6 +279,7 @@ public class LogService {
                 throw new RuntimeException("Loki call failed: " + response.statusCode() + " - " + response.body());
             }
 
+            // Parse JSON response
             JsonNode root = objectMapper.readTree(response.body());
             JsonNode result = root.path("data").path("result");
 
@@ -261,15 +302,14 @@ public class LogService {
                 }
             }
 
+            // Sort logs by timestamp ascending
             logs.sort(Comparator.comparingLong(a -> Long.parseLong(a.timestamp())));
             return logs;
 
         } catch (Exception e) {
-            Log.error("Fehler beim Abrufen von Logs für Service", e);
+            Log.error("Error fetching logs for service", e);
             throw new RuntimeException(e);
         }
     }
-
-
-
 }
+
