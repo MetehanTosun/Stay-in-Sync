@@ -66,8 +66,8 @@ public abstract class MonitoringGraphTransformationMapper {
         entity.name = dto.name;
         entity.description = dto.description;
 
-        // Diese Felder können hier nicht mehr per DB geladen werden –
-        // der Aufrufer muss die vollständigen Objekte selbst setzen.
+        // These fields can no longer be loaded from the DB here –
+        // the caller has to set the complete objects manually.
         entity.sourceSystemApiRequestConfigurations = Set.of();
         entity.targetSystemApiRequestConfigurations = Set.of();
 

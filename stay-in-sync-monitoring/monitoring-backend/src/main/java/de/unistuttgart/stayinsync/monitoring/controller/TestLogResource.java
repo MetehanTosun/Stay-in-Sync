@@ -5,16 +5,6 @@ import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.QueryParam;
 
-import java.io.PrintWriter;
-import java.net.Socket;
-
-package de.unistuttgart.stayinsync.monitoring.controller;
-
-import io.quarkus.logging.Log;
-import jakarta.ws.rs.GET;
-import jakarta.ws.rs.Path;
-import jakarta.ws.rs.QueryParam;
-
 /**
  * REST resource for sending test logs to the logging system (e.g., Loki).
  * Provides an endpoint to generate and emit test logs for monitoring and verification purposes.
