@@ -118,6 +118,8 @@ public class LogService {
                 }
             }
 
+            logs.sort(Comparator.comparingLong((LogEntryDto a) -> Long.parseLong(a.timestamp())).reversed());
+
             return logs;
 
         } catch (Exception e) {
@@ -194,7 +196,7 @@ public class LogService {
                 }
             }
 
-            logs.sort(Comparator.comparingLong(a -> Long.parseLong(a.timestamp())));
+            logs.sort(Comparator.comparingLong((LogEntryDto a) -> Long.parseLong(a.timestamp())).reversed());
 
             return logs;
         } catch (Exception e) {
@@ -261,7 +263,7 @@ public class LogService {
                 }
             }
 
-            logs.sort(Comparator.comparingLong(a -> Long.parseLong(a.timestamp())));
+            logs.sort(Comparator.comparingLong((LogEntryDto a) -> Long.parseLong(a.timestamp())).reversed());
             return logs;
 
         } catch (Exception e) {
