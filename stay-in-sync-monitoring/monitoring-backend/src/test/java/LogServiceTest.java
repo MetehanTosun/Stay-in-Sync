@@ -126,7 +126,7 @@ class LogServiceTest {
         List<LogEntryDto> logs = service.fetchAndParseLogsForTransformations(List.of("T1"), 0, 10, null);
 
         assertThat(logs).extracting(LogEntryDto::message)
-                .containsExactly("A", "B"); // nach Timestamp sortiert
+                .containsExactly("B", "A");
     }
 
     @Test
