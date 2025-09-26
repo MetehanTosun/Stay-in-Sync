@@ -1,10 +1,10 @@
 package de.unistuttgart.stayinsync.syncnode.syncjob;
 
 import de.unistuttgart.stayinsync.syncnode.domain.ExecutionPayload;
-import de.unistuttgart.stayinsync.core.transport.dto.SourceSystemApiRequestConfigurationMessageDTO;
-import de.unistuttgart.stayinsync.core.transport.dto.SourceSystemMessageDTO;
-import de.unistuttgart.stayinsync.core.transport.dto.SyncDataMessageDTO;
-import de.unistuttgart.stayinsync.core.transport.dto.TransformationMessageDTO;
+import de.unistuttgart.stayinsync.transport.dto.SourceSystemApiRequestConfigurationMessageDTO;
+import de.unistuttgart.stayinsync.transport.dto.SourceSystemMessageDTO;
+import de.unistuttgart.stayinsync.transport.dto.SyncDataMessageDTO;
+import de.unistuttgart.stayinsync.transport.dto.TransformationMessageDTO;
 import de.unistuttgart.graphengine.dto.transformationrule.TransformationRuleDTO;
 import de.unistuttgart.graphengine.nodes.Node;
 import de.unistuttgart.stayinsync.syncnode.domain.TransformJob;

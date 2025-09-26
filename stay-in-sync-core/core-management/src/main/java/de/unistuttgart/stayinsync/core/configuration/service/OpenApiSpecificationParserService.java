@@ -8,9 +8,9 @@ import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.Target
 import de.unistuttgart.stayinsync.core.configuration.rest.dtos.CreateTargetSystemEndpointDTO;
 import de.unistuttgart.stayinsync.core.configuration.rest.dtos.CreateApiHeaderDTO;
 import de.unistuttgart.stayinsync.core.configuration.rest.dtos.CreateSourceSystemEndpointDTO;
-import de.unistuttgart.stayinsync.core.transport.domain.ApiEndpointQueryParamType;
-import de.unistuttgart.stayinsync.core.transport.domain.ApiRequestHeaderType;
-import de.unistuttgart.stayinsync.core.transport.dto.SchemaType;
+import de.unistuttgart.stayinsync.transport.domain.ApiEndpointQueryParamType;
+import de.unistuttgart.stayinsync.transport.domain.ApiRequestHeaderType;
+import de.unistuttgart.stayinsync.transport.dto.SchemaType;
 import io.quarkus.logging.Log;
 import io.swagger.v3.oas.models.OpenAPI;
 import io.swagger.v3.oas.models.Operation;

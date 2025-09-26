@@ -3,6 +3,7 @@ package de.unistuttgart.stayinsync.pollingnode.execution.ressource;
 
 import de.unistuttgart.stayinsync.pollingnode.entities.RequestBuildingDetails;
 import de.unistuttgart.stayinsync.pollingnode.exceptions.execution.pollingjob.requestbuilderexceptions.RequestBuildingException;
+import de.unistuttgart.stayinsync.transport.dto.*;
 import io.vertx.mutiny.core.Vertx;
 import io.vertx.mutiny.core.buffer.Buffer;
 import io.vertx.mutiny.ext.web.client.HttpRequest;
@@ -20,8 +21,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.Set;
 
-import static de.unistuttgart.stayinsync.core.transport.dto.ParamType.PATH;
-import static de.unistuttgart.stayinsync.core.transport.dto.ParamType.QUERY;
+import static de.unistuttgart.stayinsync.transport.dto.ParamType.PATH;
+import static de.unistuttgart.stayinsync.transport.dto.ParamType.QUERY;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;

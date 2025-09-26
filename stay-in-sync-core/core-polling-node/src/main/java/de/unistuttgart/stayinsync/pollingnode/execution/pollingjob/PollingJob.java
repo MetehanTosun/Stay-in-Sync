@@ -1,6 +1,6 @@
 package de.unistuttgart.stayinsync.pollingnode.execution.pollingjob;
 
-import de.unistuttgart.stayinsync.core.transport.dto.SyncDataMessageDTO;
+import de.unistuttgart.stayinsync.transport.dto.SyncDataMessageDTO;
 import de.unistuttgart.stayinsync.pollingnode.entities.PollingJobDetails;
 import de.unistuttgart.stayinsync.pollingnode.exceptions.execution.pollingjob.requestbuilderexceptions.RequestBuildingException;
 import de.unistuttgart.stayinsync.pollingnode.exceptions.execution.pollingjob.restclientexceptions.RequestExecutionException;

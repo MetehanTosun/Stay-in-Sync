@@ -10,8 +10,8 @@ import de.unistuttgart.stayinsync.core.configuration.rest.dtos.CreateSourceArcDT
 import de.unistuttgart.stayinsync.core.configuration.rest.dtos.CreateRequestConfigurationDTO;
 import de.unistuttgart.stayinsync.core.configuration.util.TypeScriptTypeGenerator;
 import de.unistuttgart.stayinsync.core.configuration.rabbitmq.producer.PollingJobMessageProducer;
-import de.unistuttgart.stayinsync.core.transport.domain.ApiEndpointQueryParamType;
-import de.unistuttgart.stayinsync.core.transport.domain.JobDeploymentStatus;
+import de.unistuttgart.stayinsync.transport.domain.ApiEndpointQueryParamType;
+import de.unistuttgart.stayinsync.transport.domain.JobDeploymentStatus;
 import io.quarkus.logging.Log;
 import io.smallrye.common.constraint.NotNull;
 import jakarta.enterprise.context.ApplicationScoped;

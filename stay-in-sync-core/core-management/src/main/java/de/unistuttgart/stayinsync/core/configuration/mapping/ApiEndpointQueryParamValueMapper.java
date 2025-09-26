@@ -2,7 +2,7 @@ package de.unistuttgart.stayinsync.core.configuration.mapping;
 
 import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.ApiEndpointQueryParamValue;
 import de.unistuttgart.stayinsync.core.configuration.rest.dtos.ApiEndpointQueryParamValueDTO;
-import de.unistuttgart.stayinsync.core.transport.dto.ApiRequestParameterMessageDTO;
+import de.unistuttgart.stayinsync.transport.dto.ApiRequestParameterMessageDTO;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.MappingConstants;

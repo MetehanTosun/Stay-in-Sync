@@ -7,7 +7,7 @@ import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.Transf
 import de.unistuttgart.stayinsync.core.configuration.exception.CoreManagementException;
 import de.unistuttgart.stayinsync.core.configuration.rest.dtos.typegeneration.GetTypeDefinitionsResponseDTO;
 import de.unistuttgart.stayinsync.core.configuration.rest.dtos.typegeneration.TypeLibraryDTO;
-import de.unistuttgart.stayinsync.core.transport.domain.TargetApiRequestConfigurationActionRole;
+import de.unistuttgart.stayinsync.transport.domain.TargetApiRequestConfigurationActionRole;
 import io.quarkus.cache.CacheResult;
 import io.swagger.v3.oas.models.OpenAPI;
 import io.swagger.v3.oas.models.Operation;

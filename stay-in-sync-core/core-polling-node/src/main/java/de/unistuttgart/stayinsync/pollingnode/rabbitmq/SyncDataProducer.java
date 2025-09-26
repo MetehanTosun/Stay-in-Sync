@@ -3,7 +3,7 @@ package de.unistuttgart.stayinsync.pollingnode.rabbitmq;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.rabbitmq.client.AMQP;
 import com.rabbitmq.client.Channel;
-import de.unistuttgart.stayinsync.core.transport.dto.SyncDataMessageDTO;
+import de.unistuttgart.stayinsync.transport.dto.SyncDataMessageDTO;
 import de.unistuttgart.stayinsync.pollingnode.entities.PollingJobDetails;
 import de.unistuttgart.stayinsync.pollingnode.exceptions.rabbitmqexceptions.ProducerPublishDataException;
 import de.unistuttgart.stayinsync.pollingnode.exceptions.rabbitmqexceptions.ProducerSetUpStreamException;

@@ -1,6 +1,6 @@
 package de.unistuttgart.stayinsync.core.configuration.rest.dtos;
 
-import de.unistuttgart.stayinsync.core.transport.domain.ApiRequestHeaderType;
+import de.unistuttgart.stayinsync.transport.domain.ApiRequestHeaderType;
 
 import java.util.Set;
 
