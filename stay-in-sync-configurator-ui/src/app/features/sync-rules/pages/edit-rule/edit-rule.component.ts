@@ -7,6 +7,8 @@ import { TransformationRulesApiService } from '../../service';
 import { ErrorPanelComponent } from '../../components/error-panel/error-panel.component';
 import { ValidationError } from '../../models/interfaces/validation-error.interface';
 import { RuleConfigurationComponent } from '../../components/modals/rule-configuration/rule-configuration.component';
+import {Button} from 'primeng/button';
+import {Toolbar} from 'primeng/toolbar';
 
 /**
  * The rule editor page component in which the user can view and edit a transformation rule graph
@@ -20,6 +22,8 @@ import { RuleConfigurationComponent } from '../../components/modals/rule-configu
     ProviderNodeModalComponent,
     ConstantNodeModalComponent,
     ErrorPanelComponent,
+    Button,
+    Toolbar,
     RuleConfigurationComponent
   ],
   templateUrl: './edit-rule.component.html',

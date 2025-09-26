@@ -11,11 +11,14 @@ import {LogEntry} from '../core/models/log.model';
 import {PrimeTemplate} from 'primeng/api';
 import {TableModule} from 'primeng/table';
 import {Tab, TabList, TabPanel, TabPanels, Tabs} from 'primeng/tabs';
+import {MonacoEditorModule} from 'ngx-monaco-editor-v2';
+import {FormsModule} from '@angular/forms';
+import {Button} from 'primeng/button';
 
 @Component({
   selector: 'app-replay-view',
   standalone: true,
-  imports: [CommonModule, NgIf, JsonPipe, PrimeTemplate, TableModule, Tabs, TabList, Tab, TabPanels, TabPanel],
+  imports: [CommonModule, NgIf, JsonPipe, PrimeTemplate, TableModule, Tabs, TabList, Tab, TabPanels, TabPanel, MonacoEditorModule, FormsModule, Button],
   templateUrl: './replay-view.component.html',
   styleUrl: './replay-view.component.css',
 })
@@ -34,6 +37,7 @@ export class ReplayViewComponent implements OnInit {
 
   scriptDisplay = '// loading TypeScript…';
   logs: LogEntry[] = [];
+  variables: string = '';
 
   ngOnInit(): void {
     const id = this.route.snapshot.queryParamMap.get('snapshotId');

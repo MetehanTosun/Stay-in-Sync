@@ -1,25 +1,25 @@
 <!-- MARK: Page Header -->
 <div class="page-header">
-  <button class="return-button" (click)="return()">
+  <p-button class="return-button" (click)="return()">
     Back to Rules
-  </button>
+  </p-button>
   <h2>
     Rule Editor - {{ ruleName }}
-    <button id="config-button" (click)="openRuleConfiguration()">
+    <p-button id="config-button" (click)="openRuleConfiguration()">
       <span class="pi pi-cog"></span>
-    </button>
+    </p-button>
   </h2>
 
   <!-- MARK: Toolbar -->
-  <div class="toolbar">
+  <p-toolbar>
     <div style="display: flex; align-items: center; gap: 0.5rem;">
       <div id="node-selection-indicator" *ngIf="selectedNodeType">
         Selected: {{ selectedNodeType }} - Click on canvas to place
       </div>
       <div class="node-palette-trigger-wrapper" style="position: relative; display: inline-block;">
-        <button id="node-palette-button" (click)="openMainNodePalette()">
+        <p-button  id="node-palette-button" (click)="openMainNodePalette()">
           Add Node
-        </button>
+          </p-button>
         <div #nodePalette [style.position]="showMainNodePalette && nodePalettePosition.x > 0 ? 'fixed' : 'relative'"
           [style.left.px]="showMainNodePalette && nodePalettePosition.x > 0 ? nodePalettePosition.x : null"
           [style.top.px]="showMainNodePalette && nodePalettePosition.x > 0 ? nodePalettePosition.y : null"
@@ -29,11 +29,11 @@
         </div>
       </div>
     </div>
-    <button id="save-graph-button" (click)="canvas.saveGraph()">
-      <span class="pi pi-save"></span>
+    <p-button id="save-graph-button" (click)="canvas.saveGraph()">
+      <i class="pi pi-save"></i>
       Save Graph
-    </button>
-  </div>
+    </p-button>
+  </p-toolbar>
 </div>
 
 <!-- MARK: Main Body -->

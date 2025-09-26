@@ -4,7 +4,7 @@
   align-items: center;
   justify-content: space-between;
   padding: 1.5rem 2rem 1rem 2rem;
-  background: var(--sr-page-header-bg);
+  background: var(--p-surface-color);
   border-bottom: 1px solid #e5e5e5;
   gap: 1.5rem;
 }
@@ -13,7 +13,7 @@
   margin: 0;
   font-size: 2rem;
   font-weight: 600;
-  color: var(--sr-font-color);
+  color: var(--p-text-color);
   flex: 1;
 }
 

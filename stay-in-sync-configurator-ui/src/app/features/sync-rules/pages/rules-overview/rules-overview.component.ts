@@ -6,6 +6,12 @@ import { Router } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { HttpResponse } from '@angular/common/http';
+import {Button} from 'primeng/button';
+import {Dialog} from 'primeng/dialog';
+import {InputText} from 'primeng/inputtext';
+import {Toolbar} from 'primeng/toolbar';
+import {Tag} from 'primeng/tag';
+import {Select} from 'primeng/select';
 
 /**
  * The page component responsible for viewing the list of transformation rule graphs
@@ -15,7 +21,13 @@ import { HttpResponse } from '@angular/common/http';
   imports: [
     CommonModule,
     FormsModule,
-    TableModule
+    TableModule,
+    Button,
+    Dialog,
+    InputText,
+    Toolbar,
+    Tag,
+    Select
   ],
   templateUrl: './rules-overview.component.html',
   styleUrl: './rules-overview.component.css'
@@ -146,6 +158,11 @@ export class RulesOverviewComponent implements OnInit {
     return false;
   }
   //#endregion
+  selectedStatus: any;
+
+  getSeverity(status: string): string {
+    return status === 'FINALIZED' ? 'success' : 'warning';
+  }
   /**
    * Returns the rules filtered by the search term
    */
