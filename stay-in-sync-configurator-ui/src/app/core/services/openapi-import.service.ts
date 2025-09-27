@@ -104,18 +104,40 @@ export class OpenApiImportService {
 
   async persistParamsForEndpoint(endpointId: number, params: DiscoveredParam[]): Promise<void> {
     if (!endpointId || !params?.length) return;
-    for (const p of params) {
-      const dto: ApiEndpointQueryParamDTO = {
-        paramName: p.name,
-        queryParamType: p.in === 'path' ? ApiEndpointQueryParamType.Path : ApiEndpointQueryParamType.Query,
-        // include schemaType if discovered; backend expects SchemaType enum
-        // @ts-ignore
-        schemaType: p.schemaType as any,
-        // Backend expects a JSON array; Set serializes poorly. Send empty array when none.
-        // @ts-ignore
-        values: [],
-      };
-      await this.paramApi.apiConfigEndpointEndpointIdQueryParamPost(endpointId, dto).toPromise();
+    
+    try {
+      // Get existing parameters to avoid duplicates
+      const existingParams = await this.paramApi.apiConfigEndpointEndpointIdQueryParamGet(endpointId).toPromise();
+      const existingParamKeys = new Set((existingParams || []).map((ep: any) => `${ep.paramName}:${ep.queryParamType}`));
+      
+      console.log(`[OpenApiImport] Endpoint ${endpointId} - Existing params:`, Array.from(existingParamKeys));
+      console.log(`[OpenApiImport] Endpoint ${endpointId} - New params:`, params.map(p => `${p.name}:${p.in === 'path' ? 'PATH' : 'QUERY'}`));
+      
+      for (const p of params) {
+        const paramKey = `${p.name}:${p.in === 'path' ? 'PATH' : 'QUERY'}`;
+        // Skip if parameter already exists (same name and type)
+        if (existingParamKeys.has(paramKey)) {
+          console.log(`[OpenApiImport] Skipping duplicate parameter: ${paramKey}`);
+          continue;
+        }
+        
+        console.log(`[OpenApiImport] Creating new parameter: ${paramKey}`);
+        
+        const dto: ApiEndpointQueryParamDTO = {
+          paramName: p.name,
+          queryParamType: p.in === 'path' ? ApiEndpointQueryParamType.Path : ApiEndpointQueryParamType.Query,
+          // include schemaType if discovered; backend expects SchemaType enum
+          // @ts-ignore
+          schemaType: p.schemaType as any,
+          // Backend expects a JSON array; Set serializes poorly. Send empty array when none.
+          // @ts-ignore
+          values: [],
+        };
+        await this.paramApi.apiConfigEndpointEndpointIdQueryParamPost(endpointId, dto).toPromise();
+      }
+    } catch (error) {
+      console.error(`[OpenApiImport] Error persisting parameters for endpoint ${endpointId}:`, error);
+      throw error;
     }
   }
 

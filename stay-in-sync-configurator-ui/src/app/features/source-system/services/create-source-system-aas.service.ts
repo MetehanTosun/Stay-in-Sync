@@ -54,7 +54,7 @@ export class CreateSourceSystemAasService {
       this.messageService.add({ severity: 'success', summary: 'Success', detail: 'AAS connection test successful!' });
       return result;
     } catch (error) {
-      this.errorService.handleError(error);
+      this.errorService.handleError(error as any);
       throw error;
     }
   }
@@ -68,7 +68,7 @@ export class CreateSourceSystemAasService {
       const submodels = Array.isArray(resp) ? resp : (resp?.result ?? []);
       return submodels.map((sm: any) => this.mapSubmodelToNode(sm));
     } catch (error) {
-      this.errorService.handleError(error);
+      this.errorService.handleError(error as any);
       throw error;
     }
   }
@@ -101,7 +101,7 @@ export class CreateSourceSystemAasService {
 
       return { treeNodes, submodels: Array.isArray(submodels) ? submodels : [], elementsBySubmodel };
     } catch (error) {
-      this.errorService.handleError(error);
+      this.errorService.handleError(error as any);
       throw error;
     }
   }
@@ -112,7 +112,7 @@ export class CreateSourceSystemAasService {
   async loadRootElements(sourceSystemId: number, submodelId: string): Promise<any[]> {
     try {
       const smIdB64 = this.encodeIdToBase64Url(submodelId);
-      const resp = await this.aasService.listElements(sourceSystemId, smIdB64, 'SNAPSHOT').toPromise();
+      const resp = await this.aasService.listElements(sourceSystemId, smIdB64, { source: 'SNAPSHOT' }).toPromise();
       return Array.isArray(resp) ? resp : (resp?.result ?? []);
     } catch (error) {
       console.error('Failed to load root elements:', error);
@@ -131,10 +131,10 @@ export class CreateSourceSystemAasService {
   ): Promise<void> {
     try {
       const smIdB64 = this.encodeIdToBase64Url(submodelId);
-      const resp = await this.aasService.listElements(sourceSystemId, smIdB64, 'SNAPSHOT', parentPath).toPromise();
+      const resp = await this.aasService.listElements(sourceSystemId, smIdB64, { source: 'SNAPSHOT', parentPath }).toPromise();
       const elements = Array.isArray(resp) ? resp : (resp?.result ?? []);
       
-      attach.children = elements.map(el => this.mapElementToNode(el, submodelId, parentPath));
+      attach.children = elements.map((el: any) => this.mapElementToNode(el, submodelId, parentPath));
       attach.loading = false;
     } catch (error) {
       console.error('Failed to load children:', error);
@@ -153,7 +153,7 @@ export class CreateSourceSystemAasService {
   ): Promise<ElementLivePanel> {
     try {
       const smIdB64 = this.encodeIdToBase64Url(smId);
-      const resp = await this.aasService.getElementDetails(sourceSystemId, smIdB64, idShortPath || '', 'LIVE').toPromise();
+      const resp = await this.aasService.getElement(sourceSystemId, smIdB64, idShortPath || '').toPromise();
       
       return this.mapElementToLivePanel(resp, node);
     } catch (error) {

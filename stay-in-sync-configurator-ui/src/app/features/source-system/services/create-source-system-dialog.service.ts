@@ -75,7 +75,7 @@ export class CreateSourceSystemDialogService {
       this.messageService.add({ severity: 'success', summary: 'Success', detail: 'AASX uploaded successfully!' });
       return result;
     } catch (error) {
-      this.errorService.handleError(error);
+      this.errorService.handleError(error as any);
       throw error;
     }
   }
@@ -103,7 +103,7 @@ export class CreateSourceSystemDialogService {
       if (error instanceof SyntaxError) {
         this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Invalid JSON format' });
       } else {
-        this.errorService.handleError(error);
+        this.errorService.handleError(error as any);
       }
       throw error;
     }
@@ -157,7 +157,7 @@ export class CreateSourceSystemDialogService {
       if (error instanceof SyntaxError) {
         this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Invalid JSON format' });
       } else {
-        this.errorService.handleError(error);
+        this.errorService.handleError(error as any);
       }
       throw error;
     }
@@ -173,7 +173,7 @@ export class CreateSourceSystemDialogService {
       this.messageService.add({ severity: 'success', summary: 'Success', detail: 'Submodel deleted successfully!' });
       return result;
     } catch (error) {
-      this.errorService.handleError(error);
+      this.errorService.handleError(error as any);
       throw error;
     }
   }
@@ -189,7 +189,7 @@ export class CreateSourceSystemDialogService {
       this.messageService.add({ severity: 'success', summary: 'Success', detail: 'Element deleted successfully!' });
       return result;
     } catch (error) {
-      this.errorService.handleError(error);
+      this.errorService.handleError(error as any);
       throw error;
     }
   }
@@ -227,7 +227,7 @@ export class CreateSourceSystemDialogService {
       this.messageService.add({ severity: 'success', summary: 'Success', detail: 'Value updated successfully!' });
       return result;
     } catch (error) {
-      this.errorService.handleError(error);
+      this.errorService.handleError(error as any);
       throw error;
     }
   }

@@ -126,21 +126,11 @@ export class CreateSourceSystemFormService {
       description: formValue.description,
       apiType: formValue.apiType,
       apiUrl: formValue.apiUrl,
-      aasId: formValue.aasId
+      apiAuthType: formValue.authType,
+      authConfig: {
+        authType: formValue.authType
+      }
     };
-
-    if (formValue.authType === ApiAuthType.Basic) {
-      dto.basicAuth = new BasicAuthDTO(
-        formValue.basicAuth.username,
-        formValue.basicAuth.password
-      );
-    } else if (formValue.authType === ApiAuthType.ApiKey) {
-      dto.apiKeyAuth = new ApiKeyAuthDTO(
-        formValue.apiKeyAuth.keyName,
-        formValue.apiKeyAuth.keyValue,
-        formValue.apiKeyAuth.location
-      );
-    }
 
     return dto;
   }
@@ -151,18 +141,18 @@ export class CreateSourceSystemFormService {
   isFormValidForStep(form: FormGroup, step: number): boolean {
     switch (step) {
       case 0: // Metadata step
-        return form.get('name')?.valid && 
+        return !!(form.get('name')?.valid && 
                form.get('apiType')?.valid && 
                form.get('apiUrl')?.valid &&
-               (form.get('apiType')?.value !== 'AAS' || form.get('aasId')?.valid);
+               (form.get('apiType')?.value !== 'AAS' || form.get('aasId')?.valid));
       case 1: // API Headers step
         const authType = form.get('authType')?.value;
         if (authType === ApiAuthType.Basic) {
-          return form.get('basicAuth.username')?.valid && 
-                 form.get('basicAuth.password')?.valid;
+          return !!(form.get('basicAuth.username')?.valid && 
+                 form.get('basicAuth.password')?.valid);
         } else if (authType === ApiAuthType.ApiKey) {
-          return form.get('apiKeyAuth.keyName')?.valid && 
-                 form.get('apiKeyAuth.keyValue')?.valid;
+          return !!(form.get('apiKeyAuth.keyName')?.valid && 
+                 form.get('apiKeyAuth.keyValue')?.valid);
         }
         return true;
       case 2: // Endpoints step
@@ -205,22 +195,7 @@ export class CreateSourceSystemFormService {
     });
 
     // Set auth data if available
-    if (sourceSystem.basicAuth) {
-      form.patchValue({
-        apiAuthType: ApiAuthType.Basic,
-        authConfig: {
-          username: sourceSystem.basicAuth.username,
-          password: sourceSystem.basicAuth.password
-        }
-      });
-    } else if (sourceSystem.apiKeyAuth) {
-      form.patchValue({
-        apiAuthType: ApiAuthType.ApiKey,
-        authConfig: {
-          apiKey: sourceSystem.apiKeyAuth.keyValue,
-          headerName: sourceSystem.apiKeyAuth.keyName
-        }
-      });
-    }
+    // Note: SourceSystemDTO doesn't have basicAuth/apiKeyAuth properties
+    // These would need to be loaded separately if needed
   }
 }
