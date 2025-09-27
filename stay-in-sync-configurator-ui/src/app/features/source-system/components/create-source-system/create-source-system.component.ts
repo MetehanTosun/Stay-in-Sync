@@ -27,6 +27,9 @@ import {ManageEndpointsComponent} from '../manage-endpoints/manage-endpoints.com
 import {ManageApiHeadersComponent} from '../manage-api-headers/manage-api-headers.component';
 import {HttpErrorService} from '../../../../core/services/http-error.service';
 import {AasService} from '../../services/aas.service';
+import {CreateSourceSystemFormService} from '../../services/create-source-system-form.service';
+import {CreateSourceSystemAasService} from '../../services/create-source-system-aas.service';
+import {CreateSourceSystemDialogService} from '../../services/create-source-system-dialog.service';
 
 interface OperationVarView { idShort: string; modelType?: string; valueType?: string }
 interface AnnotationView { idShort: string; modelType?: string; valueType?: string; value?: any }
@@ -78,11 +81,7 @@ export class CreateSourceSystemComponent implements OnInit, OnChanges {
 
 
 
-  steps = [
-    {label: 'Metadaten'},
-    {label: 'Api Header'},
-    {label: 'Endpoints'},
-  ];
+  steps: Array<{label: string}> = [];
   currentStep = 0;
   createdSourceSystemId!: number;
 
@@ -97,14 +96,8 @@ export class CreateSourceSystemComponent implements OnInit, OnChanges {
   aasxPreview: any = null;
   aasxSelection: { submodels: Array<{ id: string; full: boolean; elements: string[] }> } = { submodels: [] };
 
-  typeOptions = [
-    {label: 'REST-OpenAPI', value: 'REST_OPENAPI'},
-    {label: 'AAS', value: 'AAS'}
-  ];
-  authTypeOptions = [
-    {label: 'Basic', value: ApiAuthType.Basic},
-    {label: 'API Key', value: ApiAuthType.ApiKey}
-  ];
+  typeOptions: Array<{label: string, value: string}> = [];
+  authTypeOptions: Array<{label: string, value: ApiAuthType}> = [];
   public readonly ApiAuthType = ApiAuthType;
 
   /**
@@ -117,7 +110,14 @@ export class CreateSourceSystemComponent implements OnInit, OnChanges {
     protected errorService: HttpErrorService,
     private aasService: AasService,
     private messageService: MessageService,
+    private formService: CreateSourceSystemFormService,
+    private aasManagementService: CreateSourceSystemAasService,
+    private dialogService: CreateSourceSystemDialogService
   ) {
+    // Initialize after services are injected
+    this.steps = this.formService.getSteps();
+    this.typeOptions = this.formService.getTypeOptions();
+    this.authTypeOptions = this.formService.getAuthTypeOptions();
   }
 
   /**
@@ -125,63 +125,26 @@ export class CreateSourceSystemComponent implements OnInit, OnChanges {
    * Subscribes to authentication type changes to adjust validators dynamically.
    */
   ngOnInit(): void {
-    this.form = this.fb.group({
-      name: ['', Validators.required],
-      apiUrl: ['', [Validators.required, Validators.pattern('https?://.+')]],
-      description: [''],
-      apiType: ['REST_OPENAPI', Validators.required],
-      apiAuthType: [null],
-      aasId: [''],
-      authConfig: this.fb.group({
-        username: [''],
-        password: [''],
-        apiKey: [''],
-        headerName: ['']
-      }),
-      openApiSpec: [{value: null, disabled: false}]
-    });
+    this.form = this.formService.createForm();
+    this.formService.setupFormSubscriptions(this.form);
 
+    // Custom step management for AAS vs REST
     this.form.get('apiType')!.valueChanges.subscribe((apiType: string) => {
-      const aasIdCtrl = this.form.get('aasId')!;
-      const openApiCtrl = this.form.get('openApiSpec')!;
       if (apiType === 'AAS') {
-        aasIdCtrl.setValidators([Validators.required]);
-        openApiCtrl.disable();
-        openApiCtrl.clearValidators();
         this.steps = [
           {label: 'Metadaten & Test'},
           {label: 'Api Header'},
           {label: 'AAS Submodels'}
         ];
       } else {
-        aasIdCtrl.clearValidators();
-        openApiCtrl.enable();
-        this.steps = [
-          {label: 'Metadaten'},
-          {label: 'Api Header'},
-          {label: 'Endpoints'},
-        ];
+        this.steps = this.formService.getSteps();
       }
-      aasIdCtrl.updateValueAndValidity();
-      openApiCtrl.updateValueAndValidity();
     });
 
-    this.form.get('apiAuthType')!.valueChanges.subscribe((authType: ApiAuthType) => {
-      const grp = this.form.get('authConfig') as FormGroup;
-      // reset
-      ['username', 'password', 'apiKey', 'headerName'].forEach(k => {
-        grp.get(k)!.clearValidators();
-        grp.get(k)!.updateValueAndValidity();
-      });
-      if (authType === ApiAuthType.Basic) {
-        grp.get('username')!.setValidators([Validators.required]);
-        grp.get('password')!.setValidators([Validators.required]);
-      } else if (authType === ApiAuthType.ApiKey) {
-        grp.get('apiKey')!.setValidators([Validators.required]);
-        grp.get('headerName')!.setValidators([Validators.required]);
-      }
-      ['username', 'password', 'apiKey', 'headerName'].forEach(k => grp.get(k)!.updateValueAndValidity());
-    });
+    // If editing, populate form
+    if (this.sourceSystem) {
+      this.formService.populateForm(this.form, this.sourceSystem);
+    }
   }
 
   /**
@@ -191,13 +154,8 @@ export class CreateSourceSystemComponent implements OnInit, OnChanges {
    * @param changes Object containing changed @Input properties.
    */
   ngOnChanges(changes: SimpleChanges): void {
-    if (changes['sourceSystem'] && this.sourceSystem) {
-      this.form.patchValue({
-        name: this.sourceSystem.name,
-        apiUrl: this.sourceSystem.apiUrl,
-        description: this.sourceSystem.description,
-        apiType: this.sourceSystem.apiType
-      });
+    if (changes['sourceSystem'] && this.sourceSystem && this.form) {
+      this.formService.populateForm(this.form, this.sourceSystem);
       this.currentStep = 0;
     }
   }
