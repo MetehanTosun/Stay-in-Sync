@@ -1,8 +1,11 @@
 // src/app/replay/replay-view.component.ts
 import { CommonModule, JsonPipe, NgIf } from '@angular/common';
 import { Component, OnInit, inject, signal } from '@angular/core';
+import { FormsModule } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
+import { MonacoEditorModule } from 'ngx-monaco-editor-v2';
 import { PrimeTemplate } from 'primeng/api';
+import { Button } from 'primeng/button';
 import { TableModule } from 'primeng/table';
 import { Tab, TabList, TabPanel, TabPanels, Tabs } from 'primeng/tabs';
 import { LogEntry } from '../core/models/log.model';
@@ -27,6 +30,9 @@ import { SnapshotService } from './snapshot.service';
     Tab,
     TabPanels,
     TabPanel,
+    MonacoEditorModule,
+    FormsModule,
+    Button,
   ],
   templateUrl: './replay-view.component.html',
   styleUrl: './replay-view.component.css',
