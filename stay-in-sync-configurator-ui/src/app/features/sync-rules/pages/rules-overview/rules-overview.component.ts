@@ -136,6 +136,7 @@ export class RulesOverviewComponent implements OnInit {
     this.rulesApi.deleteRule(ruleId).subscribe({
       next: () => {
         alert("deletion successful"); // TODO-s notify
+        this.loadRules();
       },
       error: (err) => {
         alert(err.error?.message || err.message);

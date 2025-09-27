@@ -26,7 +26,7 @@ public class TransformationDeploymentFeedbackProducer {
 
     @ConfigProperty(name = "quarkus.profile")
     String currentProfile;
-    
+
     @Inject
     RabbitMQClient rabbitMQClient;
 
@@ -64,7 +64,7 @@ public class TransformationDeploymentFeedbackProducer {
         try {
             Log.infof("Confirming deployment of transformation with id: %s", transformationId);
 
-            
+
             String messageBody = objectMapper.writeValueAsString(getDeploymentFeedback(transformationId, jobDeploymentStatus));
             AMQP.BasicProperties properties = new AMQP.BasicProperties.Builder()
                     .contentType("application/json")
@@ -74,7 +74,7 @@ public class TransformationDeploymentFeedbackProducer {
             channel.basicPublish("transformation-exchange", "feedback", properties,
                     messageBody.getBytes(StandardCharsets.UTF_8));
         } catch (IOException e) {
-            throw new SyncNodeException("Unable to publish Job" , "Object JSON-serialization failed");
+            throw new SyncNodeException("Unable to publish Job", "Object JSON-serialization failed");
         }
     }
 
@@ -85,15 +85,14 @@ public class TransformationDeploymentFeedbackProducer {
      */
     void onShutdown(@Observes ShutdownEvent shutdownEvent) throws SyncNodeException {
         Set<TransformationMessageDTO> runningJobs = transformationJobScheduler.getRunningJobs();
-        for(TransformationMessageDTO transformationMessageDTO : runningJobs)
-        {
+        for (TransformationMessageDTO transformationMessageDTO : runningJobs) {
             publishTransformationFeedback(transformationMessageDTO.id(), JobDeploymentStatus.UNDEPLOYED);
         }
     }
 
     private TransformationDeploymentFeedbackMessageDTO getDeploymentFeedback(Long transformationId, JobDeploymentStatus jobDeploymentStatus) {
 
-        return new TransformationDeploymentFeedbackMessageDTO(jobDeploymentStatus, transformationId, System.getenv("HOSTNAME")  );
+        return new TransformationDeploymentFeedbackMessageDTO(jobDeploymentStatus, transformationId, System.getenv("HOSTNAME"));
     }
 
 }

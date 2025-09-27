@@ -1,0 +1,111 @@
+package de.unistuttgart.graphengine.nodes;
+
+import de.unistuttgart.graphengine.exception.GraphEvaluationException;
+
+import java.util.List;
+import java.util.Map;
+
+/**
+ * An abstract base class for all nodes in the logic graph.
+ * It defines the common properties such as a unique ID, optional name,
+ * visual position, and input connections.
+ */
+
+public abstract class Node {
+
+    /**
+     * The unique identifier for this node within its graph.
+     */
+    private int id;
+
+    /**
+     * An optional, human-readable name for the node (e.g., "TemperatureCheck").
+     */
+    private String name;
+
+    /**
+     * The visual x-coordinate for the node's position in a UI.
+     * This is ignored by the engine during evaluation.
+     */
+    private double offsetX;
+
+    /**
+     * The visual y-coordinate for the node's position in a UI.
+     * This is ignored by the engine during evaluation.
+     */
+    private double offsetY;
+
+    /**
+     * A list of parent nodes that provide input for this node's calculation.
+     * This list is populated by the GraphMapper during graph creation and
+     * represents the incoming edges to this node.
+     */
+    private List<Node> inputNodes;
+
+    /**
+     * Stores the result of this node's calculation once it has been evaluated.
+     * Downstream nodes will read from this field.
+     */
+    private Object calculatedResult;
+
+    /**
+     * Triggers the evaluation of this node based on its specific logic.
+     * Each concrete subclass must implement its own calculation behavior.
+     * For nodes with inputs, this method is only called after all parent nodes
+     * in the `inputNodes` list have been calculated.
+     *
+     * @param dataContext The runtime data context, used for resolving external
+     * JSON values in ProviderNodes.
+     */
+    public abstract void calculate(Map<String, Object> dataContext) throws GraphEvaluationException;
+
+    public abstract Class<?> getOutputType();
+
+    public int getId() {
+        return id;
+    }
+
+    public void setId(int id) {
+        this.id = id;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public double getOffsetX() {
+        return offsetX;
+    }
+
+    public void setOffsetX(double offsetX) {
+        this.offsetX = offsetX;
+    }
+
+    public double getOffsetY() {
+        return offsetY;
+    }
+
+    public void setOffsetY(double offsetY) {
+        this.offsetY = offsetY;
+    }
+
+    public List<Node> getInputNodes() {
+        return inputNodes;
+    }
+
+    public void setInputNodes(List<Node> inputNodes) {
+        this.inputNodes = inputNodes;
+    }
+
+    public Object getCalculatedResult() {
+        return calculatedResult;
+    }
+
+    public void setCalculatedResult(Object calculatedResult) {
+        this.calculatedResult = calculatedResult;
+    }
+}

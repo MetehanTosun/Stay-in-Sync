@@ -1,21 +1,17 @@
 package de.unistuttgart.stayinsync.core.configuration.service.transformationrule;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.LogicGraphEntity;
+import de.unistuttgart.graphengine.service.GraphMapper;
+import de.unistuttgart.graphengine.validation_error.ValidationError;
 import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.TransformationRule;
 import de.unistuttgart.stayinsync.core.configuration.exception.CoreManagementException;
 
-import de.unistuttgart.stayinsync.syncnode.logic_engine.GraphMapper;
-import de.unistuttgart.stayinsync.transport.dto.transformationrule.GraphDTO;
-import de.unistuttgart.stayinsync.transport.transformation_rule_shared.nodes.Node;
-import de.unistuttgart.stayinsync.transport.transformation_rule_shared.validation_error.ValidationError;
 import io.quarkus.logging.Log;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
 import jakarta.ws.rs.core.Response;
 
-import java.io.IOException;
 import java.util.List;
 import java.util.Optional;
 
@@ -116,21 +112,19 @@ public class GraphStorageService {
      * A private helper method to "hydrate" a graph entity into an executable list of nodes.
      * It centralizes the mapping and compiling logic for loading a graph.
 
-    private List<Node> hydrateGraph(LogicGraphEntity entity) {
-        try {
-            GraphDTO dto = jsonObjectMapper.readValue(entity.graphDefinitionJson, GraphDTO.class);
+     private List<Node> hydrateGraph(LogicGraphEntity entity) {
+     try {
+     GraphDTO dto = jsonObjectMapper.readValue(entity.graphDefinitionJson, GraphDTO.class);
 
-            List<Node> rawGraph = mapper.toNodeGraph(dto);
+     List<Node> rawGraph = mapper.toNodeGraph(dto);
 
-            List<Node> compiledGraph = graphCompilerService.compile(rawGraph);
+     List<Node> compiledGraph = graphCompilerService.compile(rawGraph);
 
-            return compiledGraph;
+     return compiledGraph;
 
-        } catch (IOException e) {
-            throw new RuntimeException("Failed to deserialize graph from JSON.", e);
-        }
-    }
-      */
+     } catch (IOException e) {
+     throw new RuntimeException("Failed to deserialize graph from JSON.", e);
+     }
+     }
+     */
 }
-
-

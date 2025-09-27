@@ -27,7 +27,6 @@ import java.util.Optional;
 import java.util.Set;
 
 
-import static de.unistuttgart.stayinsync.transport.domain.JobDeploymentStatus.*;
 import static jakarta.transaction.Transactional.TxType.REQUIRED;
 import static jakarta.transaction.Transactional.TxType.SUPPORTS;
 
@@ -246,8 +245,8 @@ public class TransformationService {
     private void deployAssociatedRequestConfigs(Transformation transformation) {
         transformation.sourceSystemApiRequestConfigurations //
                 .stream() //
-                .filter(apiRequestConfiguration -> apiRequestConfiguration.deploymentStatus.equals(UNDEPLOYED))
-                .forEach(apiRequestConfiguration -> sourceRequestConfigService.updateDeploymentStatus(apiRequestConfiguration.id, DEPLOYING));
+                .filter(apiRequestConfiguration -> apiRequestConfiguration.deploymentStatus.equals(JobDeploymentStatus.UNDEPLOYED))
+                .forEach(apiRequestConfiguration -> sourceRequestConfigService.updateDeploymentStatus(apiRequestConfiguration.id, JobDeploymentStatus.DEPLOYING));
 
         sourceRequestConfigService.undeployAllUnused();
     }

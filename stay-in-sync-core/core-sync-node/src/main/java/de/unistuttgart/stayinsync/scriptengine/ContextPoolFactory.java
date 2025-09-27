@@ -64,7 +64,7 @@ public class ContextPoolFactory {
      *                   This is treated case-insensitively for map lookups.
      * @return The {@link ContextPool} for the specified language.
      */
-    public ContextPool getPool(String languageId) throws ScriptEngineException{
+    public ContextPool getPool(String languageId) throws ScriptEngineException {
         String languageKey = languageId.toLowerCase();
 
         ContextPool pool = pools.get(languageKey);

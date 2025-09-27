@@ -29,4 +29,8 @@ export interface VFlowNodeData {
   inputTypes?: string[];
   outputType?: string;
   inputLimit?: number;
+
+  // For CONFIG nodes
+  mode?: "AND" | "OR";
+  active?: boolean;
 }

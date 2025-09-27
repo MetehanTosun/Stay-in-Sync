@@ -3,7 +3,12 @@
   <p-button class="return-button" (click)="return()">
     Back to Rules
   </p-button>
-  <h2>Rule Editor - {{ ruleName }}</h2>
+  <h2>
+    Rule Editor - {{ ruleName }}
+    <p-button id="config-button" (click)="openRuleConfiguration()">
+      <span class="pi pi-cog"></span>
+    </p-button>
+  </h2>
 
   <!-- MARK: Toolbar -->
   <p-toolbar>
@@ -12,10 +17,13 @@
         Selected: {{ selectedNodeType }} - Click on canvas to place
       </div>
       <div class="node-palette-trigger-wrapper" style="position: relative; display: inline-block;">
-        <p-button id="node-palette-button" (click)="openMainNodePalette()">
+        <p-button  id="node-palette-button" (click)="openMainNodePalette()">
           Add Node
-        </p-button>
-        <div #nodePalette>
+          </p-button>
+        <div #nodePalette [style.position]="showMainNodePalette && nodePalettePosition.x > 0 ? 'fixed' : 'relative'"
+          [style.left.px]="showMainNodePalette && nodePalettePosition.x > 0 ? nodePalettePosition.x : null"
+          [style.top.px]="showMainNodePalette && nodePalettePosition.x > 0 ? nodePalettePosition.y : null"
+          [style.z-index]="showMainNodePalette && nodePalettePosition.x > 0 ? '1000' : null">
           <app-node-palette [showMainNodePalette]="showMainNodePalette" (nodeSelected)="onNodeSelected($event)">
           </app-node-palette>
         </div>
@@ -31,13 +39,13 @@
 <!-- MARK: Main Body -->
 <!-- Graph Canvas -->
 <div class="vflow-wrapper" #vflowWrapper>
-  <app-vflow-canvas (canvasClick)="onCanvasClick($event)" (suggestionSelected)="onNodeSelected($event)"
-    (graphErrors)="graphErrors = $event">
+  <app-vflow-canvas (canvasClick)="onCanvasClick($event)" (canvasRightClick)="onCanvasRightClick($event)"
+    (suggestionSelected)="onNodeSelected($event)" (graphErrors)="graphErrors = $event">
   </app-vflow-canvas>
 </div>
 
 <!-- Error Panel -->
-<app-error-panel [errors]="graphErrors"></app-error-panel>
+<app-error-panel [errors]="graphErrors" (errorClicked)="onErrorClicked($event)"></app-error-panel>
 
 <!-- MARK: Modals -->
 <!-- Provider Modal -->
@@ -51,3 +59,8 @@
   <app-constant-node-modal (constantCreated)="onConstantCreated($event)" (modalsClosed)="onModalsClosed()">
   </app-constant-node-modal>
 </div>
+
+<!-- Rule Configuration -->
+<app-rule-configuration *ngIf="showRuleConfiguration" [ruleName]="ruleName" [ruleDescription]="ruleDescription"
+  (close)="onModalsClosed()" (save)="onRuleConfigurationSaved($event)">
+</app-rule-configuration>

@@ -1,14 +1,13 @@
 package de.unistuttgart.stayinsync.pollingnode.execution;
 
+import de.unistuttgart.stayinsync.transport.domain.JobDeploymentStatus;
 import de.unistuttgart.stayinsync.pollingnode.entities.PollingJobDetails;
 import de.unistuttgart.stayinsync.pollingnode.entities.RequestBuildingDetails;
-import de.unistuttgart.stayinsync.pollingnode.exceptions.PollingNodeException;
 import de.unistuttgart.stayinsync.pollingnode.exceptions.execution.InactivePollingJobCreationException;
 import de.unistuttgart.stayinsync.pollingnode.exceptions.execution.PollingJobSchedulingException;
 import de.unistuttgart.stayinsync.pollingnode.exceptions.execution.UnsupportedRequestTypeException;
 import de.unistuttgart.stayinsync.pollingnode.execution.pollingjob.PollingJob;
 import de.unistuttgart.stayinsync.pollingnode.rabbitmq.PollingJobDeploymentFeedbackProducer;
-import de.unistuttgart.stayinsync.transport.domain.JobDeploymentStatus;
 import io.quarkus.logging.Log;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
@@ -95,13 +94,14 @@ public class PollingJobExecutionController {
     /*@
     @ requires supportedJobs.get(id) != null
      */
+
     /**
      * Deletes PollingJob in supportedJobs and deactivates the JobKey if it was active.
      *
      * @param id used to find the pollingJob to delete.
      * @throws PollingJobSchedulingException if an exception was thrown during the deletion of PollingJob.
      */
-    public void pollingJobDeletion(final Long id) throws PollingJobSchedulingException{
+    public void pollingJobDeletion(final Long id) throws PollingJobSchedulingException {
         final JobKey jobKey = supportedJobs.get(id);
         try {
             scheduler.deleteJob(jobKey);
@@ -122,7 +122,6 @@ public class PollingJobExecutionController {
     public boolean pollingJobExists(final Long id) {
         return supportedJobs.containsKey(id);
     }
-
 
 
     /**

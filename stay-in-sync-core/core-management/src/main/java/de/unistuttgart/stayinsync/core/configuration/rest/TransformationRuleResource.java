@@ -1,7 +1,9 @@
 package de.unistuttgart.stayinsync.core.configuration.rest;
 
-
-import com.fasterxml.jackson.databind.ObjectMapper;
+import de.unistuttgart.graphengine.dto.transformationrule.GraphPersistenceResponseDTO;
+import de.unistuttgart.graphengine.dto.transformationrule.TransformationRulePayloadDTO;
+import de.unistuttgart.graphengine.dto.vFlow.VFlowGraphDTO;
+import de.unistuttgart.graphengine.dto.vFlow.VflowGraphResponseDTO;
 import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.TransformationRule;
 import de.unistuttgart.stayinsync.core.configuration.exception.CoreManagementException;
 import de.unistuttgart.stayinsync.core.configuration.rest.dtos.OperatorMetadataDTO;
@@ -10,11 +12,7 @@ import de.unistuttgart.stayinsync.core.configuration.service.transformationrule.
 import de.unistuttgart.stayinsync.core.configuration.service.transformationrule.TransformationRuleService;
 import de.unistuttgart.stayinsync.core.configuration.service.transformationrule.GraphStorageService;
 import de.unistuttgart.stayinsync.core.configuration.util.OperatorMetadataService;
-import de.unistuttgart.stayinsync.transport.dto.transformationrule.GraphPersistenceResponseDTO;
-import de.unistuttgart.stayinsync.transport.dto.transformationrule.TransformationRulePayloadDTO;
-import de.unistuttgart.stayinsync.transport.dto.transformationrule.vFlow.VFlowGraphDTO;
-import de.unistuttgart.stayinsync.transport.dto.transformationrule.vFlow.VflowGraphResponseDTO;
-import de.unistuttgart.stayinsync.transport.transformation_rule_shared.validation_error.ValidationError;
+import de.unistuttgart.graphengine.validation_error.ValidationError;
 import io.quarkus.logging.Log;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
@@ -47,9 +45,6 @@ public class TransformationRuleResource {
 
     @Inject
     GraphStorageService graphStorage;
-
-    @Inject
-    ObjectMapper jsonObjectMapper;
 
     @Inject
     OperatorMetadataService operatorMetadataService;
@@ -134,7 +129,7 @@ public class TransformationRuleResource {
     @Path("/{id}")
     @Operation(summary = "Returns the metadata for a single Transformation Rule")
     public TransformationRuleDTO getTransformationRule(@Parameter(name = "id", required = true) @PathParam("id") Long id) {
-      return ruleMapper.toRuleDTO(graphStorage.findRuleById(id));
+        return ruleMapper.toRuleDTO(graphStorage.findRuleById(id));
     }
 
     /**
