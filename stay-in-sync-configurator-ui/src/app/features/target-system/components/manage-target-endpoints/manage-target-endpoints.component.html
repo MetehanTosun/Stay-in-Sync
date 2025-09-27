@@ -56,7 +56,6 @@
         </td>
         <td>
           <button pButton icon="pi pi-pencil" class="p-button-text" (click)="openEdit(row)"></button>
-          <button pButton icon="pi pi-trash" class="p-button-text p-button-danger" (click)="delete(row)"></button>
           <button pButton
                   type="button"
                   icon="pi pi-cog"
@@ -64,6 +63,7 @@
                   pTooltip="Manage query parameters"
                   tooltipPosition="top"
                   (click)="selectedEndpointForParams = row"></button>
+          <button pButton icon="pi pi-trash" class="p-button-text p-button-danger" (click)="delete(row)"></button>
         </td>
       </tr>
     </ng-template>

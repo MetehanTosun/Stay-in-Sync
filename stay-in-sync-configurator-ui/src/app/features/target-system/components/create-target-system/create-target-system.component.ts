@@ -11,6 +11,7 @@ import { FileUploadModule } from 'primeng/fileupload';
 import { FormsModule } from '@angular/forms';
 import { CheckboxModule } from 'primeng/checkbox';
 import { TreeModule } from 'primeng/tree';
+import { ToastModule } from 'primeng/toast';
 import { MessageService, TreeNode } from 'primeng/api';
 
 import { TargetSystemDTO } from '../../models/targetSystemDTO';
@@ -44,7 +45,8 @@ import { CreateTargetSystemDialogService } from '../../services/create-target-sy
     ManageApiHeadersComponent,
     TreeModule,
     FormsModule,
-    CheckboxModule
+    CheckboxModule,
+    ToastModule
   ]
 })
 export class CreateTargetSystemComponent implements OnInit, OnChanges {
@@ -143,16 +145,6 @@ export class CreateTargetSystemComponent implements OnInit, OnChanges {
           this.messageService.add({ severity: 'success', summary: 'Created', detail: 'Target system created', life: 2500 });
           this.created.emit(resp);
           this.isCreating = false;
-          
-          // Auto-close wizard after successful creation with small delay to show success message
-          setTimeout(() => {
-            this.visible = false;
-            this.visibleChange.emit(false);
-            this.formService.resetForm(this.form);
-            this.selectedFile = null;
-            this.fileSelected = false;
-            this.currentStep = 0;
-          }, 1500);
         },
         error: (err) => {
           this.errorService.handleError(err);

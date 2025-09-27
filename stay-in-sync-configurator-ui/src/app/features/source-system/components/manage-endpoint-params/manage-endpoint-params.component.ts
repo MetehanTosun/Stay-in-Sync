@@ -6,6 +6,8 @@ import { ButtonModule } from 'primeng/button';
 import { InputTextModule } from 'primeng/inputtext';
 import { DropdownModule } from 'primeng/dropdown';
 import { CardModule } from 'primeng/card';
+import { ToastModule } from 'primeng/toast';
+import { MessageService } from 'primeng/api';
 import { ApiEndpointQueryParamResourceService } from '../../service/apiEndpointQueryParamResource.service';
 import { ApiEndpointQueryParamDTO } from '../../models/apiEndpointQueryParamDTO';
 import { ApiEndpointQueryParamType } from '../../models/apiEndpointQueryParamType';
@@ -27,6 +29,7 @@ import { ApiEndpointQueryParamType } from '../../models/apiEndpointQueryParamTyp
     InputTextModule,
     DropdownModule,
     CardModule,
+    ToastModule,
     // ggf. weitere Module
   ]
 })
@@ -83,7 +86,8 @@ export class ManageEndpointParamsComponent implements OnInit, OnChanges {
    */
   constructor(
     private fb: FormBuilder,
-    private queryParamSvc: ApiEndpointQueryParamResourceService
+    private queryParamSvc: ApiEndpointQueryParamResourceService,
+    private messageService: MessageService
   ) {
     // FormGroup immer initialisieren
     this.queryParamForm = this.fb.group({
@@ -151,8 +155,22 @@ export class ManageEndpointParamsComponent implements OnInit, OnChanges {
         next: () => {
           this.queryParamForm.reset({ queryParamType: ApiEndpointQueryParamType.Query });
           this.loadQueryParams(this.endpointId);
+          this.messageService.add({ 
+            severity: 'success', 
+            summary: 'Success', 
+            detail: 'Parameter created successfully', 
+            life: 3000 
+          });
         },
-        error: (err) => console.error('Failed to add query param', err)
+        error: (err) => {
+          console.error('Failed to add query param', err);
+          this.messageService.add({ 
+            severity: 'error', 
+            summary: 'Error', 
+            detail: 'Failed to create parameter', 
+            life: 4000 
+          });
+        }
       });
   }
 
@@ -166,8 +184,22 @@ export class ManageEndpointParamsComponent implements OnInit, OnChanges {
       .subscribe({
         next: () => {
           this.queryParams = this.queryParams.filter(p => p.id !== paramId);
+          this.messageService.add({ 
+            severity: 'success', 
+            summary: 'Success', 
+            detail: 'Parameter deleted successfully', 
+            life: 3000 
+          });
         },
-        error: (err) => console.error('Failed to delete query param', err)
+        error: (err) => {
+          console.error('Failed to delete query param', err);
+          this.messageService.add({ 
+            severity: 'error', 
+            summary: 'Error', 
+            detail: 'Failed to delete parameter', 
+            life: 4000 
+          });
+        }
       });
   }
 
