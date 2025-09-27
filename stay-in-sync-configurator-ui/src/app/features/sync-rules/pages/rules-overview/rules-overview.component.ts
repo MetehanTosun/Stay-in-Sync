@@ -24,8 +24,6 @@ import {Select} from 'primeng/select';
     TableModule,
     Button,
     Dialog,
-    InputText,
-    Toolbar,
     Tag,
     Select
   ],

@@ -6,11 +6,16 @@ import jakarta.validation.constraints.NotNull;
 
 import java.util.Set;
 
-public record GetRequestConfigurationDTO(@NotNull String alias, boolean active, int pollingIntervallTimeInMs,
-                                         Set<ApiHeaderDTO> apiRequestHeaders,
-                                         Set<ApiRequestParameterMessageDTO> apiRequestParameters,
-                                         JobDeploymentStatus deploymentStatus,
-                                         String responseDts,
-                                         String sourceSystemName
+public record GetRequestConfigurationDTO(
+        Long id,
+        @NotNull String alias,
+        Long endpointId,
+        String sourceSystemName,
+        boolean active,
+        int pollingIntervallTimeInMs,
+        Set<ApiHeaderDTO> apiRequestHeaders,
+        Set<ApiRequestParameterMessageDTO> apiRequestParameters,
+        JobDeploymentStatus deploymentStatus,
+        String responseDts
 ) {
 }
