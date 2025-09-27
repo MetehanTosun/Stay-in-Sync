@@ -45,13 +45,13 @@ import { AasManagementComponent } from '../aas-management/aas-management.compone
       </div>
     </p-toolbar>
 
-    <p-table [value]="displaySystems" [loading]="loading">
+    <p-table [value]="displaySystems" [loading]="loading" [paginator]="true" [rows]="10" [responsiveLayout]="'scroll'">
       <ng-template pTemplate="header">
         <tr>
-          <th>Name</th>
-          <th>API URL</th>
-          <th>Description</th>
-          <th>Actions</th>
+          <th style="min-width: 200px;">Name</th>
+          <th style="min-width: 250px;">API URL</th>
+          <th style="min-width: 300px;">Description</th>
+          <th style="min-width: 150px;">Actions</th>
         </tr>
       </ng-template>
       <ng-template pTemplate="body" let-row>
@@ -122,11 +122,11 @@ import { AasManagementComponent } from '../aas-management/aas-management.compone
     <p-dialog [(visible)]="showDialog" [modal]="true" [style]="{width: '900px'}" [header]="dialogTitle">
       <form [formGroup]="form" class="p-fluid">
         <div class="p-field">
-          <label for="name">Name</label>
+          <label for="name">Name*</label>
           <input id="name" pInputText formControlName="name">
         </div>
         <div class="p-field">
-          <label for="apiUrl">API URL</label>
+          <label for="apiUrl">API URL*</label>
           <input id="apiUrl" pInputText formControlName="apiUrl">
         </div>
         <div class="p-field">
@@ -149,41 +149,41 @@ import { AasManagementComponent } from '../aas-management/aas-management.compone
     <p-dialog [(visible)]="showDetailDialog" [modal]="true" [style]="{ width: '80vw', height: '80vh' }" header="Manage Target System">
       <div class="p-grid p-dir-col">
         <div class="p-col" style="margin-bottom: 2rem;">
-          <h3 style="margin-bottom: 1.5rem;">Metadata</h3>
+          <h3 style="margin-bottom: 1.5rem; font-size: 1.25rem; font-weight: 600;">Metadata</h3>
           <form *ngIf="manageForm" [formGroup]="manageForm" class="p-fluid" (ngSubmit)="saveManagedMetadata()">
-            <div class="p-field">
-              <label for="m_name">Name*</label>
-              <input id="m_name" pInputText formControlName="name" />
+            <div class="p-field" style="margin-bottom: 1rem;">
+              <label for="m_name" style="font-weight: 500; margin-bottom: 0.5rem; display: block;">Name*</label>
+              <input id="m_name" pInputText formControlName="name" style="width: 100%;" />
             </div>
-            <div class="p-field">
-              <label for="m_apiUrl">API URL*</label>
-              <input id="m_apiUrl" pInputText formControlName="apiUrl" />
+            <div class="p-field" style="margin-bottom: 1rem;">
+              <label for="m_apiUrl" style="font-weight: 500; margin-bottom: 0.5rem; display: block;">API URL*</label>
+              <input id="m_apiUrl" pInputText formControlName="apiUrl" style="width: 100%;" />
             </div>
-            <div class="p-field">
-              <label for="m_description">Description</label>
-              <textarea id="m_description" pInputTextarea rows="3" formControlName="description" style="width: 100%"></textarea>
+            <div class="p-field" style="margin-bottom: 1rem;">
+              <label for="m_description" style="font-weight: 500; margin-bottom: 0.5rem; display: block;">Description</label>
+              <textarea id="m_description" pInputTextarea rows="3" formControlName="description" style="width: 100%;"></textarea>
             </div>
-            <div class="p-field">
+            <div class="p-field" style="margin-bottom: 1rem;">
               <button pButton type="submit" label="Save Metadata" [disabled]="manageForm.invalid"></button>
             </div>
           </form>
         </div>
         <p-tabView>
           <p-tabPanel *ngIf="!isAasSelected()" header="Headers & Endpoints">
-            <div class="p-grid p-m-2">
-              <div class="p-col-12 p-md-6">
-                <p-card>
-                  <h4>API Headers</h4>
-          <app-manage-api-headers *ngIf="selectedSystem" [syncSystemId]="selectedSystem.id!"></app-manage-api-headers>
-                </p-card>
-        </div>
-              <div class="p-col-12 p-md-6">
-                <p-card>
-                  <h4>Endpoints</h4>
-          <app-manage-target-endpoints *ngIf="selectedSystem" [targetSystemId]="selectedSystem.id!" (finish)="onManageFinished()"></app-manage-target-endpoints>
+            <div class="p-grid" style="margin: 1rem 0;">
+              <div class="p-col-12 p-md-6" style="padding: 0.5rem;">
+                <p-card [style]="{'height': '100%'}">
+                  <h4 style="margin-bottom: 1rem; font-size: 1.125rem; font-weight: 600;">API Headers</h4>
+                  <app-manage-api-headers *ngIf="selectedSystem" [syncSystemId]="selectedSystem.id!"></app-manage-api-headers>
                 </p-card>
               </div>
-        </div>
+              <div class="p-col-12 p-md-6" style="padding: 0.5rem;">
+                <p-card [style]="{'height': '100%'}">
+                  <h4 style="margin-bottom: 1rem; font-size: 1.125rem; font-weight: 600;">Target Endpoints</h4>
+                  <app-manage-target-endpoints *ngIf="selectedSystem" [targetSystemId]="selectedSystem.id!" (finish)="onManageFinished()"></app-manage-target-endpoints>
+                </p-card>
+              </div>
+            </div>
           </p-tabPanel>
           <p-tabPanel *ngIf="isAasSelected()" header="AAS Management">
             <app-aas-management 
@@ -269,7 +269,11 @@ export class TargetSystemBaseComponent implements OnInit {
   load(): void {
     this.loading = true;
     this.api.getAll().subscribe({
-      next: list => { this.systems = list; this.applyFilter(); this.loading = false; },
+      next: list => { 
+        this.systems = list; 
+        this.applyFilter(); 
+        this.loading = false; 
+      },
       error: () => { this.loading = false; }
     });
   }

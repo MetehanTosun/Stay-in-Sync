@@ -222,37 +222,37 @@
       Metadata edit form for selected source system
     -->
     <div style="margin-bottom: 2rem;">
-      <h3 style="margin-bottom: 1.5rem;">Metadata</h3>
+      <h3 style="margin-bottom: 1.5rem; font-size: 1.25rem; font-weight: 600;">Metadata</h3>
       <form [formGroup]="metadataForm" class="p-fluid" (ngSubmit)="saveMetadata()">
-        <div class="p-field">
-          <label for="metaName">Name*</label>
-          <input id="metaName" pInputText formControlName="name" />
+        <div class="p-field" style="margin-bottom: 1rem;">
+          <label for="metaName" style="font-weight: 500; margin-bottom: 0.5rem; display: block;">Name*</label>
+          <input id="metaName" pInputText formControlName="name" style="width: 100%;" />
         </div>
-        <div class="p-field">
-          <label for="metaUrl">API URL*</label>
-          <input id="metaUrl" pInputText formControlName="apiUrl" />
+        <div class="p-field" style="margin-bottom: 1rem;">
+          <label for="metaUrl" style="font-weight: 500; margin-bottom: 0.5rem; display: block;">API URL*</label>
+          <input id="metaUrl" pInputText formControlName="apiUrl" style="width: 100%;" />
         </div>
-        <div class="p-field">
-          <label for="metaDesc">Description</label>
-          <textarea id="metaDesc" pInputTextarea formControlName="description" rows="3" style="width: 100%"></textarea>
+        <div class="p-field" style="margin-bottom: 1rem;">
+          <label for="metaDesc" style="font-weight: 500; margin-bottom: 0.5rem; display: block;">Description</label>
+          <textarea id="metaDesc" pInputTextarea formControlName="description" rows="3" style="width: 100%;"></textarea>
         </div>
-        <div class="p-field">
+        <div class="p-field" style="margin-bottom: 1rem;">
           <button pButton label="Save Metadata" type="submit" [disabled]="metadataForm.invalid"></button>
         </div>
       </form>
     </div>
     <p-tabView>
       <p-tabPanel *ngIf="!isAasSelected()" header="Headers & Endpoints">
-        <div class="p-grid p-m-2">
-          <div class="p-col-12 p-md-6">
-            <p-card>
-              <h4>API Headers</h4>
+        <div class="p-grid" style="margin: 1rem 0;">
+          <div class="p-col-12 p-md-6" style="padding: 0.5rem;">
+            <p-card [style]="{'height': '100%'}">
+              <h4 style="margin-bottom: 1rem; font-size: 1.125rem; font-weight: 600;">API Headers</h4>
               <app-manage-api-headers [syncSystemId]="selectedSystem!.id!"></app-manage-api-headers>
             </p-card>
           </div>
-          <div class="p-col-12 p-md-6">
-            <p-card>
-              <h4>Endpoints</h4>
+          <div class="p-col-12 p-md-6" style="padding: 0.5rem;">
+            <p-card [style]="{'height': '100%'}">
+              <h4 style="margin-bottom: 1rem; font-size: 1.125rem; font-weight: 600;">Source Endpoints</h4>
               <app-manage-endpoints [sourceSystemId]="selectedSystem!.id!"></app-manage-endpoints>
             </p-card>
           </div>

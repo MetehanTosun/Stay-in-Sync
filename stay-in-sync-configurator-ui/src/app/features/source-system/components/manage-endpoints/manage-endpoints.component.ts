@@ -21,9 +21,11 @@ import {ProgressSpinnerModule} from 'primeng/progressspinner';
 import {TabViewModule} from 'primeng/tabview';
 import { MonacoEditorModule, NgxEditorModel } from 'ngx-monaco-editor-v2';
 import { DragDropModule } from '@angular/cdk/drag-drop';
+import { TooltipModule } from 'primeng/tooltip';
 
 import {SourceSystemEndpointResourceService} from '../../service/sourceSystemEndpointResource.service';
 import {HttpClient} from '@angular/common/http';
+import { firstValueFrom } from 'rxjs';
 import {SourceSystemResourceService} from '../../service/sourceSystemResource.service';
 import {TypeScriptGenerationRequest} from '../../models/typescriptGenerationRequest';
 import {TypeScriptGenerationResponse} from '../../models/typescriptGenerationResponse';
@@ -41,6 +43,7 @@ import { ManageEndpointsFormService } from '../../services/manage-endpoints-form
 import { TypeScriptGenerationService, TypeScriptGenerationState } from '../../services/typescript-generation.service';
 import { ResponsePreviewService, ResponsePreviewData } from '../../services/response-preview.service';
 import { MessageService } from 'primeng/api';
+import { ToastModule } from 'primeng/toast';
 
 
 /**
@@ -66,6 +69,8 @@ import { MessageService } from 'primeng/api';
     ConfirmationDialogComponent,
     MonacoEditorModule,
     DragDropModule,
+    TooltipModule,
+    ToastModule
   ],
   templateUrl: './manage-endpoints.component.html',
   styleUrls: ['./manage-endpoints.component.css']
@@ -195,6 +200,10 @@ export class ManageEndpointsComponent implements OnInit, OnDestroy {
   private readonly MAX_JSON_SCHEMA_SIZE = 1024 * 1024; // 1MB
   private typescriptGenerationTimeout: any = null;
   private editTypeScriptGenerationTimeout: any = null;
+  private lastToastTime: number = 0;
+  private readonly TOAST_DEBOUNCE_TIME = 1000; // 1 second
+  private toastCounter: number = 0;
+  private activeToasts: Set<string> = new Set();
 
   constructor(
     private fb: FormBuilder,
@@ -207,6 +216,17 @@ export class ManageEndpointsComponent implements OnInit, OnDestroy {
     private responsePreviewService: ResponsePreviewService,
     private messageService: MessageService
   ) {}
+
+  /**
+   * Show toast message with debounce to prevent duplicates
+   */
+  private showToast(severity: 'success' | 'error' | 'info' | 'warn', summary: string, detail: string) {
+    this.messageService.add({
+      severity,
+      summary,
+      detail
+    });
+  }
 
   /**
    * Initialize forms and load endpoints and source system API URL.
@@ -275,24 +295,51 @@ export class ManageEndpointsComponent implements OnInit, OnDestroy {
     this.sourceSystemService.apiConfigSourceSystemIdGet(this.sourceSystemId)
       .subscribe({
         next: (sourceSystem: SourceSystemDTO) => {
-          if (sourceSystem.openApiSpec && typeof sourceSystem.openApiSpec === 'string') {
-            if (sourceSystem.openApiSpec.startsWith('http')) {
-              this.apiUrl = sourceSystem.openApiSpec.trim();
-              this.currentOpenApiSpec = '';
+          console.log('[DEBUG] loadSourceSystemAndSetApiUrl - sourceSystem:', sourceSystem);
+          console.log('[DEBUG] openApiSpec type:', typeof sourceSystem.openApiSpec);
+          console.log('[DEBUG] openApiSpec value:', sourceSystem.openApiSpec);
+          console.log('[DEBUG] apiUrl:', sourceSystem.apiUrl);
+          
+          // Handle different types of openApiSpec
+          if (sourceSystem.openApiSpec) {
+            if (typeof sourceSystem.openApiSpec === 'string') {
+              if (sourceSystem.openApiSpec.startsWith('http')) {
+                this.apiUrl = sourceSystem.openApiSpec.trim();
+                this.currentOpenApiSpec = '';
+                console.log('[DEBUG] Using URL-based spec:', this.apiUrl);
+              } else {
+                // Spec was provided as raw content (uploaded file). Keep a local copy to parse client-side.
+                this.currentOpenApiSpec = sourceSystem.openApiSpec;
+                this.apiUrl = sourceSystem.apiUrl!;
+                console.log('[DEBUG] Using local spec content, length:', this.currentOpenApiSpec.length);
+              }
+            } else if (sourceSystem.openApiSpec && typeof sourceSystem.openApiSpec === 'object' && 'size' in sourceSystem.openApiSpec) {
+              // Convert Blob to string
+              const reader = new FileReader();
+              reader.onload = () => {
+                this.currentOpenApiSpec = reader.result as string;
+                this.apiUrl = sourceSystem.apiUrl!;
+                console.log('[DEBUG] Converted Blob to string, length:', this.currentOpenApiSpec.length);
+              };
+              reader.readAsText(sourceSystem.openApiSpec as any);
             } else {
-              // Spec was provided as raw content (uploaded file). Keep a local copy to parse client-side.
-              this.currentOpenApiSpec = sourceSystem.openApiSpec;
+              console.log('[DEBUG] Unknown openApiSpec type:', typeof sourceSystem.openApiSpec);
+              this.currentOpenApiSpec = '';
               this.apiUrl = sourceSystem.apiUrl!;
             }
           } else {
             this.currentOpenApiSpec = '';
             this.apiUrl = sourceSystem.apiUrl!;
+            console.log('[DEBUG] No spec available, using API URL:', this.apiUrl);
           }
         },
         error: () => {
           this.apiUrl = null;
         }
       });
+    
+    // Load endpoints after source system is loaded
+    this.loadEndpoints();
   }
 
   /**
@@ -301,8 +348,7 @@ export class ManageEndpointsComponent implements OnInit, OnDestroy {
   loadEndpoints() {
     if (!this.sourceSystemId) return;
     this.loading = true;
-    this.endpointSvc
-      .apiConfigSourceSystemSourceSystemIdEndpointGet(this.sourceSystemId)
+    this.http.get<SourceSystemEndpointDTO[]>(`/api/config/source-system/${this.sourceSystemId}/endpoint`)
       .subscribe({
         next: (eps: SourceSystemEndpointDTO[]) => {
           console.log('[Backend-Response] Endpoints:', eps);
@@ -796,16 +842,15 @@ ${jsonSchema}
       }
     }
 
-    const dto: any = {
+    const dto: SourceSystemEndpointDTO = {
+      sourceSystemId: this.sourceSystemId!,
       endpointPath: this.endpointForm.get('endpointPath')?.value,
       httpRequestType: this.endpointForm.get('httpRequestType')?.value,
       requestBodySchema: resolvedSchema,
       responseBodySchema: responseBodySchema
     };
-    this.endpointSvc.apiConfigSourceSystemSourceSystemIdEndpointPost(
-      this.sourceSystemId,
-      [dto]
-    ).subscribe({
+    this.http.post<SourceSystemEndpointDTO[]>(`/api/config/source-system/${this.sourceSystemId}/endpoint`, [dto])
+      .subscribe({
       next: () => {
         this.loadEndpoints();
         this.endpointForm.reset({
@@ -825,8 +870,13 @@ ${jsonSchema}
         
         // Ensure proper tab integration after form reset
         this.resetTabIntegration();
+        
+        this.showToast('success', 'Endpoint Created', 'Endpoint has been successfully created.');
       },
-      error: () => {}
+      error: (error) => {
+        console.error('[ManageEndpoints] Error creating endpoint:', error);
+        this.showToast('error', 'Creation Failed', 'Failed to create endpoint. Please try again.');
+      }
     });
   }
 
@@ -850,14 +900,16 @@ ${jsonSchema}
    */
   onConfirmationConfirmed(): void {
     if (this.endpointToDelete && this.endpointToDelete.id) {
-      this.endpointSvc
-        .apiConfigSourceSystemEndpointIdDelete(this.endpointToDelete.id)
+      this.http.delete(`/api/config/source-system/endpoint/${this.endpointToDelete.id}`)
         .subscribe({
           next: () => {
+            this.showToast('success', 'Success', 'Endpoint deleted successfully');
             this.endpoints = this.endpoints.filter(e => e.id !== this.endpointToDelete!.id);
             this.endpointToDelete = null;
           },
-          error: () => {
+          error: (error) => {
+            console.error('Error deleting endpoint:', error);
+            this.showToast('error', 'Error', 'Failed to delete endpoint');
             this.endpointToDelete = null;
           }
         });
@@ -973,8 +1025,8 @@ ${jsonSchema}
     }
     this.editJsonError = null;
     const dto: SourceSystemEndpointDTO = {
-      id: this.editingEndpoint.id!,
-      sourceSystemId: this.sourceSystemId,
+      id: this.editingEndpoint.id,
+      sourceSystemId: this.sourceSystemId!,
       endpointPath: this.editForm.value.endpointPath,
       httpRequestType: this.editForm.value.httpRequestType,
       requestBodySchema: this.editForm.value.requestBodySchema,
@@ -996,14 +1048,38 @@ ${jsonSchema}
         return;
       }
     }
-    this.endpointSvc
-      .apiConfigSourceSystemEndpointIdPut(this.editingEndpoint.id!, dto, 'body')
+    // Debug: Log the DTO being sent
+    console.log('Sending DTO to backend:', dto);
+    console.log('Endpoint ID:', this.editingEndpoint.id);
+    
+    // Use direct HTTP call like Target System
+    this.http.put(`/api/config/source-system/endpoint/${this.editingEndpoint.id}`, dto)
       .subscribe({
         next: () => {
+          this.showToast('success', 'Success', 'Endpoint updated successfully');
           this.closeEditDialog();
           this.loadEndpoints();
         },
-        error: () => {}
+        error: (error) => {
+          console.error('Error updating endpoint:', error);
+          console.error('Error details:', {
+            status: error.status,
+            statusText: error.statusText,
+            url: error.url,
+            error: error.error
+          });
+          
+          let errorMessage = 'Failed to update endpoint';
+          if (error.status === 500) {
+            errorMessage = 'Server error (500): Please check the backend logs';
+          } else if (error.status === 404) {
+            errorMessage = 'Endpoint not found (404)';
+          } else if (error.status === 400) {
+            errorMessage = 'Bad request (400): Please check your input data';
+          }
+          
+          this.showToast('error', 'Error', errorMessage);
+        }
       });
   }
 
@@ -1011,6 +1087,10 @@ ${jsonSchema}
    * Show the request body editor for a given endpoint.
    */
   showRequestBodyEditor(endpoint: SourceSystemEndpointDTO) {
+    console.log('[DEBUG] showRequestBodyEditor called for endpoint:', endpoint);
+    console.log('[DEBUG] currentOpenApiSpec:', this.currentOpenApiSpec);
+    console.log('[DEBUG] endpoint.requestBodySchema:', endpoint.requestBodySchema);
+    
     this.requestBodyEditorEndpoint = endpoint;
     if (!endpoint.requestBodySchema) {
       this.requestBodyEditorModel = {
@@ -1025,6 +1105,7 @@ ${jsonSchema}
       return;
     }
     const resolved = this.resolveSchemaReference(endpoint.requestBodySchema);
+    console.log('[DEBUG] resolved schema:', resolved);
     this.requestBodyEditorModel = {
       value: resolved,
       language: 'json'
@@ -1117,15 +1198,26 @@ ${jsonSchema}
    * Resolves a schema reference ($ref) in the OpenAPI spec and returns the resolved schema as a string.
    */
   private resolveSchemaReference(schemaInput: any): string {
+    console.log('[DEBUG] resolveSchemaReference called with:', schemaInput);
+    console.log('[DEBUG] currentOpenApiSpec available:', !!this.currentOpenApiSpec);
+    
     try {
       let schemaObj = typeof schemaInput === 'string' ? JSON.parse(schemaInput) : schemaInput;
+      console.log('[DEBUG] parsed schemaObj:', schemaObj);
+      
       if (schemaObj && schemaObj.$ref && this.currentOpenApiSpec) {
+        console.log('[DEBUG] Found $ref:', schemaObj.$ref);
         const openApi = typeof this.currentOpenApiSpec === 'string'
           ? JSON.parse(this.currentOpenApiSpec)
           : this.currentOpenApiSpec;
+        console.log('[DEBUG] openApi components:', openApi.components);
+        
         if (schemaObj.$ref.startsWith('#/components/schemas/')) {
           const schemaName = schemaObj.$ref.replace('#/components/schemas/', '');
+          console.log('[DEBUG] schemaName:', schemaName);
           const resolved = openApi.components?.schemas?.[schemaName];
+          console.log('[DEBUG] resolved schema:', resolved);
+          
           if (resolved) {
             if (resolved.$ref) {
               return this.resolveSchemaReference(resolved);
@@ -1134,7 +1226,9 @@ ${jsonSchema}
           }
         }
       }
-    } catch (e) {}
+    } catch (e) {
+      console.log('[DEBUG] Error in resolveSchemaReference:', e);
+    }
     return typeof schemaInput === 'string' ? schemaInput : JSON.stringify(schemaInput, null, 2);
   }
 
@@ -1409,11 +1503,25 @@ ${jsonSchema}
 
       console.log(`[ManageEndpoints] Total endpoints to process: ${endpoints.length}`);
 
-      // 3) Persist endpoints and discovered params if available
+      // 3) Filter out duplicates by METHOD + PATH (matches backend unique key)
+      const existing = await firstValueFrom(this.http.get<SourceSystemEndpointDTO[]>(`/api/config/source-system/${this.sourceSystemId}/endpoint`));
+      const existingKeys = new Set(existing.map((e: any) => `${e.httpRequestType} ${e.endpointPath}`));
+      const seenNew = new Set<string>();
+      const toCreate = endpoints.filter((e: any) => {
+        const key = `${e.httpRequestType} ${e.endpointPath}`;
+        if (existingKeys.has(key) || seenNew.has(key)) return false;
+        seenNew.add(key);
+        return true;
+      }).map((e: any) => ({
+        ...e,
+        sourceSystemId: this.sourceSystemId!
+      }));
+
+      // 4) Persist endpoints and discovered params if available
       const paramsByKey = spec ? this.openapi.discoverParamsFromSpec(spec) : {};
-      if (endpoints.length) {
-        console.log(`[ManageEndpoints] Creating ${endpoints.length} endpoints...`);
-        const created = await this.endpointSvc.apiConfigSourceSystemSourceSystemIdEndpointPost(this.sourceSystemId, endpoints as any).toPromise();
+      if (toCreate.length) {
+        console.log(`[ManageEndpoints] Creating ${toCreate.length} endpoints (${endpoints.length - toCreate.length} duplicates filtered)...`);
+        const created = await firstValueFrom(this.http.post<SourceSystemEndpointDTO[]>(`/api/config/source-system/${this.sourceSystemId}/endpoint`, toCreate));
         const createdList = (created as any[]) || [];
         console.log(`[ManageEndpoints] Created ${createdList.length} endpoints, processing parameters...`);
         
@@ -1444,16 +1552,13 @@ ${jsonSchema}
         }
         this.loadEndpoints();
         console.log('[ManageEndpoints] Import completed successfully');
+        this.showToast('success', 'Import Successful', `Successfully imported ${toCreate.length} endpoints with parameters.`);
       } else {
         console.log('[ManageEndpoints] No endpoints to create');
       }
     } catch (error) {
       console.error('[ManageEndpoints] Import failed:', error);
-      this.messageService.add({
-        severity: 'error',
-        summary: 'Import Failed',
-        detail: 'Failed to import endpoints. Check console for details.'
-      });
+      this.showToast('error', 'Import Failed', 'Failed to import endpoints. Check console for details.');
     } finally {
       this.importing = false;
     }
@@ -1474,7 +1579,7 @@ ${jsonSchema}
     for (const url of urls) {
       try {
         const isJson = url.endsWith('.json') || (!url.endsWith('.yaml') && !url.endsWith('.yml'));
-        const raw = await this.http.get(url, { responseType: isJson ? 'json' : 'text' as 'json' }).toPromise();
+        const raw = await firstValueFrom(this.http.get(url, { responseType: isJson ? 'json' : 'text' as 'json' }));
         const spec: any = isJson ? raw : parseYAML(raw as string);
         if (spec && spec.paths) return spec;
       } catch { /* try next */ }
@@ -1527,9 +1632,11 @@ ${jsonSchema}
       this.importing = false;
       return;
     }
-    const endpointDTOs = discoveredEndpoints.map(item => item.endpoint);
-    this.endpointSvc
-      .apiConfigSourceSystemSourceSystemIdEndpointPost(this.sourceSystemId, endpointDTOs)
+    const endpointDTOs = discoveredEndpoints.map(item => ({
+      ...item.endpoint,
+      sourceSystemId: this.sourceSystemId!
+    }));
+    this.http.post<SourceSystemEndpointDTO[]>(`/api/config/source-system/${this.sourceSystemId}/endpoint`, endpointDTOs)
       .subscribe({
         next: () => {
           this.loadEndpoints();
@@ -1654,5 +1761,40 @@ ${jsonSchema}
     } catch (e) {}
     return schemaRef;
     
+  }
+
+  /**
+   * Get tooltip text for Add Endpoint button
+   */
+  getAddEndpointTooltip(): string {
+    if (this.endpointForm.valid) {
+      return '';
+    }
+
+    const errors: string[] = [];
+    
+    // Check endpoint path
+    const pathControl = this.endpointForm.get('endpointPath');
+    if (pathControl?.invalid) {
+      if (pathControl.errors?.['required']) {
+        errors.push('Path is required');
+      } else if (pathControl.errors?.['pathFormat']) {
+        errors.push('Path must start with /');
+      }
+    }
+
+    // Check request body schema
+    const requestBodyControl = this.endpointForm.get('requestBodySchema');
+    if (requestBodyControl?.invalid && requestBodyControl.errors?.['jsonFormat']) {
+      errors.push('Invalid JSON in Request Body Schema');
+    }
+
+    // Check response body schema
+    const responseBodyControl = this.endpointForm.get('responseBodySchema');
+    if (responseBodyControl?.invalid && responseBodyControl.errors?.['jsonFormat']) {
+      errors.push('Invalid JSON in Response Body Schema');
+    }
+
+    return errors.length > 0 ? errors.join(', ') : '';
   }
 }

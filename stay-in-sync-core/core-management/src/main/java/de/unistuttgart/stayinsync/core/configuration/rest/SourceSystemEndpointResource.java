@@ -1,5 +1,6 @@
 package de.unistuttgart.stayinsync.core.configuration.rest;
 
+import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.SourceSystemEndpoint;
 import de.unistuttgart.stayinsync.core.configuration.exception.CoreManagementException;
 import de.unistuttgart.stayinsync.core.configuration.mapping.SourceSystemEndpointFullUpdateMapper;
 import de.unistuttgart.stayinsync.core.configuration.rest.dtos.CreateSourceSystemEndpointDTO;
@@ -166,7 +167,9 @@ public class SourceSystemEndpointResource {
                                                     )
                                                     @PathParam("id") Long id, @Valid @NotNull CreateSourceSystemEndpointDTO sourceSystemEndpointDTO) {
 
-        return this.sourceSystemEndpointService.replaceSourceSystemEndpoint(fullUpdateMapper.mapToEntity(sourceSystemEndpointDTO))
+        SourceSystemEndpoint entity = fullUpdateMapper.mapToEntity(sourceSystemEndpointDTO);
+        entity.id = id; // Set the ID from the path parameter
+        return this.sourceSystemEndpointService.replaceSourceSystemEndpoint(entity)
                 .map(updatedSourceSystemEndpoint -> {
                     Log.debugf("source-system-endpoint replaced with new values %s", updatedSourceSystemEndpoint);
                     return Response.noContent().build();

@@ -13,6 +13,7 @@ import {ApiHeaderDTO} from '../../models/apiHeaderDTO';
 import {CreateApiHeaderDTO} from '../../models/createApiHeaderDTO';
 import {HttpErrorService} from '../../../../core/services/http-error.service';
 import {ConfirmationDialogComponent, ConfirmationDialogData} from '../confirmation-dialog/confirmation-dialog.component';
+import {MessageService} from 'primeng/api';
 
 /**
  * Component for managing API header templates for a given system.
@@ -74,9 +75,11 @@ export class ManageApiHeadersComponent implements OnInit {
   constructor(
     private fb: FormBuilder,
     private hdrSvc: ApiHeaderResourceService,
-    protected errorSerice: HttpErrorService
+    protected errorSerice: HttpErrorService,
+    private messageService: MessageService
   ) {
   }
+
 
   /**
    * Initializes the header management form and loads existing headers.
@@ -121,9 +124,19 @@ export class ManageApiHeadersComponent implements OnInit {
           this.form.reset({headerType: ApiRequestHeaderType.Custom});
           this.loadHeaders();
           this.onCreated.emit();
+          this.messageService.add({
+            severity: 'success',
+            summary: 'Header Created',
+            detail: 'API header has been successfully created.'
+          });
         },
         error: (err) => {
           this.errorSerice.handleError(err);
+          this.messageService.add({
+            severity: 'error',
+            summary: 'Creation Failed',
+            detail: 'Failed to create API header. Please try again.'
+          });
         }
       });
   }

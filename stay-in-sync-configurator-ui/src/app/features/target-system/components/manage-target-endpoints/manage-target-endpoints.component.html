@@ -7,14 +7,12 @@
   <div id="create-endpoint-form"></div>
   <form [formGroup]="form" class="p-fluid p-formgrid p-grid" style="margin: 1.5rem 0; padding: 1rem;">
     <div class="p-field p-col-12" style="margin-bottom: 1rem;">
-      <label for="endpointPath">Endpoint Path</label>
+      <label for="endpointPath">Endpoint Path*</label>
       <input id="endpointPath" pInputText formControlName="endpointPath">
     </div>
     <div class="p-field p-col-12" style="margin-bottom: 1rem;">
-      <label for="httpRequestType">HTTP Method</label>
-      <select id="httpRequestType" formControlName="httpRequestType">
-        <option *ngFor="let m of httpRequestTypes" [value]="m">{{ m }}</option>
-      </select>
+      <label for="httpRequestType">Method*</label>
+      <p-dropdown id="httpRequestType" [options]="httpRequestTypes" formControlName="httpRequestType"></p-dropdown>
     </div>
     <div class="p-field p-col-12" style="margin-bottom: 1rem;" *ngIf="form.get('httpRequestType')?.value === 'POST' || form.get('httpRequestType')?.value === 'PUT'">
       <label>Request Body Schema (JSON)</label>
@@ -32,7 +30,8 @@
       </p-tabView>
     </div>
     <div class="p-col-12" style="margin: 2rem 0;">
-      <button pButton type="button" label="Add Endpoint" [disabled]="form.invalid" (click)="addEndpoint()"></button>
+      <button pButton type="button" label="Add Endpoint" [disabled]="!form.valid" (click)="addEndpoint()" 
+              [pTooltip]="getAddEndpointTooltip()" tooltipPosition="top"></button>
     </div>
   </form>
   <p-table [value]="endpoints" [loading]="loading" [paginator]="true" [rows]="10" [style]="{ 'margin': '1.5rem 0' }">
@@ -75,14 +74,12 @@
 <p-dialog [(visible)]="showDialog" [modal]="true" [style]="{width: '60vw', height: '80vh'}" [header]="dialogTitle">
   <form [formGroup]="form" class="p-fluid p-formgrid p-grid" style="margin: 1.5rem 0; padding: 1rem;">
     <div class="p-field p-col-12" style="margin-bottom: 1rem;">
-      <label for="endpointPath">Endpoint Path</label>
+      <label for="endpointPath">Endpoint Path*</label>
       <input id="endpointPath" pInputText formControlName="endpointPath">
     </div>
     <div class="p-field p-col-12" style="margin-bottom: 1rem;">
-      <label for="httpRequestType">HTTP Method</label>
-      <select id="httpRequestType" formControlName="httpRequestType">
-        <option *ngFor="let m of httpRequestTypes" [value]="m">{{ m }}</option>
-      </select>
+      <label for="httpRequestType">Method*</label>
+      <p-dropdown id="httpRequestType" [options]="httpRequestTypes" formControlName="httpRequestType"></p-dropdown>
     </div>
     <div class="p-field p-col-12" style="margin-bottom: 1rem;" *ngIf="form.get('httpRequestType')?.value === 'POST' || form.get('httpRequestType')?.value === 'PUT'">
       <label>Request Body Schema (JSON)</label>
@@ -102,7 +99,7 @@
   </form>
   <ng-template pTemplate="footer">
     <button pButton label="Cancel" class="p-button-text" (click)="showDialog=false"></button>
-    <button pButton label="Save" (click)="save()" [disabled]="form.invalid"></button>
+    <button pButton label="Save" (click)="save()" [disabled]="!form.valid"></button>
   </ng-template>
 </p-dialog>
 
@@ -129,6 +126,7 @@
   </div>
 </div>
 
+<p-toast></p-toast>
 <app-target-response-preview-modal
   [(visible)]="responsePreviewDialog"
   [endpointId]="selectedResponsePreviewEndpoint?.id"

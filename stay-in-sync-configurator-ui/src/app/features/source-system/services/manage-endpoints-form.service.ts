@@ -24,8 +24,8 @@ export class ManageEndpointsFormService {
     return this.fb.group({
       endpointPath: ['', [Validators.required, this.pathValidator()]],
       httpRequestType: ['GET', Validators.required],
-      requestBodySchema: [''],
-      responseBodySchema: ['']
+      requestBodySchema: ['', this.jsonValidator()],
+      responseBodySchema: ['', this.jsonValidator()]
     });
   }
 
@@ -36,8 +36,8 @@ export class ManageEndpointsFormService {
     return this.fb.group({
       endpointPath: ['', [Validators.required, this.pathValidator()]],
       httpRequestType: ['GET', Validators.required],
-      requestBodySchema: [''],
-      responseBodySchema: ['']
+      requestBodySchema: ['', this.jsonValidator()],
+      responseBodySchema: ['', this.jsonValidator()]
     });
   }
 
@@ -161,6 +161,26 @@ export class ManageEndpointsFormService {
       }
 
       return null;
+    };
+  }
+
+  /**
+   * Custom validator for JSON format
+   */
+  private jsonValidator(): ValidatorFn {
+    return (control: AbstractControl): ValidationErrors | null => {
+      const value = control.value;
+      if (!value || value.trim() === '') return null;
+
+      try {
+        const parsed = JSON.parse(value);
+        if (typeof parsed !== 'object' || parsed === null) {
+          return { jsonFormat: { message: 'JSON must be an object' } };
+        }
+        return null;
+      } catch (error) {
+        return { jsonFormat: { message: 'Invalid JSON format' } };
+      }
     };
   }
 

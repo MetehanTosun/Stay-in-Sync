@@ -10,6 +10,8 @@ import { CardModule } from 'primeng/card';
 import { ProgressSpinnerModule } from 'primeng/progressspinner';
 import { HttpClient } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
+import { MessageService } from 'primeng/api';
+import { ValidatorFn, AbstractControl, ValidationErrors } from '@angular/forms';
 
 import { TargetSystemEndpointResourceService } from '../../service/targetSystemEndpointResource.service';
 import { TargetSystemEndpointDTO } from '../../models/targetSystemEndpointDTO';
@@ -23,6 +25,8 @@ import { TargetSystemDTO } from '../../models/targetSystemDTO';
 import { OpenApiImportService } from '../../../../core/services/openapi-import.service';
 import { load as parseYAML } from 'js-yaml';
 import { TargetResponsePreviewModalComponent } from '../response-preview-modal/response-preview-modal.component';
+import { ToastModule } from 'primeng/toast';
+import { TooltipModule } from 'primeng/tooltip';
 
 @Component({
   standalone: true,
@@ -41,7 +45,9 @@ import { TargetResponsePreviewModalComponent } from '../response-preview-modal/r
     TabViewModule,
     MonacoEditorModule,
     DragDropModule,
-    TargetResponsePreviewModalComponent
+    TargetResponsePreviewModalComponent,
+    ToastModule,
+    TooltipModule
   ],
   templateUrl: './manage-target-endpoints.component.html',
   styles: [`
@@ -125,14 +131,14 @@ export class ManageTargetEndpointsComponent implements OnInit {
   responseJsonModel: NgxEditorModel = { value: '', language: 'json' };
   responseTypeScriptModel: NgxEditorModel = { value: '', language: 'typescript' };
 
-  constructor(private api: TargetSystemEndpointResourceService, private fb: FormBuilder, private tsService: TargetSystemResourceService, private openapi: OpenApiImportService, private http: HttpClient) {}
+  constructor(private api: TargetSystemEndpointResourceService, private fb: FormBuilder, private tsService: TargetSystemResourceService, private openapi: OpenApiImportService, private http: HttpClient, private messageService: MessageService) {}
 
   ngOnInit(): void {
     this.form = this.fb.group({
-      endpointPath: ['', Validators.required],
+      endpointPath: ['', [Validators.required, this.pathValidator()]],
       httpRequestType: ['GET', Validators.required],
-      requestBodySchema: [''],
-      responseBodySchema: ['']
+      requestBodySchema: ['', this.jsonValidator()],
+      responseBodySchema: ['', this.jsonValidator()]
     });
     this.load();
 
@@ -153,6 +159,7 @@ export class ManageTargetEndpointsComponent implements OnInit {
 
   // -------- Import from OpenAPI (similar to Source Systems) --------
   async importEndpoints(): Promise<void> {
+    console.log('[ManageTargetEndpoints] Starting import...');
     this.importing = true;
     try {
       // Load target-system to decide where to fetch OpenAPI spec
@@ -163,6 +170,7 @@ export class ManageTargetEndpointsComponent implements OnInit {
 
       // 1) If openAPI is provided and is raw content (uploaded file), parse locally
       if ((ts as any).openAPI && typeof (ts as any).openAPI === 'string' && !(ts as any).openAPI.startsWith('http')) {
+        console.log('[ManageTargetEndpoints] Using local spec content');
         try {
           try {
             spec = JSON.parse((ts as any).openAPI as string);
@@ -170,7 +178,9 @@ export class ManageTargetEndpointsComponent implements OnInit {
             spec = parseYAML((ts as any).openAPI as string);
           }
           endpoints = this.openapi.discoverEndpointsFromSpec(spec);
-        } catch {
+          console.log(`[ManageTargetEndpoints] Found ${endpoints.length} endpoints from local spec`);
+        } catch (error) {
+          console.error('[ManageTargetEndpoints] Error parsing local spec:', error);
           spec = null;
           endpoints = [];
         }
@@ -179,9 +189,13 @@ export class ManageTargetEndpointsComponent implements OnInit {
       // 2) Fallback: Use URL (either openAPI URL or apiUrl base + candidates)
       const apiUrl = ((ts as any).openAPI && (ts as any).openAPI.startsWith('http')) ? (ts as any).openAPI.trim() : (ts.apiUrl || '');
       if ((!spec || endpoints.length === 0) && apiUrl) {
+        console.log(`[ManageTargetEndpoints] Using URL discovery: ${apiUrl}`);
         endpoints = await this.openapi.discoverEndpointsFromSpecUrl(apiUrl);
         spec = await this.loadSpecCandidates(apiUrl);
+        console.log(`[ManageTargetEndpoints] Found ${endpoints.length} endpoints from URL`);
       }
+
+      console.log(`[ManageTargetEndpoints] Total endpoints to process: ${endpoints.length}`);
 
       const paramsByKey = spec ? this.openapi.discoverParamsFromSpec(spec) : {};
       // filter out duplicates by METHOD + PATH (matches backend unique key)
@@ -194,16 +208,56 @@ export class ManageTargetEndpointsComponent implements OnInit {
         seenNew.add(key);
         return true;
       });
+      
       if (toCreate.length) {
+        console.log(`[ManageTargetEndpoints] Creating ${toCreate.length} endpoints (${endpoints.length - toCreate.length} duplicates filtered)...`);
         const created = await firstValueFrom(this.api.create(this.targetSystemId, toCreate as any));
-        // Map created endpoints to keys and persist params
-        for (const ep of (created as any[])) {
+        const createdList = (created as any[]) || [];
+        console.log(`[ManageTargetEndpoints] Created ${createdList.length} endpoints, processing parameters...`);
+        
+        // Map created endpoints to keys and persist params with batch duplicate check
+        for (const ep of createdList) {
           const key = `${ep.httpRequestType} ${ep.endpointPath}`;
           const params = paramsByKey[key] || [];
-          if (ep.id && params.length) await this.openapi.persistParamsForEndpoint(ep.id, params);
+          if (ep.id && params.length) {
+            console.log(`[ManageTargetEndpoints] Processing ${params.length} parameters for endpoint ${ep.id} (${ep.endpointPath})`);
+            console.log(`[ManageTargetEndpoints] Parameters to process:`, params.map(p => `${p.name}:${p.in}`));
+            
+            // Filter out duplicates within the same import batch
+            const seenParams = new Set<string>();
+            const uniqueParams = params.filter(p => {
+              const paramKey = `${p.name}:${p.in === 'path' ? 'PATH' : 'QUERY'}`;
+              if (seenParams.has(paramKey)) {
+                console.log(`[ManageTargetEndpoints] Skipping duplicate parameter in batch: ${paramKey}`);
+                return false;
+              }
+              seenParams.add(paramKey);
+              return true;
+            });
+            
+            if (uniqueParams.length > 0) {
+              console.log(`[ManageTargetEndpoints] Processing ${uniqueParams.length} unique parameters (${params.length - uniqueParams.length} duplicates filtered)`);
+              await this.openapi.persistParamsForEndpoint(ep.id, uniqueParams);
+            }
+          }
         }
         this.load();
+        console.log('[ManageTargetEndpoints] Import completed successfully');
+        this.messageService.add({
+          severity: 'success',
+          summary: 'Import Successful',
+          detail: `Successfully imported ${toCreate.length} endpoints with parameters.`
+        });
+      } else {
+        console.log('[ManageTargetEndpoints] No endpoints to create');
       }
+    } catch (error) {
+      console.error('[ManageTargetEndpoints] Import failed:', error);
+      this.messageService.add({
+        severity: 'error',
+        summary: 'Import Failed',
+        detail: 'Failed to import endpoints. Check console for details.'
+      });
     } finally {
       this.importing = false;
     }
@@ -251,6 +305,19 @@ export class ManageTargetEndpointsComponent implements OnInit {
       next: () => {
         this.form.reset({ endpointPath: '', httpRequestType: 'GET', requestBodySchema: '', responseBodySchema: '' });
         this.load();
+        this.messageService.add({
+          severity: 'success',
+          summary: 'Endpoint Created',
+          detail: 'Endpoint has been successfully created.'
+        });
+      },
+      error: (error) => {
+        console.error('[ManageTargetEndpoints] Error creating endpoint:', error);
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Creation Failed',
+          detail: 'Failed to create endpoint. Please try again.'
+        });
       }
     });
   }
@@ -272,7 +339,25 @@ export class ManageTargetEndpointsComponent implements OnInit {
         requestBodySchema: this.form.value.requestBodySchema,
         responseBodySchema: this.form.value.responseBodySchema
       };
-      this.api.replace(this.editing.id, dto).subscribe({ next: () => { this.showDialog = false; this.load(); } });
+      this.api.replace(this.editing.id, dto).subscribe({ 
+        next: () => { 
+          this.showDialog = false; 
+          this.load(); 
+          this.messageService.add({
+            severity: 'success',
+            summary: 'Endpoint Updated',
+            detail: 'Endpoint has been successfully updated.'
+          });
+        },
+        error: (error) => {
+          console.error('[ManageTargetEndpoints] Error updating endpoint:', error);
+          this.messageService.add({
+            severity: 'error',
+            summary: 'Update Failed',
+            detail: 'Failed to update endpoint. Please try again.'
+          });
+        }
+      });
     } else {
       const payload: CreateTargetSystemEndpointDTO = {
         endpointPath: this.form.value.endpointPath,
@@ -282,13 +367,48 @@ export class ManageTargetEndpointsComponent implements OnInit {
         ...(this.form.value.requestBodySchema ? { requestBodySchema: this.form.value.requestBodySchema } : {}),
         ...(this.form.value.responseBodySchema ? { responseBodySchema: this.form.value.responseBodySchema } : {})
       } as any;
-      this.api.create(this.targetSystemId, [payload]).subscribe({ next: () => { this.showDialog = false; this.load(); } });
+      this.api.create(this.targetSystemId, [payload]).subscribe({ 
+        next: () => { 
+          this.showDialog = false; 
+          this.load(); 
+          this.messageService.add({
+            severity: 'success',
+            summary: 'Endpoint Created',
+            detail: 'Endpoint has been successfully created.'
+          });
+        },
+        error: (error) => {
+          console.error('[ManageTargetEndpoints] Error creating endpoint:', error);
+          this.messageService.add({
+            severity: 'error',
+            summary: 'Creation Failed',
+            detail: 'Failed to create endpoint. Please try again.'
+          });
+        }
+      });
     }
   }
 
   delete(row: TargetSystemEndpointDTO): void {
     if (!row.id) return;
-    this.api.delete(row.id).subscribe({ next: () => this.load() });
+    this.api.delete(row.id).subscribe({ 
+      next: () => {
+        this.load();
+        this.messageService.add({
+          severity: 'success',
+          summary: 'Endpoint Deleted',
+          detail: 'Endpoint has been successfully deleted.'
+        });
+      },
+      error: (error) => {
+        console.error('[ManageTargetEndpoints] Error deleting endpoint:', error);
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Deletion Failed',
+          detail: 'Failed to delete endpoint. Please try again.'
+        });
+      }
+    });
   }
 
   openParams(row: TargetSystemEndpointDTO): void {
@@ -347,6 +467,88 @@ export class ManageTargetEndpointsComponent implements OnInit {
     if (event?.index === 1) {
       this.generateTypeScriptForPreview();
     }
+  }
+
+  /**
+   * Custom validator for path format
+   */
+  private pathValidator(): ValidatorFn {
+    return (control: AbstractControl): ValidationErrors | null => {
+      const value = control.value;
+      if (!value) return null;
+
+      // Path should start with /
+      if (!value.startsWith('/')) {
+        return { pathFormat: { message: 'Path must start with /' } };
+      }
+
+      // Check for valid path parameter format {param}
+      const pathParamRegex = /\{[a-zA-Z_][a-zA-Z0-9_]*\}/g;
+      const invalidParams = value.match(/\{[^}]*\}/g)?.filter((param: string) => 
+        !pathParamRegex.test(param)
+      );
+
+      if (invalidParams && invalidParams.length > 0) {
+        return { pathFormat: { message: 'Invalid path parameter format. Use {paramName}' } };
+      }
+
+      return null;
+    };
+  }
+
+  /**
+   * Custom validator for JSON format
+   */
+  private jsonValidator(): ValidatorFn {
+    return (control: AbstractControl): ValidationErrors | null => {
+      const value = control.value;
+      if (!value || value.trim() === '') return null;
+
+      try {
+        const parsed = JSON.parse(value);
+        if (typeof parsed !== 'object' || parsed === null) {
+          return { jsonFormat: { message: 'JSON must be an object' } };
+        }
+        return null;
+      } catch (error) {
+        return { jsonFormat: { message: 'Invalid JSON format' } };
+      }
+    };
+  }
+
+  /**
+   * Get tooltip text for Add Endpoint button
+   */
+  getAddEndpointTooltip(): string {
+    if (this.form.valid) {
+      return '';
+    }
+
+    const errors: string[] = [];
+    
+    // Check endpoint path
+    const pathControl = this.form.get('endpointPath');
+    if (pathControl?.invalid) {
+      if (pathControl.errors?.['required']) {
+        errors.push('Path is required');
+      } else if (pathControl.errors?.['pathFormat']) {
+        errors.push('Path must start with /');
+      }
+    }
+
+    // Check request body schema
+    const requestBodyControl = this.form.get('requestBodySchema');
+    if (requestBodyControl?.invalid && requestBodyControl.errors?.['jsonFormat']) {
+      errors.push('Invalid JSON in Request Body Schema');
+    }
+
+    // Check response body schema
+    const responseBodyControl = this.form.get('responseBodySchema');
+    if (responseBodyControl?.invalid && responseBodyControl.errors?.['jsonFormat']) {
+      errors.push('Invalid JSON in Response Body Schema');
+    }
+
+    return errors.length > 0 ? errors.join(', ') : '';
   }
 }
 

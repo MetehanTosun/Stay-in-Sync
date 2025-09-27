@@ -4,6 +4,7 @@
   - Display, create, edit, delete, and import endpoints for a source system
   -------------------------------------------------------------------------------------------------
 -->
+<p-toast></p-toast>
 <p-card styleClass="p-p-4">
   <!--
     Section: Import Endpoints
@@ -24,7 +25,7 @@
   -->
   <form [formGroup]="endpointForm" class="p-fluid p-formgrid p-grid" style="margin: 1.5rem 0; padding: 1rem;">
     <div class="p-field p-col-12" style="margin-bottom: 1rem;">
-      <label for="endpointPath">Path*</label>
+      <label for="endpointPath">Endpoint Path*</label>
       <input id="endpointPath" pInputText formControlName="endpointPath" />
     </div>
     <div class="p-field p-col-12" style="margin-bottom: 1rem;">
@@ -32,12 +33,12 @@
       <p-dropdown id="httpRequestType" [options]="httpRequestTypes" formControlName="httpRequestType"></p-dropdown>
     </div>
     <div class="p-field p-col-12" style="margin-bottom: 1rem;" *ngIf="endpointForm.get('httpRequestType')?.value === 'POST' || endpointForm.get('httpRequestType')?.value === 'PUT'">
-      <label for="requestBodySchema">Request-Body-Schema (JSON)</label>
+      <label for="requestBodySchema">Request Body Schema (JSON)</label>
       <ngx-monaco-editor [options]="jsonEditorOptions" formControlName="requestBodySchema"></ngx-monaco-editor>
       <div *ngIf="jsonError" class="p-error">{{ jsonError }}</div>
     </div>
     <div class="p-field p-col-12" style="margin-bottom: 1rem;">
-      <label for="responseBodySchema">Response-Body-Schema</label>
+      <label for="responseBodySchema">Response Body Schema</label>
       <p-tabView [(activeIndex)]="activeTabIndex" (onChange)="onTabChange($event)">
         <p-tabPanel header="JSON">
           <ngx-monaco-editor [options]="jsonEditorOptions" formControlName="responseBodySchema"></ngx-monaco-editor>
@@ -63,7 +64,8 @@
       </p-tabView>
     </div>
     <div class="p-col-12" style="margin: 2rem 0;">
-      <button pButton type="button" label="Add Endpoint" [disabled]="endpointForm.invalid" (click)="addEndpoint()"></button>
+      <button pButton type="button" label="Add Endpoint" [disabled]="endpointForm.invalid" (click)="addEndpoint()" 
+              [pTooltip]="getAddEndpointTooltip()" tooltipPosition="top"></button>
     </div>
   </form>
 
@@ -73,20 +75,20 @@
   <p-dialog header="Edit Endpoint" [(visible)]="editDialog" modal="true" [style]="{ width: '600px' }">
     <form [formGroup]="editForm" class="p-fluid p-formgrid p-grid">
       <div class="p-field p-col-12">
-        <label>Path</label>
+        <label>Endpoint Path*</label>
         <input pInputText formControlName="endpointPath" />
       </div>
       <div class="p-field p-col-12">
-        <label>Method</label>
+        <label>Method*</label>
         <p-dropdown [options]="httpRequestTypes" formControlName="httpRequestType"></p-dropdown>
       </div>
       <div class="p-field p-col-12" *ngIf="editForm.get('httpRequestType')?.value === 'POST' || editForm.get('httpRequestType')?.value === 'PUT'">
-        <label>Request-Body-Schema (JSON)</label>
+        <label>Request Body Schema (JSON)</label>
         <ngx-monaco-editor [options]="jsonEditorOptions" formControlName="requestBodySchema"></ngx-monaco-editor>
         <div *ngIf="editJsonError" class="p-error">{{ editJsonError }}</div>
       </div>
       <div class="p-field p-col-12">
-        <label>Response-Body-Schema</label>
+        <label>Response Body Schema</label>
         <p-tabView [(activeIndex)]="editActiveTabIndex" (onChange)="onEditTabChange($event)">
           <p-tabPanel header="JSON">
             <ngx-monaco-editor [options]="jsonEditorOptions" formControlName="responseBodySchema"></ngx-monaco-editor>
@@ -142,15 +144,24 @@
           <button pButton type="button" label="Response Preview" (click)="showResponsePreviewModal(e)"></button>
         </td>
         <td>
-          <!-- Add manage button -->
+          <!-- Edit endpoint button -->
+          <button pButton
+                  type="button"
+                  icon="pi pi-pencil"
+                  class="p-button-text p-button-sm"
+                  pTooltip="Edit Endpoint"
+                  tooltipPosition="top"
+                  (click)="openEditDialog(e)"></button>
+          <!-- Manage parameters button -->
           <button pButton
                   type="button"
                   icon="pi pi-cog"
-                  class="p-button-info p-button-text"
+                  class="p-button-info p-button-text p-button-sm"
                   pTooltip="Query-Parameter verwalten"
                   tooltipPosition="top"
                   (click)="selectedEndpoint = e"></button>
-          <button pButton type="button" icon="pi pi-trash" class="p-button-text" (click)="deleteEndpoint(e)"></button>
+          <!-- Delete endpoint button -->
+          <button pButton type="button" icon="pi pi-trash" class="p-button-text p-button-sm" (click)="deleteEndpoint(e)"></button>
         </td>
       </tr>
     </ng-template>
