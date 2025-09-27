@@ -1,0 +1,330 @@
+import { Component, Input, Output, EventEmitter, OnInit } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { CardModule } from 'primeng/card';
+import { TreeModule } from 'primeng/tree';
+import { ButtonModule } from 'primeng/button';
+import { TreeNode } from 'primeng/api';
+import { AasManagementService, AasElementLivePanel } from '../../services/aas-management.service';
+import { AasUtilityService } from '../../services/aas-utility.service';
+import { TargetSystemDTO } from '../../models/targetSystemDTO';
+
+@Component({
+  standalone: true,
+  selector: 'app-aas-management',
+  template: `
+    <div class="p-d-flex p-ai-center p-jc-between" style="margin-bottom: .5rem;">
+      <div>
+        <strong>Base URL:</strong> {{ system?.apiUrl }}
+        <span class="ml-3"><strong>AAS ID:</strong> {{ getAasId() }}</span>
+      </div>
+      <div>
+        <button pButton type="button" label="Refresh Snapshot" class="p-button-text" 
+                (click)="discoverSnapshot()" [disabled]="isLoading"></button>
+        <button pButton type="button" label="+ Submodel" class="p-button-text" 
+                (click)="openCreateSubmodel()"></button>
+      </div>
+    </div>
+    
+    <button pButton type="button" label="Load Snapshot" 
+            (click)="discoverSnapshot()" [disabled]="isLoading"></button>
+    <span *ngIf="isLoading" class="ml-2">Loading...</span>
+    
+    <div style="display:flex; gap:1rem; align-items:flex-start;">
+      <div style="flex: 1 1 65%; min-width: 0;">
+        <p-tree [value]="treeNodes" 
+                (onNodeExpand)="onNodeExpand($event)" 
+                (onNodeSelect)="onNodeSelect($event)" 
+                selectionMode="single">
+          <ng-template let-node pTemplate="default">
+            <div style="display:flex;align-items:center;gap:.5rem;">
+              <span>{{ node.label }}</span>
+              <span style="font-size:.75rem;padding:.1rem .4rem;border-radius:999px;border:1px solid var(--surface-border);color:var(--text-color-secondary);">
+                {{ getNodeType(node) }}
+              </span>
+              <button *ngIf="node.data?.type==='submodel'" pButton type="button" class="p-button-text" 
+                      label="Create element" (click)="openCreateElement(node.data.id)"></button>
+              <button *ngIf="node.data?.type==='element' && canAddChild(node)" pButton type="button" class="p-button-text" 
+                      label="Add child" (click)="openCreateElement(node.data.submodelId, node.data.idShortPath)"></button>
+              <button *ngIf="node.data?.type==='submodel'" pButton type="button" class="p-button-text p-button-danger" 
+                      label="Delete submodel" (click)="deleteSubmodel(node.data.id)"></button>
+              <button *ngIf="node.data?.type==='element'" pButton type="button" class="p-button-text p-button-danger" 
+                      label="Delete" (click)="deleteElement(node.data.submodelId, node.data.idShortPath)"></button>
+              <button *ngIf="node.data?.type==='element' && canSetValue(node)" pButton type="button" class="p-button-text" 
+                      label="Set value" (click)="openSetValue(node.data.submodelId, node.data)"></button>
+            </div>
+          </ng-template>
+        </p-tree>
+      </div>
+      
+      <div id="aas-element-details" class="p-card" *ngIf="selectedNode && selectedNode.data?.type==='element'" 
+           style="flex: 0 0 35%; padding:1rem;border:1px solid var(--surface-border);border-radius:4px; position: sticky; top: .5rem; align-self: flex-start; max-height: calc(100vh - 1rem); overflow: auto;">
+        <div class="p-d-flex p-ai-center p-jc-between">
+          <h4 style="margin:0;">Details</h4>
+          <span *ngIf="detailsLoading">Loading...</span>
+        </div>
+        <div *ngIf="selectedLivePanel">
+          <div><strong>Label:</strong> {{ selectedLivePanel.label }}</div>
+          <div><strong>Type:</strong> {{ selectedLivePanel.type }}</div>
+          <div *ngIf="selectedLivePanel.valueType"><strong>valueType:</strong> {{ selectedLivePanel.valueType }}</div>
+          
+          <div *ngIf="selectedLivePanel.type==='MultiLanguageProperty' && (selectedLivePanel.value?.length || 0) > 0">
+            <strong>values:</strong>
+            <div style="margin:.25rem 0 .5rem 0;">
+              <div *ngFor="let v of selectedLivePanel.value" style="display:flex;gap:.5rem;align-items:baseline;">
+                <span style="font-size:.75rem;padding:.1rem .4rem;border:1px solid var(--surface-border);border-radius:999px;color:var(--text-color-secondary);min-width:2.5rem;text-align:center;">{{ v?.language || '-' }}</span>
+                <span>{{ v?.text || '' }}</span>
+              </div>
+            </div>
+          </div>
+          
+          <div *ngIf="selectedLivePanel.value !== undefined && !isCollectionType(selectedLivePanel.type) && selectedLivePanel.type!=='MultiLanguageProperty'">
+            <strong>value:</strong> {{ (selectedLivePanel.value | json) }}
+          </div>
+          
+          <div *ngIf="selectedLivePanel.type==='SubmodelElementCollection'">
+            <div><strong>Items:</strong> {{ selectedLivePanel.value?.length || 0 }}</div>
+          </div>
+          
+          <div *ngIf="selectedLivePanel.type==='SubmodelElementList'">
+            <div><strong>Count:</strong> {{ selectedLivePanel.value?.length || 0 }}</div>
+          </div>
+          
+          <div *ngIf="selectedLivePanel.type==='Range' || selectedLivePanel.min !== undefined || selectedLivePanel.max !== undefined">
+            <div><strong>min:</strong> {{ selectedLivePanel.min }}</div>
+            <div><strong>max:</strong> {{ selectedLivePanel.max }}</div>
+          </div>
+          
+          <div *ngIf="selectedLivePanel.type==='Operation'">
+            <div *ngIf="selectedLivePanel.inputVariables?.length">
+              <strong>Inputs:</strong>
+              <ul style="margin:.25rem 0 .5rem 1rem;">
+                <li *ngFor="let v of selectedLivePanel.inputVariables">{{ v.idShort }} <span *ngIf="v.valueType">({{ v.valueType }})</span></li>
+              </ul>
+            </div>
+            <div *ngIf="selectedLivePanel.inoutputVariables?.length">
+              <strong>In/Out:</strong>
+              <ul style="margin:.25rem 0 .5rem 1rem;">
+                <li *ngFor="let v of selectedLivePanel.inoutputVariables">{{ v.idShort }} <span *ngIf="v.valueType">({{ v.valueType }})</span></li>
+              </ul>
+            </div>
+            <div *ngIf="selectedLivePanel.outputVariables?.length">
+              <strong>Outputs:</strong>
+              <ul style="margin:.25rem 0 .5rem 1rem;">
+                <li *ngFor="let v of selectedLivePanel.outputVariables">{{ v.idShort }} <span *ngIf="v.valueType">({{ v.valueType }})</span></li>
+              </ul>
+            </div>
+          </div>
+          
+          <div *ngIf="selectedLivePanel.annotations?.length">
+            <strong>Annotations:</strong>
+            <ul style="margin:.25rem 0 .5rem 1rem;">
+              <li *ngFor="let anno of selectedLivePanel.annotations">
+                <strong>{{ anno.idShort }}</strong>
+                <span *ngIf="anno.modelType"> ({{ anno.modelType }})</span>:
+                {{ anno.value || '-' }}
+              </li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+  `,
+  imports: [
+    CommonModule,
+    CardModule,
+    TreeModule,
+    ButtonModule
+  ]
+})
+export class AasManagementComponent implements OnInit {
+  @Input() system: TargetSystemDTO | null = null;
+  @Output() refreshRequested = new EventEmitter<void>();
+
+  treeNodes: TreeNode[] = [];
+  selectedNode: TreeNode | null = null;
+  selectedLivePanel: AasElementLivePanel | null = null;
+  isLoading = false;
+  detailsLoading = false;
+
+  constructor(
+    private aasManagement: AasManagementService,
+    private aasUtility: AasUtilityService
+  ) {}
+
+  ngOnInit(): void {
+    if (this.system) {
+      this.discoverSnapshot();
+    }
+  }
+
+  async discoverSnapshot(): Promise<void> {
+    if (!this.system?.id) return;
+    
+    this.isLoading = true;
+    try {
+      this.treeNodes = await this.aasManagement.discoverSubmodels(this.system.id);
+    } catch (error) {
+      console.error('Error discovering submodels:', error);
+    } finally {
+      this.isLoading = false;
+    }
+  }
+
+  async onNodeExpand(event: any): Promise<void> {
+    const node = event.node;
+    if (node.data?.type === 'submodel' && (!node.children || node.children.length === 0)) {
+      await this.loadSubmodelElements(node);
+    } else if (node.data?.type === 'element' && (!node.children || node.children.length === 0)) {
+      await this.loadElementChildren(node);
+    }
+  }
+
+  async onNodeSelect(event: any): Promise<void> {
+    this.selectedNode = event.node;
+    if (event.node?.data?.type === 'element') {
+      await this.loadElementDetails(event.node);
+    }
+  }
+
+  private async loadSubmodelElements(node: TreeNode): Promise<void> {
+    if (!this.system?.id || !node.data?.id) return;
+    
+    try {
+      const elements = await this.aasManagement.loadSubmodelElements(this.system.id, node.data.id);
+      node.children = elements;
+      this.treeNodes = [...this.treeNodes];
+    } catch (error) {
+      console.error('Error loading submodel elements:', error);
+    }
+  }
+
+  private async loadElementChildren(node: TreeNode): Promise<void> {
+    if (!this.system?.id || !node.data?.submodelId || !node.data?.idShortPath) return;
+    
+    try {
+      const children = await this.aasManagement.loadElementChildren(
+        this.system.id, 
+        node.data.submodelId, 
+        node.data.idShortPath
+      );
+      node.children = children;
+      this.treeNodes = [...this.treeNodes];
+    } catch (error) {
+      console.error('Error loading element children:', error);
+    }
+  }
+
+  private async loadElementDetails(node: TreeNode): Promise<void> {
+    if (!this.system?.id || !node.data?.submodelId || !node.data?.idShortPath) return;
+    
+    this.detailsLoading = true;
+    try {
+      this.selectedLivePanel = await this.aasManagement.loadElementDetails(
+        this.system.id,
+        node.data.submodelId,
+        node.data.idShortPath
+      );
+    } catch (error) {
+      console.error('Error loading element details:', error);
+    } finally {
+      this.detailsLoading = false;
+    }
+  }
+
+  getAasId(): string {
+    return this.aasUtility.getAasId(this.system);
+  }
+
+  getNodeType(node: TreeNode): string {
+    if (node.data?.type === 'submodel') {
+      return node.data?.modelType || (node.data?.raw?.kind?.toLowerCase?.().includes('template') ? 'Submodel Template' : 'Submodel');
+    }
+    return node.data?.modelType || node.data?.raw?.modelType || (node.data?.raw?.valueType ? 'Property' : 'Element');
+  }
+
+  canAddChild(node: TreeNode): boolean {
+    const type = node.data?.modelType;
+    return type === 'SubmodelElementCollection' || type === 'SubmodelElementList' || type === 'Entity';
+  }
+
+  canSetValue(node: TreeNode): boolean {
+    return node.data?.modelType === 'Property' || !!node.data?.raw?.valueType;
+  }
+
+  isCollectionType(type: string): boolean {
+    return type === 'SubmodelElementCollection' || type === 'SubmodelElementList';
+  }
+
+  // Event handlers for AAS management actions
+  openCreateSubmodel(): void {
+    // TODO: Implement create submodel dialog
+    console.log('Create submodel clicked');
+  }
+
+  openCreateElement(submodelId: string, parentPath?: string): void {
+    // TODO: Implement create element dialog
+    console.log('Create element clicked', submodelId, parentPath);
+  }
+
+  async deleteSubmodel(submodelId: string): Promise<void> {
+    if (!this.system?.id) return;
+    
+    try {
+      await this.aasManagement.deleteSubmodel(this.system.id, submodelId);
+      this.refreshRequested.emit();
+      await this.discoverSnapshot();
+    } catch (error) {
+      console.error('Error deleting submodel:', error);
+    }
+  }
+
+  async deleteElement(submodelId: string, elementPath: string): Promise<void> {
+    if (!this.system?.id) return;
+    
+    try {
+      await this.aasManagement.deleteElement(this.system.id, submodelId, elementPath);
+      this.refreshRequested.emit();
+      // Refresh the parent node
+      const parentNode = this.findParentNode(submodelId, elementPath);
+      if (parentNode) {
+        await this.loadSubmodelElements(parentNode);
+      }
+    } catch (error) {
+      console.error('Error deleting element:', error);
+    }
+  }
+
+  openSetValue(submodelId: string, elementData: any): void {
+    // TODO: Implement set value dialog
+    console.log('Set value clicked', submodelId, elementData);
+  }
+
+  private findParentNode(submodelId: string, elementPath: string): TreeNode | null {
+    const parentPath = this.aasUtility.getParentPath(elementPath);
+    
+    // Find the submodel node
+    const submodelNode = this.treeNodes.find(node => node.data?.id === submodelId);
+    if (!submodelNode) return null;
+    
+    // If no parent path, return the submodel node
+    if (!parentPath) return submodelNode;
+    
+    // Find the parent element node
+    return this.findNodeByPath(submodelNode, parentPath);
+  }
+
+  private findNodeByPath(parentNode: TreeNode, path: string): TreeNode | null {
+    if (!parentNode.children) return null;
+    
+    const pathParts = path.split('/');
+    let current = parentNode;
+    
+    for (const part of pathParts) {
+      const child = current.children?.find(child => child.data?.idShortPath === part);
+      if (!child) return null;
+      current = child;
+    }
+    
+    return current;
+  }
+}
