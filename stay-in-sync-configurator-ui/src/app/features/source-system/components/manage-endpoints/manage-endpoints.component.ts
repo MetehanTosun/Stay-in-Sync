@@ -37,6 +37,9 @@ import { ManageEndpointParamsComponent } from '../manage-endpoint-params/manage-
 import { ResponsePreviewModalComponent } from '../response-preview-modal/response-preview-modal.component';
 import { ConfirmationDialogComponent, ConfirmationDialogData } from '../confirmation-dialog/confirmation-dialog.component';
 import { OpenApiImportService } from '../../../../core/services/openapi-import.service';
+import { ManageEndpointsFormService } from '../../services/manage-endpoints-form.service';
+import { TypeScriptGenerationService, TypeScriptGenerationState } from '../../services/typescript-generation.service';
+import { ResponsePreviewService, ResponsePreviewData } from '../../services/response-preview.service';
 
 
 /**
@@ -198,32 +201,34 @@ export class ManageEndpointsComponent implements OnInit, OnDestroy {
     private sourceSystemService: SourceSystemResourceService,
     private http: HttpClient,
     private openapi: OpenApiImportService,
+    private formService: ManageEndpointsFormService,
+    private typeScriptService: TypeScriptGenerationService,
+    private responsePreviewService: ResponsePreviewService
   ) {}
 
   /**
    * Initialize forms and load endpoints and source system API URL.
    */
   ngOnInit(): void {
-    this.endpointForm = this.fb.group({
-      endpointPath: ['', Validators.required],
-      httpRequestType: ['GET', Validators.required],
-      requestBodySchema: [''],
-      responseBodySchema: ['']
-    });
-    this.editForm = this.fb.group({
-      endpointPath: ['', Validators.required],
-      httpRequestType: ['GET', Validators.required],
-      requestBodySchema: [''],
-      responseBodySchema: ['']
-    });
+    this.endpointForm = this.formService.createEndpointForm();
+    this.editForm = this.formService.createEditForm();
     
-    // Listen for changes in responseBodySchema to update TypeScript
-    this.endpointForm.get('responseBodySchema')?.valueChanges.subscribe(value => {
-      this.loadTypeScriptForMainForm();
-    });
+    // Setup TypeScript generation subscriptions
+    this.setupTypeScriptGeneration();
     
-    this.editForm.get('responseBodySchema')?.valueChanges.subscribe(value => {
-      this.loadTypeScriptForEditForm();
+    // Subscribe to TypeScript generation states
+    this.typeScriptService.getMainGenerationState().subscribe(state => {
+      this.isGeneratingTypeScript = state.isGenerating;
+      this.generatedTypeScript = state.code;
+      this.typescriptError = state.error;
+      this.typescriptModel.value = state.code;
+    });
+
+    this.typeScriptService.getEditGenerationState().subscribe(state => {
+      this.isGeneratingEditTypeScript = state.isGenerating;
+      this.editGeneratedTypeScript = state.code;
+      this.editTypeScriptError = state.error;
+      this.editTypeScriptModel.value = state.code;
     });
     
     // Reset tab indices when forms are reset
@@ -232,6 +237,24 @@ export class ManageEndpointsComponent implements OnInit, OnDestroy {
     });
     
     this.loadSourceSystemAndSetApiUrl();
+  }
+
+  /**
+   * Setup TypeScript generation form listeners
+   */
+  private setupTypeScriptGeneration(): void {
+    // Listen for changes in response schemas to trigger TypeScript generation
+    this.endpointForm.get('responseSchema')?.valueChanges.subscribe(schema => {
+      if (schema && this.sourceSystemId) {
+        this.typeScriptService.generateTypeScript(schema, this.sourceSystemId);
+      }
+    });
+    
+    this.editForm.get('responseSchema')?.valueChanges.subscribe(schema => {
+      if (schema && this.sourceSystemId) {
+        this.typeScriptService.generateEditTypeScript(schema, this.sourceSystemId);
+      }
+    });
   }
   
   /**
