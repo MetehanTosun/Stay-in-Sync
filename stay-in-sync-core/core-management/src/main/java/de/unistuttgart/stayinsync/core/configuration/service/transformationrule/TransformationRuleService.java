@@ -3,22 +3,23 @@ package de.unistuttgart.stayinsync.core.configuration.service.transformationrule
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import de.unistuttgart.graphengine.dto.transformationrule.GraphDTO;
+import de.unistuttgart.graphengine.dto.transformationrule.InputDTO;
+import de.unistuttgart.graphengine.dto.transformationrule.NodeDTO;
+import de.unistuttgart.graphengine.dto.transformationrule.TransformationRulePayloadDTO;
+import de.unistuttgart.graphengine.dto.vFlow.VFlowGraphDTO;
+import de.unistuttgart.graphengine.nodes.Node;
+import de.unistuttgart.graphengine.service.GraphMapper;
+import de.unistuttgart.graphengine.service.GraphValidatorService;
+import de.unistuttgart.graphengine.validation_error.GraphStatus;
+import de.unistuttgart.graphengine.validation_error.ValidationError;
 import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.LogicGraphEntity;
 import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.TransformationRule;
 import de.unistuttgart.stayinsync.core.configuration.exception.CoreManagementException; // Import der korrekten Exception
-import de.unistuttgart.stayinsync.syncnode.logic_engine.GraphMapper;
-import de.unistuttgart.stayinsync.transport.dto.transformationrule.GraphDTO;
-import de.unistuttgart.stayinsync.transport.dto.transformationrule.NodeDTO;
-import de.unistuttgart.stayinsync.transport.dto.transformationrule.TransformationRulePayloadDTO;
-import de.unistuttgart.stayinsync.transport.dto.transformationrule.vFlow.VFlowGraphDTO;
-import de.unistuttgart.stayinsync.transport.transformation_rule_shared.GraphStatus;
-import de.unistuttgart.stayinsync.transport.transformation_rule_shared.nodes.Node;
-import de.unistuttgart.stayinsync.transport.transformation_rule_shared.validation_error.ValidationError;
 import io.quarkus.logging.Log;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
-import jakarta.ws.rs.NotFoundException;
 import jakarta.ws.rs.core.Response;
 
 import java.util.ArrayList;
@@ -62,8 +63,24 @@ public class TransformationRuleService {
             finalNodeDto.setName("Final Result");
             finalNodeDto.setNodeType("FINAL");
 
+            NodeDTO configNodeDto = new NodeDTO();
+            configNodeDto.setId(1);
+            configNodeDto.setName("Configuration");
+            configNodeDto.setNodeType("CONFIG");
+            configNodeDto.setChangeDetectionMode("OR");
+            configNodeDto.setInputTypes(List.of("ANY"));
+            configNodeDto.setOutputType("BOOLEAN");
+
+            InputDTO initialEdge = new InputDTO();
+            initialEdge.setId(1);
+            initialEdge.setOrderIndex(0);
+            finalNodeDto.setInputNodes(List.of(initialEdge));
+
             GraphDTO defaultGraphDto = new GraphDTO();
-            defaultGraphDto.setNodes(Collections.singletonList(finalNodeDto));
+            List<NodeDTO> nodes = new ArrayList<>();
+            nodes.add(finalNodeDto);
+            nodes.add(configNodeDto);
+            defaultGraphDto.setNodes(nodes);
 
             TransformationRule rule = new TransformationRule();
             rule.name = payload.getName();
@@ -95,6 +112,11 @@ public class TransformationRuleService {
         Log.debugf("Updating rule metadata with id: %d", id);
 
         TransformationRule ruleToUpdate = storageService.findRuleById(id);
+        if (ruleToUpdate == null) {
+            throw new CoreManagementException(Response.Status.NOT_FOUND,
+                    "Rule Not Found", 
+                    String.format("Rule ID %d was not found", id));
+        }
 
         ruleToUpdate.name = dto.getName();
         ruleToUpdate.description = dto.getDescription();
@@ -114,6 +136,11 @@ public class TransformationRuleService {
         Log.debugf("Updating graph with ruleId: %d", id);
 
         TransformationRule ruleToUpdate = storageService.findRuleById(id);
+        if (ruleToUpdate == null) {
+            throw new CoreManagementException(Response.Status.NOT_FOUND,
+                    "Rule Not Found", 
+                    String.format("Rule ID %d was not found", id));
+        }
         try {
             GraphDTO graphDto = mapper.vflowToGraphDto(vflowDto);
 

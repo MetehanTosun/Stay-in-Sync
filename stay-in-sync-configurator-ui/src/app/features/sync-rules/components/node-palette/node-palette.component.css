@@ -19,7 +19,7 @@
 	overflow-x: hidden;
 	word-break: break-word;
 	white-space: pre-line;
-	background: #fff;
+	background: var(--sr-border-highlight);
 	border-radius: 6px;
 	box-shadow: 0 2px 8px rgba(0,0,0,0.10);
 	padding: 0.3rem 0.2rem;
@@ -52,29 +52,29 @@
 }
 
 .node-palette-item {
-	background: #f8f9fa;
+	background: var(--sr-node-palette-item);
 	border-radius: 4px;
 	padding: 0.5rem 0.7rem;
 	font-size: 0.98rem;
 	font-weight: 500;
-	color: #222;
+	color: var(--sr-font-color);
 	cursor: pointer;
 	transition: background 0.13s, color 0.13s, box-shadow 0.13s;
 	box-shadow: 0 1px 2px rgba(0,0,0,0.03);
-	border: 1px solid #e5e5e5;
-		text-align: left;
-		word-break: break-word;
-		white-space: pre-line;
+	border: 1px solid var(--sr-node-palette-item-border);
+	text-align: left;
+	word-break: break-word;
+	white-space: pre-line;
 	outline: none;
 }
 .node-palette-item:hover, .node-palette-item:focus {
-	background: #e7f1ff;
+	background: var(--sr-node-palette-item-hover);
 	color: #0056b3;
 	box-shadow: 0 2px 6px rgba(0,123,255,0.08);
 }
 .node-palette-item small {
 	display: block;
 	font-size: 0.89em;
-	color: #666;
+	color: var(--node-palette-description-color);
 	margin-top: 0.15em;
 }

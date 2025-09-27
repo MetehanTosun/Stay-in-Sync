@@ -1,11 +1,12 @@
 package de.unistuttgart.stayinsync.pollingnode.rabbitmq;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.rabbitmq.client.*;
-import de.unistuttgart.stayinsync.pollingnode.exceptions.PollingNodeException;
-import de.unistuttgart.stayinsync.pollingnode.execution.PollingJobExecutionController;
+import com.rabbitmq.client.AMQP;
+import com.rabbitmq.client.Channel;
 import de.unistuttgart.stayinsync.transport.domain.JobDeploymentStatus;
 import de.unistuttgart.stayinsync.transport.dto.PollingJobDeploymentFeedbackMessageDTO;
+import de.unistuttgart.stayinsync.pollingnode.exceptions.PollingNodeException;
+import de.unistuttgart.stayinsync.pollingnode.execution.PollingJobExecutionController;
 import io.quarkiverse.rabbitmqclient.RabbitMQClient;
 import io.quarkus.logging.Log;
 import io.quarkus.runtime.ShutdownEvent;
@@ -78,8 +79,7 @@ public class PollingJobDeploymentFeedbackProducer {
      */
     void onShutdown(@Observes ShutdownEvent shutdownEvent) throws PollingNodeException {
         Set<Long> jobIds = pollingJobExecutionController.getSupportedJobs().keySet();
-        for(Long jobId : jobIds)
-        {
+        for (Long jobId : jobIds) {
             publishPollingJobFeedback(jobId, JobDeploymentStatus.UNDEPLOYED);
         }
     }

@@ -1,11 +1,10 @@
 package de.unistuttgart.stayinsync.pollingnode.execution.ressource;
 
-import de.unistuttgart.stayinsync.pollingnode.entities.RequestBuildingDetails;
-import de.unistuttgart.stayinsync.pollingnode.exceptions.execution.UnsupportedRequestTypeException;
-import de.unistuttgart.stayinsync.pollingnode.exceptions.execution.pollingjob.requestbuilderexceptions.RequestBuildingDetailsNullFieldException;
-import de.unistuttgart.stayinsync.pollingnode.exceptions.execution.pollingjob.requestbuilderexceptions.RequestBuildingException;
 import de.unistuttgart.stayinsync.transport.dto.ApiRequestParameterMessageDTO;
 import de.unistuttgart.stayinsync.transport.dto.ParamType;
+import de.unistuttgart.stayinsync.pollingnode.entities.RequestBuildingDetails;
+import de.unistuttgart.stayinsync.pollingnode.exceptions.execution.pollingjob.requestbuilderexceptions.RequestBuildingDetailsNullFieldException;
+import de.unistuttgart.stayinsync.pollingnode.exceptions.execution.pollingjob.requestbuilderexceptions.RequestBuildingException;
 import io.quarkus.logging.Log;
 import io.vertx.ext.web.client.WebClientOptions;
 import io.vertx.mutiny.core.Vertx;
@@ -18,6 +17,7 @@ import java.net.URI;
 import java.time.Duration;
 
 import static de.unistuttgart.stayinsync.transport.dto.ParamType.QUERY;
+
 
 /**
  * Offers the method configureRequest in which a request is built for later use.

@@ -21,6 +21,7 @@ import jakarta.ws.rs.core.MultivaluedHashMap;
 import jakarta.ws.rs.core.MultivaluedMap;
 import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.core.UriBuilder;
+import org.slf4j.MDC;
 
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -39,6 +40,7 @@ public class DirectiveExecutor {
     ObjectMapper objectMapper;
 
     public Uni<Void> execute(UpsertDirective directive, RequestConfigurationMessageDTO arcConfig, Long transformationId, String targetApiUrl) {
+        MDC.put("transformationId", transformationId.toString());
         WebClient client = webClientProvider.getClient();
         Log.infof("TID: %d - Processing directive: %s for target: %s", transformationId, directive.get__directiveType(), targetApiUrl);
 
@@ -59,13 +61,17 @@ public class DirectiveExecutor {
                         return Uni.createFrom().nullItem();
                     }
                 })
-                .onFailure().invoke(failure -> Log.errorf(failure, "TID: %d - A technical error occurred during directive execution for '%s'",
-                        transformationId, directive.get__directiveType()))
+                .onFailure().invoke(failure -> {
+                    MDC.put("transformationId", transformationId.toString());
+                    Log.errorf(failure, "TID: %d - A technical error occurred during directive execution for '%s'",
+                            transformationId, directive.get__directiveType());
+                })
                 .replaceWithVoid();
     }
 
     @CacheResult(cacheName = "check-cache", keyGenerator = UrlCacheKeyGenerator.class)
     public Uni<HttpResponse<Buffer>> cachedCheckRequest(WebClient client, String targetApiUrl, String resolvedPath, MultivaluedMap<String, String> queryParams, String fullUrlForCache, Long transformationId) {
+        MDC.put("transformationId", transformationId.toString());
         try {
             URI uri = new URI(targetApiUrl);
             boolean useSsl = "https".equalsIgnoreCase(uri.getScheme());
@@ -78,8 +84,6 @@ public class DirectiveExecutor {
                     .ssl(useSsl);
 
             queryParams.forEach((key, values) -> values.forEach(value -> request.addQueryParam(key, value)));
-            // TODO: Add Header (Auth) here
-            // request.putHeader("Authorization", "Bearer " + getMyTokenFor(targetApiUrl));
 
             Log.infof("TID: %d - Executing CACHED CHECK: GET %s", transformationId, fullUrlForCache);
             return request.send();
@@ -103,6 +107,7 @@ public class DirectiveExecutor {
     }
 
     private Uni<HttpResponse<Buffer>> handleCreate(WebClient client, UpsertDirective directive, RequestConfigurationMessageDTO arcConfig, Long transformationId, String targetApiUrl) {
+        MDC.put("transformationId", transformationId.toString());
         try {
             String pathTemplate = findPathForAction(arcConfig, TargetApiRequestConfigurationActionRole.CREATE)
                     .orElseThrow(() -> new IllegalStateException("CREATE action path is missing for ARC " + arcConfig.alias()));
@@ -122,11 +127,11 @@ public class DirectiveExecutor {
             HttpRequest<Buffer> request = client.post(port, uri.getHost(), resolvedPath)
                     .ssl(useSsl)
                     .putHeader("Content-Type", "application/json");
-            // TODO: Add Auth Header here
 
             Log.infof("TID: %d - Executing CREATE: POST %s", transformationId, targetApiUrl + resolvedPath);
             return request.sendBuffer(payloadBuffer)
                     .onItem().invoke(createResponse -> {
+                        MDC.put("transformationId", transformationId.toString());
                         if (createResponse.statusCode() >= 400) {
                             Log.errorf("TID: %d - CREATE request failed with status code: %d. Response: %s. Payload: %s",
                                     transformationId, createResponse.statusCode(), createResponse.bodyAsString(), payload.toString());
@@ -141,6 +146,7 @@ public class DirectiveExecutor {
     }
 
     private Uni<HttpResponse<Buffer>> handleUpdate(WebClient client, UpsertDirective directive, RequestConfigurationMessageDTO arcConfig, Long transformationId, String targetApiUrl, String checkResponseBody) {
+        MDC.put("transformationId", transformationId.toString());
         try {
             String pathTemplate = findPathForAction(arcConfig, TargetApiRequestConfigurationActionRole.UPDATE)
                     .orElseThrow(() -> new IllegalStateException("UPDATE action path is missing for ARC " + arcConfig.alias()));
@@ -162,11 +168,11 @@ public class DirectiveExecutor {
             HttpRequest<Buffer> request = client.put(port, uri.getHost(), resolvedPath)
                     .ssl(useSsl)
                     .putHeader("Content-Type", "application/json");
-            // TODO: Add Auth Header here
 
             Log.infof("TID: %d - Executing UPDATE: PUT %s", transformationId, targetApiUrl + resolvedPath);
             return request.sendBuffer(payloadBuffer)
                     .onItem().invoke(updateResponse -> {
+                        MDC.put("transformationId", transformationId.toString());
                         if (updateResponse.statusCode() >= 400) {
                             Log.errorf("TID: %d - UPDATE request failed with status code: %d. Response: %s. Payload: %s",
                                     transformationId, updateResponse.statusCode(), updateResponse.bodyAsString(), payload.toString());
@@ -230,7 +236,7 @@ public class DirectiveExecutor {
         return resolvedParams;
     }
 
-    private Optional<String> findPathForAction(RequestConfigurationMessageDTO arcConfig, TargetApiRequestConfigurationActionRole role){
+    private Optional<String> findPathForAction(RequestConfigurationMessageDTO arcConfig, TargetApiRequestConfigurationActionRole role) {
         return arcConfig.actions().stream()
                 .filter(action -> action.actionRole() == role)
                 .map(ActionMessageDTO::path)

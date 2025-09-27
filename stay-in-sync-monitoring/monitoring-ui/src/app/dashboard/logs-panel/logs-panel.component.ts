@@ -1,10 +1,13 @@
-import { Component, Input, OnChanges, SimpleChanges, OnInit } from '@angular/core';
+import { Component, OnDestroy, OnInit } from '@angular/core';
 import { LogEntry } from '../../core/models/log.model';
 import { LogService } from '../../core/services/log.service';
 import { FormsModule } from '@angular/forms';
 import { DatePipe, NgClass, NgForOf, NgIf } from '@angular/common';
 import { TableModule } from 'primeng/table';
 import { ActivatedRoute } from '@angular/router';
+import { Button } from 'primeng/button';
+import { TransformationService } from '../../core/services/transformation.service';
+import { DropdownModule } from 'primeng/dropdown';
 
 @Component({
   selector: 'app-logs-panel',
@@ -13,103 +16,224 @@ import { ActivatedRoute } from '@angular/router';
     FormsModule,
     DatePipe,
     NgClass,
-    TableModule
-  ]
+    NgIf,
+    TableModule,
+    Button,
+    DropdownModule
+  ],
+  standalone: true
 })
-export class LogsPanelComponent implements OnInit, OnChanges {
-  selectedNodeId: string | null = null;
+export class LogsPanelComponent implements OnInit, OnDestroy {
+  // Node ID passed via query params
+  selectedNodeId?: string;
 
+  // Log entries to display in the table
   logs: LogEntry[] = [];
-  filteredLogs: LogEntry[] = [];
 
-  startTime: string = '';
-  endTime: string = '';
-  level: string = 'info';
-  stream: 'stdout' | 'stderr' = 'stderr';
+  // Loading and error handling state
+  loading = false;
+  errorMessage = '';
 
-  constructor(private logService: LogService, private route: ActivatedRoute) {
-    this.route.queryParams.subscribe(params => {
-      this.selectedNodeId = params['input'];
-      console.log('Selected Node ID from query params:', this.selectedNodeId);
-    });
-  }
+  // Time filters (ISO datetime strings for input fields)
+  startTime = '';
+  endTime = '';
 
+  // Log level filter
+  level = '';
+
+  // Transformation IDs related to the selected node
+  transformationIds: string[] = [];
+
+  // Dropdown options for log levels
+  levels = [
+    { label: 'Info', value: 'info' },
+    { label: 'Warn', value: 'warn' },
+    { label: 'Error', value: 'error' },
+    { label: 'Debug', value: 'debug' },
+    { label: 'Trace', value: 'trace' }
+  ];
+
+  // Dropdown options for services
+  services = [
+    { label: 'monitoring-backend', value: 'monitoring-backend' },
+    { label: 'core-sync-node', value: 'core-sync-node' },
+    { label: 'core-polling-node', value: 'core-polling-node' },
+    { label: 'core-management', value: 'core-management' },
+    { label: 'docker', value: 'docker' }
+  ];
+
+  private intervalId?: number;
+
+  // Currently selected transformation ID (for filtering logs)
+  selectedTransformationId: string = '';
+
+  // Currently selected service (for filtering logs)
+  selectedService: string = '';
+
+  constructor(
+    private logService: LogService,
+    private route: ActivatedRoute,
+    private transformationService: TransformationService
+  ) {}
+
+  /**
+   * Initializes default time range (last hour) and subscribes to query params.
+   * Automatically fetches logs when node ID changes.
+   */
   ngOnInit() {
     const now = new Date();
     const oneHourAgo = new Date(now.getTime() - 60 * 60 * 1000);
     this.startTime = this.toDateTimeLocal(oneHourAgo);
     this.endTime = this.toDateTimeLocal(now);
+
+    this.route.queryParams.subscribe(params => {
+      this.selectedNodeId = params['input'];
+      this.fetchLogs();
+    });
   }
 
-  ngOnChanges(changes: SimpleChanges) {
-    if (changes['selectedNodeId'] && this.selectedNodeId) {
-      this.fetchLogs();
+  /**
+   * Clears any polling interval if set.
+   */
+  ngOnDestroy() {
+    if (this.intervalId) {
+      clearInterval(this.intervalId);
     }
   }
 
+  /**
+   * Reloads logs with updated end time.
+   */
+  reloadLogs() {
+    this.endTime = this.toDateTimeLocal(new Date());
+    this.fetchLogs();
+  }
+
+  /**
+   * Fetches logs depending on the context:
+   * - Polling node → logs by service
+   * - No node selected → logs by service or all logs
+   * - Transformation node → logs by transformation IDs
+   */
   fetchLogs() {
-    const startNs = new Date(this.startTime).getTime() * 1_000_000;
-    const endNs = new Date(this.endTime).getTime() * 1_000_000;
+    const startNs = this.toNanoSeconds(new Date(this.startTime));
+    const endNs = this.toNanoSeconds(new Date(this.endTime));
+    const effectiveLevel = this.level || '';
 
-    const nodeId = this.selectedNodeId || '';
-    const level = this.level || '';
+    // Case 1: Polling node
+    if (this.selectedNodeId && this.selectedNodeId.startsWith('POLL')) {
+      this.selectedService = 'core-polling-node';
+      this.loading = true;
+      this.errorMessage = '';
 
-    this.logService.getLogs(
-      this.stream,
-      level,
-      nodeId,
-      startNs.toString(),
-      endNs.toString()
-    ).subscribe({
-      next: (logs: any[]) => {
-        this.logs = logs.map((entry: any) => {
-          const rawMessage = entry.message;
+      this.logService.getLogsByService(this.selectedService, startNs, endNs, effectiveLevel).subscribe({
+        next: logs => {
+          this.logs = logs;
+          this.loading = false;
+        },
+        error: err => {
+          console.error('Error fetching logs', err);
+          this.errorMessage = 'Error loading logs';
+          this.loading = false;
+        }
+      });
+      return;
+    }
 
-          const levelMatch = rawMessage.match(/level=([a-zA-Z]+)/);
-          const level = levelMatch ? levelMatch[1].toLowerCase() : '';
+    // Case 2: No node selected
+    if (!this.selectedNodeId) {
+      this.loading = true;
+      this.errorMessage = '';
 
-          let message = '';
-          const msgMatch = rawMessage.match(/msg="([^"]+)"/);
-          const messageMatch = rawMessage.match(/message="([^"]+)"/);
-          if (msgMatch) {
-            message = msgMatch[1];
-          } else if (messageMatch) {
-            message = messageMatch[1];
+      if (this.selectedService && this.selectedService !== '') {
+        // Logs filtered by service
+        this.logService.getLogsByService(this.selectedService, startNs, endNs, effectiveLevel)
+          .subscribe({
+            next: logs => {
+              this.logs = logs;
+              this.loading = false;
+            },
+            error: err => {
+              console.error('Error fetching logs', err);
+              this.errorMessage = 'Error loading logs';
+              this.loading = false;
+            }
+          });
+      } else {
+        // Fallback: all logs
+        this.logService.getLogs(startNs, endNs, this.level)
+          .subscribe({
+            next: logs => {
+              this.logs = logs;
+              this.loading = false;
+            },
+            error: err => {
+              console.error('Error fetching logs', err);
+              this.errorMessage = 'Error loading logs';
+              this.loading = false;
+            }
+          });
+      }
+      return;
+    }
+
+    // Case 3: Transformation node
+    this.loading = true;
+    this.errorMessage = '';
+
+    // Step 1: Fetch transformation IDs for the node
+    this.transformationService.getTransformations(this.selectedNodeId).subscribe({
+      next: transformations => {
+        if (!transformations || transformations.length === 0) {
+          this.logs = [];
+          this.loading = false;
+          return;
+        }
+
+        this.transformationIds = transformations
+          .map(t => t.id)
+          .filter((id): id is number => id !== undefined)
+          .map(id => id.toString());
+
+        // Step 2: Fetch logs for transformations
+        this.logService.getLogsByTransformations(this.transformationIds, startNs, endNs, effectiveLevel).subscribe({
+          next: logs => {
+            this.logs = logs;
+            this.loading = false;
+
+            // If a specific transformation is selected, filter results
+            if (this.selectedTransformationId !== '') {
+              this.logs = this.logs.filter(log => log.transformationId?.toString() === this.selectedTransformationId);
+            }
+          },
+          error: err => {
+            console.error('Error fetching logs', err);
+            this.errorMessage = 'Error loading logs';
+            this.loading = false;
           }
-
-          const componentMatch = rawMessage.match(/component=([^\s]+)/);
-          const callerMatch = rawMessage.match(/caller=([^\s]+)/);
-
-          return {
-            timestamp: entry.timestamp,
-            message,
-            rawMessage,
-            stream: entry.stream || '',
-            level,
-            caller: callerMatch ? callerMatch[1] : ''
-          } as LogEntry;
         });
-
-
-        this.filteredLogs = this.logs.sort(
-          (a, b) => Number(new Date(b.timestamp)) - Number(new Date(a.timestamp))
-        );
-        console.log('Logs successfully fetched:', this.filteredLogs);
       },
-      error: (err) => {
-        console.error('Error fetching logs', err);
+      error: err => {
+        console.error('Error fetching transformations', err);
+        this.errorMessage = 'Error loading transformations';
+        this.loading = false;
       }
     });
   }
 
+  /**
+   * Triggers a log reload when filters are changed.
+   */
   onFilterChange() {
     this.fetchLogs();
   }
 
+  /**
+   * Builds a fallback message for unstructured log entries
+   * by extracting common fields (component, query, etc.).
+   */
   buildFallbackMessage(log: LogEntry): string {
-    const raw = log.rawMessage || ''; // full log line if message is missing
-
-    // Try to extract meaningful Loki fields
+    const raw = (log as any).rawMessage || '';
     const component = this.extractValue(raw, 'component');
     const query = this.extractQuotedValue(raw, 'query');
     const returned = this.extractValue(raw, 'returned_lines');
@@ -121,25 +245,31 @@ export class LogsPanelComponent implements OnInit, OnChanges {
       return `[${component}] Query ${query} returned ${returned || 0} lines (duration=${duration || '-'}, status=${status || '-'})`;
     }
 
-    // Fallback: return caller or component only
-    const parts = [];
-
+    const parts: string[] = [];
     if (component) parts.push(`[${component}]`);
     if (caller) parts.push(`caller=${caller}`);
-
     return parts.length > 0 ? parts.join(' ') : '(unstructured log entry)';
   }
 
+  /**
+   * Extracts a value of the form key=value from a raw log string.
+   */
   private extractValue(text: string, key: string): string | null {
     const match = text.match(new RegExp(`${key}=([^\\s]+)`));
     return match ? match[1] : null;
   }
 
+  /**
+   * Extracts a quoted value of the form key="..." from a raw log string.
+   */
   private extractQuotedValue(text: string, key: string): string | null {
     const match = text.match(new RegExp(`${key}="([^"]+)"`));
     return match ? match[1] : null;
   }
 
+  /**
+   * Converts a Date to a datetime-local string for form inputs.
+   */
   private toDateTimeLocal(date: Date): string {
     const pad = (n: number) => n.toString().padStart(2, '0');
     const yyyy = date.getFullYear();
@@ -148,5 +278,12 @@ export class LogsPanelComponent implements OnInit, OnChanges {
     const hh = pad(date.getHours());
     const mm = pad(date.getMinutes());
     return `${yyyy}-${MM}-${dd}T${hh}:${mm}`;
+  }
+
+  /**
+   * Converts a Date to nanoseconds (for backend queries).
+   */
+  private toNanoSeconds(date: Date): number {
+    return date.getTime() * 1_000_000; // ms → ns
   }
 }

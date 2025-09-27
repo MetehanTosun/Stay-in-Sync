@@ -21,7 +21,8 @@ const MyPreset = definePreset(Lara, {
     },
     error: {
       500: '#dc3545'
-    }
+    },
+
   },
   tokens: {
     colors: {

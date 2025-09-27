@@ -1,8 +1,12 @@
 import { Component, EventEmitter, Input, Output } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 
+/**
+ * This component manages the modal for setting the values of a provider node
+ */
 @Component({
   selector: 'app-provider-node-modal',
+  standalone: true,
   imports: [FormsModule],
   templateUrl: './provider-node-modal.component.html',
   styleUrl: './provider-node-modal.component.css'

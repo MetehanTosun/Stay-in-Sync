@@ -15,6 +15,7 @@ import java.lang.reflect.Method;
 public class UrlCacheKeyGenerator implements CacheKeyGenerator {
     /**
      * Generates the cache key.
+     *
      * @param method The method being invoked (cachedCheckRequest).
      * @param params The parameters passed to the method. We expect the full URL
      *               string (`fullUrlForCache`) to be among them.

@@ -84,6 +84,7 @@ public class ScriptEngineService {
             try {
                 MDC.put("jobId", job.jobId());
                 MDC.put("scriptId", job.scriptId());
+                MDC.put("transformationId", job.transformationId().toString());
                 Log.infof("Starting async transformation of job: %s, script: %s", job.jobId(), job.scriptId());
 
                 return transformInternal(job);
@@ -168,7 +169,7 @@ public class ScriptEngineService {
 
             setupBindings(context, transformJob, scriptApi);
 
-            if(sdkSource != null){
+            if (sdkSource != null) {
                 context.eval(sdkSource);
             }
 
@@ -225,13 +226,13 @@ public class ScriptEngineService {
      * <p>
      * The newly compiled {@code Source} is then stored in the cache for subsequent requests and returned.
      *
-     * @param scriptId      The unique identifier for the script, used as part of the cache key.
-     * @param scriptHash    The hash of the original script's content, used to version the script in the cache.
-     * @param scriptCode    The raw source code of the script to be compiled if it's not found in the cache.
-     * @param preprocessor  A {@link Function} that defines the pre-processing strategy for the script code
-     *                      before it is compiled.
+     * @param scriptId     The unique identifier for the script, used as part of the cache key.
+     * @param scriptHash   The hash of the original script's content, used to version the script in the cache.
+     * @param scriptCode   The raw source code of the script to be compiled if it's not found in the cache.
+     * @param preprocessor A {@link Function} that defines the pre-processing strategy for the script code
+     *                     before it is compiled.
      * @return The pre-parsed and cached {@link Source} object, ready for evaluation. Returns {@code null} if
-     *         {@code scriptCode} or {@code scriptHash} is null.
+     * {@code scriptCode} or {@code scriptHash} is null.
      * @throws ScriptEngineException if an error occurs during script compilation (e.g., syntax errors) or
      *                               if the compiled script cannot be stored or retrieved from the cache.
      */
@@ -271,12 +272,12 @@ public class ScriptEngineService {
      * </ul>
      * </p>
      *
-     * @param context The GraalVM {@link Context} to configure with bindings.
+     * @param context      The GraalVM {@link Context} to configure with bindings.
      * @param transformJob The job containing script language, source data, and identifiers for logging.
      *                     The {@code scriptLanguage} determines binding behavior (e.g., for JavaScript).
      *                     The {@code sourceData} may be exposed to the script.
      *                     The {@code scriptId} and {@code jobId} are used in log messages.
-     * @param scriptApi The {@link ScriptApi} instance to make available to the script.
+     * @param scriptApi    The {@link ScriptApi} instance to make available to the script.
      * @throws ScriptEngineException if any error occurs during the binding process (e.g., issues with {@code putMember}).
      */
     private void setupBindings(Context context, TransformJob transformJob, ScriptApi scriptApi) throws ScriptEngineException {
@@ -325,7 +326,7 @@ public class ScriptEngineService {
      * an original exception that might have occurred during script execution.
      * </p>
      *
-     * @param context The GraalVM {@link Context} from which to remove bindings.
+     * @param context      The GraalVM {@link Context} from which to remove bindings.
      * @param transformJob The job containing script language and source data details, used to determine
      *                     which bindings to clean up. The {@code scriptLanguage} and type of {@code sourceData}
      *                     guide the cleanup process. {@code scriptId} and {@code jobId} are for logging.
@@ -359,11 +360,11 @@ public class ScriptEngineService {
      * is logged and included in the returned exception's message.
      * </p>
      *
-     * @param e The {@link PolyglotException} that occurred during script execution or interaction.
+     * @param e            The {@link PolyglotException} that occurred during script execution or interaction.
      * @param transformJob The job context (ID, script ID, language) used for enriching log messages
      *                     and the resulting {@link ScriptEngineException}.
      * @return A new {@link ScriptEngineException} wrapping the original {@code PolyglotException}
-     *         with processed error information (type, title, detailed message).
+     * with processed error information (type, title, detailed message).
      */
     private ScriptEngineException handlePolyglotException(PolyglotException e, TransformJob transformJob) {
         String errorDetails;

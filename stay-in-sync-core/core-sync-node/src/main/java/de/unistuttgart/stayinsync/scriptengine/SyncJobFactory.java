@@ -1,6 +1,7 @@
+package de.unistuttgart.stayinsync.scriptengine;
 /*package de.unistuttgart.stayinsync.scriptengine;
 
-import de.unistuttgart.stayinsync.syncnode.domain.TransformJob;
+import de.unistuttgart.stayinsync.core.syncnode.domain.TransformJob;
 
 import java.util.HashMap;
 import java.util.Map;

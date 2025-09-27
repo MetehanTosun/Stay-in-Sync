@@ -28,6 +28,9 @@ import java.util.stream.Collectors;
 @ApplicationScoped
 public class DevelopmentDataSeeder {
 
+    @Inject
+    AfterSeedRunner afterSeedRunner;
+
     @ConfigProperty(name = "quarkus.profile")
     String profile;
 
@@ -115,6 +118,8 @@ public class DevelopmentDataSeeder {
         TransformationScriptDTO scriptDTO = createFinalTransformationScriptDTO(transformation.id, sourceArc.alias, targetArc.id);
         transformationScriptService.saveOrUpdateForTransformation(transformation.id, scriptDTO);
         Log.info("-> Created and linked final Transformation Script");
+
+        //afterSeedRunner.runAfterSeed();
 
         Log.info("====== DATABASE SEEDING FINISHED ======");
     }

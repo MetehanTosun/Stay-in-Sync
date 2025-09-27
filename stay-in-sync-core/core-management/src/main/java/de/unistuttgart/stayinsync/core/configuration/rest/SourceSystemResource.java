@@ -8,7 +8,6 @@ import de.unistuttgart.stayinsync.core.configuration.rest.dtos.CreateSourceSyste
 import de.unistuttgart.stayinsync.core.configuration.rest.dtos.SourceSystemDTO;
 import de.unistuttgart.stayinsync.core.configuration.service.SourceSystemEndpointService;
 import de.unistuttgart.stayinsync.core.configuration.service.SourceSystemService;
-import de.unistuttgart.stayinsync.core.configuration.rest.Examples;
 import io.quarkus.logging.Log;
 import jakarta.inject.Inject;
 import jakarta.validation.Valid;
@@ -112,6 +111,7 @@ public class SourceSystemResource {
             sourceSystemDTO.apiUrl(),
             sourceSystemDTO.description(),
             sourceSystemDTO.apiType(),
+            sourceSystemDTO.aasId(),
             sourceSystemDTO.apiAuthType(),
             sourceSystemDTO.authConfig(),
             sourceSystemDTO.openApiSpec()

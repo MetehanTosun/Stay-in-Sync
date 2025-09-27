@@ -1,6 +1,7 @@
 package de.unistuttgart.stayinsync.core.configuration.domain.entities.sync;
 
-import de.unistuttgart.stayinsync.transport.transformation_rule_shared.GraphStatus;
+import de.unistuttgart.graphengine.validation_error.GraphStatus;
+import de.unistuttgart.graphengine.validation_error.ValidationError;
 import io.quarkus.hibernate.orm.panache.PanacheEntity;
 import jakarta.persistence.*;
 
@@ -34,7 +35,7 @@ public class TransformationRule extends PanacheEntity {
     public GraphStatus graphStatus = GraphStatus.DRAFT;
 
     /**
-     * A JSON string representing a list of {@link de.unistuttgart.stayinsync.transport.transformation_rule_shared.validation_error.ValidationError} objects.
+     * A JSON string representing a list of {@link ValidationError} objects.
      * <p>
      * This field is only populated if the {@code graphStatus} is {@code DRAFT}.
      * It stores the specific reasons why the graph failed validation, allowing the

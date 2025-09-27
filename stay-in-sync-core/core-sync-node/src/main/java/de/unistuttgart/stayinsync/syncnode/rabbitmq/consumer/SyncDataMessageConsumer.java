@@ -10,13 +10,15 @@ import de.unistuttgart.stayinsync.exception.SyncNodeException;
 import de.unistuttgart.stayinsync.syncnode.domain.ExecutionPayload;
 import de.unistuttgart.stayinsync.syncnode.syncjob.DispatcherStateService;
 import de.unistuttgart.stayinsync.syncnode.syncjob.TransformationExecutionService;
-import de.unistuttgart.stayinsync.transport.dto.*;
+import de.unistuttgart.stayinsync.transport.dto.SourceSystemApiRequestConfigurationMessageDTO;
+import de.unistuttgart.stayinsync.transport.dto.SyncDataMessageDTO;
 import io.quarkiverse.rabbitmqclient.RabbitMQClient;
 import io.quarkus.logging.Log;
 import io.quarkus.runtime.StartupEvent;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.event.Observes;
 import jakarta.inject.Inject;
+import org.jboss.logging.MDC;
 
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
@@ -105,10 +107,12 @@ public class SyncDataMessageConsumer {
                 List<ExecutionPayload> completedPayloads = dispatcherStateService.processArc(syncData);
 
                 for (ExecutionPayload payload : completedPayloads) {
+                    MDC.put("transformationId", payload.job().transformationId().toString());
                     Log.infof("Dispatching job %s for conditional execution", payload.job().jobId());
                     transformationExecutionService.execute(payload)
                             .subscribe().with(
                                     result -> {
+                                        MDC.put("transformationId", payload.job().transformationId().toString());
                                         if (result != null) {
                                             Log.infof("Job %s completed successfully: %s", payload.job().jobId(), result.isValidExecution());
                                             Log.infof("Script Transformation payload: %s", result.getOutputData());
@@ -116,14 +120,17 @@ public class SyncDataMessageConsumer {
                                             Log.infof("Job %s was skipped by pre-condition and did not run.", payload.job().jobId());
                                         }
                                     },
-                                    failure -> Log.errorf(failure, "Job %s failed during execution chain", payload.job().jobId())
+                                    failure -> {
+                                        MDC.put("transformationId", payload.job().transformationId().toString());
+                                        Log.errorf(failure, "Job %s failed during execution chain", payload.job().jobId());
+                                    }
                             );
                 }
 
                 channel.basicAck(delivery.getEnvelope().getDeliveryTag(), false);
             } catch (SyncNodeException e) {
                 Log.errorf("Failed to process sync-data message", e);
-                //Sending message to dead-letter-exchange
+                // Sending message to dead-letter-exchange
                 channel.basicNack(delivery.getEnvelope().getDeliveryTag(), false, false);
             }
         };
