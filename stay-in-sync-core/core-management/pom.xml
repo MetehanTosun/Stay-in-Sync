@@ -20,7 +20,7 @@
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
         <quarkus.platform.artifact-id>quarkus-bom</quarkus.platform.artifact-id>
         <quarkus.platform.group-id>io.quarkus.platform</quarkus.platform.group-id>
-        <quarkus.platform.version>3.21.4</quarkus.platform.version>
+        <quarkus.platform.version>3.23.2</quarkus.platform.version>
         <skipITs>true</skipITs>
         <surefire-plugin.version>3.5.2</surefire-plugin.version>
     </properties>
@@ -189,25 +189,26 @@
             <artifactId>quarkus-smallrye-health</artifactId>
         </dependency>
         <!-- Polyglot Context API -->
-        <dependency>
-            <groupId>org.graalvm.polyglot</groupId>
-            <artifactId>polyglot</artifactId>
-            <version>24.0.2</version>
-        </dependency>
+<dependency>
+  <groupId>org.graalvm.polyglot</groupId>
+  <artifactId>polyglot</artifactId>
+  <version>25.0.0</version>
+</dependency>
 
-        <!-- GraalVM JavaScript language engine -->
-          <dependency>
-            <groupId>org.graalvm.js</groupId>
-            <artifactId>js-scriptengine</artifactId>
-            <version>24.2.1</version>
-        </dependency>
+<dependency>
+  <groupId>org.graalvm.polyglot</groupId>
+  <artifactId>js</artifactId>
+  <version>25.0.0</version>
+  <type>pom</type>
+</dependency>
 
         <!-- Truffle Debug/Instrumentation API (Scope, Debugger, etc.) -->
-        <dependency>
-            <groupId>org.graalvm.truffle</groupId>
-            <artifactId>truffle-api</artifactId>
-            <version>24.0.2</version>
-        </dependency>
+<dependency>
+    <groupId>org.graalvm.truffle</groupId>
+    <artifactId>truffle-api</artifactId>
+    <version>25.0.0</version>
+</dependency>
+
         <dependency>
             <groupId>de.unistuttgart</groupId>
             <artifactId>stay-in-sync-graph-engine</artifactId>
