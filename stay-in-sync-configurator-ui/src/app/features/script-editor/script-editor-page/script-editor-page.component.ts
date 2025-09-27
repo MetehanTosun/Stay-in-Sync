@@ -28,7 +28,6 @@ import {SourceSystem, SourceSystemEndpoint} from '../../source-system/models/sou
 import {ArcManagementPanelComponent} from '../arc-management-panel/arc-management-panel.component';
 import {ArcWizardComponent} from '../arc-wizard/arc-wizard.component';
 import {InputTextModule} from 'primeng/inputtext';
-import {FloatLabel} from 'primeng/floatlabel';
 import { MonacoEditorService } from '../../../core/services/monaco-editor.service';
 import { TypeDefinitionsResponse } from '../models/target-system.models';
 import { TargetArcPanelComponent } from '../target-arc-panel/target-arc-panel.component';
@@ -57,7 +56,7 @@ interface MonacoExtraLib {
     MessagesModule,
     ProgressSpinnerModule,
     ArcManagementPanelComponent,
-    ArcWizardComponent
+    ArcWizardComponent,
     ConfirmDialog,
     ToastModule,
     InputTextModule,
