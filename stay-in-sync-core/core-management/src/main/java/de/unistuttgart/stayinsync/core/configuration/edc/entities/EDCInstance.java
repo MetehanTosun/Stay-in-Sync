@@ -1,7 +1,9 @@
 package de.unistuttgart.stayinsync.core.configuration.edc.entities;
 
 import de.unistuttgart.stayinsync.core.model.UuidEntity;
-import jakarta.persistence.*;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Table;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -16,7 +18,7 @@ public class EDCInstance extends UuidEntity {
     @Column(nullable = false)
     private String name;
 
-    @Column(name = "control_plane_management_url", nullable = false)
+    @Column(name = "control_plane_management_url")
     private String controlPlaneManagementUrl;
 
     private String protocolVersion;
