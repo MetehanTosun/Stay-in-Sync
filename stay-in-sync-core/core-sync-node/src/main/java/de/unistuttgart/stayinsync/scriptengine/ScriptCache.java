@@ -69,7 +69,7 @@ public class ScriptCache {
      * @param scriptHash     The hash of the original script's content, used for versioning.
      * @param compiledSource The pre-compiled {@link Source} object to be stored in the cache.
      */
-    public void putCompiledScript(String scriptId, String scriptHash, Source compiledSource){
+    public void putCompiledScript(String scriptId, String scriptHash, Source compiledSource) {
         cache.put(buildKey(scriptId, scriptHash), compiledSource);
         Log.debugf("Cached compiled script: %s (with hash: %s)", scriptId, scriptHash);
     }

@@ -1,0 +1,29 @@
+package de.unistuttgart.graphengine.dto.vFlow;
+
+
+/**
+ * A simple DTO for a 2D point (x, y coordinates).
+ */
+
+public class PointDTO {
+    private double x;
+    private double y;
+
+    public double getX() {
+        return x;
+    }
+
+    public void setX(double x) {
+        this.x = x;
+    }
+
+    public double getY() {
+        return y;
+    }
+
+    public void setY(double y) {
+        this.y = y;
+    }
+}
+
+

@@ -1,5 +1,7 @@
 package de.unistuttgart.stayinsync.transport.dto;
 
+
+import de.unistuttgart.graphengine.dto.transformationrule.TransformationRuleDTO;
 import de.unistuttgart.stayinsync.transport.dto.targetsystems.RequestConfigurationMessageDTO;
 import de.unistuttgart.stayinsync.transport.domain.JobDeploymentStatus;
 

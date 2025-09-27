@@ -9,6 +9,7 @@
   <url>http://maven.apache.org</url>
 
   <modules>
+    <module>stay-in-sync-graph-engine</module>
     <module>stay-in-sync-shared</module>
     <module>stay-in-sync-core</module>
     <module>stay-in-sync-monitoring/monitoring-backend</module>

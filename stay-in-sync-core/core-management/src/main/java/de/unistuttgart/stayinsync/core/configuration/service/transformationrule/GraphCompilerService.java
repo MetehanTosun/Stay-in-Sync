@@ -5,10 +5,10 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.networknt.schema.JsonSchema;
 import com.networknt.schema.JsonSchemaFactory;
 import com.networknt.schema.SpecVersion.VersionFlag;
-import de.unistuttgart.stayinsync.transport.transformation_rule_shared.logic_operator.LogicOperator;
-import de.unistuttgart.stayinsync.transport.transformation_rule_shared.nodes.ConstantNode;
-import de.unistuttgart.stayinsync.transport.transformation_rule_shared.nodes.LogicNode;
-import de.unistuttgart.stayinsync.transport.transformation_rule_shared.nodes.Node;
+import de.unistuttgart.graphengine.logic_operator.LogicOperator;
+import de.unistuttgart.graphengine.nodes.ConstantNode;
+import de.unistuttgart.graphengine.nodes.LogicNode;
+import de.unistuttgart.graphengine.nodes.Node;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 

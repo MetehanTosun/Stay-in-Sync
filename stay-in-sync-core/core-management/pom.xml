@@ -208,6 +208,11 @@
             <artifactId>truffle-api</artifactId>
             <version>24.0.2</version>
         </dependency>
+        <dependency>
+            <groupId>de.unistuttgart</groupId>
+            <artifactId>stay-in-sync-graph-engine</artifactId>
+            <version>1.0.0-SNAPSHOT</version>
+        </dependency>
     </dependencies>
 
     <build>

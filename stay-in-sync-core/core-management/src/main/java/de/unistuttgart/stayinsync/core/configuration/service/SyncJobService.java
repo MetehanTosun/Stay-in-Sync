@@ -5,8 +5,6 @@ import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.Transf
 import de.unistuttgart.stayinsync.core.configuration.exception.CoreManagementException;
 import de.unistuttgart.stayinsync.core.configuration.mapping.SyncJobFullUpdateMapper;
 import de.unistuttgart.stayinsync.core.configuration.rest.dtos.SyncJobCreationDTO;
-import de.unistuttgart.stayinsync.core.configuration.rest.dtos.SyncJobDTO;
-import de.unistuttgart.stayinsync.core.configuration.service.TransformationService;
 import io.quarkus.logging.Log;
 import io.smallrye.common.constraint.NotNull;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -17,8 +15,6 @@ import jakarta.validation.Validator;
 
 import java.util.List;
 import java.util.Optional;
-import java.util.Set;
-import java.util.stream.Collectors;
 
 import static jakarta.transaction.Transactional.TxType.REQUIRED;
 import static jakarta.transaction.Transactional.TxType.SUPPORTS;

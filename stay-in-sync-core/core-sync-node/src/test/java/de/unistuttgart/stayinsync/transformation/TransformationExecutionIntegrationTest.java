@@ -3,17 +3,17 @@ package de.unistuttgart.stayinsync.transformation;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.tomakehurst.wiremock.client.WireMock;
+import de.unistuttgart.graphengine.dto.transformationrule.GraphDTO;
+import de.unistuttgart.graphengine.nodes.Node;
+import de.unistuttgart.graphengine.service.GraphMapper;
 import de.unistuttgart.stayinsync.syncnode.domain.ExecutionPayload;
 import de.unistuttgart.stayinsync.syncnode.domain.TransformJob;
-import de.unistuttgart.stayinsync.syncnode.logic_engine.GraphMapper;
 import de.unistuttgart.stayinsync.syncnode.syncjob.TransformationExecutionService;
 import de.unistuttgart.stayinsync.transport.domain.JobDeploymentStatus;
 import de.unistuttgart.stayinsync.transport.domain.TargetApiRequestConfigurationActionRole;
 import de.unistuttgart.stayinsync.transport.dto.TransformationMessageDTO;
 import de.unistuttgart.stayinsync.transport.dto.targetsystems.ActionMessageDTO;
 import de.unistuttgart.stayinsync.transport.dto.targetsystems.RequestConfigurationMessageDTO;
-import de.unistuttgart.stayinsync.transport.dto.transformationrule.GraphDTO;
-import de.unistuttgart.stayinsync.transport.transformation_rule_shared.nodes.Node;
 import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.junit.QuarkusTest;
 import jakarta.inject.Inject;
@@ -85,6 +85,7 @@ public class TransformationExecutionIntegrationTest {
         );
         return new ExecutionPayload(transformJob, graphNodes, txContext);
     }
+
     private TransformationMessageDTO createTransformationContext(String mockApiBaseUrl) {
         Set<RequestConfigurationMessageDTO> targetArcs = Set.of(
                 new RequestConfigurationMessageDTO("synchronizeProducts", mockApiBaseUrl,
@@ -100,10 +101,34 @@ public class TransformationExecutionIntegrationTest {
     }
 
     private List<Node> createGraphNodes() {
-        String graphJson = "{\"nodes\":[{\"id\":0,\"name\":\"Final Result\",\"offsetX\":0.0,\"offsetY\":0.0,\"nodeType\":\"FINAL\",\"inputNodes\":null,\"arcId\":null,\"jsonPath\":null,\"value\":null,\"operatorType\":null,\"inputTypes\":null,\"outputType\":null,\"inputLimit\":null}]}";
-
+        String defaultGraphJson = """
+        {
+          "nodes": [
+            {
+              "id": 0,
+              "name": "Change Detection",
+              "offsetX": 50.0,
+              "offsetY": 50.0,
+              "nodeType": "CONFIG",
+              "changeDetectionActive": true,
+              "changeDetectionMode": "OR",
+              "inputNodes": []
+            },
+            {
+              "id": 1,
+              "name": "Final Result",
+              "offsetX": 250.0,
+              "offsetY": 50.0,
+              "nodeType": "FINAL",
+              "inputNodes": [
+                {"nodeId": 0}
+              ]
+            }
+          ]
+        }
+        """;
         try {
-            GraphDTO graphDto = objectMapper.readValue(graphJson, GraphDTO.class);
+            GraphDTO graphDto = objectMapper.readValue(defaultGraphJson, GraphDTO.class);
             GraphMapper.MappingResult mappingResult = graphMapper.toNodeGraph(graphDto);
 
             if (!mappingResult.mappingErrors().isEmpty()) {

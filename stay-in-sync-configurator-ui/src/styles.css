@@ -1,4 +1,5 @@
-@import 'primeicons/primeicons.css';
+@import "primeicons/primeicons.css";
+@import "./app/features/sync-rules/sync-rule-styles.css";
 @import "tailwindcss";
 @import "tailwindcss-primeui";
 

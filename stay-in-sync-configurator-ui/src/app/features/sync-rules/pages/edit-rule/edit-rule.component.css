@@ -17,6 +17,28 @@
   flex: 1;
 }
 
+#config-button .pi {
+  font-size: 1.5rem;
+  color: var(--sr-font-alt-color);
+  cursor: pointer;
+}
+
+.return-button {
+  background: none;
+  border: none;
+  color: #007bff;
+  font-size: 1.05rem;
+  font-weight: 500;
+  padding: 0.5rem 1.1rem;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+
+.return-button:hover {
+  background: #e7f1ff;
+  color: #0056b3;
+}
 
 /* MARK: Toolbar */
 .toolbar {
@@ -53,7 +75,7 @@
   max-width: 85%;
   min-height: 520px;
   height: 78.5vh;
-  background: #fff;
+  background: var(--sr-border-highlight);
   border-radius: 10px;
   box-shadow: 0 4px 24px rgba(0, 0, 0, 0.08);
   padding: 0.5rem;
@@ -87,7 +109,7 @@
   color: #007bff;
   font-size: 1.02rem;
   font-weight: 500;
-  background: #f3f8ff;
+  background: var(--sr-node-selection-indicator);
   border-radius: 4px;
   padding: 0.4rem 1rem;
 }

@@ -1,0 +1,43 @@
+:root {
+  --sr-font-color: #222;
+  --sr-font-alt-color: #555555;
+  --sr-page-header-bg: #f8f9fa;
+  --sr-border-highlight: #fff;
+  --sr-input-bg: #f9fafb;
+  --sr-input-border: #d1d5db;
+  --sr-modal-bg: var(--sr-border-highlight);
+  --sr-description-bg: #f9fafb;
+  --sr-canvas-bg: var(--sr-border-highlight);
+  --sr-error-panel: rgba(255, 255, 255, 0.8);
+  --sr-error-panel-item: rgba(245,245,245,0.6);
+  --sr-error-panel-handler: var(--sr-error-panel);
+  --sr-error-panel-handler-hover: rgba(245, 245, 245, 0.95);
+  --sr-node-palette-item: var(--sr-page-header-bg);
+  --sr-node-palette-item-hover: #e7f1ff;
+  --sr-node-palette-item-border: #e5e5e5;
+  --sr-node-selection-indicator: #f3f8ff;
+  --sr-ok-button-bg: #f3f8ff;
+  --sr-node-menu-bg: var(--sr-modal-bg);
+}
+
+:root.my-app-dark {
+  --sr-font-color: #eeeeee;
+  --sr-font-alt-color: #dddddd;
+  --sr-page-header-bg: #272729;
+  --sr-border-highlight: #363434;
+  --sr-input-bg: #38383a;
+  --sr-input-border: #909192;
+  --sr-modal-bg: #302d2d;
+  --sr-description-bg: #202022;
+  --sr-canvas-bg: #232325;
+  --sr-error-panel: rgba(44, 42, 42, 0.8);
+  --sr-error-panel-item: rgba(70, 68, 68, 0.6);
+  --sr-error-panel-handler: rgba(49, 47, 47, 0.8);
+  --sr-error-panel-handler-hover: rgba(39, 37, 37, 0.8);
+  --sr-node-palette-item: var(--sr-page-header-bg);
+  --sr-node-palette-item-hover: rgb(150, 145, 145);
+  --sr-node-palette-item-border: #6d6b6b;
+  --sr-node-selection-indicator: #393a3b;
+  --sr-ok-button-bg: #3f4042;
+  --sr-node-menu-bg: var(--sr-modal-bg);
+}

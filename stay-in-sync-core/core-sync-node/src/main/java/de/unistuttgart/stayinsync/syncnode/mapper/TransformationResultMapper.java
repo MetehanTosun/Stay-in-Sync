@@ -2,6 +2,7 @@ package de.unistuttgart.stayinsync.syncnode.mapper;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+
 import de.unistuttgart.stayinsync.scriptengine.message.TransformationResult;
 import de.unistuttgart.stayinsync.transport.dto.Snapshot.TransformationResultDTO;
 
