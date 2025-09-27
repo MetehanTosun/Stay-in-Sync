@@ -19,7 +19,7 @@ public interface SnapshotClient {
 
     @GET
     @Path("/{snapshotId}")
-    SnapshotDTO byId(@PathParam("id") String id);
+    SnapshotDTO byId(@PathParam("snapshotId") String id);
 
     // optional: latest by jobId
     @GET
