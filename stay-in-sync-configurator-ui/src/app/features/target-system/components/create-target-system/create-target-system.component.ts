@@ -21,6 +21,9 @@ import { ApiHeaderResourceService } from '../../../source-system/service/apiHead
 import { ApiAuthType } from '../../../source-system/models/apiAuthType';
 import { HttpErrorService } from '../../../../core/services/http-error.service';
 import { AasClientService } from '../../../source-system/services/aas-client.service';
+import { CreateTargetSystemFormService } from '../../services/create-target-system-form.service';
+import { CreateTargetSystemAasService } from '../../services/create-target-system-aas.service';
+import { CreateTargetSystemDialogService } from '../../services/create-target-system-dialog.service';
 
 @Component({
   standalone: true,
@@ -80,64 +83,18 @@ export class CreateTargetSystemComponent implements OnInit, OnChanges {
     protected errorService: HttpErrorService,
     private aasClient: AasClientService,
     private messageService: MessageService,
+    private formService: CreateTargetSystemFormService,
+    private aasService: CreateTargetSystemAasService,
+    private dialogService: CreateTargetSystemDialogService
   ) {}
 
   ngOnInit(): void {
-    this.form = this.fb.group({
-      name: ['', Validators.required],
-      apiUrl: ['', [Validators.required, Validators.pattern('https?://.+')]],
-      description: [''],
-      apiType: ['REST_OPENAPI', Validators.required],
-      aasId: [''],
-      apiAuthType: [null],
-      authConfig: this.fb.group({
-        username: [''],
-        password: [''],
-        apiKey: [''],
-        headerName: ['']
-      }),
-      openApiSpec: [{ value: null, disabled: false }]
-    });
-
+    this.form = this.formService.createForm();
+    this.formService.setupFormSubscriptions(this.form);
+    
+    // Update steps when API type changes
     this.form.get('apiType')!.valueChanges.subscribe((apiType: string) => {
-      const aasIdCtrl = this.form.get('aasId')!;
-      const openApiCtrl = this.form.get('openApiSpec')!;
-      if (apiType === 'AAS') {
-        aasIdCtrl.setValidators([Validators.required]);
-        openApiCtrl.disable();
-        openApiCtrl.clearValidators();
-        this.steps = [
-          { label: 'Metadaten & Test' },
-          { label: 'Api Header' },
-          { label: 'AAS Submodels' },
-        ];
-      } else {
-        aasIdCtrl.clearValidators();
-        openApiCtrl.enable();
-        this.steps = [
-          { label: 'Metadaten' },
-          { label: 'Api Header' },
-          { label: 'Endpoints' },
-        ];
-      }
-      aasIdCtrl.updateValueAndValidity();
-      openApiCtrl.updateValueAndValidity();
-    });
-
-    this.form.get('apiAuthType')!.valueChanges.subscribe((authType: ApiAuthType) => {
-      const grp = this.form.get('authConfig') as FormGroup;
-      ['username', 'password', 'apiKey', 'headerName'].forEach(k => {
-        grp.get(k)!.clearValidators();
-        grp.get(k)!.updateValueAndValidity();
-      });
-      if (authType === ApiAuthType.Basic) {
-        grp.get('username')!.setValidators([Validators.required]);
-        grp.get('password')!.setValidators([Validators.required]);
-      } else if (authType === ApiAuthType.ApiKey) {
-        grp.get('apiKey')!.setValidators([Validators.required]);
-        grp.get('headerName')!.setValidators([Validators.required]);
-      }
-      ['username', 'password', 'apiKey', 'headerName'].forEach(k => grp.get(k)!.updateValueAndValidity());
+      this.steps = this.formService.getSteps(apiType);
     });
   }
 
@@ -162,10 +119,9 @@ export class CreateTargetSystemComponent implements OnInit, OnChanges {
   cancel(): void {
     this.visible = false;
     this.visibleChange.emit(false);
-    this.form.reset({ apiType: 'REST_OPENAPI' });
+    this.formService.resetForm(this.form);
     this.selectedFile = null;
     this.fileSelected = false;
-    this.form.get('openApiSpec')!.enable();
     this.currentStep = 0;
   }
 
@@ -176,7 +132,8 @@ export class CreateTargetSystemComponent implements OnInit, OnChanges {
     }
     if (this.isCreating || this.createdTargetSystemId) { return; }
     this.isCreating = true;
-    const base: any = { ...this.form.getRawValue() };
+
+    const { base, hasFile } = this.formService.getFormDataForSubmission(this.form, this.selectedFile);
 
     const post = (payload: TargetSystemDTO) => {
       this.api.create(payload).subscribe({
@@ -191,10 +148,9 @@ export class CreateTargetSystemComponent implements OnInit, OnChanges {
           setTimeout(() => {
             this.visible = false;
             this.visibleChange.emit(false);
-            this.form.reset({ apiType: 'REST_OPENAPI' });
+            this.formService.resetForm(this.form);
             this.selectedFile = null;
             this.fileSelected = false;
-            this.form.get('openApiSpec')!.enable();
             this.currentStep = 0;
           }, 1500);
         },
@@ -206,7 +162,7 @@ export class CreateTargetSystemComponent implements OnInit, OnChanges {
       });
     };
 
-    if (this.selectedFile) {
+    if (hasFile && this.selectedFile) {
       const reader = new FileReader();
       reader.onload = () => {
         const fileContent = reader.result as string;
@@ -215,14 +171,6 @@ export class CreateTargetSystemComponent implements OnInit, OnChanges {
       };
       reader.readAsText(this.selectedFile);
     } else {
-      const val = (base as any).openApiSpec;
-      if (typeof val === 'string' && val.trim()) {
-        (base as any).openAPI = val;
-      }
-      delete (base as any).openApiSpec;
-      // Strip auth fields not used by backend DTO
-      delete base.apiAuthType;
-      delete base.authConfig;
       post(base as TargetSystemDTO);
     }
   }
@@ -249,48 +197,77 @@ export class CreateTargetSystemComponent implements OnInit, OnChanges {
   aasTestOk: boolean | null = null;
   aasError: string | null = null;
   aasPreview: { idShort?: string; assetKind?: string } | null = null;
-  testAasConnection(): void {
+  async testAasConnection(): Promise<void> {
     if (this.isTesting) return;
     this.isTesting = true;
+    
     if (!this.createdTargetSystemId) {
       if (this.isCreating) { return; }
-      const base = { ...this.form.getRawValue() } as any;
-      delete base.authConfig;
+      const { base } = this.formService.getFormDataForSubmission(this.form);
       this.isCreating = true;
       this.api.create(base).subscribe({
-        next: (resp) => { this.createdTargetSystemId = resp.id!; this.isCreating = false; this.isTesting = false; this.testAasConnection(); },
-        error: (err) => { this.isCreating = false; this.isTesting = false; this.errorService.handleError(err); }
+        next: (resp) => { 
+          this.createdTargetSystemId = resp.id!; 
+          this.isCreating = false; 
+          this.isTesting = false; 
+          this.testAasConnection(); 
+        },
+        error: (err) => { 
+          this.isCreating = false; 
+          this.isTesting = false; 
+          this.errorService.handleError(err); 
+        }
       });
       return;
     }
+    
     this.aasError = null;
     this.aasPreview = null;
     this.aasTestOk = null;
-    this.aasClient.test('target', this.createdTargetSystemId).subscribe({
-      next: (data) => {
-        this.isTesting = false;
-        if (data && data.idShort) {
-          this.aasPreview = { idShort: data.idShort, assetKind: data.assetKind };
+    
+    try {
+      const result = await this.aasService.testConnection(this.createdTargetSystemId);
+      this.isTesting = false;
+      
+      if (result.success) {
+        if (result.data && result.data.idShort) {
+          this.aasPreview = { idShort: result.data.idShort, assetKind: result.data.assetKind };
         }
         this.aasTestOk = true;
-        this.messageService.add({ severity: 'success', summary: 'Connection successful', detail: this.aasPreview?.idShort ? `Shell reachable (${this.aasPreview.idShort})` : 'Shell reachable', life: 3000 });
-      },
-      error: (err) => {
-        this.isTesting = false;
+        this.messageService.add({ 
+          severity: 'success', 
+          summary: 'Connection successful', 
+          detail: this.aasPreview?.idShort ? `Shell reachable (${this.aasPreview.idShort})` : 'Shell reachable', 
+          life: 3000 
+        });
+      } else {
         this.aasPreview = null;
         this.aasTestOk = false;
-        this.aasError = 'Connection failed';
-        this.errorService.handleError(err);
-        this.messageService.add({ severity: 'error', summary: 'Connection failed', detail: 'Please verify Base URL, AAS ID and auth.', life: 5000 });
+        this.aasError = result.error || 'Connection failed';
+        this.messageService.add({ 
+          severity: 'error', 
+          summary: 'Connection failed', 
+          detail: 'Please verify Base URL, AAS ID and auth.', 
+          life: 5000 
+        });
       }
-    });
+    } catch (err) {
+      this.isTesting = false;
+      this.aasPreview = null;
+      this.aasTestOk = false;
+      this.aasError = 'Connection failed';
+      this.errorService.handleError(err as any);
+      this.messageService.add({ 
+        severity: 'error', 
+        summary: 'Connection failed', 
+        detail: 'Please verify Base URL, AAS ID and auth.', 
+        life: 5000 
+      });
+    }
   }
 
   canProceedFromStep1(): boolean {
-    if (this.isRest()) {
-      return !this.form.invalid;
-    }
-    return !this.form.invalid && this.aasTestOk === true;
+    return this.formService.isFormValidForStep(this.form, 0, this.form.get('apiType')!.value, this.aasTestOk);
   }
 
   // AASX upload state & handlers (target)
