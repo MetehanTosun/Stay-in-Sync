@@ -8,11 +8,11 @@ import { ReplayExecuteResponseDTO } from './models/replay.model';
 })
 export class ReplayService {
   private http = inject(HttpClient);
-  private baseUrl = 'http://localhost:8091';
+  private baseUrl = 'http://localhost:8090';
 
   executeReplay(snapshotId: string): Observable<ReplayExecuteResponseDTO> {
     return this.http.post<ReplayExecuteResponseDTO>(
-      `${this.baseUrl}/monitoring/replay/execute/snapshot/${snapshotId}`,
+      `${this.baseUrl}/api/replay/execute/snapshot/${snapshotId}`,
       {}
     );
   }
