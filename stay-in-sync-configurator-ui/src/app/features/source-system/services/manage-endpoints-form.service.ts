@@ -22,15 +22,10 @@ export class ManageEndpointsFormService {
    */
   createEndpointForm(): FormGroup {
     return this.fb.group({
-      name: ['', [Validators.required, Validators.minLength(1)]],
-      path: ['', [Validators.required, this.pathValidator()]],
-      method: ['GET', Validators.required],
-      description: [''],
-      requestBodyRequired: [false],
+      endpointPath: ['', [Validators.required, this.pathValidator()]],
+      httpRequestType: ['GET', Validators.required],
       requestBodySchema: [''],
-      responseSchema: [''],
-      queryParams: this.fb.array([]),
-      pathParams: this.fb.array([])
+      responseBodySchema: ['']
     });
   }
 
@@ -39,15 +34,10 @@ export class ManageEndpointsFormService {
    */
   createEditForm(): FormGroup {
     return this.fb.group({
-      name: ['', [Validators.required, Validators.minLength(1)]],
-      path: ['', [Validators.required, this.pathValidator()]],
-      method: ['GET', Validators.required],
-      description: [''],
-      requestBodyRequired: [false],
+      endpointPath: ['', [Validators.required, this.pathValidator()]],
+      httpRequestType: ['GET', Validators.required],
       requestBodySchema: [''],
-      responseSchema: [''],
-      queryParams: this.fb.array([]),
-      pathParams: this.fb.array([])
+      responseBodySchema: ['']
     });
   }
 

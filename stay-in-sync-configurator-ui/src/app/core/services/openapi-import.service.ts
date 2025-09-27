@@ -108,14 +108,18 @@ export class OpenApiImportService {
     try {
       // Get existing parameters to avoid duplicates
       const existingParams = await this.paramApi.apiConfigEndpointEndpointIdQueryParamGet(endpointId).toPromise();
-      const existingParamKeys = new Set((existingParams || []).map((ep: any) => `${ep.paramName}:${ep.queryParamType}`));
+      const existingParamKeys = new Set((existingParams || []).map((ep: any) => {
+        // Normalize parameter name by removing curly braces for comparison
+        const normalizedName = ep.paramName?.replace(/[{}]/g, '') || '';
+        return `${normalizedName}:${ep.queryParamType}`;
+      }));
       
       console.log(`[OpenApiImport] Endpoint ${endpointId} - Existing params:`, Array.from(existingParamKeys));
       console.log(`[OpenApiImport] Endpoint ${endpointId} - New params:`, params.map(p => `${p.name}:${p.in === 'path' ? 'PATH' : 'QUERY'}`));
       
       for (const p of params) {
         const paramKey = `${p.name}:${p.in === 'path' ? 'PATH' : 'QUERY'}`;
-        // Skip if parameter already exists (same name and type)
+        // Skip if parameter already exists (same name and type, normalized)
         if (existingParamKeys.has(paramKey)) {
           console.log(`[OpenApiImport] Skipping duplicate parameter: ${paramKey}`);
           continue;

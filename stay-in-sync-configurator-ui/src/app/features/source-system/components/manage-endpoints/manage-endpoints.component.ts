@@ -40,6 +40,7 @@ import { OpenApiImportService } from '../../../../core/services/openapi-import.s
 import { ManageEndpointsFormService } from '../../services/manage-endpoints-form.service';
 import { TypeScriptGenerationService, TypeScriptGenerationState } from '../../services/typescript-generation.service';
 import { ResponsePreviewService, ResponsePreviewData } from '../../services/response-preview.service';
+import { MessageService } from 'primeng/api';
 
 
 /**
@@ -203,7 +204,8 @@ export class ManageEndpointsComponent implements OnInit, OnDestroy {
     private openapi: OpenApiImportService,
     private formService: ManageEndpointsFormService,
     private typeScriptService: TypeScriptGenerationService,
-    private responsePreviewService: ResponsePreviewService
+    private responsePreviewService: ResponsePreviewService,
+    private messageService: MessageService
   ) {}
 
   /**
@@ -1373,6 +1375,7 @@ ${jsonSchema}
    * Imports endpoints from the OpenAPI spec.
    */
   async importEndpoints(): Promise<void> {
+    console.log('[ManageEndpoints] Starting import...');
     this.importing = true;
     try {
       let spec: any | null = null;
@@ -1380,6 +1383,7 @@ ${jsonSchema}
 
       // 1) Prefer locally stored spec content (uploaded file case)
       if (this.currentOpenApiSpec && typeof this.currentOpenApiSpec === 'string' && this.currentOpenApiSpec.trim()) {
+        console.log('[ManageEndpoints] Using local spec content');
         try {
           try {
             spec = JSON.parse(this.currentOpenApiSpec);
@@ -1387,7 +1391,9 @@ ${jsonSchema}
             spec = parseYAML(this.currentOpenApiSpec as string);
           }
           endpoints = this.openapi.discoverEndpointsFromSpec(spec);
-        } catch {
+          console.log(`[ManageEndpoints] Found ${endpoints.length} endpoints from local spec`);
+        } catch (error) {
+          console.error('[ManageEndpoints] Error parsing local spec:', error);
           spec = null;
           endpoints = [];
         }
@@ -1395,22 +1401,59 @@ ${jsonSchema}
 
       // 2) Fallback to URL discovery when no local spec is available
       if ((!spec || endpoints.length === 0) && this.apiUrl) {
+        console.log(`[ManageEndpoints] Using URL discovery: ${this.apiUrl}`);
         endpoints = await this.openapi.discoverEndpointsFromSpecUrl(this.apiUrl);
         spec = await this.loadSpecCandidates(this.apiUrl);
+        console.log(`[ManageEndpoints] Found ${endpoints.length} endpoints from URL`);
       }
+
+      console.log(`[ManageEndpoints] Total endpoints to process: ${endpoints.length}`);
 
       // 3) Persist endpoints and discovered params if available
       const paramsByKey = spec ? this.openapi.discoverParamsFromSpec(spec) : {};
       if (endpoints.length) {
+        console.log(`[ManageEndpoints] Creating ${endpoints.length} endpoints...`);
         const created = await this.endpointSvc.apiConfigSourceSystemSourceSystemIdEndpointPost(this.sourceSystemId, endpoints as any).toPromise();
         const createdList = (created as any[]) || [];
+        console.log(`[ManageEndpoints] Created ${createdList.length} endpoints, processing parameters...`);
+        
         for (const ep of createdList) {
           const key = `${ep.httpRequestType} ${ep.endpointPath}`;
           const params = paramsByKey[key] || [];
-          if (ep.id && params.length) await this.openapi.persistParamsForEndpoint(ep.id, params);
+          if (ep.id && params.length) {
+            console.log(`[ManageEndpoints] Processing ${params.length} parameters for endpoint ${ep.id} (${ep.endpointPath})`);
+            console.log(`[ManageEndpoints] Parameters to process:`, params.map(p => `${p.name}:${p.in}`));
+            
+            // Filter out duplicates within the same import batch
+            const seenParams = new Set<string>();
+            const uniqueParams = params.filter(p => {
+              const paramKey = `${p.name}:${p.in === 'path' ? 'PATH' : 'QUERY'}`;
+              if (seenParams.has(paramKey)) {
+                console.log(`[ManageEndpoints] Skipping duplicate parameter in batch: ${paramKey}`);
+                return false;
+              }
+              seenParams.add(paramKey);
+              return true;
+            });
+            
+            if (uniqueParams.length > 0) {
+              console.log(`[ManageEndpoints] Processing ${uniqueParams.length} unique parameters (${params.length - uniqueParams.length} duplicates filtered)`);
+              await this.openapi.persistParamsForEndpoint(ep.id, uniqueParams);
+            }
+          }
         }
         this.loadEndpoints();
+        console.log('[ManageEndpoints] Import completed successfully');
+      } else {
+        console.log('[ManageEndpoints] No endpoints to create');
       }
+    } catch (error) {
+      console.error('[ManageEndpoints] Import failed:', error);
+      this.messageService.add({
+        severity: 'error',
+        summary: 'Import Failed',
+        detail: 'Failed to import endpoints. Check console for details.'
+      });
     } finally {
       this.importing = false;
     }
