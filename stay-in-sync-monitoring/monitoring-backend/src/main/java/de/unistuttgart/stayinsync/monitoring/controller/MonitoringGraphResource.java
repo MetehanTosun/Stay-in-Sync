@@ -17,29 +17,19 @@ import org.eclipse.microprofile.openapi.annotations.responses.APIResponse;
 
 import java.util.List;
 
-/**
- * REST resource for retrieving the current monitoring graph.
- * Provides an endpoint to fetch the full monitoring graph including nodes and edges.
- */
 @Path("/api/monitoringgraph")
 @Produces(MediaType.APPLICATION_JSON)
 public class MonitoringGraphResource {
-
     @Inject
-    private MonitoringGraphService monitoringGraphService;
+    MonitoringGraphService monitoringGraphService;
 
-    /**
-     * Retrieves the current monitoring graph.
-     *
-     * @return a GraphResponse object containing the nodes and edges of the monitoring graph
-     */
     @GET
-    @Operation(summary = "Returns the current monitoring graph")
+    @Operation(summary = "Gibt den aktuellen Monitoring-Graphen zurück")
     @APIResponse(
             responseCode = "200",
-            description = "Successfully returned the monitoring graph",
+            description = "Erfolgreiche Rückgabe des Monitoring-Graphen",
             content = @Content(
-                    mediaType = MediaType.APPLICATION_JSON,
+                    mediaType = "application/json",
                     schema = @Schema(implementation = GraphResponse.class),
                     examples = @ExampleObject(
                             name = "graph-response",

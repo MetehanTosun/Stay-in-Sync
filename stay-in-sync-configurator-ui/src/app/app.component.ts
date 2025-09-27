@@ -1,33 +1,40 @@
 import {Component} from '@angular/core';
-import { RouterOutlet } from '@angular/router';
+import {ActivatedRoute, NavigationEnd, Router, RouterOutlet} from '@angular/router';
 import {SidebarMenuComponent} from './features/sidebar-menu/sidebar-menu.component';
 import {ToastModule} from 'primeng/toast';
 import {NgIf, NgStyle} from '@angular/common';
-import {Button} from 'primeng/button';
-import {ToggleSwitch} from 'primeng/toggleswitch';
 import {FormsModule} from '@angular/forms';
+import {filter} from 'rxjs/operators';
 
 
 @Component({
   selector: 'app-root',
-  imports: [RouterOutlet, SidebarMenuComponent, ToastModule, NgIf, Button, ToggleSwitch, FormsModule, NgStyle],
+  standalone: true,
+  imports: [RouterOutlet, SidebarMenuComponent, ToastModule, NgIf, FormsModule, NgStyle],
   templateUrl: './app.component.html',
   styleUrl: './app.component.css',
 })
 
 export class AppComponent {
 
-  sidebarVisible = true;
-  darkModeEnabled: boolean = false;
+  shouldShowSidebar = true;
 
-  onSidebarToggle(visible: boolean): void {
-    this.sidebarVisible = visible;
+  constructor(private router: Router, private activatedRoute: ActivatedRoute) {}
+
+  ngOnInit() {
+    this.router.events.pipe(
+      filter(event => event instanceof NavigationEnd)
+    ).subscribe(() => {
+      this.shouldShowSidebar = !this.getRouteData('hideSidebar');
+    });
   }
 
-  toggleDarkMode() {
-    const element = document.querySelector('html');
-    if (element) {
-      element.classList.toggle('my-app-dark');
+  private getRouteData(key: string): any {
+    let route = this.activatedRoute;
+    while (route.firstChild) {
+      route = route.firstChild;
     }
+    return route.snapshot.data[key];
   }
+
 }

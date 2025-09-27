@@ -58,7 +58,8 @@ public class TargetSystemWriterService {
 
             Map<String, List<UpsertDirective>> directiveMap = objectMapper.convertValue(
                     result.getOutputData(),
-                    new TypeReference<>() {}
+                    new TypeReference<>() {
+                    }
             );
 
             if (directiveMap == null || directiveMap.isEmpty()) {

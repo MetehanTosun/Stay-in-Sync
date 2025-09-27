@@ -2,6 +2,7 @@ package de.unistuttgart.stayinsync.syncnode.SnapshotManagement;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+
 import de.unistuttgart.stayinsync.scriptengine.message.TransformationResult;
 import de.unistuttgart.stayinsync.transport.dto.Snapshot.SnapshotDTO;
 import jakarta.inject.Inject;
@@ -67,7 +68,7 @@ public class SnapshotResource {
     @GET
     @Path("/list")
     public Response list(@QueryParam("transformationId") Long transformationId,
-            @QueryParam("limit") @DefaultValue("5") int limit) {
+                         @QueryParam("limit") @DefaultValue("5") int limit) {
         if (transformationId == null) {
             return Response.status(Response.Status.BAD_REQUEST).entity("transformationId is required").build();
         }

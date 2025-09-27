@@ -1,4 +1,4 @@
-<div class="logic-node" selectable>
+<div class="logic-node" selectable (mouseenter)="displayTooltips = true" (mouseleave)="displayTooltips = false">
   <!-- Node Header -->
   <div class="node-header">
     <span class="node-type">Logic</span>
@@ -11,6 +11,20 @@
   </div>
 
   <!-- I/O Handlers -->
-  <handle type="target" position="left" />
+  <div class="input-handles">
+    <ng-container *ngFor="let inputType of node().data?.inputTypes; let i = index">
+      <div class="input-handle-wrapper" [style.top.%]="(i + 1) * 100 / (node().data?.inputTypes?.length + 1)">
+        <handle type="target" position="left" [id]="'input-' + i" />
+      </div>
+    </ng-container>
+  </div>
   <handle type="source" position="right" />
+
+  <!-- Tooltips -->
+  <div class="tooltip-input" *ngIf="displayTooltips">
+    {{ node().data?.inputTypes }}
+  </div>
+  <div class="tooltip-output" *ngIf="displayTooltips">
+    {{ node().data?.outputType }}
+  </div>
 </div>

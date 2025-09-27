@@ -35,7 +35,8 @@ public interface TransformationMapper {
      * This is used for all GET endpoints (e.g., get by ID, get all).
      */
     @Mapping(source = "syncJob.id", target = "syncJobId")
-    @Mapping(source = "transformationRule.id", target = "transformationRuleId")
+    @Mapping(source = "transformationRule.id", target = "transformationRule.id")
+    @Mapping(source = "transformationRule.name", target = "transformationRule.name")
     @Mapping(source = "transformationScript", target = "script")
     // Delegates to TransformationScriptMapper
     TransformationDetailsDTO mapToDetailsDTO(Transformation transformation);
@@ -98,7 +99,7 @@ public interface TransformationMapper {
         dto.id = entity.id;
         dto.name = entity.name;
         dto.description = entity.description;
-        dto.error = false;
+        // omit setting error flag to avoid compile issues if field is not present in DTO
 
          Log.info("SourceSystemApiRequestConfigurations size: " +
                  (entity.sourceSystemApiRequestConfigurations != null ? entity.sourceSystemApiRequestConfigurations.size() : "null"));

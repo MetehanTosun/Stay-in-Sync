@@ -9,7 +9,7 @@ import {Component, OnInit} from '@angular/core';
 import {SyncJobService} from '../../services/sync-job.service';
 import {HttpErrorService} from '../../../../core/services/http-error.service';
 import {NavigationEnd, Router} from '@angular/router';
-import {Button, ButtonDirective} from 'primeng/button';
+import {Button} from 'primeng/button';
 import {SyncJobCreationComponent} from '../sync-job-creation/sync-job-creation.component';
 import {TableModule} from 'primeng/table';
 import {SyncJob} from '../../models/sync-job.model';
@@ -17,10 +17,6 @@ import {Select} from 'primeng/select';
 import {Tag} from 'primeng/tag';
 import {FormsModule} from '@angular/forms';
 import {NgIf} from '@angular/common';
-import {Toast} from 'primeng/toast';
-import {ConfirmDialog} from 'primeng/confirmdialog';
-import {Toolbar} from 'primeng/toolbar';
-import {Card} from 'primeng/card';
 
 /**
  * @class SyncJobPageComponent
@@ -37,8 +33,6 @@ import {Card} from 'primeng/card';
     Tag,
     FormsModule,
     NgIf,
-    Toolbar,
-    Card,
     NgIf,
   ],
   templateUrl: './sync-job-page.component.html',

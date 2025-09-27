@@ -1,5 +1,6 @@
 package de.unistuttgart.stayinsync.pollingnode.exceptions.execution.pollingjob;
 
+
 import de.unistuttgart.stayinsync.pollingnode.exceptions.PollingNodeException;
 
 public class PollingJobException extends PollingNodeException {

@@ -3,14 +3,34 @@ import { Observable } from 'rxjs';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { LogEntry } from '../models/log.model';
 
+/**
+ * LogService
+ *
+ * Provides methods to fetch log entries from the backend API.
+ * Supports fetching logs by:
+ * - Transformation IDs
+ * - Service name
+ * - General logs (all entries within a time range)
+ *
+ * Each method allows optional filtering by log level.
+ */
 @Injectable({ providedIn: 'root' })
 export class LogService {
+  /**
+   * Base URL for the log API endpoints.
+   */
   private baseUrl = '/api/logs';
 
   constructor(private http: HttpClient) {}
 
   /**
-   * Logs für eine Liste von TransformationIds abrufen
+   * Fetch logs for a list of transformation IDs within a given time range.
+   *
+   * @param transformationIds Array of transformation IDs.
+   * @param startTime Start timestamp in nanoseconds.
+   * @param endTime End timestamp in nanoseconds.
+   * @param level (Optional) Log level filter (e.g., "info", "error").
+   * @returns Observable emitting an array of log entries.
    */
   getLogsByTransformations(
     transformationIds: string[],
@@ -26,12 +46,20 @@ export class LogService {
       params = params.set('level', level);
     }
 
-    return this.http.post<LogEntry[]>(`${this.baseUrl}/transformations`, transformationIds, { params });
+    return this.http.post<LogEntry[]>(
+      `${this.baseUrl}/transformations`,
+      transformationIds,
+      { params }
+    );
   }
 
-
   /**
-   * Alle Logs ohne Filter abrufen
+   * Fetch all logs within a given time range (optionally filtered by level).
+   *
+   * @param startTime Start timestamp in nanoseconds.
+   * @param endTime End timestamp in nanoseconds.
+   * @param level (Optional) Log level filter (e.g., "debug", "warn").
+   * @returns Observable emitting an array of log entries.
    */
   getLogs(
     startTime: number,
@@ -49,6 +77,15 @@ export class LogService {
     return this.http.get<LogEntry[]>(this.baseUrl, { params });
   }
 
+  /**
+   * Fetch logs for a specific service within a given time range.
+   *
+   * @param service Service name (e.g., "core-polling-node").
+   * @param startTime Start timestamp in nanoseconds.
+   * @param endTime End timestamp in nanoseconds.
+   * @param level (Optional) Log level filter.
+   * @returns Observable emitting an array of log entries.
+   */
   getLogsByService(
     service: string,
     startTime: number,
@@ -66,6 +103,4 @@ export class LogService {
 
     return this.http.get<LogEntry[]>(`${this.baseUrl}/service`, { params });
   }
-
 }
-
