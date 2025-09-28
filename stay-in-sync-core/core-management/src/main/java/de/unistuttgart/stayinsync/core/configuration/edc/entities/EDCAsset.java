@@ -79,6 +79,22 @@ public class EDCAsset extends UuidEntity {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "target_system_endpoint_id", nullable = true)
     private TargetSystemEndpoint targetSystemEndpoint;
+    
+    /**
+     * Die Zugriffsrichtlinie (Access Policy), die diesem Asset zugeordnet ist.
+     * Definiert, wer auf das Asset zugreifen darf.
+     */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "access_policy_id", columnDefinition = "CHAR(36)", nullable = true)
+    private EDCPolicy accessPolicy;
+    
+    /**
+     * Die Vertragsrichtlinie (Contract Policy), die diesem Asset zugeordnet ist.
+     * Definiert die Bedingungen, unter denen auf das Asset zugegriffen werden darf.
+     */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "contract_policy_id", columnDefinition = "CHAR(36)", nullable = true)
+    private EDCPolicy contractPolicy;
 
     /**
      * Default-Konstruktor für JPA.
@@ -267,6 +283,34 @@ public class EDCAsset extends UuidEntity {
      */
     public void setTargetSystemEndpoint(TargetSystemEndpoint targetSystemEndpoint) {
         this.targetSystemEndpoint = targetSystemEndpoint;
+    }
+    
+    /**
+     * Getter für accessPolicy.
+     */
+    public EDCPolicy getAccessPolicy() {
+        return accessPolicy;
+    }
+    
+    /**
+     * Setter für accessPolicy.
+     */
+    public void setAccessPolicy(EDCPolicy accessPolicy) {
+        this.accessPolicy = accessPolicy;
+    }
+    
+    /**
+     * Getter für contractPolicy.
+     */
+    public EDCPolicy getContractPolicy() {
+        return contractPolicy;
+    }
+    
+    /**
+     * Setter für contractPolicy.
+     */
+    public void setContractPolicy(EDCPolicy contractPolicy) {
+        this.contractPolicy = contractPolicy;
     }
     
     /**

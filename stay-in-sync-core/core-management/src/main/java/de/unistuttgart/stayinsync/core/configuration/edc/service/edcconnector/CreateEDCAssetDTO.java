@@ -1,11 +1,12 @@
 package de.unistuttgart.stayinsync.core.configuration.edc.service.edcconnector;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import java.util.UUID;
 
 public class CreateEDCAssetDTO {
 
     @JsonProperty("@id")
-    String id = "355";
+    String id = "asset-" + UUID.randomUUID().toString();
 
     @JsonProperty("@context")
     ContextDTO context = new ContextDTO();

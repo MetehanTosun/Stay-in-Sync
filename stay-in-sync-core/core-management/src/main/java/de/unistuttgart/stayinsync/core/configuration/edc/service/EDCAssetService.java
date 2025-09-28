@@ -4,7 +4,6 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import de.unistuttgart.stayinsync.core.configuration.edc.dtoedc.EDCAssetDto;
 import de.unistuttgart.stayinsync.core.configuration.edc.dtoedc.EDCDataAddressDto;
-import de.unistuttgart.stayinsync.core.configuration.edc.dtoedc.EDCPropertyDto;
 import de.unistuttgart.stayinsync.core.configuration.edc.entities.EDCAsset;
 import de.unistuttgart.stayinsync.core.configuration.edc.entities.EDCInstance;
 import de.unistuttgart.stayinsync.core.configuration.edc.mapping.EDCAssetMapper;
@@ -363,18 +362,11 @@ public class EDCAssetService {
         }
 
         // Properties extrahieren
-        Map<String, String> propertiesMap = new HashMap<>();
+        Map<String, Object> propertiesMap = new HashMap<>();
         if (frontendJson.containsKey("properties") && frontendJson.get("properties") instanceof Map) {
             @SuppressWarnings("unchecked")
             Map<String, Object> propMap = (Map<String, Object>) frontendJson.get("properties");
-
-            for (Map.Entry<String, Object> entry : propMap.entrySet()) {
-                if (entry.getValue() instanceof String) {
-                    propertiesMap.put(entry.getKey(), (String) entry.getValue());
-                } else if (entry.getValue() != null) {
-                    propertiesMap.put(entry.getKey(), entry.getValue().toString());
-                }
-            }
+            propertiesMap.putAll(propMap);
         }
 
         // DataAddress extrahieren und konfigurieren
@@ -405,24 +397,23 @@ public class EDCAssetService {
             dataAddressDto.setProxyQueryParams(true);
         }
 
-        // Properties in EDCPropertyDto umwandeln
-        EDCPropertyDto propertyDto = new EDCPropertyDto();
-        propertyDto.setAdditionalProperties(propertiesMap);
-
         // Sicherstellen, dass wir eine description haben
         String description = extractDescription(frontendJson, propertiesMap);
-
-        // Explizit description setzen
-        if (!description.isEmpty()) {
-            propertyDto.setDescription(description);
-        }
 
         // URL und Type aus dataAddress extrahieren
         String url = dataAddressDto.getBaseURL() != null ? dataAddressDto.getBaseURL() : "";
         String type = dataAddressDto.getType() != null ? dataAddressDto.getType() : "HttpData";
 
         // Content-Type aus Properties extrahieren oder Standardwert verwenden
-        String contentType = propertiesMap.getOrDefault("asset:prop:contenttype", "application/json");
+        String contentType = "application/json";
+        if (propertiesMap.containsKey("asset:prop:contenttype")) {
+            Object contentTypeObj = propertiesMap.get("asset:prop:contenttype");
+            if (contentTypeObj instanceof String) {
+                contentType = (String) contentTypeObj;
+            } else if (contentTypeObj != null) {
+                contentType = contentTypeObj.toString();
+            }
+        }
 
         // Erstellen des DTOs
         EDCAssetDto assetDto = new EDCAssetDto();
@@ -433,8 +424,8 @@ public class EDCAssetService {
         assetDto.setDescription(description);
         assetDto.setTargetEDCId(edcId);
         assetDto.setDataAddress(dataAddressDto);
-        // Als Liste übergeben statt als einzelnes Objekt
-        assetDto.setProperties(Collections.singletonList(propertyDto));
+        // Direkt die Properties-Map übergeben
+        assetDto.setProperties(propertiesMap);
 
         return assetDto;
     }
@@ -476,12 +467,17 @@ public class EDCAssetService {
      * @param propertiesMap Die Properties-Map aus dem Frontend
      * @return Die extrahierte Beschreibung oder einen leeren String
      */
-    private String extractDescription(Map<String, Object> frontendJson, Map<String, String> propertiesMap) {
+    private String extractDescription(Map<String, Object> frontendJson, Map<String, Object> propertiesMap) {
         String description = "";
 
         // Zuerst aus den Properties holen
         if (propertiesMap.containsKey("asset:prop:description")) {
-            description = propertiesMap.get("asset:prop:description");
+            Object descObj = propertiesMap.get("asset:prop:description");
+            if (descObj instanceof String) {
+                description = (String) descObj;
+            } else if (descObj != null) {
+                description = descObj.toString();
+            }
         }
         // Falls nicht gefunden, direkt aus dem JSON versuchen
         else if (frontendJson.containsKey("description") && frontendJson.get("description") instanceof String) {
@@ -538,14 +534,26 @@ public class EDCAssetService {
         newAssetDto.setProperties(assetDto.getProperties());
 
         EDCClient client = createClient("http://dataprovider-controlplane.tx.test/management/v3");
+        
+        // Erstelle ein neues CreateEDCAssetDTO mit der Asset-ID
+        CreateEDCAssetDTO edcAssetDTO = new CreateEDCAssetDTO();
+        // Verwende die Asset-ID aus dem DTO, wenn vorhanden
+        if (assetDto.getAssetId() != null && !assetDto.getAssetId().trim().isEmpty()) {
+            edcAssetDTO.setId(assetDto.getAssetId());
+        }
+        
+        // Konfiguriere die Properties des Assets
+        if (assetDto.getDescription() != null) {
+            edcAssetDTO.getProperties().setDescription(assetDto.getDescription());
+        }
 
         try {
-            Log.infof(objectMapper.writeValueAsString(new CreateEDCAssetDTO()));
+            Log.infof(objectMapper.writeValueAsString(edcAssetDTO));
         } catch (JsonProcessingException e) {
             throw new RuntimeException(e);
         }
 
-        RestResponse<JsonObject> asset1 = client.createAsset("TEST2", new CreateEDCAssetDTO());
+        RestResponse<JsonObject> asset1 = client.createAsset("TEST2", edcAssetDTO);
         if (asset1.getStatus() >= 400) {
             Log.errorf("Error %d: %s", asset1.getStatus(), asset1.getEntity());
         }

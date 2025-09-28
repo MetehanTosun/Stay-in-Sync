@@ -3,10 +3,14 @@ package de.unistuttgart.stayinsync.core.configuration.edc.entities;
 import de.unistuttgart.stayinsync.core.model.UuidEntity;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+
+import java.util.ArrayList;
+import java.util.List;
 
 @Getter
 @Setter
@@ -35,4 +39,37 @@ public class EDCInstance extends UuidEntity {
 
     private String edcContractDefinitionEndpoint;
 
+    /**
+     * Die mit dieser EDC-Instanz verknüpften Policies.
+     * Diese Liste enthält alle Policies, die für diese EDC-Instanz definiert sind.
+     */
+    @OneToMany(mappedBy = "edcInstance")
+    private List<EDCPolicy> policies = new ArrayList<>();
+    
+    /**
+     * Fügt eine Policy zu dieser EDC-Instanz hinzu.
+     * 
+     * @param policy Die hinzuzufügende Policy
+     */
+    public void addPolicy(EDCPolicy policy) {
+        if (policies == null) {
+            policies = new ArrayList<>();
+        }
+        policies.add(policy);
+        policy.setEdcInstance(this);
+    }
+    
+    /**
+     * Entfernt eine Policy von dieser EDC-Instanz.
+     * 
+     * @param policy Die zu entfernende Policy
+     * @return true, wenn die Policy erfolgreich entfernt wurde, sonst false
+     */
+    public boolean removePolicy(EDCPolicy policy) {
+        if (policies != null && policies.remove(policy)) {
+            policy.setEdcInstance(null);
+            return true;
+        }
+        return false;
+    }
 }

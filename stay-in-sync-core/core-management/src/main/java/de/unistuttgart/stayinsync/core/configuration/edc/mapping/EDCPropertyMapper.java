@@ -17,12 +17,27 @@ public class EDCPropertyMapper {
     public static EDCPropertyDto toDto(EDCProperty entity) {
         if (entity == null) return null;
         
-        return new EDCPropertyDto()
-            .setId(entity.id)
-            .setName(entity.getName())
-            .setVersion(entity.getVersion())
-            .setContentType(entity.getContentType())
-            .setDescription(entity.getDescription());
+        EDCPropertyDto dto = new EDCPropertyDto();
+        dto.setId(entity.id);
+        
+        // Properties als Map setzen
+        if (entity.getName() != null) {
+            dto.addProperty(EDCPropertyDto.PROP_NAME, entity.getName());
+        }
+        
+        if (entity.getVersion() != null) {
+            dto.addProperty(EDCPropertyDto.PROP_VERSION, entity.getVersion());
+        }
+        
+        if (entity.getContentType() != null) {
+            dto.addProperty(EDCPropertyDto.PROP_CONTENTTYPE, entity.getContentType());
+        }
+        
+        if (entity.getDescription() != null) {
+            dto.addProperty(EDCPropertyDto.PROP_DESCRIPTION, entity.getDescription());
+        }
+        
+        return dto;
     }
 
     /**
@@ -50,29 +65,6 @@ public class EDCPropertyMapper {
         entity.setVersion(dto.getVersion());
         entity.setContentType(dto.getContentType());
         entity.setDescription(dto.getDescription());
-        
-        // Bekannte Properties aus additionalProperties übernehmen, falls direkte Felder nicht gesetzt sind
-        if (dto.getAdditionalProperties() != null) {
-            // Name
-            if (entity.getName() == null && dto.getAdditionalProperties().containsKey("asset:prop:name")) {
-                entity.setName(dto.getAdditionalProperties().get("asset:prop:name"));
-            }
-            
-            // Version
-            if (entity.getVersion() == null && dto.getAdditionalProperties().containsKey("asset:prop:version")) {
-                entity.setVersion(dto.getAdditionalProperties().get("asset:prop:version"));
-            }
-            
-            // Content Type
-            if (entity.getContentType() == null && dto.getAdditionalProperties().containsKey("asset:prop:contenttype")) {
-                entity.setContentType(dto.getAdditionalProperties().get("asset:prop:contenttype"));
-            }
-            
-            // Beschreibung
-            if (entity.getDescription() == null && dto.getAdditionalProperties().containsKey("asset:prop:description")) {
-                entity.setDescription(dto.getAdditionalProperties().get("asset:prop:description"));
-            }
-        }
         
         // Sicherstellen, dass wir eine Beschreibung haben (Default setzen, falls nötig)
         if (entity.getDescription() == null || entity.getDescription().trim().isEmpty()) {

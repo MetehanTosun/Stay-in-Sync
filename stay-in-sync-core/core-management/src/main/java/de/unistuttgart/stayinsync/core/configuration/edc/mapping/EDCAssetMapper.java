@@ -38,6 +38,9 @@ public interface EDCAssetMapper {
      */
     @Mapping(source = "targetEDC", target = "targetEDCId")
     @Mapping(target = "context", expression = "java(getDefaultContext())")
+    @Mapping(source = "properties", target = "properties")
+    @Mapping(target = "jsonLDType", constant = "Asset")
+    @Mapping(source = "properties.name", target = "name")
     EDCAssetDto assetToAssetDto(EDCAsset asset);
 
     /**
@@ -47,6 +50,7 @@ public interface EDCAssetMapper {
      * @return Das erzeugte Entity
      */
     @Mapping(source = "targetEDCId", target = "targetEDC")
+    @Mapping(source = "properties", target = "properties")
     @Mapping(target = "targetSystemEndpoint", ignore = true)
     EDCAsset assetDtoToAsset(EDCAssetDto assetDto);
 
@@ -88,21 +92,25 @@ public interface EDCAssetMapper {
     }
 
     /**
-     * Helfermethode: mappt eine einzelne EDCProperty zu einer Liste von EDCPropertyDto.
+     * Helfermethode: mappt eine einzelne EDCProperty zu einer Map von Properties.
      * MapStruct benötigt diese Methode, weil das Entity ein einzelnes EDCProperty
-     * und das DTO eine Liste von EDCPropertyDto verwendet.
+     * und das DTO eine Map von Properties verwendet.
      */
-    default java.util.List<de.unistuttgart.stayinsync.core.configuration.edc.dtoedc.EDCPropertyDto> map(de.unistuttgart.stayinsync.core.configuration.edc.entities.EDCProperty properties) {
-        if (properties == null) return null;
-        return java.util.List.of(EDCPropertyMapper.toDto(properties));
+    default Map<String, Object> mapPropertyToMap(de.unistuttgart.stayinsync.core.configuration.edc.entities.EDCProperty properties) {
+        if (properties == null) return new HashMap<>();
+        
+        EDCPropertyDto dto = EDCPropertyMapper.toDto(properties);
+        return dto.getProperties();
     }
 
     /**
-     * Helfermethode: mappt eine Liste von EDCPropertyDto auf ein einzelnes EDCProperty.
-     * Dabei wird das erste Element der Liste genutzt (falls vorhanden).
+     * Helfermethode: mappt eine Map von Properties auf ein einzelnes EDCProperty.
      */
-    default de.unistuttgart.stayinsync.core.configuration.edc.entities.EDCProperty map(java.util.List<de.unistuttgart.stayinsync.core.configuration.edc.dtoedc.EDCPropertyDto> propertiesDto) {
-        if (propertiesDto == null || propertiesDto.isEmpty()) return null;
-        return EDCPropertyMapper.fromDto(propertiesDto.get(0));
+    default de.unistuttgart.stayinsync.core.configuration.edc.entities.EDCProperty mapMapToProperty(Map<String, Object> propertiesMap) {
+        if (propertiesMap == null || propertiesMap.isEmpty()) return null;
+        
+        EDCPropertyDto dto = new EDCPropertyDto();
+        dto.setProperties(propertiesMap);
+        return EDCPropertyMapper.fromDto(dto);
     }
 }

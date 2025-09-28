@@ -3,7 +3,7 @@ package de.unistuttgart.stayinsync.core.configuration.edc.dtoedc;
 import com.fasterxml.jackson.annotation.JsonAnyGetter;
 import com.fasterxml.jackson.annotation.JsonAnySetter;
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonInclude;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
@@ -13,24 +13,68 @@ import java.util.UUID;
  * Repräsentiert die Eigenschaften eines EDC-Assets in einer Form, die für die 
  * JSON-Serialisierung geeignet ist.
  */
+@JsonInclude(JsonInclude.Include.NON_NULL)
 public class EDCPropertyDto {
+    /**
+     * Konstanten für die standardmäßigen Property-Namen im EDC-Format.
+     */
+    public static final String PROP_NAME = "asset:prop:name";
+    public static final String PROP_DESCRIPTION = "asset:prop:description";
+    public static final String PROP_CONTENTTYPE = "asset:prop:contenttype";
+    public static final String PROP_VERSION = "asset:prop:version";
+    
+    /**
+     * Die ID des DTOs, wird nicht in der JSON-Antwort enthalten sein.
+     */
     @JsonIgnore
     private UUID id;
-
-    @JsonProperty("asset:prop:name")
-    private String name;
     
-    @JsonProperty("asset:prop:version")
-    private String version;
+    /**
+     * Die Map, die alle Properties des Assets enthält.
+     * Diese wird bei der JSON-Serialisierung als Schlüssel-Wert-Paare auf der obersten Ebene dargestellt.
+     */
+    private Map<String, Object> properties = new HashMap<>();
     
-    @JsonProperty("asset:prop:contenttype")
-    private String contentType;
+    /**
+     * Default-Konstruktor.
+     */
+    public EDCPropertyDto() {
+        // Leere Map initialisieren
+    }
     
-    @JsonIgnore
-    private String description;
+    /**
+     * Konstruktor mit ID.
+     * 
+     * @param id Die ID des DTOs
+     */
+    public EDCPropertyDto(UUID id) {
+        this.id = id;
+    }
     
-    private Map<String, String> additionalProperties = new HashMap<>();
-
+    /**
+     * Konstruktor mit einer Map von Properties.
+     * 
+     * @param properties Die Map von Properties
+     */
+    public EDCPropertyDto(Map<String, Object> properties) {
+        if (properties != null) {
+            this.properties = new HashMap<>(properties);
+        }
+    }
+    
+    /**
+     * Vollständiger Konstruktor.
+     * 
+     * @param id Die ID des DTOs
+     * @param properties Die Map von Properties
+     */
+    public EDCPropertyDto(UUID id, Map<String, Object> properties) {
+        this.id = id;
+        if (properties != null) {
+            this.properties = new HashMap<>(properties);
+        }
+    }
+    
     /**
      * Gibt die ID des DTOs zurück.
      * 
@@ -39,7 +83,7 @@ public class EDCPropertyDto {
     public UUID getId() {
         return id;
     }
-
+    
     /**
      * Setzt die ID des DTOs.
      * 
@@ -50,16 +94,16 @@ public class EDCPropertyDto {
         this.id = id;
         return this;
     }
-
+    
     /**
      * Gibt den Namen des Assets zurück.
      * 
      * @return Der Name des Assets
      */
     public String getName() {
-        return name;
+        return (String) properties.get(PROP_NAME);
     }
-
+    
     /**
      * Setzt den Namen des Assets.
      * 
@@ -67,23 +111,21 @@ public class EDCPropertyDto {
      * @return Das DTO selbst für Method Chaining
      */
     public EDCPropertyDto setName(String name) {
-        this.name = name;
-        // Auch als zusätzliche Eigenschaft speichern
         if (name != null) {
-            additionalProperties.put("asset:prop:name", name);
+            properties.put(PROP_NAME, name);
         }
         return this;
     }
-
+    
     /**
      * Gibt die Version des Assets zurück.
      * 
      * @return Die Version des Assets
      */
     public String getVersion() {
-        return version;
+        return (String) properties.get(PROP_VERSION);
     }
-
+    
     /**
      * Setzt die Version des Assets.
      * 
@@ -91,23 +133,21 @@ public class EDCPropertyDto {
      * @return Das DTO selbst für Method Chaining
      */
     public EDCPropertyDto setVersion(String version) {
-        this.version = version;
-        // Auch als zusätzliche Eigenschaft speichern
         if (version != null) {
-            additionalProperties.put("asset:prop:version", version);
+            properties.put(PROP_VERSION, version);
         }
         return this;
     }
-
+    
     /**
      * Gibt den Content-Type des Assets zurück.
      * 
      * @return Der Content-Type des Assets
      */
     public String getContentType() {
-        return contentType;
+        return (String) properties.get(PROP_CONTENTTYPE);
     }
-
+    
     /**
      * Setzt den Content-Type des Assets.
      * 
@@ -115,23 +155,21 @@ public class EDCPropertyDto {
      * @return Das DTO selbst für Method Chaining
      */
     public EDCPropertyDto setContentType(String contentType) {
-        this.contentType = contentType;
-        // Auch als zusätzliche Eigenschaft speichern
         if (contentType != null) {
-            additionalProperties.put("asset:prop:contenttype", contentType);
+            properties.put(PROP_CONTENTTYPE, contentType);
         }
         return this;
     }
-
+    
     /**
      * Gibt die Beschreibung des Assets zurück.
      * 
      * @return Die Beschreibung des Assets
      */
     public String getDescription() {
-        return description;
+        return (String) properties.get(PROP_DESCRIPTION);
     }
-
+    
     /**
      * Setzt die Beschreibung des Assets.
      * 
@@ -139,69 +177,59 @@ public class EDCPropertyDto {
      * @return Das DTO selbst für Method Chaining
      */
     public EDCPropertyDto setDescription(String description) {
-        this.description = description;
-        // Auch als zusätzliche Eigenschaft speichern
         if (description != null) {
-            additionalProperties.put("asset:prop:description", description);
+            properties.put(PROP_DESCRIPTION, description);
         }
         return this;
     }
     
     /**
-     * Gibt alle zusätzlichen Eigenschaften des Assets zurück.
+     * Gibt alle Properties des Assets zurück.
      * Diese werden bei der JSON-Serialisierung als Top-Level-Eigenschaften eingefügt.
      * 
-     * @return Eine Map mit allen zusätzlichen Eigenschaften
+     * @return Eine Map mit allen Properties
      */
     @JsonAnyGetter
-    public Map<String, String> getAdditionalProperties() {
-        return additionalProperties;
+    public Map<String, Object> getProperties() {
+        return properties;
     }
     
     /**
-     * Setzt eine zusätzliche Eigenschaft.
-     * Wenn es sich um eine bekannte Eigenschaft handelt, wird auch das entsprechende Feld gesetzt.
+     * Hilfsmethode zum Hinzufügen einer Property.
      * 
-     * @param name Der Name der Eigenschaft
-     * @param value Der Wert der Eigenschaft
+     * @param key Der Schlüssel der Property
+     * @param value Der Wert der Property
+     * @return Das DTO selbst für Method Chaining
+     */
+    public EDCPropertyDto addProperty(String key, Object value) {
+        if (key != null && value != null) {
+            properties.put(key, value);
+        }
+        return this;
+    }
+    
+    /**
+     * Setzt eine Property.
+     * 
+     * @param name Der Name der Property
+     * @param value Der Wert der Property
      */
     @JsonAnySetter
-    public void setAdditionalProperty(String name, String value) {
-        additionalProperties.put(name, value);
-        
-        // Bekannte Eigenschaften in die entsprechenden Felder setzen
-        switch (name) {
-            case "asset:prop:description" -> this.description = value;
-            case "asset:prop:name" -> this.name = value;
-            case "asset:prop:version" -> this.version = value;
-            case "asset:prop:contenttype" -> this.contentType = value;
+    public void setProperty(String name, Object value) {
+        if (name != null && value != null) {
+            properties.put(name, value);
         }
     }
     
     /**
-     * Setzt alle zusätzlichen Eigenschaften.
-     * Extrahiert bekannte Eigenschaften in die entsprechenden Felder.
+     * Setzt alle Properties.
      * 
-     * @param properties Eine Map mit allen zu setzenden Eigenschaften
+     * @param properties Eine Map mit allen zu setzenden Properties
+     * @return Das DTO selbst für Method Chaining
      */
-    public void setAdditionalProperties(Map<String, String> properties) {
-        this.additionalProperties = properties != null ? properties : new HashMap<>();
-        
-        // Bekannte Eigenschaften extrahieren
-        if (properties != null) {
-            if (properties.containsKey("asset:prop:description")) {
-                this.description = properties.get("asset:prop:description");
-            }
-            if (properties.containsKey("asset:prop:name")) {
-                this.name = properties.get("asset:prop:name");
-            }
-            if (properties.containsKey("asset:prop:version")) {
-                this.version = properties.get("asset:prop:version");
-            }
-            if (properties.containsKey("asset:prop:contenttype")) {
-                this.contentType = properties.get("asset:prop:contenttype");
-            }
-        }
+    public EDCPropertyDto setProperties(Map<String, Object> properties) {
+        this.properties = properties != null ? new HashMap<>(properties) : new HashMap<>();
+        return this;
     }
     
     /**
@@ -213,11 +241,16 @@ public class EDCPropertyDto {
     public String toString() {
         return "EDCPropertyDto{" +
                 "id=" + id +
-                ", name='" + name + '\'' +
-                ", version='" + version + '\'' +
-                ", contentType='" + contentType + '\'' +
-                ", description='" + description + '\'' +
-                ", additionalProperties=" + additionalProperties +
+                ", properties=" + properties +
                 '}';
+    }
+    
+    /**
+     * Hilfsmethode, um die Map für die Kompatibilität mit der alten Implementierung zurückzugeben.
+     * 
+     * @return Die Map mit allen Properties
+     */
+    public Map<String, Object> getAdditionalProperties() {
+        return properties;
     }
 }

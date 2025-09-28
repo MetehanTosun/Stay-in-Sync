@@ -22,13 +22,13 @@ public class EDCDataAddressDto {
      * Der JSON-LD Typ der Daten-Adresse, standardmäßig "DataAddress".
      */
     @JsonProperty("@type")
-    private String jsonLDType;
+    private String jsonLDType = "DataAddress";
 
     /**
      * Der Typ der Daten-Adresse, standardmäßig "HttpData".
      */
     @NotBlank
-    private String type;
+    private String type = "HttpData";
 
     /**
      * Die Basis-URL für den Zugriff auf die Daten.
@@ -76,7 +76,7 @@ public class EDCDataAddressDto {
      * @return Der JSON-LD Typ der Daten-Adresse
      */
     public String getJsonLDType() {
-        return jsonLDType != null ? jsonLDType : "DataAddress";
+        return jsonLDType;
     }
 
     /**

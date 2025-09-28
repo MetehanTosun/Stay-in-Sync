@@ -1,10 +1,10 @@
 package de.unistuttgart.stayinsync.core.configuration.edc.rest;
 
 import de.unistuttgart.stayinsync.core.configuration.edc.dtoedc.EDCInstanceDto;
+import de.unistuttgart.stayinsync.transport.exception.CustomException;
 import de.unistuttgart.stayinsync.core.configuration.edc.exception.EntityCreationFailedException;
 import de.unistuttgart.stayinsync.core.configuration.edc.exception.EntityUpdateFailedException;
 import de.unistuttgart.stayinsync.core.configuration.edc.service.EDCService;
-import de.unistuttgart.stayinsync.transport.exception.CustomException;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
 import jakarta.validation.Valid;

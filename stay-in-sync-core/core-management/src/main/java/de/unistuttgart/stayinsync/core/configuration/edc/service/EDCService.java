@@ -2,10 +2,10 @@ package de.unistuttgart.stayinsync.core.configuration.edc.service;
 
 import de.unistuttgart.stayinsync.core.configuration.edc.dtoedc.EDCInstanceDto;
 import de.unistuttgart.stayinsync.core.configuration.edc.entities.EDCInstance;
+import de.unistuttgart.stayinsync.transport.exception.CustomException;
 import de.unistuttgart.stayinsync.core.configuration.edc.exception.EntityCreationFailedException;
 import de.unistuttgart.stayinsync.core.configuration.edc.exception.EntityUpdateFailedException;
 import de.unistuttgart.stayinsync.core.configuration.edc.mapping.EDCInstanceMapper;
-import de.unistuttgart.stayinsync.transport.exception.CustomException;
 import io.quarkus.logging.Log;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
