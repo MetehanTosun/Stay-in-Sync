@@ -1,4 +1,4 @@
-package de.unistuttgart.stayinsync.core.configuration.service;
+package de.unistuttgart.stayinsync.scriptengine;
 
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Counter;
