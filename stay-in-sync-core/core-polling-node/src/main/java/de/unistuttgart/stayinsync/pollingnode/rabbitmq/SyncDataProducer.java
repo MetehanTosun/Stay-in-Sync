@@ -48,7 +48,7 @@ public class SyncDataProducer {
             Map<String, Object> queueArgs = new HashMap<>();
             queueArgs.put("x-queue-type", "stream");
             queueArgs.put("x-max-age", "1m");
-            channel.queueDeclare("request-config-" + pollingJobDetails.id(), true, false, false, Collections.singletonMap("x-queue-type", "stream"));
+            channel.queueDeclare("request-config-" + pollingJobDetails.id(), true, false, false, queueArgs);
             channel.queueBind("request-config-" + pollingJobDetails.id(), "sync-data-exchange", "request-config-" + pollingJobDetails.id());
 
         } catch (IOException e) {

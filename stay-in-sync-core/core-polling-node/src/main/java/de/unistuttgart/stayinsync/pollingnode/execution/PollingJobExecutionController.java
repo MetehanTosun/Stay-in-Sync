@@ -104,6 +104,7 @@ public class PollingJobExecutionController {
     public void pollingJobDeletion(final Long id) throws PollingJobSchedulingException {
         final JobKey jobKey = supportedJobs.get(id);
         try {
+            supportedJobs.remove(id);
             scheduler.deleteJob(jobKey);
         } catch (SchedulerException e) {
             final String exceptionMessage = "Failed to delete PollingJob with the id " + id + "with the name " + jobKey.getName();
