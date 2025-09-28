@@ -12,14 +12,11 @@ import java.util.concurrent.ConcurrentMap;
 @ApplicationScoped
 public class ScriptMetricsService {
 
-    private final MeterRegistry registry;
-    private final ConcurrentMap<Long, Counter> executionCounters = new ConcurrentHashMap<Long, Counter>();
-    private final ConcurrentMap<Long, Timer> executionTimers = new ConcurrentHashMap<Long, Timer>();
-
     @Inject
-    public ScriptMetricsService(MeterRegistry registry) {
-        this.registry = registry;
-    }
+    MeterRegistry registry;
+
+    private final ConcurrentMap<Long, Counter> executionCounters = new ConcurrentHashMap<>();
+    private final ConcurrentMap<Long, Timer> executionTimers = new ConcurrentHashMap<>();
 
     public void recordExecution(Long transformationId, Runnable runnable) {
         Timer timer = executionTimers.computeIfAbsent(transformationId,
@@ -30,7 +27,7 @@ public class ScriptMetricsService {
 
         Counter counter = executionCounters.computeIfAbsent(transformationId,
                 id -> Counter.builder("stayinsync.script.executions")
-                        .description("Anzahl der Skriptausführungen")
+                        .description("Amount of script executions")
                         .tag("transformationId", id.toString())
                         .register(registry));
 
