@@ -212,6 +212,7 @@ public class TransformationService {
                 }
                 case STOPPING, RECONFIGURING -> {
                     deployAssociatedRequestConfigs(transformation);
+                    sourceRequestConfigService.undeployAllUnused();
                     transformationMessageProducer.reconfigureDeployedTransformationJob(mapper.mapToMessageDTO(transformation));
                 }
             }
@@ -247,8 +248,6 @@ public class TransformationService {
                 .stream() //
                 .filter(apiRequestConfiguration -> apiRequestConfiguration.deploymentStatus.equals(JobDeploymentStatus.UNDEPLOYED))
                 .forEach(apiRequestConfiguration -> sourceRequestConfigService.updateDeploymentStatus(apiRequestConfiguration.id, JobDeploymentStatus.DEPLOYING));
-
-        sourceRequestConfigService.undeployAllUnused();
     }
 
     private boolean isTransitioning(JobDeploymentStatus jobDeploymentStatus) {
