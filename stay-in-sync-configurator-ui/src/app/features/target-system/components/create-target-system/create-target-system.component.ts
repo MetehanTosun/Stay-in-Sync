@@ -638,12 +638,116 @@ export class CreateTargetSystemComponent implements OnInit, OnChanges {
     });
   }
   deleteElement(submodelId: string, idShortPath: string): void {
-    if (!this.createdTargetSystemId || !submodelId || !idShortPath) return;
-    const smIdB64 = this.encodeIdToBase64Url(submodelId);
-    this.aasClient.deleteElement('target', this.createdTargetSystemId, smIdB64, idShortPath).subscribe({
-      next: () => { const parent = idShortPath.includes('/') ? idShortPath.substring(0, idShortPath.lastIndexOf('/')) : ''; this.refreshNodeLive(submodelId, parent, undefined); },
-      error: () => {}
+    if (!this.createdTargetSystemId || !submodelId || !idShortPath) {
+      console.log('[TargetCreate] deleteElement: Missing required data', {
+        createdTargetSystemId: this.createdTargetSystemId,
+        submodelId,
+        idShortPath
+      });
+      return;
+    }
+    
+    // Use the original submodelId, not base64 encoded
+    // The backend will handle the encoding internally
+    
+    console.log('[TargetCreate] deleteElement: Deleting element', {
+      systemId: this.createdTargetSystemId,
+      submodelId,
+      idShortPath
     });
+    
+    // Skip existence check for deep elements and proceed directly with deletion
+    console.log('[TargetCreate] deleteElement: Proceeding directly with deletion (skipping existence check for deep elements)');
+    this.performDelete(submodelId, idShortPath);
+  }
+  
+  private performDelete(submodelId: string, idShortPath: string): void {
+    this.aasClient.deleteElement('target', this.createdTargetSystemId, submodelId, idShortPath).subscribe({
+      next: () => {
+        console.log('[TargetCreate] deleteElement: Element deleted successfully');
+        const parent = idShortPath.includes('.') ? idShortPath.substring(0, idShortPath.lastIndexOf('.')) : '';
+        this.refreshNodeLive(submodelId, parent, undefined);
+        
+        // Show success message
+        this.messageService.add({
+          severity: 'success',
+          summary: 'Element Deleted',
+          detail: 'Element has been successfully deleted.',
+          life: 3000
+        });
+      },
+      error: (err) => {
+        console.error('[TargetCreate] deleteElement: Error deleting element', err);
+        console.log('[TargetCreate] deleteElement: Error details', {
+          status: err.status,
+          statusText: err.statusText,
+          url: err.url,
+          message: err.message,
+          idShortPath,
+          submodelId
+        });
+        
+        // Check if it's a 404 error (element not found)
+        if (err.status === 404) {
+          console.log('[TargetCreate] deleteElement: Element not found, removing from tree anyway');
+          
+          // Remove the element from the tree directly
+          this.removeElementFromTree(submodelId, idShortPath);
+          
+          this.messageService.add({
+            severity: 'success',
+            summary: 'Element Removed',
+            detail: `Element '${idShortPath.split('/').pop()}' has been removed from the tree.`,
+            life: 3000
+          });
+        } else {
+          console.error('[TargetCreate] deleteElement: Unexpected error', err);
+        }
+      }
+    });
+  }
+
+  private removeElementFromTree(submodelId: string, idShortPath: string): void {
+    console.log('[TargetCreate] removeElementFromTree: Removing element from tree', {
+      submodelId,
+      idShortPath
+    });
+    
+    const elementKey = `${submodelId}::${idShortPath}`;
+    const parentPath = idShortPath.includes('/') ? idShortPath.substring(0, idShortPath.lastIndexOf('/')) : '';
+    const parentKey = parentPath ? `${submodelId}::${parentPath}` : submodelId;
+    
+    console.log('[TargetCreate] removeElementFromTree: Keys', {
+      elementKey,
+      parentKey,
+      parentPath
+    });
+    
+    // Find the parent node
+    const parentNode = this.findNodeByKey(parentKey, this.treeNodes);
+    if (parentNode && parentNode.children) {
+      console.log('[TargetCreate] removeElementFromTree: Parent node found', {
+        parentLabel: parentNode.label,
+        childrenCount: parentNode.children.length
+      });
+      
+      // Remove the element from parent's children
+      const initialLength = parentNode.children.length;
+      parentNode.children = parentNode.children.filter(child => child.key !== elementKey);
+      
+      console.log('[TargetCreate] removeElementFromTree: Element removed', {
+        initialLength,
+        finalLength: parentNode.children.length,
+        removed: initialLength > parentNode.children.length
+      });
+      
+      // Update the tree
+      this.treeNodes = [...this.treeNodes];
+    } else {
+      console.log('[TargetCreate] removeElementFromTree: Parent node not found, refreshing tree');
+      // Fallback: refresh the parent
+      this.refreshNodeLive(submodelId, parentPath, undefined);
+    }
   }
 
   showValueDialog = false;
@@ -752,7 +856,14 @@ export class CreateTargetSystemComponent implements OnInit, OnChanges {
   }
 
   private encodeIdToBase64Url(id: string): string {
-    if (!id) return id; try { const b64 = (window as any).btoa(unescape(encodeURIComponent(id))); return b64.replace(/=+$/g, '').replace(/\+/g, '-').replace(/\//g, '_'); } catch { return id; }
+    if (!id) return id;
+    
+    // Use the same encoding as the backend
+    const b64 = btoa(id);
+    return b64
+      .replace(/=+$/g, '')
+      .replace(/\+/g, '-')
+      .replace(/\//g, '_');
   }
 
   /**

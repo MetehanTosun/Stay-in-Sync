@@ -1537,17 +1537,125 @@ save(): void {
   }
 
   deleteElement(submodelId: string, idShortPath: string): void {
-    if (!this.createdSourceSystemId || !submodelId || !idShortPath) return;
-    const smIdB64 = this.aasService.encodeIdToBase64Url(submodelId);
-    this.aasService.deleteElement(this.createdSourceSystemId, smIdB64, idShortPath).subscribe({
-      next: () => {
-        // refresh parent node live
-        const parent = idShortPath.includes('/') ? idShortPath.substring(0, idShortPath.lastIndexOf('/')) : '';
-        const parentNode = parent ? this.findNodeByKey(`${submodelId}::${parent}`, this.treeNodes) : this.findNodeByKey(submodelId, this.treeNodes);
-        this.refreshNodeLive(submodelId, parent, parentNode || undefined);
-      },
-      error: (err) => this.errorService.handleError(err)
+    if (!this.createdSourceSystemId || !submodelId || !idShortPath) {
+      console.log('[SourceCreate] deleteElement: Missing required data', {
+        createdSourceSystemId: this.createdSourceSystemId,
+        submodelId,
+        idShortPath
+      });
+      return;
+    }
+    
+    // Use the original submodelId, not base64 encoded
+    // The backend will handle the encoding internally
+    
+    console.log('[SourceCreate] deleteElement: Deleting element', {
+      systemId: this.createdSourceSystemId,
+      submodelId,
+      idShortPath
     });
+    
+    // Skip existence check for deep elements and proceed directly with deletion
+    console.log('[SourceCreate] deleteElement: Proceeding directly with deletion (skipping existence check for deep elements)');
+    this.performDelete(submodelId, idShortPath);
+  }
+  
+  private performDelete(submodelId: string, idShortPath: string): void {
+    this.aasService.deleteElement(this.createdSourceSystemId, submodelId, idShortPath).subscribe({
+      next: () => {
+        console.log('[SourceCreate] deleteElement: Element deleted successfully');
+        // refresh parent node live - use dot-separated paths
+        const parent = idShortPath.includes('.') ? idShortPath.substring(0, idShortPath.lastIndexOf('.')) : '';
+        const parentNode = parent ? this.findNodeByKey(`${submodelId}::${parent}`, this.treeNodes) : this.findNodeByKey(submodelId, this.treeNodes);
+        
+        console.log('[SourceCreate] deleteElement: Refreshing parent', {
+          parent,
+          parentNode: parentNode?.label,
+          found: !!parentNode
+        });
+        
+        this.refreshNodeLive(submodelId, parent, parentNode || undefined);
+        
+        // Show success message
+        this.messageService.add({
+          severity: 'success',
+          summary: 'Element Deleted',
+          detail: 'Element has been successfully deleted.',
+          life: 3000
+        });
+      },
+      error: (err) => {
+        console.error('[SourceCreate] deleteElement: Error deleting element', err);
+        console.log('[SourceCreate] deleteElement: Error details', {
+          status: err.status,
+          statusText: err.statusText,
+          url: err.url,
+          message: err.message,
+          idShortPath,
+          submodelId
+        });
+        
+        // Check if it's a 404 error (element not found)
+        if (err.status === 404) {
+          console.log('[SourceCreate] deleteElement: Element not found, removing from tree anyway');
+          
+          // Remove the element from the tree directly
+          this.removeElementFromTree(submodelId, idShortPath);
+          
+          this.messageService.add({
+            severity: 'success',
+            summary: 'Element Removed',
+            detail: `Element '${idShortPath.split('.').pop()}' has been removed from the tree.`,
+            life: 3000
+          });
+        } else {
+          this.errorService.handleError(err);
+        }
+      }
+    });
+  }
+
+  private removeElementFromTree(submodelId: string, idShortPath: string): void {
+    console.log('[SourceCreate] removeElementFromTree: Removing element from tree', {
+      submodelId,
+      idShortPath
+    });
+    
+    const elementKey = `${submodelId}::${idShortPath}`;
+    const parentPath = idShortPath.includes('/') ? idShortPath.substring(0, idShortPath.lastIndexOf('/')) : '';
+    const parentKey = parentPath ? `${submodelId}::${parentPath}` : submodelId;
+    
+    console.log('[SourceCreate] removeElementFromTree: Keys', {
+      elementKey,
+      parentKey,
+      parentPath
+    });
+    
+    // Find the parent node
+    const parentNode = this.findNodeByKey(parentKey, this.treeNodes);
+    if (parentNode && parentNode.children) {
+      console.log('[SourceCreate] removeElementFromTree: Parent node found', {
+        parentLabel: parentNode.label,
+        childrenCount: parentNode.children.length
+      });
+      
+      // Remove the element from parent's children
+      const initialLength = parentNode.children.length;
+      parentNode.children = parentNode.children.filter(child => child.key !== elementKey);
+      
+      console.log('[SourceCreate] removeElementFromTree: Element removed', {
+        initialLength,
+        finalLength: parentNode.children.length,
+        removed: initialLength > parentNode.children.length
+      });
+      
+      // Update the tree
+      this.treeNodes = [...this.treeNodes];
+    } else {
+      console.log('[SourceCreate] removeElementFromTree: Parent node not found, refreshing tree');
+      // Fallback: refresh the parent
+      this.refreshNodeLive(submodelId, parentPath, undefined);
+    }
   }
 
   // Delete Submodel confirmation

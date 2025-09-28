@@ -107,9 +107,10 @@ public class AasTraversalClient {
     }
 
     private String encodePathSegments(String path) {
-        return Arrays.stream(path.split("/"))
+        // BaSyx expects dot-separated paths, not slash-separated
+        return Arrays.stream(path.split("\\."))
                 .map(this::encode)
-                .collect(Collectors.joining("/"));
+                .collect(Collectors.joining("."));
     }
 
     private String inferIdType(String id) {

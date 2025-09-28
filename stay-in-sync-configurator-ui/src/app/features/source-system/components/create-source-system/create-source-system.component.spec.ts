@@ -1,232 +1,271 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { ReactiveFormsModule, FormsModule } from '@angular/forms';
-import { of } from 'rxjs';
-import { HttpResponse } from '@angular/common/http';
+import { HttpClientTestingModule } from '@angular/common/http/testing';
+import { MessageService } from 'primeng/api';
+import { of, throwError } from 'rxjs';
 
 import { CreateSourceSystemComponent } from './create-source-system.component';
-import { SourceSystemResourceService } from '../../service/sourceSystemResource.service';
-import { SourceSystemDTO } from '../../models/sourceSystemDTO';
-import { CreateSourceSystemDTO } from '../../models/createSourceSystemDTO';
+import { AasService } from '../../services/aas.service';
+import { HttpErrorService } from '../../../../core/services/http-error.service';
 
 describe('CreateSourceSystemComponent', () => {
   let component: CreateSourceSystemComponent;
   let fixture: ComponentFixture<CreateSourceSystemComponent>;
-  let mockService: jasmine.SpyObj<SourceSystemResourceService>;
-
-  // Mock-Daten für erfolgreiche Response
-  const mockSourceSystemResponse: SourceSystemDTO = {
-    id: 1,
-    name: 'Test Source System',
-    apiUrl: 'https://api.test.com',
-    description: 'Test Description',
-    apiType: 'REST_OPENAPI',
-    openApiSpec: undefined
-  };
-
-  const mockCreateDTO: CreateSourceSystemDTO = {
-    name: 'Test Source System',
-    apiUrl: 'https://api.test.com',
-    description: 'Test Description',
-    apiType: 'REST_OPENAPI'
-  };
+  let aasService: jasmine.SpyObj<AasService>;
+  let messageService: jasmine.SpyObj<MessageService>;
+  let httpErrorService: jasmine.SpyObj<HttpErrorService>;
 
   beforeEach(async () => {
-    // Service Mock erstellen
-    mockService = jasmine.createSpyObj('SourceSystemResourceService', [
-      'apiConfigSourceSystemPost'
+    const aasServiceSpy = jasmine.createSpyObj('AasService', [
+      'createElement', 'deleteElement', 'getElement', 'listElements', 'encodeIdToBase64Url'
     ]);
-
-    // Default Service-Response
-    mockService.apiConfigSourceSystemPost.and.returnValue(
-      of(mockSourceSystemResponse) // Direkt SourceSystemDTO zurückgeben
-    );
+    const messageServiceSpy = jasmine.createSpyObj('MessageService', ['add']);
+    const httpErrorServiceSpy = jasmine.createSpyObj('HttpErrorService', ['handleError']);
 
     await TestBed.configureTestingModule({
       imports: [
+        CreateSourceSystemComponent,
         ReactiveFormsModule,
         FormsModule,
-        CreateSourceSystemComponent // Standalone Component
+        HttpClientTestingModule
       ],
       providers: [
-        { provide: SourceSystemResourceService, useValue: mockService }
+        { provide: AasService, useValue: aasServiceSpy },
+        { provide: MessageService, useValue: messageServiceSpy },
+        { provide: HttpErrorService, useValue: httpErrorServiceSpy }
       ]
     }).compileComponents();
 
     fixture = TestBed.createComponent(CreateSourceSystemComponent);
     component = fixture.componentInstance;
-    fixture.detectChanges();
+    aasService = TestBed.inject(AasService) as jasmine.SpyObj<AasService>;
+    messageService = TestBed.inject(MessageService) as jasmine.SpyObj<MessageService>;
+    httpErrorService = TestBed.inject(HttpErrorService) as jasmine.SpyObj<HttpErrorService>;
+
+    // Set up component state
+    component.createdSourceSystemId = 1;
+    component.targetSubmodelId = 'test-submodel-id';
+    component.parentPath = 'test/parent';
+    component.newElementJson = JSON.stringify({
+      idShort: 'test-element',
+      modelType: 'Property',
+      valueType: 'xs:string',
+      value: 'test-value'
+    });
   });
 
-  it('should create', () => {
-    expect(component).toBeTruthy();
-  });
+  describe('createElement', () => {
+    it('should create element successfully', () => {
+      aasService.createElement.and.returnValue(of({}));
+      aasService.encodeIdToBase64Url.and.returnValue('encoded-id');
 
-  it('should initialize form with default values', () => {
-    expect(component.form.get('name')?.value).toBe('');
-    expect(component.form.get('apiUrl')?.value).toBe('');
-    expect(component.form.get('description')?.value).toBe('');
-    expect(component.form.get('apiType')?.value).toBe('REST_OPENAPI');
-  });
+      component.createElement();
 
-  it('should validate required fields', () => {
-    // Name ist required
-    const nameControl = component.form.get('name');
-    nameControl?.setValue('');
-    nameControl?.markAsTouched();
-    expect(nameControl?.hasError('required')).toBe(true);
-
-    // API URL ist required
-    const apiUrlControl = component.form.get('apiUrl');
-    apiUrlControl?.setValue('');
-    apiUrlControl?.markAsTouched();
-    expect(apiUrlControl?.hasError('required')).toBe(true);
-  });
-
-  it('should create source system when form is valid', () => {
-    // Form mit gültigen Daten füllen
-    component.form.patchValue(mockCreateDTO);
-    
-    // KORRIGIERT: Verwende mockSourceSystemResponse statt HttpResponse
-    mockService.apiConfigSourceSystemPost.and.returnValue(of(mockSourceSystemResponse));
-    
-    // Save aufrufen
-    component.save();
-    
-    // Service sollte aufgerufen werden
-    expect(mockService.apiConfigSourceSystemPost).toHaveBeenCalled();
-  });
-
-  it('should not save when form is invalid', () => {
-    // Form ungültig lassen (leere required fields)
-    component.form.patchValue({
-      name: '', // Required field leer
-      apiUrl: '',
-      description: 'Test',
-      apiType: 'REST_OPENAPI'
+      expect(aasService.createElement).toHaveBeenCalledWith(
+        1,
+        'encoded-id',
+        jasmine.any(Object),
+        'test/parent'
+      );
+      expect(messageService.add).toHaveBeenCalledWith({
+        severity: 'success',
+        summary: 'Element Created',
+        detail: 'Element has been successfully created.',
+        life: 3000
+      });
     });
 
-    // Save aufrufen
-    component.save();
+    it('should handle creation error', () => {
+      const error = { status: 500, message: 'Server error', name: 'HttpErrorResponse', ok: false, headers: {} as any, url: '', error: null, statusText: '', type: 4 };
+      aasService.createElement.and.returnValue(throwError(() => error));
+      aasService.encodeIdToBase64Url.and.returnValue('encoded-id');
 
-    // Service sollte NICHT aufgerufen werden
-    expect(mockService.apiConfigSourceSystemPost).not.toHaveBeenCalled();
-  });
+      component.createElement();
 
-  it('should handle file selection', () => {
-    const mockFile = new File(['test content'], 'test.json', { type: 'application/json' });
-    const mockEvent = {
-      files: [mockFile]
-    };
-
-    component.onFileSelected(mockEvent as any);
-
-    expect(component.selectedFile).toBe(mockFile);
-    expect(component.fileSelected).toBe(true);
-  });
-
-  it('should handle OpenAPI URL input', () => {
-    const testUrl = 'https://api.example.com/openapi.json';
-    
-    component.form.get('openApiSpec')?.setValue(testUrl);
-    
-    expect(component.form.get('openApiSpec')?.value).toBe(testUrl);
-  });
-
-  it('should update form when sourceSystem input changes', () => {
-    const testSourceSystem: SourceSystemDTO = {
-      id: 1,
-      name: 'Updated System',
-      apiUrl: 'https://updated-api.com',
-      description: 'Updated Description',
-      apiType: 'REST_OPENAPI'
-    };
-
-    // Simuliere Input-Änderung
-    component.sourceSystem = testSourceSystem;
-    component.ngOnChanges({
-      sourceSystem: {
-        currentValue: testSourceSystem,
-        previousValue: null,
-        firstChange: true,
-        isFirstChange: () => true
-      }
+      expect(httpErrorService.handleError).toHaveBeenCalledWith(error);
     });
 
-    // Form sollte aktualisiert werden
-    expect(component.form.get('name')?.value).toBe('Updated System');
-    expect(component.form.get('apiUrl')?.value).toBe('https://updated-api.com');
-    expect(component.form.get('description')?.value).toBe('Updated Description');
-    expect(component.form.get('apiType')?.value).toBe('REST_OPENAPI');
-  });
+    it('should handle JSON parse error', () => {
+      component.newElementJson = 'invalid-json';
 
-  it('should reset current step when sourceSystem changes', () => {
-    component.currentStep = 2; // Setze auf Step 2
+      component.createElement();
 
-    const testSourceSystem: SourceSystemDTO = {
-      id: 1,
-      name: 'Test System',
-      apiUrl: 'https://api.test.com',
-      apiType: 'REST_OPENAPI'
-    };
-
-    component.sourceSystem = testSourceSystem;
-    component.ngOnChanges({
-      sourceSystem: {
-        currentValue: testSourceSystem,
-        previousValue: null,
-        firstChange: true,
-        isFirstChange: () => true
-      }
+      expect(httpErrorService.handleError).toHaveBeenCalled();
     });
 
-    // Should reset to step 0
-    expect(component.currentStep).toBe(0);
+    it('should not create element if missing required data', () => {
+      component.createdSourceSystemId = undefined as any;
+      component.targetSubmodelId = '';
+
+      component.createElement();
+
+      expect(aasService.createElement).not.toHaveBeenCalled();
+    });
   });
 
-  it('should require aasId when apiType is AAS and block Next until test ok', () => {
-    component.form.patchValue({ apiType: 'AAS', apiUrl: 'http://x', name: 'n' });
-    const aasIdCtrl = component.form.get('aasId');
-    expect(aasIdCtrl?.validator).toBeTruthy();
-    aasIdCtrl?.setValue('');
-    aasIdCtrl?.markAsTouched();
-    expect(aasIdCtrl?.hasError('required')).toBeTrue();
-
-    // Without successful test, cannot proceed
-    component.aasTestOk = null;
-    expect(component.canProceedFromStep1()).toBeFalse();
-    component.aasTestOk = false;
-    expect(component.canProceedFromStep1()).toBeFalse();
-    component.aasTestOk = true;
-    expect(component.canProceedFromStep1()).toBeTrue();
-  });
-
-  it('should handle save with file upload', () => {
-    // Mock file
-    const mockFile = new File(['{"openapi": "3.0.0"}'], 'openapi.json', { type: 'application/json' });
-    component.selectedFile = mockFile;
-    component.fileSelected = true;
-
-    // Form mit Daten füllen
-    component.form.patchValue({
-      name: 'Test System',
-      apiUrl: 'https://api.test.com',
-      apiType: 'REST_OPENAPI'
+  describe('deleteElement', () => {
+    beforeEach(() => {
+      aasService.encodeIdToBase64Url.and.returnValue('encoded-id');
     });
 
-    // Mock FileReader
-    spyOn(window, 'FileReader').and.returnValue({
-      readAsText: jasmine.createSpy('readAsText').and.callFake(function(this: any) {
-        this.result = '{"openapi": "3.0.0"}';
-        this.onload();
-      }),
-      result: '{"openapi": "3.0.0"}'
-    } as any);
+    it('should delete element successfully', () => {
+      aasService.getElement.and.returnValue(of({ idShort: 'test-element' }));
+      aasService.deleteElement.and.returnValue(of({}));
 
-    mockService.apiConfigSourceSystemPost.and.returnValue(of(mockSourceSystemResponse));
+      component.deleteElement('test-submodel-id', 'test/element/path');
 
-    component.save();
+      expect(aasService.getElement).toHaveBeenCalledWith(1, 'test-submodel-id', 'test/element/path', 'LIVE');
+      expect(aasService.deleteElement).toHaveBeenCalledWith(1, 'encoded-id', 'test/element/path');
+    });
 
-    // FileReader sollte verwendet werden
-    expect(window.FileReader).toHaveBeenCalled();
+    it('should handle element not found (404)', () => {
+      const error = { status: 404, message: 'Not found' };
+      aasService.getElement.and.returnValue(throwError(() => error));
+
+      component.deleteElement('test-submodel-id', 'test/element/path');
+
+      expect(aasService.getElement).toHaveBeenCalledWith(1, 'test-submodel-id', 'test/element/path', 'LIVE');
+      expect(aasService.deleteElement).not.toHaveBeenCalled();
+      expect(messageService.add).toHaveBeenCalledWith({
+        severity: 'warn',
+        summary: 'Element Not Found',
+        detail: 'Element does not exist or has already been deleted.',
+        life: 3000
+      });
+    });
+
+    it('should handle other errors when getting element', () => {
+      const error = { status: 500, message: 'Server error', name: 'HttpErrorResponse', ok: false, headers: {} as any, url: '', error: null, statusText: '', type: 4 };
+      aasService.getElement.and.returnValue(throwError(() => error));
+
+      component.deleteElement('test-submodel-id', 'test/element/path');
+
+      expect(httpErrorService.handleError).toHaveBeenCalledWith(error);
+    });
+
+    it('should handle delete error', () => {
+      aasService.getElement.and.returnValue(of({ idShort: 'test-element' }));
+      const error = { status: 500, message: 'Delete failed', name: 'HttpErrorResponse', ok: false, headers: {} as any, url: '', error: null, statusText: '', type: 4 };
+      aasService.deleteElement.and.returnValue(throwError(() => error));
+
+      component.deleteElement('test-submodel-id', 'test/element/path');
+
+      expect(aasService.deleteElement).toHaveBeenCalledWith(1, 'encoded-id', 'test/element/path');
+      expect(httpErrorService.handleError).toHaveBeenCalledWith(error);
+    });
+
+    it('should not delete if missing required data', () => {
+      component.createdSourceSystemId = undefined as any;
+
+      component.deleteElement('test-submodel-id', 'test/element/path');
+
+      expect(aasService.getElement).not.toHaveBeenCalled();
+      expect(aasService.deleteElement).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('inferModelType', () => {
+    it('should detect Property type', () => {
+      const element = { valueType: 'xs:string', value: 'test' };
+      const result = component['inferModelType'](element);
+      expect(result).toBe('Property');
+    });
+
+    it('should detect MultiLanguageProperty type', () => {
+      const element = { 
+        value: [
+          { language: 'en', text: 'English text' },
+          { language: 'de', text: 'German text' }
+        ]
+      };
+      const result = component['inferModelType'](element);
+      expect(result).toBe('MultiLanguageProperty');
+    });
+
+    it('should detect SubmodelElementCollection type', () => {
+      const element = { 
+        value: [
+          { idShort: 'child1' },
+          { idShort: 'child2' }
+        ],
+        hasChildren: true
+      };
+      const result = component['inferModelType'](element);
+      expect(result).toBe('SubmodelElementCollection');
+    });
+
+    it('should detect File type', () => {
+      const element = { 
+        contentType: 'text/plain',
+        fileName: 'test.txt'
+      };
+      const result = component['inferModelType'](element);
+      expect(result).toBe('File');
+    });
+
+    it('should return undefined for unknown type', () => {
+      const element = { idShort: 'unknown' };
+      const result = component['inferModelType'](element);
+      expect(result).toBeUndefined();
+    });
+  });
+
+  describe('mapElementToNode', () => {
+    it('should map element to tree node correctly', () => {
+      const element = {
+        idShort: 'test-element',
+        modelType: 'Property',
+        hasChildren: false,
+        value: 'test-value'
+      };
+      const submodelId = 'test-submodel';
+
+      const result = component['mapElementToNode'](submodelId, element);
+
+      expect(result.key).toBe(`${submodelId}::test-element`);
+      expect(result.label).toBe('test-element');
+      expect(result.data.type).toBe('element');
+      expect(result.data.submodelId).toBe(submodelId);
+      expect(result.data.modelType).toBe('Property');
+      expect(result.leaf).toBe(true);
+    });
+
+    it('should handle elements with children', () => {
+      const element = {
+        idShort: 'test-collection',
+        modelType: 'SubmodelElementCollection',
+        hasChildren: true,
+        value: [{ idShort: 'child1' }]
+      };
+      const submodelId = 'test-submodel';
+
+      const result = component['mapElementToNode'](submodelId, element);
+
+      expect(result.leaf).toBe(false);
+    });
+  });
+
+  describe('loadChildren', () => {
+    it('should load children and filter correctly', () => {
+      const submodelId = 'test-submodel';
+      const parentPath = 'parent';
+      const node = { children: [] };
+      const mockResponse = [
+        { idShort: 'child1', idShortPath: 'parent/child1' },
+        { idShort: 'child2', idShortPath: 'parent/child2' },
+        { idShort: 'nested', idShortPath: 'parent/child1/nested' }
+      ];
+
+      aasService.listElements.and.returnValue(of(mockResponse));
+      component.createdSourceSystemId = 1;
+
+      component['loadChildren'](submodelId, parentPath, node as any);
+
+      expect(aasService.listElements).toHaveBeenCalledWith(
+        1,
+        submodelId,
+        { depth: 'shallow', parentPath, source: 'SNAPSHOT' }
+      );
+    });
   });
 });

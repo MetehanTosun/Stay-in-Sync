@@ -85,6 +85,7 @@ export class AasService {
     element: any,
     parentPath?: string
   ): Observable<any> {
+    // Backend expects base64-encoded submodelId for CREATE
     const submodelIdEnc = this.encodeIdToBase64Url(submodelId);
     const url = `/api/config/source-system/${sourceSystemId}/aas/submodels/${submodelIdEnc}/elements`;
     const params = parentPath ? new HttpParams().set('parentPath', parentPath) : undefined;
@@ -123,26 +124,48 @@ export class AasService {
     submodelId: string,
     elementPath: string
   ): Observable<any> {
-    const url = `/api/config/source-system/${sourceSystemId}/aas/submodels/${submodelId}/elements/${this.encodePathSegments(elementPath)}`;
+    // BaSyx API expects UTF8-BASE64-URL-encoded submodelIdentifier
+    const encodedSubmodelId = this.encodeIdToBase64Url(submodelId);
+    const encodedPath = this.encodePathSegments(elementPath);
+    const url = `/api/config/source-system/${sourceSystemId}/aas/submodels/${encodedSubmodelId}/elements/${encodedPath}`;
+    
+    console.log('[AasService] deleteElement: API call', {
+      url,
+      urlLength: url.length,
+      sourceSystemId,
+      submodelId,
+      encodedSubmodelId,
+      elementPath,
+      encodedPath,
+      pathLength: elementPath.length,
+      encodedPathLength: encodedPath.length
+    });
+    
+    // Log the full URL for debugging
+    console.log('[AasService] deleteElement: Full URL', url);
+    
     return this.http.delete(url);
   }
 
   encodeIdToBase64Url(id: string): string {
     if (!id) return id;
-    const b64 = typeof window !== 'undefined' && (window as any).btoa
-      ? (window as any).btoa(unescape(encodeURIComponent(id)))
-      : id; // fallback: return original
-    return b64
-      .replace(/=+$/g, '')
-      .replace(/\+/g, '-')
-      .replace(/\//g, '_');
+    
+    // Backend expects normal Base64 with padding, not Base64-URL
+    return btoa(id);
   }
 
   private encodePathSegments(path: string): string {
-    return path
-      .split('/')
-      .map(seg => encodeURIComponent(seg))
-      .join('/');
+    // BaSyx expects dot-separated paths, not slash-separated
+    const result = path.replace(/\//g, '.');
+    
+    console.log('[AasService] encodePathSegments: Converting slash to dot', {
+      original: path,
+      result: result,
+      originalLength: path.length,
+      resultLength: result.length
+    });
+    
+    return result;
   }
 }
 

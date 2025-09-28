@@ -740,7 +740,7 @@ public class AasResource {
     private String normalizeSubmodelId(String smId) {
         if (smId == null) return null;
         try {
-            byte[] decoded = java.util.Base64.getUrlDecoder().decode(smId);
+            byte[] decoded = java.util.Base64.getDecoder().decode(smId);
             String plain = new String(decoded, java.nio.charset.StandardCharsets.UTF_8);
             return plain;
         } catch (IllegalArgumentException e) {

@@ -72,7 +72,21 @@ export class AasClientService {
   }
 
   deleteElement(systemType: AasSystemType, systemId: number, smId: string, path: string): Observable<any> {
-    return this.http.delete(`${this.base(systemType, systemId)}/submodels/${smId}/elements/${this.encodePathSegments(path)}`);
+    // BaSyx API expects UTF8-BASE64-URL-encoded submodelIdentifier
+    const encodedSmId = this.encodeIdToBase64Url(smId);
+    const url = `${this.base(systemType, systemId)}/submodels/${encodedSmId}/elements/${this.encodePathSegments(path)}`;
+    
+    console.log('[AasClient] deleteElement: API call', {
+      systemType,
+      systemId,
+      smId,
+      encodedSmId,
+      path,
+      url,
+      urlLength: url.length
+    });
+    
+    return this.http.delete(url);
   }
 
   patchElementValue(systemType: AasSystemType, systemId: number, smId: string, path: string, body: any): Observable<any> {
@@ -103,9 +117,14 @@ export class AasClientService {
   }
 
   private encodePathSegments(path: string): string {
-    return path
-      .split('/')
-      .map(seg => encodeURIComponent(seg))
-      .join('/');
+    // BaSyx expects dot-separated paths, not slash-separated
+    return path.replace(/\//g, '.');
+  }
+
+  private encodeIdToBase64Url(id: string): string {
+    if (!id) return id;
+    
+    // Backend expects normal Base64 with padding, not Base64-URL
+    return btoa(id);
   }
 }
