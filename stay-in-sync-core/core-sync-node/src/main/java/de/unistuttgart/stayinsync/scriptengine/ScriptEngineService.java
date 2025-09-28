@@ -1,6 +1,6 @@
 package de.unistuttgart.stayinsync.scriptengine;
 
-import de.unistuttgart.stayinsync.core.configuration.service.ScriptMetricsService;
+
 import de.unistuttgart.stayinsync.exception.ScriptEngineException;
 import de.unistuttgart.stayinsync.scriptengine.message.TransformationResult;
 import de.unistuttgart.stayinsync.syncnode.domain.TransformJob;

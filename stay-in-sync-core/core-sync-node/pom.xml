@@ -63,6 +63,7 @@
             <artifactId>quarkus-rest-jackson</artifactId>
         </dependency>
 
+
         <!-- Micrometer -->
         <dependency>
             <groupId>io.quarkus</groupId>
