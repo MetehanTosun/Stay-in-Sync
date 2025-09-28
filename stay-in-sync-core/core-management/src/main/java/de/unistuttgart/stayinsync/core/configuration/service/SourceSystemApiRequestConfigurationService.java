@@ -76,12 +76,13 @@ public class SourceSystemApiRequestConfigurationService {
             Log.infof("Settings deployment status of request config with id %d to %s", requestConfigId, jobDeploymentStatus);
             sourceSystemApiRequestConfiguration.deploymentStatus = jobDeploymentStatus;
             switch (jobDeploymentStatus) {
-                case DEPLOYING ->
-                        pollingJobMessageProducer.publishPollingJob(fullUpdateMapper.mapToMessageDTO(sourceSystemApiRequestConfiguration));
-                case STOPPING, RECONFIGURING ->
-                        pollingJobMessageProducer.reconfigureDeployedPollingJob(fullUpdateMapper.mapToMessageDTO(sourceSystemApiRequestConfiguration));
-            }
-            ;
+                case DEPLOYING -> {
+                    pollingJobMessageProducer.publishPollingJob(fullUpdateMapper.mapToMessageDTO(sourceSystemApiRequestConfiguration));
+                }
+                case STOPPING, RECONFIGURING -> {
+                    pollingJobMessageProducer.reconfigureDeployedPollingJob(fullUpdateMapper.mapToMessageDTO(sourceSystemApiRequestConfiguration));
+                }
+            };
         }
     }
 
@@ -127,7 +128,7 @@ public class SourceSystemApiRequestConfigurationService {
      * Replaces an existing ARC with the data provided in the DTO.
      * This is a full update: old parameters and headers are cleared and replaced.
      *
-     * @param id The ID of the ARC to update.
+     * @param id  The ID of the ARC to update.
      * @param dto The DTO containing the new configuration.
      * @return An Optional containing the updated entity, or empty if not found.
      */

@@ -36,7 +36,7 @@ public class SourceSystemApiRequestConfiguration extends ApiRequestConfiguration
                 "AND SIZE(sse.transformations) > 0";
 
         return getEntityManager().createQuery(query, SourceSystemApiRequestConfiguration.class)
-                .setParameter("statuses", List.of(JobDeploymentStatus.FAILING, JobDeploymentStatus.DEPLOYED))
+                .setParameter("statuses", List.of(JobDeploymentStatus.DEPLOYED))
                 .getResultList();
     }
 
