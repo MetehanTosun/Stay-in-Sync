@@ -3,6 +3,8 @@ package de.unistuttgart.stayinsync.monitoring.core.configuration.service;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+import jakarta.inject.Inject;
 import org.graalvm.polyglot.Context;
 import org.graalvm.polyglot.Engine;
 import org.graalvm.polyglot.HostAccess;
@@ -41,9 +43,12 @@ public class ReplayExecutor {
     ) {
     }
 
+    private final Engine graalEngine;
     private final ObjectMapper om;
 
-    public ReplayExecutor(ObjectMapper om) {
+    @Inject
+    public ReplayExecutor(ObjectMapper om, Engine graalEngine) {
+        this.graalEngine = graalEngine;
         this.om = om;
     }
 
@@ -60,10 +65,16 @@ public class ReplayExecutor {
      * @param sourceData     JSON for the 'source' argument
      */
     public Result execute(String scriptName, String javascriptCode, JsonNode sourceData) {
-
+        System.out.println("DEBUG: Executing replay with sourceData: " + sourceData.toPrettyString());
         // 1) Prepare a place to receive variables at the moment of suspension.
         final Map<String, Object> capturedVars = new LinkedHashMap<>();
         final String SOURCE_URL = scriptName == null ? "replay.js" : scriptName;
+
+        String debugJavascript = """
+    function transform() {
+        console.log('--- GUEST TRUTH --- The global "source" object is:');
+        console.log(JSON.stringify(source));
+    """ + javascriptCode.substring(javascriptCode.indexOf("{") + 1);
 
         /*
          * 2) Wrap the user code so we can suspend at the exact failure point.
@@ -78,99 +89,82 @@ public class ReplayExecutor {
         String wrapped = """
                 // --- user code start ---
                 %s
-
+                
                 // --- driver ---
-                (function __replayEntry(__replaySource) {
-                  try {
-                    return { ok: true, value: transform(__replaySource) };
-                  } catch (e) {
-                    // Force suspension for Truffle Debugger:
-                    debugger;
-                    return { ok: false, error: String(e && e.stack ? e.stack : e) };
-                  }
+                (function __replayEntry(__sourceDataArgument) {
+                try {
+                    var source = __sourceDataArgument;
+                    \s
+                    return { ok: true, value: transform() };
+                } catch (e) {
+                     debugger;
+                     return { ok: false, error: String(e && e.stack ? e.stack : e) };
+                 }
                 })
                 //# sourceURL=%s
-                """.formatted(javascriptCode, SOURCE_URL);
+                """.formatted(debugJavascript, SOURCE_URL);
 
-        // 3) Build Engine + Context. Keep it sandboxed and bounded.
-        Engine engine = Engine.newBuilder()
-                // You can enable/disable compilation, stack traces, etc. here if desired
-                .option("engine.WarnInterpreterOnly", "false")
-                .build();
-
-        Context context = Context.newBuilder("js")
-                .engine(engine)
+        try (Context context = Context.newBuilder("js")
+                .engine(graalEngine)
                 .allowHostAccess(HostAccess.NONE)
                 .allowCreateThread(false)
-                .allowIO(false)
+                .allowIO(true)
                 .allowNativeAccess(false)
                 .resourceLimits(
                         ResourceLimits.newBuilder()
-                                .statementLimit(1_000_000L, src -> true) // apply to all sources
+                                .statementLimit(1_000_000L, src -> true)
                                 .build())
-                .build();
+                .build()) {
 
-        // Provide a minimal global `stayinsync.log` so scripts that call it do not
-        // crash during replay.
-        context.eval("js",
-                "var stayinsync = (typeof stayinsync !== 'undefined') ? stayinsync : {};\n" +
-                        "if (typeof stayinsync.log !== 'function') { stayinsync.log = function(msg, level) { /* no-op in replay */ }; }\n");
+            // Provide a minimal global `stayinsync.log`
+            context.eval("js",
+                    "var stayinsync = (typeof stayinsync !== 'undefined') ? stayinsync : {};\n" +
+                            "if (typeof stayinsync.log !== 'function') { stayinsync.log = function(msg, level) { /* no-op in replay */ }; }\n");
 
-        // 4) Start a Debugger session. The SuspendedEvent callback fires when we hit
-        // `debugger;`.
-        Debugger debugger = Debugger.find(engine);
-        try (DebuggerSession session = debugger.startSession((SuspendedEvent ev) -> {
-            DebugStackFrame frame = ev.getTopStackFrame(); // <-- use stack frame
-            DebugScope scope = frame.getScope(); // <-- then get the scope
+            // Find the Debugger associated with the shared Engine
+            Debugger debugger = Debugger.find(graalEngine);
+            try (DebuggerSession session = debugger.startSession((SuspendedEvent ev) -> {
+                DebugStackFrame frame = ev.getTopStackFrame();
+                if (frame == null) return;
+                DebugScope scope = frame.getScope();
 
-            for (DebugScope s = scope; s != null; s = s.getParent()) {
-                for (DebugValue v : s.getDeclaredValues()) {
-                    try {
-                        capturedVars.putIfAbsent(v.getName(), v.as(Object.class));
-                    } catch (Exception ignore) {
-                        /* some values may not be convertible */ }
+                for (DebugScope s = scope; s != null; s = s.getParent()) {
+                    for (DebugValue v : s.getDeclaredValues()) {
+                        if (!v.isInternal()) {
+                            try {
+                                capturedVars.putIfAbsent(v.getName(), v.as(Object.class));
+                            } catch (Exception ignore) { /* some values may not be convertible */ }
+                        }
+                    }
                 }
+                ev.prepareContinue();
+            })) {
+                Value entry = context.eval("js", wrapped);
+                JsonNode dataToBind = sourceData.has("source") ? sourceData.get("source") : sourceData;
+
+                // 2. Convert it to a standard Map using a more explicit TypeReference.
+                //    This ensures there are no Jackson-specific object types.
+                TypeReference<Map<String, Object>> mapTypeRef = new TypeReference<>() {};
+                Map<String, Object> sourceAsMap = om.convertValue(dataToBind, mapTypeRef);
+
+                // 3. Execute the entry function, PASSING THE MAP AS AN ARGUMENT.
+                //    We no longer use putMember. We are directly invoking the function with data.
+                Value res = entry.execute(sourceAsMap);
+
+                Object output = null;
+                String errorInfo = null;
+
+                if (res.hasMembers() && res.getMember("ok").asBoolean()) {
+                    output = res.getMember("value").as(Object.class);
+                } else {
+                    errorInfo = res.hasMembers() && res.getMemberKeys().contains("error")
+                            ? res.getMember("error").asString()
+                            : "Unknown script error";
+                }
+                return new Result(output, capturedVars, errorInfo);
             }
-
-            // We only wanted to sample; resume right away.
-            ev.prepareContinue();
-        })) {
-
-            // 5) Evaluate the wrapped code to get our entry function.
-            Value entry = context.eval("js", wrapped);
-
-            // 6) Convert the JSON input into a JS value (Graal maps Maps/Lists/POJOs
-            // automatically).
-            Object sourcePojo = om.convertValue(sourceData, Object.class);
-
-            // Also bind `source` globally so scripts that read a global `source` work, too.
-            context.getBindings("js").putMember("source", sourcePojo);
-
-            // 7) Call the driver. It returns a small record { ok: boolean, value? or error?
-            // }.
-            Value res = entry.execute(sourcePojo);
-
-            Object output = null;
-            String errorInfo = null;
-
-            if (res.hasMembers() && res.getMember("ok").asBoolean()) {
-                output = res.getMember("value").as(Object.class);
-            } else {
-                // If we got here because of `debugger;`, our SuspendedEvent handler already
-                // collected vars.
-                errorInfo = res.hasMembers() && res.getMemberKeys().contains("error")
-                        ? res.getMember("error").asString()
-                        : "Unknown script error";
-            }
-
-            return new Result(output, capturedVars, errorInfo);
-
         } catch (PolyglotException pe) {
-            // A hard engine/context failure (or resource limit) — not caught by our driver.
             return new Result(null, capturedVars, "PolyglotException: " + pe.getMessage());
-        } finally {
-            context.close(true);
-            engine.close();
         }
     }
 }
