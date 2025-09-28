@@ -20,7 +20,7 @@ export class ProviderNodeModalComponent {
   jsonPath: string = '';
 
   ngOnInit() {
-    this.jsonPath = this.currentJsonPath || '';
+    this.jsonPath = this.currentJsonPath.replace(/^source\./, '') || '';
   }
 
   //#region Modal Methods
@@ -35,7 +35,11 @@ export class ProviderNodeModalComponent {
       return;
     }
     //TODO-s Check if JSON Path is valid
-    (this.currentJsonPath.trim() !== '' ? this.save : this.providerCreated).emit(`source.${this.jsonPath.trim()}`);
+    (this.currentJsonPath.trim() !== '' ? this.save : this.providerCreated).emit(
+      this.currentJsonPath.includes('source.')
+        ? `${this.jsonPath.trim()}`
+        : `source.${this.jsonPath.trim()}`
+    );
     this.closeModal();
   }
 
