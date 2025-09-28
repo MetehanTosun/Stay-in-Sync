@@ -31,6 +31,8 @@ import {SourceSystem} from '../../models/sourceSystem';
 import {HttpErrorService} from '../../../../core/services/http-error.service';
 import { SourceSystemEndpointDTO } from '../../models/sourceSystemEndpointDTO';
 import { SourceSystemEndpointResourceService } from '../../service/sourceSystemEndpointResource.service';
+import { MessageService } from 'primeng/api';
+import { ToastModule } from 'primeng/toast';
 
 /**
  * Base component for displaying, creating, and managing source systems.
@@ -64,6 +66,7 @@ import { SourceSystemEndpointResourceService } from '../../service/sourceSystemE
     SourceSystemAasManagementComponent,
     SearchBarComponent,
     FormsModule,
+    ToastModule
   ]
 })
 export class SourceSystemBaseComponent implements OnInit, OnDestroy {
@@ -216,7 +219,8 @@ export class SourceSystemBaseComponent implements OnInit, OnDestroy {
     private fb: FormBuilder,
     protected erorrService: HttpErrorService,
     private apiEndpointSvc: SourceSystemEndpointResourceService,
-    private searchPipe: SourceSystemSearchPipe
+    private searchPipe: SourceSystemSearchPipe,
+    private messageService: MessageService
   ) {
     this.initializeForm();
   }
@@ -1444,6 +1448,66 @@ export class SourceSystemBaseComponent implements OnInit, OnDestroy {
       apiUrl: ['', [Validators.required, Validators.pattern('https?://.+')]],
       apiType: ['REST', Validators.required],
       openApiSpec: ['']
+    });
+  }
+
+  /**
+   * Handle header creation event
+   */
+  onHeaderCreated(): void {
+    this.messageService.add({
+      severity: 'success',
+      summary: 'Header Created',
+      detail: 'Header has been successfully created.',
+      life: 3000
+    });
+  }
+
+  /**
+   * Handle header deletion event
+   */
+  onHeaderDeleted(): void {
+    this.messageService.add({
+      severity: 'success',
+      summary: 'Header Deleted',
+      detail: 'Header has been successfully deleted.',
+      life: 3000
+    });
+  }
+
+  /**
+   * Handle endpoint creation event
+   */
+  onEndpointCreated(): void {
+    this.messageService.add({
+      severity: 'success',
+      summary: 'Endpoint Created',
+      detail: 'Endpoint has been successfully created.',
+      life: 3000
+    });
+  }
+
+  /**
+   * Handle endpoint deletion event
+   */
+  onEndpointDeleted(): void {
+    this.messageService.add({
+      severity: 'success',
+      summary: 'Endpoint Deleted',
+      detail: 'Endpoint has been successfully deleted.',
+      life: 3000
+    });
+  }
+
+  /**
+   * Handle endpoint update event
+   */
+  onEndpointUpdated(): void {
+    this.messageService.add({
+      severity: 'success',
+      summary: 'Endpoint Updated',
+      detail: 'Endpoint has been successfully updated.',
+      life: 3000
     });
   }
 

@@ -40,6 +40,7 @@ export class ManageApiHeadersComponent implements OnInit {
   /** When true, hide Accept/Content-Type and show AAS-specific hint */
   @Input() isAas: boolean = false;
   @Output() onCreated = new EventEmitter<void>();
+  @Output() onDeleted = new EventEmitter<void>();
   @Output() onRetest = new EventEmitter<void>();
 
   headers: ApiHeaderDTO[] = [];
@@ -124,19 +125,9 @@ export class ManageApiHeadersComponent implements OnInit {
           this.form.reset({headerType: ApiRequestHeaderType.Custom});
           this.loadHeaders();
           this.onCreated.emit();
-          this.messageService.add({
-            severity: 'success',
-            summary: 'Header Created',
-            detail: 'API header has been successfully created.'
-          });
         },
         error: (err) => {
           this.errorSerice.handleError(err);
-          this.messageService.add({
-            severity: 'error',
-            summary: 'Creation Failed',
-            detail: 'Failed to create API header. Please try again.'
-          });
         }
       });
   }
@@ -169,6 +160,7 @@ export class ManageApiHeadersComponent implements OnInit {
           next: () => {
             this.headers = this.headers.filter(h => h.id !== this.headerToDelete!.id);
             this.headerToDelete = null;
+            this.onDeleted.emit();
           },
           error: (err) => {
             this.errorSerice.handleError(err);

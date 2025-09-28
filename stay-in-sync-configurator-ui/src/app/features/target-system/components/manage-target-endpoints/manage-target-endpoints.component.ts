@@ -243,21 +243,11 @@ export class ManageTargetEndpointsComponent implements OnInit {
         }
         this.load();
         console.log('[ManageTargetEndpoints] Import completed successfully');
-        this.messageService.add({
-          severity: 'success',
-          summary: 'Import Successful',
-          detail: `Successfully imported ${toCreate.length} endpoints with parameters.`
-        });
       } else {
         console.log('[ManageTargetEndpoints] No endpoints to create');
       }
     } catch (error) {
       console.error('[ManageTargetEndpoints] Import failed:', error);
-      this.messageService.add({
-        severity: 'error',
-        summary: 'Import Failed',
-        detail: 'Failed to import endpoints. Check console for details.'
-      });
     } finally {
       this.importing = false;
     }
@@ -308,16 +298,12 @@ export class ManageTargetEndpointsComponent implements OnInit {
         this.messageService.add({
           severity: 'success',
           summary: 'Endpoint Created',
-          detail: 'Endpoint has been successfully created.'
+          detail: 'Endpoint has been successfully created.',
+          life: 3000
         });
       },
       error: (error) => {
         console.error('[ManageTargetEndpoints] Error creating endpoint:', error);
-        this.messageService.add({
-          severity: 'error',
-          summary: 'Creation Failed',
-          detail: 'Failed to create endpoint. Please try again.'
-        });
       }
     });
   }
@@ -346,16 +332,12 @@ export class ManageTargetEndpointsComponent implements OnInit {
           this.messageService.add({
             severity: 'success',
             summary: 'Endpoint Updated',
-            detail: 'Endpoint has been successfully updated.'
+            detail: 'Endpoint has been successfully updated.',
+            life: 3000
           });
         },
         error: (error) => {
           console.error('[ManageTargetEndpoints] Error updating endpoint:', error);
-          this.messageService.add({
-            severity: 'error',
-            summary: 'Update Failed',
-            detail: 'Failed to update endpoint. Please try again.'
-          });
         }
       });
     } else {
@@ -374,16 +356,12 @@ export class ManageTargetEndpointsComponent implements OnInit {
           this.messageService.add({
             severity: 'success',
             summary: 'Endpoint Created',
-            detail: 'Endpoint has been successfully created.'
+            detail: 'Endpoint has been successfully created.',
+            life: 3000
           });
         },
         error: (error) => {
           console.error('[ManageTargetEndpoints] Error creating endpoint:', error);
-          this.messageService.add({
-            severity: 'error',
-            summary: 'Creation Failed',
-            detail: 'Failed to create endpoint. Please try again.'
-          });
         }
       });
     }
@@ -397,16 +375,12 @@ export class ManageTargetEndpointsComponent implements OnInit {
         this.messageService.add({
           severity: 'success',
           summary: 'Endpoint Deleted',
-          detail: 'Endpoint has been successfully deleted.'
+          detail: 'Endpoint has been successfully deleted.',
+          life: 3000
         });
       },
       error: (error) => {
         console.error('[ManageTargetEndpoints] Error deleting endpoint:', error);
-        this.messageService.add({
-          severity: 'error',
-          summary: 'Deletion Failed',
-          detail: 'Failed to delete endpoint. Please try again.'
-        });
       }
     });
   }
@@ -550,6 +524,7 @@ export class ManageTargetEndpointsComponent implements OnInit {
 
     return errors.length > 0 ? errors.join(', ') : '';
   }
+
 }
 
 

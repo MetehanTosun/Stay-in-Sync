@@ -1,4 +1,4 @@
-import { Component, Input, OnInit, OnChanges, SimpleChanges } from '@angular/core';
+import { Component, Input, OnInit, OnChanges, SimpleChanges, Output, EventEmitter } from '@angular/core';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
 import { CommonModule } from '@angular/common';
 import { TableModule } from 'primeng/table';
@@ -43,6 +43,16 @@ export class ManageEndpointParamsComponent implements OnInit, OnChanges {
    * The path of the API endpoint (optional).
    */
   @Input() endpointPath?: string;
+
+  /**
+   * Event emitted when a parameter is created
+   */
+  @Output() onCreated = new EventEmitter<void>();
+
+  /**
+   * Event emitted when a parameter is deleted
+   */
+  @Output() onDeleted = new EventEmitter<void>();
 
   /**
    * List of query parameters for the current endpoint.
@@ -155,12 +165,7 @@ export class ManageEndpointParamsComponent implements OnInit, OnChanges {
         next: () => {
           this.queryParamForm.reset({ queryParamType: ApiEndpointQueryParamType.Query });
           this.loadQueryParams(this.endpointId);
-          this.messageService.add({ 
-            severity: 'success', 
-            summary: 'Success', 
-            detail: 'Parameter created successfully', 
-            life: 3000 
-          });
+          this.onCreated.emit();
         },
         error: (err) => {
           console.error('Failed to add query param', err);
@@ -184,12 +189,7 @@ export class ManageEndpointParamsComponent implements OnInit, OnChanges {
       .subscribe({
         next: () => {
           this.queryParams = this.queryParams.filter(p => p.id !== paramId);
-          this.messageService.add({ 
-            severity: 'success', 
-            summary: 'Success', 
-            detail: 'Parameter deleted successfully', 
-            life: 3000 
-          });
+          this.onDeleted.emit();
         },
         error: (err) => {
           console.error('Failed to delete query param', err);

@@ -20,6 +20,10 @@ export class AppComponent {
   sidebarVisible = true;
   darkModeEnabled: boolean = false;
 
+  constructor() {
+    // Globaler Toast-Schutz deaktiviert
+  }
+
   onSidebarToggle(visible: boolean): void {
     this.sidebarVisible = visible;
   }

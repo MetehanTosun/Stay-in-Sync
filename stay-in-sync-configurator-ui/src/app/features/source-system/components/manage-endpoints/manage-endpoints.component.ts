@@ -80,6 +80,9 @@ export class ManageEndpointsComponent implements OnInit, OnDestroy {
   @Input() sourceSystemId!: number;
   @Output() backStep = new EventEmitter<void>();
   @Output() finish = new EventEmitter<void>();
+  @Output() onCreated = new EventEmitter<void>();
+  @Output() onDeleted = new EventEmitter<void>();
+  @Output() onUpdated = new EventEmitter<void>();
   endpoints: SourceSystemEndpointDTO[] = [];
   endpointForm!: FormGroup;
   loading = false;
@@ -870,12 +873,10 @@ ${jsonSchema}
         
         // Ensure proper tab integration after form reset
         this.resetTabIntegration();
-        
-        this.showToast('success', 'Endpoint Created', 'Endpoint has been successfully created.');
+        this.onCreated.emit();
       },
       error: (error) => {
         console.error('[ManageEndpoints] Error creating endpoint:', error);
-        this.showToast('error', 'Creation Failed', 'Failed to create endpoint. Please try again.');
       }
     });
   }
@@ -903,13 +904,12 @@ ${jsonSchema}
       this.http.delete(`/api/config/source-system/endpoint/${this.endpointToDelete.id}`)
         .subscribe({
           next: () => {
-            this.showToast('success', 'Success', 'Endpoint deleted successfully');
             this.endpoints = this.endpoints.filter(e => e.id !== this.endpointToDelete!.id);
             this.endpointToDelete = null;
+            this.onDeleted.emit();
           },
           error: (error) => {
             console.error('Error deleting endpoint:', error);
-            this.showToast('error', 'Error', 'Failed to delete endpoint');
             this.endpointToDelete = null;
           }
         });
@@ -1056,9 +1056,9 @@ ${jsonSchema}
     this.http.put(`/api/config/source-system/endpoint/${this.editingEndpoint.id}`, dto)
       .subscribe({
         next: () => {
-          this.showToast('success', 'Success', 'Endpoint updated successfully');
           this.closeEditDialog();
           this.loadEndpoints();
+          this.onUpdated.emit();
         },
         error: (error) => {
           console.error('Error updating endpoint:', error);
@@ -1078,7 +1078,7 @@ ${jsonSchema}
             errorMessage = 'Bad request (400): Please check your input data';
           }
           
-          this.showToast('error', 'Error', errorMessage);
+          // Error handling - no toast message needed
         }
       });
   }
@@ -1552,13 +1552,11 @@ ${jsonSchema}
         }
         this.loadEndpoints();
         console.log('[ManageEndpoints] Import completed successfully');
-        this.showToast('success', 'Import Successful', `Successfully imported ${toCreate.length} endpoints with parameters.`);
       } else {
         console.log('[ManageEndpoints] No endpoints to create');
       }
     } catch (error) {
       console.error('[ManageEndpoints] Import failed:', error);
-      this.showToast('error', 'Import Failed', 'Failed to import endpoints. Check console for details.');
     } finally {
       this.importing = false;
     }
@@ -1797,4 +1795,5 @@ ${jsonSchema}
 
     return errors.length > 0 ? errors.join(', ') : '';
   }
+
 }

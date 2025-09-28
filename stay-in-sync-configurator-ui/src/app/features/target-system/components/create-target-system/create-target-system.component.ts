@@ -708,6 +708,32 @@ export class CreateTargetSystemComponent implements OnInit, OnChanges {
   private encodeIdToBase64Url(id: string): string {
     if (!id) return id; try { const b64 = (window as any).btoa(unescape(encodeURIComponent(id))); return b64.replace(/=+$/g, '').replace(/\+/g, '-').replace(/\//g, '_'); } catch { return id; }
   }
+
+  /**
+   * Handle header creation event
+   */
+  onHeaderCreated(): void {
+    this.messageService.add({
+      severity: 'success',
+      summary: 'Header Created',
+      detail: 'Header has been successfully created.',
+      life: 3000
+    });
+  }
+
+  /**
+   * Handle header deletion event
+   */
+  onHeaderDeleted(): void {
+    this.messageService.add({
+      severity: 'success',
+      summary: 'Header Deleted',
+      detail: 'Header has been successfully deleted.',
+      life: 3000
+    });
+  }
+
+
 }
 
 

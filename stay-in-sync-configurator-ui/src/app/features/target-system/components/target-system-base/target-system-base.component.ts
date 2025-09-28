@@ -174,7 +174,7 @@ import { AasManagementComponent } from '../aas-management/aas-management.compone
               <div class="p-col-12 p-md-6" style="padding: 0.5rem;">
                 <p-card [style]="{'height': '100%'}">
                   <h4 style="margin-bottom: 1rem; font-size: 1.125rem; font-weight: 600;">API Headers</h4>
-                  <app-manage-api-headers *ngIf="selectedSystem" [syncSystemId]="selectedSystem.id!"></app-manage-api-headers>
+                  <app-manage-api-headers *ngIf="selectedSystem" [syncSystemId]="selectedSystem.id!" (onCreated)="onHeaderCreated()" (onDeleted)="onHeaderDeleted()"></app-manage-api-headers>
                 </p-card>
               </div>
               <div class="p-col-12 p-md-6" style="padding: 0.5rem;">
@@ -424,6 +424,31 @@ export class TargetSystemBaseComponent implements OnInit {
     }
     return 'No target systems available';
   }
+
+  /**
+   * Handle header creation event
+   */
+  onHeaderCreated(): void {
+    this.messageService.add({
+      severity: 'success',
+      summary: 'Header Created',
+      detail: 'Header has been successfully created.',
+      life: 3000
+    });
+  }
+
+  /**
+   * Handle header deletion event
+   */
+  onHeaderDeleted(): void {
+    this.messageService.add({
+      severity: 'success',
+      summary: 'Header Deleted',
+      detail: 'Header has been successfully deleted.',
+      life: 3000
+    });
+  }
+
 
 }
 
