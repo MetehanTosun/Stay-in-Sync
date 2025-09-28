@@ -143,7 +143,7 @@ public class SyncDataMessageConsumer {
             Map<String, Object> queueArgs = new HashMap<>();
             queueArgs.put("x-queue-type", "stream");
             queueArgs.put("x-max-age", "1m");
-            channel.queueDeclare("request-config-" + requestConfigurationMessageDTO.id(), true, false, false, Collections.singletonMap("x-queue-type", "stream"));
+            channel.queueDeclare("request-config-" + requestConfigurationMessageDTO.id(), true, false, false, queueArgs);
             channel.basicConsume("request-config-" + requestConfigurationMessageDTO.id(), false, receiveSyncDataCallback(), cancelSyncDataConsumptionCallback());
         } catch (IOException e) {
             throw new RuntimeException(e);

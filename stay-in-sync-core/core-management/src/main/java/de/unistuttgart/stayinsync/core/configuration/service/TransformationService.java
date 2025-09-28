@@ -204,7 +204,9 @@ public class TransformationService {
             Log.warnf("The transformation with id %d is currently in the deployment state of %s and thus can not be deployed or stopped", transformationId, transformation.deploymentStatus);
         } else {
             transformation.deploymentStatus = deploymentStatus;
-            statusEmitter.send(new TransformationStatusUpdate(transformationId, transformation.syncJob.id, deploymentStatus));
+            if (statusEmitter.hasRequests()) {
+                statusEmitter.send(new TransformationStatusUpdate(transformationId, transformation.syncJob.id, deploymentStatus));
+            }
             switch (deploymentStatus) {
                 case DEPLOYING -> {
                     deployAssociatedRequestConfigs(transformation);
@@ -212,6 +214,7 @@ public class TransformationService {
                 }
                 case STOPPING, RECONFIGURING -> {
                     deployAssociatedRequestConfigs(transformation);
+                    sourceRequestConfigService.undeployAllUnused();
                     transformationMessageProducer.reconfigureDeployedTransformationJob(mapper.mapToMessageDTO(transformation));
                 }
             }
@@ -247,8 +250,6 @@ public class TransformationService {
                 .stream() //
                 .filter(apiRequestConfiguration -> apiRequestConfiguration.deploymentStatus.equals(JobDeploymentStatus.UNDEPLOYED))
                 .forEach(apiRequestConfiguration -> sourceRequestConfigService.updateDeploymentStatus(apiRequestConfiguration.id, JobDeploymentStatus.DEPLOYING));
-
-        sourceRequestConfigService.undeployAllUnused();
     }
 
     private boolean isTransitioning(JobDeploymentStatus jobDeploymentStatus) {

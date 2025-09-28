@@ -152,7 +152,7 @@ public class PollingJobMessageConsumer {
      */
     public void bindExisitingPollingJobQueue(SourceSystemApiRequestConfigurationMessageDTO apiRequestConfigurationMessageDTO) throws ConsumerQueueBindingException {
         try {
-            String routingKey = "polling-job" + apiRequestConfigurationMessageDTO.id();
+            String routingKey = "polling-job-" + apiRequestConfigurationMessageDTO.id();
             Log.infof("Binding queue %s with routing key %s", pollingNodeQueueName, routingKey);
             channel.queueBind(pollingNodeQueueName, "pollingjob-exchange", routingKey);
             channel.basicConsume(pollingNodeQueueName, false, updateDeployedPollingJobCallback(), cancelSyncJobDeploymentCallback(pollingNodeQueueName));

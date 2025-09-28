@@ -85,7 +85,7 @@ export class ScriptEditorService {
     // TODO: Replace with the actual API endpoint once it's available.
     // Example: return this.http.get<ArcUsageInfo[]>(`${this.API_URL}/config/request-configuration/${arcId}/usages`);
     // For now, returning an empty array to allow UI development.
-    return of([]); 
+    return of([]);
   }
 
   /**
@@ -210,7 +210,7 @@ export class ScriptEditorService {
             description: dto.description || '',
             required: dto.required || false,
             options: dto.values || [],
-            type: dto.schemaType.toLowerCase() as 'string' | 'number' | 'integer' | 'boolean' | 'array',
+            type: (dto.schemaType?.toLowerCase() ?? 'string') as 'string' | 'number' | 'integer' | 'boolean' | 'array',
           };
 
           if (definition.in === 'path') {
