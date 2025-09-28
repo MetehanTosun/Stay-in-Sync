@@ -337,10 +337,28 @@ export class ScriptEditorPageComponent implements OnInit, OnDestroy {
     }
 
     if (response && response.libraries) {
-      for (const lib of response.libraries) {
-        this.monaco.languages.typescript.typescriptDefaults.addExtraLib(lib.content, `file:///${lib.filePath}`);
+      console.log(`[Monaco] Applying ${response.libraries.length} type definitions from backend.`);
+
+      for (const newLib of response.libraries) {
+        const libUri = `file:///${newLib.filePath}`;
+
+        const existingLibIndex = this.currentExtraLibs.findIndex(lib => lib.uri === libUri);
+
+        if (existingLibIndex > -1) {
+          console.log(`[Monaco] Replacing existing library: ${libUri}`);
+          const oldLib = this.currentExtraLibs[existingLibIndex];
+          oldLib.disposable.dispose();
+
+          this.currentExtraLibs.splice(existingLibIndex, 1);
+        }
+        const newDisposable = this.monaco.languages.typescript.typescriptDefaults.addExtraLib(
+          newLib.content,
+          libUri
+        );
+        this.currentExtraLibs.push({ uri: libUri, disposable: newDisposable });
       }
-      console.log('Target type definitions successfully applied to Monaco editor.');
+
+      console.log('[Monaco] Type definitions applied successfully.');
     }
   }
 

@@ -2,6 +2,7 @@ import { Injectable } from '@angular/core';
 import { HttpClient, HttpParams, HttpHeaders } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { AasArc, AasArcSaveRequest } from '../../script-editor/models/arc.models';
+import { AasTargetArcConfiguration, CreateAasTargetArcDTO } from '../../script-editor/models/target-system.models';
 
 @Injectable({ providedIn: 'root' })
 export class AasService {
@@ -106,6 +107,14 @@ export class AasService {
   deleteAasArc(arcId: number): Observable<void> {
     const url = `/api/config/aas-request-configuration/${arcId}`;
     return this.http.delete<void>(url);
+  }
+
+  createAasTargetArc(dto: CreateAasTargetArcDTO): Observable<AasTargetArcConfiguration> {
+    return this.http.post<AasTargetArcConfiguration>('/api/config/aas-target-request-configuration', dto);
+  }
+  
+  deleteAasTargetArc(arcId: number): Observable<void> {
+    return this.http.delete<void>(`/api/config/aas-target-request-configuration/${arcId}`);
   }
 }
 

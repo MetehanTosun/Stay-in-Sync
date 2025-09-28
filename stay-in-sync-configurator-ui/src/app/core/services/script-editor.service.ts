@@ -1,4 +1,4 @@
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
 import { forkJoin, map, Observable, of } from 'rxjs';
 import { SyncJobContextData } from '../../features/script-editor/sync-job-context-panel/sync-job-context-panel.component';
@@ -12,17 +12,22 @@ import {
   ArcTestCallResponse,
   ArcWizardContextData,
   EndpointParameterDefinition,
+  SubmodelDescription,
 } from '../../features/script-editor/models/arc.models';
 import {
   SourceSystem,
   SourceSystemEndpoint,
 } from '../../features/source-system/models/source-system.models';
 import { 
+  AasTargetArcConfiguration,
+  AnyTargetArc,
+  CreateAasTargetArcDTO,
   CreateTargetArcDTO, 
   EndpointSuggestion, 
   TargetArcConfiguration, 
   TargetSystem, 
-  TypeDefinitionsResponse 
+  TypeDefinitionsResponse, 
+  UpdateTransformationRequestConfigurationDTO
 } from '../../features/script-editor/models/target-system.models';
 
 export interface ScriptPayload {
@@ -32,7 +37,8 @@ export interface ScriptPayload {
   javascriptCode?: string;
   requiredArcAliases?: string[];
   status: 'DRAFT' | 'VALIDATED';
-  targetArcIds: number[];
+  restTargetArcIds: number[];
+  aasTargetArcIds: number[];
 }
 
 export interface ArcUsageInfo {
@@ -174,16 +180,40 @@ export class ScriptEditorService {
     return this.http.post<TargetArcConfiguration>(`${this.API_URL}/config/target-arcs`, dto);
   }
 
+  // deprecated
   getActiveArcsForTransformation(transformationId: string): Observable<TargetArcConfiguration[]> {
     return this.http.get<TargetArcConfiguration[]>(`${this.API_URL}/config/transformation/${transformationId}/target-arcs`);
   }
 
-  updateTransformationTargetArcs(transformationId: number, targetArcIds: number[]): Observable<any> {
-    return this.http.put(`${this.API_URL}/config/transformation/${transformationId}/target-arcs`, { targetArcIds });
+  getActiveAnyArcsForTransformation(transformationId: number): Observable<AnyTargetArc[]> {
+    return this.http.get<AnyTargetArc[]>(`${this.API_URL}/config/transformation/${transformationId}/target-arcs`);
+  }
+
+  updateTransformationTargetArcs(transformationId: number, targetArcIds: UpdateTransformationRequestConfigurationDTO): Observable<any> {
+    return this.http.put(`${this.API_URL}/config/transformation/${transformationId}/target-arcs`, targetArcIds);
   }
 
   getTargetTypeDefinitions(transformationId: number): Observable<TypeDefinitionsResponse> {
     return this.http.get<TypeDefinitionsResponse>(`${this.API_URL}/config/transformation/${transformationId}/target-type-definitions`);
+  }
+
+  createAasTargetArc(dto: CreateAasTargetArcDTO): Observable<AasTargetArcConfiguration> {
+    return this.http.post<AasTargetArcConfiguration>(`${this.API_URL}/config/aas-target-request-configuration`, dto);
+  }
+  
+  deleteAasTargetArc(arcId: number): Observable<void> {
+    return this.http.delete<void>(`${this.API_URL}/config/aas-target-request-configuration/${arcId}`);
+  }
+
+  // TODO: Update to TargetSystem
+  getSubmodelsForTargetSystem(targetSystemId: number): Observable<SubmodelDescription[]> {
+    const url = `/api/config/source-system/${targetSystemId}/aas/submodels`;
+    const params = new HttpParams().set('source', 'SNAPSHOT');
+    return this.http.get<SubmodelDescription[]>(url, { params });
+  }
+
+  updateAasTargetArc(arcId: number, dto: CreateAasTargetArcDTO): Observable<AasTargetArcConfiguration> {
+    return this.http.put<AasTargetArcConfiguration>(`${this.API_URL}/config/aas-target-request-configuration/${arcId}`, dto);
   }
 
   getArcWizardContextData(

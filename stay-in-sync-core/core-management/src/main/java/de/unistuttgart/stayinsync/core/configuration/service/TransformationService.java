@@ -1,5 +1,8 @@
 package de.unistuttgart.stayinsync.core.configuration.service;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import de.unistuttgart.stayinsync.core.configuration.domain.entities.aas.AasTargetApiRequestConfiguration;
 import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.*;
 import de.unistuttgart.stayinsync.core.configuration.exception.CoreManagementException;
 import de.unistuttgart.stayinsync.core.configuration.mapping.TransformationMapper;
@@ -107,38 +110,53 @@ public class TransformationService {
         return transformation;
     }
 
-    public List<GetRequestConfigurationDTO> getTargetArcs(Long transformationId){
-        Log.debugf("Getting Target ARCs for Transformation with id %d", transformationId);
-
-        Transformation transformation = Transformation.<Transformation>findByIdOptional(transformationId)
-                .orElseThrow(() -> new CoreManagementException(Response.Status.NOT_FOUND, "Transformation not found", "Transformation with id %d not found.", transformationId));
-
-        Set<TargetSystemApiRequestConfiguration> targetArcs = transformation.targetSystemApiRequestConfigurations;
-        List<TargetSystemApiRequestConfiguration> targetArcsToList =  targetArcs.stream().toList();
-        return requestConfigurationMapper.mapToGetDTOList(targetArcsToList);
-    }
+    @Inject
+    ObjectMapper objectMapper;
 
     @Transactional
     public TransformationDetailsDTO updateTargetArcs(Long transformationId, UpdateTransformationRequestConfigurationDTO dto){
-        Log.debugf("Updating Target ARCs for Transformation with id %d", transformationId);
+        Log.debugf("Updating ALL Target ARCs for Transformation with id %d", transformationId);
+
+        try {
+            Log.infof("Received DTO for updating Target ARCs: %s", objectMapper.writeValueAsString(dto));
+        } catch (JsonProcessingException e) {
+            Log.warn("Could not serialize DTO for logging", e);
+        }
 
         Transformation transformation = Transformation.<Transformation>findByIdOptional(transformationId)
                 .orElseThrow(() -> new CoreManagementException(Response.Status.NOT_FOUND, "Transformation not found", "Transformation with id %d not found.", transformationId));
 
         transformation.targetSystemApiRequestConfigurations.clear();
+        transformation.aasTargetApiRequestConfigurations.clear();
 
-        if (dto.targetArcIds() != null && !dto.targetArcIds().isEmpty()) {
-            List<TargetSystemApiRequestConfiguration> arcsToLink = TargetSystemApiRequestConfiguration.list("id in ?1", dto.targetArcIds());
+        if (dto.restTargetArcIds() != null && !dto.restTargetArcIds().isEmpty()) {
+            List<TargetSystemApiRequestConfiguration> restArcsToLink = TargetSystemApiRequestConfiguration.list("id in ?1", dto.restTargetArcIds());
 
-            if (arcsToLink.size() != dto.targetArcIds().size()) {
-                throw new CoreManagementException(Response.Status.BAD_REQUEST, "Invalid ARC ID", "One or more provided Target ARC IDs could not be found.");
+            if (restArcsToLink.size() != dto.restTargetArcIds().size()) {
+                throw new CoreManagementException(Response.Status.BAD_REQUEST, "Invalid REST ARC ID", "One or more provided REST Target ARC IDs could not be found.");
             }
 
-            transformation.targetSystemApiRequestConfigurations.addAll(arcsToLink);
+            transformation.targetSystemApiRequestConfigurations.addAll(restArcsToLink);
+            restArcsToLink.forEach(arc -> arc.transformations.add(transformation));
         }
 
-        Log.infof("Successfully updated Target ARCs for Transformation %d. New count: %d",
-                transformationId, transformation.targetSystemApiRequestConfigurations.size());
+        if (dto.aasTargetArcIds() != null && !dto.aasTargetArcIds().isEmpty()) {
+            List<AasTargetApiRequestConfiguration> aasArcsToLink = AasTargetApiRequestConfiguration.list("id in ?1", dto.aasTargetArcIds());
+
+            if (aasArcsToLink.size() != dto.aasTargetArcIds().size()) {
+                throw new CoreManagementException(Response.Status.BAD_REQUEST, "Invalid AAS ARC ID", "One or more provided AAS Target ARC IDs could not be found.");
+            }
+
+            transformation.aasTargetApiRequestConfigurations.addAll(aasArcsToLink);
+            aasArcsToLink.forEach(arc -> arc.transformations.add(transformation));
+        }
+
+        transformation.persist();
+
+        Log.infof("Successfully updated Target ARCs for Transformation %d. REST ARC count: %d, AAS ARC count: %d",
+                transformationId,
+                transformation.targetSystemApiRequestConfigurations.size(),
+                transformation.aasTargetApiRequestConfigurations.size());
 
         return mapper.mapToDetailsDTO(transformation);
     }

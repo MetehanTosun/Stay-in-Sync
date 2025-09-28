@@ -111,7 +111,7 @@ public class DevelopmentDataSeeder {
         Transformation transformation = transformationService.createTransformation(shellDTO);
         Log.info("-> Created Transformation 'TestTransformation'");
 
-        UpdateTransformationRequestConfigurationDTO updateTargetArcsDto = new UpdateTransformationRequestConfigurationDTO(Set.of(targetArc.id));
+        UpdateTransformationRequestConfigurationDTO updateTargetArcsDto = new UpdateTransformationRequestConfigurationDTO(Set.of(targetArc.id),Collections.emptySet());
         transformationService.updateTargetArcs(transformation.id, updateTargetArcsDto);
         Log.info("-> Linked Target ARC to Transformation");
 
@@ -269,7 +269,8 @@ public class DevelopmentDataSeeder {
                 scriptCode,
                 Set.of(sourceArcAlias),
                 ScriptStatus.VALIDATED,
-                Set.of(targetArcId)
+                Set.of(targetArcId),
+                Set.of()
         );
     }
 }
