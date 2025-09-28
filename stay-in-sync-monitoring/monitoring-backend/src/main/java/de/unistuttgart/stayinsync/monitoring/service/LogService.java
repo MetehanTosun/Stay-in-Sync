@@ -5,7 +5,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import de.unistuttgart.stayinsync.monitoring.dtos.LogEntryDto;
 import io.quarkus.logging.Log;
 import jakarta.enterprise.context.ApplicationScoped;
-import org.eclipse.microprofile.config.inject.ConfigProperty;
 
 import java.net.URI;
 import java.net.http.HttpClient;
@@ -21,9 +20,7 @@ import java.util.Objects;
 @ApplicationScoped
 public class LogService {
 
-
-    @ConfigProperty(name = "loki.url")
-    String LOKI_URL;
+    private static final String LOKI_URL = "http://localhost:3100/loki/api/v1/query_range";
 
     private final HttpClient httpClient;
     private final ObjectMapper objectMapper;
@@ -37,7 +34,6 @@ public class LogService {
     public LogService(ObjectMapper objectMapper, HttpClient httpClient) {
         this.objectMapper = Objects.requireNonNull(objectMapper);
         this.httpClient = Objects.requireNonNull(httpClient);
-        this.LOKI_URL = "http://localhost:3100";
     }
 
     public List<LogEntryDto> fetchAndParseLogs(String syncJobId, long startNs, long endNs, String level) {
@@ -122,8 +118,6 @@ public class LogService {
                 }
             }
 
-            logs.sort(Comparator.comparingLong((LogEntryDto a) -> Long.parseLong(a.timestamp())).reversed());
-
             return logs;
 
         } catch (Exception e) {
@@ -200,7 +194,7 @@ public class LogService {
                 }
             }
 
-            logs.sort(Comparator.comparingLong((LogEntryDto a) -> Long.parseLong(a.timestamp())).reversed());
+            logs.sort(Comparator.comparingLong(a -> Long.parseLong(a.timestamp())));
 
             return logs;
         } catch (Exception e) {
@@ -267,7 +261,7 @@ public class LogService {
                 }
             }
 
-            logs.sort(Comparator.comparingLong((LogEntryDto a) -> Long.parseLong(a.timestamp())).reversed());
+            logs.sort(Comparator.comparingLong(a -> Long.parseLong(a.timestamp())));
             return logs;
 
         } catch (Exception e) {

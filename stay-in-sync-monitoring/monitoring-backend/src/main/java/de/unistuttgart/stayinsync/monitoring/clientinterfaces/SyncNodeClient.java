@@ -16,37 +16,55 @@ import java.util.Map;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 
+/**
+ * Client for interacting with the SyncNode API to fetch snapshot data.
+ * This client uses Java HttpClient for making requests and Jackson for JSON deserialization.
+ */
 @ApplicationScoped
 public class SyncNodeClient {
 
-    private final HttpClient client = HttpClient.newHttpClient();
+    private static final String BASE_URL = "http://localhost:8091";
 
-    // Hier ObjectMapper mit JavaTimeModule registrieren
-    private final ObjectMapper mapper = new ObjectMapper()
-            .registerModule(new JavaTimeModule())      // <- wichtig
-            .disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS); // optional, ISO-Format
+    private final HttpClient httpClient;
+    private final ObjectMapper objectMapper;
 
-    private final String baseUrl = "http://localhost:8091"; // SyncNode
+    public SyncNodeClient() {
+        this.httpClient = HttpClient.newHttpClient();
 
+        // Configure ObjectMapper to handle Java 8 date/time types
+        this.objectMapper = new ObjectMapper()
+                .registerModule(new JavaTimeModule()) // ensures proper Java Time support
+                .disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS); // use ISO-8601 format
+    }
+
+    /**
+     * Fetches the latest snapshots for all monitored entities from the SyncNode.
+     *
+     * @return a Map where the key is the entity ID and the value is the latest SnapshotDTO
+     */
     public Map<Long, SnapshotDTO> getLatestAll() {
         try {
+            // Build GET request for the /monitoring/snapshots/latestAll endpoint
             HttpRequest request = HttpRequest.newBuilder()
-                    .uri(URI.create(baseUrl + "/monitoring/snapshots/latestAll"))
+                    .uri(URI.create(BASE_URL + "/monitoring/snapshots/latestAll"))
                     .GET()
                     .build();
 
-            HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+            // Send the request and get the response as a String
+            HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
 
+            // Check for non-success HTTP status
             if (response.statusCode() != 200) {
                 Log.error("SyncNode responded with status " + response.statusCode());
-                return Map.of();
+                return Map.of(); // return empty map on failure
             }
 
-            // JSON in Map<Long, SnapshotDTO> umwandeln
-            return mapper.readValue(response.body(), new TypeReference<Map<Long, SnapshotDTO>>() {});
+            // Deserialize JSON response into Map<Long, SnapshotDTO>
+            return objectMapper.readValue(response.body(), new TypeReference<Map<Long, SnapshotDTO>>() {});
+
         } catch (Exception e) {
             Log.error("Failed to fetch /latestAll from SyncNode", e);
-            return Map.of();
+            return Map.of(); // return empty map on exception
         }
     }
 }
