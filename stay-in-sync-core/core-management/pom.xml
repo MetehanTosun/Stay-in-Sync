@@ -51,23 +51,18 @@
             <artifactId>quarkus-rest-jackson</artifactId>
         </dependency>
         <dependency>
-  <groupId>io.quarkus</groupId>
-  <artifactId>quarkus-rest-client</artifactId>
-</dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-rest-client</artifactId>
+        </dependency>
 
-<dependency>
-  <groupId>io.quarkus</groupId>
-  <artifactId>quarkus-rest-client-jackson</artifactId>
-</dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-rest-client-jackson</artifactId>
+        </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-jdbc-mariadb</artifactId>
         </dependency>
-        <dependency>
-            <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-micrometer-registry-prometheus</artifactId>
-        </dependency>
-
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-hibernate-orm-panache</artifactId>
@@ -143,10 +138,6 @@
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-micrometer</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>io.quarkus</groupId>
             <artifactId>quarkus-junit5-mockito</artifactId>
             <scope>test</scope>
         </dependency>
@@ -198,25 +189,25 @@
             <artifactId>quarkus-smallrye-health</artifactId>
         </dependency>
         <!-- Polyglot Context API -->
-<dependency>
-  <groupId>org.graalvm.polyglot</groupId>
-  <artifactId>polyglot</artifactId>
-  <version>25.0.0</version>
-</dependency>
+        <dependency>
+            <groupId>org.graalvm.polyglot</groupId>
+            <artifactId>polyglot</artifactId>
+            <version>25.0.0</version>
+        </dependency>
 
-<dependency>
-  <groupId>org.graalvm.polyglot</groupId>
-  <artifactId>js</artifactId>
-  <version>25.0.0</version>
-  <type>pom</type>
-</dependency>
+        <dependency>
+            <groupId>org.graalvm.polyglot</groupId>
+            <artifactId>js</artifactId>
+            <version>25.0.0</version>
+            <type>pom</type>
+        </dependency>
 
         <!-- Truffle Debug/Instrumentation API (Scope, Debugger, etc.) -->
-<dependency>
-    <groupId>org.graalvm.truffle</groupId>
-    <artifactId>truffle-api</artifactId>
-    <version>25.0.0</version>
-</dependency>
+        <dependency>
+            <groupId>org.graalvm.truffle</groupId>
+            <artifactId>truffle-api</artifactId>
+            <version>25.0.0</version>
+        </dependency>
 
         <dependency>
             <groupId>de.unistuttgart</groupId>
