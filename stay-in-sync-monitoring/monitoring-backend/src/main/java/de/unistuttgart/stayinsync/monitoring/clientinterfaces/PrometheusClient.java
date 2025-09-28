@@ -25,12 +25,14 @@ public class PrometheusClient {
 
     public boolean isUp(String targetUrl) {
         try {
-            String query = URLEncoder.encode("probe_success{instance=\"" + targetUrl + "\"}", StandardCharsets.UTF_8);
-            // anpassen
+            String query = "probe_success{instance=\"" + targetUrl + "\"}";
+            URI uri = URI.create(prometheusUrl + "/api/v1/query?query=" + URLEncoder.encode(query, StandardCharsets.UTF_8));
+
             HttpRequest request = HttpRequest.newBuilder()
-                    .uri(URI.create(prometheusUrl + "/api/v1/query?query=" + query))
+                    .uri(uri)
                     .GET()
                     .build();
+
 
             Log.info("Prometheus Url: " + request.uri());
 
