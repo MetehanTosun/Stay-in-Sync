@@ -88,8 +88,7 @@
         <button pButton type="button" label="Test connection" (click)="testAasConnection()" [disabled]="isTesting"></button>
         <span *ngIf="isTesting" class="ml-2">Testing...</span>
         <div class="mt-2" *ngIf="aasPreview && aasTestOk">
-          <strong>idShort:</strong> {{ aasPreview.idShort }}
-          <span class="ml-3"><strong>assetKind:</strong> {{ aasPreview.assetKind }}</span>
+          <strong>Connection successful!</strong>
         </div>
         <div class="mt-2" *ngIf="aasError && aasTestOk === false" style="color:#d32f2f;">
           {{ aasError }}

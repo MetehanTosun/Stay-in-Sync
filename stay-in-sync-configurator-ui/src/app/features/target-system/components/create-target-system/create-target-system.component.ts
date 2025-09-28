@@ -229,7 +229,7 @@ export class CreateTargetSystemComponent implements OnInit, OnChanges {
         this.messageService.add({ 
           severity: 'success', 
           summary: 'Connection successful', 
-          detail: this.aasPreview?.idShort ? `Shell reachable (${this.aasPreview.idShort})` : 'Shell reachable', 
+          detail: 'Shell reachable', 
           life: 3000 
         });
       } else {
