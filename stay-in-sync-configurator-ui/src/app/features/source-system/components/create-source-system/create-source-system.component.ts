@@ -189,6 +189,17 @@ export class CreateSourceSystemComponent implements OnInit, OnChanges {
             // Normalize to array of {id,idShort,kind,elements:[{idShort,modelType}]}
             const arr = Array.isArray(this.aasxPreview) ? this.aasxPreview : (this.aasxPreview?.submodels ?? []);
             this.aasxSelection = { submodels: (arr || []).map((sm: any) => ({ id: sm.id || sm.submodelId, full: true, elements: (sm.elements || []).map((e: any) => e.idShort) })) };
+            
+            // Check for empty collections/lists and show toast
+            const emptySubmodels = arr.filter((sm: any) => !sm.elements || sm.elements.length === 0);
+            if (emptySubmodels.length > 0) {
+              this.messageService.add({
+                severity: 'info',
+                summary: 'AASX Preview',
+                detail: `${emptySubmodels.length} submodel(s) have no collections or lists available.`,
+                life: 4000
+              });
+            }
           },
           error: (err) => {
             
@@ -605,7 +616,45 @@ save(): void {
         next: (resp) => {
           this.childrenLoading[key] = false;
           const list = Array.isArray(resp) ? resp : (resp?.result ?? []);
-          const mapped = list.map((el: any) => {
+          
+          // Filter for direct children only to prevent duplicates
+          const prefix = parentPath ? (parentPath.endsWith('/') ? parentPath : parentPath + '/') : '';
+          const filteredList = list.filter((el: any) => {
+            const p = el?.idShortPath || el?.idShort;
+            if (!p) return false;
+            
+            // If no parentPath, include all root elements
+            if (!parentPath) {
+              return !String(p).includes('/');
+            }
+            
+            // For elements with parentPath, check if they are direct children
+            if (!String(p).startsWith(prefix)) return false;
+            const relativePath = String(p).substring(prefix.length);
+            
+            // Include if it's a direct child (no additional slashes)
+            return relativePath && !relativePath.includes('/');
+          });
+          
+          console.log('[SourceCreate] loadChildren: Filtered children', {
+            submodelId,
+            parentPath,
+            prefix,
+            originalCount: list.length,
+            filteredCount: filteredList.length,
+            original: list.map((el: any) => ({
+              idShort: el.idShort,
+              idShortPath: el.idShortPath,
+              hasChildren: el.hasChildren
+            })),
+            filtered: filteredList.map((el: any) => ({
+              idShort: el.idShort,
+              idShortPath: el.idShortPath,
+              hasChildren: el.hasChildren
+            }))
+          });
+          
+          const mapped = filteredList.map((el: any) => {
             if (!el.idShortPath && el.idShort) {
               el.idShortPath = parentPath ? `${parentPath}/${el.idShort}` : el.idShort;
             }
@@ -628,25 +677,96 @@ save(): void {
   // Tree mapping helpers
   private inferModelType(el: any): string | undefined {
     if (!el) return undefined;
+    
+    // Direct modelType is most reliable
     if (el.modelType) return el.modelType;
+    
+    // Check for 'type' field (common in AAS data)
+    if (el.type) {
+      console.log('[SourceCreate] inferModelType - Using type field for:', el.idShort, 'type:', el.type);
+      return el.type;
+    }
+    
+    console.log('[SourceCreate] inferModelType - Analyzing element:', el.idShort, 'Raw data:', el);
+    
     // Detect Range before Property (Range often also has valueType for endpoint types)
-    if (el.min !== undefined || el.max !== undefined || el.minValue !== undefined || el.maxValue !== undefined) return 'Range';
-    if (el.valueType) return 'Property';
-    if (Array.isArray(el.inputVariables) || Array.isArray(el.outputVariables) || Array.isArray(el.inoutputVariables)) return 'Operation';
+    if (el.min !== undefined || el.max !== undefined || el.minValue !== undefined || el.maxValue !== undefined) {
+      console.log('[SourceCreate] inferModelType - Detected Range for:', el.idShort);
+      return 'Range';
+    }
+    
+    // Property detection - most common type
+    if (el.valueType) {
+      console.log('[SourceCreate] inferModelType - Detected Property for:', el.idShort, 'valueType:', el.valueType);
+      return 'Property';
+    }
+    
+    // Operation detection
+    if (Array.isArray(el.inputVariables) || Array.isArray(el.outputVariables) || Array.isArray(el.inoutputVariables)) {
+      console.log('[SourceCreate] inferModelType - Detected Operation for:', el.idShort);
+      return 'Operation';
+    }
+    
+    // Array-based types
     if (Array.isArray(el.value)) {
       const isML = el.value.every((v: any) => v && (v.language !== undefined) && (v.text !== undefined));
-      if (isML) return 'MultiLanguageProperty';
-      if (el.typeValueListElement || el.orderRelevant !== undefined) return 'SubmodelElementList';
+      if (isML) {
+        console.log('[SourceCreate] inferModelType - Detected MultiLanguageProperty for:', el.idShort);
+        return 'MultiLanguageProperty';
+      }
+      if (el.typeValueListElement || el.orderRelevant !== undefined) {
+        console.log('[SourceCreate] inferModelType - Detected SubmodelElementList for:', el.idShort);
+        return 'SubmodelElementList';
+      }
+      console.log('[SourceCreate] inferModelType - Detected SubmodelElementCollection for:', el.idShort);
       return 'SubmodelElementCollection';
     }
+    
+    // Relationship elements
     if (el.first || el.firstReference) {
       const ann = el.annotations || el.annotation;
-      return Array.isArray(ann) ? 'AnnotatedRelationshipElement' : 'RelationshipElement';
+      const isAnnotated = Array.isArray(ann);
+      console.log('[SourceCreate] inferModelType - Detected RelationshipElement for:', el.idShort, 'annotated:', isAnnotated);
+      return isAnnotated ? 'AnnotatedRelationshipElement' : 'RelationshipElement';
     }
-    if (Array.isArray(el.annotations) || Array.isArray(el.annotation)) return 'AnnotatedRelationshipElement';
-    if (Array.isArray(el.statements)) return 'Entity';
-    if (Array.isArray(el.keys)) return 'ReferenceElement';
-    if (el.contentType && (el.fileName || el.path)) return 'File';
+    
+    // Annotated relationship
+    if (Array.isArray(el.annotations) || Array.isArray(el.annotation)) {
+      console.log('[SourceCreate] inferModelType - Detected AnnotatedRelationshipElement for:', el.idShort);
+      return 'AnnotatedRelationshipElement';
+    }
+    
+    // Entity
+    if (Array.isArray(el.statements)) {
+      console.log('[SourceCreate] inferModelType - Detected Entity for:', el.idShort);
+      return 'Entity';
+    }
+    
+    // Reference element
+    if (Array.isArray(el.keys)) {
+      console.log('[SourceCreate] inferModelType - Detected ReferenceElement for:', el.idShort);
+      return 'ReferenceElement';
+    }
+    
+    // File
+    if (el.contentType && (el.fileName || el.path)) {
+      console.log('[SourceCreate] inferModelType - Detected File for:', el.idShort);
+      return 'File';
+    }
+    
+    // Additional fallback checks for common patterns
+    if (el.value !== undefined && el.value !== null) {
+      console.log('[SourceCreate] inferModelType - Fallback to Property for:', el.idShort, 'value:', el.value);
+      return 'Property';
+    }
+    
+    // Check for submodel elements with children
+    if (el.hasChildren === true || el.submodelElements || el.items) {
+      console.log('[SourceCreate] inferModelType - Fallback to SubmodelElementCollection for:', el.idShort);
+      return 'SubmodelElementCollection';
+    }
+    
+    console.log('[SourceCreate] inferModelType - Could not determine type for:', el.idShort, 'returning undefined');
     return undefined;
   }
   private mapSubmodelToNode(sm: any): TreeNode {
@@ -668,7 +788,29 @@ save(): void {
     const computedType = this.inferModelType(el);
     const label = el.idShort;
     const typeHasChildren = el?.modelType === 'SubmodelElementCollection' || el?.modelType === 'SubmodelElementList' || el?.modelType === 'Operation' || el?.modelType === 'Entity';
-    const hasChildren = el?.hasChildren === true || typeHasChildren;
+    
+    // RADIKALE LÖSUNG: Prüfe explizit auf leere Collections/Lists
+    let hasChildren = false;
+    
+    if (typeHasChildren) {
+      // Für Collections/Lists: Prüfe ob sie tatsächlich Items haben
+      if (el?.modelType === 'SubmodelElementCollection' || el?.modelType === 'SubmodelElementList') {
+        // Prüfe verschiedene mögliche Felder für Items
+        const hasItems = (el?.value && Array.isArray(el.value) && el.value.length > 0) ||
+                        (el?.submodelElements && Array.isArray(el.submodelElements) && el.submodelElements.length > 0) ||
+                        (el?.items && Array.isArray(el.items) && el.items.length > 0) ||
+                        (el?.hasChildren === true);
+        
+        hasChildren = hasItems;
+        console.log('[SourceCreate] mapElementToNode - Collection/List:', label, 'hasItems:', hasItems, 'value:', el?.value, 'submodelElements:', el?.submodelElements);
+      } else {
+        // Für andere Typen (Operation, Entity): Standard-Logik
+        hasChildren = el?.hasChildren === true || typeHasChildren;
+      }
+    } else {
+      hasChildren = el?.hasChildren === true;
+    }
+    
     return {
       key: `${submodelId}::${el.idShortPath}`,
       label,
@@ -681,6 +823,13 @@ save(): void {
   onNodeExpand(event: any): void {
     const node: TreeNode = event.node;
     if (!node) return;
+    
+    // Don't expand if node is a leaf (no children)
+    if (node.leaf) {
+      console.log('[SourceCreate] onNodeExpand - Node is leaf, skipping expansion');
+      return;
+    }
+    
     if (node.data?.type === 'submodel') {
       this.loadRootElements(node.data.id, node);
     } else if (node.data?.type === 'element') {
@@ -707,18 +856,35 @@ save(): void {
   }
 
   private loadLiveElementDetails(smId: string, idShortPath: string | undefined, node?: TreeNode): void {
+    console.log('[SourceCreate] loadLiveElementDetails called with:', { smId, idShortPath, node: node?.label });
     if (!this.createdSourceSystemId) return;
     this.selectedLiveLoading = true;
     const keyStr = (node && typeof node.key === 'string') ? (node.key as string) : '';
     const keyPath = keyStr.includes('::') ? keyStr.split('::')[1] : '';
-    const safePath = idShortPath || keyPath || (node?.data?.raw?.idShort || '');
+    const safePath = (idShortPath || keyPath || (node?.data?.raw?.idShort || '')).replace(/\/+/g, '/');
     const last = safePath.split('/').pop() as string;
     const parent = safePath.includes('/') ? safePath.substring(0, safePath.lastIndexOf('/')) : '';
     // Robust load: try direct element endpoint (backend has deep fallback)
+    console.log('[SourceCreate] Calling aasService.getElement with:', { 
+      systemId: this.createdSourceSystemId, 
+      smId, 
+      safePath, 
+      source: 'LIVE' 
+    });
+    
     this.aasService.getElement(this.createdSourceSystemId, smId, safePath, 'LIVE').subscribe({
       next: (found: any) => {
+        console.log('[SourceCreate] aasService.getElement response:', found);
         this.selectedLiveLoading = false;
-        const liveType = found?.modelType || (found?.valueType ? 'Property' : undefined);
+        // Use the same logic as inferModelType for consistent type detection
+        let liveType = found?.modelType || found?.type || (found?.valueType ? 'Property' : undefined);
+        
+        // Fallback: Use inferModelType method for consistent type detection
+        if (!liveType) {
+          liveType = this.inferModelType(found);
+        }
+        
+        console.log('[SourceCreate] loadLiveElementDetails - Element:', found.idShort, 'liveType:', liveType, 'found:', found);
         const minValue = (found as any).min ?? (found as any).minValue;
         const maxValue = (found as any).max ?? (found as any).maxValue;
         const inputVars = Array.isArray((found as any).inputVariables) ? (found as any).inputVariables : [];
@@ -769,6 +935,8 @@ save(): void {
           secondRef,
           annotations: annotationsRaw.map(mapAnnotation).filter(Boolean) as AnnotationView[]
         } as any;
+        
+        console.log('[SourceCreate] selectedLivePanel created:', this.selectedLivePanel);
         // Fallback: If AnnotatedRelationshipElement has no annotations in direct payload, load children as annotations
         if ((liveType === 'AnnotatedRelationshipElement') && (((this.selectedLivePanel?.annotations?.length ?? 0) === 0))) {
           const pathForChildren = safePath;
@@ -809,14 +977,110 @@ save(): void {
           this.treeNodes = [...this.treeNodes];
         }
       },
-      error: (_err: any) => {
+      error: (err: any) => {
+        console.log('[SourceCreate] aasService.getElement error:', err);
+        this.selectedLiveLoading = false;
+        
+        // DIRECT FALLBACK: Use tree node data immediately
+        console.log('[SourceCreate] DIRECT FALLBACK: Using tree node data immediately');
+        if (node?.data?.raw) {
+          const rawData = node.data.raw;
+          const directType = rawData?.modelType || rawData?.type || this.inferModelType(rawData) || 'Unknown';
+          console.log('[SourceCreate] DIRECT FALLBACK: rawData:', rawData, 'type:', directType, 'value:', rawData.value);
+          console.log('[SourceCreate] DIRECT FALLBACK: node.data.raw:', node.data.raw);
+          
+          // Extract value from raw data - check multiple possible locations
+          let extractedValue = rawData.value;
+          console.log('[SourceCreate] DIRECT FALLBACK: rawData.value:', rawData.value);
+          console.log('[SourceCreate] DIRECT FALLBACK: rawData.valueType:', rawData.valueType);
+          
+          // Don't use valueType as value - it's metadata, not the actual value
+          if (extractedValue === rawData.valueType) {
+            console.log('[SourceCreate] DIRECT FALLBACK: Value is same as valueType, this is wrong - setting to undefined');
+            extractedValue = undefined;
+          }
+          
+          if (!extractedValue && rawData.raw && rawData.raw.value) {
+            extractedValue = rawData.raw.value;
+            console.log('[SourceCreate] DIRECT FALLBACK: Found in rawData.raw.value:', extractedValue);
+          }
+          if (!extractedValue && node.data.raw && node.data.raw.value) {
+            extractedValue = node.data.raw.value;
+            console.log('[SourceCreate] DIRECT FALLBACK: Found in node.data.raw.value:', extractedValue);
+          }
+          
+          // Additional check: look for value in the entire node structure
+          if (!extractedValue) {
+            console.log('[SourceCreate] DIRECT FALLBACK: Searching entire node structure for value...');
+            console.log('[SourceCreate] DIRECT FALLBACK: node.data:', node.data);
+            console.log('[SourceCreate] DIRECT FALLBACK: node.data.raw:', node.data.raw);
+            
+            // Check if value is nested deeper
+            if (node.data.raw && typeof node.data.raw === 'object') {
+              for (const key in node.data.raw) {
+                if (key.toLowerCase().includes('value') && node.data.raw[key] && node.data.raw[key] !== rawData.valueType) {
+                  extractedValue = node.data.raw[key];
+                  console.log('[SourceCreate] DIRECT FALLBACK: Found value in key:', key, 'value:', extractedValue);
+                  break;
+                }
+              }
+            }
+          }
+          
+          // Use only real values - no mock values
+          if (extractedValue) {
+            console.log('[SourceCreate] DIRECT FALLBACK: Using real value found:', extractedValue);
+          } else {
+            console.log('[SourceCreate] DIRECT FALLBACK: No value found for element type:', directType);
+          }
+          
+          console.log('[SourceCreate] DIRECT FALLBACK: Final extractedValue:', extractedValue);
+          
+          // SIMPLE TEST: Create a basic panel first
+          this.selectedLivePanel = {
+            label: rawData.idShort || last,
+            type: directType,
+            value: extractedValue,
+            valueType: rawData.valueType,
+            min: rawData.min,
+            max: rawData.max,
+            inputVariables: [],
+            outputVariables: [],
+            inoutputVariables: [],
+            firstRef: undefined,
+            secondRef: undefined,
+            annotations: []
+          } as any;
+          
+          console.log('[SourceCreate] DIRECT FALLBACK selectedLivePanel created:', this.selectedLivePanel);
+          
+          // Force change detection
+          setTimeout(() => {
+            console.log('[SourceCreate] DIRECT FALLBACK - selectedLivePanel after timeout:', this.selectedLivePanel);
+            console.log('[SourceCreate] DIRECT FALLBACK - selectedNode:', this.selectedNode);
+            console.log('[SourceCreate] DIRECT FALLBACK - selectedLiveLoading:', this.selectedLiveLoading);
+          }, 100);
+          
+          return; // Skip the complex fallback logic
+        }
+        
         // Fallback: list under parent shallow
+        console.log('[SourceCreate] Fallback: listElements with:', { 
+          systemId: this.createdSourceSystemId, 
+          smId, 
+          parentPath: parent || undefined, 
+          source: 'LIVE',
+          lookingFor: last
+        });
+        
         this.aasService
           .listElements(this.createdSourceSystemId, smId, { depth: 'shallow', parentPath: parent || undefined, source: 'LIVE' })
           .subscribe({
             next: (resp: any) => {
+              console.log('[SourceCreate] Fallback listElements response:', resp);
               this.selectedLiveLoading = false;
               const list: any[] = Array.isArray(resp) ? resp : (resp?.result ?? []);
+              console.log('[SourceCreate] Fallback: looking for element with idShort:', last, 'in list:', list.map(el => el.idShort));
               const found2 = list.find((el: any) => el.idShort === last);
               if (found2) {
                 const liveType = found2?.modelType || (found2?.valueType ? 'Property' : undefined);
@@ -875,11 +1139,70 @@ save(): void {
                   this.treeNodes = [...this.treeNodes];
                 }
               } else {
-                this.selectedLivePanel = { label: last, type: 'Unknown' };
+                console.log('[SourceCreate] Fallback: Element not found, trying alternative approach');
+                // Alternative: Try to load the element with a different approach
+                console.log('[SourceCreate] Fallback: Trying to load element with SNAPSHOT source');
+                
+                this.aasService.getElement(this.createdSourceSystemId, smId, safePath, 'SNAPSHOT').subscribe({
+                  next: (snapshotData: any) => {
+                    console.log('[SourceCreate] Fallback SNAPSHOT response:', snapshotData);
+                    this.selectedLiveLoading = false;
+                    
+                    const snapshotType = snapshotData?.modelType || snapshotData?.type || this.inferModelType(snapshotData) || 'Unknown';
+                    
+                    this.selectedLivePanel = {
+                      label: snapshotData.idShort || last,
+                      type: snapshotType,
+                      value: snapshotData.value,
+                      valueType: snapshotData.valueType,
+                      min: snapshotData.min,
+                      max: snapshotData.max,
+                      inputVariables: [],
+                      outputVariables: [],
+                      inoutputVariables: [],
+                      firstRef: undefined,
+                      secondRef: undefined,
+                      annotations: []
+                    } as any;
+                    
+                    console.log('[SourceCreate] Fallback SNAPSHOT selectedLivePanel created:', this.selectedLivePanel);
+                  },
+                  error: (snapshotErr: any) => {
+                    console.log('[SourceCreate] Fallback SNAPSHOT error:', snapshotErr);
+                    // Final fallback: Use tree node data
+                    if (node?.data?.raw) {
+                      const rawData = node.data.raw;
+                      const fallbackType = rawData?.modelType || rawData?.type || this.inferModelType(rawData) || 'Unknown';
+                      console.log('[SourceCreate] Final fallback: Using tree node data:', rawData, 'type:', fallbackType, 'value:', rawData.value);
+                      
+                      this.selectedLivePanel = {
+                        label: rawData.idShort || last,
+                        type: fallbackType,
+                        value: rawData.value,
+                        valueType: rawData.valueType,
+                        min: rawData.min,
+                        max: rawData.max,
+                        inputVariables: [],
+                        outputVariables: [],
+                        inoutputVariables: [],
+                        firstRef: undefined,
+                        secondRef: undefined,
+                        annotations: []
+                      } as any;
+                      
+                      console.log('[SourceCreate] Final fallback selectedLivePanel created:', this.selectedLivePanel);
+                    } else {
+                      this.selectedLivePanel = { label: last, type: 'Unknown' };
+                    }
+                    this.selectedLiveLoading = false;
+                  }
+                });
               }
             },
             error: (err2: any) => {
+              console.log('[SourceCreate] Fallback listElements error:', err2);
               this.selectedLiveLoading = false;
+              this.selectedLivePanel = { label: last, type: 'Unknown' };
               this.errorService.handleError(err2);
             }
           });
@@ -1056,35 +1379,68 @@ save(): void {
     reader.readAsText(file);
   }
   createElement(): void {
-    if (!this.createdSourceSystemId || !this.targetSubmodelId) return;
+    if (!this.createdSourceSystemId || !this.targetSubmodelId) {
+      console.log('[SourceCreate] createElement: Missing required data', {
+        createdSourceSystemId: this.createdSourceSystemId,
+        targetSubmodelId: this.targetSubmodelId
+      });
+      return;
+    }
+    
     try {
       const body = JSON.parse(this.newElementJson);
       const smIdB64 = this.aasService.encodeIdToBase64Url(this.targetSubmodelId);
+      
+      console.log('[SourceCreate] createElement: Creating element', {
+        systemId: this.createdSourceSystemId,
+        submodelId: this.targetSubmodelId,
+        parentPath: this.parentPath,
+        body: body
+      });
+      
       this.aasService.createElement(this.createdSourceSystemId, smIdB64, body, this.parentPath || undefined)
         .subscribe({
           next: () => {
+            console.log('[SourceCreate] createElement: Element created successfully');
             this.showElementDialog = false;
             // Delta refresh: query LIVE under the affected parent and update tree
             this.refreshTreeAfterCreate();
           },
-          error: (err) => this.errorService.handleError(err)
+          error: (err) => {
+            console.error('[SourceCreate] createElement: Error creating element', err);
+            this.errorService.handleError(err);
+          }
         });
     } catch (e) {
+      console.error('[SourceCreate] createElement: JSON parse error', e);
       this.errorService.handleError(e as any);
     }
   }
 
   private refreshTreeAfterCreate(): void {
+    console.log('[SourceCreate] refreshTreeAfterCreate: Starting refresh', {
+      targetSubmodelId: this.targetSubmodelId,
+      parentPath: this.parentPath
+    });
+    
     if (this.parentPath) {
       const key = `${this.targetSubmodelId}::${this.parentPath}`;
       const parentNode = this.findNodeByKey(key, this.treeNodes);
+      console.log('[SourceCreate] refreshTreeAfterCreate: Parent node found', {
+        key: key,
+        parentNode: parentNode,
+        found: !!parentNode
+      });
+      
       if (parentNode) {
         (parentNode as any).expanded = true;
         this.refreshNodeLive(this.targetSubmodelId, this.parentPath, parentNode);
       } else {
+        console.log('[SourceCreate] refreshTreeAfterCreate: Parent node not found, refreshing root');
         this.refreshNodeLive(this.targetSubmodelId, '', undefined);
       }
     } else {
+      console.log('[SourceCreate] refreshTreeAfterCreate: No parent path, refreshing root');
       this.refreshNodeLive(this.targetSubmodelId, '', undefined);
     }
   }
@@ -1100,13 +1456,30 @@ save(): void {
   }
 
   private refreshNodeLive(submodelId: string, parentPath: string, node?: TreeNode): void {
-    if (!this.createdSourceSystemId) return;
+    if (!this.createdSourceSystemId) {
+      console.log('[SourceCreate] refreshNodeLive: No createdSourceSystemId');
+      return;
+    }
+    
     const key = parentPath ? `${submodelId}::${parentPath}` : submodelId;
+    console.log('[SourceCreate] refreshNodeLive: Starting refresh', {
+      submodelId,
+      parentPath,
+      key,
+      node: node?.label
+    });
+    
     this.childrenLoading[key] = true;
     this.aasService
       .listElements(this.createdSourceSystemId, submodelId, { depth: 'shallow', parentPath: parentPath || undefined, source: 'LIVE' })
       .subscribe({
         next: (resp) => {
+          console.log('[SourceCreate] refreshNodeLive: Response received', {
+            key,
+            response: resp,
+            node: node?.label
+          });
+          
           this.childrenLoading[key] = false;
           const list = Array.isArray(resp) ? resp : (resp?.result ?? []);
           const mapped = list.map((el: any) => {
@@ -1115,17 +1488,42 @@ save(): void {
             }
             return this.mapElementToNode(submodelId, el);
           });
+          
+          console.log('[SourceCreate] refreshNodeLive: Mapped elements', {
+            key,
+            mappedCount: mapped.length,
+            mapped: mapped.map((m: any) => m.label)
+          });
+          
           if (node) {
             node.children = mapped;
+            console.log('[SourceCreate] refreshNodeLive: Updated node children', {
+              nodeLabel: node.label,
+              childrenCount: mapped.length
+            });
           } else {
             // root
             const attachNode = this.findNodeByKey(submodelId, this.treeNodes);
             if (attachNode) {
               attachNode.children = mapped;
+              console.log('[SourceCreate] refreshNodeLive: Updated root node children', {
+                attachNodeLabel: attachNode.label,
+                childrenCount: mapped.length
+              });
+            } else {
+              console.log('[SourceCreate] refreshNodeLive: Root node not found for submodelId', submodelId);
             }
           }
+          
+          // Force tree update
+          this.treeNodes = [...this.treeNodes];
+          console.log('[SourceCreate] refreshNodeLive: Tree updated');
         },
         error: (err) => {
+          console.error('[SourceCreate] refreshNodeLive: Error', {
+            key,
+            error: err
+          });
           this.childrenLoading[key] = false;
           this.errorService.handleError(err);
         }

@@ -85,8 +85,19 @@ export class AasService {
     element: any,
     parentPath?: string
   ): Observable<any> {
-    const url = `/api/config/source-system/${sourceSystemId}/aas/submodels/${submodelId}/elements`;
+    const submodelIdEnc = this.encodeIdToBase64Url(submodelId);
+    const url = `/api/config/source-system/${sourceSystemId}/aas/submodels/${submodelIdEnc}/elements`;
     const params = parentPath ? new HttpParams().set('parentPath', parentPath) : undefined;
+    
+    console.log('[AasService] createElement: API call', {
+      url,
+      sourceSystemId,
+      submodelId,
+      submodelIdEnc,
+      parentPath,
+      element
+    });
+    
     return this.http.post(url, element, { params });
   }
 

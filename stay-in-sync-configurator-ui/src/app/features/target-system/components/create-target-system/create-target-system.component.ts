@@ -285,6 +285,17 @@ export class CreateTargetSystemComponent implements OnInit, OnChanges {
         const arr = (resp && (Array.isArray(resp.submodels) ? resp.submodels : (resp.result ?? []))) || [];
         this.aasxPreview = arr;
         this.aasxSelection = { submodels: arr.map((sm: any) => ({ id: sm.id || sm.submodelId, full: true, elements: (sm.elements || []).map((e: any) => e.idShort) })) };
+        
+        // Check for empty collections/lists and show toast
+        const emptySubmodels = arr.filter((sm: any) => !sm.elements || sm.elements.length === 0);
+        if (emptySubmodels.length > 0) {
+          this.messageService.add({
+            severity: 'info',
+            summary: 'AASX Preview',
+            detail: `${emptySubmodels.length} submodel(s) have no collections or lists available.`,
+            life: 4000
+          });
+        }
       },
       error: () => { this.aasxPreview = null; this.aasxSelection = { submodels: [] }; }
     });
@@ -386,6 +397,13 @@ export class CreateTargetSystemComponent implements OnInit, OnChanges {
   // duplicate removed; see method above
   onNodeExpand(event: any): void {
     const node: TreeNode = event.node; if (!node) return; console.log('[TargetCreate] onNodeExpand node=', node);
+    
+    // Don't expand if node is a leaf (no children)
+    if (node.leaf) {
+      console.log('[TargetCreate] onNodeExpand - Node is leaf, skipping expansion');
+      return;
+    }
+    
     if (node.data?.type === 'submodel') { this.loadRootElements(node.data.id, node); }
     else if (node.data?.type === 'element') { this.loadChildren(node.data.submodelId, node.data.idShortPath, node); }
   }
@@ -458,7 +476,13 @@ export class CreateTargetSystemComponent implements OnInit, OnChanges {
                 const p = el?.idShortPath || el?.idShort;
                 if (!p) return false;
                 if (!parentPath) return !String(p).includes('/');
-                return String(p).startsWith(prefix);
+                
+                // FIX: Only include direct children, not nested elements
+                if (!String(p).startsWith(prefix)) return false;
+                
+                // Check if this is a direct child (no additional '/' after the prefix)
+                const relativePath = String(p).substring(prefix.length);
+                return relativePath && !relativePath.includes('/');
               });
               node.children = children.map((el: any) => {
                 if (!el.idShortPath && el.idShort) { el.idShortPath = parentPath ? `${parentPath}/${el.idShort}` : el.idShort; }
@@ -683,7 +707,29 @@ export class CreateTargetSystemComponent implements OnInit, OnChanges {
     const computedType = this.inferModelType(el);
     const label = el.idShort;
     const typeHasChildren = el?.modelType === 'SubmodelElementCollection' || el?.modelType === 'SubmodelElementList' || el?.modelType === 'Operation' || el?.modelType === 'Entity';
-    const hasChildren = el?.hasChildren === true || typeHasChildren;
+    
+    // RADIKALE LÖSUNG: Prüfe explizit auf leere Collections/Lists
+    let hasChildren = false;
+    
+    if (typeHasChildren) {
+      // Für Collections/Lists: Prüfe ob sie tatsächlich Items haben
+      if (el?.modelType === 'SubmodelElementCollection' || el?.modelType === 'SubmodelElementList') {
+        // Prüfe verschiedene mögliche Felder für Items
+        const hasItems = (el?.value && Array.isArray(el.value) && el.value.length > 0) ||
+                        (el?.submodelElements && Array.isArray(el.submodelElements) && el.submodelElements.length > 0) ||
+                        (el?.items && Array.isArray(el.items) && el.items.length > 0) ||
+                        (el?.hasChildren === true);
+        
+        hasChildren = hasItems;
+        console.log('[TargetCreate] mapElementToNode - Collection/List:', label, 'hasItems:', hasItems, 'value:', el?.value, 'submodelElements:', el?.submodelElements);
+      } else {
+        // Für andere Typen (Operation, Entity): Standard-Logik
+        hasChildren = el?.hasChildren === true || typeHasChildren;
+      }
+    } else {
+      hasChildren = el?.hasChildren === true;
+    }
+    
     return { key: `${submodelId}::${el.idShortPath || el.idShort}`, label, data: { type: 'element', submodelId, idShortPath: el.idShortPath || el.idShort, modelType: computedType, raw: el }, leaf: !hasChildren, children: [] } as TreeNode;
   }
   private inferModelType(el: any): string | undefined {
