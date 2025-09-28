@@ -1,6 +1,7 @@
 package de.unistuttgart.stayinsync.core.configuration.service;
 
 import de.unistuttgart.stayinsync.core.configuration.domain.entities.aas.AasSourceApiRequestConfiguration;
+import de.unistuttgart.stayinsync.core.configuration.domain.entities.aas.AasTargetApiRequestConfiguration;
 import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.SourceSystemApiRequestConfiguration;
 import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.TargetSystemApiRequestConfiguration;
 import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.Transformation;
@@ -135,21 +136,37 @@ public class TransformationScriptService {
         requiredAasArcs.forEach(arc -> arc.transformations.add(transformation));
         Log.infof("Bound %d AAS ARCs to transformation %d", requiredAasArcs.size(), transformationId);
 
-        Set<TargetSystemApiRequestConfiguration> targetArcs = new HashSet<>();
-        if (dto.targetArcIds() != null && !dto.targetArcIds().isEmpty()) {
-            List<TargetSystemApiRequestConfiguration> foundTargetArcs = TargetSystemApiRequestConfiguration.list("id in ?1", dto.targetArcIds());
 
-            if (foundTargetArcs.size() != dto.targetArcIds().size()) {
-                // Finde heraus, welche IDs nicht gefunden wurden, für eine bessere Fehlermeldung
-                throw new CoreManagementException(Response.Status.BAD_REQUEST, "Target ARC Not Found",
-                        "One or more specified Target ARC IDs could not be found.");
+        transformation.targetSystemApiRequestConfigurations.clear();
+        transformation.aasTargetApiRequestConfigurations.clear();
+
+        // REST Target Arc Binding
+        if (dto.restTargetArcIds() != null && !dto.restTargetArcIds().isEmpty()) {
+            List<TargetSystemApiRequestConfiguration> foundRestArcs = TargetSystemApiRequestConfiguration.list("id in ?1", dto.restTargetArcIds());
+            if (foundRestArcs.size() != dto.restTargetArcIds().size()) {
+                throw new CoreManagementException(Response.Status.BAD_REQUEST, "REST Target ARC Not Found",
+                        "One or more specified REST Target ARC IDs could not be found.");
             }
-            targetArcs.addAll(foundTargetArcs);
+            transformation.targetSystemApiRequestConfigurations.addAll(foundRestArcs);
+            foundRestArcs.forEach(arc -> arc.transformations.add(transformation));
+            Log.infof("Bound %d REST Target ARCs to transformation %d", foundRestArcs.size(), transformationId);
+        } else {
+            Log.info("No REST Target ARCs to bind.");
         }
 
-        transformation.targetSystemApiRequestConfigurations = targetArcs;
-        targetArcs.forEach(arc -> arc.transformations.add(transformation));
-        Log.infof("Bound %d Target ARCs to transformation %d", targetArcs.size(), transformationId);
+        // AAS Target Arc Binding
+        if (dto.aasTargetArcIds() != null && !dto.aasTargetArcIds().isEmpty()) {
+            List<AasTargetApiRequestConfiguration> foundAasArcs = AasTargetApiRequestConfiguration.list("id in ?1", dto.aasTargetArcIds());
+            if (foundAasArcs.size() != dto.aasTargetArcIds().size()) {
+                throw new CoreManagementException(Response.Status.BAD_REQUEST, "AAS Target ARC Not Found",
+                        "One or more specified AAS Target ARC IDs could not be found.");
+            }
+            transformation.aasTargetApiRequestConfigurations.addAll(foundAasArcs);
+            foundAasArcs.forEach(arc -> arc.transformations.add(transformation));
+            Log.infof("Bound %d AAS Target ARCs to transformation %d", foundAasArcs.size(), transformationId);
+        } else {
+            Log.info("No AAS Target ARCs to bind.");
+        }
 
         // SDK Code Generation for graalJS Context inside SyncNode
         String generatedSdkCode = targetSdkGeneratorService.generateSdkForTransformation(transformation);

@@ -40,7 +40,7 @@ interface MonacoExtraLib {
   uri: String;
   disposable: IDisposable;
 }
-// 
+//
 @Component({
   selector: 'app-script-editor-step', // might be without step
   providers: [ConfirmationService],
@@ -216,7 +216,7 @@ export class ScriptEditorPageComponent implements OnInit, OnDestroy {
     this.scriptEditorService.checkArcUsage(arc.id).pipe(
       switchMap(usages => {
         let message = `Are you sure you want to delete the ARC "${arc.alias}"?`;
-        
+
         if (usages.length > 0) {
           const usageList = usages.map(u => `<li>${u.scriptName}</li>`).join('');
           message = `
@@ -294,10 +294,10 @@ export class ScriptEditorPageComponent implements OnInit, OnDestroy {
     };
     this.isAasWizardVisible = true;
   }
-  
+
   handleDeleteAasArc(context: { arc: AasArc }): void {
     const arc = context.arc;
-    
+
     this.confirmationService.confirm({
       header: 'Confirm Deletion',
       icon: 'pi pi-exclamation-triangle',
@@ -305,7 +305,7 @@ export class ScriptEditorPageComponent implements OnInit, OnDestroy {
       accept: () => {
         this.isLoading = true;
         this.loadingMessage = `Deleting AAS ARC "${arc.alias}"...`;
-        
+
         this.aasService.deleteAasArc(arc.id).subscribe({
           next: () => {
             this.arcStateService.removeArc(arc);
@@ -397,7 +397,13 @@ export class ScriptEditorPageComponent implements OnInit, OnDestroy {
       return;
     }
 
-    const activeTargetArcIds = this.targetArcPanel.activeArcs.map(arc => arc.id);
+    const restTargetArcIds = this.targetArcPanel.activeArcs
+      .filter(arc => arc.arcType === 'REST')
+      .map(arc => arc.id);
+
+    const aasTargetArcIds = this.targetArcPanel.activeArcs
+      .filter(arc => arc.arcType === 'AAS')
+      .map(arc => arc.id);
 
     let scriptStatus: 'DRAFT' | 'VALIDATED' = 'DRAFT';
     let transpiledCode = '';
@@ -444,7 +450,8 @@ export class ScriptEditorPageComponent implements OnInit, OnDestroy {
         javascriptCode: transpiledCode,
         requiredArcAliases: requiredArcAliases,
         status: scriptStatus,
-        targetArcIds: activeTargetArcIds
+        restTargetArcIds: restTargetArcIds,
+        aasTargetArcIds: aasTargetArcIds
       };
 
     this.isSaving = true;
