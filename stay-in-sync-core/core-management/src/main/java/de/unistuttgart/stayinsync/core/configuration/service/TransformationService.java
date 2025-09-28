@@ -204,7 +204,9 @@ public class TransformationService {
             Log.warnf("The transformation with id %d is currently in the deployment state of %s and thus can not be deployed or stopped", transformationId, transformation.deploymentStatus);
         } else {
             transformation.deploymentStatus = deploymentStatus;
-            statusEmitter.send(new TransformationStatusUpdate(transformationId, transformation.syncJob.id, deploymentStatus));
+            if (statusEmitter.hasRequests()) {
+                statusEmitter.send(new TransformationStatusUpdate(transformationId, transformation.syncJob.id, deploymentStatus));
+            }
             switch (deploymentStatus) {
                 case DEPLOYING -> {
                     deployAssociatedRequestConfigs(transformation);
