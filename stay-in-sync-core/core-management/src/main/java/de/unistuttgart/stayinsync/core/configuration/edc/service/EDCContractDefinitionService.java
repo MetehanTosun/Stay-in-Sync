@@ -1,16 +1,24 @@
 package de.unistuttgart.stayinsync.core.configuration.edc.service;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import de.unistuttgart.stayinsync.core.configuration.edc.entities.EDCAsset;
 import de.unistuttgart.stayinsync.core.configuration.edc.entities.EDCContractDefinition;
 import de.unistuttgart.stayinsync.core.configuration.edc.entities.EDCInstance;
 import de.unistuttgart.stayinsync.core.configuration.edc.entities.EDCPolicy;
+import de.unistuttgart.stayinsync.core.configuration.edc.service.edcconnector.CreateEDCContractDefinitionDTO;
+import de.unistuttgart.stayinsync.core.configuration.edc.service.edcconnector.EDCClient;
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import jakarta.persistence.TypedQuery;
 import jakarta.transaction.Transactional;
+import org.eclipse.microprofile.rest.client.RestClientBuilder;
 import org.jboss.logging.Logger;
+import org.jboss.resteasy.reactive.RestResponse;
+import jakarta.json.JsonObject;
 
+import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -85,10 +93,113 @@ public class EDCContractDefinitionService {
      * @param contractDefinition to be persisted.
      * @return the created EDCPolicy.
      */
+    @Inject
+    ObjectMapper objectMapper;
+    
+    /**
+     * Erstellt einen EDCClient für die Kommunikation mit dem EDC.
+     * 
+     * @param baseUrl Die Basis-URL des EDC
+     * @return Ein konfigurierter EDCClient
+     */
+    private EDCClient createClient(String baseUrl) {
+        try {
+            return RestClientBuilder.newBuilder()
+                    .baseUri(URI.create(baseUrl))
+                    .build(EDCClient.class);
+        } catch (Exception e) {
+            LOG.error("Error creating EDC client", e);
+            return null;
+        }
+    }
+    
     @Transactional
     public EDCContractDefinition create(final EDCContractDefinition contractDefinition) {
         contractDefinition.persist();
+        
+        // Synchronisiere mit EDC direkt nach Speicherung in der Datenbank
+        try {
+            syncContractDefinitionWithEDC(contractDefinition);
+        } catch (Exception e) {
+            LOG.error("Error while syncing contract definition with EDC", e);
+            // Wir werfen keine Exception, um den Datenbank-Vorgang nicht zu beeinträchtigen
+        }
+        
         return contractDefinition;
+    }
+    
+    /**
+     * Sendet eine Contract Definition an den EDC.
+     * 
+     * @param contractDefinition Die Contract Definition, die an den EDC gesendet werden soll
+     */
+    private void syncContractDefinitionWithEDC(EDCContractDefinition contractDefinition) {
+        if (contractDefinition == null) {
+            LOG.warn("Cannot sync null contract definition with EDC");
+            return;
+        }
+        
+        LOG.info("Attempting to sync contract definition with EDC: " + contractDefinition.getContractDefinitionId());
+        
+        if (contractDefinition.getEdcInstance() == null) {
+            LOG.warn("Cannot sync contract definition: EDC instance is null");
+            return;
+        }
+        
+        String edcUrl = contractDefinition.getEdcInstance().getEdcContractDefinitionEndpoint();
+        if (edcUrl == null || edcUrl.isEmpty()) {
+            LOG.info("EDC endpoint URL not specified, using default");
+            edcUrl = "http://dataprovider-controlplane.tx.test/management/v3";
+        }
+        
+        EDCClient client = createClient(edcUrl);
+        if (client != null) {
+            try {
+                // Erstellen des DTOs für den EDC
+                CreateEDCContractDefinitionDTO edcContractDefinitionDTO = new CreateEDCContractDefinitionDTO();
+                edcContractDefinitionDTO.setId(contractDefinition.getContractDefinitionId());
+                
+                // Setzen der Asset- und Policy-IDs
+                if (contractDefinition.getAsset() != null && contractDefinition.getAsset().getAssetId() != null) {
+                    edcContractDefinitionDTO.setAssetId(contractDefinition.getAsset().getAssetId());
+                } else {
+                    LOG.warn("Asset ID is missing, contract definition may be invalid in EDC");
+                }
+                
+                if (contractDefinition.getAccessPolicy() != null && contractDefinition.getAccessPolicy().getPolicyId() != null) {
+                    edcContractDefinitionDTO.setAccessPolicyId(contractDefinition.getAccessPolicy().getPolicyId());
+                } else {
+                    LOG.warn("Access policy ID is missing, contract definition may be invalid in EDC");
+                }
+                
+                if (contractDefinition.getContractPolicy() != null && contractDefinition.getContractPolicy().getPolicyId() != null) {
+                    edcContractDefinitionDTO.setContractPolicyId(contractDefinition.getContractPolicy().getPolicyId());
+                } else {
+                    LOG.warn("Contract policy ID is missing, contract definition may be invalid in EDC");
+                }
+                
+                // Log the EDC DTO that we're about to send
+                try {
+                    LOG.info("EDC Contract Definition DTO: " + objectMapper.writeValueAsString(edcContractDefinitionDTO));
+                } catch (Exception ex) {
+                    LOG.warn("Could not serialize EDC Contract Definition DTO for logging", ex);
+                }
+                
+                // Senden der Contract Definition an den EDC
+                LOG.info("Sending contract definition to EDC: " + contractDefinition.getContractDefinitionId());
+                RestResponse<JsonObject> response = client.createContractDefinition("TEST2", edcContractDefinitionDTO);
+                
+                if (response.getStatus() >= 400) {
+                    LOG.error("Error creating contract definition in EDC: " + response.getStatus() + ", " + response.getEntity());
+                } else {
+                    LOG.info("Contract definition successfully created in EDC");
+                }
+            } catch (Exception e) {
+                LOG.error("Error sending contract definition to EDC", e);
+            }
+        } else {
+            LOG.warn("Cannot send contract definition to EDC: EDC client is null");
+        }
     }
 
     /**
@@ -108,6 +219,15 @@ public class EDCContractDefinitionService {
             existing.setAccessPolicy(EDCPolicy.findById(updatedContractDefinition.getAccessPolicy() != null ? updatedContractDefinition.getAccessPolicy().id : null));
             existing.setContractPolicy(EDCPolicy.findById(updatedContractDefinition.getContractPolicy() != null ? updatedContractDefinition.getContractPolicy().id : null));
             existing.setEdcInstance(updatedContractDefinition.getEdcInstance());
+            
+            // Versuche die aktualisierte Contract Definition mit dem EDC zu synchronisieren
+            try {
+                syncContractDefinitionWithEDC(existing);
+            } catch (Exception e) {
+                LOG.error("Error while syncing updated contract definition with EDC", e);
+                // Wir werfen keine Exception, um den Datenbank-Vorgang nicht zu beeinträchtigen
+            }
+            
             return existing;
         });
     }

@@ -110,9 +110,16 @@ public interface EDCPolicyMapper {
      */
     default EDCInstance map(UUID edcId) {
         if (edcId == null) {
+            Log.warn("EDC ID is null when trying to map to EDCInstance");
             return null;
         }
-        return EDCInstance.findById(edcId);
+        EDCInstance instance = EDCInstance.findById(edcId);
+        if (instance == null) {
+            Log.warn("Could not find EDC instance with ID: " + edcId);
+        } else {
+            Log.info("Found EDC instance: " + instance.id + " with name: " + instance.getName());
+        }
+        return instance;
     }
 
     /**
