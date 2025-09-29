@@ -8,6 +8,7 @@ import { TreeNode } from 'primeng/api';
 import { AasManagementService, AasElementLivePanel } from '../../services/aas-management.service';
 import { AasUtilityService } from '../../services/aas-utility.service';
 import { TargetSystemDTO } from '../../models/targetSystemDTO';
+import { AasElementDialogComponent, AasElementDialogData, AasElementDialogResult } from '../../../../shared/components/aas-element-dialog/aas-element-dialog.component';
 
 @Component({
   standalone: true,
@@ -126,13 +127,21 @@ import { TargetSystemDTO } from '../../models/targetSystemDTO';
         </div>
       </div>
     </div>
+
+    <!-- Element Creation Dialog -->
+    <app-aas-element-dialog
+      [(visible)]="showElementDialog"
+      [data]="elementDialogData"
+      (result)="onElementDialogResult($event)">
+    </app-aas-element-dialog>
   `,
   imports: [
     CommonModule,
     CardModule,
     TreeModule,
     ButtonModule,
-    TooltipModule
+    TooltipModule,
+    AasElementDialogComponent
   ],
   styles: [`
     .custom-tree ::ng-deep .p-tree-node-icon {
@@ -153,6 +162,10 @@ export class AasManagementComponent implements OnInit {
   // AAS Test properties
   aasTestLoading = false;
   aasTestError: string | null = null;
+
+  // Element creation dialog
+  showElementDialog = false;
+  elementDialogData: AasElementDialogData | null = null;
 
   constructor(
     private aasManagement: AasManagementService,
@@ -285,8 +298,47 @@ export class AasManagementComponent implements OnInit {
   }
 
   openCreateElement(submodelId: string, parentPath?: string): void {
-    // TODO: Implement create element dialog
-    console.log('Create element clicked', submodelId, parentPath);
+    if (!this.system?.id) return;
+    
+    this.elementDialogData = {
+      submodelId: submodelId,
+      parentPath: parentPath,
+      systemId: this.system.id,
+      systemType: 'target'
+    };
+    this.showElementDialog = true;
+  }
+
+  onElementDialogResult(result: AasElementDialogResult): void {
+    if (result.success && result.element) {
+      this.handleElementCreation(result.element);
+    } else if (result.error) {
+      console.error('[TargetAasManage] Element creation failed:', result.error);
+    }
+  }
+
+  private async handleElementCreation(elementData: any): Promise<void> {
+    if (!this.system?.id) return;
+    
+    try {
+      console.log('[TargetAasManage] Creating element:', elementData);
+      
+      // Use the AAS management service to create the element
+      await this.aasManagement.createElement(
+        this.system.id,
+        elementData.submodelId,
+        elementData.body,
+        elementData.parentPath
+      );
+      
+      console.log('[TargetAasManage] Element created successfully');
+      
+      // Refresh the tree
+      await this.discoverSnapshot();
+      
+    } catch (error) {
+      console.error('[TargetAasManage] Error creating element:', error);
+    }
   }
 
   async deleteSubmodel(submodelId: string): Promise<void> {

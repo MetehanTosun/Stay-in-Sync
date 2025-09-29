@@ -14,6 +14,7 @@ import { TreeNode } from 'primeng/api';
 import { SourceSystemDTO } from '../../models/sourceSystemDTO';
 import { SourceSystemAasManagementService, AasElementLivePanel } from '../../services/source-system-aas-management.service';
 import { AasService } from '../../services/aas.service';
+import { AasElementDialogComponent, AasElementDialogData, AasElementDialogResult } from '../../../../shared/components/aas-element-dialog/aas-element-dialog.component';
 
 @Component({
   standalone: true,
@@ -29,7 +30,8 @@ import { AasService } from '../../services/aas.service';
     TextareaModule,
     FileUploadModule,
     MessageModule,
-    FormsModule
+    FormsModule,
+    AasElementDialogComponent
   ]
 })
 export class SourceSystemAasManagementComponent implements OnInit {
@@ -47,14 +49,14 @@ export class SourceSystemAasManagementComponent implements OnInit {
   aasTestLoading = false;
   aasTestError: string | null = null;
 
+  // Element creation dialog
+  showElementDialog = false;
+  elementDialogData: AasElementDialogData | null = null;
+
   // AAS Create dialogs
   showAasSubmodelDialog = false;
   aasNewSubmodelJson = '{\n  "id": "https://example.com/ids/sm/new",\n  "idShort": "NewSubmodel"\n}';
   
-  showAasElementDialog = false;
-  aasTargetSubmodelId = '';
-  aasParentPath = '';
-  aasNewElementJson = '{\n  "modelType": "Property",\n  "idShort": "NewProp",\n  "valueType": "xs:string",\n  "value": "42"\n}';
 
   // AAS Value dialog
   showAasValueDialog = false;
@@ -98,82 +100,6 @@ export class SourceSystemAasManagementComponent implements OnInit {
 }`;
 
   // Element templates
-  aasElementTemplateProperty: string = `{
-  "modelType": "Property",
-  "idShort": "NewProp",
-  "valueType": "xs:string",
-  "value": "Foo"
-}`;
-
-  aasElementTemplateRange: string = `{
-  "modelType": "Range",
-  "idShort": "NewRange",
-  "valueType": "xs:double",
-  "min": 0,
-  "max": 100
-}`;
-
-  aasElementTemplateMLP: string = `{
-  "modelType": "MultiLanguageProperty",
-  "idShort": "Title",
-  "value": [ { "language": "en", "text": "Example" } ]
-}`;
-
-  aasElementTemplateRef: string = `{
-  "modelType": "ReferenceElement",
-  "idShort": "Ref",
-  "value": { "type": "ModelReference", "keys": [ { "type": "Submodel", "value": "https://example.com/ids/sm" } ] }
-}`;
-
-  aasElementTemplateRel: string = `{
-  "modelType": "RelationshipElement",
-  "idShort": "Rel",
-  "first":  { "type": "ModelReference", "keys": [ { "type": "Submodel", "value": "https://example.com/ids/sm1" } ] },
-  "second": { "type": "ModelReference", "keys": [ { "type": "Submodel", "value": "https://example.com/ids/sm2" } ] }
-}`;
-
-  aasElementTemplateAnnRel: string = `{
-  "modelType": "AnnotatedRelationshipElement",
-  "idShort": "AnnRel",
-  "first":  { "type": "ModelReference", "keys": [ { "type": "Submodel", "value": "https://example.com/ids/sm1" } ] },
-  "second": { "type": "ModelReference", "keys": [ { "type": "Submodel", "value": "https://example.com/ids/sm2" } ] },
-  "annotations": [ { "modelType": "Property", "idShort": "note", "valueType": "xs:string", "value": "Hello" } ]
-}`;
-
-  aasElementTemplateCollection: string = `{
-  "modelType": "SubmodelElementCollection",
-  "idShort": "group",
-  "value": []
-}`;
-
-  aasElementTemplateList: string = `{
-  "modelType": "SubmodelElementList",
-  "idShort": "items",
-  "typeValueListElement": "Property",
-  "valueTypeListElement": "xs:string",
-  "value": []
-}`;
-
-  aasElementTemplateFile: string = `{
-  "modelType": "File",
-  "idShort": "file1",
-  "contentType": "text/plain",
-  "value": "path-or-url.txt"
-}`;
-
-  aasElementTemplateOperation: string = `{
-  "modelType": "Operation",
-  "idShort": "Op",
-  "inputVariables": [ { "value": { "modelType": "Property", "idShort": "in", "valueType": "xs:string" } } ],
-  "outputVariables": []
-}`;
-
-  aasElementTemplateEntity: string = `{
-  "modelType": "Entity",
-  "idShort": "Ent",
-  "entityType": "SelfManagedEntity",
-  "statements": []
-}`;
 
   constructor(
     private aasManagementService: SourceSystemAasManagementService,
@@ -398,89 +324,58 @@ export class SourceSystemAasManagementComponent implements OnInit {
    * Open AAS create element dialog
    */
   openAasCreateElement(smId: string, parent?: string): void {
-    this.aasTargetSubmodelId = smId;
-    this.aasParentPath = parent || '';
-    this.showAasElementDialog = true;
+    if (!this.system?.id) return;
+    
+    this.elementDialogData = {
+      submodelId: smId,
+      parentPath: parent,
+      systemId: this.system.id,
+      systemType: 'source'
+    };
+    this.showElementDialog = true;
   }
 
   /**
-   * Set AAS element template
+   * Handle element dialog result
    */
-  setAasElementTemplate(kind: string): void {
-    switch (kind) {
-      case 'property': this.aasNewElementJson = this.aasElementTemplateProperty; break;
-      case 'range': this.aasNewElementJson = this.aasElementTemplateRange; break;
-      case 'mlp': this.aasNewElementJson = this.aasElementTemplateMLP; break;
-      case 'ref': this.aasNewElementJson = this.aasElementTemplateRef; break;
-      case 'rel': this.aasNewElementJson = this.aasElementTemplateRel; break;
-      case 'annrel': this.aasNewElementJson = this.aasElementTemplateAnnRel; break;
-      case 'collection': this.aasNewElementJson = this.aasElementTemplateCollection; break;
-      case 'list': this.aasNewElementJson = this.aasElementTemplateList; break;
-      case 'file': this.aasNewElementJson = this.aasElementTemplateFile; break;
-      case 'operation': this.aasNewElementJson = this.aasElementTemplateOperation; break;
-      case 'entity': this.aasNewElementJson = this.aasElementTemplateEntity; break;
-      default: this.aasNewElementJson = '{}';
+  onElementDialogResult(result: AasElementDialogResult): void {
+    if (result.success && result.element) {
+      this.handleElementCreation(result.element);
+    } else if (result.error) {
+      console.error('[SourceAasManage] Element creation failed:', result.error);
     }
   }
 
-  /**
-   * Handle AAS element JSON file selection
-   */
-  onAasElementJsonFileSelected(event: any): void {
-    const file = event.files?.[0];
-    if (!file) return;
+  private async handleElementCreation(elementData: any): Promise<void> {
+    if (!this.system?.id) return;
     
-    const reader = new FileReader();
-    reader.onload = () => {
-      try {
-        const text = String(reader.result || '').trim();
-        if (text) {
-          JSON.parse(text);
-          this.aasNewElementJson = text;
-        }
-      } catch {
-        // ignore parse error and keep current JSON
-      }
-    };
-    reader.readAsText(file);
+    try {
+      console.log('[SourceAasManage] Creating element:', elementData);
+      
+      // Use the AAS service to create the element
+      const smIdB64 = this.aasService.encodeIdToBase64Url(elementData.submodelId);
+      await this.aasService.createElement(
+        this.system.id,
+        smIdB64,
+        elementData.body,
+        elementData.parentPath
+      ).toPromise();
+      
+      console.log('[SourceAasManage] Element created successfully');
+      
+      // Refresh the tree
+      this.refreshAasTreeAfterCreate();
+      
+    } catch (error) {
+      console.error('[SourceAasManage] Error creating element:', error);
+    }
   }
+
+
 
   /**
    * Create AAS element (same logic as create dialog)
    */
-  aasCreateElement(): void {
-    if (!this.system?.id || !this.aasTargetSubmodelId) return;
-    
-    try {
-      const body = JSON.parse(this.aasNewElementJson);
-      const smIdB64 = this.aasService.encodeIdToBase64Url(this.aasTargetSubmodelId);
-      
-      console.log('[SourceAasManage] createElement: Creating element', {
-        systemId: this.system.id,
-        submodelId: this.aasTargetSubmodelId,
-        parentPath: this.aasParentPath,
-        body: body
-      });
-      
-      // Use the same service as create dialog
-      this.aasService.createElement(this.system.id, smIdB64, body, this.aasParentPath && this.aasParentPath.trim() ? this.aasParentPath : undefined)
-        .subscribe({
-          next: () => {
-            console.log('[SourceAasManage] createElement: Element created successfully');
-            this.showAasElementDialog = false;
-            // Use the same refresh logic as create dialog
-            this.refreshAasTreeAfterCreate();
-          },
-          error: (err) => {
-            console.error('[SourceAasManage] createElement: Error creating element', err);
-            // Error handling
-          }
-        });
-    } catch (e) {
-      console.error('[SourceAasManage] createElement: JSON parse error', e);
-      // Error handling
-    }
-  }
 
   /**
    * Refresh AAS tree after create (same logic as create dialog)

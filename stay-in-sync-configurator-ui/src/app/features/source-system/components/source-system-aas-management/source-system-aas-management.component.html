@@ -147,37 +147,10 @@
   </div>
 </p-dialog>
 
-<!-- Dialog: Create Element (AAS Manage) -->
-<p-dialog header="Create Element" [(visible)]="showAasElementDialog" [modal]="true" [style]="{width:'40vw'}">
-  <div class="p-field">
-    <label>Submodel ID</label>
-    <input pInputText [value]="aasTargetSubmodelId" disabled />
-  </div>
-  <div class="p-field">
-    <label>Parent Path</label>
-    <input pInputText [(ngModel)]="aasParentPath" placeholder="e.g. address or address/street" />
-    <small>Optional. Use idShort path with slashes for nesting.</small>
-  </div>
-  <div class="p-field">
-    <label>Import JSON</label>
-    <p-fileupload mode="basic" [auto]="false" [showUploadButton]="false" [showCancelButton]="false" accept=".json" (onSelect)="onAasElementJsonFileSelected($event)"></p-fileupload>
-  </div>
-  <textarea pInputTextarea [(ngModel)]="aasNewElementJson" rows="10" style="width:100%"></textarea>
-  <ng-template pTemplate="footer">
-    <button pButton type="button" class="p-button-text" label="Cancel" (click)="showAasElementDialog=false"></button>
-    <button pButton type="button" label="Create" (click)="aasCreateElement()"></button>
-  </ng-template>
-  <div class="p-mt-2" style="display:flex;gap:.5rem;flex-wrap:wrap;">
-    <button pButton type="button" class="p-button-text" label="Template: Property" (click)="setAasElementTemplate('property')"></button>
-    <button pButton type="button" class="p-button-text" label="Template: Range" (click)="setAasElementTemplate('range')"></button>
-    <button pButton type="button" class="p-button-text" label="Template: MultiLanguageProperty" (click)="setAasElementTemplate('mlp')"></button>
-    <button pButton type="button" class="p-button-text" label="Template: ReferenceElement" (click)="setAasElementTemplate('ref')"></button>
-    <button pButton type="button" class="p-button-text" label="Template: RelationshipElement" (click)="setAasElementTemplate('rel')"></button>
-    <button pButton type="button" class="p-button-text" label="Template: AnnotatedRelationshipElement" (click)="setAasElementTemplate('annrel')"></button>
-    <button pButton type="button" class="p-button-text" label="Template: Collection" (click)="setAasElementTemplate('collection')"></button>
-    <button pButton type="button" class="p-button-text" label="Template: List" (click)="setAasElementTemplate('list')"></button>
-    <button pButton type="button" class="p-button-text" label="Template: File" (click)="setAasElementTemplate('file')"></button>
-    <button pButton type="button" class="p-button-text" label="Template: Operation" (click)="setAasElementTemplate('operation')"></button>
-    <button pButton type="button" class="p-button-text" label="Template: Entity" (click)="setAasElementTemplate('entity')"></button>
-  </div>
-</p-dialog>
+
+<!-- Element Creation Dialog -->
+<app-aas-element-dialog
+  [(visible)]="showElementDialog"
+  [data]="elementDialogData"
+  (result)="onElementDialogResult($event)">
+</app-aas-element-dialog>

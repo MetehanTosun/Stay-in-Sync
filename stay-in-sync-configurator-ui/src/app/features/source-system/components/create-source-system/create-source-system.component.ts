@@ -15,6 +15,7 @@ import {StepsModule} from 'primeng/steps';
 import {FileSelectEvent, FileUploadEvent, FileUploadModule} from 'primeng/fileupload';
 import {TreeModule} from 'primeng/tree';
 import {MessageService, TreeNode} from 'primeng/api';
+import { AasElementDialogComponent, AasElementDialogData, AasElementDialogResult } from '../../../../shared/components/aas-element-dialog/aas-element-dialog.component';
 
 
 
@@ -72,6 +73,7 @@ interface ElementLivePanel {
     FileUploadModule,
     TreeModule,
     CheckboxModule,
+    AasElementDialogComponent
   ]
 })
 export class CreateSourceSystemComponent implements OnInit, OnChanges {
@@ -1266,16 +1268,8 @@ save(): void {
   }
 
   showElementDialog = false;
-  targetSubmodelId = '';
-  parentPath = '';
-  newElementJson = '{\n  "modelType": "Property",\n  "idShort": "NewProp",\n  "valueType": "xs:string",\n  "value": "42"\n}';
+  elementDialogData: AasElementDialogData | null = null;
   // Element templates
-  elementTemplateProperty: string = `{
-  "modelType": "Property",
-  "idShort": "NewProp",
-  "valueType": "xs:string",
-  "value": "Foo"
-}`;
   elementTemplateRange: string = `{
   "modelType": "Range",
   "idShort": "NewRange",
@@ -1339,26 +1333,49 @@ save(): void {
   "entityType": "SelfManagedEntity",
   "statements": []
 }`;
-  setElementTemplate(kind: string): void {
-    switch (kind) {
-      case 'property': this.newElementJson = this.elementTemplateProperty; break;
-      case 'range': this.newElementJson = this.elementTemplateRange; break;
-      case 'mlp': this.newElementJson = this.elementTemplateMLP; break;
-      case 'ref': this.newElementJson = this.elementTemplateRef; break;
-      case 'rel': this.newElementJson = this.elementTemplateRel; break;
-      case 'annrel': this.newElementJson = this.elementTemplateAnnRel; break;
-      case 'collection': this.newElementJson = this.elementTemplateCollection; break;
-      case 'list': this.newElementJson = this.elementTemplateList; break;
-      case 'file': this.newElementJson = this.elementTemplateFile; break;
-      case 'operation': this.newElementJson = this.elementTemplateOperation; break;
-      case 'entity': this.newElementJson = this.elementTemplateEntity; break;
-      default: this.newElementJson = '{}';
+  openCreateElement(smId: string, parent?: string): void {
+    if (!this.createdSourceSystemId) return;
+    
+    this.elementDialogData = {
+      submodelId: smId,
+      parentPath: parent,
+      systemId: this.createdSourceSystemId,
+      systemType: 'source'
+    };
+    this.showElementDialog = true;
+  }
+
+  onElementDialogResult(result: AasElementDialogResult): void {
+    if (result.success && result.element) {
+      this.handleElementCreation(result.element);
+    } else if (result.error) {
+      console.error('[SourceCreate] Element creation failed:', result.error);
     }
   }
-  openCreateElement(smId: string, parent?: string): void {
-    this.targetSubmodelId = smId;
-    this.parentPath = parent || '';
-    this.showElementDialog = true;
+
+  private async handleElementCreation(elementData: any): Promise<void> {
+    if (!this.createdSourceSystemId) return;
+    
+    try {
+      console.log('[SourceCreate] Creating element:', elementData);
+      
+      // Use the AAS service to create the element
+      const smIdB64 = this.aasService.encodeIdToBase64Url(elementData.submodelId);
+      await this.aasService.createElement(
+        this.createdSourceSystemId,
+        smIdB64,
+        elementData.body,
+        elementData.parentPath
+      ).toPromise();
+      
+      console.log('[SourceCreate] Element created successfully');
+      
+      // Refresh the tree
+      this.discoverSubmodels();
+      
+    } catch (error) {
+      console.error('[SourceCreate] Error creating element:', error);
+    }
   }
   onElementJsonFileSelected(event: FileSelectEvent): void {
     const file = event.files?.[0];
@@ -1398,24 +1415,6 @@ save(): void {
         body: body
       });
       
-      this.aasService.createElement(this.createdSourceSystemId, smIdB64, body, this.parentPath || undefined)
-        .subscribe({
-          next: () => {
-            console.log('[SourceCreate] createElement: Element created successfully');
-            this.showElementDialog = false;
-            // Delta refresh: query LIVE under the affected parent and update tree
-            this.refreshTreeAfterCreate();
-          },
-          error: (err) => {
-            console.error('[SourceCreate] createElement: Error creating element', err);
-            this.errorService.handleError(err);
-          }
-        });
-    } catch (e) {
-      console.error('[SourceCreate] createElement: JSON parse error', e);
-      this.errorService.handleError(e as any);
-    }
-  }
 
   private refreshTreeAfterCreate(): void {
     console.log('[SourceCreate] refreshTreeAfterCreate: Starting refresh', {
