@@ -524,7 +524,8 @@ public class AasResource {
         // Adjust parent path for types that require sub-paths in BaSyx (collections/lists: /value, entity: /statements)
         if (effectiveParentPath != null) {
             try {
-                var parentResp = traversal.getElement(ss.apiUrl, smId, parentPath, headers).await().indefinitely();
+                String normalizedSmId = normalizeSubmodelId(smId);
+                var parentResp = traversal.getElement(ss.apiUrl, normalizedSmId, parentPath, headers).await().indefinitely();
                 if (parentResp != null && parentResp.statusCode() >= 200 && parentResp.statusCode() < 300) {
                     String pb = parentResp.bodyAsString();
                     io.vertx.core.json.JsonObject pobj = pb != null && pb.trim().startsWith("{")
