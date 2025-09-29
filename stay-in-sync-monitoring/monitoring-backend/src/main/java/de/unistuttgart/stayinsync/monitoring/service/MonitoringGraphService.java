@@ -36,129 +36,103 @@ public class MonitoringGraphService {
     @Inject
     KubernetesPollingNodeService kubernetesPollingNodeService;
 
-
     public GraphResponse buildGraph() {
         Map<String, NodeDto> nodeMap = new HashMap<>();
         List<NodeConnectionDto> connections = new ArrayList<>();
-        try{
+
+        // Versuche Logging (soll Fehler nicht blockieren)
+        try {
             clientLogger.logUrl();
-            List<MonitoringSourceSystemDto> monitoringSources = sourceSystemClient.getAll();
-            Log.info("Monitoring Sources: " + monitoringSources);
+        } catch (Exception e) {
+            Log.warn("Konnte URL nicht loggen", e);
         }
-        catch (Exception e) {
+
+        // --- SourceSystems ---
+        List<MonitoringSourceSystemDto> monitoringSources = new ArrayList<>();
+        try {
+            monitoringSources = sourceSystemClient.getAll();
+            Log.info("Monitoring Sources: " + monitoringSources);
+        } catch (Exception e) {
             Log.error("Fehler beim Abrufen der SourceSystems", e);
         }
 
-        // 1. Alle SourceSystems
-        for (MonitoringSourceSystemDto src : sourceSystemClient.getAll()) {
+        for (MonitoringSourceSystemDto src : monitoringSources) {
             boolean isHealthy = false;
             try {
                 if (src.apiUrl != null) {
                     isHealthy = prometheusClient.isUp(src.apiUrl);
                 }
             } catch (Exception e) {
-                Log.error("Fehler beim Prometheus-Check für SourceSystem " + src.id + " (" + src.apiUrl + ")", e);
+                Log.warnf(e, "Prometheus-Check fehlgeschlagen für SourceSystem %s (%s)", src.id, src.apiUrl);
             }
             nodeMap.put("SRC_" + src.id,
                     createNode("SRC_" + src.id, "SourceSystem", src.name, isHealthy ? "active" : "error"));
         }
 
-        Log.info(nodeMap.toString());
+        // --- TargetSystems ---
+        List<MonitoringTargetSystemDto> monitoringTargets = new ArrayList<>();
+        try {
+            monitoringTargets = targetSystemClient.getAll();
+            Log.info("Monitoring Targets: " + monitoringTargets);
+        } catch (Exception e) {
+            Log.error("Fehler beim Abrufen der TargetSystems", e);
+        }
 
-        // 2. Alle TargetSystems
-        for (MonitoringTargetSystemDto tgt : targetSystemClient.getAll()) {
+        for (MonitoringTargetSystemDto tgt : monitoringTargets) {
             boolean isHealthy = false;
             try {
                 if (tgt.apiUrl != null) {
                     isHealthy = prometheusClient.isUp(tgt.apiUrl);
                 }
             } catch (Exception e) {
-                Log.error("Fehler beim Prometheus-Check für TargetSystem " + tgt.id + " (" + tgt.apiUrl + ")", e);
+                Log.warnf(e, "Prometheus-Check fehlgeschlagen für TargetSystem %s (%s)", tgt.id, tgt.apiUrl);
             }
             nodeMap.put("TGT_" + tgt.id,
                     createNode("TGT_" + tgt.id, "TargetSystem", tgt.name, isHealthy ? "active" : "error"));
         }
 
-
-        Log.info(nodeMap.toString());
-
-        // Mapping Schritt hier
-        List<MonitoringSyncJobDto> jobs = syncJobClient.getAll();
-
-        Log.info("Jobs: " + jobs);
-
-        List<String> pollingNodesFromK8s = kubernetesPollingNodeService.getPollingNodes();
-        if (!pollingNodesFromK8s.isEmpty()){
-            Log.info("PollingNodes in K8s: " + pollingNodesFromK8s);
-            for (String pollingNodeName : pollingNodesFromK8s) {
-                String pollingNodeId = "POLL_" + pollingNodeName;
-
-                boolean isHealthy = false;
-                try {
-                    isHealthy = prometheusClient.isUp("http://host.docker.internal:8095/q/health/live");
-                } catch (Exception e) {
-                    Log.error("Fehler beim Prometheus-Check für PollingNode " + pollingNodeName, e);
-                }
-
-                nodeMap.putIfAbsent(pollingNodeId,
-                        createNode(pollingNodeId, "PollingNode", pollingNodeName,
-                                isHealthy ? "active" : "error"));
-
-                // Hier musst du die Zuordnung zu SourceSystemen definieren.
-                // Beispiel: alle SourceSystems verbinden:
-                for (MonitoringSourceSystemDto src : sourceSystemClient.getAll()) {
-                    connections.add(createConnection("SRC_" + src.id, pollingNodeId, "active"));
-                }
-
-                // Verbindung PollingNode → SyncNode (wenn du konkrete SyncNodes hast)
-                for (MonitoringSyncJobDto job : jobs) {
-                    String syncNodeId = job.id.toString();
-                    connections.add(createConnection(pollingNodeId, syncNodeId, "active"));
-                }
-            }
+        // --- SyncJobs ---
+        List<MonitoringSyncJobDto> jobs = new ArrayList<>();
+        try {
+            jobs = syncJobClient.getAll();
+            Log.info("Jobs: " + jobs);
+        } catch (Exception e) {
+            Log.error("Fehler beim Abrufen der SyncJobs", e);
         }
-        // 3. SyncJobs + Verbindungen
+
         for (MonitoringSyncJobDto job : jobs) {
             String syncNodeId = job.id.toString();
             nodeMap.put(syncNodeId, createNode(syncNodeId, "SyncNode", job.name, "active"));
 
             if (job.transformations != null) {
                 for (MonitoringTransformationDto tf : job.transformations) {
-                    Log.info(tf.name);
-
-                    Log.info("SourceSystems:" + tf.sourceSystemIds);
-                    Log.info("TargetSystems:" + tf.targetSystemIds);
-                    Log.info("PollingNodes:" + tf.pollingNodes);
+                    Log.info("Transformation: " + tf.name);
 
                     // --- PollingNodes hinzufügen ---
                     if (tf.pollingNodes != null) {
                         for (String pollingNodeName : tf.pollingNodes) {
                             String pollingNodeId = "POLL_" + pollingNodeName;
-
                             boolean isHealthy = false;
                             try {
                                 isHealthy = prometheusClient.isUp("http://host.docker.internal:8095/q/health/live");
                             } catch (Exception e) {
-                                Log.error("Fehler beim Prometheus-Check für PollingNode " + pollingNodeName, e);
+                                Log.warnf(e, "Prometheus-Check fehlgeschlagen für PollingNode %s", pollingNodeName);
                             }
 
                             nodeMap.putIfAbsent(pollingNodeId,
                                     createNode(pollingNodeId, "PollingNode", pollingNodeName,
                                             isHealthy ? "active" : "error"));
 
-                            // SourceSystem → PollingNode
                             if (tf.sourceSystemIds != null) {
                                 for (Long srcId : tf.sourceSystemIds) {
                                     connections.add(createConnection("SRC_" + srcId, pollingNodeId, "active"));
                                 }
                             }
-
-                            // PollingNode → SyncNode
                             connections.add(createConnection(pollingNodeId, syncNodeId, "active"));
                         }
                     }
 
-                    // SyncNode → Target
+                    // --- SyncNode → Target ---
                     if (tf.targetSystemIds != null) {
                         for (Long tgtId : tf.targetSystemIds) {
                             connections.add(createConnection(syncNodeId, "TGT_" + tgtId, "active"));
@@ -168,12 +142,36 @@ public class MonitoringGraphService {
             }
         }
 
+        // --- PollingNodes aus K8s ---
+        try {
+            List<String> pollingNodesFromK8s = kubernetesPollingNodeService.getPollingNodes();
+            if (!pollingNodesFromK8s.isEmpty()) {
+                Log.info("PollingNodes in K8s: " + pollingNodesFromK8s);
+                for (String pollingNodeName : pollingNodesFromK8s) {
+                    String pollingNodeId = "POLL_" + pollingNodeName;
+                    nodeMap.putIfAbsent(pollingNodeId,
+                            createNode(pollingNodeId, "PollingNode", pollingNodeName, "active"));
+
+                    // alle SourceSystems verbinden
+                    for (MonitoringSourceSystemDto src : monitoringSources) {
+                        connections.add(createConnection("SRC_" + src.id, pollingNodeId, "active"));
+                    }
+                    // alle Jobs verbinden
+                    for (MonitoringSyncJobDto job : jobs) {
+                        connections.add(createConnection(pollingNodeId, job.id.toString(), "active"));
+                    }
+                }
+            }
+        } catch (Exception e) {
+            Log.error("Fehler beim Abrufen der PollingNodes aus K8s", e);
+        }
+
         GraphResponse graph = new GraphResponse();
         graph.nodes = new ArrayList<>(nodeMap.values());
         graph.connections = connections;
+
         return graph;
     }
-
 
     private NodeDto createNode(String id, String type, String label, String status) {
         NodeDto node = new NodeDto();
