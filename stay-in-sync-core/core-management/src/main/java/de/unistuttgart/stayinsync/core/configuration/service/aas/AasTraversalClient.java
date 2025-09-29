@@ -46,7 +46,7 @@ public class AasTraversalClient {
 
 
     public Uni<HttpResponse<Buffer>> createElement(String baseUrl, String submodelId, String parentPath, String body, Map<String, String> headers) {
-        String url = baseUrl + "/submodels/" + encode(submodelId) + "/submodel-elements";
+        String url = baseUrl + "/submodels/" + submodelId + "/submodel-elements";
         if (parentPath != null && !parentPath.isBlank()) {
             url += "/" + encodePathSegments(parentPath);
         }
