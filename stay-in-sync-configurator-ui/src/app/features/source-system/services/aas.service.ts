@@ -85,17 +85,20 @@ export class AasService {
     element: any,
     parentPath?: string
   ): Observable<any> {
-    // Backend expects base64-encoded submodelId for CREATE
-    const submodelIdEnc = this.encodeIdToBase64Url(submodelId);
-    const url = `/api/config/source-system/${sourceSystemId}/aas/submodels/${submodelIdEnc}/elements`;
-    const params = parentPath ? new HttpParams().set('parentPath', parentPath) : undefined;
+    // submodelId is already Base64-encoded, use it directly
+    const url = `/api/config/source-system/${sourceSystemId}/aas/submodels/${submodelId}/elements`;
+    
+    // Encode parentPath to dot-separated format for BaSyx compatibility
+    const encodedParentPath = parentPath && parentPath.trim() ? this.encodePathSegments(parentPath) : undefined;
+    const params = encodedParentPath ? new HttpParams().set('parentPath', encodedParentPath) : undefined;
     
     console.log('[AasService] createElement: API call', {
       url,
+      urlLength: url.length,
       sourceSystemId,
       submodelId,
-      submodelIdEnc,
       parentPath,
+      encodedParentPath,
       element
     });
     

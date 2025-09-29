@@ -164,6 +164,8 @@ export class AasManagementService {
               modelType: v.modelType,
               valueType: v.valueType
             })),
+            firstRef: element.first?.keys?.map((k: any) => `${k.type}:${k.value}`).join(',') || element.first,
+            secondRef: element.second?.keys?.map((k: any) => `${k.type}:${k.value}`).join(',') || element.second,
             annotations: element.annotations?.map((a: any) => ({
               idShort: a.idShort,
               modelType: a.modelType,

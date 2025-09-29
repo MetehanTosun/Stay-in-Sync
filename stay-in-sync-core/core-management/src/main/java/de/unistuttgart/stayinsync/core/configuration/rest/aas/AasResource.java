@@ -520,9 +520,9 @@ public class AasResource {
         var headers = headerBuilder.buildMergedHeaders(ss, de.unistuttgart.stayinsync.core.configuration.service.aas.HttpHeaderBuilder.Mode.WRITE_JSON);
         Log.infof("Create element LIVE: apiUrl=%s smId=%s parentPath=%s", ss.apiUrl, smId, parentPath);
         Log.debugf("WRITE headers: %s body=%s", headers, body);
-        String effectiveParentPath = parentPath;
+        String effectiveParentPath = (parentPath != null && !parentPath.isBlank()) ? parentPath : null;
         // Adjust parent path for types that require sub-paths in BaSyx (collections/lists: /value, entity: /statements)
-        if (parentPath != null && !parentPath.isBlank()) {
+        if (effectiveParentPath != null) {
             try {
                 var parentResp = traversal.getElement(ss.apiUrl, smId, parentPath, headers).await().indefinitely();
                 if (parentResp != null && parentResp.statusCode() >= 200 && parentResp.statusCode() < 300) {
@@ -545,7 +545,9 @@ public class AasResource {
                 Log.warnf("Could not inspect parent element for path suffix resolution: %s", e.getMessage());
             }
         }
-        var resp = traversal.createElement(ss.apiUrl, smId, effectiveParentPath, body, headers).await().indefinitely();
+        // Decode the Base64-encoded smId before sending to BaSyx
+        String decodedSmId = normalizeSubmodelId(smId);
+        var resp = traversal.createElement(ss.apiUrl, decodedSmId, effectiveParentPath, body, headers).await().indefinitely();
         int sc = resp.statusCode();
         Log.infof("Create element upstream status=%d msg=%s body=%s", sc, resp.statusMessage(), safeBody(resp));
         if (sc >= 200 && sc < 300) {

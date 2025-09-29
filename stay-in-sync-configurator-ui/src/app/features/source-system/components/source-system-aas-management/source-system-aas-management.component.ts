@@ -451,6 +451,7 @@ export class SourceSystemAasManagementComponent implements OnInit {
     
     try {
       const body = JSON.parse(this.aasNewElementJson);
+      // Use the submodelId as-is (it's already Base64-encoded)
       this.aasManagementService.createElement(this.system.id, this.aasTargetSubmodelId, body, this.aasParentPath || undefined)
         .subscribe({
           next: () => {

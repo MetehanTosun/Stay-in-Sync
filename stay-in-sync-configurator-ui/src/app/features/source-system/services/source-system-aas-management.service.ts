@@ -2,6 +2,7 @@ import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import { TreeNode } from 'primeng/api';
 import { AasService } from '../services/aas.service';
+import { AasClientService } from '../services/aas-client.service';
 import { HttpErrorService } from '../../../core/services/http-error.service';
 
 export interface AasOperationVarView { 
@@ -39,6 +40,7 @@ export class SourceSystemAasManagementService {
 
   constructor(
     private aasService: AasService,
+    private aasClient: AasClientService,
     private errorService: HttpErrorService
   ) {}
 
@@ -142,8 +144,8 @@ export class SourceSystemAasManagementService {
    * Create element
    */
   createElement(systemId: number, submodelId: string, elementData: any, parentPath?: string): Observable<any> {
-    const smIdB64 = this.aasService.encodeIdToBase64Url(submodelId);
-    return this.aasService.createElement(systemId, smIdB64, elementData, parentPath);
+    // Use aasClientService like target system does
+    return this.aasClient.createElement('source', systemId, submodelId, elementData, parentPath);
   }
 
   /**
