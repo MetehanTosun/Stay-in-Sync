@@ -1564,17 +1564,9 @@ save(): void {
     this.aasService.deleteElement(this.createdSourceSystemId, submodelId, idShortPath).subscribe({
       next: () => {
         console.log('[SourceCreate] deleteElement: Element deleted successfully');
-        // refresh parent node live - use dot-separated paths
-        const parent = idShortPath.includes('.') ? idShortPath.substring(0, idShortPath.lastIndexOf('.')) : '';
-        const parentNode = parent ? this.findNodeByKey(`${submodelId}::${parent}`, this.treeNodes) : this.findNodeByKey(submodelId, this.treeNodes);
         
-        console.log('[SourceCreate] deleteElement: Refreshing parent', {
-          parent,
-          parentNode: parentNode?.label,
-          found: !!parentNode
-        });
-        
-        this.refreshNodeLive(submodelId, parent, parentNode || undefined);
+        // Remove element from tree immediately
+        this.removeElementFromTree(submodelId, idShortPath);
         
         // Show success message
         this.messageService.add({
@@ -1622,7 +1614,7 @@ save(): void {
     });
     
     const elementKey = `${submodelId}::${idShortPath}`;
-    const parentPath = idShortPath.includes('/') ? idShortPath.substring(0, idShortPath.lastIndexOf('/')) : '';
+    const parentPath = idShortPath.includes('.') ? idShortPath.substring(0, idShortPath.lastIndexOf('.')) : '';
     const parentKey = parentPath ? `${submodelId}::${parentPath}` : submodelId;
     
     console.log('[SourceCreate] removeElementFromTree: Keys', {
@@ -1630,6 +1622,9 @@ save(): void {
       parentKey,
       parentPath
     });
+    
+    // Try to find and remove the element from the tree
+    let elementRemoved = false;
     
     // Find the parent node
     const parentNode = this.findNodeByKey(parentKey, this.treeNodes);
@@ -1641,20 +1636,32 @@ save(): void {
       
       // Remove the element from parent's children
       const initialLength = parentNode.children.length;
-      parentNode.children = parentNode.children.filter(child => child.key !== elementKey);
+      parentNode.children = parentNode.children.filter(child => {
+        const shouldKeep = child.key !== elementKey;
+        if (!shouldKeep) {
+          console.log('[SourceCreate] removeElementFromTree: Removing child', {
+            childKey: child.key,
+            childLabel: child.label
+          });
+        }
+        return shouldKeep;
+      });
       
+      elementRemoved = initialLength > parentNode.children.length;
       console.log('[SourceCreate] removeElementFromTree: Element removed', {
         initialLength,
         finalLength: parentNode.children.length,
-        removed: initialLength > parentNode.children.length
+        removed: elementRemoved
       });
-      
-      // Update the tree
-      this.treeNodes = [...this.treeNodes];
-    } else {
-      console.log('[SourceCreate] removeElementFromTree: Parent node not found, refreshing tree');
-      // Fallback: refresh the parent
-      this.refreshNodeLive(submodelId, parentPath, undefined);
+    }
+    
+    // Force tree update
+    this.treeNodes = [...this.treeNodes];
+    
+    // If element wasn't found in the tree, refresh the parent node
+    if (!elementRemoved) {
+      console.log('[SourceCreate] removeElementFromTree: Element not found in tree, refreshing parent node');
+      this.refreshNodeLive(submodelId, parentPath, parentNode || undefined);
     }
   }
 

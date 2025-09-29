@@ -29,6 +29,7 @@
     <p-tree [value]="aasTreeNodes" (onNodeExpand)="onAasNodeExpand($event)" (onNodeSelect)="onAasNodeSelect($event)" selectionMode="single">
       <ng-template let-node pTemplate="default">
         <div style="display:flex;align-items:center;gap:.5rem;">
+          <i [class]="node.expanded ? 'pi pi-folder-open' : 'pi pi-folder'" style="color: var(--primary-color);"></i>
           <span>{{ node.label }}</span>
           <span style="font-size:.75rem;padding:.1rem .4rem;border-radius:999px;border:1px solid var(--surface-border);color:var(--text-color-secondary);">
             {{ node.data?.type==='submodel' ? (node.data?.modelType || (node.data?.raw?.kind?.toLowerCase?.().includes('template') ? 'Submodel Template' : 'Submodel')) : (node.data?.modelType || node.data?.raw?.modelType || (node.data?.raw?.valueType ? 'Property' : 'Element')) }}

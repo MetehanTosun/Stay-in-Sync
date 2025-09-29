@@ -665,8 +665,9 @@ export class CreateTargetSystemComponent implements OnInit, OnChanges {
     this.aasClient.deleteElement('target', this.createdTargetSystemId, submodelId, idShortPath).subscribe({
       next: () => {
         console.log('[TargetCreate] deleteElement: Element deleted successfully');
-        const parent = idShortPath.includes('.') ? idShortPath.substring(0, idShortPath.lastIndexOf('.')) : '';
-        this.refreshNodeLive(submodelId, parent, undefined);
+        
+        // Remove element from tree immediately
+        this.removeElementFromTree(submodelId, idShortPath);
         
         // Show success message
         this.messageService.add({
@@ -697,7 +698,7 @@ export class CreateTargetSystemComponent implements OnInit, OnChanges {
           this.messageService.add({
             severity: 'success',
             summary: 'Element Removed',
-            detail: `Element '${idShortPath.split('/').pop()}' has been removed from the tree.`,
+            detail: `Element '${idShortPath.split('.').pop()}' has been removed from the tree.`,
             life: 3000
           });
         } else {
@@ -714,7 +715,7 @@ export class CreateTargetSystemComponent implements OnInit, OnChanges {
     });
     
     const elementKey = `${submodelId}::${idShortPath}`;
-    const parentPath = idShortPath.includes('/') ? idShortPath.substring(0, idShortPath.lastIndexOf('/')) : '';
+    const parentPath = idShortPath.includes('.') ? idShortPath.substring(0, idShortPath.lastIndexOf('.')) : '';
     const parentKey = parentPath ? `${submodelId}::${parentPath}` : submodelId;
     
     console.log('[TargetCreate] removeElementFromTree: Keys', {
@@ -722,6 +723,9 @@ export class CreateTargetSystemComponent implements OnInit, OnChanges {
       parentKey,
       parentPath
     });
+    
+    // Try to find and remove the element from the tree
+    let elementRemoved = false;
     
     // Find the parent node
     const parentNode = this.findNodeByKey(parentKey, this.treeNodes);
@@ -733,20 +737,32 @@ export class CreateTargetSystemComponent implements OnInit, OnChanges {
       
       // Remove the element from parent's children
       const initialLength = parentNode.children.length;
-      parentNode.children = parentNode.children.filter(child => child.key !== elementKey);
+      parentNode.children = parentNode.children.filter(child => {
+        const shouldKeep = child.key !== elementKey;
+        if (!shouldKeep) {
+          console.log('[TargetCreate] removeElementFromTree: Removing child', {
+            childKey: child.key,
+            childLabel: child.label
+          });
+        }
+        return shouldKeep;
+      });
       
+      elementRemoved = initialLength > parentNode.children.length;
       console.log('[TargetCreate] removeElementFromTree: Element removed', {
         initialLength,
         finalLength: parentNode.children.length,
-        removed: initialLength > parentNode.children.length
+        removed: elementRemoved
       });
-      
-      // Update the tree
-      this.treeNodes = [...this.treeNodes];
-    } else {
-      console.log('[TargetCreate] removeElementFromTree: Parent node not found, refreshing tree');
-      // Fallback: refresh the parent
-      this.refreshNodeLive(submodelId, parentPath, undefined);
+    }
+    
+    // Force tree update
+    this.treeNodes = [...this.treeNodes];
+    
+    // If element wasn't found in the tree, refresh the parent node
+    if (!elementRemoved) {
+      console.log('[TargetCreate] removeElementFromTree: Element not found in tree, refreshing parent node');
+      this.refreshNodeLive(submodelId, parentPath, parentNode || undefined);
     }
   }
 

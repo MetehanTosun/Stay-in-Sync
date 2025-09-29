@@ -62,6 +62,7 @@ export class AasManagementService {
    */
   async loadSubmodelElements(systemId: number, submodelId: string): Promise<TreeNode[]> {
     return new Promise((resolve, reject) => {
+      // Use normal Base64 with padding for BaSyx compatibility
       const smIdB64 = btoa(submodelId);
       this.aasClientService.listElements('target', systemId, smIdB64).subscribe({
         next: (response: any) => {
@@ -98,6 +99,7 @@ export class AasManagementService {
    */
   async loadElementChildren(systemId: number, submodelId: string, parentPath: string): Promise<TreeNode[]> {
     return new Promise((resolve, reject) => {
+      // Use normal Base64 with padding for BaSyx compatibility
       const smId = btoa(submodelId);
       
       this.aasClientService.listElements('target', systemId, smId, 'shallow', parentPath).subscribe({
@@ -135,6 +137,7 @@ export class AasManagementService {
    */
   async loadElementDetails(systemId: number, submodelId: string, elementPath: string): Promise<AasElementLivePanel> {
     return new Promise((resolve, reject) => {
+      // Use normal Base64 with padding for BaSyx compatibility
       const smId = btoa(submodelId);
       
       this.aasClientService.getElement('target', systemId, smId, elementPath).subscribe({
@@ -206,6 +209,7 @@ export class AasManagementService {
    */
   async createElement(systemId: number, submodelId: string, elementData: any, parentPath?: string): Promise<void> {
     return new Promise((resolve, reject) => {
+      // Use normal Base64 with padding for BaSyx compatibility
       const smIdB64 = btoa(submodelId);
       this.aasClientService.createElement('target', systemId, smIdB64, elementData, parentPath).subscribe({
         next: () => {
@@ -233,6 +237,7 @@ export class AasManagementService {
    */
   async deleteSubmodel(systemId: number, submodelId: string): Promise<void> {
     return new Promise((resolve, reject) => {
+      // Use normal Base64 with padding for BaSyx compatibility
       const smIdB64 = btoa(submodelId);
       this.aasClientService.deleteSubmodel('target', systemId, smIdB64).subscribe({
         next: () => {
@@ -260,6 +265,7 @@ export class AasManagementService {
    */
   async deleteElement(systemId: number, submodelId: string, elementPath: string): Promise<void> {
     return new Promise((resolve, reject) => {
+      // Use normal Base64 with padding for BaSyx compatibility
       const smIdB64 = btoa(submodelId);
       this.aasClientService.deleteElement('target', systemId, smIdB64, elementPath).subscribe({
         next: () => {
@@ -287,6 +293,7 @@ export class AasManagementService {
    */
   async setElementValue(systemId: number, submodelId: string, elementPath: string, value: any): Promise<void> {
     return new Promise((resolve, reject) => {
+      // Use normal Base64 with padding for BaSyx compatibility
       const smIdB64 = btoa(submodelId);
       this.aasClientService.patchElementValue('target', systemId, smIdB64, elementPath, value).subscribe({
         next: () => {
