@@ -28,9 +28,22 @@
   border: 1px solid var(--surface-border);
   background: var(--surface-card);
   color: var(--text-color);
+  transition: all 0.2s ease;
 }
 
 .p-mt-2 .p-button-text:hover {
   background: var(--surface-hover);
   border-color: var(--primary-color);
+}
+
+.p-mt-2 .p-button-text.active {
+  background: var(--primary-color);
+  border-color: var(--primary-color);
+  color: white;
+}
+
+.p-mt-2 .p-button-text.active:hover {
+  background: var(--primary-color);
+  border-color: var(--primary-color);
+  color: white;
 }

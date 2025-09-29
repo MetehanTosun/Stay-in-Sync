@@ -45,16 +45,49 @@
   </ng-template>
   
   <div class="p-mt-2" style="display:flex;gap:.5rem;flex-wrap:wrap;">
-    <button pButton type="button" class="p-button-text" label="Template: Property" (click)="setElementTemplate('property')"></button>
-    <button pButton type="button" class="p-button-text" label="Template: Range" (click)="setElementTemplate('range')"></button>
-    <button pButton type="button" class="p-button-text" label="Template: MultiLanguageProperty" (click)="setElementTemplate('mlp')"></button>
-    <button pButton type="button" class="p-button-text" label="Template: ReferenceElement" (click)="setElementTemplate('ref')"></button>
-    <button pButton type="button" class="p-button-text" label="Template: RelationshipElement" (click)="setElementTemplate('rel')"></button>
-    <button pButton type="button" class="p-button-text" label="Template: AnnotatedRelationshipElement" (click)="setElementTemplate('annrel')"></button>
-    <button pButton type="button" class="p-button-text" label="Template: Collection" (click)="setElementTemplate('collection')"></button>
-    <button pButton type="button" class="p-button-text" label="Template: List" (click)="setElementTemplate('list')"></button>
-    <button pButton type="button" class="p-button-text" label="Template: File" (click)="setElementTemplate('file')"></button>
-    <button pButton type="button" class="p-button-text" label="Template: Operation" (click)="setElementTemplate('operation')"></button>
-    <button pButton type="button" class="p-button-text" label="Template: Entity" (click)="setElementTemplate('entity')"></button>
+    <button pButton type="button" 
+            [class]="'p-button-text' + (activeTemplate === 'property' ? ' active' : '')" 
+            label="Template: Property" 
+            (click)="setElementTemplate('property')"></button>
+    <button pButton type="button" 
+            [class]="'p-button-text' + (activeTemplate === 'range' ? ' active' : '')" 
+            label="Template: Range" 
+            (click)="setElementTemplate('range')"></button>
+    <button pButton type="button" 
+            [class]="'p-button-text' + (activeTemplate === 'mlp' ? ' active' : '')" 
+            label="Template: MultiLanguageProperty" 
+            (click)="setElementTemplate('mlp')"></button>
+    <button pButton type="button" 
+            [class]="'p-button-text' + (activeTemplate === 'ref' ? ' active' : '')" 
+            label="Template: ReferenceElement" 
+            (click)="setElementTemplate('ref')"></button>
+    <button pButton type="button" 
+            [class]="'p-button-text' + (activeTemplate === 'rel' ? ' active' : '')" 
+            label="Template: RelationshipElement" 
+            (click)="setElementTemplate('rel')"></button>
+    <button pButton type="button" 
+            [class]="'p-button-text' + (activeTemplate === 'annrel' ? ' active' : '')" 
+            label="Template: AnnotatedRelationshipElement" 
+            (click)="setElementTemplate('annrel')"></button>
+    <button pButton type="button" 
+            [class]="'p-button-text' + (activeTemplate === 'collection' ? ' active' : '')" 
+            label="Template: Collection" 
+            (click)="setElementTemplate('collection')"></button>
+    <button pButton type="button" 
+            [class]="'p-button-text' + (activeTemplate === 'list' ? ' active' : '')" 
+            label="Template: List" 
+            (click)="setElementTemplate('list')"></button>
+    <button pButton type="button" 
+            [class]="'p-button-text' + (activeTemplate === 'file' ? ' active' : '')" 
+            label="Template: File" 
+            (click)="setElementTemplate('file')"></button>
+    <button pButton type="button" 
+            [class]="'p-button-text' + (activeTemplate === 'operation' ? ' active' : '')" 
+            label="Template: Operation" 
+            (click)="setElementTemplate('operation')"></button>
+    <button pButton type="button" 
+            [class]="'p-button-text' + (activeTemplate === 'entity' ? ' active' : '')" 
+            label="Template: Entity" 
+            (click)="setElementTemplate('entity')"></button>
   </div>
 </p-dialog>
