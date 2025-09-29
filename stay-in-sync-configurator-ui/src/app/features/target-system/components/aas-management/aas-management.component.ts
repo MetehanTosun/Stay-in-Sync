@@ -366,7 +366,8 @@ export class AasManagementComponent implements OnInit {
       console.error('[TargetAasManage] Error creating element:', error);
       
       // Show error toast
-      if (error && error.error && error.error.includes('Duplicate entry')) {
+      const errorMessage = (error as any)?.error || (error as any)?.message || 'Failed to create element';
+      if (errorMessage.includes('Duplicate entry')) {
         this.messageService.add({
           severity: 'error',
           summary: 'Duplicate Element',
@@ -377,7 +378,7 @@ export class AasManagementComponent implements OnInit {
         this.messageService.add({
           severity: 'error',
           summary: 'Error',
-          detail: error?.error || error?.message || 'Failed to create element',
+          detail: errorMessage,
           life: 5000
         });
       }
