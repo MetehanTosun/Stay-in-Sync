@@ -13,6 +13,7 @@ import { TreeNode } from 'primeng/api';
 
 import { SourceSystemDTO } from '../../models/sourceSystemDTO';
 import { SourceSystemAasManagementService, AasElementLivePanel } from '../../services/source-system-aas-management.service';
+import { AasService } from '../../services/aas.service';
 
 @Component({
   standalone: true,
@@ -175,7 +176,8 @@ export class SourceSystemAasManagementComponent implements OnInit {
 }`;
 
   constructor(
-    private aasManagementService: SourceSystemAasManagementService
+    private aasManagementService: SourceSystemAasManagementService,
+    private aasService: AasService
   ) {}
 
   ngOnInit(): void {
@@ -444,50 +446,155 @@ export class SourceSystemAasManagementComponent implements OnInit {
   }
 
   /**
-   * Create AAS element
+   * Create AAS element (same logic as create dialog)
    */
   aasCreateElement(): void {
     if (!this.system?.id || !this.aasTargetSubmodelId) return;
     
     try {
       const body = JSON.parse(this.aasNewElementJson);
-      // Use the submodelId as-is (it's already Base64-encoded)
-      this.aasManagementService.createElement(this.system.id, this.aasTargetSubmodelId, body, this.aasParentPath && this.aasParentPath.trim() ? this.aasParentPath : undefined)
+      const smIdB64 = this.aasService.encodeIdToBase64Url(this.aasTargetSubmodelId);
+      
+      console.log('[SourceAasManage] createElement: Creating element', {
+        systemId: this.system.id,
+        submodelId: this.aasTargetSubmodelId,
+        parentPath: this.aasParentPath,
+        body: body
+      });
+      
+      // Use the same service as create dialog
+      this.aasService.createElement(this.system.id, smIdB64, body, this.aasParentPath && this.aasParentPath.trim() ? this.aasParentPath : undefined)
         .subscribe({
           next: () => {
+            console.log('[SourceAasManage] createElement: Element created successfully');
             this.showAasElementDialog = false;
-            // Trigger full tree refresh after element creation
-            this.discoverAasSnapshot();
+            // Use the same refresh logic as create dialog
+            this.refreshAasTreeAfterCreate();
           },
           error: (err) => {
+            console.error('[SourceAasManage] createElement: Error creating element', err);
             // Error handling
           }
         });
     } catch (e) {
+      console.error('[SourceAasManage] createElement: JSON parse error', e);
       // Error handling
     }
   }
 
   /**
-   * Refresh AAS node live
+   * Refresh AAS tree after create (same logic as create dialog)
+   */
+  private refreshAasTreeAfterCreate(): void {
+    console.log('[SourceAasManage] refreshAasTreeAfterCreate: Starting refresh', {
+      targetSubmodelId: this.aasTargetSubmodelId,
+      parentPath: this.aasParentPath
+    });
+    
+    if (this.aasParentPath) {
+      const key = `${this.aasTargetSubmodelId}::${this.aasParentPath}`;
+      const parentNode = this.findAasNodeByKey(key, this.aasTreeNodes);
+      console.log('[SourceAasManage] refreshAasTreeAfterCreate: Parent node found', {
+        key: key,
+        parentNode: parentNode,
+        found: !!parentNode
+      });
+      
+      if (parentNode) {
+        (parentNode as any).expanded = true;
+        this.refreshAasNodeLive(this.aasTargetSubmodelId, this.aasParentPath, parentNode);
+      } else {
+        console.log('[SourceAasManage] refreshAasTreeAfterCreate: Parent node not found, refreshing root');
+        this.refreshAasNodeLive(this.aasTargetSubmodelId, '', undefined);
+      }
+    } else {
+      console.log('[SourceAasManage] refreshAasTreeAfterCreate: No parent path, refreshing root');
+      this.refreshAasNodeLive(this.aasTargetSubmodelId, '', undefined);
+    }
+  }
+
+  private findAasNodeByKey(key: string, nodes: TreeNode[] | undefined): TreeNode | null {
+    if (!nodes) return null;
+    for (const n of nodes) {
+      if (n.key === key) return n;
+      const found = this.findAasNodeByKey(key, n.children as TreeNode[]);
+      if (found) return found;
+    }
+    return null;
+  }
+
+  private mapElementToNode(submodelId: string, element: any): TreeNode {
+    const idShortPath = element.idShortPath || element.idShort;
+    const key = `${submodelId}::${idShortPath}`;
+    
+    return {
+      key: key,
+      label: element.idShort || element.idShortPath || 'Unknown',
+      data: {
+        type: 'element',
+        submodelId: submodelId,
+        idShortPath: idShortPath,
+        modelType: element.modelType,
+        raw: element
+      },
+      children: []
+    };
+  }
+
+  /**
+   * Refresh AAS node live (same logic as create dialog)
    */
   private refreshAasNodeLive(submodelId: string, parentPath: string, node?: TreeNode): void {
-    if (!this.system?.id) return;
+    if (!this.system?.id) {
+      console.log('[SourceAasManage] refreshAasNodeLive: No system ID');
+      return;
+    }
     
     const key = parentPath ? `${submodelId}::${parentPath}` : submodelId;
-    this.aasManagementService.loadChildren(this.system.id, submodelId, parentPath || undefined, node || ({} as TreeNode))
+    console.log('[SourceAasManage] refreshAasNodeLive: Starting refresh', {
+      submodelId,
+      parentPath,
+      key,
+      node: node?.label
+    });
+    
+    // Use the same service call as create dialog
+    this.aasService.listElements(this.system.id, submodelId, { depth: 'shallow', parentPath: parentPath || undefined, source: 'LIVE' })
       .subscribe({
-        next: () => {
+        next: (resp) => {
+          console.log('[SourceAasManage] refreshAasNodeLive: Response received', {
+            key,
+            response: resp,
+            node: node?.label
+          });
+          
+          const list = Array.isArray(resp) ? resp : (resp?.result ?? []);
+          const mapped = list.map((el: any) => {
+            if (!el.idShortPath && el.idShort) {
+              el.idShortPath = parentPath ? `${parentPath}/${el.idShort}` : el.idShort;
+            }
+            return this.mapElementToNode(submodelId, el);
+          });
+          
+          console.log('[SourceAasManage] refreshAasNodeLive: Mapped elements', {
+            key,
+            mappedCount: mapped.length,
+            mapped: mapped.map((m: any) => m.label)
+          });
+          
           if (node) {
+            node.children = mapped;
             this.aasTreeNodes = [...this.aasTreeNodes];
           } else {
-            const attachNode = this.aasManagementService.findNodeByKey(submodelId, this.aasTreeNodes);
+            const attachNode = this.findAasNodeByKey(submodelId, this.aasTreeNodes);
             if (attachNode) {
+              attachNode.children = mapped;
               this.aasTreeNodes = [...this.aasTreeNodes];
             }
           }
         },
         error: (err) => {
+          console.error('[SourceAasManage] refreshAasNodeLive: Error', err);
           // Error handling
         }
       });
@@ -553,20 +660,63 @@ export class SourceSystemAasManagementComponent implements OnInit {
   }
 
   /**
-   * Delete AAS element
+   * Delete AAS element (same logic as create dialog)
    */
   deleteAasElement(submodelId: string, idShortPath: string): void {
     if (!this.system?.id || !submodelId || !idShortPath) return;
     
+    console.log('[SourceAasManage] deleteAasElement: Starting deletion', {
+      systemId: this.system.id,
+      submodelId,
+      idShortPath
+    });
+    
     this.aasManagementService.deleteElement(this.system.id, submodelId, idShortPath).subscribe({
       next: () => {
-        const parent = idShortPath.includes('/') ? idShortPath.substring(0, idShortPath.lastIndexOf('/')) : '';
-        const parentNode = parent ? this.aasManagementService.findNodeByKey(`${submodelId}::${parent}`, this.aasTreeNodes) : this.aasManagementService.findNodeByKey(submodelId, this.aasTreeNodes);
-        this.loadAasChildren(submodelId, parent || undefined, parentNode || ({} as TreeNode));
+        console.log('[SourceAasManage] deleteAasElement: Element deleted successfully');
+        // Use the same refresh logic as create dialog
+        this.refreshAasTreeAfterDelete(submodelId, idShortPath);
       },
       error: (err) => {
+        console.error('[SourceAasManage] deleteAasElement: Error deleting element', err);
         // Error handling
       }
     });
+  }
+
+  /**
+   * Refresh AAS tree after delete (same logic as create dialog)
+   */
+  private refreshAasTreeAfterDelete(submodelId: string, idShortPath: string): void {
+    console.log('[SourceAasManage] refreshAasTreeAfterDelete: Starting refresh', {
+      submodelId,
+      idShortPath
+    });
+    
+    const parent = idShortPath.includes('.') ? idShortPath.substring(0, idShortPath.lastIndexOf('.')) : '';
+    console.log('[SourceAasManage] refreshAasTreeAfterDelete: Parent path', {
+      idShortPath,
+      parent
+    });
+    
+    if (parent) {
+      const key = `${submodelId}::${parent}`;
+      const parentNode = this.findAasNodeByKey(key, this.aasTreeNodes);
+      console.log('[SourceAasManage] refreshAasTreeAfterDelete: Parent node found', {
+        key,
+        parentNode: parentNode,
+        found: !!parentNode
+      });
+      
+      if (parentNode) {
+        this.refreshAasNodeLive(submodelId, parent, parentNode);
+      } else {
+        console.log('[SourceAasManage] refreshAasTreeAfterDelete: Parent node not found, refreshing root');
+        this.refreshAasNodeLive(submodelId, '', undefined);
+      }
+    } else {
+      console.log('[SourceAasManage] refreshAasTreeAfterDelete: No parent path, refreshing root');
+      this.refreshAasNodeLive(submodelId, '', undefined);
+    }
   }
 }

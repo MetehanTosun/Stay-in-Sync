@@ -41,7 +41,7 @@ import { TargetSystemDTO } from '../../models/targetSystemDTO';
 
     <div style="display:flex; gap:1rem; align-items:flex-start;">
       <div style="flex: 1 1 65%; min-width: 0;">
-        <p-tree [value]="treeNodes" (onNodeExpand)="onNodeExpand($event)" (onNodeSelect)="onNodeSelect($event)" selectionMode="single">
+        <p-tree [value]="treeNodes" (onNodeExpand)="onNodeExpand($event)" (onNodeSelect)="onNodeSelect($event)" selectionMode="single" class="custom-tree">
           <ng-template let-node pTemplate="default">
             <div style="display:flex;align-items:center;gap:.5rem;">
               <i [class]="node.expanded ? 'pi pi-folder-open' : 'pi pi-folder'" style="color: var(--primary-color);"></i>
@@ -133,7 +133,12 @@ import { TargetSystemDTO } from '../../models/targetSystemDTO';
     TreeModule,
     ButtonModule,
     TooltipModule
-  ]
+  ],
+  styles: [`
+    .custom-tree ::ng-deep .p-tree-node-icon {
+      display: none !important;
+    }
+  `]
 })
 export class AasManagementComponent implements OnInit {
   @Input() system: TargetSystemDTO | null = null;
