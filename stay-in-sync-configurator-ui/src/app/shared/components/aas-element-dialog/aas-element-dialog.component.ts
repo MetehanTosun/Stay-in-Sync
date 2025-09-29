@@ -8,6 +8,7 @@ import { InputTextModule } from 'primeng/inputtext';
 import { TextareaModule } from 'primeng/textarea';
 import { FileUploadModule } from 'primeng/fileupload';
 import { MessageModule } from 'primeng/message';
+import { MessageService } from 'primeng/api';
 
 export interface AasElementDialogData {
   submodelId: string;
@@ -129,7 +130,7 @@ export class AasElementDialogComponent implements OnInit, OnChanges {
   "statements": []
 }`;
 
-  constructor() {}
+  constructor(private messageService: MessageService) {}
 
   ngOnInit(): void {
     // Initialize with default template
@@ -224,6 +225,37 @@ export class AasElementDialogComponent implements OnInit, OnChanges {
     } catch (e) {
       console.error('[AasElementDialog] createElement: JSON parse error', e);
       this.result.emit({ success: false, error: 'Invalid JSON format' });
+    }
+  }
+
+  /**
+   * Handle element creation result with toast notifications
+   */
+  handleElementCreationResult(result: AasElementDialogResult): void {
+    if (result.success) {
+      this.messageService.add({
+        severity: 'success',
+        summary: 'Element Created',
+        detail: 'Element has been successfully created.',
+        life: 3000
+      });
+    } else if (result.error) {
+      // Check if it's a duplicate idShort error
+      if (result.error.includes('Duplicate entry') || result.error.includes('uk_element_submodel_idshortpath')) {
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Duplicate Element',
+          detail: 'An element with this idShort already exists. Please use a different idShort.',
+          life: 5000
+        });
+      } else {
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Error',
+          detail: result.error,
+          life: 5000
+        });
+      }
     }
   }
 

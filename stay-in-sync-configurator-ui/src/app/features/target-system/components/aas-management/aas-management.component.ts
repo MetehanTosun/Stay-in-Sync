@@ -314,6 +314,22 @@ export class AasManagementComponent implements OnInit {
       this.handleElementCreation(result.element);
     } else if (result.error) {
       console.error('[TargetAasManage] Element creation failed:', result.error);
+      // Show toast for duplicate idShort error
+      if (result.error.includes('Duplicate entry') || result.error.includes('uk_element_submodel_idshortpath')) {
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Duplicate Element',
+          detail: 'An element with this idShort already exists. Please use a different idShort.',
+          life: 5000
+        });
+      } else {
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Error',
+          detail: result.error,
+          life: 5000
+        });
+      }
     }
   }
 
