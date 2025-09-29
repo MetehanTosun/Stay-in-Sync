@@ -381,31 +381,10 @@ export class SourceSystemAasManagementComponent implements OnInit {
    * Refresh AAS tree after create (same logic as create dialog)
    */
   private refreshAasTreeAfterCreate(): void {
-    console.log('[SourceAasManage] refreshAasTreeAfterCreate: Starting refresh', {
-      targetSubmodelId: this.aasTargetSubmodelId,
-      parentPath: this.aasParentPath
-    });
+    console.log('[SourceAasManage] refreshAasTreeAfterCreate: Starting refresh');
     
-    if (this.aasParentPath) {
-      const key = `${this.aasTargetSubmodelId}::${this.aasParentPath}`;
-      const parentNode = this.findAasNodeByKey(key, this.aasTreeNodes);
-      console.log('[SourceAasManage] refreshAasTreeAfterCreate: Parent node found', {
-        key: key,
-        parentNode: parentNode,
-        found: !!parentNode
-      });
-      
-      if (parentNode) {
-        (parentNode as any).expanded = true;
-        this.refreshAasNodeLive(this.aasTargetSubmodelId, this.aasParentPath, parentNode);
-      } else {
-        console.log('[SourceAasManage] refreshAasTreeAfterCreate: Parent node not found, refreshing root');
-        this.refreshAasNodeLive(this.aasTargetSubmodelId, '', undefined);
-      }
-    } else {
-      console.log('[SourceAasManage] refreshAasTreeAfterCreate: No parent path, refreshing root');
-      this.refreshAasNodeLive(this.aasTargetSubmodelId, '', undefined);
-    }
+    // Use discoverAasSnapshot for full refresh
+    this.discoverAasSnapshot();
   }
 
   private findAasNodeByKey(key: string, nodes: TreeNode[] | undefined): TreeNode | null {
