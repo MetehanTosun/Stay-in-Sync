@@ -1337,7 +1337,7 @@ save(): void {
       console.error('[SourceCreate] Error creating element:', error);
       
       // Show error toast
-      const errorMessage = (error as any)?.error || (error as any)?.message || 'Failed to create element';
+      const errorMessage = String((error as any)?.error || (error as any)?.message || 'Failed to create element');
       if (errorMessage.includes('Duplicate entry')) {
         this.messageService.add({
           severity: 'error',
