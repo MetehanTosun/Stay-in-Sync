@@ -452,11 +452,12 @@ export class SourceSystemAasManagementComponent implements OnInit {
     try {
       const body = JSON.parse(this.aasNewElementJson);
       // Use the submodelId as-is (it's already Base64-encoded)
-      this.aasManagementService.createElement(this.system.id, this.aasTargetSubmodelId, body, this.aasParentPath || undefined)
+      this.aasManagementService.createElement(this.system.id, this.aasTargetSubmodelId, body, this.aasParentPath && this.aasParentPath.trim() ? this.aasParentPath : undefined)
         .subscribe({
           next: () => {
             this.showAasElementDialog = false;
-            this.refreshAasNodeLive(this.aasTargetSubmodelId, this.aasParentPath, undefined);
+            // Trigger full tree refresh after element creation
+            this.discoverAasSnapshot();
           },
           error: (err) => {
             // Error handling

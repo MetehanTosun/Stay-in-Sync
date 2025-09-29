@@ -618,8 +618,12 @@ export class CreateTargetSystemComponent implements OnInit, OnChanges {
     try {
       const body = JSON.parse(this.newElementJson);
       const smIdB64 = this.encodeIdToBase64Url(this.targetSubmodelId);
-      this.aasClient.createElement('target', this.createdTargetSystemId, smIdB64, body, this.parentPath || undefined).subscribe({
-        next: () => { this.showElementDialog = false; this.refreshNodeLive(this.targetSubmodelId, this.parentPath, undefined); },
+      this.aasClient.createElement('target', this.createdTargetSystemId, smIdB64, body, this.parentPath && this.parentPath.trim() ? this.parentPath : undefined).subscribe({
+        next: () => { 
+          this.showElementDialog = false; 
+          // Trigger full tree refresh after element creation
+          this.discoverSubmodels(); 
+        },
         error: () => {}
       });
     } catch {}
