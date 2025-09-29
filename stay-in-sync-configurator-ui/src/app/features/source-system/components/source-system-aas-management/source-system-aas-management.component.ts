@@ -10,6 +10,7 @@ import { TextareaModule } from 'primeng/textarea';
 import { FileUploadModule } from 'primeng/fileupload';
 import { MessageModule } from 'primeng/message';
 import { TreeNode } from 'primeng/api';
+import { MessageService } from 'primeng/api';
 
 import { SourceSystemDTO } from '../../models/sourceSystemDTO';
 import { SourceSystemAasManagementService, AasElementLivePanel } from '../../services/source-system-aas-management.service';
@@ -103,7 +104,8 @@ export class SourceSystemAasManagementComponent implements OnInit {
 
   constructor(
     private aasManagementService: SourceSystemAasManagementService,
-    private aasService: AasService
+    private aasService: AasService,
+    private messageService: MessageService
   ) {}
 
   ngOnInit(): void {

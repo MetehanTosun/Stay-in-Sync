@@ -5,6 +5,7 @@ import { TreeModule } from 'primeng/tree';
 import { ButtonModule } from 'primeng/button';
 import { TooltipModule } from 'primeng/tooltip';
 import { TreeNode } from 'primeng/api';
+import { MessageService } from 'primeng/api';
 import { AasManagementService, AasElementLivePanel } from '../../services/aas-management.service';
 import { AasUtilityService } from '../../services/aas-utility.service';
 import { TargetSystemDTO } from '../../models/targetSystemDTO';
@@ -169,7 +170,8 @@ export class AasManagementComponent implements OnInit {
 
   constructor(
     private aasManagement: AasManagementService,
-    private aasUtility: AasUtilityService
+    private aasUtility: AasUtilityService,
+    private messageService: MessageService
   ) {}
 
   ngOnInit(): void {
