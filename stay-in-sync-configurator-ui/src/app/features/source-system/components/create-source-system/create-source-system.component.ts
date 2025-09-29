@@ -1565,8 +1565,9 @@ save(): void {
       next: () => {
         console.log('[SourceCreate] deleteElement: Element deleted successfully');
         
-        // Remove element from tree immediately
-        this.removeElementFromTree(submodelId, idShortPath);
+        // Trigger discover to refresh the entire tree
+        console.log('[SourceCreate] deleteElement: Triggering discover to refresh tree');
+        this.discoverSubmodels();
         
         // Show success message
         this.messageService.add({

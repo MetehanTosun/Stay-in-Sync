@@ -301,12 +301,11 @@ export class AasManagementComponent implements OnInit {
     
     try {
       await this.aasManagement.deleteElement(this.system.id, submodelId, elementPath);
-      this.refreshRequested.emit();
-      // Refresh the parent node
-      const parentNode = this.findParentNode(submodelId, elementPath);
-      if (parentNode) {
-        await this.loadSubmodelElements(parentNode);
-      }
+      
+      // Trigger discover to refresh the entire tree (same as source system)
+      console.log('[TargetAasManagement] deleteElement: Triggering discover to refresh tree');
+      this.discoverSnapshot();
+      
     } catch (error) {
       console.error('Error deleting element:', error);
     }
