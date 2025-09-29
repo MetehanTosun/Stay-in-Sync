@@ -68,7 +68,7 @@ export interface EndpointParameterDefinition {
   description: string;
   required: boolean;
   options: string[];
-  type: 'string' | 'number' | 'integer' | 'boolean' | 'array';
+  type?: 'string' | 'number' | 'integer' | 'boolean' | 'array';
 }
 
 export interface SourceSystemApiRequestConfiguration extends ApiRequestConfiguration {

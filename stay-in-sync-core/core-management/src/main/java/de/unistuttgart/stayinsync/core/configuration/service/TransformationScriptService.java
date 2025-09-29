@@ -203,16 +203,13 @@ public class TransformationScriptService {
         }
         try {
             MessageDigest md = MessageDigest.getInstance("SHA-256");
-
             byte[] hashBytes = md.digest(input.getBytes(StandardCharsets.UTF_8));
-
             BigInteger number = new BigInteger(1, hashBytes);
             StringBuilder hexString = new StringBuilder(number.toString(16));
 
             while (hexString.length() < 64) {
                 hexString.insert(0, '0');
             }
-
             return hexString.toString();
         } catch (NoSuchAlgorithmException e) {
             throw new CoreManagementException(Response.Status.INTERNAL_SERVER_ERROR,

@@ -16,8 +16,8 @@ export interface VFlowNodeDTO {
   id: string;
   point: { x: number, y: number};
   type: NodeType;
-  width?: number; // TODO-s check if width is necessary
-  height?: number; // TODO-s check if height is necessary
+  width?: number;
+  height?: number;
   data: VFlowNodeData;
 }
 

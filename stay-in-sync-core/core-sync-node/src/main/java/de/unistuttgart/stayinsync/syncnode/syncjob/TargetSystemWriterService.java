@@ -10,6 +10,8 @@ import de.unistuttgart.stayinsync.syncnode.domain.UpsertDirective;
 import de.unistuttgart.stayinsync.transport.dto.TransformationMessageDTO;
 import de.unistuttgart.stayinsync.transport.dto.targetsystems.AasTargetArcMessageDTO;
 import de.unistuttgart.stayinsync.transport.dto.targetsystems.RequestConfigurationMessageDTO;
+import io.micrometer.core.instrument.Counter;
+import io.micrometer.core.instrument.MeterRegistry;
 import io.quarkus.logging.Log;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
@@ -25,11 +27,11 @@ import java.util.Map;
 @ApplicationScoped
 public class TargetSystemWriterService {
 
-    @ConfigProperty(name = "stayinsync.writer.rate-limit", defaultValue = "10")
-    int rateLimit;
-
     @Inject
     ObjectMapper objectMapper;
+
+    @ConfigProperty(name = "stayinsync.writer.rate-limit", defaultValue = "10")
+    int rateLimit;
 
     @Inject
     DirectiveExecutor restDirectiveExecutor;
@@ -42,6 +44,19 @@ public class TargetSystemWriterService {
             String arcAlias,
             TransformationMessageDTO transformationContext
     ){}
+
+    @Inject
+    MeterRegistry meterRegistry;
+
+    private final Counter processedMessagesCounter;
+
+    @Inject
+    public TargetSystemWriterService(MeterRegistry meterRegistry) {
+        this.meterRegistry = meterRegistry;
+        this.processedMessagesCounter = Counter.builder("transformation_scripts_messages_total")
+                .description("Total number of messages processed across all transformation scripts")
+                .register(meterRegistry);
+    }
 
     public Uni<Void> processDirectives(TransformationResult result, TransformationMessageDTO transformationContext) {
         try {
@@ -61,6 +76,9 @@ public class TargetSystemWriterService {
             directiveMap.forEach((arcAlias, directives) -> {
                 for(JsonNode directiveNode : directives){
                     allTasks.add(new DirectiveTask(directiveNode, arcAlias, transformationContext));
+
+                    // Increment the Prometheus counter for each processed message
+                    processedMessagesCounter.increment();
                 }
             });
 

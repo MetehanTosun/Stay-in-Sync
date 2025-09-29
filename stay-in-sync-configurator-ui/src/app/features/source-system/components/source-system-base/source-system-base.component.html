@@ -3,30 +3,26 @@
   Main view for managing source systems including listing, searching, creating, and deleting.
   Provides comprehensive search functionality with highlighting and responsive design.
 -->
-<p-card>
+
   <app-search-bar
     [customPlaceholder]="'Search source systems by name, description, API URL, endpoints, or headers...'"
     (search)="onSearchChange($event)"
     (clear)="onSearchClear()">
   </app-search-bar>
-  <!-- Header toolbar with title and create button -->
-  <p-toolbar>
-    <div class="p-toolbar-group-left">
-      <h3>Source Systems</h3>
-    </div>
-    <div class="p-toolbar-group-right">
-      <button pButton type="button" label="Create Source System" icon="pi pi-plus" (click)="openCreate()"></button>
-    </div>
-  </p-toolbar>
-
 
   <!--
     Table of source systems with pagination and action buttons
   -->
   <p-table [value]="systems" [loading]="loading" [paginator]="true" [rows]="10" [responsiveLayout]="'scroll'">
+    <ng-template #caption>
+      <div class="flex items-center justify-between">
+        <span class="text-xl font-bold">Source Systems</span>
+        <button pButton type="button" label="Create Source System" icon="pi pi-plus" (click)="openCreate()"></button>
+      </div>
+    </ng-template>
     <ng-template pTemplate="header">
       <tr>
-        <th style="min-width: 200px;">
+        <th style="width: 25%;">
           <div class="column-header">
             <span>Name</span>
             <div class="search-indicator" *ngIf="hasNameMatches()">
@@ -34,7 +30,7 @@
             </div>
           </div>
         </th>
-        <th style="min-width: 250px;">
+        <th style="width: 25%;">
           <div class="column-header">
             <span>API URL</span>
             <div class="search-indicator" *ngIf="hasUrlMatches()">
@@ -42,7 +38,7 @@
             </div>
           </div>
         </th>
-        <th style="min-width: 300px;">
+        <th style="width: 25%;">
           <div class="column-header">
             <span>Description</span>
             <div class="search-indicator" *ngIf="hasDescriptionMatches()">
@@ -50,7 +46,7 @@
             </div>
           </div>
         </th>
-        <th style="min-width: 150px;">
+        <th style="width: 25%;">
           <div class="column-header">
             <span>Actions</span>
             <div class="search-indicator" *ngIf="hasEndpointMatches() || hasHeaderMatches()">
@@ -197,7 +193,6 @@
       </button>
     </div>
   </div>
-</p-card>
 
 <!-- Shared confirmation dialog for delete -->
 <app-confirmation-dialog
@@ -286,6 +281,9 @@
               <ng-template let-node pTemplate="default">
                 <div style="display:flex;align-items:center;gap:.5rem;">
                   <span>{{ node.label }}</span>
+                  <span style="font-size:.75rem;padding:.1rem .4rem;border-radius:999px;border:1px solid var(--surface-border);color:var(--text-color-secondary);">
+                    {{ node.data?.type==='submodel' ? 'Submodel' : (node.data?.modelType || node.data?.raw?.modelType || (node.data?.raw?.valueType ? 'Property' : 'Element')) }}
+                  </span>
                   <button *ngIf="node.data?.type==='submodel'" pButton type="button" class="p-button-text" label="Create element" (click)="openAasCreateElement(node.data.id)"></button>
                   <!-- <button *ngIf="node.data?.type==='element' && node.data?.modelType!=='Property'" pButton type="button" class="p-button-text" label="Add child" (click)="openAasCreateElement(node.data.submodelId, node.data.idShortPath)"></button> -->
                   <button *ngIf="node.data?.type==='submodel'" pButton type="button" class="p-button-text p-button-danger" label="Delete submodel" (click)="deleteAasSubmodel(node.data.id)"></button>
@@ -305,6 +303,44 @@
               <div><strong>Type:</strong> {{ aasSelectedLivePanel.type }}</div>
               <div *ngIf="aasSelectedLivePanel.valueType"><strong>valueType:</strong> {{ aasSelectedLivePanel.valueType }}</div>
               <div *ngIf="aasSelectedLivePanel.value !== undefined"><strong>value:</strong> {{ aasSelectedLivePanel.value }}</div>
+              <div *ngIf="aasSelectedLivePanel.type==='Range' || aasSelectedLivePanel.min !== undefined || aasSelectedLivePanel.max !== undefined">
+                <div><strong>min:</strong> {{ aasSelectedLivePanel.min }}</div>
+                <div><strong>max:</strong> {{ aasSelectedLivePanel.max }}</div>
+              </div>
+              <div *ngIf="aasSelectedLivePanel.type==='Operation'">
+                <div *ngIf="aasSelectedLivePanel.inputVariables?.length">
+                  <strong>Inputs:</strong>
+                  <ul style="margin:.25rem 0 .5rem 1rem;">
+                    <li *ngFor="let v of aasSelectedLivePanel.inputVariables">{{ v.idShort }} <span *ngIf="v.valueType">({{ v.valueType }})</span></li>
+                  </ul>
+                </div>
+                <div *ngIf="aasSelectedLivePanel.inoutputVariables?.length">
+                  <strong>In/Out:</strong>
+                  <ul style="margin:.25rem 0 .5rem 1rem;">
+                    <li *ngFor="let v of aasSelectedLivePanel.inoutputVariables">{{ v.idShort }} <span *ngIf="v.valueType">({{ v.valueType }})</span></li>
+                  </ul>
+                </div>
+                <div *ngIf="aasSelectedLivePanel.outputVariables?.length">
+                  <strong>Outputs:</strong>
+                  <ul style="margin:.25rem 0 .5rem 1rem;">
+                    <li *ngFor="let v of aasSelectedLivePanel.outputVariables">{{ v.idShort }} <span *ngIf="v.valueType">({{ v.valueType }})</span></li>
+                  </ul>
+                </div>
+              </div>
+              <div *ngIf="aasSelectedLivePanel.type==='RelationshipElement' || aasSelectedLivePanel.type==='AnnotatedRelationshipElement'">
+                <div *ngIf="aasSelectedLivePanel.firstRef"><strong>First:</strong> {{ aasSelectedLivePanel.firstRef }}</div>
+                <div *ngIf="aasSelectedLivePanel.secondRef"><strong>Second:</strong> {{ aasSelectedLivePanel.secondRef }}</div>
+                <div *ngIf="aasSelectedLivePanel.type==='AnnotatedRelationshipElement' && aasSelectedLivePanel.annotations?.length">
+                  <strong>Annotations:</strong>
+                  <ul style="margin:.25rem 0 .5rem 1rem;">
+                    <li *ngFor="let a of aasSelectedLivePanel.annotations; let i = index">
+                      <div><strong>{{ a.idShort || ('Annotation ' + (i+1)) }}</strong></div>
+                      <div *ngIf="a.valueType"><em>valueType:</em> {{ a.valueType }}</div>
+                      <div *ngIf="a.value !== undefined"><em>value:</em> {{ (a.value | json) }}</div>
+                    </li>
+                  </ul>
+                </div>
+              </div>
             </div>
           </div>
         </div>

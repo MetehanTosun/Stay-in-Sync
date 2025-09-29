@@ -1,24 +1,25 @@
-import {AfterViewInit, Component, EventEmitter, Input, Output} from '@angular/core';
+import { AfterViewInit, Component, EventEmitter, Input, Output } from '@angular/core';
 import * as d3 from 'd3';
-import type {Node, NodeConnection} from '../../core/models/node.model';
-import {LegendPanelComponent} from './legend-panel/legend-panel.component';
-import {MonitoringGraphService} from '../../core/services/monitoring-graph.service';
-import {Router} from '@angular/router';
+import type { Node, NodeConnection } from '../../core/models/node.model';
+import { LegendPanelComponent } from './legend-panel/legend-panel.component';
+import { MonitoringGraphService } from '../../core/services/monitoring-graph.service';
+import { Router } from '@angular/router';
+import { Button } from 'primeng/button';
 
 /**
  * GraphPanelComponent
  *
- * This Angular component is responsible for rendering and managing a graph visualization
- * using D3.js. It supports filtering nodes and links based on a search term, updating the graph,
- * and handling user interactions such as node selection and drag-and-drop behavior.
+ * Angular component responsible for rendering and managing a graph visualization
+ * using D3.js. It supports:
+ * - Filtering nodes and links by a search term.
+ * - Updating the graph dynamically when data changes.
+ * - User interactions such as selection, drag-and-drop, zoom, and click navigation.
  */
 @Component({
   selector: 'app-graph-panel',
   templateUrl: './graph-panel.component.html',
-  imports: [
-    LegendPanelComponent
-  ],
-  styleUrl: './graph-panel.component.css'
+  imports: [LegendPanelComponent],
+  styleUrl: './graph-panel.component.css',
 })
 export class GraphPanelComponent implements AfterViewInit {
   /**
@@ -29,22 +30,26 @@ export class GraphPanelComponent implements AfterViewInit {
 
   private _searchTerm: string = '';
   private isInitialized: boolean = false;
+
+  /**
+   * Tracks nodes that are marked with an error state.
+   */
   markedNodes: { [nodeId: string]: boolean } = {};
 
-
-
-  constructor(private graphService: MonitoringGraphService, private router: Router) {
-  }
+  constructor(
+    private graphService: MonitoringGraphService,
+    private router: Router
+  ) {}
 
   /**
    * Input property for the search term.
-   * When the search term changes, the graph is filtered and updated accordingly.
+   * Whenever the search term changes (after initialization),
+   * nodes and links are filtered and the graph is updated.
    */
   @Input()
   set searchTerm(value: string) {
     this._searchTerm = value;
 
-    // Filter nur anwenden, wenn die Komponente bereits initialisiert ist
     if (this.isInitialized) {
       this.filteredNodes = this.filterNodes(this._searchTerm);
       this.filteredLinks = this.filterLinks();
@@ -55,86 +60,46 @@ export class GraphPanelComponent implements AfterViewInit {
     return this._searchTerm;
   }
 
-  loadGraphData() {
-    this.graphService.getMonitoringGraphData().subscribe((data) => {
-      console.log('Graph data loaded:', data);
-      this.nodes = data.nodes;
-      if (data.connections === undefined || data.connections === null) {
-        this.links = [];
-      }else {
-        this.links = data.connections;
-      }
-      // Status der Nodes basierend auf markedNodes aktualisieren
-      this.nodes.forEach(node => {
-        if (this.markedNodes[node.id]) {
-          node.status = 'error';
-        }
-      });
-      this.filteredNodes = this.filterNodes(this.searchTerm);
-      this.filteredLinks = this.filterLinks();
-      this.updateGraph(this.filteredNodes, this.filteredLinks);
-      this.isInitialized = true;
-      const svgElement = document.querySelector('svg');
-      const width = svgElement?.clientWidth ?? 400;
-      const height = svgElement?.clientHeight ?? 300;
-
-      const svg = d3.select('svg')
-        .attr('width', '100%')
-        .attr('height', '100%');
-
-      const container = svg.append('g');
-
-      svg.call(
-        d3.zoom<any, unknown>()
-          .scaleExtent([0.5, 5])
-          .on('zoom', (event) => {
-            container.attr('transform', event.transform);
-          })
-      );
-      this.renderGraph(container, this.nodes, this.links, width, height);
-    }, (error) => {
-      console.error('Error loading graph data:', error);
-    });
-  }
-
-
-
   /**
-   * Array of all nodes in the graph.
+   * All nodes in the graph.
    */
   nodes: Node[] = [];
 
   /**
-   * Array of all links in the graph.
+   * All links (edges) in the graph.
    */
   links: NodeConnection[] = [];
 
   /**
-   * Array of filtered links based on the search term.
+   * Filtered links based on the search term.
    */
   filteredLinks: NodeConnection[] = [...this.links];
 
   /**
-   * Array of filtered nodes based on the search term.
+   * Filtered nodes based on the search term.
    */
   filteredNodes: Node[] = [...this.nodes];
 
   /**
-   * Lifecycle hook that is called after the view has been initialized.
-   * Sets up the SVG container, zoom behavior, and renders the initial graph.
+   * Lifecycle hook called after the component’s view is initialized.
+   * - Loads graph data.
+   * - Sets up zoom and pan interactions.
+   * - Subscribes to SSE events to update node states in real-time.
    */
   ngAfterViewInit() {
     this.loadGraphData();
 
-    // SSE abonnieren
+    // Subscribe to server-sent events for real-time updates
     const evtSource = new EventSource('/events/subscribe');
     evtSource.addEventListener('job-update', (e) => {
       const changedJobIds: number[] = JSON.parse(e.data);
 
-      // markiere Nodes, die zu diesen JobIds gehören
-      this.nodes.forEach(node => {
+      // Mark nodes belonging to changed jobs as error/active
+      this.nodes.forEach((node) => {
         if (node.type === 'SyncNode') {
-          node.status = changedJobIds.includes(Number(node.id)) ? 'error' : 'active';
+          node.status = changedJobIds.includes(Number(node.id))
+            ? 'error'
+            : 'active';
         }
       });
 
@@ -144,46 +109,93 @@ export class GraphPanelComponent implements AfterViewInit {
     });
   }
 
-
-
   /**
-   * Filters the nodes based on the provided search term.
-   * TODO: filter by syncjob and not id and type
-   *
-   * @param term The search term used for filtering nodes.
-   * @returns An array of nodes that match the search term.
+   * Loads graph data from the monitoring service,
+   * initializes zoom behavior, and renders the graph.
    */
-  filterNodes(term: string): Node[] {
-    console.log(`Filtering nodes with term: ${term}`);
-    if (term === '') {
-      return [...this.nodes];
-    }
-    return this.nodes.filter(node =>
-      node.id.toLowerCase().includes(term.toLowerCase()) ||
-      node.type.toLowerCase().includes(term.toLowerCase())
+  loadGraphData() {
+    this.graphService.getMonitoringGraphData().subscribe(
+      (data) => {
+        this.nodes = data.nodes;
+        this.links = data.connections ?? [];
+
+        // Apply error state to marked nodes
+        this.nodes.forEach((node) => {
+          if (this.markedNodes[node.id]) {
+            node.status = 'error';
+          }
+        });
+
+        this.filteredNodes = this.filterNodes(this.searchTerm);
+        this.filteredLinks = this.filterLinks();
+        this.updateGraph(this.filteredNodes, this.filteredLinks);
+        this.isInitialized = true;
+
+        const svgElement = document.querySelector('svg');
+        const width = svgElement?.clientWidth ?? 400;
+        const height = svgElement?.clientHeight ?? 300;
+
+        const svg = d3
+          .select('svg')
+          .attr('width', '100%')
+          .attr('height', '100%');
+
+        const container = svg.append('g');
+
+        // Enable zooming and panning
+        svg.call(
+          d3
+            .zoom<any, unknown>()
+            .scaleExtent([0.5, 5])
+            .on('zoom', (event) => {
+              container.attr('transform', event.transform);
+            })
+        );
+
+        this.renderGraph(container, this.nodes, this.links, width, height);
+      },
+      (error) => {
+        console.error('Error loading graph data:', error);
+      }
     );
   }
 
   /**
-   * Filters the links based on the filtered nodes.
+   * Filters nodes by the given search term.
+   * TODO: Replace ID/type filtering with sync-job-based filtering.
    *
-   * @returns An array of links that connect filtered nodes.
+   * @param term Search term.
+   * @returns Nodes matching the search term.
+   */
+  filterNodes(term: string): Node[] {
+    if (term === '') {
+      return [...this.nodes];
+    }
+    return this.nodes.filter(
+      (node) =>
+        node.id.toLowerCase().includes(term.toLowerCase()) ||
+        node.type.toLowerCase().includes(term.toLowerCase())
+    );
+  }
+
+  /**
+   * Filters links so only those connecting currently filtered nodes remain.
+   *
+   * @returns Filtered array of links.
    */
   filterLinks(): NodeConnection[] {
-    return this.links.filter(link =>
-      this.filteredNodes.includes(link.source as Node) && this.filteredNodes.includes(link.target as Node)
+    return this.links.filter(
+      (link) =>
+        this.filteredNodes.includes(link.source as Node) &&
+        this.filteredNodes.includes(link.target as Node)
     );
   }
 
   /**
    * Updates the graph visualization with new nodes and links.
    *
-   * - Removes all existing lines and node groups from the container.
-   * - Calculates the current SVG width and height.
-   * - Calls renderGraph to redraw the graph with the provided nodes and links.
-   *
-   * @param newNodes Array of nodes to display in the graph.
-   * @param newLinks Array of links to display in the graph.
+   * @param newNodes Nodes to render.
+   * @param newLinks Links to render.
    */
   updateGraph(newNodes: Node[], newLinks: NodeConnection[]) {
     const svg = d3.select('svg');
@@ -193,26 +205,25 @@ export class GraphPanelComponent implements AfterViewInit {
     container.selectAll('g').remove();
 
     const svgNode = svg.node();
-    const width = (svgNode instanceof SVGSVGElement) ? window.innerWidth : 400;
-    const height = (svgNode instanceof SVGSVGElement) ? svgNode.clientHeight : 300;
+    const width =
+      svgNode instanceof SVGSVGElement ? window.innerWidth : 400;
+    const height =
+      svgNode instanceof SVGSVGElement ? svgNode.clientHeight : 300;
 
     this.renderGraph(container, newNodes, newLinks, width, height);
   }
 
   /**
-   * Renders the graph with nodes and links.
+   * Renders the graph.
+   * - Creates shapes for nodes based on type.
+   * - Adds labels and tooltips.
+   * - Sets up drag behavior, zoom, and node click interactions.
    *
-   * - Creates SVG groups for links and nodes.
-   * - Draws nodes as circles and applies status styles.
-   * - Initializes the D3 force simulation for layout.
-   * - Enables drag-and-drop for nodes.
-   * - Handles click events on nodes and the SVG container element.
-   *
-   * @param container D3 selection of the container group element (<g>).
-   * @param nodes Array of node objects.
-   * @param links Array of link objects.
-   * @param width Width of the drawing area.
-   * @param height Height of the drawing area.
+   * @param container D3 container group element (<g>).
+   * @param nodes Nodes to render.
+   * @param links Links to render.
+   * @param width Width of the SVG area.
+   * @param height Height of the SVG area.
    */
   private renderGraph(
     container: d3.Selection<SVGGElement, unknown, HTMLElement, any>,
@@ -222,28 +233,36 @@ export class GraphPanelComponent implements AfterViewInit {
     height: number
   ) {
     const tooltip = d3.select('#tooltip');
-    console.log(`Rendering graph with ${nodes.length} nodes and ${links.length} links`);
 
-    const link = container.append('g')
+    // Draw links
+    const link = container
+      .append('g')
       .selectAll('line')
       .data(links)
-      .enter().append('line')
+      .enter()
+      .append('line')
       .attr('stroke', '#999');
 
-    const nodeGroup = container.append('g')
+    // Draw nodes
+    const nodeGroup = container
+      .append('g')
       .selectAll('g')
       .data(nodes)
-      .enter().append('g');
+      .enter()
+      .append('g');
 
+    // Node shapes and labels
     nodeGroup.each(function (d: Node) {
       let shape: any;
       if (d.type === 'SourceSystem' || d.type === 'ASS') {
-        shape = d3.select(this)
+        shape = d3
+          .select(this)
           .append('polygon')
-          .attr('points', '-25,20 25,20 0,-35') // Größeres Dreieck
+          .attr('points', '-25,20 25,20 0,-35')
           .attr('fill', '#888');
       } else if (d.type === 'TargetSystem') {
-        shape = d3.select(this)
+        shape = d3
+          .select(this)
           .append('rect')
           .attr('width', 40)
           .attr('height', 40)
@@ -251,38 +270,43 @@ export class GraphPanelComponent implements AfterViewInit {
           .attr('y', -20)
           .attr('fill', '#888');
       } else {
-        shape = d3.select(this)
+        shape = d3
+          .select(this)
           .append('circle')
           .attr('r', 20)
           .attr('fill', '#888');
       }
+
       if (shape) {
         shape
           .on('mouseover', (event: MouseEvent, d: Node) => {
-            tooltip.style('visibility', 'visible')
+            tooltip
+              .style('visibility', 'visible')
               .text(d.label)
               .style('position', 'absolute')
               .style('top', `${event.pageY + 10}px`)
               .style('left', `${event.pageX + 10}px`);
           })
           .on('mousemove', (event: MouseEvent) => {
-            tooltip.style('top', `${event.pageY + 10}px`)
+            tooltip
+              .style('top', `${event.pageY + 10}px`)
               .style('left', `${event.pageX + 10}px`);
           })
           .on('mouseout', () => {
             tooltip.style('visibility', 'hidden');
           });
       }
+
       d3.select(this)
         .append('text')
-        .attr('dy', 35)          // Abstand nach unten
+        .attr('dy', 35)
         .attr('text-anchor', 'middle')
-        .text(d.label ?? d.id)   // Label oder ID anzeigen
+        .text(d.label ?? d.id)
         .style('font-size', '12px')
         .style('fill', '#333');
     });
 
-    // Klick-Handler für Nodes mit Status "error"
+    // Node click → navigate to replay if status=error
     nodeGroup.on('click', (event, d) => {
       if (d.status === 'error') {
         this.router.navigate(['/replay'], { queryParams: { nodeId: d.id } });
@@ -291,71 +315,83 @@ export class GraphPanelComponent implements AfterViewInit {
 
     this.applyStatusStyles(nodeGroup);
 
-    const simulation = this.createSimulation(nodes, links, width, height, link, nodeGroup);
+    // Setup simulation
+    const simulation = this.createSimulation(
+      nodes,
+      links,
+      width,
+      height,
+      link,
+      nodeGroup
+    );
 
     this.addDragBehavior(nodeGroup, simulation, link);
 
+    // Node click → emit selection event
     nodeGroup.on('click', (event, d) => {
       event.stopPropagation();
-      this.nodeSelected.emit(d.id);
-      console.log(`Node ${d.id} selected`);
+      if (d.type === 'PollingNode' || d.type === 'SyncNode') {
+        this.nodeSelected.emit(d.id);
+      }
     });
 
+    // Background click → deselect
     d3.select('svg').on('click', (event: MouseEvent) => {
-      if ((event.target as SVGElement).tagName === 'svg') {
+      if (event.target === event.currentTarget) {
         this.nodeSelected.emit(null);
       }
     });
   }
 
   /**
-   * Applies status-specific styles to nodes.
+   * Applies visual styles for node status:
+   * - Active → green circle
+   * - Error → red circle
+   * - Inactive → yellow circle
    *
-   * - Active nodes receive a green circle.
-   * - Nodes with error status receive a red circle.
-   * - Inactive nodes receive a yellow circle.
-   *
-   * @param nodeGroup D3 selection of node groups (<g> elements).
+   * @param nodeGroup D3 selection of node groups.
    */
-  private applyStatusStyles(nodeGroup: d3.Selection<SVGGElement, Node, any, any>) {
+  private applyStatusStyles(
+    nodeGroup: d3.Selection<SVGGElement, Node, any, any>
+  ) {
     nodeGroup.selectAll('.status-circle').remove();
 
-    nodeGroup.filter(d => d.status === 'active')
+    nodeGroup
+      .filter((d) => d.status === 'active')
       .append('circle')
       .attr('class', 'status-circle')
       .attr('r', 8)
       .attr('fill', '#4caf50');
 
-    nodeGroup.filter(d => d.status === 'error')
+    nodeGroup
+      .filter((d) => d.status === 'error')
       .append('circle')
       .attr('class', 'status-circle')
       .attr('r', 8)
       .attr('fill', '#f44336');
 
-    nodeGroup.filter(d => d.status === 'inactive')
+    nodeGroup
+      .filter((d) => d.status === 'inactive')
       .append('circle')
       .attr('class', 'status-circle')
       .attr('r', 8)
       .attr('fill', '#ffeb3b');
   }
 
-
   /**
-   * Adds drag-and-drop behavior to the graph nodes.
-   *
-   * @param nodeGroup D3 selection of node groups (SVG <g> elements).
-   * @param simulation D3 force simulation used for node positioning.
-   * @param link D3 selection of link elements (SVG <line> elements).
-   *
-   * While dragging, the node coordinates are updated and the positions of links and nodes are reset.
-   * After releasing, the fixed coordinates are removed so the simulation can continue.
+   * Adds drag-and-drop behavior for nodes.
+   * - While dragging: updates node position and link coordinates.
+   * - On release: frees the node back to the simulation.
    */
-  private addDragBehavior(nodeGroup: d3.Selection<SVGGElement, Node, any, any>, simulation: d3.Simulation<Node, NodeConnection>, link: d3.Selection<SVGLineElement, NodeConnection, any, any>) {
+  private addDragBehavior(
+    nodeGroup: d3.Selection<SVGGElement, Node, any, any>,
+    simulation: d3.Simulation<Node, NodeConnection>,
+    link: d3.Selection<SVGLineElement, NodeConnection, any, any>
+  ) {
     nodeGroup.call(
-      d3.drag<SVGGElement, Node>()
-        .on('start', () => {
-          simulation.stop();
-        })
+      d3
+        .drag<SVGGElement, Node>()
+        .on('start', () => simulation.stop())
         .on('drag', (event, d) => {
           d.x = event.x;
           d.y = event.y;
@@ -363,13 +399,15 @@ export class GraphPanelComponent implements AfterViewInit {
           d.fy = event.y;
 
           link
-            .attr('x1', l => (l.source as Node).x ?? 0)
-            .attr('y1', l => (l.source as Node).y ?? 0)
-            .attr('x2', l => (l.target as Node).x ?? 0)
-            .attr('y2', l => (l.target as Node).y ?? 0);
+            .attr('x1', (l) => (l.source as Node).x ?? 0)
+            .attr('y1', (l) => (l.source as Node).y ?? 0)
+            .attr('x2', (l) => (l.target as Node).x ?? 0)
+            .attr('y2', (l) => (l.target as Node).y ?? 0);
 
-          nodeGroup
-            .attr('transform', n => `translate(${n.x ?? 0},${n.y ?? 0})`);
+          nodeGroup.attr(
+            'transform',
+            (n) => `translate(${n.x ?? 0},${n.y ?? 0})`
+          );
         })
         .on('end', (event, d) => {
           d.fx = undefined;
@@ -379,29 +417,38 @@ export class GraphPanelComponent implements AfterViewInit {
   }
 
   /**
-   * Creates a D3 force simulation for the graph layout.
-   *
-   * @param nodes Array of node objects.
-   * @param links Array of link objects.
-   * @param width Width of the drawing area.
-   * @param height Height of the drawing area.
-   * @param link D3 selection of link elements (SVG <line> elements).
-   * @param nodeGroup D3 selection of node groups (SVG <g> elements).
-   * @returns A D3 force simulation instance.
+   * Creates and configures the D3 force simulation
+   * used to position nodes and links dynamically.
    */
-  private createSimulation(nodes: Node[], links: NodeConnection[], width: number, height: number, link: d3.Selection<SVGLineElement, NodeConnection, any, any>, nodeGroup: d3.Selection<SVGGElement, Node, any, any>) {
-    return d3.forceSimulation<Node>(nodes)
-      .force('link', d3.forceLink<Node, NodeConnection>(links).id(d => d.id).distance(100))
+  private createSimulation(
+    nodes: Node[],
+    links: NodeConnection[],
+    width: number,
+    height: number,
+    link: d3.Selection<SVGLineElement, NodeConnection, any, any>,
+    nodeGroup: d3.Selection<SVGGElement, Node, any, any>
+  ) {
+    return d3
+      .forceSimulation<Node>(nodes)
+      .force(
+        'link',
+        d3
+          .forceLink<Node, NodeConnection>(links)
+          .id((d) => d.id)
+          .distance(100)
+      )
       .force('charge', d3.forceManyBody().strength(-200))
       .force('center', d3.forceCenter(width / 2, height / 2))
       .on('tick', () => {
         link
-          .attr('x1', d => (d.source as Node).x ?? 0)
-          .attr('y1', d => (d.source as Node).y ?? 0)
-          .attr('x2', d => (d.target as Node).x ?? 0)
-          .attr('y2', d => (d.target as Node).y ?? 0);
-        nodeGroup
-          .attr('transform', d => `translate(${d.x ?? 0},${d.y ?? 0})`);
+          .attr('x1', (d) => (d.source as Node).x ?? 0)
+          .attr('y1', (d) => (d.source as Node).y ?? 0)
+          .attr('x2', (d) => (d.target as Node).x ?? 0)
+          .attr('y2', (d) => (d.target as Node).y ?? 0);
+        nodeGroup.attr(
+          'transform',
+          (d) => `translate(${d.x ?? 0},${d.y ?? 0})`
+        );
       });
   }
 }

@@ -18,6 +18,14 @@ export class AasService {
     return this.http.post(url, {});
   }
 
+  uploadAasx(sourceSystemId: number, file: File): Observable<any> {
+    const url = `/api/config/source-system/${sourceSystemId}/aas/upload`;
+    const form = new FormData();
+    form.append('file', file, file.name);
+    form.append('filename', file.name);
+    return this.http.post(url, form);
+  }
+
   listSubmodels(sourceSystemId: number, source: 'SNAPSHOT' | 'LIVE' = 'SNAPSHOT'): Observable<any> {
     const url = `/api/config/source-system/${sourceSystemId}/aas/submodels`;
     const params = new HttpParams().set('source', source);
@@ -37,6 +45,19 @@ export class AasService {
     }
     const submodelIdEnc = this.encodeIdToBase64Url(submodelId);
     const url = `/api/config/source-system/${sourceSystemId}/aas/submodels/${submodelIdEnc}/elements`;
+    return this.http.get(url, { params });
+  }
+
+  getElement(
+    sourceSystemId: number,
+    submodelId: string,
+    idShortPath: string,
+    source: 'SNAPSHOT' | 'LIVE' = 'LIVE'
+  ): Observable<any> {
+    const submodelIdEnc = this.encodeIdToBase64Url(submodelId);
+    const pathEnc = this.encodePathSegments(idShortPath);
+    const url = `/api/config/source-system/${sourceSystemId}/aas/submodels/${submodelIdEnc}/elements/${pathEnc}`;
+    const params = new HttpParams().set('source', source);
     return this.http.get(url, { params });
   }
 
@@ -62,8 +83,7 @@ export class AasService {
     elementPath: string,
     value: any
   ): Observable<any> {
-    const url = `/api/config/source-system/${sourceSystemId}/aas/submodels/${submodelId}/elements/${elementPath}/value`;
-    // Ensure JSON content type; quote strings as JSON
+    const url = `/api/config/source-system/${sourceSystemId}/aas/submodels/${submodelId}/elements/${this.encodePathSegments(elementPath)}/value`;
     const headers = new HttpHeaders({ 'Content-Type': 'application/json' });
     const body = (typeof value === 'string') ? JSON.stringify(value) : value;
     return this.http.patch(url, body, { headers });
@@ -79,7 +99,7 @@ export class AasService {
     submodelId: string,
     elementPath: string
   ): Observable<any> {
-    const url = `/api/config/source-system/${sourceSystemId}/aas/submodels/${submodelId}/elements/${elementPath}`;
+    const url = `/api/config/source-system/${sourceSystemId}/aas/submodels/${submodelId}/elements/${this.encodePathSegments(elementPath)}`;
     return this.http.delete(url);
   }
 
@@ -112,9 +132,16 @@ export class AasService {
   createAasTargetArc(dto: CreateAasTargetArcDTO): Observable<AasTargetArcConfiguration> {
     return this.http.post<AasTargetArcConfiguration>('/api/config/aas-target-request-configuration', dto);
   }
-  
+
   deleteAasTargetArc(arcId: number): Observable<void> {
     return this.http.delete<void>(`/api/config/aas-target-request-configuration/${arcId}`);
+  }
+
+  private encodePathSegments(path: string): string {
+    return path
+      .split('/')
+      .map(seg => encodeURIComponent(seg))
+      .join('/');
   }
 }
 

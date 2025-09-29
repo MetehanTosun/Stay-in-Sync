@@ -7,7 +7,7 @@ import {ScriptEditorService, ScriptPayload,} from '../../../core/services/script
 import {MessagesModule} from 'primeng/messages';
 import {ConfirmationService, MessageService} from 'primeng/api';
 
-import {ActivatedRoute} from '@angular/router';
+import {ActivatedRoute, Router} from '@angular/router';
 
 import { debounceTime, finalize, first, of, Subject, Subscription, switchMap } from 'rxjs';
 
@@ -28,11 +28,11 @@ import {SourceSystem, SourceSystemEndpoint} from '../../source-system/models/sou
 import {ArcManagementPanelComponent} from '../arc-management-panel/arc-management-panel.component';
 import {ArcWizardComponent} from '../arc-wizard/arc-wizard.component';
 import {InputTextModule} from 'primeng/inputtext';
-import {FloatLabel} from 'primeng/floatlabel';
 import { MonacoEditorService } from '../../../core/services/monaco-editor.service';
 import { TypeDefinitionsResponse } from '../models/target-system.models';
 import { TargetArcPanelComponent } from '../target-arc-panel/target-arc-panel.component';
 import { ConfirmDialog } from 'primeng/confirmdialog';
+import {Inplace} from 'primeng/inplace';
 import { ArcWizardAasComponent } from '../arc-wizard-aas/arc-wizard-aas.component';
 import { AasService } from '../../source-system/services/aas.service';
 
@@ -40,7 +40,7 @@ interface MonacoExtraLib {
   uri: String;
   disposable: IDisposable;
 }
-//
+
 @Component({
   selector: 'app-script-editor-step', // might be without step
   providers: [ConfirmationService],
@@ -63,8 +63,8 @@ interface MonacoExtraLib {
     ConfirmDialog,
     ToastModule,
     InputTextModule,
-    FloatLabel,
-    TargetArcPanelComponent
+    TargetArcPanelComponent,
+    Inplace,
   ],
 })
 export class ScriptEditorPageComponent implements OnInit, OnDestroy {
@@ -72,6 +72,7 @@ export class ScriptEditorPageComponent implements OnInit, OnDestroy {
   @ViewChild(ArcManagementPanelComponent) arcManagementPanel!: ArcManagementPanelComponent;
 
   currentTransformationId: string | null = null;
+  originalName: string = '';
   scriptPayload: ScriptPayload | null = null;
 
   editorOptions = {
@@ -118,7 +119,7 @@ export class ScriptEditorPageComponent implements OnInit, OnDestroy {
 
   private route = inject(ActivatedRoute);
 
-  constructor() {
+  constructor(private router: Router) {
     this.subscriptions.add(
       this.onModelChange.pipe(debounceTime(1000)).subscribe(() => this.analyzeEditorContentForTypes())
     );
@@ -149,7 +150,7 @@ export class ScriptEditorPageComponent implements OnInit, OnDestroy {
     console.log('[ScriptEditorPage] Subscribing to type definition updates...');
     this.subscriptions.add(
       this.monacoEditorService.typeUpdateRequested$.subscribe(response => {
-        if(!response){
+        if (!response) {
           return;
         }
         console.log('[ScriptEditorPage] Received type update request. Applying to Monaco instance.');
@@ -331,7 +332,7 @@ export class ScriptEditorPageComponent implements OnInit, OnDestroy {
   }
 
   private applyTypeDefinitions(response: TypeDefinitionsResponse): void {
-    if (!this.monaco){
+    if (!this.monaco) {
       console.error("Cannot apply types, monaco instance is not available.");
       return;
     }
@@ -379,7 +380,11 @@ export class ScriptEditorPageComponent implements OnInit, OnDestroy {
         error: (err) => {
           console.error('Failed to load script context', err);
           this.code = `// ERROR: Could not load script context for Transformation ID ${transformationId}.`;
-          this.messageService.add({ severity: 'error', summary: 'Load Error', detail: 'Script context could not be loaded.' });
+          this.messageService.add({
+            severity: 'error',
+            summary: 'Load Error',
+            detail: 'Script context could not be loaded.'
+          });
         }
       });
   }
@@ -411,22 +416,22 @@ export class ScriptEditorPageComponent implements OnInit, OnDestroy {
 
     try {
       hasErrors = await this.hasValidationErrors();
-      if (hasErrors){
+      if (hasErrors) {
         this.messageService.add({
-        severity: 'error',
-        summary: 'Validation Failed',
-        detail: 'Please fix the TypeScript errors before saving.'
-      });
+          severity: 'error',
+          summary: 'Validation Failed',
+          detail: 'Please fix the TypeScript errors before saving.'
+        });
       }
       const transpileOutput = ts.transpileModule(this.code, {
         compilerOptions: {module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ESNext},
       });
       transpiledCode = transpileOutput.outputText;
 
-      if(!hasErrors){
+      if (!hasErrors) {
         scriptStatus = 'VALIDATED';
       }
-    } catch (e){
+    } catch (e) {
       scriptStatus = 'DRAFT';
     }
 
@@ -435,7 +440,7 @@ export class ScriptEditorPageComponent implements OnInit, OnDestroy {
     const matches = codeToSave.matchAll(arcPattern);
 
     const requiredArcSet = new Set<string>();
-    for (const match of matches){
+    for (const match of matches) {
       const systemName = match[1];
       const arcName = match[2];
       requiredArcSet.add(`${systemName}.${arcName}`);
@@ -456,27 +461,27 @@ export class ScriptEditorPageComponent implements OnInit, OnDestroy {
 
     this.isSaving = true;
     this.scriptEditorService.saveScriptForTransformation(Number(this.currentTransformationId), payload).subscribe({
-        next: () => {
-          this.messageService.add({
-            severity: 'success',
-            summary: 'Saved!',
-            detail: 'Script has been saved successfully.'
-          });
+      next: () => {
+        this.messageService.add({
+          severity: 'success',
+          summary: 'Saved!',
+          detail: 'Script has been saved successfully.'
+        });
 
-          this.isSaving = false;
-          this.cdr.detectChanges();
-        },
-        error: (err) => {
-          this.messageService.add({
-            severity: 'error',
-            summary: 'Save Failed',
-            detail: 'Could not save the script to the server.'
-          });
-          console.error('Save script error:', err);
-          this.isSaving = false;
-          this.cdr.detectChanges();
-        }
-      });
+        this.isSaving = false;
+        this.cdr.detectChanges();
+      },
+      error: (err) => {
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Save Failed',
+          detail: 'Could not save the script to the server.'
+        });
+        console.error('Save script error:', err);
+        this.isSaving = false;
+        this.cdr.detectChanges();
+      }
+    });
   }
 
   // --- Helper & Private Methods ---
@@ -595,5 +600,23 @@ function transform(): DirectiveMap {
   ngOnDestroy(): void {
     this.subscriptions.unsubscribe();
     this.currentExtraLibs.forEach(lib => lib.disposable.dispose());
+  }
+
+  goBack() {
+    this.router.navigate(['transformation-scripts']);
+  }
+
+  onSave(closeCallback: Function) {
+    this.saveScript()
+    closeCallback();
+  }
+
+  onClose(closeCallback: Function) {
+    this.scriptPayload!.name = this.originalName;
+    closeCallback();
+  }
+
+  onActivate() {
+    this.originalName = this.scriptPayload!.name;
   }
 }

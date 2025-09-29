@@ -10,7 +10,8 @@ import de.unistuttgart.stayinsync.exception.SyncNodeException;
 import de.unistuttgart.stayinsync.syncnode.domain.ExecutionPayload;
 import de.unistuttgart.stayinsync.syncnode.syncjob.DispatcherStateService;
 import de.unistuttgart.stayinsync.syncnode.syncjob.TransformationExecutionService;
-import de.unistuttgart.stayinsync.transport.dto.*;
+import de.unistuttgart.stayinsync.transport.dto.SourceSystemApiRequestConfigurationMessageDTO;
+import de.unistuttgart.stayinsync.transport.dto.SyncDataMessageDTO;
 import io.quarkiverse.rabbitmqclient.RabbitMQClient;
 import io.quarkus.logging.Log;
 import io.quarkus.runtime.StartupEvent;
@@ -136,14 +137,13 @@ public class SyncDataMessageConsumer {
     }
 
 
-
     public void startConsumingSyncData(SourceSystemApiRequestConfigurationMessageDTO requestConfigurationMessageDTO) {
         try {
             //TODO: Check if and how it would be possible to not declare queue in both services
             Map<String, Object> queueArgs = new HashMap<>();
             queueArgs.put("x-queue-type", "stream");
             queueArgs.put("x-max-age", "1m");
-            channel.queueDeclare("request-config-" + requestConfigurationMessageDTO.id(), true, false, false, Collections.singletonMap("x-queue-type", "stream"));
+            channel.queueDeclare("request-config-" + requestConfigurationMessageDTO.id(), true, false, false, queueArgs);
             channel.basicConsume("request-config-" + requestConfigurationMessageDTO.id(), false, receiveSyncDataCallback(), cancelSyncDataConsumptionCallback());
         } catch (IOException e) {
             throw new RuntimeException(e);

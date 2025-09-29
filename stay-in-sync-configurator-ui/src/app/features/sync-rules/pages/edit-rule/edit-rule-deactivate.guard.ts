@@ -2,7 +2,10 @@ import { Injectable } from '@angular/core';
 import { CanDeactivate } from '@angular/router';
 import { EditRuleComponent } from './edit-rule.component';
 
-// TODO-s
+/**
+ * This class represents the guard that requests user confirmation
+ * if one tries to exit the graph editor with unsaved changes
+ */
 @Injectable({ providedIn: 'root' })
 export class EditRuleDeactivateGuard implements CanDeactivate<EditRuleComponent> {
   canDeactivate(component: EditRuleComponent): boolean {

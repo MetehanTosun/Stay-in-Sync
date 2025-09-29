@@ -18,21 +18,21 @@ import {
   SourceSystem,
   SourceSystemEndpoint,
 } from '../../features/source-system/models/source-system.models';
-import { 
+import {
   AasTargetArcConfiguration,
   AnyTargetArc,
   CreateAasTargetArcDTO,
-  CreateTargetArcDTO, 
-  EndpointSuggestion, 
-  TargetArcConfiguration, 
-  TargetSystem, 
-  TypeDefinitionsResponse, 
+  CreateTargetArcDTO,
+  EndpointSuggestion,
+  TargetArcConfiguration,
+  TargetSystem,
+  TypeDefinitionsResponse,
   UpdateTransformationRequestConfigurationDTO
 } from '../../features/script-editor/models/target-system.models';
 
 export interface ScriptPayload {
   id?: string;
-  name: string | null | undefined;
+  name: string;
   typescriptCode: string;
   javascriptCode?: string;
   requiredArcAliases?: string[];
@@ -91,7 +91,7 @@ export class ScriptEditorService {
     // TODO: Replace with the actual API endpoint once it's available.
     // Example: return this.http.get<ArcUsageInfo[]>(`${this.API_URL}/config/request-configuration/${arcId}/usages`);
     // For now, returning an empty array to allow UI development.
-    return of([]); 
+    return of([]);
   }
 
   /**
@@ -200,7 +200,7 @@ export class ScriptEditorService {
   createAasTargetArc(dto: CreateAasTargetArcDTO): Observable<AasTargetArcConfiguration> {
     return this.http.post<AasTargetArcConfiguration>(`${this.API_URL}/config/aas-target-request-configuration`, dto);
   }
-  
+
   deleteAasTargetArc(arcId: number): Observable<void> {
     return this.http.delete<void>(`${this.API_URL}/config/aas-target-request-configuration/${arcId}`);
   }
@@ -240,7 +240,7 @@ export class ScriptEditorService {
             description: dto.description || '',
             required: dto.required || false,
             options: dto.values || [],
-            type: dto.schemaType.toLowerCase() as 'string' | 'number' | 'integer' | 'boolean' | 'array',
+            type: (dto.schemaType?.toLowerCase() ?? 'string') as 'string' | 'number' | 'integer' | 'boolean' | 'array',
           };
 
           if (definition.in === 'path') {

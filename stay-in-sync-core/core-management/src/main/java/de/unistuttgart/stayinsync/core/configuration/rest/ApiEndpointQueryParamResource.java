@@ -4,7 +4,6 @@ import de.unistuttgart.stayinsync.core.configuration.exception.CoreManagementExc
 import de.unistuttgart.stayinsync.core.configuration.mapping.ApiEndpointQueryParamMapper;
 import de.unistuttgart.stayinsync.core.configuration.rest.dtos.ApiEndpointQueryParamDTO;
 import de.unistuttgart.stayinsync.core.configuration.service.ApiEndpointQueryParamService;
-import de.unistuttgart.stayinsync.core.configuration.rest.Examples;
 import io.quarkus.logging.Log;
 import jakarta.inject.Inject;
 import jakarta.validation.Valid;

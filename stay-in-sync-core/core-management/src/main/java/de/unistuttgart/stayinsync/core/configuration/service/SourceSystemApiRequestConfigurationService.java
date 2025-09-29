@@ -12,7 +12,7 @@ import de.unistuttgart.stayinsync.core.configuration.rest.dtos.CreateSourceArcDT
 import de.unistuttgart.stayinsync.core.configuration.rest.dtos.CreateRequestConfigurationDTO;
 import de.unistuttgart.stayinsync.core.configuration.rest.dtos.GetRequestConfigurationDTO;
 import de.unistuttgart.stayinsync.core.configuration.util.TypeScriptTypeGenerator;
-import de.unistuttgart.stayinsync.core.management.rabbitmq.producer.PollingJobMessageProducer;
+import de.unistuttgart.stayinsync.core.configuration.rabbitmq.producer.PollingJobMessageProducer;
 import de.unistuttgart.stayinsync.transport.domain.ApiEndpointQueryParamType;
 import de.unistuttgart.stayinsync.transport.domain.JobDeploymentStatus;
 import io.quarkus.logging.Log;
@@ -78,12 +78,13 @@ public class SourceSystemApiRequestConfigurationService {
             Log.infof("Settings deployment status of request config with id %d to %s", requestConfigId, jobDeploymentStatus);
             sourceSystemApiRequestConfiguration.deploymentStatus = jobDeploymentStatus;
             switch (jobDeploymentStatus) {
-                case DEPLOYING ->
-                        pollingJobMessageProducer.publishPollingJob(fullUpdateMapper.mapToMessageDTO(sourceSystemApiRequestConfiguration));
-                case STOPPING, RECONFIGURING ->
-                        pollingJobMessageProducer.reconfigureDeployedPollingJob(fullUpdateMapper.mapToMessageDTO(sourceSystemApiRequestConfiguration));
-            }
-            ;
+                case DEPLOYING -> {
+                    pollingJobMessageProducer.publishPollingJob(fullUpdateMapper.mapToMessageDTO(sourceSystemApiRequestConfiguration));
+                }
+                case STOPPING, RECONFIGURING -> {
+                    pollingJobMessageProducer.reconfigureDeployedPollingJob(fullUpdateMapper.mapToMessageDTO(sourceSystemApiRequestConfiguration));
+                }
+            };
         }
     }
 
@@ -135,7 +136,7 @@ public class SourceSystemApiRequestConfigurationService {
      * Replaces an existing ARC with the data provided in the DTO.
      * This is a full update: old parameters and headers are cleared and replaced.
      *
-     * @param id The ID of the ARC to update.
+     * @param id  The ID of the ARC to update.
      * @param dto The DTO containing the new configuration.
      * @return An Optional containing the updated entity, or empty if not found.
      */

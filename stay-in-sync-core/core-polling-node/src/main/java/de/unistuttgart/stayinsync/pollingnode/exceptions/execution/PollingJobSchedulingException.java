@@ -1,5 +1,6 @@
 package de.unistuttgart.stayinsync.pollingnode.exceptions.execution;
 
+
 import de.unistuttgart.stayinsync.pollingnode.exceptions.PollingNodeException;
 
 public class PollingJobSchedulingException extends PollingNodeException {
@@ -7,7 +8,7 @@ public class PollingJobSchedulingException extends PollingNodeException {
         super(message);
     }
 
-    public PollingJobSchedulingException(String message, Throwable cause){
+    public PollingJobSchedulingException(String message, Throwable cause) {
         super(message, cause);
     }
 }
