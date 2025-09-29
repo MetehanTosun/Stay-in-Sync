@@ -546,9 +546,8 @@ public class AasResource {
                 Log.warnf("Could not inspect parent element for path suffix resolution: %s", e.getMessage());
             }
         }
-        // Decode the Base64-encoded smId before sending to BaSyx
-        String decodedSmId = normalizeSubmodelId(smId);
-        var resp = traversal.createElement(ss.apiUrl, decodedSmId, effectiveParentPath, body, headers).await().indefinitely();
+        // Use raw smId (Base64URL) for upstream like Target System
+        var resp = traversal.createElement(ss.apiUrl, smId, effectiveParentPath, body, headers).await().indefinitely();
         int sc = resp.statusCode();
         Log.infof("Create element upstream status=%d msg=%s body=%s", sc, resp.statusMessage(), safeBody(resp));
         if (sc >= 200 && sc < 300) {
