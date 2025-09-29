@@ -351,11 +351,36 @@ export class AasManagementComponent implements OnInit {
       
       console.log('[TargetAasManage] Element created successfully');
       
+      // Show success toast
+      this.messageService.add({
+        severity: 'success',
+        summary: 'Element Created',
+        detail: 'Element has been successfully created.',
+        life: 3000
+      });
+      
       // Refresh the tree
       await this.discoverSnapshot();
       
     } catch (error) {
       console.error('[TargetAasManage] Error creating element:', error);
+      
+      // Show error toast
+      if (error && error.error && error.error.includes('Duplicate entry')) {
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Duplicate Element',
+          detail: 'An element with this idShort already exists. Please use a different idShort.',
+          life: 5000
+        });
+      } else {
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Error',
+          detail: error?.error || error?.message || 'Failed to create element',
+          life: 5000
+        });
+      }
     }
   }
 
