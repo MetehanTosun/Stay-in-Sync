@@ -12,6 +12,7 @@ import {InputText} from 'primeng/inputtext';
 import {Toolbar} from 'primeng/toolbar';
 import {Tag} from 'primeng/tag';
 import {Select} from 'primeng/select';
+import { ArcAPIService } from '../../service/api/arc-api.service';
 
 /**
  * The page component responsible for viewing the list of transformation rule graphs
@@ -48,11 +49,20 @@ export class RulesOverviewComponent implements OnInit {
 
   constructor(
     private router: Router,
-    private rulesApi: TransformationRulesApiService
+    private rulesApi: TransformationRulesApiService,
+    private arcApi: ArcAPIService
   ) { }
 
   ngOnInit() : void {
     this.loadRules();
+      this.arcApi.getJsonPaths().subscribe({
+    next: (jsonPaths) => {
+      console.log('JSON Paths:', jsonPaths);
+    },
+    error: (error) => {
+      console.error('Error fetching JSON paths:', error);
+    }
+  });
   }
   //#endregion
 

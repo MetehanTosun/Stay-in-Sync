@@ -28,4 +28,8 @@ export class ProviderNodeComponent extends CustomNodeComponent {
   getTrimmedJsonpath(): string {
     return this.node().data?.jsonPath.replace(/^source\./, '');
   }
+
+  getJsonPayload(): any {
+
+  }
 }
