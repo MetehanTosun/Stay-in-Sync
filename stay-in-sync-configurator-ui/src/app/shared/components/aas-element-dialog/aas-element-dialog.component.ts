@@ -50,7 +50,6 @@ export class AasElementDialogComponent implements OnInit, OnChanges {
   submodelId = '';
   systemId = 0;
   systemType: 'source' | 'target' = 'source';
-  activeTemplate = 'property';
 
   // Templates
   elementTemplateProperty = `{
@@ -150,7 +149,6 @@ export class AasElementDialogComponent implements OnInit, OnChanges {
    * Set element template
    */
   setElementTemplate(kind: string): void {
-    this.activeTemplate = kind;
     switch (kind) {
       case 'property': this.elementJson = this.elementTemplateProperty; break;
       case 'range': this.elementJson = this.elementTemplateRange; break;
