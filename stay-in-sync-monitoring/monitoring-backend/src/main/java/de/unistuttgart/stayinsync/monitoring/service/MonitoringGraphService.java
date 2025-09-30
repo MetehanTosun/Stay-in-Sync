@@ -37,26 +37,29 @@ public class MonitoringGraphService {
     KubernetesPollingNodeService kubernetesPollingNodeService;
 
     public GraphResponse buildGraph() {
+        long globalStart = System.currentTimeMillis();
+
         Map<String, NodeDto> nodeMap = new HashMap<>();
         List<NodeConnectionDto> connections = new ArrayList<>();
 
-        // Versuche Logging (soll Fehler nicht blockieren)
-        try {
-            clientLogger.logUrl();
-        } catch (Exception e) {
-            Log.warn("Konnte URL nicht loggen", e);
-        }
+        // Logging Start
+        Log.info("buildGraph gestartet");
 
         // --- SourceSystems ---
+        long t1 = System.currentTimeMillis();
         List<MonitoringSourceSystemDto> monitoringSources = new ArrayList<>();
         try {
             monitoringSources = sourceSystemClient.getAll();
-            Log.info("Monitoring Sources: " + monitoringSources);
+            Log.info("Monitoring Sources geladen: " + monitoringSources.size());
         } catch (Exception e) {
             Log.error("Fehler beim Abrufen der SourceSystems", e);
         }
+        long t2 = System.currentTimeMillis();
+        Log.info("sourceSystemClient.getAll() dauerte " + (t2 - t1) + " ms");
 
+        // pro SourceSystem: Prometheus-Check
         for (MonitoringSourceSystemDto src : monitoringSources) {
+            long ps = System.currentTimeMillis();
             boolean isHealthy = false;
             try {
                 if (src.apiUrl != null) {
@@ -65,20 +68,28 @@ public class MonitoringGraphService {
             } catch (Exception e) {
                 Log.warnf(e, "Prometheus-Check fehlgeschlagen für SourceSystem %s (%s)", src.id, src.apiUrl);
             }
+            long pe = System.currentTimeMillis();
+            Log.info("Prometheus-Check für SourceSystem " + src.id + " dauerte " + (pe - ps) + " ms");
+
             nodeMap.put("SRC_" + src.id,
                     createNode("SRC_" + src.id, "SourceSystem", src.name, isHealthy ? "active" : "error"));
         }
 
         // --- TargetSystems ---
+        long t3 = System.currentTimeMillis();
         List<MonitoringTargetSystemDto> monitoringTargets = new ArrayList<>();
         try {
             monitoringTargets = targetSystemClient.getAll();
-            Log.info("Monitoring Targets: " + monitoringTargets);
+            Log.info("Monitoring Targets geladen: " + monitoringTargets.size());
         } catch (Exception e) {
             Log.error("Fehler beim Abrufen der TargetSystems", e);
         }
+        long t4 = System.currentTimeMillis();
+        Log.info("targetSystemClient.getAll() dauerte " + (t4 - t3) + " ms");
 
+        // pro TargetSystem: Prometheus-Check
         for (MonitoringTargetSystemDto tgt : monitoringTargets) {
+            long ps = System.currentTimeMillis();
             boolean isHealthy = false;
             try {
                 if (tgt.apiUrl != null) {
@@ -87,18 +98,24 @@ public class MonitoringGraphService {
             } catch (Exception e) {
                 Log.warnf(e, "Prometheus-Check fehlgeschlagen für TargetSystem %s (%s)", tgt.id, tgt.apiUrl);
             }
+            long pe = System.currentTimeMillis();
+            Log.info("Prometheus-Check für TargetSystem " + tgt.id + " dauerte " + (pe - ps) + " ms");
+
             nodeMap.put("TGT_" + tgt.id,
                     createNode("TGT_" + tgt.id, "TargetSystem", tgt.name, isHealthy ? "active" : "error"));
         }
 
         // --- SyncJobs ---
+        long t5 = System.currentTimeMillis();
         List<MonitoringSyncJobDto> jobs = new ArrayList<>();
         try {
             jobs = syncJobClient.getAll();
-            Log.info("Jobs: " + jobs);
+            Log.info("Jobs geladen: " + jobs.size());
         } catch (Exception e) {
             Log.error("Fehler beim Abrufen der SyncJobs", e);
         }
+        long t6 = System.currentTimeMillis();
+        Log.info("syncJobClient.getAll() dauerte " + (t6 - t5) + " ms");
 
         for (MonitoringSyncJobDto job : jobs) {
             String syncNodeId = job.id.toString();
@@ -113,11 +130,6 @@ public class MonitoringGraphService {
                         for (String pollingNodeName : tf.pollingNodes) {
                             String pollingNodeId = "POLL_" + pollingNodeName;
                             boolean isHealthy = false;
-                            try {
-                                isHealthy = prometheusClient.isUp("http://host.docker.internal:8095/q/health/live");
-                            } catch (Exception e) {
-                                Log.warnf(e, "Prometheus-Check fehlgeschlagen für PollingNode %s", pollingNodeName);
-                            }
 
                             nodeMap.putIfAbsent(pollingNodeId,
                                     createNode(pollingNodeId, "PollingNode", pollingNodeName,
@@ -141,6 +153,7 @@ public class MonitoringGraphService {
                 }
             }
         }
+        long t7 = System.currentTimeMillis();
 
         // --- PollingNodes aus K8s ---
         try {
@@ -165,11 +178,15 @@ public class MonitoringGraphService {
         } catch (Exception e) {
             Log.error("Fehler beim Abrufen der PollingNodes aus K8s", e);
         }
+        long t8 = System.currentTimeMillis();
+        Log.info("kubernetesPollingNodeService.getPollingNodes() dauerte " + (t8 - t7) + " ms");
 
         GraphResponse graph = new GraphResponse();
         graph.nodes = new ArrayList<>(nodeMap.values());
         graph.connections = connections;
 
+        long globalEnd = System.currentTimeMillis();
+        Log.info("buildGraph() komplett dauerte " + (globalEnd - globalStart) + " ms");
         return graph;
     }
 
