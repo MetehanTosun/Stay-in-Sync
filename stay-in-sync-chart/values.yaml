@@ -178,9 +178,10 @@ kube-prometheus-stack:
 prometheus:
   prometheusSpec:
     maximumStartupDurationSeconds: 600
-    additionalScrapeConfigs:
-      name: stayinsync-additional-scrape-configs
-      key: additional-scrape-configs.yaml
+    additionalScrapeConfigsSecret:
+      enabled: true
+      name: prometheus-additional-scrape
+      key: prometheus-additional.yaml
     serviceMonitorSelector:
       matchExpressions:
         - key: app.kubernetes.io/managed-by

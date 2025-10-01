@@ -1,10 +1,8 @@
 apiVersion: v1
 kind: Secret
 metadata:
-  name: stayinsync-additional-scrape-configs
+  name: prometheus-additional-scrape
   namespace: {{ .Release.Namespace }}
-  labels:
-    app.kubernetes.io/name: stayinsync-monitoring
 type: Opaque
 stringData:
   prometheus-additional.yaml: |
@@ -16,12 +14,13 @@ stringData:
         - url: http://core-management:80/api/monitoring/prometheus/flat/sources
           refresh_interval: 30s
       relabel_configs:
+        # Wichtig: __address__ wird zum Target -> kommt aus SD (muss https:// enthalten)
         - source_labels: [__address__]
           target_label: __param_target
         - source_labels: [__param_target]
           target_label: instance
         - target_label: __address__
-          replacement: blackbox-exporter:9115
+          replacement: blackbox-exporter.umbrella.svc.cluster.local:9115
 
     - job_name: 'blackbox_http_targetSystems'
       metrics_path: /probe
@@ -36,4 +35,21 @@ stringData:
         - source_labels: [__param_target]
           target_label: instance
         - target_label: __address__
-          replacement: blackbox-exporter:9115
+          replacement: blackbox-exporter.umbrella.svc.cluster.local:9115
+
+
+    - job_name: 'blackbox_http_dummyjson'
+      metrics_path: /probe
+      params:
+        module: [http_2xx]
+      static_configs:
+      - targets:
+        - https://dummyjson.com
+      relabel_configs:
+        - source_labels: [__address__]
+          target_label: __param_target
+        - source_labels: [__param_target]
+          target_label: instance
+        - target_label: __address__
+          replacement: blackbox-exporter.umbrella.svc.cluster.local:9115
+
