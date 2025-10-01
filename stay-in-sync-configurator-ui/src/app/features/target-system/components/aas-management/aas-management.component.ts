@@ -268,18 +268,33 @@ export class AasManagementComponent implements OnInit {
       submodelId: node.data.submodelId,
       idShortPath: node.data.idShortPath,
       nodeKey: node.key,
-      nodeLabel: node.label
+      nodeLabel: node.label,
+      fullNodeData: node.data
     });
     
     this.detailsLoading = true;
     try {
+      console.log('[TargetAasManage] Calling aasManagement.loadElementDetails with:', {
+        systemId: this.system.id,
+        submodelId: node.data.submodelId,
+        idShortPath: node.data.idShortPath
+      });
+      
       this.selectedLivePanel = await this.aasManagement.loadElementDetails(
         this.system.id,
         node.data.submodelId,
         node.data.idShortPath
       );
+      
+      console.log('[TargetAasManage] Element details loaded successfully:', this.selectedLivePanel);
     } catch (error) {
-      console.error('Error loading element details:', error);
+      console.error('[TargetAasManage] Error loading element details:', error);
+      console.error('[TargetAasManage] Error details:', {
+        error: error,
+        systemId: this.system.id,
+        submodelId: node.data.submodelId,
+        idShortPath: node.data.idShortPath
+      });
     } finally {
       this.detailsLoading = false;
     }
