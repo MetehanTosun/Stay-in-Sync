@@ -397,6 +397,12 @@ export class SourceSystemAasManagementComponent implements OnInit {
       setTimeout(() => {
         console.log('[SourceAasManage] Force refreshing tree after element creation');
         this.discoverAasSnapshot();
+        
+        // Additional refresh to ensure deep elements are properly loaded
+        setTimeout(() => {
+          console.log('[SourceAasManage] Final refresh for deep elements');
+          this.discoverAasSnapshot();
+        }, 500);
       }, 1000);
       
     } catch (error) {

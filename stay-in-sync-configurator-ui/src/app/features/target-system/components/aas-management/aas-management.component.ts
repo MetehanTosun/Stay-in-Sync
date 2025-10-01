@@ -390,6 +390,12 @@ export class AasManagementComponent implements OnInit {
       setTimeout(async () => {
         console.log('[TargetAasManage] Force refreshing tree after element creation');
         await this.discoverSnapshot();
+        
+        // Additional refresh to ensure deep elements are properly loaded
+        setTimeout(async () => {
+          console.log('[TargetAasManage] Final refresh for deep elements');
+          await this.discoverSnapshot();
+        }, 500);
       }, 1000);
       
     } catch (error) {
