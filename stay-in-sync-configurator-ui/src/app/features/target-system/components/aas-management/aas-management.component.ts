@@ -308,18 +308,38 @@ export class AasManagementComponent implements OnInit {
    * Fix tree structure after live refresh to ensure correct idShortPath
    */
   private fixTreeStructureAfterRefresh(elementData: any): void {
-    if (!elementData || !elementData.parentPath) return;
+    console.log('[TargetAasManage] fixTreeStructureAfterRefresh called with:', elementData);
+    
+    if (!elementData || !elementData.parentPath) {
+      console.log('[TargetAasManage] fixTreeStructureAfterRefresh: Missing elementData or parentPath', {
+        elementData: elementData,
+        parentPath: elementData?.parentPath
+      });
+      return;
+    }
     
     console.log('[TargetAasManage] Fixing tree structure after live refresh', {
       parentPath: elementData.parentPath,
-      elementIdShort: elementData.body?.idShort
+      elementIdShort: elementData.body?.idShort,
+      fullElementData: elementData
     });
     
     const elementIdShort = elementData.body?.idShort;
-    if (!elementIdShort) return;
+    if (!elementIdShort) {
+      console.log('[TargetAasManage] fixTreeStructureAfterRefresh: Missing elementIdShort', {
+        body: elementData.body
+      });
+      return;
+    }
     
     // Build the correct idShortPath
     const correctIdShortPath = elementData.parentPath + '/' + elementIdShort;
+    
+    console.log('[TargetAasManage] Building correct idShortPath', {
+      parentPath: elementData.parentPath,
+      elementIdShort: elementIdShort,
+      correctIdShortPath: correctIdShortPath
+    });
     
     // Find and update the element in the tree
     this.updateElementInTree(this.treeNodes, elementIdShort, correctIdShortPath);
