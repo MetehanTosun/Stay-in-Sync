@@ -186,7 +186,7 @@ export class SourceSystemAasManagementComponent implements OnInit {
     const correctIdShortPath = elementData.parentPath + '/' + elementIdShort;
     
     // Find and update the element in the tree
-    this.updateElementInTree(this.treeNodes, elementIdShort, correctIdShortPath);
+    this.updateElementInTree(this.aasTreeNodes, elementIdShort, correctIdShortPath);
     
     console.log('[SourceAasManage] Fixed tree structure', {
       elementIdShort,
