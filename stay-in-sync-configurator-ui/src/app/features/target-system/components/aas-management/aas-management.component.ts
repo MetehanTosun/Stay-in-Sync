@@ -341,12 +341,19 @@ export class AasManagementComponent implements OnInit {
     try {
       console.log('[TargetAasManage] Creating element:', elementData);
       
+      // Encode parentPath for BaSyx (convert / to .)
+      const encodedParentPath = elementData.parentPath ? 
+        elementData.parentPath.replace(/\//g, '.') : 
+        undefined;
+      
+      console.log('[TargetAasManage] Encoded parentPath:', encodedParentPath);
+      
       // Use the AAS management service to create the element
       await this.aasManagement.createElement(
         this.system.id,
         elementData.submodelId,
         elementData.body,
-        elementData.parentPath
+        encodedParentPath
       );
       
       console.log('[TargetAasManage] Element created successfully');
