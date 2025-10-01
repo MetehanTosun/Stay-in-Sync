@@ -5,11 +5,11 @@ import type {editor, IDisposable} from 'monaco-editor';
 import * as ts from 'typescript';
 import {ScriptEditorService, ScriptPayload,} from '../../../core/services/script-editor.service';
 import {MessagesModule} from 'primeng/messages';
-import {MessageService} from 'primeng/api';
+import {ConfirmationService, MessageService} from 'primeng/api';
 
 import {ActivatedRoute, Router} from '@angular/router';
 
-import {debounceTime, finalize, Subject, Subscription} from 'rxjs';
+import { debounceTime, finalize, first, of, Subject, Subscription, switchMap } from 'rxjs';
 
 // PrimeNG Modules
 import {PanelModule} from 'primeng/panel';
@@ -28,9 +28,10 @@ import {SourceSystem, SourceSystemEndpoint} from '../../source-system/models/sou
 import {ArcManagementPanelComponent} from '../arc-management-panel/arc-management-panel.component';
 import {ArcWizardComponent} from '../arc-wizard/arc-wizard.component';
 import {InputTextModule} from 'primeng/inputtext';
-import {MonacoEditorService} from '../../../core/services/monaco-editor.service';
-import {TypeDefinitionsResponse} from '../models/target-system.models';
-import {TargetArcPanelComponent} from '../target-arc-panel/target-arc-panel.component';
+import { MonacoEditorService } from '../../../core/services/monaco-editor.service';
+import { TypeDefinitionsResponse } from '../models/target-system.models';
+import { TargetArcPanelComponent } from '../target-arc-panel/target-arc-panel.component';
+import { ConfirmDialog } from 'primeng/confirmdialog';
 import {Inplace} from 'primeng/inplace';
 
 interface MonacoExtraLib {
@@ -40,6 +41,7 @@ interface MonacoExtraLib {
 
 @Component({
   selector: 'app-script-editor-step', // might be without step
+  providers: [ConfirmationService],
   templateUrl: './script-editor-page.component.html',
   styleUrls: ['./script-editor-page.component.css'],
   standalone: true,
@@ -54,15 +56,17 @@ interface MonacoExtraLib {
     MessagesModule,
     ProgressSpinnerModule,
     ArcManagementPanelComponent,
+    ArcWizardComponent,
+    ConfirmDialog,
     ToastModule,
     InputTextModule,
     TargetArcPanelComponent,
     Inplace,
-    ArcWizardComponent
   ],
 })
 export class ScriptEditorPageComponent implements OnInit, OnDestroy {
   @ViewChild(TargetArcPanelComponent) targetArcPanel!: TargetArcPanelComponent;
+  @ViewChild(ArcManagementPanelComponent) arcManagementPanel!: ArcManagementPanelComponent;
 
   currentTransformationId: string | null = null;
   originalName: string = '';
@@ -89,6 +93,7 @@ export class ScriptEditorPageComponent implements OnInit, OnDestroy {
   wizardContext: {
     system: SourceSystem;
     endpoint: SourceSystemEndpoint;
+    arcToEdit?: ApiRequestConfiguration;
     arcToClone?: ApiRequestConfiguration
   } | null | undefined = null;
 
@@ -99,6 +104,7 @@ export class ScriptEditorPageComponent implements OnInit, OnDestroy {
   private messageService = inject(MessageService);
   private arcStateService = inject(ArcStateService);
   private monacoEditorService = inject(MonacoEditorService);
+  private confirmationService = inject(ConfirmationService);
 
   private route = inject(ActivatedRoute);
 
@@ -174,19 +180,89 @@ export class ScriptEditorPageComponent implements OnInit, OnDestroy {
     this.isWizardVisible = true;
   }
 
-  handleCloneArc(context: { arc: ApiRequestConfiguration }): void {
-    // TODO: Implement proper arc fetch and inject for selected arc inside arc wizard with the same data, but new entity
-    // this.wizardContext = { ... };
-    // this.isWizardVisible = true;
+  handleEditArc(context: { system: SourceSystem; endpoint: SourceSystemEndpoint; arc: ApiRequestConfiguration }): void {
+    this.wizardContext = { ...context, arcToEdit: context.arc };
+    this.isWizardVisible = true;
+  }
+
+  handleCloneArc(context: {
+    system: SourceSystem;
+    endpoint: SourceSystemEndpoint;
+    arc: ApiRequestConfiguration;
+  }): void {
+    console.log('%c[Editor] Clone requested for:', 'color: #8b5cf6;', context.arc);
+
+    this.wizardContext = {
+      system: context.system,
+      endpoint: context.endpoint,
+      arcToClone: context.arc,
+    };
+
+    this.isWizardVisible = true;
+  }
+
+  handleDeleteArc(context: { arc: ApiRequestConfiguration }): void {
+    const arc = context.arc;
+    this.scriptEditorService.checkArcUsage(arc.id).pipe(
+      switchMap(usages => {
+        let message = `Are you sure you want to delete the ARC "${arc.alias}"?`;
+
+        if (usages.length > 0) {
+          const usageList = usages.map(u => `<li>${u.scriptName}</li>`).join('');
+          message = `
+            <p><b>Warning:</b> This ARC is currently used in the following scripts:</p>
+            <ul>${usageList}</ul>
+            <p>Deleting it may cause these scripts to fail. Do you still want to proceed?</p>
+          `;
+        }
+
+        this.confirmationService.confirm({
+          header: 'Confirm Deletion',
+          icon: 'pi pi-exclamation-triangle',
+          message: message,
+          accept: () => {
+            this.isLoading = true;
+            this.loadingMessage = `Deleting ARC "${arc.alias}"...`;
+            this.scriptEditorService.deleteArc(arc.id).subscribe({
+              next: () => {
+                this.arcStateService.removeArc(arc);
+                this.messageService.add({ severity: 'success', summary: 'Deleted', detail: 'ARC has been successfully deleted.' });
+                this.isLoading = false;
+              },
+              error: (err) => {
+                this.messageService.add({ severity: 'error', summary: 'Delete Failed', detail: err.error?.message || 'Could not delete the ARC.' });
+                this.isLoading = false;
+              }
+            });
+          },
+          reject: () => {
+            // user cancellation
+          }
+        });
+        return of(null);
+      })
+    ).subscribe();
   }
 
   handleArcSave(savedArc: ApiRequestConfiguration): void {
     console.log('%c[Editor] Handling saved ARC:', 'color: #10b981;', savedArc);
-    this.arcStateService.addOrUpdateArc(savedArc);
-    this.messageService.add({
-      severity: 'success',
-      summary: 'ARC Saved',
-      detail: `Configuration '${savedArc.alias}' is now available.`
+
+    this.arcManagementPanel.allSourceSystems$.pipe(
+      first()
+    ).subscribe(allSystems => {
+      const parentSystem = allSystems.find(s => s.name === savedArc.sourceSystemName);
+
+      if (parentSystem) {
+        this.arcManagementPanel.ensureEndpointsLoaded(parentSystem);
+      }
+
+      this.arcStateService.addOrUpdateArc(savedArc);
+
+      this.messageService.add({
+        severity: 'success',
+        summary: 'ARC Saved',
+        detail: `Configuration '${savedArc.alias}' is now available.`
+      });
     });
   }
 

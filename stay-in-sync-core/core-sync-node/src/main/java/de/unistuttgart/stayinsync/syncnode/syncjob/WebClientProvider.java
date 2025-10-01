@@ -12,7 +12,7 @@ public class WebClientProvider {
     private final WebClient client;
 
     @Inject
-    public WebClientProvider(Vertx vertx){
+    public WebClientProvider(Vertx vertx) {
         WebClientOptions options = new WebClientOptions()
                 .setTrustAll(true) // TODO: production code should not trust all
                 .setSsl(true)
@@ -20,7 +20,7 @@ public class WebClientProvider {
         this.client = WebClient.create(vertx, options);
     }
 
-    public WebClient getClient(){
+    public WebClient getClient() {
         return client;
     }
 }

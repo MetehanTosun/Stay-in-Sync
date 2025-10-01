@@ -1,25 +1,31 @@
-# 02_logs.md – Log Aggregation, Display, and Filtering
+# Log Aggregation, Display & Filtering
 
-### Architecture
-- All logs from the components are sent via **TCP** to **FluentBit**.
-- FluentBit enriches logs with labels and forwards them to **Loki**.
+---
 
-## LogTab in the UI
-The **LogTab** displays logs queried from Loki.  
-Available filtering options include:
+## 🏗️ Architektur
+- Alle Logs der Komponenten werden über **TCP** an **FluentBit** gesendet.
+- **FluentBit** reichert die Logs mit Labels an und leitet sie an **Loki** weiter.
 
-- Log level (INFO, WARN, ERROR, …)
-- Service
-- Transformation IDs
-- Start and end time
+---
 
-**Technical details:**
-- A maximum of **5000 logs** are loaded per query.
-- Default timeframe is **the last hour**.
+## 🖥️ LogTab in der UI
+Das **LogTab** zeigt Logs, die aus **Loki** abgefragt werden.  
+Es bietet verschiedene **Filteroptionen**:
 
-## Filtering via Graph
-The graph is also integrated into log filtering:
+- 🏷️ **Log Level** (INFO, WARN, ERROR, …)
+- ⚙️ **Service**
+- 🔄 **Transformation IDs**
+- ⏱️ **Start- und Endzeit**
 
-- Click on a **SyncNode** → logs are filtered by its **Transformation IDs**.
+### 📌 Technische Details
+- Pro Abfrage werden maximal **5000 Logs** geladen.
+- Standardzeitraum: **letzte Stunde**.
+
+---
+
+## 🔍 Filtering via Graph
+Der **Graph** ist ebenfalls in das Log-Filtering integriert:
+
+- Klick auf einen **SyncNode** → zeigt nur Logs mit den entsprechenden **Transformation IDs**.
 
 ---

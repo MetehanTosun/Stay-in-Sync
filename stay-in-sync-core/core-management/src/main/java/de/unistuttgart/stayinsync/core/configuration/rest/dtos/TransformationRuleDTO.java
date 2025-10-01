@@ -1,6 +1,6 @@
 package de.unistuttgart.stayinsync.core.configuration.rest.dtos;
 
-import de.unistuttgart.stayinsync.transport.transformation_rule_shared.GraphStatus;
+import de.unistuttgart.graphengine.validation_error.GraphStatus;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.Setter;

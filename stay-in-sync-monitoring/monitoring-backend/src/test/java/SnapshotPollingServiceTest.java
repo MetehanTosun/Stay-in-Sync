@@ -1,6 +1,6 @@
+import de.unistuttgart.stayinsync.monitoring.service.SnapshotPollingService;
 import de.unistuttgart.stayinsync.monitoring.clientinterfaces.SyncJobClient;
 import de.unistuttgart.stayinsync.monitoring.clientinterfaces.SyncNodeClient;
-import de.unistuttgart.stayinsync.monitoring.service.SnapshotPollingService;
 import de.unistuttgart.stayinsync.transport.dto.Snapshot.SnapshotDTO;
 import de.unistuttgart.stayinsync.transport.dto.monitoringgraph.MonitoringSyncJobDto;
 import de.unistuttgart.stayinsync.transport.dto.monitoringgraph.MonitoringTransformationDto;

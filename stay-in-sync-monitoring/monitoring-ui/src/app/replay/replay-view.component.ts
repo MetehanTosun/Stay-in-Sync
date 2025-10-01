@@ -1,21 +1,39 @@
 // src/app/replay/replay-view.component.ts
 import { CommonModule, JsonPipe, NgIf } from '@angular/common';
 import { Component, OnInit, inject, signal } from '@angular/core';
+import { FormsModule } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
+import { MonacoEditorModule } from 'ngx-monaco-editor-v2';
+import { PrimeTemplate } from 'primeng/api';
+import { Button } from 'primeng/button';
+import { TableModule } from 'primeng/table';
+import { Tab, TabList, TabPanel, TabPanels, Tabs } from 'primeng/tabs';
+import { LogEntry } from '../core/models/log.model';
+import { LogService } from '../core/services/log.service';
 import { SnapshotDTO } from './models/snapshot.model';
 import { TransformationScriptDTO } from './models/transformation-script.model';
+import { ReplayService } from './replay.service';
 import { ScriptService } from './script.service';
 import { SnapshotService } from './snapshot.service';
-import {LogService} from '../core/services/log.service';
-import {LogEntry} from '../core/models/log.model';
-import {PrimeTemplate} from 'primeng/api';
-import {TableModule} from 'primeng/table';
-import {Tab, TabList, TabPanel, TabPanels, Tabs} from 'primeng/tabs';
 
 @Component({
   selector: 'app-replay-view',
   standalone: true,
-  imports: [CommonModule, NgIf, JsonPipe, PrimeTemplate, TableModule, Tabs, TabList, Tab, TabPanels, TabPanel],
+  imports: [
+    CommonModule,
+    NgIf,
+    JsonPipe,
+    PrimeTemplate,
+    TableModule,
+    Tabs,
+    TabList,
+    Tab,
+    TabPanels,
+    TabPanel,
+    MonacoEditorModule,
+    FormsModule,
+    Button,
+  ],
   templateUrl: './replay-view.component.html',
   styleUrl: './replay-view.component.css',
 })
@@ -24,26 +42,31 @@ export class ReplayViewComponent implements OnInit {
   private snapshots = inject(SnapshotService);
   private scripts = inject(ScriptService);
   private logService = inject(LogService);
-
-
+  private replayService = inject(ReplayService);
 
   // UI state
   loading = signal<boolean>(true);
   error = signal<string | null>(null);
   data = signal<SnapshotDTO | null>(null);
 
+  //replay data
+  outputData: any;
+  variables: Record<string, any> = {};
+  errorInfo: string | null = null;
+  snapshotId: string | null = null;
+
   scriptDisplay = '// loading TypeScript…';
   logs: LogEntry[] = [];
 
   ngOnInit(): void {
-    const id = this.route.snapshot.queryParamMap.get('snapshotId');
-    if (!id) {
+    this.snapshotId = this.route.snapshot.queryParamMap.get('snapshotId');
+    if (!this.snapshotId) {
       this.error.set('Missing snapshotId in URL.');
       this.loading.set(false);
       return;
     }
 
-    this.snapshots.getById(id).subscribe({
+    this.snapshots.getById(this.snapshotId).subscribe({
       next: (snap) => {
         this.data.set(snap);
 
@@ -72,20 +95,26 @@ export class ReplayViewComponent implements OnInit {
           },
         });
 
-        this.logService.getLogsByTransformations(
-          [transformationId.toString()],
-          this.toNanoSeconds(new Date(Date.now() - 24 * 60 * 60 * 1000)), // vor 24 Stunden
-          this.toNanoSeconds(new Date()), // jetzt
-          ""
-        ).subscribe({
-          next: (logs) => {
-            this.logs = logs;
-            console.log('Logs for transformation', transformationId, logs);
-          },
-          error: (err) => {
-            console.error('Failed to load logs for transformation', transformationId, err);
-          }
-        });
+        this.logService
+          .getLogsByTransformations(
+            [transformationId.toString()],
+            this.toNanoSeconds(new Date(Date.now() - 24 * 60 * 60 * 1000)), // vor 24 Stunden
+            this.toNanoSeconds(new Date()), // jetzt
+            ''
+          )
+          .subscribe({
+            next: (logs) => {
+              this.logs = logs;
+              console.log('Logs for transformation', transformationId, logs);
+            },
+            error: (err) => {
+              console.error(
+                'Failed to load logs for transformation',
+                transformationId,
+                err
+              );
+            },
+          });
       },
       error: (e) => {
         this.error.set(`Failed to load snapshot: ${e?.message ?? e}`);
@@ -94,9 +123,23 @@ export class ReplayViewComponent implements OnInit {
     });
   }
 
+  onReplayClick(): void {
+    if (!this.snapshotId) {
+      this.errorInfo = 'No snapshotId found in URL';
+      return;
+    }
 
-  onReplayClick() {
-    // stub for later
+    this.replayService.executeReplay(this.snapshotId).subscribe({
+      next: (res) => {
+        this.outputData = res.outputData;
+        this.variables = res.variables;
+        this.errorInfo = res.errorInfo;
+      },
+      error: (err) => {
+        console.error('Replay failed', err);
+        this.errorInfo = 'Replay request failed';
+      },
+    });
   }
 
   private toNanoSeconds(date: Date) {

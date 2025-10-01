@@ -17,7 +17,6 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
 
-import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Optional;
 
@@ -81,6 +80,12 @@ public class SourceSystemService {
             try {
                 Log.debugf("Starting deletion of related entities for source system ID: %d", id);
                 
+                // Cleanup AAS snapshot lites (elements first, then submodels)
+                long deletedElements = de.unistuttgart.stayinsync.core.configuration.domain.entities.aas.AasElementLite.delete("submodelLite.sourceSystem.id", id);
+                Log.debugf("Deleted %d AAS element lites", deletedElements);
+                long deletedSubmodels = de.unistuttgart.stayinsync.core.configuration.domain.entities.aas.AasSubmodelLite.delete("sourceSystem.id", id);
+                Log.debugf("Deleted %d AAS submodel lites", deletedSubmodels);
+
                 
                 long deletedConfigs = SourceSystemApiRequestConfiguration.delete("sourceSystem.id", id);
                 Log.debugf("Deleted %d API request configurations", deletedConfigs);

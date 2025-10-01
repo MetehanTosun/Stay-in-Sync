@@ -5,6 +5,9 @@ import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.QueryParam;
 
+import java.io.PrintWriter;
+import java.net.Socket;
+
 @Path("/api/test-log")
 public class TestLogResource {
 
