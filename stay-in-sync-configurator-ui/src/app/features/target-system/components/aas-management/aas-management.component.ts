@@ -253,7 +253,23 @@ export class AasManagementComponent implements OnInit {
   }
 
   private async loadElementDetails(node: TreeNode): Promise<void> {
-    if (!this.system?.id || !node.data?.submodelId || !node.data?.idShortPath) return;
+    if (!this.system?.id || !node.data?.submodelId || !node.data?.idShortPath) {
+      console.error('[TargetAasManage] loadElementDetails: Missing required data', {
+        systemId: this.system?.id,
+        submodelId: node.data?.submodelId,
+        idShortPath: node.data?.idShortPath,
+        nodeData: node.data
+      });
+      return;
+    }
+    
+    console.log('[TargetAasManage] loadElementDetails: Loading element details', {
+      systemId: this.system.id,
+      submodelId: node.data.submodelId,
+      idShortPath: node.data.idShortPath,
+      nodeKey: node.key,
+      nodeLabel: node.label
+    });
     
     this.detailsLoading = true;
     try {
