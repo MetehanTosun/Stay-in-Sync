@@ -387,6 +387,8 @@ umbrella:
 
   dataconsumerOne:
     enabled: true
+    secrets:
+      edc-wallet-secret: changeme
     dataspace-connector-bundle:
       tractusx-connector:
         iatp:
@@ -410,6 +412,8 @@ umbrella:
 
   tx-data-provider:
     enabled: true
+    secrets:
+      edc-wallet-secret: changeme
     dataspace-connector-bundle:
       tractusx-connector:
         iatp:
