@@ -289,6 +289,55 @@ export class AasManagementComponent implements OnInit {
     return this.aasUtility.getAasId(this.system);
   }
 
+  /**
+   * Fix tree structure for deep elements by correcting idShortPath
+   */
+  private fixTreeStructureForDeepElements(elementData: any): void {
+    if (!elementData || !elementData.parentPath) return;
+    
+    console.log('[TargetAasManage] Fixing tree structure for deep elements', {
+      parentPath: elementData.parentPath,
+      elementIdShort: elementData.body?.idShort
+    });
+    
+    // Find the element in the tree and fix its idShortPath
+    const elementIdShort = elementData.body?.idShort;
+    if (!elementIdShort) return;
+    
+    // Build the correct idShortPath
+    const correctIdShortPath = elementData.parentPath + '/' + elementIdShort;
+    
+    // Find and update the element in the tree
+    this.updateElementIdShortPath(this.treeNodes, elementIdShort, correctIdShortPath);
+    
+    console.log('[TargetAasManage] Fixed idShortPath for element', {
+      elementIdShort,
+      correctIdShortPath
+    });
+  }
+
+  /**
+   * Update element idShortPath in tree structure
+   */
+  private updateElementIdShortPath(nodes: TreeNode[], elementIdShort: string, correctIdShortPath: string): void {
+    if (!nodes) return;
+    
+    for (const node of nodes) {
+      if (node.data?.idShort === elementIdShort && node.data?.idShortPath !== correctIdShortPath) {
+        console.log('[TargetAasManage] Updating element idShortPath', {
+          old: node.data.idShortPath,
+          new: correctIdShortPath
+        });
+        node.data.idShortPath = correctIdShortPath;
+        return;
+      }
+      
+      if (node.children) {
+        this.updateElementIdShortPath(node.children, elementIdShort, correctIdShortPath);
+      }
+    }
+  }
+
   getNodeType(node: TreeNode): string {
     if (node.data?.type === 'submodel') {
       return node.data?.modelType || (node.data?.raw?.kind?.toLowerCase?.().includes('template') ? 'Submodel Template' : 'Submodel');
@@ -395,6 +444,9 @@ export class AasManagementComponent implements OnInit {
         setTimeout(async () => {
           console.log('[TargetAasManage] Final refresh for deep elements');
           await this.discoverSnapshot();
+          
+          // Fix tree structure for deep elements
+          this.fixTreeStructureForDeepElements(elementData);
         }, 500);
       }, 1000);
       
