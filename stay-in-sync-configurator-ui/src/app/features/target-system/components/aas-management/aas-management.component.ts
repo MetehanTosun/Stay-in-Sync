@@ -366,7 +366,8 @@ export class AasManagementComponent implements OnInit {
         life: 3000
       });
       
-      // Refresh the tree
+      // Refresh the tree with full discover
+      console.log('[TargetAasManage] Triggering full snapshot refresh');
       await this.discoverSnapshot();
       
     } catch (error) {

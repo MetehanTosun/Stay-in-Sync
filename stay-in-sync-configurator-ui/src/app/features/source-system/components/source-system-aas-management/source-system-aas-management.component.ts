@@ -389,8 +389,9 @@ export class SourceSystemAasManagementComponent implements OnInit {
         life: 3000
       });
       
-      // Refresh the tree
-      this.refreshAasTreeAfterCreate();
+      // Refresh the tree with full discover
+      console.log('[SourceAasManage] Triggering full AAS snapshot refresh');
+      this.discoverAasSnapshot();
       
     } catch (error) {
       console.error('[SourceAasManage] Error creating element:', error);
@@ -421,15 +422,6 @@ export class SourceSystemAasManagementComponent implements OnInit {
    * Create AAS element (same logic as create dialog)
    */
 
-  /**
-   * Refresh AAS tree after create (same logic as create dialog)
-   */
-  private refreshAasTreeAfterCreate(): void {
-    console.log('[SourceAasManage] refreshAasTreeAfterCreate: Starting refresh');
-    
-    // Use discoverAasSnapshot for full refresh
-    this.discoverAasSnapshot();
-  }
 
   private findAasNodeByKey(key: string, nodes: TreeNode[] | undefined): TreeNode | null {
     if (!nodes) return null;
