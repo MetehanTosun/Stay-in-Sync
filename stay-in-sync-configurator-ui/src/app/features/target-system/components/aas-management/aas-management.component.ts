@@ -470,12 +470,16 @@ export class AasManagementComponent implements OnInit {
       console.log('[TargetAasManage] Triggering live refresh after element creation');
       await this.discoverSnapshot();
       
+      // Fix tree structure immediately after element creation
+      console.log('[TargetAasManage] Fixing tree structure immediately after element creation');
+      this.fixTreeStructureAfterRefresh(elementData);
+      
       // Force live refresh after a short delay to ensure backend is updated
       setTimeout(async () => {
         console.log('[TargetAasManage] Force live refresh for deep elements');
         await this.discoverSnapshot();
         
-        // Fix tree structure after live refresh
+        // Fix tree structure again after live refresh
         this.fixTreeStructureAfterRefresh(elementData);
       }, 1000);
       
