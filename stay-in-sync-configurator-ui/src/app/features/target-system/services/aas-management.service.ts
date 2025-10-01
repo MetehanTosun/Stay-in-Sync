@@ -140,7 +140,14 @@ export class AasManagementService {
       // Use normal Base64 with padding for BaSyx compatibility
       const smId = btoa(submodelId);
       
-      this.aasClientService.getElement('target', systemId, smId, elementPath).subscribe({
+      // URL encode the element path to handle spaces and special characters
+      const encodedElementPath = encodeURIComponent(elementPath);
+      console.log('[AasManagement] loadElementDetails: Encoding element path', {
+        original: elementPath,
+        encoded: encodedElementPath
+      });
+      
+      this.aasClientService.getElement('target', systemId, smId, encodedElementPath).subscribe({
         next: (element: any) => {
           const livePanel: AasElementLivePanel = {
             label: element.idShort || 'Element',

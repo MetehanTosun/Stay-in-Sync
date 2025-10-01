@@ -153,7 +153,14 @@ export class CreateTargetSystemAasService {
     return new Promise((resolve, reject) => {
       const smIdEnc = this.encodeIdToBase64Url(submodelId);
       
-      this.aasClient.getElement('target', systemId, smIdEnc, elementPath).subscribe({
+      // URL encode the element path to handle spaces and special characters
+      const encodedElementPath = encodeURIComponent(elementPath);
+      console.log('[CreateTargetAas] loadElementDetails: Encoding element path', {
+        original: elementPath,
+        encoded: encodedElementPath
+      });
+      
+      this.aasClient.getElement('target', systemId, smIdEnc, encodedElementPath).subscribe({
         next: (found: any) => {
           const liveType = found?.modelType || (found?.valueType ? 'Property' : undefined);
           const minValue = found.min ?? found.minValue;
