@@ -366,9 +366,15 @@ export class AasManagementComponent implements OnInit {
         life: 3000
       });
       
-      // Refresh the tree with full discover
+      // Refresh the tree with full discover and force tree rebuild
       console.log('[TargetAasManage] Triggering full snapshot refresh');
       await this.discoverSnapshot();
+      
+      // Force tree refresh after a short delay to ensure backend is updated
+      setTimeout(async () => {
+        console.log('[TargetAasManage] Force refreshing tree after element creation');
+        await this.discoverSnapshot();
+      }, 1000);
       
     } catch (error) {
       console.error('[TargetAasManage] Error creating element:', error);

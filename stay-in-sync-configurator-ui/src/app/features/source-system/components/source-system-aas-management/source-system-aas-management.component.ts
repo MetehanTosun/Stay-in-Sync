@@ -389,9 +389,15 @@ export class SourceSystemAasManagementComponent implements OnInit {
         life: 3000
       });
       
-      // Refresh the tree with full discover
+      // Refresh the tree with full discover and force tree rebuild
       console.log('[SourceAasManage] Triggering full AAS snapshot refresh');
       this.discoverAasSnapshot();
+      
+      // Force tree refresh after a short delay to ensure backend is updated
+      setTimeout(() => {
+        console.log('[SourceAasManage] Force refreshing tree after element creation');
+        this.discoverAasSnapshot();
+      }, 1000);
       
     } catch (error) {
       console.error('[SourceAasManage] Error creating element:', error);
