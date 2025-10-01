@@ -289,6 +289,54 @@ export class AasManagementComponent implements OnInit {
     return this.aasUtility.getAasId(this.system);
   }
 
+  /**
+   * Fix tree structure after live refresh to ensure correct idShortPath
+   */
+  private fixTreeStructureAfterRefresh(elementData: any): void {
+    if (!elementData || !elementData.parentPath) return;
+    
+    console.log('[TargetAasManage] Fixing tree structure after live refresh', {
+      parentPath: elementData.parentPath,
+      elementIdShort: elementData.body?.idShort
+    });
+    
+    const elementIdShort = elementData.body?.idShort;
+    if (!elementIdShort) return;
+    
+    // Build the correct idShortPath
+    const correctIdShortPath = elementData.parentPath + '/' + elementIdShort;
+    
+    // Find and update the element in the tree
+    this.updateElementInTree(this.treeNodes, elementIdShort, correctIdShortPath);
+    
+    console.log('[TargetAasManage] Fixed tree structure', {
+      elementIdShort,
+      correctIdShortPath
+    });
+  }
+
+  /**
+   * Update element in tree structure with correct idShortPath
+   */
+  private updateElementInTree(nodes: TreeNode[], elementIdShort: string, correctIdShortPath: string): void {
+    if (!nodes) return;
+    
+    for (const node of nodes) {
+      if (node.data?.idShort === elementIdShort) {
+        console.log('[TargetAasManage] Updating element in tree', {
+          old: node.data.idShortPath,
+          new: correctIdShortPath
+        });
+        node.data.idShortPath = correctIdShortPath;
+        return;
+      }
+      
+      if (node.children) {
+        this.updateElementInTree(node.children, elementIdShort, correctIdShortPath);
+      }
+    }
+  }
+
 
   getNodeType(node: TreeNode): string {
     if (node.data?.type === 'submodel') {
@@ -391,6 +439,9 @@ export class AasManagementComponent implements OnInit {
       setTimeout(async () => {
         console.log('[TargetAasManage] Force live refresh for deep elements');
         await this.discoverSnapshot();
+        
+        // Fix tree structure after live refresh
+        this.fixTreeStructureAfterRefresh(elementData);
       }, 1000);
       
     } catch (error) {
