@@ -25,6 +25,7 @@ import { AasClientService } from '../../../source-system/services/aas-client.ser
 import { CreateTargetSystemFormService } from '../../services/create-target-system-form.service';
 import { CreateTargetSystemAasService } from '../../services/create-target-system-aas.service';
 import { CreateTargetSystemDialogService } from '../../services/create-target-system-dialog.service';
+import { AasElementDialogComponent, AasElementDialogData, AasElementDialogResult } from '../../../../shared/components/aas-element-dialog/aas-element-dialog.component';
 
 @Component({
   standalone: true,
@@ -46,7 +47,8 @@ import { CreateTargetSystemDialogService } from '../../services/create-target-sy
     TreeModule,
     FormsModule,
     CheckboxModule,
-    ToastModule
+    ToastModule,
+    AasElementDialogComponent
   ]
 })
 export class CreateTargetSystemComponent implements OnInit, OnChanges {
@@ -574,59 +576,95 @@ export class CreateTargetSystemComponent implements OnInit, OnChanges {
     } catch {}
   }
 
+  // Element creation dialog
   showElementDialog = false;
-  targetSubmodelId = '';
-  parentPath = '';
-  newElementJson = '{\n  "modelType": "Property",\n  "idShort": "NewProp",\n  "valueType": "xs:string",\n  "value": "42"\n}';
-  elementTemplateProperty: string = `{"modelType":"Property","idShort":"NewProp","valueType":"xs:string","value":"Foo"}`;
-  elementTemplateRange: string = `{"modelType":"Range","idShort":"NewRange","valueType":"xs:double","min":0,"max":100}`;
-  elementTemplateMLP: string = `{"modelType":"MultiLanguageProperty","idShort":"Title","value":[{"language":"en","text":"Example"}]}`;
-  elementTemplateRef: string = `{"modelType":"ReferenceElement","idShort":"Ref","value":{"type":"ModelReference","keys":[{"type":"Submodel","value":"https://example.com/ids/sm"}]}}`;
-  elementTemplateRel: string = `{"modelType":"RelationshipElement","idShort":"Rel","first":{"type":"ModelReference","keys":[{"type":"Submodel","value":"https://example.com/ids/sm1"}]},"second":{"type":"ModelReference","keys":[{"type":"Submodel","value":"https://example.com/ids/sm2"}]}}`;
-  elementTemplateAnnRel: string = `{"modelType":"AnnotatedRelationshipElement","idShort":"AnnRel","first":{"type":"ModelReference","keys":[{"type":"Submodel","value":"https://example.com/ids/sm1"}]},"second":{"type":"ModelReference","keys":[{"type":"Submodel","value":"https://example.com/ids/sm2"}]},"annotations":[{"modelType":"Property","idShort":"note","valueType":"xs:string","value":"Hello"}]}`;
-  elementTemplateCollection: string = `{"modelType":"SubmodelElementCollection","idShort":"group","value":[]}`;
-  elementTemplateList: string = `{"modelType":"SubmodelElementList","idShort":"items","typeValueListElement":"Property","valueTypeListElement":"xs:string","value":[]}`;
-  elementTemplateFile: string = `{"modelType":"File","idShort":"file1","contentType":"text/plain","value":"path-or-url.txt"}`;
-  elementTemplateOperation: string = `{"modelType":"Operation","idShort":"Op","inputVariables":[{"value":{"modelType":"Property","idShort":"in","valueType":"xs:string"}}],"outputVariables":[]}`;
-  elementTemplateEntity: string = `{"modelType":"Entity","idShort":"Ent","entityType":"SelfManagedEntity","statements":[]}`;
-  setElementTemplate(kind: string): void {
-    switch (kind) {
-      case 'property': this.newElementJson = this.elementTemplateProperty; break;
-      case 'range': this.newElementJson = this.elementTemplateRange; break;
-      case 'mlp': this.newElementJson = this.elementTemplateMLP; break;
-      case 'ref': this.newElementJson = this.elementTemplateRef; break;
-      case 'rel': this.newElementJson = this.elementTemplateRel; break;
-      case 'annrel': this.newElementJson = this.elementTemplateAnnRel; break;
-      case 'collection': this.newElementJson = this.elementTemplateCollection; break;
-      case 'list': this.newElementJson = this.elementTemplateList; break;
-      case 'file': this.newElementJson = this.elementTemplateFile; break;
-      case 'operation': this.newElementJson = this.elementTemplateOperation; break;
-      case 'entity': this.newElementJson = this.elementTemplateEntity; break;
-      default: this.newElementJson = '{}';
+  elementDialogData: AasElementDialogData | null = null;
+  openCreateElement(smId: string, parent?: string): void {
+    if (!this.createdTargetSystemId) return;
+    
+    this.elementDialogData = {
+      submodelId: smId,
+      parentPath: parent,
+      systemId: this.createdTargetSystemId,
+      systemType: 'target'
+    };
+    this.showElementDialog = true;
+  }
+  onElementDialogResult(result: AasElementDialogResult): void {
+    if (result.success && result.element) {
+      this.handleElementCreation(result.element);
+    } else if (result.error) {
+      console.error('[TargetCreate] Element creation failed:', result.error);
+      // Show toast for duplicate idShort error
+      if (result.error.includes('Duplicate entry') || result.error.includes('uk_element_submodel_idshortpath')) {
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Duplicate Element',
+          detail: 'An element with this idShort already exists. Please use a different idShort.',
+          life: 5000
+        });
+      } else {
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Error',
+          detail: result.error,
+          life: 5000
+        });
+      }
     }
   }
-  openCreateElement(smId: string, parent?: string): void {
-    this.targetSubmodelId = smId; this.parentPath = parent || ''; this.showElementDialog = true;
-  }
-  onElementJsonFileSelected(event: any): void {
-    const file = event.files?.[0]; if (!file) return;
-    const reader = new FileReader(); reader.onload = () => { try { const text = String(reader.result || '').trim(); if (text) { JSON.parse(text); this.newElementJson = text; } } catch {} };
-    reader.readAsText(file);
-  }
-  createElement(): void {
-    if (!this.createdTargetSystemId || !this.targetSubmodelId) return;
+
+  private async handleElementCreation(elementData: any): Promise<void> {
+    if (!this.createdTargetSystemId) return;
+    
     try {
-      const body = JSON.parse(this.newElementJson);
-      const smIdB64 = this.encodeIdToBase64Url(this.targetSubmodelId);
-      this.aasClient.createElement('target', this.createdTargetSystemId, smIdB64, body, this.parentPath && this.parentPath.trim() ? this.parentPath : undefined).subscribe({
-        next: () => { 
-          this.showElementDialog = false; 
-          // Trigger full tree refresh after element creation
-          this.discoverSubmodels(); 
-        },
-        error: () => {}
+      console.log('[TargetCreate] Creating element:', elementData);
+      
+      // Encode parentPath for BaSyx (convert / to .)
+      const encodedParentPath = elementData.parentPath ? 
+        elementData.parentPath.replace(/\//g, '.') : 
+        undefined;
+      
+      console.log('[TargetCreate] Encoded parentPath:', encodedParentPath);
+      
+      // Use the AAS client to create the element
+      const smIdB64 = this.encodeIdToBase64Url(elementData.submodelId);
+      await this.aasClient.createElement('target', this.createdTargetSystemId, smIdB64, elementData.body, encodedParentPath).toPromise();
+      
+      console.log('[TargetCreate] Element created successfully');
+      
+      // Show success toast
+      this.messageService.add({
+        severity: 'success',
+        summary: 'Element Created',
+        detail: 'Element has been successfully created.',
+        life: 3000
       });
-    } catch {}
+      
+      // Refresh the tree
+      this.discoverSubmodels();
+      
+    } catch (error) {
+      console.error('[TargetCreate] Error creating element:', error);
+      
+      // Show error toast
+      const errorMessage = String((error as any)?.error || (error as any)?.message || 'Failed to create element');
+      if (errorMessage.includes('Duplicate entry')) {
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Duplicate Element',
+          detail: 'An element with this idShort already exists. Please use a different idShort.',
+          life: 5000
+        });
+      } else {
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Error',
+          detail: errorMessage,
+          life: 5000
+        });
+      }
+    }
   }
 
   // Delete actions & value set (target)
