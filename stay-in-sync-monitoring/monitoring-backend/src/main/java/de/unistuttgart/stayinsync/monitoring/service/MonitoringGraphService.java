@@ -137,17 +137,17 @@ public class MonitoringGraphService {
 
                             if (tf.sourceSystemIds != null) {
                                 for (Long srcId : tf.sourceSystemIds) {
-                                    connections.add(createConnection("SRC_" + srcId, pollingNodeId, "active"));
+                                    connections.add(createConnection("SRC_" + srcId, pollingNodeId));
                                 }
                             }
-                            connections.add(createConnection(pollingNodeId, syncNodeId, "active"));
+                            connections.add(createConnection(pollingNodeId, syncNodeId));
                         }
                     }
 
                     // --- SyncNode → Target ---
                     if (tf.targetSystemIds != null) {
                         for (Long tgtId : tf.targetSystemIds) {
-                            connections.add(createConnection(syncNodeId, "TGT_" + tgtId, "active"));
+                            connections.add(createConnection(syncNodeId, "TGT_" + tgtId));
                         }
                     }
                 }
@@ -167,11 +167,11 @@ public class MonitoringGraphService {
 
                     // alle SourceSystems verbinden
                     for (MonitoringSourceSystemDto src : monitoringSources) {
-                        connections.add(createConnection("SRC_" + src.id, pollingNodeId, "active"));
+                        connections.add(createConnection("SRC_" + src.id, pollingNodeId));
                     }
                     // alle Jobs verbinden
                     for (MonitoringSyncJobDto job : jobs) {
-                        connections.add(createConnection(pollingNodeId, job.id.toString(), "active"));
+                        connections.add(createConnection(pollingNodeId, job.id.toString()));
                     }
                 }
             }
@@ -199,11 +199,11 @@ public class MonitoringGraphService {
         return node;
     }
 
-    private NodeConnectionDto createConnection(String sourceId, String targetId, String status) {
+    private NodeConnectionDto createConnection(String sourceId, String targetId) {
         NodeConnectionDto conn = new NodeConnectionDto();
         conn.source = sourceId;
         conn.target = targetId;
-        conn.status = status;
+        conn.status = "active";
         return conn;
     }
 }

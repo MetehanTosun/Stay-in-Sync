@@ -1,6 +1,7 @@
+package de.unistuttgart.stayinsync.monitoring.service;
+
 import de.unistuttgart.stayinsync.monitoring.clientinterfaces.SyncJobClient;
 import de.unistuttgart.stayinsync.monitoring.clientinterfaces.SyncNodeClient;
-import de.unistuttgart.stayinsync.monitoring.service.SnapshotPollingService;
 import de.unistuttgart.stayinsync.transport.dto.Snapshot.SnapshotDTO;
 import de.unistuttgart.stayinsync.transport.dto.monitoringgraph.MonitoringSyncJobDto;
 import de.unistuttgart.stayinsync.transport.dto.monitoringgraph.MonitoringTransformationDto;
@@ -84,7 +85,7 @@ class SnapshotPollingServiceTest {
 
 
     @Test
-    void buildTransformationToJobMap_shouldReturnCorrectMapping() {
+   void buildTransformationToJobMap_shouldReturnCorrectMapping() {
         MonitoringTransformationDto t1 = new MonitoringTransformationDto();
         t1.id = 1L;
         MonitoringTransformationDto t2 = new MonitoringTransformationDto();
@@ -96,8 +97,14 @@ class SnapshotPollingServiceTest {
 
         Map<Long, Long> map = serviceTestHelper_buildMap(List.of(job));
 
-        assert map.get(1L).equals(99L);
+        assert(map.get(1L).equals(99L));
         assert map.get(2L).equals(99L);
+
+        // Zusätzliche Assertion: Map enthält genau 2 Einträge
+        assert(map.size() == 2);
+
+        // Zusätzliche Assertion: Kein Mapping für nicht vorhandene Transformation
+        assert(map.get(3L) == null);
     }
 
     // kleiner Trick: private Methode über Reflection aufrufen

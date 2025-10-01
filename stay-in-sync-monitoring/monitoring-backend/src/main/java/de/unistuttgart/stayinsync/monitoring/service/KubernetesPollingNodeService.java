@@ -7,7 +7,6 @@ import jakarta.inject.Inject;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
 @ApplicationScoped
 public class KubernetesPollingNodeService {
@@ -27,6 +26,6 @@ public class KubernetesPollingNodeService {
 
         return pods.stream()
                 .map(p -> p.getMetadata().getName())
-                .collect(Collectors.toList());
+                .toList();
     }
 }

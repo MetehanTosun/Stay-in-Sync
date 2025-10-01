@@ -1,8 +1,9 @@
+package de.unistuttgart.stayinsync.monitoring.service;
+
 import de.unistuttgart.stayinsync.monitoring.clientinterfaces.PrometheusClient;
 import de.unistuttgart.stayinsync.monitoring.clientinterfaces.SourceSystemClient;
 import de.unistuttgart.stayinsync.monitoring.clientinterfaces.SyncJobClient;
 import de.unistuttgart.stayinsync.monitoring.clientinterfaces.TargetSystemClient;
-import de.unistuttgart.stayinsync.monitoring.service.MonitoringGraphService;
 import de.unistuttgart.stayinsync.transport.dto.monitoringgraph.*;
 import io.quarkus.test.InjectMock;
 import io.quarkus.test.junit.QuarkusTest;
@@ -34,6 +35,9 @@ class MonitoringGraphServiceTest {
 
     @InjectMock
     PrometheusClient prometheusClient;
+
+    @InjectMock
+    KubernetesPollingNodeService kubernetesPollingNodeService;
 
     @Inject
     MonitoringGraphService service;
@@ -67,6 +71,9 @@ class MonitoringGraphServiceTest {
         when(jobClient.getAll()).thenReturn(List.of(job));
         when(prometheusClient.isUp(anyString())).thenReturn(true);
 
+        // Keine K8s-PollingNodes für diesen Test
+        when(kubernetesPollingNodeService.getPollingNodes()).thenReturn(Collections.emptyList());
+
         // Act
         GraphResponse graph = service.buildGraph();
 
@@ -79,10 +86,11 @@ class MonitoringGraphServiceTest {
 
     @Test
     void buildGraph_shouldHandleEmptySystemsAndJobs() {
-        // Arrange: no systems, no jobs
+        // Arrange: keine Systeme, keine Jobs
         when(sourceClient.getAll()).thenReturn(Collections.emptyList());
         when(targetClient.getAll()).thenReturn(Collections.emptyList());
         when(jobClient.getAll()).thenReturn(Collections.emptyList());
+        when(kubernetesPollingNodeService.getPollingNodes()).thenReturn(Collections.emptyList());
 
         // Act
         GraphResponse graph = service.buildGraph();
@@ -103,8 +111,9 @@ class MonitoringGraphServiceTest {
 
         when(targetClient.getAll()).thenReturn(Collections.emptyList());
         when(jobClient.getAll()).thenReturn(Collections.emptyList());
+        when(kubernetesPollingNodeService.getPollingNodes()).thenReturn(Collections.emptyList());
 
-        // unhealthy
+        // ungesund
         when(prometheusClient.isUp("http://bad-src")).thenReturn(false);
 
         // Act
@@ -158,6 +167,7 @@ class MonitoringGraphServiceTest {
 
         when(jobClient.getAll()).thenReturn(List.of(job));
         when(prometheusClient.isUp(anyString())).thenReturn(true);
+        when(kubernetesPollingNodeService.getPollingNodes()).thenReturn(Collections.emptyList());
 
         // Act
         GraphResponse graph = service.buildGraph();
@@ -173,5 +183,41 @@ class MonitoringGraphServiceTest {
                 .anyMatch(c -> c.source.equals("POLL_poller2") && c.target.equals("100"))
                 .anyMatch(c -> c.source.equals("100") && c.target.equals("TGT_2"))
                 .anyMatch(c -> c.source.equals("100") && c.target.equals("TGT_3"));
+    }
+
+    @Test
+    void buildGraph_shouldIncludeKubernetesPollingNodes() {
+        // Arrange
+        MonitoringSourceSystemDto src = new MonitoringSourceSystemDto();
+        src.id = 1L;
+        src.name = "SourceA";
+        src.apiUrl = "http://src";
+        when(sourceClient.getAll()).thenReturn(List.of(src));
+
+        MonitoringSyncJobDto job = new MonitoringSyncJobDto();
+        job.id = 42L;
+        job.name = "Job42";
+        job.transformations = Collections.emptyList();
+        when(jobClient.getAll()).thenReturn(List.of(job));
+
+        when(targetClient.getAll()).thenReturn(Collections.emptyList());
+        when(prometheusClient.isUp(anyString())).thenReturn(true);
+
+        // Kubernetes-PollingNodes mocken
+        when(kubernetesPollingNodeService.getPollingNodes()).thenReturn(List.of("k8sPoller1", "k8sPoller2"));
+
+        // Act
+        GraphResponse graph = service.buildGraph();
+
+        // Assert: K8s-PollingNodes existieren
+        assertThat(graph.nodes).extracting("id")
+                .contains("SRC_1", "42", "POLL_k8sPoller1", "POLL_k8sPoller2");
+
+        // Assert: Verbindungen von Source → K8s-Poller → Job
+        assertThat(graph.connections)
+                .anyMatch(c -> c.source.equals("SRC_1") && c.target.equals("POLL_k8sPoller1"))
+                .anyMatch(c -> c.source.equals("SRC_1") && c.target.equals("POLL_k8sPoller2"))
+                .anyMatch(c -> c.source.equals("POLL_k8sPoller1") && c.target.equals("42"))
+                .anyMatch(c -> c.source.equals("POLL_k8sPoller2") && c.target.equals("42"));
     }
 }
