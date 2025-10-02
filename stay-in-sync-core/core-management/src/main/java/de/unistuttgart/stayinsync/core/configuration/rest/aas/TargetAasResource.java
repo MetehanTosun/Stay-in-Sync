@@ -822,41 +822,8 @@ public class TargetAasResource {
         return null;
     }
 
-    @POST
-    @Path("/submodels")
-    public Response createSubmodel(@PathParam("targetSystemId") Long targetSystemId, String body) {
-        TargetSystem ts = TargetSystem.<TargetSystem>findByIdOptional(targetSystemId).orElse(null);
-        ts = aasService.validateAasTarget(ts);
-        var headers = headerBuilder.buildMergedHeaders(ts, HttpHeaderBuilder.Mode.WRITE_JSON);
-        var resp = traversal.createSubmodel(ts.apiUrl, body, headers).await().indefinitely();
-        if (resp.statusCode() >= 200 && resp.statusCode() < 300) {
-            return Response.status(Response.Status.CREATED).entity(resp.bodyAsString()).build();
-        }
-        return aasService.mapHttpError(resp.statusCode(), resp.statusMessage(), resp.bodyAsString());
-    }
 
-    @PUT
-    @Path("/submodels/{smId}")
-    public Response putSubmodel(@PathParam("targetSystemId") Long targetSystemId,
-                                @PathParam("smId") String smId,
-                                String body) {
-        TargetSystem ts = TargetSystem.<TargetSystem>findByIdOptional(targetSystemId).orElse(null);
-        ts = aasService.validateAasTarget(ts);
-        var headers = headerBuilder.buildMergedHeaders(ts, HttpHeaderBuilder.Mode.WRITE_JSON);
-        var resp = traversal.putSubmodel(ts.apiUrl, smId, body, headers).await().indefinitely();
-        return Response.status(resp.statusCode()).entity(resp.bodyAsString()).build();
-    }
 
-    @DELETE
-    @Path("/submodels/{smId}")
-    public Response deleteSubmodel(@PathParam("targetSystemId") Long targetSystemId,
-                                   @PathParam("smId") String smId) {
-        TargetSystem ts = TargetSystem.<TargetSystem>findByIdOptional(targetSystemId).orElse(null);
-        ts = aasService.validateAasTarget(ts);
-        var headers = headerBuilder.buildMergedHeaders(ts, HttpHeaderBuilder.Mode.WRITE_JSON);
-        var resp = traversal.deleteSubmodel(ts.apiUrl, smId, headers).await().indefinitely();
-        return Response.status(resp.statusCode()).entity(resp.bodyAsString()).build();
-    }
 
     @POST
     @Path("/submodels/{smId}/elements")
