@@ -634,8 +634,12 @@ save(): void {
             if (!String(p).startsWith(prefix)) return false;
             const relativePath = String(p).substring(prefix.length);
             
-            // Include if it's a direct child (no additional slashes)
-            return relativePath && !relativePath.includes('/');
+            // Include if it's a direct child (check for exact match or single level)
+            if (!relativePath) return false;
+            
+            // Count slashes in relative path - should be 0 for direct children
+            const slashCount = (relativePath.match(/\//g) || []).length;
+            return slashCount === 0;
           });
           
           console.log('[SourceCreate] loadChildren: Filtered children', {
