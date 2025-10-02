@@ -74,8 +74,12 @@ export class AasManagementService {
           }
           
           const treeNodes = elements.map(el => {
-            // Ensure idShortPath is set correctly - use the full path from the API response
-            const idShortPath = el.idShortPath || el.idShort;
+            // Ensure idShortPath is set correctly - build full path like Source System
+            let idShortPath = el.idShortPath || el.idShort;
+            if (!el.idShortPath && el.idShort) {
+              // For root elements, just use idShort
+              idShortPath = el.idShort;
+            }
             console.log('[AasManagement] loadSubmodelElements: Mapping element', {
               idShort: el.idShort,
               idShortPath: idShortPath,
@@ -90,12 +94,13 @@ export class AasManagementService {
                 idShortPath: idShortPath,
                 raw: el,
                 modelType: el.modelType
-            },
-            leaf: this.isLeafElement(el),
-            children: [],
-            expandedIcon: 'pi pi-folder-open',
-            collapsedIcon: 'pi pi-folder'
-          }));
+              },
+              leaf: this.isLeafElement(el),
+              children: [],
+              expandedIcon: 'pi pi-folder-open',
+              collapsedIcon: 'pi pi-folder'
+            };
+          });
           resolve(treeNodes);
         },
         error: (error: any) => reject(error)
@@ -121,8 +126,12 @@ export class AasManagementService {
           }
           
           const treeNodes = children.map(el => {
-            // Ensure idShortPath is set correctly - use the full path from the API response
-            const idShortPath = el.idShortPath || el.idShort;
+            // Ensure idShortPath is set correctly - build full path like Source System
+            let idShortPath = el.idShortPath || el.idShort;
+            if (!el.idShortPath && el.idShort) {
+              // Build full path: parentPath + '/' + idShort
+              idShortPath = parentPath ? `${parentPath}/${el.idShort}` : el.idShort;
+            }
             console.log('[AasManagement] loadElementChildren: Mapping child element', {
               idShort: el.idShort,
               idShortPath: idShortPath,
@@ -137,13 +146,14 @@ export class AasManagementService {
                 submodelId: submodelId,
                 idShortPath: idShortPath,
                 raw: el,
-              modelType: el.modelType
-            },
-            leaf: this.isLeafElement(el),
-            children: [],
-            expandedIcon: 'pi pi-folder-open',
-            collapsedIcon: 'pi pi-folder'
-          }));
+                modelType: el.modelType
+              },
+              leaf: this.isLeafElement(el),
+              children: [],
+              expandedIcon: 'pi pi-folder-open',
+              collapsedIcon: 'pi pi-folder'
+            };
+          });
           resolve(treeNodes);
         },
         error: (error: any) => reject(error)
