@@ -289,7 +289,10 @@ public class AasResource {
             var headers = headerBuilder.buildMergedHeaders(ss, de.unistuttgart.stayinsync.core.configuration.service.aas.HttpHeaderBuilder.Mode.READ);
             final String apiUrl = ss.apiUrl;
             final java.util.Map<String,String> headersSnapshot = headers;
-            return traversal.listElements(apiUrl, smId, depth, parentPath, headersSnapshot).map(resp -> {
+            // Convert parentPath from slash notation to dot notation for BaSyx compatibility
+            final String dotNotationPath = parentPath.replace("/", ".");
+            Log.infof("Source listElements SNAPSHOT: Converting parentPath from slash to dot notation: %s -> %s", parentPath, dotNotationPath);
+            return traversal.listElements(apiUrl, smId, depth, dotNotationPath, headersSnapshot).map(resp -> {
                 int sc = resp.statusCode();
                 if (sc >= 200 && sc < 300) {
                     String body = resp.bodyAsString();
