@@ -183,6 +183,13 @@ public class AasResource {
                                 }
                                 if (directChildren != null) {
                                     Log.infof("Source listElements: parent modelType=%s children=%d parentPath=%s", modelType, directChildren.size(), parentPath);
+                                    Log.infof("Source listElements: DEBUG - directChildren details: size=%d, first few items:", directChildren.size());
+                                    for (int i = 0; i < Math.min(5, directChildren.size()); i++) {
+                                        var item = directChildren.getJsonObject(i);
+                                        if (item != null) {
+                                            Log.infof("Source listElements: DEBUG - item[%d]: idShort=%s, modelType=%s", i, item.getString("idShort"), item.getString("modelType"));
+                                        }
+                                    }
                                     
                                     // Special handling for SubmodelElementList flattening
                                     if ("SubmodelElementList".equalsIgnoreCase(modelType)) {
@@ -220,6 +227,13 @@ public class AasResource {
                                         out.add(el);
                                     }
                                     Log.infof("Source listElements: returning %d direct children", out.size());
+                                    Log.infof("Source listElements: DEBUG - final output details: size=%d, first few items:", out.size());
+                                    for (int i = 0; i < Math.min(5, out.size()); i++) {
+                                        var item = out.getJsonObject(i);
+                                        if (item != null) {
+                                            Log.infof("Source listElements: DEBUG - final[%d]: idShort=%s, idShortPath=%s", i, item.getString("idShort"), item.getString("idShortPath"));
+                                        }
+                                    }
                                     return Response.ok(out.encode()).build();
                                 }
                             }
