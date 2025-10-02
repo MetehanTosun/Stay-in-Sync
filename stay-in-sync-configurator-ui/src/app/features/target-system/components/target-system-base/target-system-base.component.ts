@@ -314,7 +314,9 @@ export class TargetSystemBaseComponent implements OnInit {
   onCreated(system: TargetSystemDTO): void {
     // refresh list immediately so the newly created system appears without manual reload
     console.log('[TargetSystemBase] onCreated: Refreshing list after system creation', { id: system.id, name: system.name });
+    console.log('[TargetSystemBase] onCreated: Calling load() method');
     this.load();
+    console.log('[TargetSystemBase] onCreated: load() method called successfully');
   }
 
   edit(row: TargetSystemDTO): void {
