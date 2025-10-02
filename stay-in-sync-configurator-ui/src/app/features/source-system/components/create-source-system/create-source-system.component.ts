@@ -587,14 +587,49 @@ save(): void {
   loadRootElements(submodelId: string, attachToNode?: TreeNode): void {
     if (!this.createdSourceSystemId) return;
     this.childrenLoading[submodelId] = true;
+    
+    console.log('[SourceCreate] loadRootElements: Starting to load root elements', {
+      submodelId,
+      attachToNode: attachToNode?.label
+    });
+    
     this.aasService.listElements(this.createdSourceSystemId, submodelId, { depth: 'shallow', source: 'SNAPSHOT' })
       .subscribe({
         next: (resp) => {
           this.childrenLoading[submodelId] = false;
           const list = Array.isArray(resp) ? resp : (resp?.result ?? []);
+          
+          console.log('[SourceCreate] loadRootElements: ROOT ELEMENTS LOADED', {
+            submodelId,
+            totalCount: list.length,
+            elements: list.map((el: any, index: number) => ({
+              index,
+              idShort: el.idShort,
+              idShortPath: el.idShortPath,
+              hasChildren: el.hasChildren,
+              modelType: el.modelType,
+              value: el.value,
+              submodelElements: el.submodelElements
+            }))
+          });
+          
           this.elementsBySubmodel[submodelId] = list;
           if (attachToNode) {
-            attachToNode.children = list.map((el: any) => this.mapElementToNode(submodelId, el));
+            const mappedChildren = list.map((el: any) => this.mapElementToNode(submodelId, el));
+            
+            console.log('[SourceCreate] loadRootElements: MAPPED CHILDREN', {
+              submodelId,
+              mappedCount: mappedChildren.length,
+              children: mappedChildren.map((child: any, index: number) => ({
+                index,
+                key: child.key,
+                label: child.label,
+                leaf: child.leaf,
+                data: child.data
+              }))
+            });
+            
+            attachToNode.children = mappedChildren;
             this.treeNodes = [...this.treeNodes];
             // Background: hydrate precise types via LIVE element details
             this.hydrateNodeTypesForNodes(submodelId, attachToNode.children as TreeNode[]);
@@ -604,6 +639,10 @@ save(): void {
         },
         error: (err) => {
           this.childrenLoading[submodelId] = false;
+          console.error('[SourceCreate] loadRootElements: ERROR', {
+            submodelId,
+            error: err
+          });
           this.errorService.handleError(err);
         }
       });
@@ -642,23 +681,75 @@ save(): void {
             return slashCount === 0;
           });
           
-          console.log('[SourceCreate] loadChildren: Filtered children', {
+          console.log('[SourceCreate] loadChildren: DETAILED FILTERING ANALYSIS', {
             submodelId,
             parentPath,
             prefix,
             originalCount: list.length,
-            filteredCount: filteredList.length,
-            original: list.map((el: any) => ({
-              idShort: el.idShort,
-              idShortPath: el.idShortPath,
-              hasChildren: el.hasChildren
-            })),
-            filtered: filteredList.map((el: any) => ({
-              idShort: el.idShort,
-              idShortPath: el.idShortPath,
-              hasChildren: el.hasChildren
-            }))
+            filteredCount: filteredList.length
           });
+          
+          // Log all original elements with detailed info
+          console.log('[SourceCreate] loadChildren: ORIGINAL ELEMENTS:', list.map((el: any, index: number) => {
+            const p = el?.idShortPath || el?.idShort;
+            const relativePath = p ? String(p).substring(prefix.length) : '';
+            const slashCount = relativePath ? (relativePath.match(/\//g) || []).length : -1;
+            const isDirectChild = slashCount === 0;
+            
+            return {
+              index,
+              idShort: el.idShort,
+              idShortPath: el.idShortPath,
+              fullPath: p,
+              relativePath,
+              slashCount,
+              isDirectChild,
+              hasChildren: el.hasChildren,
+              modelType: el.modelType,
+              willBeIncluded: isDirectChild
+            };
+          }));
+          
+          // Log filtered elements
+          console.log('[SourceCreate] loadChildren: FILTERED ELEMENTS:', filteredList.map((el: any, index: number) => ({
+            index,
+            idShort: el.idShort,
+            idShortPath: el.idShortPath,
+            hasChildren: el.hasChildren,
+            modelType: el.modelType
+          })));
+          
+          // Log elements that were filtered out
+          const filteredOut = list.filter((el: any) => {
+            const p = el?.idShortPath || el?.idShort;
+            if (!p) return true;
+            if (!parentPath) return String(p).includes('/');
+            if (!String(p).startsWith(prefix)) return true;
+            const relativePath = String(p).substring(prefix.length);
+            if (!relativePath) return true;
+            const slashCount = (relativePath.match(/\//g) || []).length;
+            return slashCount !== 0;
+          });
+          
+          console.log('[SourceCreate] loadChildren: FILTERED OUT ELEMENTS:', filteredOut.map((el: any, index: number) => {
+            const p = el?.idShortPath || el?.idShort;
+            const relativePath = p ? String(p).substring(prefix.length) : '';
+            const slashCount = relativePath ? (relativePath.match(/\//g) || []).length : -1;
+            
+            return {
+              index,
+              idShort: el.idShort,
+              idShortPath: el.idShortPath,
+              fullPath: p,
+              relativePath,
+              slashCount,
+              reason: !p ? 'no path' : 
+                      !parentPath && String(p).includes('/') ? 'root but has slash' :
+                      !String(p).startsWith(prefix) ? 'does not start with prefix' :
+                      !relativePath ? 'no relative path' :
+                      slashCount !== 0 ? `has ${slashCount} slashes (not direct child)` : 'unknown'
+            };
+          }));
           
           const mapped = filteredList.map((el: any) => {
             if (!el.idShortPath && el.idShort) {
@@ -817,13 +908,31 @@ save(): void {
       hasChildren = el?.hasChildren === true;
     }
     
-    return {
+    const node = {
       key: `${submodelId}::${el.idShortPath}`,
       label,
       data: { type: 'element', submodelId, idShortPath: el.idShortPath || el.idShort, modelType: computedType, raw: el },
       leaf: !hasChildren,
       children: []
     } as TreeNode;
+    
+    console.log('[SourceCreate] mapElementToNode: MAPPED NODE', {
+      idShort: label,
+      idShortPath: el.idShortPath,
+      modelType: computedType,
+      typeHasChildren,
+      hasChildren,
+      leaf: !hasChildren,
+      key: node.key,
+      rawData: {
+        hasChildren: el?.hasChildren,
+        value: el?.value,
+        submodelElements: el?.submodelElements,
+        items: el?.items
+      }
+    });
+    
+    return node;
   }
 
   onNodeExpand(event: any): void {
