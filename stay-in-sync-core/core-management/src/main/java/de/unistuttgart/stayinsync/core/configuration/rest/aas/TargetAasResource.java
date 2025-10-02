@@ -891,18 +891,6 @@ public class TargetAasResource {
         return Response.status(resp.statusCode()).entity(resp.bodyAsString()).build();
     }
 
-    @PATCH
-    @Path("/submodels/{smId}/elements/{path:.+}/value")
-    public Response patchElementValue(@PathParam("targetSystemId") Long targetSystemId,
-                                      @PathParam("smId") String smId,
-                                      @PathParam("path") String path,
-                                      String body) {
-        TargetSystem ts = TargetSystem.<TargetSystem>findByIdOptional(targetSystemId).orElse(null);
-        ts = aasService.validateAasTarget(ts);
-        var headers = headerBuilder.buildMergedHeaders(ts, HttpHeaderBuilder.Mode.WRITE_JSON);
-        var resp = traversal.patchElementValue(ts.apiUrl, smId, path, body, headers).await().indefinitely();
-        return Response.status(resp.statusCode()).entity(resp.bodyAsString()).build();
-    }
 
     @POST
     @Path("/upload/preview")

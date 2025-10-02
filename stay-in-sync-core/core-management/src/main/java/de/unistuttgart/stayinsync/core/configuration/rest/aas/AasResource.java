@@ -613,25 +613,6 @@ public class AasResource {
         }
         return aasService.mapHttpError(sc, resp.statusMessage(), resp.bodyAsString());
     }
-    @PATCH
-    @Path("/submodels/{smId}/elements/{path:.+}/value")
-    public Response patchElementValue(@PathParam("sourceSystemId") Long sourceSystemId,
-                                      @PathParam("smId") String smId,
-                                      @PathParam("path") String path,
-                                      String body) {
-        SourceSystem ss = SourceSystem.<SourceSystem>findByIdOptional(sourceSystemId).orElse(null);
-        ss = aasService.validateAasSource(ss);
-        var headers = headerBuilder.buildMergedHeaders(ss, de.unistuttgart.stayinsync.core.configuration.service.aas.HttpHeaderBuilder.Mode.WRITE_JSON);
-        Log.infof("Patch element value LIVE: apiUrl=%s smId=%s path=%s", ss.apiUrl, smId, path);
-        Log.debugf("WRITE headers: %s body=%s", headers, body);
-        var resp = traversal.patchElementValue(ss.apiUrl, smId, path, body, headers).await().indefinitely();
-        int sc = resp.statusCode();
-        Log.infof("Patch element upstream status=%d msg=%s body=%s", sc, resp.statusMessage(), safeBody(resp));
-        if (sc >= 200 && sc < 300) {
-            return Response.noContent().build();
-        }
-        return aasService.mapHttpError(sc, resp.statusMessage(), resp.bodyAsString());
-    }
 
     private String safeBody(HttpResponse<Buffer> resp) {
         try {
