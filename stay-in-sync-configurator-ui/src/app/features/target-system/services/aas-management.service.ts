@@ -73,14 +73,23 @@ export class AasManagementService {
             elements = response.result;
           }
           
-          const treeNodes = elements.map(el => ({
-            label: el.idShort || 'Element',
-            data: {
-              type: 'element',
-              submodelId: submodelId,
-              idShortPath: el.idShortPath || el.idShort,
-              raw: el,
+          const treeNodes = elements.map(el => {
+            // Ensure idShortPath is set correctly - use the full path from the API response
+            const idShortPath = el.idShortPath || el.idShort;
+            console.log('[AasManagement] loadSubmodelElements: Mapping element', {
+              idShort: el.idShort,
+              idShortPath: idShortPath,
               modelType: el.modelType
+            });
+            
+            return {
+              label: el.idShort || 'Element',
+              data: {
+                type: 'element',
+                submodelId: submodelId,
+                idShortPath: idShortPath,
+                raw: el,
+                modelType: el.modelType
             },
             leaf: this.isLeafElement(el),
             children: [],
@@ -111,13 +120,23 @@ export class AasManagementService {
             children = response.result;
           }
           
-          const treeNodes = children.map(el => ({
-            label: el.idShort || 'Element',
-            data: {
-              type: 'element',
-              submodelId: submodelId,
-              idShortPath: el.idShortPath || el.idShort,
-              raw: el,
+          const treeNodes = children.map(el => {
+            // Ensure idShortPath is set correctly - use the full path from the API response
+            const idShortPath = el.idShortPath || el.idShort;
+            console.log('[AasManagement] loadElementChildren: Mapping child element', {
+              idShort: el.idShort,
+              idShortPath: idShortPath,
+              modelType: el.modelType,
+              parentPath: parentPath
+            });
+            
+            return {
+              label: el.idShort || 'Element',
+              data: {
+                type: 'element',
+                submodelId: submodelId,
+                idShortPath: idShortPath,
+                raw: el,
               modelType: el.modelType
             },
             leaf: this.isLeafElement(el),
