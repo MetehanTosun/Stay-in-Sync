@@ -267,14 +267,19 @@ export class TargetSystemBaseComponent implements OnInit {
   }
 
   load(): void {
+    console.log('[TargetSystemBase] load: Loading target systems');
     this.loading = true;
     this.api.getAll().subscribe({
       next: list => { 
+        console.log('[TargetSystemBase] load: Loaded systems', { count: list.length, systems: list.map(s => ({ id: s.id, name: s.name })) });
         this.systems = list; 
         this.applyFilter(); 
         this.loading = false; 
       },
-      error: () => { this.loading = false; }
+      error: (err) => { 
+        console.error('[TargetSystemBase] load: Error loading systems', err);
+        this.loading = false; 
+      }
     });
   }
 
@@ -308,6 +313,7 @@ export class TargetSystemBaseComponent implements OnInit {
 
   onCreated(_: TargetSystemDTO): void {
     // refresh list immediately so the newly created system appears without manual reload
+    console.log('[TargetSystemBase] onCreated: Refreshing list after system creation');
     this.load();
   }
 
