@@ -13,6 +13,7 @@ import org.junit.jupiter.api.Test;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -20,6 +21,8 @@ import static org.mockito.Mockito.*;
 
 @QuarkusTest
 class MonitoringGraphServiceTest {
+
+    private static final String LOCAL_HEALTH_URL = "http://host.docker.internal:8095/q/health/live";
 
     @InjectMock
     @RestClient
@@ -69,39 +72,49 @@ class MonitoringGraphServiceTest {
         job.transformations = List.of(tf);
 
         when(jobClient.getAll()).thenReturn(List.of(job));
+
+        // Default: alle Prometheus-Checks healthy
         when(prometheusClient.isUp(anyString())).thenReturn(true);
 
-        // Keine K8s-PollingNodes für diesen Test
+        // K8s liefert leer -> fallback local
         when(kubernetesPollingNodeService.getPollingNodes()).thenReturn(Collections.emptyList());
 
         // Act
         GraphResponse graph = service.buildGraph();
 
-        // Assert
+        // Assert: TF-Poller sowie Local-Fallback-Poller werden erzeugt
         assertThat(graph.nodes).extracting("id")
-                .containsExactlyInAnyOrder("SRC_1", "TGT_99", "42", "POLL_poller");
+                .containsExactlyInAnyOrder("SRC_1", "TGT_99", "42", "POLL_poller", "POLL_core-polling-node");
+
         assertThat(graph.connections).isNotEmpty();
+
+        // Prometheus wurde zumindest einmal befragt (Sources/Targets + ggf. Local)
         verify(prometheusClient, atLeastOnce()).isUp(anyString());
     }
 
     @Test
-    void buildGraph_shouldHandleEmptySystemsAndJobs() {
+    void buildGraph_shouldHandleEmptySystemsAndJobs_withLocalFallback() {
         // Arrange: keine Systeme, keine Jobs
         when(sourceClient.getAll()).thenReturn(Collections.emptyList());
         when(targetClient.getAll()).thenReturn(Collections.emptyList());
         when(jobClient.getAll()).thenReturn(Collections.emptyList());
+
+        when(prometheusClient.isUp(anyString())).thenReturn(true);
         when(kubernetesPollingNodeService.getPollingNodes()).thenReturn(Collections.emptyList());
 
         // Act
         GraphResponse graph = service.buildGraph();
 
-        // Assert
-        assertThat(graph.nodes).isEmpty();
+        // Assert: Kein Source/Target/Job, aber Local-Fallback-Poller vorhanden
+        assertThat(graph.nodes).extracting("id")
+                .containsExactly("POLL_core-polling-node");
+
+        // Keine Verbindungen, weil keine Sources/Jobs vorhanden sind
         assertThat(graph.connections).isEmpty();
     }
 
     @Test
-    void buildGraph_shouldMarkUnhealthyNodes() {
+    void buildGraph_shouldMarkUnhealthyNodes_withLocalFallbackPresent() {
         // Arrange
         MonitoringSourceSystemDto src = new MonitoringSourceSystemDto();
         src.id = 10L;
@@ -111,23 +124,30 @@ class MonitoringGraphServiceTest {
 
         when(targetClient.getAll()).thenReturn(Collections.emptyList());
         when(jobClient.getAll()).thenReturn(Collections.emptyList());
-        when(kubernetesPollingNodeService.getPollingNodes()).thenReturn(Collections.emptyList());
 
-        // ungesund
+        // default healthy
+        when(prometheusClient.isUp(anyString())).thenReturn(true);
+        // but the bad-src should be unhealthy
         when(prometheusClient.isUp("http://bad-src")).thenReturn(false);
+
+        // K8s leer -> fallback
+        when(kubernetesPollingNodeService.getPollingNodes()).thenReturn(Collections.emptyList());
 
         // Act
         GraphResponse graph = service.buildGraph();
 
-        // Assert
-        assertThat(graph.nodes).hasSize(1);
-        NodeDto node = graph.nodes.getFirst();
-        assertThat(node.id).isEqualTo("SRC_10");
-        assertThat(node.status).isEqualTo("error");
+        // Assert: Source + LocalPoller existieren
+        assertThat(graph.nodes).extracting("id")
+                .contains("SRC_10", "POLL_core-polling-node");
+
+        // find SRC_10 and assert status is "error"
+        Optional<NodeDto> srcNode = graph.nodes.stream().filter(n -> "SRC_10".equals(n.id)).findFirst();
+        assertThat(srcNode).isPresent();
+        assertThat(srcNode.get().status).isEqualTo("error");
     }
 
     @Test
-    void buildGraph_shouldSupportMultipleTransformations() {
+    void buildGraph_shouldSupportMultipleTransformations_andLocalFallback() {
         // Arrange
         MonitoringSourceSystemDto src = new MonitoringSourceSystemDto();
         src.id = 1L;
@@ -167,15 +187,18 @@ class MonitoringGraphServiceTest {
 
         when(jobClient.getAll()).thenReturn(List.of(job));
         when(prometheusClient.isUp(anyString())).thenReturn(true);
+
+        // K8s leer -> fallback local
         when(kubernetesPollingNodeService.getPollingNodes()).thenReturn(Collections.emptyList());
 
         // Act
         GraphResponse graph = service.buildGraph();
 
-        // Assert
+        // Assert: alle erwarteten Knoten (inkl. local fallback)
         assertThat(graph.nodes).extracting("id")
-                .contains("SRC_1", "TGT_2", "TGT_3", "100", "POLL_poller1", "POLL_poller2");
+                .contains("SRC_1", "TGT_2", "TGT_3", "100", "POLL_poller1", "POLL_poller2", "POLL_core-polling-node");
 
+        // Assert: die zentralen Verbindungen sind vorhanden (zusätzliche Verbindungen zu local sind möglich)
         assertThat(graph.connections)
                 .anyMatch(c -> c.source.equals("SRC_1") && c.target.equals("POLL_poller1"))
                 .anyMatch(c -> c.source.equals("SRC_1") && c.target.equals("POLL_poller2"))
@@ -186,7 +209,7 @@ class MonitoringGraphServiceTest {
     }
 
     @Test
-    void buildGraph_shouldIncludeKubernetesPollingNodes() {
+    void buildGraph_shouldIncludeKubernetesPollingNodes_andNotFallback() {
         // Arrange
         MonitoringSourceSystemDto src = new MonitoringSourceSystemDto();
         src.id = 1L;
@@ -203,7 +226,7 @@ class MonitoringGraphServiceTest {
         when(targetClient.getAll()).thenReturn(Collections.emptyList());
         when(prometheusClient.isUp(anyString())).thenReturn(true);
 
-        // Kubernetes-PollingNodes mocken
+        // K8s liefert PollingNodes => kein Fallback
         when(kubernetesPollingNodeService.getPollingNodes()).thenReturn(List.of("k8sPoller1", "k8sPoller2"));
 
         // Act
@@ -213,11 +236,49 @@ class MonitoringGraphServiceTest {
         assertThat(graph.nodes).extracting("id")
                 .contains("SRC_1", "42", "POLL_k8sPoller1", "POLL_k8sPoller2");
 
-        // Assert: Verbindungen von Source → K8s-Poller → Job
+        // Local fallback node MUST NOT exist
+        assertThat(graph.nodes).extracting("id").doesNotContain("POLL_core-polling-node");
+
+        // Verify that local-health check URL was NOT invoked
+        verify(prometheusClient, never()).isUp(LOCAL_HEALTH_URL);
+    }
+
+    @Test
+    void buildGraph_shouldFallbackToLocalWhenK8sThrows() {
+        // Arrange
+        MonitoringSourceSystemDto src = new MonitoringSourceSystemDto();
+        src.id = 1L;
+        src.name = "SourceA";
+        src.apiUrl = "http://src";
+        when(sourceClient.getAll()).thenReturn(List.of(src));
+
+        MonitoringSyncJobDto job = new MonitoringSyncJobDto();
+        job.id = 5L;
+        job.name = "Job5";
+        job.transformations = Collections.emptyList();
+        when(jobClient.getAll()).thenReturn(List.of(job));
+
+        when(targetClient.getAll()).thenReturn(Collections.emptyList());
+
+        // Simuliere K8s-Ausfall
+        when(kubernetesPollingNodeService.getPollingNodes()).thenThrow(new RuntimeException("K8s down"));
+
+        // Lokaler Health-Check (wird im Fallback geprüft)
+        when(prometheusClient.isUp(LOCAL_HEALTH_URL)).thenReturn(true);
+
+        // Act
+        GraphResponse graph = service.buildGraph();
+
+        // Assert: Lokaler Poller ist enthalten
+        assertThat(graph.nodes).extracting("id")
+                .contains("SRC_1", "5", "POLL_core-polling-node");
+
+        // Assert: Source -> Local -> Job
         assertThat(graph.connections)
-                .anyMatch(c -> c.source.equals("SRC_1") && c.target.equals("POLL_k8sPoller1"))
-                .anyMatch(c -> c.source.equals("SRC_1") && c.target.equals("POLL_k8sPoller2"))
-                .anyMatch(c -> c.source.equals("POLL_k8sPoller1") && c.target.equals("42"))
-                .anyMatch(c -> c.source.equals("POLL_k8sPoller2") && c.target.equals("42"));
+                .anyMatch(c -> c.source.equals("SRC_1") && c.target.equals("POLL_core-polling-node"))
+                .anyMatch(c -> c.source.equals("POLL_core-polling-node") && c.target.equals("5"));
+
+        // Prometheus local health wurde geprüft
+        verify(prometheusClient).isUp(LOCAL_HEALTH_URL);
     }
 }
