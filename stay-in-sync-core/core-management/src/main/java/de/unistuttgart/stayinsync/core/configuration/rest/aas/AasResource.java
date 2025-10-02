@@ -283,6 +283,102 @@ public class AasResource {
                 return Response.status(sc).entity(resp.bodyAsString()).build();
             });
         }
+        
+        // Apply same special logic for SNAPSHOT source when parentPath is provided
+        if ("SNAPSHOT".equalsIgnoreCase(source) && parentPath != null && !parentPath.isBlank()) {
+            var headers = headerBuilder.buildMergedHeaders(ss, de.unistuttgart.stayinsync.core.configuration.service.aas.HttpHeaderBuilder.Mode.READ);
+            final String apiUrl = ss.apiUrl;
+            final java.util.Map<String,String> headersSnapshot = headers;
+            return traversal.listElements(apiUrl, smId, depth, parentPath, headersSnapshot).map(resp -> {
+                int sc = resp.statusCode();
+                if (sc >= 200 && sc < 300) {
+                    String body = resp.bodyAsString();
+                    Log.infof("Source listElements SNAPSHOT: status=%d depth=%s parentPath=%s", sc, depth, parentPath);
+                    
+                    // SUCCESS PATH: Check if server returned parent object instead of children array
+                    if (parentPath != null && !parentPath.isBlank() && body != null && !body.isBlank()) {
+                        try {
+                            if (body.trim().startsWith("{")) {
+                                io.vertx.core.json.JsonObject obj = new io.vertx.core.json.JsonObject(body);
+                                String modelType = obj.getString("modelType");
+                                io.vertx.core.json.JsonArray directChildren = null;
+                                if ("SubmodelElementCollection".equalsIgnoreCase(modelType) || "SubmodelElementList".equalsIgnoreCase(modelType)) {
+                                    var v = obj.getValue("value");
+                                    if (v instanceof io.vertx.core.json.JsonArray arr) directChildren = arr;
+                                } else if ("Entity".equalsIgnoreCase(modelType)) {
+                                    var st = obj.getValue("statements");
+                                    if (st instanceof io.vertx.core.json.JsonArray arr) directChildren = arr;
+                                }
+                                if (directChildren != null) {
+                                    Log.infof("Source listElements SNAPSHOT: parent modelType=%s children=%d parentPath=%s", modelType, directChildren.size(), parentPath);
+                                    Log.infof("Source listElements SNAPSHOT: DEBUG - directChildren details: size=%d, first few items:", directChildren.size());
+                                    for (int i = 0; i < Math.min(5, directChildren.size()); i++) {
+                                        var item = directChildren.getJsonObject(i);
+                                        if (item != null) {
+                                            Log.infof("Source listElements SNAPSHOT: DEBUG - item[%d]: idShort=%s, modelType=%s", i, item.getString("idShort"), item.getString("modelType"));
+                                        }
+                                    }
+                                    
+                                    // Special handling for SubmodelElementList flattening
+                                    if ("SubmodelElementList".equalsIgnoreCase(modelType)) {
+                                        io.vertx.core.json.JsonArray flattened = new io.vertx.core.json.JsonArray();
+                                        for (int i = 0; i < directChildren.size(); i++) {
+                                            var listItem = directChildren.getJsonObject(i);
+                                            if (listItem == null) continue;
+                                            String idxId = listItem.getString("idShort");
+                                            if (idxId == null || idxId.isBlank()) idxId = Integer.toString(i);
+                                            Object itemVal = listItem.getValue("value");
+                                            if (itemVal instanceof io.vertx.core.json.JsonArray carr) {
+                                                for (int j = 0; j < carr.size(); j++) {
+                                                    var child = carr.getJsonObject(j);
+                                                    if (child == null) continue;
+                                                    String cid = child.getString("idShort");
+                                                    if (cid != null && !cid.isBlank()) child.put("idShortPath", parentPath + "/" + idxId + "/" + cid);
+                                                    flattened.add(child);
+                                                }
+                                            } else {
+                                                if (idxId != null && !idxId.isBlank()) listItem.put("idShortPath", parentPath + "/" + idxId);
+                                                flattened.add(listItem);
+                                            }
+                                        }
+                                        directChildren = flattened;
+                                    }
+                                    
+                                    io.vertx.core.json.JsonArray out = new io.vertx.core.json.JsonArray();
+                                    for (int i = 0; i < directChildren.size(); i++) {
+                                        var el = directChildren.getJsonObject(i);
+                                        if (el == null) continue;
+                                        String idShort = el.getString("idShort");
+                                        if (idShort == null || idShort.isBlank()) {
+                                            idShort = "item_" + i;
+                                            el.put("idShort", idShort);
+                                        }
+                                        if (idShort != null && !idShort.isBlank()) el.put("idShortPath", parentPath + "/" + idShort);
+                                        out.add(el);
+                                    }
+                                    Log.infof("Source listElements SNAPSHOT: returning %d direct children", out.size());
+                                    Log.infof("Source listElements SNAPSHOT: DEBUG - final output details: size=%d, first few items:", out.size());
+                                    for (int i = 0; i < Math.min(5, out.size()); i++) {
+                                        var item = out.getJsonObject(i);
+                                        if (item != null) {
+                                            Log.infof("Source listElements SNAPSHOT: DEBUG - final[%d]: idShort=%s, idShortPath=%s", i, item.getString("idShort"), item.getString("idShortPath"));
+                                        }
+                                    }
+                                    return Response.ok(out.encode()).build();
+                                }
+                            }
+                        } catch (Exception ignore) {}
+                    }
+                    
+                    // If not a parent object, return the response as-is
+                    return Response.ok(body).build();
+                }
+                
+                Log.infof("Source listElements SNAPSHOT: final return status=%d", sc);
+                return Response.status(sc).entity(resp.bodyAsString()).build();
+            });
+        }
+        
         String normalizedSmId = normalizeSubmodelId(smId);
         var submodel = AasSubmodelLite.<AasSubmodelLite>find("sourceSystem.id = ?1 and submodelId = ?2", sourceSystemId, normalizedSmId).firstResult();
         if (submodel == null) {
