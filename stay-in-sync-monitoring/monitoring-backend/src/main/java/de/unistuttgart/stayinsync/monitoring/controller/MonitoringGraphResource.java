@@ -13,7 +13,6 @@ import org.eclipse.microprofile.openapi.annotations.media.ExampleObject;
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
 import org.eclipse.microprofile.openapi.annotations.responses.APIResponse;
 
-import java.util.List;
 
 @Path("/api/monitoringgraph")
 @Produces(MediaType.APPLICATION_JSON)

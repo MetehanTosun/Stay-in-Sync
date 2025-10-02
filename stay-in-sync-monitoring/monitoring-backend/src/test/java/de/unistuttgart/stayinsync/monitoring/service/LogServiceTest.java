@@ -19,13 +19,11 @@ import static org.mockito.Mockito.*;
 @QuarkusTest
 class LogServiceTest {
 
-    private HttpClient httpClient;
-    private HttpResponse<String> httpResponse;
     private LogService service;
 
     void setupMock(String body, int status) throws Exception {
-        httpClient = mock(HttpClient.class);
-        httpResponse = mock(HttpResponse.class);
+        HttpClient httpClient = mock(HttpClient.class);
+        HttpResponse<String> httpResponse = mock(HttpResponse.class);
         service = new LogService(new ObjectMapper(), httpClient);
 
         when(httpResponse.statusCode()).thenReturn(status);

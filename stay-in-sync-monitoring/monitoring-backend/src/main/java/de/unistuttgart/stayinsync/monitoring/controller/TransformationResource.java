@@ -22,16 +22,16 @@ public class TransformationResource {
 
     @GET
     @Path("/{syncJobId}")
-    @Operation(summary = "Gibt alle Transformationen für einen SyncJob zurück")
+    @Operation(summary = "Returns all transformations for a given SyncJob")
     @APIResponse(
             responseCode = "200",
-            description = "Liste der Transformationen für den angegebenen SyncJob",
+            description = "List of transformations for the specified SyncJob",
             content = @Content(
                     mediaType = "application/json",
                     schema = @Schema(implementation = MonitoringTransformationDto.class),
                     examples = @ExampleObject(
                             name = "transformation-list",
-                            value = "[{\"id\":\"1\",\"name\":\"Beispiel\"}]"
+                            value = "[{\"id\":\"1\",\"name\":\"Example\"}]"
                     )
             )
     )

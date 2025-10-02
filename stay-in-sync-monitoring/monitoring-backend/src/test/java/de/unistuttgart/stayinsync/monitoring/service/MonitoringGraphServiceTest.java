@@ -121,7 +121,7 @@ class MonitoringGraphServiceTest {
 
         // Assert
         assertThat(graph.nodes).hasSize(1);
-        NodeDto node = graph.nodes.get(0);
+        NodeDto node = graph.nodes.getFirst();
         assertThat(node.id).isEqualTo("SRC_10");
         assertThat(node.status).isEqualTo("error");
     }
