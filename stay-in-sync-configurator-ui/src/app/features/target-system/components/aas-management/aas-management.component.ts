@@ -310,19 +310,10 @@ export class AasManagementComponent implements OnInit {
   private fixTreeStructureAfterRefresh(elementData: any): void {
     console.log('[TargetAasManage] fixTreeStructureAfterRefresh called with:', elementData);
     
-    if (!elementData || !elementData.parentPath) {
-      console.log('[TargetAasManage] fixTreeStructureAfterRefresh: Missing elementData or parentPath', {
-        elementData: elementData,
-        parentPath: elementData?.parentPath
-      });
+    if (!elementData) {
+      console.log('[TargetAasManage] fixTreeStructureAfterRefresh: Missing elementData');
       return;
     }
-    
-    console.log('[TargetAasManage] Fixing tree structure after live refresh', {
-      parentPath: elementData.parentPath,
-      elementIdShort: elementData.body?.idShort,
-      fullElementData: elementData
-    });
     
     const elementIdShort = elementData.body?.idShort;
     if (!elementIdShort) {
@@ -333,12 +324,19 @@ export class AasManagementComponent implements OnInit {
     }
     
     // Build the correct idShortPath
-    const correctIdShortPath = elementData.parentPath + '/' + elementIdShort;
+    let correctIdShortPath: string;
+    if (elementData.parentPath) {
+      correctIdShortPath = elementData.parentPath + '/' + elementIdShort;
+    } else {
+      // For root elements, just use the idShort
+      correctIdShortPath = elementIdShort;
+    }
     
-    console.log('[TargetAasManage] Building correct idShortPath', {
+    console.log('[TargetAasManage] Fixing tree structure after live refresh', {
       parentPath: elementData.parentPath,
       elementIdShort: elementIdShort,
-      correctIdShortPath: correctIdShortPath
+      correctIdShortPath: correctIdShortPath,
+      fullElementData: elementData
     });
     
     // Find and update the element in the tree
