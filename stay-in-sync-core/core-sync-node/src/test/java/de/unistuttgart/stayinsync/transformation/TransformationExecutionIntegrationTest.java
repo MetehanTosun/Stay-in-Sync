@@ -97,7 +97,7 @@ public class TransformationExecutionIntegrationTest {
                 )
         );
         return new TransformationMessageDTO(1L, "Test Transformation", null, null,
-                JobDeploymentStatus.DEPLOYED, Set.of(), List.of(), targetArcs);
+                JobDeploymentStatus.DEPLOYED, Set.of(), List.of(), targetArcs, Set.of());
     }
 
     private List<Node> createGraphNodes() {
