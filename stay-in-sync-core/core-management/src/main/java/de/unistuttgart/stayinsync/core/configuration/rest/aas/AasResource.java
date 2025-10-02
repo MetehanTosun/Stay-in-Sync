@@ -155,6 +155,8 @@ public class AasResource {
                                  @QueryParam("depth") @DefaultValue("shallow") String depth,
                                  @QueryParam("parentPath") String parentPath,
                                  @QueryParam("source") @DefaultValue("SNAPSHOT") String source) {
+        Log.infof("Source listElements ENTRY: sourceSystemId=%d smId=%s depth=%s parentPath=%s source=%s", 
+                  sourceSystemId, smId, depth, parentPath, source);
         SourceSystem ss = SourceSystem.<SourceSystem>findByIdOptional(sourceSystemId).orElse(null);
         ss = aasService.validateAasSource(ss);
         if ("LIVE".equalsIgnoreCase(source)) {
