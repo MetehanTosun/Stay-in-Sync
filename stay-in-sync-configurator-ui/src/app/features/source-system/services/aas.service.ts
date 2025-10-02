@@ -58,6 +58,20 @@ export class AasService {
     }
     const submodelIdEnc = this.encodeIdToBase64Url(submodelId);
     const url = `/api/config/source-system/${sourceSystemId}/aas/submodels/${submodelIdEnc}/elements`;
+    
+    console.log('[AasService] listElements: FRONTEND REQUEST', {
+      sourceSystemId,
+      submodelId,
+      submodelIdEnc,
+      options,
+      url,
+      params: {
+        depth: params.get('depth'),
+        parentPath: params.get('parentPath'),
+        source: params.get('source')
+      }
+    });
+    
     return this.http.get(url, { params });
   }
 
