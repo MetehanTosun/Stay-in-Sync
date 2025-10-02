@@ -4,7 +4,7 @@ import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.SyncSy
 import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.TargetSystemApiRequestConfiguration;
 import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.TargetSystemApiRequestConfigurationAction;
 import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.Transformation;
-import de.unistuttgart.stayinsync.core.transport.domain.TargetApiRequestConfigurationActionRole;
+import de.unistuttgart.stayinsync.transport.domain.TargetApiRequestConfigurationActionRole;
 import io.swagger.v3.oas.models.OpenAPI;
 import io.swagger.v3.oas.models.Operation;
 import io.swagger.v3.oas.models.PathItem;

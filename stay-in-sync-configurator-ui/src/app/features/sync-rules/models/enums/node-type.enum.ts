@@ -20,5 +20,10 @@ export enum NodeType {
   /**
    * Final nodes represent the end of the boolean condition / the output of the transformation graph
    */
-  FINAL = 'FINAL'
+  FINAL = 'FINAL',
+
+  /**
+   * Final nodes control the behavior of a transformation graphs logic
+   */
+  CONFIG = 'CONFIG'
 }

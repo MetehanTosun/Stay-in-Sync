@@ -4,7 +4,7 @@ import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.Source
 import de.unistuttgart.stayinsync.core.configuration.rest.dtos.CreateSourceSystemDTO;
 import de.unistuttgart.stayinsync.core.configuration.rest.dtos.SourceSystemDTO;
 
-import de.unistuttgart.stayinsync.core.transport.dto.SourceSystemMessageDTO;
+import de.unistuttgart.stayinsync.transport.dto.SourceSystemMessageDTO;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.MappingConstants;

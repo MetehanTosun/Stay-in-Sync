@@ -24,28 +24,28 @@ import {
   ReactiveFormsModule,
   Validators,
 } from '@angular/forms';
-import { ScriptEditorService } from '../../../core/services/script-editor.service';
+import {ScriptEditorService} from '../../../core/services/script-editor.service';
 import {
   SourceSystem,
   SourceSystemEndpoint,
 } from '../../source-system/models/source-system.models';
-import { DialogModule } from 'primeng/dialog';
-import { CommonModule } from '@angular/common';
-import { InputTextModule } from 'primeng/inputtext';
-import { ButtonModule } from 'primeng/button';
-import { DividerModule } from 'primeng/divider';
-import { SchemaViewerComponent } from '../schema-viewer/schema-viewer.component';
-import { catchError, finalize, of } from 'rxjs';
-import { FieldsetModule } from 'primeng/fieldset';
-import { Dropdown, DropdownModule } from 'primeng/dropdown';
-import { TooltipModule } from 'primeng/tooltip';
-import { MessagesModule } from 'primeng/messages';
+import {DialogModule} from 'primeng/dialog';
+import {CommonModule} from '@angular/common';
+import {InputTextModule} from 'primeng/inputtext';
+import {ButtonModule} from 'primeng/button';
+import {DividerModule} from 'primeng/divider';
+import {SchemaViewerComponent} from '../schema-viewer/schema-viewer.component';
+import {catchError, finalize, of} from 'rxjs';
+import {FieldsetModule} from 'primeng/fieldset';
+import {Dropdown, DropdownModule} from 'primeng/dropdown';
+import {TooltipModule} from 'primeng/tooltip';
+import {MessagesModule} from 'primeng/messages';
 
-import { HttpClient } from '@angular/common/http';
-import { ArcStateService } from '../../../core/services/arc-state.service';
-import { InputNumberModule } from 'primeng/inputnumber';
-import { TableModule } from 'primeng/table';
-import { InputSwitchModule } from 'primeng/inputswitch';
+import {HttpClient} from '@angular/common/http';
+import {ArcStateService} from '../../../core/services/arc-state.service';
+import {InputNumberModule} from 'primeng/inputnumber';
+import {TableModule} from 'primeng/table';
+import {InputSwitchModule} from 'primeng/inputswitch';
 
 // TEMPORARY: FIX MESSAGING TOASTS AS A PATTERN
 interface Message {
@@ -82,6 +82,7 @@ export class ArcWizardComponent implements OnChanges {
   @Input() context!: {
     system: SourceSystem;
     endpoint: SourceSystemEndpoint;
+    arcToEdit?: ApiRequestConfiguration;
     arcToClone?: ApiRequestConfiguration;
   };
   @Output() onHide = new EventEmitter<void>();
@@ -135,28 +136,16 @@ export class ArcWizardComponent implements OnChanges {
   ngOnChanges(changes: SimpleChanges): void {
     if (changes['visible'] && this.visible && this.context) {
       this.resetWizardState();
-      this.fetchAndBuildForm();
+      this.loadInitialData();
     }
   }
 
-  private fetchAndBuildForm(): void {
+  private loadInitialData(): void {
     this.isLoadingDefinitions = true;
     this.errorMessages = [];
 
     this.scriptEditorService
       .getArcWizardContextData(this.context.system.id, this.context.endpoint.id)
-      .pipe(
-        catchError((err) => {
-          this.errorMessages = [
-            {
-              severity: 'error',
-              summary: 'Load Failed',
-              detail: 'Could not load parameter and header definitions.',
-            },
-          ];
-          return of(null);
-        })
-      )
       .subscribe((data) => {
         if (!data) {
           this.isLoadingDefinitions = false;
@@ -184,7 +173,7 @@ export class ArcWizardComponent implements OnChanges {
         this.availableQueryParams = this.queryParamDefinitions.filter(p => !p.required);
 
         requiredQueryParams.forEach(p => {
-          this.queryParameters.push(this.newParam(p.name, '', true, true, p.type));
+          this.queryParameters.push(this.newParam(p.name, '', true, true, p.type!));
         });
 
         this.headerParameters.clear();
@@ -192,8 +181,62 @@ export class ArcWizardComponent implements OnChanges {
 
         this.availableHeaders = [...data.headerDefinitions];
 
-        this.isLoadingDefinitions = false;
+        const arcToLoad = this.context.arcToEdit || this.context.arcToClone;
+        if (arcToLoad) {
+          this.scriptEditorService.getArcDetails(arcToLoad.id).subscribe(arcDetails => {
+            this.populateForm(arcDetails);
+            this.isLoadingDefinitions = false;
+          });
+        } else {
+          this.isLoadingDefinitions = false;
+        }
       });
+  }
+
+  private populateForm(arc: ApiRequestConfiguration): void {
+    const isClone = !!this.context.arcToClone;
+    const alias = isClone ? `${arc.alias}_copy` : arc.alias;
+
+    this.arcForm.patchValue({
+      alias: alias,
+      pollingRate: (arc as any).pollingIntervallTimeInMs || 1000,
+    });
+
+    this.queryParameters.clear();
+    this.headerParameters.clear();
+
+    const queryParamsFromDto = (arc as any).apiRequestParameters || [];
+    queryParamsFromDto.forEach((param: { type: string; paramName: string; paramValue: string }) => {
+      if (param.type === 'QUERY') {
+        const predefined = this.queryParamDefinitions.find(p => p.name === param.paramName);
+        this.queryParameters.push(
+          this.newParam(
+            param.paramName,
+            param.paramValue,
+            !!predefined,
+            predefined?.required || false,
+            predefined?.type || 'string'
+          )
+        );
+        this.availableQueryParams = this.availableQueryParams.filter(p => p.name !== param.paramName);
+      }
+    });
+
+    const headersFromDto = (arc as any).apiRequestHeaders || [];
+    headersFromDto.forEach((header: { headerName: string; values: string[] }) => {
+      const headerValue = header.values && header.values.length > 0 ? header.values[0] : '';
+      const predefined = this.headerDefinitions.find(h => h.headerName === header.headerName);
+      this.headerParameters.push(
+        this.newParam(
+          header.headerName,
+          headerValue,
+          !!predefined,
+          false,
+          'string'
+        )
+      );
+      this.availableHeaders = this.availableHeaders.filter(h => h.headerName !== header.headerName);
+    });
   }
 
   private newParam(
@@ -205,7 +248,7 @@ export class ArcWizardComponent implements OnChanges {
   ): FormGroup {
     const valueValidators = isRequired ? [Validators.required] : [];
     return this.fb.group({
-      key: [{ value: key, disabled: isDefined }, Validators.required],
+      key: [{value: key, disabled: isDefined}, Validators.required],
       value: [value, valueValidators],
       isDefined: [isDefined],
       isRequired: [isRequired],
@@ -215,18 +258,18 @@ export class ArcWizardComponent implements OnChanges {
 
   addPredefinedQueryParam(param: EndpointParameterDefinition | null): void {
     if (!param) return;
-    
-    this.queryParameters.push(this.newParam(param.name, '', true, param.required, param.type));
+
+    this.queryParameters.push(this.newParam(param.name, '', true, param.required, param.type!));
     this.availableQueryParams = this.availableQueryParams.filter(p => p.name !== param.name);
-    
+
     setTimeout(() => {
       this.paramDropdown?.clear();
     }, 0);
   }
-  
+
   addPredefinedHeader(header: ApiHeaderDefinition | null): void {
     if (!header) return;
-    
+
     this.headerParameters.push(this.newParam(header.headerName, '', true, false, 'string'));
     this.availableHeaders = this.availableHeaders.filter(h => h.headerName !== header.headerName);
 
@@ -237,7 +280,7 @@ export class ArcWizardComponent implements OnChanges {
 
   addQueryParam(paramToAdd?: EndpointParameterDefinition): void {
     if (paramToAdd) {
-      this.queryParameters.push(this.newParam(paramToAdd.name, '', true, paramToAdd.required, paramToAdd.type));
+      this.queryParameters.push(this.newParam(paramToAdd.name, '', true, paramToAdd.required, paramToAdd.type!));
       this.availableQueryParams = this.availableQueryParams.filter(p => p.name !== paramToAdd.name);
     } else {
       this.queryParameters.push(this.newParam('', '', false, false, 'string'));
@@ -247,7 +290,7 @@ export class ArcWizardComponent implements OnChanges {
   removeQueryParam(index: number): void {
     const removedControl = this.queryParameters.at(index);
     const paramName = removedControl.get('key')?.value;
-    
+
     if (removedControl.get('isDefined')?.value) {
       const predefinedParam = this.queryParamDefinitions.find(p => p.name === paramName);
       if (predefinedParam) {
@@ -255,7 +298,7 @@ export class ArcWizardComponent implements OnChanges {
         this.availableQueryParams.sort((a, b) => a.name.localeCompare(b.name));
       }
     }
-    
+
     this.queryParameters.removeAt(index);
   }
 
@@ -284,12 +327,12 @@ export class ArcWizardComponent implements OnChanges {
   }
 
   /**
-    if (this.context.arcToClone) {
-      // TODO: fetch the detailed ARC to get its saved parameter values for cloning
-      this.arcForm.patchValue({
-        alias: `${this.context.arcToClone?.alias}_copy`,
-      });
-    } */
+   if (this.context.arcToClone) {
+   // TODO: fetch the detailed ARC to get its saved parameter values for cloning
+   this.arcForm.patchValue({
+   alias: `${this.context.arcToClone?.alias}_copy`,
+   });
+   } */
 
   onTestCall(): void {
     if (this.arcForm.invalid) {
@@ -340,20 +383,20 @@ export class ArcWizardComponent implements OnChanges {
   }
 
   private prunePayloadRecursively(data: any): any {
-    if (data == null || typeof data !== 'object'){
+    if (data == null || typeof data !== 'object') {
       return data;
     }
 
-    if (Array.isArray(data)){
-      if (data.length === 0){
+    if (Array.isArray(data)) {
+      if (data.length === 0) {
         return [];
       }
       return [this.prunePayloadRecursively(data[0])];
     }
 
     const newObject: { [key: string]: any } = {};
-    for(const key in data){
-      if (Object.prototype.hasOwnProperty.call(data, key)){
+    for (const key in data) {
+      if (Object.prototype.hasOwnProperty.call(data, key)) {
         newObject[key] = this.prunePayloadRecursively(data[key]);
       }
     }
@@ -383,7 +426,7 @@ export class ArcWizardComponent implements OnChanges {
       ];
       return;
     }
-    
+
 
     this.isSaving = true;
     this.errorMessages = [];
@@ -392,7 +435,8 @@ export class ArcWizardComponent implements OnChanges {
 
     const prunedPayload = this.prunePayloadRecursively(this.testResult.responsePayload);
 
-    const createDto: ArcSaveRequest = {
+    const saveRequest: ArcSaveRequest = {
+      id: this.context.arcToEdit ? this.context.arcToEdit.id : undefined,
       alias: this.alias?.value,
       sourceSystemId: this.context.system.id,
       endpointId: this.context.endpoint.id,
@@ -403,15 +447,12 @@ export class ArcWizardComponent implements OnChanges {
       pollingIntervallTimeInMs: this.arcForm.get('pollingRate')?.value,
     };
 
-    this.http
-      .post<ApiRequestConfiguration>(
-        `/api/config/source-system/endpoint/${this.context.endpoint.id}/request-configuration`, // TODO verifiy endpoint
-        createDto
-      )
+    this.scriptEditorService.saveArcConfiguration(saveRequest)
       .pipe(finalize(() => (this.isSaving = false)))
       .subscribe({
         next: (savedArc) => {
-          console.log('ARC saved successfully!', savedArc);
+          console.log('ARC saved/updated successfully!', savedArc);
+
           this.arcStateService.addOrUpdateArc(savedArc);
           this.onSaveSuccess.emit(savedArc);
           this.closeDialog();

@@ -90,6 +90,8 @@ public class GraphMapper {
             nodeDto.setOutputType(data.getOutputType());
             nodeDto.setInputLimit(data.getInputLimit());
             nodeDto.setInputNodes(new ArrayList<>()); // Initialize empty list for connections
+            nodeDto.setChangeDetectionMode(data.getChangeDetectionMode());
+            nodeDto.setChangeDetectionActive(data.isChangeDetectionActive());
 
             nodeDtoMap.put(vflowNode.getId(), nodeDto);
         }

@@ -1,7 +1,7 @@
 package de.unistuttgart.stayinsync.core.configuration.domain.entities.sync;
 
-import de.unistuttgart.stayinsync.core.transport.domain.ApiEndpointQueryParamType;
-import de.unistuttgart.stayinsync.core.transport.dto.SchemaType;
+import de.unistuttgart.stayinsync.transport.domain.ApiEndpointQueryParamType;
+import de.unistuttgart.stayinsync.transport.dto.SchemaType;
 import io.quarkus.hibernate.orm.panache.PanacheEntity;
 import jakarta.persistence.*;
 

@@ -4,14 +4,14 @@ import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.Source
 import de.unistuttgart.stayinsync.core.configuration.rest.dtos.CreateSourceArcDTO;
 import de.unistuttgart.stayinsync.core.configuration.rest.dtos.CreateRequestConfigurationDTO;
 import de.unistuttgart.stayinsync.core.configuration.rest.dtos.GetRequestConfigurationDTO;
-import de.unistuttgart.stayinsync.core.transport.dto.ApiConnectionDetailsDTO;
-import de.unistuttgart.stayinsync.core.transport.dto.SourceSystemApiRequestConfigurationMessageDTO;
+import de.unistuttgart.stayinsync.transport.dto.ApiConnectionDetailsDTO;
+import de.unistuttgart.stayinsync.transport.dto.SourceSystemApiRequestConfigurationMessageDTO;
 import org.mapstruct.*;
 
 import java.util.List;
 
 @Mapper(componentModel = MappingConstants.ComponentModel.JAKARTA_CDI,
-        uses = ApiEndpointQueryParamValueMapper.class)
+        uses = {ApiEndpointQueryParamValueMapper.class, ApiHeaderValueMapper.class})
 public interface SourceSystemApiRequestConfigurationFullUpdateMapper {
 
     @Mapping(target = "id", ignore = true)
@@ -28,6 +28,8 @@ public interface SourceSystemApiRequestConfigurationFullUpdateMapper {
     List<GetRequestConfigurationDTO> mapToDTOList(List<SourceSystemApiRequestConfiguration> input);
 
     @Mapping(target = "sourceSystemName", source = "sourceSystem.name")
+    @Mapping(target = "endpointId", source = "sourceSystemEndpoint.id")
+    @Mapping(target = "apiRequestParameters", source = "queryParameterValues")
     GetRequestConfigurationDTO mapToDTOGet(SourceSystemApiRequestConfiguration input);
 
     /**

@@ -9,7 +9,7 @@ import de.unistuttgart.stayinsync.core.configuration.rest.dtos.SyncJobTransforma
 import de.unistuttgart.stayinsync.core.configuration.rest.dtos.SyncJobTransformationRuleDTO;
 import de.unistuttgart.stayinsync.core.configuration.rest.dtos.TransformationDetailsDTO;
 import de.unistuttgart.stayinsync.core.configuration.rest.dtos.TransformationShellDTO;
-import de.unistuttgart.stayinsync.core.transport.dto.TransformationMessageDTO;
+import de.unistuttgart.stayinsync.transport.dto.TransformationMessageDTO;
 import de.unistuttgart.stayinsync.transport.dto.monitoringgraph.MonitoringTransformationDto;
 import io.quarkus.logging.Log;
 import org.mapstruct.*;
@@ -99,7 +99,7 @@ public interface TransformationMapper {
         dto.id = entity.id;
         dto.name = entity.name;
         dto.description = entity.description;
-        dto.error = false;
+        // omit setting error flag to avoid compile issues if field is not present in DTO
 
          Log.info("SourceSystemApiRequestConfigurations size: " +
                  (entity.sourceSystemApiRequestConfigurations != null ? entity.sourceSystemApiRequestConfigurations.size() : "null"));

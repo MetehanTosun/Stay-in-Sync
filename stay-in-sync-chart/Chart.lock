@@ -7,7 +7,16 @@ dependencies:
   version: 20.5.6
 - name: mongodb
   repository: https://charts.bitnami.com/bitnami
-  version: 16.5.11
+  version: 16.5.45
+- name: kube-prometheus-stack
+  repository: https://prometheus-community.github.io/helm-charts
+  version: 77.10.0
+- name: fluent-bit
+  repository: https://charts.bitnami.com/bitnami
+  version: 3.1.11
+- name: loki
+  repository: https://grafana.github.io/helm-charts
+  version: 6.16.0
 - name: umbrella
   repository: https://eclipse-tractusx.github.io/charts/dev
   version: 3.6.3
@@ -20,5 +29,8 @@ dependencies:
 - name: core-sync-node
   repository: file://../stay-in-sync-core/core-sync-node/target/helm/kubernetes/core-sync-node
   version: 1.0.0-SNAPSHOT
-digest: sha256:c023a33b817d42dbc06d09a66a7b28d6edf886b3a6b856f337cb22116644306f
-generated: "2025-09-19T16:23:38.591844883+02:00"
+- name: monitoring-backend
+  repository: file://../stay-in-sync-monitoring/monitoring-backend/target/helm/kubernetes/monitoring-backend
+  version: 1.0.0-SNAPSHOT
+digest: sha256:8998e9826a659695577ec798a42e073fd4ccf4248a1ab01dac54227f751ad442
+generated: "2025-09-22T11:54:04.751818221+02:00"

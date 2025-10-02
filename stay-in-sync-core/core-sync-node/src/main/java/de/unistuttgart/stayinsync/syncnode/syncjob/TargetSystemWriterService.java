@@ -5,8 +5,10 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import de.unistuttgart.stayinsync.exception.SyncNodeException;
 import de.unistuttgart.stayinsync.scriptengine.message.TransformationResult;
 import de.unistuttgart.stayinsync.syncnode.domain.UpsertDirective;
-import de.unistuttgart.stayinsync.core.transport.dto.TransformationMessageDTO;
-import de.unistuttgart.stayinsync.core.transport.dto.targetsystems.RequestConfigurationMessageDTO;
+import de.unistuttgart.stayinsync.transport.dto.TransformationMessageDTO;
+import de.unistuttgart.stayinsync.transport.dto.targetsystems.RequestConfigurationMessageDTO;
+import io.micrometer.core.instrument.Counter;
+import io.micrometer.core.instrument.MeterRegistry;
 import io.quarkus.logging.Log;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
@@ -30,6 +32,19 @@ public class TargetSystemWriterService {
 
     @Inject
     DirectiveExecutor directiveExecutor;
+
+    @Inject
+    MeterRegistry meterRegistry;
+
+    private final Counter processedMessagesCounter;
+
+    @Inject
+    public TargetSystemWriterService(MeterRegistry meterRegistry) {
+        this.meterRegistry = meterRegistry;
+        this.processedMessagesCounter = Counter.builder("transformation_scripts_messages_total")
+                .description("Total number of messages processed across all transformation scripts")
+                .register(meterRegistry);
+    }
 
     private record DirectiveWithContext(
             UpsertDirective directive,
@@ -66,10 +81,11 @@ public class TargetSystemWriterService {
 
                     for (UpsertDirective directive : directives) {
                         allTasks.add(new DirectiveWithContext(directive, arcConfig, targetApiUrl));
+                        // Increment the Prometheus counter for each processed message
+                        processedMessagesCounter.increment();
                     }
                 } catch (SyncNodeException e) {
                     Log.errorf("Malformed ARC Configuration for alias '%s': %s. Skipping all directives for this ARC.", arcAlias, e.getMessage());
-                    // TODO: Position to Cancel Transformation indefinitely
                 }
             });
 

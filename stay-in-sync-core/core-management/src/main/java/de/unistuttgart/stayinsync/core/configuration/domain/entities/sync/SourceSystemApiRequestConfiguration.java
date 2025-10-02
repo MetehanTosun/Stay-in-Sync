@@ -1,6 +1,6 @@
 package de.unistuttgart.stayinsync.core.configuration.domain.entities.sync;
 
-import de.unistuttgart.stayinsync.core.transport.domain.JobDeploymentStatus;
+import de.unistuttgart.stayinsync.transport.domain.JobDeploymentStatus;
 import jakarta.persistence.*;
 
 import java.util.*;
@@ -36,7 +36,7 @@ public class SourceSystemApiRequestConfiguration extends ApiRequestConfiguration
                 "AND SIZE(sse.transformations) > 0";
 
         return getEntityManager().createQuery(query, SourceSystemApiRequestConfiguration.class)
-                .setParameter("statuses", List.of(JobDeploymentStatus.FAILING, JobDeploymentStatus.DEPLOYED))
+                .setParameter("statuses", List.of(JobDeploymentStatus.DEPLOYED))
                 .getResultList();
     }
 

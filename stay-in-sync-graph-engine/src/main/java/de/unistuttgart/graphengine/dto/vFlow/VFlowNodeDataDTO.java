@@ -57,6 +57,16 @@ public class VFlowNodeDataDTO {
      */
     private List<Integer> inputLimit;
 
+    /**
+     * The currently set mode of a config node
+     */
+    private String changeDetectionMode;
+
+    /**
+     * A Boolean describing if the config node's mode is active or not
+     */
+    private boolean changeDetectionActive;
+
     public String getName() {
         return name;
     }
@@ -127,5 +137,21 @@ public class VFlowNodeDataDTO {
 
     public void setInputLimit(List<Integer> inputLimit) {
         this.inputLimit = inputLimit;
+    }
+
+    public String getChangeDetectionMode() {
+        return changeDetectionMode;
+    }
+
+    public void setChangeDetectionMode(String changeDetectionMode) {
+        this.changeDetectionMode = changeDetectionMode;
+    }
+
+    public boolean isChangeDetectionActive() {
+        return changeDetectionActive;
+    }
+
+    public void setChangeDetectionActive(boolean changeDetectionActive) {
+        this.changeDetectionActive = changeDetectionActive;
     }
 }

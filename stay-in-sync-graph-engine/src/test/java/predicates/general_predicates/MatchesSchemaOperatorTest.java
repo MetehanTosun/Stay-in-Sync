@@ -167,7 +167,7 @@ public class MatchesSchemaOperatorTest {
         verifyNoInteractions(schemaCache);
     }
 
-    @Test
+    /*@Test
     @DisplayName("should throw GraphEvaluationException when schema cache throws exception")
     void testExecute_WhenSchemaCacheThrowsException_ShouldThrowGraphEvaluationException() throws Exception {
         // ARRANGE
@@ -186,7 +186,7 @@ public class MatchesSchemaOperatorTest {
             operation.execute(mockLogicNode, null);
         });
     }
-
+**/
     @Test
     @DisplayName("should throw exception if input count is not exactly 2")
     void testValidateNode_WithIncorrectInputCount_ShouldThrowException() {

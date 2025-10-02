@@ -6,6 +6,9 @@ import { CommonModule } from '@angular/common';
 import { TransformationRulesApiService } from '../../service';
 import { ErrorPanelComponent } from '../../components/error-panel/error-panel.component';
 import { ValidationError } from '../../models/interfaces/validation-error.interface';
+import { RuleConfigurationComponent } from '../../components/modals/rule-configuration/rule-configuration.component';
+import {Button} from 'primeng/button';
+import {Toolbar} from 'primeng/toolbar';
 
 /**
  * The rule editor page component in which the user can view and edit a transformation rule graph
@@ -18,7 +21,10 @@ import { ValidationError } from '../../models/interfaces/validation-error.interf
     NodePaletteComponent,
     ProviderNodeModalComponent,
     ConstantNodeModalComponent,
-    ErrorPanelComponent
+    ErrorPanelComponent,
+    Button,
+    Toolbar,
+    RuleConfigurationComponent
   ],
   templateUrl: './edit-rule.component.html',
   styleUrl: './edit-rule.component.css'
@@ -27,9 +33,11 @@ export class EditRuleComponent implements OnInit {
   //#region Setup
   ruleName = 'New Rule';
   ruleId: number | undefined = undefined;
+  ruleDescription = '';
 
   // Palette Attributes
   showMainNodePalette = false;
+  nodePalettePosition = { x: 0, y: 0 };
   selectedNodeType: NodeType | null = null;
   selectedOperator: LogicOperatorMeta | null = null;
 
@@ -37,6 +45,7 @@ export class EditRuleComponent implements OnInit {
   showProviderModal = false;
   showConstantModal = false;
   pendingNodePos: { x: number, y: number } | null = null;
+  showRuleConfiguration = false;
 
   // Error Panel Attribute
   //* Needed as an intermediate attribute
@@ -57,6 +66,7 @@ export class EditRuleComponent implements OnInit {
     if (this.ruleId) {
       this.rulesApi.getRule(this.ruleId).subscribe(rule => {
         this.ruleName = rule.name;
+        this.ruleDescription = rule.description;
       });
     }
 
@@ -84,8 +94,18 @@ export class EditRuleComponent implements OnInit {
   private handlePageClick = (event: MouseEvent) => {
     if (!this.nodePaletteRef.nativeElement.contains(event.target)) {
       this.showMainNodePalette = false;
+      this.showMainNodePalette = false;
       this.nodePalette.closeSubPalettes();
     }
+  }
+
+  /**
+   * Moves the canvas view to the node associated with the given node ID
+   *
+   * @param nodeId
+   */
+  onErrorClicked(nodeId: number) {
+    this.canvas.centerOnNode(nodeId);
   }
   //#endregion
 
@@ -97,6 +117,7 @@ export class EditRuleComponent implements OnInit {
    * @param mouseEvent
    */
   openMainNodePalette() {
+    this.nodePalettePosition = { x: 0, y: 0 };
     this.showMainNodePalette = true;
   }
 
@@ -110,6 +131,22 @@ export class EditRuleComponent implements OnInit {
     this.selectedOperator = selection.operator || null;
     this.showMainNodePalette = false
     this.nodePalette.closeSubPalettes();
+
+    if (this.pendingNodePos) {
+      switch (this.selectedNodeType) {
+        case NodeType.PROVIDER:
+          this.showProviderModal = true;
+          break;
+        case NodeType.CONSTANT:
+          this.showConstantModal = true;
+          break;
+        case NodeType.LOGIC:
+          this.canvas.addNode(this.selectedNodeType, this.pendingNodePos, undefined, undefined, this.selectedOperator!);
+          this.clearNodeSelection();
+          this.pendingNodePos = null;
+          break;
+      }
+    }
   }
 
   /**
@@ -148,6 +185,23 @@ export class EditRuleComponent implements OnInit {
     this.showMainNodePalette = false;
     this.nodePalette.closeSubPalettes();
   }
+
+  /**
+   * Opens the node palette on the given viewport position
+   *
+   * @param positions contains the viewport and canvas positions of the last right click
+   */
+  onCanvasRightClick(positions: { viewportPos: { x: number, y: number }, canvasPos: { x: number, y: number } }) {
+    this.pendingNodePos = positions.canvasPos;
+
+    // Position the palette at the viewport location
+    this.nodePalettePosition = positions.viewportPos;
+    this.showMainNodePalette = true;
+    this.nodePalette.closeSubPalettes();
+  }
+  openRuleConfiguration() {
+    this.showRuleConfiguration = true;
+  }
   //#endregion
 
   //#region Modal Events
@@ -175,6 +229,7 @@ export class EditRuleComponent implements OnInit {
   onModalsClosed() {
     this.showConstantModal = false;
     this.showProviderModal = false;
+    this.showRuleConfiguration = false;
     this.pendingNodePos = null;
     this.clearNodeSelection();
   }
@@ -183,6 +238,27 @@ export class EditRuleComponent implements OnInit {
     if (this.documentClickListener) {
       document.removeEventListener('mousedown', this.documentClickListener, true);
     }
+  }
+
+  /**
+   * Updates the current rule with the given rule configuration
+   *
+   * @param ruleConfiguration
+   */
+  onRuleConfigurationSaved(ruleConfiguration: { name: string, description: string }) {
+    this.rulesApi.updateRule(this.ruleId!, ruleConfiguration).subscribe({
+      next: (updatedRule) => {
+        alert("Rule successfully updated")
+        console.log('Rule updated successfully', updatedRule); // TODO-s DELETE
+
+        this.ruleName = ruleConfiguration.name;
+        this.ruleDescription = ruleConfiguration.description;
+      },
+      error: (error) => {
+        console.error('Failed to update rule:', error);
+      }
+    });
+    this.onModalsClosed();
   }
   //#endregion
 }

@@ -1,6 +1,6 @@
 package de.unistuttgart.stayinsync.pollingnode.execution;
 
-import de.unistuttgart.stayinsync.core.transport.domain.JobDeploymentStatus;
+import de.unistuttgart.stayinsync.transport.domain.JobDeploymentStatus;
 import de.unistuttgart.stayinsync.pollingnode.entities.PollingJobDetails;
 import de.unistuttgart.stayinsync.pollingnode.entities.RequestBuildingDetails;
 import de.unistuttgart.stayinsync.pollingnode.exceptions.execution.InactivePollingJobCreationException;
@@ -104,6 +104,7 @@ public class PollingJobExecutionController {
     public void pollingJobDeletion(final Long id) throws PollingJobSchedulingException {
         final JobKey jobKey = supportedJobs.get(id);
         try {
+            supportedJobs.remove(id);
             scheduler.deleteJob(jobKey);
         } catch (SchedulerException e) {
             final String exceptionMessage = "Failed to delete PollingJob with the id " + id + "with the name " + jobKey.getName();

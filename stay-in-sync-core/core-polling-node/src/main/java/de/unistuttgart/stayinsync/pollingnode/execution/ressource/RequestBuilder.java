@@ -1,7 +1,7 @@
 package de.unistuttgart.stayinsync.pollingnode.execution.ressource;
 
-import de.unistuttgart.stayinsync.core.transport.dto.ApiRequestParameterMessageDTO;
-import de.unistuttgart.stayinsync.core.transport.dto.ParamType;
+import de.unistuttgart.stayinsync.transport.dto.ApiRequestParameterMessageDTO;
+import de.unistuttgart.stayinsync.transport.dto.ParamType;
 import de.unistuttgart.stayinsync.pollingnode.entities.RequestBuildingDetails;
 import de.unistuttgart.stayinsync.pollingnode.exceptions.execution.pollingjob.requestbuilderexceptions.RequestBuildingDetailsNullFieldException;
 import de.unistuttgart.stayinsync.pollingnode.exceptions.execution.pollingjob.requestbuilderexceptions.RequestBuildingException;
@@ -16,7 +16,7 @@ import jakarta.enterprise.context.ApplicationScoped;
 import java.net.URI;
 import java.time.Duration;
 
-import static de.unistuttgart.stayinsync.core.transport.dto.ParamType.QUERY;
+import static de.unistuttgart.stayinsync.transport.dto.ParamType.QUERY;
 
 
 /**

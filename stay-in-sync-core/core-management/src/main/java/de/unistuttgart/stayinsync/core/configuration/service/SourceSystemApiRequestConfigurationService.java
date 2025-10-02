@@ -8,10 +8,11 @@ import de.unistuttgart.stayinsync.core.configuration.exception.CoreManagementExc
 import de.unistuttgart.stayinsync.core.configuration.mapping.SourceSystemApiRequestConfigurationFullUpdateMapper;
 import de.unistuttgart.stayinsync.core.configuration.rest.dtos.CreateSourceArcDTO;
 import de.unistuttgart.stayinsync.core.configuration.rest.dtos.CreateRequestConfigurationDTO;
+import de.unistuttgart.stayinsync.core.configuration.rest.dtos.GetRequestConfigurationDTO;
 import de.unistuttgart.stayinsync.core.configuration.util.TypeScriptTypeGenerator;
 import de.unistuttgart.stayinsync.core.configuration.rabbitmq.producer.PollingJobMessageProducer;
-import de.unistuttgart.stayinsync.core.transport.domain.ApiEndpointQueryParamType;
-import de.unistuttgart.stayinsync.core.transport.domain.JobDeploymentStatus;
+import de.unistuttgart.stayinsync.transport.domain.ApiEndpointQueryParamType;
+import de.unistuttgart.stayinsync.transport.domain.JobDeploymentStatus;
 import io.quarkus.logging.Log;
 import io.smallrye.common.constraint.NotNull;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -43,14 +44,14 @@ public class SourceSystemApiRequestConfigurationService {
     TypeScriptTypeGenerator typeGenerator;
 
     @Inject
-    SourceSystemApiRequestConfigurationFullUpdateMapper mapper;
+    SourceSystemApiRequestConfigurationFullUpdateMapper fullUpdateMapper;
 
     @Inject
     PollingJobMessageProducer pollingJobMessageProducer;
 
     // TODO: Evaluate if method is necessary since ARC creation has cascading effects
     public SourceSystemApiRequestConfiguration persistApiRequestConfiguration(@NotNull @Valid CreateRequestConfigurationDTO sourceSystemApiRequestConfigurationDTO, Long endpointId) {
-        SourceSystemApiRequestConfiguration sourceSystemApiRequestConfiguration = mapper.mapToEntity(sourceSystemApiRequestConfigurationDTO);
+        SourceSystemApiRequestConfiguration sourceSystemApiRequestConfiguration = fullUpdateMapper.mapToEntity(sourceSystemApiRequestConfigurationDTO);
 
         Log.debugf("Persisting request-configurations: %s, for endpoint with id: %s", sourceSystemApiRequestConfiguration, endpointId);
 
@@ -75,12 +76,13 @@ public class SourceSystemApiRequestConfigurationService {
             Log.infof("Settings deployment status of request config with id %d to %s", requestConfigId, jobDeploymentStatus);
             sourceSystemApiRequestConfiguration.deploymentStatus = jobDeploymentStatus;
             switch (jobDeploymentStatus) {
-                case DEPLOYING ->
-                        pollingJobMessageProducer.publishPollingJob(mapper.mapToMessageDTO(sourceSystemApiRequestConfiguration));
-                case STOPPING, RECONFIGURING ->
-                        pollingJobMessageProducer.reconfigureDeployedPollingJob(mapper.mapToMessageDTO(sourceSystemApiRequestConfiguration));
-            }
-            ;
+                case DEPLOYING -> {
+                    pollingJobMessageProducer.publishPollingJob(fullUpdateMapper.mapToMessageDTO(sourceSystemApiRequestConfiguration));
+                }
+                case STOPPING, RECONFIGURING -> {
+                    pollingJobMessageProducer.reconfigureDeployedPollingJob(fullUpdateMapper.mapToMessageDTO(sourceSystemApiRequestConfiguration));
+                }
+            };
         }
     }
 
@@ -122,15 +124,43 @@ public class SourceSystemApiRequestConfigurationService {
         SourceSystemApiRequestConfiguration.deleteById(id);
     }
 
-    public Optional<SourceSystemApiRequestConfiguration> replaceApiRequestConfiguration(@NotNull @Valid CreateRequestConfigurationDTO sourceSystemApiRequestConfigurationDTO) {
-        SourceSystemApiRequestConfiguration sourceSystemApiRequestConfiguration = mapper.mapToEntity(sourceSystemApiRequestConfigurationDTO);
-        Log.debugf("Replacing request-configurations: %s", sourceSystemApiRequestConfiguration);
+    /**
+     * Replaces an existing ARC with the data provided in the DTO.
+     * This is a full update: old parameters and headers are cleared and replaced.
+     *
+     * @param id  The ID of the ARC to update.
+     * @param dto The DTO containing the new configuration.
+     * @return An Optional containing the updated entity, or empty if not found.
+     */
+    @Transactional
+    public Optional<GetRequestConfigurationDTO> update(Long id, CreateSourceArcDTO dto) {
+        Log.debugf("Attempting to update ARC with id %d", id);
 
-        return SourceSystemApiRequestConfiguration.findByIdOptional(sourceSystemApiRequestConfiguration.id)
-                .map(SourceSystemApiRequestConfiguration.class::cast) // Only here for type erasure within the IDE
-                .map(targetRequestConfiguration -> {
-                    this.mapper.mapFullUpdate(sourceSystemApiRequestConfiguration, targetRequestConfiguration);
-                    return targetRequestConfiguration;
+        return SourceSystemApiRequestConfiguration.<SourceSystemApiRequestConfiguration>findByIdOptional(id)
+                .map(arcToUpdate -> {
+                    arcToUpdate.queryParameterValues.clear();
+                    arcToUpdate.apiRequestHeaders.clear();
+                    ApiEndpointQueryParamValue.delete("requestConfiguration.id", id);
+                    ApiHeaderValue.delete("requestConfiguration.id", id);
+
+                    arcToUpdate.alias = dto.alias();
+                    arcToUpdate.active = dto.active();
+                    arcToUpdate.pollingIntervallTimeInMs = dto.pollingIntervallTimeInMs();
+
+                    try {
+                        JsonNode rootNode = new ObjectMapper().readTree(dto.responseDts());
+                        arcToUpdate.responseIsArray = rootNode.isArray();
+                        arcToUpdate.responseDts = typeGenerator.generate(dto.responseDts());
+                    } catch (JsonProcessingException e) {
+                        throw new CoreManagementException(Response.Status.BAD_REQUEST, "Invalid sample JSON", e.getMessage());
+                    }
+
+                    createAndPersistParameterValues(dto.pathParameterValues(), arcToUpdate, arcToUpdate.sourceSystemEndpoint, ApiEndpointQueryParamType.PATH);
+                    createAndPersistParameterValues(dto.queryParameterValues(), arcToUpdate, arcToUpdate.sourceSystemEndpoint, ApiEndpointQueryParamType.QUERY);
+                    createAndPersistHeaderValues(dto.headerValues(), arcToUpdate, arcToUpdate.sourceSystem);
+
+                    Log.infof("Successfully updated ARC with id %d", id);
+                    return fullUpdateMapper.mapToDTOGet(arcToUpdate);
                 });
     }
 
@@ -158,7 +188,7 @@ public class SourceSystemApiRequestConfigurationService {
             throw new CoreManagementException(Response.Status.BAD_REQUEST, "Invalid sample JSON", "The provided JSON is invalid and cannot be built into a TypeScript type: %s", e.getMessage());
         }
 
-        SourceSystemApiRequestConfiguration newArc = mapper.mapToEntity(dto);
+        SourceSystemApiRequestConfiguration newArc = fullUpdateMapper.mapToEntity(dto);
 
         newArc.sourceSystem = sourceSystem;
         newArc.sourceSystemEndpoint = endpoint;

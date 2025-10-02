@@ -1,79 +1,114 @@
-### Prerequisites
-
-Make sure you have the following tools installed before running the monitoring-backend project:
-
-- JDK: Java 17 or higher  
-  Check with: java -version
-
-- Maven Wrapper: The project uses ./mvnw so Maven doesn't need to be installed globally.  
-  If missing, generate it with:  
-  mvn -N io.takari:maven:wrapper
-
-- Docker: Required for Quarkus DevServices and Testcontainers  
-  Install from: https://www.docker.com/products/docker-desktop  
-  Check with: docker info
-
-- Database: Optional, only if not using Docker DevServices  
-  Example config in „application.properties“
-
 # monitoring-backend
-This project uses Quarkus, the Supersonic Subatomic Java Framework.
 
-If you want to learn more about Quarkus, please visit its website: <https://quarkus.io/>.
+This project provides the backend for the monitoring service and is built with [Quarkus](https://quarkus.io/), the Supersonic Subatomic Java Framework.
+
+The backend exposes runtime and system metrics that can be scraped by **Prometheus** and visualized in **Grafana**.
+
+A detailed list of available metrics and their descriptions can be found in [`Metrics.md`](./docs/Metrics.md).  
+This document is located at:
+
+```
+/stay-in-sync-monitoring/monitoring-backend/docs/Metrics.md
+```
+
+It can be used as a reference for writing Prometheus queries.
+
+---
+
+## Prerequisites
+
+Make sure you have the following tools installed before running the `monitoring-backend` project:
+
+- **JDK**: Java 17 or higher  
+  Check installation:
+  ```bash
+  java -version
+  ```
+
+- **Maven Wrapper**: The project uses `./mvnw`, so Maven does not need to be installed globally.  
+  If missing, generate it with:
+  ```bash
+  mvn -N io.takari:maven:wrapper
+  ```
+
+- **Docker**: Required for Quarkus DevServices and Testcontainers  
+  Install from: [Docker Desktop](https://www.docker.com/products/docker-desktop)  
+  Check installation:
+  ```bash
+  docker info
+  ```
+
+- **Database**: Optional, only needed if not using Docker DevServices.  
+  Example configuration can be found in `application.properties`.
+
+---
 
 ## Running the application in dev mode
 
-You can run your application in dev mode that enables live coding using:
+You can run the application in dev mode with live coding enabled using:
 
-```shell script
+```bash
 ./mvnw quarkus:dev
 ```
 
-> **_NOTE:_**  Quarkus now ships with a Dev UI, which is available in dev mode only at <http://localhost:8080/q/dev/>.
+> **Note**: Quarkus provides a Dev UI, available only in dev mode, at <http://localhost:8080/q/dev/>.
+
+---
 
 ## Packaging and running the application
 
-The application can be packaged using:
+To package the application, run:
 
-```shell script
+```bash
 ./mvnw package
 ```
 
-It produces the `quarkus-run.jar` file in the `target/quarkus-app/` directory.
-Be aware that it’s not an _über-jar_ as the dependencies are copied into the `target/quarkus-app/lib/` directory.
+This produces the `quarkus-run.jar` file in the `target/quarkus-app/` directory.  
+The application is now runnable using:
 
-The application is now runnable using `java -jar target/quarkus-app/quarkus-run.jar`.
+```bash
+java -jar target/quarkus-app/quarkus-run.jar
+```
 
-If you want to build an _über-jar_, execute the following command:
+To build an **über-jar** (all dependencies bundled in a single JAR):
 
-```shell script
+```bash
 ./mvnw package -Dquarkus.package.jar.type=uber-jar
 ```
 
-The application, packaged as an _über-jar_, is now runnable using `java -jar target/*-runner.jar`.
+Run it using:
+
+```bash
+java -jar target/*-runner.jar
+```
+
+---
 
 ## Creating a native executable
 
 You can create a native executable using:
 
-```shell script
+```bash
 ./mvnw package -Dnative
 ```
 
-Or, if you don't have GraalVM installed, you can run the native executable build in a container using:
+If GraalVM is not installed locally, build inside a container instead:
 
-```shell script
+```bash
 ./mvnw package -Dnative -Dquarkus.native.container-build=true
 ```
 
-You can then execute your native executable with: `./target/monitoring-backend-1.0.0-SNAPSHOT-runner`
+The resulting executable can then be run directly:
 
-If you want to learn more about building native executables, please consult <https://quarkus.io/guides/maven-tooling>.
+```bash
+./target/monitoring-backend-1.0.0-SNAPSHOT-runner
+```
 
-## Provided Code
+For more information about building native executables, see the [Quarkus Maven guide](https://quarkus.io/guides/maven-tooling).
 
-### REST
+---
 
-Easily start your REST Web Services
+## REST Endpoints
 
-[Related guide section...](https://quarkus.io/guides/getting-started-reactive#reactive-jax-rs-resources)
+The backend also exposes REST endpoints that can be used to integrate with other services.  
+Refer to the Quarkus documentation and project code for examples.
