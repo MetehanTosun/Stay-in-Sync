@@ -652,11 +652,31 @@ save(): void {
     if (!this.createdSourceSystemId) return;
     const key = `${submodelId}::${parentPath}`;
     this.childrenLoading[key] = true;
+    
+    console.log('[SourceCreate] loadChildren: BACKEND REQUEST', {
+      systemId: this.createdSourceSystemId,
+      submodelId,
+      parentPath,
+      depth: 'shallow',
+      source: 'SNAPSHOT',
+      key
+    });
+    
     this.aasService.listElements(this.createdSourceSystemId, submodelId, { depth: 'shallow', parentPath, source: 'SNAPSHOT' })
       .subscribe({
         next: (resp) => {
           this.childrenLoading[key] = false;
           const list = Array.isArray(resp) ? resp : (resp?.result ?? []);
+          
+          console.log('[SourceCreate] loadChildren: BACKEND RESPONSE', {
+            submodelId,
+            parentPath,
+            responseType: Array.isArray(resp) ? 'array' : 'object',
+            responseKeys: Array.isArray(resp) ? 'N/A' : Object.keys(resp || {}),
+            resultCount: Array.isArray(resp) ? resp.length : (resp?.result?.length || 0),
+            listCount: list.length,
+            rawResponse: resp
+          });
           
           // Filter for direct children only to prevent duplicates
           const prefix = parentPath ? (parentPath.endsWith('/') ? parentPath : parentPath + '/') : '';
