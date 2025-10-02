@@ -10,9 +10,10 @@ import org.graalvm.polyglot.PolyglotException;
 import org.graalvm.polyglot.ResourceLimits;
 import org.graalvm.polyglot.Value;
 
-import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.oracle.truffle.api.debug.DebugScope;
 import com.oracle.truffle.api.debug.DebugStackFrame;
 import com.oracle.truffle.api.debug.DebugValue;
@@ -53,6 +54,8 @@ public class ReplayExecutor {
     }
 
     public Result execute(String scriptName, String javascriptCode, JsonNode sourceData) {
+        ObjectNode a = sourceData.withObject("source"); // ensure "source" node exists
+
         System.out.println("DEBUG: Executing replay with sourceData: " + sourceData.toPrettyString());
 
         final Map<String, Object> capturedVars = new LinkedHashMap<>();
@@ -92,11 +95,14 @@ public class ReplayExecutor {
                     "var stayinsync = (typeof stayinsync !== 'undefined') ? stayinsync : {};\n" +
                             "if (typeof stayinsync.log !== 'function') { stayinsync.log = function(msg, level) { /* no-op in replay */ }; }\n");
 
-            // Bind "source" globally
-            TypeReference<Map<String, Object>> mapTypeRef = new TypeReference<>() {
-            };
-            Map<String, Object> sourceAsMap = om.convertValue(sourceData, mapTypeRef);
-            context.getBindings("js").putMember("source", sourceAsMap);
+            // Bind "source" globally as a native JS object
+            String sourceJson;
+            try {
+                sourceJson = om.writeValueAsString(sourceData);
+            } catch (JsonProcessingException e) {
+                return new Result(null, capturedVars, "JSON serialization error: " + e.getMessage());
+            }
+            context.eval("js", "var source = " + sourceJson + ";");
 
             // Debugger session to capture vars on suspend
             Debugger debugger = Debugger.find(graalEngine);
@@ -119,7 +125,7 @@ public class ReplayExecutor {
                 }
                 ev.prepareContinue();
             })) {
-                // Evaluate script
+                // Evaluate wrapped script (defines __replayEntry)
                 Value entry = context.eval("js", wrapped);
 
                 // Execute driver, which calls transform() using global "source"
@@ -177,7 +183,6 @@ public class ReplayExecutor {
             return v.toString();
         } else if (val instanceof DebugValue dv) {
             try {
-                // minimal: take display string, plus children if any
                 Map<String, Object> map = new LinkedHashMap<>();
                 map.put("_value", dv.toDisplayString());
                 if (dv.getProperties() != null) {
