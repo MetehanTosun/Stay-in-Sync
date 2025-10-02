@@ -145,6 +145,7 @@ export class CreateTargetSystemComponent implements OnInit, OnChanges {
           this.createdTargetSystemId = resp.id!;
           this.currentStep = 1;
           this.messageService.add({ severity: 'success', summary: 'Created', detail: 'Target system created', life: 2500 });
+          console.log('[CreateTargetSystem] Emitting created event', { id: resp.id, name: resp.name });
           this.created.emit(resp);
           this.isCreating = false;
         },

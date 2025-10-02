@@ -311,9 +311,9 @@ export class TargetSystemBaseComponent implements OnInit {
     this.wizardVisible = true;
   }
 
-  onCreated(_: TargetSystemDTO): void {
+  onCreated(system: TargetSystemDTO): void {
     // refresh list immediately so the newly created system appears without manual reload
-    console.log('[TargetSystemBase] onCreated: Refreshing list after system creation');
+    console.log('[TargetSystemBase] onCreated: Refreshing list after system creation', { id: system.id, name: system.name });
     this.load();
   }
 
