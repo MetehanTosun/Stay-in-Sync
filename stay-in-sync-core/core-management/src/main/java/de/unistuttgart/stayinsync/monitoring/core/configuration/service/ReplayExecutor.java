@@ -14,12 +14,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import com.oracle.truffle.api.debug.DebugScope;
-import com.oracle.truffle.api.debug.DebugStackFrame;
 import com.oracle.truffle.api.debug.DebugValue;
-import com.oracle.truffle.api.debug.Debugger;
-import com.oracle.truffle.api.debug.DebuggerSession;
-import com.oracle.truffle.api.debug.SuspendedEvent;
 
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
@@ -60,10 +55,10 @@ public class ReplayExecutor {
         final Map<String, Object> capturedVars = new LinkedHashMap<>();
         final String SOURCE_URL = scriptName == null ? "replay.js" : scriptName;
 
-        // Inject debugger at start of transform()
-        javascriptCode = javascriptCode.replaceFirst(
-                "(?m)(function\\s+transform\\s*\\(\\s*\\)\\s*\\{)",
-                "$1 debugger;");
+        // Remove injection of debugger; inside transform()
+        // javascriptCode = javascriptCode.replaceFirst(
+        // "(?m)(function\\s+transform\\s*\\(\\s*\\)\\s*\\{)",
+        // "$1 debugger;");
 
         System.out.println(javascriptCode);
 
@@ -107,6 +102,11 @@ public class ReplayExecutor {
                             "  stayinsync.log = function(msg, level) { /* no-op */ };\n" +
                             "}\n");
 
+            // Inject __capture helper function into JS context
+            context.eval("js",
+                    "if (typeof globalThis.__capturedLocals === 'undefined') { globalThis.__capturedLocals = {}; }\n" +
+                            "function __capture(name, value) { globalThis.__capturedLocals[name] = value; }\n");
+
             // Serialize the "source" object into JS context
             String sourceJson;
             try {
@@ -116,52 +116,39 @@ public class ReplayExecutor {
             }
             context.eval("js", "var source = " + sourceJson + ";");
 
-            // Start a debugger session that listens for "debugger;" statements
-            Debugger debugger = Debugger.find(graalEngine);
-            try (DebuggerSession session = debugger.startSession((SuspendedEvent ev) -> {
+            // Remove usage of Truffle Debugger session since __capture replaces it
+            // Load user code + wrapper (defines __replayEntry)
+            Value entry = context.eval("js", wrapped);
 
-                // Look through all stack frames to find the user’s transform() frame
-                for (DebugStackFrame frame : ev.getStackFrames()) {
-                    if ("transform".equals(frame.getName())) {
-                        DebugScope scope = frame.getScope();
+            // Call __replayEntry, which in turn calls transform()
+            Value res = entry.execute();
 
-                        // Walk scopes inside transform() to capture locals
-                        for (DebugScope s = scope; s != null; s = s.getParent()) {
-                            for (DebugValue v : s.getDeclaredValues()) {
-                                if (!v.isInternal()) {
-                                    try {
-                                        capturedVars.putIfAbsent(v.getName(), convertPolyglotValue(v));
-                                    } catch (Exception ignore) {
-                                        // Some values may not be convertible
-                                    }
-                                }
-                            }
-                        }
-                        break; // only need transform() frame
+            Object output = null;
+            String errorInfo = null;
+
+            if (res.hasMembers() && res.getMember("ok").asBoolean()) {
+                output = convertPolyglotValue(res.getMember("value"));
+            } else {
+                errorInfo = res.hasMembers() && res.getMemberKeys().contains("error")
+                        ? res.getMember("error").asString()
+                        : "Unknown script error";
+            }
+
+            // After execution, read globalThis.__capturedLocals and convert to capturedVars
+            Value capturedLocalsValue = context.eval("js", "globalThis.__capturedLocals");
+            if (capturedLocalsValue != null && capturedLocalsValue.hasMembers()) {
+                capturedVars.clear();
+                for (String key : capturedLocalsValue.getMemberKeys()) {
+                    try {
+                        capturedVars.put(key, convertPolyglotValue(capturedLocalsValue.getMember(key)));
+                    } catch (Exception ignore) {
+                        // Some values may not be convertible
                     }
                 }
-
-                // Continue execution after snapshot
-                ev.prepareContinue();
-            })) {
-                // Load user code + wrapper (defines __replayEntry)
-                Value entry = context.eval("js", wrapped);
-
-                // Call __replayEntry, which in turn calls transform()
-                Value res = entry.execute();
-
-                Object output = null;
-                String errorInfo = null;
-
-                if (res.hasMembers() && res.getMember("ok").asBoolean()) {
-                    output = convertPolyglotValue(res.getMember("value"));
-                } else {
-                    errorInfo = res.hasMembers() && res.getMemberKeys().contains("error")
-                            ? res.getMember("error").asString()
-                            : "Unknown script error";
-                }
-                return new Result(output, capturedVars, errorInfo);
             }
+
+            return new Result(output, capturedVars, errorInfo);
+
         } catch (PolyglotException pe) {
             // Top-level Polyglot error (not caught by JS try/catch)
             return new Result(null, capturedVars, "PolyglotException: " + pe.getMessage());
