@@ -26,6 +26,7 @@ export interface VFlowNodeData {
 
   // For LOGIC nodes
   operatorType?: string;
+  
   inputTypes?: string[];
   outputType?: string;
   inputLimit?: number;

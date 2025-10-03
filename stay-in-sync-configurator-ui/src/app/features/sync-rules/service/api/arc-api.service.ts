@@ -16,17 +16,7 @@ export class ArcAPIService {
   constructor(private http: HttpClient) { }
 
   //#region Read Operations
-  /**
-   * Sends a GET request to read a json paths payload.
-   *
-   * @param jsonPath
-   * @returns the json paths payload
-   */
-  getArcPayload(jsonPath: string): Observable<unknown> {
-    return this.http.get<unknown>(`${this.apiUrl}/`);
-  }
-
-  getConfigurationResources(): Observable<ConfigurationResourceDTO[]> {
+  private getConfigurationResources(): Observable<ConfigurationResourceDTO[]> {
     return this.http.get<ConfigurationResourceDTO[]>(this.apiUrl)
   }
 

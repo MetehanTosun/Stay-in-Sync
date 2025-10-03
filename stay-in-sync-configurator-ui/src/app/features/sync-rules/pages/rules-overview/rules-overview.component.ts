@@ -50,19 +50,10 @@ export class RulesOverviewComponent implements OnInit {
   constructor(
     private router: Router,
     private rulesApi: TransformationRulesApiService,
-    private arcApi: ArcAPIService
   ) { }
 
   ngOnInit() : void {
     this.loadRules();
-      this.arcApi.getJsonPaths().subscribe({
-    next: (jsonPaths) => {
-      console.log('JSON Paths:', jsonPaths);
-    },
-    error: (error) => {
-      console.error('Error fetching JSON paths:', error);
-    }
-  });
   }
   //#endregion
 

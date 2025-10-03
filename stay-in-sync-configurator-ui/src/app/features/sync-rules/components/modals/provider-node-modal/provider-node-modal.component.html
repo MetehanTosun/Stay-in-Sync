@@ -7,9 +7,14 @@
   <form (ngSubmit)="submit()">
     <div class="form-field">
       <label for="provider-value">Provider Value:</label>
-      <div id="json-path-input-line">
-        <input name="provider-value" type="text" [(ngModel)]="jsonPath" placeholder="Enter JSON Path" class="form-input"
-          required>
+      <div class="autocomplete-container">
+        <input name="provider-value" [(ngModel)]="jsonPath" (input)="onInputChange($event)" class="form-input"
+          placeholder="Type or select JSON Path" required>
+        <div class="suggestions-dropdown">
+          <div *ngFor="let path of getFilteredPaths()" class="suggestion-item" (click)="selectPath(path)">
+            {{ path }}
+          </div>
+        </div>
       </div>
     </div>
 
