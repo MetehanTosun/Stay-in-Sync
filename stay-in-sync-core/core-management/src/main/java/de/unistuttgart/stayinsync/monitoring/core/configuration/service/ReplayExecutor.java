@@ -25,14 +25,12 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 
 /**
- * Runs a transformation script in a sandboxed GraalJS context, captures
- * variables via Truffle Debug API when suspended (on error or injected
- * breakpoint),
- * and returns outputData + captured variable states.
+ * Runs a transformation script in a sandboxed GraalJS context.
  *
- * Contract: The user script defines a function:
- * function transform() { ... return <any>; }
- * and expects "source" to exist in the global scope.
+ * - Executes a user-provided transform() function
+ * - Captures local variables from the transform() stack frame
+ * (on both success and error) via Truffle Debug API
+ * - Returns transform() result, captured variables, and error info
  */
 @ApplicationScoped
 public class ReplayExecutor {
@@ -54,14 +52,24 @@ public class ReplayExecutor {
     }
 
     public Result execute(String scriptName, String javascriptCode, JsonNode sourceData) {
-        ObjectNode a = sourceData.withObject("source"); // ensure "source" node exists
+        // Ensure "source" object always exists in input
+        ObjectNode a = sourceData.withObject("source");
 
         System.out.println("DEBUG: Executing replay with sourceData: " + sourceData.toPrettyString());
 
         final Map<String, Object> capturedVars = new LinkedHashMap<>();
         final String SOURCE_URL = scriptName == null ? "replay.js" : scriptName;
 
-        // Wrap user code + driver
+        // Inject debugger at start of transform()
+        javascriptCode = javascriptCode.replaceFirst(
+                "(?m)(function\\s+transform\\s*\\(\\s*\\)\\s*\\{)",
+                "$1 debugger;");
+
+        System.out.println(javascriptCode);
+
+        // Wrap user code with driver that calls transform()
+        // We inject a debugger; statement both on success and error
+        // so we can snapshot variables in either case
         String wrapped = """
                 // --- user code start ---
                 %s
@@ -69,9 +77,11 @@ public class ReplayExecutor {
                 // --- driver ---
                 (function __replayEntry() {
                     try {
-                        return { ok: true, value: transform() };
+                        var result = transform();
+                        debugger; // snapshot on success
+                        return { ok: true, value: result };
                     } catch (e) {
-                        debugger;
+                        debugger; // snapshot on error
                         return { ok: false, error: String(e && e.stack ? e.stack : e) };
                     }
                 })
@@ -80,22 +90,24 @@ public class ReplayExecutor {
 
         try (Context context = Context.newBuilder("js")
                 .engine(graalEngine)
-                .allowHostAccess(HostAccess.NONE)
+                .allowHostAccess(HostAccess.NONE) // no host access for safety
                 .allowCreateThread(false)
                 .allowIO(true)
                 .allowNativeAccess(false)
                 .resourceLimits(
                         ResourceLimits.newBuilder()
-                                .statementLimit(1_000_000L, src -> true)
+                                .statementLimit(1_000_000L, src -> true) // execution guard
                                 .build())
                 .build()) {
 
-            // Provide a minimal global `stayinsync.log`
+            // Provide a minimal global `stayinsync.log` (no-op in replay mode)
             context.eval("js",
                     "var stayinsync = (typeof stayinsync !== 'undefined') ? stayinsync : {};\n" +
-                            "if (typeof stayinsync.log !== 'function') { stayinsync.log = function(msg, level) { /* no-op in replay */ }; }\n");
+                            "if (typeof stayinsync.log !== 'function') {\n" +
+                            "  stayinsync.log = function(msg, level) { /* no-op */ };\n" +
+                            "}\n");
 
-            // Bind "source" globally as a native JS object
+            // Serialize the "source" object into JS context
             String sourceJson;
             try {
                 sourceJson = om.writeValueAsString(sourceData);
@@ -104,31 +116,38 @@ public class ReplayExecutor {
             }
             context.eval("js", "var source = " + sourceJson + ";");
 
-            // Debugger session to capture vars on suspend
+            // Start a debugger session that listens for "debugger;" statements
             Debugger debugger = Debugger.find(graalEngine);
             try (DebuggerSession session = debugger.startSession((SuspendedEvent ev) -> {
-                DebugStackFrame frame = ev.getTopStackFrame();
-                if (frame == null)
-                    return;
-                DebugScope scope = frame.getScope();
 
-                for (DebugScope s = scope; s != null; s = s.getParent()) {
-                    for (DebugValue v : s.getDeclaredValues()) {
-                        if (!v.isInternal()) {
-                            try {
-                                capturedVars.putIfAbsent(v.getName(), convertPolyglotValue(v));
-                            } catch (Exception ignore) {
-                                // Some values may not be convertible
+                // Look through all stack frames to find the user’s transform() frame
+                for (DebugStackFrame frame : ev.getStackFrames()) {
+                    if ("transform".equals(frame.getName())) {
+                        DebugScope scope = frame.getScope();
+
+                        // Walk scopes inside transform() to capture locals
+                        for (DebugScope s = scope; s != null; s = s.getParent()) {
+                            for (DebugValue v : s.getDeclaredValues()) {
+                                if (!v.isInternal()) {
+                                    try {
+                                        capturedVars.putIfAbsent(v.getName(), convertPolyglotValue(v));
+                                    } catch (Exception ignore) {
+                                        // Some values may not be convertible
+                                    }
+                                }
                             }
                         }
+                        break; // only need transform() frame
                     }
                 }
+
+                // Continue execution after snapshot
                 ev.prepareContinue();
             })) {
-                // Evaluate wrapped script (defines __replayEntry)
+                // Load user code + wrapper (defines __replayEntry)
                 Value entry = context.eval("js", wrapped);
 
-                // Execute driver, which calls transform() using global "source"
+                // Call __replayEntry, which in turn calls transform()
                 Value res = entry.execute();
 
                 Object output = null;
@@ -144,6 +163,7 @@ public class ReplayExecutor {
                 return new Result(output, capturedVars, errorInfo);
             }
         } catch (PolyglotException pe) {
+            // Top-level Polyglot error (not caught by JS try/catch)
             return new Result(null, capturedVars, "PolyglotException: " + pe.getMessage());
         }
     }
@@ -165,6 +185,7 @@ public class ReplayExecutor {
                 return v.asLong();
             if (v.fitsInDouble())
                 return v.asDouble();
+
             if (v.hasArrayElements()) {
                 int size = (int) v.getArraySize();
                 java.util.List<Object> list = new java.util.ArrayList<>(size);
@@ -181,6 +202,7 @@ public class ReplayExecutor {
                 return map;
             }
             return v.toString();
+
         } else if (val instanceof DebugValue dv) {
             try {
                 Map<String, Object> map = new LinkedHashMap<>();
