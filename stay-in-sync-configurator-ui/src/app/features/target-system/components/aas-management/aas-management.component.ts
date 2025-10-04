@@ -7,6 +7,7 @@ import { ButtonModule } from 'primeng/button';
 import { TooltipModule } from 'primeng/tooltip';
 import { DialogModule } from 'primeng/dialog';
 import { TextareaModule } from 'primeng/textarea';
+import { FileUploadModule } from 'primeng/fileupload';
 import { TreeNode } from 'primeng/api';
 import { MessageService } from 'primeng/api';
 import { AasManagementService, AasElementLivePanel } from '../../services/aas-management.service';
@@ -175,6 +176,7 @@ import { AasElementDialogComponent, AasElementDialogData, AasElementDialogResult
     TooltipModule,
     DialogModule,
     TextareaModule,
+    FileUploadModule,
     AasElementDialogComponent
   ],
   styles: [`
