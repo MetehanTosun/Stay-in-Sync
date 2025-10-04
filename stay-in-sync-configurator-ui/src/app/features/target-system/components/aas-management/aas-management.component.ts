@@ -300,8 +300,8 @@ export class AasManagementComponent implements OnInit {
     this.messageService.add({
       severity: 'warn',
       summary: 'Submodel Created',
-      detail: 'Submodel was created but may not be visible yet. Try refreshing manually.',
-      life: 5000
+      detail: 'Submodel was created but may not be visible yet. Try refreshing manually or wait a few minutes.',
+      life: 8000
     });
   }
 
