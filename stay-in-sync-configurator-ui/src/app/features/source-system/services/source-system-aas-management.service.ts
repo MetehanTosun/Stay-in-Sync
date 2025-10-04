@@ -114,34 +114,25 @@ export class SourceSystemAasManagementService {
         node: node?.label
       });
 
-      this.aasService.getElement(systemId, smId, safePath, 'LIVE').subscribe({
-        next: (found: any) => {
-          const livePanel = this.mapElementToLivePanel(found);
-          observer.next(livePanel);
-          observer.complete();
-        },
-        error: (_err: any) => {
-          // Fallback: list under parent shallow and pick child
-          this.aasService.listElements(systemId, smId, { depth: 'shallow', parentPath: parent || undefined, source: 'LIVE' })
-            .subscribe({
-              next: (resp: any) => {
-                const list: any[] = Array.isArray(resp) ? resp : (resp?.result ?? []);
-                const found2 = list.find((el: any) => el.idShort === last);
-                if (found2) {
-                  const livePanel = this.mapElementToLivePanel(found2);
-                  observer.next(livePanel);
-                } else {
-                  observer.next({ label: last, type: 'Unknown' } as AasElementLivePanel);
-                }
-                observer.complete();
-              },
-              error: (err2: any) => {
-                this.errorService.handleError(err2);
-                observer.error(err2);
-              }
-            });
-        }
-      });
+      // Since getElement endpoint doesn't work properly, use listElements directly
+      this.aasService.listElements(systemId, smId, { depth: 'shallow', parentPath: parent || undefined, source: 'SNAPSHOT' })
+        .subscribe({
+          next: (resp: any) => {
+            const list: any[] = Array.isArray(resp) ? resp : (resp?.result ?? []);
+            const found = list.find((el: any) => el.idShort === last);
+            if (found) {
+              const livePanel = this.mapElementToLivePanel(found);
+              observer.next(livePanel);
+            } else {
+              observer.next({ label: last, type: 'Unknown' } as AasElementLivePanel);
+            }
+            observer.complete();
+          },
+          error: (err: any) => {
+            this.errorService.handleError(err);
+            observer.error(err);
+          }
+        });
     });
   }
 
