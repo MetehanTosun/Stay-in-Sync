@@ -1,9 +1,12 @@
 import { Component, Input, Output, EventEmitter, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { CardModule } from 'primeng/card';
 import { TreeModule } from 'primeng/tree';
 import { ButtonModule } from 'primeng/button';
 import { TooltipModule } from 'primeng/tooltip';
+import { DialogModule } from 'primeng/dialog';
+import { TextareaModule } from 'primeng/textarea';
 import { TreeNode } from 'primeng/api';
 import { MessageService } from 'primeng/api';
 import { AasManagementService, AasElementLivePanel } from '../../services/aas-management.service';
@@ -129,6 +132,20 @@ import { AasElementDialogComponent, AasElementDialogData, AasElementDialogResult
       </div>
     </div>
 
+    <!-- Dialog: Create Submodel -->
+    <p-dialog header="Create Submodel" [(visible)]="showSubmodelDialog" [modal]="true" [style]="{width:'40vw'}">
+      <textarea pInputTextarea [(ngModel)]="newSubmodelJson" rows="10" style="width:100%"></textarea>
+      <ng-template pTemplate="footer">
+        <button pButton type="button" class="p-button-text" label="Cancel" (click)="showSubmodelDialog=false"></button>
+        <button pButton type="button" label="Create" (click)="createSubmodel()"></button>
+      </ng-template>
+      <div class="p-mt-2" style="display:flex;gap:.5rem;flex-wrap:wrap;">
+        <button pButton type="button" class="p-button-text" label="Template: Minimal" (click)="setSubmodelTemplate('minimal')"></button>
+        <button pButton type="button" class="p-button-text" label="Template: With Property" (click)="setSubmodelTemplate('property')"></button>
+        <button pButton type="button" class="p-button-text" label="Template: With Collection" (click)="setSubmodelTemplate('collection')"></button>
+      </div>
+    </p-dialog>
+
     <!-- Element Creation Dialog -->
     <app-aas-element-dialog
       [(visible)]="showElementDialog"
@@ -138,10 +155,13 @@ import { AasElementDialogComponent, AasElementDialogData, AasElementDialogResult
   `,
   imports: [
     CommonModule,
+    FormsModule,
     CardModule,
     TreeModule,
     ButtonModule,
     TooltipModule,
+    DialogModule,
+    TextareaModule,
     AasElementDialogComponent
   ],
   styles: [`
@@ -167,6 +187,44 @@ export class AasManagementComponent implements OnInit {
   // Element creation dialog
   showElementDialog = false;
   elementDialogData: AasElementDialogData | null = null;
+
+  // Submodel creation dialog
+  showSubmodelDialog = false;
+  newSubmodelJson = '{\n  "id": "https://example.com/ids/sm/new",\n  "idShort": "NewSubmodel"\n}';
+
+  // Templates
+  minimalSubmodelTemplate: string = `{
+  "id": "https://example.com/ids/sm/new",
+  "idShort": "NewSubmodel",
+  "kind": "Instance"
+}`;
+
+  propertySubmodelTemplate: string = `{
+  "id": "https://example.com/ids/sm/new",
+  "idShort": "NewSubmodel",
+  "submodelElements": [
+    {
+      "modelType": "Property",
+      "idShort": "Name",
+      "valueType": "xs:string",
+      "value": "Foo"
+    }
+  ]
+}`;
+
+  collectionSubmodelTemplate: string = `{
+  "id": "https://example.com/ids/sm/new",
+  "idShort": "NewSubmodel",
+  "submodelElements": [
+    {
+      "modelType": "SubmodelElementCollection",
+      "idShort": "address",
+      "value": [
+        { "modelType": "Property", "idShort": "street", "valueType": "xs:string", "value": "Main St" }
+      ]
+    }
+  ]
+}`;
 
   constructor(
     private aasManagement: AasManagementService,
@@ -393,44 +451,29 @@ export class AasManagementComponent implements OnInit {
 
   // Event handlers for AAS management actions
   openCreateSubmodel(): void {
-    if (!this.system?.id) return;
-    
-    // Create a simple submodel creation dialog
-    const submodelData = {
-      id: `https://example.com/ids/sm/new-${Date.now()}`,
-      idShort: `NewSubmodel${Date.now()}`,
-      kind: 'Instance'
-    };
-    
-    // Show confirmation dialog
-    if (confirm(`Create new submodel "${submodelData.idShort}"?`)) {
-      this.createSubmodel(submodelData);
-    }
+    this.showSubmodelDialog = true;
   }
-  
-  private async createSubmodel(submodelData: any): Promise<void> {
+
+  setSubmodelTemplate(kind: 'minimal'|'property'|'collection'): void {
+    if (kind === 'minimal') this.newSubmodelJson = this.minimalSubmodelTemplate;
+    if (kind === 'property') this.newSubmodelJson = this.propertySubmodelTemplate;
+    if (kind === 'collection') this.newSubmodelJson = this.collectionSubmodelTemplate;
+  }
+
+  async createSubmodel(): Promise<void> {
     if (!this.system?.id) return;
     
     try {
-      await this.aasManagement.createSubmodel(this.system.id, submodelData);
-      
-      this.messageService.add({
-        severity: 'success',
-        summary: 'Submodel Created',
-        detail: `Submodel "${submodelData.idShort}" has been successfully created.`,
-        life: 3000
-      });
-      
-      // Refresh the tree
+      const body = JSON.parse(this.newSubmodelJson);
+      await this.aasManagement.createSubmodel(this.system.id, body);
+      this.showSubmodelDialog = false;
       await this.discoverSnapshot();
-      
-    } catch (error) {
-      console.error('Error creating submodel:', error);
-      
+    } catch (e: any) {
+      console.error('Error creating submodel:', e);
       this.messageService.add({
         severity: 'error',
         summary: 'Error',
-        detail: 'Failed to create submodel. Please try again.',
+        detail: e?.message || 'Failed to create submodel. Please check the JSON format.',
         life: 5000
       });
     }
