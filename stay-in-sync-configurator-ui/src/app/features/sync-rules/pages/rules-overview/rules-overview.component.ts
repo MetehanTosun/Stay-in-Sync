@@ -6,13 +6,14 @@ import { Router } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { HttpResponse } from '@angular/common/http';
-import {Button} from 'primeng/button';
-import {Dialog} from 'primeng/dialog';
-import {InputText} from 'primeng/inputtext';
-import {Toolbar} from 'primeng/toolbar';
-import {Tag} from 'primeng/tag';
-import {Select} from 'primeng/select';
+import { Button } from 'primeng/button';
+import { Dialog } from 'primeng/dialog';
+import { InputText } from 'primeng/inputtext';
+import { Toolbar } from 'primeng/toolbar';
+import { Tag } from 'primeng/tag';
+import { Select } from 'primeng/select';
 import { ArcAPIService } from '../../service/api/arc-api.service';
+import { MessageService } from 'primeng/api';
 
 /**
  * The page component responsible for viewing the list of transformation rule graphs
@@ -50,9 +51,10 @@ export class RulesOverviewComponent implements OnInit {
   constructor(
     private router: Router,
     private rulesApi: TransformationRulesApiService,
+    private messageService: MessageService
   ) { }
 
-  ngOnInit() : void {
+  ngOnInit(): void {
     this.loadRules();
   }
   //#endregion
@@ -91,7 +93,11 @@ export class RulesOverviewComponent implements OnInit {
    */
   createRule() {
     if (!this.isInputValid()) {
-      alert("Invalid Input");// TODO-s err user
+      this.messageService.add({
+        severity: 'error',
+        summary: 'Invalid Rule Inputs',
+        detail: 'Entered invalid rule configurations'
+      });
       return
     }
 
@@ -103,8 +109,12 @@ export class RulesOverviewComponent implements OnInit {
         this.editRule(res.body?.id)
       },
       error: (err) => {
-        alert(err.error?.message || err.message);
-        console.log(err); // TODO-s err
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Creating Rule',
+          detail: 'An error accurred while creating a rule. \n Please check the logs or console.'
+        });
+        console.log(err);
       },
     })
   }
@@ -118,8 +128,12 @@ export class RulesOverviewComponent implements OnInit {
         this.rules = rules;
       },
       error: (err) => {
-        alert(err.error?.message || err.message);
-        console.log(err); // TODO-s err
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Loading Rules',
+          detail: 'An error accurred while loading the rules. \n Please check the logs or console.'
+        });
+        console.log(err);
       },
       complete: () => {
         this.isLoading = false;
@@ -134,12 +148,20 @@ export class RulesOverviewComponent implements OnInit {
   deleteRule(ruleId: number) {
     this.rulesApi.deleteRule(ruleId).subscribe({
       next: () => {
-        alert("deletion successful"); // TODO-s notify
+        this.messageService.add({
+          severity: 'success',
+          summary: 'Deleting Rule',
+          detail: 'Rule was successfully deleted'
+        });
         this.loadRules();
       },
       error: (err) => {
-        alert(err.error?.message || err.message);
-        console.log(err); // TODO-s err
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Deleting Rule',
+          detail: 'An error accurred while deleting a rule. \n Please check the logs or console.'
+        });
+        console.log(err);
       }
     })
   }

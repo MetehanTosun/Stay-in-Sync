@@ -7,8 +7,9 @@ import { TransformationRulesApiService } from '../../service';
 import { ErrorPanelComponent } from '../../components/error-panel/error-panel.component';
 import { ValidationError } from '../../models/interfaces/validation-error.interface';
 import { RuleConfigurationComponent } from '../../components/modals/rule-configuration/rule-configuration.component';
-import {Button} from 'primeng/button';
-import {Toolbar} from 'primeng/toolbar';
+import { Button } from 'primeng/button';
+import { Toolbar } from 'primeng/toolbar';
+import { MessageService } from 'primeng/api';
 
 /**
  * The rule editor page component in which the user can view and edit a transformation rule graph
@@ -57,7 +58,12 @@ export class EditRuleComponent implements OnInit {
   @ViewChild(VflowCanvasComponent) canvas!: VflowCanvasComponent;
   @ViewChild('nodePalette', { static: true }) nodePaletteRef!: ElementRef;
 
-  constructor(private route: ActivatedRoute, private router: Router, private rulesApi: TransformationRulesApiService) { }
+  constructor(
+    private route: ActivatedRoute,
+    private router: Router,
+    private rulesApi: TransformationRulesApiService,
+    private messageService: MessageService
+  ) { }
 
   ngOnInit(): void {
     const routeId = this.route.snapshot.paramMap.get('id');
@@ -248,7 +254,11 @@ export class EditRuleComponent implements OnInit {
   onRuleConfigurationSaved(ruleConfiguration: { name: string, description: string }) {
     this.rulesApi.updateRule(this.ruleId!, ruleConfiguration).subscribe({
       next: (updatedRule) => {
-        alert("Rule successfully updated")
+        this.messageService.add({
+          severity: 'success',
+          summary: 'Updated Rule Configurations',
+          detail: 'Rule was successfully updated'
+        });
         console.log('Rule updated successfully', updatedRule); // TODO-s DELETE
 
         this.ruleName = ruleConfiguration.name;

@@ -1,5 +1,6 @@
-import { Component, EventEmitter, Input, Output } from '@angular/core';
+import { Component, EventEmitter, inject, Input, Output } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { MessageService } from 'primeng/api';
 
 /**
  * This component manages the modal for setting the values of a constant node
@@ -12,6 +13,7 @@ import { FormsModule } from '@angular/forms';
   styleUrl: './constant-node-modal.component.css'
 })
 export class ConstantNodeModalComponent {
+
   @Input() currentValue: string = '';
   @Output() constantCreated = new EventEmitter<any>();
   @Output() save = new EventEmitter<string>();
@@ -23,6 +25,8 @@ export class ConstantNodeModalComponent {
     this.constantValue = this.currentValue || '';
   }
 
+  constructor(private messageService: MessageService) {}
+
   //#region Modal Methods
   /**
    * Concludes the constant node creation by forwarding the constant value to node creation
@@ -31,7 +35,11 @@ export class ConstantNodeModalComponent {
    */
   submit() {
     if (!this.constantValue.trim()) {
-      alert('Please enter a constant value');
+      this.messageService.add({
+        severity: 'warn',
+        summary: 'No constant value',
+        detail: "Please enter a constant value"
+      })
       return;
     }
 

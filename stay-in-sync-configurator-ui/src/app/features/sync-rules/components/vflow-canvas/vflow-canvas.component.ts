@@ -8,6 +8,7 @@ import { CommonModule } from '@angular/common';
 import { SetNodeNameModalComponent } from '../modals/set-node-name-modal/set-node-name-modal.component';
 import { ValidationError } from '../../models/interfaces/validation-error.interface';
 import { ConfigNodeComponent } from '../nodes/config-node/config-node.component';
+import { MessageService } from 'primeng/api';
 
 /**
  * The canvas of the rule editor on which the rule graph is visualized
@@ -76,7 +77,8 @@ export class VflowCanvasComponent implements OnInit {
   constructor(
     private route: ActivatedRoute,
     private graphApi: GraphAPIService,
-    private nodesApi: OperatorNodesApiService
+    private nodesApi: OperatorNodesApiService,
+    private messageService: MessageService
   ) { }
 
   ngOnInit(): void {
@@ -86,7 +88,11 @@ export class VflowCanvasComponent implements OnInit {
     if (this.ruleId) {
       this.loadGraph(this.ruleId);
     } else {
-      alert("Unable to load graph - cannot read rule id") // TODO-s err
+      this.messageService.add({
+        severity: 'error',
+        summary: 'No rule id',
+        detail: "Unable to load graph - cannot read rule id"
+      })
     }
   }
   //#endregion
@@ -213,7 +219,11 @@ export class VflowCanvasComponent implements OnInit {
         operatorType: operatorData.operatorName,  // Map operatorName to operatorType for the Backend
       }
     } else {
-      alert("Unable to create node") // TODO-s err
+      this.messageService.add({
+        severity: 'error',
+        summary: 'Unable to create node',
+        detail: 'Unable to create node. \n Please check the logs.'
+      });
     }
 
     const size = this.getDefaultNodeSize(nodeType);
@@ -396,7 +406,7 @@ export class VflowCanvasComponent implements OnInit {
   /**
    * Updates the the currently selected node's JSON path with the new value
    *
-   * @param newJsonPath
+   * @param nodeData - Object containing jsonPath and outputType
    */
   onJsonPathSaved(nodeData: { jsonPath: string, outputType: string }) {
     if (this.nodeBeingEdited) {
@@ -595,7 +605,12 @@ export class VflowCanvasComponent implements OnInit {
         this.centerOnNode(0);
       },
       error: (err) => {
-        alert(err.error?.message || err.message);  // TODO-s err
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Loading the graph',
+          detail: 'An error accurred while loading the graph. \n Please check the logs or the console.'
+        });
+        console.error(err);
       }
     })
   }
@@ -625,8 +640,12 @@ export class VflowCanvasComponent implements OnInit {
         this.graphErrors.emit(res.errors ? res.errors : []);
       },
       error: (err) => {
-        console.error('Error response body:', err.error); // TODO-s DELETE
-        alert(err.message);
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Saving the graph',
+          detail: 'An error accurred while saving the graph. \n Please check the logs or the console.'
+        });
+        console.error('Error response body:', err.error);
       }
     });
   }
@@ -683,7 +702,11 @@ export class VflowCanvasComponent implements OnInit {
           this.showSuggestions = true;
         },
         error: (err) => {
-          alert(err); // TODO-s
+          this.messageService.add({
+            severity: 'error',
+            summary: 'Loading the logic operators',
+            detail: 'An error accurred while accessing the the logic operators. \n Please check the logs or the console.'
+          });
           console.error(err);
         }
       })
@@ -879,8 +902,12 @@ export class VflowCanvasComponent implements OnInit {
       case NodeType.FINAL: return FinalNodeComponent;
       case NodeType.CONFIG: return ConfigNodeComponent;
       default:
-        alert("Unknown NodeType");
-        throw Error("Unknown NodeType"); // TODO-s err
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Unknown NodeType',
+          detail: 'An unknown node type was attempted to be accessed. \n Please check the logs or the console.'
+        });
+        throw Error("Unknown NodeType");
     }
   }
   //#endregion

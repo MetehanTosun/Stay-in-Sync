@@ -2,6 +2,7 @@ import { CommonModule } from '@angular/common';
 import { Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
 import { LogicOperatorMeta, NodeType } from '../../models';
 import { OperatorNodesApiService } from '../../service';
+import { MessageService } from 'primeng/api';
 
 /**
  * Responsible for the main logic of the node selection/creation palette
@@ -25,7 +26,10 @@ export class NodePaletteComponent implements OnInit {
   selectedLogicGroup: string | null = null;
   showGroupOperators = false;
 
-  constructor(private nodesApi: OperatorNodesApiService) { }
+  constructor(
+    private nodesApi: OperatorNodesApiService,
+    private messageService: MessageService
+  ) { }
 
   ngOnInit(): void {
     this.loadGroupedOperators();
@@ -80,7 +84,11 @@ export class NodePaletteComponent implements OnInit {
         this.operatorsGrouped = operatorsGrouped;
       },
       error: (err) => {
-        alert(err.error?.message || err.message);
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Loading operator nodes',
+          detail: 'An error accurred while loading the logic operators nodes. \n Please check the logs or the console.'
+        });
         console.log(err); // TODO-s err
       },
     })

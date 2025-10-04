@@ -2,6 +2,7 @@ import { Component, EventEmitter, Input, Output } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ArcAPIService } from '../../../service/api/arc-api.service';
 import { CommonModule } from '@angular/common';
+import { MessageService } from 'primeng/api';
 
 /**
  * This component manages the modal for setting the values of a provider node
@@ -25,7 +26,8 @@ export class ProviderNodeModalComponent {
   filteredPaths: string[] = [];
 
   constructor(
-    private arcApi: ArcAPIService
+    private arcApi: ArcAPIService,
+    private messageService: MessageService
   ) { }
 
   ngOnInit() {
@@ -102,12 +104,20 @@ export class ProviderNodeModalComponent {
    */
   submit() {
     if (!this.jsonPath.trim()) {
-      alert('Please enter a JSON Path');
+      this.messageService.add({
+        severity: 'warn',
+        summary: 'No JSON Path',
+        detail: "Please enter a JSON Path"
+      })
       return;
     }
 
     if (!this.isValidArrayPath(this.jsonPath)) {
-      alert('Please replace [*] with a specific array index (e.g., [0], [1], [2]...)');
+      this.messageService.add({
+        severity: 'warn',
+        summary: 'No valid array index',
+        detail: "Please replace [*] with a specific array index (e.g. [0], [1], ...)"
+      })
       return;
     }
 
