@@ -20,7 +20,7 @@
     </header>
     <ngx-monaco-editor
       [options]="editorOptions"
-      [ngModel]="scriptDisplay"
+      [(ngModel)]="scriptDisplay"
       (onInit)="onEditorInit($event)"
       style="
         flex: 1;

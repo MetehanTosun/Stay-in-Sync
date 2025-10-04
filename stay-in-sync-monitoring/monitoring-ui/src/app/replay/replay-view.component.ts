@@ -8,6 +8,7 @@ import { PrimeTemplate } from 'primeng/api';
 import { Button } from 'primeng/button';
 import { TableModule } from 'primeng/table';
 import { Tab, TabList, TabPanel, TabPanels, Tabs } from 'primeng/tabs';
+import * as ts from 'typescript';
 import { LogEntry } from '../core/models/log.model';
 import { LogService } from '../core/services/log.service';
 import { SnapshotDTO } from './models/snapshot.model';
@@ -238,22 +239,63 @@ declare var __capture: (name: string, value: any) => void;
   }
 
   onReplayClick(): void {
-    if (!this.snapshotId) {
-      this.errorInfo = 'No snapshotId found in URL';
+    if (!this.data()) {
+      this.errorInfo = 'No snapshot data available';
       return;
     }
 
-    this.replayService.executeReplay(this.snapshotId).subscribe({
+    let transpiledCode: string;
+
+    try {
+      // Transpile TypeScript → JavaScript
+      const transpileOutput = ts.transpileModule(this.scriptDisplay, {
+        compilerOptions: {
+          module: ts.ModuleKind.CommonJS,
+          target: ts.ScriptTarget.ESNext,
+        },
+      });
+
+      transpiledCode = transpileOutput.outputText;
+
+      // Optionally check diagnostics
+      const hasErrors =
+        transpileOutput.diagnostics && transpileOutput.diagnostics.length > 0;
+      if (hasErrors) {
+        console.warn(
+          'TypeScript transpile had errors',
+          transpileOutput.diagnostics
+        );
+      }
+    } catch (e) {
+      console.error('Error transpiling TypeScript:', e);
+      this.errorInfo = 'TypeScript transpilation failed';
+      return;
+    }
+
+    // Build ReplayExecuteRequestDTO
+    const dto = {
+      scriptName: 'replay.js',
+      javascriptCode: transpiledCode,
+      sourceData: this.data()?.transformationResult?.sourceData || {},
+    };
+
+    // Call backend endpoint
+    this.replayService.executeReplay(dto).subscribe({
       next: (res) => {
         this.outputData = res.outputData;
         this.variables = res.variables;
         this.errorInfo = res.errorInfo;
+        console.log('Replay executed successfully', res);
       },
       error: (err) => {
-        console.error('Replay failed', err);
+        console.error('Replay request failed', err);
         this.errorInfo = 'Replay request failed';
       },
     });
+
+    console.log(this.scriptDisplay);
+    //Debugging
+    console.log(dto);
   }
 
   private toNanoSeconds(date: Date) {
