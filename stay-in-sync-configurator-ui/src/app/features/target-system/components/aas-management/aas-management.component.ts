@@ -177,7 +177,7 @@ import { AasElementDialogComponent, AasElementDialogData, AasElementDialogResult
       </div>
       <ng-template pTemplate="footer">
         <button pButton type="button" class="p-button-text" label="Cancel" (click)="showAasxUpload=false"></button>
-        <button pButton type="button" label="Upload" (click)="uploadAasx()" [disabled]="isUploadingAasx || !aasxSelectedFile"></button>
+        <button pButton type="button" label="Upload" (click)="uploadAasx()" [disabled]="isUploadingAasx || !aasxSelectedFile || !aasxPreview?.length"></button>
       </ng-template>
     </p-dialog>
   `,
