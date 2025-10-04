@@ -35,7 +35,7 @@
   <!-- Rechte Seite: Tabs bleiben wie vorher -->
   <section
     class="right-pane"
-    style="flex: 1; display: flex; flex-direction: column"
+    style="flex: 1; display: flex; flex-direction: column; min-height: 0"
   >
     <p-tabs>
       <p-tablist>
@@ -46,38 +46,45 @@
         <p-tab value="4">Logs</p-tab>
       </p-tablist>
 
-      <p-tabpanels>
-        <p-tabpanel value="0">
+      <p-tabpanels style="flex: 1; display: flex; flex-direction: column">
+        <p-tabpanel value="0" style="flex: 1; overflow: auto">
           <ng-container *ngIf="!loading(); else loadingTpl">
             <ng-container *ngIf="!error(); else errorTpl">
-              <h3>SourceData</h3>
-              <pre class="json-block">{{
-                data()?.transformationResult?.sourceData | json
-              }}</pre>
+              <ngx-json-viewer
+                [json]="data()?.transformationResult?.sourceData"
+                [expanded]="true"
+              ></ngx-json-viewer>
             </ng-container>
           </ng-container>
         </p-tabpanel>
-        <p-tabpanel value="1">
+
+        <p-tabpanel value="1" style="flex: 1; overflow: auto">
           <ng-container *ngIf="!loading(); else loadingTpl">
             <ng-container *ngIf="!error(); else errorTpl">
-              <h3>Variable Snapshot</h3>
-              <pre class="json-block">{{ variables | json }}</pre>
+              <ngx-json-viewer
+                [json]="variables"
+                [expanded]="true"
+              ></ngx-json-viewer>
             </ng-container>
           </ng-container>
         </p-tabpanel>
-        <p-tabpanel value="2">
+
+        <p-tabpanel value="2" style="flex: 1; overflow: auto">
           <ng-container *ngIf="!loading(); else loadingTpl">
             <ng-container *ngIf="!error(); else errorTpl">
-              <h3>Errors</h3>
               <pre class="terminal">{{ errorInfo | json }}</pre>
             </ng-container>
           </ng-container>
         </p-tabpanel>
-        <p-tabpanel value="3">
+
+        <p-tabpanel value="3" style="flex: 1; overflow: auto">
           <ng-container *ngIf="!loading(); else loadingTpl">
             <ng-container *ngIf="!error(); else errorTpl">
               <h3>OutputData</h3>
-              <pre class="terminal">{{ outputData | json }}</pre>
+              <ngx-json-viewer
+                [json]="outputData"
+                [expanded]="true"
+              ></ngx-json-viewer>
             </ng-container>
           </ng-container>
         </p-tabpanel>

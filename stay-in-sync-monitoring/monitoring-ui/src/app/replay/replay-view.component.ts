@@ -3,6 +3,7 @@ import { CommonModule, JsonPipe, NgIf } from '@angular/common';
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
+import { NgxJsonViewerModule } from 'ngx-json-viewer';
 import { MonacoEditorModule } from 'ngx-monaco-editor-v2';
 import { PrimeTemplate } from 'primeng/api';
 import { Button } from 'primeng/button';
@@ -37,6 +38,7 @@ declare const monaco: any;
     MonacoEditorModule,
     FormsModule,
     Button,
+    NgxJsonViewerModule,
   ],
   templateUrl: './replay-view.component.html',
   styleUrl: './replay-view.component.css',
