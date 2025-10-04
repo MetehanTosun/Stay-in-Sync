@@ -256,11 +256,15 @@ export class AasManagementComponent implements OnInit {
   async discoverSnapshot(): Promise<void> {
     if (!this.system?.id) return;
     
+    console.log('[TargetAasManage] discoverSnapshot: Starting with systemId:', this.system.id);
     this.isLoading = true;
     try {
-      this.treeNodes = await this.aasManagement.discoverSubmodels(this.system.id);
+      const newTreeNodes = await this.aasManagement.discoverSubmodels(this.system.id);
+      console.log('[TargetAasManage] discoverSnapshot: Got new treeNodes:', newTreeNodes.length, newTreeNodes);
+      this.treeNodes = newTreeNodes;
+      console.log('[TargetAasManage] discoverSnapshot: Updated this.treeNodes:', this.treeNodes.length, this.treeNodes);
     } catch (error) {
-      console.error('Error discovering submodels:', error);
+      console.error('[TargetAasManage] discoverSnapshot: Error discovering submodels:', error);
     } finally {
       this.isLoading = false;
     }
@@ -473,7 +477,9 @@ export class AasManagementComponent implements OnInit {
       console.log('[TargetAasManage] Waiting for backend to make submodel available...');
       setTimeout(async () => {
         console.log('[TargetAasManage] Discovering submodels after creation');
+        console.log('[TargetAasManage] Current treeNodes before refresh:', this.treeNodes.length, this.treeNodes);
         await this.discoverSnapshot();
+        console.log('[TargetAasManage] TreeNodes after refresh:', this.treeNodes.length, this.treeNodes);
       }, 1000);
       
       this.messageService.add({

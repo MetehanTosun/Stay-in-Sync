@@ -46,13 +46,20 @@ export class AasManagementService {
    */
   async discoverSubmodels(systemId: number): Promise<TreeNode[]> {
     return new Promise((resolve, reject) => {
+      console.log('[AasManagement] discoverSubmodels: Starting with systemId:', systemId);
       this.aasClientService.listSubmodels('target', systemId).subscribe({
         next: (response: any) => {
+          console.log('[AasManagement] discoverSubmodels: Raw response:', response);
           const submodels = Array.isArray(response) ? response : (response?.result ?? []);
+          console.log('[AasManagement] discoverSubmodels: Extracted submodels:', submodels.length, submodels);
           const treeNodes = submodels.map((sm: any) => this.mapSmToNode(sm));
+          console.log('[AasManagement] discoverSubmodels: Mapped treeNodes:', treeNodes.length, treeNodes);
           resolve(treeNodes);
         },
-        error: (error: any) => reject(error)
+        error: (error: any) => {
+          console.error('[AasManagement] discoverSubmodels: Error:', error);
+          reject(error);
+        }
       });
     });
   }
@@ -221,8 +228,10 @@ export class AasManagementService {
    */
   async createSubmodel(systemId: number, submodelData: any): Promise<void> {
     return new Promise((resolve, reject) => {
+      console.log('[AasManagement] createSubmodel: Starting with systemId:', systemId, 'submodelData:', submodelData);
       this.aasClientService.createSubmodel('target', systemId, submodelData).subscribe({
-        next: () => {
+        next: (response: any) => {
+          console.log('[AasManagement] createSubmodel: Success response:', response);
           this.messageService.add({ 
             severity: 'success', 
             summary: 'Submodel created', 
@@ -231,6 +240,7 @@ export class AasManagementService {
           resolve();
         },
         error: (error: any) => {
+          console.error('[AasManagement] createSubmodel: Error:', error);
           this.messageService.add({ 
             severity: 'error', 
             summary: 'Create failed', 
