@@ -47,9 +47,10 @@ export class AasManagementService {
   async discoverSubmodels(systemId: number): Promise<TreeNode[]> {
     return new Promise((resolve, reject) => {
       console.log('[AasManagement] discoverSubmodels: Starting with systemId:', systemId);
-      this.aasClientService.listSubmodels('target', systemId).subscribe({
+      // Try SNAPSHOT first, then fallback to no source parameter (LIVE)
+      this.aasClientService.listSubmodels('target', systemId, { source: 'SNAPSHOT' }).subscribe({
         next: (response: any) => {
-          console.log('[AasManagement] discoverSubmodels: Raw response:', response);
+          console.log('[AasManagement] discoverSubmodels: SNAPSHOT response:', response);
           const submodels = Array.isArray(response) ? response : (response?.result ?? []);
           console.log('[AasManagement] discoverSubmodels: Extracted submodels:', submodels.length, submodels);
           const treeNodes = submodels.map((sm: any) => this.mapSmToNode(sm));
@@ -57,8 +58,22 @@ export class AasManagementService {
           resolve(treeNodes);
         },
         error: (error: any) => {
-          console.error('[AasManagement] discoverSubmodels: Error:', error);
-          reject(error);
+          console.log('[AasManagement] discoverSubmodels: SNAPSHOT failed, trying LIVE:', error);
+          // Fallback to LIVE (no source parameter)
+          this.aasClientService.listSubmodels('target', systemId).subscribe({
+            next: (response: any) => {
+              console.log('[AasManagement] discoverSubmodels: LIVE response:', response);
+              const submodels = Array.isArray(response) ? response : (response?.result ?? []);
+              console.log('[AasManagement] discoverSubmodels: Extracted submodels:', submodels.length, submodels);
+              const treeNodes = submodels.map((sm: any) => this.mapSmToNode(sm));
+              console.log('[AasManagement] discoverSubmodels: Mapped treeNodes:', treeNodes.length, treeNodes);
+              resolve(treeNodes);
+            },
+            error: (liveError: any) => {
+              console.error('[AasManagement] discoverSubmodels: Both SNAPSHOT and LIVE failed:', liveError);
+              reject(liveError);
+            }
+          });
         }
       });
     });
