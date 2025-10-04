@@ -58,14 +58,23 @@ export class SourceSystemAasManagementService {
     return new Observable(observer => {
       this.aasService.listSubmodels(systemId, 'SNAPSHOT').subscribe({
         next: (resp) => {
+          // Check if response is an error object
+          if (resp && resp.errorTitle && resp.errorMessage) {
+            console.error('[SourceAasManage] discoverSnapshot: Backend error', { error: resp });
+            observer.next([]); // Return empty array on error
+            observer.complete();
+            return;
+          }
+          
           const submodels = Array.isArray(resp) ? resp : (resp?.result ?? []);
           const treeNodes = submodels.map((sm: any) => this.mapSubmodelToNode(sm));
           observer.next(treeNodes);
           observer.complete();
         },
         error: (err) => {
-          this.errorService.handleError(err);
-          observer.error(err);
+          console.error('[SourceAasManage] discoverSnapshot: Error', err);
+          observer.next([]); // Return empty array on error
+          observer.complete();
         }
       });
     });
@@ -78,14 +87,25 @@ export class SourceSystemAasManagementService {
     return new Observable(observer => {
       this.aasService.listElements(systemId, submodelId, { depth: 'shallow', parentPath, source: 'SNAPSHOT' }).subscribe({
         next: (resp) => {
+          // Check if response is an error object
+          if (resp && resp.errorTitle && resp.errorMessage) {
+            console.error('[SourceAasManage] loadChildren: Backend error', { error: resp });
+            attach.children = []; // Set empty children on error
+            observer.next();
+            observer.complete();
+            return;
+          }
+          
           const list = Array.isArray(resp) ? resp : (resp?.result ?? []);
           attach.children = list.map((el: any) => this.mapElementToNode(submodelId, el));
           observer.next();
           observer.complete();
         },
         error: (err) => {
-          this.errorService.handleError(err);
-          observer.error(err);
+          console.error('[SourceAasManage] loadChildren: Error', err);
+          attach.children = []; // Set empty children on error
+          observer.next();
+          observer.complete();
         }
       });
     });
@@ -130,6 +150,20 @@ export class SourceSystemAasManagementService {
         this.aasService.listElements(systemId, smId, options)
           .subscribe({
             next: (resp: any) => {
+              // Check if response is an error object
+              if (resp && resp.errorTitle && resp.errorMessage) {
+                console.error('[SourceAasManage] loadElementDetails: Backend error', { source, error: resp });
+                // If SNAPSHOT failed and we haven't tried LIVE yet, try LIVE
+                if (source === 'SNAPSHOT') {
+                  console.log('[SourceAasManage] loadElementDetails: Trying LIVE as fallback after backend error');
+                  tryLoadElementDetails('LIVE');
+                } else {
+                  observer.next({ label: last, type: 'Unknown', value: 'Backend Error: ' + resp.errorMessage } as AasElementLivePanel);
+                  observer.complete();
+                }
+                return;
+              }
+              
               const list: any[] = Array.isArray(resp) ? resp : (resp?.result ?? []);
               const found = list.find((el: any) => el.idShort === last);
               if (found) {
