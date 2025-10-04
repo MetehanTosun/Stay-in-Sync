@@ -102,6 +102,18 @@ export class SourceSystemAasManagementService {
       const last = safePath.split('/').pop() as string;
       const parent = safePath.includes('/') ? safePath.substring(0, safePath.lastIndexOf('/')) : '';
 
+      console.log('[SourceAasManage] loadElementDetails: URL construction', {
+        systemId,
+        smId,
+        idShortPath,
+        keyStr,
+        keyPath,
+        safePath,
+        last,
+        parent,
+        node: node?.label
+      });
+
       this.aasService.getElement(systemId, smId, safePath, 'LIVE').subscribe({
         next: (found: any) => {
           const livePanel = this.mapElementToLivePanel(found);
