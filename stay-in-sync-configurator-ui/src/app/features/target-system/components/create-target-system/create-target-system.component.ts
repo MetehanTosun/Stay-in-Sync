@@ -516,6 +516,26 @@ export class CreateTargetSystemComponent implements OnInit, OnChanges {
         const annotationsRaw = Array.isArray(ann1) ? ann1 : (Array.isArray(ann2) ? ann2 : []);
         const mapVar = (v: any): any | null => { const val = v?.value ?? v; const idShort = val?.idShort; if (!idShort) return null; return { idShort, modelType: val?.modelType, valueType: val?.valueType }; };
         const mapAnnotation = (a: any): any | null => { const val = a?.value ?? a; const idShort = val?.idShort; if (!idShort) return null; return { idShort, modelType: val?.modelType, valueType: val?.valueType, value: val?.value }; };
+        
+        // Handle relationship references
+        const stringifyRef = (ref: any): string | undefined => {
+          if (!ref) return undefined;
+          const keys = ref?.keys;
+          if (Array.isArray(keys) && keys.length) {
+            try {
+              return keys.map((k: any) => `${k?.type ?? ''}:${k?.value ?? ''}`).join(' / ');
+            } catch {
+              return JSON.stringify(ref);
+            }
+          }
+          if (typeof ref === 'string') return ref;
+          if (ref?.value) return String(ref.value);
+          try { return JSON.stringify(ref); } catch { return String(ref); }
+        };
+        
+        const firstRef = stringifyRef((found as any).first || (found as any).firstReference);
+        const secondRef = stringifyRef((found as any).second || (found as any).secondReference);
+        
         this.selectedLivePanel = {
           label: found.idShort,
           type: liveType || 'Unknown',
@@ -523,6 +543,8 @@ export class CreateTargetSystemComponent implements OnInit, OnChanges {
           valueType: (found as any).valueType,
           min: minValue,
           max: maxValue,
+          firstRef,
+          secondRef,
           inputVariables: inputVars.map(mapVar).filter(Boolean),
           outputVariables: outputVars.map(mapVar).filter(Boolean),
           inoutputVariables: inoutVars.map(mapVar).filter(Boolean),
