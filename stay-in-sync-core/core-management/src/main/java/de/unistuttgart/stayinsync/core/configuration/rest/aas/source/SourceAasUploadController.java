@@ -21,7 +21,7 @@ import org.jboss.resteasy.reactive.RestForm;
 
 import java.nio.file.Files;
 
-@Path("/source-systems/{sourceSystemId}/aas")
+@Path("/api/config/source-system/{sourceSystemId}/aas")
 @RegisterForReflection
 @Blocking
 public class SourceAasUploadController {
