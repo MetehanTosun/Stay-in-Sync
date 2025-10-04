@@ -393,8 +393,47 @@ export class AasManagementComponent implements OnInit {
 
   // Event handlers for AAS management actions
   openCreateSubmodel(): void {
-    // TODO: Implement create submodel dialog
-    console.log('Create submodel clicked');
+    if (!this.system?.id) return;
+    
+    // Create a simple submodel creation dialog
+    const submodelData = {
+      id: `https://example.com/ids/sm/new-${Date.now()}`,
+      idShort: `NewSubmodel${Date.now()}`,
+      kind: 'Instance'
+    };
+    
+    // Show confirmation dialog
+    if (confirm(`Create new submodel "${submodelData.idShort}"?`)) {
+      this.createSubmodel(submodelData);
+    }
+  }
+  
+  private async createSubmodel(submodelData: any): Promise<void> {
+    if (!this.system?.id) return;
+    
+    try {
+      await this.aasManagement.createSubmodel(this.system.id, submodelData);
+      
+      this.messageService.add({
+        severity: 'success',
+        summary: 'Submodel Created',
+        detail: `Submodel "${submodelData.idShort}" has been successfully created.`,
+        life: 3000
+      });
+      
+      // Refresh the tree
+      await this.discoverSnapshot();
+      
+    } catch (error) {
+      console.error('Error creating submodel:', error);
+      
+      this.messageService.add({
+        severity: 'error',
+        summary: 'Error',
+        detail: 'Failed to create submodel. Please try again.',
+        life: 5000
+      });
+    }
   }
 
   openCreateElement(submodelId: string, parentPath?: string): void {
