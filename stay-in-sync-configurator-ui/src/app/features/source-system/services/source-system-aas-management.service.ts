@@ -122,24 +122,10 @@ export class SourceSystemAasManagementService {
       const last = safePath.split('/').pop() as string;
       const parent = safePath.includes('/') ? safePath.substring(0, safePath.lastIndexOf('/')) : '';
 
-      console.log('[SourceAasManage] loadElementDetails: URL construction', {
-        systemId,
-        smId,
-        idShortPath,
-        keyStr,
-        keyPath,
-        safePath,
-        last,
-        parent,
-        node: node?.label,
-        nodeData: node?.data,
-        isManuallyCreated: node?.data?.isManuallyCreated || false
-      });
 
       // Use getElement API for direct element loading with values
       // Try SNAPSHOT first, then LIVE as fallback for manually created elements
       const tryLoadElementDetails = (source: 'SNAPSHOT' | 'LIVE') => {
-        console.log('[SourceAasManage] loadElementDetails: Trying getElement with source', { source, safePath });
         
         this.aasService.getElement(systemId, smId, safePath, source)
           .subscribe({
@@ -149,7 +135,6 @@ export class SourceSystemAasManagementService {
                 console.error('[SourceAasManage] loadElementDetails: Backend error', { source, error: found });
                 // If SNAPSHOT failed and we haven't tried LIVE yet, try LIVE
                 if (source === 'SNAPSHOT') {
-                  console.log('[SourceAasManage] loadElementDetails: Trying LIVE as fallback after backend error');
                   tryLoadElementDetails('LIVE');
                 } else {
                   observer.next({ label: last, type: 'Unknown', value: 'Backend Error: ' + found.errorMessage } as AasElementLivePanel);
@@ -159,14 +144,12 @@ export class SourceSystemAasManagementService {
               }
               
               if (found) {
-                console.log('[SourceAasManage] loadElementDetails: Found element', { source, found });
                 
                 // Check if SNAPSHOT has no meaningful value and we should try LIVE
                 const hasValue = found.value !== undefined && found.value !== null && found.value !== '';
                 const isSnapshotWithoutValue = source === 'SNAPSHOT' && !hasValue;
                 
                 if (isSnapshotWithoutValue) {
-                  console.log('[SourceAasManage] loadElementDetails: SNAPSHOT has no value, trying LIVE for values');
                   tryLoadElementDetails('LIVE');
                   return;
                 }
@@ -175,10 +158,8 @@ export class SourceSystemAasManagementService {
                 observer.next(livePanel);
                 observer.complete();
               } else {
-                console.log('[SourceAasManage] loadElementDetails: Element not found', { source, safePath });
                 // If SNAPSHOT failed and we haven't tried LIVE yet, try LIVE
                 if (source === 'SNAPSHOT') {
-                  console.log('[SourceAasManage] loadElementDetails: Trying LIVE as fallback');
                   tryLoadElementDetails('LIVE');
                 } else {
                   observer.next({ label: last, type: 'Unknown' } as AasElementLivePanel);
@@ -190,7 +171,6 @@ export class SourceSystemAasManagementService {
               console.error('[SourceAasManage] loadElementDetails: Error with source', { source, err });
               // If SNAPSHOT failed and we haven't tried LIVE yet, try LIVE
               if (source === 'SNAPSHOT') {
-                console.log('[SourceAasManage] loadElementDetails: Trying LIVE as fallback after error');
                 tryLoadElementDetails('LIVE');
               } else {
                 this.errorService.handleError(err);
@@ -350,20 +330,6 @@ export class SourceSystemAasManagementService {
       elementValue = found.hasChildren ? ['...'] : []; // Placeholder to indicate children exist
     }
 
-    // Debug logging for Collections and Lists
-    if (liveType === 'SubmodelElementCollection' || liveType === 'SubmodelElementList') {
-      console.log('[SourceAasManage] mapElementToLivePanel: Collection/List debug', {
-        idShort: found.idShort,
-        liveType,
-        originalValue: (found as any).value,
-        submodelElements: (found as any).submodelElements,
-        valueListElement: (found as any).valueListElement,
-        finalElementValue: elementValue,
-        elementValueLength: Array.isArray(elementValue) ? elementValue.length : 'not array',
-        hasChildren: found.hasChildren,
-        note: 'Collections/Lists don\'t include child elements in the data, only hasChildren flag'
-      });
-    }
 
     return {
       label: found.idShort,

@@ -76,7 +76,6 @@ export class AasClientService {
     const encodedSmId = this.encodeIdToBase64Url(smId);
     const url = `${this.base(systemType, systemId)}/submodels/${encodedSmId}/elements/${this.encodePathSegments(path)}`;
     
-    console.log('[AasClient] deleteElement: API call', {
       systemType,
       systemId,
       smId,

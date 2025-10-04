@@ -3,8 +3,6 @@ import {FormBuilder, FormGroup, ReactiveFormsModule, Validators} from '@angular/
 import {FormsModule} from '@angular/forms';
 import {CommonModule} from '@angular/common';
 import {SourceSystemDTO} from '../../models/sourceSystemDTO';
-
-
 import {DialogModule} from 'primeng/dialog';
 import {CheckboxModule} from 'primeng/checkbox';
 import {DropdownModule} from 'primeng/dropdown';
@@ -16,8 +14,6 @@ import {FileSelectEvent, FileUploadEvent, FileUploadModule} from 'primeng/fileup
 import {TreeModule} from 'primeng/tree';
 import {MessageService, TreeNode} from 'primeng/api';
 import { AasElementDialogComponent, AasElementDialogData, AasElementDialogResult } from '../../../../shared/components/aas-element-dialog/aas-element-dialog.component';
-
-
 
 import {SourceSystemResourceService} from '../../service/sourceSystemResource.service';
 import {CreateSourceSystemDTO} from '../../models/createSourceSystemDTO';
@@ -80,8 +76,6 @@ export class CreateSourceSystemComponent implements OnInit, OnChanges {
   @Input() visible = false;
   @Input() sourceSystem: SourceSystemDTO | null = null;
   @Output() visibleChange = new EventEmitter<boolean>();
-
-
 
   steps: Array<{label: string}> = [];
   currentStep = 0;
@@ -563,7 +557,6 @@ save(): void {
     if (!this.createdSourceSystemId) return;
     this.childrenLoading[submodelId] = true;
     
-    console.log('[SourceCreate] loadRootElements: Starting to load root elements', {
       submodelId,
       attachToNode: attachToNode?.label
     });
@@ -574,7 +567,6 @@ save(): void {
           this.childrenLoading[submodelId] = false;
           const list = Array.isArray(resp) ? resp : (resp?.result ?? []);
           
-          console.log('[SourceCreate] loadRootElements: ROOT ELEMENTS LOADED', {
             submodelId,
             totalCount: list.length,
             elements: list.map((el: any, index: number) => ({
@@ -592,7 +584,6 @@ save(): void {
           if (attachToNode) {
             const mappedChildren = list.map((el: any) => this.mapElementToNode(submodelId, el));
             
-            console.log('[SourceCreate] loadRootElements: MAPPED CHILDREN', {
               submodelId,
               mappedCount: mappedChildren.length,
               children: mappedChildren.map((child: any, index: number) => ({
@@ -628,7 +619,6 @@ save(): void {
     const key = `${submodelId}::${parentPath}`;
     this.childrenLoading[key] = true;
     
-    console.log('[SourceCreate] loadChildren: BACKEND REQUEST', {
       systemId: this.createdSourceSystemId,
       submodelId,
       parentPath,
@@ -643,7 +633,6 @@ save(): void {
           this.childrenLoading[key] = false;
           const list = Array.isArray(resp) ? resp : (resp?.result ?? []);
           
-          console.log('[SourceCreate] loadChildren: BACKEND RESPONSE', {
             submodelId,
             parentPath,
             responseType: Array.isArray(resp) ? 'array' : 'object',
@@ -676,7 +665,6 @@ save(): void {
             return slashCount === 0;
           });
           
-          console.log('[SourceCreate] loadChildren: DETAILED FILTERING ANALYSIS', {
             submodelId,
             parentPath,
             prefix,
@@ -685,7 +673,6 @@ save(): void {
           });
           
           // Log all original elements with detailed info
-          console.log('[SourceCreate] loadChildren: ORIGINAL ELEMENTS:', list.map((el: any, index: number) => {
             const p = el?.idShortPath || el?.idShort;
             const relativePath = p ? String(p).substring(prefix.length) : '';
             const slashCount = relativePath ? (relativePath.match(/\//g) || []).length : -1;
@@ -706,7 +693,6 @@ save(): void {
           }));
           
           // Log filtered elements
-          console.log('[SourceCreate] loadChildren: FILTERED ELEMENTS:', filteredList.map((el: any, index: number) => ({
             index,
             idShort: el.idShort,
             idShortPath: el.idShortPath,
@@ -726,7 +712,6 @@ save(): void {
             return slashCount !== 0;
           });
           
-          console.log('[SourceCreate] loadChildren: FILTERED OUT ELEMENTS:', filteredOut.map((el: any, index: number) => {
             const p = el?.idShortPath || el?.idShort;
             const relativePath = p ? String(p).substring(prefix.length) : '';
             const slashCount = relativePath ? (relativePath.match(/\//g) || []).length : -1;
@@ -775,27 +760,22 @@ save(): void {
     
     // Check for 'type' field (common in AAS data)
     if (el.type) {
-      console.log('[SourceCreate] inferModelType - Using type field for:', el.idShort, 'type:', el.type);
       return el.type;
     }
     
-    console.log('[SourceCreate] inferModelType - Analyzing element:', el.idShort, 'Raw data:', el);
     
     // Detect Range before Property (Range often also has valueType for endpoint types)
     if (el.min !== undefined || el.max !== undefined || el.minValue !== undefined || el.maxValue !== undefined) {
-      console.log('[SourceCreate] inferModelType - Detected Range for:', el.idShort);
       return 'Range';
     }
     
     // Property detection - most common type
     if (el.valueType) {
-      console.log('[SourceCreate] inferModelType - Detected Property for:', el.idShort, 'valueType:', el.valueType);
       return 'Property';
     }
     
     // Operation detection
     if (Array.isArray(el.inputVariables) || Array.isArray(el.outputVariables) || Array.isArray(el.inoutputVariables)) {
-      console.log('[SourceCreate] inferModelType - Detected Operation for:', el.idShort);
       return 'Operation';
     }
     
@@ -803,14 +783,11 @@ save(): void {
     if (Array.isArray(el.value)) {
       const isML = el.value.every((v: any) => v && (v.language !== undefined) && (v.text !== undefined));
       if (isML) {
-        console.log('[SourceCreate] inferModelType - Detected MultiLanguageProperty for:', el.idShort);
         return 'MultiLanguageProperty';
       }
       if (el.typeValueListElement || el.orderRelevant !== undefined) {
-        console.log('[SourceCreate] inferModelType - Detected SubmodelElementList for:', el.idShort);
         return 'SubmodelElementList';
       }
-      console.log('[SourceCreate] inferModelType - Detected SubmodelElementCollection for:', el.idShort);
       return 'SubmodelElementCollection';
     }
     
@@ -818,47 +795,39 @@ save(): void {
     if (el.first || el.firstReference) {
       const ann = el.annotations || el.annotation;
       const isAnnotated = Array.isArray(ann);
-      console.log('[SourceCreate] inferModelType - Detected RelationshipElement for:', el.idShort, 'annotated:', isAnnotated);
       return isAnnotated ? 'AnnotatedRelationshipElement' : 'RelationshipElement';
     }
     
     // Annotated relationship
     if (Array.isArray(el.annotations) || Array.isArray(el.annotation)) {
-      console.log('[SourceCreate] inferModelType - Detected AnnotatedRelationshipElement for:', el.idShort);
       return 'AnnotatedRelationshipElement';
     }
     
     // Entity
     if (Array.isArray(el.statements)) {
-      console.log('[SourceCreate] inferModelType - Detected Entity for:', el.idShort);
       return 'Entity';
     }
     
     // Reference element
     if (Array.isArray(el.keys)) {
-      console.log('[SourceCreate] inferModelType - Detected ReferenceElement for:', el.idShort);
       return 'ReferenceElement';
     }
     
     // File
     if (el.contentType && (el.fileName || el.path)) {
-      console.log('[SourceCreate] inferModelType - Detected File for:', el.idShort);
       return 'File';
     }
     
     // Additional fallback checks for common patterns
     if (el.value !== undefined && el.value !== null) {
-      console.log('[SourceCreate] inferModelType - Fallback to Property for:', el.idShort, 'value:', el.value);
       return 'Property';
     }
     
     // Check for submodel elements with children
     if (el.hasChildren === true || el.submodelElements || el.items) {
-      console.log('[SourceCreate] inferModelType - Fallback to SubmodelElementCollection for:', el.idShort);
       return 'SubmodelElementCollection';
     }
     
-    console.log('[SourceCreate] inferModelType - Could not determine type for:', el.idShort, 'returning undefined');
     return undefined;
   }
   private mapSubmodelToNode(sm: any): TreeNode {
@@ -894,7 +863,6 @@ save(): void {
                         (el?.hasChildren === true);
         
         hasChildren = hasItems;
-        console.log('[SourceCreate] mapElementToNode - Collection/List:', label, 'hasItems:', hasItems, 'value:', el?.value, 'submodelElements:', el?.submodelElements);
       } else {
         // Für andere Typen (Operation, Entity): Standard-Logik
         hasChildren = el?.hasChildren === true || typeHasChildren;
@@ -911,7 +879,6 @@ save(): void {
       children: []
     } as TreeNode;
     
-    console.log('[SourceCreate] mapElementToNode: MAPPED NODE', {
       idShort: label,
       idShortPath: el.idShortPath,
       modelType: computedType,
@@ -936,7 +903,6 @@ save(): void {
     
     // Don't expand if node is a leaf (no children)
     if (node.leaf) {
-      console.log('[SourceCreate] onNodeExpand - Node is leaf, skipping expansion');
       return;
     }
     
@@ -966,7 +932,6 @@ save(): void {
   }
 
   private loadLiveElementDetails(smId: string, idShortPath: string | undefined, node?: TreeNode): void {
-    console.log('[SourceCreate] loadLiveElementDetails called with:', { smId, idShortPath, node: node?.label });
     if (!this.createdSourceSystemId) return;
     this.selectedLiveLoading = true;
     const keyStr = (node && typeof node.key === 'string') ? (node.key as string) : '';
@@ -975,7 +940,6 @@ save(): void {
     const last = safePath.split('/').pop() as string;
     const parent = safePath.includes('/') ? safePath.substring(0, safePath.lastIndexOf('/')) : '';
     // Robust load: try direct element endpoint (backend has deep fallback)
-    console.log('[SourceCreate] Calling aasService.getElement with:', { 
       systemId: this.createdSourceSystemId, 
       smId, 
       safePath, 
@@ -984,7 +948,6 @@ save(): void {
     
     this.aasService.getElement(this.createdSourceSystemId, smId, safePath, 'LIVE').subscribe({
       next: (found: any) => {
-        console.log('[SourceCreate] aasService.getElement response:', found);
         this.selectedLiveLoading = false;
         // Use the same logic as inferModelType for consistent type detection
         let liveType = found?.modelType || found?.type || (found?.valueType ? 'Property' : undefined);
@@ -994,7 +957,6 @@ save(): void {
           liveType = this.inferModelType(found);
         }
         
-        console.log('[SourceCreate] loadLiveElementDetails - Element:', found.idShort, 'liveType:', liveType, 'found:', found);
         const minValue = (found as any).min ?? (found as any).minValue;
         const maxValue = (found as any).max ?? (found as any).maxValue;
         const inputVars = Array.isArray((found as any).inputVariables) ? (found as any).inputVariables : [];
@@ -1046,7 +1008,6 @@ save(): void {
           annotations: annotationsRaw.map(mapAnnotation).filter(Boolean) as AnnotationView[]
         } as any;
         
-        console.log('[SourceCreate] selectedLivePanel created:', this.selectedLivePanel);
         // Fallback: If AnnotatedRelationshipElement has no annotations in direct payload, load children as annotations
         if ((liveType === 'AnnotatedRelationshipElement') && (((this.selectedLivePanel?.annotations?.length ?? 0) === 0))) {
           const pathForChildren = safePath;
@@ -1088,49 +1049,36 @@ save(): void {
         }
       },
       error: (err: any) => {
-        console.log('[SourceCreate] aasService.getElement error:', err);
         this.selectedLiveLoading = false;
         
         // DIRECT FALLBACK: Use tree node data immediately
-        console.log('[SourceCreate] DIRECT FALLBACK: Using tree node data immediately');
         if (node?.data?.raw) {
           const rawData = node.data.raw;
           const directType = rawData?.modelType || rawData?.type || this.inferModelType(rawData) || 'Unknown';
-          console.log('[SourceCreate] DIRECT FALLBACK: rawData:', rawData, 'type:', directType, 'value:', rawData.value);
-          console.log('[SourceCreate] DIRECT FALLBACK: node.data.raw:', node.data.raw);
           
           // Extract value from raw data - check multiple possible locations
           let extractedValue = rawData.value;
-          console.log('[SourceCreate] DIRECT FALLBACK: rawData.value:', rawData.value);
-          console.log('[SourceCreate] DIRECT FALLBACK: rawData.valueType:', rawData.valueType);
           
           // Don't use valueType as value - it's metadata, not the actual value
           if (extractedValue === rawData.valueType) {
-            console.log('[SourceCreate] DIRECT FALLBACK: Value is same as valueType, this is wrong - setting to undefined');
             extractedValue = undefined;
           }
           
           if (!extractedValue && rawData.raw && rawData.raw.value) {
             extractedValue = rawData.raw.value;
-            console.log('[SourceCreate] DIRECT FALLBACK: Found in rawData.raw.value:', extractedValue);
           }
           if (!extractedValue && node.data.raw && node.data.raw.value) {
             extractedValue = node.data.raw.value;
-            console.log('[SourceCreate] DIRECT FALLBACK: Found in node.data.raw.value:', extractedValue);
           }
           
           // Additional check: look for value in the entire node structure
           if (!extractedValue) {
-            console.log('[SourceCreate] DIRECT FALLBACK: Searching entire node structure for value...');
-            console.log('[SourceCreate] DIRECT FALLBACK: node.data:', node.data);
-            console.log('[SourceCreate] DIRECT FALLBACK: node.data.raw:', node.data.raw);
             
             // Check if value is nested deeper
             if (node.data.raw && typeof node.data.raw === 'object') {
               for (const key in node.data.raw) {
                 if (key.toLowerCase().includes('value') && node.data.raw[key] && node.data.raw[key] !== rawData.valueType) {
                   extractedValue = node.data.raw[key];
-                  console.log('[SourceCreate] DIRECT FALLBACK: Found value in key:', key, 'value:', extractedValue);
                   break;
                 }
               }
@@ -1139,12 +1087,9 @@ save(): void {
           
           // Use only real values - no mock values
           if (extractedValue) {
-            console.log('[SourceCreate] DIRECT FALLBACK: Using real value found:', extractedValue);
           } else {
-            console.log('[SourceCreate] DIRECT FALLBACK: No value found for element type:', directType);
           }
           
-          console.log('[SourceCreate] DIRECT FALLBACK: Final extractedValue:', extractedValue);
           
           // SIMPLE TEST: Create a basic panel first
           this.selectedLivePanel = {
@@ -1162,20 +1107,15 @@ save(): void {
             annotations: []
           } as any;
           
-          console.log('[SourceCreate] DIRECT FALLBACK selectedLivePanel created:', this.selectedLivePanel);
           
           // Force change detection
           setTimeout(() => {
-            console.log('[SourceCreate] DIRECT FALLBACK - selectedLivePanel after timeout:', this.selectedLivePanel);
-            console.log('[SourceCreate] DIRECT FALLBACK - selectedNode:', this.selectedNode);
-            console.log('[SourceCreate] DIRECT FALLBACK - selectedLiveLoading:', this.selectedLiveLoading);
           }, 100);
           
           return; // Skip the complex fallback logic
         }
         
         // Fallback: list under parent shallow
-        console.log('[SourceCreate] Fallback: listElements with:', { 
           systemId: this.createdSourceSystemId, 
           smId, 
           parentPath: parent || undefined, 
@@ -1187,10 +1127,8 @@ save(): void {
           .listElements(this.createdSourceSystemId, smId, { depth: 'shallow', parentPath: parent || undefined, source: 'LIVE' })
           .subscribe({
             next: (resp: any) => {
-              console.log('[SourceCreate] Fallback listElements response:', resp);
               this.selectedLiveLoading = false;
               const list: any[] = Array.isArray(resp) ? resp : (resp?.result ?? []);
-              console.log('[SourceCreate] Fallback: looking for element with idShort:', last, 'in list:', list.map(el => el.idShort));
               const found2 = list.find((el: any) => el.idShort === last);
               if (found2) {
                 const liveType = found2?.modelType || (found2?.valueType ? 'Property' : undefined);
@@ -1249,13 +1187,10 @@ save(): void {
                   this.treeNodes = [...this.treeNodes];
                 }
               } else {
-                console.log('[SourceCreate] Fallback: Element not found, trying alternative approach');
                 // Alternative: Try to load the element with a different approach
-                console.log('[SourceCreate] Fallback: Trying to load element with SNAPSHOT source');
                 
                 this.aasService.getElement(this.createdSourceSystemId, smId, safePath, 'SNAPSHOT').subscribe({
                   next: (snapshotData: any) => {
-                    console.log('[SourceCreate] Fallback SNAPSHOT response:', snapshotData);
                     this.selectedLiveLoading = false;
                     
                     const snapshotType = snapshotData?.modelType || snapshotData?.type || this.inferModelType(snapshotData) || 'Unknown';
@@ -1275,15 +1210,12 @@ save(): void {
                       annotations: []
                     } as any;
                     
-                    console.log('[SourceCreate] Fallback SNAPSHOT selectedLivePanel created:', this.selectedLivePanel);
                   },
                   error: (snapshotErr: any) => {
-                    console.log('[SourceCreate] Fallback SNAPSHOT error:', snapshotErr);
                     // Final fallback: Use tree node data
                     if (node?.data?.raw) {
                       const rawData = node.data.raw;
                       const fallbackType = rawData?.modelType || rawData?.type || this.inferModelType(rawData) || 'Unknown';
-                      console.log('[SourceCreate] Final fallback: Using tree node data:', rawData, 'type:', fallbackType, 'value:', rawData.value);
                       
                       this.selectedLivePanel = {
                         label: rawData.idShort || last,
@@ -1300,7 +1232,6 @@ save(): void {
                         annotations: []
                       } as any;
                       
-                      console.log('[SourceCreate] Final fallback selectedLivePanel created:', this.selectedLivePanel);
                     } else {
                       this.selectedLivePanel = { label: last, type: 'Unknown' };
                     }
@@ -1310,7 +1241,6 @@ save(): void {
               }
             },
             error: (err2: any) => {
-              console.log('[SourceCreate] Fallback listElements error:', err2);
               this.selectedLiveLoading = false;
               this.selectedLivePanel = { label: last, type: 'Unknown' };
               this.errorService.handleError(err2);
@@ -1417,7 +1347,6 @@ save(): void {
     if (!this.createdSourceSystemId) return;
     
     try {
-      console.log('[SourceCreate] Creating element:', elementData);
       
       // Use the AAS service to create the element
       const smIdB64 = this.aasService.encodeIdToBase64Url(elementData.submodelId);
@@ -1428,7 +1357,6 @@ save(): void {
         elementData.parentPath
       ).toPromise();
       
-      console.log('[SourceCreate] Element created successfully');
       
       // Show success toast
       this.messageService.add({
@@ -1476,12 +1404,10 @@ save(): void {
 
   private refreshNodeLive(submodelId: string, parentPath: string, node?: TreeNode): void {
     if (!this.createdSourceSystemId) {
-      console.log('[SourceCreate] refreshNodeLive: No createdSourceSystemId');
       return;
     }
     
     const key = parentPath ? `${submodelId}::${parentPath}` : submodelId;
-    console.log('[SourceCreate] refreshNodeLive: Starting refresh', {
       submodelId,
       parentPath,
       key,
@@ -1493,7 +1419,6 @@ save(): void {
       .listElements(this.createdSourceSystemId, submodelId, { depth: 'shallow', parentPath: parentPath || undefined, source: 'LIVE' })
       .subscribe({
         next: (resp) => {
-          console.log('[SourceCreate] refreshNodeLive: Response received', {
             key,
             response: resp,
             node: node?.label
@@ -1508,7 +1433,6 @@ save(): void {
             return this.mapElementToNode(submodelId, el);
           });
           
-          console.log('[SourceCreate] refreshNodeLive: Mapped elements', {
             key,
             mappedCount: mapped.length,
             mapped: mapped.map((m: any) => m.label)
@@ -1516,7 +1440,6 @@ save(): void {
           
           if (node) {
             node.children = mapped;
-            console.log('[SourceCreate] refreshNodeLive: Updated node children', {
               nodeLabel: node.label,
               childrenCount: mapped.length
             });
@@ -1525,18 +1448,15 @@ save(): void {
             const attachNode = this.findNodeByKey(submodelId, this.treeNodes);
             if (attachNode) {
               attachNode.children = mapped;
-              console.log('[SourceCreate] refreshNodeLive: Updated root node children', {
                 attachNodeLabel: attachNode.label,
                 childrenCount: mapped.length
               });
             } else {
-              console.log('[SourceCreate] refreshNodeLive: Root node not found for submodelId', submodelId);
             }
           }
           
           // Force tree update
           this.treeNodes = [...this.treeNodes];
-          console.log('[SourceCreate] refreshNodeLive: Tree updated');
         },
         error: (err) => {
           console.error('[SourceCreate] refreshNodeLive: Error', {
@@ -1557,7 +1477,6 @@ save(): void {
 
   deleteElement(submodelId: string, idShortPath: string): void {
     if (!this.createdSourceSystemId || !submodelId || !idShortPath) {
-      console.log('[SourceCreate] deleteElement: Missing required data', {
         createdSourceSystemId: this.createdSourceSystemId,
         submodelId,
         idShortPath
@@ -1568,24 +1487,20 @@ save(): void {
     // Use the original submodelId, not base64 encoded
     // The backend will handle the encoding internally
     
-    console.log('[SourceCreate] deleteElement: Deleting element', {
       systemId: this.createdSourceSystemId,
       submodelId,
       idShortPath
     });
     
     // Skip existence check for deep elements and proceed directly with deletion
-    console.log('[SourceCreate] deleteElement: Proceeding directly with deletion (skipping existence check for deep elements)');
     this.performDelete(submodelId, idShortPath);
   }
   
   private performDelete(submodelId: string, idShortPath: string): void {
     this.aasService.deleteElement(this.createdSourceSystemId, submodelId, idShortPath).subscribe({
       next: () => {
-        console.log('[SourceCreate] deleteElement: Element deleted successfully');
         
         // Trigger discover to refresh the entire tree
-        console.log('[SourceCreate] deleteElement: Triggering discover to refresh tree');
         this.discoverSubmodels();
         
         // Show success message
@@ -1598,7 +1513,6 @@ save(): void {
       },
       error: (err) => {
         console.error('[SourceCreate] deleteElement: Error deleting element', err);
-        console.log('[SourceCreate] deleteElement: Error details', {
           status: err.status,
           statusText: err.statusText,
           url: err.url,
@@ -1609,7 +1523,6 @@ save(): void {
         
         // Check if it's a 404 error (element not found)
         if (err.status === 404) {
-          console.log('[SourceCreate] deleteElement: Element not found, removing from tree anyway');
           
           // Remove the element from the tree directly
           this.removeElementFromTree(submodelId, idShortPath);
@@ -1628,7 +1541,6 @@ save(): void {
   }
 
   private removeElementFromTree(submodelId: string, idShortPath: string): void {
-    console.log('[SourceCreate] removeElementFromTree: Removing element from tree', {
       submodelId,
       idShortPath
     });
@@ -1637,7 +1549,6 @@ save(): void {
     const parentPath = idShortPath.includes('.') ? idShortPath.substring(0, idShortPath.lastIndexOf('.')) : '';
     const parentKey = parentPath ? `${submodelId}::${parentPath}` : submodelId;
     
-    console.log('[SourceCreate] removeElementFromTree: Keys', {
       elementKey,
       parentKey,
       parentPath
@@ -1649,7 +1560,6 @@ save(): void {
     // Find the parent node
     const parentNode = this.findNodeByKey(parentKey, this.treeNodes);
     if (parentNode && parentNode.children) {
-      console.log('[SourceCreate] removeElementFromTree: Parent node found', {
         parentLabel: parentNode.label,
         childrenCount: parentNode.children.length
       });
@@ -1659,7 +1569,6 @@ save(): void {
       parentNode.children = parentNode.children.filter(child => {
         const shouldKeep = child.key !== elementKey;
         if (!shouldKeep) {
-          console.log('[SourceCreate] removeElementFromTree: Removing child', {
             childKey: child.key,
             childLabel: child.label
           });
@@ -1668,7 +1577,6 @@ save(): void {
       });
       
       elementRemoved = initialLength > parentNode.children.length;
-      console.log('[SourceCreate] removeElementFromTree: Element removed', {
         initialLength,
         finalLength: parentNode.children.length,
         removed: elementRemoved
@@ -1680,7 +1588,6 @@ save(): void {
     
     // If element wasn't found in the tree, refresh the parent node
     if (!elementRemoved) {
-      console.log('[SourceCreate] removeElementFromTree: Element not found in tree, refreshing parent node');
       this.refreshNodeLive(submodelId, parentPath, parentNode || undefined);
     }
   }
@@ -1782,8 +1689,6 @@ save(): void {
       this.currentStep = 2;
     }
   }
-
-
   /**
    * Moves the stepper to the previous step.
    */
@@ -1792,6 +1697,4 @@ save(): void {
       this.currentStep -= 1;
     }
   }
-
-
 }

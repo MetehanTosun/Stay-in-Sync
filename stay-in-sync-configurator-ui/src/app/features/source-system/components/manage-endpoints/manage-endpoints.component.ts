@@ -44,8 +44,6 @@ import { TypeScriptGenerationService, TypeScriptGenerationState } from '../../se
 import { ResponsePreviewService, ResponsePreviewData } from '../../services/response-preview.service';
 import { MessageService } from 'primeng/api';
 import { ToastModule } from 'primeng/toast';
-
-
 /**
  * Component for managing endpoints of a source system: list, create, edit, delete, and import.
  */
@@ -298,10 +296,6 @@ export class ManageEndpointsComponent implements OnInit, OnDestroy {
     this.sourceSystemService.apiConfigSourceSystemIdGet(this.sourceSystemId)
       .subscribe({
         next: (sourceSystem: SourceSystemDTO) => {
-          console.log('[DEBUG] loadSourceSystemAndSetApiUrl - sourceSystem:', sourceSystem);
-          console.log('[DEBUG] openApiSpec type:', typeof sourceSystem.openApiSpec);
-          console.log('[DEBUG] openApiSpec value:', sourceSystem.openApiSpec);
-          console.log('[DEBUG] apiUrl:', sourceSystem.apiUrl);
           
           // Handle different types of openApiSpec
           if (sourceSystem.openApiSpec) {
@@ -309,12 +303,10 @@ export class ManageEndpointsComponent implements OnInit, OnDestroy {
               if (sourceSystem.openApiSpec.startsWith('http')) {
                 this.apiUrl = sourceSystem.openApiSpec.trim();
                 this.currentOpenApiSpec = '';
-                console.log('[DEBUG] Using URL-based spec:', this.apiUrl);
               } else {
                 // Spec was provided as raw content (uploaded file). Keep a local copy to parse client-side.
                 this.currentOpenApiSpec = sourceSystem.openApiSpec;
                 this.apiUrl = sourceSystem.apiUrl!;
-                console.log('[DEBUG] Using local spec content, length:', this.currentOpenApiSpec.length);
               }
             } else if (sourceSystem.openApiSpec && typeof sourceSystem.openApiSpec === 'object' && 'size' in sourceSystem.openApiSpec) {
               // Convert Blob to string
@@ -322,18 +314,15 @@ export class ManageEndpointsComponent implements OnInit, OnDestroy {
               reader.onload = () => {
                 this.currentOpenApiSpec = reader.result as string;
                 this.apiUrl = sourceSystem.apiUrl!;
-                console.log('[DEBUG] Converted Blob to string, length:', this.currentOpenApiSpec.length);
               };
               reader.readAsText(sourceSystem.openApiSpec as any);
             } else {
-              console.log('[DEBUG] Unknown openApiSpec type:', typeof sourceSystem.openApiSpec);
               this.currentOpenApiSpec = '';
               this.apiUrl = sourceSystem.apiUrl!;
             }
           } else {
             this.currentOpenApiSpec = '';
             this.apiUrl = sourceSystem.apiUrl!;
-            console.log('[DEBUG] No spec available, using API URL:', this.apiUrl);
           }
         },
         error: () => {
@@ -354,10 +343,7 @@ export class ManageEndpointsComponent implements OnInit, OnDestroy {
     this.http.get<SourceSystemEndpointDTO[]>(`/api/config/source-system/${this.sourceSystemId}/endpoint`)
       .subscribe({
         next: (eps: SourceSystemEndpointDTO[]) => {
-          console.log('[Backend-Response] Endpoints:', eps);
           eps.forEach((ep, idx) => {
-            console.log(`[Endpoint ${idx}] responseBodySchema:`, ep.responseBodySchema);
-            console.log(`[Endpoint ${idx}] responseDts:`, ep.responseDts);
           });
           this.endpoints = eps;
           this.loading = false;
@@ -1087,9 +1073,6 @@ ${jsonSchema}
    * Show the request body editor for a given endpoint.
    */
   showRequestBodyEditor(endpoint: SourceSystemEndpointDTO) {
-    console.log('[DEBUG] showRequestBodyEditor called for endpoint:', endpoint);
-    console.log('[DEBUG] currentOpenApiSpec:', this.currentOpenApiSpec);
-    console.log('[DEBUG] endpoint.requestBodySchema:', endpoint.requestBodySchema);
     
     this.requestBodyEditorEndpoint = endpoint;
     if (!endpoint.requestBodySchema) {
@@ -1105,7 +1088,6 @@ ${jsonSchema}
       return;
     }
     const resolved = this.resolveSchemaReference(endpoint.requestBodySchema);
-    console.log('[DEBUG] resolved schema:', resolved);
     this.requestBodyEditorModel = {
       value: resolved,
       language: 'json'
@@ -1198,25 +1180,18 @@ ${jsonSchema}
    * Resolves a schema reference ($ref) in the OpenAPI spec and returns the resolved schema as a string.
    */
   private resolveSchemaReference(schemaInput: any): string {
-    console.log('[DEBUG] resolveSchemaReference called with:', schemaInput);
-    console.log('[DEBUG] currentOpenApiSpec available:', !!this.currentOpenApiSpec);
     
     try {
       let schemaObj = typeof schemaInput === 'string' ? JSON.parse(schemaInput) : schemaInput;
-      console.log('[DEBUG] parsed schemaObj:', schemaObj);
       
       if (schemaObj && schemaObj.$ref && this.currentOpenApiSpec) {
-        console.log('[DEBUG] Found $ref:', schemaObj.$ref);
         const openApi = typeof this.currentOpenApiSpec === 'string'
           ? JSON.parse(this.currentOpenApiSpec)
           : this.currentOpenApiSpec;
-        console.log('[DEBUG] openApi components:', openApi.components);
         
         if (schemaObj.$ref.startsWith('#/components/schemas/')) {
           const schemaName = schemaObj.$ref.replace('#/components/schemas/', '');
-          console.log('[DEBUG] schemaName:', schemaName);
           const resolved = openApi.components?.schemas?.[schemaName];
-          console.log('[DEBUG] resolved schema:', resolved);
           
           if (resolved) {
             if (resolved.$ref) {
@@ -1227,7 +1202,6 @@ ${jsonSchema}
         }
       }
     } catch (e) {
-      console.log('[DEBUG] Error in resolveSchemaReference:', e);
     }
     return typeof schemaInput === 'string' ? schemaInput : JSON.stringify(schemaInput, null, 2);
   }
@@ -1469,7 +1443,6 @@ ${jsonSchema}
    * Imports endpoints from the OpenAPI spec.
    */
   async importEndpoints(): Promise<void> {
-    console.log('[ManageEndpoints] Starting import...');
     this.importing = true;
     try {
       let spec: any | null = null;
@@ -1477,7 +1450,6 @@ ${jsonSchema}
 
       // 1) Prefer locally stored spec content (uploaded file case)
       if (this.currentOpenApiSpec && typeof this.currentOpenApiSpec === 'string' && this.currentOpenApiSpec.trim()) {
-        console.log('[ManageEndpoints] Using local spec content');
         try {
           try {
             spec = JSON.parse(this.currentOpenApiSpec);
@@ -1485,7 +1457,6 @@ ${jsonSchema}
             spec = parseYAML(this.currentOpenApiSpec as string);
           }
           endpoints = this.openapi.discoverEndpointsFromSpec(spec);
-          console.log(`[ManageEndpoints] Found ${endpoints.length} endpoints from local spec`);
         } catch (error) {
           console.error('[ManageEndpoints] Error parsing local spec:', error);
           spec = null;
@@ -1495,14 +1466,9 @@ ${jsonSchema}
 
       // 2) Fallback to URL discovery when no local spec is available
       if ((!spec || endpoints.length === 0) && this.apiUrl) {
-        console.log(`[ManageEndpoints] Using URL discovery: ${this.apiUrl}`);
         endpoints = await this.openapi.discoverEndpointsFromSpecUrl(this.apiUrl);
         spec = await this.loadSpecCandidates(this.apiUrl);
-        console.log(`[ManageEndpoints] Found ${endpoints.length} endpoints from URL`);
       }
-
-      console.log(`[ManageEndpoints] Total endpoints to process: ${endpoints.length}`);
-
       // 3) Filter out duplicates by METHOD + PATH (matches backend unique key)
       const existing = await firstValueFrom(this.http.get<SourceSystemEndpointDTO[]>(`/api/config/source-system/${this.sourceSystemId}/endpoint`));
       const existingKeys = new Set(existing.map((e: any) => `${e.httpRequestType} ${e.endpointPath}`));
@@ -1520,24 +1486,19 @@ ${jsonSchema}
       // 4) Persist endpoints and discovered params if available
       const paramsByKey = spec ? this.openapi.discoverParamsFromSpec(spec) : {};
       if (toCreate.length) {
-        console.log(`[ManageEndpoints] Creating ${toCreate.length} endpoints (${endpoints.length - toCreate.length} duplicates filtered)...`);
         const created = await firstValueFrom(this.http.post<SourceSystemEndpointDTO[]>(`/api/config/source-system/${this.sourceSystemId}/endpoint`, toCreate));
         const createdList = (created as any[]) || [];
-        console.log(`[ManageEndpoints] Created ${createdList.length} endpoints, processing parameters...`);
         
         for (const ep of createdList) {
           const key = `${ep.httpRequestType} ${ep.endpointPath}`;
           const params = paramsByKey[key] || [];
           if (ep.id && params.length) {
-            console.log(`[ManageEndpoints] Processing ${params.length} parameters for endpoint ${ep.id} (${ep.endpointPath})`);
-            console.log(`[ManageEndpoints] Parameters to process:`, params.map(p => `${p.name}:${p.in}`));
             
             // Filter out duplicates within the same import batch
             const seenParams = new Set<string>();
             const uniqueParams = params.filter(p => {
               const paramKey = `${p.name}:${p.in === 'path' ? 'PATH' : 'QUERY'}`;
               if (seenParams.has(paramKey)) {
-                console.log(`[ManageEndpoints] Skipping duplicate parameter in batch: ${paramKey}`);
                 return false;
               }
               seenParams.add(paramKey);
@@ -1545,15 +1506,12 @@ ${jsonSchema}
             });
             
             if (uniqueParams.length > 0) {
-              console.log(`[ManageEndpoints] Processing ${uniqueParams.length} unique parameters (${params.length - uniqueParams.length} duplicates filtered)`);
               await this.openapi.persistParamsForEndpoint(ep.id, uniqueParams);
             }
           }
         }
         this.loadEndpoints();
-        console.log('[ManageEndpoints] Import completed successfully');
       } else {
-        console.log('[ManageEndpoints] No endpoints to create');
       }
     } catch (error) {
       console.error('[ManageEndpoints] Import failed:', error);

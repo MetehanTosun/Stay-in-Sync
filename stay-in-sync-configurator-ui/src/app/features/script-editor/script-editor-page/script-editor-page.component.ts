@@ -129,13 +129,11 @@ export class ScriptEditorPageComponent implements OnInit, OnDestroy {
     this.monaco = monaco;
     console.log('Monaco editor instance initialized', editorInstance);
 
-    console.log('[ScriptEditorPage] Subscribing to type definition updates...');
     this.subscriptions.add(
       this.monacoEditorService.typeUpdateRequested$.subscribe(response => {
         if(!response){
           return;
         }
-        console.log('[ScriptEditorPage] Received type update request. Applying to Monaco instance.');
         this.applyTypeDefinitions(response);
       })
     );
@@ -180,7 +178,6 @@ export class ScriptEditorPageComponent implements OnInit, OnDestroy {
   }
 
   handleArcSave(savedArc: ApiRequestConfiguration): void {
-    console.log('%c[Editor] Handling saved ARC:', 'color: #10b981;', savedArc);
     this.arcStateService.addOrUpdateArc(savedArc);
     this.messageService.add({
       severity: 'success',
@@ -277,7 +274,6 @@ export class ScriptEditorPageComponent implements OnInit, OnDestroy {
     }
 
     const requiredArcAliases = Array.from(requiredArcSet);
-    console.log('%c[Editor] Extracted ARC dependencies:', 'color: #f97316;', requiredArcAliases);
 
     const payload: ScriptPayload = {
         name: this.scriptPayload!.name,
@@ -326,7 +322,6 @@ export class ScriptEditorPageComponent implements OnInit, OnDestroy {
     }
 
     if (systemNamesInEditor.size > 0) {
-      console.log('%c[Editor] Detected system names:', 'color: #eab308;', Array.from(systemNamesInEditor));
       this.arcStateService.loadTypesForSourceSystemNames(Array.from(systemNamesInEditor)).subscribe();
     }
   }

@@ -293,13 +293,10 @@ export class AasManagementComponent implements OnInit {
   async discoverSnapshot(): Promise<void> {
     if (!this.system?.id) return;
     
-    console.log('[TargetAasManage] discoverSnapshot: Starting with systemId:', this.system.id);
     this.isLoading = true;
     try {
       const newTreeNodes = await this.aasManagement.discoverSubmodels(this.system.id);
-      console.log('[TargetAasManage] discoverSnapshot: Got new treeNodes:', newTreeNodes.length, newTreeNodes);
       this.treeNodes = newTreeNodes;
-      console.log('[TargetAasManage] discoverSnapshot: Updated this.treeNodes:', this.treeNodes.length, this.treeNodes);
     } catch (error) {
       console.error('[TargetAasManage] discoverSnapshot: Error discovering submodels:', error);
     } finally {
@@ -310,19 +307,15 @@ export class AasManagementComponent implements OnInit {
   private async retryDiscoverWithDelay(maxRetries: number, initialDelay: number): Promise<void> {
     for (let attempt = 1; attempt <= maxRetries; attempt++) {
       const delay = initialDelay * attempt; // 2s, 4s, 6s
-      console.log(`[TargetAasManage] Attempt ${attempt}/${maxRetries}: Waiting ${delay}ms before checking for new submodel...`);
       
       await new Promise(resolve => setTimeout(resolve, delay));
       
-      console.log(`[TargetAasManage] Attempt ${attempt}: Checking for new submodel...`);
       const beforeCount = this.treeNodes.length;
       await this.discoverSnapshot();
       const afterCount = this.treeNodes.length;
       
-      console.log(`[TargetAasManage] Attempt ${attempt}: Tree count ${beforeCount} -> ${afterCount}`);
       
       if (afterCount > beforeCount) {
-        console.log(`[TargetAasManage] Success! New submodel found on attempt ${attempt}`);
         this.messageService.add({
           severity: 'success',
           summary: 'Submodel Visible',
@@ -333,7 +326,6 @@ export class AasManagementComponent implements OnInit {
       }
     }
     
-    console.log(`[TargetAasManage] All ${maxRetries} attempts failed. New submodel not yet available.`);
     this.messageService.add({
       severity: 'warn',
       summary: 'Submodel Created',
@@ -397,7 +389,6 @@ export class AasManagementComponent implements OnInit {
       return;
     }
     
-    console.log('[TargetAasManage] loadElementDetails: Loading element details', {
       systemId: this.system.id,
       submodelId: node.data.submodelId,
       idShortPath: node.data.idShortPath,
@@ -408,7 +399,6 @@ export class AasManagementComponent implements OnInit {
     
     this.detailsLoading = true;
     try {
-      console.log('[TargetAasManage] Calling aasManagement.loadElementDetails with:', {
         systemId: this.system.id,
         submodelId: node.data.submodelId,
         idShortPath: node.data.idShortPath
@@ -420,7 +410,6 @@ export class AasManagementComponent implements OnInit {
         node.data.idShortPath
       );
       
-      console.log('[TargetAasManage] Element details loaded successfully:', this.selectedLivePanel);
     } catch (error) {
       console.error('[TargetAasManage] Error loading element details:', error);
       console.error('[TargetAasManage] Error details:', {
@@ -442,16 +431,13 @@ export class AasManagementComponent implements OnInit {
    * Fix tree structure after live refresh to ensure correct idShortPath
    */
   private fixTreeStructureAfterRefresh(elementData: any): void {
-    console.log('[TargetAasManage] fixTreeStructureAfterRefresh called with:', elementData);
     
     if (!elementData) {
-      console.log('[TargetAasManage] fixTreeStructureAfterRefresh: Missing elementData');
       return;
     }
     
     const elementIdShort = elementData.body?.idShort;
     if (!elementIdShort) {
-      console.log('[TargetAasManage] fixTreeStructureAfterRefresh: Missing elementIdShort', {
         body: elementData.body
       });
       return;
@@ -466,7 +452,6 @@ export class AasManagementComponent implements OnInit {
       correctIdShortPath = elementIdShort;
     }
     
-    console.log('[TargetAasManage] Fixing tree structure after live refresh', {
       parentPath: elementData.parentPath,
       elementIdShort: elementIdShort,
       correctIdShortPath: correctIdShortPath,
@@ -476,7 +461,6 @@ export class AasManagementComponent implements OnInit {
     // Find and update the element in the tree
     this.updateElementInTree(this.treeNodes, elementIdShort, correctIdShortPath);
     
-    console.log('[TargetAasManage] Fixed tree structure', {
       elementIdShort,
       correctIdShortPath
     });
@@ -490,7 +474,6 @@ export class AasManagementComponent implements OnInit {
     
     for (const node of nodes) {
       if (node.data?.idShort === elementIdShort) {
-        console.log('[TargetAasManage] Updating element in tree', {
           old: node.data.idShortPath,
           new: correctIdShortPath
         });
@@ -503,8 +486,6 @@ export class AasManagementComponent implements OnInit {
       }
     }
   }
-
-
   getNodeType(node: TreeNode): string {
     if (node.data?.type === 'submodel') {
       return node.data?.modelType || (node.data?.raw?.kind?.toLowerCase?.().includes('template') ? 'Submodel Template' : 'Submodel');
@@ -545,7 +526,6 @@ export class AasManagementComponent implements OnInit {
       this.showSubmodelDialog = false;
       
       // Target System now adds submodel to AAS shell like Source System, so it should be available faster
-      console.log('[TargetAasManage] Waiting for backend to make submodel available...');
       this.retryDiscoverWithDelay(3, 2000); // 3 attempts with 2s, 4s, 6s delays
       
       this.messageService.add({
@@ -605,14 +585,12 @@ export class AasManagementComponent implements OnInit {
     if (!this.system?.id) return;
     
     try {
-      console.log('[TargetAasManage] Creating element:', elementData);
       
       // Encode parentPath for BaSyx (convert / to .)
       const encodedParentPath = elementData.parentPath ? 
         elementData.parentPath.replace(/\//g, '.') : 
         undefined;
       
-      console.log('[TargetAasManage] Encoded parentPath:', encodedParentPath);
       
       // Use the AAS management service to create the element
       await this.aasManagement.createElement(
@@ -622,7 +600,6 @@ export class AasManagementComponent implements OnInit {
         encodedParentPath
       );
       
-      console.log('[TargetAasManage] Element created successfully');
       
       // Show success toast
       this.messageService.add({
@@ -633,16 +610,13 @@ export class AasManagementComponent implements OnInit {
       });
       
       // Use live refresh like in create dialog
-      console.log('[TargetAasManage] Triggering live refresh after element creation');
       await this.discoverSnapshot();
       
       // Fix tree structure immediately after element creation
-      console.log('[TargetAasManage] Fixing tree structure immediately after element creation');
       this.fixTreeStructureAfterRefresh(elementData);
       
       // Force live refresh after a short delay to ensure backend is updated
       setTimeout(async () => {
-        console.log('[TargetAasManage] Force live refresh for deep elements');
         await this.discoverSnapshot();
         
         // Fix tree structure again after live refresh
@@ -691,7 +665,6 @@ export class AasManagementComponent implements OnInit {
       await this.aasManagement.deleteElement(this.system.id, submodelId, elementPath);
       
       // Trigger discover to refresh the entire tree (same as source system)
-      console.log('[TargetAasManagement] deleteElement: Triggering discover to refresh tree');
       this.discoverSnapshot();
       
     } catch (error) {
@@ -778,8 +751,6 @@ export class AasManagementComponent implements OnInit {
       sel.elements = [];
     }
   }
-
-
   uploadAasx(): void {
     if (this.isUploadingAasx) return;
     if (!this.aasxSelectedFile || !this.system?.id) {

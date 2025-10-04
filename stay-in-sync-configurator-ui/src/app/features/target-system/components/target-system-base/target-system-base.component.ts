@@ -23,8 +23,6 @@ import { ManageTargetEndpointsComponent } from '../manage-target-endpoints/manag
 import { ManageApiHeadersComponent } from '../../../source-system/components/manage-api-headers/manage-api-headers.component';
 import { SearchBarComponent } from '../../../source-system/components/search-bar/search-bar.component';
 import { AasManagementComponent } from '../aas-management/aas-management.component';
-
-
 @Component({
   standalone: true,
   selector: 'app-target-system-base',
@@ -267,11 +265,9 @@ export class TargetSystemBaseComponent implements OnInit {
   }
 
   load(): void {
-    console.log('[TargetSystemBase] load: Loading target systems');
     this.loading = true;
     this.api.getAll().subscribe({
       next: list => { 
-        console.log('[TargetSystemBase] load: Loaded systems', { count: list.length, systems: list.map(s => ({ id: s.id, name: s.name })) });
         this.systems = list; 
         this.applyFilter(); 
         this.loading = false; 
@@ -313,11 +309,7 @@ export class TargetSystemBaseComponent implements OnInit {
 
   onCreated(system: TargetSystemDTO): void {
     // refresh list immediately so the newly created system appears without manual reload
-    console.log('[TargetSystemBase] onCreated: Event received!', { id: system.id, name: system.name });
-    console.log('[TargetSystemBase] onCreated: Refreshing list after system creation');
-    console.log('[TargetSystemBase] onCreated: Calling load() method');
     this.load();
-    console.log('[TargetSystemBase] onCreated: load() method called successfully');
   }
 
   edit(row: TargetSystemDTO): void {
@@ -457,8 +449,4 @@ export class TargetSystemBaseComponent implements OnInit {
       life: 3000
     });
   }
-
-
 }
-
-

@@ -6,8 +6,6 @@ import de.unistuttgart.stayinsync.core.configuration.service.aas.TargetSystemAas
 import de.unistuttgart.stayinsync.core.configuration.service.aas.HttpHeaderBuilder;
 import io.quarkus.logging.Log;
 import io.smallrye.mutiny.Uni;
-import io.vertx.mutiny.ext.web.client.HttpResponse;
-import io.vertx.mutiny.core.buffer.Buffer;
 import io.smallrye.common.annotation.Blocking;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.*;
@@ -50,11 +48,13 @@ public class TargetAasValueController {
     public Uni<Response> getElementValue(@PathParam("targetSystemId") Long targetSystemId,
                                         @PathParam("smId") String smId,
                                         @PathParam("path") String path) {
+        Log.infof("Target getElementValue: targetSystemId=%d smId=%s path=%s", targetSystemId, smId, path);
         TargetSystem ts = TargetSystem.<TargetSystem>findByIdOptional(targetSystemId).orElse(null);
         ts = aasService.validateAasTarget(ts);
         var headers = headerBuilder.buildMergedHeaders(ts, HttpHeaderBuilder.Mode.READ);
         return traversal.getElement(ts.apiUrl, smId, path + "/value", headers).map(resp -> {
             int sc = resp.statusCode();
+            Log.infof("Target getElementValue upstream status=%d msg=%s", sc, resp.statusMessage());
             if (sc >= 200 && sc < 300) {
                 return Response.ok(resp.bodyAsString()).build();
             }
@@ -75,10 +75,13 @@ public class TargetAasValueController {
                                       @PathParam("smId") String smId,
                                       @PathParam("path") String path,
                                       @RequestBody(description = "Element value JSON", content = @Content(schema = @Schema(implementation = String.class))) String body) {
+        Log.infof("Target patchElementValue: targetSystemId=%d smId=%s path=%s", targetSystemId, smId, path);
+        Log.debugf("Target patchElementValue body=%s", body);
         TargetSystem ts = TargetSystem.<TargetSystem>findByIdOptional(targetSystemId).orElse(null);
         ts = aasService.validateAasTarget(ts);
         var headers = headerBuilder.buildMergedHeaders(ts, HttpHeaderBuilder.Mode.WRITE_JSON);
         var resp = traversal.patchElementValue(ts.apiUrl, smId, path, body, headers).await().indefinitely();
+        Log.infof("Target patchElementValue upstream status=%d msg=%s", resp.statusCode(), resp.statusMessage());
         return Response.status(resp.statusCode()).entity(resp.bodyAsString()).build();
     }
 }

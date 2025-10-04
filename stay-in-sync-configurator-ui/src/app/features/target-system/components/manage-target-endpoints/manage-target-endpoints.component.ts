@@ -159,7 +159,6 @@ export class ManageTargetEndpointsComponent implements OnInit {
 
   // -------- Import from OpenAPI (similar to Source Systems) --------
   async importEndpoints(): Promise<void> {
-    console.log('[ManageTargetEndpoints] Starting import...');
     this.importing = true;
     try {
       // Load target-system to decide where to fetch OpenAPI spec
@@ -170,7 +169,6 @@ export class ManageTargetEndpointsComponent implements OnInit {
 
       // 1) If openAPI is provided and is raw content (uploaded file), parse locally
       if ((ts as any).openAPI && typeof (ts as any).openAPI === 'string' && !(ts as any).openAPI.startsWith('http')) {
-        console.log('[ManageTargetEndpoints] Using local spec content');
         try {
           try {
             spec = JSON.parse((ts as any).openAPI as string);
@@ -178,7 +176,6 @@ export class ManageTargetEndpointsComponent implements OnInit {
             spec = parseYAML((ts as any).openAPI as string);
           }
           endpoints = this.openapi.discoverEndpointsFromSpec(spec);
-          console.log(`[ManageTargetEndpoints] Found ${endpoints.length} endpoints from local spec`);
         } catch (error) {
           console.error('[ManageTargetEndpoints] Error parsing local spec:', error);
           spec = null;
@@ -189,14 +186,9 @@ export class ManageTargetEndpointsComponent implements OnInit {
       // 2) Fallback: Use URL (either openAPI URL or apiUrl base + candidates)
       const apiUrl = ((ts as any).openAPI && (ts as any).openAPI.startsWith('http')) ? (ts as any).openAPI.trim() : (ts.apiUrl || '');
       if ((!spec || endpoints.length === 0) && apiUrl) {
-        console.log(`[ManageTargetEndpoints] Using URL discovery: ${apiUrl}`);
         endpoints = await this.openapi.discoverEndpointsFromSpecUrl(apiUrl);
         spec = await this.loadSpecCandidates(apiUrl);
-        console.log(`[ManageTargetEndpoints] Found ${endpoints.length} endpoints from URL`);
       }
-
-      console.log(`[ManageTargetEndpoints] Total endpoints to process: ${endpoints.length}`);
-
       const paramsByKey = spec ? this.openapi.discoverParamsFromSpec(spec) : {};
       // filter out duplicates by METHOD + PATH (matches backend unique key)
       const existing = await firstValueFrom(this.api.list(this.targetSystemId));
@@ -210,25 +202,20 @@ export class ManageTargetEndpointsComponent implements OnInit {
       });
       
       if (toCreate.length) {
-        console.log(`[ManageTargetEndpoints] Creating ${toCreate.length} endpoints (${endpoints.length - toCreate.length} duplicates filtered)...`);
         const created = await firstValueFrom(this.api.create(this.targetSystemId, toCreate as any));
         const createdList = (created as any[]) || [];
-        console.log(`[ManageTargetEndpoints] Created ${createdList.length} endpoints, processing parameters...`);
         
         // Map created endpoints to keys and persist params with batch duplicate check
         for (const ep of createdList) {
           const key = `${ep.httpRequestType} ${ep.endpointPath}`;
           const params = paramsByKey[key] || [];
           if (ep.id && params.length) {
-            console.log(`[ManageTargetEndpoints] Processing ${params.length} parameters for endpoint ${ep.id} (${ep.endpointPath})`);
-            console.log(`[ManageTargetEndpoints] Parameters to process:`, params.map(p => `${p.name}:${p.in}`));
             
             // Filter out duplicates within the same import batch
             const seenParams = new Set<string>();
             const uniqueParams = params.filter(p => {
               const paramKey = `${p.name}:${p.in === 'path' ? 'PATH' : 'QUERY'}`;
               if (seenParams.has(paramKey)) {
-                console.log(`[ManageTargetEndpoints] Skipping duplicate parameter in batch: ${paramKey}`);
                 return false;
               }
               seenParams.add(paramKey);
@@ -236,15 +223,12 @@ export class ManageTargetEndpointsComponent implements OnInit {
             });
             
             if (uniqueParams.length > 0) {
-              console.log(`[ManageTargetEndpoints] Processing ${uniqueParams.length} unique parameters (${params.length - uniqueParams.length} duplicates filtered)`);
               await this.openapi.persistParamsForEndpoint(ep.id, uniqueParams);
             }
           }
         }
         this.load();
-        console.log('[ManageTargetEndpoints] Import completed successfully');
       } else {
-        console.log('[ManageTargetEndpoints] No endpoints to create');
       }
     } catch (error) {
       console.error('[ManageTargetEndpoints] Import failed:', error);
@@ -526,5 +510,3 @@ export class ManageTargetEndpointsComponent implements OnInit {
   }
 
 }
-
-
