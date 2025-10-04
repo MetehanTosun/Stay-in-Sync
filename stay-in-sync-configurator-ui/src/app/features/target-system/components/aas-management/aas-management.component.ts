@@ -467,7 +467,21 @@ export class AasManagementComponent implements OnInit {
       const body = JSON.parse(this.newSubmodelJson);
       await this.aasManagement.createSubmodel(this.system.id, body);
       this.showSubmodelDialog = false;
-      await this.discoverSnapshot();
+      
+      // For target systems, we need to wait a bit for the backend to make the submodel available
+      // Then discover the updated submodels
+      console.log('[TargetAasManage] Waiting for backend to make submodel available...');
+      setTimeout(async () => {
+        console.log('[TargetAasManage] Discovering submodels after creation');
+        await this.discoverSnapshot();
+      }, 1000);
+      
+      this.messageService.add({
+        severity: 'success',
+        summary: 'Submodel Created',
+        detail: 'Submodel has been successfully created. The tree will refresh shortly.',
+        life: 3000
+      });
     } catch (e: any) {
       console.error('Error creating submodel:', e);
       this.messageService.add({
