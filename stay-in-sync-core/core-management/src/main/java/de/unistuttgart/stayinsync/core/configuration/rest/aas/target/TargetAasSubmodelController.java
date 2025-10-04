@@ -51,10 +51,37 @@ public class TargetAasSubmodelController {
         ts = aasService.validateAasTarget(ts);
         var headers = headerBuilder.buildMergedHeaders(ts, HttpHeaderBuilder.Mode.WRITE_JSON);
         var resp = traversal.createSubmodel(ts.apiUrl, body, headers).await().indefinitely();
-        if (resp.statusCode() >= 200 && resp.statusCode() < 300) {
+        int sc = resp.statusCode();
+        Log.infof("Create submodel upstream status=%d msg=%s body=%s", sc, resp.statusMessage(), safeBody(resp));
+        if (sc >= 200 && sc < 300) {
+            try {
+                String submodelId = io.vertx.core.json.JsonObject.mapFrom(io.vertx.core.json.jackson.DatabindCodec.mapper().readTree(resp.bodyAsString())).getString("id");
+                if (submodelId == null || submodelId.isBlank()) {
+                    var reqId = io.vertx.core.json.JsonObject.mapFrom(io.vertx.core.json.jackson.DatabindCodec.mapper().readTree(body)).getString("id");
+                    if (reqId != null && !reqId.isBlank()) submodelId = reqId;
+                }
+                if (submodelId != null && !submodelId.isBlank()) {
+                    var refHeaders = headerBuilder.buildMergedHeaders(ts, HttpHeaderBuilder.Mode.WRITE_JSON);
+                    var refResp = traversal.addSubmodelReferenceToShell(ts.apiUrl, ts.aasId, submodelId, refHeaders).await().indefinitely();
+                    Log.infof("Add submodel-ref upstream status=%d msg=%s body=%s", refResp.statusCode(), refResp.statusMessage(), safeBody(refResp));
+                } else {
+                    Log.warn("Could not resolve submodelId for auto-referencing");
+                }
+            } catch (Exception e) {
+                Log.warn("Auto-reference add failed", e);
+            }
             return Response.status(Response.Status.CREATED).entity(resp.bodyAsString()).build();
         }
-        return aasService.mapHttpError(resp.statusCode(), resp.statusMessage(), resp.bodyAsString());
+        return aasService.mapHttpError(sc, resp.statusMessage(), resp.bodyAsString());
+    }
+
+    private static String safeBody(io.vertx.mutiny.ext.web.client.HttpResponse<io.vertx.mutiny.core.buffer.Buffer> resp) {
+        try {
+            String body = resp.bodyAsString();
+            return body != null && body.length() > 200 ? body.substring(0, 200) + "..." : body;
+        } catch (Exception e) {
+            return "<error reading body>";
+        }
     }
 
     @PUT
