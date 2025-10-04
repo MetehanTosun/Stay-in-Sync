@@ -115,7 +115,13 @@ export class SourceSystemAasManagementService {
       });
 
       // Since getElement endpoint doesn't work properly, use listElements directly
-      this.aasService.listElements(systemId, smId, { depth: 'shallow', parentPath: parent || undefined, source: 'SNAPSHOT' })
+      // For first-level elements, don't send parentPath parameter at all
+      const options: any = { depth: 'shallow', source: 'SNAPSHOT' };
+      if (parent && parent.trim() !== '') {
+        options.parentPath = parent;
+      }
+      
+      this.aasService.listElements(systemId, smId, options)
         .subscribe({
           next: (resp: any) => {
             const list: any[] = Array.isArray(resp) ? resp : (resp?.result ?? []);
