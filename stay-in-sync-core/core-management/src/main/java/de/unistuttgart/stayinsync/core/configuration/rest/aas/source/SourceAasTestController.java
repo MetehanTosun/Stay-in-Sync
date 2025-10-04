@@ -1,4 +1,4 @@
-package de.unistuttgart.stayinsync.core.configuration.rest.aas;
+package de.unistuttgart.stayinsync.core.configuration.rest.aas.source;
 
 import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.SourceSystem;
 import de.unistuttgart.stayinsync.core.configuration.rest.dtos.aas.AasTestResultDTO;
@@ -29,7 +29,7 @@ import java.util.List;
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
 @Blocking
-public class AasTestController {
+public class SourceAasTestController {
 
     @Inject
     SourceSystemAasService aasService;

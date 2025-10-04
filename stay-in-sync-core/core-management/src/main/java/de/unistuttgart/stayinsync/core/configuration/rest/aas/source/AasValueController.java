@@ -1,4 +1,4 @@
-package de.unistuttgart.stayinsync.core.configuration.rest.aas;
+package de.unistuttgart.stayinsync.core.configuration.rest.aas.source;
 
 import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.SourceSystem;
 import de.unistuttgart.stayinsync.core.configuration.service.aas.AasTraversalClient;

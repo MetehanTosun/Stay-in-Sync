@@ -1,8 +1,8 @@
-package de.unistuttgart.stayinsync.core.configuration.rest.aas;
+package de.unistuttgart.stayinsync.core.configuration.rest.aas.source;
 
-import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.TargetSystem;
+import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.SourceSystem;
 import de.unistuttgart.stayinsync.core.configuration.service.aas.AasTraversalClient;
-import de.unistuttgart.stayinsync.core.configuration.service.aas.TargetSystemAasService;
+import de.unistuttgart.stayinsync.core.configuration.service.aas.SourceSystemAasService;
 import de.unistuttgart.stayinsync.core.configuration.service.aas.HttpHeaderBuilder;
 import io.quarkus.logging.Log;
 import io.smallrye.mutiny.Uni;
@@ -21,17 +21,17 @@ import org.eclipse.microprofile.openapi.annotations.responses.APIResponse;
 import org.eclipse.microprofile.openapi.annotations.responses.APIResponses;
 
 /**
- * AAS Value Management Controller for Target Systems.
+ * AAS Value Management Controller for Source Systems.
  * Handles value operations for AAS elements within submodels.
  */
-@Path("/api/config/target-system/{targetSystemId}/aas")
+@Path("/api/config/source-system/{sourceSystemId}/aas")
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
 @Blocking
-public class TargetAasValueController {
+public class SourceAasValueController {
 
     @Inject
-    TargetSystemAasService aasService;
+    SourceSystemAasService aasService;
 
     @Inject
     AasTraversalClient traversal;
@@ -44,16 +44,17 @@ public class TargetAasValueController {
     @Operation(summary = "Get element value", description = "Retrieves the value of an element")
     @APIResponses(value = {
         @APIResponse(responseCode = "200", description = "Element value retrieved successfully"),
-        @APIResponse(responseCode = "404", description = "Target system, submodel or element not found"),
+        @APIResponse(responseCode = "404", description = "Source system, submodel or element not found"),
         @APIResponse(responseCode = "500", description = "Failed to retrieve element value")
     })
-    public Uni<Response> getElementValue(@PathParam("targetSystemId") Long targetSystemId,
+    public Uni<Response> getElementValue(@PathParam("sourceSystemId") Long sourceSystemId,
                                         @PathParam("smId") String smId,
                                         @PathParam("path") String path) {
-        TargetSystem ts = TargetSystem.<TargetSystem>findByIdOptional(targetSystemId).orElse(null);
-        ts = aasService.validateAasTarget(ts);
-        var headers = headerBuilder.buildMergedHeaders(ts, HttpHeaderBuilder.Mode.READ);
-        return traversal.getElement(ts.apiUrl, smId, path + "/value", headers).map(resp -> {
+        SourceSystem ss = SourceSystem.<SourceSystem>findByIdOptional(sourceSystemId).orElse(null);
+        ss = aasService.validateAasSource(ss);
+        var headers = headerBuilder.buildMergedHeaders(ss, HttpHeaderBuilder.Mode.READ);
+        Log.infof("Get element value LIVE: apiUrl=%s smId=%s path=%s", ss.apiUrl, smId, path);
+        return traversal.getElement(ss.apiUrl, smId, path + "/value", headers).map(resp -> {
             int sc = resp.statusCode();
             if (sc >= 200 && sc < 300) {
                 return Response.ok(resp.bodyAsString()).build();
@@ -68,17 +69,34 @@ public class TargetAasValueController {
     @APIResponses(value = {
         @APIResponse(responseCode = "204", description = "Element value updated successfully"),
         @APIResponse(responseCode = "400", description = "Invalid request"),
-        @APIResponse(responseCode = "404", description = "Target system, submodel or element not found"),
+        @APIResponse(responseCode = "404", description = "Source system, submodel or element not found"),
         @APIResponse(responseCode = "500", description = "Failed to update element value")
     })
-    public Response patchElementValue(@PathParam("targetSystemId") Long targetSystemId,
+    public Response patchElementValue(@PathParam("sourceSystemId") Long sourceSystemId,
                                       @PathParam("smId") String smId,
                                       @PathParam("path") String path,
                                       @RequestBody(description = "Element value JSON", content = @Content(schema = @Schema(implementation = String.class))) String body) {
-        TargetSystem ts = TargetSystem.<TargetSystem>findByIdOptional(targetSystemId).orElse(null);
-        ts = aasService.validateAasTarget(ts);
-        var headers = headerBuilder.buildMergedHeaders(ts, HttpHeaderBuilder.Mode.WRITE_JSON);
-        var resp = traversal.patchElementValue(ts.apiUrl, smId, path, body, headers).await().indefinitely();
-        return Response.status(resp.statusCode()).entity(resp.bodyAsString()).build();
+        SourceSystem ss = SourceSystem.<SourceSystem>findByIdOptional(sourceSystemId).orElse(null);
+        ss = aasService.validateAasSource(ss);
+        var headers = headerBuilder.buildMergedHeaders(ss, HttpHeaderBuilder.Mode.WRITE_JSON);
+        Log.infof("Patch element value LIVE: apiUrl=%s smId=%s path=%s", ss.apiUrl, smId, path);
+        Log.debugf("WRITE headers: %s body=%s", headers, body);
+        var resp = traversal.patchElementValue(ss.apiUrl, smId, path, body, headers).await().indefinitely();
+        int sc = resp.statusCode();
+        Log.infof("Patch element upstream status=%d msg=%s body=%s", sc, resp.statusMessage(), safeBody(resp));
+        if (sc >= 200 && sc < 300) {
+            return Response.noContent().build();
+        }
+        return aasService.mapHttpError(sc, resp.statusMessage(), resp.bodyAsString());
+    }
+
+    private String safeBody(HttpResponse<Buffer> resp) {
+        try {
+            String b = resp.bodyAsString();
+            if (b == null) return null;
+            return b.length() > 500 ? b.substring(0, 500) + "..." : b;
+        } catch (Exception e) {
+            return null;
+        }
     }
 }

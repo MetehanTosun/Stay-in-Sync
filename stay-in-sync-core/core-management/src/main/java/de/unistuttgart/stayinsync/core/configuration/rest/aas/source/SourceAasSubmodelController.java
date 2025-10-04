@@ -1,4 +1,4 @@
-package de.unistuttgart.stayinsync.core.configuration.rest.aas;
+package de.unistuttgart.stayinsync.core.configuration.rest.aas.source;
 
 import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.SourceSystem;
 import de.unistuttgart.stayinsync.core.configuration.service.aas.AasTraversalClient;
@@ -25,7 +25,7 @@ import org.eclipse.microprofile.openapi.annotations.responses.APIResponses;
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
 @Blocking
-public class AasSubmodelController {
+public class SourceAasSubmodelController {
 
     @Inject
     SourceSystemAasService aasService;
