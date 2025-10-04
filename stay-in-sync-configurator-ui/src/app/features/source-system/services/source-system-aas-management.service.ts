@@ -160,6 +160,17 @@ export class SourceSystemAasManagementService {
               
               if (found) {
                 console.log('[SourceAasManage] loadElementDetails: Found element', { source, found });
+                
+                // Check if SNAPSHOT has no meaningful value and we should try LIVE
+                const hasValue = found.value !== undefined && found.value !== null && found.value !== '';
+                const isSnapshotWithoutValue = source === 'SNAPSHOT' && !hasValue;
+                
+                if (isSnapshotWithoutValue) {
+                  console.log('[SourceAasManage] loadElementDetails: SNAPSHOT has no value, trying LIVE for values');
+                  tryLoadElementDetails('LIVE');
+                  return;
+                }
+                
                 const livePanel = this.mapElementToLivePanel(found);
                 observer.next(livePanel);
                 observer.complete();
