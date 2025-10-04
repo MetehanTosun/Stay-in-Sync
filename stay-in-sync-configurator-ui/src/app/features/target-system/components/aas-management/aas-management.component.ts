@@ -170,16 +170,6 @@ import { AasElementDialogComponent, AasElementDialogData, AasElementDialogResult
             <span class="font-bold">{{ sm.idShort || sm.id }}</span>
             <span style="font-size:.75rem;padding:.1rem .4rem;border:1px solid var(--surface-border);border-radius:999px;color:var(--text-color-secondary);">Submodel</span>
           </div>
-          <div *ngIf="sm.elements?.length" class="p-ml-4 p-mt-1">
-            <div *ngFor="let el of sm.elements" class="p-mb-1" style="display:flex;align-items:center;gap:.5rem;">
-              <p-checkbox binary="true" [ngModel]="getOrInitAasxSelFor(sm).elements.includes(el.idShort)" (ngModelChange)="toggleAasxElement(sm, el.idShort, $event)"></p-checkbox>
-              <span>{{ el.idShort }}</span>
-              <span style="font-size:.75rem;padding:.1rem .4rem;border:1px solid var(--surface-border);border-radius:999px;color:var(--text-color-secondary);">{{ el.modelType }}</span>
-            </div>
-          </div>
-          <div *ngIf="!sm.elements?.length" class="p-ml-4 p-mt-1">
-            <small>No elements available in this submodel.</small>
-          </div>
         </div>
       </div>
       <ng-template pTemplate="footer">
@@ -753,20 +743,9 @@ export class AasManagementComponent implements OnInit {
       // Load preview to enable selective attach
       this.aasManagement.previewAasx(this.system.id, this.aasxSelectedFile).then((resp: any) => {
         this.aasxPreview = resp?.submodels || (resp?.result ?? []);
-        // Normalize to array of {id,idShort,kind,elements:[{idShort,modelType}]}
+        // Normalize to array of {id,idShort,kind}
         const arr = Array.isArray(this.aasxPreview) ? this.aasxPreview : (this.aasxPreview?.submodels ?? []);
-        this.aasxSelection = { submodels: (arr || []).map((sm: any) => ({ id: sm.id || sm.submodelId, full: true, elements: (sm.elements || []).map((e: any) => e.idShort) })) };
-        
-        // Check for empty collections/lists and show toast
-        const emptySubmodels = arr.filter((sm: any) => !sm.elements || sm.elements.length === 0);
-        if (emptySubmodels.length > 0) {
-          this.messageService.add({
-            severity: 'info',
-            summary: 'AASX Preview',
-            detail: `${emptySubmodels.length} submodel(s) have no elements available.`,
-            life: 4000
-          });
-        }
+        this.aasxSelection = { submodels: (arr || []).map((sm: any) => ({ id: sm.id || sm.submodelId, full: true, elements: [] })) };
       }).catch((err: any) => {
         this.aasxPreview = null;
         this.aasxSelection = { submodels: [] };
@@ -797,15 +776,6 @@ export class AasManagementComponent implements OnInit {
     }
   }
 
-  toggleAasxElement(sm: any, idShort: string, checked: boolean): void {
-    const sel = this.getOrInitAasxSelFor(sm);
-    const exists = sel.elements.includes(idShort);
-    if (checked) {
-      if (!exists) sel.elements.push(idShort);
-    } else {
-      if (exists) sel.elements = sel.elements.filter((x) => x !== idShort);
-    }
-  }
 
   uploadAasx(): void {
     if (this.isUploadingAasx) return;
@@ -818,7 +788,7 @@ export class AasManagementComponent implements OnInit {
     this.isUploadingAasx = true;
     
     // If preview is available and user made a selection, use selective attach; else default upload
-    const hasSelection = (this.aasxSelection?.submodels?.some(s => s.full || (s.elements && s.elements.length > 0)) ?? false);
+    const hasSelection = (this.aasxSelection?.submodels?.some(s => s.full) ?? false);
     const req$ = hasSelection ? 
       this.aasManagement.attachSelectedAasx(this.system.id, this.aasxSelectedFile, this.aasxSelection) : 
       this.aasManagement.uploadAasx(this.system.id, this.aasxSelectedFile);

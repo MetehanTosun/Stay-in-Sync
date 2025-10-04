@@ -169,16 +169,6 @@
         <span class="font-bold">{{ sm.idShort || sm.id }}</span>
         <span style="font-size:.75rem;padding:.1rem .4rem;border:1px solid var(--surface-border);border-radius:999px;color:var(--text-color-secondary);">Submodel</span>
       </div>
-      <div *ngIf="sm.elements?.length" class="p-ml-4 p-mt-1">
-        <div *ngFor="let el of sm.elements" class="p-mb-1" style="display:flex;align-items:center;gap:.5rem;">
-          <p-checkbox binary="true" [ngModel]="getOrInitAasxSelFor(sm).elements.includes(el.idShort)" (ngModelChange)="toggleAasxElement(sm, el.idShort, $event)"></p-checkbox>
-          <span>{{ el.idShort }}</span>
-          <span style="font-size:.75rem;padding:.1rem .4rem;border:1px solid var(--surface-border);border-radius:999px;color:var(--text-color-secondary);">{{ el.modelType }}</span>
-        </div>
-      </div>
-      <div *ngIf="!sm.elements?.length" class="p-ml-4 p-mt-1">
-        <small>No elements available in this submodel.</small>
-      </div>
     </div>
   </div>
   <ng-template pTemplate="footer">

@@ -308,18 +308,7 @@ export class CreateTargetSystemComponent implements OnInit, OnChanges {
       next: (resp) => {
         const arr = (resp && (Array.isArray(resp.submodels) ? resp.submodels : (resp.result ?? []))) || [];
         this.aasxPreview = arr;
-        this.aasxSelection = { submodels: arr.map((sm: any) => ({ id: sm.id || sm.submodelId, full: true, elements: (sm.elements || []).map((e: any) => e.idShort) })) };
-        
-        // Check for empty collections/lists and show toast
-        const emptySubmodels = arr.filter((sm: any) => !sm.elements || sm.elements.length === 0);
-        if (emptySubmodels.length > 0) {
-          this.messageService.add({
-            severity: 'info',
-            summary: 'AASX Preview',
-            detail: `${emptySubmodels.length} submodel(s) have no collections or lists available.`,
-            life: 4000
-          });
-        }
+        this.aasxSelection = { submodels: arr.map((sm: any) => ({ id: sm.id || sm.submodelId, full: true, elements: [] })) };
       },
       error: () => { this.aasxPreview = null; this.aasxSelection = { submodels: [] }; }
     });
@@ -336,23 +325,12 @@ export class CreateTargetSystemComponent implements OnInit, OnChanges {
     sel.full = !!checked;
     if (sel.full) sel.elements = [];
   }
-  isAasxElementSelected(sm: any, idShort: string): boolean {
-    const sel = this.getOrInitAasxSelFor(sm);
-    return sel.elements.includes(idShort);
-  }
-  toggleAasxElement(sm: any, idShort: string, checked: boolean): void {
-    const sel = this.getOrInitAasxSelFor(sm);
-    sel.full = false;
-    const exists = sel.elements.includes(idShort);
-    if (checked) { if (!exists) sel.elements.push(idShort); }
-    else { if (exists) sel.elements = sel.elements.filter(x => x !== idShort); }
-  }
   uploadAasx(): void {
     if (this.isUploadingAasx) return;
     if (!this.aasxSelectedFile || !this.createdTargetSystemId) return;
     this.isUploadingAasx = true;
     this.messageService.add({ severity: 'info', summary: 'Uploading AASX', detail: `${this.aasxSelectedFile?.name} (${this.aasxSelectedFile?.size} bytes)` });
-    const hasSelection = this.aasxSelection?.submodels?.some(s => s.full || (s.elements && s.elements.length > 0));
+    const hasSelection = this.aasxSelection?.submodels?.some(s => s.full);
     const selectedIds: string[] = hasSelection ? this.aasxSelection.submodels.map(s => s.id).filter(Boolean) : [];
     const req$ = hasSelection
       ? this.aasClient.attachSelectedAasx('target', this.createdTargetSystemId, this.aasxSelectedFile, this.aasxSelection)
