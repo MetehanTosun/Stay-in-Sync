@@ -30,6 +30,7 @@ import { AasElementDialogComponent, AasElementDialogData, AasElementDialogResult
           <span *ngIf="!aasTestLoading">Test Connection</span>
         </button>
         <button pButton type="button" label="Refresh Snapshot" class="p-button-text" (click)="discoverSnapshot()" [disabled]="isLoading"></button>
+        <button pButton type="button" label="Upload AASX" class="p-button-text" (click)="openAasxUpload()"></button>
         <button pButton type="button" label="+ Submodel" class="p-button-text" (click)="openCreateSubmodel()"></button>
       </div>
     </div>
@@ -152,6 +153,18 @@ import { AasElementDialogComponent, AasElementDialogData, AasElementDialogResult
       [data]="elementDialogData"
       (result)="onElementDialogResult($event)">
     </app-aas-element-dialog>
+
+    <!-- Dialog: Upload AASX -->
+    <p-dialog header="Upload AASX" [(visible)]="showAasxUpload" [modal]="true" [style]="{width:'35vw'}">
+      <div class="p-field">
+        <p-fileupload mode="basic" [auto]="false" [showUploadButton]="false" [showCancelButton]="false" accept=".aasx" (onSelect)="onAasxFileSelected($event)"></p-fileupload>
+        <small *ngIf="aasxSelectedFile">{{ aasxSelectedFile.name }}</small>
+      </div>
+      <ng-template pTemplate="footer">
+        <button pButton type="button" class="p-button-text" label="Cancel" (click)="showAasxUpload=false"></button>
+        <button pButton type="button" label="Upload" (click)="uploadAasx()" [disabled]="isUploadingAasx || !aasxSelectedFile"></button>
+      </ng-template>
+    </p-dialog>
   `,
   imports: [
     CommonModule,
@@ -191,6 +204,11 @@ export class AasManagementComponent implements OnInit {
   // Submodel creation dialog
   showSubmodelDialog = false;
   newSubmodelJson = '{\n  "id": "https://example.com/ids/sm/new",\n  "idShort": "NewSubmodel"\n}';
+
+  // AASX upload properties
+  showAasxUpload = false;
+  aasxSelectedFile: File | null = null;
+  isUploadingAasx = false;
 
   // Templates
   minimalSubmodelTemplate: string = `{
@@ -695,5 +713,38 @@ export class AasManagementComponent implements OnInit {
     }
     
     return current;
+  }
+
+  // AASX upload methods
+  openAasxUpload(): void {
+    this.showAasxUpload = true;
+    this.aasxSelectedFile = null;
+  }
+
+  onAasxFileSelected(event: any): void {
+    this.aasxSelectedFile = event.files?.[0] || null;
+  }
+
+  uploadAasx(): void {
+    if (this.isUploadingAasx) return;
+    if (!this.aasxSelectedFile || !this.system?.id) {
+      this.messageService.add({ severity: 'warn', summary: 'No file selected', detail: 'Please choose an .aasx file.' });
+      return;
+    }
+    
+    this.messageService.add({ severity: 'info', summary: 'Uploading AASX', detail: `${this.aasxSelectedFile?.name} (${this.aasxSelectedFile?.size} bytes)` });
+    this.isUploadingAasx = true;
+    
+    // For target systems, we use a simple upload without preview/selection
+    this.aasManagement.uploadAasx(this.system.id, this.aasxSelectedFile).then(() => {
+      this.isUploadingAasx = false;
+      this.showAasxUpload = false;
+      // Refresh the tree to show uploaded content
+      this.discoverSnapshot();
+      this.messageService.add({ severity: 'success', summary: 'Upload accepted', detail: 'AASX uploaded successfully.' });
+    }).catch((error) => {
+      this.isUploadingAasx = false;
+      this.messageService.add({ severity: 'error', summary: 'Upload failed', detail: error?.message || 'See console for details' });
+    });
   }
 }

@@ -404,4 +404,22 @@ export class AasManagementService {
       children: [] 
     } as TreeNode;
   }
+
+  /**
+   * Upload AASX file
+   */
+  async uploadAasx(systemId: number, file: File): Promise<void> {
+    return new Promise((resolve, reject) => {
+      this.aasClientService.uploadAasx('target', systemId, file).subscribe({
+        next: () => {
+          console.log('[AasManagement] AASX uploaded successfully');
+          resolve();
+        },
+        error: (error: any) => {
+          console.error('[AasManagement] Error uploading AASX:', error);
+          reject(error);
+        }
+      });
+    });
+  }
 }

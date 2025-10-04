@@ -10,6 +10,7 @@
       <span *ngIf="!aasTestLoading">Test Connection</span>
     </button>
     <button pButton type="button" label="Refresh Snapshot" class="p-button-text" (click)="discoverAasSnapshot()" [disabled]="aasTreeLoading"></button>
+    <button pButton type="button" label="Upload AASX" class="p-button-text" (click)="openAasxUpload()"></button>
     <button pButton type="button" label="+ Submodel" class="p-button-text" (click)="openAasCreateSubmodel()"></button>
   </div>
 </div>
@@ -154,3 +155,34 @@
   [data]="elementDialogData"
   (result)="onElementDialogResult($event)">
 </app-aas-element-dialog>
+
+<!-- Dialog: Upload AASX -->
+<p-dialog header="Upload AASX" [(visible)]="showAasxUpload" [modal]="true" [style]="{width:'35vw'}">
+  <div class="p-field">
+    <p-fileupload mode="basic" [auto]="false" [showUploadButton]="false" [showCancelButton]="false" accept=".aasx" (onSelect)="onAasxFileSelected($event)"></p-fileupload>
+    <small *ngIf="aasxSelectedFile">{{ aasxSelectedFile.name }}</small>
+  </div>
+  <div *ngIf="aasxPreview?.length" class="p-mt-3">
+    <div *ngFor="let sm of aasxPreview" class="p-mb-2">
+      <div style="display:flex;align-items:center;gap:.5rem;">
+        <p-checkbox binary="true" [ngModel]="getOrInitAasxSelFor(sm).full" (ngModelChange)="toggleAasxSubmodelFull(sm, $event)"></p-checkbox>
+        <span class="font-bold">{{ sm.idShort || sm.id }}</span>
+        <span style="font-size:.75rem;padding:.1rem .4rem;border:1px solid var(--surface-border);border-radius:999px;color:var(--text-color-secondary);">Submodel</span>
+      </div>
+      <div *ngIf="sm.elements?.length" class="p-ml-4 p-mt-1">
+        <div *ngFor="let el of sm.elements" class="p-mb-1" style="display:flex;align-items:center;gap:.5rem;">
+          <p-checkbox binary="true" [ngModel]="getOrInitAasxSelFor(sm).elements.includes(el.idShort)" (ngModelChange)="toggleAasxElement(sm, el.idShort, $event)"></p-checkbox>
+          <span>{{ el.idShort }}</span>
+          <span style="font-size:.75rem;padding:.1rem .4rem;border:1px solid var(--surface-border);border-radius:999px;color:var(--text-color-secondary);">{{ el.modelType }}</span>
+        </div>
+      </div>
+      <div *ngIf="!sm.elements?.length" class="p-ml-4 p-mt-1">
+        <small>No selectable collections/lists found.</small>
+      </div>
+    </div>
+  </div>
+  <ng-template pTemplate="footer">
+    <button pButton type="button" class="p-button-text" label="Cancel" (click)="showAasxUpload=false"></button>
+    <button pButton type="button" label="Upload" (click)="uploadAasx()" [disabled]="isUploadingAasx || !aasxSelectedFile"></button>
+  </ng-template>
+</p-dialog>

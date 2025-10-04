@@ -9,6 +9,7 @@ import { InputTextModule } from 'primeng/inputtext';
 import { TextareaModule } from 'primeng/textarea';
 import { FileUploadModule } from 'primeng/fileupload';
 import { MessageModule } from 'primeng/message';
+import { CheckboxModule } from 'primeng/checkbox';
 import { TreeNode } from 'primeng/api';
 import { MessageService } from 'primeng/api';
 
@@ -31,6 +32,7 @@ import { AasElementDialogComponent, AasElementDialogData, AasElementDialogResult
     TextareaModule,
     FileUploadModule,
     MessageModule,
+    CheckboxModule,
     FormsModule,
     AasElementDialogComponent
   ]
@@ -49,6 +51,13 @@ export class SourceSystemAasManagementComponent implements OnInit {
   // AAS Test properties
   aasTestLoading = false;
   aasTestError: string | null = null;
+
+  // AASX upload properties
+  showAasxUpload = false;
+  aasxSelectedFile: File | null = null;
+  isUploadingAasx = false;
+  aasxPreview: any = null;
+  aasxSelection: { submodels: Array<{ id: string; full: boolean; elements: string[] }> } = { submodels: [] };
 
   // Element creation dialog
   showElementDialog = false;
@@ -713,5 +722,105 @@ export class SourceSystemAasManagementComponent implements OnInit {
       console.log('[SourceAasManage] refreshAasTreeAfterDelete: No parent path, refreshing root');
       this.refreshAasNodeLive(submodelId, '', undefined);
     }
+  }
+
+  // AASX upload methods
+  openAasxUpload(): void {
+    this.showAasxUpload = true;
+    this.aasxSelectedFile = null;
+  }
+
+  onAasxFileSelected(event: any): void {
+    this.aasxSelectedFile = event.files?.[0] || null;
+    if (this.aasxSelectedFile && this.system?.id) {
+      // Load preview to enable selective attach
+      this.aasService.previewAasx(this.system.id, this.aasxSelectedFile).subscribe({
+        next: (resp) => {
+          this.aasxPreview = resp?.submodels || (resp?.result ?? []);
+          // Normalize to array of {id,idShort,kind,elements:[{idShort,modelType}]}
+          const arr = Array.isArray(this.aasxPreview) ? this.aasxPreview : (this.aasxPreview?.submodels ?? []);
+          this.aasxSelection = { submodels: (arr || []).map((sm: any) => ({ id: sm.id || sm.submodelId, full: true, elements: (sm.elements || []).map((e: any) => e.idShort) })) };
+          
+          // Check for empty collections/lists and show toast
+          const emptySubmodels = arr.filter((sm: any) => !sm.elements || sm.elements.length === 0);
+          if (emptySubmodels.length > 0) {
+            this.messageService.add({
+              severity: 'info',
+              summary: 'AASX Preview',
+              detail: `${emptySubmodels.length} submodel(s) have no collections or lists available.`,
+              life: 4000
+            });
+          }
+        },
+        error: (err) => {
+          this.aasxPreview = null;
+          this.aasxSelection = { submodels: [] };
+        }
+      });
+    }
+  }
+
+  // AASX selective attach helpers
+  private getSmId(sm: any): string {
+    return sm?.id || sm?.submodelId || '';
+  }
+
+  getOrInitAasxSelFor(sm: any): { id: string; full: boolean; elements: string[] } {
+    const id = this.getSmId(sm);
+    let found = this.aasxSelection.submodels.find((s) => s.id === id);
+    if (!found) {
+      found = { id, full: true, elements: [] };
+      this.aasxSelection.submodels.push(found);
+    }
+    return found;
+  }
+
+  toggleAasxSubmodelFull(sm: any, checked: boolean): void {
+    const sel = this.getOrInitAasxSelFor(sm);
+    sel.full = checked;
+    if (checked) {
+      sel.elements = [];
+    }
+  }
+
+  toggleAasxElement(sm: any, idShort: string, checked: boolean): void {
+    const sel = this.getOrInitAasxSelFor(sm);
+    const exists = sel.elements.includes(idShort);
+    if (checked) {
+      if (!exists) sel.elements.push(idShort);
+    } else {
+      if (exists) sel.elements = sel.elements.filter((x) => x !== idShort);
+    }
+  }
+
+  uploadAasx(): void {
+    if (this.isUploadingAasx) return;
+    if (!this.aasxSelectedFile || !this.system?.id) {
+      this.messageService.add({ severity: 'warn', summary: 'No file selected', detail: 'Please choose an .aasx file.' });
+      return;
+    }
+    
+    this.messageService.add({ severity: 'info', summary: 'Uploading AASX', detail: `${this.aasxSelectedFile?.name} (${this.aasxSelectedFile?.size} bytes)` });
+    this.isUploadingAasx = true;
+    
+    // If preview is available and user made a selection, use selective attach; else default upload
+    const hasSelection = (this.aasxSelection?.submodels?.some(s => s.full || (s.elements && s.elements.length > 0)) ?? false);
+    const req$ = hasSelection ? 
+      this.aasService.attachSelectedAasx(this.system.id, this.aasxSelectedFile, this.aasxSelection) : 
+      this.aasService.uploadAasx(this.system.id, this.aasxSelectedFile);
+    
+    req$.subscribe({
+      next: (resp) => {
+        this.isUploadingAasx = false;
+        this.showAasxUpload = false;
+        // Refresh the tree to show uploaded content
+        this.discoverAasSnapshot();
+        this.messageService.add({ severity: 'success', summary: 'Upload accepted', detail: 'AASX uploaded. Snapshot refresh started.' });
+      },
+      error: (err) => {
+        this.isUploadingAasx = false;
+        this.messageService.add({ severity: 'error', summary: 'Upload failed', detail: (err?.message || 'See console for details') });
+      }
+    });
   }
 }
