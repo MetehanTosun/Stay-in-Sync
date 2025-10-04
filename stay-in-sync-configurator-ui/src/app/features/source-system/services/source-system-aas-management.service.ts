@@ -136,43 +136,35 @@ export class SourceSystemAasManagementService {
         isManuallyCreated: node?.data?.isManuallyCreated || false
       });
 
-      // Since getElement endpoint doesn't work properly, use listElements directly
-      // For first-level elements, don't send parentPath parameter at all
+      // Use getElement API for direct element loading with values
       // Try SNAPSHOT first, then LIVE as fallback for manually created elements
       const tryLoadElementDetails = (source: 'SNAPSHOT' | 'LIVE') => {
-        const options: any = { depth: 'shallow', source };
-        if (parent && parent.trim() !== '') {
-          options.parentPath = parent;
-        }
+        console.log('[SourceAasManage] loadElementDetails: Trying getElement with source', { source, safePath });
         
-        console.log('[SourceAasManage] loadElementDetails: Trying source', { source, parent, last });
-        
-        this.aasService.listElements(systemId, smId, options)
+        this.aasService.getElement(systemId, smId, safePath, source)
           .subscribe({
-            next: (resp: any) => {
+            next: (found: any) => {
               // Check if response is an error object
-              if (resp && resp.errorTitle && resp.errorMessage) {
-                console.error('[SourceAasManage] loadElementDetails: Backend error', { source, error: resp });
+              if (found && found.errorTitle && found.errorMessage) {
+                console.error('[SourceAasManage] loadElementDetails: Backend error', { source, error: found });
                 // If SNAPSHOT failed and we haven't tried LIVE yet, try LIVE
                 if (source === 'SNAPSHOT') {
                   console.log('[SourceAasManage] loadElementDetails: Trying LIVE as fallback after backend error');
                   tryLoadElementDetails('LIVE');
                 } else {
-                  observer.next({ label: last, type: 'Unknown', value: 'Backend Error: ' + resp.errorMessage } as AasElementLivePanel);
+                  observer.next({ label: last, type: 'Unknown', value: 'Backend Error: ' + found.errorMessage } as AasElementLivePanel);
                   observer.complete();
                 }
                 return;
               }
               
-              const list: any[] = Array.isArray(resp) ? resp : (resp?.result ?? []);
-              const found = list.find((el: any) => el.idShort === last);
               if (found) {
                 console.log('[SourceAasManage] loadElementDetails: Found element', { source, found });
                 const livePanel = this.mapElementToLivePanel(found);
                 observer.next(livePanel);
                 observer.complete();
               } else {
-                console.log('[SourceAasManage] loadElementDetails: Element not found', { source, last, list });
+                console.log('[SourceAasManage] loadElementDetails: Element not found', { source, safePath });
                 // If SNAPSHOT failed and we haven't tried LIVE yet, try LIVE
                 if (source === 'SNAPSHOT') {
                   console.log('[SourceAasManage] loadElementDetails: Trying LIVE as fallback');
