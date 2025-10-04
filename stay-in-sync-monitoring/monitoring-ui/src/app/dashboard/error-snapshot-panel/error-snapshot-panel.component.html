@@ -2,7 +2,7 @@
 <p-message *ngIf="!selectedNodeId || selectedNodeId.startsWith('POLL')" severity="info" text="Please select a SyncNode"></p-message>
 
 <!-- Wenn keine Transformationen -->
-<p-message *ngIf="selectedNodeId && transformations.length === 0" severity="warn" text="There are no transformations"></p-message>
+<p-message *ngIf="selectedNodeId && transformations.length === 0&& !(selectedNodeId.startsWith('POLL'))" severity="warn" text="There are no transformations"></p-message>
 
 <!-- Wenn Transformationen vorhanden -->
 <div *ngIf="selectedNodeId && transformations.length > 0 && !(selectedNodeId.startsWith('POLL'))" class="grid gap-4">

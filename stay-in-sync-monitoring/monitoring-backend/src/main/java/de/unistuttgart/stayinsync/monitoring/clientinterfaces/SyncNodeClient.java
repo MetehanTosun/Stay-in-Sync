@@ -26,13 +26,10 @@ import org.eclipse.microprofile.config.inject.ConfigProperty;
  * from the SyncNode backend. It uses Java's built-in {@link HttpClient}
  * to perform HTTP requests and Jackson's {@link ObjectMapper}
  * for JSON serialization/deserialization.
- * </p>
- *
  * <p>
  * The base URL for SyncNode is configurable via MicroProfile Config
  * property {@code syncnode.base.url}, defaulting to
  * {@code http://localhost:8091}.
- * </p>
  */
 @ApplicationScoped
 public class SyncNodeClient {

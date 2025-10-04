@@ -18,7 +18,6 @@ import java.nio.charset.StandardCharsets;
 
 /**
  * Client for querying Prometheus to check the availability of monitored targets.
- * <p>
  * This client sends a request to Prometheus' HTTP API to evaluate the
  * {@code probe_success} metric for a given instance (target URL). If the metric
  * returns {@code 1}, the target is considered "up"; otherwise "down".

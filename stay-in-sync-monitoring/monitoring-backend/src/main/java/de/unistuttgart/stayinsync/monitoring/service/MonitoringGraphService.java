@@ -11,6 +11,21 @@ import java.util.*;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
+/**
+ * Service responsible for building the monitoring graph that represents
+ * source systems, target systems, sync jobs, and polling nodes, along with
+ * their health status and interconnections.
+ *
+ * <p>
+ * The graph is constructed by:
+ * <ul>
+ *     <li>Fetching source systems, target systems, and sync jobs from their respective services.</li>
+ *     <li>Checking health status via Prometheus.</li>
+ *     <li>Fetching active polling nodes from Kubernetes (with a fallback to a local node).</li>
+ *     <li>Creating nodes and connections (edges) between the entities.</li>
+ * </ul>
+ * </p>
+ */
 @ApplicationScoped
 public class MonitoringGraphService {
 
@@ -44,29 +59,38 @@ public class MonitoringGraphService {
     @Inject
     KubernetesPollingNodeService kubernetesPollingNodeService;
 
+    /**
+     * Builds the complete monitoring graph by fetching all nodes and their connections.
+     *
+     * @return {@link GraphResponse} containing the nodes and connections of the system
+     */
     public GraphResponse buildGraph() {
         long globalStart = System.currentTimeMillis();
         Map<String, NodeDto> nodeMap = new HashMap<>();
         List<NodeConnectionDto> connections = new ArrayList<>();
 
-        Log.info("buildGraph gestartet");
+        Log.info("buildGraph started");
 
+        // Fetch systems and jobs
         List<MonitoringSourceSystemDto> monitoringSources = fetchSourceSystems(nodeMap);
         fetchTargetSystems(nodeMap);
         List<MonitoringSyncJobDto> jobs = fetchSyncJobs(nodeMap, connections);
 
+        // Add polling nodes from Kubernetes (or fallback)
         connectPollingNodesFromK8s(nodeMap, connections, monitoringSources, jobs);
 
+        // Build response
         GraphResponse graph = new GraphResponse();
         graph.nodes = new ArrayList<>(nodeMap.values());
         graph.connections = connections;
 
-        long globalEnd = System.currentTimeMillis();
-        Log.info("buildGraph() komplett dauerte " + (globalEnd - globalStart) + " ms");
+        Log.info("buildGraph() completed in " + (System.currentTimeMillis() - globalStart) + " ms");
         return graph;
     }
 
-
+    /**
+     * Fetches source systems, creates nodes, and checks health status.
+     */
     private List<MonitoringSourceSystemDto> fetchSourceSystems(Map<String, NodeDto> nodeMap) {
         long start = System.currentTimeMillis();
         List<MonitoringSourceSystemDto> sources = safeFetch(sourceSystemClient::getAll, "SourceSystems");
@@ -80,6 +104,9 @@ public class MonitoringGraphService {
         return sources;
     }
 
+    /**
+     * Fetches target systems, creates nodes, and checks health status.
+     */
     private List<MonitoringTargetSystemDto> fetchTargetSystems(Map<String, NodeDto> nodeMap) {
         long start = System.currentTimeMillis();
         List<MonitoringTargetSystemDto> targets = safeFetch(targetSystemClient::getAll, "TargetSystems");
@@ -93,6 +120,9 @@ public class MonitoringGraphService {
         return targets;
     }
 
+    /**
+     * Fetches sync jobs, creates nodes for each job, and adds connections for transformations.
+     */
     private List<MonitoringSyncJobDto> fetchSyncJobs(Map<String, NodeDto> nodeMap, List<NodeConnectionDto> connections) {
         long start = System.currentTimeMillis();
         List<MonitoringSyncJobDto> jobs = safeFetch(syncJobClient::getAll, "SyncJobs");
@@ -111,6 +141,9 @@ public class MonitoringGraphService {
         return jobs;
     }
 
+    /**
+     * Handles a single transformation: connects source systems, polling nodes, and target systems.
+     */
     private void handleTransformation(MonitoringTransformationDto tf, String syncNodeId,
                                       Map<String, NodeDto> nodeMap, List<NodeConnectionDto> connections) {
         Log.info("Transformation: " + tf.name);
@@ -137,13 +170,15 @@ public class MonitoringGraphService {
         }
     }
 
+    /**
+     * Connects polling nodes retrieved from Kubernetes. If none are found, falls back to a local node.
+     */
     private void connectPollingNodesFromK8s(Map<String, NodeDto> nodeMap,
                                             List<NodeConnectionDto> connections,
                                             List<MonitoringSourceSystemDto> monitoringSources,
                                             List<MonitoringSyncJobDto> jobs) {
         long start = System.currentTimeMillis();
         try {
-            // Kubernetes-Call mit Timeout-Thread
             List<String> pollingNodesFromK8s = getPollingNodesWithTimeout();
 
             if (!pollingNodesFromK8s.isEmpty()) {
@@ -151,19 +186,21 @@ public class MonitoringGraphService {
                 for (String pollingNodeName : pollingNodesFromK8s) {
                     addPollingNodeAndConnections(nodeMap, connections, monitoringSources, jobs, pollingNodeName, STATUS_ACTIVE);
                 }
-                return; // fertig, K8s hat geliefert
+                return; // Kubernetes provided nodes, no fallback needed
             }
 
-            // Falls leer → fallback auf lokal
             fallbackToLocalPollingNode(nodeMap, connections, monitoringSources, jobs);
 
         } catch (Exception e) {
-            Log.error("Fehler beim Abrufen der PollingNodes aus K8s", e);
+            Log.error("Error while retrieving PollingNodes from K8s", e);
             fallbackToLocalPollingNode(nodeMap, connections, monitoringSources, jobs);
         }
         logDuration("kubernetesPollingNodeService.getPollingNodes()", start);
     }
 
+    /**
+     * Fetches polling nodes from Kubernetes with a timeout (2s).
+     */
     private List<String> getPollingNodesWithTimeout() throws Exception {
         try (var executor = Executors.newSingleThreadExecutor()) {
             return executor.submit(() -> kubernetesPollingNodeService.getPollingNodes())
@@ -171,17 +208,24 @@ public class MonitoringGraphService {
         }
     }
 
+    /**
+     * Fallback when Kubernetes polling nodes cannot be retrieved: use a local node.
+     */
     private void fallbackToLocalPollingNode(Map<String, NodeDto> nodeMap,
                                             List<NodeConnectionDto> connections,
                                             List<MonitoringSourceSystemDto> monitoringSources,
                                             List<MonitoringSyncJobDto> jobs) {
-        String localPollingNode = "core-polling-node"; // Fallback
+        String localPollingNode = "core-polling-node"; // Fallback node
         boolean isHealthy = prometheusClient.isUp("http://host.docker.internal:8095/q/health/live");
-        Log.warn("Keine PollingNodes aus K8s gefunden – fallback auf lokalen Node: " + localPollingNode);
+        Log.warn("No PollingNodes found in K8s – falling back to local node: " + localPollingNode);
 
-        addPollingNodeAndConnections(nodeMap, connections, monitoringSources, jobs, localPollingNode, isHealthy ? STATUS_ACTIVE : STATUS_ERROR);
+        addPollingNodeAndConnections(nodeMap, connections, monitoringSources, jobs,
+                localPollingNode, isHealthy ? STATUS_ACTIVE : STATUS_ERROR);
     }
 
+    /**
+     * Adds a polling node to the graph and connects it to sources and jobs.
+     */
     private void addPollingNodeAndConnections(Map<String, NodeDto> nodeMap,
                                               List<NodeConnectionDto> connections,
                                               List<MonitoringSourceSystemDto> monitoringSources,
@@ -200,7 +244,9 @@ public class MonitoringGraphService {
         }
     }
 
-
+    /**
+     * Performs a health check for a system via Prometheus.
+     */
     private boolean checkPrometheus(Long id, String apiUrl, String type) {
         long start = System.currentTimeMillis();
         boolean isHealthy = false;
@@ -209,25 +255,28 @@ public class MonitoringGraphService {
                 isHealthy = prometheusClient.isUp(apiUrl);
             }
         } catch (Exception e) {
-            Log.warnf(e, "Prometheus-Check fehlgeschlagen für %s %s (%s)", type, id, apiUrl);
+            Log.warnf(e, "Prometheus check failed for %s %s (%s)", type, id, apiUrl);
         }
-        Log.info("Prometheus-Check für " + type + " " + id + " dauerte " + (System.currentTimeMillis() - start) + " ms");
+        Log.info("Prometheus check for " + type + " " + id + " took " + (System.currentTimeMillis() - start) + " ms");
         return isHealthy;
     }
 
+    /**
+     * Wraps a fetch call with exception handling.
+     */
     private <T> List<T> safeFetch(SupplierWithException<List<T>> supplier, String entityName) {
         try {
             List<T> result = supplier.get();
-            Log.info(entityName + " geladen: " + result.size());
+            Log.info(entityName + " loaded: " + result.size());
             return result;
         } catch (Exception e) {
-            Log.error("Fehler beim Abrufen der " + entityName, e);
+            Log.error("Error fetching " + entityName, e);
             return Collections.emptyList();
         }
     }
 
     private void logDuration(String action, long start) {
-        Log.info(action + " dauerte " + (System.currentTimeMillis() - start) + " ms");
+        Log.info(action + " took " + (System.currentTimeMillis() - start) + " ms");
     }
 
     private NodeDto createNode(String id, String type, String label, String status) {
