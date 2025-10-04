@@ -160,6 +160,7 @@ import { AasElementDialogComponent, AasElementDialogData, AasElementDialogResult
       <div class="p-field">
         <p-fileupload mode="basic" [auto]="false" [showUploadButton]="false" [showCancelButton]="false" accept=".aasx" (onSelect)="onAasxFileSelected($event)"></p-fileupload>
         <small *ngIf="aasxSelectedFile">{{ aasxSelectedFile.name }}</small>
+        <small *ngIf="!aasxSelectedFile" style="color:var(--text-color-secondary);">No AASX file selected. Please choose a file to upload.</small>
       </div>
       <ng-template pTemplate="footer">
         <button pButton type="button" class="p-button-text" label="Cancel" (click)="showAasxUpload=false"></button>
