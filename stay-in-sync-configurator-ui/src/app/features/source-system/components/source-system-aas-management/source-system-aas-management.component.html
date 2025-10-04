@@ -65,10 +65,10 @@
         <strong>value:</strong> {{ (aasSelectedLivePanel.value | json) }}
       </div>
       <div *ngIf="aasSelectedLivePanel.type==='SubmodelElementCollection'">
-        <div><strong>Items:</strong> {{ aasSelectedLivePanel.value?.length || 0 }}</div>
+        <div><strong>Items:</strong> {{ getCollectionItemCount() }}</div>
       </div>
       <div *ngIf="aasSelectedLivePanel.type==='SubmodelElementList'">
-        <div><strong>Count:</strong> {{ aasSelectedLivePanel.value?.length || 0 }}</div>
+        <div><strong>Count:</strong> {{ getCollectionItemCount() }}</div>
       </div>
       <div *ngIf="aasSelectedLivePanel.type==='Range' || aasSelectedLivePanel.min !== undefined || aasSelectedLivePanel.max !== undefined">
         <div><strong>min:</strong> {{ aasSelectedLivePanel.min }}</div>

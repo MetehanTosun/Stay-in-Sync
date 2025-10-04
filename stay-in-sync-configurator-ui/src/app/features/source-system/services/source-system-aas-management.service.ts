@@ -271,6 +271,16 @@ export class SourceSystemAasManagementService {
       elementValue = (found as any).valueListElement;
     }
 
+    // For Collections and Lists, if we don't have the actual elements in the data,
+    // we need to calculate the count differently. The backend only provides hasChildren: true
+    // but doesn't include the actual child elements in the response.
+    if ((liveType === 'SubmodelElementCollection' || liveType === 'SubmodelElementList') && !Array.isArray(elementValue)) {
+      // If hasChildren is true but we don't have the actual elements, 
+      // we can't determine the exact count from the data alone.
+      // The count will be shown as "?" or we need to make an additional API call.
+      elementValue = found.hasChildren ? ['...'] : []; // Placeholder to indicate children exist
+    }
+
     // Debug logging for Collections and Lists
     if (liveType === 'SubmodelElementCollection' || liveType === 'SubmodelElementList') {
       console.log('[SourceAasManage] mapElementToLivePanel: Collection/List debug', {
@@ -281,7 +291,8 @@ export class SourceSystemAasManagementService {
         valueListElement: (found as any).valueListElement,
         finalElementValue: elementValue,
         elementValueLength: Array.isArray(elementValue) ? elementValue.length : 'not array',
-        hasChildren: found.hasChildren
+        hasChildren: found.hasChildren,
+        note: 'Collections/Lists don\'t include child elements in the data, only hasChildren flag'
       });
     }
 

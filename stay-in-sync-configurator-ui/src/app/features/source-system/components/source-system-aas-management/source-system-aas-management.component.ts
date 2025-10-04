@@ -656,6 +656,22 @@ export class SourceSystemAasManagementComponent implements OnInit {
   }
 
   /**
+   * Get collection item count from the selected node
+   */
+  getCollectionItemCount(): string {
+    if (!this.selectedAasNode || !this.selectedAasNode.children) {
+      return '0';
+    }
+    
+    const count = this.selectedAasNode.children.length;
+    if (count === 0) {
+      return '0';
+    }
+    
+    return count.toString();
+  }
+
+  /**
    * Refresh AAS tree after delete (same logic as create dialog)
    */
   private refreshAasTreeAfterDelete(submodelId: string, idShortPath: string): void {
