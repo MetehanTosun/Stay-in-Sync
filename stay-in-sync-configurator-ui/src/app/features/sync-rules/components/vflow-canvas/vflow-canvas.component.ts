@@ -188,17 +188,17 @@ export class VflowCanvasComponent implements OnInit {
   addNode(
     nodeType: NodeType,
     pos: { x: number, y: number },
-    providerJsonPath?: string,
+    providerData?: { jsonPath: string, outputType: string },
     constantValue?: any,
     operatorData?: LogicOperatorMeta,
   ) {
     let nodeData: any;
 
-    if (nodeType === NodeType.PROVIDER && providerJsonPath) {
+    if (nodeType === NodeType.PROVIDER && providerData) {
       nodeData = {
-        name: providerJsonPath,
-        arcId: 0, // TODO-s get arcId from JSON path
-        jsonPath: providerJsonPath
+        name: providerData.jsonPath,
+        jsonPath: providerData.jsonPath,
+        outputType: providerData.outputType
       }
     } else if (nodeType === NodeType.CONSTANT && constantValue !== undefined) {
       nodeData = {
@@ -239,6 +239,10 @@ export class VflowCanvasComponent implements OnInit {
     newNode.contextMenuItems = this.getNodeMenuItems(newNode);
     this.nodes = [...this.nodes, newNode];
     this.hasUnsavedChanges = true;
+
+
+    console.log(providerData)
+    console.log(newNode)
   }
 
   /**
@@ -394,7 +398,7 @@ export class VflowCanvasComponent implements OnInit {
    *
    * @param newJsonPath
    */
-  onJsonPathSaved(newJsonPath: string) {
+  onJsonPathSaved(nodeData: { jsonPath: string, outputType: string }) {
     if (this.nodeBeingEdited) {
       const index = this.nodes.findIndex(n => n.id === this.nodeBeingEdited!.id);
       if (index !== -1) {
@@ -403,7 +407,8 @@ export class VflowCanvasComponent implements OnInit {
           ...this.nodes[index],
           data: {
             ...this.nodes[index].data,
-            jsonPath: newJsonPath
+            jsonPath: nodeData.jsonPath,
+            outputType: nodeData.outputType
           }
         };
 

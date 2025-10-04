@@ -115,7 +115,8 @@ export class ProviderNodeModalComponent {
       ? `${this.jsonPath.trim()}`
       : `source.${this.jsonPath.trim()}`;
 
-    const outputType = this.jsonPaths[this.jsonPath] || 'unknown';
+    const normalizedPath = this.jsonPath.replace(/\[\d+\]/g, '[*]');
+    const outputType = this.jsonPaths[normalizedPath] || 'unknown';
 
     const nodeData = {
       jsonPath: finalJsonPath,

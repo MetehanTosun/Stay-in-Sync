@@ -18,7 +18,6 @@ export interface VFlowNodeData {
   nodeType: NodeType;
 
   // For PROVIDER nodes
-  arcId?: number;
   jsonPath?: string;
 
   // For CONSTANT nodes
@@ -26,7 +25,7 @@ export interface VFlowNodeData {
 
   // For LOGIC nodes
   operatorType?: string;
-  
+
   inputTypes?: string[];
   outputType?: string;
   inputLimit?: number;

@@ -18,7 +18,7 @@ export class ProviderNodeComponent extends CustomNodeComponent {
    * @returns The Property whose value is read by this provider node
    */
   getSourceProperty(): string {
-    const parts = this.node().data?.jsonPath.split('.');
+    const parts = this.node().data?.jsonPath?.split('.');
     return parts[parts.length - 1];
   }
 
@@ -27,9 +27,5 @@ export class ProviderNodeComponent extends CustomNodeComponent {
    */
   getTrimmedJsonpath(): string {
     return this.node().data?.jsonPath.replace(/^source\./, '');
-  }
-
-  getJsonPayload(): any {
-
   }
 }
