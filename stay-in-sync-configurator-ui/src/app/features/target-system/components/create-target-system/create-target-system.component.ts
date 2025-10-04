@@ -145,11 +145,7 @@ export class CreateTargetSystemComponent implements OnInit, OnChanges {
           this.createdTargetSystemId = resp.id!;
           this.currentStep = 1;
           this.messageService.add({ severity: 'success', summary: 'Created', detail: 'Target system created', life: 2500 });
-          console.log('[CreateTargetSystem] Emitting created event', { id: resp.id, name: resp.name });
-          console.log('[CreateTargetSystem] Event emitter exists:', !!this.created);
-          console.log('[CreateTargetSystem] Event emitter observers count:', this.created.observers.length);
-          this.created.emit(resp);
-          console.log('[CreateTargetSystem] Created event emitted successfully');
+          console.log('[CreateTargetSystem] Target system created, moving to step 1', { id: resp.id, name: resp.name });
           this.isCreating = false;
         },
         error: (err) => {
@@ -184,6 +180,28 @@ export class CreateTargetSystemComponent implements OnInit, OnChanges {
 
   goBack(): void {
     if (this.currentStep > 0) this.currentStep -= 1;
+  }
+
+  finish(): void {
+    // Emit the created event when user clicks Finish
+    if (this.createdTargetSystemId) {
+      console.log('[CreateTargetSystem] Emitting created event on finish', { id: this.createdTargetSystemId });
+      console.log('[CreateTargetSystem] Event emitter exists:', !!this.created);
+      console.log('[CreateTargetSystem] Event emitter observers count:', this.created.observers.length);
+      
+      // Create a mock response object with the created system ID
+      const createdSystem = { id: this.createdTargetSystemId, name: this.form.get('name')?.value || 'Unknown' } as TargetSystemDTO;
+      this.created.emit(createdSystem);
+      console.log('[CreateTargetSystem] Created event emitted successfully on finish');
+    }
+    
+    // Close the dialog
+    this.visible = false;
+    this.visibleChange.emit(false);
+    this.formService.resetForm(this.form);
+    this.selectedFile = null;
+    this.fileSelected = false;
+    this.currentStep = 0;
   }
 
   // Helpers matching Source Create behaviour

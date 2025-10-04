@@ -152,7 +152,7 @@
     <div class="p-d-flex p-jc-between">
       <button pButton type="button" label="Back" class="p-button-text" (click)="goBack()" [disabled]="currentStep === 0"></button>
       <button *ngIf="currentStep === 0 || currentStep === 1" pButton type="button" label="Next" (click)="goNext()" [disabled]="currentStep === 0 ? !canProceedFromStep1() : false"></button>
-      <button *ngIf="currentStep === 2" pButton type="button" label="Finish" (click)="cancel()"></button>
+      <button *ngIf="currentStep === 2" pButton type="button" label="Finish" (click)="finish()"></button>
     </div>
   </ng-template>
 </p-dialog>
