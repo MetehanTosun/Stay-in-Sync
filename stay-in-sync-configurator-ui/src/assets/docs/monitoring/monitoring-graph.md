@@ -14,9 +14,9 @@ Der **Monitoring Graph** bietet eine visuelle Übersicht über:
 Alle Systeme (Source, Target, PollingNodes) werden kontinuierlich überwacht.  
 Der Status der Knoten wird durch **Farbcodes** dargestellt:
 
-- 🟩 **Grün** → aktiv
-- 🟥 **Rot** → Fehler
-- 🟨 **Gelb** → inaktiv
+-  **Grün** → aktiv
+-  **Rot** → Fehler
+-  **Gelb** → inaktiv
 
 ### 🔎 Legende
 Die Legende ist **ein- und ausklappbar** und erklärt Formen & Farben:
@@ -34,26 +34,26 @@ Die Legende ist **ein- und ausklappbar** und erklärt Formen & Farben:
 
 ---
 
-## 📈 Metrics
+##  Metrics
 Im **Metrics Tab** werden Systemstatistiken aller aktiven Services angezeigt.  
 Dies erfolgt über ein **eingebettetes Grafana-Dashboard** mit freier Navigation, Filterung und individuellen Diagrammen.
 
-### 🔧 Allgemeine Metriken
+###  Allgemeine Metriken
 - CPU-Auslastung
 - Thread-Anzahl
 - RabbitMQ-Channels
 - Heap-Memory
 
-### 📡 PollingNodes
+###  PollingNodes
 - Request-Anzahl
 
-### ⚙️ SyncNodes
+###  SyncNodes
 - Script Load
 - Ausführungszeiten
 
 ---
 
-## 🔍 Filtering im Graph
+##  Filtering im Graph
 Die Filterung kann direkt über den Graphen erfolgen:
 
 - Klick auf einen **PollingNode** → zeigt nur dessen Request-Anzahl
