@@ -270,6 +270,41 @@ export class AasManagementComponent implements OnInit {
     }
   }
 
+  private async retryDiscoverWithDelay(maxRetries: number, initialDelay: number): Promise<void> {
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      const delay = initialDelay * attempt; // 2s, 4s, 6s
+      console.log(`[TargetAasManage] Attempt ${attempt}/${maxRetries}: Waiting ${delay}ms before checking for new submodel...`);
+      
+      await new Promise(resolve => setTimeout(resolve, delay));
+      
+      console.log(`[TargetAasManage] Attempt ${attempt}: Checking for new submodel...`);
+      const beforeCount = this.treeNodes.length;
+      await this.discoverSnapshot();
+      const afterCount = this.treeNodes.length;
+      
+      console.log(`[TargetAasManage] Attempt ${attempt}: Tree count ${beforeCount} -> ${afterCount}`);
+      
+      if (afterCount > beforeCount) {
+        console.log(`[TargetAasManage] Success! New submodel found on attempt ${attempt}`);
+        this.messageService.add({
+          severity: 'success',
+          summary: 'Submodel Visible',
+          detail: `New submodel is now visible in the tree!`,
+          life: 3000
+        });
+        return;
+      }
+    }
+    
+    console.log(`[TargetAasManage] All ${maxRetries} attempts failed. New submodel not yet available.`);
+    this.messageService.add({
+      severity: 'warn',
+      summary: 'Submodel Created',
+      detail: 'Submodel was created but may not be visible yet. Try refreshing manually.',
+      life: 5000
+    });
+  }
+
   async onNodeExpand(event: any): Promise<void> {
     const node = event.node;
     if (node.data?.type === 'submodel' && (!node.children || node.children.length === 0)) {
@@ -472,20 +507,15 @@ export class AasManagementComponent implements OnInit {
       await this.aasManagement.createSubmodel(this.system.id, body);
       this.showSubmodelDialog = false;
       
-      // For target systems, we need to wait a bit for the backend to make the submodel available
-      // Then discover the updated submodels
+      // For target systems, we need to wait longer for the backend to make the submodel available
+      // Try multiple times with increasing delays
       console.log('[TargetAasManage] Waiting for backend to make submodel available...');
-      setTimeout(async () => {
-        console.log('[TargetAasManage] Discovering submodels after creation');
-        console.log('[TargetAasManage] Current treeNodes before refresh:', this.treeNodes.length, this.treeNodes);
-        await this.discoverSnapshot();
-        console.log('[TargetAasManage] TreeNodes after refresh:', this.treeNodes.length, this.treeNodes);
-      }, 1000);
+      this.retryDiscoverWithDelay(3, 2000);
       
       this.messageService.add({
         severity: 'success',
         summary: 'Submodel Created',
-        detail: 'Submodel has been successfully created. The tree will refresh shortly.',
+        detail: 'Submodel has been successfully created. Checking for visibility...',
         life: 3000
       });
     } catch (e: any) {
