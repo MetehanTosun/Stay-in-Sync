@@ -406,6 +406,42 @@ export class AasManagementService {
   }
 
   /**
+   * Preview AASX file
+   */
+  async previewAasx(systemId: number, file: File): Promise<any> {
+    return new Promise((resolve, reject) => {
+      this.aasClientService.previewAasx('target', systemId, file).subscribe({
+        next: (response) => {
+          console.log('[AasManagement] AASX preview loaded successfully');
+          resolve(response);
+        },
+        error: (error: any) => {
+          console.error('[AasManagement] Error previewing AASX:', error);
+          reject(error);
+        }
+      });
+    });
+  }
+
+  /**
+   * Attach selected AASX content
+   */
+  async attachSelectedAasx(systemId: number, file: File, selection: any): Promise<void> {
+    return new Promise((resolve, reject) => {
+      this.aasClientService.attachSelectedAasx('target', systemId, file, selection).subscribe({
+        next: () => {
+          console.log('[AasManagement] Selected AASX content attached successfully');
+          resolve();
+        },
+        error: (error: any) => {
+          console.error('[AasManagement] Error attaching selected AASX content:', error);
+          reject(error);
+        }
+      });
+    });
+  }
+
+  /**
    * Upload AASX file
    */
   async uploadAasx(systemId: number, file: File): Promise<void> {

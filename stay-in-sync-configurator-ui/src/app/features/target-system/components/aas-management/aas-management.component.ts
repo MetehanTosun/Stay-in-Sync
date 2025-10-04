@@ -8,6 +8,7 @@ import { TooltipModule } from 'primeng/tooltip';
 import { DialogModule } from 'primeng/dialog';
 import { TextareaModule } from 'primeng/textarea';
 import { FileUploadModule } from 'primeng/fileupload';
+import { CheckboxModule } from 'primeng/checkbox';
 import { TreeNode } from 'primeng/api';
 import { MessageService } from 'primeng/api';
 import { AasManagementService, AasElementLivePanel } from '../../services/aas-management.service';
@@ -162,6 +163,25 @@ import { AasElementDialogComponent, AasElementDialogData, AasElementDialogResult
         <small *ngIf="aasxSelectedFile">{{ aasxSelectedFile.name }}</small>
         <small *ngIf="!aasxSelectedFile" style="color:var(--text-color-secondary);">No AASX file selected. Please choose a file to upload.</small>
       </div>
+      <div *ngIf="aasxPreview?.length" class="p-mt-3">
+        <div *ngFor="let sm of aasxPreview" class="p-mb-2">
+          <div style="display:flex;align-items:center;gap:.5rem;">
+            <p-checkbox binary="true" [ngModel]="getOrInitAasxSelFor(sm).full" (ngModelChange)="toggleAasxSubmodelFull(sm, $event)"></p-checkbox>
+            <span class="font-bold">{{ sm.idShort || sm.id }}</span>
+            <span style="font-size:.75rem;padding:.1rem .4rem;border:1px solid var(--surface-border);border-radius:999px;color:var(--text-color-secondary);">Submodel</span>
+          </div>
+          <div *ngIf="sm.elements?.length" class="p-ml-4 p-mt-1">
+            <div *ngFor="let el of sm.elements" class="p-mb-1" style="display:flex;align-items:center;gap:.5rem;">
+              <p-checkbox binary="true" [ngModel]="getOrInitAasxSelFor(sm).elements.includes(el.idShort)" (ngModelChange)="toggleAasxElement(sm, el.idShort, $event)"></p-checkbox>
+              <span>{{ el.idShort }}</span>
+              <span style="font-size:.75rem;padding:.1rem .4rem;border:1px solid var(--surface-border);border-radius:999px;color:var(--text-color-secondary);">{{ el.modelType }}</span>
+            </div>
+          </div>
+          <div *ngIf="!sm.elements?.length" class="p-ml-4 p-mt-1">
+            <small>No elements available in this submodel.</small>
+          </div>
+        </div>
+      </div>
       <ng-template pTemplate="footer">
         <button pButton type="button" class="p-button-text" label="Cancel" (click)="showAasxUpload=false"></button>
         <button pButton type="button" label="Upload" (click)="uploadAasx()" [disabled]="isUploadingAasx || !aasxSelectedFile"></button>
@@ -178,6 +198,7 @@ import { AasElementDialogComponent, AasElementDialogData, AasElementDialogResult
     DialogModule,
     TextareaModule,
     FileUploadModule,
+    CheckboxModule,
     AasElementDialogComponent
   ],
   styles: [`
@@ -212,6 +233,8 @@ export class AasManagementComponent implements OnInit {
   showAasxUpload = false;
   aasxSelectedFile: File | null = null;
   isUploadingAasx = false;
+  aasxPreview: any = null;
+  aasxSelection: { submodels: Array<{ id: string; full: boolean; elements: string[] }> } = { submodels: [] };
 
   // Templates
   minimalSubmodelTemplate: string = `{
@@ -726,6 +749,62 @@ export class AasManagementComponent implements OnInit {
 
   onAasxFileSelected(event: any): void {
     this.aasxSelectedFile = event.files?.[0] || null;
+    if (this.aasxSelectedFile && this.system?.id) {
+      // Load preview to enable selective attach
+      this.aasManagement.previewAasx(this.system.id, this.aasxSelectedFile).then((resp: any) => {
+        this.aasxPreview = resp?.submodels || (resp?.result ?? []);
+        // Normalize to array of {id,idShort,kind,elements:[{idShort,modelType}]}
+        const arr = Array.isArray(this.aasxPreview) ? this.aasxPreview : (this.aasxPreview?.submodels ?? []);
+        this.aasxSelection = { submodels: (arr || []).map((sm: any) => ({ id: sm.id || sm.submodelId, full: true, elements: (sm.elements || []).map((e: any) => e.idShort) })) };
+        
+        // Check for empty collections/lists and show toast
+        const emptySubmodels = arr.filter((sm: any) => !sm.elements || sm.elements.length === 0);
+        if (emptySubmodels.length > 0) {
+          this.messageService.add({
+            severity: 'info',
+            summary: 'AASX Preview',
+            detail: `${emptySubmodels.length} submodel(s) have no elements available.`,
+            life: 4000
+          });
+        }
+      }).catch((err: any) => {
+        this.aasxPreview = null;
+        this.aasxSelection = { submodels: [] };
+      });
+    }
+  }
+
+  // AASX selective attach helpers
+  private getSmId(sm: any): string {
+    return sm?.id || sm?.submodelId || '';
+  }
+
+  getOrInitAasxSelFor(sm: any): { id: string; full: boolean; elements: string[] } {
+    const id = this.getSmId(sm);
+    let found = this.aasxSelection.submodels.find((s) => s.id === id);
+    if (!found) {
+      found = { id, full: true, elements: [] };
+      this.aasxSelection.submodels.push(found);
+    }
+    return found;
+  }
+
+  toggleAasxSubmodelFull(sm: any, checked: boolean): void {
+    const sel = this.getOrInitAasxSelFor(sm);
+    sel.full = checked;
+    if (checked) {
+      sel.elements = [];
+    }
+  }
+
+  toggleAasxElement(sm: any, idShort: string, checked: boolean): void {
+    const sel = this.getOrInitAasxSelFor(sm);
+    const exists = sel.elements.includes(idShort);
+    if (checked) {
+      if (!exists) sel.elements.push(idShort);
+    } else {
+      if (exists) sel.elements = sel.elements.filter((x) => x !== idShort);
+    }
   }
 
   uploadAasx(): void {
@@ -738,14 +817,19 @@ export class AasManagementComponent implements OnInit {
     this.messageService.add({ severity: 'info', summary: 'Uploading AASX', detail: `${this.aasxSelectedFile?.name} (${this.aasxSelectedFile?.size} bytes)` });
     this.isUploadingAasx = true;
     
-    // For target systems, we use a simple upload without preview/selection
-    this.aasManagement.uploadAasx(this.system.id, this.aasxSelectedFile).then(() => {
+    // If preview is available and user made a selection, use selective attach; else default upload
+    const hasSelection = (this.aasxSelection?.submodels?.some(s => s.full || (s.elements && s.elements.length > 0)) ?? false);
+    const req$ = hasSelection ? 
+      this.aasManagement.attachSelectedAasx(this.system.id, this.aasxSelectedFile, this.aasxSelection) : 
+      this.aasManagement.uploadAasx(this.system.id, this.aasxSelectedFile);
+    
+    req$.then(() => {
       this.isUploadingAasx = false;
       this.showAasxUpload = false;
       // Refresh the tree to show uploaded content
       this.discoverSnapshot();
       this.messageService.add({ severity: 'success', summary: 'Upload accepted', detail: 'AASX uploaded successfully.' });
-    }).catch((error) => {
+    }).catch((error: any) => {
       this.isUploadingAasx = false;
       this.messageService.add({ severity: 'error', summary: 'Upload failed', detail: error?.message || 'See console for details' });
     });
