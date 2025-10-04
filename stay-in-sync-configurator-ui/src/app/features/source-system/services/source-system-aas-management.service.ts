@@ -111,34 +111,60 @@ export class SourceSystemAasManagementService {
         safePath,
         last,
         parent,
-        node: node?.label
+        node: node?.label,
+        nodeData: node?.data,
+        isManuallyCreated: node?.data?.isManuallyCreated || false
       });
 
       // Since getElement endpoint doesn't work properly, use listElements directly
       // For first-level elements, don't send parentPath parameter at all
-      const options: any = { depth: 'shallow', source: 'SNAPSHOT' };
-      if (parent && parent.trim() !== '') {
-        options.parentPath = parent;
-      }
-      
-      this.aasService.listElements(systemId, smId, options)
-        .subscribe({
-          next: (resp: any) => {
-            const list: any[] = Array.isArray(resp) ? resp : (resp?.result ?? []);
-            const found = list.find((el: any) => el.idShort === last);
-            if (found) {
-              const livePanel = this.mapElementToLivePanel(found);
-              observer.next(livePanel);
-            } else {
-              observer.next({ label: last, type: 'Unknown' } as AasElementLivePanel);
+      // Try SNAPSHOT first, then LIVE as fallback for manually created elements
+      const tryLoadElementDetails = (source: 'SNAPSHOT' | 'LIVE') => {
+        const options: any = { depth: 'shallow', source };
+        if (parent && parent.trim() !== '') {
+          options.parentPath = parent;
+        }
+        
+        console.log('[SourceAasManage] loadElementDetails: Trying source', { source, parent, last });
+        
+        this.aasService.listElements(systemId, smId, options)
+          .subscribe({
+            next: (resp: any) => {
+              const list: any[] = Array.isArray(resp) ? resp : (resp?.result ?? []);
+              const found = list.find((el: any) => el.idShort === last);
+              if (found) {
+                console.log('[SourceAasManage] loadElementDetails: Found element', { source, found });
+                const livePanel = this.mapElementToLivePanel(found);
+                observer.next(livePanel);
+                observer.complete();
+              } else {
+                console.log('[SourceAasManage] loadElementDetails: Element not found', { source, last, list });
+                // If SNAPSHOT failed and we haven't tried LIVE yet, try LIVE
+                if (source === 'SNAPSHOT') {
+                  console.log('[SourceAasManage] loadElementDetails: Trying LIVE as fallback');
+                  tryLoadElementDetails('LIVE');
+                } else {
+                  observer.next({ label: last, type: 'Unknown' } as AasElementLivePanel);
+                  observer.complete();
+                }
+              }
+            },
+            error: (err: any) => {
+              console.error('[SourceAasManage] loadElementDetails: Error with source', { source, err });
+              // If SNAPSHOT failed and we haven't tried LIVE yet, try LIVE
+              if (source === 'SNAPSHOT') {
+                console.log('[SourceAasManage] loadElementDetails: Trying LIVE as fallback after error');
+                tryLoadElementDetails('LIVE');
+              } else {
+                this.errorService.handleError(err);
+                observer.error(err);
+              }
             }
-            observer.complete();
-          },
-          error: (err: any) => {
-            this.errorService.handleError(err);
-            observer.error(err);
-          }
-        });
+          });
+      };
+      
+      // Start with SNAPSHOT, fallback to LIVE
+      tryLoadElementDetails('SNAPSHOT');
     });
   }
 

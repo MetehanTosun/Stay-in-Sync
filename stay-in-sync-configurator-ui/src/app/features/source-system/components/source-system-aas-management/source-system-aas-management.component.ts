@@ -452,6 +452,14 @@ export class SourceSystemAasManagementComponent implements OnInit {
         
         // Fix tree structure again after live refresh
         this.fixTreeStructureAfterRefresh(elementData);
+        
+        // Reload element details if we have a selected node
+        if (this.selectedAasNode && this.selectedAasNode.data?.type === 'element') {
+          console.log('[SourceAasManage] Reloading element details after creation');
+          const smId = this.selectedAasNode.data.submodelId;
+          const idShortPath = this.selectedAasNode.data.idShortPath;
+          this.loadAasLiveElementDetails(smId, idShortPath, this.selectedAasNode);
+        }
       }, 1000);
       
     } catch (error) {
