@@ -262,10 +262,33 @@ export class SourceSystemAasManagementService {
     const firstRef = stringifyRef((found as any).first || (found as any).firstReference);
     const secondRef = stringifyRef((found as any).second || (found as any).secondReference);
 
+    // Handle different value structures for Collections and Lists
+    let elementValue = (found as any).value;
+    if (liveType === 'SubmodelElementCollection' && !elementValue && (found as any).submodelElements) {
+      elementValue = (found as any).submodelElements;
+    }
+    if (liveType === 'SubmodelElementList' && !elementValue && (found as any).valueListElement) {
+      elementValue = (found as any).valueListElement;
+    }
+
+    // Debug logging for Collections and Lists
+    if (liveType === 'SubmodelElementCollection' || liveType === 'SubmodelElementList') {
+      console.log('[SourceAasManage] mapElementToLivePanel: Collection/List debug', {
+        idShort: found.idShort,
+        liveType,
+        originalValue: (found as any).value,
+        submodelElements: (found as any).submodelElements,
+        valueListElement: (found as any).valueListElement,
+        finalElementValue: elementValue,
+        elementValueLength: Array.isArray(elementValue) ? elementValue.length : 'not array',
+        hasChildren: found.hasChildren
+      });
+    }
+
     return {
       label: found.idShort,
       type: liveType || 'Unknown',
-      value: (found as any).value,
+      value: elementValue,
       valueType: (found as any).valueType,
       min: minValue,
       max: maxValue,
