@@ -63,9 +63,16 @@ public class TargetAasTestController {
         @APIResponse(responseCode = "404", description = "Target system not found"),
         @APIResponse(responseCode = "500", description = "Failed to retrieve submodels")
     })
-    public Response listSubmodels(@PathParam("targetSystemId") Long targetSystemId) {
+    public Response listSubmodels(@PathParam("targetSystemId") Long targetSystemId,
+                                  @QueryParam("source") @DefaultValue("LIVE") String source) {
         TargetSystem ts = TargetSystem.<TargetSystem>findByIdOptional(targetSystemId).orElse(null);
         ts = aasService.validateAasTarget(ts);
+        
+        // Target System only supports LIVE (no SNAPSHOT database)
+        if ("SNAPSHOT".equalsIgnoreCase(source)) {
+            Log.infof("Target listSubmodels: SNAPSHOT requested but not supported, falling back to LIVE");
+        }
+        
         var headers = headerBuilder.buildMergedHeaders(ts, HttpHeaderBuilder.Mode.READ);
         try {
             var refsResp = traversal.listSubmodels(ts.apiUrl, ts.aasId, headers).await().indefinitely();

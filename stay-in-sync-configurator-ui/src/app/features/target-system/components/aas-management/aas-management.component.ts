@@ -300,8 +300,8 @@ export class AasManagementComponent implements OnInit {
     this.messageService.add({
       severity: 'warn',
       summary: 'Submodel Created',
-      detail: 'Submodel was created but may not be visible yet. Try refreshing manually or wait a few minutes.',
-      life: 8000
+      detail: 'Submodel was created but may take up to 2-3 minutes to appear. Use "Refresh Snapshot" button to check manually.',
+      life: 10000
     });
   }
 
@@ -508,9 +508,9 @@ export class AasManagementComponent implements OnInit {
       this.showSubmodelDialog = false;
       
       // For target systems, we need to wait longer for the backend to make the submodel available
-      // Try multiple times with increasing delays
+      // Target System always uses LIVE data (no SNAPSHOT database), so it takes longer
       console.log('[TargetAasManage] Waiting for backend to make submodel available...');
-      this.retryDiscoverWithDelay(3, 2000);
+      this.retryDiscoverWithDelay(5, 5000); // 5 attempts with 5s, 10s, 15s, 20s, 25s delays
       
       this.messageService.add({
         severity: 'success',
