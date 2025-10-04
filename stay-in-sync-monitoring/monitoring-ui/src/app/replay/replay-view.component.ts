@@ -16,6 +16,9 @@ import { ReplayService } from './replay.service';
 import { ScriptService } from './script.service';
 import { SnapshotService } from './snapshot.service';
 
+// IMPORTANT: Import monaco types for the onInit handler
+declare const monaco: any;
+
 @Component({
   selector: 'app-replay-view',
   standalone: true,
@@ -49,7 +52,7 @@ export class ReplayViewComponent implements OnInit {
   error = signal<string | null>(null);
   data = signal<SnapshotDTO | null>(null);
 
-  //replay data
+  // Replay data
   outputData: any;
   variables: Record<string, any> = {};
   errorInfo: string | null = null;
@@ -58,7 +61,106 @@ export class ReplayViewComponent implements OnInit {
   scriptDisplay = '// loading TypeScript…';
   logs: LogEntry[] = [];
 
+  editorOptions = {
+    readOnly: false,
+    language: 'typescript',
+    automaticLayout: true,
+    minimap: { enabled: false },
+    theme: 'vs-dark',
+    lineNumbers: 'on' as const,
+  };
+
+  private globalsConfigured = false;
+
+  onEditorInit(editor: any): void {
+    console.log('Monaco editor initializing...');
+
+    // Configure globals immediately when editor is created
+    if (!this.globalsConfigured && typeof monaco !== 'undefined') {
+      this.configureMonacoGlobals();
+      this.globalsConfigured = true;
+    }
+
+    // Get the model and force TypeScript to re-validate with new globals
+    setTimeout(() => {
+      const model = editor.getModel();
+      if (model && typeof monaco !== 'undefined') {
+        // Trigger TypeScript worker to re-check the model
+        const uri = model.uri;
+        monaco.editor.setModelLanguage(model, 'typescript');
+
+        // Force diagnostics refresh
+        monaco.languages.typescript
+          .getTypeScriptWorker()
+          .then((worker: any) => worker(uri))
+          .then((client: any) => {
+            console.log('TypeScript worker refreshed');
+          })
+          .catch((err: any) =>
+            console.error('Error refreshing TS worker:', err)
+          );
+      }
+    }, 100);
+  }
+
+  private configureMonacoGlobals(): void {
+    if (typeof monaco === 'undefined') {
+      console.error('Monaco is not defined');
+      return;
+    }
+
+    console.log('Configuring Monaco TypeScript globals...');
+
+    // Clear existing extra libs
+    monaco.languages.typescript.typescriptDefaults.setExtraLibs([]);
+
+    // Add global variable declarations
+    const libSource = `
+declare var source: any;
+declare var targets: any;
+declare var stayinsync: any;
+declare var __capture: (name: string, value: any) => void;
+`;
+
+    const libUri = 'ts:filename/globals.d.ts';
+    monaco.languages.typescript.typescriptDefaults.addExtraLib(
+      libSource,
+      libUri
+    );
+
+    // Configure TypeScript compiler options
+    monaco.languages.typescript.typescriptDefaults.setCompilerOptions({
+      target: monaco.languages.typescript.ScriptTarget.ES2020,
+      allowNonTsExtensions: true,
+      moduleResolution: monaco.languages.typescript.ModuleResolutionKind.NodeJs,
+      module: monaco.languages.typescript.ModuleKind.CommonJS,
+      noEmit: true,
+      esModuleInterop: true,
+      allowJs: true,
+      strict: false,
+      noImplicitAny: false,
+      strictNullChecks: false,
+    });
+
+    // Set diagnostics options
+    monaco.languages.typescript.typescriptDefaults.setDiagnosticsOptions({
+      noSemanticValidation: false,
+      noSyntaxValidation: false,
+      noSuggestionDiagnostics: true,
+    });
+
+    console.log('Monaco globals configured successfully');
+  }
+
   ngOnInit(): void {
+    // Pre-configure Monaco if it's already available
+    // This handles cases where Monaco loads before component initialization
+    if (typeof monaco !== 'undefined' && !this.globalsConfigured) {
+      this.configureMonacoGlobals();
+      this.globalsConfigured = true;
+    }
+
+    // Get snapshotId from URL
     this.snapshotId = this.route.snapshot.queryParamMap.get('snapshotId');
     if (!this.snapshotId) {
       this.error.set('Missing snapshotId in URL.');
@@ -66,12 +168,10 @@ export class ReplayViewComponent implements OnInit {
       return;
     }
 
+    // Load snapshot
     this.snapshots.getById(this.snapshotId).subscribe({
       next: (snap) => {
         this.data.set(snap);
-
-        // Fill right-side "SourceData"
-        // (template already uses data()?.transformationResult?.sourceData | json)
 
         const transformationId = snap.transformationResult?.transformationId;
         if (transformationId == null) {
@@ -81,11 +181,24 @@ export class ReplayViewComponent implements OnInit {
           return;
         }
 
-        // fetch the **TypeScript** code by transformationId
+        // Fetch TypeScript code by transformationId
         this.scripts.getByTransformationId(transformationId).subscribe({
           next: (script: TransformationScriptDTO) => {
+            // Set the editor content
             this.scriptDisplay =
               script.typescriptCode || '// No TypeScript code available';
+
+            // Force re-validation after content is loaded
+            setTimeout(() => {
+              if (typeof monaco !== 'undefined') {
+                const models = monaco.editor.getModels();
+                if (models.length > 0) {
+                  const model = models[0];
+                  monaco.editor.setModelLanguage(model, 'typescript');
+                }
+              }
+            }, 100);
+
             this.loading.set(false);
           },
           error: (err) => {
@@ -95,11 +208,12 @@ export class ReplayViewComponent implements OnInit {
           },
         });
 
+        // Load logs
         this.logService
           .getLogsByTransformations(
             [transformationId.toString()],
-            this.toNanoSeconds(new Date(Date.now() - 24 * 60 * 60 * 1000)), // vor 24 Stunden
-            this.toNanoSeconds(new Date()), // jetzt
+            this.toNanoSeconds(new Date(Date.now() - 24 * 60 * 60 * 1000)),
+            this.toNanoSeconds(new Date()),
             ''
           )
           .subscribe({

@@ -18,28 +18,18 @@
         Replay
       </button>
     </header>
-
-    <ng-container *ngIf="!loading(); else loadingTpl">
-      <ng-container *ngIf="!error(); else errorTpl">
-        <ngx-monaco-editor
-          [options]="{
-            readOnly: true,
-            language: 'javascript',
-            automaticLayout: true,
-            minimap: { enabled: false },
-            lineNumbers: 'on'
-          }"
-          [ngModel]="scriptDisplay"
-          style="
-            flex: 1;
-            border: 1px solid #ccc;
-            border-radius: 4px;
-            overflow: hidden;
-          "
-        >
-        </ngx-monaco-editor>
-      </ng-container>
-    </ng-container>
+    <ngx-monaco-editor
+      [options]="editorOptions"
+      [ngModel]="scriptDisplay"
+      (onInit)="onEditorInit($event)"
+      style="
+        flex: 1;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+        overflow: hidden;
+      "
+    >
+    </ngx-monaco-editor>
   </section>
 
   <!-- Rechte Seite: Tabs bleiben wie vorher -->
