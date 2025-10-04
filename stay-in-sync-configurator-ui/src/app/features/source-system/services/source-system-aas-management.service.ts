@@ -211,7 +211,13 @@ export class SourceSystemAasManagementService {
    * Map element to live panel
    */
   private mapElementToLivePanel(found: any): AasElementLivePanel {
-    const liveType = found?.modelType || (found?.valueType ? 'Property' : undefined);
+    // Use the same logic as inferModelType for consistent type detection
+    let liveType = found?.modelType || found?.type || (found?.valueType ? 'Property' : undefined);
+    
+    // Fallback: Use inferModelType method for consistent type detection
+    if (!liveType) {
+      liveType = this.inferModelType(found);
+    }
     const minValue = (found as any).min ?? (found as any).minValue;
     const maxValue = (found as any).max ?? (found as any).maxValue;
     const inputVars = Array.isArray((found as any).inputVariables) ? (found as any).inputVariables : [];
