@@ -16,7 +16,7 @@ import {
 export class PolicyService {
 
   // UI Testing method. To use the real backend, change this to false!
-  private mockMode = false;
+  private mockMode = true;
 
   private backendUrl = 'http://localhost:8090/api/config/policies';
   private contractDefUrl = 'http://localhost:8090/api/config/edcs/contract-definitions';
@@ -123,7 +123,7 @@ export class PolicyService {
 
   // Prüfen, ob es sich um ein Update oder eine neue Policy handelt
   const isUpdate = !!raw.dbId;
-  
+
   // 1) Robuste Normalisierung aus Editor:
   //    - Erlaube sowohl { permission: [...] } als auch { policy: { permission: [...] } }
   const permission = Array.isArray(raw?.permission)
@@ -145,12 +145,12 @@ export class PolicyService {
     policyId: normalizedPolicy['@id'],
     policy: normalizedPolicy
   };
-  
+
   // Wenn dbId vorhanden ist, handelt es sich um ein Update
   if (isUpdate) {
     console.log(`[PolicyService] Updating policy with dbId ${raw.dbId} for EDC ${edcId}`);
     console.log('[PolicyService] Update DTO ->', dto);
-    
+
     // PUT request für Update
     return this.http.put(`${this.baseUrl}/${edcId}/policies/${raw.dbId}`, dto, { observe: 'response' })
       .pipe(
@@ -163,7 +163,7 @@ export class PolicyService {
   } else {
     console.log('[PolicyService] Creating new policy for EDC', edcId);
     console.log('[PolicyService] Create DTO ->', dto);
-    
+
     // POST request für neue Policy
     return this.http.post(`${this.baseUrl}/${edcId}/policies`, dto, { observe: 'response' })
       .pipe(
@@ -233,6 +233,11 @@ export class PolicyService {
           (error: any) => console.error(`Error deleting policy ${dbId}:`, error)
         )
       );
+  }
+
+  redeployPolicy(edcId: string, dbId: string): Observable<void> {
+    // This endpoint will trigger the backend to push the stored configuration to the EDC
+    return this.http.post<void>(`${this.baseUrl}/${edcId}/policies/${dbId}/redeploy`, {});
   }
 
   // Normalize backend responses for create/update policies: ensure body.id/policyId present
@@ -344,5 +349,10 @@ export class PolicyService {
       return of(undefined).pipe(delay(300));
     }
     return this.http.delete<void>(`${this.baseUrl}/${edcId}/contract-definitions/${id}`);
+  }
+
+  redeployContractDefinition(edcId: string, contractDefinitionId: string): Observable<void> {
+    // This endpoint will trigger the backend to push the stored configuration to the EDC
+    return this.http.post<void>(`${this.baseUrl}/${edcId}/contract-definitions/${contractDefinitionId}/redeploy`, {});
   }
 }

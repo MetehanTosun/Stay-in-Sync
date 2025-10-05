@@ -1159,6 +1159,57 @@ accessPolicySuggestions: OdrlPolicyDefinition[] = [];
     });
   }
 
+  redeployAsset(asset: Asset): void {
+    this.confirmationService.confirm({
+      message: `The asset "${asset.name}" has been modified externally. Do you want to redeploy the configuration from this UI to the EDC?`,
+      header: 'Confirm Redeployment',
+      icon: 'pi pi-exclamation-triangle',
+      accept: async () => {
+        try {
+          await lastValueFrom(this.assetService.redeployAsset(this.instance.id, asset.assetId));
+          this.messageService.add({ severity: 'success', summary: 'Success', detail: 'Asset redeployed successfully.' });
+          this.loadAssets(); // Reload to update sync status
+        } catch (error) {
+          this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Failed to redeploy asset.' });
+        }
+      }
+    });
+  }
+
+  redeployPolicy(policy: OdrlPolicyDefinition): void {
+    this.confirmationService.confirm({
+      message: `The policy "${policy.policyId || policy['@id']}" has been modified externally. Do you want to redeploy the configuration from this UI to the EDC?`,
+      header: 'Confirm Redeployment',
+      icon: 'pi pi-exclamation-triangle',
+      accept: async () => {
+        try {
+          await lastValueFrom(this.policyService.redeployPolicy(this.instance.id, policy.dbId!));
+          this.messageService.add({ severity: 'success', summary: 'Success', detail: 'Policy redeployed successfully.' });
+          this.loadPoliciesAndDefinitions(); // Reload to update sync status
+        } catch (error) {
+          this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Failed to redeploy policy.' });
+        }
+      }
+    });
+  }
+
+  redeployContractDefinition(contractDefinition: UiContractDefinition): void {
+    this.confirmationService.confirm({
+      message: `The contract definition "${contractDefinition.id}" has been modified externally. Do you want to redeploy the configuration from this UI to the EDC?`,
+      header: 'Confirm Redeployment',
+      icon: 'pi pi-exclamation-triangle',
+      accept: async () => {
+        try {
+          await lastValueFrom(this.policyService.redeployContractDefinition(this.instance.id, contractDefinition.id));
+          this.messageService.add({ severity: 'success', summary: 'Success', detail: 'Contract definition redeployed successfully.' });
+          this.loadPoliciesAndDefinitions(); // Reload to update sync status
+        } catch (error) {
+          this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Failed to redeploy contract definition.' });
+        }
+      }
+    });
+  }
+
   // Access Policy Methods
 
   openNewAccessPolicyDialog() {
