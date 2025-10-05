@@ -145,6 +145,7 @@ export class CreateTargetSystemComponent implements OnInit, OnChanges {
           this.createdTargetSystemId = resp.id!;
           this.currentStep = 1;
           this.messageService.add({ severity: 'success', summary: 'Created', detail: 'Target system created', life: 2500 });
+          console.log('[CreateTargetSystem] Target system created, moving to step 1', { id: resp.id, name: resp.name });
           this.isCreating = false;
         },
         error: (err) => {
@@ -184,10 +185,14 @@ export class CreateTargetSystemComponent implements OnInit, OnChanges {
   finish(): void {
     // Emit the created event when user clicks Finish
     if (this.createdTargetSystemId) {
+      console.log('[CreateTargetSystem] Emitting created event on finish', { id: this.createdTargetSystemId });
+      console.log('[CreateTargetSystem] Event emitter exists:', !!this.created);
+      console.log('[CreateTargetSystem] Event emitter observers count:', this.created.observers.length);
       
       // Create a mock response object with the created system ID
       const createdSystem = { id: this.createdTargetSystemId, name: this.form.get('name')?.value || 'Unknown' } as TargetSystemDTO;
       this.created.emit(createdSystem);
+      console.log('[CreateTargetSystem] Created event emitted successfully on finish');
     }
     
     // Close the dialog
@@ -362,10 +367,12 @@ export class CreateTargetSystemComponent implements OnInit, OnChanges {
     // Ensure system exists before discovery (mirror Source behavior)
     if (!this.createdTargetSystemId) { if (!this.isCreating) { this.save(); } return; }
     this.isDiscovering = true;
+    console.log('[TargetCreate] discoverSubmodels -> targetId=', this.createdTargetSystemId);
     this.aasClient.listSubmodels('target', this.createdTargetSystemId, {}).subscribe({
       next: (resp) => {
         this.isDiscovering = false;
         this.submodels = Array.isArray(resp) ? resp : (resp?.result ?? []);
+        console.log('[TargetCreate] submodels resp=', resp, 'parsedCount=', this.submodels.length);
         this.treeNodes = this.submodels.map((sm: any) => this.mapSubmodelToNode(sm));
       },
       error: (_err) => { this.isDiscovering = false; console.error('[TargetCreate] discover error', _err); this.errorService.handleError(_err); }
@@ -391,9 +398,11 @@ export class CreateTargetSystemComponent implements OnInit, OnChanges {
   }
   // duplicate removed; see method above
   onNodeExpand(event: any): void {
+    const node: TreeNode = event.node; if (!node) return; console.log('[TargetCreate] onNodeExpand node=', node);
     
     // Don't expand if node is a leaf (no children)
     if (node.leaf) {
+      console.log('[TargetCreate] onNodeExpand - Node is leaf, skipping expansion');
       return;
     }
     
@@ -409,8 +418,10 @@ export class CreateTargetSystemComponent implements OnInit, OnChanges {
   }
   private loadRootElements(submodelId: string, attach?: TreeNode): void {
     if (!this.createdTargetSystemId) return;
+    const smIdEnc = this.encodeIdToBase64Url(submodelId); console.log('[TargetCreate] loadRootElements smIdRaw=', submodelId, 'smIdB64=', smIdEnc);
     // Use shallow; backend will deep-fallback when needed
     this.aasClient.listElements('target', this.createdTargetSystemId, smIdEnc, 'shallow').subscribe({
+      next: (resp) => { const list = Array.isArray(resp) ? resp : (resp?.result ?? []); console.log('[TargetCreate] loadRootElements respCount=', list.length, 'rawResp=', resp);
         const roots = list.filter((el: any) => {
           const p = el?.idShortPath || el?.idShort;
           return p && !String(p).includes('/');
@@ -442,8 +453,10 @@ export class CreateTargetSystemComponent implements OnInit, OnChanges {
   }
   private loadChildren(submodelId: string, parentPath: string, node: TreeNode): void {
     if (!this.createdTargetSystemId) return;
+    const smIdEnc = this.encodeIdToBase64Url(submodelId); console.log('[TargetCreate] loadChildren smIdRaw=', submodelId, 'smIdB64=', smIdEnc, 'parentPath=', parentPath);
     // Use shallow; backend will deep-fallback when needed
     this.aasClient.listElements('target', this.createdTargetSystemId, smIdEnc, 'shallow', parentPath).subscribe({
+      next: (resp) => { const list = Array.isArray(resp) ? resp : (resp?.result ?? []); console.log('[TargetCreate] loadChildren respCount=', list.length, 'rawResp=', resp);
         // Backend already returns correct direct children, no filtering needed
         node.children = list.map((el: any) => {
           if (!el.idShortPath && el.idShort) { el.idShortPath = parentPath ? `${parentPath}/${el.idShort}` : el.idShort; }
@@ -488,7 +501,9 @@ export class CreateTargetSystemComponent implements OnInit, OnChanges {
   private loadLiveElementDetails(smId: string, idShortPath: string | undefined, node?: TreeNode): void {
     const systemId = this.createdTargetSystemId; if (!systemId) return;
     this.selectedLiveLoading = true;
+    const smIdEnc = this.encodeIdToBase64Url(smId); console.log('[TargetCreate] loadLiveElementDetails smIdRaw=', smId, 'smIdB64=', smIdEnc, 'path=', idShortPath);
     this.aasClient.getElement('target', systemId, smIdEnc, idShortPath || '').subscribe({
+      next: (found: any) => { this.selectedLiveLoading = false; console.log('[TargetCreate] loadLiveElementDetails resp=', found);
         const liveType = found?.modelType || (found?.valueType ? 'Property' : undefined);
         const minValue = (found as any).min ?? (found as any).minValue;
         const maxValue = (found as any).max ?? (found as any).maxValue;
@@ -625,17 +640,20 @@ export class CreateTargetSystemComponent implements OnInit, OnChanges {
     if (!this.createdTargetSystemId) return;
     
     try {
+      console.log('[TargetCreate] Creating element:', elementData);
       
       // Encode parentPath for BaSyx (convert / to .)
       const encodedParentPath = elementData.parentPath ? 
         elementData.parentPath.replace(/\//g, '.') : 
         undefined;
       
+      console.log('[TargetCreate] Encoded parentPath:', encodedParentPath);
       
       // Use the AAS client to create the element
       const smIdB64 = this.encodeIdToBase64Url(elementData.submodelId);
       await this.aasClient.createElement('target', this.createdTargetSystemId, smIdB64, elementData.body, encodedParentPath).toPromise();
       
+      console.log('[TargetCreate] Element created successfully');
       
       // Show success toast
       this.messageService.add({
@@ -685,6 +703,7 @@ export class CreateTargetSystemComponent implements OnInit, OnChanges {
   }
   deleteElement(submodelId: string, idShortPath: string): void {
     if (!this.createdTargetSystemId || !submodelId || !idShortPath) {
+      console.log('[TargetCreate] deleteElement: Missing required data', {
         createdTargetSystemId: this.createdTargetSystemId,
         submodelId,
         idShortPath
@@ -695,20 +714,24 @@ export class CreateTargetSystemComponent implements OnInit, OnChanges {
     // Use the original submodelId, not base64 encoded
     // The backend will handle the encoding internally
     
+    console.log('[TargetCreate] deleteElement: Deleting element', {
       systemId: this.createdTargetSystemId,
       submodelId,
       idShortPath
     });
     
     // Skip existence check for deep elements and proceed directly with deletion
+    console.log('[TargetCreate] deleteElement: Proceeding directly with deletion (skipping existence check for deep elements)');
     this.performDelete(submodelId, idShortPath);
   }
   
   private performDelete(submodelId: string, idShortPath: string): void {
     this.aasClient.deleteElement('target', this.createdTargetSystemId, submodelId, idShortPath).subscribe({
       next: () => {
+        console.log('[TargetCreate] deleteElement: Element deleted successfully');
         
         // Trigger discover to refresh the entire tree
+        console.log('[TargetCreate] deleteElement: Triggering discover to refresh tree');
         this.discoverSubmodels();
         
         // Show success message
@@ -721,6 +744,7 @@ export class CreateTargetSystemComponent implements OnInit, OnChanges {
       },
       error: (err) => {
         console.error('[TargetCreate] deleteElement: Error deleting element', err);
+        console.log('[TargetCreate] deleteElement: Error details', {
           status: err.status,
           statusText: err.statusText,
           url: err.url,
@@ -731,6 +755,7 @@ export class CreateTargetSystemComponent implements OnInit, OnChanges {
         
         // Check if it's a 404 error (element not found)
         if (err.status === 404) {
+          console.log('[TargetCreate] deleteElement: Element not found, removing from tree anyway');
           
           // Remove the element from the tree directly
           this.removeElementFromTree(submodelId, idShortPath);
@@ -749,6 +774,7 @@ export class CreateTargetSystemComponent implements OnInit, OnChanges {
   }
 
   private removeElementFromTree(submodelId: string, idShortPath: string): void {
+    console.log('[TargetCreate] removeElementFromTree: Removing element from tree', {
       submodelId,
       idShortPath
     });
@@ -757,6 +783,7 @@ export class CreateTargetSystemComponent implements OnInit, OnChanges {
     const parentPath = idShortPath.includes('.') ? idShortPath.substring(0, idShortPath.lastIndexOf('.')) : '';
     const parentKey = parentPath ? `${submodelId}::${parentPath}` : submodelId;
     
+    console.log('[TargetCreate] removeElementFromTree: Keys', {
       elementKey,
       parentKey,
       parentPath
@@ -768,6 +795,7 @@ export class CreateTargetSystemComponent implements OnInit, OnChanges {
     // Find the parent node
     const parentNode = this.findNodeByKey(parentKey, this.treeNodes);
     if (parentNode && parentNode.children) {
+      console.log('[TargetCreate] removeElementFromTree: Parent node found', {
         parentLabel: parentNode.label,
         childrenCount: parentNode.children.length
       });
@@ -777,6 +805,7 @@ export class CreateTargetSystemComponent implements OnInit, OnChanges {
       parentNode.children = parentNode.children.filter(child => {
         const shouldKeep = child.key !== elementKey;
         if (!shouldKeep) {
+          console.log('[TargetCreate] removeElementFromTree: Removing child', {
             childKey: child.key,
             childLabel: child.label
           });
@@ -785,6 +814,7 @@ export class CreateTargetSystemComponent implements OnInit, OnChanges {
       });
       
       elementRemoved = initialLength > parentNode.children.length;
+      console.log('[TargetCreate] removeElementFromTree: Element removed', {
         initialLength,
         finalLength: parentNode.children.length,
         removed: elementRemoved
@@ -796,6 +826,7 @@ export class CreateTargetSystemComponent implements OnInit, OnChanges {
     
     // If element wasn't found in the tree, refresh the parent node
     if (!elementRemoved) {
+      console.log('[TargetCreate] removeElementFromTree: Element not found in tree, refreshing parent node');
       this.refreshNodeLive(submodelId, parentPath, parentNode || undefined);
     }
   }
@@ -875,6 +906,7 @@ export class CreateTargetSystemComponent implements OnInit, OnChanges {
                         (el?.hasChildren === true);
         
         hasChildren = hasItems;
+        console.log('[TargetCreate] mapElementToNode - Collection/List:', label, 'hasItems:', hasItems, 'value:', el?.value, 'submodelElements:', el?.submodelElements);
       } else {
         // Für andere Typen (Operation, Entity): Standard-Logik
         hasChildren = el?.hasChildren === true || typeHasChildren;
@@ -938,4 +970,8 @@ export class CreateTargetSystemComponent implements OnInit, OnChanges {
       life: 3000
     });
   }
+
+
 }
+
+

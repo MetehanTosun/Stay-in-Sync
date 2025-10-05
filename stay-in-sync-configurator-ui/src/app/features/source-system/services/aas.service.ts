@@ -59,6 +59,7 @@ export class AasService {
     const submodelIdEnc = this.encodeIdToBase64Url(submodelId);
     const url = `/api/config/source-system/${sourceSystemId}/aas/submodels/${submodelIdEnc}/elements`;
     
+    console.log('[AasService] listElements: FRONTEND REQUEST', {
       sourceSystemId,
       submodelId,
       submodelIdEnc,
@@ -105,6 +106,7 @@ export class AasService {
     const encodedParentPath = parentPath && parentPath.trim() ? this.encodePathSegments(parentPath) : undefined;
     const params = encodedParentPath ? new HttpParams().set('parentPath', encodedParentPath) : undefined;
     
+    console.log('[AasService] createElement: API call', {
       url,
       urlLength: url.length,
       sourceSystemId,
@@ -144,6 +146,7 @@ export class AasService {
     const encodedPath = this.encodePathSegments(elementPath);
     const url = `/api/config/source-system/${sourceSystemId}/aas/submodels/${encodedSubmodelId}/elements/${encodedPath}`;
     
+    console.log('[AasService] deleteElement: API call', {
       url,
       urlLength: url.length,
       sourceSystemId,
@@ -156,6 +159,7 @@ export class AasService {
     });
     
     // Log the full URL for debugging
+    console.log('[AasService] deleteElement: Full URL', url);
     
     return this.http.delete(url);
   }
@@ -171,6 +175,7 @@ export class AasService {
     // BaSyx expects dot-separated paths, not slash-separated
     const result = path.replace(/\//g, '.');
     
+    console.log('[AasService] encodePathSegments: Converting slash to dot', {
       original: path,
       result: result,
       originalLength: path.length,
@@ -180,3 +185,5 @@ export class AasService {
     return result;
   }
 }
+
+

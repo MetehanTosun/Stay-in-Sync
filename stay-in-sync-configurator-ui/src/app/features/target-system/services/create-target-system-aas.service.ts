@@ -155,6 +155,7 @@ export class CreateTargetSystemAasService {
       
       // URL encode the element path to handle spaces and special characters
       const encodedElementPath = encodeURIComponent(elementPath);
+      console.log('[CreateTargetSystemAasService] loadElementDetails:', {
         original: elementPath,
         encoded: encodedElementPath
       });

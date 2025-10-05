@@ -46,19 +46,27 @@ export class AasManagementService {
    */
   async discoverSubmodels(systemId: number): Promise<TreeNode[]> {
     return new Promise((resolve, reject) => {
+      console.log('[AasManagement] discoverSubmodels: Starting with systemId:', systemId);
       // Try SNAPSHOT first, then fallback to no source parameter (LIVE)
       this.aasClientService.listSubmodels('target', systemId, { source: 'SNAPSHOT' }).subscribe({
         next: (response: any) => {
+          console.log('[AasManagement] discoverSubmodels: SNAPSHOT response:', response);
           const submodels = Array.isArray(response) ? response : (response?.result ?? []);
+          console.log('[AasManagement] discoverSubmodels: Extracted submodels:', submodels.length, submodels);
           const treeNodes = submodels.map((sm: any) => this.mapSmToNode(sm));
+          console.log('[AasManagement] discoverSubmodels: Mapped treeNodes:', treeNodes.length, treeNodes);
           resolve(treeNodes);
         },
         error: (error: any) => {
+          console.log('[AasManagement] discoverSubmodels: SNAPSHOT failed, trying LIVE:', error);
           // Fallback to LIVE (no source parameter)
           this.aasClientService.listSubmodels('target', systemId).subscribe({
             next: (response: any) => {
+              console.log('[AasManagement] discoverSubmodels: LIVE response:', response);
               const submodels = Array.isArray(response) ? response : (response?.result ?? []);
+              console.log('[AasManagement] discoverSubmodels: Extracted submodels:', submodels.length, submodels);
               const treeNodes = submodels.map((sm: any) => this.mapSmToNode(sm));
+              console.log('[AasManagement] discoverSubmodels: Mapped treeNodes:', treeNodes.length, treeNodes);
               resolve(treeNodes);
             },
             error: (liveError: any) => {
@@ -94,6 +102,7 @@ export class AasManagementService {
               // For root elements, just use idShort
               idShortPath = el.idShort;
             }
+            console.log('[AasManagement] loadSubmodelElements: Mapping element', {
               idShort: el.idShort,
               idShortPath: idShortPath,
               modelType: el.modelType
@@ -145,6 +154,7 @@ export class AasManagementService {
               // Build full path: parentPath + '/' + idShort
               idShortPath = parentPath ? `${parentPath}/${el.idShort}` : el.idShort;
             }
+            console.log('[AasManagement] loadElementChildren: Mapping child element', {
               idShort: el.idShort,
               idShortPath: idShortPath,
               modelType: el.modelType,
@@ -183,6 +193,7 @@ export class AasManagementService {
       
       // URL encode the element path to handle spaces and special characters
       const encodedElementPath = encodeURIComponent(elementPath);
+      console.log('[AasManagement] loadElementDetails: Encoding element path', {
         original: elementPath,
         encoded: encodedElementPath
       });
@@ -232,8 +243,10 @@ export class AasManagementService {
    */
   async createSubmodel(systemId: number, submodelData: any): Promise<void> {
     return new Promise((resolve, reject) => {
+      console.log('[AasManagement] createSubmodel: Starting with systemId:', systemId, 'submodelData:', submodelData);
       this.aasClientService.createSubmodel('target', systemId, submodelData).subscribe({
         next: (response: any) => {
+          console.log('[AasManagement] createSubmodel: Success response:', response);
           this.messageService.add({ 
             severity: 'success', 
             summary: 'Submodel created', 
@@ -399,6 +412,7 @@ export class AasManagementService {
     return new Promise((resolve, reject) => {
       this.aasClientService.previewAasx('target', systemId, file).subscribe({
         next: (response) => {
+          console.log('[AasManagement] AASX preview loaded successfully');
           resolve(response);
         },
         error: (error: any) => {
@@ -416,6 +430,7 @@ export class AasManagementService {
     return new Promise((resolve, reject) => {
       this.aasClientService.attachSelectedAasx('target', systemId, file, selection).subscribe({
         next: () => {
+          console.log('[AasManagement] Selected AASX content attached successfully');
           resolve();
         },
         error: (error: any) => {
@@ -433,6 +448,7 @@ export class AasManagementService {
     return new Promise((resolve, reject) => {
       this.aasClientService.uploadAasx('target', systemId, file).subscribe({
         next: () => {
+          console.log('[AasManagement] AASX uploaded successfully');
           resolve();
         },
         error: (error: any) => {
