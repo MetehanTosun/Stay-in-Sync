@@ -1,6 +1,6 @@
 package de.unistuttgart.stayinsync.core.service;
 
-import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.SourceSystemEndpoint;
+import de.unistuttgart.stayinsync.core.configuration.persistence.entities.sync.SourceSystemEndpoint;
 import de.unistuttgart.stayinsync.core.configuration.service.SourceSystemEndpointService;
 import de.unistuttgart.stayinsync.core.configuration.util.TypeScriptTypeGenerator;
 import io.quarkus.test.junit.QuarkusTest;

@@ -2,7 +2,7 @@ package de.unistuttgart.stayinsync.core.configuration.util;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.*;
+import de.unistuttgart.stayinsync.core.configuration.persistence.entities.sync.*;
 import de.unistuttgart.stayinsync.core.configuration.rest.dtos.*;
 import de.unistuttgart.stayinsync.core.configuration.rest.dtos.targetsystem.ActionDefinitionDTO;
 import de.unistuttgart.stayinsync.core.configuration.rest.dtos.targetsystem.CreateArcDTO;

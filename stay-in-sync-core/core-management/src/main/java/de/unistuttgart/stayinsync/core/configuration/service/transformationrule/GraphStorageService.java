@@ -3,7 +3,7 @@ package de.unistuttgart.stayinsync.core.configuration.service.transformationrule
 import com.fasterxml.jackson.databind.ObjectMapper;
 import de.unistuttgart.graphengine.service.GraphMapper;
 import de.unistuttgart.graphengine.validation_error.ValidationError;
-import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.TransformationRule;
+import de.unistuttgart.stayinsync.core.configuration.persistence.entities.sync.TransformationRule;
 import de.unistuttgart.stayinsync.core.configuration.exception.CoreManagementException;
 
 import io.quarkus.logging.Log;
