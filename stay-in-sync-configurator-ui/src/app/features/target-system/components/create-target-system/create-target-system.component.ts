@@ -512,6 +512,11 @@ export class CreateTargetSystemComponent implements OnInit, OnChanges {
         const inoutVars = Array.isArray((found as any).inoutputVariables) ? (found as any).inoutputVariables : [];
         const ann1 = (found as any).annotations; const ann2 = (found as any).annotation;
         const annotationsRaw = Array.isArray(ann1) ? ann1 : (Array.isArray(ann2) ? ann2 : []);
+        console.log('=== ANNOTATIONS DEBUG ===');
+        console.log('Found element:', found);
+        console.log('ann1 (annotations):', ann1);
+        console.log('ann2 (annotation):', ann2);
+        console.log('annotationsRaw:', annotationsRaw);
         const mapVar = (v: any): any | null => { const val = v?.value ?? v; const idShort = val?.idShort; if (!idShort) return null; return { idShort, modelType: val?.modelType, valueType: val?.valueType }; };
         const mapAnnotation = (a: any): any | null => { const val = a?.value ?? a; const idShort = val?.idShort; if (!idShort) return null; return { idShort, modelType: val?.modelType, valueType: val?.valueType, value: val?.value }; };
         
@@ -534,6 +539,9 @@ export class CreateTargetSystemComponent implements OnInit, OnChanges {
         const firstRef = stringifyRef((found as any).first || (found as any).firstReference);
         const secondRef = stringifyRef((found as any).second || (found as any).secondReference);
         
+        const mappedAnnotations = annotationsRaw.map(mapAnnotation).filter(Boolean);
+        console.log('Mapped annotations:', mappedAnnotations);
+        
         this.selectedLivePanel = {
           label: found.idShort,
           type: liveType || 'Unknown',
@@ -546,8 +554,10 @@ export class CreateTargetSystemComponent implements OnInit, OnChanges {
           inputVariables: inputVars.map(mapVar).filter(Boolean),
           outputVariables: outputVars.map(mapVar).filter(Boolean),
           inoutputVariables: inoutVars.map(mapVar).filter(Boolean),
-          annotations: annotationsRaw.map(mapAnnotation).filter(Boolean)
+          annotations: mappedAnnotations
         } as any;
+        
+        console.log('Final selectedLivePanel:', this.selectedLivePanel);
         if (node && node.data) {
           node.data.idShortPath = idShortPath || node.data.idShortPath;
           node.data.modelType = liveType || node.data.modelType;

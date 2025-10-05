@@ -139,6 +139,12 @@
             <div *ngIf="selectedLivePanel.type==='RelationshipElement' || selectedLivePanel.type==='AnnotatedRelationshipElement'">
               <div *ngIf="selectedLivePanel.firstRef"><strong>First Reference:</strong> {{ selectedLivePanel.firstRef }}</div>
               <div *ngIf="selectedLivePanel.secondRef"><strong>Second Reference:</strong> {{ selectedLivePanel.secondRef }}</div>
+              <!-- Debug info -->
+              <div style="font-size:0.8rem;color:#666;margin:0.5rem 0;">
+                <div>DEBUG - Type: {{ selectedLivePanel.type }}</div>
+                <div>DEBUG - Annotations length: {{ selectedLivePanel.annotations?.length || 0 }}</div>
+                <div>DEBUG - Annotations: {{ selectedLivePanel.annotations | json }}</div>
+              </div>
               <div *ngIf="selectedLivePanel.type==='AnnotatedRelationshipElement' && selectedLivePanel.annotations?.length">
                 <strong>Annotations:</strong>
                 <div style="margin:.25rem 0 .5rem 0;">
