@@ -188,7 +188,7 @@ public class SourceSystemEndpointResource {
         Log.infof("Mapped entity ID: %s", entity.id);
         Log.infof("Mapped entity endpointPath: %s", entity.endpointPath);
         
-        return this.sourceSystemEndpointService.replaceSourceSystemEndpoint(entity)
+        return this.sourceSystemEndpointService.replaceSourceSystemEndpoint(entity, sourceSystemEndpointDTO.sourceSystemId())
                 .map(updatedSourceSystemEndpoint -> {
                     Log.debugf("source-system-endpoint replaced with new values %s", updatedSourceSystemEndpoint);
                     return Response.noContent().build();

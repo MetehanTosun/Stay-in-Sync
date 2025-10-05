@@ -178,7 +178,7 @@ public class SourceSystemEndpointService {
         }
     }
 
-    public Optional<SourceSystemEndpoint> replaceSourceSystemEndpoint(@NotNull @Valid SourceSystemEndpoint sourceSystemEndpoint) {
+    public Optional<SourceSystemEndpoint> replaceSourceSystemEndpoint(@NotNull @Valid SourceSystemEndpoint sourceSystemEndpoint, Long sourceSystemId) {
         Log.infof("=== SOURCE SYSTEM ENDPOINT SERVICE REPLACE DEBUG ===");
         Log.infof("Replacing endpoint ID: %s", sourceSystemEndpoint.id);
         Log.infof("Endpoint path: %s", sourceSystemEndpoint.endpointPath);
@@ -207,10 +207,18 @@ public class SourceSystemEndpointService {
         return SourceSystemEndpoint.findByIdOptional(sourceSystemEndpoint.id)
                 .map(SourceSystemEndpoint.class::cast) // Only here for type erasure within the IDE
                 .map(targetSouceSystemEndpoint -> {
+                    // Get the source system to maintain the relationship
+                    SourceSystem sourceSystem = sourceSystemService.findSourceSystemById(sourceSystemId).orElseThrow(() ->
+                            new CoreManagementException(Response.Status.NOT_FOUND, "Unable to find Source System", "There is no source-system with id " + sourceSystemId));
+                    
                     this.sourceSystemEndpointFullMapper.mapFullUpdate(sourceSystemEndpoint, targetSouceSystemEndpoint);
                  
                     targetSouceSystemEndpoint.requestBodySchema = sourceSystemEndpoint.requestBodySchema;
                     targetSouceSystemEndpoint.responseBodySchema = sourceSystemEndpoint.responseBodySchema;
+                    
+                    // CRITICAL: Set the sourceSystem relationship to prevent it from becoming null
+                    targetSouceSystemEndpoint.sourceSystem = sourceSystem;
+                    targetSouceSystemEndpoint.syncSystem = sourceSystem;
                     
             
                     if (targetSouceSystemEndpoint.responseBodySchema != null && !targetSouceSystemEndpoint.responseBodySchema.isBlank()) {
