@@ -51,13 +51,13 @@ export class AasUtilityService {
           }
           
           // Final localhost fallback
-          return 'Default AAS';
+          return 'AAS ID not found';
         }
         
         // For other hosts, use hostname as AAS ID
         return url.hostname;
       } catch (e) {
-        return 'Unknown';
+        return 'AAS ID not found';
       }
     }
     
