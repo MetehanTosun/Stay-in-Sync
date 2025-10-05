@@ -1,6 +1,6 @@
 # Monitoring Graph & Metrics
 
-Der **Monitoring Graph** bietet eine visuelle Übersicht über:
+The **Monitoring Graph** provides a visual overview of:
 
 - **Source systems**
 - **Target systems**
@@ -11,53 +11,53 @@ Der **Monitoring Graph** bietet eine visuelle Übersicht über:
 ---
 
 ## 🩺 Health Checks & Visualization
-Alle Systeme (Source, Target, PollingNodes) werden kontinuierlich überwacht.  
-Der Status der Knoten wird durch **Farbcodes** dargestellt:
+All systems (source, target, polling nodes) are continuously monitored.  
+The status of the nodes is represented by **color codes**:
 
--  **Grün** → aktiv
--  **Rot** → Fehler
--  **Gelb** → inaktiv
+- **Green** → active
+- **Red** → Error
+- **Yellow** → inactive
 
-### 🔎 Legende
-Die Legende ist **ein- und ausklappbar** und erklärt Formen & Farben:
+### 🔎 Legend
+The legend can be folded in and out and explains shapes and colors:
 
 **Formen**
 
-- 🔵 **Kreis** → SyncNode / PollingNode
-- 🔺 **Dreieck** → SourceSystem / ASS
-- 🟦 **Quadrat** → TargetSystem
+- 🔵 **Circle** → SyncNode / PollingNode
+- 🔺 **Triangle** → SourceSystem / ASS
+- 🟦 **Square** → TargetSystem
 
-**Farben**
-- 🟩 Grün → aktiv
-- 🟥 Rot → Fehler
-- 🟨 Gelb → inaktiv
+**Colors**
+- 🟩 Green → active
+- 🟥 Red → error
+- 🟨 Yellow → inactive
 
 ---
 
 ##  Metrics
-Im **Metrics Tab** werden Systemstatistiken aller aktiven Services angezeigt.  
-Dies erfolgt über ein **eingebettetes Grafana-Dashboard** mit freier Navigation, Filterung und individuellen Diagrammen.
+The **Metrics tab** displays system statistics for all active services.  
+This is done via an **embedded Grafana dashboard** with free navigation, filtering, and customizable charts.
 
-###  Allgemeine Metriken
-- CPU-Auslastung
-- Thread-Anzahl
-- RabbitMQ-Channels
-- Heap-Memory
+###  General Metrics
+- CPU utilization
+- Number of threads
+- RabbitMQ channels
+- Heap memory
 
 ###  PollingNodes
-- Request-Anzahl
+- Number of requests
 
 ###  SyncNodes
-- Script Load
-- Ausführungszeiten
+- Script load
+- Execution times
 
 ---
 
-##  Filtering im Graph
-Die Filterung kann direkt über den Graphen erfolgen:
+##  Filtering in the graph
+Filtering can be done directly via the graphs:
 
-- Klick auf einen **PollingNode** → zeigt nur dessen Request-Anzahl
-- Klick auf einen **SyncNode** → zeigt nur scriptbezogene Metriken
-- Klick auf **freien Bereich** → Filter wird entfernt
+- Click on a **PollingNode** → shows only its request count
+- Click on a **SyncNode** → shows only script-related metrics
+- Click on **free area** → filter is removed
 
 ---
