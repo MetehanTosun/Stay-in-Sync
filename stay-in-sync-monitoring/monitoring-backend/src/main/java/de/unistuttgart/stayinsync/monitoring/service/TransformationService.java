@@ -16,6 +16,13 @@ public class TransformationService {
     @RestClient
     SyncJobClient syncJobClient;
 
+    /**
+     * Retrieves all transformations associated with a given SyncJob.
+     *
+     * @param syncJobId the ID of the SyncJob (as a String, converted to Long internally)
+     * @return a list of {@link MonitoringTransformationDto} belonging to the SyncJob
+     */
+
     public List<MonitoringTransformationDto> getTransformations(String syncJobId) {
         MonitoringSyncJobDto syncJob = syncJobClient.getById(Long.valueOf(syncJobId));
         return syncJob.transformations;
