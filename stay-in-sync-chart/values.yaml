@@ -145,10 +145,31 @@ monitoring-backend:
       FLUENT_BIT_ADDRESS: fluent-bit:5170
       CORE_MANAGEMENT_ADDRESS: http://core-management:80
       SYNCNODE_ADDRESS: http://core-sync-node:80
-      PROMETHEUS_URL: http://test-kube-prometheus-stack-prometheus:9090
+      PROMETHEUS_URL: http://stay-in-sync-kube-promethe-prometheus:9090
       LOKI_URL: http://loki:3100/loki/api/v1/query_range
       GRAFANA_BASE_URL: http://grafana.stayinsync.local/d/abd0d0fc-75cf-4a29-abeb-7c96b57a1629/stayinsync-monitoring-metrics
 kube-prometheus-stack:
+  prometheus:
+    prometheusSpec:
+      additionalScrapeConfigsSecret:
+        enabled: true
+        name: additional-scrape-configs
+        key: prometheus-additional.yaml
+      maximumStartupDurationSeconds: 600
+      serviceMonitorSelector:
+        matchExpressions:
+          - key: app.kubernetes.io/managed-by
+            operator: In
+            values:
+              - Helm
+              - quarkus
+      podMonitorSelector:
+        matchExpressions:
+          - key: app.kubernetes.io/managed-by
+            operator: In
+            values:
+              - Helm
+              - quarkus
   grafana:
     adminUser: admin
     adminPassword: admin
@@ -175,28 +196,6 @@ kube-prometheus-stack:
             type: prometheus
             access: proxy
             url: http://test-kube-prometheus-stack-prometheus:9090
-prometheus:
-  prometheusSpec:
-    maximumStartupDurationSeconds: 600
-    additionalScrapeConfigsSecret:
-      enabled: true
-      name: prometheus-additional-scrape
-      key: prometheus-additional.yaml
-    serviceMonitorSelector:
-      matchExpressions:
-        - key: app.kubernetes.io/managed-by
-          operator: In
-          values:
-            - Helm
-            - quarkus
-    podMonitorSelector:
-      matchExpressions:
-        - key: app.kubernetes.io/managed-by
-          operator: In
-          values:
-            - Helm
-            - quarkus
-
 
 loki:
   fullnameOverride: loki
