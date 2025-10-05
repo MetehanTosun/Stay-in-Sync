@@ -165,7 +165,7 @@ public class SourceSystemEndpointResource {
                                                                     schema = @Schema(implementation = SourceSystemEndpointDTO.class)
                                                             )
                                                     )
-                                                    @PathParam("id") Long id, @Valid @NotNull CreateSourceSystemEndpointDTO sourceSystemEndpointDTO) {
+                                                    @PathParam("id") Long id, @Valid @NotNull SourceSystemEndpointDTO sourceSystemEndpointDTO) {
 
         SourceSystemEndpoint entity = fullUpdateMapper.mapToEntity(sourceSystemEndpointDTO);
         entity.id = id; // Set the ID from the path parameter

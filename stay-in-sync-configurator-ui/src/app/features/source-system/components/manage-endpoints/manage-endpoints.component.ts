@@ -1010,11 +1010,14 @@ ${jsonSchema}
       return;
     }
     this.editJsonError = null;
-    const dto = {
+    const dto: SourceSystemEndpointDTO = {
+      id: this.editingEndpoint.id,
+      sourceSystemId: this.sourceSystemId!,
       endpointPath: this.editForm.value.endpointPath,
       httpRequestType: this.editForm.value.httpRequestType,
       requestBodySchema: this.editForm.value.requestBodySchema,
-      responseBodySchema: this.editForm.value.responseBodySchema
+      responseBodySchema: this.editForm.value.responseBodySchema,
+      responseDts: this.editingEndpoint.responseDts
     };
     if (dto.requestBodySchema) {
       try {
