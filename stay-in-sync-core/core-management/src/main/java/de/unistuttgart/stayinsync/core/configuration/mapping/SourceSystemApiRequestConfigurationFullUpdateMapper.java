@@ -26,6 +26,7 @@ public interface SourceSystemApiRequestConfigurationFullUpdateMapper {
                 entity.id,
                 entity.pollingIntervallTimeInMs,
                 entity.deploymentStatus,
+                null, // workerPodName - not available in entity
                 conn
         );
     }
