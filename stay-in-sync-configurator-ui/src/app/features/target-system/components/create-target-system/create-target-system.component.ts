@@ -520,12 +520,11 @@ export class CreateTargetSystemComponent implements OnInit, OnChanges {
         const mapVar = (v: any): any | null => { const val = v?.value ?? v; const idShort = val?.idShort; if (!idShort) return null; return { idShort, modelType: val?.modelType, valueType: val?.valueType }; };
         const mapAnnotation = (a: any): any | null => { 
           console.log('Mapping annotation:', a);
-          const val = a?.value ?? a; 
-          console.log('Annotation val:', val);
-          const idShort = val?.idShort; 
+          // For annotations, we want the annotation object itself, not its value
+          const idShort = a?.idShort; 
           console.log('Annotation idShort:', idShort);
           if (!idShort) return null; 
-          const result = { idShort, modelType: val?.modelType, valueType: val?.valueType, value: val?.value };
+          const result = { idShort, modelType: a?.modelType, valueType: a?.valueType, value: a?.value };
           console.log('Annotation result:', result);
           return result;
         };
