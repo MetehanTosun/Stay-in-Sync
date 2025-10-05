@@ -143,7 +143,7 @@ public class SourceSystemEndpointServiceTest {
         replacementEndpoint.responseBodySchema = "{\"type\": \"object\", \"properties\": {\"newField\": {\"type\": \"string\"}}}";
 
         // Act
-        Optional<SourceSystemEndpoint> result = sourceSystemEndpointService.replaceSourceSystemEndpoint(replacementEndpoint);
+        Optional<SourceSystemEndpoint> result = sourceSystemEndpointService.replaceSourceSystemEndpoint(replacementEndpoint, 1L);
 
         // Assert
         assertTrue(result.isPresent());
