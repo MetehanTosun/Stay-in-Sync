@@ -1,6 +1,6 @@
 <!-- Handler outside the panel, only visible when closed -->
 <div *ngIf="!open" id="error-panel-handler" (click)="togglePanel()">
-  <span class="material-symbols-rounded" id="menu-icon">keyboard_arrow_left</span>
+  <span class="pi pi-angle-left" id="menu-icon"></span>
   <span class="error-count">{{ errors.length }}</span>
 </div>
 
@@ -9,13 +9,13 @@
     <div class="error-panel-header">
       <h2>Validation Errors</h2>
       <!-- Close arrow only visible when open -->
-      <button class="close-panel-btn" (click)="togglePanel()" aria-label="Close error panel">
-        <span class="material-symbols-rounded">keyboard_arrow_right</span>
+      <button class="close-panel-btn" (click)="togglePanel()">
+        <span class="pi pi-angle-right"></span>
       </button>
     </div>
     <div id="error-panel">
       <ul>
-        <li *ngFor="let error of errors">
+        <li *ngFor="let error of errors" (click)="onErrorClick(error)" [class.clickable]="error.nodeId !== undefined">
           <strong>{{ error.errorCode }}</strong>: {{ error.message }}
         </li>
       </ul>

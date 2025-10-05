@@ -3,16 +3,27 @@
     <!-- Tab 1: All Data Sources -->
     <p-tabPanel header="All Data Sources">
       <ng-container
-        *ngTemplateOutlet="systemListTemplate; context: { systems: allSourceSystems$ | async }">
+        *ngTemplateOutlet="
+          systemListTemplate;
+          context: { systems: allSourceSystems$ | async }
+        "
+      >
       </ng-container>
     </p-tabPanel>
 
     <!-- Tab 2: Active in Script -->
     <p-tabPanel header="Active in Script">
       <ng-container
-        *ngTemplateOutlet="systemListTemplate; context: { systems: activeSystems$ | async }">
+        *ngTemplateOutlet="
+          systemListTemplate;
+          context: { systems: activeSystems$ | async }
+        "
+      >
       </ng-container>
-      <div *ngIf="!(activeSystems$ | async)?.length" class="p-3 text-center text-muted">
+      <div
+        *ngIf="!(activeSystems$ | async)?.length"
+        class="p-3 text-center text-muted"
+      >
         <i class="pi pi-info-circle p-mr-2"></i>
         <span>No source systems are currently active in the script.</span>
         <span>Type 'source.system-name.' to load its ARCs.</span>
@@ -22,16 +33,20 @@
 </p-panel>
 
 <ng-template #systemListTemplate let-systems="systems">
-  <p-accordion [multiple]="true" *ngIf="systems?.length" (onOpen)="onSystemExpand(systems[$event.index])">
-    <p-accordionTab
-      *ngFor="let system of systems"
-      [header]="system.name"
-    >
+  <p-accordion
+    [multiple]="true"
+    *ngIf="systems?.length"
+    (onOpen)="onSystemExpand(systems[$event.index])"
+  >
+    <p-accordionTab *ngFor="let system of systems" [header]="system.name">
       <div *ngIf="system.isLoadingEndpoints" class="text-center p-2">
         <p-progressSpinner styleClass="w-2rem h-2rem"></p-progressSpinner>
       </div>
 
-      <div *ngIf="!system.isLoadingEndpoints && system.endpoints.length === 0" class="p-2 text-muted">
+      <div
+        *ngIf="!system.isLoadingEndpoints && system.endpoints.length === 0"
+        class="p-2 text-muted"
+      >
         <span>No endpoints are defined for this source system.</span>
       </div>
 
@@ -40,7 +55,9 @@
         class="endpoint-group mb-3"
       >
         <div class="endpoint-header">
-          <span class="font-bold">{{ endpoint.httpRequestType }} {{ endpoint.endpointPath }}</span>
+          <span class="font-bold"
+            >{{ endpoint.httpRequestType }} {{ endpoint.endpointPath }}</span
+          >
         </div>
 
         <p-button
@@ -50,23 +67,43 @@
           (click)="onCreateArc(system, endpoint)"
         ></p-button>
 
-        <div *ngIf="(arcsBySystem$ | async)?.get(system.name) as arcsForSystem">
+        <div
+          *ngIf="(arcsBySystem$ | async)?.get(system.name) as arcsForSystem"
+          class="arc-list"
+        >
           <div
-            *ngFor="let arc of arcsForSystem | filterByEndpoint: endpoint.id"
+            *ngFor="let arc of arcsForSystem | filterByEndpoint : endpoint.id"
             class="arc-item"
           >
-            <span class="ml-2">{{ arc.alias }}</span>
+            <span class="ml-2 arc-alias">{{ arc.alias }}</span>
             <div class="arc-actions">
+
+              <!-- EDIT BUTTON -->
+              <p-button
+                icon="pi pi-pencil"
+                styleClass="p-button-rounded p-button-text p-button-sm"
+                (click)="onEditArc(system, endpoint, arc)"
+                pTooltip="Edit ARC"
+              ></p-button>
+
+              <!-- CLONE BUTTON (Unchanged but useful for context) -->
               <p-button
                 icon="pi pi-clone"
                 styleClass="p-button-rounded p-button-text p-button-sm"
-                (click)="onCloneArc(arc)"
+                (click)="onCloneArc(system, endpoint, arc)"
                 pTooltip="Clone & Edit"
+              ></p-button>
+
+              <!-- DELETE BUTTON -->
+              <p-button
+                icon="pi pi-trash"
+                styleClass="p-button-rounded p-button-text p-button-sm p-button-danger"
+                (click)="onDeleteArc(arc)"
+                pTooltip="Delete ARC"
               ></p-button>
             </div>
           </div>
         </div>
-
       </div>
     </p-accordionTab>
   </p-accordion>

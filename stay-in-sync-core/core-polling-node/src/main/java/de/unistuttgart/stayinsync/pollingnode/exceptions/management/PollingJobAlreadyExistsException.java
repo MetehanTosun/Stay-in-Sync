@@ -1,5 +1,6 @@
 package de.unistuttgart.stayinsync.pollingnode.exceptions.management;
 
+
 import de.unistuttgart.stayinsync.pollingnode.exceptions.PollingNodeException;
 
 public class PollingJobAlreadyExistsException extends PollingNodeException {
@@ -10,13 +11,13 @@ public class PollingJobAlreadyExistsException extends PollingNodeException {
         super(message);
     }
 
-    public PollingJobAlreadyExistsException(String message, Long idOfActivePollingJob){
+    public PollingJobAlreadyExistsException(String message, Long idOfActivePollingJob) {
         super(message);
         this.idOfActivePollingJob = idOfActivePollingJob;
     }
 
-    public Long getIdOfMessage(){
-        if(idOfActivePollingJob == null){
+    public Long getIdOfMessage() {
+        if (idOfActivePollingJob == null) {
             return -1L;
         }
         return idOfActivePollingJob;

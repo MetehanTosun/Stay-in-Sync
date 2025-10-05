@@ -1,58 +1,88 @@
 <div class="replay-container">
+  <!-- Left pane: Monaco Editor -->
   <section class="left-pane">
     <header class="pane-header">
       <h2>Script (read-only)</h2>
-      <button class="btn btn-secondary" disabled>Replay (stub)</button>
+      <button class="btn btn-secondary" (click)="onReplayClick()">
+        Replay
+      </button>
     </header>
-
-    <ng-container *ngIf="!loading(); else loadingTpl">
-      <ng-container *ngIf="!error(); else errorTpl">
-        <pre class="code-block"><code>{{ scriptDisplay }}</code></pre>
-      </ng-container>
-    </ng-container>
+    <div class="editor-wrapper">
+      <ngx-monaco-editor
+        [options]="editorOptions"
+        [(ngModel)]="scriptDisplay"
+        (onInit)="onEditorInit($event)"
+      >
+      </ngx-monaco-editor>
+    </div>
   </section>
 
+  <!-- Right pane: Tabs -->
   <section class="right-pane">
     <p-tabs>
-
       <p-tablist>
         <p-tab value="0">SourceData</p-tab>
         <p-tab value="1">Variables</p-tab>
-        <p-tab value="2">Terminal</p-tab>
-        <p-tab value="3">Logs</p-tab>
+        <p-tab value="2">Errors</p-tab>
+        <p-tab value="3">OutputData</p-tab>
+        <p-tab value="4">Logs</p-tab>
       </p-tablist>
 
       <p-tabpanels>
         <p-tabpanel value="0">
-          <ng-container *ngIf="!loading(); else loadingTpl">
-            <ng-container *ngIf="!error(); else errorTpl">
-              <h3>SourceData</h3>
-              <pre class="json-block">{{
-                  data()?.transformationResult?.sourceData | json
-                }}</pre>
+          <div class="tab-content">
+            <ng-container *ngIf="!loading(); else loadingTpl">
+              <ng-container *ngIf="!error(); else errorTpl">
+                <h3>Source Data</h3>
+                <ngx-json-viewer
+                  [json]="data()?.transformationResult?.sourceData"
+                  [expanded]="false"
+                ></ngx-json-viewer>
+              </ng-container>
             </ng-container>
-          </ng-container>
+          </div>
         </p-tabpanel>
+
         <p-tabpanel value="1">
-          <ng-container *ngIf="!loading(); else loadingTpl">
-            <ng-container *ngIf="!error(); else errorTpl">
-              <h3>Variable Snapshot</h3>
-              <pre class="json-block">
-          </pre>
+          <div class="tab-content">
+            <ng-container *ngIf="!loading(); else loadingTpl">
+              <ng-container *ngIf="!error(); else errorTpl">
+                <h3>Variable Snapshot</h3>
+                <ngx-json-viewer
+                  [json]="variables"
+                  [expanded]="false"
+                ></ngx-json-viewer>
+              </ng-container>
             </ng-container>
-          </ng-container>
+          </div>
         </p-tabpanel>
+
         <p-tabpanel value="2">
-          <ng-container *ngIf="!loading(); else loadingTpl">
-            <ng-container *ngIf="!error(); else errorTpl">
-              <h3>Terminal</h3>
-              <pre class="terminal">{{
-                  data()?.transformationResult?.errorInfo || "No errors."
-                }}</pre>
+          <div class="tab-content">
+            <ng-container *ngIf="!loading(); else loadingTpl">
+              <ng-container *ngIf="!error(); else errorTpl">
+                <h3>Errors</h3>
+                <pre class="terminal">{{ errorInfo || "No errors" }}</pre>
+              </ng-container>
             </ng-container>
-          </ng-container>
+          </div>
         </p-tabpanel>
+
         <p-tabpanel value="3">
+          <div class="tab-content">
+            <ng-container *ngIf="!loading(); else loadingTpl">
+              <ng-container *ngIf="!error(); else errorTpl">
+                <h3>Output Data</h3>
+                <ngx-json-viewer
+                  [json]="outputData"
+                  [expanded]="false"
+                ></ngx-json-viewer>
+              </ng-container>
+            </ng-container>
+          </div>
+        </p-tabpanel>
+
+        <p-tabpanel value="4">
           <ng-container *ngIf="!loading(); else loadingTpl">
             <ng-container *ngIf="!error(); else errorTpl">
               <h3>Logs</h3>
@@ -63,13 +93,11 @@
                 class="log-table"
                 [style.width]="'100%'"
                 [style.table-layout]="'fixed'"
-                [style.height]="'350px'"
               >
                 <ng-template pTemplate="header">
                   <tr>
                     <th pSortableColumn="timestamp">
-                      Timestamp
-                      <p-sortIcon field="timestamp"></p-sortIcon>
+                      Timestamp <p-sortIcon field="timestamp"></p-sortIcon>
                     </th>
                     <th>Level</th>
                     <th>Service</th>
@@ -84,20 +112,34 @@
                         type="text"
                         field="message"
                         placeholder="Search by message"
-                        ariaLabel="Filter Message"
                       ></p-columnFilter>
                     </th>
                   </tr>
                 </ng-template>
-
                 <ng-template pTemplate="body" let-log>
                   <tr>
-                    <td class="timestamp">{{ (log.timestamp / 1000000) | date: 'short' }}</td>
-                    <td class="level" [ngClass]="log.level">{{ log.level }}</td>
-                    <td style="max-width: 150px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
-                      {{ log.service || '-' }}
+                    <td class="timestamp">
+                      {{ log.timestamp / 1000000 | date : "short" }}
                     </td>
-                    <td class="message" style="white-space: normal; word-wrap: break-word; max-width: 400px;">
+                    <td class="level" [ngClass]="log.level">{{ log.level }}</td>
+                    <td
+                      style="
+                        max-width: 150px;
+                        overflow: hidden;
+                        text-overflow: ellipsis;
+                        white-space: nowrap;
+                      "
+                    >
+                      {{ log.service || "-" }}
+                    </td>
+                    <td
+                      class="message"
+                      style="
+                        white-space: normal;
+                        word-wrap: break-word;
+                        max-width: 400px;
+                      "
+                    >
                       {{ log.message }}
                     </td>
                   </tr>
@@ -110,21 +152,16 @@
     </p-tabs>
   </section>
 
-  <!-- deine Templates -->
+  <!-- Templates for Loading & Error -->
   <ng-template #loadingTpl>
-    <p>Loading...</p>
+    <div class="loading-state">
+      <p>Loading...</p>
+    </div>
   </ng-template>
 
   <ng-template #errorTpl>
-    <p class="error">Error loading data</p>
+    <div class="error-state">
+      <p class="error">{{ error() }}</p>
+    </div>
   </ng-template>
-
 </div>
-
-<ng-template #loadingTpl>
-  <div style="padding: 12px">Loading…</div>
-</ng-template>
-
-<ng-template #errorTpl>
-  <div style="padding: 12px; color: #b00020">{{ error() }}</div>
-</ng-template>

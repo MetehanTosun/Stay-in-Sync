@@ -236,7 +236,7 @@ public class DirectiveExecutor {
         return resolvedParams;
     }
 
-    private Optional<String> findPathForAction(RequestConfigurationMessageDTO arcConfig, TargetApiRequestConfigurationActionRole role){
+    private Optional<String> findPathForAction(RequestConfigurationMessageDTO arcConfig, TargetApiRequestConfigurationActionRole role) {
         return arcConfig.actions().stream()
                 .filter(action -> action.actionRole() == role)
                 .map(ActionMessageDTO::path)

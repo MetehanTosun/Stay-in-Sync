@@ -3,31 +3,26 @@
   Main view for managing source systems including listing, searching, creating, and deleting.
   Provides comprehensive search functionality with highlighting and responsive design.
 -->
-<p-toast></p-toast>
-<p-card>
+
   <app-search-bar
     [customPlaceholder]="'Search source systems by name, description, API URL, endpoints, or headers...'"
     (search)="onSearchChange($event)"
     (clear)="onSearchClear()">
   </app-search-bar>
-  <!-- Header toolbar with title and create button -->
-  <p-toolbar>
-    <div class="p-toolbar-group-left">
-      <h3>Source Systems</h3>
-    </div>
-    <div class="p-toolbar-group-right">
-      <button pButton type="button" label="Create Source System" icon="pi pi-plus" (click)="openCreate()"></button>
-    </div>
-  </p-toolbar>
-
 
   <!--
     Table of source systems with pagination and action buttons
   -->
   <p-table [value]="systems" [loading]="loading" [paginator]="true" [rows]="10" [responsiveLayout]="'scroll'">
+    <ng-template #caption>
+      <div class="flex items-center justify-between">
+        <span class="text-xl font-bold">Source Systems</span>
+        <button pButton type="button" label="Create Source System" icon="pi pi-plus" (click)="openCreate()"></button>
+      </div>
+    </ng-template>
     <ng-template pTemplate="header">
       <tr>
-        <th style="min-width: 200px;">
+        <th style="width: 25%;">
           <div class="column-header">
             <span>Name</span>
             <div class="search-indicator" *ngIf="hasNameMatches()">
@@ -35,7 +30,7 @@
             </div>
           </div>
         </th>
-        <th style="min-width: 250px;">
+        <th style="width: 25%;">
           <div class="column-header">
             <span>API URL</span>
             <div class="search-indicator" *ngIf="hasUrlMatches()">
@@ -43,7 +38,7 @@
             </div>
           </div>
         </th>
-        <th style="min-width: 300px;">
+        <th style="width: 25%;">
           <div class="column-header">
             <span>Description</span>
             <div class="search-indicator" *ngIf="hasDescriptionMatches()">
@@ -51,7 +46,7 @@
             </div>
           </div>
         </th>
-        <th style="min-width: 150px;">
+        <th style="width: 25%;">
           <div class="column-header">
             <span>Actions</span>
             <div class="search-indicator" *ngIf="hasEndpointMatches() || hasHeaderMatches()">
@@ -198,7 +193,6 @@
       </button>
     </div>
   </div>
-</p-card>
 
 <!-- Shared confirmation dialog for delete -->
 <app-confirmation-dialog

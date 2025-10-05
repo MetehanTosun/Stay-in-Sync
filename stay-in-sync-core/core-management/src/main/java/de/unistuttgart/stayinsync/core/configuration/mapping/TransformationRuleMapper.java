@@ -2,10 +2,9 @@ package de.unistuttgart.stayinsync.core.configuration.mapping;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import de.unistuttgart.graphengine.dto.transformationrule.GraphDTO;
 import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.TransformationRule;
-import de.unistuttgart.stayinsync.transport.dto.TransformationRuleDTO;
-//import de.unistuttgart.stayinsync.transport.dto.transformationrule.GraphDTO;
-import de.unistuttgart.stayinsync.transport.dto.transformationrule.GraphDTO;
+import de.unistuttgart.graphengine.dto.transformationrule.TransformationRuleDTO;
 import io.quarkus.logging.Log;
 import jakarta.inject.Inject;
 import org.mapstruct.Mapper;

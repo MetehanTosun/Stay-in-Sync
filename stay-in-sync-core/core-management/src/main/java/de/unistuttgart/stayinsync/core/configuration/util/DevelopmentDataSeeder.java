@@ -198,7 +198,7 @@ public class DevelopmentDataSeeder {
 
 
         return new CreateSourceArcDTO(
-                "products",
+                "syncProductsArc",
                 sourceSystem.id,
                 sourceSystemEndpoint.id,
                 Collections.emptyMap(),
@@ -226,7 +226,7 @@ public class DevelopmentDataSeeder {
                 function transform() {
                     stayinsync.log('Transformation started: Upserting products...', 'INFO');
                 
-                    const productsFromSource = source.Dummy_JSON.products.products;
+                    const productsFromSource = source.Dummy_JSON.syncProductsArc.products;
                 
                     if (!productsFromSource || productsFromSource.length === 0) {
                         stayinsync.log('No products found in source data. Finishing.', 'WARN');

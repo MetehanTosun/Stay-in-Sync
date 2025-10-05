@@ -1,21 +1,11 @@
 <div class="flex">
-  <!-- Home-Button -->
-  <p-button *ngIf="!sidebarVisible" (click)="sidebarVisible = true">
-    <i class="pi pi-home"></i>
-  </p-button>
-
   <!-- Sidebar -->
-  <div *ngIf="sidebarVisible" class="w-60">
-    <app-sidebar-menu
-      (sidebarVisibleChange)="onSidebarToggle($event)">
-    </app-sidebar-menu>
+  <div *ngIf="shouldShowSidebar" class="w-60">
+    <app-sidebar-menu></app-sidebar-menu>
   </div>
 
   <!-- Hauptinhalt -->
-  <div [ngStyle]="{'width': sidebarVisible ? 'calc(100% - 300px)' : '100%'}" class="p-5">
-    <div class="toggle-switch-top-right">
-      <p-toggleswitch [(ngModel)]="darkModeEnabled" (onChange)="toggleDarkMode()" />
-    </div>
+  <div [ngStyle]="{'width': shouldShowSidebar ? 'calc(100% - 300px)' : '100%'}" class="p-5">
     <router-outlet></router-outlet>
   </div>
 </div>

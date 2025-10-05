@@ -1,5 +1,6 @@
 package de.unistuttgart.stayinsync.scriptengine;
 
+
 import de.unistuttgart.stayinsync.exception.ScriptEngineException;
 import de.unistuttgart.stayinsync.scriptengine.message.TransformationResult;
 import de.unistuttgart.stayinsync.syncnode.domain.TransformJob;
@@ -14,10 +15,7 @@ import org.graalvm.polyglot.*;
 import org.jboss.logging.MDC;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.function.Function;
 
 /**
@@ -36,49 +34,34 @@ import java.util.function.Function;
  * <p>The {@code main} method included is for development or standalone testing purposes of the
  * Quarkus application and is not part of the service's typical API usage.</p>
  *
- * @author Maximilian Peresunchak
+ * <p><b>Metrics:</b> This class integrates {@link ScriptMetricsService} to track execution count
+ * and execution time per transformation ID. These metrics are exposed via Micrometer and can be
+ * scraped by Prometheus and visualized in Grafana.</p>
+ *
  * @since 1.0
  */
 @ApplicationScoped
 public class ScriptEngineService {
-    /**
-     * The name under which the {@link ScriptApi} instance is bound and made available
-     * to the executed scripts. Scripts can access the API using this name (e.g., {@code stayinsync.log("message")}).
-     */
+
     private static final String SCRIPT_API_BINDING_NAME = "stayinsync";
     private static final String JAVASCRIPT_LANGUAGE_ID = "js";
 
     private final ScriptCache scriptCache;
     private final ContextPoolFactory contextPoolFactory;
     private final ManagedExecutor managedExecutor;
+    private final ScriptMetricsService metricsService;
 
-    /**
-     * Constructs a new {@code ScriptEngineService} with injected dependencies.
-     * This constructor is typically invoked by the CDI container.
-     *
-     * @param scriptCache        The cache for storing and retrieving pre-parsed scripts.
-     * @param contextPoolFactory The factory for obtaining pools of script execution contexts.
-     * @param managedExecutor    The executor service for running asynchronous tasks, managed by the MicroProfile Context Propagation.
-     */
     @Inject
-    public ScriptEngineService(ScriptCache scriptCache, ContextPoolFactory contextPoolFactory, ManagedExecutor managedExecutor) {
+    public ScriptEngineService(ScriptCache scriptCache,
+                               ContextPoolFactory contextPoolFactory,
+                               ManagedExecutor managedExecutor,
+                               ScriptMetricsService metricsService) {
         this.scriptCache = scriptCache;
         this.contextPoolFactory = contextPoolFactory;
         this.managedExecutor = managedExecutor;
+        this.metricsService = metricsService;
     }
 
-    /**
-     * Asynchronously executes a script transformation based on the provided {@link TransformJob}.
-     * The job contains the script code, its identifier, expected hash, input data, and language.
-     * The transformation is performed on a separate thread managed by the {@link #managedExecutor}.
-     *
-     * <p>MDC (Mapped Diagnostic Context) is used to enrich logs with {@code jobId} and {@code scriptId}
-     * for the duration of the asynchronous task.</p>
-     *
-     * @param job The {@link TransformJob} defining the transformation to be executed.
-     * @return A {@link Uni} that will emit a {@link TransformationResult}
-     * containing the output of the script execution, its validity, and any error information.
-     */
     public Uni<TransformationResult> transformAsync(TransformJob job) {
         return Uni.createFrom().item(() -> {
             try {
@@ -109,28 +92,13 @@ public class ScriptEngineService {
         }).runSubscriptionOn(managedExecutor);
     }
 
-    /**
-     * Main method for running the Quarkus application.
-     * This is primarily intended for development, testing, or standalone execution
-     * and is not the typical way to interact with this service's API.
-     *
-     * @param args Command line arguments.
-     */
     public static void main(String[] args) {
         Quarkus.run(args);
     }
 
     /**
-     * Internal synchronous method to perform the script transformation.
-     * This method handles context borrowing, script caching, API binding, script evaluation,
-     * and result extraction.
-     *
-     * <p>TODO: Handle proper validity setting of a job inside the VM.</p>
-     * <p>TODO: Assign proper input and output data formats beyond current Map/basic type handling.</p>
-     *
-     * @param transformJob The {@link TransformJob} to process.
-     * @return A {@link TransformationResult} encapsulating the outcome of the transformation.
-     * @throws ScriptEngineException for various error states that can appear when calling this method {@link ScriptEngineException}
+     * Core execution method. Wraps actual script execution inside metricsService.recordExecution
+     * so that execution time and execution count are tracked per transformationId.
      */
     private TransformationResult transformInternal(TransformJob transformJob) throws ScriptEngineException {
         TransformationResult result = new TransformationResult(transformJob.jobId(), transformJob.scriptId());
@@ -166,26 +134,40 @@ public class ScriptEngineService {
             );
 
             ScriptApi scriptApi = new ScriptApi(transformJob.sourceData(), transformJob.jobId());
-
             setupBindings(context, transformJob, scriptApi);
 
-            if(sdkSource != null){
-                context.eval(sdkSource);
-            }
+            // --- Metrics tracking: execution count & time per transformationId ---
+            Context finalContext = context;
+            metricsService.recordExecution(transformJob.transformationId(), () -> {
+                if (sdkSource != null) {
+                    finalContext.eval(sdkSource);
+                }
 
-            Value rawOutputValue = context.eval(userSource);
-            if (rawOutputValue == null || rawOutputValue.isNull()) {
-                Log.errorf("Script %s did not return a value from its transform() function. Output is null for job %s.", transformJob.scriptId(), transformJob.jobId());
-                throw new ScriptEngineException(
-                        ScriptEngineException.ErrorType.SCRIPT_EXECUTION_ERROR,
-                        "Invalid Script Return",
-                        "The transform() function must return a DirectiveMap object."
-                );
-            }
+                Value rawOutputValue = finalContext.eval(userSource);
+                if (rawOutputValue == null || rawOutputValue.isNull()) {
+                    Log.errorf("Script %s did not return a value from its transform() function. Output is null for job %s.",
+                            transformJob.scriptId(), transformJob.jobId());
+                    try {
+                        throw new ScriptEngineException(
+                                ScriptEngineException.ErrorType.SCRIPT_EXECUTION_ERROR,
+                                "Invalid Script Return",
+                                "The transform() function must return a DirectiveMap object."
+                        );
+                    } catch (ScriptEngineException e) {
+                        throw new RuntimeException(e);
+                    }
+                }
 
-            result.setOutputData(extractResult(Value.asValue(rawOutputValue)));
-            result.setValidExecution(true);
-            Log.infof("Script %s executed successfully for job %s.", transformJob.scriptId(), transformJob.jobId());
+                try {
+                    result.setOutputData(extractResult(Value.asValue(rawOutputValue)));
+                    result.setValidExecution(true);
+                    Log.infof("Script %s executed successfully for job %s.", transformJob.scriptId(), transformJob.jobId());
+                } catch (ScriptEngineException e) {
+                    throw new RuntimeException(e);
+                }
+            });
+            // ---------------------------------------------------------------------
+
             return result;
         } catch (PolyglotException e) {
             throw handlePolyglotException(e, transformJob);
@@ -226,13 +208,13 @@ public class ScriptEngineService {
      * <p>
      * The newly compiled {@code Source} is then stored in the cache for subsequent requests and returned.
      *
-     * @param scriptId      The unique identifier for the script, used as part of the cache key.
-     * @param scriptHash    The hash of the original script's content, used to version the script in the cache.
-     * @param scriptCode    The raw source code of the script to be compiled if it's not found in the cache.
-     * @param preprocessor  A {@link Function} that defines the pre-processing strategy for the script code
-     *                      before it is compiled.
+     * @param scriptId     The unique identifier for the script, used as part of the cache key.
+     * @param scriptHash   The hash of the original script's content, used to version the script in the cache.
+     * @param scriptCode   The raw source code of the script to be compiled if it's not found in the cache.
+     * @param preprocessor A {@link Function} that defines the pre-processing strategy for the script code
+     *                     before it is compiled.
      * @return The pre-parsed and cached {@link Source} object, ready for evaluation. Returns {@code null} if
-     *         {@code scriptCode} or {@code scriptHash} is null.
+     * {@code scriptCode} or {@code scriptHash} is null.
      * @throws ScriptEngineException if an error occurs during script compilation (e.g., syntax errors) or
      *                               if the compiled script cannot be stored or retrieved from the cache.
      */
@@ -272,12 +254,12 @@ public class ScriptEngineService {
      * </ul>
      * </p>
      *
-     * @param context The GraalVM {@link Context} to configure with bindings.
+     * @param context      The GraalVM {@link Context} to configure with bindings.
      * @param transformJob The job containing script language, source data, and identifiers for logging.
      *                     The {@code scriptLanguage} determines binding behavior (e.g., for JavaScript).
      *                     The {@code sourceData} may be exposed to the script.
      *                     The {@code scriptId} and {@code jobId} are used in log messages.
-     * @param scriptApi The {@link ScriptApi} instance to make available to the script.
+     * @param scriptApi    The {@link ScriptApi} instance to make available to the script.
      * @throws ScriptEngineException if any error occurs during the binding process (e.g., issues with {@code putMember}).
      */
     private void setupBindings(Context context, TransformJob transformJob, ScriptApi scriptApi) throws ScriptEngineException {
@@ -326,7 +308,7 @@ public class ScriptEngineService {
      * an original exception that might have occurred during script execution.
      * </p>
      *
-     * @param context The GraalVM {@link Context} from which to remove bindings.
+     * @param context      The GraalVM {@link Context} from which to remove bindings.
      * @param transformJob The job containing script language and source data details, used to determine
      *                     which bindings to clean up. The {@code scriptLanguage} and type of {@code sourceData}
      *                     guide the cleanup process. {@code scriptId} and {@code jobId} are for logging.
@@ -360,11 +342,11 @@ public class ScriptEngineService {
      * is logged and included in the returned exception's message.
      * </p>
      *
-     * @param e The {@link PolyglotException} that occurred during script execution or interaction.
+     * @param e            The {@link PolyglotException} that occurred during script execution or interaction.
      * @param transformJob The job context (ID, script ID, language) used for enriching log messages
      *                     and the resulting {@link ScriptEngineException}.
      * @return A new {@link ScriptEngineException} wrapping the original {@code PolyglotException}
-     *         with processed error information (type, title, detailed message).
+     * with processed error information (type, title, detailed message).
      */
     private ScriptEngineException handlePolyglotException(PolyglotException e, TransformJob transformJob) {
         String errorDetails;

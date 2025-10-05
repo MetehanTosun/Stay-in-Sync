@@ -52,20 +52,21 @@
             <artifactId>quarkus-rest-jackson</artifactId>
         </dependency>
 
-        <!-- Database and ORM -->
-        <dependency>
-            <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-jdbc-mariadb</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-hibernate-orm-panache</artifactId>
-        </dependency>
 
         <!-- Container Image -->
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-container-image-docker</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>io.quarkiverse.helm</groupId>
+            <artifactId>quarkus-helm</artifactId>
+            <version>1.2.7</version>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-kubernetes</artifactId>
         </dependency>
 
         <!-- OpenAPI and Validation -->
@@ -142,11 +143,6 @@
         <dependency>
             <groupId>de.unistuttgart.stayinsync</groupId>
             <artifactId>shared</artifactId>
-            <version>1.0.0-SNAPSHOT</version>
-        </dependency>
-        <dependency>
-            <groupId>de.unistuttgart.stayinsync</groupId>
-            <artifactId>core-management</artifactId>
             <version>1.0.0-SNAPSHOT</version>
         </dependency>
         <dependency>

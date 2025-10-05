@@ -6,7 +6,6 @@ import de.unistuttgart.stayinsync.pollingnode.exceptions.execution.pollingjob.re
 import io.quarkus.logging.Log;
 import io.smallrye.mutiny.Uni;
 import io.vertx.core.json.DecodeException;
-import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 import io.vertx.mutiny.core.buffer.Buffer;
 import io.vertx.mutiny.ext.web.client.HttpRequest;
@@ -66,8 +65,8 @@ public class RestClient {
      *
      * @param responseUniFormat of an executed request
      * @return retrieved JsonObject
-     * @throws ExecutionException   if a RuntimeException was thrown during the request execution leading to the response
-     * @throws InterruptedException if the response was not fully finished when a new response occurred
+     * @throws ExecutionException             if a RuntimeException was thrown during the request execution leading to the response
+     * @throws InterruptedException           if the response was not fully finished when a new response occurred
      * @throws ResponseInvalidFormatException if the response did not contain a Json but data of a different type.
      */
     private JsonObject retrieveJsonObjectFromUniResponse(final Uni<HttpResponse<Buffer>> responseUniFormat) throws ExecutionException, InterruptedException, ResponseInvalidFormatException {
@@ -77,10 +76,11 @@ public class RestClient {
 
     /**
      * Subscribes to the Uni-Container to extract the response wrapped inside of it.
+     *
      * @param responseUniFormat the Uni-Container containing the response.
      * @return the extracted response.
      * @throws InterruptedException if another value was received before the unpacking was finished.
-     * @throws ExecutionException if a RuntimeException was thrown during the request execution leading to the response.
+     * @throws ExecutionException   if a RuntimeException was thrown during the request execution leading to the response.
      */
     private HttpResponse<Buffer> extractResponseFromUniContainer(Uni<HttpResponse<Buffer>> responseUniFormat) throws InterruptedException, ExecutionException {
         return responseUniFormat.subscribe()
@@ -91,14 +91,15 @@ public class RestClient {
     /**
      * Tries to extract the JsonObject of the response. If the response does not contain an object, but an array as the outer entity,
      * the array is converted to a JsonObject containing it in the field 'entities' and then returned.
+     *
      * @param response the response of which teh JsonObject needs to be extracted.
      * @return extracted JsonObject
      * @throws ResponseInvalidFormatException if the body of the response was in a format incompatible to JsonObjects.
      */
-    private JsonObject extractJsonObjectFromResponse(HttpResponse<Buffer> response) throws ResponseInvalidFormatException{
-        try{
+    private JsonObject extractJsonObjectFromResponse(HttpResponse<Buffer> response) throws ResponseInvalidFormatException {
+        try {
             return response.bodyAsJsonObject();
-        } catch(DecodeException e){
+        } catch (DecodeException e) {
             try {
                 return new JsonObject().put("entities", response.bodyAsJsonArray());
             } catch (DecodeException e2) {
