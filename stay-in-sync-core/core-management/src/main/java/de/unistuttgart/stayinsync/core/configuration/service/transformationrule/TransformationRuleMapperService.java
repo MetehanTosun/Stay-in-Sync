@@ -2,13 +2,13 @@ package de.unistuttgart.stayinsync.core.configuration.service.transformationrule
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import de.unistuttgart.graphengine.dto.vFlow.*;
+import de.unistuttgart.graphengine.dto.transformationrule.GraphDTO;
+import de.unistuttgart.graphengine.dto.transformationrule.InputDTO;
+import de.unistuttgart.graphengine.dto.transformationrule.NodeDTO;
 import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.TransformationRule;
 import de.unistuttgart.stayinsync.core.configuration.exception.CoreManagementException;
 import de.unistuttgart.stayinsync.core.configuration.rest.dtos.TransformationRuleDTO;
-import de.unistuttgart.stayinsync.transport.dto.transformationrule.GraphDTO;
-import de.unistuttgart.stayinsync.transport.dto.transformationrule.InputDTO;
-import de.unistuttgart.stayinsync.transport.dto.transformationrule.NodeDTO;
-import de.unistuttgart.stayinsync.transport.dto.transformationrule.vFlow.*;
 import io.quarkus.logging.Log;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
@@ -27,6 +27,11 @@ public class TransformationRuleMapperService {
 
     @Inject
     ObjectMapper jsonObjectMapper;
+
+    @Inject
+    public TransformationRuleMapperService(ObjectMapper jsonObjectMapper) {
+        this.jsonObjectMapper = jsonObjectMapper;
+    }
 
     /**
      * Maps a TransformationRule entity to a lightweight DTO for list views.
@@ -132,6 +137,8 @@ public class TransformationRuleMapperService {
             data.setInputTypes(nodeDto.getInputTypes());
             data.setOutputType(nodeDto.getOutputType());
             data.setInputLimit(nodeDto.getInputLimit());
+            data.setChangeDetectionMode(nodeDto.getChangeDetectionMode());
+            data.setChangeDetectionActive(nodeDto.isChangeDetectionActive());
 
             vflowNode.setData(data);
             vflowNodes.add(vflowNode);

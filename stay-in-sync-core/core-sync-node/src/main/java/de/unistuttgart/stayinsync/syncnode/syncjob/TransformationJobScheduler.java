@@ -75,7 +75,8 @@ public class TransformationJobScheduler {
     }
 
     //TODO implement this method
-    private void stopConsumingFromUnusedRequestConfigurations() {}
+    private void stopConsumingFromUnusedRequestConfigurations() {
+    }
 
     public Set<TransformationMessageDTO> getRunningJobs() {
         return runningJobs;

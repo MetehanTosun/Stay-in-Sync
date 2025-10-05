@@ -17,7 +17,6 @@ import jakarta.enterprise.event.Observes;
 import jakarta.inject.Inject;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 
-import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 
 /**

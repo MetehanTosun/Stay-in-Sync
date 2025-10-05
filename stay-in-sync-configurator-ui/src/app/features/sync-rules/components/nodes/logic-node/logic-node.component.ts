@@ -1,3 +1,4 @@
+import { CommonModule } from '@angular/common';
 import { Component } from '@angular/core';
 import { CustomNodeComponent, HandleComponent, SelectableDirective } from 'ngx-vflow';
 
@@ -6,10 +7,10 @@ import { CustomNodeComponent, HandleComponent, SelectableDirective } from 'ngx-v
  */
 @Component({
   selector: 'app-logic-node',
-  imports: [HandleComponent, SelectableDirective],
+  imports: [HandleComponent, SelectableDirective, CommonModule],
   templateUrl: './logic-node.component.html',
   styleUrl: './logic-node.component.css'
 })
 export class LogicNodeComponent extends CustomNodeComponent {
-
+  displayTooltips = false;
 }

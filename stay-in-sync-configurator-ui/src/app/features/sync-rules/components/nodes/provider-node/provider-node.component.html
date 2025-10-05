@@ -1,4 +1,4 @@
-<div class="provider-node" selectable>
+<div class="provider-node" selectable (mouseenter)="displayTooltips = true" (mouseleave)="displayTooltips = false">
   <!-- Node Header -->
   <div class="node-header">
     <span class="node-type">Provider</span>
@@ -13,4 +13,8 @@
 
   <!-- I/O Handlers -->
   <handle type="source" position="right" />
+
+  <div class="tooltip-output" *ngIf="displayTooltips">
+    {{ node().data?.outputType || 'UNKNOWN' }}
+  </div>
 </div>

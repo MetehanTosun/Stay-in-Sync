@@ -1,4 +1,4 @@
-<div class="final-node" selectable>
+<div class="final-node" selectable (mouseenter)="displayTooltips = true" (mouseleave)="displayTooltips = false">
   <!-- Node Header -->
   <div class="node-header">
     <span class="node-type">Final</span>
@@ -11,4 +11,9 @@
 
   <!-- I/O Handlers -->
   <handle type="target" position="left" />
+
+  <!-- Tooltips -->
+  <div class="tooltip-input" *ngIf="displayTooltips">
+    BOOLEAN
+  </div>
 </div>

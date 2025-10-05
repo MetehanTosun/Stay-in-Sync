@@ -1,6 +1,6 @@
 import { HttpClient } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
-import { forkJoin, map, Observable } from 'rxjs';
+import { forkJoin, map, Observable, of } from 'rxjs';
 import { SyncJobContextData } from '../../features/script-editor/sync-job-context-panel/sync-job-context-panel.component';
 
 import {
@@ -35,6 +35,11 @@ export interface ScriptPayload {
   targetArcIds: number[];
 }
 
+export interface ArcUsageInfo {
+  scriptId: number;
+  scriptName: string;
+}
+
 @Injectable({
   providedIn: 'root',
 })
@@ -49,6 +54,38 @@ export class ScriptEditorService {
     return this.http.get<string[]>(
       `${this.API_URL}/config/source-system/systemNames`
     );
+  }
+
+  /**
+   * Fetches the full configuration details for a single ARC.
+   * @param arcId The ID of the ARC to fetch.
+   */
+  getArcDetails(arcId: number): Observable<ApiRequestConfiguration> {
+    return this.http.get<ApiRequestConfiguration>(
+      `${this.API_URL}/config/source-system/endpoint/request-configuration/${arcId}`
+    );
+  }
+
+  /**
+   * Deletes a Source ARC from the backend.
+   * @param arcId The ID of the ARC to delete.
+   */
+  deleteArc(arcId: number): Observable<void> {
+    return this.http.delete<void>(
+      `${this.API_URL}/config/source-system/endpoint/request-configuration/${arcId}`
+    );
+  }
+
+  /**
+   * Checks where a specific ARC is being used across different scripts.
+   * @param arcId The ID of the ARC to check.
+   */
+  checkArcUsage(arcId: number): Observable<ArcUsageInfo[]> {
+    //
+    // TODO: Replace with the actual API endpoint once it's available.
+    // Example: return this.http.get<ArcUsageInfo[]>(`${this.API_URL}/config/request-configuration/${arcId}/usages`);
+    // For now, returning an empty array to allow UI development.
+    return of([]);
   }
 
   /**
@@ -173,7 +210,7 @@ export class ScriptEditorService {
             description: dto.description || '',
             required: dto.required || false,
             options: dto.values || [],
-            type: dto.schemaType.toLowerCase() as 'string' | 'number' | 'integer' | 'boolean' | 'array',
+            type: (dto.schemaType?.toLowerCase() ?? 'string') as 'string' | 'number' | 'integer' | 'boolean' | 'array',
           };
 
           if (definition.in === 'path') {

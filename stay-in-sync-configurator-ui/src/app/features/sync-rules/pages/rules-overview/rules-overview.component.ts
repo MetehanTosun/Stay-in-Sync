@@ -24,8 +24,6 @@ import {Select} from 'primeng/select';
     TableModule,
     Button,
     Dialog,
-    InputText,
-    Toolbar,
     Tag,
     Select
   ],
@@ -136,6 +134,7 @@ export class RulesOverviewComponent implements OnInit {
     this.rulesApi.deleteRule(ruleId).subscribe({
       next: () => {
         alert("deletion successful"); // TODO-s notify
+        this.loadRules();
       },
       error: (err) => {
         alert(err.error?.message || err.message);

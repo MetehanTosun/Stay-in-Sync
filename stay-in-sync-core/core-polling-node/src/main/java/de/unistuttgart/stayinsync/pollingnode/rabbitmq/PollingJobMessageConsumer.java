@@ -6,12 +6,12 @@ import com.rabbitmq.client.CancelCallback;
 import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.DeliverCallback;
 import com.rabbitmq.client.Delivery;
+import de.unistuttgart.stayinsync.transport.dto.SourceSystemApiRequestConfigurationMessageDTO;
 import de.unistuttgart.stayinsync.pollingnode.entities.PollingJobDetails;
 import de.unistuttgart.stayinsync.pollingnode.exceptions.PollingNodeException;
 import de.unistuttgart.stayinsync.pollingnode.exceptions.rabbitmqexceptions.ConsumerQueueBindingException;
 import de.unistuttgart.stayinsync.pollingnode.exceptions.rabbitmqexceptions.ConsumerQueueUnbindingException;
 import de.unistuttgart.stayinsync.pollingnode.management.MessageProcessor;
-import de.unistuttgart.stayinsync.transport.dto.SourceSystemApiRequestConfigurationMessageDTO;
 import io.quarkiverse.rabbitmqclient.RabbitMQClient;
 import io.quarkus.logging.Log;
 import io.quarkus.runtime.StartupEvent;
@@ -115,6 +115,7 @@ public class PollingJobMessageConsumer {
 
     /**
      * Called when the consumer got canceled from consuming
+     *
      * @return
      */
     private CancelCallback cancelSyncJobDeploymentCallback(String queue) {
@@ -125,6 +126,7 @@ public class PollingJobMessageConsumer {
 
     /**
      * Processes a message for a running polling-job configuration
+     *
      * @return
      */
     private DeliverCallback updateDeployedPollingJobCallback() {
@@ -150,7 +152,7 @@ public class PollingJobMessageConsumer {
      */
     public void bindExisitingPollingJobQueue(SourceSystemApiRequestConfigurationMessageDTO apiRequestConfigurationMessageDTO) throws ConsumerQueueBindingException {
         try {
-            String routingKey = "polling-job" + apiRequestConfigurationMessageDTO.id();
+            String routingKey = "polling-job-" + apiRequestConfigurationMessageDTO.id();
             Log.infof("Binding queue %s with routing key %s", pollingNodeQueueName, routingKey);
             channel.queueBind(pollingNodeQueueName, "pollingjob-exchange", routingKey);
             channel.basicConsume(pollingNodeQueueName, false, updateDeployedPollingJobCallback(), cancelSyncJobDeploymentCallback(pollingNodeQueueName));

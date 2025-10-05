@@ -1,7 +1,8 @@
 package de.unistuttgart.stayinsync.syncnode.domain;
 
+import de.unistuttgart.graphengine.nodes.Node;
 import de.unistuttgart.stayinsync.transport.dto.TransformationMessageDTO;
-import de.unistuttgart.stayinsync.transport.transformation_rule_shared.nodes.Node;
+
 
 import java.util.List;
 

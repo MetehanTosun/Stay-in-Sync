@@ -65,7 +65,7 @@ public class ApiEndpointQueryParamValueService {
     }
 
     public Optional<ApiEndpointQueryParamValue> replaceConfiguration(@NotNull @Valid ApiEndpointQueryParamValueDTO queryParamConfiguration) {
-        de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.ApiEndpointQueryParamValue apiEndpointQueryParam = mapper.mapToEntity(queryParamConfiguration);
+        ApiEndpointQueryParamValue apiEndpointQueryParam = mapper.mapToEntity(queryParamConfiguration);
         Log.debugf("Replacing endpoint: %s", apiEndpointQueryParam);
 
         Optional<ApiEndpointQueryParamValue> updatedQueryParamValue = apiEndpointQueryParam.findByIdOptional(apiEndpointQueryParam.id)

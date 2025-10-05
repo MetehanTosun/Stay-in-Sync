@@ -51,12 +51,12 @@ INSERT INTO OperatorMetadata(operator_name, category, description, input_types, 
 -- String Predicates
 INSERT INTO OperatorMetadata(operator_name, category, description, input_types, output_type) VALUES('EQUALS_CASE_SENSITIVE', 'STRING', 'Performs a case-sensitive comparison of two strings.', '["STRING", "STRING"]', 'BOOLEAN');
 INSERT INTO OperatorMetadata(operator_name, category, description, input_types, output_type) VALUES('EQUALS_IGNORE_CASE', 'STRING', 'Performs a case-insensitive comparison of two strings.', '["STRING", "STRING"]', 'BOOLEAN');
-INSERT INTO OperatorMetadata(operator_name, category, description, input_types, output_type) VALUES('CONTAINS', 'STRING', 'Checks if a string contains another string.', '["STRING", "STRING"]', 'BOOLEAN');
-INSERT INTO OperatorMetadata(operator_name, category, description, input_types, output_type) VALUES('NOT_CONTAINS', 'STRING', 'Checks if a string does not contain another string.', '["STRING", "STRING"]', 'BOOLEAN');
-INSERT INTO OperatorMetadata(operator_name, category, description, input_types, output_type) VALUES('STARTS_WITH', 'STRING', 'Checks if a string starts with a specific prefix.', '["STRING", "STRING"]', 'BOOLEAN');
-INSERT INTO OperatorMetadata(operator_name, category, description, input_types, output_type) VALUES('ENDS_WITH', 'STRING', 'Checks if a string ends with a specific suffix.', '["STRING", "STRING"]', 'BOOLEAN');
+INSERT INTO OperatorMetadata(operator_name, category, description, input_types, output_type) VALUES('STRING_CONTAINS', 'STRING', 'Checks if a string contains another string.', '["STRING", "STRING"]', 'BOOLEAN');
+INSERT INTO OperatorMetadata(operator_name, category, description, input_types, output_type) VALUES('STRING_NOT_CONTAINS', 'STRING', 'Checks if a string does not contain another string.', '["STRING", "STRING"]', 'BOOLEAN');
+INSERT INTO OperatorMetadata(operator_name, category, description, input_types, output_type) VALUES('STRING_STARTS_WITH', 'STRING', 'Checks if a string starts with a specific prefix.', '["STRING", "STRING"]', 'BOOLEAN');
+INSERT INTO OperatorMetadata(operator_name, category, description, input_types, output_type) VALUES('STRING_ENDS_WITH', 'STRING', 'Checks if a string ends with a specific suffix.', '["STRING", "STRING"]', 'BOOLEAN');
 INSERT INTO OperatorMetadata(operator_name, category, description, input_types, output_type) VALUES('REGEX_MATCH', 'STRING', 'Checks if a string matches a regular expression pattern.', '["STRING", "STRING"]', 'BOOLEAN');
-INSERT INTO OperatorMetadata(operator_name, category, description, input_types, output_type) VALUES('LENGTH_BETWEEN', 'STRING', 'Checks if a string''s length is between two numbers.', '["STRING", "NUMBER", "NUMBER"]', 'BOOLEAN');
+INSERT INTO OperatorMetadata(operator_name, category, description, input_types, output_type) VALUES('STRING_LENGTH_BETWEEN', 'STRING', 'Checks if a string''s length is between two numbers.', '["STRING", "NUMBER", "NUMBER"]', 'BOOLEAN');
 
 -- Date/Time Predicates
 INSERT INTO OperatorMetadata(operator_name, category, description, input_types, output_type) VALUES('BEFORE', 'DATETIME', 'Checks if a date is before another date.', '["DATE", "DATE"]', 'BOOLEAN');

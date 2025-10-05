@@ -1,0 +1,26 @@
+<div class="config-node" selectable (mouseenter)="displayTooltips = true" (mouseleave)="displayTooltips = false">
+  <!-- Node Header -->
+  <div class="node-header">
+    <span class="node-type">Config</span>
+  </div>
+
+  <!-- Node Body -->
+  <div class="node-content">
+    <div class="node-mode">Configuration: {{ node().data?.changeDetectionMode }}</div>
+    <div class="node-active" [ngClass]="node().data?.changeDetectionActive ? 'active-enabled' : 'active-disabled'">
+      {{ node().data?.changeDetectionActive ? 'Enabled' : 'Disabled' }}
+    </div>
+  </div>
+
+  <!-- I/O Handlers -->
+  <handle type="target" position="left" />
+  <handle type="source" position="right" />
+
+  <!-- Tooltips -->
+  <div class="tooltip-input" *ngIf="displayTooltips">
+    {{ node().data?.inputTypes }} - Provider Nodes
+  </div>
+  <div class="tooltip-output" *ngIf="displayTooltips">
+    {{ node().data?.outputType }}
+  </div>
+</div>

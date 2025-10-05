@@ -27,7 +27,6 @@ import java.util.Optional;
 import java.util.Set;
 
 
-import static de.unistuttgart.stayinsync.transport.domain.JobDeploymentStatus.*;
 import static jakarta.transaction.Transactional.TxType.REQUIRED;
 import static jakarta.transaction.Transactional.TxType.SUPPORTS;
 
@@ -205,7 +204,9 @@ public class TransformationService {
             Log.warnf("The transformation with id %d is currently in the deployment state of %s and thus can not be deployed or stopped", transformationId, transformation.deploymentStatus);
         } else {
             transformation.deploymentStatus = deploymentStatus;
-            statusEmitter.send(new TransformationStatusUpdate(transformationId, transformation.syncJob.id, deploymentStatus));
+            if (statusEmitter.hasRequests()) {
+                statusEmitter.send(new TransformationStatusUpdate(transformationId, transformation.syncJob.id, deploymentStatus));
+            }
             switch (deploymentStatus) {
                 case DEPLOYING -> {
                     deployAssociatedRequestConfigs(transformation);
@@ -213,6 +214,7 @@ public class TransformationService {
                 }
                 case STOPPING, RECONFIGURING -> {
                     deployAssociatedRequestConfigs(transformation);
+                    sourceRequestConfigService.undeployAllUnused();
                     transformationMessageProducer.reconfigureDeployedTransformationJob(mapper.mapToMessageDTO(transformation));
                 }
             }
@@ -246,10 +248,8 @@ public class TransformationService {
     private void deployAssociatedRequestConfigs(Transformation transformation) {
         transformation.sourceSystemApiRequestConfigurations //
                 .stream() //
-                .filter(apiRequestConfiguration -> apiRequestConfiguration.deploymentStatus.equals(UNDEPLOYED))
-                .forEach(apiRequestConfiguration -> sourceRequestConfigService.updateDeploymentStatus(apiRequestConfiguration.id, DEPLOYING));
-
-        sourceRequestConfigService.undeployAllUnused();
+                .filter(apiRequestConfiguration -> apiRequestConfiguration.deploymentStatus.equals(JobDeploymentStatus.UNDEPLOYED))
+                .forEach(apiRequestConfiguration -> sourceRequestConfigService.updateDeploymentStatus(apiRequestConfiguration.id, JobDeploymentStatus.DEPLOYING));
     }
 
     private boolean isTransitioning(JobDeploymentStatus jobDeploymentStatus) {
