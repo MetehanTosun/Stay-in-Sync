@@ -179,8 +179,13 @@ public class SourceSystemEndpointService {
     }
 
     public Optional<SourceSystemEndpoint> replaceSourceSystemEndpoint(@NotNull @Valid SourceSystemEndpoint sourceSystemEndpoint) {
-        System.out.println("### TEST replace: " + sourceSystemEndpoint.requestBodySchema);
-        Log.debug("Replacing endpoint: " + sourceSystemEndpoint);
+        Log.infof("=== SOURCE SYSTEM ENDPOINT SERVICE REPLACE DEBUG ===");
+        Log.infof("Replacing endpoint ID: %s", sourceSystemEndpoint.id);
+        Log.infof("Endpoint path: %s", sourceSystemEndpoint.endpointPath);
+        Log.infof("HTTP method: %s", sourceSystemEndpoint.httpRequestType);
+        Log.infof("Request body schema: %s", sourceSystemEndpoint.requestBodySchema);
+        Log.infof("Response body schema: %s", sourceSystemEndpoint.responseBodySchema);
+        Log.infof("Source system ID: %s", sourceSystemEndpoint.sourceSystem != null ? sourceSystemEndpoint.sourceSystem.id : "null");
 
       
         if (sourceSystemEndpoint.requestBodySchema != null && !sourceSystemEndpoint.requestBodySchema.isBlank()) {
@@ -220,8 +225,16 @@ public class SourceSystemEndpointService {
                         targetSouceSystemEndpoint.responseDts = null;
                     }
                     
-                    System.out.println("### TEST replace (entity): " + targetSouceSystemEndpoint.requestBodySchema);
-                    Log.info("Wird gespeichert (replace): " + targetSouceSystemEndpoint.requestBodySchema);
+                    Log.infof("=== AFTER UPDATE MAPPING ===");
+                    Log.infof("Updated endpoint ID: %s", targetSouceSystemEndpoint.id);
+                    Log.infof("Updated endpoint path: %s", targetSouceSystemEndpoint.endpointPath);
+                    Log.infof("Updated HTTP method: %s", targetSouceSystemEndpoint.httpRequestType);
+                    Log.infof("Updated request body schema: %s", targetSouceSystemEndpoint.requestBodySchema);
+                    Log.infof("Updated response body schema: %s", targetSouceSystemEndpoint.responseBodySchema);
+                    Log.infof("Updated response DTS: %s", targetSouceSystemEndpoint.responseDts);
+                    
+                    targetSouceSystemEndpoint.persist();
+                    Log.infof("=== ENDPOINT PERSISTED SUCCESSFULLY ===");
                     return targetSouceSystemEndpoint;
                 });
     }

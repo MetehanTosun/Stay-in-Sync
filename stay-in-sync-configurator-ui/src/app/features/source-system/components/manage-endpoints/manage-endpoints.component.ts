@@ -339,11 +339,18 @@ export class ManageEndpointsComponent implements OnInit, OnDestroy {
    */
   loadEndpoints() {
     if (!this.sourceSystemId) return;
+    console.log('=== LOADING ENDPOINTS ===');
+    console.log('Source System ID:', this.sourceSystemId);
+    console.log('API URL:', `/api/config/source-system/${this.sourceSystemId}/endpoint`);
     this.loading = true;
     this.http.get<SourceSystemEndpointDTO[]>(`/api/config/source-system/${this.sourceSystemId}/endpoint`)
       .subscribe({
         next: (eps: SourceSystemEndpointDTO[]) => {
+          console.log('=== ENDPOINTS LOADED ===');
+          console.log('Loaded endpoints:', eps);
+          console.log('Number of endpoints:', eps.length);
           eps.forEach((ep, idx) => {
+            console.log(`Endpoint ${idx}:`, ep);
           });
           this.endpoints = eps;
           this.loading = false;
@@ -1036,18 +1043,27 @@ ${jsonSchema}
       }
     }
     // Debug: Log the DTO being sent
+    console.log('=== SOURCE SYSTEM EDIT DEBUG ===');
+    console.log('Editing endpoint:', this.editingEndpoint);
+    console.log('Form values:', this.editForm.value);
     console.log('Sending DTO to backend:', dto);
     console.log('Endpoint ID:', this.editingEndpoint.id);
+    console.log('Source System ID:', this.sourceSystemId);
+    console.log('API URL:', `/api/config/source-system/endpoint/${this.editingEndpoint.id}`);
     
     // Use direct HTTP call like Target System
     this.http.put(`/api/config/source-system/endpoint/${this.editingEndpoint.id}`, dto)
       .subscribe({
-        next: () => {
+        next: (response) => {
+          console.log('=== EDIT SUCCESS ===');
+          console.log('Response:', response);
+          console.log('Closing dialog and reloading endpoints...');
           this.closeEditDialog();
           this.loadEndpoints();
           this.onUpdated.emit();
         },
         error: (error) => {
+          console.error('=== EDIT ERROR ===');
           console.error('Error updating endpoint:', error);
           console.error('Error details:', {
             status: error.status,

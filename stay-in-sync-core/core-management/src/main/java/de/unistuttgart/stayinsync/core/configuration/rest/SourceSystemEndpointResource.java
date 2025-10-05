@@ -93,11 +93,19 @@ public class SourceSystemEndpointResource {
             )
     )
     public List<SourceSystemEndpointDTO> getAllSourceSystemEndpoints(@Parameter(name = "source system", description = "The id of the associated source system") @PathParam("sourceSystemId") Long sourceSystemid) {
+        Log.infof("=== GET ALL SOURCE SYSTEM ENDPOINTS DEBUG ===");
+        Log.infof("Requested source system ID: %d", sourceSystemid);
+        
         var sourceSystemEndpoints = this.sourceSystemEndpointService.findAllEndpointsWithSourceSystemIdLike(sourceSystemid);
 
-        Log.debugf("Total number of source-system-endpoints: %d", sourceSystemEndpoints.size());
+        Log.infof("Found %d source-system-endpoints", sourceSystemEndpoints.size());
+        sourceSystemEndpoints.forEach(ep -> {
+            Log.infof("Endpoint ID: %s, Path: %s, Method: %s", ep.id, ep.endpointPath, ep.httpRequestType);
+        });
 
-        return fullUpdateMapper.mapToDTOList(sourceSystemEndpoints);
+        var dtos = fullUpdateMapper.mapToDTOList(sourceSystemEndpoints);
+        Log.infof("Mapped to %d DTOs", dtos.size());
+        return dtos;
     }
 
 
@@ -167,8 +175,19 @@ public class SourceSystemEndpointResource {
                                                     )
                                                     @PathParam("id") Long id, @Valid @NotNull SourceSystemEndpointDTO sourceSystemEndpointDTO) {
 
+        Log.infof("=== SOURCE SYSTEM ENDPOINT UPDATE DEBUG ===");
+        Log.infof("Received ID from path: %d", id);
+        Log.infof("Received DTO: %s", sourceSystemEndpointDTO);
+        Log.infof("DTO ID: %s", sourceSystemEndpointDTO.id());
+        Log.infof("DTO SourceSystemId: %s", sourceSystemEndpointDTO.sourceSystemId());
+        Log.infof("DTO EndpointPath: %s", sourceSystemEndpointDTO.endpointPath());
+        Log.infof("DTO HttpRequestType: %s", sourceSystemEndpointDTO.httpRequestType());
+
         SourceSystemEndpoint entity = fullUpdateMapper.mapToEntity(sourceSystemEndpointDTO);
         entity.id = id; // Set the ID from the path parameter
+        Log.infof("Mapped entity ID: %s", entity.id);
+        Log.infof("Mapped entity endpointPath: %s", entity.endpointPath);
+        
         return this.sourceSystemEndpointService.replaceSourceSystemEndpoint(entity)
                 .map(updatedSourceSystemEndpoint -> {
                     Log.debugf("source-system-endpoint replaced with new values %s", updatedSourceSystemEndpoint);
