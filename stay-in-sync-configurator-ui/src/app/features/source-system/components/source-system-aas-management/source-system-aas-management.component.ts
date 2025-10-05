@@ -17,6 +17,7 @@ import { SourceSystemDTO } from '../../models/sourceSystemDTO';
 import { SourceSystemAasManagementService, AasElementLivePanel } from '../../services/source-system-aas-management.service';
 import { AasService } from '../../services/aas.service';
 import { AasElementDialogComponent, AasElementDialogData, AasElementDialogResult } from '../../../../shared/components/aas-element-dialog/aas-element-dialog.component';
+import { AasUtilityService } from '../../../target-system/services/aas-utility.service';
 
 @Component({
   standalone: true,
@@ -114,6 +115,7 @@ export class SourceSystemAasManagementComponent implements OnInit {
   constructor(
     private aasManagementService: SourceSystemAasManagementService,
     private aasService: AasService,
+    private aasUtility: AasUtilityService,
     private messageService: MessageService
   ) {}
 
@@ -128,53 +130,8 @@ export class SourceSystemAasManagementComponent implements OnInit {
     return (this.system?.apiType || '').toUpperCase().includes('AAS');
   }
 
-  /**
-   * Get AAS ID with fallback logic
-   */
   getAasId(): string {
-    if (!this.system) return '-';
-    
-    // If aasId is explicitly set, use it
-    if (this.system.aasId && this.system.aasId.trim() !== '') {
-      return this.system.aasId;
-    }
-    
-    // Fallback: try to extract from API URL or use a default
-    if (this.system.apiUrl) {
-      try {
-        const url = new URL(this.system.apiUrl);
-        
-        // For localhost, try to extract AAS ID from path or use system name
-        if (url.hostname === 'localhost' || url.hostname === '127.0.0.1') {
-          // Try to extract AAS ID from path (e.g., /aas/12345/...)
-          const pathMatch = url.pathname.match(/\/aas\/([^\/]+)/);
-          if (pathMatch && pathMatch[1]) {
-            return pathMatch[1];
-          }
-          
-          // Try to extract from query parameters
-          const aasIdParam = url.searchParams.get('aasId') || url.searchParams.get('id');
-          if (aasIdParam) {
-            return aasIdParam;
-          }
-          
-          // Use system name as AAS ID if available
-          if (this.system.name && this.system.name.trim() !== '') {
-            return this.system.name;
-          }
-          
-          // Final localhost fallback
-          return 'Default AAS';
-        }
-        
-        // For other hosts, use hostname as AAS ID
-        return url.hostname;
-      } catch (e) {
-        return 'Unknown';
-      }
-    }
-    
-    return '-';
+    return this.aasUtility.getAasId(this.system as any);
   }
 
   /**
