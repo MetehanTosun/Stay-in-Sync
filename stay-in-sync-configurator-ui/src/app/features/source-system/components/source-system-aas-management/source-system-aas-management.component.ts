@@ -171,8 +171,31 @@ export class SourceSystemAasManagementComponent implements OnInit {
           return aasIdParam;
         }
         
-        // For localhost, use a default
+        // For localhost, try to extract from common AAS server patterns
         if (url.hostname === 'localhost' || url.hostname === '127.0.0.1') {
+          // Try common AAS server patterns
+          const commonPatterns = [
+            /\/shells\/([^\/]+)/,  // /shells/{aasId}
+            /\/aas\/([^\/]+)/,     // /aas/{aasId}
+            /\/assetAdministrationShells\/([^\/]+)/, // /assetAdministrationShells/{aasId}
+            /aasId=([^&]+)/,       // ?aasId=...
+            /id=([^&]+)/           // ?id=...
+          ];
+          
+          for (const pattern of commonPatterns) {
+            const match = url.pathname.match(pattern) || url.search.match(pattern);
+            if (match && match[1]) {
+              console.log('[SourceAasManage] Found AAS ID in common pattern:', match[1]);
+              return match[1];
+            }
+          }
+          
+          // If no pattern matches, use system name as fallback
+          if (this.system.name && this.system.name.trim() !== '') {
+            console.log('[SourceAasManage] Using system name as AAS ID:', this.system.name);
+            return this.system.name;
+          }
+          
           console.log('[SourceAasManage] Using localhost default');
           return 'Default AAS';
         }
