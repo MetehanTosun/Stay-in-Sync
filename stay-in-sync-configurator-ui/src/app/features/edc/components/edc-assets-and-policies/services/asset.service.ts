@@ -12,7 +12,7 @@ import { MOCK_ODRL_ASSETS } from '../../../mocks/mock-data';
 export class AssetService {
 
 
-  private mockMode = true;
+  private mockMode = false;
 
   private baseUrl = 'http://localhost:8090/api/config/edcs';
 
@@ -124,9 +124,17 @@ export class AssetService {
   }
 
   redeployAsset(edcId: string, assetId: string): Observable<void> {
+    if (this.mockMode) {
+      console.warn(`Mock Mode: Redeploying asset ${assetId}.`);
+      const asset = (MOCK_ODRL_ASSETS[edcId] || []).find(a => a['@id'] === assetId);
+      if (asset) asset.syncStatus = 'SYNCED';
+      return of(undefined).pipe(delay(300));
+    }
     // This endpoint will trigger the backend to push the stored configuration to the EDC
     return this.http.post<void>(`${this.baseUrl}/${edcId}/assets/${assetId}/redeploy`, {});
   }
+
+
 
   // Returns static suggestions for query and header parameters used in the New Asset dialog
   getParamOptions(): Observable<{ query: { label: string; value: string }[]; header: { label: string; value: string }[] }> {
@@ -211,7 +219,7 @@ export class AssetService {
       || raw?.dataAddress?.base_url
       || '';
 
-    return {
+    const result = {
       id: raw?.id, // not provided by backend (ignored), kept for compatibility
       assetId: raw?.assetId || raw?.['@id'] || '',
       name: raw?.name || firstProps['asset:prop:name'] || firstProps.name || '',
@@ -231,7 +239,9 @@ export class AssetService {
         id: p?.id,
         description: p?.description || p?.['asset:prop:description'] || '',
       })),
-    } as Asset;
+      syncStatus: raw?.syncStatus, // Correctly map syncStatus as a top-level property
+    };
+    return result as Asset;
   }
 
 }

@@ -101,6 +101,14 @@ export let MOCK_POLICIES: Record<string, any[]> = {
  * Mock Contract Definitions
  */
 export let MOCK_CONTRACT_DEFINITIONS: Record<string, OdrlContractDefinition[]> = {
-  'edc-instance-1': [],
+  'edc-instance-1': [
+    {
+      '@id': 'contract-def-1',
+      id: 'contract-def-1',
+      accessPolicyId: 'policy-bpn-dev',
+      contractPolicyId: 'policy-bpn-dev',
+      assetsSelector: [],
+    } as any,
+  ],
   'edc-instance-2': [],
 };

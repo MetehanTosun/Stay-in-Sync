@@ -11,7 +11,7 @@ export class TemplateService {
   private backendUrl = 'http://localhost:8090/api/config/templates';
 
   // UI Testing method. To use the real backend, change this to false!
-  private mockMode = true;
+  private mockMode = false;
 
   constructor(private http: HttpClient) {}
 
