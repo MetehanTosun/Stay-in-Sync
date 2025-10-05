@@ -28,7 +28,7 @@
                         placeholder="Search by path"></p-columnFilter>
       </th>
       <th>
-        <p-columnFilter field="deploymentStatus" matchMode="equals" [showMenu]="false">
+        <p-columnFilter field="httpRequestType" matchMode="equals" [showMenu]="false">
           <ng-template #filter let-filter="filterCallback">
             <p-select [options]="httpRequestTypes"
                       (onChange)="filter($event.value)"

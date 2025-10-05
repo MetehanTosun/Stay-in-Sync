@@ -234,6 +234,7 @@ export class ManageEndpointsComponent implements OnInit, OnDestroy {
       // Keep track of form state for tab management
     });
 
+    this.loadEndpoints()
     this.loadSourceSystemAndSetApiUrl();
   }
 
