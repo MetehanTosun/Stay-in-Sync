@@ -32,6 +32,7 @@ import { SourceSystemEndpointDTO } from '../../models/sourceSystemEndpointDTO';
 import { SourceSystemEndpointResourceService } from '../../service/sourceSystemEndpointResource.service';
 import { AasService } from '../../services/aas.service';
 import { TreeNode } from 'primeng/api';
+import {Router} from '@angular/router';
 
 interface AasOperationVarView { idShort: string; modelType?: string; valueType?: string }
 interface AasAnnotationView { idShort: string; modelType?: string; valueType?: string; value?: any }
@@ -76,8 +77,6 @@ interface AasElementLivePanel {
     FileUploadModule,
     ReactiveFormsModule,
     CreateSourceSystemComponent,
-    ManageApiHeadersComponent,
-    ManageEndpointsComponent,
     ConfirmationDialogComponent,
     SearchBarComponent,
     FormsModule,
@@ -88,12 +87,12 @@ export class SourceSystemBaseComponent implements OnInit, OnDestroy {
    * List of source systems to display in the table
    */
   systems: SourceSystemDTO[] = [];
-  
+
   /**
    * Flag indicating whether data is currently loading
    */
   loading = false;
-  
+
   /**
    * Holds any error message encountered during operations
    */
@@ -113,7 +112,7 @@ export class SourceSystemBaseComponent implements OnInit, OnDestroy {
    * Currently selected system for viewing or editing
    */
   selectedSystem: SourceSystemDTO | null = null;
-  
+
   /**
    * Reactive form for editing system metadata
    */
@@ -284,7 +283,7 @@ export class SourceSystemBaseComponent implements OnInit, OnDestroy {
     }
   }
 
-  
+
   /**
    * List of endpoints for the currently selected system
    */
@@ -299,22 +298,22 @@ export class SourceSystemBaseComponent implements OnInit, OnDestroy {
    * Current search term entered by user
    */
   searchTerm: string = '';
-  
+
   /**
    * Search configuration options
    */
   searchOptions: SearchOptions = {};
-  
+
   /**
    * Filtered systems based on search criteria
    */
   filteredSystems: SourceSystemDTO[] = [];
-  
+
   /**
    * Search result count information
    */
   searchResultCount: SearchResultCount | null = null;
-  
+
   /**
    * Flag indicating if search is currently active
    */
@@ -324,12 +323,12 @@ export class SourceSystemBaseComponent implements OnInit, OnDestroy {
    * Controls visibility of headers section in detail dialog
    */
   showHeadersSection = true;
-  
+
   /**
    * Controls visibility of endpoints section in detail dialog
    */
   showEndpointsSection = true;
-  
+
   /**
    * Controls visibility of metadata section in detail dialog
    */
@@ -339,7 +338,7 @@ export class SourceSystemBaseComponent implements OnInit, OnDestroy {
    * Controls visibility of confirmation dialog
    */
   showConfirmationDialog = false;
-  
+
   /**
    * Configuration data for confirmation dialog
    */
@@ -350,7 +349,7 @@ export class SourceSystemBaseComponent implements OnInit, OnDestroy {
     cancelLabel: 'Cancel',
     severity: 'danger'
   };
-  
+
   /**
    * System to be deleted (stored for confirmation)
    */
@@ -391,7 +390,8 @@ export class SourceSystemBaseComponent implements OnInit, OnDestroy {
     protected erorrService: HttpErrorService,
     private apiEndpointSvc: SourceSystemEndpointResourceService,
     private searchPipe: SourceSystemSearchPipe,
-    private aasService: AasService
+    private aasService: AasService,
+    private router: Router
   ) {
     this.initializeForm();
   }
@@ -403,7 +403,7 @@ export class SourceSystemBaseComponent implements OnInit, OnDestroy {
   ngOnInit(): void {
     this.loadSystems();
     this.loadSearchState();
-    
+
     window.addEventListener('beforeunload', this.onBeforeUnload.bind(this));
     window.addEventListener('storage', this.onStorageChange.bind(this));
   }
@@ -556,19 +556,7 @@ export class SourceSystemBaseComponent implements OnInit, OnDestroy {
    * @param system - The source system to manage
    */
   manageSourceSystem(system: SourceSystemDTO): void {
-    this.selectedSystem = system;
-    this.showDetailDialog = true;
-  }
-
-  /**
-   * Opens the view dialog for a source system
-   * Loads endpoints and shows the detail dialog
-   * @param system - The source system to view
-   */
-  viewSourceSystem(system: SourceSystemDTO): void {
-    this.selectedSystem = system;
-    this.loadEndpointsForSelectedSystem();
-    this.showDetailDialog = true;
+    this.router.navigate(['/source-system/', system.id]);
   }
 
   /**
@@ -1129,8 +1117,8 @@ export class SourceSystemBaseComponent implements OnInit, OnDestroy {
    * Toggles case sensitivity in search
    */
   toggleCaseSensitive(): void {
-    this.updateSearchOptions({ 
-      caseSensitive: !this.searchOptions.caseSensitive 
+    this.updateSearchOptions({
+      caseSensitive: !this.searchOptions.caseSensitive
     });
   }
 
@@ -1138,8 +1126,8 @@ export class SourceSystemBaseComponent implements OnInit, OnDestroy {
    * Toggles regex search functionality
    */
   toggleRegexSearch(): void {
-    this.updateSearchOptions({ 
-      enableRegex: !this.searchOptions.enableRegex 
+    this.updateSearchOptions({
+      enableRegex: !this.searchOptions.enableRegex
     });
   }
 
@@ -1147,8 +1135,8 @@ export class SourceSystemBaseComponent implements OnInit, OnDestroy {
    * Toggles search result highlighting
    */
   toggleHighlightMatches(): void {
-    this.updateSearchOptions({ 
-      highlightMatches: !this.searchOptions.highlightMatches 
+    this.updateSearchOptions({
+      highlightMatches: !this.searchOptions.highlightMatches
     });
   }
 
@@ -1197,7 +1185,7 @@ export class SourceSystemBaseComponent implements OnInit, OnDestroy {
       version: '1.0',
       savedAt: new Date().toISOString()
     };
-    
+
     try {
       localStorage.setItem('source-system-search-state', JSON.stringify(stateData));
       this.syncSearchStateAcrossTabs();
@@ -1245,8 +1233,8 @@ export class SourceSystemBaseComponent implements OnInit, OnDestroy {
    * @returns True if state is valid
    */
   private isValidSearchState(state: any): boolean {
-    return state && 
-           typeof state === 'object' && 
+    return state &&
+           typeof state === 'object' &&
            typeof state.term === 'string' &&
            typeof state.isActive === 'boolean';
   }
@@ -1286,7 +1274,7 @@ export class SourceSystemBaseComponent implements OnInit, OnDestroy {
       timestamp: Date.now(),
       tabId: Math.random().toString(36).substr(2, 9)
     };
-    
+
     try {
       localStorage.setItem('source-system-search-state', JSON.stringify(stateData));
       window.dispatchEvent(new StorageEvent('storage', {
@@ -1384,7 +1372,7 @@ export class SourceSystemBaseComponent implements OnInit, OnDestroy {
     try {
       const savedState = localStorage.getItem('source-system-search-state');
       const backupState = localStorage.getItem('source-system-search-backup');
-      
+
       return {
         hasSavedState: !!savedState,
         hasBackup: !!backupState,
@@ -1507,7 +1495,7 @@ export class SourceSystemBaseComponent implements OnInit, OnDestroy {
    */
   getResponsiveSearchOptions(): SearchOptions {
     const baseOptions = this.searchOptions;
-    
+
     if (this.isSmallScreen()) {
       return {
         ...baseOptions,
@@ -1515,7 +1503,7 @@ export class SourceSystemBaseComponent implements OnInit, OnDestroy {
         searchScope: 'all'
       };
     }
-    
+
     return baseOptions;
   }
 
@@ -1594,7 +1582,7 @@ export class SourceSystemBaseComponent implements OnInit, OnDestroy {
    */
   getSearchSuggestions(): string[] {
     const suggestions: string[] = [];
-    
+
     this.systems.forEach(system => {
       if (system.name && !suggestions.includes(system.name)) {
         suggestions.push(system.name);
@@ -1603,7 +1591,7 @@ export class SourceSystemBaseComponent implements OnInit, OnDestroy {
         suggestions.push(system.apiType);
       }
     });
-    
+
     return suggestions.slice(0, 10);
   }
 
@@ -1613,22 +1601,22 @@ export class SourceSystemBaseComponent implements OnInit, OnDestroy {
    */
   getAlternativeSearchTerms(): string[] {
     if (!this.searchTerm) return [];
-    
+
     const alternatives: string[] = [];
     const term = this.searchTerm.toLowerCase();
-    
+
     this.systems.forEach(system => {
       if (system.name?.toLowerCase().includes(term) && !alternatives.includes(system.name)) {
         alternatives.push(system.name);
       }
       if (system.description?.toLowerCase().includes(term)) {
-        const words = system.description.split(' ').filter(word => 
+        const words = system.description.split(' ').filter(word =>
           word.toLowerCase().includes(term) && word.length > 3
         );
         alternatives.push(...words.slice(0, 3));
       }
     });
-    
+
     return [...new Set(alternatives)].slice(0, 5);
   }
 
@@ -1684,7 +1672,7 @@ export class SourceSystemBaseComponent implements OnInit, OnDestroy {
    * Start time for search performance measurement
    */
   private searchStartTime: number = 0;
-  
+
   /**
    * End time for search performance measurement
    */
@@ -1740,7 +1728,7 @@ export class SourceSystemBaseComponent implements OnInit, OnDestroy {
     if (!this.isSearchActive || !this.searchOptions.highlightMatches) {
       return false;
     }
-    
+
     const searchableText = this.getSystemSearchableText(system);
     return searchableText.toLowerCase().includes(this.searchTerm.toLowerCase());
   }
@@ -1777,7 +1765,7 @@ export class SourceSystemBaseComponent implements OnInit, OnDestroy {
     if (!this.isSearchActive || !this.searchOptions.highlightMatches || !text) {
       return text || '';
     }
-    
+
     return this.searchPipe.highlightMatches(text, this.searchTerm, this.searchOptions);
   }
 
@@ -1788,7 +1776,7 @@ export class SourceSystemBaseComponent implements OnInit, OnDestroy {
    */
   getRelevanceScore(system: SourceSystemDTO): number {
     if (!this.isSearchActive) return 0;
-    
+
     const searchableText = this.getSystemSearchableText(system);
     const normalizedSearchTerm = this.searchTerm.toLowerCase();
     let score = 0;
@@ -1835,8 +1823,8 @@ export class SourceSystemBaseComponent implements OnInit, OnDestroy {
    */
   getEndpointMatchCount(system: SourceSystemDTO): number {
     if (!this.isSearchActive || !this.hasEndpointMatches()) return 0;
-    
-    return this.endpointsForSelectedSystem.filter(endpoint => 
+
+    return this.endpointsForSelectedSystem.filter(endpoint =>
       endpoint.endpointPath?.toLowerCase().includes(this.searchTerm.toLowerCase())
     ).length;
   }
@@ -1848,14 +1836,14 @@ export class SourceSystemBaseComponent implements OnInit, OnDestroy {
   getSearchBreakdownText(): string {
     const breakdown = this.getSearchBreakdown();
     if (!breakdown) return '';
-    
+
     const parts: string[] = [];
     if (breakdown.byName > 0) parts.push(`${breakdown.byName} names`);
     if (breakdown.byDescription > 0) parts.push(`${breakdown.byDescription} descriptions`);
     if (breakdown.byUrl > 0) parts.push(`${breakdown.byUrl} URLs`);
     if (breakdown.byEndpoints > 0) parts.push(`${breakdown.byEndpoints} endpoints`);
     if (breakdown.byHeaders > 0) parts.push(`${breakdown.byHeaders} headers`);
-    
+
     return parts.join(', ');
   }
 
@@ -1886,7 +1874,7 @@ export class SourceSystemBaseComponent implements OnInit, OnDestroy {
   showSearchSuggestions(): void {
     const suggestions = this.getSearchSuggestions();
     const alternatives = this.getAlternativeSearchTerms();
-    
+
     console.log('Search suggestions:', { suggestions, alternatives });
   }
 
@@ -1895,7 +1883,7 @@ export class SourceSystemBaseComponent implements OnInit, OnDestroy {
    */
   exportSearchResults(): void {
     if (!this.hasSearchResults()) return;
-    
+
     const exportData = {
       searchTerm: this.searchTerm,
       searchOptions: this.searchOptions,
@@ -1903,16 +1891,16 @@ export class SourceSystemBaseComponent implements OnInit, OnDestroy {
       exportDate: new Date().toISOString(),
       totalResults: this.searchResultCount?.filtered || 0
     };
-    
+
     const dataStr = JSON.stringify(exportData, null, 2);
     const dataBlob = new Blob([dataStr], { type: 'application/json' });
     const url = URL.createObjectURL(dataBlob);
-    
+
     const link = document.createElement('a');
     link.href = url;
     link.download = `source-systems-search-${new Date().toISOString().split('T')[0]}.json`;
     link.click();
-    
+
     URL.revokeObjectURL(url);
   }
 
@@ -1921,7 +1909,7 @@ export class SourceSystemBaseComponent implements OnInit, OnDestroy {
    */
   saveSearchQuery(): void {
     if (!this.isSearchActive) return;
-    
+
     try {
       const savedSearches = this.loadSavedSearches();
       const newSearch = {
@@ -1930,13 +1918,13 @@ export class SourceSystemBaseComponent implements OnInit, OnDestroy {
         timestamp: Date.now(),
         resultCount: this.searchResultCount?.filtered || 0
       };
-      
+
       savedSearches.push(newSearch);
-      
+
       if (savedSearches.length > 20) {
         savedSearches.splice(0, savedSearches.length - 20);
       }
-      
+
       localStorage.setItem('saved-searches', JSON.stringify(savedSearches));
     } catch (error) {
       console.warn('Failed to save search query:', error);
