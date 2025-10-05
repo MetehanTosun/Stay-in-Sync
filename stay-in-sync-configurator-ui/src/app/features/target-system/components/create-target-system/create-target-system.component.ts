@@ -518,7 +518,17 @@ export class CreateTargetSystemComponent implements OnInit, OnChanges {
         console.log('ann2 (annotation):', ann2);
         console.log('annotationsRaw:', annotationsRaw);
         const mapVar = (v: any): any | null => { const val = v?.value ?? v; const idShort = val?.idShort; if (!idShort) return null; return { idShort, modelType: val?.modelType, valueType: val?.valueType }; };
-        const mapAnnotation = (a: any): any | null => { const val = a?.value ?? a; const idShort = val?.idShort; if (!idShort) return null; return { idShort, modelType: val?.modelType, valueType: val?.valueType, value: val?.value }; };
+        const mapAnnotation = (a: any): any | null => { 
+          console.log('Mapping annotation:', a);
+          const val = a?.value ?? a; 
+          console.log('Annotation val:', val);
+          const idShort = val?.idShort; 
+          console.log('Annotation idShort:', idShort);
+          if (!idShort) return null; 
+          const result = { idShort, modelType: val?.modelType, valueType: val?.valueType, value: val?.value };
+          console.log('Annotation result:', result);
+          return result;
+        };
         
         // Handle relationship references
         const stringifyRef = (ref: any): string | undefined => {
