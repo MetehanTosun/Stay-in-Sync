@@ -512,21 +512,12 @@ export class CreateTargetSystemComponent implements OnInit, OnChanges {
         const inoutVars = Array.isArray((found as any).inoutputVariables) ? (found as any).inoutputVariables : [];
         const ann1 = (found as any).annotations; const ann2 = (found as any).annotation;
         const annotationsRaw = Array.isArray(ann1) ? ann1 : (Array.isArray(ann2) ? ann2 : []);
-        console.log('=== ANNOTATIONS DEBUG ===');
-        console.log('Found element:', found);
-        console.log('ann1 (annotations):', ann1);
-        console.log('ann2 (annotation):', ann2);
-        console.log('annotationsRaw:', annotationsRaw);
         const mapVar = (v: any): any | null => { const val = v?.value ?? v; const idShort = val?.idShort; if (!idShort) return null; return { idShort, modelType: val?.modelType, valueType: val?.valueType }; };
         const mapAnnotation = (a: any): any | null => { 
-          console.log('Mapping annotation:', a);
           // For annotations, we want the annotation object itself, not its value
           const idShort = a?.idShort; 
-          console.log('Annotation idShort:', idShort);
           if (!idShort) return null; 
-          const result = { idShort, modelType: a?.modelType, valueType: a?.valueType, value: a?.value };
-          console.log('Annotation result:', result);
-          return result;
+          return { idShort, modelType: a?.modelType, valueType: a?.valueType, value: a?.value };
         };
         
         // Handle relationship references
@@ -549,7 +540,6 @@ export class CreateTargetSystemComponent implements OnInit, OnChanges {
         const secondRef = stringifyRef((found as any).second || (found as any).secondReference);
         
         const mappedAnnotations = annotationsRaw.map(mapAnnotation).filter(Boolean);
-        console.log('Mapped annotations:', mappedAnnotations);
         
         this.selectedLivePanel = {
           label: found.idShort,
@@ -565,8 +555,6 @@ export class CreateTargetSystemComponent implements OnInit, OnChanges {
           inoutputVariables: inoutVars.map(mapVar).filter(Boolean),
           annotations: mappedAnnotations
         } as any;
-        
-        console.log('Final selectedLivePanel:', this.selectedLivePanel);
         if (node && node.data) {
           node.data.idShortPath = idShortPath || node.data.idShortPath;
           node.data.modelType = liveType || node.data.modelType;
