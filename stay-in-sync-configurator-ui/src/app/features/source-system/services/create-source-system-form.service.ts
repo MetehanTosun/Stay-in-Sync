@@ -126,6 +126,7 @@ export class CreateSourceSystemFormService {
       description: formValue.description,
       apiType: formValue.apiType,
       apiUrl: formValue.apiUrl,
+      aasId: formValue.aasId,
       apiAuthType: formValue.authType,
       authConfig: {
         authType: formValue.authType
