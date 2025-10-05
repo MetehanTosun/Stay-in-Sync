@@ -25,6 +25,7 @@ import { TargetSystemDTO } from '../../models/targetSystemDTO';
 import { OpenApiImportService } from '../../../../core/services/openapi-import.service';
 import { load as parseYAML } from 'js-yaml';
 import { TargetResponsePreviewModalComponent } from '../response-preview-modal/response-preview-modal.component';
+import { ConfirmationDialogComponent, ConfirmationDialogData } from '../../../source-system/components/confirmation-dialog/confirmation-dialog.component';
 import { ToastModule } from 'primeng/toast';
 import { TooltipModule } from 'primeng/tooltip';
 
@@ -46,6 +47,7 @@ import { TooltipModule } from 'primeng/tooltip';
     MonacoEditorModule,
     DragDropModule,
     TargetResponsePreviewModalComponent,
+    ConfirmationDialogComponent,
     ToastModule,
     TooltipModule
   ],
@@ -112,6 +114,17 @@ export class ManageTargetEndpointsComponent implements OnInit {
   requestBodyEditorError: string | null = null;
   responsePreviewDialog = false;
   selectedResponsePreviewEndpoint: TargetSystemEndpointDTO | null = null;
+  
+  // Confirmation dialog variables
+  showConfirmationDialog = false;
+  confirmationData: ConfirmationDialogData = {
+    title: '',
+    message: '',
+    confirmLabel: 'Delete',
+    cancelLabel: 'Cancel',
+    severity: 'warning'
+  };
+  endpointToDelete: TargetSystemEndpointDTO | null = null;
 
   jsonEditorOptions = {
     theme: 'vs-dark',
@@ -352,21 +365,43 @@ export class ManageTargetEndpointsComponent implements OnInit {
   }
 
   delete(row: TargetSystemEndpointDTO): void {
-    if (!row.id) return;
-    this.api.delete(row.id).subscribe({ 
-      next: () => {
-        this.load();
-        this.messageService.add({
-          severity: 'success',
-          summary: 'Endpoint Deleted',
-          detail: 'Endpoint has been successfully deleted.',
-          life: 3000
-        });
-      },
-      error: (error) => {
-        console.error('[ManageTargetEndpoints] Error deleting endpoint:', error);
-      }
-    });
+    this.endpointToDelete = row;
+    this.confirmationData = {
+      title: 'Delete Endpoint',
+      message: `Are you sure you want to delete the endpoint "${row.endpointPath}" (${row.httpRequestType})? This action cannot be undone and will also delete all associated query parameters.`,
+      confirmLabel: 'Delete',
+      cancelLabel: 'Cancel',
+      severity: 'warning'
+    };
+    this.showConfirmationDialog = true;
+  }
+
+  /**
+   * Handle confirmation dialog events.
+   */
+  onConfirmationConfirmed(): void {
+    if (this.endpointToDelete && this.endpointToDelete.id) {
+      this.api.delete(this.endpointToDelete.id).subscribe({ 
+        next: () => {
+          this.load();
+          this.messageService.add({
+            severity: 'success',
+            summary: 'Endpoint Deleted',
+            detail: 'Endpoint has been successfully deleted.',
+            life: 3000
+          });
+          this.endpointToDelete = null;
+        },
+        error: (error) => {
+          console.error('[ManageTargetEndpoints] Error deleting endpoint:', error);
+          this.endpointToDelete = null;
+        }
+      });
+    }
+  }
+
+  onConfirmationCancelled(): void {
+    this.endpointToDelete = null;
   }
 
   openParams(row: TargetSystemEndpointDTO): void {

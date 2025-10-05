@@ -136,4 +136,14 @@
   [responseDts]="selectedResponsePreviewEndpoint?.responseDts">
 </app-target-response-preview-modal>
 
+<!--
+  Confirmation dialog for deletion
+-->
+<app-confirmation-dialog
+  [(visible)]="showConfirmationDialog"
+  [data]="confirmationData"
+  (confirmed)="onConfirmationConfirmed()"
+  (cancelled)="onConfirmationCancelled()">
+</app-confirmation-dialog>
+
 

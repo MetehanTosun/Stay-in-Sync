@@ -1010,9 +1010,7 @@ ${jsonSchema}
       return;
     }
     this.editJsonError = null;
-    const dto: SourceSystemEndpointDTO = {
-      id: this.editingEndpoint.id,
-      sourceSystemId: this.sourceSystemId!,
+    const dto = {
       endpointPath: this.editForm.value.endpointPath,
       httpRequestType: this.editForm.value.httpRequestType,
       requestBodySchema: this.editForm.value.requestBodySchema,
