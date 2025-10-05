@@ -34,6 +34,10 @@ class TargetSystemTest {
         targetSystem.apiType = "REST";
         targetSystem.description = "Test target system for unit testing";
         targetSystem.syncSystemEndpoints = new HashSet<>();
+        
+        // Initialize endpoints
+        endpoint1 = new TargetSystemEndpoint();
+        endpoint2 = new TargetSystemEndpoint();
     }
 
     @Test
@@ -59,21 +63,21 @@ class TargetSystemTest {
     @Transactional
     void testCascadeOperationsWithEndpoints() {
         // Arrange
-        endpoint1 = new TargetSystemEndpoint();
         endpoint1.endpointPath = "/api/target1";
         endpoint1.httpRequestType = "GET";
-        endpoint1.syncSystem = (SyncSystem) targetSystem;
+        endpoint1.syncSystem = targetSystem;
 
-        endpoint2 = new TargetSystemEndpoint();
         endpoint2.endpointPath = "/api/target2";
         endpoint2.httpRequestType = "POST";
-        endpoint2.syncSystem = (SyncSystem) targetSystem;
+        endpoint2.syncSystem = targetSystem;
 
         targetSystem.syncSystemEndpoints.add(endpoint1);
         targetSystem.syncSystemEndpoints.add(endpoint2);
 
         // Act
         targetSystem.persist();
+        endpoint1.persist();
+        endpoint2.persist();
         entityManager.flush();
 
         // Assert

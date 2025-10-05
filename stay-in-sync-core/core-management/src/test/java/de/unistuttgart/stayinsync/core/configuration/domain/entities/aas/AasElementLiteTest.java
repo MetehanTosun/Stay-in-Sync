@@ -9,6 +9,7 @@ import jakarta.persistence.PersistenceContext;
 import jakarta.transaction.Transactional;
 
 import static org.junit.jupiter.api.Assertions.*;
+import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.SourceSystem;
 
 @QuarkusTest
 @DisplayName("AasElementLite Entity Tests")
@@ -19,14 +20,24 @@ class AasElementLiteTest {
 
     private AasElementLite elementLite;
     private AasSubmodelLite submodelLite;
+    private SourceSystem sourceSystem;
 
     @BeforeEach
     @Transactional
     void setUp() {
+        // Create test source system
+        sourceSystem = new SourceSystem();
+        sourceSystem.apiType = "AAS";
+        sourceSystem.apiUrl = "http://aas.example";
+        sourceSystem.aasId = "aHR0cHM6Ly9leGFtcGxlLmNvbS9pZHMvYWFzLzAzMDBfNjE0MV81MDUyXzg3MTU";
+        sourceSystem.name = "test-source";
+        sourceSystem.persist();
+
         // Create test submodel
         submodelLite = new AasSubmodelLite();
         submodelLite.submodelIdShort = "TestSubmodel";
         submodelLite.submodelId = "https://test.com/submodel";
+        submodelLite.sourceSystem = sourceSystem;
         submodelLite.persist();
 
         // Create test element
@@ -66,7 +77,7 @@ class AasElementLiteTest {
     void testNullOptionalFields() {
         // Arrange
         elementLite.valueType = null;
-        elementLite.idShortPath = null;
+        // Note: idShortPath cannot be null as it's a required field
 
         // Act
         elementLite.persist();
@@ -78,7 +89,7 @@ class AasElementLiteTest {
         assertEquals("Property", elementLite.modelType);
         assertNull(elementLite.valueType);
         // Note: AasElementLite doesn't have a 'value' field, removing this assertion
-        assertNull(elementLite.idShortPath);
+        assertEquals("TestElement", elementLite.idShortPath); // idShortPath is required, so it should still be set
     }
 
     @Test

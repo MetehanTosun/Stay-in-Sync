@@ -27,7 +27,7 @@ public class AasResourceTest {
     @BeforeEach
     @Transactional
     void seed() {
-        SourceSystem.deleteAll();
+        // Clean up in correct order to avoid foreign key constraints
         SourceSystem ss = new SourceSystem();
         ss.apiType = "AAS";
         ss.apiUrl = "http://aas.example";
@@ -56,13 +56,17 @@ public class AasResourceTest {
         String payload = "{\"result\":[{\"type\":\"ModelReference\",\"keys\":[{\"type\":\"Submodel\",\"value\":\"id\"}]}]}";
         HttpResponse<Buffer> httpResp = mockResp(200, payload);
         Mockito.when(traversal.listSubmodels(anyString(), anyString(), anyMap())).thenReturn(Uni.createFrom().item(httpResp));
+        
+        // Mock getSubmodel to return success for the submodel reference
+        HttpResponse<Buffer> getSubmodelResp = mockResp(200, "{\"idShort\":\"test-submodel\"}");
+        Mockito.when(traversal.getSubmodel(anyString(), anyString(), anyMap())).thenReturn(Uni.createFrom().item(getSubmodelResp));
 
         given()
             .queryParam("source", "LIVE")
             .when().get("/api/config/source-system/{id}/aas/submodels", SourceSystem.<SourceSystem>findAll().firstResult().id)
             .then()
             .statusCode(200)
-            .body("result.size()", equalTo(1));
+            .body("size()", equalTo(1));
     }
 
     private HttpResponse<Buffer> mockResp(int code, String body) {

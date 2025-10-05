@@ -25,9 +25,6 @@ class SourceSystemServiceTest {
     @BeforeEach
     @Transactional
     void setUp() {
-        // Clean up any existing data
-        SourceSystem.deleteAll();
-        
         // Create a test source system
         testSourceSystem = new SourceSystem();
         testSourceSystem.name = "Test Source System";

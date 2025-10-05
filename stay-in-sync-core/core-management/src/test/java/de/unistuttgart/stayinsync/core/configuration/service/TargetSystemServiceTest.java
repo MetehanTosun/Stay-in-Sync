@@ -26,7 +26,7 @@ class TargetSystemServiceTest {
     @Transactional
     void setUp() {
         // Clean up any existing data
-        TargetSystem.deleteAll();
+        // Create new TargetSystem instead of deleting all to avoid foreign key constraints
         
         // Create a test target system
         testTargetSystem = new TargetSystem();
