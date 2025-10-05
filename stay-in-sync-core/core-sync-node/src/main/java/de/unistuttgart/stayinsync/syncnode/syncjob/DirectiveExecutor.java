@@ -220,16 +220,11 @@ public class DirectiveExecutor {
             String valueExpression = entry.getValue();
 
             if (valueExpression != null && valueExpression.startsWith("{{") && valueExpression.endsWith("}}")) {
-                String path = valueExpression.substring("{{checkResponse.body.".length(), valueExpression.length() - "}}".length());
-                String jsonPointer = "/" + path.replace('.', '/').replaceAll("\\[(\\d+)\\]", "/$1");
-
+                String jsonPointer = valueExpression.substring(2, valueExpression.length() - 2)
+                        .replace("checkResponse.body.", "/");
                 JsonNode valueNode = checkResponseJson.at(jsonPointer);
                 if (!valueNode.isMissingNode()) {
-                    if (valueNode.isNumber()) {
-                        resolvedParams.put(paramName, valueNode.numberValue());
-                    } else {
-                        resolvedParams.put(paramName, valueNode.asText());
-                    }
+                    resolvedParams.put(paramName, valueNode.asText());
                 } else {
                     Log.warnf("Placeholder '%s' could not be resolved. JSON Pointer '%s' not found in CHECK response.", valueExpression, jsonPointer);
                     resolvedParams.put(paramName, null);
