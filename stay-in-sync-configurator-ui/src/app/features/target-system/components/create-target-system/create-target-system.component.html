@@ -133,8 +133,21 @@
                 </div>
               </div>
             </div>
-            <div *ngIf="selectedLivePanel.value !== undefined && selectedLivePanel.type!=='SubmodelElementCollection' && selectedLivePanel.type!=='SubmodelElementList' && selectedLivePanel.type!=='MultiLanguageProperty'">
+            <div *ngIf="selectedLivePanel.value !== undefined && selectedLivePanel.type!=='SubmodelElementCollection' && selectedLivePanel.type!=='SubmodelElementList' && selectedLivePanel.type!=='MultiLanguageProperty' && selectedLivePanel.type!=='RelationshipElement' && selectedLivePanel.type!=='AnnotatedRelationshipElement'">
               <strong>value:</strong> {{ (selectedLivePanel.value | json) }}
+            </div>
+            <div *ngIf="selectedLivePanel.type==='RelationshipElement' || selectedLivePanel.type==='AnnotatedRelationshipElement'">
+              <div *ngIf="selectedLivePanel.firstRef"><strong>First Reference:</strong> {{ selectedLivePanel.firstRef }}</div>
+              <div *ngIf="selectedLivePanel.secondRef"><strong>Second Reference:</strong> {{ selectedLivePanel.secondRef }}</div>
+              <div *ngIf="selectedLivePanel.type==='AnnotatedRelationshipElement' && selectedLivePanel.annotations?.length">
+                <strong>Annotations:</strong>
+                <div style="margin:.25rem 0 .5rem 0;">
+                  <div *ngFor="let ann of selectedLivePanel.annotations" style="display:flex;gap:.5rem;align-items:baseline;margin:.25rem 0;">
+                    <span style="font-size:.75rem;padding:.1rem .4rem;border:1px solid var(--surface-border);border-radius:999px;color:var(--text-color-secondary);min-width:2.5rem;text-align:center;">{{ ann?.idShort || '-' }}</span>
+                    <span>{{ ann?.value || '' }}</span>
+                  </div>
+                </div>
+              </div>
             </div>
             <div *ngIf="selectedLivePanel.type==='SubmodelElementCollection'">
               <div><strong>Items:</strong> {{ selectedLivePanel.value?.length || 0 }}</div>
