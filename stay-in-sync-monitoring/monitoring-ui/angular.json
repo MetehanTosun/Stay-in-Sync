@@ -13,6 +13,7 @@
         "build": {
           "builder": "@angular-devkit/build-angular:application",
           "options": {
+            "allowedCommonJsDependencies": ["source-map-support"],
             "outputPath": "dist/monitoring-ui",
             "index": "src/index.html",
             "browser": "src/main.ts",
