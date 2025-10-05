@@ -4,16 +4,17 @@
   Provides comprehensive search functionality with highlighting and responsive design.
 -->
 
-  <app-search-bar
-    [customPlaceholder]="'Search source systems by name, description, API URL, endpoints, or headers...'"
-    (search)="onSearchChange($event)"
-    (clear)="onSearchClear()">
-  </app-search-bar>
-
   <!--
     Table of source systems with pagination and action buttons
   -->
-  <p-table [value]="systems" [loading]="loading" [paginator]="true" [rows]="10" [responsiveLayout]="'scroll'">
+<div style="height: 55rem">
+
+  <p-table [value]="systems" [loading]="loading" [paginator]="true"
+           [paginator]="true"
+           paginatorPosition="bottom"
+           [rows]="10"
+           [scrollable]="true"
+           scrollHeight="flex">
     <ng-template #caption>
       <div class="flex items-center justify-between">
         <span class="text-xl font-bold">Source Systems</span>
@@ -25,48 +26,46 @@
         <th style="width: 25%;">
           <div class="column-header">
             <span>Name</span>
-            <div class="search-indicator" *ngIf="hasNameMatches()">
-              <i class="pi pi-search" title="Name matches found"></i>
-            </div>
           </div>
         </th>
         <th style="width: 25%;">
           <div class="column-header">
             <span>API URL</span>
-            <div class="search-indicator" *ngIf="hasUrlMatches()">
-              <i class="pi pi-search" title="URL matches found"></i>
-            </div>
           </div>
         </th>
         <th style="width: 25%;">
           <div class="column-header">
             <span>Description</span>
-            <div class="search-indicator" *ngIf="hasDescriptionMatches()">
-              <i class="pi pi-search" title="Description matches found"></i>
-            </div>
           </div>
         </th>
         <th style="width: 25%;">
           <div class="column-header">
             <span>Actions</span>
-            <div class="search-indicator" *ngIf="hasEndpointMatches() || hasHeaderMatches()">
-              <i class="pi pi-cog" title="Endpoint/Header matches found"></i>
-            </div>
           </div>
+        </th>
+      </tr>
+      <tr>
+        <th>
+          <p-columnFilter type="text" field="name" matchMode="contains" placeholder="Search by name" [showMenu]="false"
+                          ariaLabel="Filter Name"></p-columnFilter>
+        </th>
+        <th>
+          <p-columnFilter type="text" field="apiUrl" matchMode="contains" placeholder="Search by address"
+                          ariaLabel="Filter Name"></p-columnFilter>
+        </th>
+        <th></th>
+        <th>
         </th>
       </tr>
     </ng-template>
 
     <!-- Table body with search highlighting and action buttons -->
     <ng-template pTemplate="body" let-system let-rowIndex="rowIndex">
-      <tr [class.search-result]="isSearchActive" [class.highlighted-row]="isHighlightedRow(system)">
+      <tr [class.search-result]="isSearchActive">
         <td>
           <div class="system-name-cell">
             <div class="system-name" [innerHTML]="getHighlightedText(system.name, 'name')"></div>
             <div class="system-meta" *ngIf="isSearchActive">
-              <small class="relevance-score" *ngIf="getRelevanceScore(system) > 0">
-                Relevance: {{ getRelevanceScore(system) }}%
-              </small>
             </div>
           </div>
         </td>
@@ -81,11 +80,6 @@
         <td>
           <div class="description-cell">
             <div class="description-text" [innerHTML]="getHighlightedText(system.description, 'description')"></div>
-            <div class="description-meta" *ngIf="isSearchActive && hasEndpointMatches()">
-              <small class="endpoint-matches" *ngIf="getEndpointMatchCount(system) > 0">
-                {{ getEndpointMatchCount(system) }} endpoint(s) match
-              </small>
-            </div>
           </div>
         </td>
         <td>
@@ -106,16 +100,7 @@
                     (click)="deleteSourceSystem(system)"
                     [title]="'Delete ' + system.name">
             </button>
-            <!-- Quick search actions for detailed search information -->
-            <div class="quick-search-actions" *ngIf="isSearchActive">
-              <button pButton
-                      type="button"
-                      icon="pi pi-search"
-                      class="p-button-text p-button-sm p-button-info"
-                      (click)="showSearchDetails(system)"
-                      [title]="'Show search details for ' + system.name">
-              </button>
-            </div>
+
           </div>
         </td>
       </tr>
@@ -139,20 +124,6 @@
                 No source systems available. Create your first source system to get started.
               </p>
             </div>
-            <div class="empty-actions" *ngIf="isSearchActive">
-              <button pButton
-                      type="button"
-                      label="Clear Search"
-                      class="p-button-text"
-                      (click)="onSearchClear()">
-              </button>
-              <button pButton
-                      type="button"
-                      label="Show All"
-                      class="p-button-text"
-                      (click)="onSearchClear()">
-              </button>
-            </div>
             <div class="empty-actions" *ngIf="!isSearchActive">
               <button pButton
                       type="button"
@@ -166,33 +137,7 @@
       </tr>
     </ng-template>
   </p-table>
-
-  <!-- Search footer with statistics and actions -->
-  <div class="search-footer" *ngIf="isSearchActive && searchResultCount">
-    <div class="search-stats">
-      <small class="search-performance">
-        Search completed in {{ getSearchPerformance().duration }}ms
-      </small>
-    </div>
-    <div class="search-actions">
-      <button pButton
-              type="button"
-              label="Export Results"
-              icon="pi pi-download"
-              class="p-button-text p-button-sm"
-              (click)="exportSearchResults()"
-              [disabled]="!hasSearchResults()">
-      </button>
-      <button pButton
-              type="button"
-              label="Save Query"
-              icon="pi pi-save"
-              class="p-button-text p-button-sm"
-              (click)="saveSearchQuery()"
-              [disabled]="!hasSearchResults()">
-      </button>
-    </div>
-  </div>
+</div>
 
 <!-- Shared confirmation dialog for delete -->
 <app-confirmation-dialog

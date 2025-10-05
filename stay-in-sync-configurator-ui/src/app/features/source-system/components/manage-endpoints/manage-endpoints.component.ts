@@ -64,7 +64,6 @@ import {Select} from 'primeng/select';
     ConfirmationDialogComponent,
     MonacoEditorModule,
     DragDropModule,
-    JobStatusTagComponent,
     Select,
   ],
   templateUrl: './manage-endpoints.component.html',
