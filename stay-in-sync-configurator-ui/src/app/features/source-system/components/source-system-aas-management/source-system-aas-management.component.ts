@@ -134,8 +134,16 @@ export class SourceSystemAasManagementComponent implements OnInit {
   getAasId(): string {
     if (!this.system) return '-';
     
+    console.log('[SourceAasManage] getAasId debug:', {
+      system: this.system,
+      aasId: this.system.aasId,
+      apiUrl: this.system.apiUrl,
+      apiType: this.system.apiType
+    });
+    
     // If aasId is explicitly set, use it
     if (this.system.aasId && this.system.aasId.trim() !== '') {
+      console.log('[SourceAasManage] Using explicit aasId:', this.system.aasId);
       return this.system.aasId;
     }
     
@@ -143,31 +151,42 @@ export class SourceSystemAasManagementComponent implements OnInit {
     if (this.system.apiUrl) {
       try {
         const url = new URL(this.system.apiUrl);
+        console.log('[SourceAasManage] URL parsing:', {
+          hostname: url.hostname,
+          pathname: url.pathname,
+          searchParams: Object.fromEntries(url.searchParams)
+        });
         
         // Try to extract AAS ID from path (e.g., /aas/12345/...)
         const pathMatch = url.pathname.match(/\/aas\/([^\/]+)/);
         if (pathMatch && pathMatch[1]) {
+          console.log('[SourceAasManage] Found AAS ID in path:', pathMatch[1]);
           return pathMatch[1];
         }
         
         // Try to extract from query parameters
         const aasIdParam = url.searchParams.get('aasId') || url.searchParams.get('id');
         if (aasIdParam) {
+          console.log('[SourceAasManage] Found AAS ID in query params:', aasIdParam);
           return aasIdParam;
         }
         
         // For localhost, use a default
         if (url.hostname === 'localhost' || url.hostname === '127.0.0.1') {
+          console.log('[SourceAasManage] Using localhost default');
           return 'Default AAS';
         }
         
         // For other hosts, use hostname as AAS ID
+        console.log('[SourceAasManage] Using hostname as AAS ID:', url.hostname);
         return url.hostname;
       } catch (e) {
+        console.log('[SourceAasManage] URL parsing error:', e);
         return 'Unknown';
       }
     }
     
+    console.log('[SourceAasManage] No API URL, returning dash');
     return '-';
   }
 
