@@ -45,12 +45,7 @@ export class AasUtilityService {
             return aasIdParam;
           }
           
-          // Use system name as AAS ID if available
-          if (system.name && system.name.trim() !== '') {
-            return system.name;
-          }
-          
-          // Final localhost fallback
+          // No AAS ID found in URL
           return 'AAS ID not found';
         }
         
