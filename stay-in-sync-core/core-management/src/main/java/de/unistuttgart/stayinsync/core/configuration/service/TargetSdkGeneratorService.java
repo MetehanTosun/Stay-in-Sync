@@ -168,14 +168,14 @@ public class TargetSdkGeneratorService {
             if (action.actionRole == TargetApiRequestConfigurationActionRole.UPDATE && "path".equals(paramIn)) {
                 methods.append("          if (typeof value === 'function') {\n")
                         .append(
-                        // The function itself is just a marker. We generate a standardized placeholder.
-                        // The name of the parameter in the lambda (e.g., `checkResponse`) is irrelevant here.
-                        // The placeholder path is constructed based on the parameter name from the OpenAPI spec.
-                        String.format("            self.directive.%s.%s['%s'] = '{{checkResponse.body.%s}}';\n", configKey, targetKey, paramName, paramName))
+                                // The function itself is just a marker. We generate a standardized placeholder.
+                                // The name of the parameter in the lambda (e.g., `checkResponse`) is irrelevant here.
+                                // The placeholder path is constructed based on the parameter name from the OpenAPI spec.
+                                String.format("            self.directive.%s.%s['%s'] = '{{checkResponse.body.%s}}';\n", configKey, targetKey, paramName, paramName))
                         .append("          } else {\n")
                         .append(
-                        // Static value was provided
-                        String.format("            self.directive.%s.%s['%s'] = value;\n", configKey, targetKey, paramName))
+                                // Static value was provided
+                                String.format("            self.directive.%s.%s['%s'] = value;\n", configKey, targetKey, paramName))
                         .append("          }\n");
             } else {
                 // Standard case for all other parameters
