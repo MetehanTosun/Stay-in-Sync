@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import de.unistuttgart.stayinsync.syncnode.domain.ApiCallConfiguration;
 import de.unistuttgart.stayinsync.syncnode.domain.UpsertDirective;
+import de.unistuttgart.stayinsync.syncnode.syncjob.assets.CheckResponseCacheService;
 import de.unistuttgart.stayinsync.transport.domain.TargetApiRequestConfigurationActionRole;
 import de.unistuttgart.stayinsync.transport.dto.targetsystems.ActionMessageDTO;
 import de.unistuttgart.stayinsync.transport.dto.targetsystems.RequestConfigurationMessageDTO;
@@ -34,6 +35,9 @@ import java.util.Optional;
 public class DirectiveExecutor {
 
     @Inject
+    CheckResponseCacheService responseCache;
+
+    @Inject
     WebClientProvider webClientProvider;
 
     @Inject
@@ -50,6 +54,7 @@ public class DirectiveExecutor {
                     int statusCode = checkResponse.statusCode();
 
                     if (statusCode == Response.Status.OK.getStatusCode()) {
+                        responseCache.addResponse(transformationId, arcConfig.id(), checkResponseBody);
                         Log.infof("TID: %d - CHECK successful (200 OK), entity exists. Proceeding with UPDATE.", transformationId);
                         return handleUpdate(client, directive, arcConfig, transformationId, targetApiUrl, checkResponseBody);
                     } else if (statusCode == Response.Status.NOT_FOUND.getStatusCode()) {
