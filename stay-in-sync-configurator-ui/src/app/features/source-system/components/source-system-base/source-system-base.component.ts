@@ -432,7 +432,13 @@ export class SourceSystemBaseComponent implements OnInit, OnDestroy {
       this.api.apiConfigSourceSystemIdPut(this.selectedSystem.id!, updatedSystem).subscribe({
         next: () => {
           this.loadSystems();
-          this.closeDetailDialog();
+          // Update selectedSystem with new data to keep dialog open
+          this.selectedSystem = updatedSystem;
+          this.messageService.add({
+            severity: 'success',
+            summary: 'Success',
+            detail: 'Metadata saved successfully'
+          });
         },
         error: (error) => {
           this.erorrService.handleError(error);
