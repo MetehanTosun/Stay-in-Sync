@@ -244,7 +244,7 @@ export class PolicyService {
       if (policy) policy.syncStatus = 'SYNCED';
       return of(undefined).pipe(delay(300));
     }
-    // This endpoint will trigger the backend to push the stored configuration to the EDC
+
     return this.http.post<void>(`${this.baseUrl}/${edcId}/policies/${dbId}/redeploy`, {});
   }
 
@@ -281,8 +281,8 @@ export class PolicyService {
     });
   }
 
-  // --------------------------------------------------------
-  // CONTRACT DEFINITIONS
+
+  // CONTRACT DEFINITIONS:
   // --------------------------------------------------------
 
   // getContractDefinitions(): Observable<OdrlContractDefinition[]> {
@@ -367,7 +367,7 @@ export class PolicyService {
       if (contractDef) contractDef.syncStatus = 'SYNCED';
       return of(undefined).pipe(delay(300));
     }
-    // This endpoint will trigger the backend to push the stored configuration to the EDC
+
     return this.http.post<void>(`${this.baseUrl}/${edcId}/contract-definitions/${contractDefinitionId}/redeploy`, {});
   }
 }

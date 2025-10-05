@@ -130,7 +130,7 @@ export class AssetService {
       if (asset) asset.syncStatus = 'SYNCED';
       return of(undefined).pipe(delay(300));
     }
-    // This endpoint will trigger the backend to push the stored configuration to the EDC
+
     return this.http.post<void>(`${this.baseUrl}/${edcId}/assets/${assetId}/redeploy`, {});
   }
 
