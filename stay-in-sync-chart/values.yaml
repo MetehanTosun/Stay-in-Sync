@@ -124,6 +124,7 @@ affinity: { }
 core-management:
   app:
     envs:
+      FLUENT_BIT_ADDRESS: fluent-bit:5171
       DB_HOST: stay-in-sync-mariadb
       DB_PASSWORD: root
       DB_USERNAME: root
@@ -131,22 +132,71 @@ core-management:
 core-polling-node:
   app:
     envs:
+      FLUENT_BIT_ADDRESS: fluent-bit:5172
       RABBITMQ_HOST: stay-in-sync-rabbitmq
 core-sync-node:
   app:
     envs:
+      FLUENT_BIT_ADDRESS: fluent-bit:5173
       RABBITMQ_HOST: stay-in-sync-rabbitmq
 monitoring-backend:
   app:
     envs:
-      FLUENT_BIT_ADDRESS: fluent-bit:5171
-      CORE_MANAGEMENT_ADDRESS: http://stay-in-sync-management.test
-      PROMETHEUS_URL: test-kube-prometheus-stack-prometheus:9090
+      FLUENT_BIT_ADDRESS: fluent-bit:5170
+      CORE_MANAGEMENT_ADDRESS: http://core-management:80
+      SYNCNODE_ADDRESS: http://core-sync-node:80
+      PROMETHEUS_URL: http://stay-in-sync-kube-promethe-prometheus:9090
       LOKI_URL: http://loki:3100/loki/api/v1/query_range
+      GRAFANA_BASE_URL: http://grafana.stayinsync.local/d/abd0d0fc-75cf-4a29-abeb-7c96b57a1629/stayinsync-monitoring-metrics
 kube-prometheus-stack:
   prometheus:
     prometheusSpec:
+      additionalScrapeConfigsSecret:
+        enabled: true
+        name: additional-scrape-configs
+        key: prometheus-additional.yaml
       maximumStartupDurationSeconds: 600
+      serviceMonitorSelector:
+        matchExpressions:
+          - key: app.kubernetes.io/managed-by
+            operator: In
+            values:
+              - Helm
+              - quarkus
+      podMonitorSelector:
+        matchExpressions:
+          - key: app.kubernetes.io/managed-by
+            operator: In
+            values:
+              - Helm
+              - quarkus
+  grafana:
+    adminUser: admin
+    adminPassword: admin
+    service:
+      type: ClusterIP
+    ingress:
+      enabled: true
+      hosts:
+        - grafana.stayinsync.local
+    grafana.ini:
+      security:
+        allow_embedding: true
+    sidecar:
+      dashboards:
+        enabled: true
+        label: grafana_dashboard
+    dashboardsConfigMaps:
+      stayinsync-dashboard: stayinsync-dashboard
+    datasources:
+      datasources.yaml:
+        apiVersion: 1
+        datasources:
+          - name: Prometheus
+            type: prometheus
+            access: proxy
+            url: http://test-kube-prometheus-stack-prometheus:9090
+
 loki:
   fullnameOverride: loki
   deploymentMode: SingleBinary
@@ -230,16 +280,6 @@ fluent-bit:
   fullnameOverride: fluent-bit
   config:
     inputs: |
-      # Docker Container Logs
-      [INPUT]
-          Name              tail
-          Tag               docker.*
-          Path              /var/lib/docker/containers/*/*.log
-          Parser            docker
-          Docker_Mode       On
-          Mem_Buf_Limit     5MB
-          Skip_Long_Lines   On
-
       # TCP Input für generische Logs
       [INPUT]
           Name              tcp
@@ -336,7 +376,7 @@ fluent-bit:
           Host    loki
           Port    3100
           Labels  agent=fluent-bit
-          label_keys  $service,$job,${syncJobId:empty},$level,${scriptId:empty},${transformationId:empty}
+          label_keys  $service,$job,$syncJobId,$level,$scriptId,$transformationId
           Uri     /loki/api/v1/push
 
   containerPorts:
@@ -347,16 +387,31 @@ fluent-bit:
     tcp-core-polling: 5172
     tcp-core-sync: 5173
 
-  # Service configuration
   service:
     type: ClusterIP
     ports:
       http: 2020
-      tcp-generic: 5000
-      tcp-monitoring: 5170
-      tcp-core-management: 5171
-      tcp-core-polling: 5172
-      tcp-core-sync: 5173
+    extraPorts:
+      - name: tcp-generic
+        port: 5000
+        targetPort: 5000
+        protocol: TCP
+      - name: tcp-monitoring
+        port: 5170
+        targetPort: 5170
+        protocol: TCP
+      - name: tcp-core-management
+        port: 5171
+        targetPort: 5171
+        protocol: TCP
+      - name: tcp-core-polling
+        port: 5172
+        targetPort: 5172
+        protocol: TCP
+      - name: tcp-core-sync
+        port: 5173
+        targetPort: 5173
+        protocol: TCP
 
 mariadb:
   fullnameOverride: stay-in-sync-mariadb
@@ -387,6 +442,8 @@ umbrella:
 
   dataconsumerOne:
     enabled: true
+    secrets:
+      edc-wallet-secret: changeme
     dataspace-connector-bundle:
       tractusx-connector:
         iatp:
@@ -410,6 +467,8 @@ umbrella:
 
   tx-data-provider:
     enabled: true
+    secrets:
+      edc-wallet-secret: changeme
     dataspace-connector-bundle:
       tractusx-connector:
         iatp:

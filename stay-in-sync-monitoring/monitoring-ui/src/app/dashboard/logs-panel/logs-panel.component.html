@@ -11,7 +11,7 @@
 
   <label>
     Level:
-    <p-dropdown
+    <p-select
       [options]="levels"
       [(ngModel)]="level"
       (onChange)="onFilterChange()"
@@ -20,31 +20,31 @@
       [filter]="true"
       optionLabel="label"
       optionValue="value">
-    </p-dropdown>
+    </p-select>
   </label>
 
   <label *ngIf="selectedNodeId && !selectedNodeId.startsWith('POLL')">
     Transformation ID:
-    <p-dropdown
+    <p-select
       [options]="transformationIds"
       [(ngModel)]="selectedTransformationId"
       (onChange)="onFilterChange()"
       placeholder="All"
       [showClear]="true"
       [filter]="true">
-    </p-dropdown>
+    </p-select>
   </label>
 
   <label *ngIf="!selectedNodeId || selectedNodeId.startsWith('POLL')">
     Service:
-    <p-dropdown
+    <p-select
       [options]="services"
       [(ngModel)]="selectedService"
       (onChange)="onFilterChange()"
       placeholder="All"
       [showClear]="true"
       [filter]="true">
-    </p-dropdown>
+    </p-select>
   </label>
 
 

@@ -1,5 +1,5 @@
 <p-dialog
-  header="New Syncjob"
+  header="New Sync Job"
   [(visible)]="visible"
   (onHide)="cancel()"
   [modal]="true"
@@ -17,8 +17,8 @@
     <p-step-panels>
       <p-step-panel [value]="1">
         <ng-template #content>
-          <div class="flex flex-col h-48 w-full space-y-4">
-            <div class="border-2 border-dashed border-surface-200 dark:border-surface-700 rounded bg-surface-50 dark:bg-surface-950 flex-auto flex justify-center items-center font-medium">
+          <div class="border-2 border-dashed border-surface-200 dark:border-surface-700 rounded bg-surface-50 dark:bg-surface-950 flex flex-col h-48 space-y-4">
+            <div class="flex-auto flex justify-center items-center font-medium">
               <p-floatlabel variant="on" class="w-80">
                 <input
                   type="text"
@@ -37,7 +37,7 @@
                 </div>
               </p-floatlabel>
             </div>
-            <div class="border-2 border-dashed border-surface-200 dark:border-surface-700 rounded bg-surface-50 dark:bg-surface-950 flex-auto flex justify-center items-center font-medium">
+            <div class="flex-auto flex justify-center items-center font-medium">
               <p-floatlabel variant="on" class="w-80">
                 <textarea
                   pTextarea
@@ -51,25 +51,6 @@
                 ></textarea>
                 <label for="syncjob_description">Description</label>
               </p-floatlabel>
-            </div>
-            <div class="border-2 border-dashed border-surface-200 dark:border-surface-700 rounded bg-surface-50 dark:bg-surface-950 flex-auto flex justify-center items-center font-medium">
-               <div class="flex flex-col w-80">
-                 <label for="source_system">Sourcesystem(e)</label>
-                 <p-multi-select
-                   id="source_system"
-                   [options]="sourceSystems"
-                   [(ngModel)]="selectedSourceSystems"
-                   optionLabel="name"
-                   placeholder="Quellsystem(e) auswählen"
-                   class="w-80"
-                 ></p-multi-select>
-               </div>
-            </div>
-            <div class="border-2 border-dashed border-surface-200 dark:border-surface-700 rounded bg-surface-50 dark:bg-surface-950 flex-auto flex justify-center items-center font-medium">
-              <div class="flex items-center w-80">
-                <label for="simulationSwitch" class="mr-2">Simulation Mode</label>
-                <p-toggleswitch id="simulationSwitch" [(ngModel)]="isSimulation"></p-toggleswitch>
-              </div>
             </div>
           </div>
         </ng-template>

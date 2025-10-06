@@ -25,6 +25,9 @@ import { EditRuleDeactivateGuard } from './features/sync-rules/pages/edit-rule/e
 
 // Target System
 import { TargetSystemBaseComponent } from './features/target-system/components/target-system-base/target-system-base.component';
+import {
+  SourceSystemPageComponent
+} from './features/source-system/components/source-system-page/source-system-page.component';
 
 export const routes: Routes = [
   // Route für Sync Rules
@@ -48,6 +51,8 @@ export const routes: Routes = [
       }
     ]
   },
+  { path: 'source-system/:id', component: SourceSystemPageComponent},
+
 
   // Route für Target System
   {

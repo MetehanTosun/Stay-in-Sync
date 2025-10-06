@@ -484,6 +484,8 @@ public class TargetDtsBuilderGeneratorService {
         if (s == null || s.isEmpty()) {
             return s;
         }
+
+        //return s.substring(0, 1).toUpperCase() + s.substring(1);
         return Arrays.stream(s.split("[_\\- ]"))
                 .map(word -> word.substring(0, 1).toUpperCase() + word.substring(1))
                 .collect(Collectors.joining());

@@ -5,30 +5,25 @@ import { SnapshotModel } from '../models/snapshot.model';
 /**
  * SnapshotService
  *
- * Provides methods to fetch snapshot data for transformations
- * from the monitoring backend.
+ * Provides methods to fetch snapshot data related to transformations from the backend API.
  */
 @Injectable({
   providedIn: 'root',
 })
 export class SnapshotService {
-  /**
-   * Base URL of the monitoring backend API.
-   * TODO: Replace hardcoded URL with environment configuration.
-   */
-  private baseUrl = 'http://localhost:8091';
+  /** Base URL for snapshot API endpoints */
+  private readonly baseUrl = '/api/snapshots';
 
-  constructor(private http: HttpClient) {}
+  constructor(private readonly http: HttpClient) {}
 
   /**
    * Fetch the latest snapshot for a given transformation.
    *
-   * @param transformationId The transformation ID as a string.
-   * @returns An Observable emitting the latest snapshot.
+   * @param transformationId ID of the transformation.
+   * @returns Observable emitting the latest SnapshotModel.
    */
   getLatestSnapshot(transformationId: string) {
-    const url = `${this.baseUrl}/monitoring/snapshots/latest`;
-    return this.http.get<SnapshotModel>(url, {
+    return this.http.get<SnapshotModel>(`${this.baseUrl}/latest`, {
       params: { transformationId },
     });
   }
@@ -36,12 +31,11 @@ export class SnapshotService {
   /**
    * Fetch the last five snapshots for a given transformation.
    *
-   * @param transformationId The transformation ID as a string.
-   * @returns An Observable emitting an array of up to five snapshots.
+   * @param transformationId ID of the transformation.
+   * @returns Observable emitting an array of SnapshotModel.
    */
   getLastFiveSnapshots(transformationId: string) {
-    const url = `${this.baseUrl}/monitoring/snapshots/list`;
-    return this.http.get<SnapshotModel[]>(url, {
+    return this.http.get<SnapshotModel[]>(`${this.baseUrl}/list`, {
       params: { transformationId },
     });
   }
