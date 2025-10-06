@@ -9,6 +9,7 @@ public record GetRequestConfigurationDTO(
         String alias,
         String targetSystemName,
         TargetApiRequestConfigurationPatternType arcPatternType,
-        List<GetActionDTO> actions
+        List<GetActionDTO> actions,
+        String arcType
 ) {
 }

@@ -16,6 +16,7 @@ public record GetRequestConfigurationDTO(
         Set<ApiHeaderDTO> apiRequestHeaders,
         Set<ApiRequestParameterMessageDTO> apiRequestParameters,
         JobDeploymentStatus deploymentStatus,
-        String responseDts
+        String responseDts,
+        String arcType
 ) {
 }
