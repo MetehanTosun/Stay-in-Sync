@@ -4,7 +4,6 @@ import type { Node, NodeConnection } from '../../core/models/node.model';
 import { LegendPanelComponent } from './legend-panel/legend-panel.component';
 import { MonitoringGraphService } from '../../core/services/monitoring-graph.service';
 import { Router } from '@angular/router';
-import { Button } from 'primeng/button';
 
 /**
  * GraphPanelComponent
@@ -120,11 +119,11 @@ export class GraphPanelComponent implements AfterViewInit {
         this.links = data.connections ?? [];
 
         // Apply error state to marked nodes
-        this.nodes.forEach((node) => {
+        for (const node of this.nodes) {
           if (this.markedNodes[node.id]) {
             node.status = 'error';
           }
-        });
+        }
 
         this.filteredNodes = this.filterNodes(this.searchTerm);
         this.filteredLinks = this.filterLinks();

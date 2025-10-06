@@ -227,6 +227,9 @@
                 <artifactId>quarkus-maven-plugin</artifactId>
                 <version>${quarkus.platform.version}</version>
                 <extensions>true</extensions>
+                <configuration>
+                    <jvmArgs>--add-opens java.base/java.lang=ALL-UNNAMED</jvmArgs>
+                </configuration>
                 <executions>
                     <execution>
                         <goals>

@@ -59,10 +59,10 @@ export class ErrorSnapshotPanelComponent implements OnInit, OnDestroy {
   private sse?: EventSource;
 
   constructor(
-    private route: ActivatedRoute,
-    private transformationService: TransformationService,
-    private router: Router,
-    private snapshotService: SnapshotService
+    private readonly route: ActivatedRoute,
+    private readonly transformationService: TransformationService,
+    private readonly router: Router,
+    private readonly snapshotService: SnapshotService
   ) {}
 
   /**
@@ -97,7 +97,7 @@ export class ErrorSnapshotPanelComponent implements OnInit, OnDestroy {
    * and then loads snapshots for them.
    */
   getTransformations() {
-    if (this.selectedNodeId) {
+    if (this.selectedNodeId && !(this.selectedNodeId.startsWith("POLL"))) {
       this.transformationService
         .getTransformations(this.selectedNodeId)
         .subscribe((data) => {

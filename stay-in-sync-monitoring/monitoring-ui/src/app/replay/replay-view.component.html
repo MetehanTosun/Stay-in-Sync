@@ -1,52 +1,24 @@
-<div class="replay-container" style="display: flex; gap: 1rem; height: 100%">
-  <!-- Linke Seite: Monaco Editor mit fester Breite -->
-  <section
-    class="left-pane"
-    style="width: 55%; display: flex; flex-direction: column"
-  >
-    <header
-      class="pane-header"
-      style="
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-bottom: 0.5rem;
-      "
-    >
+<div class="replay-container">
+  <!-- Left pane: Monaco Editor -->
+  <section class="left-pane">
+    <header class="pane-header">
       <h2>Script (read-only)</h2>
       <button class="btn btn-secondary" (click)="onReplayClick()">
         Replay
       </button>
     </header>
-
-    <ng-container *ngIf="!loading(); else loadingTpl">
-      <ng-container *ngIf="!error(); else errorTpl">
-        <ngx-monaco-editor
-          [options]="{
-            readOnly: true,
-            language: 'javascript',
-            automaticLayout: true,
-            minimap: { enabled: false },
-            lineNumbers: 'on'
-          }"
-          [ngModel]="scriptDisplay"
-          style="
-            flex: 1;
-            border: 1px solid #ccc;
-            border-radius: 4px;
-            overflow: hidden;
-          "
-        >
-        </ngx-monaco-editor>
-      </ng-container>
-    </ng-container>
+    <div class="editor-wrapper">
+      <ngx-monaco-editor
+        [options]="editorOptions"
+        [(ngModel)]="scriptDisplay"
+        (onInit)="onEditorInit($event)"
+      >
+      </ngx-monaco-editor>
+    </div>
   </section>
 
-  <!-- Rechte Seite: Tabs bleiben wie vorher -->
-  <section
-    class="right-pane"
-    style="flex: 1; display: flex; flex-direction: column"
-  >
+  <!-- Right pane: Tabs -->
+  <section class="right-pane">
     <p-tabs>
       <p-tablist>
         <p-tab value="0">SourceData</p-tab>
@@ -58,39 +30,58 @@
 
       <p-tabpanels>
         <p-tabpanel value="0">
-          <ng-container *ngIf="!loading(); else loadingTpl">
-            <ng-container *ngIf="!error(); else errorTpl">
-              <h3>SourceData</h3>
-              <pre class="json-block">{{
-                data()?.transformationResult?.sourceData | json
-              }}</pre>
+          <div class="tab-content">
+            <ng-container *ngIf="!loading(); else loadingTpl">
+              <ng-container *ngIf="!error(); else errorTpl">
+                <h3>Source Data</h3>
+                <ngx-json-viewer
+                  [json]="data()?.transformationResult?.sourceData"
+                  [expanded]="false"
+                ></ngx-json-viewer>
+              </ng-container>
             </ng-container>
-          </ng-container>
+          </div>
         </p-tabpanel>
+
         <p-tabpanel value="1">
-          <ng-container *ngIf="!loading(); else loadingTpl">
-            <ng-container *ngIf="!error(); else errorTpl">
-              <h3>Variable Snapshot</h3>
-              <pre class="json-block">{{ variables | json }}</pre>
+          <div class="tab-content">
+            <ng-container *ngIf="!loading(); else loadingTpl">
+              <ng-container *ngIf="!error(); else errorTpl">
+                <h3>Variable Snapshot</h3>
+                <ngx-json-viewer
+                  [json]="variables"
+                  [expanded]="false"
+                ></ngx-json-viewer>
+              </ng-container>
             </ng-container>
-          </ng-container>
+          </div>
         </p-tabpanel>
+
         <p-tabpanel value="2">
-          <ng-container *ngIf="!loading(); else loadingTpl">
-            <ng-container *ngIf="!error(); else errorTpl">
-              <h3>Errors</h3>
-              <pre class="terminal">{{ errorInfo | json }}</pre>
+          <div class="tab-content">
+            <ng-container *ngIf="!loading(); else loadingTpl">
+              <ng-container *ngIf="!error(); else errorTpl">
+                <h3>Errors</h3>
+                <pre class="terminal">{{ errorInfo || "No errors" }}</pre>
+              </ng-container>
             </ng-container>
-          </ng-container>
+          </div>
         </p-tabpanel>
+
         <p-tabpanel value="3">
-          <ng-container *ngIf="!loading(); else loadingTpl">
-            <ng-container *ngIf="!error(); else errorTpl">
-              <h3>OutputData</h3>
-              <pre class="terminal">{{ outputData | json }}</pre>
+          <div class="tab-content">
+            <ng-container *ngIf="!loading(); else loadingTpl">
+              <ng-container *ngIf="!error(); else errorTpl">
+                <h3>Output Data</h3>
+                <ngx-json-viewer
+                  [json]="outputData"
+                  [expanded]="false"
+                ></ngx-json-viewer>
+              </ng-container>
             </ng-container>
-          </ng-container>
+          </div>
         </p-tabpanel>
+
         <p-tabpanel value="4">
           <ng-container *ngIf="!loading(); else loadingTpl">
             <ng-container *ngIf="!error(); else errorTpl">
@@ -161,12 +152,16 @@
     </p-tabs>
   </section>
 
-  <!-- Templates für Loading & Error -->
+  <!-- Templates for Loading & Error -->
   <ng-template #loadingTpl>
-    <p>Loading...</p>
+    <div class="loading-state">
+      <p>Loading...</p>
+    </div>
   </ng-template>
 
   <ng-template #errorTpl>
-    <p class="error">Error loading data</p>
+    <div class="error-state">
+      <p class="error">{{ error() }}</p>
+    </div>
   </ng-template>
 </div>
