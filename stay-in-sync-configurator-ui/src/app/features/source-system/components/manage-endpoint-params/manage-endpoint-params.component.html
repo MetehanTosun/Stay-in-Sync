@@ -2,26 +2,35 @@
 <div class="p-card p-mt-4 p-p-4">
   <!-- Clickable header with arrow -->
   <div style="display: flex; align-items: center; cursor: pointer;" (click)="toggleExpanded()">
-    <h4 style="flex: 1 1 auto; margin: 0;">Query and Path Parameters for: {{ endpointPath || 'Endpoint' }}</h4>
+    <h4 style="">Query and Path Parameters for: {{ endpointPath || 'Endpoint' }}</h4>
     <i class="pi" [ngClass]="isExpanded ? 'pi-chevron-down' : 'pi-chevron-right'"></i>
   </div>
 
   <!-- Show content only when expanded -->
   <div *ngIf="isExpanded">
     <!-- Form to add a new query or path parameter -->
-    <form [formGroup]="queryParamForm" (ngSubmit)="addQueryParam()" class="p-fluid p-formgrid p-grid p-mb-4">
+    <form [formGroup]="queryParamForm" (ngSubmit)="addQueryParam()" class="inline-flex gap-5 mt-3! mb-3!" >
       <div class="p-field p-col-6">
-        <label for="paramName">Parameter Name</label>
-        <input id="paramName" type="text" pInputText formControlName="paramName" />
-    
+        <p-floatlabel  variant="on">
+
+          <label for="paramName">Parameter Name</label>
+          <input id="paramName" type="text" pInputText formControlName="paramName" />
+        </p-floatlabel>
       </div>
       <div class="p-field p-col-4">
-        <label for="paramType">Type</label>
-        <p-dropdown id="paramType"
-                    [options]="paramTypes"
-                    optionLabel="label"
-                    optionValue="value"
-                    formControlName="queryParamType"></p-dropdown>
+        <p-float-label variant="on">
+          <p-select
+            id="paramType"
+            [options]="paramTypes"
+            optionLabel="label"
+            optionValue="value"
+            placeholder="Select type"
+            formControlName="queryParamType"
+          >
+          </p-select>
+          <label for="paramType">Type</label>
+        </p-float-label>
+
       </div>
       <div class="p-field p-col-2 p-d-flex p-ai-end">
         <button pButton
@@ -39,6 +48,34 @@
           <th>Name</th>
           <th>Type</th>
           <th style="width: 8rem">Actions</th>
+        </tr>
+        <tr>
+          <th>
+            <p-columnFilter type="text" field="paramName" matchMode="contains"
+                            placeholder="Search by name"></p-columnFilter>
+          </th>
+          <th>
+            <p-columnFilter field="queryParamType" matchMode="equals" [showMenu]="false">
+              <ng-template #filter let-filter="filterCallback">
+                <p-select [options]="paramTypes"
+                          (onChange)="filter($event.value)"
+                          placeholder="Select Type"
+                          [showClear]="true"
+                          [style]="{ 'min-width': '12rem' }">
+                  <ng-template let-option #item>
+                    <p>{{ option.label }}</p>
+                  </ng-template>
+                </p-select>
+              </ng-template>
+            </p-columnFilter>
+          </th>
+          <th>
+          </th>
+          <th>
+
+          </th>
+          <th>
+          </th>
         </tr>
       </ng-template>
       <ng-template pTemplate="body" let-param>
@@ -61,4 +98,4 @@
       </ng-template>
     </p-table>
   </div>
-</div> 
+</div>

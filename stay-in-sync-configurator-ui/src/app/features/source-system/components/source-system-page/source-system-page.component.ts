@@ -1,37 +1,30 @@
-import {CommonModule} from '@angular/common';
-import {Component, OnInit, OnDestroy, HostListener} from '@angular/core';
-import {FormBuilder, FormGroup, ReactiveFormsModule, Validators} from '@angular/forms';
-import { FormsModule } from '@angular/forms';
-
-import {TableModule} from 'primeng/table';
+import {Component, OnInit} from '@angular/core';
 import {ButtonModule} from 'primeng/button';
+import {CardModule} from 'primeng/card';
 import {DialogModule} from 'primeng/dialog';
+import {FormBuilder, FormGroup, FormsModule, ReactiveFormsModule, Validators} from '@angular/forms';
+import {InputTextModule} from 'primeng/inputtext';
+import {CommonModule} from '@angular/common';
+import {ManageApiHeadersComponent} from '../manage-api-headers/manage-api-headers.component';
+import {ManageEndpointsComponent} from '../manage-endpoints/manage-endpoints.component';
+import {TreeNode} from 'primeng/api';
+import {TabViewModule} from 'primeng/tabview';
+import {TextareaModule} from 'primeng/textarea';
+import {TreeModule} from 'primeng/tree';
+import {SourceSystemDTO} from '../../models/sourceSystemDTO';
+import {SourceSystemResourceService} from '../../service/sourceSystemResource.service';
+import {HttpErrorService} from '../../../../core/services/http-error.service';
+import {SourceSystemEndpointResourceService} from '../../service/sourceSystemEndpointResource.service';
+import { SourceSystemSearchPipe} from '../../pipes/source-system-search.pipe';
+import {AasService} from '../../services/aas.service';
+import {TableModule} from 'primeng/table';
 import {ToolbarModule} from 'primeng/toolbar';
 import {MessageModule} from 'primeng/message';
-import {CardModule} from 'primeng/card';
-import {TabViewModule} from 'primeng/tabview';
-import {TreeModule} from 'primeng/tree';
 import {DropdownModule} from 'primeng/dropdown';
-import {InputTextModule} from 'primeng/inputtext';
-import {TextareaModule} from 'primeng/textarea';
 import {FileUploadModule} from 'primeng/fileupload';
+import {ActivatedRoute} from '@angular/router';
+import {InplaceModule} from 'primeng/inplace';
 
-import {CreateSourceSystemComponent} from '../create-source-system/create-source-system.component';
-import {ConfirmationDialogComponent, ConfirmationDialogData} from '../confirmation-dialog/confirmation-dialog.component';
-
-import {SourceSystemSearchPipe, SearchOptions, SearchResultCount} from '../../pipes/source-system-search.pipe';
-
-import {SourceSystemResourceService} from '../../service/sourceSystemResource.service';
-import {SourceSystemDTO} from '../../models/sourceSystemDTO';
-import {SourceSystem} from '../../models/sourceSystem';
-import {HttpErrorService} from '../../../../core/services/http-error.service';
-import { SourceSystemEndpointDTO } from '../../models/sourceSystemEndpointDTO';
-import { SourceSystemEndpointResourceService } from '../../service/sourceSystemEndpointResource.service';
-import { AasService } from '../../services/aas.service';
-import { TreeNode } from 'primeng/api';
-import {Router} from '@angular/router';
-import {JobStatusTagComponent} from '../../../../shared/components/job-status-tag/job-status-tag.component';
-import {Select} from 'primeng/select';
 
 interface AasOperationVarView { idShort: string; modelType?: string; valueType?: string }
 interface AasAnnotationView { idShort: string; modelType?: string; valueType?: string; value?: any }
@@ -50,16 +43,9 @@ interface AasElementLivePanel {
   annotations?: AasAnnotationView[];
 }
 
-/**
- * Base component for displaying, creating, and managing source systems.
- * Provides comprehensive functionality for listing, searching, creating, editing,
- * and deleting source systems with advanced search capabilities and responsive design.
- */
 @Component({
+  selector: 'app-source-system-page',
   standalone: true,
-  selector: 'app-source-system-base',
-  templateUrl: './source-system-base.component.html',
-  styleUrls: ['./source-system-base.component.css'],
   imports: [
     CommonModule,
     TableModule,
@@ -75,18 +61,31 @@ interface AasElementLivePanel {
     TextareaModule,
     FileUploadModule,
     ReactiveFormsModule,
-    CreateSourceSystemComponent,
-    ConfirmationDialogComponent,
+    ManageApiHeadersComponent,
+    ManageEndpointsComponent,
     FormsModule,
-    JobStatusTagComponent,
-    Select,
-  ]
+    InplaceModule
+  ],
+  templateUrl: './source-system-page.component.html',
+  styleUrl: './source-system-page.component.css'
 })
-export class SourceSystemBaseComponent implements OnInit {
-  /**
-   * List of source systems to display in the table
-   */
-  systems: SourceSystemDTO[] = [];
+export class SourceSystemPageComponent implements OnInit {
+  private originalName: string = "";
+  private originalApiUrl: string = "";
+  ngOnInit(): void {
+    const id = Number.parseInt(this.route.snapshot.paramMap.get('id')!);
+    this.sourceSystemService.apiConfigSourceSystemIdGet(id).subscribe({
+      next: data => {
+        console.log(data);
+        this.selectedSystem = data;
+      },
+      error: err => {
+        console.log(err);
+      }
+    });
+
+  }
+
 
   /**
    * Flag indicating whether data is currently loading
@@ -94,35 +93,15 @@ export class SourceSystemBaseComponent implements OnInit {
   loading = false;
 
   /**
-   * Holds any error message encountered during operations
-   */
-  errorMsg?: string;
-
-  /**
-   * Controls visibility of the create/edit dialog
-   */
-  showCreateDialog = false;
-
-  /**
-   * Controls visibility of the detail/manage dialog
-   */
-  showDetailDialog = false;
-
-  /**
    * Currently selected system for viewing or editing
    */
-  selectedSystem: SourceSystemDTO | null = null;
+  selectedSystem?: SourceSystemDTO;
 
-  /**
-   * Reactive form for editing system metadata
-   */
-  metadataForm!: FormGroup;
 
   /**
    * Selected endpoint for parameter management
    */
-  selectedEndpointForParams: SourceSystemEndpointDTO | null = null;
-  // AAS Manage Page state
+    // AAS Manage Page state
   aasTreeNodes: TreeNode[] = [];
   aasTreeLoading = false;
   aasTestLoading = false;
@@ -138,6 +117,7 @@ export class SourceSystemBaseComponent implements OnInit {
 
   // Cache: submodelId -> (idShortPath -> modelType)
   private aasTypeCache: Record<string, Record<string, string>> = {};
+
   private ensureAasTypeMap(submodelId: string): void {
     const systemId = this.selectedSystem?.id;
     if (!systemId) return;
@@ -146,7 +126,7 @@ export class SourceSystemBaseComponent implements OnInit {
       return;
     }
     this.aasService
-      .listElements(systemId, submodelId, { depth: 'all', source: 'LIVE' })
+      .listElements(systemId, submodelId, {depth: 'all', source: 'LIVE'})
       .subscribe({
         next: (resp) => {
           const list: any[] = Array.isArray(resp) ? resp : (resp?.result ?? []);
@@ -159,9 +139,11 @@ export class SourceSystemBaseComponent implements OnInit {
           this.aasTypeCache[submodelId] = map;
           this.applyAasTypeMapToTree(submodelId);
         },
-        error: () => {}
+        error: () => {
+        }
       });
   }
+
   private applyAasTypeMapToTree(submodelId: string): void {
     const map = this.aasTypeCache[submodelId];
     if (!map) return;
@@ -195,7 +177,8 @@ export class SourceSystemBaseComponent implements OnInit {
               this.aasTreeNodes = [...this.aasTreeNodes];
             }
           },
-          error: () => {}
+          error: () => {
+          }
         });
       }
     }
@@ -234,12 +217,17 @@ export class SourceSystemBaseComponent implements OnInit {
     }
   ]
 }`;
-  setAasSubmodelTemplate(kind: 'minimal'|'property'|'collection'): void {
+
+  setAasSubmodelTemplate(kind: 'minimal' | 'property' | 'collection'): void {
     if (kind === 'minimal') this.aasNewSubmodelJson = this.aasMinimalSubmodelTemplate;
     if (kind === 'property') this.aasNewSubmodelJson = this.aasPropertySubmodelTemplate;
     if (kind === 'collection') this.aasNewSubmodelJson = this.aasCollectionSubmodelTemplate;
   }
-  openAasCreateSubmodel(): void { this.showAasSubmodelDialog = true; }
+
+  openAasCreateSubmodel(): void {
+    this.showAasSubmodelDialog = true;
+  }
+
   aasCreateSubmodel(): void {
     if (!this.selectedSystem?.id) return;
     try {
@@ -260,11 +248,13 @@ export class SourceSystemBaseComponent implements OnInit {
   aasTargetSubmodelId = '';
   aasParentPath = '';
   aasNewElementJson = '{\n  "modelType": "Property",\n  "idShort": "NewProp",\n  "valueType": "xs:string",\n  "value": "42"\n}';
+
   openAasCreateElement(smId: string, parent?: string): void {
     this.aasTargetSubmodelId = smId;
     this.aasParentPath = parent || '';
     this.showAasElementDialog = true;
   }
+
   aasCreateElement(): void {
     if (!this.selectedSystem?.id || !this.aasTargetSubmodelId) return;
     try {
@@ -284,241 +274,18 @@ export class SourceSystemBaseComponent implements OnInit {
   }
 
 
-  /**
-   * List of endpoints for the currently selected system
-   */
-  endpointsForSelectedSystem: SourceSystemEndpointDTO[] = [];
 
-  /**
-   * Currently selected file for upload
-   */
-  selectedFile: File | null = null;
-
-  /**
-   * Current search term entered by user
-   */
-  searchTerm: string = '';
-
-  /**
-   * Search configuration options
-   */
-  searchOptions: SearchOptions = {};
-
-  /**
-   * Filtered systems based on search criteria
-   */
-  filteredSystems: SourceSystemDTO[] = [];
-
-  /**
-   * Search result count information
-   */
-  searchResultCount: SearchResultCount | null = null;
-
-  /**
-   * Flag indicating if search is currently active
-   */
-  isSearchActive: boolean = false;
-
-  /**
-   * Controls visibility of headers section in detail dialog
-   */
-  showHeadersSection = true;
-
-  /**
-   * Controls visibility of endpoints section in detail dialog
-   */
-  showEndpointsSection = true;
-
-  /**
-   * Controls visibility of metadata section in detail dialog
-   */
-  showMetadataSection = true;
-
-  /**
-   * Controls visibility of confirmation dialog
-   */
-  showConfirmationDialog = false;
-
-  /**
-   * Configuration data for confirmation dialog
-   */
-  confirmationData: ConfirmationDialogData = {
-    title: 'Confirm Delete',
-    message: 'Are you sure you want to delete this source system?',
-    confirmLabel: 'Delete',
-    cancelLabel: 'Cancel',
-    severity: 'danger'
-  };
-
-  /**
-   * System to be deleted (stored for confirmation)
-   */
-  systemToDelete: SourceSystemDTO | null = null;
-
-  /**
-   * Toggles the visibility of the headers section
-   */
-  toggleHeadersSection() {
-    this.showHeadersSection = !this.showHeadersSection;
-  }
-
-  /**
-   * Toggles the visibility of the endpoints section
-   */
-  toggleEndpointsSection() {
-    this.showEndpointsSection = !this.showEndpointsSection;
-  }
-
-  /**
-   * Toggles the visibility of the metadata section
-   */
-  toggleMetadataSection() {
-    this.showMetadataSection = !this.showMetadataSection;
-  }
-
-  /**
-   * Constructor for the SourceSystemBaseComponent
-   * @param api - Service for source system API operations
-   * @param fb - Form builder for reactive forms
-   * @param erorrService - Service for handling HTTP errors
-   * @param apiEndpointSvc - Service for endpoint operations
-   * @param searchPipe - Pipe for search functionality
-   */
   constructor(
-    private api: SourceSystemResourceService,
+    private sourceSystemService: SourceSystemResourceService,
+    private readonly route: ActivatedRoute,
     private fb: FormBuilder,
     protected erorrService: HttpErrorService,
     private apiEndpointSvc: SourceSystemEndpointResourceService,
     private searchPipe: SourceSystemSearchPipe,
     private aasService: AasService,
-    private router: Router
+    private readonly httpErrorService: HttpErrorService
   ) {
   }
-
-  /**
-   * Initializes the component on startup
-   * Loads source systems and sets up search state recovery
-   */
-  ngOnInit(): void {
-    this.loadSystems();
-
-  }
-
-  /**
-   * Loads all source systems from the API
-   * Handles loading states and error conditions
-   */
-  loadSystems(): void {
-    this.loading = true;
-    this.errorMsg = undefined;
-
-    this.api.apiConfigSourceSystemGet().subscribe({
-      next: (systems: SourceSystem[]) => {
-        this.systems = systems.map(system => ({
-          id: system.id,
-          name: system.name || '',
-          apiUrl: system.apiUrl || '',
-          description: system.description || '',
-          apiType: system.apiType || '',
-          openApiSpec: undefined
-        } as SourceSystemDTO));
-        this.loading = false;
-      },
-      error: (error) => {
-        this.erorrService.handleError(error);
-        this.errorMsg = 'Failed to load source systems';
-        this.loading = false;
-      }
-    });
-  }
-
-  /**
-   * Opens the create source system dialog
-   * Resets selection and shows the dialog
-   */
-  openCreate(): void {
-    this.selectedSystem = null;
-    this.showCreateDialog = true;
-  }
-
-  /**
-   * Handles the close event of the create dialog
-   * Reloads systems if a new one was created
-   * @param visible - Whether the dialog is visible
-   */
-  onCreateDialogClose(visible: boolean): void {
-    this.showCreateDialog = visible;
-    if (!visible) {
-      this.loadSystems();
-    }
-  }
-
-  /**
-   * Initiates deletion of a source system
-   * Shows confirmation dialog before proceeding
-   * @param system - The source system to delete
-   */
-  deleteSourceSystem(system: SourceSystemDTO): void {
-    this.systemToDelete = system;
-    this.confirmationData = {
-      title: 'Confirm Delete',
-      message: `Are you sure you want to delete "${system.name}"? This action cannot be undone.`,
-      confirmLabel: 'Delete',
-      cancelLabel: 'Cancel',
-      severity: 'danger'
-    };
-    this.showConfirmationDialog = true;
-  }
-
-  /**
-   * Handles confirmation of system deletion
-   * Performs the actual deletion and updates the list
-   */
-  onConfirmationConfirmed(): void {
-    if (this.systemToDelete) {
-      this.api.apiConfigSourceSystemIdDelete(this.systemToDelete.id!).subscribe({
-        next: () => {
-          this.loadSystems();
-          this.showConfirmationDialog = false;
-          this.systemToDelete = null;
-        },
-        error: (error) => {
-          this.erorrService.handleError(error);
-          this.errorMsg = 'Failed to delete source system';
-          this.showConfirmationDialog = false;
-        }
-      });
-    }
-  }
-
-  /**
-   * Handles cancellation of system deletion
-   * Closes the confirmation dialog without action
-   */
-  onConfirmationCancelled(): void {
-    this.showConfirmationDialog = false;
-    this.systemToDelete = null;
-  }
-
-
-  /**
-   * Opens the manage dialog for a source system
-   * @param system - The source system to manage
-   */
-  manageSourceSystem(system: SourceSystemDTO): void {
-    this.router.navigate(['/source-system/', system.id]);
-  }
-
-  /**
-   * Closes the detail dialog
-   * Resets form and clears selection
-   */
-  closeDetailDialog(): void {
-    this.showDetailDialog = false;
-    this.selectedSystem = null;
-    this.metadataForm.reset();
-  }
-
 
 
   // AAS: Manage Page helpers
@@ -564,7 +331,11 @@ export class SourceSystemBaseComponent implements OnInit {
 
   private loadAasChildren(submodelId: string, parentPath: string | undefined, attach: TreeNode): void {
     if (!this.selectedSystem?.id) return;
-    this.aasService.listElements(this.selectedSystem.id, submodelId, { depth: 'shallow', parentPath, source: 'SNAPSHOT' }).subscribe({
+    this.aasService.listElements(this.selectedSystem.id, submodelId, {
+      depth: 'shallow',
+      parentPath,
+      source: 'SNAPSHOT'
+    }).subscribe({
       next: (resp) => {
         const list = Array.isArray(resp) ? resp : (resp?.result ?? []);
         attach.children = list.map((el: any) => this.mapElToNode(submodelId, el));
@@ -577,11 +348,16 @@ export class SourceSystemBaseComponent implements OnInit {
       error: (err) => this.erorrService.handleError(err)
     });
   }
+
   private refreshAasNodeLive(submodelId: string, parentPath: string, node?: TreeNode): void {
     if (!this.selectedSystem?.id) return;
     const key = parentPath ? `${submodelId}::${parentPath}` : submodelId;
     this.aasService
-      .listElements(this.selectedSystem.id, submodelId, { depth: 'shallow', parentPath: parentPath || undefined, source: 'LIVE' })
+      .listElements(this.selectedSystem.id, submodelId, {
+        depth: 'shallow',
+        parentPath: parentPath || undefined,
+        source: 'LIVE'
+      })
       .subscribe({
         next: (resp) => {
           const list = Array.isArray(resp) ? resp : (resp?.result ?? []);
@@ -632,13 +408,13 @@ export class SourceSystemBaseComponent implements OnInit {
           const val = v?.value ?? v;
           const idShort = val?.idShort;
           if (!idShort) return null;
-          return { idShort, modelType: val?.modelType, valueType: val?.valueType };
+          return {idShort, modelType: val?.modelType, valueType: val?.valueType};
         };
         const mapAnnotation = (a: any): AasAnnotationView | null => {
           const val = a?.value ?? a;
           const idShort = val?.idShort;
           if (!idShort) return null;
-          return { idShort, modelType: val?.modelType, valueType: val?.valueType, value: val?.value };
+          return {idShort, modelType: val?.modelType, valueType: val?.valueType, value: val?.value};
         };
         const stringifyRef = (ref: any): string | undefined => {
           if (!ref) return undefined;
@@ -652,7 +428,11 @@ export class SourceSystemBaseComponent implements OnInit {
           }
           if (typeof ref === 'string') return ref;
           if (ref?.value) return String(ref.value);
-          try { return JSON.stringify(ref); } catch { return String(ref); }
+          try {
+            return JSON.stringify(ref);
+          } catch {
+            return String(ref);
+          }
         };
         const firstRef = stringifyRef((found as any).first || (found as any).firstReference);
         const secondRef = stringifyRef((found as any).second || (found as any).secondReference);
@@ -675,7 +455,7 @@ export class SourceSystemBaseComponent implements OnInit {
           const pathForChildren = safePath;
           // Try deep list to get full element (with annotations)
           this.aasService
-            .listElements(systemId, smId, { depth: 'all', source: 'LIVE' })
+            .listElements(systemId, smId, {depth: 'all', source: 'LIVE'})
             .subscribe({
               next: (resp: any) => {
                 const arr: any[] = Array.isArray(resp) ? resp : (resp?.result ?? []);
@@ -683,7 +463,12 @@ export class SourceSystemBaseComponent implements OnInit {
                 const anns = Array.isArray(foundDeep?.annotations) ? foundDeep.annotations : (Array.isArray(foundDeep?.annotation) ? foundDeep.annotation : []);
                 let annotations: AasAnnotationView[] = [];
                 if (anns.length) {
-                  annotations = anns.map((a: any) => ({ idShort: a?.idShort, modelType: a?.modelType, valueType: a?.valueType, value: a?.value } as AasAnnotationView));
+                  annotations = anns.map((a: any) => ({
+                    idShort: a?.idShort,
+                    modelType: a?.modelType,
+                    valueType: a?.valueType,
+                    value: a?.value
+                  } as AasAnnotationView));
                 } else {
                   // Fallback: treat shallow children as annotations
                   const list: any[] = arr.filter((el: any) => {
@@ -692,10 +477,15 @@ export class SourceSystemBaseComponent implements OnInit {
                     const rest = p.substring((pathForChildren + '/').length);
                     return rest && !rest.includes('/');
                   });
-                  annotations = list.map((el: any) => ({ idShort: el?.idShort, modelType: el?.modelType, valueType: el?.valueType, value: el?.value } as AasAnnotationView));
+                  annotations = list.map((el: any) => ({
+                    idShort: el?.idShort,
+                    modelType: el?.modelType,
+                    valueType: el?.valueType,
+                    value: el?.value
+                  } as AasAnnotationView));
                 }
                 if (this.aasSelectedLivePanel) {
-                  this.aasSelectedLivePanel = { ...this.aasSelectedLivePanel, annotations };
+                  this.aasSelectedLivePanel = {...this.aasSelectedLivePanel, annotations};
                 }
               },
               error: () => {
@@ -706,14 +496,19 @@ export class SourceSystemBaseComponent implements OnInit {
           const computedPath = safePath;
           node.data.idShortPath = computedPath;
           node.data.modelType = liveType || node.data.modelType;
-          node.data.raw = { ...(node.data.raw || {}), idShortPath: computedPath, modelType: found.modelType, valueType: found.valueType };
+          node.data.raw = {
+            ...(node.data.raw || {}),
+            idShortPath: computedPath,
+            modelType: found.modelType,
+            valueType: found.valueType
+          };
           this.aasTreeNodes = [...this.aasTreeNodes];
         }
       },
       error: (_err: any) => {
         // Fallback: list under parent shallow and pick child
         this.aasService
-          .listElements(systemId, smId, { depth: 'shallow', parentPath: parent || undefined, source: 'LIVE' })
+          .listElements(systemId, smId, {depth: 'shallow', parentPath: parent || undefined, source: 'LIVE'})
           .subscribe({
             next: (resp: any) => {
               this.aasSelectedLiveLoading = false;
@@ -730,7 +525,7 @@ export class SourceSystemBaseComponent implements OnInit {
                   const val = v?.value ?? v;
                   const idShort = val?.idShort;
                   if (!idShort) return null;
-                  return { idShort, modelType: val?.modelType, valueType: val?.valueType };
+                  return {idShort, modelType: val?.modelType, valueType: val?.valueType};
                 };
                 const ann1b = (found2 as any).annotations;
                 const ann2b = (found2 as any).annotation;
@@ -739,7 +534,7 @@ export class SourceSystemBaseComponent implements OnInit {
                   const val = a?.value ?? a;
                   const idShort = val?.idShort;
                   if (!idShort) return null;
-                  return { idShort, modelType: val?.modelType, valueType: val?.valueType, value: val?.value };
+                  return {idShort, modelType: val?.modelType, valueType: val?.valueType, value: val?.value};
                 };
                 const stringifyRef2 = (ref: any): string | undefined => {
                   if (!ref) return undefined;
@@ -753,7 +548,11 @@ export class SourceSystemBaseComponent implements OnInit {
                   }
                   if (typeof ref === 'string') return ref;
                   if (ref?.value) return String(ref.value);
-                  try { return JSON.stringify(ref); } catch { return String(ref); }
+                  try {
+                    return JSON.stringify(ref);
+                  } catch {
+                    return String(ref);
+                  }
                 };
                 const firstRef2 = stringifyRef2((found2 as any).first || (found2 as any).firstReference);
                 const secondRef2 = stringifyRef2((found2 as any).second || (found2 as any).secondReference);
@@ -776,7 +575,7 @@ export class SourceSystemBaseComponent implements OnInit {
                   this.aasTreeNodes = [...this.aasTreeNodes];
                 }
               } else {
-                this.aasSelectedLivePanel = { label: last, type: 'Unknown' } as any;
+                this.aasSelectedLivePanel = {label: last, type: 'Unknown'} as any;
               }
             },
             error: (err2: any) => {
@@ -877,7 +676,13 @@ export class SourceSystemBaseComponent implements OnInit {
   private mapSmToNode(sm: any): TreeNode {
     const id = sm.submodelId || sm.id || (sm.keys && sm.keys[0]?.value);
     const label = (sm.submodelIdShort || sm.idShort) || id;
-    return { key: id, label, data: { type: 'submodel', id, modelType: 'Submodel', raw: sm }, leaf: false, children: [] } as TreeNode;
+    return {
+      key: id,
+      label,
+      data: {type: 'submodel', id, modelType: 'Submodel', raw: sm},
+      leaf: false,
+      children: []
+    } as TreeNode;
   }
 
   private mapElToNode(submodelId: string, el: any): TreeNode {
@@ -888,7 +693,7 @@ export class SourceSystemBaseComponent implements OnInit {
     return {
       key: `${submodelId}::${el.idShortPath || el.idShort}`,
       label,
-      data: { type: 'element', submodelId, idShortPath: el.idShortPath || el.idShort, modelType: computedType, raw: el },
+      data: {type: 'element', submodelId, idShortPath: el.idShortPath || el.idShort, modelType: computedType, raw: el},
       leaf: !hasChildren,
       children: []
     } as TreeNode;
@@ -936,172 +741,30 @@ export class SourceSystemBaseComponent implements OnInit {
   }
 
 
+  goBack() {
 
-
-
-  /**
-   * Gets the systems to display in the table
-   * Returns filtered systems when search is active, otherwise all systems
-   * @returns Array of systems to display
-   */
-  getDisplaySystems(): SourceSystemDTO[] {
-    return this.isSearchActive ? this.filteredSystems : this.systems;
   }
 
-
-
-
-  /**
-   * Checks if current device is a mobile device
-   * @returns True if mobile device
-   */
-  isMobileDevice(): boolean {
-    return window.innerWidth <= 768;
+  onInplaceActivate() {
+    this.originalName = this.selectedSystem?.name || '';
+    this.originalApiUrl = this.selectedSystem?.apiUrl || '';
   }
 
-  /**
-   * Checks if current device is a tablet
-   * @returns True if tablet device
-   */
-  isTabletDevice(): boolean {
-    return window.innerWidth > 768 && window.innerWidth <= 1024;
+  onSave(closeCallback: any) {
+    this.sourceSystemService.apiConfigSourceSystemIdPut(this.selectedSystem!.id!, this.selectedSystem!).subscribe({
+      next: data => {
+      },
+      error: err => {
+        this.httpErrorService.handleError(err)
+      }
+    });
+    closeCallback();
   }
 
-  /**
-   * Checks if current device is a desktop
-   * @returns True if desktop device
-   */
-  isDesktopDevice(): boolean {
-    return window.innerWidth > 1024;
+  onClose(closeCallback: any) {
+    this.selectedSystem!.name = this.originalName;
+    this.selectedSystem!.apiUrl = this.originalApiUrl;
+    closeCallback();
   }
-
-  /**
-   * Checks if current screen is small
-   * @returns True if small screen
-   */
-  isSmallScreen(): boolean {
-    return window.innerWidth <= 640;
-  }
-
-  /**
-   * Checks if device is in landscape mode
-   * @returns True if landscape orientation
-   */
-  isLandscapeMode(): boolean {
-    return window.innerWidth > window.innerHeight;
-  }
-
-  /**
-   * Checks if device supports touch input
-   * @returns True if touch device
-   */
-  isTouchDevice(): boolean {
-    return 'ontouchstart' in window || navigator.maxTouchPoints > 0;
-  }
-
-  /**
-   * Gets responsive placeholder text for search input
-   * @returns Placeholder text based on screen size
-   */
-  getResponsivePlaceholder(): string {
-    if (this.isSmallScreen()) {
-      return 'Search systems...';
-    } else if (this.isMobileDevice()) {
-      return 'Search by name, URL, or description...';
-    } else {
-      return 'Search source systems by name, description, API URL, endpoints, or headers...';
-    }
-  }
-
-  /**
-   * Gets responsive table row count
-   * @returns Number of rows to display based on screen size
-   */
-  getResponsiveTableRows(): number {
-    if (this.isSmallScreen()) {
-      return 5;
-    } else if (this.isMobileDevice()) {
-      return 10;
-    } else {
-      return 25;
-    }
-  }
-
-  /**
-   * Checks if advanced search features should be shown
-   * @returns True if advanced search should be visible
-   */
-  shouldShowAdvancedSearch(): boolean {
-    return !this.isSmallScreen() && this.isSearchActive;
-  }
-
-  /**
-   * Checks if search breakdown should be shown
-   * @returns True if breakdown should be visible
-   */
-  shouldShowSearchBreakdown(): boolean {
-    return !this.isSmallScreen() && !!this.searchResultCount?.breakdown;
-  }
-
-  /**
-   * Checks if search actions should be shown
-   * @returns True if actions should be visible
-   */
-  shouldShowSearchActions(): boolean {
-    return !this.isSmallScreen() && this.isSearchActive;
-  }
-
-  /**
-   * Gets responsive search options based on screen size
-   * @returns Search options optimized for current screen
-   */
-  getResponsiveSearchOptions(): SearchOptions {
-    const baseOptions = this.searchOptions;
-
-    if (this.isSmallScreen()) {
-      return {
-        ...baseOptions,
-        highlightMatches: false,
-        searchScope: 'all'
-      };
-    }
-
-    return baseOptions;
-  }
-
-
-
-  /**
-   * Gets appropriate empty state message
-   * @returns Message to display when no results are found
-   */
-  getEmptyMessage(): string {
-    if (this.isSearchActive) {
-      return 'No matching source systems found';
-    }
-    return 'No source systems available';
-  }
-
-  /**
-   * Gets highlighted text for display
-   * @param text - Original text
-   * @param fieldType - Type of field for highlighting
-   * @returns Text with HTML highlighting
-   */
-  getHighlightedText(text: string, fieldType: 'name' | 'url' | 'description'): string {
-    if (!this.isSearchActive || !this.searchOptions.highlightMatches || !text) {
-      return text || '';
-    }
-
-    return this.searchPipe.highlightMatches(text, this.searchTerm, this.searchOptions);
-  }
-
-
-
-
-
-
-
-
-
 }
+
