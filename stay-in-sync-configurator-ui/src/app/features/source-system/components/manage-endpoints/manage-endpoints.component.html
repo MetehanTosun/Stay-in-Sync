@@ -4,187 +4,187 @@
   - Display, create, edit, delete, and import endpoints for a source system
   -------------------------------------------------------------------------------------------------
 -->
-<p-card styleClass="p-p-4">
-  <!--
-    Section: Import Endpoints
-  -->
-  <div class="p-mb-3">
-    <button
-      pButton
-      type="button"
-      icon="pi pi-cloud-download"
-      label="Import Endpoints"
-      [disabled]="!apiUrl || importing"
-      (click)="importEndpoints()">
-    </button>
-    <p-progressSpinner *ngIf="importing" styleClass="p-ml-2" strokeWidth="4"></p-progressSpinner>
-  </div>
-  <!--
-    Section: Create New Endpoint Form
-  -->
-  <form [formGroup]="endpointForm" class="p-fluid p-formgrid p-grid" style="margin: 1.5rem 0; padding: 1rem;">
-    <div class="p-field p-col-12" style="margin-bottom: 1rem;">
-      <label for="endpointPath">Path*</label>
-      <input id="endpointPath" pInputText formControlName="endpointPath" />
+
+
+<p-table [style]="{ 'margin': '1.5rem 0' }" [value]="endpoints" [loading]="loading"
+
+         [paginator]="true"
+         paginatorPosition="bottom"
+         [rows]="10"
+         [scrollable]="true"
+         scrollHeight="flex">
+  <ng-template #caption>
+    <div class="flex items-center justify-between">
+      <span class="text-xl font-bold">Api Endpoints</span>
+      <button pButton type="button" label="Add Api Endpoint" icon="pi pi-plus"
+              (click)="addEndpointVisible = true"></button>
     </div>
-    <div class="p-field p-col-12" style="margin-bottom: 1rem;">
-      <label for="httpRequestType">Method*</label>
-      <p-dropdown id="httpRequestType" [options]="httpRequestTypes" formControlName="httpRequestType"></p-dropdown>
+  </ng-template>
+  <ng-template pTemplate="header">
+    <tr>
+      <th>Path</th>
+      <th>Method</th>
+      <th>Request-Body</th>
+      <th>Response-Body</th>
+      <th>Actions</th>
+    </tr>
+    <tr>
+      <th>
+        <p-columnFilter type="text" field="endpointPath" matchMode="contains"
+                        placeholder="Search by path"></p-columnFilter>
+      </th>
+      <th>
+        <p-columnFilter field="httpRequestType" matchMode="equals" [showMenu]="false">
+          <ng-template #filter let-filter="filterCallback">
+            <p-select [options]="httpRequestTypes"
+                      (onChange)="filter($event.value)"
+                      placeholder="Select One"
+                      [showClear]="true"
+                      [style]="{ 'min-width': '12rem' }">
+              <ng-template let-option #item>
+                <p>{{ option.label }}</p>
+              </ng-template>
+            </p-select>
+          </ng-template>
+        </p-columnFilter>
+      </th>
+      <th>
+      </th>
+      <th>
+
+      </th>
+      <th>
+      </th>
+    </tr>
+  </ng-template>
+  <ng-template pTemplate="body" let-e>
+    <tr>
+      <td>{{ e.endpointPath }}</td>
+      <td>{{ e.httpRequestType }}</td>
+      <td>
+        <button *ngIf="e.httpRequestType === 'POST' || e.httpRequestType === 'PUT'" pButton type="button"
+                label="Request Body" (click)="showRequestBodyEditor(e)"></button>
+      </td>
+      <td>
+        <button pButton type="button" label="Response Preview" (click)="showResponsePreviewModal(e)"></button>
+      </td>
+      <td>
+        <!-- Add manage button -->
+        <button pButton
+                type="button"
+                icon="pi pi-cog"
+                class="p-button-info p-button-text"
+                pTooltip="Query-Parameter verwalten"
+                tooltipPosition="top"
+                (click)="selectedEndpoint = e"></button>
+        <button pButton type="button" icon="pi pi-trash" class="p-button-text" (click)="deleteEndpoint(e)"></button>
+      </td>
+    </tr>
+  </ng-template>
+</p-table>
+
+<!--
+  Section: Import Endpoints
+-->
+<div class="p-mb-3">
+  <button
+    pButton
+    type="button"
+    icon="pi pi-cloud-download"
+    label="Import Endpoints"
+    [disabled]="!apiUrl || importing"
+    (click)="importEndpoints()">
+  </button>
+  <p-progressSpinner *ngIf="importing" styleClass="p-ml-2" strokeWidth="4"></p-progressSpinner>
+</div>
+<!--
+  Section: Edit Endpoint Dialog
+-->
+<p-dialog header="Edit Endpoint" [(visible)]="editDialog" modal="true" [style]="{ width: '600px' }">
+  <form [formGroup]="editForm" class="p-fluid p-formgrid p-grid">
+    <div class="p-field p-col-12">
+      <label>Path</label>
+      <input pInputText formControlName="endpointPath"/>
     </div>
-    <div class="p-field p-col-12" style="margin-bottom: 1rem;" *ngIf="endpointForm.get('httpRequestType')?.value === 'POST' || endpointForm.get('httpRequestType')?.value === 'PUT'">
-      <label for="requestBodySchema">Request-Body-Schema (JSON)</label>
+    <div class="p-field p-col-12">
+      <label>Method</label>
+      <p-dropdown [options]="httpRequestTypes" formControlName="httpRequestType"></p-dropdown>
+    </div>
+    <div class="p-field p-col-12"
+         *ngIf="editForm.get('httpRequestType')?.value === 'POST' || editForm.get('httpRequestType')?.value === 'PUT'">
+      <label>Request-Body-Schema (JSON)</label>
       <ngx-monaco-editor [options]="jsonEditorOptions" formControlName="requestBodySchema"></ngx-monaco-editor>
-      <div *ngIf="jsonError" class="p-error">{{ jsonError }}</div>
+      <div *ngIf="editJsonError" class="p-error">{{ editJsonError }}</div>
     </div>
-    <div class="p-field p-col-12" style="margin-bottom: 1rem;">
-      <label for="responseBodySchema">Response-Body-Schema</label>
-      <p-tabView [(activeIndex)]="activeTabIndex" (onChange)="onTabChange($event)">
+    <div class="p-field p-col-12">
+      <label>Response-Body-Schema</label>
+      <p-tabView [(activeIndex)]="editActiveTabIndex" (onChange)="onEditTabChange($event)">
         <p-tabPanel header="JSON">
           <ngx-monaco-editor [options]="jsonEditorOptions" formControlName="responseBodySchema"></ngx-monaco-editor>
-          <div *ngIf="jsonError" class="p-error">{{ jsonError }}</div>
+          <div *ngIf="editJsonError" class="p-error">{{ editJsonError }}</div>
         </p-tabPanel>
         <p-tabPanel header="TypeScript">
-          <div *ngIf="isGeneratingTypeScript" class="typescript-loading">
-            <p-progressSpinner [style]="{width: '20px', height: '20px'}" strokeWidth="2" fill="var(--surface-ground)" animationDuration=".5s"></p-progressSpinner>
+          <div *ngIf="isGeneratingEditTypeScript" class="typescript-loading">
+            <p-progressSpinner [style]="{width: '20px', height: '20px'}" strokeWidth="2" fill="var(--surface-ground)"
+                               animationDuration=".5s"></p-progressSpinner>
             <span class="loading-text">Generating TypeScript interface...</span>
           </div>
-          <div *ngIf="!isGeneratingTypeScript && typescriptError" class="typescript-error">
+          <div *ngIf="!isGeneratingEditTypeScript && editTypeScriptError" class="typescript-error">
             <div class="error-header">
               <i class="pi pi-exclamation-triangle"></i>
               <span>TypeScript Generation Error</span>
             </div>
-            <div class="error-message">{{ typescriptError }}</div>
+            <div class="error-message">{{ editTypeScriptError }}</div>
             <div class="error-actions">
-              <button pButton type="button" label="Retry" class="p-button-sm" (click)="loadTypeScriptForMainForm()"></button>
+              <button pButton type="button" label="Retry" class="p-button-sm"
+                      (click)="loadTypeScriptForEditForm()"></button>
             </div>
           </div>
-          <ngx-monaco-editor *ngIf="!isGeneratingTypeScript && !typescriptError" [options]="typescriptEditorOptions" [model]="typescriptModel"></ngx-monaco-editor>
+          <ngx-monaco-editor *ngIf="!isGeneratingEditTypeScript && !editTypeScriptError"
+                             [options]="typescriptEditorOptions" [model]="editTypeScriptModel"></ngx-monaco-editor>
         </p-tabPanel>
       </p-tabView>
     </div>
-    <div class="p-col-12" style="margin: 2rem 0;">
-      <button pButton type="button" label="Add Endpoint" [disabled]="endpointForm.invalid" (click)="addEndpoint()"></button>
-    </div>
   </form>
+  <ng-template pTemplate="footer">
+    <button pButton type="button" label="Cancel" class="p-button-text" (click)="closeEditDialog()"></button>
+    <button pButton type="button" label="Save" (click)="saveEdit()" [disabled]="editForm.invalid"></button>
+  </ng-template>
+</p-dialog>
 
-  <!--
-    Section: Edit Endpoint Dialog
-  -->
-  <p-dialog header="Edit Endpoint" [(visible)]="editDialog" modal="true" [style]="{ width: '600px' }">
-    <form [formGroup]="editForm" class="p-fluid p-formgrid p-grid">
-      <div class="p-field p-col-12">
-        <label>Path</label>
-        <input pInputText formControlName="endpointPath" />
-      </div>
-      <div class="p-field p-col-12">
-        <label>Method</label>
-        <p-dropdown [options]="httpRequestTypes" formControlName="httpRequestType"></p-dropdown>
-      </div>
-      <div class="p-field p-col-12" *ngIf="editForm.get('httpRequestType')?.value === 'POST' || editForm.get('httpRequestType')?.value === 'PUT'">
-        <label>Request-Body-Schema (JSON)</label>
-        <ngx-monaco-editor [options]="jsonEditorOptions" formControlName="requestBodySchema"></ngx-monaco-editor>
-        <div *ngIf="editJsonError" class="p-error">{{ editJsonError }}</div>
-      </div>
-      <div class="p-field p-col-12">
-        <label>Response-Body-Schema</label>
-        <p-tabView [(activeIndex)]="editActiveTabIndex" (onChange)="onEditTabChange($event)">
-          <p-tabPanel header="JSON">
-            <ngx-monaco-editor [options]="jsonEditorOptions" formControlName="responseBodySchema"></ngx-monaco-editor>
-            <div *ngIf="editJsonError" class="p-error">{{ editJsonError }}</div>
-          </p-tabPanel>
-          <p-tabPanel header="TypeScript">
-            <div *ngIf="isGeneratingEditTypeScript" class="typescript-loading">
-              <p-progressSpinner [style]="{width: '20px', height: '20px'}" strokeWidth="2" fill="var(--surface-ground)" animationDuration=".5s"></p-progressSpinner>
-              <span class="loading-text">Generating TypeScript interface...</span>
-            </div>
-            <div *ngIf="!isGeneratingEditTypeScript && editTypeScriptError" class="typescript-error">
-              <div class="error-header">
-                <i class="pi pi-exclamation-triangle"></i>
-                <span>TypeScript Generation Error</span>
-              </div>
-              <div class="error-message">{{ editTypeScriptError }}</div>
-              <div class="error-actions">
-                <button pButton type="button" label="Retry" class="p-button-sm" (click)="loadTypeScriptForEditForm()"></button>
-              </div>
-            </div>
-            <ngx-monaco-editor *ngIf="!isGeneratingEditTypeScript && !editTypeScriptError" [options]="typescriptEditorOptions" [model]="editTypeScriptModel"></ngx-monaco-editor>
-          </p-tabPanel>
-        </p-tabView>
-      </div>
-    </form>
-    <ng-template pTemplate="footer">
-      <button pButton type="button" label="Cancel" class="p-button-text" (click)="closeEditDialog()"></button>
-      <button pButton type="button" label="Save" (click)="saveEdit()" [disabled]="editForm.invalid"></button>
-    </ng-template>
-  </p-dialog>
-
-  <!--
-    Section: Endpoints Data Table
-  -->
-  <p-table [style]="{ 'margin': '1.5rem 0' }" [value]="endpoints" [loading]="loading" [paginator]="true" [rows]="10">
-    <ng-template pTemplate="header">
-      <tr>
-        <th>Path</th>
-        <th>Method</th>
-        <th>Request-Body</th>
-        <th>Response-Body</th>
-        <th>Actions</th>
-      </tr>
-    </ng-template>
-    <ng-template pTemplate="body" let-e>
-      <tr>
-        <td>{{ e.endpointPath }}</td>
-        <td>{{ e.httpRequestType }}</td>
-        <td>
-          <button *ngIf="e.httpRequestType === 'POST' || e.httpRequestType === 'PUT'" pButton type="button" label="Request Body" (click)="showRequestBodyEditor(e)"></button>
-        </td>
-        <td>
-          <button pButton type="button" label="Response Preview" (click)="showResponsePreviewModal(e)"></button>
-        </td>
-        <td>
-          <!-- Add manage button -->
-          <button pButton
-                  type="button"
-                  icon="pi pi-cog"
-                  class="p-button-info p-button-text"
-                  pTooltip="Query-Parameter verwalten"
-                  tooltipPosition="top"
-                  (click)="selectedEndpoint = e"></button>
-          <button pButton type="button" icon="pi pi-trash" class="p-button-text" (click)="deleteEndpoint(e)"></button>
-        </td>
-      </tr>
-    </ng-template>
-  </p-table>
-
-  <!-- Request Body Editor Overlay (outside of p-card/Dialog) -->
-  <div *ngIf="requestBodyEditorEndpoint" class="request-body-editor-overlay" cdkDrag cdkDragRootElement=".request-body-editor-overlay">
-    <div class="editor-header" cdkDragHandle>
-      <span>Request-Body-Schema für {{ requestBodyEditorEndpoint.endpointPath }} ({{ requestBodyEditorEndpoint.httpRequestType }})</span>
-      <button class="close-btn" (click)="closeRequestBodyEditor()">&#10005;</button>
-    </div>
-    <ngx-monaco-editor [options]="jsonEditorOptions" [model]="requestBodyEditorModel" (modelChange)="onRequestBodyModelChange($event)"></ngx-monaco-editor>
-    <div class="editor-footer">
-   
-      <span *ngIf="requestBodyEditorError" class="p-error p-ml-3">{{ requestBodyEditorError }}</span>
-    </div>
+<!-- Request Body Editor Overlay (outside of p-card/Dialog) -->
+<div *ngIf="requestBodyEditorEndpoint" class="request-body-editor-overlay" cdkDrag
+     cdkDragRootElement=".request-body-editor-overlay">
+  <div class="editor-header" cdkDragHandle>
+    <span>Request-Body-Schema für {{ requestBodyEditorEndpoint.endpointPath }}
+      ({{ requestBodyEditorEndpoint.httpRequestType }})</span>
+    <button class="close-btn" (click)="closeRequestBodyEditor()">&#10005;</button>
   </div>
+  <ngx-monaco-editor [options]="jsonEditorOptions" [model]="requestBodyEditorModel"
+                     (modelChange)="onRequestBodyModelChange($event)"></ngx-monaco-editor>
+  <div class="editor-footer">
 
-  <!-- Response Preview Modal -->
-  <app-response-preview-modal
-    [(visible)]="responsePreviewModalVisible"
-    [endpointId]="selectedResponsePreviewEndpoint?.id"
-    [endpointPath]="selectedResponsePreviewEndpoint?.endpointPath || ''"
-    [httpMethod]="selectedResponsePreviewEndpoint?.httpRequestType || ''"
-    [responseBodySchema]="selectedResponsePreviewEndpoint?.responseBodySchema"
-    [responseDts]="selectedResponsePreviewEndpoint?.responseDts"
-    (visibleChange)="onResponsePreviewModalVisibleChange($event)">
-  </app-response-preview-modal>
+    <span *ngIf="requestBodyEditorError" class="p-error p-ml-3">{{ requestBodyEditorError }}</span>
+  </div>
+</div>
 
-  <!-- =================================================================== -->
+<!-- Response Preview Modal -->
+<app-response-preview-modal
+  [(visible)]="responsePreviewModalVisible"
+  [endpointId]="selectedResponsePreviewEndpoint?.id"
+  [endpointPath]="selectedResponsePreviewEndpoint?.endpointPath || ''"
+  [httpMethod]="selectedResponsePreviewEndpoint?.httpRequestType || ''"
+  [responseBodySchema]="selectedResponsePreviewEndpoint?.responseBodySchema"
+  [responseDts]="selectedResponsePreviewEndpoint?.responseDts"
+  (visibleChange)="onResponsePreviewModalVisibleChange($event)">
+</app-response-preview-modal>
+
+<!-- =================================================================== -->
 <!--               Section: Manage Query Parameters                    -->
 <!-- =================================================================== -->
 <ng-container *ngIf="selectedEndpoint && selectedEndpoint.id != null">
-  <app-manage-endpoint-params [endpointId]="selectedEndpoint.id!" [endpointPath]="selectedEndpoint.endpointPath"></app-manage-endpoint-params>
+  <app-manage-endpoint-params [endpointId]="selectedEndpoint.id!"
+                              [endpointPath]="selectedEndpoint.endpointPath"></app-manage-endpoint-params>
 </ng-container>
 
 <!--
@@ -196,4 +196,72 @@
   (confirmed)="onConfirmationConfirmed()"
   (cancelled)="onConfirmationCancelled()">
 </app-confirmation-dialog>
+
+<p-dialog [(visible)]="addEndpointVisible" [modal]="true" [style]="{ width: '60rem', height: '50rem' }">
+    <ng-template #header>
+      <div class="inline-flex items-center justify-center gap-2">
+        <span class="font-bold whitespace-nowrap">Add Endpoint</span>
+      </div>
+    </ng-template>
+  <form [formGroup]="endpointForm">
+  <div class="inline-flex gap-4 mt-5!">
+      <p-floatlabel variant="on">
+        <p-select
+          id="httpRequestType"
+          [options]="httpRequestTypes"
+          optionLabel="label"
+          optionValue="value"
+          placeholder="Select type"
+          formControlName="httpRequestType">
+        </p-select>
+        <label for="httpRequestType">Method</label>
+      </p-floatlabel>
+      <p-floatlabel variant="on">
+        <input id="endpointPath" pInputText formControlName="endpointPath"/>
+        <label for="endpointPath">Path</label>
+      </p-floatlabel>
+    </div>
+    <div class="p-field p-col-12 mt-1!" style="margin-bottom: 1rem;"
+         *ngIf="endpointForm.get('httpRequestType')?.value === 'POST' || endpointForm.get('httpRequestType')?.value === 'PUT'">
+      <label for="requestBodySchema">Request-Body-Schema (JSON)</label>
+      <ngx-monaco-editor [options]="jsonEditorOptions" formControlName="requestBodySchema"></ngx-monaco-editor>
+      <div *ngIf="jsonError" class="p-error">{{ jsonError }}</div>
+    </div>
+    <div class="p-field p-col-12 mt-1!" style="margin-bottom: 1rem;">
+      <label for="responseBodySchema">Response-Body-Schema</label>
+      <p-tabView [(activeIndex)]="activeTabIndex" (onChange)="onTabChange($event)">
+        <p-tabPanel header="JSON">
+          <ngx-monaco-editor [options]="jsonEditorOptions" formControlName="responseBodySchema"></ngx-monaco-editor>
+          <div *ngIf="jsonError" class="p-error">{{ jsonError }}</div>
+        </p-tabPanel>
+        <p-tabPanel header="TypeScript">
+          <div *ngIf="isGeneratingTypeScript" class="typescript-loading">
+            <p-progressSpinner [style]="{width: '20px', height: '20px'}" strokeWidth="2" fill="var(--surface-ground)"
+                               animationDuration=".5s"></p-progressSpinner>
+            <span class="loading-text">Generating TypeScript interface...</span>
+          </div>
+          <div *ngIf="!isGeneratingTypeScript && typescriptError" class="typescript-error">
+            <div class="error-header">
+              <i class="pi pi-exclamation-triangle"></i>
+              <span>TypeScript Generation Error</span>
+            </div>
+            <div class="error-message">{{ typescriptError }}</div>
+            <div class="error-actions">
+              <button pButton type="button" label="Retry" class="p-button-sm"
+                      (click)="loadTypeScriptForMainForm()"></button>
+            </div>
+          </div>
+          <ngx-monaco-editor *ngIf="!isGeneratingTypeScript && !typescriptError" [options]="typescriptEditorOptions"
+                             [model]="typescriptModel"></ngx-monaco-editor>
+        </p-tabPanel>
+      </p-tabView>
+    </div>
+  </form>
+  <ng-template #footer>
+    <p-button label="Cancel" [text]="true" severity="secondary" (click)="addEndpointVisible = false"/>
+    <p-button label="Save" [outlined]="true" severity="secondary" (click)="addEndpoint()"
+              [disabled]="endpointForm.invalid"/>
+  </ng-template>
+</p-dialog>
+
 

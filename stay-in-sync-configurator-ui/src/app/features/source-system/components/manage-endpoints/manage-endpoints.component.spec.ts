@@ -13,7 +13,6 @@ import { SourceSystemResourceService } from '../../service/sourceSystemResource.
 import { SourceSystemEndpointDTO } from '../../models/sourceSystemEndpointDTO';
 import { SourceSystemDTO } from '../../models/sourceSystemDTO';
 import { CreateSourceSystemEndpointDTO } from '../../models/createSourceSystemEndpointDTO';
-import { TypeScriptGenerationRequest } from '../../models/typescriptGenerationRequest';
 import { TypeScriptGenerationResponse } from '../../models/typescriptGenerationResponse';
 
 

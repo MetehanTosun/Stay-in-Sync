@@ -192,7 +192,7 @@ public class DevelopmentDataSeeder {
 
 
         return new CreateSourceArcDTO(
-                "products",
+                "syncProductsArc",
                 sourceSystem.id,
                 sourceSystemEndpoint.id,
                 Collections.emptyMap(),
@@ -220,8 +220,7 @@ public class DevelopmentDataSeeder {
                 function transform() {
                     stayinsync.log('Transformation started: Upserting products...', 'INFO');
                 
-                    const products = source.Dummy_JSON.products.products;
-                    const productsFromSource = products.slice(1,2);
+                    const productsFromSource = source.Dummy_JSON.syncProductsArc.products;
                 
                     if (!productsFromSource || productsFromSource.length === 0) {
                         stayinsync.log('No products found in source data. Finishing.', 'WARN');
@@ -232,7 +231,7 @@ public class DevelopmentDataSeeder {
                         return targets.synchronizeProducts.defineUpsert()
                             // CHECK: Find product with its sku. Assumption: sku is unique
                             .usingCheck(config => {
-                                config.withQueryParamQ(product.title); // DummyJSON 'q' is search param
+                                config.withQueryParamQ(product.sku); // DummyJSON 'q' is search param
                             })
                             // CREATE: If not found, create new Product
                             .usingCreate(config => {
@@ -244,7 +243,7 @@ public class DevelopmentDataSeeder {
                             })
                             // UPDATE: If found, update price and description
                             .usingUpdate(config => {
-                                config.withPathParamProductId(checkResponse => {
+                                config.withPathParamProduct_id(checkResponse => {
                                     // Assumption: /products/search-answer contains a list and we take the first occurence
                                     return checkResponse.products[0].id;
                                 }).withPayload({
