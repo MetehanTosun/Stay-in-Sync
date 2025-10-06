@@ -1,7 +1,5 @@
 package de.unistuttgart.stayinsync.core.configuration.rest.resource;
 
-import de.unistuttgart.stayinsync.core.configuration.rest.Examples;
-import de.unistuttgart.stayinsync.core.configuration.rest.dtos.SyncJobDTO;
 import de.unistuttgart.stayinsync.core.configuration.service.SyncedAssetsService;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.GET;
@@ -11,14 +9,12 @@ import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.core.Response;
 import org.eclipse.microprofile.openapi.annotations.Operation;
 import org.eclipse.microprofile.openapi.annotations.media.Content;
-import org.eclipse.microprofile.openapi.annotations.media.ExampleObject;
-import org.eclipse.microprofile.openapi.annotations.media.Schema;
 import org.eclipse.microprofile.openapi.annotations.parameters.Parameter;
 import org.eclipse.microprofile.openapi.annotations.responses.APIResponse;
 
 import static jakarta.ws.rs.core.MediaType.APPLICATION_JSON;
 
-@Path("/api/config/sync-job")
+@Path("/api/config/synced-assets")
 @Produces(APPLICATION_JSON)
 public class SyncedAssetsResource {
 
@@ -43,5 +39,6 @@ public class SyncedAssetsResource {
 
         syncedAssetsService.retrieveSyncedAssets(id);
 
+        return Response.ok().build();
     }
 }
