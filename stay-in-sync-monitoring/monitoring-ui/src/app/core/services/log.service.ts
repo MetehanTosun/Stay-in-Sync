@@ -19,9 +19,9 @@ export class LogService {
   /**
    * Base URL for the log API endpoints.
    */
-  private baseUrl = '/api/logs';
+  private readonly baseUrl = '/api/logs';
 
-  constructor(private http: HttpClient) {}
+  constructor(private readonly http: HttpClient) {}
 
   /**
    * Fetch logs for a list of transformation IDs within a given time range.

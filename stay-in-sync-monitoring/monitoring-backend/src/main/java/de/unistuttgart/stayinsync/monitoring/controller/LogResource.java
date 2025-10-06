@@ -51,9 +51,6 @@ public class LogResource {
         return Response.ok(logs).build();
     }
 
-    /**
-     * Neuer Endpunkt: Logs für eine Liste von TransformationIds abrufen
-     */
     @POST
     @Path("/transformations")
     @Operation(
