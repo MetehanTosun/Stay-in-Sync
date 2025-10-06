@@ -39,6 +39,7 @@ import { ConfirmationDialogComponent, ConfirmationDialogData } from '../confirma
 import { OpenApiImportService } from '../../../../core/services/openapi-import.service';
 import {JobStatusTagComponent} from '../../../../shared/components/job-status-tag/job-status-tag.component';
 import {Select} from 'primeng/select';
+import {FloatLabel} from 'primeng/floatlabel';
 
 
 /**
@@ -65,6 +66,7 @@ import {Select} from 'primeng/select';
     MonacoEditorModule,
     DragDropModule,
     Select,
+    FloatLabel,
   ],
   templateUrl: './manage-endpoints.component.html',
   styleUrls: ['./manage-endpoints.component.css']
@@ -748,6 +750,7 @@ ${jsonSchema}
    * Create a new endpoint using form data and refresh list upon success.
    */
   addEndpoint() {
+    this.addEndpointVisible = false;
     let requestBodySchema = this.endpointForm.get('requestBodySchema')?.value || '';
     let resolvedSchema = requestBodySchema;
     try {
@@ -1560,6 +1563,7 @@ ${jsonSchema}
   }
 
   public currentOpenApiSpec: string | any = '';
+  addEndpointVisible: boolean = false;
 
   /**
    * Resolves a $ref schema from the current OpenAPI spec (recursively).
@@ -1593,4 +1597,5 @@ ${jsonSchema}
     return schemaRef;
 
   }
+
 }
