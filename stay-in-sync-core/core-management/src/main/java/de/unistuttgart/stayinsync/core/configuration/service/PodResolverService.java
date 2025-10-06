@@ -14,7 +14,7 @@ public class PodResolverService {
     public String resolvePodName(String podName) {
         if(podName == null)
         {
-            return "http://localhost:8095";
+            return "http://localhost:8091";
         }
         Pod pod = kubernetesClient.pods()
                 .inNamespace("umbrella") // or use .inAnyNamespace()
@@ -22,9 +22,9 @@ public class PodResolverService {
                 .get();
 
         if (pod == null) {
-            return "http://localhost:8095";
+            return "http://localhost:8091";
         }
 
-        return pod.getStatus().getPodIP() + ":8095";
+        return "http://" + pod.getStatus().getPodIP() + ":8095";
     }
 }
