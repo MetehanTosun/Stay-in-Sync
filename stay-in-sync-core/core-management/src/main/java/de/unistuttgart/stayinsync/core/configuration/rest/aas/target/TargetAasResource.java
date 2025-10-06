@@ -863,7 +863,8 @@ public class TargetAasResource {
         if (resp.statusCode() >= 200 && resp.statusCode() < 300) {
             return Response.status(Response.Status.CREATED).entity(resp.bodyAsString()).build();
         }
-        return aasService.mapHttpError(resp.statusCode(), resp.statusMessage(), resp.bodyAsString());
+        aasService.throwHttpError(resp.statusCode(), resp.statusMessage(), resp.bodyAsString());
+        return null; // This line will never be reached due to exception
     }
 
     @PUT

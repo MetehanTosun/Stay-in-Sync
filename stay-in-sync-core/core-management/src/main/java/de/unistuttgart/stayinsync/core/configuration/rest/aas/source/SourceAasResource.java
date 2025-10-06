@@ -331,7 +331,8 @@ public class SourceAasResource {
                     
                     return Response.ok(body).build();
                 }
-                return aasService.mapHttpError(sc, resp.statusMessage(), resp.bodyAsString());
+                aasService.throwHttpError(sc, resp.statusMessage(), resp.bodyAsString());
+                return null; // This line will never be reached due to exception
             });
         }
         java.util.List<AasElementLite> elements;
@@ -413,7 +414,8 @@ public class SourceAasResource {
                 
                 return Response.ok(body).build();
             }
-            return aasService.mapHttpError(sc, resp.statusMessage(), resp.bodyAsString());
+            aasService.throwHttpError(sc, resp.statusMessage(), resp.bodyAsString());
+            return null; // This line will never be reached due to exception
         });
     }
 
@@ -466,7 +468,8 @@ public class SourceAasResource {
             snapshotService.applyElementCreate(sourceSystemId, normalizedSmId, parentPath, resp.bodyAsString());
             return Response.status(Response.Status.CREATED).entity(resp.bodyAsString()).build();
         }
-        return aasService.mapHttpError(sc, resp.statusMessage(), resp.bodyAsString());
+        aasService.throwHttpError(sc, resp.statusMessage(), resp.bodyAsString());
+        return null; // This line will never be reached due to exception
     }
 
     @PUT
@@ -485,7 +488,8 @@ public class SourceAasResource {
         if (sc >= 200 && sc < 300) {
             return Response.ok(resp.bodyAsString()).build();
         }
-        return aasService.mapHttpError(sc, resp.statusMessage(), resp.bodyAsString());
+        aasService.throwHttpError(sc, resp.statusMessage(), resp.bodyAsString());
+        return null; // This line will never be reached due to exception
     }
 
     @DELETE
@@ -505,7 +509,8 @@ public class SourceAasResource {
             snapshotService.applyElementDelete(sourceSystemId, normalizedSmId, path);
             return Response.noContent().build();
         }
-        return aasService.mapHttpError(sc, resp.statusMessage(), resp.bodyAsString());
+        aasService.throwHttpError(sc, resp.statusMessage(), resp.bodyAsString());
+        return null; // This line will never be reached due to exception
     }
 
     private String safeBody(HttpResponse<Buffer> resp) {

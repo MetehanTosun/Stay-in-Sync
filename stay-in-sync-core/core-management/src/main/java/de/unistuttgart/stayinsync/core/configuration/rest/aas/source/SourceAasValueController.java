@@ -59,7 +59,8 @@ public class SourceAasValueController {
             if (sc >= 200 && sc < 300) {
                 return Response.ok(resp.bodyAsString()).build();
             }
-            return aasService.mapHttpError(sc, resp.statusMessage(), resp.bodyAsString());
+            aasService.throwHttpError(sc, resp.statusMessage(), resp.bodyAsString());
+            return null; // This line will never be reached due to exception
         });
     }
 
@@ -87,7 +88,8 @@ public class SourceAasValueController {
         if (sc >= 200 && sc < 300) {
             return Response.noContent().build();
         }
-        return aasService.mapHttpError(sc, resp.statusMessage(), resp.bodyAsString());
+        aasService.throwHttpError(sc, resp.statusMessage(), resp.bodyAsString());
+        return null; // This line will never be reached due to exception
     }
 
     private String safeBody(HttpResponse<Buffer> resp) {

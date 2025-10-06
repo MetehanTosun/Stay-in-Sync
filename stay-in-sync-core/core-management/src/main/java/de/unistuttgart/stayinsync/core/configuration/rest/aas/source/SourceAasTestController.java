@@ -131,10 +131,12 @@ public class SourceAasTestController {
                         return Response.ok(result).build();
                     } catch (Exception e) {
                         Log.errorf("Failed to parse submodel refs: %s", e.getMessage());
-                        return aasService.mapHttpError(sc, resp.statusMessage(), resp.bodyAsString());
+                        aasService.throwHttpError(sc, resp.statusMessage(), resp.bodyAsString());
+                        return null; // This line will never be reached due to exception
                     }
                 }
-                return aasService.mapHttpError(sc, resp.statusMessage(), resp.bodyAsString());
+                aasService.throwHttpError(sc, resp.statusMessage(), resp.bodyAsString());
+                return null; // This line will never be reached due to exception
             });
         } else {
             // SNAPSHOT source

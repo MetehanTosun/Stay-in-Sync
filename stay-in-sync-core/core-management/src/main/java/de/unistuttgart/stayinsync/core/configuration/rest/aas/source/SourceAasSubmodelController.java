@@ -78,7 +78,8 @@ public class SourceAasSubmodelController {
             snapshotService.applySubmodelCreate(sourceSystemId, resp.bodyAsString());
             return Response.status(Response.Status.CREATED).entity(resp.bodyAsString()).build();
         }
-        return aasService.mapHttpError(sc, resp.statusMessage(), resp.bodyAsString());
+        aasService.throwHttpError(sc, resp.statusMessage(), resp.bodyAsString());
+        return null; // This line will never be reached due to exception
     }
 
     @PUT
@@ -104,7 +105,8 @@ public class SourceAasSubmodelController {
             snapshotService.applySubmodelCreate(sourceSystemId, resp.bodyAsString());
             return Response.ok(resp.bodyAsString()).build();
         }
-        return aasService.mapHttpError(sc, resp.statusMessage(), resp.bodyAsString());
+        aasService.throwHttpError(sc, resp.statusMessage(), resp.bodyAsString());
+        return null; // This line will never be reached due to exception
     }
 
     @DELETE
@@ -128,7 +130,8 @@ public class SourceAasSubmodelController {
             snapshotService.applySubmodelDelete(sourceSystemId, smId);
             return Response.ok().build();
         }
-        return aasService.mapHttpError(sc, resp.statusMessage(), resp.bodyAsString());
+        aasService.throwHttpError(sc, resp.statusMessage(), resp.bodyAsString());
+        return null; // This line will never be reached due to exception
     }
 
     private static String safeBody(io.vertx.mutiny.ext.web.client.HttpResponse<io.vertx.mutiny.core.buffer.Buffer> resp) {
