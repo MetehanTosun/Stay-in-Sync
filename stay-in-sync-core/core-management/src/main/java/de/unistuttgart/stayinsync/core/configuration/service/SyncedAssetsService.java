@@ -7,6 +7,8 @@ import jakarta.inject.Inject;
 import org.eclipse.microprofile.rest.client.RestClientBuilder;
 
 import java.net.URI;
+import java.util.List;
+import java.util.Map;
 
 @ApplicationScoped
 public class SyncedAssetsService {
@@ -18,14 +20,16 @@ public class SyncedAssetsService {
     @Inject
     TransformationService transformationService;
 
-    public void retrieveSyncedAssets(Long id) {
+    public Map<Long, List<String>> retrieveSyncedAssets(Long id) {
         Transformation transformation = transformationService.findByIdDirect(id);
 
         String workerHostName = transformation.workerHostName;
         String workerAddress = podResolverService.resolvePodName(workerHostName);
 
-        RestClientBuilder.newBuilder()
+        SyncedAssetsClient client = RestClientBuilder.newBuilder()
                 .baseUri(URI.create(workerAddress))
                 .build(SyncedAssetsClient.class);
+
+        return client.getById(id);
     }
 }

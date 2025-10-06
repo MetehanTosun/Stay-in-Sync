@@ -39,6 +39,6 @@ public class SyncedAssetsResource {
 
         syncedAssetsService.retrieveSyncedAssets(id);
 
-        return Response.ok().build();
+        return Response.ok().entity(syncedAssetsService.retrieveSyncedAssets(id)).build();
     }
 }
