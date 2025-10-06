@@ -89,3 +89,34 @@
 #cancel-button:hover {
 	background: #cbd5e1;
 }
+
+.tip-button {
+  background: none;
+  border: none;
+  color: #3c7abd;
+  cursor: pointer;
+  margin-left: 5px;
+  font-size: 14px;
+}
+
+.tip-button:hover {
+  text-decoration: underline;
+}
+.tip-content {
+  margin-top: 0.5rem;
+  background: #f9f9f9;
+  border: 1px solid #d1d5db;
+  border-radius: 4px;
+  padding: 0.75rem;
+  font-size: 0.9rem;
+  color: #333;
+  width: 100%;
+}
+
+.tip-content p {
+  margin: 0 0 0.5rem 0;
+}
+
+.tip-content p:last-child {
+  margin-bottom: 0;
+}

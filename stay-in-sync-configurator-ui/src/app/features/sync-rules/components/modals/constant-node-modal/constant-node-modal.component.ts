@@ -1,3 +1,4 @@
+import { CommonModule } from '@angular/common';
 import { Component, EventEmitter, inject, Input, Output } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { MessageService } from 'primeng/api';
@@ -8,7 +9,7 @@ import { MessageService } from 'primeng/api';
 @Component({
   selector: 'app-constant-node-modal',
   standalone: true,
-  imports: [FormsModule],
+  imports: [FormsModule, CommonModule],
   templateUrl: './constant-node-modal.component.html',
   styleUrl: './constant-node-modal.component.css'
 })
@@ -20,6 +21,7 @@ export class ConstantNodeModalComponent {
   @Output() modalsClosed = new EventEmitter<void>();
 
   constantValue: string = '';
+  isTipPopupVisible: boolean = false;
 
   ngOnInit() {
     this.constantValue = this.currentValue || '';
@@ -53,6 +55,10 @@ export class ConstantNodeModalComponent {
   closeModal() {
     this.constantValue = '';
     this.modalsClosed.emit();
+  }
+
+  toggleTipPopup() {
+    this.isTipPopupVisible = !this.isTipPopupVisible;
   }
   //#endregion
 
