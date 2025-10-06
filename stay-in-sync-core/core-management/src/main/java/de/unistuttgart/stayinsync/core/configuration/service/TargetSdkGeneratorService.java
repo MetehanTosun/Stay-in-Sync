@@ -15,9 +15,7 @@ import io.swagger.v3.oas.models.PathItem;
 import io.swagger.v3.oas.models.parameters.Parameter;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
-
-import java.util.Arrays;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 
 /**
@@ -28,13 +26,8 @@ import java.util.stream.Collectors;
  */
 @ApplicationScoped
 public class TargetSdkGeneratorService {
-
-    @Inject
-    AasSdkGeneratorService aasSdkGeneratorService;
-
     @Inject
     TargetDtsBuilderGeneratorService dtsGeneratorService;
-
     /**
      * Generates the full JavaScript SDK script for a given Transformation entity.
      *
@@ -42,52 +35,53 @@ public class TargetSdkGeneratorService {
      * @return A String containing the complete, executable JavaScript SDK.
      */
     public String generateSdkForTransformation(Transformation transformation) {
+        if (transformation.targetSystemApiRequestConfigurations == null || transformation.targetSystemApiRequestConfigurations.isEmpty()) {
+            return "// No Target ARCs configured for this transformation.\nvar targets = {};";
+        }
         StringBuilder sdkScript = new StringBuilder();
         sdkScript.append("/**\n * Auto-generated Stay-in-Sync SDK\n * Transformation ID: ").append(transformation.id).append("\n */\n");
         sdkScript.append("var targets = {};\n\n");
-
-        // REST SDK Generation
-        if (transformation.targetSystemApiRequestConfigurations != null && !transformation.targetSystemApiRequestConfigurations.isEmpty()) {
-            Map<Long, OpenAPI> parsedSpecs = transformation.targetSystemApiRequestConfigurations.stream()
-                    .map(arc -> arc.targetSystem)
-                    .distinct()
-                    .collect(Collectors.toMap(
-                            system -> system.id,
-                            system -> dtsGeneratorService.parseSpecification(system.openApiSpec),
-                            (existing, replacement) -> existing
-                    ));
-
-            for (TargetSystemApiRequestConfiguration arc : transformation.targetSystemApiRequestConfigurations) {
-                OpenAPI specification = parsedSpecs.get(arc.targetSystem.id);
-                sdkScript.append(generateSdkForArc(arc, specification));
-            }
+        Map<Long, OpenAPI> parsedSpecs = transformation.targetSystemApiRequestConfigurations.stream()
+                .map(arc -> arc.targetSystem)
+                .distinct()
+                .collect(Collectors.toMap(
+                        system -> system.id,
+                        system -> dtsGeneratorService.parseSpecification(system.openApiSpec),
+                        (existing, replacement) -> existing
+                ));
+        for (TargetSystemApiRequestConfiguration arc : transformation.targetSystemApiRequestConfigurations) {
+            OpenAPI specification = parsedSpecs.get(arc.targetSystem.id);
+            sdkScript.append(generateSdkForArc(arc, specification));
         }
-
-        // AAS SDK Generation
-        if (transformation.aasTargetApiRequestConfigurations != null && !transformation.aasTargetApiRequestConfigurations.isEmpty()) {
-            for (AasTargetApiRequestConfiguration aasArc : transformation.aasTargetApiRequestConfigurations) {
-                try {
-                    sdkScript.append(aasSdkGeneratorService.generateSdkForAasArc(aasArc));
-                } catch (JsonProcessingException e) {
-                    throw new CoreManagementException("SDK Generation failed.", "Failed to generate SDK for AAS ARC " + aasArc.alias + ": " + e.getMessage());
-                }
-            }
-        }
-
         return sdkScript.toString();
     }
-
     /**
      * Generates the JavaScript SDK snippet for a single Target ARC.
      */
     private String generateSdkForArc(TargetSystemApiRequestConfiguration arc, OpenAPI specification) {
         String arcAlias = arc.alias;
         StringBuilder arcSdk = new StringBuilder();
-
         // IIFE (Immediately Invoked Function Expression) to isolate arc scopes individually
         arcSdk.append("(function() {\n");
         arcSdk.append("  'use strict';\n\n");
         arcSdk.append(String.format("  const arcAlias = '%s';\n\n", arcAlias));
+
+        // Helper function to build path string for UPDATE
+        arcSdk.append("  function buildPathStringFromProxy(path) {\n");
+        arcSdk.append("    if (!path || path.length === 0) return '';\n");
+        arcSdk.append("    let result = path[0];\n");
+        arcSdk.append("    for (let i = 1; i < path.length; i++) {\n");
+        arcSdk.append("      const segment = path[i];\n");
+        arcSdk.append("      if (!isNaN(parseInt(segment, 10))) {\n");
+        arcSdk.append("        result += '[' + segment + ']';\n");
+        arcSdk.append("      } else {\n");
+        arcSdk.append("        result += '.' + segment;\n");
+        arcSdk.append("      }\n");
+        arcSdk.append("    }\n");
+        arcSdk.append("    return result;\n");
+        arcSdk.append("  }\n\n");
+
+        // UpsertBuilder class segment
         arcSdk.append("  class UpsertBuilder {\n");
         arcSdk.append("    constructor() {\n");
         arcSdk.append("      this.directive = {\n");
@@ -97,28 +91,22 @@ public class TargetSdkGeneratorService {
         arcSdk.append("        updateConfiguration: { parameters: {}, pathParameters: {}, payload: null }\n");
         arcSdk.append("      };\n");
         arcSdk.append("    }\n\n");
-
         // main builder methods (usingCheck, usingCreate, usingUpdate)
         for (TargetSystemApiRequestConfigurationAction action : arc.actions) {
             arcSdk.append(generateActionWrapperMethod(action, specification));
         }
-
         arcSdk.append("    build() {\n");
         arcSdk.append("      return this.directive;\n");
         arcSdk.append("    }\n");
         arcSdk.append("  }\n\n"); // End of UpsertBuilder class
-
         arcSdk.append(String.format("  targets['%s'] = {\n", arcAlias));
         arcSdk.append("    defineUpsert: function () {\n");
         arcSdk.append("      return new UpsertBuilder();\n");
         arcSdk.append("    }\n");
         arcSdk.append("  }\n");
-
         arcSdk.append("})();\n\n"); // End of IIFE
-
         return arcSdk.toString();
     }
-
     /**
      * Generates the main `usingCheck`, `usingCreate`, or `usingUpdate` method.
      * This method creates a temporary builder object for configuring the specific action.
@@ -127,16 +115,20 @@ public class TargetSdkGeneratorService {
         String actionNamePascal = toPascalCase(action.actionRole.name());
         String configKey = action.actionRole.name().toLowerCase() + "Configuration";
 
+        List<String> methodSnippets = new ArrayList<>();
+        methodSnippets.addAll(generateParameterMethodSnippets(action, specification, configKey));
+        generateWithPayloadMethodSnippet(action, specification, configKey).ifPresent(methodSnippets::add);
+
         StringBuilder method = new StringBuilder();
         method.append(String.format("    using%s(configurator) {\n", actionNamePascal));
-        method.append("      const self = this;\n");  // Reference to the main UpsertBuilder instance
+        method.append("      const self = this;\n");
         method.append("      const builder = {\n");
 
-        // Generate all parameter methods (e.g., withQueryParamSku)
-        method.append(generateParameterMethods(action, specification, configKey));
+        method.append(String.join(",\n", methodSnippets));
 
-        // Generate the withPayload method if applicable
-        method.append(generateWithPayloadMethod(action, specification, configKey));
+        if (!methodSnippets.isEmpty()) {
+            method.append("\n");
+        }
 
         method.append("      };\n"); // End of temporary builder object
         method.append("      if (typeof configurator === 'function') {\n");
@@ -146,81 +138,77 @@ public class TargetSdkGeneratorService {
         method.append("    }\n\n");
         return method.toString();
     }
-
     /**
      * Generates the `withPayload` method for the temporary action builder.
      */
-    private String generateWithPayloadMethod(TargetSystemApiRequestConfigurationAction action, OpenAPI specification, String configKey) {
+    private Optional<String> generateWithPayloadMethodSnippet(TargetSystemApiRequestConfigurationAction action, OpenAPI specification, String configKey) {
         Operation operation = findOperation(action.endpoint, specification);
 
         if (operation == null || operation.getRequestBody() == null) {
-            return "";
+            return Optional.empty();
         }
 
-        return String.format(
+        String snippet = String.format(
                 "        withPayload: function(payloadObject) {\n" +
                         "          self.directive.%s.payload = payloadObject;\n" +
                         "          return this;\n" +
-                        "        },\n",
+                        "        }",
                 configKey
         );
+        return Optional.of(snippet);
     }
 
-    private String generateParameterMethods(TargetSystemApiRequestConfigurationAction action, OpenAPI specification, String configKey) {
-        StringBuilder methods = new StringBuilder();
+    private List<String> generateParameterMethodSnippets(TargetSystemApiRequestConfigurationAction action, OpenAPI specification, String configKey) {
+        List<String> methodSnippets = new ArrayList<>();
         Operation operation = findOperation(action.endpoint, specification);
         if (operation == null || operation.getParameters() == null) {
-            return "";
+            return methodSnippets;
         }
 
         for (Parameter parameter : operation.getParameters()) {
+            StringBuilder singleMethod = new StringBuilder();
             String paramName = parameter.getName();
             String paramIn = parameter.getIn();
-
             String methodName = "with" + toPascalCase(paramIn) + "Param" + toPascalCase(paramName);
-            String targetKey = paramIn.equalsIgnoreCase("path") ? "pathParameters" : "parameters";
 
-            methods.append(String.format("        %s: function(value) {\n", methodName));
+            singleMethod.append(String.format("        %s: function(value) {\n", methodName));
 
-            if (action.actionRole == TargetApiRequestConfigurationActionRole.UPDATE && "path".equals(paramIn)) {
-                methods.append("          if (typeof value === 'function') {\n")
-                        .append(
-                                // The function itself is just a marker. We generate a standardized placeholder.
-                                // The name of the parameter in the lambda (e.g., `checkResponse`) is irrelevant here.
-                                // The placeholder path is constructed based on the parameter name from the OpenAPI spec.
-                                String.format("            self.directive.%s.%s['%s'] = '{{checkResponse.body.%s}}';\n", configKey, targetKey, paramName, paramName))
+            if ("path".equalsIgnoreCase(paramIn) && action.actionRole == TargetApiRequestConfigurationActionRole.UPDATE) {
+                String targetKey = "pathParameters";
+                singleMethod.append("          if (typeof value === 'function') {\n")
+                        .append("            const path = [];\n")
+                        .append("            const handler = {\n")
+                        .append("              get: function(target, prop, receiver) {\n")
+                        .append("                path.push(prop);\n")
+                        .append("                return new Proxy({}, handler);\n")
+                        .append("              }\n")
+                        .append("            };\n")
+                        .append("            const pathTracker = new Proxy({}, handler);\n")
+                        .append("            value(pathTracker);\n")
+                        .append("            const pathString = buildPathStringFromProxy(path);\n")
+                        .append(String.format(
+                                "            self.directive.%s.%s['%s'] = `{{checkResponse.body.${pathString}}}`;\n",
+                                configKey, targetKey, paramName))
                         .append("          } else {\n")
-                        .append(
-                                // Static value was provided
-                                String.format("            self.directive.%s.%s['%s'] = value;\n", configKey, targetKey, paramName))
+                        .append(String.format(
+                                "            self.directive.%s.%s['%s'] = value;\n",
+                                configKey, targetKey, paramName))
                         .append("          }\n");
             } else {
-                // Standard case for all other parameters
-                methods.append(String.format(
-                        "          self.directive.%s.%s = self.directive.%s.%s || {};\n",
-                        configKey, targetKey, configKey, targetKey
-                ));
-                if (!"path".equalsIgnoreCase(paramIn)) { // Query and Header params are nested
-                    methods.append(String.format(
-                            "          self.directive.%s.%s.%s = self.directive.%s.%s.%s || {};\n",
-                            configKey, targetKey, paramIn, configKey, targetKey, paramIn
-                    ));
-                    methods.append(String.format(
-                            "          self.directive.%s.%s.%s['%s'] = value;\n",
-                            configKey, targetKey, paramIn, paramName
-                    ));
+                String targetKey = "path".equalsIgnoreCase(paramIn) ? "pathParameters" : "parameters";
+                if ("path".equalsIgnoreCase(paramIn)) {
+                    singleMethod.append(String.format("          self.directive.%s.%s['%s'] = value;\n", configKey, targetKey, paramName));
                 } else {
-                    methods.append(String.format(
-                            "          self.directive.%s.%s['%s'] = value;\n",
-                            configKey, targetKey, paramName
-                    ));
+                    singleMethod.append(String.format("          self.directive.%s.%s = self.directive.%s.%s || {};\n", configKey, targetKey, configKey, targetKey));
+                    singleMethod.append(String.format("          self.directive.%s.%s.%s = self.directive.%s.%s.%s || {};\n", configKey, targetKey, paramIn, configKey, targetKey, paramIn));
+                    singleMethod.append(String.format("          self.directive.%s.%s.%s['%s'] = value;\n", configKey, targetKey, paramIn, paramName));
                 }
             }
-            methods.append("          return this;\n");
-            methods.append("        },\n");
+            singleMethod.append("          return this;\n");
+            singleMethod.append("        }");
+            methodSnippets.add(singleMethod.toString());
         }
-
-        return methods.toString();
+        return methodSnippets;
     }
 
     private Operation findOperation(SyncSystemEndpoint endpoint, OpenAPI specification) {
@@ -231,11 +219,10 @@ public class TargetSdkGeneratorService {
             case "GET" -> pathItem.getGet();
             case "POST" -> pathItem.getPost();
             case "PUT" -> pathItem.getPut();
-            // Add other methods as needed
+
             default -> null;
         };
     }
-
     private String toPascalCase(String s) {
         if (s == null || s.isEmpty()) return s;
         return Arrays.stream(s.split("[_\\- ]"))

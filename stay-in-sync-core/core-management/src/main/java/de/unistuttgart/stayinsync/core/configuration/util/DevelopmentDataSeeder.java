@@ -220,7 +220,8 @@ public class DevelopmentDataSeeder {
                 function transform() {
                     stayinsync.log('Transformation started: Upserting products...', 'INFO');
                 
-                    const productsFromSource = source.Dummy_JSON.syncProductsArc.products;
+                    const products = source.Dummy_JSON.products.products;
+                    const productsFromSource = products.slice(1,2);
                 
                     if (!productsFromSource || productsFromSource.length === 0) {
                         stayinsync.log('No products found in source data. Finishing.', 'WARN');
@@ -229,9 +230,9 @@ public class DevelopmentDataSeeder {
                 
                     const directives = productsFromSource.map(product => {
                         return targets.synchronizeProducts.defineUpsert()
-                            // CHECK: Find product with its sku. Assumption: sku is unique
+                            // CHECK: Find product with its title. Assumption: sku is unique
                             .usingCheck(config => {
-                                config.withQueryParamQ(product.sku); // DummyJSON 'q' is search param
+                                config.withQueryParamQ(product.title); // DummyJSON 'q' is search param
                             })
                             // CREATE: If not found, create new Product
                             .usingCreate(config => {
@@ -243,7 +244,7 @@ public class DevelopmentDataSeeder {
                             })
                             // UPDATE: If found, update price and description
                             .usingUpdate(config => {
-                                config.withPathParamProduct_id(checkResponse => {
+                                config.withPathParamProductId(checkResponse => {
                                     // Assumption: /products/search-answer contains a list and we take the first occurence
                                     return checkResponse.products[0].id;
                                 }).withPayload({
