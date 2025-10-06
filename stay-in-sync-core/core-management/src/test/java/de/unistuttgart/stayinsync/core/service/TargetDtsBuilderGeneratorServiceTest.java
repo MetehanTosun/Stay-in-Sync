@@ -149,9 +149,12 @@ class TargetDtsBuilderGeneratorServiceTest {
     void testParseSpecification() {
         OpenAPI spec = service.parseSpecification(getTestOpenApiSpec());
         assertNotNull(spec);
+
         assertEquals("Product API", spec.getInfo().getTitle());
         assertEquals("1.0.0", spec.getInfo().getVersion());
+
         assertNotNull(spec.getPaths());
+
         assertTrue(spec.getPaths().containsKey("/products"));
         assertTrue(spec.getPaths().containsKey("/products/{id}"));
     }
