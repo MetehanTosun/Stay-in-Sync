@@ -1,9 +1,13 @@
 package de.unistuttgart.stayinsync.core.configuration.service;
 
-import de.unistuttgart.stayinsync.core.configuration.persistence.entities.sync.SyncSystemEndpoint;
-import de.unistuttgart.stayinsync.core.configuration.persistence.entities.sync.TargetSystemApiRequestConfiguration;
-import de.unistuttgart.stayinsync.core.configuration.persistence.entities.sync.TargetSystemApiRequestConfigurationAction;
-import de.unistuttgart.stayinsync.core.configuration.persistence.entities.sync.Transformation;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import de.unistuttgart.stayinsync.core.configuration.domain.entities.aas.AasTargetApiRequestConfiguration;
+import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.SyncSystemEndpoint;
+import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.TargetSystemApiRequestConfiguration;
+import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.TargetSystemApiRequestConfigurationAction;
+import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.Transformation;
+import de.unistuttgart.stayinsync.core.configuration.exception.CoreManagementException;
+import de.unistuttgart.stayinsync.core.configuration.service.aas.AasSdkGeneratorService;
 import de.unistuttgart.stayinsync.transport.domain.TargetApiRequestConfigurationActionRole;
 import io.swagger.v3.oas.models.OpenAPI;
 import io.swagger.v3.oas.models.Operation;
@@ -26,6 +30,9 @@ import java.util.stream.Collectors;
 public class TargetSdkGeneratorService {
 
     @Inject
+    AasSdkGeneratorService aasSdkGeneratorService;
+
+    @Inject
     TargetDtsBuilderGeneratorService dtsGeneratorService;
 
     /**
@@ -35,26 +42,36 @@ public class TargetSdkGeneratorService {
      * @return A String containing the complete, executable JavaScript SDK.
      */
     public String generateSdkForTransformation(Transformation transformation) {
-        if (transformation.targetSystemApiRequestConfigurations == null || transformation.targetSystemApiRequestConfigurations.isEmpty()) {
-            return "// No Target ARCs configured for this transformation.\nvar targets = {};";
-        }
-
         StringBuilder sdkScript = new StringBuilder();
         sdkScript.append("/**\n * Auto-generated Stay-in-Sync SDK\n * Transformation ID: ").append(transformation.id).append("\n */\n");
         sdkScript.append("var targets = {};\n\n");
 
-        Map<Long, OpenAPI> parsedSpecs = transformation.targetSystemApiRequestConfigurations.stream()
-                .map(arc -> arc.targetSystem)
-                .distinct()
-                .collect(Collectors.toMap(
-                        system -> system.id,
-                        system -> dtsGeneratorService.parseSpecification(system.openApiSpec),
-                        (existing, replacement) -> existing
-                ));
+        // REST SDK Generation
+        if (transformation.targetSystemApiRequestConfigurations != null && !transformation.targetSystemApiRequestConfigurations.isEmpty()) {
+            Map<Long, OpenAPI> parsedSpecs = transformation.targetSystemApiRequestConfigurations.stream()
+                    .map(arc -> arc.targetSystem)
+                    .distinct()
+                    .collect(Collectors.toMap(
+                            system -> system.id,
+                            system -> dtsGeneratorService.parseSpecification(system.openApiSpec),
+                            (existing, replacement) -> existing
+                    ));
 
-        for (TargetSystemApiRequestConfiguration arc : transformation.targetSystemApiRequestConfigurations) {
-            OpenAPI specification = parsedSpecs.get(arc.targetSystem.id);
-            sdkScript.append(generateSdkForArc(arc, specification));
+            for (TargetSystemApiRequestConfiguration arc : transformation.targetSystemApiRequestConfigurations) {
+                OpenAPI specification = parsedSpecs.get(arc.targetSystem.id);
+                sdkScript.append(generateSdkForArc(arc, specification));
+            }
+        }
+
+        // AAS SDK Generation
+        if (transformation.aasTargetApiRequestConfigurations != null && !transformation.aasTargetApiRequestConfigurations.isEmpty()) {
+            for (AasTargetApiRequestConfiguration aasArc : transformation.aasTargetApiRequestConfigurations) {
+                try {
+                    sdkScript.append(aasSdkGeneratorService.generateSdkForAasArc(aasArc));
+                } catch (JsonProcessingException e) {
+                    throw new CoreManagementException("SDK Generation failed.", "Failed to generate SDK for AAS ARC " + aasArc.alias + ": " + e.getMessage());
+                }
+            }
         }
 
         return sdkScript.toString();

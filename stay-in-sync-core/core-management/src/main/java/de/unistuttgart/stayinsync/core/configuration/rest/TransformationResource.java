@@ -4,6 +4,8 @@ import de.unistuttgart.stayinsync.core.configuration.persistence.entities.sync.T
 import de.unistuttgart.stayinsync.core.configuration.exception.CoreManagementException;
 import de.unistuttgart.stayinsync.core.configuration.mapping.TransformationMapper;
 import de.unistuttgart.stayinsync.core.configuration.mapping.TransformationScriptMapper;
+import de.unistuttgart.stayinsync.core.configuration.mapping.targetsystem.AasTargetApiRequestConfigurationMapper;
+import de.unistuttgart.stayinsync.core.configuration.mapping.targetsystem.RequestConfigurationMapper;
 import de.unistuttgart.stayinsync.core.configuration.rest.dtos.TransformationAssemblyDTO;
 import de.unistuttgart.stayinsync.core.configuration.rest.dtos.TransformationDetailsDTO;
 import de.unistuttgart.stayinsync.core.configuration.rest.dtos.TransformationShellDTO;
@@ -27,6 +29,7 @@ import org.eclipse.microprofile.openapi.annotations.tags.Tag;
 import org.eclipse.microprofile.reactive.messaging.Channel;
 import org.jboss.resteasy.reactive.RestStreamElementType;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -49,6 +52,12 @@ public class TransformationResource {
 
     @Inject
     TransformationScriptMapper scriptMapper;
+
+    @Inject
+    RequestConfigurationMapper targetArcMapper;
+
+    @Inject
+    AasTargetApiRequestConfigurationMapper aasTargetArcMapper;
 
     @Inject
     @Channel("transformation-status-updates")
@@ -135,7 +144,15 @@ public class TransformationResource {
     @Operation(summary = "Gets the associated Target ARCs for a Transformation",
             description = "Provides the currently actively bound Target ARCs for a Transformation")
     public Response getTransformationTargetArcs(@Parameter(name = "id", required = true) @PathParam("id") Long id) {
-        return Response.ok(transformationService.getTargetArcs(id)).build();
+        Transformation transformation = transformationService.findById(id)
+                .orElseThrow(() -> new CoreManagementException(Response.Status.NOT_FOUND,"Transformation not found", "Transformation not found"));
+
+        List<Object> allArcs = new ArrayList<>();
+        allArcs.addAll(targetArcMapper.mapToGetDTOList(new ArrayList<>(transformation.targetSystemApiRequestConfigurations)));
+        allArcs.addAll(transformation.aasTargetApiRequestConfigurations.stream()
+                .map(aasTargetArcMapper::mapToDto).toList());
+
+        return Response.ok(allArcs).build();
     }
 
     @PUT

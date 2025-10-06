@@ -1,9 +1,11 @@
 package de.unistuttgart.stayinsync.core.configuration.service;
 
-import de.unistuttgart.stayinsync.core.configuration.persistence.entities.sync.SourceSystemApiRequestConfiguration;
-import de.unistuttgart.stayinsync.core.configuration.persistence.entities.sync.TargetSystemApiRequestConfiguration;
-import de.unistuttgart.stayinsync.core.configuration.persistence.entities.sync.Transformation;
-import de.unistuttgart.stayinsync.core.configuration.persistence.entities.sync.TransformationScript;
+import de.unistuttgart.stayinsync.core.configuration.domain.entities.aas.AasSourceApiRequestConfiguration;
+import de.unistuttgart.stayinsync.core.configuration.domain.entities.aas.AasTargetApiRequestConfiguration;
+import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.SourceSystemApiRequestConfiguration;
+import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.TargetSystemApiRequestConfiguration;
+import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.Transformation;
+import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.TransformationScript;
 import de.unistuttgart.stayinsync.core.configuration.exception.CoreManagementException;
 import de.unistuttgart.stayinsync.core.configuration.mapping.TransformationScriptMapper;
 import de.unistuttgart.stayinsync.core.configuration.rest.dtos.TransformationScriptDTO;
@@ -34,8 +36,6 @@ public class TransformationScriptService {
 
     @Inject
     TargetSdkGeneratorService targetSdkGeneratorService;
-
-
 
     public TransformationScript create(TransformationScriptDTO dto) {
         Log.debugf("Creating new transformation script with name: %s", dto.name());
@@ -85,7 +85,9 @@ public class TransformationScriptService {
 
         script.hash = generateSha256Hash(dto.javascriptCode());
 
-        Set<SourceSystemApiRequestConfiguration> scriptArcs = new HashSet<>();
+        Set<SourceSystemApiRequestConfiguration> requiredRestArcs = new HashSet<>();
+        Set<AasSourceApiRequestConfiguration> requiredAasArcs = new HashSet<>();
+
         if(dto.requiredArcAliases() != null){
             for (String combinedAlias : dto.requiredArcAliases()) {
                 String[] parts = combinedAlias.split("\\.",2);
@@ -93,39 +95,78 @@ public class TransformationScriptService {
                     String systemName = parts[0];
                     String arcName = parts[1];
 
-                    Log.infof("Found systemName: %s and arcName: %s", systemName, arcName);
+                    Log.infof("Resolving ARC: system='%s', alias='%s'", systemName, arcName);
 
-                    SourceSystemApiRequestConfiguration foundArc = SourceSystemApiRequestConfiguration.findBySourceSystemAndArcName(systemName, arcName)
-                            .orElseThrow(() -> new CoreManagementException(Response.Status.BAD_REQUEST, "ARC Not Found",
-                                    "The ARC specified in the script '%s' could not be found.", combinedAlias));
-                    scriptArcs.add(foundArc);
+                    Optional<SourceSystemApiRequestConfiguration> restArcOpt = SourceSystemApiRequestConfiguration
+                            .findBySourceSystemAndArcName(systemName, arcName);
+
+                    if (restArcOpt.isPresent()) {
+                        requiredRestArcs.add(restArcOpt.get());
+                        continue;
+                    }
+
+                    Optional<AasSourceApiRequestConfiguration> aasArcOpt = AasSourceApiRequestConfiguration
+                            .findBySourceSystemAndArcName(systemName, arcName);
+
+                    if (aasArcOpt.isPresent()) {
+                        requiredAasArcs.add(aasArcOpt.get());
+                        continue;
+                    }
+
+                    throw new CoreManagementException(Response.Status.BAD_REQUEST, "ARC Not Found",
+                            "The ARC specified in the script '%s' could not be found as a REST or AAS ARC.", combinedAlias);
                 }
             }
         }
-        Log.infof("Found %d unique ARCs required by the script", scriptArcs.size());
+        Log.infof("Found %d unique ARCs required by the script", requiredRestArcs.size());
 
         Set<SourceSystemApiRequestConfiguration> finalArcSet = new HashSet<>();
-        finalArcSet.addAll(scriptArcs);
 
+        finalArcSet.addAll(requiredRestArcs);
+
+        // TODO: Handle Union for ARCs with Graph and Script, since they can have a symmetric difference
+        // Start with fresh set, add present ARCs for graph and script respectively.
+
+        // Bind ManyToMany
         transformation.sourceSystemApiRequestConfigurations = finalArcSet;
         finalArcSet.forEach(sourceSystemApiRequestConfiguration -> sourceSystemApiRequestConfiguration.transformations.add(transformation));
+        Log.infof("Bound %d REST ARCs to transformation %d", requiredRestArcs.size(), transformationId);
 
-        Log.infof("Final total bound ARCs for transformation %d: %d", transformationId, finalArcSet.size());
+        transformation.aasSourceApiRequestConfigurations = requiredAasArcs;
+        requiredAasArcs.forEach(arc -> arc.transformations.add(transformation));
+        Log.infof("Bound %d AAS ARCs to transformation %d", requiredAasArcs.size(), transformationId);
 
-        Set<TargetSystemApiRequestConfiguration> targetArcs = new HashSet<>();
-        if (dto.targetArcIds() != null && !dto.targetArcIds().isEmpty()) {
-            List<TargetSystemApiRequestConfiguration> foundTargetArcs = TargetSystemApiRequestConfiguration.list("id in ?1", dto.targetArcIds());
 
-            if (foundTargetArcs.size() != dto.targetArcIds().size()) {
-                throw new CoreManagementException(Response.Status.BAD_REQUEST, "Target ARC Not Found",
-                        "One or more specified Target ARC IDs could not be found.");
+        transformation.targetSystemApiRequestConfigurations.clear();
+        transformation.aasTargetApiRequestConfigurations.clear();
+
+        // REST Target Arc Binding
+        if (dto.restTargetArcIds() != null && !dto.restTargetArcIds().isEmpty()) {
+            List<TargetSystemApiRequestConfiguration> foundRestArcs = TargetSystemApiRequestConfiguration.list("id in ?1", dto.restTargetArcIds());
+            if (foundRestArcs.size() != dto.restTargetArcIds().size()) {
+                throw new CoreManagementException(Response.Status.BAD_REQUEST, "REST Target ARC Not Found",
+                        "One or more specified REST Target ARC IDs could not be found.");
             }
-            targetArcs.addAll(foundTargetArcs);
+            transformation.targetSystemApiRequestConfigurations.addAll(foundRestArcs);
+            foundRestArcs.forEach(arc -> arc.transformations.add(transformation));
+            Log.infof("Bound %d REST Target ARCs to transformation %d", foundRestArcs.size(), transformationId);
+        } else {
+            Log.info("No REST Target ARCs to bind.");
         }
 
-        transformation.targetSystemApiRequestConfigurations = targetArcs;
-        targetArcs.forEach(arc -> arc.transformations.add(transformation));
-        Log.infof("Bound %d Target ARCs to transformation %d", targetArcs.size(), transformationId);
+        // AAS Target Arc Binding
+        if (dto.aasTargetArcIds() != null && !dto.aasTargetArcIds().isEmpty()) {
+            List<AasTargetApiRequestConfiguration> foundAasArcs = AasTargetApiRequestConfiguration.list("id in ?1", dto.aasTargetArcIds());
+            if (foundAasArcs.size() != dto.aasTargetArcIds().size()) {
+                throw new CoreManagementException(Response.Status.BAD_REQUEST, "AAS Target ARC Not Found",
+                        "One or more specified AAS Target ARC IDs could not be found.");
+            }
+            transformation.aasTargetApiRequestConfigurations.addAll(foundAasArcs);
+            foundAasArcs.forEach(arc -> arc.transformations.add(transformation));
+            Log.infof("Bound %d AAS Target ARCs to transformation %d", foundAasArcs.size(), transformationId);
+        } else {
+            Log.info("No AAS Target ARCs to bind.");
+        }
 
         // SDK Code Generation for graalJS Context inside SyncNode
         String generatedSdkCode = targetSdkGeneratorService.generateSdkForTransformation(transformation);

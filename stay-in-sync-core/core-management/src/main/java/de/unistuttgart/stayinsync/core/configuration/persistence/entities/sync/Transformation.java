@@ -2,6 +2,8 @@ package de.unistuttgart.stayinsync.core.configuration.persistence.entities.sync;
 
 import com.fasterxml.jackson.annotation.JsonBackReference;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
+import de.unistuttgart.stayinsync.core.configuration.domain.entities.aas.AasSourceApiRequestConfiguration;
+import de.unistuttgart.stayinsync.core.configuration.domain.entities.aas.AasTargetApiRequestConfiguration;
 import de.unistuttgart.stayinsync.transport.domain.JobDeploymentStatus;
 import io.quarkus.hibernate.orm.panache.PanacheEntity;
 import jakarta.persistence.*;
@@ -44,6 +46,14 @@ public class Transformation extends PanacheEntity {
 
     @ManyToMany
     @JoinTable(
+            name = "transformation_aas_source_arc_config",
+            joinColumns = @JoinColumn(name = "transformation_id"),
+            inverseJoinColumns = @JoinColumn(name = "aas_source_arc_config_id")
+    )
+    public Set<AasSourceApiRequestConfiguration> aasSourceApiRequestConfigurations = new HashSet<>();
+
+    @ManyToMany
+    @JoinTable(
             name = "transformation_sourceVariable",
             joinColumns = @JoinColumn(name = "transformation_id"),
             inverseJoinColumns = @JoinColumn(name = "source_variable_id")
@@ -57,6 +67,14 @@ public class Transformation extends PanacheEntity {
             inverseJoinColumns = @JoinColumn(name = "target_system_api_request_configuration_id")
     )
     public Set<TargetSystemApiRequestConfiguration> targetSystemApiRequestConfigurations = new HashSet<>();
+
+    @ManyToMany
+    @JoinTable(
+            name = "transformation_aas_target_arc_config",
+            joinColumns = @JoinColumn(name = "transformation_id"),
+            inverseJoinColumns = @JoinColumn(name = "aas_target_arc_config_id")
+    )
+    public Set<AasTargetApiRequestConfiguration> aasTargetApiRequestConfigurations = new HashSet<>();
 
     public static List<Transformation> listAllWithoutSyncJob() {
         return find("syncJob is null").list();

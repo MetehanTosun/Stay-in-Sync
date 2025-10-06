@@ -1,14 +1,20 @@
 package de.unistuttgart.stayinsync.core.configuration.rest;
 
-import de.unistuttgart.stayinsync.core.configuration.persistence.entities.sync.SourceSystemApiRequestConfiguration;
+import de.unistuttgart.stayinsync.core.configuration.domain.entities.aas.AasSourceApiRequestConfiguration;
+import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.SourceSystemApiRequestConfiguration;
+import de.unistuttgart.stayinsync.core.configuration.exception.CoreManagementException;
+import de.unistuttgart.stayinsync.core.configuration.mapping.AasApiRequestConfigurationMapper;
 import de.unistuttgart.stayinsync.core.configuration.mapping.SourceSystemApiRequestConfigurationFullUpdateMapper;
 import de.unistuttgart.stayinsync.core.configuration.rest.dtos.CreateSourceArcDTO;
 import de.unistuttgart.stayinsync.core.configuration.rest.dtos.CreateRequestConfigurationDTO;
 import de.unistuttgart.stayinsync.core.configuration.rest.dtos.GetRequestConfigurationDTO;
+import de.unistuttgart.stayinsync.core.configuration.rest.dtos.aas.AasArcDTO;
 import de.unistuttgart.stayinsync.core.configuration.service.SourceSystemApiRequestConfigurationService;
+import de.unistuttgart.stayinsync.core.configuration.service.aas.AasApiRequestConfigurationService;
 import io.quarkus.logging.Log;
 import jakarta.inject.Inject;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotNull;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.*;
 import org.eclipse.microprofile.openapi.annotations.Operation;
@@ -21,9 +27,7 @@ import org.eclipse.microprofile.openapi.annotations.parameters.RequestBody;
 import org.eclipse.microprofile.openapi.annotations.responses.APIResponse;
 
 import java.net.URI;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import static jakarta.ws.rs.core.MediaType.APPLICATION_JSON;
@@ -35,6 +39,9 @@ public class RequestConfigurationResource {
 
     @Inject
     SourceSystemApiRequestConfigurationFullUpdateMapper fullUpdateMapper;
+
+    @Inject
+    AasApiRequestConfigurationMapper aasArcMapper;
 
     @POST
     @Consumes(APPLICATION_JSON)
@@ -111,16 +118,22 @@ public class RequestConfigurationResource {
             return Response.ok(Map.of()).build();
         }
 
-        List<Object[]> results = SourceSystemApiRequestConfiguration.findArcsGroupedBySourceSystemName(sourceSystemNames);
+        Map<String, List<Object>> groupedArcs = new HashMap<>();
 
-        Map<String, List<GetRequestConfigurationDTO>> groupedArcs = results.stream()
-                .collect(Collectors.groupingBy(
-                        row -> (String) row[0],
-                        Collectors.mapping(
-                                row -> fullUpdateMapper.mapToDTOGet((SourceSystemApiRequestConfiguration) row[1]),
-                                Collectors.toList()
-                        )
-                ));
+        List<Object[]> restResults = SourceSystemApiRequestConfiguration.findArcsGroupedBySourceSystemName(sourceSystemNames);
+        restResults.forEach(row ->{
+            String systemName = (String) row[0];
+            GetRequestConfigurationDTO arcDto = fullUpdateMapper.mapToDTOGet((SourceSystemApiRequestConfiguration) row[1]);
+            groupedArcs.computeIfAbsent(systemName, k -> new ArrayList<>()).add(arcDto);
+        });
+
+        List<AasSourceApiRequestConfiguration> aasResults = AasSourceApiRequestConfiguration.list("sourceSystem.name in ?1", sourceSystemNames);
+
+        aasResults.forEach(aasArc -> {
+            String systemName = aasArc.sourceSystem.name;
+            AasArcDTO aasArcDTO = aasArcMapper.mapToDto(aasArc);
+            groupedArcs.computeIfAbsent(systemName, k -> new ArrayList<>()).add(aasArcDTO);
+        });
 
         sourceSystemNames.forEach(name -> groupedArcs.putIfAbsent(name, List.of()));
 
@@ -157,12 +170,12 @@ public class RequestConfigurationResource {
                     schema = @Schema(implementation = GetRequestConfigurationDTO.class, type = SchemaType.ARRAY)
             )
     )
-    public List<GetRequestConfigurationDTO> getAllSourceSystemRequestConfigurationsBySourceSystemId(@Parameter(name = "source_system_filter", description = "An optional filter parameter to filter results by source system id") @PathParam("sourceSystemId") Long sourceSystemId) {
+    public List<Object> getAllSourceSystemRequestConfigurationsBySourceSystemId(@Parameter(name = "source_system_filter", description = "An optional filter parameter to filter results by source system id") @PathParam("sourceSystemId") Long sourceSystemId) {
         var apiRequestConfigurations = sourceSystemApiRequestConfigurationService.findAllRequestConfigurationsWithSourceSystemIdLike(sourceSystemId);
 
         Log.debugf("Total number of api request configurations by source-system: %d", apiRequestConfigurations.size());
 
-        return fullUpdateMapper.mapToDTOList(apiRequestConfigurations);
+        return apiRequestConfigurations;
     }
 
 
