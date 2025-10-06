@@ -35,6 +35,7 @@ import { ConfirmDialog } from 'primeng/confirmdialog';
 import {Inplace} from 'primeng/inplace';
 import { ArcWizardAasComponent } from '../arc-wizard-aas/arc-wizard-aas.component';
 import { AasService } from '../../source-system/services/aas.service';
+import { ToolbarModule } from 'primeng/toolbar';
 
 interface MonacoExtraLib {
   uri: String;
@@ -65,6 +66,7 @@ interface MonacoExtraLib {
     InputTextModule,
     TargetArcPanelComponent,
     Inplace,
+    ToolbarModule
   ],
 })
 export class ScriptEditorPageComponent implements OnInit, OnDestroy {

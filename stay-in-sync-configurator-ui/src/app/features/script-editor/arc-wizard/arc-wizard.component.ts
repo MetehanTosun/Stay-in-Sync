@@ -46,6 +46,9 @@ import {ArcStateService} from '../../../core/services/arc-state.service';
 import {InputNumberModule} from 'primeng/inputnumber';
 import {TableModule} from 'primeng/table';
 import {InputSwitchModule} from 'primeng/inputswitch';
+import { ProgressSpinnerModule } from 'primeng/progressspinner';
+import { TabViewModule } from 'primeng/tabview';
+import { AccordionModule } from 'primeng/accordion';
 
 // TEMPORARY: FIX MESSAGING TOASTS AS A PATTERN
 interface Message {
@@ -68,7 +71,10 @@ interface Message {
     DropdownModule,
     ButtonModule,
     DividerModule,
+    AccordionModule,
     TableModule,
+    ProgressSpinnerModule,
+    TabViewModule,
     SchemaViewerComponent,
     InputNumberModule,
     InputSwitchModule,

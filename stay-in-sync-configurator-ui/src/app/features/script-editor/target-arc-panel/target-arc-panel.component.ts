@@ -29,6 +29,7 @@ import { MenuModule } from 'primeng/menu';
 import { AasService } from '../../source-system/services/aas.service';
 import { UpdateTransformationRequest } from '../../transformation/models/transformation.model';
 import { TargetArcWizardAasComponent } from '../target-arc-wizard-aas/target-arc-wizard-aas.component';
+import { SplitButtonModule } from 'primeng/splitbutton';
 
 type LibrarySystem = TargetSystem & {
   arcs: AnyTargetArc[];

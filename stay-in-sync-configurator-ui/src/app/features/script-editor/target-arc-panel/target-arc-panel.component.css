@@ -1,15 +1,71 @@
-:host ::ng-deep .compact-treetable .p-treetable-tbody > tr > td {
-  padding-top: 0.3rem;
-  padding-bottom: 0.3rem;
+.custom-panel-header {
+  width: 100%; /* Ensure the container takes full width of the panel header */
 }
 
-:host ::ng-deep .compact-treetable .p-treetable-toggler {
-  height: 1.5rem;
-  width: 1.5rem;
-  margin-right: 0.25rem;
+.header-actions {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.75rem; /* Space between the title and the buttons */
 }
 
-:host ::ng-deep .compact-treetable .p-treetable-thead > tr > th {
-  padding-top: 0.5rem;
-  padding-bottom: 0.5rem;
+/*
+  Main Panel Layout & Scrolling
+*/
+:host ::ng-deep .p-panel-content {
+  padding: 0; /* Remove padding to make accordion flush */
+  overflow-y: auto;
+  
+  /* Modern scrollbar */
+  scrollbar-width: thin;
+  scrollbar-color: var(--surface-400) transparent;
+}
+:host ::ng-deep .p-panel-content::-webkit-scrollbar {
+  width: 6px;
+}
+:host ::ng-deep .p-panel-content::-webkit-scrollbar-track {
+  background: transparent;
+}
+:host ::ng-deep .p-panel-content::-webkit-scrollbar-thumb {
+  background-color: var(--surface-400);
+  border-radius: 10px;
+}
+
+/*
+  Accordion & List Styling (Mirrors the left panel)
+*/
+:host ::ng-deep .p-accordion .p-accordion-header .p-accordion-header-link {
+  padding: 0.6rem 1rem;
+  font-size: 0.9rem;
+  font-weight: normal;
+}
+
+/* Padding for the content area inside each accordion tab */
+:host ::ng-deep .p-accordion .p-accordion-content {
+  padding: 0.5rem 1rem;
+}
+
+/* Individual ARC item in the list */
+.arc-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.5rem;
+  border-radius: var(--border-radius);
+  transition: background-color 0.2s;
+  font-size: 0.9rem;
+}
+
+.arc-item:hover {
+  background-color: var(--surface-hover);
+}
+
+/* Actions appear on hover */
+.arc-actions {
+  display: flex;
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+.arc-item:hover .arc-actions {
+  opacity: 1;
 }

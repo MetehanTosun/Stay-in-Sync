@@ -1,0 +1,125 @@
+/*
+  Main Layout Control
+*/
+:host {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+}
+
+/*
+  Accordion 1: The Data Sources List
+*/
+.data-sources-accordion {
+  flex-grow: 1; 
+  display: flex;
+  flex-direction: column;
+  min-height: 0; 
+  border-bottom: none;
+  border-radius: 0;
+}
+
+:host ::ng-deep .data-sources-accordion > .p-accordion-tab > .p-toggleable-content > .p-accordion-content > .p-accordioncontent-content {
+  overflow-y: auto !important;
+  height: 100%;
+}
+
+:host ::ng-deep .data-sources-accordion .p-accordion-content {
+  padding: 0;
+  flex-grow: 1; /* Allow content panel to grow */
+  display: flex; /* Make it a flex container for its child */
+  flex-direction: column;
+  min-height: 0;
+}
+
+/*
+  Accordion 2: The "Sticky" Footer
+*/
+.active-script-accordion {
+  flex-shrink: 0;
+  border-top: 1px solid var(--surface-border);
+}
+
+/*
+  General Accordion Styling
+*/
+/* Outer headers ("Data Sources", "Active in Script") */
+:host ::ng-deep .p-accordion > .p-accordion-tab > .p-accordion-header > .p-accordion-header-link {
+  padding: 0.6rem 1rem;
+  font-size: 0.9rem;
+  font-weight: normal;
+  border-radius: 0;
+}
+
+/* Inner headers ("Dummy_JSON") - Made much thinner */
+:host ::ng-deep .inner-accordion .p-accordion-header-link {
+   padding: 0.4rem 1rem !important; /* Thinner padding */
+   font-size: 0.85rem !important;    /* Smaller font */
+   background-color: var(--surface-section) !important;
+}
+
+/* Padding for the content of the inner accordion */
+:host ::ng-deep .inner-accordion .p-accordion-content {
+  padding: 0.5rem 1rem 1rem 1rem;
+}
+
+:host ::ng-deep .data-sources-accordion > .p-accordion-tab > .p-toggleable-content > .p-accordion-content {
+  padding: 0;
+}
+
+
+/* Modern Scrollbar for the correct container */
+:host ::ng-deep .data-sources-accordion > .p-accordion-tab > .p-toggleable-content > .p-accordion-content > .p-accordioncontent-content {
+  scrollbar-width: thin;
+  scrollbar-color: var(--surface-400) transparent;
+}
+:host ::ng-deep .data-sources-accordion > .p-accordion-tab > .p-toggleable-content > .p-accordion-content > .p-accordioncontent-content::-webkit-scrollbar {
+  width: 6px;
+}
+
+/* Endpoint & ARC List Styling (Unchanged) */
+.endpoint-group {
+  border-bottom: 1px solid var(--surface-border);
+  padding-bottom: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+.endpoint-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.25rem 0;
+}
+.endpoint-path-wrapper {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  cursor: default;
+}
+.arc-list {
+  padding-left: 1rem;
+  margin-left: 0.25rem;
+  border-left: 1px solid var(--surface-border);
+  margin-top: 0.25rem;
+}
+.arc-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.25rem 0.5rem;
+  border-radius: var(--border-radius);
+  transition: background-color 0.2s;
+  font-size: 0.9rem;
+}
+.arc-item:hover {
+  background-color: var(--surface-hover);
+}
+.arc-actions {
+  display: flex;
+  gap: 0.25rem;
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+.arc-item:hover .arc-actions {
+  opacity: 1;
+}

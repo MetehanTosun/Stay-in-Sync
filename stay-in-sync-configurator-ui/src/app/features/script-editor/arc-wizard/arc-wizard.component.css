@@ -1,3 +1,4 @@
+/* Context Header Styles (Unchanged) */
 .context-header {
   display: flex;
   align-items: center;
@@ -5,10 +6,9 @@
   background-color: var(--surface-b);
   border: 1px solid var(--surface-d);
   padding: 0.75rem 1rem;
-  border-radius: 6px;
+  border-radius: var(--border-radius);
   margin-bottom: 1.5rem;
 }
-
 .http-method {
   font-weight: bold;
   padding: 0.25rem 0.5rem;
@@ -21,9 +21,29 @@
 .endpoint-path {
   font-size: 1rem;
 }
-
 .http-method.get { background-color: #22c55e; }
 .http-method.post { background-color: #3b82f6; }
 .http-method.put { background-color: #f97316; }
 .http-method.delete { background-color: #ef4444; }
 .http-method.patch { background-color: #eab308; }
+
+
+/* Main Dialog and Tab Styles */
+:host ::ng-deep .p-dialog .p-dialog-content {
+    overflow-y: auto;
+}
+
+:host ::ng-deep .p-tabview .p-tabview-panel {
+    /* More vertical space for a less cramped feel */
+    padding: 1.5rem 0.5rem; 
+}
+
+/* Accordion and Table Styles */
+:host ::ng-deep .p-accordion .p-accordion-content {
+    padding: 0;
+}
+
+/* Ensure table header text is not overly large */
+:host ::ng-deep .p-datatable-sm .p-datatable-thead > tr > th {
+    font-size: 0.9rem;
+}
