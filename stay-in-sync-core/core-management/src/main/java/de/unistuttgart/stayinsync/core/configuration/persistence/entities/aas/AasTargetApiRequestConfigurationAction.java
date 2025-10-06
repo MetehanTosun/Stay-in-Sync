@@ -1,4 +1,4 @@
-package de.unistuttgart.stayinsync.core.configuration.domain.entities.aas;
+package de.unistuttgart.stayinsync.core.configuration.persistence.entities.aas;
 
 import de.unistuttgart.stayinsync.transport.domain.AasTargetActionRole;
 import io.quarkus.hibernate.orm.panache.PanacheEntity;

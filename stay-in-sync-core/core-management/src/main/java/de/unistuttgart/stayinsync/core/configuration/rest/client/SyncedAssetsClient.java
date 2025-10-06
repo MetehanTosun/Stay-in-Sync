@@ -5,7 +5,7 @@ import jakarta.ws.rs.Path;
 import jakarta.ws.rs.QueryParam;
 import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
 
-@Path("/extensions")
+@Path("/api/sync-node/asset-cache")
 @RegisterRestClient
 public interface SyncedAssetsClient {
 

@@ -1,12 +1,13 @@
-package de.unistuttgart.stayinsync.core.configuration.domain.entities.aas;
+package de.unistuttgart.stayinsync.core.configuration.persistence.entities.aas;
 
-import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.SourceSystem;
-import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.Transformation;
+import de.unistuttgart.stayinsync.core.configuration.persistence.entities.sync.SourceSystem;
+import de.unistuttgart.stayinsync.core.configuration.persistence.entities.sync.Transformation;
 import io.quarkus.hibernate.orm.panache.PanacheEntity;
 import jakarta.persistence.*;
 
 import java.util.ArrayList;
 import java.util.HashSet;
+
 import java.util.List;
 import java.util.Set;
 
@@ -26,5 +27,5 @@ public class AasTargetApiRequestConfiguration extends PanacheEntity {
 
     @OneToMany(mappedBy = "aasTargetApiRequestConfiguration", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER)
     @OrderBy("id")
-    public List<AasTargetApiRequestConfigurationAction> actions = new ArrayList<>();
+    public List<de.unistuttgart.stayinsync.core.configuration.persistence.entities.aas.AasTargetApiRequestConfigurationAction> actions = new ArrayList<>();
 }
