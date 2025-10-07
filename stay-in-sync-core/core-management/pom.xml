@@ -55,7 +55,10 @@
             <artifactId>quarkus-rest-client</artifactId>
         </dependency>
 
-        <!-- Reactive REST client (we will use it incrementally) -->
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-rest-client-jackson</artifactId>
+        </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-jdbc-mariadb</artifactId>
