@@ -103,8 +103,8 @@ public class SourceAasValueControllerTest {
                .thenReturn(Map.of("Authorization", "Bearer token"));
         Mockito.when(traversal.getElement(anyString(), anyString(), anyString(), anyMap()))
                .thenReturn(Uni.createFrom().item(mockResponse));
-        Mockito.when(aasService.mapHttpError(404, "OK", "Element not found"))
-               .thenReturn(jakarta.ws.rs.core.Response.status(404).entity("Element not found").build());
+        Mockito.doThrow(new de.unistuttgart.stayinsync.core.configuration.service.CoreManagementWebException(404, "OK", "Element not found"))
+                .when(aasService).throwHttpError(404, "OK", "Element not found");
 
         // When & Then
         given()
@@ -170,8 +170,8 @@ public class SourceAasValueControllerTest {
                .thenReturn(Map.of("Authorization", "Bearer token"));
         Mockito.when(traversal.patchElementValue(anyString(), anyString(), anyString(), anyString(), anyMap()))
                .thenReturn(Uni.createFrom().item(mockResponse));
-        Mockito.when(aasService.mapHttpError(400, "OK", "Bad Request"))
-               .thenReturn(jakarta.ws.rs.core.Response.status(400).entity("Bad Request").build());
+        Mockito.doThrow(new de.unistuttgart.stayinsync.core.configuration.service.CoreManagementWebException(400, "OK", "Bad Request"))
+                .when(aasService).throwHttpError(400, "OK", "Bad Request");
 
         // When & Then
         given()
@@ -195,8 +195,8 @@ public class SourceAasValueControllerTest {
         jakarta.ws.rs.core.Response errorResponse = jakarta.ws.rs.core.Response.status(404)
                 .entity("Source system not found")
                 .build();
-        Mockito.when(aasService.mapHttpError(404, "Source system not found", "Source system is null"))
-               .thenReturn(errorResponse);
+        Mockito.doThrow(new de.unistuttgart.stayinsync.core.configuration.service.CoreManagementWebException(404, "Source system not found", "Source system is null"))
+                .when(aasService).throwHttpError(404, "Source system not found", "Source system is null");
 
         // When & Then
         given()
