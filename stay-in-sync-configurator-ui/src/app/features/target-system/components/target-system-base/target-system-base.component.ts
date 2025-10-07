@@ -17,6 +17,7 @@ import { CreateTargetSystemComponent } from '../create-target-system/create-targ
 import { ManageTargetEndpointsComponent } from '../manage-target-endpoints/manage-target-endpoints.component';
 import { ManageApiHeadersComponent } from '../../../source-system/components/manage-api-headers/manage-api-headers.component';
 import { SearchBarComponent } from '../../../source-system/components/search-bar/search-bar.component';
+import { AasManagementComponent } from '../aas-management/aas-management.component';
 
 @Component({
   standalone: true,
@@ -36,7 +37,8 @@ import { SearchBarComponent } from '../../../source-system/components/search-bar
     ManageApiHeadersComponent,
     SearchBarComponent,
     TextareaModule,
-    ConfirmationDialogComponent
+    ConfirmationDialogComponent,
+    AasManagementComponent
   ],
   styleUrls: ['./target-system-base.component.css']
 })
@@ -58,6 +60,7 @@ export class TargetSystemBaseComponent implements OnInit {
     private api: TargetSystemResourceService,
     private fb: FormBuilder,
     private confirm: ConfirmationService,
+    private messageService: MessageService,
   ) {}
 
   ngOnInit(): void {
@@ -72,7 +75,6 @@ export class TargetSystemBaseComponent implements OnInit {
     this.manageForm = this.fb.group({
       name: ['', Validators.required],
       apiUrl: ['', [Validators.required, Validators.pattern('https?://.+')]],
-      apiType: ['', Validators.required],
       description: ['']
     });
   }
@@ -141,7 +143,7 @@ export class TargetSystemBaseComponent implements OnInit {
     this.systemToDelete = row;
     this.confirmationData = {
       title: 'Confirm Delete',
-      message: `Are you sure you want to delete "${row.name}"?`,
+      message: `Are you sure you want to delete "${row.name}"? This action cannot be undone.`,
       confirmLabel: 'Delete',
       cancelLabel: 'Cancel',
       severity: 'danger'
@@ -161,7 +163,6 @@ export class TargetSystemBaseComponent implements OnInit {
     this.manageForm = this.fb.group({
       name: [row.name || '', Validators.required],
       apiUrl: [row.apiUrl || '', [Validators.required, Validators.pattern('https?://.+')]],
-      apiType: [row.apiType || '', Validators.required],
       description: [row.description || '']
     });
     this.showDetailDialog = true;
@@ -171,7 +172,7 @@ export class TargetSystemBaseComponent implements OnInit {
   showConfirmationDialog = false;
   confirmationData: ConfirmationDialogData = {
     title: 'Confirm Delete',
-    message: 'Are you sure?',
+    message: 'Are you sure you want to delete this target system?',
     confirmLabel: 'Delete',
     cancelLabel: 'Cancel',
     severity: 'danger'
@@ -201,6 +202,43 @@ export class TargetSystemBaseComponent implements OnInit {
     if (!this.selectedSystem || this.manageForm.invalid) return;
     const payload: TargetSystemDTO = { ...this.selectedSystem, ...this.manageForm.value } as TargetSystemDTO;
     this.api.update(this.selectedSystem.id!, payload).subscribe({ next: () => { this.load(); } });
+  }
+  // AAS-related methods
+  isAasSelected(): boolean {
+    const t = (this.selectedSystem?.apiType || '').trim().toUpperCase();
+    return t === 'AAS';
+  }
+
+  onAasRefreshRequested(): void {
+    this.load();
+  }
+
+  // Empty state functionality
+  isSearchActive: boolean = false;
+
+  getEmptyMessage(): string {
+    if (this.isSearchActive) {
+      return 'No matching target systems found';
+    }
+    return 'No target systems available';
+  }
+
+  onHeaderCreated(): void {
+    this.messageService.add({
+      severity: 'success',
+      summary: 'Header Created',
+      detail: 'Header has been successfully created.',
+      life: 3000
+    });
+  }
+
+  onHeaderDeleted(): void {
+    this.messageService.add({
+      severity: 'success',
+      summary: 'Header Deleted',
+      detail: 'Header has been successfully deleted.',
+      life: 3000
+    });
   }
 }
 
