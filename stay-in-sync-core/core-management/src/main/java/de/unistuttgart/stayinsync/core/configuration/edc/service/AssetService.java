@@ -197,7 +197,7 @@ public class AssetService {
     private void checkForAllAssetsForThirdPartyChanges(final List<Asset> assetsToCheck, final EDCInstance edcInstance) throws AuthorizationFailedException, DatabaseEntityOutOfSyncException, ConnectionToEdcFailedException, ResponseInvalidFormatException {
         final Map<String, AssetDto> edcAssetDtosMappedToOwnAssetIds = extractAssetDtosFromResponse(AssetEdcClient.createClient(edcInstance.getControlPlaneManagementUrl()).getAllAssets(edcInstance.getApiKey()))
                 .stream()
-                .collect(Collectors.toMap(AssetDto::id, asset -> asset));
+                .collect(Collectors.toMap(AssetDto::assetId, asset -> asset));
 
         for (Asset persistedAsset : assetsToCheck) {
             final AssetDto persistedAssetAsDto = AssetMapper.mapper.entityToDto(persistedAsset);
