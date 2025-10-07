@@ -1,7 +1,7 @@
 package de.unistuttgart.stayinsync.core.configuration.edc.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import de.unistuttgart.stayinsync.core.configuration.edc.entities.EDCAsset;
+import de.unistuttgart.stayinsync.core.configuration.edc.entities.Asset;
 import de.unistuttgart.stayinsync.core.configuration.edc.entities.EDCContractDefinition;
 import de.unistuttgart.stayinsync.core.configuration.edc.entities.EDCInstance;
 import de.unistuttgart.stayinsync.core.configuration.edc.entities.EDCPolicy;
@@ -215,7 +215,7 @@ public class EDCContractDefinitionService {
         return findByIdAndEdcId(id, updatedContractDefinition.getEdcInstance().id).map(existing -> {
             // nur die zu ändernden Felder übernehmen
             existing.setContractDefinitionId(updatedContractDefinition.getContractDefinitionId());
-            existing.setAsset(EDCAsset.findById(updatedContractDefinition.getAsset() != null ? updatedContractDefinition.getAsset().id : null));
+            existing.setAsset(Asset.findById(updatedContractDefinition.getAsset() != null ? updatedContractDefinition.getAsset().id : null));
             existing.setAccessPolicy(EDCPolicy.findById(updatedContractDefinition.getAccessPolicy() != null ? updatedContractDefinition.getAccessPolicy().id : null));
             existing.setContractPolicy(EDCPolicy.findById(updatedContractDefinition.getContractPolicy() != null ? updatedContractDefinition.getContractPolicy().id : null));
             existing.setEdcInstance(updatedContractDefinition.getEdcInstance());

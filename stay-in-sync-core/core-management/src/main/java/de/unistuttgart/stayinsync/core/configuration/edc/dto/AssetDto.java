@@ -15,7 +15,7 @@ import com.fasterxml.jackson.annotation.JsonView;
  */
 public record AssetDto(
         @JsonProperty("@context")
-        AssetContextDto context,
+        ContextDto context,
         @JsonProperty("@type")
         String type,
         @JsonProperty("@id")

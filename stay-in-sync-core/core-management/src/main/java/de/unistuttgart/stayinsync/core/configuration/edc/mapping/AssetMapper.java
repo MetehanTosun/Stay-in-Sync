@@ -1,9 +1,8 @@
 package de.unistuttgart.stayinsync.core.configuration.edc.mapping;
 
-import de.unistuttgart.stayinsync.core.configuration.edc.dto.AssetContextDto;
+import de.unistuttgart.stayinsync.core.configuration.edc.dto.ContextDto;
 import de.unistuttgart.stayinsync.core.configuration.edc.dto.AssetDto;
 import de.unistuttgart.stayinsync.core.configuration.edc.entities.Asset;
-import de.unistuttgart.stayinsync.core.configuration.edc.entities.EDCInstance;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.factory.Mappers;
@@ -57,7 +56,7 @@ public interface AssetMapper {
      *
      * @return Das Standard-AssetContextDto mit allen erforderlichen Namespaces
      */
-    default AssetContextDto getDefaultContext() {
-        return new AssetContextDto();
+    default ContextDto getDefaultContext() {
+        return new ContextDto();
     }
 }

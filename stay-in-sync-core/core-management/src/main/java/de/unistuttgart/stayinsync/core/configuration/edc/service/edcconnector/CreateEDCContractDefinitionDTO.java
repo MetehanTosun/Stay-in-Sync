@@ -1,6 +1,7 @@
 package de.unistuttgart.stayinsync.core.configuration.edc.service.edcconnector;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import de.unistuttgart.stayinsync.core.configuration.edc.dto.ContextDto;
 
 import java.util.UUID;
 
@@ -18,7 +19,7 @@ public class CreateEDCContractDefinitionDTO {
     String type = "ContractDefinition";
 
     @JsonProperty("@context")
-    ContextDTO context = new ContextDTO();
+    ContextDto context = new ContextDto();
 
     @JsonProperty("accessPolicyId")
     String accessPolicyId;
@@ -45,11 +46,11 @@ public class CreateEDCContractDefinitionDTO {
         this.type = type;
     }
 
-    public ContextDTO getContext() {
+    public ContextDto getContext() {
         return context;
     }
 
-    public void setContext(ContextDTO context) {
+    public void setContext(ContextDto context) {
         this.context = context;
     }
 

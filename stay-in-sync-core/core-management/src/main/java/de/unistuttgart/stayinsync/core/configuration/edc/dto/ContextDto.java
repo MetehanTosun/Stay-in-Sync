@@ -6,7 +6,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
  * DataTransferObject for Edc communication that sets the context in which an asset is created.
  * The Context is always set to the eclipse tractus-x standard.
  */
-public record AssetContextDto(
+public record ContextDto(
         @JsonProperty("@vocab")
         String vocab,
         String edc,
@@ -18,7 +18,7 @@ public record AssetContextDto(
         String dcat,
         String odrl
 ) {
-    public AssetContextDto() {
+    public ContextDto() {
         this(
                 "https://w3id.org/edc/v0.0.1/ns/",
                 "https://w3id.org/edc/v0.0.1/ns/",

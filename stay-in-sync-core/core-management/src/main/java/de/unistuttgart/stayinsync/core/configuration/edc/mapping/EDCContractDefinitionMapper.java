@@ -28,7 +28,7 @@ public class EDCContractDefinitionMapper {
 
         // Resolve asset by assetId if present
         if (dto.getAssetId() != null && !dto.getAssetId().isBlank()) {
-            var asset = Asset.findByAssetId(dto.getAssetId());
+            Asset asset = Asset.findById(dto.getAssetId());
             entity.setAsset(asset);
         }
 

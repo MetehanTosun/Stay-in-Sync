@@ -13,9 +13,6 @@ import org.jboss.resteasy.reactive.RestResponse;
 @Path("/")
 public interface EDCClient {
 
-    @POST
-    @Path("/assets")
-    RestResponse<JsonObject> createAsset(@HeaderParam("X-Api-Key") String apiKey, CreateEDCAssetDTO jsonLdData);
 
     @POST
     @Path("/policydefinitions")
@@ -24,10 +21,6 @@ public interface EDCClient {
     @POST
     @Path("/contractdefinitions")
     RestResponse<JsonObject> createContractDefinition(@HeaderParam("X-Api-Key") String apiKey, CreateEDCContractDefinitionDTO jsonLdData);
-
-    @GET
-    @Path("/assets")
-    RestResponse<JsonObject> getAllAssets(@HeaderParam("X-Api-Key") String apiKey);
 
     @GET
     @Path("/policydefinitions")
