@@ -1,5 +1,12 @@
-<p-table [value]="transformations" [paginator]="true" [rows]="10" [responsiveLayout]="'scroll'"
-         [tableStyle]="{ 'min-height': '30rem'}">
+<div style="height: 600px;">
+
+
+<p-table [value]="transformations"
+         [paginator]="true"
+         paginatorPosition="bottom"
+         [rows]="10"
+         [scrollable]="true"
+         scrollHeight="flex">
   <ng-template pTemplate="header">
     <tr>
       <th>Name</th>

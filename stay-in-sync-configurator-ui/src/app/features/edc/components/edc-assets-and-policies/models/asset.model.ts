@@ -22,4 +22,5 @@ export interface Asset {
   targetEDCId: string;       // UUID der EDC-Instanz
   dataAddress: EDCDataAddress;
   properties?: EDCProperty[];
+  syncStatus?: 'SYNCED' | 'MODIFIED' | 'UNSYNCED';
 }

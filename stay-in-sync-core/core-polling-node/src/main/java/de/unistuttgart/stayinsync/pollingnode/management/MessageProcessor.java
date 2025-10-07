@@ -1,5 +1,7 @@
 package de.unistuttgart.stayinsync.pollingnode.management;
 
+import de.unistuttgart.stayinsync.transport.domain.JobDeploymentStatus;
+import de.unistuttgart.stayinsync.transport.dto.SourceSystemApiRequestConfigurationMessageDTO;
 import de.unistuttgart.stayinsync.pollingnode.entities.PollingJobDetails;
 import de.unistuttgart.stayinsync.pollingnode.entities.RequestBuildingDetails;
 import de.unistuttgart.stayinsync.pollingnode.exceptions.execution.InactivePollingJobCreationException;
@@ -11,8 +13,6 @@ import de.unistuttgart.stayinsync.pollingnode.exceptions.rabbitmqexceptions.Cons
 import de.unistuttgart.stayinsync.pollingnode.execution.PollingJobExecutionController;
 import de.unistuttgart.stayinsync.pollingnode.rabbitmq.PollingJobDeploymentFeedbackProducer;
 import de.unistuttgart.stayinsync.pollingnode.rabbitmq.PollingJobMessageConsumer;
-import de.unistuttgart.stayinsync.transport.domain.JobDeploymentStatus;
-import de.unistuttgart.stayinsync.transport.dto.SourceSystemApiRequestConfigurationMessageDTO;
 import io.quarkus.logging.Log;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
@@ -46,13 +46,13 @@ public class MessageProcessor {
             feedbackProducer.publishPollingJobFeedback(pollingJobDetails.id(), JobDeploymentStatus.DEPLOYED);
             Log.infof("PollingJob for SourceSystem %s with the id %d was successfully created", pollingJobDetails.requestBuildingDetails().sourceSystem().name(), apiRequestConfigurationMessage.id());
         } catch (PollingJobAlreadyExistsException e) {
-            Log.error("PollingJob " + pollingJobDetails.name() + " with the id " + pollingJobDetails.id() +" did already exist and therefore can´t be created again. Try to reconfigure the existing one instead.", e);
+            Log.error("PollingJob " + pollingJobDetails.name() + " with the id " + pollingJobDetails.id() + " did already exist and therefore can´t be created again. Try to reconfigure the existing one instead.", e);
         } catch (InactivePollingJobCreationException e) {
             Log.errorf("It is not possible to create an inactive PollingJob", e);
         } catch (PollingJobSchedulingException e) {
             Log.error("While creating the PollingJob " + pollingJobDetails.name() + " with the id " + pollingJobDetails.id() + "a SchedulingException occurred. " +
                     "Therefore the PollingJob is in a uncontrolled state and should be reconfigured or deleted as soon as possible.", e);
-        } catch (ConsumerQueueBindingException e){
+        } catch (ConsumerQueueBindingException e) {
             Log.error("While binding the RabbitMQ PollingJobQueue for the PollingJob with the id " + pollingJobDetails.id() + " an exception occurred.", e);
         }
     }
@@ -60,6 +60,7 @@ public class MessageProcessor {
     /**
      * Reconfigures PollingJob if it already exists.
      * If deploymentStatus is set to RECONFIGURING the existing PollingJob is updated. If deploymentStatus is set to STOPPING the existing PollingJob is deleted.
+     *
      * @param apiRequestConfigurationMessage contains data to create PollingJobDetails.
      */
     public void reconfigureSupportOfRequestConfiguration(final SourceSystemApiRequestConfigurationMessageDTO apiRequestConfigurationMessage) {
@@ -77,11 +78,11 @@ public class MessageProcessor {
                 Log.info("PollingJob " + pollingJobDetails.name() + " with the id " + pollingJobDetails.id() + " successfully removed");
             }
         } catch (PollingJobNotFoundException e) {
-            Log.error("PollingJob " + pollingJobDetails.name() + " with the id " + pollingJobDetails.id() +" did not already exist and therefore could not be reconfigured", e);
+            Log.error("PollingJob " + pollingJobDetails.name() + " with the id " + pollingJobDetails.id() + " did not already exist and therefore could not be reconfigured", e);
         } catch (PollingJobSchedulingException e) {
             Log.error("While reconfiguring the PollingJob " + pollingJobDetails.name() + " with the id " + pollingJobDetails.id() + "a SchedulingException occurred. " +
                     "Therefore the PollingJob is in a uncontrolled state and should be reconfigured or deleted as soon as possible.", e);
-        } catch (ConsumerQueueUnbindingException e){
+        } catch (ConsumerQueueUnbindingException e) {
             Log.error("While unbinding the RabbitMQ PollingJobQueue for the PollingJob with the id " + pollingJobDetails.id() + " an exception occurred.", e);
         }
     }
@@ -93,14 +94,15 @@ public class MessageProcessor {
      * @param message the object containing all needed details, that is converted in a more readable format.
      * @return PollingJobDetails as result of conversion.
      */
-    private PollingJobDetails convertSourceSystemApiMessageToPollingJobDetails(final SourceSystemApiRequestConfigurationMessageDTO message){
-        return new PollingJobDetails(message.name(), message.id(), message.pollingIntervallTimeInMs(),
+    private PollingJobDetails convertSourceSystemApiMessageToPollingJobDetails(final SourceSystemApiRequestConfigurationMessageDTO message) {
+        return new PollingJobDetails(message.name(), message.id(), message.pollingIntervallTimeInMs(), message.workerPodName(),
                 new RequestBuildingDetails(message.apiConnectionDetails().sourceSystem(), message.apiConnectionDetails().endpoint(),
                         message.apiConnectionDetails().requestParameters(), message.apiConnectionDetails().requestHeader()));
     }
 
     /**
      * Throws an Exception if in PollingJobExecutionController there already exists a PollingJob with the same id.
+     *
      * @param pollingJobDetails contain the id for checking and are used to give the exception more context as well.
      * @throws PollingJobAlreadyExistsException if the PollingJob already exists in PollingJobExecutionController.
      */
@@ -114,11 +116,12 @@ public class MessageProcessor {
 
     /**
      * Throws an Exception if in PollingJobExecutionController there does not exist a PollingJob with the same id.
+     *
      * @param pollingJobDetails contain the id for checking and are used to give the exception more context as well.
      * @throws PollingJobNotFoundException if the PollingJob does not exist in PollingJobExecutionController.
      */
     private void throwExceptionIfJobDoesNotExistInExecutionController(PollingJobDetails pollingJobDetails) throws PollingJobNotFoundException {
-        if(!executionController.pollingJobExists(pollingJobDetails.id())){
+        if (!executionController.pollingJobExists(pollingJobDetails.id())) {
             final String exceptionMessage = "There did not exist a PollingJob for SourceSystem " + pollingJobDetails.requestBuildingDetails().sourceSystem().name() + " with the id " + pollingJobDetails.id();
             Log.errorf(exceptionMessage, pollingJobDetails.id());
             throw new PollingJobNotFoundException(exceptionMessage, pollingJobDetails.id());

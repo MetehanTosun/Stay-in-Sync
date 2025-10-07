@@ -13,6 +13,9 @@ export let MOCK_EDC_INSTANCES: EdcInstance[] = [
     description: 'Local EDC for development purposes.',
     bpn: 'BPNL000000000DEV',
     apiKey: 'test-api-key',
+    edcAssetEndpoint: 'http://localhost:19193/api/assets',
+    edcPolicyEndpoint: 'http://localhost:19193/api/policies',
+    edcContractDefinitionEndpoint: 'http://localhost:19193/api/contractdefinitions'
   },
   {
     id: 'edc-instance-2',
@@ -22,6 +25,9 @@ export let MOCK_EDC_INSTANCES: EdcInstance[] = [
     description: 'Staging environment connector.',
     bpn: 'BPNL000000000STG',
     apiKey: 'staging-api-key',
+    edcAssetEndpoint: 'https://edc.staging.example.com/api/assets',
+    edcPolicyEndpoint: 'https://edc.staging.example.com/api/policies',
+    edcContractDefinitionEndpoint: 'https://edc.staging.example.com/api/contractdefinitions'
   },
 ];
 
@@ -95,6 +101,14 @@ export let MOCK_POLICIES: Record<string, any[]> = {
  * Mock Contract Definitions
  */
 export let MOCK_CONTRACT_DEFINITIONS: Record<string, OdrlContractDefinition[]> = {
-  'edc-instance-1': [],
+  'edc-instance-1': [
+    {
+      '@id': 'contract-def-1',
+      id: 'contract-def-1',
+      accessPolicyId: 'policy-bpn-dev',
+      contractPolicyId: 'policy-bpn-dev',
+      assetsSelector: [],
+    } as any,
+  ],
   'edc-instance-2': [],
 };

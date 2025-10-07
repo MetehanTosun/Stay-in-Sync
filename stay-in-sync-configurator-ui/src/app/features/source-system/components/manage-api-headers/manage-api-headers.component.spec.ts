@@ -20,4 +20,12 @@ describe('ManageApiHeadersComponent', () => {
   it('should create', () => {
     expect(component).toBeTruthy();
   });
+
+  it('should filter Accept/Content-Type when isAas=true', () => {
+    component.isAas = true;
+    fixture.detectChanges();
+    const types = component.allowedHeaderTypes.map(t => t.value);
+    expect(types).not.toContain('Accept');
+    expect(types).not.toContain('ContentType');
+  });
 });

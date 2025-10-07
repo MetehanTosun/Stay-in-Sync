@@ -1,6 +1,6 @@
 package de.unistuttgart.stayinsync.pollingnode.entities;
 
-public record PollingJobDetails(String name, Long id, int pollingIntervallTimeInMs,
+public record PollingJobDetails(String name, Long id, int pollingIntervallTimeInMs, String workerPodName,
                                 RequestBuildingDetails requestBuildingDetails) {
 
 }

@@ -38,6 +38,7 @@ export class PolicyService {
         policyId: dto.policy?.['@id'],
         dbId: dto.id,
         bpn: dto.policy?.permission?.[0]?.constraint?.[0]?.rightOperand,
+        syncStatus: dto.syncStatus, // Correctly map syncStatus as a top-level property
       }));
       return of(mapped).pipe(delay(300));
     }
@@ -71,7 +72,8 @@ export class PolicyService {
             ...unpacked,                      // entpacke ODRL-Struktur
             policyId: unpacked?.['@id'],      // fürs UI, ersetzt 'id'
             dbId: dto.id,                     // DB-UUID
-            bpn: extractBpn(unpacked) || ''   // abgeleitete BPN falls vorhanden
+            bpn: extractBpn(unpacked) || '',   // abgeleitete BPN falls vorhanden
+            syncStatus: dto.syncStatus,       // Correctly map syncStatus as a top-level property
           };
         });
       })
@@ -123,7 +125,7 @@ export class PolicyService {
 
   // Prüfen, ob es sich um ein Update oder eine neue Policy handelt
   const isUpdate = !!raw.dbId;
-  
+
   // 1) Robuste Normalisierung aus Editor:
   //    - Erlaube sowohl { permission: [...] } als auch { policy: { permission: [...] } }
   const permission = Array.isArray(raw?.permission)
@@ -145,12 +147,12 @@ export class PolicyService {
     policyId: normalizedPolicy['@id'],
     policy: normalizedPolicy
   };
-  
+
   // Wenn dbId vorhanden ist, handelt es sich um ein Update
   if (isUpdate) {
     console.log(`[PolicyService] Updating policy with dbId ${raw.dbId} for EDC ${edcId}`);
     console.log('[PolicyService] Update DTO ->', dto);
-    
+
     // PUT request für Update
     return this.http.put(`${this.baseUrl}/${edcId}/policies/${raw.dbId}`, dto, { observe: 'response' })
       .pipe(
@@ -163,7 +165,7 @@ export class PolicyService {
   } else {
     console.log('[PolicyService] Creating new policy for EDC', edcId);
     console.log('[PolicyService] Create DTO ->', dto);
-    
+
     // POST request für neue Policy
     return this.http.post(`${this.baseUrl}/${edcId}/policies`, dto, { observe: 'response' })
       .pipe(
@@ -235,6 +237,17 @@ export class PolicyService {
       );
   }
 
+  redeployPolicy(edcId: string, dbId: string): Observable<void> {
+    if (this.mockMode) {
+      console.warn(`Mock Mode: Redeploying policy ${dbId}.`);
+      const policy = (MOCK_POLICIES[edcId] || []).find(p => p.id === dbId);
+      if (policy) policy.syncStatus = 'SYNCED';
+      return of(undefined).pipe(delay(300));
+    }
+
+    return this.http.post<void>(`${this.baseUrl}/${edcId}/policies/${dbId}/redeploy`, {});
+  }
+
   // Normalize backend responses for create/update policies: ensure body.id/policyId present
   private ensurePolicyResponseBody(resp: HttpResponse<any>, sentDto: { policyId: string; policy: any }): HttpResponse<any> {
     const body = resp?.body || {};
@@ -268,8 +281,8 @@ export class PolicyService {
     });
   }
 
-  // --------------------------------------------------------
-  // CONTRACT DEFINITIONS
+
+  // CONTRACT DEFINITIONS:
   // --------------------------------------------------------
 
   // getContractDefinitions(): Observable<OdrlContractDefinition[]> {
@@ -296,6 +309,7 @@ export class PolicyService {
           ['@id']: cdId,
           assetsSelector,
           accessPolicyId,
+          syncStatus: dto.syncStatus, // Correctly map syncStatus as a top-level property
         } as OdrlContractDefinition;
       }))
     );
@@ -344,5 +358,16 @@ export class PolicyService {
       return of(undefined).pipe(delay(300));
     }
     return this.http.delete<void>(`${this.baseUrl}/${edcId}/contract-definitions/${id}`);
+  }
+
+  redeployContractDefinition(edcId: string, contractDefinitionId: string): Observable<void> {
+    if (this.mockMode) {
+      console.warn(`Mock Mode: Redeploying contract definition ${contractDefinitionId}.`);
+      const contractDef = (MOCK_CONTRACT_DEFINITIONS[edcId] || []).find(cd => cd['@id'] === contractDefinitionId);
+      if (contractDef) contractDef.syncStatus = 'SYNCED';
+      return of(undefined).pipe(delay(300));
+    }
+
+    return this.http.post<void>(`${this.baseUrl}/${edcId}/contract-definitions/${contractDefinitionId}/redeploy`, {});
   }
 }

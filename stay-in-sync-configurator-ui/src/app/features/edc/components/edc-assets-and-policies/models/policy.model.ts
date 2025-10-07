@@ -12,6 +12,7 @@ export interface OdrlPolicyDefinition {
   
   dbId?: string;  // neue UUID vom Backend
   policyId?: string; // Business-Key aus DB
+  syncStatus?: 'SYNCED' | 'MODIFIED' | 'UNSYNCED';
 }
 
 export interface OdrlPolicy {
@@ -43,6 +44,7 @@ export interface OdrlContractDefinition {
   accessPolicyId: string;
   contractPolicyId: string;
   assetsSelector: OdrlCriterion[];
+  syncStatus?: 'SYNCED' | 'MODIFIED' | 'UNSYNCED';
 }
 
 /**
@@ -62,6 +64,7 @@ export interface UiContractDefinition {
   assetId: string;
   bpn: string;
   accessPolicyId: string;
+  syncStatus?: 'SYNCED' | 'MODIFIED' | 'UNSYNCED';
    assetsSelector?: OdrlCriterion[]; // optional, da leer sein kann
 }
 

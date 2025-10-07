@@ -1,34 +1,51 @@
-<p-toast></p-toast>
+<p-confirmDialog [style]="{width: '50vw'}"></p-confirmDialog>
 <div *ngIf="isLoading" class="loading-overlay">
   <p-progressSpinner strokeWidth="4"></p-progressSpinner>
   <p>{{ loadingMessage }}</p>
 </div>
 
+
 <div class="script-editor-layout" [class.blurred]="isLoading">
+
+  <div class="top-header">
+    <p-button
+      icon="pi pi-arrow-left"
+      (onClick)="goBack()"
+      styleClass="p-button-secondary">
+    </p-button>
+    <p-inplace #inplace (onActivate)="onActivate()">
+      <ng-template #display>
+        <span class="text-xl font-bold">{{ scriptPayload?.name }}</span>
+      </ng-template>
+      <ng-template #content let-closeCallback="closeCallback">
+        <span class="inline-flex gap-2">
+          <input
+            type="text"
+            [(ngModel)]="scriptPayload!.name"
+            pInputText
+            autofocus
+            (keyup.enter)="onSave(closeCallback)"/>
+          <p-button icon="pi pi-times" aria-label="Save" (click)="onClose(closeCallback)" text severity="danger"/>
+          <p-button icon="pi pi-check" aria-label="Save" (click)="onSave(closeCallback)" text severity="success"/>
+
+        </span>
+      </ng-template>
+    </p-inplace>
+  </div>
+
   <!-- Source System ARCs -->
-  <div class="side-panel">
+  <div class="side-panel-source">
     <app-arc-management-panel
       (createArc)="handleCreateArc($event)"
       (cloneArc)="handleCloneArc($event)"
+      (editArc)="handleEditArc($event)"
+      (deleteArc)="handleDeleteArc($event)"
     ></app-arc-management-panel>
   </div>
 
   <!-- Code Editor Panel -->
   <div class="main-panel">
-    <p-panel styleClass="h-full editor-panel">
-      <ng-template pTemplate="header">
-        <p-float-label>
-          <input
-            *ngIf="scriptPayload"
-            pInputText
-            id="script_name"
-            [(ngModel)]="scriptPayload.name"
-            autocomplete="off"
-          />
-          <label for="script_name">Script Name</label>
-        </p-float-label>
-      </ng-template>
-
+    <p-panel styleClass="editor-panel">
       <div class="monaco-editor-wrapper">
         <ngx-monaco-editor
           style="width: 100%; height: 100%"
@@ -50,8 +67,8 @@
     </p-panel>
   </div>
 
-  <!-- Target ARC Panel -->
-  <div class="side-panel">
+  <!--   Target ARC Panel-->
+  <div class="side-panel-target">
     <app-target-arc-panel
       *ngIf="currentTransformationId"
       [transformationId]="currentTransformationId"
@@ -59,7 +76,6 @@
   </div>
 </div>
 
-<!-- ARC Wizard Pop-Out -->
 <app-arc-wizard
   *ngIf="isWizardVisible && wizardContext"
   [visible]="isWizardVisible"

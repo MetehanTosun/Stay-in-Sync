@@ -1,22 +1,36 @@
-:host {
-  display: block;
-  height: 100vh;
-  box-sizing: border-box;
-  padding: 0.5rem;
-}
 
 .script-editor-layout {
   display: grid;
   grid-template-columns: 380px 1fr 380px;
+  grid-template-rows: 60px 1fr;
   height: 100%;
   gap: 0.75rem;
 }
 
-.side-panel,
-.main-panel {
+.top-header {
+  grid-column: 1 / -1;
+  grid-row: 1;
   display: flex;
-  flex-direction: column;
+  align-items: center;
+  gap: 1em;
+}
+
+.top-header h2 {
+ margin: 1px;
+}
+
+.main-panel {
   min-height: 0;
+  grid-row: 2;
+  grid-column: 2;
+}
+
+.side-panel-source {
+  grid-column: 1;
+}
+
+.side-panel-target{
+  grid-column: 3;
 }
 
 :host app-arc-management-panel,

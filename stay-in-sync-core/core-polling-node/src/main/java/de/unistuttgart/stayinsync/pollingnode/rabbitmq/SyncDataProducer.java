@@ -3,12 +3,10 @@ package de.unistuttgart.stayinsync.pollingnode.rabbitmq;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.rabbitmq.client.AMQP;
 import com.rabbitmq.client.Channel;
+import de.unistuttgart.stayinsync.transport.dto.SyncDataMessageDTO;
 import de.unistuttgart.stayinsync.pollingnode.entities.PollingJobDetails;
-import de.unistuttgart.stayinsync.pollingnode.exceptions.PollingNodeException;
 import de.unistuttgart.stayinsync.pollingnode.exceptions.rabbitmqexceptions.ProducerPublishDataException;
 import de.unistuttgart.stayinsync.pollingnode.exceptions.rabbitmqexceptions.ProducerSetUpStreamException;
-import de.unistuttgart.stayinsync.transport.dto.SourceSystemApiRequestConfigurationMessageDTO;
-import de.unistuttgart.stayinsync.transport.dto.SyncDataMessageDTO;
 import io.quarkiverse.rabbitmqclient.RabbitMQClient;
 import io.quarkus.logging.Log;
 import io.quarkus.runtime.StartupEvent;
@@ -50,7 +48,7 @@ public class SyncDataProducer {
             Map<String, Object> queueArgs = new HashMap<>();
             queueArgs.put("x-queue-type", "stream");
             queueArgs.put("x-max-age", "1m");
-            channel.queueDeclare("request-config-" + pollingJobDetails.id(), true, false, false, Collections.singletonMap("x-queue-type", "stream"));
+            channel.queueDeclare("request-config-" + pollingJobDetails.id(), true, false, false, queueArgs);
             channel.queueBind("request-config-" + pollingJobDetails.id(), "sync-data-exchange", "request-config-" + pollingJobDetails.id());
 
         } catch (IOException e) {

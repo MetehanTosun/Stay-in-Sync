@@ -15,6 +15,8 @@ import {Button} from 'primeng/button';
 import {HttpClient} from '@angular/common/http';
 import {Listbox, ListboxChangeEvent} from 'primeng/listbox';
 import {NgIf} from '@angular/common';
+import {ToggleSwitch} from 'primeng/toggleswitch';
+import {FormsModule} from '@angular/forms';
 
 @Component({
   selector: 'app-help-page',
@@ -25,10 +27,16 @@ import {NgIf} from '@angular/common';
     NgIf,
     Button,
     Listbox,
+    ToggleSwitch,
+    FormsModule,
   ],
   styleUrl: './help-page.component.css'
 })
 export class HelpPageComponent implements OnInit {
+
+  darkModeEnabled: boolean = false;
+
+
   /** Path to the markdown file to be displayed */
   markdownPath = '';
 
@@ -219,6 +227,10 @@ export class HelpPageComponent implements OnInit {
           {
             label: 'Log Aggregation & Filtering',
             command: () => { this.router.navigate(['/help', 'monitoring/monitoring-logs']); }
+          },
+          {
+            label: 'ErrorSnapshots & Replay',
+            command: () => { this.router.navigate(['/help', 'monitoring/monitoring-replay']); }
           }
         ]
       },
@@ -251,5 +263,12 @@ export class HelpPageComponent implements OnInit {
         ]
       }
     ];
+  }
+
+  toggleDarkMode() {
+    const element = document.querySelector('html');
+    if (element) {
+      element.classList.toggle('my-app-dark');
+    }
   }
 }

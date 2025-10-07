@@ -94,6 +94,9 @@ export class EdcInstancesComponent implements OnInit {
       description: '',
       bpn: '',
       apiKey: '',
+      edcAssetEndpoint: '',
+      edcPolicyEndpoint: '',
+      edcContractDefinitionEndpoint: ''
     };
   }
 

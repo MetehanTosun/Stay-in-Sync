@@ -11,17 +11,43 @@
 
   <label>
     Level:
-    <select [(ngModel)]="level" (change)="onFilterChange()">
-      <option value="">All</option>
-      <option value="info">Info</option>
-      <option value="warn">Warn</option>
-      <option value="error">Error</option>
-      <option value="debug">Debug</option>
-      <option value="trace">Trace</option>
-    </select>
+    <p-dropdown
+      [options]="levels"
+      [(ngModel)]="level"
+      (onChange)="onFilterChange()"
+      placeholder="All"
+      [showClear]="true"
+      [filter]="true"
+      optionLabel="label"
+      optionValue="value">
+    </p-dropdown>
   </label>
 
-  <!-- Reload Button -->
+  <label *ngIf="selectedNodeId && !selectedNodeId.startsWith('POLL')">
+    Transformation ID:
+    <p-dropdown
+      [options]="transformationIds"
+      [(ngModel)]="selectedTransformationId"
+      (onChange)="onFilterChange()"
+      placeholder="All"
+      [showClear]="true"
+      [filter]="true">
+    </p-dropdown>
+  </label>
+
+  <label *ngIf="!selectedNodeId || selectedNodeId.startsWith('POLL')">
+    Service:
+    <p-dropdown
+      [options]="services"
+      [(ngModel)]="selectedService"
+      (onChange)="onFilterChange()"
+      placeholder="All"
+      [showClear]="true"
+      [filter]="true">
+    </p-dropdown>
+  </label>
+
+
   <p-button (click)="reloadLogs()">Reload Logs</p-button>
 </div>
 
@@ -42,7 +68,10 @@
 >
   <ng-template pTemplate="header">
     <tr>
-      <th>Timestamp</th>
+      <th pSortableColumn="timestamp">
+        Timestamp
+        <p-sortIcon field="timestamp"></p-sortIcon>
+      </th>
       <th>Level</th>
       <th>Service</th>
       <th>Message</th>

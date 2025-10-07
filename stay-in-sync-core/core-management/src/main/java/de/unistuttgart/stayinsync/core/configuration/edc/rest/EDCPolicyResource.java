@@ -1,6 +1,7 @@
 package de.unistuttgart.stayinsync.core.configuration.edc.rest;
 
-import de.unistuttgart.stayinsync.core.configuration.edc.dto.EDCPolicyDto;
+import de.unistuttgart.stayinsync.core.configuration.edc.dtoedc.EDCPolicyDto;
+import de.unistuttgart.stayinsync.core.configuration.edc.entities.EDCInstance;
 import de.unistuttgart.stayinsync.core.configuration.edc.entities.EDCPolicy;
 import de.unistuttgart.stayinsync.core.configuration.edc.mapping.EDCPolicyMapper;
 import de.unistuttgart.stayinsync.core.configuration.edc.service.EDCPolicyService;
@@ -106,15 +107,27 @@ public class EDCPolicyResource {
                 }
             }
 
-            // Konvertiere DTO zu Entity
-            EDCPolicy entity = EDCPolicyMapper.policyMapper.policyDtoToPolicy(dto);
-            
-            // Prüfe, ob die EDC-Instanz existiert
-            if (entity.getEdcInstance() == null) {
-                Log.error("EDC instance not found: " + edcId);
+            // Überprüfe zuerst, ob die EDC-Instanz existiert
+            EDCInstance edcInstance = EDCInstance.findById(edcId);
+            if (edcInstance == null) {
+                Log.error("EDC instance not found in database: " + edcId);
                 return Response.status(Response.Status.NOT_FOUND)
                              .entity("EDC instance not found: " + edcId)
                              .build();
+            }
+            
+            Log.info("Found EDC instance: " + edcInstance.id + " with name: " + edcInstance.getName());
+            
+            // Konvertiere DTO zu Entity
+            EDCPolicy entity = EDCPolicyMapper.policyMapper.policyDtoToPolicy(dto);
+            
+            // Prüfe, ob die EDC-Instanz korrekt gesetzt wurde
+            if (entity.getEdcInstance() == null) {
+                Log.error("EDC instance not set in entity after mapping from DTO: " + edcId);
+                
+                // Setze die EDC-Instanz manuell
+                Log.info("Manually setting EDC instance");
+                entity.setEdcInstance(edcInstance);
             }
             
             // Speichere die Policy

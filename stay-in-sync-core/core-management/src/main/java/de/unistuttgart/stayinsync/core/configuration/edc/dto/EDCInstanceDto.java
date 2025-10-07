@@ -7,7 +7,7 @@ import java.util.UUID;
 public record EDCInstanceDto(
         UUID id,
         @NotBlank String name,
-        @NotBlank String controlPlaneManagementUrl,
+        String controlPlaneManagementUrl,
         String protocolVersion,
         String description,
         String bpn,
@@ -15,6 +15,6 @@ public record EDCInstanceDto(
         String edcAssetEndpoint,
         String edcPolicyEndpoint,
         String edcContractDefinitionEndpoint
-        ) {
+) {
 
 }
