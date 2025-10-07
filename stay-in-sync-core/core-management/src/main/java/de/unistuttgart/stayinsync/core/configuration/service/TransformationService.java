@@ -127,7 +127,7 @@ public class TransformationService {
     }
 
     @Transactional
-    public TransformationDetailsDTO updateTargetArcs(Long transformationId, UpdateTransformationRequestConfigurationDTO dto){
+    public TransformationDetailsDTO updateTargetArcs(Long transformationId, UpdateTransformationRequestConfigurationDTO dto) {
         Log.debugf("Updating ALL Target ARCs for Transformation with id %d", transformationId);
 
         Transformation transformation = Transformation.<Transformation>findByIdOptional(transformationId)
@@ -179,8 +179,8 @@ public class TransformationService {
         Log.debugf("Finding transformation with id %d", id);
         Transformation transformation = Transformation.findById(id);
 
-        if(transformation == null) {
-            throw new CoreManagementWebException(Response.Status.NOT_FOUND,"Transformation not found", "No Transformation found using id %d", id);
+        if (transformation == null) {
+            throw new CoreManagementWebException(Response.Status.NOT_FOUND, "Transformation not found", "No Transformation found using id %d", id);
         }
 
         return transformation;
@@ -224,7 +224,7 @@ public class TransformationService {
         return Transformation.deleteById(id);
     }
 
-    public void updateDeploymentStatus(Long transformationId, JobDeploymentStatus deploymentStatus) {
+    public void updateDeploymentStatus(Long transformationId, JobDeploymentStatus deploymentStatus, String hostName) {
         Transformation transformation = findByIdDirect(transformationId);
         Log.infof("Settings deployment status of transformation with id %d to %s", transformationId, deploymentStatus);
 
@@ -232,6 +232,8 @@ public class TransformationService {
             Log.warnf("The transformation with id %d is currently in the deployment state of %s and thus can not be deployed or stopped", transformationId, transformation.deploymentStatus);
         } else {
             transformation.deploymentStatus = deploymentStatus;
+            transformation.workerHostName = hostName;
+
             if (statusEmitter.hasRequests()) {
                 statusEmitter.send(new TransformationStatusUpdate(transformationId, transformation.syncJob.id, deploymentStatus));
             }
@@ -277,7 +279,7 @@ public class TransformationService {
         transformation.sourceSystemApiRequestConfigurations //
                 .stream() //
                 .filter(apiRequestConfiguration -> apiRequestConfiguration.deploymentStatus.equals(JobDeploymentStatus.UNDEPLOYED))
-                .forEach(apiRequestConfiguration -> sourceRequestConfigService.updateDeploymentStatus(apiRequestConfiguration.id, JobDeploymentStatus.DEPLOYING));
+                .forEach(apiRequestConfiguration -> sourceRequestConfigService.updateDeploymentStatus(apiRequestConfiguration.id, JobDeploymentStatus.DEPLOYING, null));
     }
 
     private boolean isTransitioning(JobDeploymentStatus jobDeploymentStatus) {

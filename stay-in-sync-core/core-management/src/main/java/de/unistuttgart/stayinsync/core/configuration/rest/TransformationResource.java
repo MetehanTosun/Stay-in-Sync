@@ -197,7 +197,7 @@ public class TransformationResource {
     @Operation(summary = "Enables deploying or undeploying of transformations",
             description = "Allows managing the deployment status of a transformation transformation")
     public Response manageDeployment(@Parameter(name = "id", required = true) @PathParam("id") Long id, JobDeploymentStatus deploymentStatus) {
-        transformationService.updateDeploymentStatus(id, deploymentStatus);
+        transformationService.updateDeploymentStatus(id, deploymentStatus, null);
         return Response.noContent().build();
     }
 

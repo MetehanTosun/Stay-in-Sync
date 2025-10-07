@@ -66,7 +66,7 @@ public class DeploymentFeedbackConsumer {
             channel.basicConsume("transformation-feedback", true, processTransformationFeedback(), cancelFeedbackConsumption());
             channel.basicConsume("pollingjob-feedback", true, processPollingJobFeedback(), cancelFeedbackConsumption());
         } catch (IOException e) {
-            Log.errorf("Error initialising rabbitMQ message consumer: %s %s", e.getClass(),e.getMessage());
+            Log.errorf("Error initialising rabbitMQ message consumer: %s %s", e.getClass(), e.getMessage());
             throw new CoreManagementException("RabbitMQ error", "Could not initiliaze consumer: %s", e.getMessage());
         }
     }
@@ -86,7 +86,9 @@ public class DeploymentFeedbackConsumer {
         return (consumerTag, delivery) -> {
             TransformationDeploymentFeedbackMessageDTO transformationMessageDTO = extractTransformation(delivery);
             Log.infof("Received deployment feedback for transformation (id: %s)", transformationMessageDTO.transformationId());
-            transformationService.updateDeploymentStatus(transformationMessageDTO.transformationId(), transformationMessageDTO.status());
+            transformationService.updateDeploymentStatus(transformationMessageDTO.transformationId(),
+                    transformationMessageDTO.status(),
+                    transformationMessageDTO.syncNode());
         };
     }
 
@@ -99,7 +101,9 @@ public class DeploymentFeedbackConsumer {
         return (consumerTag, delivery) -> {
             PollingJobDeploymentFeedbackMessageDTO sourceSystemApiRequestConfigurationMessageDTO = extractPollingJob(delivery);
             Log.infof("Received deployment feedback for polling-job id: %s", sourceSystemApiRequestConfigurationMessageDTO.requestConfigId());
-            sourceSystemApiRequestConfigurationService.updateDeploymentStatus(sourceSystemApiRequestConfigurationMessageDTO.requestConfigId(), sourceSystemApiRequestConfigurationMessageDTO.deploymentStatus());
+            sourceSystemApiRequestConfigurationService.updateDeploymentStatus(sourceSystemApiRequestConfigurationMessageDTO.requestConfigId(),
+                    sourceSystemApiRequestConfigurationMessageDTO.deploymentStatus(),
+                    sourceSystemApiRequestConfigurationMessageDTO.pollingPod());
         };
     }
 

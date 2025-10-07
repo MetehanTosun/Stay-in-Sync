@@ -69,7 +69,7 @@ public class SourceSystemApiRequestConfigurationService {
         return sourceSystemApiRequestConfiguration;
     }
 
-    public void updateDeploymentStatus(Long requestConfigId, JobDeploymentStatus jobDeploymentStatus) {
+    public void updateDeploymentStatus(Long requestConfigId, JobDeploymentStatus jobDeploymentStatus, String hostname) {
         SourceSystemApiRequestConfiguration sourceSystemApiRequestConfiguration = findApiRequestConfigurationById(requestConfigId);
 
         if (isTransitioning(sourceSystemApiRequestConfiguration.deploymentStatus) && isTransitioning(jobDeploymentStatus)) {
@@ -77,6 +77,7 @@ public class SourceSystemApiRequestConfigurationService {
         } else {
             Log.infof("Settings deployment status of request config with id %d to %s", requestConfigId, jobDeploymentStatus);
             sourceSystemApiRequestConfiguration.deploymentStatus = jobDeploymentStatus;
+            sourceSystemApiRequestConfiguration.workerPodName = hostname;
             switch (jobDeploymentStatus) {
                 case DEPLOYING -> {
                     pollingJobMessageProducer.publishPollingJob(fullUpdateMapper.mapToMessageDTO(sourceSystemApiRequestConfiguration));
@@ -286,7 +287,7 @@ public class SourceSystemApiRequestConfigurationService {
     public void undeployAllUnused() {
         List<SourceSystemApiRequestConfiguration> sourceSystemApiRequestConfigurations = SourceSystemApiRequestConfiguration.listAllActiveAndUnused();
         Log.infof("%d unused polling configurations have been found and will be scheduled for undeployment", sourceSystemApiRequestConfigurations.size());
-        sourceSystemApiRequestConfigurations.stream().forEach(apiRequestConfiguration -> updateDeploymentStatus(apiRequestConfiguration.id, JobDeploymentStatus.STOPPING));
+        sourceSystemApiRequestConfigurations.stream().forEach(apiRequestConfiguration -> updateDeploymentStatus(apiRequestConfiguration.id, JobDeploymentStatus.STOPPING, null));
     }
 
 }
