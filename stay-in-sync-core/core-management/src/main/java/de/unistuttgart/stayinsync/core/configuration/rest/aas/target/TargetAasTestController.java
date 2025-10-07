@@ -81,39 +81,15 @@ public class TargetAasTestController {
             }
             String body = refsResp.bodyAsString();
             Log.infof("Target listSubmodels: upstream status=%d, bodyLen=%d", refsResp.statusCode(), (body == null ? 0 : body.length()));
-            io.vertx.core.json.JsonArray refs;
-            boolean wrapped = false;
-            try {
-                if (body != null && body.trim().startsWith("{")) {
-                    io.vertx.core.json.JsonObject obj = new io.vertx.core.json.JsonObject(body);
-                    refs = obj.getJsonArray("result", new io.vertx.core.json.JsonArray());
-                    wrapped = true;
-                } else {
-                    refs = body != null ? new io.vertx.core.json.JsonArray(body) : new io.vertx.core.json.JsonArray();
-                }
-            } catch (Exception e) {
-                refs = new io.vertx.core.json.JsonArray();
-            }
+
+            var parseResult = parseSubmodelReferences(body);
+            io.vertx.core.json.JsonArray refs = parseResult.refs;
+            boolean wrapped = parseResult.wrapped;
             Log.infof("Target listSubmodels: parsed refs count=%d (wrapped=%s)", refs.size(), wrapped);
             io.vertx.core.json.JsonArray out = new io.vertx.core.json.JsonArray();
             for (int i = 0; i < refs.size(); i++) {
                 var ref = refs.getJsonObject(i);
-                String submodelId = null;
-                try {
-                    io.vertx.core.json.JsonArray keys = ref.getJsonArray("keys");
-                    if ((keys == null || keys.isEmpty()) && ref.containsKey("value")) {
-                        var val = ref.getJsonObject("value");
-                        if (val != null) keys = val.getJsonArray("keys");
-                    }
-                    if (keys != null && !keys.isEmpty()) {
-                        var k0 = keys.getJsonObject(0);
-                        if (k0 != null && "Submodel".equalsIgnoreCase(k0.getString("type"))) {
-                            submodelId = k0.getString("value");
-                        } else {
-                            submodelId = k0 != null ? k0.getString("value") : null;
-                        }
-                    }
-                } catch (Exception ignore) { }
+                String submodelId = extractSubmodelIdFromRef(ref);
                 Log.infof("Target listSubmodels: ref[%d] -> submodelId=%s", i, submodelId);
                 if (submodelId == null) continue;
                 try {
@@ -123,18 +99,7 @@ public class TargetAasTestController {
                     if (smResp != null && smResp.statusCode() >= 200 && smResp.statusCode() < 300) {
                         String smBody = smResp.bodyAsString();
                         var sm = smBody != null && smBody.trim().startsWith("{") ? new io.vertx.core.json.JsonObject(smBody) : new io.vertx.core.json.JsonObject();
-                        String id = sm.getString("id", normalizedSmId);
-                        String idShort = sm.getString("idShort");
-                        if (idShort == null || idShort.isBlank()) {
-                            idShort = deriveIdShortFromId(id);
-                        }
-                        Log.infof("Target listSubmodels: fetched submodel id=%s idShort=%s kind=%s", id, idShort, sm.getString("kind"));
-                        io.vertx.core.json.JsonObject item = new io.vertx.core.json.JsonObject()
-                                .put("id", id)
-                                .put("submodelId", id)
-                                .put("idShort", idShort)
-                                .put("submodelIdShort", idShort)
-                                .put("kind", sm.getString("kind"));
+                        var item = buildSubmodelListItem(sm, normalizedSmId);
                         out.add(item);
                     } else {
                         Log.infof("Target listSubmodels: filtered stale/invalid submodel-ref value=%s status=%d", normalizedSmId, (smResp != null ? smResp.statusCode() : -1));
@@ -154,6 +119,67 @@ public class TargetAasTestController {
             var fallback = traversal.listSubmodels(ts.apiUrl, ts.aasId, headers).await().indefinitely();
             return Response.status(fallback.statusCode()).entity(fallback.bodyAsString()).build();
         }
+    }
+
+    private static class SubmodelRefsParseResult {
+        final io.vertx.core.json.JsonArray refs;
+        final boolean wrapped;
+        SubmodelRefsParseResult(io.vertx.core.json.JsonArray refs, boolean wrapped) {
+            this.refs = refs;
+            this.wrapped = wrapped;
+        }
+    }
+
+    private SubmodelRefsParseResult parseSubmodelReferences(String body) {
+        io.vertx.core.json.JsonArray refs;
+        boolean wrapped = false;
+        try {
+            if (body != null && body.trim().startsWith("{")) {
+                io.vertx.core.json.JsonObject obj = new io.vertx.core.json.JsonObject(body);
+                refs = obj.getJsonArray("result", new io.vertx.core.json.JsonArray());
+                wrapped = true;
+            } else {
+                refs = body != null ? new io.vertx.core.json.JsonArray(body) : new io.vertx.core.json.JsonArray();
+            }
+        } catch (Exception e) {
+            refs = new io.vertx.core.json.JsonArray();
+        }
+        return new SubmodelRefsParseResult(refs, wrapped);
+    }
+
+    private String extractSubmodelIdFromRef(io.vertx.core.json.JsonObject ref) {
+        if (ref == null) return null;
+        try {
+            io.vertx.core.json.JsonArray keys = ref.getJsonArray("keys");
+            if ((keys == null || keys.isEmpty()) && ref.containsKey("value")) {
+                var val = ref.getJsonObject("value");
+                if (val != null) keys = val.getJsonArray("keys");
+            }
+            if (keys != null && !keys.isEmpty()) {
+                var k0 = keys.getJsonObject(0);
+                if (k0 != null && "Submodel".equalsIgnoreCase(k0.getString("type"))) {
+                    return k0.getString("value");
+                } else {
+                    return k0 != null ? k0.getString("value") : null;
+                }
+            }
+        } catch (Exception ignore) { }
+        return null;
+    }
+
+    private io.vertx.core.json.JsonObject buildSubmodelListItem(io.vertx.core.json.JsonObject sm, String normalizedSmId) {
+        String id = sm.getString("id", normalizedSmId);
+        String idShort = sm.getString("idShort");
+        if (idShort == null || idShort.isBlank()) {
+            idShort = deriveIdShortFromId(id);
+        }
+        Log.infof("Target listSubmodels: fetched submodel id=%s idShort=%s kind=%s", id, idShort, sm.getString("kind"));
+        return new io.vertx.core.json.JsonObject()
+                .put("id", id)
+                .put("submodelId", id)
+                .put("idShort", idShort)
+                .put("submodelIdShort", idShort)
+                .put("kind", sm.getString("kind"));
     }
 
     private String normalizeSubmodelId(String smId) {
