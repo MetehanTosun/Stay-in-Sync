@@ -46,7 +46,7 @@ public class Asset extends PanacheEntity {
      * @param assetDto contains data for the update.
      */
     public void updateValuesWithAssetDto(final AssetDto assetDto){
-        this.setAssetId(assetDto.id());
+        this.setAssetId(assetDto.assetId());
         this.setType(assetDto.type());
         this.setProperties(AssetPropertiesMapper.mapper.dtoToEntity(assetDto.properties()));
         this.setDataAddress(AssetDataAddressMapper.mapper.dtoToEntity(assetDto.dataAddress()));

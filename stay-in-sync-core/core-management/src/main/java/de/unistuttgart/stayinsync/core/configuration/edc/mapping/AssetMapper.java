@@ -26,10 +26,11 @@ public interface AssetMapper {
      */
     @Mapping(target = "context", expression = "java(getDefaultContext())")
     @Mapping(target = "type", constant = "Asset")
-    @Mapping(source = "assetId", target = "id")
+    @Mapping(source = "assetId", target = "assetId")
     @Mapping(source = "thirdPartyChanges", target = "thirdPartyChanges")
     @Mapping(source = "properties", target = "properties")
     @Mapping(source = "dataAddress", target = "dataAddress")
+    @Mapping(source = "id", target = "id")
     AssetDto entityToDto(Asset entity);
 
     /**
@@ -44,7 +45,7 @@ public interface AssetMapper {
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "targetEDC", ignore = true) // Muss vom Caller gesetzt werden
     @Mapping(target = "type", constant = "Asset")
-    @Mapping(source = "id", target = "assetId")
+    @Mapping(source = "assetId", target = "assetId")
     @Mapping(source = "thirdPartyChanges", target = "thirdPartyChanges", defaultValue = "false")
     @Mapping(source = "properties", target = "properties")
     @Mapping(source = "dataAddress", target = "dataAddress")

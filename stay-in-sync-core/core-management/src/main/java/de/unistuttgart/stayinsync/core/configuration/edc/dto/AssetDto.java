@@ -14,12 +14,14 @@ import com.fasterxml.jackson.annotation.JsonView;
  * @param dataAddress Configuration for accessing the actual data
  */
 public record AssetDto(
+        @JsonView(VisibilitySidesForDto.Ui.class)
+        Long id,
         @JsonProperty("@context")
         ContextDto context,
         @JsonProperty("@type")
         String type,
         @JsonProperty("@id")
-        String id,
+        String assetId,
         AssetPropertiesDto properties,
         AssetDataAddressDto dataAddress,
         @JsonView(VisibilitySidesForDto.Ui.class)
