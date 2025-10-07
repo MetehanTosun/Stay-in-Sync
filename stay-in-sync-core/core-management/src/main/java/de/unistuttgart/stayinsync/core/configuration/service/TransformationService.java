@@ -1,20 +1,21 @@
 package de.unistuttgart.stayinsync.core.configuration.service;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import de.unistuttgart.stayinsync.core.configuration.domain.entities.aas.AasTargetApiRequestConfiguration;
-import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.*;
+import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.TargetSystemApiRequestConfiguration;
+import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.Transformation;
+import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.TransformationRule;
+import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.TransformationScript;
 import de.unistuttgart.stayinsync.core.configuration.exception.CoreManagementException;
 import de.unistuttgart.stayinsync.core.configuration.mapping.TransformationMapper;
 import de.unistuttgart.stayinsync.core.configuration.mapping.targetsystem.RequestConfigurationMapper;
+import de.unistuttgart.stayinsync.core.configuration.rabbitmq.producer.TransformationJobMessageProducer;
 import de.unistuttgart.stayinsync.core.configuration.rest.dtos.TransformationAssemblyDTO;
 import de.unistuttgart.stayinsync.core.configuration.rest.dtos.TransformationDetailsDTO;
 import de.unistuttgart.stayinsync.core.configuration.rest.dtos.TransformationShellDTO;
-import de.unistuttgart.stayinsync.core.configuration.rest.dtos.targetsystem.GetRequestConfigurationDTO;
 import de.unistuttgart.stayinsync.core.configuration.rest.dtos.TransformationStatusUpdate;
+import de.unistuttgart.stayinsync.core.configuration.rest.dtos.targetsystem.GetRequestConfigurationDTO;
 import de.unistuttgart.stayinsync.core.configuration.rest.dtos.targetsystem.UpdateTransformationRequestConfigurationDTO;
 import de.unistuttgart.stayinsync.core.configuration.service.transformationrule.GraphStorageService;
-import de.unistuttgart.stayinsync.core.configuration.rabbitmq.producer.TransformationJobMessageProducer;
 import de.unistuttgart.stayinsync.transport.domain.JobDeploymentStatus;
 import io.quarkus.logging.Log;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -28,7 +29,6 @@ import org.eclipse.microprofile.reactive.messaging.Emitter;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
-
 
 import static jakarta.transaction.Transactional.TxType.REQUIRED;
 import static jakarta.transaction.Transactional.TxType.SUPPORTS;

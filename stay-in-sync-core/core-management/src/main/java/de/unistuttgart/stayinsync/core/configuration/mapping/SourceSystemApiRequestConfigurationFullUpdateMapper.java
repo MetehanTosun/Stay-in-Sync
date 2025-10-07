@@ -1,8 +1,8 @@
 package de.unistuttgart.stayinsync.core.configuration.mapping;
 
 import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.SourceSystemApiRequestConfiguration;
-import de.unistuttgart.stayinsync.core.configuration.rest.dtos.CreateSourceArcDTO;
 import de.unistuttgart.stayinsync.core.configuration.rest.dtos.CreateRequestConfigurationDTO;
+import de.unistuttgart.stayinsync.core.configuration.rest.dtos.CreateSourceArcDTO;
 import de.unistuttgart.stayinsync.core.configuration.rest.dtos.GetRequestConfigurationDTO;
 import de.unistuttgart.stayinsync.transport.dto.ApiConnectionDetailsDTO;
 import de.unistuttgart.stayinsync.transport.dto.SourceSystemApiRequestConfigurationMessageDTO;

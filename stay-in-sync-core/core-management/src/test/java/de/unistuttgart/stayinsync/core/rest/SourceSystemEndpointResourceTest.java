@@ -1,8 +1,8 @@
 package de.unistuttgart.stayinsync.core.rest;
 
 import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.SourceSystem;
-import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.TestTransaction;
+import io.quarkus.test.junit.QuarkusTest;
 import io.restassured.http.ContentType;
 import jakarta.inject.Inject;
 import jakarta.persistence.EntityManager;
@@ -10,7 +10,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import static io.restassured.RestAssured.given;
-import static org.hamcrest.Matchers.*;
+import static org.hamcrest.Matchers.is;
 
 @QuarkusTest
 @TestTransaction

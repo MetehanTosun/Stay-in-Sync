@@ -1,31 +1,32 @@
 package de.unistuttgart.stayinsync.core.configuration.rest.aas;
 
+import de.unistuttgart.stayinsync.core.configuration.domain.entities.aas.AasElementLite;
+import de.unistuttgart.stayinsync.core.configuration.domain.entities.aas.AasSubmodelLite;
 import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.SourceSystem;
 import de.unistuttgart.stayinsync.core.configuration.rest.dtos.aas.AasTestResultDTO;
 import de.unistuttgart.stayinsync.core.configuration.rest.dtos.aas.SubmodelElementNodeDTO;
 import de.unistuttgart.stayinsync.core.configuration.rest.dtos.aas.SubmodelSummaryDTO;
-import de.unistuttgart.stayinsync.core.configuration.service.aas.AasTraversalClient;
 import de.unistuttgart.stayinsync.core.configuration.service.aas.AasStructureSnapshotService;
-import de.unistuttgart.stayinsync.core.configuration.domain.entities.aas.AasSubmodelLite;
-import de.unistuttgart.stayinsync.core.configuration.domain.entities.aas.AasElementLite;
+import de.unistuttgart.stayinsync.core.configuration.service.aas.AasTraversalClient;
 import de.unistuttgart.stayinsync.core.configuration.service.aas.SourceSystemAasService;
 import io.quarkus.logging.Log;
-import io.smallrye.mutiny.Uni;
-import io.vertx.mutiny.ext.web.client.HttpResponse;
-import io.vertx.mutiny.core.buffer.Buffer;
 import io.smallrye.common.annotation.Blocking;
+import io.smallrye.mutiny.Uni;
+import io.vertx.mutiny.core.buffer.Buffer;
+import io.vertx.mutiny.ext.web.client.HttpResponse;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
-import org.jboss.resteasy.reactive.RestForm;
 import org.eclipse.microprofile.openapi.annotations.Operation;
-import org.eclipse.microprofile.openapi.annotations.parameters.RequestBody;
 import org.eclipse.microprofile.openapi.annotations.media.Content;
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
+import org.eclipse.microprofile.openapi.annotations.parameters.RequestBody;
 import org.eclipse.microprofile.openapi.annotations.responses.APIResponse;
 import org.eclipse.microprofile.openapi.annotations.responses.APIResponses;
+import org.jboss.resteasy.reactive.RestForm;
 import org.jboss.resteasy.reactive.multipart.FileUpload;
+
 import java.nio.file.Files;
 
 

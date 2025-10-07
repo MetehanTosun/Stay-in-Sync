@@ -3,7 +3,6 @@ package de.unistuttgart.stayinsync.core.configuration.service.aas;
 import de.unistuttgart.stayinsync.core.configuration.domain.entities.aas.AasSubmodelLite;
 import de.unistuttgart.stayinsync.core.configuration.domain.entities.aas.AasTargetApiRequestConfiguration;
 import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.SourceSystem;
-import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.TargetSystem;
 import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.Transformation;
 import de.unistuttgart.stayinsync.core.configuration.exception.CoreManagementException;
 import de.unistuttgart.stayinsync.core.configuration.mapping.targetsystem.AasTargetApiRequestConfigurationMapper;

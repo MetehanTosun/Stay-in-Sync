@@ -1,24 +1,9 @@
 package de.unistuttgart.stayinsync.core.configuration.service;
 
-import static jakarta.transaction.Transactional.TxType.*;
-
-import java.util.List;
-import java.util.Optional;
-
-import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.TargetSystem;
-import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.TargetSystemEndpoint;
 import de.unistuttgart.stayinsync.core.configuration.domain.entities.edc.EDCAsset;
-import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.TargetSystemApiQueryParam;
-import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.TargetSystemApiRequestHeader;
-import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.TargetSystemVariable;
-import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.ApiHeader;
-import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.ApiEndpointQueryParam;
-import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.ApiEndpointQueryParamValue;
-import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.ApiHeaderValue;
-import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.TargetSystemApiRequestConfiguration;
-import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.TargetSystemApiRequestConfigurationAction;
-import de.unistuttgart.stayinsync.core.configuration.exception.CoreManagementException;
+import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.*;
 import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.authconfig.SyncSystemAuthConfig;
+import de.unistuttgart.stayinsync.core.configuration.exception.CoreManagementException;
 import de.unistuttgart.stayinsync.core.configuration.mapping.targetsystem.TargetSystemMapper;
 import de.unistuttgart.stayinsync.core.configuration.rest.dtos.targetsystem.TargetSystemDTO;
 import io.quarkus.logging.Log;
@@ -26,6 +11,12 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
 import jakarta.ws.rs.core.Response;
+
+import java.util.List;
+import java.util.Optional;
+
+import static jakarta.transaction.Transactional.TxType.REQUIRED;
+import static jakarta.transaction.Transactional.TxType.SUPPORTS;
 
 @ApplicationScoped
 @Transactional(REQUIRED)

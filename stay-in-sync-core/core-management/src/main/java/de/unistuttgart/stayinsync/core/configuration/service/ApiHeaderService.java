@@ -4,7 +4,6 @@ import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.ApiHea
 import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.ApiHeaderValue;
 import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.SyncSystem;
 import de.unistuttgart.stayinsync.core.configuration.exception.CoreManagementException;
-import jakarta.ws.rs.core.Response;
 import de.unistuttgart.stayinsync.core.configuration.mapping.ApiHeaderFullUpdateMapper;
 import de.unistuttgart.stayinsync.core.configuration.rest.dtos.ApiHeaderDTO;
 import de.unistuttgart.stayinsync.core.configuration.rest.dtos.CreateApiHeaderDTO;
@@ -15,6 +14,7 @@ import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
 import jakarta.validation.Valid;
 import jakarta.validation.Validator;
+import jakarta.ws.rs.core.Response;
 
 import java.util.List;
 import java.util.Optional;

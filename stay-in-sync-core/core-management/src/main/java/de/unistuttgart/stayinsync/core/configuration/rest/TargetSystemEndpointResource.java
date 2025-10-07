@@ -1,27 +1,14 @@
 package de.unistuttgart.stayinsync.core.configuration.rest;
 
-import static jakarta.ws.rs.core.MediaType.APPLICATION_JSON;
-
-import java.util.List;
-
-import org.eclipse.microprofile.openapi.annotations.Operation;
-import org.eclipse.microprofile.openapi.annotations.enums.SchemaType;
-import org.eclipse.microprofile.openapi.annotations.media.Content;
-import org.eclipse.microprofile.openapi.annotations.media.Schema;
-import org.eclipse.microprofile.openapi.annotations.media.ExampleObject;
-import org.eclipse.microprofile.openapi.annotations.parameters.Parameter;
-import org.eclipse.microprofile.openapi.annotations.parameters.RequestBody;
-import org.eclipse.microprofile.openapi.annotations.responses.APIResponse;
-
 import de.unistuttgart.stayinsync.core.configuration.exception.CoreManagementException;
 import de.unistuttgart.stayinsync.core.configuration.mapping.TargetSystemEndpointFullUpdateMapper;
 import de.unistuttgart.stayinsync.core.configuration.rest.dtos.CreateTargetSystemEndpointDTO;
 import de.unistuttgart.stayinsync.core.configuration.rest.dtos.TargetSystemEndpointDTO;
-import de.unistuttgart.stayinsync.core.configuration.service.TargetSystemEndpointService;
-import io.quarkus.logging.Log;
 import de.unistuttgart.stayinsync.core.configuration.rest.dtos.TypeScriptGenerationRequest;
 import de.unistuttgart.stayinsync.core.configuration.rest.dtos.TypeScriptGenerationResponse;
+import de.unistuttgart.stayinsync.core.configuration.service.TargetSystemEndpointService;
 import de.unistuttgart.stayinsync.core.configuration.util.TypeScriptTypeGenerator;
+import io.quarkus.logging.Log;
 import jakarta.inject.Inject;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
@@ -29,6 +16,18 @@ import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.Context;
 import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.core.UriInfo;
+import org.eclipse.microprofile.openapi.annotations.Operation;
+import org.eclipse.microprofile.openapi.annotations.enums.SchemaType;
+import org.eclipse.microprofile.openapi.annotations.media.Content;
+import org.eclipse.microprofile.openapi.annotations.media.ExampleObject;
+import org.eclipse.microprofile.openapi.annotations.media.Schema;
+import org.eclipse.microprofile.openapi.annotations.parameters.Parameter;
+import org.eclipse.microprofile.openapi.annotations.parameters.RequestBody;
+import org.eclipse.microprofile.openapi.annotations.responses.APIResponse;
+
+import java.util.List;
+
+import static jakarta.ws.rs.core.MediaType.APPLICATION_JSON;
 
 @Path("api/config/target-systems/")
 @Produces(APPLICATION_JSON)

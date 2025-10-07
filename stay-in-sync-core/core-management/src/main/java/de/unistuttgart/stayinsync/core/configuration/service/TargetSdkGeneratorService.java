@@ -1,13 +1,9 @@
 package de.unistuttgart.stayinsync.core.configuration.service;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import de.unistuttgart.stayinsync.core.configuration.domain.entities.aas.AasTargetApiRequestConfiguration;
 import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.SyncSystemEndpoint;
 import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.TargetSystemApiRequestConfiguration;
 import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.TargetSystemApiRequestConfigurationAction;
 import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.Transformation;
-import de.unistuttgart.stayinsync.core.configuration.exception.CoreManagementException;
-import de.unistuttgart.stayinsync.core.configuration.service.aas.AasSdkGeneratorService;
 import de.unistuttgart.stayinsync.transport.domain.TargetApiRequestConfigurationActionRole;
 import io.swagger.v3.oas.models.OpenAPI;
 import io.swagger.v3.oas.models.Operation;
@@ -15,6 +11,7 @@ import io.swagger.v3.oas.models.PathItem;
 import io.swagger.v3.oas.models.parameters.Parameter;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
+
 import java.util.*;
 import java.util.stream.Collectors;
 

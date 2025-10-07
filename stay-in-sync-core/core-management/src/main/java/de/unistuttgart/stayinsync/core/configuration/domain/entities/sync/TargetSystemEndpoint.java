@@ -1,14 +1,7 @@
 package de.unistuttgart.stayinsync.core.configuration.domain.entities.sync;
 
 import de.unistuttgart.stayinsync.core.configuration.domain.entities.edc.EDCAsset;
-import jakarta.persistence.DiscriminatorValue;
-import jakarta.persistence.Entity;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
-import jakarta.persistence.OneToMany;
-import jakarta.persistence.OneToOne;
-import jakarta.persistence.Table;
-import jakarta.persistence.UniqueConstraint;
+import jakarta.persistence.*;
 
 import java.util.HashSet;
 

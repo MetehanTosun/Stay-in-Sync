@@ -3,7 +3,10 @@ package de.unistuttgart.stayinsync.core.configuration.domain.entities.sync;
 import de.unistuttgart.stayinsync.transport.domain.JobDeploymentStatus;
 import jakarta.persistence.*;
 
-import java.util.*;
+import java.util.Collections;
+import java.util.List;
+import java.util.Optional;
+import java.util.Set;
 
 @Entity
 @DiscriminatorValue("SOURCE_SYSTEM")

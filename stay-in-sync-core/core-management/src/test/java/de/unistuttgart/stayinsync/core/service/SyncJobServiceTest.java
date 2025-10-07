@@ -6,15 +6,13 @@ import de.unistuttgart.stayinsync.core.configuration.mapping.SyncJobFullUpdateMa
 import de.unistuttgart.stayinsync.core.configuration.service.SyncJobService;
 import io.quarkus.panache.mock.PanacheMock;
 import io.quarkus.test.junit.QuarkusTest;
-import jakarta.enterprise.event.Event;
 import jakarta.inject.Inject;
 import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
-import org.mockito.Mock;
 
 import java.util.Optional;
 
-import static org.assertj.core.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 

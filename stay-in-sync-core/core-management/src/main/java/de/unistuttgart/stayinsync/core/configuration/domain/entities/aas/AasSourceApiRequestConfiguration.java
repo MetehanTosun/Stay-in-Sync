@@ -5,6 +5,7 @@ import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.Transf
 import de.unistuttgart.stayinsync.transport.domain.JobDeploymentStatus;
 import io.quarkus.hibernate.orm.panache.PanacheEntity;
 import jakarta.persistence.*;
+
 import java.util.HashSet;
 import java.util.Optional;
 import java.util.Set;

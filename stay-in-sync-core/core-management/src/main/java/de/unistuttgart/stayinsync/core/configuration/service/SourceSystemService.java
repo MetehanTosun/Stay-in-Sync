@@ -1,21 +1,15 @@
 package de.unistuttgart.stayinsync.core.configuration.service;
 
-import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.SourceSystem;
-import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.SourceSystemEndpoint;
-import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.SourceSystemApiRequestConfiguration;
-import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.ApiHeader;
+import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.*;
 import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.authconfig.SyncSystemAuthConfig;
-import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.SourceSystemVariable;
-import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.ApiEndpointQueryParam;
-import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.ApiEndpointQueryParamValue;
+import de.unistuttgart.stayinsync.core.configuration.exception.CoreManagementException;
 import de.unistuttgart.stayinsync.core.configuration.mapping.SourceSystemFullUpdateMapper;
 import de.unistuttgart.stayinsync.core.configuration.rest.dtos.CreateSourceSystemDTO;
-import de.unistuttgart.stayinsync.core.configuration.exception.CoreManagementException;
-import jakarta.ws.rs.core.Response;
 import io.quarkus.logging.Log;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
+import jakarta.ws.rs.core.Response;
 
 import java.util.List;
 import java.util.Optional;

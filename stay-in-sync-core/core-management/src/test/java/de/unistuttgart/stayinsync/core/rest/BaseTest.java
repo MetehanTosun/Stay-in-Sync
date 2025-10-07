@@ -1,6 +1,5 @@
 package de.unistuttgart.stayinsync.core.rest;
 
-import io.quarkus.test.junit.QuarkusTest;
 import jakarta.inject.Inject;
 import jakarta.persistence.EntityManager;
 import jakarta.transaction.Transactional;

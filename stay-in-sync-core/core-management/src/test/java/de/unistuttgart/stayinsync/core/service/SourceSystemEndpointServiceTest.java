@@ -3,20 +3,18 @@ package de.unistuttgart.stayinsync.core.service;
 import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.SourceSystemEndpoint;
 import de.unistuttgart.stayinsync.core.configuration.service.SourceSystemEndpointService;
 import de.unistuttgart.stayinsync.core.configuration.util.TypeScriptTypeGenerator;
-import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.InjectMock;
+import io.quarkus.test.junit.QuarkusTest;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import java.util.Optional;
+
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.when;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.atLeastOnce;
-
-import java.util.Optional;
+import static org.mockito.Mockito.*;
 
 @QuarkusTest
 public class SourceSystemEndpointServiceTest {
