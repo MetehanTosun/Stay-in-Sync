@@ -11,6 +11,7 @@ import { ToolbarModule } from 'primeng/toolbar';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { ConfirmationService, MessageService } from 'primeng/api';
 import { ConfirmationDialogComponent, ConfirmationDialogData } from '../../../source-system/components/confirmation-dialog/confirmation-dialog.component';
+import { TabViewModule } from 'primeng/tabview';
 import { TargetSystemResourceService } from '../../service/targetSystemResource.service';
 import { TargetSystemDTO } from '../../models/targetSystemDTO';
 import { CreateTargetSystemComponent } from '../create-target-system/create-target-system.component';
@@ -32,6 +33,7 @@ import { AasManagementComponent } from '../aas-management/aas-management.compone
     DialogModule,
     InputTextModule,
     ConfirmDialogModule,
+    TabViewModule,
     CreateTargetSystemComponent,
     ManageTargetEndpointsComponent,
     ManageApiHeadersComponent,
