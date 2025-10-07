@@ -30,7 +30,7 @@ public class CoreManagementException extends WebApplicationException {
      * @param args    message params
      */
     public CoreManagementException(Response.Status status, String title, String message, Object... args) {
-        super(buildResponse(title, message, status, args));
+        super(message, buildResponse(title, message, status, args));
     }
 
     public CoreManagementException(int i, String string, String string2, Long endpointId) {
