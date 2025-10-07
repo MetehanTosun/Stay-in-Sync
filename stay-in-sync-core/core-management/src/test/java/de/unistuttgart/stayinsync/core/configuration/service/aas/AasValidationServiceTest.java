@@ -2,7 +2,7 @@ package de.unistuttgart.stayinsync.core.configuration.service.aas;
 
 import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.SourceSystem;
 import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.TargetSystem;
-import de.unistuttgart.stayinsync.core.configuration.exception.CoreManagementException;
+import de.unistuttgart.stayinsync.core.configuration.exception.CoreManagementWebException;
 import io.quarkus.test.junit.QuarkusTest;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
@@ -53,7 +53,7 @@ public class AasValidationServiceTest {
     @Test
     void testValidateAasSource_NullSourceSystem() {
         // When & Then
-        assertThrows(CoreManagementException.class, () -> {
+        assertThrows(CoreManagementWebException.class, () -> {
             validationService.validateAasSource(null);
         });
     }
@@ -69,7 +69,7 @@ public class AasValidationServiceTest {
         nonAasSystem.persist();
 
         // When & Then
-        assertThrows(CoreManagementException.class, () -> {
+        assertThrows(CoreManagementWebException.class, () -> {
             validationService.validateAasSource(nonAasSystem);
         });
     }
@@ -88,7 +88,7 @@ public class AasValidationServiceTest {
     @Test
     void testValidateAasTarget_NullTargetSystem() {
         // When & Then
-        assertThrows(CoreManagementException.class, () -> {
+        assertThrows(CoreManagementWebException.class, () -> {
             validationService.validateAasTarget(null);
         });
     }
@@ -104,7 +104,7 @@ public class AasValidationServiceTest {
         nonAasSystem.persist();
 
         // When & Then
-        assertThrows(CoreManagementException.class, () -> {
+        assertThrows(CoreManagementWebException.class, () -> {
             validationService.validateAasTarget(nonAasSystem);
         });
     }
@@ -120,7 +120,7 @@ public class AasValidationServiceTest {
         invalidSystem.persist();
 
         // When & Then
-        assertThrows(CoreManagementException.class, () -> {
+        assertThrows(CoreManagementWebException.class, () -> {
             validationService.validateAasSource(invalidSystem);
         });
     }
@@ -136,7 +136,7 @@ public class AasValidationServiceTest {
         invalidSystem.persist();
 
         // When & Then
-        assertThrows(CoreManagementException.class, () -> {
+        assertThrows(CoreManagementWebException.class, () -> {
             validationService.validateAasTarget(invalidSystem);
         });
     }

@@ -97,7 +97,7 @@ public class SourceAasTestControllerTest {
                .thenReturn(Map.of("Authorization", "Bearer token"));
         Mockito.when(traversal.getShell(anyString(), anyString(), anyMap()))
                .thenReturn(Uni.createFrom().item(mockResponse));
-        Mockito.doThrow(new de.unistuttgart.stayinsync.core.configuration.service.CoreManagementWebException(500, "OK", responseBody))
+        Mockito.doThrow(new de.unistuttgart.stayinsync.core.configuration.exception.CoreManagementWebException(jakarta.ws.rs.core.Response.Status.INTERNAL_SERVER_ERROR, "OK", responseBody))
                 .when(aasService).throwHttpError(500, "OK", responseBody);
 
         // When & Then
@@ -118,7 +118,7 @@ public class SourceAasTestControllerTest {
                         jakarta.ws.rs.core.Response.Status.NOT_FOUND, "Source system not found", "Source system is null"));
         
         // Mock the error mapping service to return the correct HTTP response
-        Mockito.doThrow(new de.unistuttgart.stayinsync.core.configuration.service.CoreManagementWebException(404, "Source system not found", "Source system is null"))
+        Mockito.doThrow(new de.unistuttgart.stayinsync.core.configuration.exception.CoreManagementWebException(jakarta.ws.rs.core.Response.Status.NOT_FOUND, "Source system not found", "Source system is null"))
                 .when(aasService).throwHttpError(404, "Source system not found", "Source system is null");
 
         // When & Then

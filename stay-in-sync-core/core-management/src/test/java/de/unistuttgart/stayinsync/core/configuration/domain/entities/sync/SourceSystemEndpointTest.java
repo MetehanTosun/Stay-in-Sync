@@ -33,6 +33,7 @@ class SourceSystemEndpointTest {
         // Create test endpoint
         endpoint = new SourceSystemEndpoint();
         endpoint.sourceSystem = sourceSystem;
+        endpoint.syncSystem = sourceSystem;
         endpoint.endpointPath = "/api/test";
         endpoint.httpRequestType = "GET";
         endpoint.description = "Test endpoint";
@@ -101,6 +102,7 @@ class SourceSystemEndpointTest {
         // Create duplicate endpoint with same sync system, path and method
         SourceSystemEndpoint duplicateEndpoint = new SourceSystemEndpoint();
         duplicateEndpoint.sourceSystem = sourceSystem;
+        duplicateEndpoint.syncSystem = sourceSystem;
         duplicateEndpoint.endpointPath = "/api/test";
         duplicateEndpoint.httpRequestType = "GET";
 

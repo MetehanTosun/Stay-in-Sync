@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import de.unistuttgart.stayinsync.core.configuration.domain.entities.aas.AasSubmodelLite;
 import de.unistuttgart.stayinsync.core.configuration.domain.entities.aas.AasElementLite;
 import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.SourceSystem;
+import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.SourceSystemEndpoint;
 import io.quarkus.test.junit.QuarkusTest;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
@@ -33,6 +34,7 @@ class AasStructureSnapshotServiceTest {
         // Clean up any existing data
         AasElementLite.deleteAll();
         AasSubmodelLite.deleteAll();
+        SourceSystemEndpoint.deleteAll();
         SourceSystem.deleteAll();
         
         // Create a test source system
