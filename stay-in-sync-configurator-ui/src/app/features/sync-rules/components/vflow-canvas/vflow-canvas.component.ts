@@ -174,7 +174,17 @@ export class VflowCanvasComponent implements OnInit {
       case NodeType.CONFIG:
         return [
           { label: 'Toggle Mode', action: () => { this.toggleConfiguration("MODE") } },
-          { label: 'Toggle Status', action: () => { this.toggleConfiguration("STATUS") } }
+          { label: 'Toggle Status', action: () => { this.toggleConfiguration("STATUS") } },
+          {
+            submenu: [
+              { label: '5s', action: () => { this.setTimeWindow(5000) } },
+              { label: '10s', action: () => { this.setTimeWindow(10000) } },
+              { label: '15s', action: () => { this.setTimeWindow(15000) } },
+              { label: '20s', action: () => { this.setTimeWindow(20000) } },
+              { label: '25s', action: () => { this.setTimeWindow(25000) } },
+              { label: '30s', action: () => { this.setTimeWindow(30000) } }
+            ]
+          }
         ];
     }
   }
@@ -500,14 +510,28 @@ export class VflowCanvasComponent implements OnInit {
    */
   toggleConfiguration(configuration: "MODE" | "STATUS") {
     //* The config node should always be on the index 1
-    const configNode = this.nodes.at(1)!;
-    const configData = configNode.data;
+    const configData = this.nodes.at(1)!.data;
 
     if (configuration === "MODE") {
-      configData.mode === "AND" ? configData.mode = "OR" : configData.mode = "AND";
+      configData.changeDetectionMode === "AND" ? configData.changeDetectionMode = "OR" : configData.changeDetectionMode = "AND";
     } else {
-      configData.active != configData.active;
+      configData.changeDetectionActive = !configData.changeDetectionActive;
     }
+
+    // Re-insert as new node to rerender it correctly
+    this.nodes = [
+      ...this.nodes.slice(0, 1),
+      { ...this.nodes[1] },
+      ...this.nodes.slice(2)
+    ];
+    this.hasUnsavedChanges = true;
+    this.closeNodeContextMenu();
+  }
+
+  setTimeWindow(timeWindowMillis: number) {
+    //* The config node should always be on the index 1
+    const configNode = this.nodes.at(1)!;
+    configNode.data.timeWindowMillis = timeWindowMillis;
 
     // Re-insert the node into the nodes array to rerender it correctly
     this.nodes = [
@@ -517,6 +541,7 @@ export class VflowCanvasComponent implements OnInit {
     ];
     this.hasUnsavedChanges = true;
     this.closeNodeContextMenu();
+
   }
   //#endregion
 
@@ -574,6 +599,7 @@ export class VflowCanvasComponent implements OnInit {
   loadGraph(ruleId: number) {
     this.graphApi.getGraph(ruleId).subscribe({
       next: (graph: VFlowGraphDTO) => {
+        console.log("Received:", graph); // TODO-s DELETE
 
         // loads nodes
         this.nodes = graph.nodes.map(node => ({

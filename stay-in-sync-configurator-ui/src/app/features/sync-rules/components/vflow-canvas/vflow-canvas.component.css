@@ -99,6 +99,53 @@ vflow::ng-deep svg.root-svg {
   color: var(--sr-font-color);
 }
 
+/* Context Menu */
+.context-menu {
+  position: absolute;
+  background-color: white;
+  border: 1px solid #ccc;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+  z-index: 1000;
+  padding: 5px;
+  border-radius: 4px;
+}
+
+.context-menu-item {
+  padding: 5px 10px;
+  cursor: pointer;
+}
+
+.context-menu-item:hover {
+  background-color: #f0f0f0;
+}
+
+/* Submenu */
+.submenu-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 5px;
+}
+
+.submenu-item {
+  padding: 5px;
+  text-align: center;
+  cursor: pointer;
+}
+
+.submenu-item:hover {
+  background-color: #f0f0f0;
+}
+
+.submenu-divider {
+  margin-top: 2px;
+  margin-bottom: 2px;
+  border: none;
+  border-top: 1px solid #ccc;
+  height: 1px;
+  pointer-events: none;
+}
+
+
 #delete-edge-button {
   background: #fee2e2;
   color: #dc2626;

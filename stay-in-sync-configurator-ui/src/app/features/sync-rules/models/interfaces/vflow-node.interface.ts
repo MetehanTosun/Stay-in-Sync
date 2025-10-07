@@ -31,6 +31,7 @@ export interface VFlowNodeData {
   inputLimit?: number;
 
   // For CONFIG nodes
-  mode?: "AND" | "OR";
-  active?: boolean;
+  changeDetectionMode?: "AND" | "OR";
+  changeDetectionActive?: boolean;
+  timeWindowMillis?: number;
 }

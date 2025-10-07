@@ -30,8 +30,19 @@
 <div *ngIf="showNodeContextMenu && selectedNode" class="context-menu" [style.left.px]="nodeContextMenuPosition.x"
   [style.top.px]="nodeContextMenuPosition.y" (click)="$event.stopPropagation()">
   <ng-container *ngFor="let item of selectedNode.contextMenuItems">
-    <div class="context-menu-item" (click)="item.action()">
+    <!-- Render only if the item has a label or action -->
+    <div *ngIf="item.label || item.action" class="context-menu-item" (click)="item.action && item.action()">
       {{ item.label }}
+    </div>
+    <!-- Horizontal line before submenu -->
+    <hr *ngIf="item.submenu" class="submenu-divider" />
+    <!-- Embedded Submenu -->
+    <div *ngIf="item.submenu">
+      <div class="submenu-grid">
+        <div *ngFor="let subItem of item.submenu" class="submenu-item" (click)="subItem.action && subItem.action()">
+          {{ subItem.label }}
+        </div>
+      </div>
     </div>
   </ng-container>
 </div>
