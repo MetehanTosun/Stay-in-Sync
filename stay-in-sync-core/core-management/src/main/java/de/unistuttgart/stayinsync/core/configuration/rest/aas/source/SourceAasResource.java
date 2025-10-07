@@ -73,112 +73,15 @@ public class SourceAasResource {
                     
                     // SUCCESS PATH: Check if server returned parent object instead of children array
                     if (parentPath != null && !parentPath.isBlank() && body != null && !body.isBlank()) {
-                        try {
-                            if (body.trim().startsWith("{")) {
-                                io.vertx.core.json.JsonObject obj = new io.vertx.core.json.JsonObject(body);
-                                String modelType = obj.getString("modelType");
-                                io.vertx.core.json.JsonArray directChildren = null;
-                                if ("SubmodelElementCollection".equalsIgnoreCase(modelType) || "SubmodelElementList".equalsIgnoreCase(modelType)) {
-                                    var v = obj.getValue("value");
-                                    if (v instanceof io.vertx.core.json.JsonArray arr) directChildren = arr;
-                                } else if ("Entity".equalsIgnoreCase(modelType)) {
-                                    var st = obj.getValue("statements");
-                                    if (st instanceof io.vertx.core.json.JsonArray arr) directChildren = arr;
-                                }
-                                if (directChildren != null) {
-                                    Log.infof("Source listElements: parent modelType=%s children=%d parentPath=%s", modelType, directChildren.size(), parentPath);
-                                    Log.infof("Source listElements: DEBUG - directChildren details: size=%d, first few items:", directChildren.size());
-                                    for (int i = 0; i < Math.min(5, directChildren.size()); i++) {
-                                        var item = directChildren.getJsonObject(i);
-                                        if (item != null) {
-                                            Log.infof("Source listElements: DEBUG - item[%d]: idShort=%s, modelType=%s", i, item.getString("idShort"), item.getString("modelType"));
-                                        }
-                                    }
-                                    
-                                    // Special handling for SubmodelElementList flattening
-                                    if ("SubmodelElementList".equalsIgnoreCase(modelType)) {
-                                        io.vertx.core.json.JsonArray flattened = new io.vertx.core.json.JsonArray();
-                                        for (int i = 0; i < directChildren.size(); i++) {
-                                            var listItem = directChildren.getJsonObject(i);
-                                            if (listItem == null) continue;
-                                            String idxId = listItem.getString("idShort");
-                                            if (idxId == null || idxId.isBlank()) idxId = Integer.toString(i);
-                                            Object itemVal = listItem.getValue("value");
-                                            if (itemVal instanceof io.vertx.core.json.JsonArray carr) {
-                                                for (int j = 0; j < carr.size(); j++) {
-                                                    var child = carr.getJsonObject(j);
-                                                    if (child == null) continue;
-                                                    String cid = child.getString("idShort");
-                                                    if (cid != null && !cid.isBlank()) child.put("idShortPath", parentPath + "/" + idxId + "/" + cid);
-                                                    flattened.add(child);
-                                                }
-                                            }
-                                        }
-                                        if (!flattened.isEmpty()) return Response.ok(flattened.encode()).build();
-                                    }
-                                    
-                                    // Regular children processing
-                                    io.vertx.core.json.JsonArray out = new io.vertx.core.json.JsonArray();
-                                    for (int i = 0; i < directChildren.size(); i++) {
-                                        var el = directChildren.getJsonObject(i);
-                                        if (el == null) continue;
-                                        String idShort = el.getString("idShort");
-                                        if ((idShort == null || idShort.isBlank()) && "SubmodelElementList".equalsIgnoreCase(modelType)) {
-                                            idShort = Integer.toString(i);
-                                            el.put("idShort", idShort);
-                                        }
-                                        if (idShort != null && !idShort.isBlank()) el.put("idShortPath", parentPath + "/" + idShort);
-                                        out.add(el);
-                                    }
-                                    Log.infof("Source listElements: returning %d direct children", out.size());
-                                    Log.infof("Source listElements: DEBUG - final output details: size=%d, first few items:", out.size());
-                                    for (int i = 0; i < Math.min(5, out.size()); i++) {
-                                        var item = out.getJsonObject(i);
-                                        if (item != null) {
-                                            Log.infof("Source listElements: DEBUG - final[%d]: idShort=%s, idShortPath=%s", i, item.getString("idShort"), item.getString("idShortPath"));
-                                        }
-                                    }
-                                    return Response.ok(out.encode()).build();
-                                }
-                            }
-                        } catch (Exception ignore) {}
+                        Response r = buildChildrenResponseFromParentBody(body, parentPath, false);
+                        if (r != null) return r;
                     }
                     
                     return Response.ok(body).build();
                 }
                 // Fallback for nested collections returning 404/400 on parent path
                 if ((sc == 404 || sc == 400) && parentPath != null && !parentPath.isBlank()) {
-                    try {
-                        Log.infof("Source listElements 404/400-fallback: trying deep fetch for parentPath=%s", parentPath);
-                        var all = traversal.listElements(apiUrl, smId, "all", null, headersLive).await().indefinitely();
-                        if (all.statusCode() >= 200 && all.statusCode() < 300) {
-                            String body = all.bodyAsString();
-                            io.vertx.core.json.JsonArray arr = body != null && body.trim().startsWith("{")
-                                    ? new io.vertx.core.json.JsonObject(body).getJsonArray("result", new io.vertx.core.json.JsonArray())
-                                    : new io.vertx.core.json.JsonArray(body);
-                            String prefix = parentPath.endsWith("/") ? parentPath : parentPath + "/";
-                            io.vertx.core.json.JsonArray children = new io.vertx.core.json.JsonArray();
-                            for (int i = 0; i < arr.size(); i++) {
-                                var el = arr.getJsonObject(i);
-                                String p = el.getString("idShortPath", el.getString("idShort"));
-                                if (p == null) continue;
-                                if (p.equals(parentPath)) continue; // skip parent itself
-                                if (p.startsWith(prefix)) {
-                                    String rest = p.substring(prefix.length());
-                                    if (!rest.contains("/")) {
-                                        children.add(el);
-                                    }
-                                }
-                            }
-                            return Response.ok(children.encode()).build();
-                        }
-                    } catch (Exception ignore) {
-                        Log.infof("Source listElements 404/400-fallback: exception in fallback processing: %s", ignore.getMessage());
-                    }
-                    
-                    // Final safety: return empty array for children queries that fail
-                    Log.infof("Source listElements 404/400-fallback: returning final empty array for parentPath=%s", parentPath);
-                    return Response.ok("[]").build();
+                    return buildDeepChildrenFallbackResponse(apiUrl, smId, parentPath, headersLive);
                 }
                 
                 Log.infof("Source listElements MAIN: final return status=%d", sc);
@@ -199,83 +102,11 @@ public class SourceAasResource {
                 if (sc >= 200 && sc < 300) {
                     String body = resp.bodyAsString();
                     Log.infof("Source listElements SNAPSHOT: status=%d depth=%s parentPath=%s", sc, depth, parentPath);
-                    
                     // SUCCESS PATH: Check if server returned parent object instead of children array
                     if (parentPath != null && !parentPath.isBlank() && body != null && !body.isBlank()) {
-                        try {
-                            if (body.trim().startsWith("{")) {
-                                io.vertx.core.json.JsonObject obj = new io.vertx.core.json.JsonObject(body);
-                                String modelType = obj.getString("modelType");
-                                io.vertx.core.json.JsonArray directChildren = null;
-                                if ("SubmodelElementCollection".equalsIgnoreCase(modelType) || "SubmodelElementList".equalsIgnoreCase(modelType)) {
-                                    var v = obj.getValue("value");
-                                    if (v instanceof io.vertx.core.json.JsonArray arr) directChildren = arr;
-                                } else if ("Entity".equalsIgnoreCase(modelType)) {
-                                    var st = obj.getValue("statements");
-                                    if (st instanceof io.vertx.core.json.JsonArray arr) directChildren = arr;
-                                }
-                                if (directChildren != null) {
-                                    Log.infof("Source listElements SNAPSHOT: parent modelType=%s children=%d parentPath=%s", modelType, directChildren.size(), parentPath);
-                                    Log.infof("Source listElements SNAPSHOT: DEBUG - directChildren details: size=%d, first few items:", directChildren.size());
-                                    for (int i = 0; i < Math.min(5, directChildren.size()); i++) {
-                                        var item = directChildren.getJsonObject(i);
-                                        if (item != null) {
-                                            Log.infof("Source listElements SNAPSHOT: DEBUG - item[%d]: idShort=%s, modelType=%s", i, item.getString("idShort"), item.getString("modelType"));
-                                        }
-                                    }
-                                    
-                                    // Special handling for SubmodelElementList flattening
-                                    if ("SubmodelElementList".equalsIgnoreCase(modelType)) {
-                                        io.vertx.core.json.JsonArray flattened = new io.vertx.core.json.JsonArray();
-                                        for (int i = 0; i < directChildren.size(); i++) {
-                                            var listItem = directChildren.getJsonObject(i);
-                                            if (listItem == null) continue;
-                                            String idxId = listItem.getString("idShort");
-                                            if (idxId == null || idxId.isBlank()) idxId = Integer.toString(i);
-                                            Object itemVal = listItem.getValue("value");
-                                            if (itemVal instanceof io.vertx.core.json.JsonArray carr) {
-                                                for (int j = 0; j < carr.size(); j++) {
-                                                    var child = carr.getJsonObject(j);
-                                                    if (child == null) continue;
-                                                    String cid = child.getString("idShort");
-                                                    if (cid != null && !cid.isBlank()) child.put("idShortPath", parentPath + "/" + idxId + "/" + cid);
-                                                    flattened.add(child);
-                                                }
-                                            } else {
-                                                if (idxId != null && !idxId.isBlank()) listItem.put("idShortPath", parentPath + "/" + idxId);
-                                                flattened.add(listItem);
-                                            }
-                                        }
-                                        directChildren = flattened;
-                                    }
-                                    
-                                    io.vertx.core.json.JsonArray out = new io.vertx.core.json.JsonArray();
-                                    for (int i = 0; i < directChildren.size(); i++) {
-                                        var el = directChildren.getJsonObject(i);
-                                        if (el == null) continue;
-                                        String idShort = el.getString("idShort");
-                                        if (idShort == null || idShort.isBlank()) {
-                                            idShort = "item_" + i;
-                                            el.put("idShort", idShort);
-                                        }
-                                        if (idShort != null && !idShort.isBlank()) el.put("idShortPath", parentPath + "/" + idShort);
-                                        out.add(el);
-                                    }
-                                    Log.infof("Source listElements SNAPSHOT: returning %d direct children", out.size());
-                                    Log.infof("Source listElements SNAPSHOT: DEBUG - final output details: size=%d, first few items:", out.size());
-                                    for (int i = 0; i < Math.min(5, out.size()); i++) {
-                                        var item = out.getJsonObject(i);
-                                        if (item != null) {
-                                            Log.infof("Source listElements SNAPSHOT: DEBUG - final[%d]: idShort=%s, idShortPath=%s", i, item.getString("idShort"), item.getString("idShortPath"));
-                                        }
-                                    }
-                                    return Response.ok(out.encode()).build();
-                                }
-                            }
-                        } catch (Exception ignore) {}
+                        Response r = buildChildrenResponseFromParentBody(body, parentPath, true);
+                        if (r != null) return r;
                     }
-                    
-                    // If not a parent object, return the response as-is
                     return Response.ok(body).build();
                 }
                 
@@ -551,6 +382,97 @@ public class SourceAasResource {
             }
         } catch (Exception ignore) {}
         return null;
+    }
+
+    private Response buildChildrenResponseFromParentBody(String body, String parentPath, boolean snapshotMode) {
+        try {
+            if (body.trim().startsWith("{")) {
+                io.vertx.core.json.JsonObject obj = new io.vertx.core.json.JsonObject(body);
+                String modelType = obj.getString("modelType");
+                io.vertx.core.json.JsonArray directChildren = null;
+                if ("SubmodelElementCollection".equalsIgnoreCase(modelType) || "SubmodelElementList".equalsIgnoreCase(modelType)) {
+                    var v = obj.getValue("value");
+                    if (v instanceof io.vertx.core.json.JsonArray arr) directChildren = arr;
+                } else if ("Entity".equalsIgnoreCase(modelType)) {
+                    var st = obj.getValue("statements");
+                    if (st instanceof io.vertx.core.json.JsonArray arr) directChildren = arr;
+                }
+                if (directChildren != null) {
+                    Log.infof("Source listElements: parent modelType=%s children=%d parentPath=%s", modelType, directChildren.size(), parentPath);
+                    // Special handling for SubmodelElementList flattening
+                    if ("SubmodelElementList".equalsIgnoreCase(modelType)) {
+                        io.vertx.core.json.JsonArray flattened = new io.vertx.core.json.JsonArray();
+                        for (int i = 0; i < directChildren.size(); i++) {
+                            var listItem = directChildren.getJsonObject(i);
+                            if (listItem == null) continue;
+                            String idxId = listItem.getString("idShort");
+                            if (idxId == null || idxId.isBlank()) idxId = Integer.toString(i);
+                            Object itemVal = listItem.getValue("value");
+                            if (itemVal instanceof io.vertx.core.json.JsonArray carr) {
+                                for (int j = 0; j < carr.size(); j++) {
+                                    var child = carr.getJsonObject(j);
+                                    if (child == null) continue;
+                                    String cid = child.getString("idShort");
+                                    if (cid != null && !cid.isBlank()) child.put("idShortPath", parentPath + "/" + idxId + "/" + cid);
+                                    flattened.add(child);
+                                }
+                            } else if (snapshotMode) {
+                                if (idxId != null && !idxId.isBlank()) listItem.put("idShortPath", parentPath + "/" + idxId);
+                                flattened.add(listItem);
+                            }
+                        }
+                        if (!flattened.isEmpty()) return Response.ok(flattened.encode()).build();
+                    }
+                    // Regular children processing
+                    io.vertx.core.json.JsonArray out = new io.vertx.core.json.JsonArray();
+                    for (int i = 0; i < directChildren.size(); i++) {
+                        var el = directChildren.getJsonObject(i);
+                        if (el == null) continue;
+                        String idShort = el.getString("idShort");
+                        if ((idShort == null || idShort.isBlank()) && "SubmodelElementList".equalsIgnoreCase(modelType)) {
+                            idShort = snapshotMode ? ("item_" + i) : Integer.toString(i);
+                            el.put("idShort", idShort);
+                        }
+                        if (idShort != null && !idShort.isBlank()) el.put("idShortPath", parentPath + "/" + idShort);
+                        out.add(el);
+                    }
+                    return Response.ok(out.encode()).build();
+                }
+            }
+        } catch (Exception ignore) {}
+        return null;
+    }
+
+    private Response buildDeepChildrenFallbackResponse(String apiUrl, String smId, String parentPath, java.util.Map<String,String> headers) {
+        try {
+            Log.infof("Source listElements 404/400-fallback: trying deep fetch for parentPath=%s", parentPath);
+            var all = traversal.listElements(apiUrl, smId, "all", null, headers).await().indefinitely();
+            if (all.statusCode() >= 200 && all.statusCode() < 300) {
+                String body = all.bodyAsString();
+                io.vertx.core.json.JsonArray arr = body != null && body.trim().startsWith("{")
+                        ? new io.vertx.core.json.JsonObject(body).getJsonArray("result", new io.vertx.core.json.JsonArray())
+                        : new io.vertx.core.json.JsonArray(body);
+                String prefix = parentPath.endsWith("/") ? parentPath : parentPath + "/";
+                io.vertx.core.json.JsonArray children = new io.vertx.core.json.JsonArray();
+                for (int i = 0; i < arr.size(); i++) {
+                    var el = arr.getJsonObject(i);
+                    String p = el.getString("idShortPath", el.getString("idShort"));
+                    if (p == null) continue;
+                    if (p.equals(parentPath)) continue; // skip parent itself
+                    if (p.startsWith(prefix)) {
+                        String rest = p.substring(prefix.length());
+                        if (!rest.contains("/")) {
+                            children.add(el);
+                        }
+                    }
+                }
+                return Response.ok(children.encode()).build();
+            }
+        } catch (Exception ignore) {
+            Log.infof("Source listElements 404/400-fallback: exception in fallback processing: %s", ignore.getMessage());
+        }
+        Log.infof("Source listElements 404/400-fallback: returning final empty array for parentPath=%s", parentPath);
+        return Response.ok("[]").build();
     }
 
     private io.vertx.core.json.JsonObject findElementByPathRecursive(io.vertx.core.json.JsonArray elements, String targetPath) {
