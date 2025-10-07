@@ -6,6 +6,7 @@ import io.vertx.mutiny.ext.web.client.HttpResponse;
 import io.vertx.mutiny.core.buffer.Buffer;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
+import org.eclipse.microprofile.rest.client.inject.RestClient;
 
 import java.util.Map;
 import java.util.Arrays;
@@ -16,6 +17,9 @@ public class AasTraversalClient {
 
     @Inject
     AasHttpClient http;
+
+    // REST client wiring prepared but not yet used
+    @Inject @RestClient AasTraversalApi restApi;
 
     public Uni<HttpResponse<Buffer>> getShell(String baseUrl, String aasId, Map<String, String> headers) {
         return http.getJson(baseUrl + "/shells/" + encode(aasId), headers);
