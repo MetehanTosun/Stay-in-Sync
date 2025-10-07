@@ -1,5 +1,6 @@
 package de.unistuttgart.stayinsync.core.configuration.edc.service.edcconnector;
 
+import de.unistuttgart.stayinsync.core.configuration.edc.exception.ConnectionToEdcFailedException;
 import de.unistuttgart.stayinsync.core.configuration.edc.exception.RequestExecutionException;
 import de.unistuttgart.stayinsync.core.configuration.edc.exception.ResponseInvalidFormatException;
 import de.unistuttgart.stayinsync.core.configuration.edc.exception.ResponseSubscriptionException;
@@ -32,9 +33,9 @@ public class EDCRestClient {
     public JsonObject executeEdcCall(final HttpRequest<Buffer> request, final String jsonContent) throws RequestExecutionException, ResponseSubscriptionException {
         try {
             if(jsonContent != null && !jsonContent.isEmpty()){
-                return this.retrieveJsonObjectFromUniResponse(this.executeRequest(request, jsonContent));
+                return this.retrieveJsonObjectFromResponse(this.executeRequest(request, jsonContent));
             } else {
-                return this.retrieveJsonObjectFromUniResponse(this.executeRequest(request));
+                return this.retrieveJsonObjectFromResponse(this.executeRequest(request));
             }
         } catch (ExecutionException e) {
             final String exceptionMessage = "During the execution of this request a RuntimeException was thrown in form of an ExecutionException.";
@@ -88,8 +89,9 @@ public class EDCRestClient {
      * @throws InterruptedException if the response was not fully finished when a new response occurred
      * @throws ResponseInvalidFormatException if the response did not contain a Json but data of a different type.
      */
-    private JsonObject retrieveJsonObjectFromUniResponse(final Uni<HttpResponse<Buffer>> responseUniFormat) throws ExecutionException, InterruptedException, ResponseInvalidFormatException {
+    private JsonObject retrieveJsonObjectFromResponse(final Uni<HttpResponse<Buffer>> responseUniFormat) throws ExecutionException, InterruptedException, ResponseInvalidFormatException {
         final HttpResponse<Buffer> response = extractResponseFromUniContainer(responseUniFormat);
+        validateHttpStatusCode(response);
         return extractJsonObjectFromResponse(response);
     }
 
@@ -122,6 +124,21 @@ public class EDCRestClient {
             } catch (DecodeException e2) {
                 throw new ResponseInvalidFormatException("The response was not in Json-Format and therefore could not be converted into a JsonObject", e2);
             }
+        }
+    }
+
+    /**
+     * Validates the HTTP status code of the response.
+     * @param response the HTTP response to validate
+     * @throws ResponseInvalidFormatException if the status code indicates an error
+     */
+    private void validateHttpStatusCode(HttpResponse<Buffer> response) throws ResponseInvalidFormatException{
+        int statusCode = response.statusCode();
+        if (statusCode < 200 || statusCode >= 300) {
+            String errorMessage = String.format("EDC operation failed with HTTP status %d. Response: %s",
+                    statusCode, response.bodyAsString());
+            Log.errorf(errorMessage);
+            throw new ResponseInvalidFormatException(errorMessage);
         }
     }
 }

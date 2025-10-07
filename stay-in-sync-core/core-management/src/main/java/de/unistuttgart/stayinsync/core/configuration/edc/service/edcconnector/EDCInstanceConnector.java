@@ -33,7 +33,6 @@ public class EDCInstanceConnector {
         Log.debugf("Trying to connect to Control Plane Management URL");
 
         try {
-
             final HttpRequest<Buffer> assetRequest = requestBuilder.buildRequest(edcInstance, "GET", edcInstance.getEdcAssetEndpoint());
             final HttpRequest<Buffer> policyRequest =requestBuilder.buildRequest(edcInstance, "GET", edcInstance.getEdcPolicyEndpoint());
             final HttpRequest<Buffer> contractDefinitionRequest =requestBuilder.buildRequest(edcInstance, "GET", edcInstance.getEdcContractDefinitionEndpoint());
@@ -78,7 +77,6 @@ public class EDCInstanceConnector {
             Log.debugf("Successfully validated EDC %s endpoint", endpointName);
 
         } catch (RequestExecutionException | ResponseSubscriptionException e) {
-            // Spezifische HTTP-Fehlerbehandlung
             if (isAuthenticationError(e)) {
                 throw new ConnectionToEdcFailedException(String.format("Authentication failed for %s endpoint: %s", endpointName, e.getMessage()), e);
             } else if (isNotFoundError(e)) {

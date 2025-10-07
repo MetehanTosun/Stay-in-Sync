@@ -1,6 +1,6 @@
 package de.unistuttgart.stayinsync.core.configuration.edc.mapping;
 
-import de.unistuttgart.stayinsync.core.configuration.edc.dtoedc.JsonTemplateDto;
+import de.unistuttgart.stayinsync.core.configuration.edc.dto.JsonTemplateDto;
 import de.unistuttgart.stayinsync.core.configuration.edc.entities.JsonTemplate;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;

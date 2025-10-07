@@ -7,7 +7,7 @@ import java.util.Optional;
 
 import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.TargetSystem;
 import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.TargetSystemEndpoint;
-import de.unistuttgart.stayinsync.core.configuration.edc.entities.EDCAsset;
+import de.unistuttgart.stayinsync.core.configuration.edc.entities.Asset;
 import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.TargetSystemApiQueryParam;
 import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.TargetSystemApiRequestHeader;
 import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.TargetSystemVariable;
@@ -108,8 +108,8 @@ public class TargetSystemService {
             for (TargetSystemApiRequestHeader th : tHeaders) th.delete();
 
             // EDC Asset
-            List<EDCAsset> assets = EDCAsset.list("targetSystemEndpoint.id", endpoint.id);
-            for (EDCAsset asset : assets) asset.delete();
+            List<Asset> assets = Asset.list("targetSystemEndpoint.id", endpoint.id);
+            for (Asset asset : assets) asset.delete();
 
             // Endpoint
             endpoint.delete();

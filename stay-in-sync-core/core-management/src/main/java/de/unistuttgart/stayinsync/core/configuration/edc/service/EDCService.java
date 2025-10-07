@@ -1,6 +1,6 @@
 package de.unistuttgart.stayinsync.core.configuration.edc.service;
 
-import de.unistuttgart.stayinsync.core.configuration.edc.dtoedc.EDCInstanceDto;
+import de.unistuttgart.stayinsync.core.configuration.edc.dto.EDCInstanceDto;
 import de.unistuttgart.stayinsync.core.configuration.edc.exception.EntityUpdateFailedException;
 import de.unistuttgart.stayinsync.core.configuration.edc.service.edcconnector.EDCInstanceConnector;
 import de.unistuttgart.stayinsync.core.configuration.edc.entities.EDCInstance;
@@ -12,7 +12,6 @@ import io.quarkus.logging.Log;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
-import org.apache.http.ConnectionClosedException;
 
 import java.util.List;
 import java.util.UUID;
@@ -49,7 +48,7 @@ public class EDCService {
         }
         
         Log.info("EDC-Instanz gefunden: " + instance.getName());
-        return mapper.toDto(instance);
+        return mapper.entityToDto(instance);
     }
 
     /**
@@ -62,7 +61,7 @@ public class EDCService {
         
         List<EDCInstance> instances = EDCInstance.listAll();
         List<EDCInstanceDto> dtos = instances.stream()
-                .map(mapper::toDto)
+                .map(mapper::entityToDto)
                 .toList();
         
         Log.info(instances.size() + " EDC-Instanzen gefunden");
@@ -78,12 +77,12 @@ public class EDCService {
     @Transactional
     public EDCInstanceDto create(final EDCInstanceDto edcInstanceDto) throws EntityCreationFailedException{
         Log.debugf("Creation of EdcInstance started.", edcInstanceDto.name());
-        final EDCInstance edcInstance = EDCInstanceMapper.mapper.fromDto(edcInstanceDto);
+        final EDCInstance edcInstance = EDCInstanceMapper.mapper.dtoToEntity(edcInstanceDto);
         try{
             edcConnector.tryConnectingInstanceToExistingEdc(edcInstance);
             Log.debugf("Connection tested. EDCInstance is persisted in database");
             edcInstance.persist();
-            return EDCInstanceMapper.mapper.toDto(edcInstance);
+            return EDCInstanceMapper.mapper.entityToDto(edcInstance);
         } catch(ConnectionToEdcFailedException e){
             final String exceptionMessage = "EdcInstance creation failed because of connectionError:" + e.getMessage();
             Log.errorf(exceptionMessage);
@@ -103,7 +102,7 @@ public class EDCService {
     public EDCInstanceDto update(final UUID id, final EDCInstanceDto updatedDto) throws EntityUpdateFailedException {
         Log.debug("Aktualisieren der EDC-Instanz mit ID: " + id);
         final EDCInstance persistedInstance = EDCInstance.findById(id);
-        final EDCInstance updatedInstance = mapper.fromDto(updatedDto);
+        final EDCInstance updatedInstance = mapper.dtoToEntity(updatedDto);
         if (persistedInstance == null) {
             final String exceptionMessage = "Keine EDC-Instanz mit ID " + id + " für Update gefunden";
             Log.error(exceptionMessage);
@@ -123,7 +122,7 @@ public class EDCService {
             persistedInstance.setEdcContractDefinitionEndpoint(updatedInstance.getEdcContractDefinitionEndpoint());
 
             Log.info("EDC-Instanz mit ID " + id + " erfolgreich aktualisiert");
-            return mapper.toDto(persistedInstance);
+            return mapper.entityToDto(persistedInstance);
         } catch(ConnectionToEdcFailedException e) {
             final String exceptionMessage = "EdcInstance update failed because of connectionError:" + e.getMessage();
             Log.errorf(exceptionMessage);

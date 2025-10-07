@@ -1,6 +1,6 @@
 package de.unistuttgart.stayinsync.core.configuration.edc.rest;
 
-import de.unistuttgart.stayinsync.core.configuration.edc.dtoedc.EDCInstanceDto;
+import de.unistuttgart.stayinsync.core.configuration.edc.dto.EDCInstanceDto;
 import de.unistuttgart.stayinsync.core.configuration.edc.exception.EntityCreationFailedException;
 import de.unistuttgart.stayinsync.core.configuration.edc.exception.EntityUpdateFailedException;
 import de.unistuttgart.stayinsync.core.configuration.edc.service.EDCService;
@@ -23,8 +23,6 @@ public class EDCResource {
 
     @Inject
     public EDCService service;
-
-    
 
 
     @GET

@@ -1,6 +1,6 @@
 package de.unistuttgart.stayinsync.core.configuration.edc.rest;
 
-import de.unistuttgart.stayinsync.core.configuration.edc.dtoedc.JsonTemplateDto;
+import de.unistuttgart.stayinsync.core.configuration.edc.dto.JsonTemplateDto;
 import de.unistuttgart.stayinsync.core.configuration.edc.service.JsonTemplateService;
 import io.quarkus.logging.Log;
 import jakarta.inject.Inject;

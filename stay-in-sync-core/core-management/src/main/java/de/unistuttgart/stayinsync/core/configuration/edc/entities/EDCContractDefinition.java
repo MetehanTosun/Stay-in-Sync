@@ -16,7 +16,7 @@ public class EDCContractDefinition extends UuidEntity {
         columnDefinition = "CHAR(36)",
         nullable = false
     )
-    private EDCAsset asset;
+    private Asset asset;
 
     @ManyToOne(optional = false)
     @JoinColumn(
@@ -46,11 +46,11 @@ public class EDCContractDefinition extends UuidEntity {
         this.contractDefinitionId = contractDefinitionId;
     }
 
-    public EDCAsset getAsset() {
+    public Asset getAsset() {
         return asset;
     }
 
-    public void setAsset(EDCAsset asset) {
+    public void setAsset(Asset asset) {
         this.asset = asset;
     }
 
