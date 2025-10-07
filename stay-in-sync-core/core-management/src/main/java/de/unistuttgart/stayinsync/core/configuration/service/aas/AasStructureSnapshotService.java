@@ -318,6 +318,69 @@ public class AasStructureSnapshotService {
         SourceSystem ss = ssOpt.get();
 
         int attached = 0;
+
+        // Read entries and JSON parts (while tracking if archive had any entries at all)
+        var zipRead = readAasxJsonEntries(fileBytes);
+        if (!zipRead.hasEntries) {
+            throw new InvalidAasxException("Not a valid AASX: archive has no entries");
+        }
+
+        Log.infof("Live attach: discovered %d JSON entries in AASX", zipRead.jsonEntries.size());
+
+        var headersWrite = headerBuilder.buildMergedHeaders(ss, HttpHeaderBuilder.Mode.WRITE_JSON);
+        var headersRead = headerBuilder.buildMergedHeaders(ss, HttpHeaderBuilder.Mode.READ);
+
+        // Process JSON entries
+        for (ZipJson zj : zipRead.jsonEntries) {
+            try {
+                Log.debugf("Live attach: scanning JSON entry '%s'", zj.name());
+                JsonNode root = objectMapper.readTree(zj.json);
+                if (root == null) continue;
+
+                var candidates = getSubmodelCandidatesFromJson(root);
+                Log.infof("Live attach: JSON entry '%s' produced %d candidate submodels", zj.name(), candidates.size());
+                for (JsonNode smNode : candidates) {
+                    String id = textOrNull(smNode, "id");
+                    if (id == null && smNode.has("identification")) {
+                        id = textOrNull(smNode.get("identification"), "id");
+                    }
+                    if (id == null || id.isBlank()) continue;
+
+                    Log.infof("Live attach: processing submodel id=%s from JSON", id);
+                    // If exists upstream, ensure shell reference
+                    if (checkAndAttachExisting(ss, id, headersWrite, headersRead)) {
+                        attached++;
+                        continue;
+                    }
+                    // Otherwise create and attach
+                    String createdId = createSubmodelUpstreamFromJson(ss, smNode, headersWrite);
+                    if (createdId != null && tryAddSubmodelRef(ss, createdId, headersWrite, headersRead)) {
+                        attached++;
+                    }
+                }
+            } catch (Exception ex) {
+                Log.warn("Skipping JSON entry from AASX during live attach", ex);
+            }
+        }
+
+        // XML fallback
+        if (attached == 0) {
+            attached += attachSubmodelsFromXmlFallback(ss, fileBytes, headersWrite, headersRead);
+        }
+
+        return attached;
+    }
+
+    private static final class ZipReadResult {
+        final java.util.List<ZipJson> jsonEntries;
+        final boolean hasEntries;
+        ZipReadResult(java.util.List<ZipJson> jsonEntries, boolean hasEntries) {
+            this.jsonEntries = jsonEntries;
+            this.hasEntries = hasEntries;
+        }
+    }
+
+    private ZipReadResult readAasxJsonEntries(byte[] fileBytes) {
         final java.util.List<ZipJson> jsonEntries = new java.util.ArrayList<>();
         boolean hasEntries = false;
         try (java.util.zip.ZipInputStream zis = new java.util.zip.ZipInputStream(new java.io.ByteArrayInputStream(fileBytes))) {
@@ -336,60 +399,121 @@ public class AasStructureSnapshotService {
         } catch (java.io.IOException e) {
             throw new InvalidAasxException("Failed to read AASX: " + e.getMessage());
         }
-        if (!hasEntries) {
-            throw new InvalidAasxException("Not a valid AASX: archive has no entries");
+        return new ZipReadResult(jsonEntries, hasEntries);
+    }
+
+    private java.util.List<JsonNode> getSubmodelCandidatesFromJson(JsonNode root) {
+        java.util.List<JsonNode> candidates = new java.util.ArrayList<>();
+        if (root == null) return candidates;
+        if ((root.has("modelType") && "Submodel".equalsIgnoreCase(textOrNull(root, "modelType")))
+                || (root.has("submodelElements") && root.get("submodelElements").isArray())) {
+            candidates.add(root);
         }
+        if (root.has("submodel")) {
+            candidates.add(root.get("submodel"));
+        }
+        if (root.has("submodels") && root.get("submodels").isArray()) {
+            for (JsonNode sm : root.get("submodels")) candidates.add(sm);
+        }
+        return candidates;
+    }
 
-        Log.infof("Live attach: discovered %d JSON entries in AASX", jsonEntries.size());
+    private boolean checkAndAttachExisting(SourceSystem ss, String id, java.util.Map<String,String> headersWrite, java.util.Map<String,String> headersRead) {
+        try {
+            String smIdB64 = java.util.Base64.getUrlEncoder().withoutPadding().encodeToString(id.getBytes(java.nio.charset.StandardCharsets.UTF_8));
+            io.vertx.mutiny.ext.web.client.HttpResponse<io.vertx.mutiny.core.buffer.Buffer> check = traversalClient.getSubmodel(ss.apiUrl, smIdB64, headersRead).await().indefinitely();
+            if (check.statusCode() >= 200 && check.statusCode() < 300) {
+                return tryAddSubmodelRef(ss, id, headersWrite, headersRead);
+            }
+        } catch (Exception ignore) { }
+        return false;
+    }
 
-        var headersWrite = headerBuilder.buildMergedHeaders(ss, HttpHeaderBuilder.Mode.WRITE_JSON);
-        var headersRead = headerBuilder.buildMergedHeaders(ss, HttpHeaderBuilder.Mode.READ);
-
-        for (ZipJson zj : jsonEntries) {
+    private String createSubmodelUpstreamFromJson(SourceSystem ss, JsonNode smNode, java.util.Map<String,String> headersWrite) {
+        String id = textOrNull(smNode, "id");
+        if (id == null && smNode.has("identification")) {
+            id = textOrNull(smNode.get("identification"), "id");
+        }
+        String payload = buildNormalizedSubmodelPayload(smNode);
+        Log.debugf("Live attach: creating submodel id=%s payload=%s", id, payload);
+        var createResp = traversalClient.createSubmodel(ss.apiUrl, payload, headersWrite).await().indefinitely();
+        if (createResp.statusCode() >= 200 && createResp.statusCode() < 300) {
+            String createdId = id;
             try {
-                Log.debugf("Live attach: scanning JSON entry '%s'", zj.name());
-                JsonNode root = objectMapper.readTree(zj.json);
-                if (root == null) continue;
+                String b = createResp.bodyAsString();
+                if (b != null && !b.isBlank() && b.trim().startsWith("{")) {
+                    JsonNode created = objectMapper.readTree(b);
+                    String cid = textOrNull(created, "id");
+                    if (cid != null && !cid.isBlank()) createdId = cid;
+                }
+            } catch (Exception ignore) { }
+            Log.infof("Live attach: created submodel upstream id=%s (from JSON)", createdId);
+            return createdId;
+        } else {
+            Log.warnf("Failed to create submodel id=%s upstream: %d %s", id, createResp.statusCode(), createResp.statusMessage());
+            return null;
+        }
+    }
 
-                // Accept: standalone submodel or container with .submodels[] or .submodel
-                java.util.List<JsonNode> candidates = new java.util.ArrayList<>();
-                if ((root.has("modelType") && "Submodel".equalsIgnoreCase(textOrNull(root, "modelType")))
-                        || (root.has("submodelElements") && root.get("submodelElements").isArray())) {
-                    candidates.add(root);
-                }
-                if (root.has("submodel")) {
-                    candidates.add(root.get("submodel"));
-                }
-                if (root.has("submodels") && root.get("submodels").isArray()) {
-                    for (JsonNode sm : root.get("submodels")) candidates.add(sm);
-                }
-                Log.infof("Live attach: JSON entry '%s' produced %d candidate submodels", zj.name(), candidates.size());
-                for (JsonNode smNode : candidates) {
-                    String id = textOrNull(smNode, "id");
-                    if (id == null && smNode.has("identification")) {
-                        id = textOrNull(smNode.get("identification"), "id");
+    private int attachSubmodelsFromXmlFallback(SourceSystem ss, byte[] fileBytes, java.util.Map<String,String> headersWrite, java.util.Map<String,String> headersRead) {
+        int attached = 0;
+        Log.info("Live attach: No submodels attached from JSON, trying XML fallback");
+        try (java.util.zip.ZipInputStream zis2 = new java.util.zip.ZipInputStream(new java.io.ByteArrayInputStream(fileBytes))) {
+            java.util.zip.ZipEntry entry;
+            while ((entry = zis2.getNextEntry()) != null) {
+                String name = entry.getName();
+                if (name == null) continue;
+                String lower = name.toLowerCase(java.util.Locale.ROOT);
+                if (!lower.endsWith(".xml")) continue;
+                try {
+                    Log.debugf("Live attach: scanning XML entry '%s'", name);
+                    javax.xml.parsers.DocumentBuilderFactory dbf = javax.xml.parsers.DocumentBuilderFactory.newInstance();
+                    dbf.setNamespaceAware(true);
+                    javax.xml.parsers.DocumentBuilder db = dbf.newDocumentBuilder();
+                    org.w3c.dom.Document doc = db.parse(zis2);
+                    org.w3c.dom.Element root = doc.getDocumentElement();
+                    if (root == null) continue;
+                    String rootLocal = root.getLocalName() != null ? root.getLocalName() : root.getNodeName();
+                    if (rootLocal == null || !rootLocal.toLowerCase(java.util.Locale.ROOT).contains("submodel")) {
+                        var subNodes = root.getElementsByTagNameNS("*", "submodel");
+                        if (subNodes.getLength() > 0) {
+                            root = (org.w3c.dom.Element) subNodes.item(0);
+                        }
                     }
-                    if (id == null || id.isBlank()) continue;
-
-                    Log.infof("Live attach: processing submodel id=%s from JSON", id);
-
-                    // Skip if submodel already exists upstream
+                    String id = firstTextByLocalName(root, "id");
+                    if (id == null) {
+                        var ident = firstChildByLocalName(root, "identification");
+                        if (ident != null) id = firstTextByLocalName(ident, "id");
+                        if (id == null) {
+                            var identifier = firstChildByLocalName(root, "identifier");
+                            if (identifier != null) {
+                                String i1 = identifier.getAttribute("id");
+                                if (i1 != null && !i1.isBlank()) id = i1;
+                                if (id == null) id = identifier.getTextContent();
+                            }
+                        }
+                    }
+                    if (id == null || id.isBlank()) {
+                        id = name;
+                    }
+                    Log.infof("Live attach: processing submodel id=%s from XML", id);
+                    // Skip if already present
                     try {
                         String smIdB64 = java.util.Base64.getUrlEncoder().withoutPadding().encodeToString(id.getBytes(java.nio.charset.StandardCharsets.UTF_8));
-                        io.vertx.mutiny.ext.web.client.HttpResponse<io.vertx.mutiny.core.buffer.Buffer> check = traversalClient.getSubmodel(ss.apiUrl, smIdB64, headersRead).await().indefinitely();
+                        var check = traversalClient.getSubmodel(ss.apiUrl, smIdB64, headersRead).await().indefinitely();
                         if (check.statusCode() >= 200 && check.statusCode() < 300) {
-                            // Ensure shell has the reference; if not, add
-                            if (tryAddSubmodelRef(ss, id, headersWrite, headersRead)) {
-                                attached++;
-                            }
+                            if (tryAddSubmodelRef(ss, id, headersWrite, headersRead)) attached++;
                             continue;
                         }
                     } catch (Exception ignore) { }
 
-                    // Create submodel upstream
-                    String payload = buildNormalizedSubmodelPayload(smNode);
-                    Log.debugf("Live attach: creating submodel id=%s payload=%s", id, payload);
-                    var createResp = traversalClient.createSubmodel(ss.apiUrl, payload, headersWrite).await().indefinitely();
+                    String idShort = firstTextByLocalName(root, "idShort");
+                    com.fasterxml.jackson.databind.node.ObjectNode out = objectMapper.createObjectNode();
+                    out.put("modelType", "Submodel");
+                    out.put("id", id);
+                    if (idShort != null) out.put("idShort", idShort);
+                    out.putArray("submodelElements");
+                    var createResp = traversalClient.createSubmodel(ss.apiUrl, out.toString(), headersWrite).await().indefinitely();
                     if (createResp.statusCode() >= 200 && createResp.statusCode() < 300) {
                         String createdId = id;
                         try {
@@ -400,101 +524,17 @@ public class AasStructureSnapshotService {
                                 if (cid != null && !cid.isBlank()) createdId = cid;
                             }
                         } catch (Exception ignore) { }
-                        Log.infof("Live attach: created submodel upstream id=%s (from JSON)", createdId);
-                        if (tryAddSubmodelRef(ss, createdId, headersWrite, headersRead)) {
-                            attached++;
-                        }
+                        Log.infof("Live attach: created submodel upstream id=%s (from XML)", createdId);
+                        if (tryAddSubmodelRef(ss, createdId, headersWrite, headersRead)) attached++;
                     } else {
-                        Log.warnf("Failed to create submodel id=%s upstream: %d %s", id, createResp.statusCode(), createResp.statusMessage());
+                        Log.warnf("Failed to create submodel from XML id=%s upstream: %d %s", id, createResp.statusCode(), createResp.statusMessage());
                     }
+                } catch (Exception ignore) {
                 }
-            } catch (Exception ex) {
-                Log.warn("Skipping JSON entry from AASX during live attach", ex);
             }
+        } catch (java.io.IOException e) {
+            // ignore
         }
-
-        // Fallback: if nothing attached from JSON, try to extract minimal submodel info from XML entries
-        if (attached == 0) {
-            Log.info("Live attach: No submodels attached from JSON, trying XML fallback");
-            try (java.util.zip.ZipInputStream zis2 = new java.util.zip.ZipInputStream(new java.io.ByteArrayInputStream(fileBytes))) {
-                java.util.zip.ZipEntry entry;
-                while ((entry = zis2.getNextEntry()) != null) {
-                    String name = entry.getName();
-                    if (name == null) continue;
-                    String lower = name.toLowerCase(java.util.Locale.ROOT);
-                    if (!lower.endsWith(".xml")) continue;
-                    try {
-                        Log.debugf("Live attach: scanning XML entry '%s'", name);
-                        javax.xml.parsers.DocumentBuilderFactory dbf = javax.xml.parsers.DocumentBuilderFactory.newInstance();
-                        dbf.setNamespaceAware(true);
-                        javax.xml.parsers.DocumentBuilder db = dbf.newDocumentBuilder();
-                        org.w3c.dom.Document doc = db.parse(zis2);
-                        org.w3c.dom.Element root = doc.getDocumentElement();
-                        if (root == null) continue;
-                        String rootLocal = root.getLocalName() != null ? root.getLocalName() : root.getNodeName();
-                        if (rootLocal == null || !rootLocal.toLowerCase(java.util.Locale.ROOT).contains("submodel")) {
-                            var subNodes = root.getElementsByTagNameNS("*", "submodel");
-                            if (subNodes.getLength() > 0) {
-                                root = (org.w3c.dom.Element) subNodes.item(0);
-                            }
-                        }
-                        String id = firstTextByLocalName(root, "id");
-                        if (id == null) {
-                            var ident = firstChildByLocalName(root, "identification");
-                            if (ident != null) id = firstTextByLocalName(ident, "id");
-                            if (id == null) {
-                                var identifier = firstChildByLocalName(root, "identifier");
-                                if (identifier != null) {
-                                    String i1 = identifier.getAttribute("id");
-                                    if (i1 != null && !i1.isBlank()) id = i1;
-                                    if (id == null) id = identifier.getTextContent();
-                                }
-                            }
-                        }
-                        if (id == null || id.isBlank()) {
-                            id = name;
-                        }
-                        Log.infof("Live attach: processing submodel id=%s from XML", id);
-                        // Skip if already present
-                        try {
-                            String smIdB64 = java.util.Base64.getUrlEncoder().withoutPadding().encodeToString(id.getBytes(java.nio.charset.StandardCharsets.UTF_8));
-                            var check = traversalClient.getSubmodel(ss.apiUrl, smIdB64, headersRead).await().indefinitely();
-                            if (check.statusCode() >= 200 && check.statusCode() < 300) {
-                                if (tryAddSubmodelRef(ss, id, headersWrite, headersRead)) attached++;
-                                continue;
-                            }
-                        } catch (Exception ignore) { }
-
-                        String idShort = firstTextByLocalName(root, "idShort");
-                        com.fasterxml.jackson.databind.node.ObjectNode out = objectMapper.createObjectNode();
-                        out.put("modelType", "Submodel");
-                        out.put("id", id);
-                        if (idShort != null) out.put("idShort", idShort);
-                        out.putArray("submodelElements");
-                        var createResp = traversalClient.createSubmodel(ss.apiUrl, out.toString(), headersWrite).await().indefinitely();
-                        if (createResp.statusCode() >= 200 && createResp.statusCode() < 300) {
-                            String createdId = id;
-                            try {
-                                String b = createResp.bodyAsString();
-                                if (b != null && !b.isBlank() && b.trim().startsWith("{")) {
-                                    JsonNode created = objectMapper.readTree(b);
-                                    String cid = textOrNull(created, "id");
-                                    if (cid != null && !cid.isBlank()) createdId = cid;
-                                }
-                            } catch (Exception ignore) { }
-                            Log.infof("Live attach: created submodel upstream id=%s (from XML)", createdId);
-                            if (tryAddSubmodelRef(ss, createdId, headersWrite, headersRead)) attached++;
-                        } else {
-                            Log.warnf("Failed to create submodel from XML id=%s upstream: %d %s", id, createResp.statusCode(), createResp.statusMessage());
-                        }
-                    } catch (Exception ignore) {
-                    }
-                }
-            } catch (java.io.IOException e) {
-                // ignore
-            }
-        }
-
         return attached;
     }
 
