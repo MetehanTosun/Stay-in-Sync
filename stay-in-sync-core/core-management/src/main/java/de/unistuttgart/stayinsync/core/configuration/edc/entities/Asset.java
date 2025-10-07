@@ -1,5 +1,8 @@
 package de.unistuttgart.stayinsync.core.configuration.edc.entities;
 
+import de.unistuttgart.stayinsync.core.configuration.edc.dto.AssetDto;
+import de.unistuttgart.stayinsync.core.configuration.edc.mapping.AssetDataAddressMapper;
+import de.unistuttgart.stayinsync.core.configuration.edc.mapping.AssetPropertiesMapper;
 import io.quarkus.hibernate.orm.panache.PanacheEntity;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
@@ -37,4 +40,15 @@ public class Asset extends PanacheEntity {
 
     @Column(name = "third_party_changes")
     private boolean thirdPartyChanges = false;
+
+    /**
+     * Update asset with the contents of the given assetDto
+     * @param assetDto contains data for the update.
+     */
+    public void updateValuesWithAssetDto(final AssetDto assetDto){
+        this.setAssetId(assetDto.id());
+        this.setType(assetDto.type());
+        this.setProperties(AssetPropertiesMapper.mapper.dtoToEntity(assetDto.properties()));
+        this.setDataAddress(AssetDataAddressMapper.mapper.dtoToEntity(assetDto.dataAddress()));
+    }
 }
