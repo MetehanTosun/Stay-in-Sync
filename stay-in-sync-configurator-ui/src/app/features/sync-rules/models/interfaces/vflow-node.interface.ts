@@ -81,7 +81,7 @@ export type VFlowNodeData =
  */
 export interface CustomVFlowNode extends ComponentNode<VFlowNodeData> {
   /**
-   * Individual data contained within the node
+   * Additional data contained within the node
    */
   data: VFlowNodeData;
 

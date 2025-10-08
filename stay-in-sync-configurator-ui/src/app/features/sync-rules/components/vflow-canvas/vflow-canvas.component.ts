@@ -618,8 +618,7 @@ export class VflowCanvasComponent implements OnInit {
         // loads edges
         this.edges = graph.edges.map(edge => {
           return {
-            ...edge,
-            type: edge.type as EdgeType,
+            ...edge
           }
         });
 
