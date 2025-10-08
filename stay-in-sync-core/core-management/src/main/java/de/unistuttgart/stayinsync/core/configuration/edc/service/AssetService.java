@@ -2,6 +2,7 @@ package de.unistuttgart.stayinsync.core.configuration.edc.service;
 
 import de.unistuttgart.stayinsync.core.configuration.edc.client.AssetEdcClient;
 import de.unistuttgart.stayinsync.core.configuration.edc.dto.AssetDto;
+import de.unistuttgart.stayinsync.core.configuration.edc.dto.EdcEntityDto;
 import de.unistuttgart.stayinsync.core.configuration.edc.entities.Asset;
 import de.unistuttgart.stayinsync.core.configuration.edc.entities.EDCInstance;
 import de.unistuttgart.stayinsync.core.configuration.edc.exception.*;
@@ -23,19 +24,11 @@ import java.util.stream.Collectors;
  * If assets are fetched from the database then they are compared to their one self from the edc. If the states of both versions are inconsistent their boolean thirdPartyChanges is changed to true.
  */
 @ApplicationScoped
-public class AssetService {
+public class AssetService extends EdcEntityService<AssetDto>{
 
-    /**
-     * Returns the asset from the database if it is found. Also fetches the uploaded assetFrom the Edc and compares it
-     * to the persisted asset. If they aren´t equal third party changes is set to true, else false.
-     *
-     * @param id to find the existing asset in the database.
-     * @return the found asset as a Dto
-     * @throws EntityNotFoundException if no asset was found in database with the id.
-     * @throws EntityFetchingException if the asset could not be fetched from the Edc.
-     */
+    @Override
     @Transactional
-    public AssetDto getAssetAndCheckForThirdPartyChanges(final Long id) throws EntityNotFoundException, EntityFetchingException {
+    public AssetDto getEntityWithSyncCheck(final Long id) throws EntityNotFoundException, EntityFetchingException {
         final Asset persistedAsset = this.getAssetFromDatabase(id);
         final EDCInstance edcOfAsset = persistedAsset.getTargetEDC();
         final AssetEdcClient client = AssetEdcClient.createClient(edcOfAsset.getControlPlaneManagementUrl());
@@ -43,12 +36,12 @@ public class AssetService {
 
             final AssetDto fetchedAssetFromEdc = this.extractAssetDtosFromResponse(client.getAssetById(edcOfAsset.getApiKey(), persistedAsset.getAssetId())).getFirst();
             final AssetDto persistedAssetAsDto = AssetMapper.mapper.entityToDto(persistedAsset);
-            persistedAsset.setThirdPartyChanges(!persistedAssetAsDto.equals(fetchedAssetFromEdc));
+            persistedAsset.setEntityOutOfSync(!persistedAssetAsDto.equals(fetchedAssetFromEdc));
             return persistedAssetAsDto;
 
         } catch (DatabaseEntityOutOfSyncException e) {
             Log.warnf(e.getMessage(), persistedAsset.getAssetId());
-            persistedAsset.setThirdPartyChanges(true);
+            persistedAsset.setEntityOutOfSync(true);
             return AssetMapper.mapper.entityToDto(persistedAsset);
 
         } catch (AuthorizationFailedException | ResponseInvalidFormatException | ConnectionToEdcFailedException e) {
@@ -58,13 +51,9 @@ public class AssetService {
         }
     }
 
-    /**
-     * Returns all Assets the database contains for the edc with the given id.
-     *
-     * @return a list of assets as dtos.
-     */
+    @Override
     @Transactional
-    public List<AssetDto> listAllAndCheckForThirdPartyChanges(final Long edcId) throws EntityNotFoundException, EntityFetchingException {
+    public List<AssetDto> getEntitiesAsListWithSyncCheck(final Long edcId) throws EntityNotFoundException, EntityFetchingException {
         final EDCInstance edcInstance = getEdcInstanceFromDatabase(edcId);
         final List<Asset> persistedAssetsForEdcInstance = getAllAssetsForEdcInstanceFromDatabase(edcInstance);
         try {
@@ -78,14 +67,9 @@ public class AssetService {
     }
 
 
-    /**
-     * Persists the asset in the database, after it was uploaded to the edc.
-     *
-     * @param assetDto contains the information to create the asset.
-     * @return the created asset as a dto.
-     */
+    @Override
     @Transactional
-    public AssetDto create(final Long edcId, final AssetDto assetDto) throws EntityCreationFailedException, EntityNotFoundException {
+    public AssetDto createEntityInDatabaseAndEdc(final Long edcId, final AssetDto assetDto) throws EntityNotFoundException, EntityCreationFailedException {
         final EDCInstance assetsEdc = getEdcInstanceFromDatabase(edcId);
         final Asset assetToPersist = AssetMapper.mapper.dtoToEntity(assetDto);
         AssetEdcClient client = AssetEdcClient.createClient(assetToPersist.getTargetEDC().getControlPlaneManagementUrl());
@@ -104,18 +88,10 @@ public class AssetService {
         }
     }
 
-    /**
-     * Updates an existing asset in its referenced edc and then in the database.
-     *
-     * @param id              to find the asset to be updated in the database
-     * @param updatedAssetDto contains the data to update the persisted asset
-     * @return the updated asset as Dto
-     * @throws EntityNotFoundException     if no asset was found with the id
-     * @throws EntityUpdateFailedException if the update was unsuccessful
-     */
+    @Override
     @Transactional
-    public AssetDto update(final Long id, final AssetDto updatedAssetDto) throws EntityUpdateFailedException, EntityNotFoundException {
-        final Asset persistedAsset = this.getAssetFromDatabase(id);
+    public AssetDto updateEntityInDatabaseAndEdc(final Long assetId, final AssetDto updatedAssetDto) throws EntityNotFoundException, EntityUpdateFailedException {
+        final Asset persistedAsset = this.getAssetFromDatabase(assetId);
         final AssetEdcClient client = AssetEdcClient.createClient(persistedAsset.getTargetEDC().getControlPlaneManagementUrl());
         try {
             final AssetDto returnedAssetAfterUpdateOnEdc = extractAssetDtosFromResponse(client.updateAsset(persistedAsset.getTargetEDC().getApiKey(), persistedAsset.getAssetId(), updatedAssetDto)).getFirst();
@@ -127,13 +103,9 @@ public class AssetService {
         }
     }
 
-    /**
-     * Tries to remove asset from referenced Edc. If successful it is also removed from the database.
-     *
-     * @param id to find the existing asset in the database.
-     */
+    @Override
     @Transactional
-    public void delete(final Long id) throws EntityDeletionException, EntityNotFoundException {
+    public void deleteEntityFromDatabaseAndEdc(final Long id) throws EntityNotFoundException, EntityDeletionFailedException {
         Asset assetToDelete = this.getAssetFromDatabase(id);
         AssetEdcClient client = AssetEdcClient.createClient(assetToDelete.getTargetEDC().getControlPlaneManagementUrl());
         RestResponse<Void> response = client.deleteAsset(assetToDelete.getTargetEDC().getApiKey(), assetToDelete.getAssetId());
@@ -143,7 +115,7 @@ public class AssetService {
         } else {
             final String exceptionMessage = "Asset could not be deleted from edc.";
             Log.errorf(exceptionMessage, id);
-            throw new EntityDeletionException(exceptionMessage);
+            throw new EntityDeletionFailedException(exceptionMessage);
         }
     }
 
@@ -201,8 +173,8 @@ public class AssetService {
 
         for (Asset persistedAsset : assetsToCheck) {
             final AssetDto persistedAssetAsDto = AssetMapper.mapper.entityToDto(persistedAsset);
-            final AssetDto edcAssetDto = edcAssetDtosMappedToOwnAssetIds.get(persistedAssetAsDto.id());
-            persistedAsset.setThirdPartyChanges(!persistedAssetAsDto.equals(edcAssetDto));
+            final AssetDto edcAssetDto = edcAssetDtosMappedToOwnAssetIds.get(persistedAssetAsDto.assetId());
+            persistedAsset.setEntityOutOfSync(!persistedAssetAsDto.equals(edcAssetDto));
         }
     }
 
