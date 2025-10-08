@@ -12,7 +12,7 @@ import { MOCK_ODRL_ASSETS } from '../../../mocks/mock-data';
 export class AssetService {
 
 
-  private mockMode = false;
+  private mockMode = true;
 
   private baseUrl = 'http://localhost:8090/api/config/edcs';
 

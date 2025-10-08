@@ -48,6 +48,9 @@ export let MOCK_ODRL_ASSETS: Record<string, any[]> = {
       dataAddress: {
         type: 'HttpData',
         baseUrl: 'https://jsonplaceholder.typicode.com/todos/1',
+        queryParams: 'page=1&limit=10', // Example for query params parsing
+        'header:Authorization': 'Bearer MOCK_TOKEN_123', // Example for header parsing
+        'header:X-Custom-Header': 'StayInSync'
       },
     },
     {

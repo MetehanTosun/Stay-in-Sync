@@ -190,11 +190,8 @@ accessPolicySuggestions: OdrlPolicyDefinition[] = [];
   endpointSuggestions: string[] = [];
   assetAttributes: { key: string; value: string }[] = [{ key: '', value: '' }]; // Start with one empty row
   pathParamId: string = '';
-  queryParams: string[] = [];
-  headerParams: string[] = [];
-  authorizationData: string = '';
-  queryParamOptions: { label: string; value: string }[] = [];
-  headerParamOptions: { label: string; value: string }[] = [];
+  queryParams: { key: string; value: string }[] = [{ key: '', value: '' }];
+  headerParams: { key: string; value: string }[] = [{ key: '', value: '' }];
 
   constructor(
     private assetService: AssetService,
@@ -243,7 +240,6 @@ accessPolicySuggestions: OdrlPolicyDefinition[] = [];
 
     this.loadAccessPolicyTemplates();
     this.loadAssetTemplates();
-    this.loadParamOptions();
     this.loadAllBpns();
   }
 
@@ -257,13 +253,6 @@ accessPolicySuggestions: OdrlPolicyDefinition[] = [];
   private loadAccessPolicyTemplates() {
     this.templateService.getTemplates().subscribe(allTemplates => {
       this.accessPolicyTemplates = allTemplates;
-    });
-  }
-
-  private loadParamOptions() {
-    this.assetService.getParamOptions().subscribe((options: { query: { label: string; value: string }[]; header: { label: string; value: string }[] }) => {
-      this.queryParamOptions = options.query;
-      this.headerParamOptions = options.header;
     });
   }
 
@@ -745,13 +734,51 @@ accessPolicySuggestions: OdrlPolicyDefinition[] = [];
     });
 
     // Update Parameterization fields in dataAddress
-    currentAssetJson.dataAddress.pathParamId = this.pathParamId || undefined;
-    currentAssetJson.dataAddress.queryParams = this.queryParams.length > 0 ? this.queryParams : undefined;
-    currentAssetJson.dataAddress.headerParams = this.headerParams.length > 0 ? this.headerParams : undefined;
-    currentAssetJson.dataAddress.authorizationData = this.authorizationData || undefined;
+    if (this.pathParamId) {
+      currentAssetJson.dataAddress.path = this.pathParamId;
+    }
+
+    // Combine query params into a single string
+    const queryParamsString = this.queryParams
+      .filter(p => p.key && p.value)
+      .map(p => `${encodeURIComponent(p.key)}=${encodeURIComponent(p.value)}`)
+      .join('&');
+    currentAssetJson.dataAddress.queryParams = queryParamsString || undefined;
+
+    // Collect headers into a map, removing the old ones first
+    Object.keys(currentAssetJson.dataAddress).forEach(key => {
+      if (key.toLowerCase().startsWith('header:')) {
+        delete currentAssetJson.dataAddress[key];
+      }
+    });
+    this.headerParams.forEach(h => {
+      if (h.key && h.value) {
+        // The backend will add the "header:" prefix
+        currentAssetJson.dataAddress[h.key] = h.value;
+      }
+    });
 
     this.expertModeJsonContent = JSON.stringify(currentAssetJson, null, 2);
   }
+
+  addQueryParam() {
+    this.queryParams.push({ key: '', value: '' });
+  }
+
+  removeQueryParam(index: number) {
+    this.queryParams.splice(index, 1);
+    this.syncAssetJsonFromForm();
+  }
+
+  addHeaderParam() {
+    this.headerParams.push({ key: '', value: '' });
+  }
+
+  removeHeaderParam(index: number) {
+    this.headerParams.splice(index, 1);
+    this.syncAssetJsonFromForm();
+  }
+
 
   private generateUuid(): string {
     return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
@@ -791,10 +818,27 @@ accessPolicySuggestions: OdrlPolicyDefinition[] = [];
     // Wir müssen alle möglichen Felder prüfen, da das Backend base_url erwartet, aber das Frontend
     // möglicherweise andere Bezeichnungen verwendet
     this.selectedEndpoint = odrlAsset.dataAddress?.base_url || odrlAsset.dataAddress?.baseURL || odrlAsset.dataAddress?.baseUrl || null;
-    this.pathParamId = odrlAsset.dataAddress?.pathParamId || '';
-    this.queryParams = odrlAsset.dataAddress?.queryParams || [];
-    this.headerParams = odrlAsset.dataAddress?.headerParams || [];
-    this.authorizationData = odrlAsset.dataAddress?.authorizationData || '';
+    this.pathParamId = odrlAsset.dataAddress?.path || '';
+
+    // Parse queryParams string into key-value pairs
+    this.queryParams = [];
+    const queryParamsString = odrlAsset.dataAddress?.queryParams || '';
+    if (queryParamsString) {
+      queryParamsString.split('&').forEach((pair: string) => {
+        const [key, value] = pair.split('=');
+        if (key) {
+          this.queryParams.push({ key: decodeURIComponent(key), value: decodeURIComponent(value || '') });
+        }
+      });
+    }
+
+    // Parse headers from dataAddress properties
+    this.headerParams = [];
+    for (const key in odrlAsset.dataAddress) {
+      if (key.toLowerCase().startsWith('header:')) {
+        this.headerParams.push({ key: key.substring(7), value: odrlAsset.dataAddress[key] });
+      }
+    }
 
     this.assetAttributes = [];
     if (odrlAsset.properties) {
@@ -816,9 +860,8 @@ accessPolicySuggestions: OdrlPolicyDefinition[] = [];
     this.selectedEndpoint = null;
     this.assetAttributes = [{ key: '', value: '' }];
     this.pathParamId = '';
-    this.queryParams = [];
-    this.headerParams = [];
-    this.authorizationData = '';
+    this.queryParams = [{ key: '', value: '' }];
+    this.headerParams = [{ key: '', value: '' }];
   }
 
   // End Asset Template methods
@@ -1030,6 +1073,7 @@ accessPolicySuggestions: OdrlPolicyDefinition[] = [];
     this.assetToEditODRL = this.allOdrlAssets.find(a => a['@id'] === asset.assetId) ?? null;
     if (this.assetToEditODRL) {
       this.expertModeJsonContent = JSON.stringify(this.assetToEditODRL, null, 2);
+      this.populateAssetFormFromOdrl(this.assetToEditODRL); // Populate the form fields
       this.displayEditAssetDialog = true;
       return;
     }
@@ -1040,6 +1084,7 @@ accessPolicySuggestions: OdrlPolicyDefinition[] = [];
         next: (raw: any) => {
           this.assetToEditODRL = raw as any;
           this.expertModeJsonContent = JSON.stringify(this.assetToEditODRL, null, 2);
+          this.populateAssetFormFromOdrl(this.assetToEditODRL); // Populate the form fields
           this.displayEditAssetDialog = true;
         },
         error: () => {
@@ -1115,8 +1160,10 @@ accessPolicySuggestions: OdrlPolicyDefinition[] = [];
         assetJson.dataAddress.proxyQueryParams = true;
       }
 
-      console.log('Sende bearbeitetes Asset an Backend:', JSON.stringify(assetJson, null, 2));
-      await this.assetService.createAsset(this.instance.id, assetJson);
+      // Use the update service method instead of create
+      console.log('Sending updated asset to backend:', JSON.stringify(assetJson, null, 2));
+      await lastValueFrom(this.assetService.updateAsset(this.instance.id, this.assetToEditODRL['@id'], assetJson));
+
       this.messageService.add({ severity: 'success', summary: 'Success', detail: 'Asset updated successfully.' });
       this.loadAssets();
       this.hideEditAssetDialog();
