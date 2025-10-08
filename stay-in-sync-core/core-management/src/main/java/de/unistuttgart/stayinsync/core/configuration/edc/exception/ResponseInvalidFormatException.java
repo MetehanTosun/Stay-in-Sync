@@ -8,4 +8,8 @@ public class ResponseInvalidFormatException extends EdcException {
         super(message);
         this.throwable = throwable;
     }
+
+    public ResponseInvalidFormatException(String message) {
+        super(message);
+    }
 }

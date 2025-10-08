@@ -1,7 +1,7 @@
-package de.unistuttgart.stayinsync.core.configuration.edc.dtoedc;
+package de.unistuttgart.stayinsync.core.configuration.edc.dto;
 
 import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
+
 import java.util.UUID;
 
 public class EDCContractDefinitionDto {

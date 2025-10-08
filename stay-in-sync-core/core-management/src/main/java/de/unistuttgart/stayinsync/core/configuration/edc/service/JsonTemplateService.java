@@ -1,12 +1,11 @@
 package de.unistuttgart.stayinsync.core.configuration.edc.service;
 
 
-import de.unistuttgart.stayinsync.core.configuration.edc.dtoedc.JsonTemplateDto;
+import de.unistuttgart.stayinsync.core.configuration.edc.dto.JsonTemplateDto;
 import de.unistuttgart.stayinsync.core.configuration.edc.entities.JsonTemplate;
 import de.unistuttgart.stayinsync.core.configuration.edc.mapping.JsonTemplateMapper;
 import io.quarkus.logging.Log;
 import jakarta.enterprise.context.ApplicationScoped;
-import jakarta.inject.Inject;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.persistence.PersistenceContext;

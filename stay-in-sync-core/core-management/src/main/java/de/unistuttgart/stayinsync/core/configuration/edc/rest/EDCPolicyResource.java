@@ -1,6 +1,6 @@
 package de.unistuttgart.stayinsync.core.configuration.edc.rest;
 
-import de.unistuttgart.stayinsync.core.configuration.edc.dtoedc.EDCPolicyDto;
+import de.unistuttgart.stayinsync.core.configuration.edc.dto.EDCPolicyDto;
 import de.unistuttgart.stayinsync.core.configuration.edc.entities.EDCInstance;
 import de.unistuttgart.stayinsync.core.configuration.edc.entities.EDCPolicy;
 import de.unistuttgart.stayinsync.core.configuration.edc.mapping.EDCPolicyMapper;

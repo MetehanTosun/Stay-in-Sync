@@ -1,6 +1,6 @@
 package de.unistuttgart.stayinsync.core.configuration.edc.rest;
 
-import de.unistuttgart.stayinsync.core.configuration.edc.dtoedc.EDCContractDefinitionDto;
+import de.unistuttgart.stayinsync.core.configuration.edc.dto.EDCContractDefinitionDto;
 import de.unistuttgart.stayinsync.core.configuration.edc.entities.EDCContractDefinition;
 import de.unistuttgart.stayinsync.core.configuration.edc.entities.EDCInstance;
 import de.unistuttgart.stayinsync.core.configuration.edc.mapping.EDCContractDefinitionMapper;

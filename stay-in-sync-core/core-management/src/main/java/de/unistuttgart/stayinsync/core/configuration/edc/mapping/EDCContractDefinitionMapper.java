@@ -1,7 +1,7 @@
 package de.unistuttgart.stayinsync.core.configuration.edc.mapping;
 
-import de.unistuttgart.stayinsync.core.configuration.edc.dtoedc.EDCContractDefinitionDto;
-import de.unistuttgart.stayinsync.core.configuration.edc.entities.EDCAsset;
+import de.unistuttgart.stayinsync.core.configuration.edc.dto.EDCContractDefinitionDto;
+import de.unistuttgart.stayinsync.core.configuration.edc.entities.Asset;
 import de.unistuttgart.stayinsync.core.configuration.edc.entities.EDCContractDefinition;
 import de.unistuttgart.stayinsync.core.configuration.edc.entities.EDCPolicy;
 
@@ -28,7 +28,7 @@ public class EDCContractDefinitionMapper {
 
         // Resolve asset by assetId if present
         if (dto.getAssetId() != null && !dto.getAssetId().isBlank()) {
-            var asset = EDCAsset.findByAssetId(dto.getAssetId());
+            Asset asset = Asset.findById(dto.getAssetId());
             entity.setAsset(asset);
         }
 

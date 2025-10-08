@@ -1,4 +1,4 @@
-package de.unistuttgart.stayinsync.core.configuration.edc.dtoedc;
+package de.unistuttgart.stayinsync.core.configuration.edc.dto;
 
 import jakarta.validation.constraints.NotBlank;
 

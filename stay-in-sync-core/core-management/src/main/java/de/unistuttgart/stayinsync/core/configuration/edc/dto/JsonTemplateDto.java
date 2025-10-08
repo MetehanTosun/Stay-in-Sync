@@ -1,10 +1,9 @@
-package de.unistuttgart.stayinsync.core.configuration.edc.dtoedc;
+package de.unistuttgart.stayinsync.core.configuration.edc.dto;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import java.util.Map;
-import java.util.UUID;
 
 /**
  * Data Transfer Object (DTO) für Policy-Templates.

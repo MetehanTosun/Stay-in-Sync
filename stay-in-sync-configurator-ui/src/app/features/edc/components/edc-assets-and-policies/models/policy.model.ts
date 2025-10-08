@@ -11,8 +11,8 @@ export interface OdrlPolicyDefinition {
    // UI/Backend-Helper-Felder
   
   dbId?: string;  // neue UUID vom Backend
-  policyId?: string; // Business-Key aus DB
-  syncStatus?: 'SYNCED' | 'MODIFIED' | 'UNSYNCED';
+  policyId?: string; // Business-Key aus DB  
+  thirdPartyChanges?: boolean;
 }
 
 export interface OdrlPolicy {
@@ -44,7 +44,7 @@ export interface OdrlContractDefinition {
   accessPolicyId: string;
   contractPolicyId: string;
   assetsSelector: OdrlCriterion[];
-  syncStatus?: 'SYNCED' | 'MODIFIED' | 'UNSYNCED';
+  thirdPartyChanges?: boolean;
 }
 
 /**
@@ -64,7 +64,7 @@ export interface UiContractDefinition {
   assetId: string;
   bpn: string;
   accessPolicyId: string;
-  syncStatus?: 'SYNCED' | 'MODIFIED' | 'UNSYNCED';
+  thirdPartyChanges?: boolean;
    assetsSelector?: OdrlCriterion[]; // optional, da leer sein kann
 }
 

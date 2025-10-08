@@ -4,7 +4,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-import de.unistuttgart.stayinsync.core.configuration.edc.dtoedc.EDCPolicyDto;
+import de.unistuttgart.stayinsync.core.configuration.edc.dto.EDCPolicyDto;
 import de.unistuttgart.stayinsync.core.configuration.edc.entities.EDCInstance;
 import de.unistuttgart.stayinsync.core.configuration.edc.entities.EDCPolicy;
 import io.quarkus.logging.Log;

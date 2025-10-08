@@ -1,4 +1,4 @@
-package de.unistuttgart.stayinsync.core.configuration.edc.dtoedc;
+package de.unistuttgart.stayinsync.core.configuration.edc.dto;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.validation.constraints.NotBlank;
