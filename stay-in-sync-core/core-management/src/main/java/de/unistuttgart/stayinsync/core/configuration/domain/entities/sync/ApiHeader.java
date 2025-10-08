@@ -22,6 +22,7 @@ public class ApiHeader extends PanacheEntity {
     @Enumerated(EnumType.STRING)
     @Column(name = "header_type")
     public ApiRequestHeaderType headerType;
+
     @ManyToOne(fetch = FetchType.LAZY)
     public SyncSystem syncSystem;
 

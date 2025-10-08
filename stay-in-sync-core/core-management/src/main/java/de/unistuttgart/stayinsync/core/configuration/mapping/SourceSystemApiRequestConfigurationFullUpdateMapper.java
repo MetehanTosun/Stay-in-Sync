@@ -27,6 +27,7 @@ public interface SourceSystemApiRequestConfigurationFullUpdateMapper {
 
     List<GetRequestConfigurationDTO> mapToDTOList(List<SourceSystemApiRequestConfiguration> input);
 
+    @Mapping(target = "arcType", constant = "REST")
     @Mapping(target = "sourceSystemName", source = "sourceSystem.name")
     @Mapping(target = "endpointId", source = "sourceSystemEndpoint.id")
     @Mapping(target = "apiRequestParameters", source = "queryParameterValues")

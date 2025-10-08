@@ -3,6 +3,7 @@ package de.unistuttgart.stayinsync.monitoring.core.configuration.rest;
 
 import java.util.Map;
 
+import io.quarkus.logging.Log;
 import org.eclipse.microprofile.rest.client.inject.RestClient;
 
 import com.fasterxml.jackson.databind.JsonNode;
@@ -111,6 +112,10 @@ public class ReplayResource {
 
         JsonNode source = tr.getSourceData() == null ? objectMapper.createObjectNode() : tr.getSourceData();
 
+        if(tr.getSourceData() == null){
+
+            Log.errorf("Sourcedata for Snapshow is null");
+        }
         var result = executor.execute(
                 "transformation-" + tr.getTransformationId() + ".js",
                 javascript,

@@ -88,7 +88,7 @@ public class TransformationExecutionIntegrationTest {
 
     private TransformationMessageDTO createTransformationContext(String mockApiBaseUrl) {
         Set<RequestConfigurationMessageDTO> targetArcs = Set.of(
-                new RequestConfigurationMessageDTO("synchronizeProducts", mockApiBaseUrl,
+                new RequestConfigurationMessageDTO(1L,"synchronizeProducts", mockApiBaseUrl,
                         List.of(
                                 new ActionMessageDTO(TargetApiRequestConfigurationActionRole.CHECK, 1, "GET", "/products/search"),
                                 new ActionMessageDTO(TargetApiRequestConfigurationActionRole.CREATE, 2, "POST", "/products"),
@@ -97,7 +97,7 @@ public class TransformationExecutionIntegrationTest {
                 )
         );
         return new TransformationMessageDTO(1L, "Test Transformation", null, null,
-                JobDeploymentStatus.DEPLOYED, Set.of(), List.of(), targetArcs);
+                JobDeploymentStatus.DEPLOYED, Set.of(), List.of(), targetArcs, Set.of());
     }
 
     private List<Node> createGraphNodes() {

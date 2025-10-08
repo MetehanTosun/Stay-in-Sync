@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import de.unistuttgart.stayinsync.syncnode.domain.ApiCallConfiguration;
 import de.unistuttgart.stayinsync.syncnode.domain.UpsertDirective;
+import de.unistuttgart.stayinsync.syncnode.syncjob.assets.CheckResponseCacheService;
 import de.unistuttgart.stayinsync.transport.domain.TargetApiRequestConfigurationActionRole;
 import de.unistuttgart.stayinsync.transport.dto.targetsystems.ActionMessageDTO;
 import de.unistuttgart.stayinsync.transport.dto.targetsystems.RequestConfigurationMessageDTO;
@@ -34,6 +35,9 @@ import java.util.Optional;
 public class DirectiveExecutor {
 
     @Inject
+    CheckResponseCacheService responseCache;
+
+    @Inject
     WebClientProvider webClientProvider;
 
     @Inject
@@ -50,6 +54,7 @@ public class DirectiveExecutor {
                     int statusCode = checkResponse.statusCode();
 
                     if (statusCode == Response.Status.OK.getStatusCode()) {
+                        responseCache.addResponse(transformationId, arcConfig.id(), checkResponseBody);
                         Log.infof("TID: %d - CHECK successful (200 OK), entity exists. Proceeding with UPDATE.", transformationId);
                         return handleUpdate(client, directive, arcConfig, transformationId, targetApiUrl, checkResponseBody);
                     } else if (statusCode == Response.Status.NOT_FOUND.getStatusCode()) {
@@ -220,11 +225,16 @@ public class DirectiveExecutor {
             String valueExpression = entry.getValue();
 
             if (valueExpression != null && valueExpression.startsWith("{{") && valueExpression.endsWith("}}")) {
-                String jsonPointer = valueExpression.substring(2, valueExpression.length() - 2)
-                        .replace("checkResponse.body.", "/");
+                String path = valueExpression.substring("{{checkResponse.body.".length(), valueExpression.length() - "}}".length());
+                String jsonPointer = "/" + path.replace('.', '/').replaceAll("\\[(\\d+)\\]", "/$1");
+
                 JsonNode valueNode = checkResponseJson.at(jsonPointer);
                 if (!valueNode.isMissingNode()) {
-                    resolvedParams.put(paramName, valueNode.asText());
+                    if (valueNode.isNumber()) {
+                        resolvedParams.put(paramName, valueNode.numberValue());
+                    } else {
+                        resolvedParams.put(paramName, valueNode.asText());
+                    }
                 } else {
                     Log.warnf("Placeholder '%s' could not be resolved. JSON Pointer '%s' not found in CHECK response.", valueExpression, jsonPointer);
                     resolvedParams.put(paramName, null);

@@ -40,6 +40,9 @@
       (cloneArc)="handleCloneArc($event)"
       (editArc)="handleEditArc($event)"
       (deleteArc)="handleDeleteArc($event)"
+      (createAasArc)="handleCreateAasArc($event)"
+      (editAasArc)="handleEditAasArc($event)"
+      (deleteAasArc)="handleDeleteAasArc($event)"
     ></app-arc-management-panel>
   </div>
 
@@ -84,3 +87,12 @@
   (onSaveSuccess)="handleArcSave($event)"
 >
 </app-arc-wizard>
+
+<app-arc-wizard-aas
+  *ngIf="isAasWizardVisible && aasWizardContext"
+  [visible]="isAasWizardVisible"
+  [context]="aasWizardContext"
+  (onHide)="isAasWizardVisible = false"
+  (onSaveSuccess)="handleAasArcSave($event)"
+>
+</app-arc-wizard-aas>

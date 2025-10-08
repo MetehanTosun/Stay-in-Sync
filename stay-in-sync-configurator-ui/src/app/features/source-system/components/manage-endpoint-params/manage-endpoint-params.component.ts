@@ -9,6 +9,8 @@ import { CardModule } from 'primeng/card';
 import { ApiEndpointQueryParamResourceService } from '../../service/apiEndpointQueryParamResource.service';
 import { ApiEndpointQueryParamDTO } from '../../models/apiEndpointQueryParamDTO';
 import { ApiEndpointQueryParamType } from '../../models/apiEndpointQueryParamType';
+import {FloatLabel} from 'primeng/floatlabel';
+import {Select} from 'primeng/select';
 
 /**
  * Component to manage API endpoint query parameters.
@@ -27,6 +29,8 @@ import { ApiEndpointQueryParamType } from '../../models/apiEndpointQueryParamTyp
     InputTextModule,
     DropdownModule,
     CardModule,
+    FloatLabel,
+    Select,
     // ggf. weitere Module
   ]
 })
@@ -181,4 +185,4 @@ export class ManageEndpointParamsComponent implements OnInit, OnChanges {
     const cleanName = paramName.replace(/[{}]/g, '');
     return `{${cleanName}}`;
   }
-} 
+}

@@ -7,6 +7,6 @@ export interface LogEntry {
   timestamp: string;
   message: string;
   nodeId?: string;
-  labels: { [key: string]: string };
+  labels?: { [key: string]: string };
   transformationId?: string;
 }

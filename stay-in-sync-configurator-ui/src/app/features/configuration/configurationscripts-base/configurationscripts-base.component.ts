@@ -67,7 +67,14 @@ export class ConfigurationscriptsBaseComponent implements OnInit {
     this.router.navigate(['/script-editor/', transformation.id]);
   }
 
-  delete(item: any) {
-
+  delete(transformation: Transformation) {
+    this.transformationService.delete(transformation).subscribe({
+      next: data => {
+        this.loadTransformationScripts()
+      },
+      error: err => {
+        console.log(err);
+      }
+    });
   }
 }

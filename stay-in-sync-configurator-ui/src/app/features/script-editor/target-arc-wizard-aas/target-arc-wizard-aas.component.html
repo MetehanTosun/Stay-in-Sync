@@ -1,0 +1,82 @@
+<p-dialog
+  [header]="isEditMode ? 'Edit AAS Target ARC' : 'Create New AAS Target ARC'"
+  [(visible)]="visible"
+  (onHide)="closeDialog()"
+  [modal]="true"
+  [style]="{ width: '50vw' }"
+  [draggable]="false"
+  [resizable]="false"
+>
+  <form [formGroup]="wizardForm" class="form-container">
+    
+    <!-- Alias -->
+    <div class="form-field">
+      <label for="alias">Alias *</label>
+      <input
+        id="alias"
+        pInputText
+        formControlName="alias"
+        placeholder="A unique name for this ARC in your scripts (e.g. updatePlantData)"
+      />
+    </div>
+
+    <!-- Target System Selection -->
+    <div class="form-field">
+      <label for="targetSystem">Target System (AAS only) *</label>
+      <p-dropdown
+        id="targetSystem"
+        [options]="(aasTargetSystems$ | async) || []"
+        optionLabel="name"
+        optionValue="id"
+        formControlName="targetSystemId"
+        placeholder="Select AAS Target System"
+        [showClear]="true"
+        styleClass="w-full"
+      ></p-dropdown>
+    </div>
+
+    <!-- Submodel Selection -->
+    <ng-container *ngIf="wizardForm.get('targetSystemId')?.value">
+      <div class="flex justify-content-center my-3" *ngIf="isLoadingSubmodels">
+        <p-progressSpinner styleClass="w-3rem h-3rem"></p-progressSpinner>
+      </div>
+      
+      <div class="form-field" *ngIf="!isLoadingSubmodels">
+        <label for="submodel">Submodel *</label>
+        <p-dropdown
+          id="submodel"
+          [options]="(submodels$ | async) || []"
+          optionLabel="idShort"
+          optionValue="coreEntityId"
+          formControlName="submodelId"
+          placeholder="Select Submodel"
+          [showClear]="true"
+          styleClass="w-full"
+        >
+          <ng-template let-submodel pTemplate="item">
+            <div class="flex flex-column align-items-start">
+              <div>{{ submodel.idShort }}</div>
+              <small class="text-color-secondary font-mono">{{ submodel.submodelId }}</small>
+            </div>
+          </ng-template>
+        </p-dropdown>
+      </div>
+    </ng-container>
+  </form>
+
+  <ng-template pTemplate="footer">
+    <p-button
+      label="Cancel"
+      icon="pi pi-times"
+      styleClass="p-button-text"
+      (click)="closeDialog()"
+    ></p-button>
+    <p-button
+      [label]="isEditMode ? 'Save Changes' : 'Create ARC'"
+      icon="pi pi-check"
+      (click)="onSave()"
+      [loading]="isSaving"
+      [disabled]="wizardForm.invalid"
+    ></p-button>
+  </ng-template>
+</p-dialog>
