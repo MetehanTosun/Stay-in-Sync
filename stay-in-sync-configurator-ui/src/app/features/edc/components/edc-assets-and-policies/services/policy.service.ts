@@ -38,7 +38,7 @@ export class PolicyService {
         policyId: dto.policy?.['@id'],
         dbId: dto.id,
         bpn: dto.policy?.permission?.[0]?.constraint?.[0]?.rightOperand,
-        syncStatus: dto.syncStatus, // Correctly map syncStatus as a top-level property
+        thirdPartyChanges: dto.thirdPartyChanges,
       }));
       return of(mapped).pipe(delay(300));
     }
@@ -73,7 +73,7 @@ export class PolicyService {
             policyId: unpacked?.['@id'],      // fürs UI, ersetzt 'id'
             dbId: dto.id,                     // DB-UUID
             bpn: extractBpn(unpacked) || '',   // abgeleitete BPN falls vorhanden
-            syncStatus: dto.syncStatus,       // Correctly map syncStatus as a top-level property
+            thirdPartyChanges: dto.thirdPartyChanges,
           };
         });
       })
@@ -241,7 +241,7 @@ export class PolicyService {
     if (this.mockMode) {
       console.warn(`Mock Mode: Redeploying policy ${dbId}.`);
       const policy = (MOCK_POLICIES[edcId] || []).find(p => p.id === dbId);
-      if (policy) policy.syncStatus = 'SYNCED';
+      if (policy) policy.thirdPartyChanges = false;
       return of(undefined).pipe(delay(300));
     }
 
@@ -309,7 +309,7 @@ export class PolicyService {
           ['@id']: cdId,
           assetsSelector,
           accessPolicyId,
-          syncStatus: dto.syncStatus, // Correctly map syncStatus as a top-level property
+          thirdPartyChanges: dto.thirdPartyChanges,
         } as OdrlContractDefinition;
       }))
     );
@@ -364,7 +364,7 @@ export class PolicyService {
     if (this.mockMode) {
       console.warn(`Mock Mode: Redeploying contract definition ${contractDefinitionId}.`);
       const contractDef = (MOCK_CONTRACT_DEFINITIONS[edcId] || []).find(cd => cd['@id'] === contractDefinitionId);
-      if (contractDef) contractDef.syncStatus = 'SYNCED';
+      if (contractDef) contractDef.thirdPartyChanges = false;
       return of(undefined).pipe(delay(300));
     }
 

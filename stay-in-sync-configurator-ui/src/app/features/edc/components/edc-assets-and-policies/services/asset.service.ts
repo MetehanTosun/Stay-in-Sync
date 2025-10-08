@@ -127,7 +127,7 @@ export class AssetService {
     if (this.mockMode) {
       console.warn(`Mock Mode: Redeploying asset ${assetId}.`);
       const asset = (MOCK_ODRL_ASSETS[edcId] || []).find(a => a['@id'] === assetId);
-      if (asset) asset.syncStatus = 'SYNCED';
+      if (asset) asset.thirdPartyChanges = false;
       return of(undefined).pipe(delay(300));
     }
 
@@ -239,7 +239,7 @@ export class AssetService {
         id: p?.id,
         description: p?.description || p?.['asset:prop:description'] || '',
       })),
-      syncStatus: raw?.syncStatus, // Correctly map syncStatus as a top-level property
+      thirdPartyChanges: raw?.thirdPartyChanges,
     };
     return result as Asset;
   }

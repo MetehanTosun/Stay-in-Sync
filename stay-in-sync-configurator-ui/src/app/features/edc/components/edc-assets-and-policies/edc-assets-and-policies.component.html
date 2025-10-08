@@ -63,7 +63,7 @@
         <td>{{ asset.contentType }}</td>
         <td>
           <button pButton pRipple type="button" icon="pi pi-pencil" class="p-button-rounded p-button-text p-button-info mr-2" (click)="editAsset(asset)" pTooltip="Edit Asset"></button>
-          <button *ngIf="asset.syncStatus && asset.syncStatus !== 'SYNCED'" pButton pRipple type="button" icon="pi pi-sync" class="p-button-rounded p-button-text p-button-warning mr-2" (click)="redeployAsset(asset)" pTooltip="Redeploy Asset"></button>
+          <button *ngIf="asset.thirdPartyChanges" pButton pRipple type="button" icon="pi pi-sync" class="p-button-rounded p-button-text p-button-warning mr-2" (click)="redeployAsset(asset)" pTooltip="Redeploy Asset"></button>
           <button pButton pRipple type="button" icon="pi pi-trash" class="p-button-rounded p-button-text p-button-danger" (click)="deleteAsset(asset)" pTooltip="Delete Asset"></button>
         </td>
       </tr>
@@ -148,7 +148,7 @@
         <td>{{ policy.bpn }}</td>
         <td>
           <button pButton pRipple type="button" icon="pi pi-pencil" class="p-button-rounded p-button-text p-button-info mr-2" pTooltip="Edit Access Policy" (click)="editAccessPolicy(policy)" ></button>
-          <button *ngIf="policy.syncStatus && policy.syncStatus !== 'SYNCED'" pButton pRipple type="button" icon="pi pi-sync" class="p-button-rounded p-button-text p-button-warning mr-2" (click)="redeployPolicy(policy)" pTooltip="Redeploy Policy"></button>
+          <button *ngIf="policy.thirdPartyChanges" pButton pRipple type="button" icon="pi pi-sync" class="p-button-rounded p-button-text p-button-warning mr-2" (click)="redeployPolicy(policy)" pTooltip="Redeploy Policy"></button>
           <button pButton pRipple type="button" icon="pi pi-trash" class="p-button-rounded p-button-text p-button-danger" pTooltip="Delete Access Policy" (click)="deleteAccessPolicy(policy)"></button>
         </td>
       </tr>
@@ -212,7 +212,7 @@
         <td>{{ contractPolicy.bpn }}</td>
         <td>
           <button pButton pRipple type="button" icon="pi pi-pencil" class="p-button-rounded p-button-text p-button-info mr-2" pTooltip="Edit Contract Definition" (click)="editContractPolicy(contractPolicy)"></button>
-          <button *ngIf="contractPolicy.syncStatus && contractPolicy.syncStatus !== 'SYNCED'" pButton pRipple type="button" icon="pi pi-sync" class="p-button-rounded p-button-text p-button-warning mr-2" (click)="redeployContractDefinition(contractPolicy)" pTooltip="Redeploy Contract Definition"></button>
+          <button *ngIf="contractPolicy.thirdPartyChanges" pButton pRipple type="button" icon="pi pi-sync" class="p-button-rounded p-button-text p-button-warning mr-2" (click)="redeployContractDefinition(contractPolicy)" pTooltip="Redeploy Contract Definition"></button>
           <button pButton pRipple type="button" icon="pi pi-trash" class="p-button-rounded p-button-text p-button-danger" pTooltip="Delete Contract Definition" (click)="deleteContractPolicy(contractPolicy)"></button>
         </td>
       </tr>
