@@ -173,7 +173,7 @@ export class RulesOverviewComponent implements OnInit {
    * @returns true if the user input is valid
    */
   isInputValid(): boolean {
-    if (this.newRule.name.trim() && this.newRule.description.trim()) {
+    if (this.newRule.name.trim() && this.newRule.description?.trim()) {
       return true;
     }
     return false;

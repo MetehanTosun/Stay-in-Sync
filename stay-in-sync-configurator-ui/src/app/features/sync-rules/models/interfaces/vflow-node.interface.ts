@@ -31,7 +31,7 @@ export interface ProviderNodeData extends BaseNodeData {
  */
 export interface LogicNodeData extends BaseNodeData {
   /**
-   * Categorizes the logic node into certain groups e.g. operator for numbers, strings, ...
+   * Categorizes the logic node into certain groups (e.g. operator for numbers, strings, ...)
    */
   operatorType: string;
 

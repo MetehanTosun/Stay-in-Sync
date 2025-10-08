@@ -15,9 +15,9 @@ export class GraphAPIService {
 
   constructor(private http: HttpClient) { }
 
-  //#region Read Operations
+  //#region Read
   /**
-   * Sends a GET request to read a specific transformation graph.
+   * Sends a GET request for a transformation graph.
    *
    * @param ruleId
    * @returns the frontend (vflow) graph representation
@@ -27,12 +27,12 @@ export class GraphAPIService {
   }
   //#endregion
 
-  //#region Update Operations
+  //#region Update
   /**
-   * Sends a PUT request to update a specific transformation graph.
+   * Sends a PUT request for a transformation graph.
    *
    * @param ruleId
-   * @param graphDto
+   * @param graphDto the changes that are ought to be made
    * @returns the database representation of the created graph
    */
   updateGraph(ruleId: number, graphDto: VFlowGraphDTO): Observable<VFlowGraphDTO> {

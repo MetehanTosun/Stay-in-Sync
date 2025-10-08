@@ -1,6 +1,6 @@
 import { CommonModule } from '@angular/common';
 import { Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
-import { LogicOperatorMetadata, NodeType } from '../../models';
+import { GroupedOperators, LogicOperatorMetadata, NodeType } from '../../models';
 import { OperatorNodesApiService } from '../../service';
 import { MessageService } from 'primeng/api';
 
@@ -19,7 +19,7 @@ export class NodePaletteComponent implements OnInit {
   @Output() nodeSelected = new EventEmitter<{ nodeType: NodeType, operator?: LogicOperatorMetadata }>();
 
   NodeType = NodeType; //* for .html file
-  operatorsGrouped: Map<string, LogicOperatorMetadata[]> = new Map<string, LogicOperatorMetadata[]>();
+  operatorsGrouped: GroupedOperators = {};
 
   // Palette Status
   showLogicGroups = false;
@@ -80,7 +80,7 @@ export class NodePaletteComponent implements OnInit {
    */
   loadGroupedOperators() {
     this.nodesApi.getGroupedOperators().subscribe({
-      next: (operatorsGrouped: Map<string, LogicOperatorMetadata[]>) => {
+      next: (operatorsGrouped: GroupedOperators) => {
         this.operatorsGrouped = operatorsGrouped;
       },
       error: (err) => {
@@ -100,7 +100,7 @@ export class NodePaletteComponent implements OnInit {
    * @returns the names of all logic groups
    */
   getLogicGroups(): string[] {
-    return Array.from(this.operatorsGrouped.keys());
+    return Object.keys(this.operatorsGrouped);
   }
 
   /**
@@ -110,7 +110,7 @@ export class NodePaletteComponent implements OnInit {
    * @returns Array of logic operators
    */
   getOperatorsForGroup(groupName: string): LogicOperatorMetadata[] {
-    return this.operatorsGrouped.get(groupName) || [];
+    return this.operatorsGrouped[groupName];
   }
   //#endregion
 }
