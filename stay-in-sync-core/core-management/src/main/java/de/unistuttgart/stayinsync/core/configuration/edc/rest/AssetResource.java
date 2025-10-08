@@ -38,7 +38,7 @@ public class AssetResource {
             return handleNullArgument();
         }
         try {
-            final AssetDto asset = service.getAssetAndCheckForThirdPartyChanges(id);
+            final AssetDto asset = service.getEntityWithSyncCheck(id);
             Log.debugf("Found asset with its id", id);
             return Response.status(Response.Status.OK)
                     .entity(asset)
@@ -70,7 +70,7 @@ public class AssetResource {
             return handleNullArgument();
         }
         try{
-            final List<AssetDto> assetDtos = service.listAllAndCheckForThirdPartyChanges(edcId);
+            final List<AssetDto> assetDtos = service.getEntitiesAsListWithSyncCheck(edcId);
             Log.debug("Asset successfully fetched.");
             return Response.status(Response.Status.OK)
                     .entity(assetDtos)
@@ -100,7 +100,7 @@ public class AssetResource {
             return handleNullArgument();
         }
         try{
-            final AssetDto createdAssetDto = service.create(edcId, assetToCreate);
+            final AssetDto createdAssetDto = service.createEntityInDatabaseAndEdc(edcId, assetToCreate);
             Log.infof("Asset successfully created", createdAssetDto.id());
             return Response.status(Response.Status.CREATED)
                     .entity(createdAssetDto)
@@ -132,7 +132,7 @@ public class AssetResource {
             return handleNullArgument();
         }
         try{
-            AssetDto updatedAsset = service.update(id,assetToUpdate);
+            AssetDto updatedAsset = service.updateEntityInDatabaseAndEdc(id,assetToUpdate);
             Log.infof("Asset successfully updated", id);
             return Response.status(Response.Status.OK)
                     .entity(updatedAsset)
@@ -166,7 +166,7 @@ public class AssetResource {
             return handleNullArgument();
         }
         try{
-            service.delete(id);
+            service.deleteEntityFromDatabaseAndEdc(id);
             Log.infof("Asset successfully deleted. ");
             return Response.status(Response.Status.OK)
                     .build();
