@@ -3,7 +3,7 @@ package de.unistuttgart.stayinsync.core.configuration.edc.mapping;
 import de.unistuttgart.stayinsync.core.configuration.edc.dto.EDCContractDefinitionDto;
 import de.unistuttgart.stayinsync.core.configuration.edc.entities.Asset;
 import de.unistuttgart.stayinsync.core.configuration.edc.entities.EDCContractDefinition;
-import de.unistuttgart.stayinsync.core.configuration.edc.entities.EDCPolicy;
+import de.unistuttgart.stayinsync.core.configuration.edc.entities.PolicyDefinition;
 
 public class EDCContractDefinitionMapper {
 
@@ -34,16 +34,16 @@ public class EDCContractDefinitionMapper {
 
         // Set access policy based on UUID or string id
         if (dto.getAccessPolicyId() != null) {
-            entity.setAccessPolicy(EDCPolicy.findById(dto.getAccessPolicyId()));
+            entity.setAccessPolicy(PolicyDefinition.findById(dto.getAccessPolicyId()));
         } else if (dto.getAccessPolicyIdStr() != null && !dto.getAccessPolicyIdStr().isBlank()) {
-            entity.setAccessPolicy(EDCPolicy.findByPolicyId(dto.getAccessPolicyIdStr()));
+            entity.setAccessPolicy(PolicyDefinition.findByPolicyId(dto.getAccessPolicyIdStr()));
         }
 
         // Set contract policy based on UUID or string id
         if (dto.getContractPolicyId() != null) {
-            entity.setContractPolicy(EDCPolicy.findById(dto.getContractPolicyId()));
+            entity.setContractPolicy(PolicyDefinition.findById(dto.getContractPolicyId()));
         } else if (dto.getContractPolicyIdStr() != null && !dto.getContractPolicyIdStr().isBlank()) {
-            entity.setContractPolicy(EDCPolicy.findByPolicyId(dto.getContractPolicyIdStr()));
+            entity.setContractPolicy(PolicyDefinition.findByPolicyId(dto.getContractPolicyIdStr()));
         }
 
         return entity;

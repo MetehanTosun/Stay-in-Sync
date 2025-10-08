@@ -5,11 +5,11 @@ import jakarta.persistence.*;
 
 @Entity
 @Table(name = "edc_access_policy_permission")
-public class EDCAccessPolicyPermission extends UuidEntity {
+public class Policy extends UuidEntity {
 
     @ManyToOne
     @JoinColumn(name = "policy_id", columnDefinition = "CHAR(36)", nullable = false)
-    public EDCPolicy edcAccessPolicy;
+    public PolicyDefinition edcAccessPolicy;
 
     @Column(nullable = false)
     public String action;
@@ -23,11 +23,11 @@ public class EDCAccessPolicyPermission extends UuidEntity {
     @Column(name = "constraint_right_operand", nullable = false)
     public String constraintRightOperand;
 
-    public EDCPolicy getEdcAccessPolicy() {
+    public PolicyDefinition getEdcAccessPolicy() {
         return edcAccessPolicy;
     }
 
-    public void setEdcAccessPolicy(EDCPolicy edcAccessPolicy) {
+    public void setEdcAccessPolicy(PolicyDefinition edcAccessPolicy) {
         this.edcAccessPolicy = edcAccessPolicy;
     }
 

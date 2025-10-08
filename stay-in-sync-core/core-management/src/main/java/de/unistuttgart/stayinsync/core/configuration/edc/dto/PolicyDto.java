@@ -4,7 +4,7 @@ import jakarta.validation.constraints.NotBlank;
 
 import java.util.UUID;
 
-public class EDCAccessPolicyPermissionDto {
+public class PolicyDto {
     private UUID id;
 
     @NotBlank
@@ -22,7 +22,7 @@ public class EDCAccessPolicyPermissionDto {
     public UUID getId() {
         return id;
     }
-    public EDCAccessPolicyPermissionDto setId(UUID id) {
+    public PolicyDto setId(UUID id) {
         this.id = id;
         return this;
     }
@@ -30,7 +30,7 @@ public class EDCAccessPolicyPermissionDto {
     public String getAction() {
         return action;
     }
-    public EDCAccessPolicyPermissionDto setAction(String action) {
+    public PolicyDto setAction(String action) {
         this.action = action;
         return this;
     }
@@ -38,7 +38,7 @@ public class EDCAccessPolicyPermissionDto {
     public String getConstraintLeftOperand() {
         return constraintLeftOperand;
     }
-    public EDCAccessPolicyPermissionDto setConstraintLeftOperand(String constraintLeftOperand) {
+    public PolicyDto setConstraintLeftOperand(String constraintLeftOperand) {
         this.constraintLeftOperand = constraintLeftOperand;
         return this;
     }
@@ -46,7 +46,7 @@ public class EDCAccessPolicyPermissionDto {
     public String getConstraintOperator() {
         return constraintOperator;
     }
-    public EDCAccessPolicyPermissionDto setConstraintOperator(String constraintOperator) {
+    public PolicyDto setConstraintOperator(String constraintOperator) {
         this.constraintOperator = constraintOperator;
         return this;
     }
@@ -54,7 +54,7 @@ public class EDCAccessPolicyPermissionDto {
     public String getConstraintRightOperand() {
         return constraintRightOperand;
     }
-    public EDCAccessPolicyPermissionDto setConstraintRightOperand(String constraintRightOperand) {
+    public PolicyDto setConstraintRightOperand(String constraintRightOperand) {
         this.constraintRightOperand = constraintRightOperand;
         return this;
     }

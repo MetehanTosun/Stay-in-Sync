@@ -44,14 +44,14 @@ public class EDCInstance extends UuidEntity {
      * Diese Liste enthält alle Policies, die für diese EDC-Instanz definiert sind.
      */
     @OneToMany(mappedBy = "edcInstance")
-    private List<EDCPolicy> policies = new ArrayList<>();
+    private List<PolicyDefinition> policies = new ArrayList<>();
     
     /**
      * Fügt eine Policy zu dieser EDC-Instanz hinzu.
      * 
      * @param policy Die hinzuzufügende Policy
      */
-    public void addPolicy(EDCPolicy policy) {
+    public void addPolicy(PolicyDefinition policy) {
         if (policies == null) {
             policies = new ArrayList<>();
         }
@@ -65,7 +65,7 @@ public class EDCInstance extends UuidEntity {
      * @param policy Die zu entfernende Policy
      * @return true, wenn die Policy erfolgreich entfernt wurde, sonst false
      */
-    public boolean removePolicy(EDCPolicy policy) {
+    public boolean removePolicy(PolicyDefinition policy) {
         if (policies != null && policies.remove(policy)) {
             policy.setEdcInstance(null);
             return true;

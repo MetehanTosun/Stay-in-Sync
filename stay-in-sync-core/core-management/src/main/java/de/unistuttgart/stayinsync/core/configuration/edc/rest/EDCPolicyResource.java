@@ -1,8 +1,8 @@
 package de.unistuttgart.stayinsync.core.configuration.edc.rest;
 
-import de.unistuttgart.stayinsync.core.configuration.edc.dto.EDCPolicyDto;
+import de.unistuttgart.stayinsync.core.configuration.edc.dto.PolicyDefinitionDto;
 import de.unistuttgart.stayinsync.core.configuration.edc.entities.EDCInstance;
-import de.unistuttgart.stayinsync.core.configuration.edc.entities.EDCPolicy;
+import de.unistuttgart.stayinsync.core.configuration.edc.entities.PolicyDefinition;
 import de.unistuttgart.stayinsync.core.configuration.edc.mapping.EDCPolicyMapper;
 import de.unistuttgart.stayinsync.core.configuration.edc.service.EDCPolicyService;
 import io.quarkus.logging.Log;
@@ -40,11 +40,11 @@ public class EDCPolicyResource {
      */
     @GET
     @Path("{edcId}/policies")
-    public List<EDCPolicyDto> listPoliciesForEdc(@PathParam("edcId") UUID edcId) {
+    public List<PolicyDefinitionDto> listPoliciesForEdc(@PathParam("edcId") UUID edcId) {
         Log.info("Fetching policies for EDC: " + edcId);
-        List<EDCPolicy> policies = service.listAllByEdcId(edcId);
+        List<PolicyDefinition> policies = service.listAllByEdcId(edcId);
         
-        List<EDCPolicyDto> policyDtos = policies.stream()
+        List<PolicyDefinitionDto> policyDtos = policies.stream()
                 .map(entity -> EDCPolicyMapper.policyMapper.policyToPolicyDto(entity))
                 .collect(Collectors.toList());
                 
@@ -62,9 +62,9 @@ public class EDCPolicyResource {
      */
     @GET
     @Path("{edcId}/policies/{id}")
-    public EDCPolicyDto getPolicyForEdc(@PathParam("edcId") UUID edcId, @PathParam("id") UUID id) {
+    public PolicyDefinitionDto getPolicyForEdc(@PathParam("edcId") UUID edcId, @PathParam("id") UUID id) {
         Log.info("Fetching policy " + id + " for EDC: " + edcId);
-        Optional<EDCPolicy> policyOpt = service.findByIdAndEdcId(id, edcId);
+        Optional<PolicyDefinition> policyOpt = service.findByIdAndEdcId(id, edcId);
         
         if (policyOpt.isEmpty()) {
             Log.warn("Policy " + id + " not found for EDC " + edcId);
@@ -85,7 +85,7 @@ public class EDCPolicyResource {
     @POST
     @Path("{edcId}/policies")
     @Transactional
-    public Response createPolicyForEdc(@PathParam("edcId") UUID edcId, EDCPolicyDto dto, @Context UriInfo uriInfo) {
+    public Response createPolicyForEdc(@PathParam("edcId") UUID edcId, PolicyDefinitionDto dto, @Context UriInfo uriInfo) {
         try {
             Log.info("Creating policy for EDC: " + edcId);
             // Normalisieren bevor gemappt wird (falls verschachtelt übergeben)
@@ -119,7 +119,7 @@ public class EDCPolicyResource {
             Log.info("Found EDC instance: " + edcInstance.id + " with name: " + edcInstance.getName());
             
             // Konvertiere DTO zu Entity
-            EDCPolicy entity = EDCPolicyMapper.policyMapper.policyDtoToPolicy(dto);
+            PolicyDefinition entity = EDCPolicyMapper.policyMapper.policyDtoToPolicy(dto);
             
             // Prüfe, ob die EDC-Instanz korrekt gesetzt wurde
             if (entity.getEdcInstance() == null) {
@@ -131,8 +131,8 @@ public class EDCPolicyResource {
             }
             
             // Speichere die Policy
-            EDCPolicy created = service.create(entity);
-            EDCPolicyDto result = EDCPolicyMapper.policyMapper.policyToPolicyDto(created);
+            PolicyDefinition created = service.create(entity);
+            PolicyDefinitionDto result = EDCPolicyMapper.policyMapper.policyToPolicyDto(created);
             
             // Erstelle URI für Location-Header
             URI uri = uriInfo.getAbsolutePathBuilder()
@@ -160,7 +160,7 @@ public class EDCPolicyResource {
     @PUT
     @Path("{edcId}/policies/{id}")
     @Transactional
-    public Response updatePolicyForEdc(@PathParam("edcId") UUID edcId, @PathParam("id") UUID id, EDCPolicyDto dto) {
+    public Response updatePolicyForEdc(@PathParam("edcId") UUID edcId, @PathParam("id") UUID id, PolicyDefinitionDto dto) {
         try {
             Log.info("Updating policy " + id + " for EDC: " + edcId);
             
@@ -172,7 +172,7 @@ public class EDCPolicyResource {
             normalizePolicy(dto);
 
             // Prüfe, ob die Policy existiert
-            Optional<EDCPolicy> existingPolicyOpt = service.findByIdAndEdcId(id, edcId);
+            Optional<PolicyDefinition> existingPolicyOpt = service.findByIdAndEdcId(id, edcId);
             if (existingPolicyOpt.isEmpty()) {
                 Log.error("Policy " + id + " not found for EDC " + edcId);
                 return Response.status(Response.Status.NOT_FOUND)
@@ -181,7 +181,7 @@ public class EDCPolicyResource {
             }
             
             // Konvertiere DTO zu Entity
-            EDCPolicy newState = EDCPolicyMapper.policyMapper.policyDtoToPolicy(dto);
+            PolicyDefinition newState = EDCPolicyMapper.policyMapper.policyDtoToPolicy(dto);
             
             // Prüfe, ob die EDC-Instanz existiert
             if (newState.getEdcInstance() == null) {
@@ -192,13 +192,13 @@ public class EDCPolicyResource {
             }
             
             // Aktualisiere die bestehende Entity
-            EDCPolicy existingPolicy = existingPolicyOpt.get();
+            PolicyDefinition existingPolicy = existingPolicyOpt.get();
             existingPolicy.setPolicyId(newState.getPolicyId());
             existingPolicy.setPolicyJson(newState.getPolicyJson());
             existingPolicy.setDisplayName(newState.getDisplayName());
             
             // Konvertiere zurück zu DTO
-            EDCPolicyDto result = EDCPolicyMapper.policyMapper.policyToPolicyDto(existingPolicy);
+            PolicyDefinitionDto result = EDCPolicyMapper.policyMapper.policyToPolicyDto(existingPolicy);
             
             Log.info("Policy updated successfully: " + result.getId());
             return Response.ok(result).build();
@@ -223,7 +223,7 @@ public class EDCPolicyResource {
     public Response deletePolicyForEdc(@PathParam("edcId") UUID edcId, @PathParam("id") UUID id) {
         Log.info("Deleting policy " + id + " for EDC: " + edcId);
         
-        Optional<EDCPolicy> policy = service.findByIdAndEdcId(id, edcId);
+        Optional<PolicyDefinition> policy = service.findByIdAndEdcId(id, edcId);
         if (policy.isEmpty()) {
             Log.warn("Policy " + id + " not found for EDC " + edcId);
             return Response.status(Response.Status.NOT_FOUND)
@@ -231,14 +231,14 @@ public class EDCPolicyResource {
                          .build();
         }
         
-        EDCPolicy policyEntity = policy.get();
+        PolicyDefinition policyEntity = policy.get();
         Log.info("Found policy to delete: id=" + policyEntity.id + ", policyId=" + policyEntity.getPolicyId());
         
         if (service.delete(id)) {
             Log.info("Policy " + id + " deleted successfully");
             
             // Verify the policy is actually gone from the database
-            Optional<EDCPolicy> checkDeleted = service.findByIdAndEdcId(id, edcId);
+            Optional<PolicyDefinition> checkDeleted = service.findByIdAndEdcId(id, edcId);
             if (checkDeleted.isPresent()) {
                 Log.error("Policy " + id + " still exists in database after deletion!");
             } else {
@@ -260,7 +260,7 @@ public class EDCPolicyResource {
      * @param dto Die zu normalisierende Policy
      */
     @SuppressWarnings("unchecked")
-    private static void normalizePolicy(EDCPolicyDto dto) {
+    private static void normalizePolicy(PolicyDefinitionDto dto) {
         if (dto == null || dto.getPolicy() == null) return;
 
         Object nested = dto.getPolicy().get("policy");

@@ -22,7 +22,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 import de.unistuttgart.stayinsync.core.configuration.edc.entities.EDCInstance;
-import de.unistuttgart.stayinsync.core.configuration.edc.entities.EDCPolicy;
+import de.unistuttgart.stayinsync.core.configuration.edc.entities.PolicyDefinition;
 import de.unistuttgart.stayinsync.core.configuration.edc.entities.EDCContractDefinition;
 
 
@@ -53,7 +53,7 @@ public class EDCPolicyService {
      * @param edcId the UUID of the EDC instance
      * @return List with all policies for that EDC instance
      */
-    public List<EDCPolicy> listAllByEdcId(final UUID edcId) {
+    public List<PolicyDefinition> listAllByEdcId(final UUID edcId) {
         LOG.info("Fetching policies for EDC: " + edcId);
         EDCInstance edcInstance = EDCInstance.findById(edcId);
         if (edcInstance == null) {
@@ -61,12 +61,12 @@ public class EDCPolicyService {
             return new ArrayList<>();
         }
         
-        TypedQuery<EDCPolicy> query = entityManager.createQuery(
-                "SELECT p FROM EDCPolicy p WHERE p.edcInstance.id = :edcId", 
-                EDCPolicy.class);
+        TypedQuery<PolicyDefinition> query = entityManager.createQuery(
+                "SELECT p FROM PolicyDefinition p WHERE p.edcInstance.id = :edcId",
+                PolicyDefinition.class);
         query.setParameter("edcId", edcId);
         
-        List<EDCPolicy> policyList = query.getResultList();
+        List<PolicyDefinition> policyList = query.getResultList();
         LOG.info("Found " + policyList.size() + " policies for EDC " + edcId);
         return policyList;
     }
@@ -78,15 +78,15 @@ public class EDCPolicyService {
      * @param edcId the UUID of the EDC instance
      * @return found policy or empty if not found
      */
-    public Optional<EDCPolicy> findByIdAndEdcId(final UUID id, final UUID edcId) {
+    public Optional<PolicyDefinition> findByIdAndEdcId(final UUID id, final UUID edcId) {
         LOG.info("Fetching policy " + id + " for EDC: " + edcId);
-        TypedQuery<EDCPolicy> query = entityManager.createQuery(
-                "SELECT p FROM EDCPolicy p WHERE p.id = :policyId AND p.edcInstance.id = :edcId", 
-                EDCPolicy.class);
+        TypedQuery<PolicyDefinition> query = entityManager.createQuery(
+                "SELECT p FROM PolicyDefinition p WHERE p.id = :policyId AND p.edcInstance.id = :edcId",
+                PolicyDefinition.class);
         query.setParameter("policyId", id);
         query.setParameter("edcId", edcId);
         
-        List<EDCPolicy> results = query.getResultList();
+        List<PolicyDefinition> results = query.getResultList();
         if (results.isEmpty()) {
             LOG.warn("No policy found with id " + id + " for EDC " + edcId);
             return Optional.empty();
@@ -103,7 +103,7 @@ public class EDCPolicyService {
      * @return the created EDCPolicy.
      */
     @Transactional
-    public EDCPolicy create(final EDCPolicy policy) {
+    public PolicyDefinition create(final PolicyDefinition policy) {
         // Log important information before persisting
         LOG.info("Creating policy with ID: " + policy.id + ", policyId: " + policy.getPolicyId());
         LOG.info("Policy has EDC instance: " + (policy.getEdcInstance() != null));
@@ -272,8 +272,8 @@ public class EDCPolicyService {
      * @return Optional with the updated EDCPolicy or an empty Optional if nothing was found.
      */
     @Transactional
-    public Optional<EDCPolicy> update(final UUID id, final EDCPolicy updatedPolicy) {
-        final EDCPolicy policyLinkedToDatabase = EDCPolicy.findById(id);
+    public Optional<PolicyDefinition> update(final UUID id, final PolicyDefinition updatedPolicy) {
+        final PolicyDefinition policyLinkedToDatabase = PolicyDefinition.findById(id);
         if (policyLinkedToDatabase == null) {
             return Optional.empty();
         }
@@ -352,7 +352,7 @@ public class EDCPolicyService {
         LOG.info("Attempting to delete policy with ID: " + id);
         
         // First, check if the policy exists
-        EDCPolicy policyToDelete = EDCPolicy.findById(id);
+        PolicyDefinition policyToDelete = PolicyDefinition.findById(id);
         if (policyToDelete == null) {
             LOG.warn("Policy with ID " + id + " not found, cannot delete");
             return false;
@@ -424,7 +424,7 @@ public class EDCPolicyService {
         } catch (Exception e) {
             LOG.error("Error deleting policy " + id + " via EntityManager", e);
             // Fall back to PanacheEntityBase.deleteById
-            boolean result = EDCPolicy.deleteById(id);
+            boolean result = PolicyDefinition.deleteById(id);
             LOG.info("Delete operation for policy " + id + " via PanacheEntityBase returned: " + result);
             return result;
         }

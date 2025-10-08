@@ -4,7 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import de.unistuttgart.stayinsync.core.configuration.edc.entities.Asset;
 import de.unistuttgart.stayinsync.core.configuration.edc.entities.EDCContractDefinition;
 import de.unistuttgart.stayinsync.core.configuration.edc.entities.EDCInstance;
-import de.unistuttgart.stayinsync.core.configuration.edc.entities.EDCPolicy;
+import de.unistuttgart.stayinsync.core.configuration.edc.entities.PolicyDefinition;
 import de.unistuttgart.stayinsync.core.configuration.edc.service.edcconnector.CreateEDCContractDefinitionDTO;
 import de.unistuttgart.stayinsync.core.configuration.edc.service.edcconnector.EDCClient;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -216,8 +216,8 @@ public class EDCContractDefinitionService {
             // nur die zu ändernden Felder übernehmen
             existing.setContractDefinitionId(updatedContractDefinition.getContractDefinitionId());
             existing.setAsset(Asset.findById(updatedContractDefinition.getAsset() != null ? updatedContractDefinition.getAsset().id : null));
-            existing.setAccessPolicy(EDCPolicy.findById(updatedContractDefinition.getAccessPolicy() != null ? updatedContractDefinition.getAccessPolicy().id : null));
-            existing.setContractPolicy(EDCPolicy.findById(updatedContractDefinition.getContractPolicy() != null ? updatedContractDefinition.getContractPolicy().id : null));
+            existing.setAccessPolicy(PolicyDefinition.findById(updatedContractDefinition.getAccessPolicy() != null ? updatedContractDefinition.getAccessPolicy().id : null));
+            existing.setContractPolicy(PolicyDefinition.findById(updatedContractDefinition.getContractPolicy() != null ? updatedContractDefinition.getContractPolicy().id : null));
             existing.setEdcInstance(updatedContractDefinition.getEdcInstance());
             
             // Versuche die aktualisierte Contract Definition mit dem EDC zu synchronisieren

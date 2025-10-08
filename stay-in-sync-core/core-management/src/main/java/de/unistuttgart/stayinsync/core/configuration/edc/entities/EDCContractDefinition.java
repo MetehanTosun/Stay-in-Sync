@@ -24,7 +24,7 @@ public class EDCContractDefinition extends UuidEntity {
         columnDefinition = "CHAR(36)",
         nullable = false
     )
-    private EDCPolicy accessPolicy;
+    private PolicyDefinition accessPolicy;
 
     @ManyToOne(optional = false)
     @JoinColumn(
@@ -32,7 +32,7 @@ public class EDCContractDefinition extends UuidEntity {
         columnDefinition = "CHAR(36)",
         nullable = false
     )
-    private EDCPolicy contractPolicy;
+    private PolicyDefinition contractPolicy;
     
     @ManyToOne
     @JoinColumn(name = "edc_instance_id")
@@ -54,19 +54,19 @@ public class EDCContractDefinition extends UuidEntity {
         this.asset = asset;
     }
 
-    public EDCPolicy getAccessPolicy() {
+    public PolicyDefinition getAccessPolicy() {
         return accessPolicy;
     }
 
-    public void setAccessPolicy(EDCPolicy accessPolicy) {
+    public void setAccessPolicy(PolicyDefinition accessPolicy) {
         this.accessPolicy = accessPolicy;
     }
 
-    public EDCPolicy getContractPolicy() {
+    public PolicyDefinition getContractPolicy() {
         return contractPolicy;
     }
 
-    public void setContractPolicy(EDCPolicy contractPolicy) {
+    public void setContractPolicy(PolicyDefinition contractPolicy) {
         this.contractPolicy = contractPolicy;
     }
     

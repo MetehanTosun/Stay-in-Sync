@@ -17,7 +17,7 @@ import java.util.UUID;
  * Das DTO wird für die Kommunikation zwischen Frontend, Backend und EDC verwendet
  * und beinhaltet alle relevanten Informationen einer Policy.
  */
-public class EDCPolicyDto {
+public class PolicyDefinitionDto {
     
     /**
      * Die ID des DTOs (DB-UUID). Wird in der JSON-Antwort mit ausgegeben,
@@ -58,7 +58,7 @@ public class EDCPolicyDto {
     /**
      * Default-Konstruktor.
      */
-    public EDCPolicyDto() {
+    public PolicyDefinitionDto() {
         this.policy = new HashMap<>();
         this.context = new HashMap<>(Map.of("odrl", "http://www.w3.org/ns/odrl/2/"));
     }
@@ -73,8 +73,8 @@ public class EDCPolicyDto {
      * @param policy Die Policy-Regeln als Map
      * @param context Der Kontext der Policy
      */
-    public EDCPolicyDto(UUID id, UUID edcId, String policyId, String displayName, 
-                        Map<String, Object> policy, Map<String, String> context) {
+    public PolicyDefinitionDto(UUID id, UUID edcId, String policyId, String displayName,
+                               Map<String, Object> policy, Map<String, String> context) {
         this.id = id;
         this.edcId = edcId;
         this.policyId = policyId;
@@ -91,7 +91,7 @@ public class EDCPolicyDto {
      * @param displayName Der Anzeigename der Policy
      * @param policy Die Policy-Regeln als Map
      */
-    public EDCPolicyDto(UUID edcId, String policyId, String displayName, Map<String, Object> policy) {
+    public PolicyDefinitionDto(UUID edcId, String policyId, String displayName, Map<String, Object> policy) {
         this(null, edcId, policyId, displayName, policy, new HashMap<>(Map.of("odrl", "http://www.w3.org/ns/odrl/2/")));
     }
 
@@ -149,7 +149,7 @@ public class EDCPolicyDto {
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
-        EDCPolicyDto that = (EDCPolicyDto) o;
+        PolicyDefinitionDto that = (PolicyDefinitionDto) o;
         return Objects.equals(id, that.id) &&
                Objects.equals(edcId, that.edcId) &&
                Objects.equals(policyId, that.policyId) &&

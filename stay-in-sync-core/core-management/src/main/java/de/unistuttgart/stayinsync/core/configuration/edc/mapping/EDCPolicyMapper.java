@@ -4,9 +4,9 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-import de.unistuttgart.stayinsync.core.configuration.edc.dto.EDCPolicyDto;
+import de.unistuttgart.stayinsync.core.configuration.edc.dto.PolicyDefinitionDto;
 import de.unistuttgart.stayinsync.core.configuration.edc.entities.EDCInstance;
-import de.unistuttgart.stayinsync.core.configuration.edc.entities.EDCPolicy;
+import de.unistuttgart.stayinsync.core.configuration.edc.entities.PolicyDefinition;
 import io.quarkus.logging.Log;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
@@ -47,7 +47,7 @@ public interface EDCPolicyMapper {
     @Mapping(source = "edcInstance", target = "edcId")
     @Mapping(source = "policyJson", target = "policy", qualifiedByName = "jsonToMap")
     @Mapping(target = "context", expression = "java(getDefaultContext())")
-    EDCPolicyDto policyToPolicyDto(EDCPolicy policy);
+    PolicyDefinitionDto policyToPolicyDto(PolicyDefinition policy);
 
     /**
      * Konvertiert ein EDCPolicyDto in eine EDCPolicy-Entität.
@@ -57,7 +57,7 @@ public interface EDCPolicyMapper {
      */
     @Mapping(source = "edcId", target = "edcInstance")
     @Mapping(source = "policy", target = "policyJson", qualifiedByName = "mapToJson")
-    EDCPolicy policyDtoToPolicy(EDCPolicyDto policyDto);
+    PolicyDefinition policyDtoToPolicy(PolicyDefinitionDto policyDto);
 
     /**
      * Konvertiert einen JSON-String in eine Map<String, Object>.
