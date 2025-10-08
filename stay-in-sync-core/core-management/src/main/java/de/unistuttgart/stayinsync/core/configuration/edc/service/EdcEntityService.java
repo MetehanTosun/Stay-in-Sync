@@ -5,7 +5,11 @@ import de.unistuttgart.stayinsync.core.configuration.edc.exception.*;
 
 import java.util.List;
 
-
+/**
+ * Abstract class that offers the base structure of base methods needed to manage the core entities of the edc: Assets, Policies and Contract Definitions.
+ *
+ * @param <D> EdcEntityDto so the subclasses can use their own dtos that implement EdcEntityDto
+ */
 public abstract class EdcEntityService <D extends EdcEntityDto> {
 
     /**
@@ -56,7 +60,7 @@ public abstract class EdcEntityService <D extends EdcEntityDto> {
      * @throws EntityNotFoundException if the entity was not found in the database.
      * @throws EntityUpdateFailedException if it was not possible to update the entity in the edc and therefore in the database.
      */
-    public abstract D updateEntityInDatabaseAndEdc(final Long entityId, D updatedDto) throws EntityNotFoundException, EntityUpdateFailedException;
+    public abstract D updateEntityInDatabaseAndEdc(final Long entityId, final D updatedDto) throws EntityNotFoundException, EntityUpdateFailedException;
 
     /**
      * Tries to remove an entity found by id in database from the referenced Edc. If that
