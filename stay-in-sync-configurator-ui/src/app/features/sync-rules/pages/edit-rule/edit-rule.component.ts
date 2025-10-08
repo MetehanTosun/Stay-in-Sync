@@ -1,7 +1,7 @@
 import { Component, ElementRef, OnInit, ViewChild } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { ConstantNodeModalComponent, NodePaletteComponent, ProviderNodeModalComponent, VflowCanvasComponent } from '../../components';
-import { LogicOperatorMeta, NodeType } from '../../models';
+import { LogicOperatorMetadata, NodeType } from '../../models';
 import { CommonModule } from '@angular/common';
 import { TransformationRulesApiService } from '../../service';
 import { ErrorPanelComponent } from '../../components/error-panel/error-panel.component';
@@ -34,13 +34,13 @@ export class EditRuleComponent implements OnInit {
   //#region Setup
   ruleName = 'New Rule';
   ruleId: number | undefined = undefined;
-  ruleDescription = '';
+  ruleDescription: string | undefined;
 
   // Palette Attributes
   showMainNodePalette = false;
   nodePalettePosition = { x: 0, y: 0 };
   selectedNodeType: NodeType | null = null;
-  selectedOperator: LogicOperatorMeta | null = null;
+  selectedOperator: LogicOperatorMetadata | null = null;
 
   // Modal states
   showProviderModal = false;
@@ -132,7 +132,7 @@ export class EditRuleComponent implements OnInit {
    *
    * @param selection
    */
-  onNodeSelected(selection: { nodeType: NodeType, operator?: LogicOperatorMeta }) {
+  onNodeSelected(selection: { nodeType: NodeType, operator?: LogicOperatorMetadata }) {
     this.selectedNodeType = selection.nodeType;
     this.selectedOperator = selection.operator || null;
     this.showMainNodePalette = false

@@ -1,7 +1,7 @@
 /**
  * Metadata interface of logic operators
  */
-export interface LogicOperatorMeta {
+export interface LogicOperatorMetadata {
   operatorName: string;
   description: string;
   category: string;

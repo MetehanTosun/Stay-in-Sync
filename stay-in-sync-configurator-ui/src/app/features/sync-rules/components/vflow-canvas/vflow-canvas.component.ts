@@ -2,7 +2,7 @@ import { Component, ElementRef, EventEmitter, OnInit, Output, ViewChild } from '
 import { ActivatedRoute } from '@angular/router';
 import { Connection, Edge, EdgeChange, EdgeType, NodeChange, Vflow, VflowComponent } from 'ngx-vflow';
 import { GraphAPIService, OperatorNodesApiService } from '../../service';
-import { CustomVFlowNode, LogicOperatorMeta, NodeMenuItem, NodeType, VFlowGraphDTO } from '../../models';
+import { ConfigNodeData, CustomVFlowNode, LogicNodeData, LogicOperatorMetadata, NodeMenuItem, NodeType, VFlowGraphDTO } from '../../models';
 import { ConstantNodeComponent, ConstantNodeModalComponent, FinalNodeComponent, LogicNodeComponent, ProviderNodeComponent, ProviderNodeModalComponent } from '..';
 import { CommonModule } from '@angular/common';
 import { SetNodeNameModalComponent } from '../modals/set-node-name-modal/set-node-name-modal.component';
@@ -57,7 +57,7 @@ export class VflowCanvasComponent implements OnInit {
   showRemoveEdgesModal: boolean = false;
 
   // Autocomplete Feature
-  suggestions: LogicOperatorMeta[] = []
+  suggestions: LogicOperatorMetadata[] = []
   showSuggestions = false;
 
   // Pending Stuff
@@ -68,7 +68,7 @@ export class VflowCanvasComponent implements OnInit {
     viewportPos: { x: number, y: number },
     canvasPos: { x: number, y: number }
   }>();
-  @Output() suggestionSelected = new EventEmitter<{ nodeType: NodeType, operator: LogicOperatorMeta }>();
+  @Output() suggestionSelected = new EventEmitter<{ nodeType: NodeType, operator: LogicOperatorMetadata }>();
   @Output() graphErrors = new EventEmitter<ValidationError[]>();
 
   @ViewChild(VflowComponent) vflowInstance!: VflowComponent;
@@ -206,7 +206,7 @@ export class VflowCanvasComponent implements OnInit {
     pos: { x: number, y: number },
     providerData?: { jsonPath: string, outputType: string },
     constantValue?: any,
-    operatorData?: LogicOperatorMeta,
+    operatorData?: LogicOperatorMetadata,
   ) {
     let nodeData: any;
 
@@ -356,7 +356,7 @@ export class VflowCanvasComponent implements OnInit {
    *
    * @param selection
    */
-  onSuggestionSelected(selection: LogicOperatorMeta) {
+  onSuggestionSelected(selection: LogicOperatorMetadata) {
     this.suggestionSelected.emit({ nodeType: NodeType.LOGIC, operator: selection });
     this.closeNodeContextMenu();
   }
@@ -454,7 +454,7 @@ export class VflowCanvasComponent implements OnInit {
    * @param newValue
    */
   onValueSaved(newValue: string) {
-    if (this.nodeBeingEdited) {
+    if (this.nodeBeingEdited && "outputType" in this.nodeBeingEdited.data) { // Cannot be Final Node
       if (this.inferTypeFromValue(newValue) !== this.nodeBeingEdited.data.outputType) {
         this.pendingNodeValue = newValue;
         this.showRemoveEdgesModal = true;
@@ -509,11 +509,11 @@ export class VflowCanvasComponent implements OnInit {
    * @param configuration
    */
   toggleConfiguration(configuration: "MODE" | "STATUS") {
-    //* The config node should always be on the index 1
-    const configData = this.nodes.at(1)!.data;
+    //* Config node cannot be deleted
+    const configData = this.nodes.find(n => n.data.nodeType === NodeType.CONFIG)?.data as ConfigNodeData;
 
     if (configuration === "MODE") {
-      configData.changeDetectionMode === "AND" ? configData.changeDetectionMode = "OR" : configData.changeDetectionMode = "AND";
+      configData.changeDetectionMode = configData.changeDetectionMode === "AND" ? "OR" : "AND";
     } else {
       configData.changeDetectionActive = !configData.changeDetectionActive;
     }
@@ -531,7 +531,7 @@ export class VflowCanvasComponent implements OnInit {
   setTimeWindow(timeWindowMillis: number) {
     //* The config node should always be on the index 1
     const configNode = this.nodes.at(1)!;
-    configNode.data.timeWindowMillis = timeWindowMillis;
+    (configNode.data as ConfigNodeData).timeWindowMillis = timeWindowMillis;
 
     // Re-insert the node into the nodes array to rerender it correctly
     this.nodes = [
@@ -720,10 +720,10 @@ export class VflowCanvasComponent implements OnInit {
    */
   openSuggestionsMenu(node: CustomVFlowNode) {
     const latestNode = this.nodes.find(n => n.id === node.id);
-    if (latestNode) {
-      const outputType = latestNode.data.outputType ?? this.inferTypeFromValue(latestNode.data.value);
+    if (latestNode &&  "outputType" in latestNode.data) {
+      const outputType = latestNode.data.outputType;
       this.nodesApi.getOperators().subscribe({
-        next: (operators: LogicOperatorMeta[]) => {
+        next: (operators: LogicOperatorMetadata[]) => {
           this.suggestions = operators.filter(o => o.inputTypes.includes(outputType));
           this.showSuggestions = true;
         },
@@ -842,9 +842,7 @@ export class VflowCanvasComponent implements OnInit {
       return false;
     }
 
-    let sourceType = sourceNode?.data.outputType ?? 'ANY';
-    if (sourceNode?.data.nodeType! === NodeType.CONSTANT)
-      sourceType = this.inferTypeFromValue(sourceNode?.data.value);
+    let sourceType = (sourceNode?.data as { outputType: string }).outputType ?? 'ANY';
 
     const targetType = this.getExpectedInputType(targetNode!, targetHandle);
 
@@ -904,7 +902,7 @@ export class VflowCanvasComponent implements OnInit {
    * Returns the expected input type for a target Node
    */
   private getExpectedInputType(target: CustomVFlowNode, targetHandle?: string): string {
-    const inputTypes = target?.data?.inputTypes;
+    const inputTypes = (target.data as LogicNodeData).inputTypes;
     if (target.data.nodeType === NodeType.FINAL) return 'BOOLEAN'
 
     if (targetHandle) {

@@ -1,6 +1,6 @@
 import { CommonModule } from '@angular/common';
 import { Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
-import { LogicOperatorMeta, NodeType } from '../../models';
+import { LogicOperatorMetadata, NodeType } from '../../models';
 import { OperatorNodesApiService } from '../../service';
 import { MessageService } from 'primeng/api';
 
@@ -16,10 +16,10 @@ import { MessageService } from 'primeng/api';
 export class NodePaletteComponent implements OnInit {
   //#region Setup
   @Input() showMainNodePalette = false;
-  @Output() nodeSelected = new EventEmitter<{ nodeType: NodeType, operator?: LogicOperatorMeta }>();
+  @Output() nodeSelected = new EventEmitter<{ nodeType: NodeType, operator?: LogicOperatorMetadata }>();
 
   NodeType = NodeType; //* for .html file
-  operatorsGrouped: Map<string, LogicOperatorMeta[]> = new Map<string, LogicOperatorMeta[]>();
+  operatorsGrouped: Map<string, LogicOperatorMetadata[]> = new Map<string, LogicOperatorMetadata[]>();
 
   // Palette Status
   showLogicGroups = false;
@@ -43,7 +43,7 @@ export class NodePaletteComponent implements OnInit {
    * @param nodeType The type of node that is to be created
    * @param operator The logic operator that is to be created, only for logic nodes
    */
-  selectNode(nodeType: NodeType, operator?: LogicOperatorMeta) {
+  selectNode(nodeType: NodeType, operator?: LogicOperatorMetadata) {
     this.nodeSelected.emit({ nodeType, operator });
   }
 
@@ -80,7 +80,7 @@ export class NodePaletteComponent implements OnInit {
    */
   loadGroupedOperators() {
     this.nodesApi.getGroupedOperators().subscribe({
-      next: (operatorsGrouped: Map<string, LogicOperatorMeta[]>) => {
+      next: (operatorsGrouped: Map<string, LogicOperatorMetadata[]>) => {
         this.operatorsGrouped = operatorsGrouped;
       },
       error: (err) => {
@@ -109,7 +109,7 @@ export class NodePaletteComponent implements OnInit {
    * @param groupName
    * @returns Array of logic operators
    */
-  getOperatorsForGroup(groupName: string): LogicOperatorMeta[] {
+  getOperatorsForGroup(groupName: string): LogicOperatorMetadata[] {
     return this.operatorsGrouped.get(groupName) || [];
   }
   //#endregion
