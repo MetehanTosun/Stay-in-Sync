@@ -20,9 +20,9 @@ export class MetricsPanelComponent implements OnInit {
   grafanaBaseUrl: string = '';
 
   constructor(
-    private route: ActivatedRoute,
-    private transformationService: TransformationService,
-    private configService: ConfigService
+    private readonly route: ActivatedRoute,
+    private readonly transformationService: TransformationService,
+    private readonly configService: ConfigService
   ) {}
 
   async ngOnInit(): Promise<void> {

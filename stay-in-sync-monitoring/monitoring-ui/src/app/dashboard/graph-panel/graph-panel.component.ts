@@ -36,8 +36,8 @@ export class GraphPanelComponent implements AfterViewInit {
   markedNodes: { [nodeId: string]: boolean } = {};
 
   constructor(
-    private graphService: MonitoringGraphService,
-    private router: Router
+    private readonly graphService: MonitoringGraphService,
+    private readonly router: Router
   ) {}
 
   /**
