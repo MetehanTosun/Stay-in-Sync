@@ -172,7 +172,7 @@ export class GraphPanelComponent implements AfterViewInit {
     }
     return this.nodes.filter(
       (node) =>
-        node.id.toLowerCase().includes(term.toLowerCase()) ||
+        node.label.toLowerCase().includes(term.toLowerCase()) ||
         node.type.toLowerCase().includes(term.toLowerCase())
     );
   }

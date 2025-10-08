@@ -62,7 +62,7 @@ export class LogsPanelComponent implements OnInit, OnDestroy {
     { label: 'docker', value: 'docker' }
   ];
 
-  private intervalId?: number;
+  private readonly intervalId?: number;
 
   // Currently selected transformation ID (for filtering logs)
   selectedTransformationId: string = '';
@@ -71,9 +71,9 @@ export class LogsPanelComponent implements OnInit, OnDestroy {
   selectedService: string = '';
 
   constructor(
-    private logService: LogService,
-    private route: ActivatedRoute,
-    private transformationService: TransformationService
+    private readonly logService: LogService,
+    private readonly route: ActivatedRoute,
+    private readonly transformationService: TransformationService
   ) {}
 
   /**
@@ -227,6 +227,16 @@ export class LogsPanelComponent implements OnInit, OnDestroy {
   onFilterChange() {
     this.fetchLogs();
   }
+
+  onServiceChange(event: any) {
+    // Wenn ein anderer Service als der PollingNode gewählt wird
+    if (this.selectedNodeId?.startsWith('POLL')) {
+      this.selectedNodeId = undefined;
+      this.selectedTransformationId = '';
+    }
+    this.fetchLogs();
+  }
+
 
   /**
    * Builds a fallback message for unstructured log entries

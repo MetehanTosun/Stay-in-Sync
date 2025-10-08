@@ -40,12 +40,13 @@
     <p-select
       [options]="services"
       [(ngModel)]="selectedService"
-      (onChange)="onFilterChange()"
+      (onChange)="onServiceChange($event)"
       placeholder="All"
       [showClear]="true"
       [filter]="true">
     </p-select>
   </label>
+
 
 
   <p-button (click)="reloadLogs()">Reload Logs</p-button>
