@@ -173,7 +173,7 @@ public class AssetResource {
         } catch(EntityNotFoundException e){
             return handleNotFoundException(id);
 
-        } catch (EntityDeletionException e){
+        } catch (EntityDeletionFailedException e){
             final String exceptionMessage = "Error deleting the asset: " + e.getMessage();
             Log.errorf(exceptionMessage);
             return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
