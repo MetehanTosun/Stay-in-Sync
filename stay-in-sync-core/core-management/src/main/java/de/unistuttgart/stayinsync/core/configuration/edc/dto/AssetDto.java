@@ -25,6 +25,6 @@ public record AssetDto(
         AssetPropertiesDto properties,
         AssetDataAddressDto dataAddress,
         @JsonView(VisibilitySidesForDto.Ui.class)
-        Boolean thirdPartyChanges
-) {
+        Boolean entityOutOfSync
+) implements EdcEntityDto {
 }

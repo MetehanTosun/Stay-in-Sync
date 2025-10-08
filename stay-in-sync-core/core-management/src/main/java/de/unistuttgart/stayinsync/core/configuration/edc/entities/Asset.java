@@ -39,7 +39,7 @@ public class Asset extends PanacheEntity {
     private EDCInstance targetEDC;
 
     @Column(name = "third_party_changes")
-    private boolean thirdPartyChanges = false;
+    private boolean entityOutOfSync = false;
 
     /**
      * Update asset with the contents of the given assetDto
@@ -50,5 +50,6 @@ public class Asset extends PanacheEntity {
         this.setType(assetDto.type());
         this.setProperties(AssetPropertiesMapper.mapper.dtoToEntity(assetDto.properties()));
         this.setDataAddress(AssetDataAddressMapper.mapper.dtoToEntity(assetDto.dataAddress()));
+        this.setEntityOutOfSync(false);
     }
 }
