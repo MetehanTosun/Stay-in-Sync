@@ -1,0 +1,61 @@
+<p-dialog
+  header="Create new Rule"
+  [(visible)]="visible"
+  [modal]="true"
+  [closable]="false"
+  [style]="{ width: '450px' }"
+  [styleClass]="'create-rule-dialog'"
+>
+  <form (ngSubmit)="onSave()" class="p-fluid">
+
+    <!-- MARK: Rule Name -->
+    <div class="form-field">
+      <label for="rule-name">Name</label>
+      <input
+        id="rule-name"
+        name="rule-name"
+        type="text"
+        [(ngModel)]="newRule.name"
+        placeholder="Demo Rule"
+        class="form-input"
+        required
+      />
+    </div>
+
+    <!-- MARK: Rule Description -->
+    <div class="field mb-3">
+      <label for="rule-description" class="font-bold mb-1">Description</label>
+      <textarea
+        id="rule-description"
+        name="rule-description"
+        [(ngModel)]="newRule.description"
+        placeholder="Describe the rule..."
+        class="form-input w-full"
+        rows="3"
+        required
+        autocomplete="off"
+      ></textarea>
+    </div>
+
+    <!-- MARK: Form Actions -->
+    <div class="form-actions">
+      <p-button
+        id="save-button"
+        label="Save"
+        icon="pi pi-save"
+        type="submit"
+        aria-label="Save new rule"
+        styleClass="save-btn"
+      ></p-button>
+      <p-button
+        id="cancel-button"
+        label="Cancel"
+        icon="pi pi-times"
+        type="button"
+        (click)="onCancel()"
+        aria-label="Cancel"
+        styleClass="cancel-btn p-button-secondary"
+      ></p-button>
+    </div>
+  </form>
+</p-dialog>
