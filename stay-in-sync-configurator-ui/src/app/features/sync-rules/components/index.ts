@@ -6,6 +6,7 @@ export * from './modals/provider-node-modal/provider-node-modal.component';
 export * from './node-palette/node-palette.component';
 
 // Nodes
+export * from './nodes/config-node/config-node.component';
 export * from './nodes/constant-node/constant-node.component';
 export * from './nodes/logic-node/logic-node.component';
 export * from './nodes/provider-node/provider-node.component';
