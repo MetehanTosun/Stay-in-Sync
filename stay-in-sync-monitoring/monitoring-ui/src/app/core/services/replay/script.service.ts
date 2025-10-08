@@ -2,7 +2,7 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
-import { TransformationScriptDTO } from './models/transformation-script.model';
+import { TransformationScriptDTO } from '../../models/transformation-script.model';
 
 @Injectable({ providedIn: 'root' })
 export class ScriptService {

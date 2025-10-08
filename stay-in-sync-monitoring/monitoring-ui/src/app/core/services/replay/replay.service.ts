@@ -4,7 +4,7 @@ import { Observable } from 'rxjs';
 import {
   ReplayExecuteRequestDTO,
   ReplayExecuteResponseDTO,
-} from './models/replay.model';
+} from '../../models/replay.model';
 
 @Injectable({
   providedIn: 'root',
