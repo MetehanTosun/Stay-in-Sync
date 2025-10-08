@@ -7,6 +7,7 @@ import { CustomNodeComponent, HandleComponent, SelectableDirective } from 'ngx-v
  */
 @Component({
   selector: 'app-provider-node',
+  standalone: true,
   imports: [HandleComponent, SelectableDirective, CommonModule],
   templateUrl: './provider-node.component.html',
   styleUrl: './provider-node.component.css'
@@ -18,14 +19,17 @@ export class ProviderNodeComponent extends CustomNodeComponent {
    * @returns The Property whose value is read by this provider node
    */
   getSourceProperty(): string {
-    const parts = this.node().data?.jsonPath?.split('.');
-    return parts[parts.length - 1];
+    const path = this.node()?.data?.jsonPath;
+    if (!path) return 'unknown';
+    const parts = path.split('.');
+    return parts[parts.length - 1] || 'unknown';
   }
 
   /**
    * @returns The entire JSON path with the leading 'source.' removed
    */
   getTrimmedJsonpath(): string {
-    return this.node().data?.jsonPath.replace(/^source\./, '');
+    const path = this.node()?.data?.jsonPath || '';
+    return path.replace(/^source\./, '');
   }
 }

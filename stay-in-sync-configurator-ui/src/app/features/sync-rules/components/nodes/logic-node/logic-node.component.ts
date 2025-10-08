@@ -7,6 +7,7 @@ import { CustomNodeComponent, HandleComponent, SelectableDirective } from 'ngx-v
  */
 @Component({
   selector: 'app-logic-node',
+  standalone: true,
   imports: [HandleComponent, SelectableDirective, CommonModule],
   templateUrl: './logic-node.component.html',
   styleUrl: './logic-node.component.css'

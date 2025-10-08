@@ -7,6 +7,7 @@ import { CustomNodeComponent, HandleComponent, SelectableDirective } from 'ngx-v
  */
 @Component({
   selector: 'app-config-node',
+  standalone: true,
   imports: [HandleComponent, SelectableDirective, CommonModule],
   templateUrl: './config-node.component.html',
   styleUrl: './config-node.component.css'
