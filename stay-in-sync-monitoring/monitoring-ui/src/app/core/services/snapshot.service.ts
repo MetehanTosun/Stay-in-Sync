@@ -41,6 +41,12 @@ export class SnapshotService {
     });
   }
 
+  /**
+  * Retrieves a snapshot by its ID.
+  *
+  * @param id The ID of the snapshot.
+   * @returns Observable that emits the corresponding SnapshotDTO object.
+  */
   getById(id: string): Observable<SnapshotDTO> {
     return this.http.get<SnapshotDTO>(`${this.baseUrl}/${id}`);
   }

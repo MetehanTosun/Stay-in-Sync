@@ -1,20 +1,22 @@
-// src/app/replay/script.service.ts
-import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
-import { Observable } from 'rxjs';
+import { HttpClient } from '@angular/common/http';
+import { Observable, from, switchMap } from 'rxjs';
 import { TransformationScriptDTO } from '../../models/transformation-script.model';
+import { ConfigService } from '../config.service';
 
 @Injectable({ providedIn: 'root' })
 export class ScriptService {
-  private readonly baseUrl = 'http://localhost:8090';
-
-  constructor(private http: HttpClient) {}
+  constructor(private readonly http: HttpClient, private readonly config: ConfigService) {}
 
   getByTransformationId(
     transformationId: number | string
   ): Observable<TransformationScriptDTO> {
-    return this.http.get<TransformationScriptDTO>(
-      `${this.baseUrl}/api/config/transformation/${transformationId}/script`
+    return from(this.config.getSyncNodeBaseUrl()).pipe(
+      switchMap(baseUrl =>
+        this.http.get<TransformationScriptDTO>(
+          `${baseUrl}/api/config/transformation/${transformationId}/script`
+        )
+      )
     );
   }
 }
