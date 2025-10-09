@@ -31,9 +31,9 @@ export class ConfigService {
    * @returns A promise that resolves to the SyncNode base URL as a string.
    * @throws If the request fails, the promise will reject with an HTTP error.
    */
-  async getSyncNodeBaseUrl(): Promise<string> {
+  async getCoreManagementUrl(): Promise<string> {
     return firstValueFrom(
-      this.http.get('/api/config/syncNodeUrl', { responseType: 'text' })
+      this.http.get('/api/config/coreManagementUrl', { responseType: 'text' })
     );
   }
 }

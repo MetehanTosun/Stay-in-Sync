@@ -6,7 +6,7 @@
     (input)="onInput($event)"
     #searchInput
   />
-  <button class="search-button" (click)="onSearch(searchInput.value)">
+  <p-button (onClick)="onSearch(searchInput.value)" [style]="{ height: '3.4rem' }">
     <i class="pi pi-search"></i>
-  </button>
+  </p-button>
 </div>

@@ -11,7 +11,7 @@ export class ScriptService {
   getByTransformationId(
     transformationId: number | string
   ): Observable<TransformationScriptDTO> {
-    return from(this.config.getSyncNodeBaseUrl()).pipe(
+    return from(this.config.getCoreManagementUrl()).pipe(
       switchMap(baseUrl =>
         this.http.get<TransformationScriptDTO>(
           `${baseUrl}/api/config/transformation/${transformationId}/script`

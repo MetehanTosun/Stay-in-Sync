@@ -16,6 +16,7 @@ import { TransformationScriptDTO } from '../core/models/transformation-script.mo
 import { ReplayService } from '../core/services/replay/replay.service';
 import { ScriptService } from '../core/services/replay/script.service';
 import {SnapshotService} from '../core/services/snapshot.service';
+import {Button} from 'primeng/button';
 
 // IMPORTANT: Import monaco types for the onInit handler
 declare const monaco: any;
@@ -36,6 +37,7 @@ declare const monaco: any;
     MonacoEditorModule,
     FormsModule,
     NgxJsonViewerModule,
+    Button,
   ],
   templateUrl: './replay-view.component.html',
   styleUrl: './replay-view.component.css',

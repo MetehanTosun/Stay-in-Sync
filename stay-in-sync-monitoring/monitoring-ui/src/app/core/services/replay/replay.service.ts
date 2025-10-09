@@ -17,7 +17,7 @@ export class ReplayService {
   executeReplay(
     dto: ReplayExecuteRequestDTO
   ): Observable<ReplayExecuteResponseDTO> {
-    return from(this.config.getSyncNodeBaseUrl()).pipe(
+    return from(this.config.getCoreManagementUrl()).pipe(
       switchMap(baseUrl =>
         this.http.post<ReplayExecuteResponseDTO>(
           `${baseUrl}/api/replay/execute`,
