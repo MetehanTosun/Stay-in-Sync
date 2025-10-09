@@ -4,7 +4,7 @@ import de.unistuttgart.stayinsync.core.configuration.edc.dto.PolicyDefinitionDto
 import de.unistuttgart.stayinsync.core.configuration.edc.entities.EDCInstance;
 import de.unistuttgart.stayinsync.core.configuration.edc.entities.PolicyDefinition;
 import de.unistuttgart.stayinsync.core.configuration.edc.mapping.EDCPolicyMapper;
-import de.unistuttgart.stayinsync.core.configuration.edc.service.EDCPolicyService;
+import de.unistuttgart.stayinsync.core.configuration.edc.service.PolicyDefinitionService;
 import io.quarkus.logging.Log;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
@@ -27,10 +27,10 @@ import java.util.stream.Collectors;
 @Path("/api/config/edcs")
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
-public class EDCPolicyResource {
+public class PolicyDefinitionResource {
 
     @Inject
-    EDCPolicyService service;
+    PolicyDefinitionService service;
 
     /**
      * Listet alle Policies für eine bestimmte EDC-Instanz auf.

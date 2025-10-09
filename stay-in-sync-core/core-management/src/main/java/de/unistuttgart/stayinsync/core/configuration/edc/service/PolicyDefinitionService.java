@@ -31,9 +31,9 @@ import de.unistuttgart.stayinsync.core.configuration.edc.entities.EDCContractDef
  * GET, GET ALL, POST, PUT, DELETE.
  */
 @ApplicationScoped
-public class EDCPolicyService {
+public class PolicyDefinitionService {
 
-    private static final Logger LOG = Logger.getLogger(EDCPolicyService.class);
+    private static final Logger LOG = Logger.getLogger(PolicyDefinitionService.class);
     
     @PersistenceContext
     EntityManager entityManager;
