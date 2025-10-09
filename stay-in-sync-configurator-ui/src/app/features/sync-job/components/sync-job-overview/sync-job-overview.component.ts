@@ -2,7 +2,6 @@ import {Component, Input, OnInit} from '@angular/core';
 import {NgForOf, NgIf} from '@angular/common';
 import {SyncJob} from '../../models/sync-job.model';
 import {Card} from 'primeng/card';
-import {Tag} from 'primeng/tag';
 import {Transformation} from '../../../transformation/models/transformation.model';
 import {TransformationService} from '../../../transformation/services/transformation.service';
 import {SourceSystemApiRequestConfiguration} from '../../../script-editor/models/arc.models';
@@ -12,7 +11,6 @@ import {SourceSystemApiRequestConfiguration} from '../../../script-editor/models
   imports: [
     NgForOf,
     Card,
-    Tag,
     NgIf
   ],
   templateUrl: './sync-job-overview.component.html',
@@ -37,7 +35,8 @@ constructor(private transformationService: TransformationService) {
 }
 
   ngOnInit() {
-    console.log(this.syncJob.sourceSystems)
+    console.log(this.syncJob.sourceSystems);
+
   }
 
  updateSourceSystemApiRequestConfigurations(): void {
