@@ -58,15 +58,19 @@ public class TransformationRuleService {
         }
 
         try {
+            // FinalNode
             NodeDTO finalNodeDto = new NodeDTO();
             finalNodeDto.setId(0);
             finalNodeDto.setName("Final Result");
             finalNodeDto.setNodeType("FINAL");
+            finalNodeDto.setOffsetX(750);
 
+            // ConfigNode
             NodeDTO configNodeDto = new NodeDTO();
             configNodeDto.setId(1);
             configNodeDto.setName("Configuration");
             configNodeDto.setNodeType("CONFIG");
+            configNodeDto.setOffsetY(300);
             configNodeDto.setChangeDetectionMode("OR");
             configNodeDto.setInputTypes(List.of("ANY"));
             configNodeDto.setOutputType("BOOLEAN");
