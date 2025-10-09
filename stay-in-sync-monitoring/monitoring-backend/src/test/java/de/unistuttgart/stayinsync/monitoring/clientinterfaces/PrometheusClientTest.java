@@ -4,7 +4,6 @@ import jakarta.json.Json;
 import jakarta.json.JsonObject;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.Mockito;
 
 import java.io.StringReader;
 import java.net.URI;
@@ -18,8 +17,7 @@ import static org.mockito.Mockito.*;
 
 /**
  * Unit tests for the PrometheusClient class.
- * These tests verify correct behavior when Prometheus returns valid data,
- * no data, an error value, or when exceptions occur.
+ * Covers success, failure, empty results, exceptions, invalid input, and multiple results.
  */
 class PrometheusClientTest {
 
@@ -32,22 +30,21 @@ class PrometheusClientTest {
         mockHttpClient = mock(HttpClient.class);
         mockResponse = mock(HttpResponse.class);
 
-        // Create a subclass that uses our mock HttpClient
         prometheusClient = new PrometheusClient() {
             @Override
             public boolean isUp(String targetUrl) {
+                if (targetUrl == null || targetUrl.isBlank()) {
+                    return false;
+                }
+
                 try {
-                    // Build a fake request just like the real client does
                     String prometheusUrl = "http://localhost:9090";
                     HttpRequest request = HttpRequest.newBuilder()
                             .uri(URI.create(prometheusUrl + "/api/v1/query?query=dummy"))
                             .GET()
                             .build();
 
-                    // Use our mocked HttpClient
-                    HttpResponse<String> response =
-                            mockHttpClient.send(request, HttpResponse.BodyHandlers.ofString());
-
+                    HttpResponse<String> response = mockHttpClient.send(request, HttpResponse.BodyHandlers.ofString());
                     JsonObject json = Json.createReader(new StringReader(response.body())).readObject();
                     var result = json.getJsonObject("data").getJsonArray("result");
 
@@ -69,19 +66,14 @@ class PrometheusClientTest {
         String jsonResponse = """
             {
               "status": "success",
-              "data": {
-                "result": [
-                  { "value": [169652, "1"] }
-                ]
-              }
+              "data": { "result": [{ "value": [169652, "1"] }] }
             }
             """;
 
         when(mockResponse.body()).thenReturn(jsonResponse);
         when(mockHttpClient.send(any(), any(HttpResponse.BodyHandler.class))).thenReturn(mockResponse);
 
-        boolean result = prometheusClient.isUp("test-instance");
-        assertTrue(result, "Expected true when Prometheus reports probe_success=1");
+        assertTrue(prometheusClient.isUp("test-instance"));
     }
 
     @Test
@@ -89,9 +81,66 @@ class PrometheusClientTest {
         String jsonResponse = """
             {
               "status": "success",
+              "data": { "result": [{ "value": [169652, "0"] }] }
+            }
+            """;
+
+        when(mockResponse.body()).thenReturn(jsonResponse);
+        when(mockHttpClient.send(any(), any(HttpResponse.BodyHandler.class))).thenReturn(mockResponse);
+
+        assertFalse(prometheusClient.isUp("test-instance"));
+    }
+
+    @Test
+    void testIsUp_ReturnsFalse_WhenNoResultsReturned() throws Exception {
+        String jsonResponse = """
+            {
+              "status": "success",
+              "data": { "result": [] }
+            }
+            """;
+
+        when(mockResponse.body()).thenReturn(jsonResponse);
+        when(mockHttpClient.send(any(), any(HttpResponse.BodyHandler.class))).thenReturn(mockResponse);
+
+        assertFalse(prometheusClient.isUp("test-instance"));
+    }
+
+    @Test
+    void testIsUp_ReturnsFalse_OnException() throws Exception {
+        when(mockHttpClient.send(any(), any(HttpResponse.BodyHandler.class)))
+                .thenThrow(new RuntimeException("Connection failed"));
+
+        assertFalse(prometheusClient.isUp("test-instance"));
+    }
+
+    @Test
+    void testIsUp_ReturnsFalse_WhenTargetUrlIsNull() {
+        assertFalse(prometheusClient.isUp(null));
+    }
+
+    @Test
+    void testIsUp_ReturnsFalse_WhenTargetUrlIsBlank() {
+        assertFalse(prometheusClient.isUp(" "));
+    }
+
+    @Test
+    void testIsUp_ReturnsFalse_OnInvalidJson() throws Exception {
+        when(mockResponse.body()).thenReturn("INVALID_JSON");
+        when(mockHttpClient.send(any(), any(HttpResponse.BodyHandler.class))).thenReturn(mockResponse);
+
+        assertFalse(prometheusClient.isUp("test-instance"));
+    }
+
+    @Test
+    void testIsUp_ReturnsTrue_WhenMultipleResultsFirstIsSuccess() throws Exception {
+        String jsonResponse = """
+            {
+              "status": "success",
               "data": {
                 "result": [
-                  { "value": [169652, "0"] }
+                  { "value": [169652, "1"] },
+                  { "value": [169653, "0"] }
                 ]
               }
             }
@@ -100,17 +149,19 @@ class PrometheusClientTest {
         when(mockResponse.body()).thenReturn(jsonResponse);
         when(mockHttpClient.send(any(), any(HttpResponse.BodyHandler.class))).thenReturn(mockResponse);
 
-        boolean result = prometheusClient.isUp("test-instance");
-        assertFalse(result, "Expected false when probe_success=0");
+        assertTrue(prometheusClient.isUp("test-instance"));
     }
 
     @Test
-    void testIsUp_ReturnsFalse_WhenNoResultsReturned() throws Exception {
+    void testIsUp_ReturnsFalse_WhenMultipleResultsFirstIsZero() throws Exception {
         String jsonResponse = """
             {
               "status": "success",
               "data": {
-                "result": []
+                "result": [
+                  { "value": [169652, "0"] },
+                  { "value": [169653, "1"] }
+                ]
               }
             }
             """;
@@ -118,16 +169,6 @@ class PrometheusClientTest {
         when(mockResponse.body()).thenReturn(jsonResponse);
         when(mockHttpClient.send(any(), any(HttpResponse.BodyHandler.class))).thenReturn(mockResponse);
 
-        boolean result = prometheusClient.isUp("test-instance");
-        assertFalse(result, "Expected false when no results are returned");
-    }
-
-    @Test
-    void testIsUp_ReturnsFalse_OnException() throws Exception {
-        when(mockHttpClient.send(any(), any(HttpResponse.BodyHandler.class)))
-                .thenThrow(new RuntimeException("Connection failed"));
-
-        boolean result = prometheusClient.isUp("test-instance");
-        assertFalse(result, "Expected false when an exception occurs");
+        assertFalse(prometheusClient.isUp("test-instance"));
     }
 }
