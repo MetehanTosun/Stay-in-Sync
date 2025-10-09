@@ -18,12 +18,14 @@ import java.util.Set;
 })
 public abstract class SyncSystem extends PanacheEntity {
 
+    @Column(unique = true, nullable = false)
     public String name;
+
     public String apiUrl;
-    
+
     @Lob
     public String description;
-    
+
     public String apiType;
 
     public String aasId;

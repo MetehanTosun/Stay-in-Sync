@@ -7,7 +7,7 @@ import {
 } from '@angular/core';
 import { ScriptEditorService } from '../../../core/services/script-editor.service';
 import { ArcStateService } from '../../../core/services/arc-state.service';
-import { ApiRequestConfiguration } from '../models/arc.models';
+import { AasArc, AnyArc, ApiRequestConfiguration, SubmodelDescription } from '../models/arc.models';
 import {
   SourceSystem,
   SourceSystemEndpoint,
@@ -21,10 +21,14 @@ import { TooltipModule } from 'primeng/tooltip';
 import { TabViewModule } from 'primeng/tabview';
 import { combineLatest, map, Observable, shareReplay, Subscription } from 'rxjs';
 import { FilterByEndpointPipe } from '../../source-system/pipes/filter-by-endpoint.pipe';
+import { AasService } from '../../source-system/services/aas.service';
+import { FilterByTypePipe } from '../../source-system/pipes/filter-by-type.pipe';
+import { FilterBySubmodelPipe } from '../../source-system/pipes/filter-by-submodel.pipe';
 
 type SystemWithState = SourceSystem & {
-  endpoints: SourceSystemEndpoint[];
-  isLoadingEndpoints: boolean;
+  endpoints?: SourceSystemEndpoint[];
+  submodels?: SubmodelDescription[];
+  isLoading: boolean;
 };
 
 @Component({
@@ -39,6 +43,8 @@ type SystemWithState = SourceSystem & {
     TooltipModule,
     TabViewModule,
     FilterByEndpointPipe,
+    FilterByTypePipe,
+    FilterBySubmodelPipe
   ],
   templateUrl: './arc-management-panel.component.html',
   styleUrl: './arc-management-panel.component.css',
@@ -60,20 +66,25 @@ export class ArcManagementPanelComponent implements OnInit {
     arc: ApiRequestConfiguration;
   }>();
 
+  @Output() createAasArc = new EventEmitter<{ system: SourceSystem; submodel: SubmodelDescription }>();
+  @Output() editAasArc = new EventEmitter<{ system: SourceSystem; submodel: SubmodelDescription; arc: AasArc }>();
+  @Output() deleteAasArc = new EventEmitter<{ arc: AasArc }>();
+
   allSourceSystems$!: Observable<SystemWithState[]>;
 
   activeSystems$!: Observable<SystemWithState[]>;
 
-  arcsBySystem$: Observable<Map<string, ApiRequestConfiguration[]>>;
+  arcsBySystem$: Observable<Map<string, AnyArc[]>>;
 
   private stateSubscription: Subscription | undefined;
 
   constructor(
     private scriptEditorService: ScriptEditorService,
     private arcStateService: ArcStateService,
+    private aasService: AasService,
     private cdr: ChangeDetectorRef
   ) {
-    this.arcsBySystem$ = this.arcStateService.arcsBySystem$;
+    this.arcsBySystem$ = this.arcStateService.arcsBySystem$ as Observable<Map<string, AnyArc[]>>;
   }
 
   ngOnInit(): void {
@@ -82,7 +93,7 @@ export class ArcManagementPanelComponent implements OnInit {
         systems.map((s) => ({
           ...s,
           endpoints: [],
-          isLoadingEndpoints: false,
+          isLoading: false,
         }))
       ),
       shareReplay(1) // API call is made only once
@@ -113,31 +124,63 @@ export class ArcManagementPanelComponent implements OnInit {
       systemNamesWithArcs.forEach(systemName => {
         const system = allSystems.find(s => s.name === systemName);
 
-        if (system && system.endpoints.length === 0 && !system.isLoadingEndpoints) {
+        if (system && system.endpoints?.length === 0 && !system.isLoading) {
           console.log(`%c[Panel] Reactively fetching endpoints for '${system.name}' because new ARCs were detected.`, 'color: #8b5cf6;');
-          this.onSystemExpand(system);
+          this.reactivelyLoadSystemDetails(system);
         }
       });
     });
   }
 
-  onSystemExpand(system: SystemWithState): void {
-    this.ensureEndpointsLoaded(system);
+  private reactivelyLoadSystemDetails(system: SystemWithState): void {
+    if (system.apiType === 'AAS') {
+      if (!system.submodels && !system.isLoading) {
+        console.log(`%c[Panel] Reactively fetching submodels for '${system.name}'...`, 'color: #8b5cf6;');
+        this.ensureSubmodelsLoaded(system);
+      }
+    } else {
+      if (system.endpoints?.length === 0 && !system.isLoading) {
+        console.log(`%c[Panel] Reactively fetching endpoints for '${system.name}'...`, 'color: #8b5cf6;');
+        this.ensureEndpointsLoaded(system);
+      }
+    }
+  }
+
+  onSystemExpand(index:number, systems: SystemWithState[]): void {
+    const system = systems[index];
+    if(!system) return;
+
+    if (system.apiType === 'AAS') {
+      this.ensureSubmodelsLoaded(system);
+    } else {
+      this.ensureEndpointsLoaded(system);
+    }
     
     this.arcStateService.loadArcsForSourceSystem(system.name, system.id).subscribe();
   }
 
   public ensureEndpointsLoaded(system: SystemWithState): void {
-    if (system && system.endpoints.length === 0 && !system.isLoadingEndpoints) {
+    if (system && system.endpoints?.length === 0 && !system.isLoading) {
       console.log(`%c[Panel] Parent commanded to ensure endpoints are loaded for '${system.name}'. Fetching now.`, 'color: #f97316;');
-      system.isLoadingEndpoints = true;
+      system.isLoading = true;
       this.scriptEditorService
         .getEndpointsForSourceSystem(system.id)
         .subscribe((endpoints) => {
           system.endpoints = endpoints;
-          system.isLoadingEndpoints = false;
+          system.isLoading = false;
           this.cdr.detectChanges();
         });
+    }
+  }
+
+  public ensureSubmodelsLoaded(system: SystemWithState): void {
+    if (system && !system.submodels && !system.isLoading) {
+      system.isLoading = true;
+      this.aasService.listSubmodels(system.id).subscribe(submodels => {
+        system.submodels = submodels;
+        system.isLoading = false;
+        this.cdr.detectChanges();
+      });
     }
   }
 
@@ -159,6 +202,18 @@ export class ArcManagementPanelComponent implements OnInit {
 
   onDeleteArc(arc: ApiRequestConfiguration): void {
     this.deleteArc.emit({ arc });
+  }
+
+  onCreateAasArc(system: SourceSystem, submodel: SubmodelDescription): void {
+    this.createAasArc.emit({ system, submodel });
+  }
+
+  onEditAasArc(system: SourceSystem, submodel: SubmodelDescription, arc: AasArc): void {
+    this.editAasArc.emit({ system, submodel, arc });
+  }
+
+  onDeleteAasArc(arc: AasArc): void {
+    this.deleteAasArc.emit({ arc });
   }
 
   ngOnDestroy(): void {

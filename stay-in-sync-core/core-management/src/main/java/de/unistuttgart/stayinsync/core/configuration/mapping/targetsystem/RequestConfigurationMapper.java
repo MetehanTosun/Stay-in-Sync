@@ -33,6 +33,7 @@ public interface RequestConfigurationMapper {
      * Maps a TargetSystemApiRequestConfiguration entity to its detailed DTO for GET requests.
      */
     @Mapping(target = "targetSystemName", source = "targetSystem.name")
+    @Mapping(target = "arcType", constant = "REST")
     GetRequestConfigurationDTO mapToGetDTO(TargetSystemApiRequestConfiguration entity);
 
     List<GetRequestConfigurationDTO> mapToGetDTOList(List<TargetSystemApiRequestConfiguration> entities);

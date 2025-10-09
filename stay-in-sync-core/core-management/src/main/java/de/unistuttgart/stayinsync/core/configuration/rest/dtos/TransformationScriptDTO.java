@@ -11,6 +11,7 @@ public record TransformationScriptDTO(
         String javascriptCode,
         Set<String> requiredArcAliases,
         ScriptStatus status,
-        Set<Long> targetArcIds
+        Set<Long> restTargetArcIds,
+        Set<Long> aasTargetArcIds
 ) {
 }

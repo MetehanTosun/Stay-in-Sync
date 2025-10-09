@@ -3,6 +3,7 @@ package de.unistuttgart.stayinsync.core.configuration.domain.entities.aas;
 import io.quarkus.hibernate.orm.panache.PanacheEntity;
 import jakarta.persistence.*;
 import jakarta.persistence.Index;
+import lombok.Getter;
 
 @Entity
 @Table(
@@ -34,6 +35,7 @@ public class AasElementLite extends PanacheEntity {
     @Column(name = "encoded_api_path")
     public String encodedApiPath;
 
+    @Getter
     @Column(name = "parent_path")
     public String parentPath;
 
@@ -69,6 +71,7 @@ public class AasElementLite extends PanacheEntity {
     @Lob
     @Column(name = "output_signature")
     public String outputSignature;
+
 }
 
 

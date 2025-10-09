@@ -7,11 +7,9 @@ import { SnapshotDTO } from './models/snapshot.model';
 @Injectable({ providedIn: 'root' })
 export class SnapshotService {
   private http = inject(HttpClient);
-  private baseUrl = 'http://localhost:8091';
+  private baseUrl = '/api/snapshots';
 
   getById(id: string): Observable<SnapshotDTO> {
-    return this.http.get<SnapshotDTO>(
-      `${this.baseUrl}//monitoring/snapshots/${id}`
-    );
+    return this.http.get<SnapshotDTO>(`${this.baseUrl}/${id}`);
   }
 }

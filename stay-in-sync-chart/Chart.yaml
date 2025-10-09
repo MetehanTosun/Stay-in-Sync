@@ -45,6 +45,9 @@ dependencies:
   - name: umbrella
     version: 3.6.3
     repository: https://eclipse-tractusx.github.io/charts/dev
+  - name: prometheus-blackbox-exporter
+    version: 11.3.1
+    repository: https://prometheus-community.github.io/helm-charts
   - name: core-management
     version: 1.0.0-SNAPSHOT
     repository: "file://../stay-in-sync-core/core-management/target/helm/kubernetes/core-management"
