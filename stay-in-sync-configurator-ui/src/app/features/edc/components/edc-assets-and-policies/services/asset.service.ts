@@ -4,6 +4,7 @@ import { Observable, throwError, of, delay } from 'rxjs';
 import { catchError, map } from 'rxjs/operators';
 import { Asset } from '../models/asset.model';
 import { MOCK_ODRL_ASSETS } from '../../../mocks/mock-data';
+import { TargetSystem } from '../../../models/target-system.model';
 
 
 @Injectable({
@@ -12,9 +13,12 @@ import { MOCK_ODRL_ASSETS } from '../../../mocks/mock-data';
 export class AssetService {
 
 
-  private mockMode = true;
+  private mockMode = false;
 
   private baseUrl = 'http://localhost:8090/api/config/edcs';
+  private suggestionsUrl = 'http://localhost:8090/api/config/endpoint-suggestions';
+  private paramOptionsUrl = 'http://localhost:8090/api/config/param-options';
+  private targetSystemConfigUrl = 'http://localhost:8090/api/config/target-system-configurations';
 
   constructor(private http: HttpClient) {}
 
@@ -134,41 +138,89 @@ export class AssetService {
     return this.http.post<void>(`${this.baseUrl}/${edcId}/assets/${assetId}/redeploy`, {});
   }
 
+  /**
+   * Fetches asset templates for the asset creation dialog.
+   */
+  getAssetTemplates(): Observable<{ name: string; content: any }[]> {
+    if (this.mockMode) {
+      console.warn('Mock Mode: Fetching asset templates.');
+      const mockTemplates = [
+        {
+          name: 'Standard HTTP Data Asset',
+          content: {
+            "@context": { "edc": "https://w3id.org/edc/v0.0.1/ns/" },
+            "@id": "",
+            "properties": {
+              "asset:prop:name": "",
+              "asset:prop:description": "",
+              "asset:prop:contenttype": "application/json",
+              "asset:prop:version": "1.0.0"
+            },
+            "dataAddress": {
+              "type": "HttpData",
+              "base_url": ""
+            }
+          }
+        }
+      ];
+      return of(mockTemplates).pipe(delay(100));
+    }
+    return this.http.get<{ name: string; content: any }[]>(`${this.baseUrl}/asset-templates`);
+  }
+
+  /**
+   * Fetches the list of available Target Systems (ID and alias).
+   */
+  getTargetSystems(): Observable<TargetSystem[]> {
+    if (this.mockMode) {
+      console.warn('Mock Mode: Fetching target systems.');
+      const mockSystems: TargetSystem[] = [
+        { id: '1', alias: 'User Management API' },
+        { id: '2', alias: 'Events API' }
+      ];
+      return of(mockSystems).pipe(delay(100));
+    }
+    return this.http.get<TargetSystem[]>(this.targetSystemConfigUrl);
+  }
+
+  /**
+   * Fetches the detailed configuration for a specific Target System.
+   * @param targetSystemId The ID of the target system.
+   */
+  getTargetSystemConfig(targetSystemId: string): Observable<any> {
+    if (this.mockMode) {
+      console.warn(`Mock Mode: Fetching config for Target System ID: ${targetSystemId}`);
+
+      const mockConfig = {
+        "1": {
+          "dataAddress": {
+            "baseUrl": "https://api.example.com/users",
+            "proxyQueryParams": "true",
+            "header:Authorization": "Bearer <YOUR_USER_API_TOKEN>"
+          }
+        },
+        "2": {
+          "dataAddress": {
+            "baseUrl": "https://api.example.com/events",
+            "queryParams": "activeOnly=true",
+            "header:Accept": "application/json"
+          }
+        }
+      };
+      const config = (mockConfig as any)[targetSystemId] || { dataAddress: {} };
+      return of(config).pipe(delay(200));
+    }
+    return this.http.get<any>(`${this.targetSystemConfigUrl}/${targetSystemId}`);
+  }
 
 
   // Returns static suggestions for query and header parameters used in the New Asset dialog
   getParamOptions(): Observable<{ query: { label: string; value: string }[]; header: { label: string; value: string }[] }> {
-    if (this.mockMode) {
-      console.warn('Mock Mode: Fetching parameter options.');
-      const mockOptions = {
-        query: [{ label: 'Limit', value: 'limit' }, { label: 'Offset', value: 'offset' }],
-        header: [{ label: 'X-API-Key', value: 'X-API-Key' }, { label: 'Authorization', value: 'Authorization' }]
-      };
-      return of(mockOptions).pipe(delay(100));
-    }
-    // In a real scenario, this would call a backend endpoint.
-    // For now, we return the same static data for both modes.
-    const queryOptions = [
-      { label: 'limit', value: 'limit' },
-      { label: 'offset', value: 'offset' },
-      { label: 'sort', value: 'sort' },
-      { label: 'filter', value: 'filter' },
-      { label: 'page', value: 'page' },
-      { label: 'size', value: 'size' }
-    ];
 
-    const headerOptions = [
-      { label: 'Authorization', value: 'Authorization' },
-      { label: 'Content-Type', value: 'Content-Type' },
-      { label: 'Accept', value: 'Accept' },
-      { label: 'X-API-Key', value: 'X-API-Key' },
-      { label: 'X-Request-ID', value: 'X-Request-ID' }
-    ];
-
-    return of({ query: queryOptions, header: headerOptions });
+    return this.http.get<{ query: any[], header: any[] }>(this.paramOptionsUrl);
   }
 
-  // Very light-weight endpoint autocompletion. Can be wired to a backend later if needed.
+
   getEndpointSuggestions(query: string): Observable<string[]> {
     if (this.mockMode) {
       console.warn('Mock Mode: Fetching endpoint suggestions.');
@@ -180,19 +232,7 @@ export class AssetService {
       const filteredEndpoints = allEndpoints.filter(e => e.toLowerCase().includes(query.toLowerCase()));
       return of(filteredEndpoints).pipe(delay(100));
     }
-    const catalog: string[] = [
-      'https://example.com/api',
-      'https://example.com/api/resources',
-      'https://httpbin.org/get',
-      'https://httpbin.org/anything',
-      'https://jsonplaceholder.typicode.com/posts',
-      'https://jsonplaceholder.typicode.com/users',
-      'https://api.github.com/repos',
-    ];
-
-    const q = (query || '').toLowerCase();
-    const filtered = catalog.filter(u => u.toLowerCase().includes(q));
-    return of(filtered.length > 0 ? filtered : catalog.slice(0, 5));
+    return this.http.get<string[]>(this.suggestionsUrl, { params: { q: query } });
   }
 
   // Maps backend JSON (JSON-LD style) to our Asset interface used by the UI table

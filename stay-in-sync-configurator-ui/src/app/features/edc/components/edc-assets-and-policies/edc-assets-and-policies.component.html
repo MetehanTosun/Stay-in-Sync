@@ -230,23 +230,24 @@
 <p-dialog header="Create New Asset" [(visible)]="displayNewAssetDialog" [modal]="true" [style]="{ width: '50vw' }" (onHide)="hideNewAssetDialog()" [draggable]="false" [resizable]="false">
   <div class="p-fluid pt-3">
     <div class="field col-12 mt-3">
-      <label for="targetSystemEndpoint" class="font-bold block mb-2">TargetSystem Endpoint:</label>
+      <label for="targetSystem" class="font-bold block mb-2">Target System:</label>
       <p-autoComplete
-        id="targetSystemEndpoint"
-        [(ngModel)]="selectedEndpoint"
-        [suggestions]="endpointSuggestions"
-        (completeMethod)="searchEndpoints($event)"
-        (onSelect)="onEndpointSelect($event)"
-        (onClear)="onEndpointSelect($event)"
+        id="targetSystem"
+        [(ngModel)]="selectedTargetSystem"
+        [suggestions]="targetSystemSuggestions"
+        (completeMethod)="searchTargetSystems($event)"
+        (onSelect)="onTargetSystemSelect($event)"
+        (onClear)="onTargetSystemSelect({ value: null })"
+        field="alias"
         [forceSelection]="true"
-        placeholder="Type or select an endpoint URL"
+        placeholder="Select a Target System"
         styleClass="w-full"
         inputStyleClass="w-full"
         [appendTo]="'body'"
       ></p-autoComplete>
     </div>
 
-    <div *ngIf="selectedEndpoint" class="dynamic-fields-section">
+    <div *ngIf="selectedTargetSystem" class="dynamic-fields-section">
       <p-divider align="center" type="dashed" styleClass="my-4">
         <b>Asset Details</b>
       </p-divider>
@@ -313,15 +314,16 @@
 <p-dialog header="Edit Asset" [(visible)]="displayEditAssetDialog" [modal]="true" [style]="{ width: '50vw' }" (onHide)="hideEditAssetDialog()" [draggable]="false" [resizable]="false">
   <ng-container *ngIf="assetToEditODRL">
     <div class="p-fluid pt-3">
-      <div class="field col-12 mt-3">
-        <label for="editTargetSystemEndpoint" class="font-bold block mb-2">TargetSystem Endpoint:</label>
+      <div class="field col-12 mt-3" *ngIf="false"> <!-- Hide for now in edit mode to avoid complexity -->
+        <label for="editTargetSystem" class="font-bold block mb-2">Target System:</label>
         <p-autoComplete
-          id="editTargetSystemEndpoint"
-          [(ngModel)]="selectedEndpoint"
-          [suggestions]="endpointSuggestions"
-          (completeMethod)="searchEndpoints($event)"
-          (onSelect)="onEndpointSelect($event)"
-          (onClear)="onEndpointSelect($event)"
+          id="editTargetSystem"
+          [(ngModel)]="selectedTargetSystem"
+          [suggestions]="targetSystemSuggestions"
+          (completeMethod)="searchTargetSystems($event)"
+          (onSelect)="onTargetSystemSelect($event)"
+          (onClear)="onTargetSystemSelect({ value: null })"
+          field="alias"
           [forceSelection]="true"
           placeholder="Type or select an endpoint URL"
           styleClass="w-full"

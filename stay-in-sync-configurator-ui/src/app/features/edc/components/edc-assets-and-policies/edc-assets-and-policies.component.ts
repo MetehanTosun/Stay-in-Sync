@@ -35,6 +35,7 @@ import { EdcInstanceService } from '../edc-instances/services/edc-instance.servi
 import {lastValueFrom, Subject, Subscription} from 'rxjs';
 import {debounceTime, tap} from "rxjs/operators";
 import { MultiSelectModule } from 'primeng/multiselect';
+import { TargetSystem } from '../../models/target-system.model';
 import { forkJoin } from 'rxjs';
 import { TemplateService } from '../../services/template.service';
 
@@ -186,8 +187,9 @@ accessPolicySuggestions: OdrlPolicyDefinition[] = [];
   private templateJsonSyncSubject = new Subject<void>();
 
   // New Asset Dialog specific properties
-  selectedEndpoint: string | null = null;
-  endpointSuggestions: string[] = [];
+  allTargetSystems: TargetSystem[] = [];
+  targetSystemSuggestions: TargetSystem[] = [];
+  selectedTargetSystem: TargetSystem | null = null;
   assetAttributes: { key: string; value: string }[] = [{ key: '', value: '' }]; // Start with one empty row
   pathParamId: string = '';
   queryParams: { key: string; value: string }[] = [{ key: '', value: '' }];
@@ -240,7 +242,7 @@ accessPolicySuggestions: OdrlPolicyDefinition[] = [];
 
     this.loadAccessPolicyTemplates();
     this.loadAssetTemplates();
-    this.loadAllBpns();
+    this.loadTargetSystems();
   }
 
   ngOnDestroy(): void {
@@ -257,42 +259,18 @@ accessPolicySuggestions: OdrlPolicyDefinition[] = [];
   }
 
   private loadAssetTemplates() {
-    // Mock data for asset templates
-    this.assetTemplates = [
-      {
-        name: 'Standard HTTP Data Asset',
-        content: {
-          "@context": { "edc": "https://w3id.org/edc/v0.0.1/ns/" },
-          "@id": "",
-          "properties": {
-            "asset:prop:name": "",
-            "asset:prop:description": "",
-            "asset:prop:contenttype": "application/json",
-            "asset:prop:version": "1.0.0"
-          },
-          "dataAddress": {
-            "type": "HttpData",
-            "base_url": ""
-          }
-        }
-      }
-      ,
-    ];
+    this.assetService.getAssetTemplates().subscribe(templates => {
+      this.assetTemplates = templates;
+    });
   }
 
-  private loadAllBpns() {
-  this.edcInstanceService.getEdcInstances().subscribe({
-    next: (instances) => {
-      // Set sorgt für eindeutige BPNs
-      const bpnSet = new Set(instances.map(i => i.bpn));
-      this.allBpns = [...bpnSet];
-    },
-    error: (err) => {
-      console.error('Fehler beim Laden der EDC-Instanzen', err);
-      this.allBpns = [];
-    }
-  });
-}
+  private loadTargetSystems() {
+    this.assetService.getTargetSystems().subscribe(systems => {
+      this.allTargetSystems = systems;
+    });
+  }
+
+
 
 
   /**
@@ -500,6 +478,9 @@ accessPolicySuggestions: OdrlPolicyDefinition[] = [];
 
   // Asset methods
   openNewAssetDialog() {
+    // Always start with a clean slate
+    this.resetAssetFormFields();
+
     // Find the default template, which is the first in the list
     const defaultTemplate = this.assetTemplates.length > 0 ? this.assetTemplates[0] : null;
     if (defaultTemplate) {
@@ -513,23 +494,31 @@ accessPolicySuggestions: OdrlPolicyDefinition[] = [];
       this.populateAssetFormFromOdrl(templateContent);
     } else {
       // Fallback if no templates are loaded, create an empty form
-      this.resetAssetFormFields();
       this.syncAssetJsonFromForm();
     }
     this.displayNewAssetDialog = true;
   }
 
   // New Asset Dialog specific methods
-  searchEndpoints(event: { query: string }) {
-    this.assetService.getEndpointSuggestions(event.query).subscribe(suggestions => {
-      this.endpointSuggestions = suggestions;
-    });
+  searchTargetSystems(event: { query: string }) {
+    const query = event.query.toLowerCase();
+    this.targetSystemSuggestions = this.allTargetSystems.filter(system =>
+      system.alias.toLowerCase().includes(query)
+    );
   }
 
-  onEndpointSelect(event: any) {
-    this.syncAssetJsonFromForm();
+  onTargetSystemSelect(event: any) {
+    const selectedSystem: TargetSystem | null = event.value;
+    if (selectedSystem) {
+      this.assetService.getTargetSystemConfig(selectedSystem.id).subscribe(config => {
+        this.populateAssetFormFromOdrl(config);
+        this.syncAssetJsonFromForm();
+      });
+    } else {
+      this.resetAssetFormFields();
+      this.syncAssetJsonFromForm();
+    }
   }
-
   hideNewAssetDialog() {
     this.displayNewAssetDialog = false;
   }
@@ -699,16 +688,6 @@ accessPolicySuggestions: OdrlPolicyDefinition[] = [];
       currentAssetJson.dataAddress = { type: 'HttpData' }; // Default type
     }
 
-    // Update dataAddress.base_url von selectedEndpoint
-    if (this.selectedEndpoint) {
-      currentAssetJson.dataAddress.base_url = this.selectedEndpoint;
-    } else {
-      // Behalte bestehende base_url bei oder setze Standard
-      if (!currentAssetJson.dataAddress.base_url) {
-        currentAssetJson.dataAddress.base_url = '';
-      }
-    }
-
     // Stelle sicher, dass proxyPath und proxyQueryParams existieren
     if (currentAssetJson.dataAddress.proxyPath === undefined) {
       currentAssetJson.dataAddress.proxyPath = true;
@@ -753,8 +732,7 @@ accessPolicySuggestions: OdrlPolicyDefinition[] = [];
     });
     this.headerParams.forEach(h => {
       if (h.key && h.value) {
-        // The backend will add the "header:" prefix
-        currentAssetJson.dataAddress[h.key] = h.value;
+        currentAssetJson.dataAddress[`header:${h.key}`] = h.value;
       }
     });
 
@@ -816,8 +794,6 @@ accessPolicySuggestions: OdrlPolicyDefinition[] = [];
   private populateAssetFormFromOdrl(odrlAsset: any): void {
     // Hier liegt ein kritischer Fehler vor: base_url vs. baseUrl
     // Wir müssen alle möglichen Felder prüfen, da das Backend base_url erwartet, aber das Frontend
-    // möglicherweise andere Bezeichnungen verwendet
-    this.selectedEndpoint = odrlAsset.dataAddress?.base_url || odrlAsset.dataAddress?.baseURL || odrlAsset.dataAddress?.baseUrl || null;
     this.pathParamId = odrlAsset.dataAddress?.path || '';
 
     // Parse queryParams string into key-value pairs
@@ -857,8 +833,7 @@ accessPolicySuggestions: OdrlPolicyDefinition[] = [];
   }
 
   private resetAssetFormFields(): void {
-    this.selectedEndpoint = null;
-    this.assetAttributes = [{ key: '', value: '' }];
+    this.selectedTargetSystem = null;    this.assetAttributes = [{ key: '', value: '' }];
     this.pathParamId = '';
     this.queryParams = [{ key: '', value: '' }];
     this.headerParams = [{ key: '', value: '' }];

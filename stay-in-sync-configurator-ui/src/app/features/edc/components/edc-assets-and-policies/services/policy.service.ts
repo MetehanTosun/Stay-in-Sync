@@ -15,7 +15,7 @@ import {
 })
 export class PolicyService {
 
-  // UI Testing method. To use the real backend, change this to false!
+  // UI Testing method. To use the backend, change this to false!
   private mockMode = false;
 
   private backendUrl = 'http://localhost:8090/api/config/policies';
