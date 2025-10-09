@@ -1,6 +1,7 @@
 package de.unistuttgart.stayinsync.core.configuration.edc.entities;
 
-import de.unistuttgart.stayinsync.core.model.UuidEntity;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import io.quarkus.hibernate.orm.panache.PanacheEntity;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
@@ -15,54 +16,21 @@ import lombok.Setter;
 @Setter
 @Getter
 @Entity
-@Table(name = "edc_policy")
-public class PolicyDefinition extends UuidEntity {
+@Table(name = "edc_policydefinition")
+public class PolicyDefinition extends PanacheEntity {
 
-    /**
-     * Die Policy-ID als String, wie sie im EDC verwendet wird.
-     * Muss eindeutig innerhalb des Systems sein.
-     * Beispiel: "my-policy-id" oder "policy-for-asset-123"
-     */
+    @JsonProperty("@id")
     @Column(nullable = false, unique = true)
     private String policyId;
-    
-    /**
-     * Ein optionaler Anzeigename für die Policy.
-     * Dieser wird im Frontend zur übersichtlicheren Darstellung verwendet.
-     */
+
+    @OneToOne
+    private Policy policy;
+
     @Column
     private String displayName;
 
-    /**
-     * Die vollständige Policy-Definition als JSON-String.
-     * Speichert die komplette Policy-Struktur (context, permissions, usw.)
-     * als serialisierten JSON-String für maximale Flexibilität.
-     */
-    @Lob
-    @Column(columnDefinition = "LONGTEXT", nullable = false)
-    private String policyJson;
-    
-    /**
-     * Die zugehörige EDC-Instanz, zu der diese Policy gehört.
-     * Eine Policy ist immer genau einer EDC-Instanz zugeordnet.
-     */
     @ManyToOne
-    @JoinColumn(name = "edc_instance_id")
+    @JoinColumn(name = "edc_instance")
     private EDCInstance edcInstance;
 
-    /**
-     * Finder-Methode zum Abrufen einer Policy anhand ihrer policyId.
-     * 
-     * @param policyId Die zu suchende Policy-ID
-     * @return Die gefundene EDC-Policy oder null, wenn keine gefunden wurde
-     */
-    public static PolicyDefinition findByPolicyId(String policyId) {
-        if (policyId == null || policyId.isEmpty()) {
-            return null;
-        }
-        
-        // Einfache Simulation - in einer echten Implementierung würde hier
-        // ein Datenbankzugriff erfolgen
-        return find("policyId", policyId).firstResult();
-    }
 }

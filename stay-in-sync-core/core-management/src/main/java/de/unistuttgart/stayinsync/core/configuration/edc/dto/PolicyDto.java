@@ -1,61 +1,12 @@
 package de.unistuttgart.stayinsync.core.configuration.edc.dto;
 
-import jakarta.validation.constraints.NotBlank;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import java.util.Map;
 
-import java.util.UUID;
-
-public class PolicyDto {
-    private UUID id;
-
-    @NotBlank
-    private String action;
-
-    @NotBlank
-    private String constraintLeftOperand;
-
-    @NotBlank
-    private String constraintOperator;
-
-    @NotBlank
-    private String constraintRightOperand;
-
-    public UUID getId() {
-        return id;
-    }
-    public PolicyDto setId(UUID id) {
-        this.id = id;
-        return this;
-    }
-
-    public String getAction() {
-        return action;
-    }
-    public PolicyDto setAction(String action) {
-        this.action = action;
-        return this;
-    }
-
-    public String getConstraintLeftOperand() {
-        return constraintLeftOperand;
-    }
-    public PolicyDto setConstraintLeftOperand(String constraintLeftOperand) {
-        this.constraintLeftOperand = constraintLeftOperand;
-        return this;
-    }
-
-    public String getConstraintOperator() {
-        return constraintOperator;
-    }
-    public PolicyDto setConstraintOperator(String constraintOperator) {
-        this.constraintOperator = constraintOperator;
-        return this;
-    }
-
-    public String getConstraintRightOperand() {
-        return constraintRightOperand;
-    }
-    public PolicyDto setConstraintRightOperand(String constraintRightOperand) {
-        this.constraintRightOperand = constraintRightOperand;
-        return this;
-    }
+public record PolicyDto(
+        @JsonProperty("@type")
+        //TODO Im Mapper auf Policy festsetzen
+        String type,
+        Map<String,Object> contents
+){
 }
