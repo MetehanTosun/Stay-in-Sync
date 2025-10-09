@@ -109,7 +109,7 @@ data:
                   {
                     "matcher": {
                       "id": "byName",
-                      "options": "core-management:80"
+                      "options": "{instance=\"core-management:80\", job=\"quarkus_metrics\"}"
                     },
                     "properties": [
                       {
@@ -121,7 +121,7 @@ data:
                   {
                     "matcher": {
                       "id": "byName",
-                      "options": "sync-node:80"
+                      "options": "{instance=\"core-sync-node:80\", job=\"quarkus_metrics\"}"
                     },
                     "properties": [
                       {
@@ -133,7 +133,7 @@ data:
                   {
                     "matcher": {
                       "id": "byName",
-                      "options": "polling-node:80"
+                      "options": "{instance=\"core-polling-node:80\", job=\"quarkus_metrics\"}"
                     },
                     "properties": [
                       {
@@ -145,7 +145,7 @@ data:
                   {
                     "matcher": {
                       "id": "byName",
-                      "options": "monitoring:80"
+                      "options": "{instance=\"monitoring-backend:80\", job=\"quarkus_metrics\"}"
                     },
                     "properties": [
                       {
@@ -261,7 +261,7 @@ data:
                   {
                     "matcher": {
                       "id": "byName",
-                      "options": "core-management:80"
+                      "options": "{__name__=\"jvm_memory_usage_after_gc\", area=\"heap\", instance=\"core-management:80\", job=\"quarkus_metrics\", pool=\"long-lived\"}"
                     },
                     "properties": [
                       {
@@ -273,36 +273,57 @@ data:
                   {
                     "matcher": {
                       "id": "byName",
-                      "options": "sync-node:80"
+                      "options": "{__name__=\"jvm_memory_usage_after_gc\", area=\"heap\", instance=\"core-sync-node:80\", job=\"quarkus_metrics\", pool=\"long-lived\"}"
                     },
                     "properties": [
                       {
                         "id": "displayName",
                         "value": "SyncNode"
+                      },
+                      {
+                        "id": "color",
+                        "value": {
+                          "fixedColor": "yellow",
+                          "mode": "fixed"
+                        }
                       }
                     ]
                   },
                   {
                     "matcher": {
                       "id": "byName",
-                      "options": "polling-node:80"
+                      "options": "{__name__=\"jvm_memory_usage_after_gc\", area=\"heap\", instance=\"core-polling-node:80\", job=\"quarkus_metrics\", pool=\"long-lived\"}"
                     },
                     "properties": [
                       {
                         "id": "displayName",
                         "value": "PollingNode"
+                      },
+                      {
+                        "id": "color",
+                        "value": {
+                          "fixedColor": "blue",
+                          "mode": "fixed"
+                        }
                       }
                     ]
                   },
                   {
                     "matcher": {
                       "id": "byName",
-                      "options": "monitoring:80"
+                      "options": "{__name__=\"jvm_memory_usage_after_gc\", area=\"heap\", instance=\"monitoring-backend:80\", job=\"quarkus_metrics\", pool=\"long-lived\"}"
                     },
                     "properties": [
                       {
                         "id": "displayName",
                         "value": "Monitoring"
+                      },
+                      {
+                        "id": "color",
+                        "value": {
+                          "fixedColor": "orange",
+                          "mode": "fixed"
+                        }
                       }
                     ]
                   }
@@ -533,7 +554,7 @@ data:
                   },
                   "disableTextWrap": false,
                   "editorMode": "builder",
-                  "expr": "rate(script_execution_time_seconds_count{transformationId=\"$transformationId\"}[1m]) * 60",
+                  "expr": "rate(script_execution_time_seconds_count{transformationId=\"$transformationId\", job=\"quarkus_metrics\"}[1m]) * 60",
                   "fullMetaSearch": false,
                   "includeNullMetadata": true,
                   "instant": false,
@@ -604,7 +625,56 @@ data:
                     ]
                   }
                 },
-                "overrides": []
+                "overrides": [
+                  {
+                    "matcher": {
+                      "id": "byName",
+                      "options": "{__name__=\"jvm_threads_daemon_threads\", instance=\"core-management:80\", job=\"quarkus_metrics\"}"
+                    },
+                    "properties": [
+                      {
+                        "id": "displayName",
+                        "value": "core-management"
+                      }
+                    ]
+                  },
+                  {
+                    "matcher": {
+                      "id": "byName",
+                      "options": "{__name__=\"jvm_threads_daemon_threads\", instance=\"core-polling-node:80\", job=\"quarkus_metrics\"}"
+                    },
+                    "properties": [
+                      {
+                        "id": "displayName",
+                        "value": "PollingNode"
+                      }
+                    ]
+                  },
+                  {
+                    "matcher": {
+                      "id": "byName",
+                      "options": "{__name__=\"jvm_threads_daemon_threads\", instance=\"core-sync-node:80\", job=\"quarkus_metrics\"}"
+                    },
+                    "properties": [
+                      {
+                        "id": "displayName",
+                        "value": "SyncNode"
+                      }
+                    ]
+                  },
+                  {
+                    "matcher": {
+                      "id": "byName",
+                      "options": "{__name__=\"jvm_threads_daemon_threads\", instance=\"monitoring-backend:80\", job=\"quarkus_metrics\"}"
+                    },
+                    "properties": [
+                      {
+                        "id": "displayName",
+                        "value": "Monitoring"
+                      }
+                    ]
+                  }
+                ]
               },
               "gridPos": {
                 "h": 8,
@@ -702,7 +772,44 @@ data:
                     ]
                   }
                 },
-                "overrides": []
+                "overrides": [
+                  {
+                    "matcher": {
+                      "id": "byName",
+                      "options": "{__name__=\"rabbitmq_connections\", instance=\"core-management:80\", job=\"quarkus_metrics\", name=\"<default>\"}"
+                    },
+                    "properties": [
+                      {
+                        "id": "displayName",
+                        "value": "core-management"
+                      }
+                    ]
+                  },
+                  {
+                    "matcher": {
+                      "id": "byName",
+                      "options": "{__name__=\"rabbitmq_connections\", instance=\"core-polling-node:80\", job=\"quarkus_metrics\", name=\"<default>\"}"
+                    },
+                    "properties": [
+                      {
+                        "id": "displayName",
+                        "value": "PollingNode"
+                      }
+                    ]
+                  },
+                  {
+                    "matcher": {
+                      "id": "byName",
+                      "options": "{__name__=\"rabbitmq_connections\", instance=\"core-sync-node:80\", job=\"quarkus_metrics\", name=\"<default>\"}"
+                    },
+                    "properties": [
+                      {
+                        "id": "displayName",
+                        "value": "SyncNode"
+                      }
+                    ]
+                  }
+                ]
               },
               "gridPos": {
                 "h": 8,
@@ -731,15 +838,134 @@ data:
                     "type": "prometheus",
                     "uid": "prometheus"
                   },
-                  "editorMode": "code",
-                  "expr": "rabbitmq_connections{name=\"<default>\"}",
+                  "disableTextWrap": false,
+                  "editorMode": "builder",
+                  "expr": "rabbitmq_connections{job=\"quarkus_metrics\"}",
+                  "fullMetaSearch": false,
+                  "includeNullMetadata": true,
                   "instant": false,
                   "legendFormat": "__auto",
                   "range": true,
-                  "refId": "A"
+                  "refId": "A",
+                  "useBackend": false
                 }
               ],
               "title": "RabbitMQ Connections",
+              "type": "timeseries"
+            },
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+              },
+              "fieldConfig": {
+                "defaults": {
+                  "color": {
+                    "mode": "palette-classic"
+                  },
+                  "custom": {
+                    "axisBorderShow": false,
+                    "axisCenteredZero": false,
+                    "axisColorMode": "text",
+                    "axisLabel": "",
+                    "axisPlacement": "auto",
+                    "barAlignment": 0,
+                    "barWidthFactor": 0.6,
+                    "drawStyle": "line",
+                    "fillOpacity": 0,
+                    "gradientMode": "none",
+                    "hideFrom": {
+                      "legend": false,
+                      "tooltip": false,
+                      "viz": false
+                    },
+                    "insertNulls": false,
+                    "lineInterpolation": "linear",
+                    "lineWidth": 1,
+                    "pointSize": 5,
+                    "scaleDistribution": {
+                      "type": "linear"
+                    },
+                    "showPoints": "auto",
+                    "spanNulls": false,
+                    "stacking": {
+                      "group": "A",
+                      "mode": "none"
+                    },
+                    "thresholdsStyle": {
+                      "mode": "off"
+                    }
+                  },
+                  "mappings": [],
+                  "thresholds": {
+                    "mode": "absolute",
+                    "steps": [
+                      {
+                        "color": "green",
+                        "value": 0
+                      },
+                      {
+                        "color": "red",
+                        "value": 80
+                      }
+                    ]
+                  }
+                },
+                "overrides": [
+                  {
+                    "matcher": {
+                      "id": "byName",
+                      "options": "{instance=\"core-sync-node:80\", job=\"quarkus_metrics\"}"
+                    },
+                    "properties": [
+                      {
+                        "id": "displayName",
+                        "value": "SyncNodes"
+                      }
+                    ]
+                  }
+                ]
+              },
+              "gridPos": {
+                "h": 8,
+                "w": 12,
+                "x": 0,
+                "y": 24
+              },
+              "id": 8,
+              "options": {
+                "legend": {
+                  "calcs": [],
+                  "displayMode": "list",
+                  "placement": "bottom",
+                  "showLegend": true
+                },
+                "tooltip": {
+                  "hideZeros": false,
+                  "mode": "single",
+                  "sort": "none"
+                }
+              },
+              "pluginVersion": "12.1.1",
+              "targets": [
+                {
+                  "datasource": {
+                    "type": "prometheus",
+                    "uid": "prometheus"
+                  },
+                  "disableTextWrap": false,
+                  "editorMode": "code",
+                  "expr": "rate(transformation_scripts_messages_total{job=\"quarkus_metrics\"}[1m])*60",
+                  "fullMetaSearch": false,
+                  "includeNullMetadata": true,
+                  "instant": false,
+                  "legendFormat": "__auto",
+                  "range": true,
+                  "refId": "A",
+                  "useBackend": false
+                }
+              ],
+              "title": "Script Messages per minute",
               "type": "timeseries"
             },
             {
@@ -805,7 +1031,7 @@ data:
               "gridPos": {
                 "h": 8,
                 "w": 12,
-                "x": 0,
+                "x": 12,
                 "y": 24
               },
               "id": 7,
@@ -831,7 +1057,7 @@ data:
                   },
                   "disableTextWrap": false,
                   "editorMode": "builder",
-                  "expr": "rate(http_server_requests_seconds_count{job=\"quarkus_metrics\"}[1m])",
+                  "expr": "rate(http_client_requests_seconds_count{job=\"quarkus_metrics\"}[1m])",
                   "fullMetaSearch": false,
                   "includeNullMetadata": true,
                   "instant": false,
@@ -841,7 +1067,7 @@ data:
                   "useBackend": false
                 }
               ],
-              "title": "New panel",
+              "title": "HTTP Requests per Second",
               "type": "timeseries"
             }
           ],
