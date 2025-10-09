@@ -1,6 +1,9 @@
 package de.unistuttgart.stayinsync.monitoring.clientinterfaces;
 
+import de.unistuttgart.stayinsync.transport.dto.Snapshot.SnapshotDTO;
 import org.junit.jupiter.api.Test;
+
+import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -13,66 +16,57 @@ import static org.junit.jupiter.api.Assertions.*;
 class SyncNodeClientTest {
 
     /**
-     * Test that SyncNodeClient can be instantiated with a valid URI
+     * Test that SyncNodeClient can be instantiated with the no-arg constructor
      * and does not throw an exception.
      */
     @Test
     void testClientInitialization() {
         assertDoesNotThrow(() -> {
-            SyncNodeClient client = new SyncNodeClient("http://localhost");
+            SyncNodeClient client = new SyncNodeClient();
             assertNotNull(client, "SyncNodeClient instance should not be null");
         });
     }
 
     /**
-     * Test that getLatestAll() returns a non-null value.
-     *
-     * Since we are using a dummy URI, we mainly verify that the method
-     * does not throw and returns a value (even if it is empty).
+     * Test that getLatestAll() returns a non-null Map.
      */
     @Test
     void testGetLatestAll_ReturnsNonNull() {
-        SyncNodeClient client = new SyncNodeClient("http://localhost");
+        SyncNodeClient client = new SyncNodeClient();
 
         assertDoesNotThrow(() -> {
-            var result = client.getLatestAll();
+            Map<Long, SnapshotDTO> result = client.getLatestAll();
             assertNotNull(result, "getLatestAll() should not return null");
         });
     }
 
     /**
-     * Test that getLatestAll() returns the expected type.
-     *
-     * Adapt this assertion if getLatestAll() returns a specific type
-     * (e.g., String, List, or custom object).
+     * Test that getLatestAll() returns the expected Map type.
      */
     @Test
     void testGetLatestAll_ReturnsExpectedType() {
-        SyncNodeClient client = new SyncNodeClient("http://localhost");
+        SyncNodeClient client = new SyncNodeClient();
 
-        var result = client.getLatestAll();
+        Map<Long, SnapshotDTO> result = client.getLatestAll();
         assertNotNull(result, "Result should not be null");
-
-        // Replace Object.class with the actual expected type if known
-        assertTrue(result instanceof String, "Result should be of type String");
+        assertInstanceOf(Map.class, result, "Result should be of type Map<Long, SnapshotDTO>");
     }
 
     /**
      * Test that multiple calls to getLatestAll() do not throw exceptions.
-     * This simulates repeated access, as might occur in real usage.
      */
     @Test
     void testGetLatestAll_MultipleCalls() {
-        SyncNodeClient client = new SyncNodeClient("http://localhost");
+        SyncNodeClient client = new SyncNodeClient();
 
         for (int i = 0; i < 5; i++) {
+            int finalI = i;
             assertDoesNotThrow(() -> {
-                var result = client.getLatestAll();
-                assertNotNull(result, "Result of call " + (i + 1) + " should not be null");
+                Map<Long, SnapshotDTO> result = client.getLatestAll();
+                assertNotNull(result, "Result of call " + (finalI + 1) + " should not be null");
             });
         }
     }
 }
-
 
 
