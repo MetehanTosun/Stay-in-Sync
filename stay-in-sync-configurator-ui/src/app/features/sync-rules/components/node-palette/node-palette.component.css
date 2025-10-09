@@ -1,7 +1,5 @@
 .node-palette-container {
-	position: absolute;
-	top: 100%;
-	right: 0;
+	position: relative;
 	z-index: 3000;
 	pointer-events: none;
 	width: auto;
@@ -37,17 +35,17 @@
 
 #main-node-palette-menu {
 	z-index: 3;
-	right: 0;
+	left: 0;
 	top: 0;
 }
 #logic-groups-menu {
 	z-index: 2;
-	right: 170px;
+	left: 170px;
 	top: 0;
 }
 #logic-group-submenu {
 	z-index: 1;
-	right: 340px;
+	left: 340px;
 	top: 0;
 }
 

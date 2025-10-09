@@ -46,8 +46,8 @@ export class CreateRuleModalComponent {
    * Validate the user input for a new rule and hide the modal if user input is valid
    */
   onSave() {
-    if (!this.newRule.name?.trim() || !this.newRule.description?.trim()) {
-      return;
+    if (!this.newRule.name?.trim()) {
+      return; // TODO-s toast to tell user needs name
     }
     this.created.emit({ ...this.newRule });
     this.hide();

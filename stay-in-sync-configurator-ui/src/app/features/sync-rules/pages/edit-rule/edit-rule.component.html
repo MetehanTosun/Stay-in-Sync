@@ -1,35 +1,34 @@
 <!-- MARK: Page Header -->
 <div class="page-header">
-  <p-button class="return-button" (click)="return()">
+  <p-button class="return-button" (click)="goBack()">
     Back to Rules
   </p-button>
   <h2>
     Rule Editor - {{ ruleName }}
-    <p-button id="config-button" (click)="openRuleConfiguration()">
+    <p-button class="config-button" (click)="openRuleConfiguration()">
       <span class="pi pi-cog"></span>
     </p-button>
   </h2>
 
   <!-- MARK: Toolbar -->
-  <p-toolbar>
-    <div style="display: flex; align-items: center; gap: 0.5rem;">
-      <div id="node-selection-indicator" *ngIf="selectedNodeType">
-        Selected: {{ selectedNodeType }} - Click on canvas to place
-      </div>
-      <div class="node-palette-trigger-wrapper" style="position: relative; display: inline-block;">
-        <p-button  id="node-palette-button" (click)="openMainNodePalette()">
-          Add Node
-          </p-button>
-        <div #nodePalette [style.position]="showMainNodePalette && nodePalettePosition.x > 0 ? 'fixed' : 'relative'"
-          [style.left.px]="showMainNodePalette && nodePalettePosition.x > 0 ? nodePalettePosition.x : null"
-          [style.top.px]="showMainNodePalette && nodePalettePosition.x > 0 ? nodePalettePosition.y : null"
-          [style.z-index]="showMainNodePalette && nodePalettePosition.x > 0 ? '1000' : null">
-          <app-node-palette [showMainNodePalette]="showMainNodePalette" (nodeSelected)="onNodeSelected($event)">
-          </app-node-palette>
-        </div>
+  <div class="node-selection-indicator" *ngIf="selectedNodeType">
+    Selected: {{ selectedNodeType }} - Click on canvas to place
+  </div>
+  <p-toolbar class="toolbar">
+    <!-- Add Node Button -->
+    <div class="node-palette-trigger-wrapper">
+      <p-button class="node-palette-button" (click)="openMainNodePalette()">
+        Add Node
+      </p-button>
+      <div #nodePalette srClickOutside (srClickOutside)="closeNodePalette()">
+        <app-node-palette [showMainNodePalette]="showMainNodePalette" [position]="nodePalettePosition"
+          (nodeSelected)="onNodeSelected($event)">
+        </app-node-palette>
       </div>
     </div>
-    <p-button id="save-graph-button" (click)="canvas.saveGraph()">
+
+    <!-- Save Graph Button -->
+    <p-button class="save-graph-button" (click)="canvasFacade.saveGraph()">
       <i class="pi pi-save"></i>
       Save Graph
     </p-button>
@@ -49,18 +48,16 @@
 
 <!-- MARK: Modals -->
 <!-- Provider Modal -->
-<div id="provider-node-modal" *ngIf="showProviderModal">
-  <app-provider-node-modal (providerCreated)="onProviderCreated($event)" (modalsClosed)="onModalsClosed()">
-  </app-provider-node-modal>
-</div>
+<app-provider-node-modal *ngIf="modalOpen === 'provider'" (providerCreated)="onProviderCreated($event)"
+  (modalsClosed)="onModalsClosed()">
+</app-provider-node-modal>
 
 <!-- Constant Modal -->
-<div id="constant-node-modal" *ngIf="showConstantModal">
-  <app-constant-node-modal (constantCreated)="onConstantCreated($event)" (modalsClosed)="onModalsClosed()">
-  </app-constant-node-modal>
-</div>
+<app-constant-node-modal *ngIf="modalOpen === 'constant'" (constantCreated)="onConstantCreated($event)"
+  (modalsClosed)="onModalsClosed()">
+</app-constant-node-modal>
 
-<!-- Rule Configuration -->
-<app-rule-configuration *ngIf="showRuleConfiguration" [ruleName]="ruleName" [ruleDescription]="ruleDescription"
+<!-- Rule Configuration Modal -->
+<app-rule-configuration *ngIf="modalOpen === 'config'" [ruleName]="ruleName" [ruleDescription]="ruleDescription"
   (close)="onModalsClosed()" (save)="onRuleConfigurationSaved($event)">
 </app-rule-configuration>

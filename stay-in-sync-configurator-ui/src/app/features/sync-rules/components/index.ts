@@ -1,6 +1,8 @@
 // Modals
 export * from './modals/constant-node-modal/constant-node-modal.component';
 export * from './modals/provider-node-modal/provider-node-modal.component';
+export * from './modals/rule-configuration/rule-configuration.component';
+export * from './modals/set-node-name-modal/set-node-name-modal.component';
 
 // Node Palette
 export * from './node-palette/node-palette.component';

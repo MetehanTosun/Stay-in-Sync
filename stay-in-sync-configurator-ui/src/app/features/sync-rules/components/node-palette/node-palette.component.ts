@@ -16,6 +16,7 @@ import { MessageService } from 'primeng/api';
 export class NodePaletteComponent implements OnInit {
   //#region Setup
   @Input() showMainNodePalette = false;
+  @Input() position?: { x: number, y: number } | null = null;
   @Output() nodeSelected = new EventEmitter<{ nodeType: NodeType, operator?: LogicOperatorMetadata }>();
 
   NodeType = NodeType; //* for .html file
@@ -34,6 +35,21 @@ export class NodePaletteComponent implements OnInit {
   ngOnInit(): void {
     this.loadGroupedOperators();
   }
+  //#endregion
+
+  //#region Style helpers
+  get paletteStyle() {
+    if (this.showMainNodePalette && this.position && this.position.x > 0) {
+      return {
+        position: 'fixed',
+        left: `${this.position.x}px`,
+        top: `${this.position.y}px`,
+        'z-index': '100'
+      } as { [key: string]: string };
+    }
+    return { position: 'relative', 'pointer-events': 'none' } as { [key: string]: string };
+  }
+
   //#endregion
 
   //#region Template Methods
@@ -87,11 +103,11 @@ export class NodePaletteComponent implements OnInit {
         this.messageService.add({
           severity: 'error',
           summary: 'Loading operator nodes',
-          detail: 'An error accurred while loading the logic operators nodes. \n Please check the logs or the console.'
+          detail: 'An error occurred while loading the logic operator nodes.'
         });
-        console.log(err); // TODO-s err
+        console.error(err);
       },
-    })
+    });
   }
   //#endregion
 
@@ -110,7 +126,7 @@ export class NodePaletteComponent implements OnInit {
    * @returns Array of logic operators
    */
   getOperatorsForGroup(groupName: string): LogicOperatorMetadata[] {
-    return this.operatorsGrouped[groupName];
+    return this.operatorsGrouped[groupName] || [];
   }
   //#endregion
 }
