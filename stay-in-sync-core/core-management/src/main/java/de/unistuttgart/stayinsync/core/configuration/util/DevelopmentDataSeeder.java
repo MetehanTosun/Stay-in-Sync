@@ -28,9 +28,6 @@ import java.util.stream.Collectors;
 @ApplicationScoped
 public class DevelopmentDataSeeder {
 
-    @Inject
-    AfterSeedRunner afterSeedRunner;
-
     @ConfigProperty(name = "quarkus.profile")
     String profile;
 
