@@ -48,16 +48,16 @@
 
 <!-- MARK: Modals -->
 <!-- Provider Modal -->
-<app-provider-node-modal *ngIf="modalOpen === 'provider'" (providerCreated)="onProviderCreated($event)"
-  (modalsClosed)="onModalsClosed()">
-</app-provider-node-modal>
+<app-set-json-path-modal [(visible)]="showProviderModal" (visibleChange)="showProviderModal = $event"
+  (providerCreated)="onProviderCreated($event)" (modalsClosed)="onModalsClosed()">
+</app-set-json-path-modal>
 
 <!-- Constant Modal -->
-<app-constant-node-modal *ngIf="modalOpen === 'constant'" (constantCreated)="onConstantCreated($event)"
-  (modalsClosed)="onModalsClosed()">
-</app-constant-node-modal>
+<app-set-constant-value-modal [(visible)]="showConstantModal" (visibleChange)="showConstantModal = $event"
+  (constantCreated)="onConstantCreated($event)" (modalsClosed)="onModalsClosed()">
+</app-set-constant-value-modal>
 
 <!-- Rule Configuration Modal -->
-<app-rule-configuration *ngIf="modalOpen === 'config'" [ruleName]="ruleName" [ruleDescription]="ruleDescription"
-  (close)="onModalsClosed()" (save)="onRuleConfigurationSaved($event)">
-</app-rule-configuration>
+<app-set-rule-configuration-modal [(visible)]="showConfigModal" [ruleName]="ruleName" [ruleDescription]="ruleDescription"
+  (visibleChange)="showConfigModal = $event" (close)="onModalsClosed()" (save)="onRuleConfigurationSaved($event)">
+</app-set-rule-configuration-modal>

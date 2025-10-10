@@ -3,26 +3,49 @@ import { FormsModule } from '@angular/forms';
 import { ArcAPIService } from '../../../service/api/arc-api.service';
 import { CommonModule } from '@angular/common';
 import { MessageService } from 'primeng/api';
+import { Dialog } from 'primeng/dialog';
+import { Button } from 'primeng/button';
 
 /**
  * This component manages the modal for setting the values of a provider node
  */
 @Component({
-  selector: 'app-provider-node-modal',
+  selector: 'app-set-json-path-modal',
   standalone: true,
-  imports: [FormsModule, CommonModule],
-  templateUrl: './provider-node-modal.component.html',
-  styleUrl: './provider-node-modal.component.css'
+  imports: [FormsModule, CommonModule, Dialog, Button],
+  templateUrl: './set-json-path-modal.component.html',
+  styleUrls: ['../modal-shared.component.css', './set-json-path-modal.component.css']
 })
-export class ProviderNodeModalComponent {
+export class SetJsonPathModalComponent {
+
+  /** Controls dialog visibility (two-way binding with `visibleChange`) */
+  @Input() visible = true;
+
+  /** Emits when dialog visibility changes (two-way binding with `visible`) */
+  @Output() visibleChange = new EventEmitter<boolean>();
+
+  /** The currently JSON path to be edited (empty when creating) */
   @Input() currentJsonPath: string = '';
+
+  /** Emitted when the user creates a new provider node (payload: { jsonPath, outputType }) */
   @Output() providerCreated = new EventEmitter<{ jsonPath: string, outputType: string }>();
+
+  /** Emitted when the user saves changes to an existing provider node (payload: { jsonPath, outputType }) */
   @Output() save = new EventEmitter<{ jsonPath: string, outputType: string }>();
+
+  /** Emitted when the modal closes */
   @Output() modalsClosed = new EventEmitter<void>();
 
+  /** Cached mapping of extracted JSON paths and their output types (populated from API) */
   jsonPaths: { [key: string]: string } = {};
+
+  /** JSON path the user selects */
   jsonPath: string = '';
+
+  /** Whether the suggestions dropdown is currently visible */
   showSuggestions: boolean = false;
+
+  /** Filtered list of suggestion paths matching current input */
   filteredPaths: string[] = [];
 
   constructor(
@@ -30,18 +53,15 @@ export class ProviderNodeModalComponent {
     private messageService: MessageService
   ) { }
 
+  /**
+   * Load JSON paths and current JSON path if available
+   */
   ngOnInit() {
-    this.arcApi.getJsonPaths().subscribe({
-      next: (jsonPaths) => {
-        console.log('JSON Paths:', jsonPaths);
-      },
-      error: (error) => {
-        console.error('Error fetching JSON paths:', error);
-      }
-    }); // TODO-s DELETE
 
+    // Remove leading `source.` prefix when showing/editing the path in the modal
     this.jsonPath = this.currentJsonPath.replace(/^source\./, '') || '';
 
+    // Load paths for autocomplete and initialize the filtered list
     this.arcApi.getJsonPaths().subscribe(paths => {
       this.jsonPaths = paths;
       this.filteredPaths = this.getJsonPathKeys();
@@ -143,6 +163,8 @@ export class ProviderNodeModalComponent {
   closeModal() {
     this.jsonPath = '';
     this.modalsClosed.emit();
+    this.visible = false;
+    this.visibleChange.emit(false);
   }
   //#endregion
 }

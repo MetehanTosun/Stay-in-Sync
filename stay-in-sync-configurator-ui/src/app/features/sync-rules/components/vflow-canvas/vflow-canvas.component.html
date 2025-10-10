@@ -66,19 +66,19 @@
 
 <!-- Modals -->
 <!-- Set Node Name -->
-<app-set-node-name-modal *ngIf="editNodeNameModalOpen" [currentName]="getNodeName(nodeBeingEdited)"
-  (save)="onNodeNameSaved($event)" (close)="closeModals()">
+<app-set-node-name-modal [(visible)]="editNodeNameModalOpen" (visibleChange)="editNodeNameModalOpen = $event"
+  [currentName]="getNodeName(nodeBeingEdited)" (save)="onNodeNameSaved($event)" (close)="closeModals()">
 </app-set-node-name-modal>
 
 <!-- Set Provider JSON Path -->
-<app-provider-node-modal *ngIf="editJsonPathModalOpen" [currentJsonPath]="getNodeJsonPath(nodeBeingEdited)"
-  (save)="onJsonPathSaved($event)" (modalsClosed)="closeModals()">
-</app-provider-node-modal>
+<app-set-json-path-modal [(visible)]="editJsonPathModalOpen" (visibleChange)="editJsonPathModalOpen = $event"
+  [currentJsonPath]="getNodeJsonPath(nodeBeingEdited)" (save)="onJsonPathSaved($event)" (modalsClosed)="closeModals()">
+</app-set-json-path-modal>
 
 <!-- Set Constant Value -->
-<app-constant-node-modal *ngIf="editNodeValueModalOpen" [currentValue]="getNodeValue(nodeBeingEdited)"
-  (save)="onValueSaved($event)" (modalsClosed)="closeModals()">
-</app-constant-node-modal>
+<app-set-constant-value-modal [(visible)]="editNodeValueModalOpen" (visibleChange)="editNodeValueModalOpen = $event"
+  [currentValue]="getNodeValue(nodeBeingEdited)" (save)="onValueSaved($event)" (modalsClosed)="closeModals()">
+</app-set-constant-value-modal>
 
 <!-- Pending Edge Removal -->
 <div *ngIf="showRemoveEdgesModal" class="modal-backdrop"></div>

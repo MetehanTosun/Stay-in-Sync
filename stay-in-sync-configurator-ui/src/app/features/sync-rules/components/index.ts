@@ -1,7 +1,7 @@
 // Modals
-export * from './modals/constant-node-modal/constant-node-modal.component';
-export * from './modals/provider-node-modal/provider-node-modal.component';
-export * from './modals/rule-configuration/rule-configuration.component';
+export * from './modals/set-constant-value-modal/set-constant-value-modal.component';
+export * from './modals/set-json-path-modal/set-json-path-modal.component';
+export * from './modals/set-rule-configuration-modal/set-rule-configuration-modal.component';
 export * from './modals/set-node-name-modal/set-node-name-modal.component';
 
 // Node Palette

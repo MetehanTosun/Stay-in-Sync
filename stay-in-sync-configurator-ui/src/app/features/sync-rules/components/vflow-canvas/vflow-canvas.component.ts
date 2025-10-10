@@ -1,9 +1,9 @@
 import { Component, ElementRef, EventEmitter, OnInit, Output, ViewChild } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
-import { Connection, Edge, EdgeChange, EdgeType, NodeChange, Vflow, VflowComponent } from 'ngx-vflow';
+import { Connection, Edge, EdgeChange, NodeChange, Vflow, VflowComponent } from 'ngx-vflow';
 import { GraphAPIService, OperatorNodesApiService } from '../../service';
 import { ConfigNodeData, CustomVFlowNode, LogicNodeData, LogicOperatorMetadata, NodeMenuItem, NodeType, VFlowGraphDTO } from '../../models';
-import { ConstantNodeComponent, ConstantNodeModalComponent, FinalNodeComponent, LogicNodeComponent, ProviderNodeComponent, ProviderNodeModalComponent } from '..';
+import { ConstantNodeComponent, FinalNodeComponent, LogicNodeComponent, ProviderNodeComponent, SetConstantValueModalComponent, SetJsonPathModalComponent } from '..';
 import { CommonModule } from '@angular/common';
 import { SetNodeNameModalComponent } from '../modals/set-node-name-modal/set-node-name-modal.component';
 import { ValidationError } from '../../models/interfaces/validation-error.interface';
@@ -20,8 +20,8 @@ import { MessageService } from 'primeng/api';
     Vflow,
     CommonModule,
     SetNodeNameModalComponent,
-    ProviderNodeModalComponent,
-    ConstantNodeModalComponent
+    SetJsonPathModalComponent,
+    SetConstantValueModalComponent
   ],
   templateUrl: './vflow-canvas.component.html',
   styleUrl: './vflow-canvas.component.css'
@@ -769,7 +769,7 @@ export class VflowCanvasComponent implements OnInit {
    */
   openSuggestionsMenu(node: CustomVFlowNode) {
     const latestNode = this.nodes.find(n => n.id === node.id);
-    if (latestNode &&  "outputType" in latestNode.data) {
+    if (latestNode && "outputType" in latestNode.data) {
       const outputType = latestNode.data.outputType;
       this.nodesApi.getOperators().subscribe({
         next: (operators: LogicOperatorMetadata[]) => {

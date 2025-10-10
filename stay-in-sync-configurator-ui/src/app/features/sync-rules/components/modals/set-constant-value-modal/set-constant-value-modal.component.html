@@ -1,0 +1,31 @@
+<p-dialog header="Edit Constant Value" [(visible)]="visible" [modal]="true" [closable]="false"
+  [style]="{ width: '420px' }">
+  <form (ngSubmit)="submit()" class="p-fluid">
+    <div class="form-field">
+      <div class="label-row">
+        <label for="constant-value">Constant Value</label>
+
+        <!-- Tip Button -->
+        <button type="button" class="tip-button" (click)="toggleTipPopup()">
+          <span class="pi pi-info-circle"></span>
+          Tip
+        </button>
+      </div>
+      <input id="constant-value" name="constant-value" type="text" [(ngModel)]="constantValue"
+        placeholder="Enter Constant Value" class="form-input" required />
+
+      <!-- Tip Content -->
+      <div class="tip-content" *ngIf="isTipPopupVisible">
+        <p>Supported types: <br> String, Number, Boolean, Array, JSON, Date</p>
+        <p style="font-size: 95%;">Date format: <br> ISO 8601 (<em>e.g., {{ getCurrentDateTimeExample() }}</em>)</p>
+      </div>
+    </div>
+
+    <!-- MARK: Form Actions -->
+    <div class="form-actions">
+      <p-button id="save-button" label="Save" icon="pi pi-save" type="submit" styleClass="save-btn"></p-button>
+      <p-button id="cancel-button" label="Cancel" icon="pi pi-times" type="button" (click)="closeModal()"
+        styleClass="cancel-btn p-button-secondary"></p-button>
+    </div>
+  </form>
+</p-dialog>

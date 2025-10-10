@@ -1,14 +1,14 @@
 import { Component, OnInit, OnDestroy, AfterViewInit, ViewChild } from '@angular/core';
 import { ClickOutsideDirective } from '../../directives/click-outside.directive';
 import { ActivatedRoute, Router } from '@angular/router';
-import { ConstantNodeModalComponent, NodePaletteComponent, ProviderNodeModalComponent, VflowCanvasComponent } from '../../components';
+import { NodePaletteComponent, VflowCanvasComponent, SetConstantValueModalComponent, SetJsonPathModalComponent } from '../../components';
 import { CanvasFacadeService } from '../../service/canvas/canvas-facade.service';
 import { LogicOperatorMetadata, NodeType } from '../../models';
 import { CommonModule } from '@angular/common';
 import { TransformationRulesApiService } from '../../service';
 import { ErrorPanelComponent } from '../../components/error-panel/error-panel.component';
 import { ValidationError } from '../../models/interfaces/validation-error.interface';
-import { RuleConfigurationComponent } from '../../components/modals/rule-configuration/rule-configuration.component';
+import { SetRuleConfigurationModal } from '../../components/modals/set-rule-configuration-modal/set-rule-configuration-modal.component';
 import { Button } from 'primeng/button';
 import { Toolbar } from 'primeng/toolbar';
 import { MessageService } from 'primeng/api';
@@ -22,12 +22,12 @@ import { MessageService } from 'primeng/api';
     CommonModule,
     VflowCanvasComponent,
     NodePaletteComponent,
-    ProviderNodeModalComponent,
-    ConstantNodeModalComponent,
+    SetJsonPathModalComponent,
+    SetConstantValueModalComponent,
     ErrorPanelComponent,
     Button,
     Toolbar,
-    RuleConfigurationComponent,
+    SetRuleConfigurationModal,
     ClickOutsideDirective
   ],
   templateUrl: './edit-rule.component.html',
@@ -46,8 +46,10 @@ export class EditRuleComponent implements OnInit, AfterViewInit, OnDestroy {
   selectedOperator: LogicOperatorMetadata | null = null;
 
   // Node Creation
-  modalOpen: 'provider' | 'constant' | 'config' | null = null;
   pendingNodePos: { x: number, y: number } | null = null;
+  showProviderModal: boolean = false;
+  showConstantModal: boolean = false;
+  showConfigModal: boolean = false;
 
   // Error Panel Attribute
   //* Needed as an intermediate attribute
@@ -152,10 +154,12 @@ export class EditRuleComponent implements OnInit, AfterViewInit, OnDestroy {
     if (this.pendingNodePos) {
       switch (this.selectedNodeType) {
         case NodeType.PROVIDER:
-          this.modalOpen = 'provider';
+          this.closeAllModals();
+          this.showProviderModal = true;
           break;
         case NodeType.CONSTANT:
-          this.modalOpen = 'constant';
+          this.closeAllModals();
+          this.showConstantModal = true;
           break;
         case NodeType.LOGIC:
           if (this.pendingNodePos) {
@@ -189,11 +193,13 @@ export class EditRuleComponent implements OnInit, AfterViewInit, OnDestroy {
       switch (this.selectedNodeType) {
         case NodeType.PROVIDER:
           this.pendingNodePos = pos;
-          this.modalOpen = 'provider';
+          this.closeAllModals();
+          this.showProviderModal = true;
           break;
         case NodeType.CONSTANT:
           this.pendingNodePos = pos;
-          this.modalOpen = 'constant';
+          this.closeAllModals();
+          this.showConstantModal = true;
           break;
         case NodeType.LOGIC:
           this.canvasFacade.addNode(this.selectedNodeType, pos, undefined, undefined, this.selectedOperator || undefined);
@@ -222,7 +228,8 @@ export class EditRuleComponent implements OnInit, AfterViewInit, OnDestroy {
    * Opens the rule configuration modal
    */
   openRuleConfiguration(): void {
-    this.modalOpen = 'config';
+    this.closeAllModals();
+    this.showConfigModal = true;
   }
   //#endregion
 
@@ -251,12 +258,21 @@ export class EditRuleComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   /**
-   * Closes all modals of this page
+   * Closes all modals of this page and reverts node creation process
    */
   onModalsClosed(): void {
-    this.modalOpen = null;
     this.pendingNodePos = null;
+    this.closeAllModals();
     this.clearNodeSelection();
+  }
+
+  /**
+   * loses all modals of this page
+   */
+  private closeAllModals(): void {
+    this.showProviderModal = false;
+    this.showConstantModal = false;
+    this.showConfigModal = false;
   }
 
   /**

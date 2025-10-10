@@ -13,7 +13,7 @@ import { RuleCreationDTO } from '../../../models';
   standalone: true,
   imports: [CommonModule, FormsModule, Dialog, Button],
   templateUrl: './create-rule-modal.component.html',
-  styleUrls: ['./create-rule-modal.component.css']
+  styleUrls: ['../modal-shared.component.css', './create-rule-modal.component.css']
 })
 export class CreateRuleModalComponent {
   /**

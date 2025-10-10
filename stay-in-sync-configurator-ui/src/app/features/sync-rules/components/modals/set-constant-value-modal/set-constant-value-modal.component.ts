@@ -1,28 +1,46 @@
 import { CommonModule } from '@angular/common';
-import { Component, EventEmitter, inject, Input, Output } from '@angular/core';
+import { Component, EventEmitter, Input, Output } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { Dialog } from 'primeng/dialog';
+import { Button } from 'primeng/button';
 import { MessageService } from 'primeng/api';
 
 /**
  * This component manages the modal for setting the values of a constant node
  */
 @Component({
-  selector: 'app-constant-node-modal',
+  selector: 'app-set-constant-value-modal',
   standalone: true,
-  imports: [FormsModule, CommonModule],
-  templateUrl: './constant-node-modal.component.html',
-  styleUrl: './constant-node-modal.component.css'
+  imports: [FormsModule, CommonModule, Dialog, Button],
+  templateUrl: './set-constant-value-modal.component.html',
+  styleUrls: ['../modal-shared.component.css', './set-constant-value-modal.component.css']
 })
-export class ConstantNodeModalComponent {
+export class SetConstantValueModalComponent {
+  /** Controls dialog visibility (two-way binding with `visibleChange`) */
+  @Input() visible = true;
 
+  /** Emits when dialog visibility changes (two-way binding with `visible`) */
+  @Output() visibleChange = new EventEmitter<boolean>();
+
+  /** The current value to be edited (empty when creating)  */
   @Input() currentValue: string = '';
+
+  /** Emitted when a new constant value is created (payload: parsed value) */
   @Output() constantCreated = new EventEmitter<any>();
+
+  /** Emitted when saving an edited constant (payload: parsed value) */
   @Output() save = new EventEmitter<string>();
+
+  /** Emitted when the modal closes */
   @Output() modalsClosed = new EventEmitter<void>();
 
+  /** String containing the user entered value */
   constantValue: string = '';
+
+  /** Controls whether the tip is displayed in the UI */
   isTipPopupVisible: boolean = false;
 
+  /** Initialize the constant's value from the input prop */
   ngOnInit() {
     this.constantValue = this.currentValue || '';
   }
@@ -31,9 +49,8 @@ export class ConstantNodeModalComponent {
 
   //#region Modal Methods
   /**
-   * Concludes the constant node creation by forwarding the constant value to node creation
-   *
-   * @returns
+   * Concludes the constant node creation by validating and forwarding the constant value.
+   * Emits either `save` (when editing) or `constantCreated` (when creating new).
    */
   submit() {
     if (!this.constantValue.trim()) {
@@ -55,6 +72,8 @@ export class ConstantNodeModalComponent {
   closeModal() {
     this.constantValue = '';
     this.modalsClosed.emit();
+    this.visible = false;
+    this.visibleChange.emit(false);
   }
 
   toggleTipPopup() {
