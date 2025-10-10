@@ -1,30 +1,31 @@
 <div class="node-palette-container" [ngStyle]="paletteStyle">
   <!-- Main Menu -->
-  <div id="main-node-palette-menu" *ngIf="showMainNodePalette">
-    <div class="node-palette-item" (click)="selectNode(NodeType.PROVIDER)">
+  <div id="main-node-palette-menu" *ngIf="showMainNodePalette" role="menu" aria-label="Node palette main menu">
+    <button class="node-palette-item" type="button" role="menuitem" (click)="selectNode(NodeType.PROVIDER)">
       Provider Node
-    </div>
-    <div class="node-palette-item" (click)="selectLogicNodePalette()">
+    </button>
+    <button class="node-palette-item" type="button" role="menuitem" (click)="selectLogicNodePalette()">
       Logic Node
-    </div>
-    <div class="node-palette-item" (click)="selectNode(NodeType.CONSTANT)">
+    </button>
+    <button class="node-palette-item" type="button" role="menuitem" (click)="selectNode(NodeType.CONSTANT)">
       Constant Node
-    </div>
+    </button>
   </div>
 
   <!-- Logic Groups Sub-Palette -->
-  <div id="logic-groups-menu" *ngIf="showLogicGroups" (click)="$event.stopPropagation()">
-    <div *ngFor="let groupName of getLogicGroups()" class="node-palette-item" (click)="selectLogicGroup(groupName)">
+  <div id="logic-groups-menu" *ngIf="showLogicGroups" (click)="$event.stopPropagation()" role="menu" aria-label="Logic groups">
+    <button *ngFor="let groupName of logicGroupKeys; trackBy: trackByGroupName" class="node-palette-item" type="button" role="menuitem" (click)="selectLogicGroup(groupName)">
       <span>{{ groupName }}</span>
-    </div>
+    </button>
   </div>
 
   <!-- Logic Nodes Sub-Palette -->
-  <div id="logic-group-submenu" *ngIf="showGroupOperators" (click)="$event.stopPropagation()">
-    <div *ngFor="let operator of getOperatorsForGroup(selectedLogicGroup!)" class="node-palette-item"
-      (click)="selectNode(NodeType.LOGIC, operator)">
+  <div id="logic-group-submenu" *ngIf="showGroupOperators && selectedLogicGroup && getOperatorsForGroup(selectedLogicGroup) as ops"
+       (click)="$event.stopPropagation()" role="menu" aria-label="Logic operators">
+    <button *ngFor="let operator of ops; trackBy: trackByOperator" class="node-palette-item" type="button"
+      role="menuitem" (click)="selectNode(NodeType.LOGIC, operator)">
       <span>{{ operator.operatorName }}</span>
       <small *ngIf="operator.description">{{ operator.description }}</small>
-    </div>
+    </button>
   </div>
 </div>

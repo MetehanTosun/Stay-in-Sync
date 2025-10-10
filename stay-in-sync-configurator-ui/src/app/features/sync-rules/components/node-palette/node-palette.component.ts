@@ -2,6 +2,7 @@ import { CommonModule } from '@angular/common';
 import { Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
 import { GroupedOperators, LogicOperatorMetadata, NodeType } from '../../models';
 import { OperatorNodesApiService } from '../../service';
+import { trackByGroupName, trackByOperator } from './node-palette.utils';
 import { MessageService } from 'primeng/api';
 
 /**
@@ -11,27 +12,46 @@ import { MessageService } from 'primeng/api';
   selector: 'app-node-palette',
   imports: [CommonModule],
   templateUrl: './node-palette.component.html',
-  styleUrl: './node-palette.component.css'
+  styleUrls: ['./node-palette.component.css']
 })
 export class NodePaletteComponent implements OnInit {
-  //#region Setup
+  //#region  Fields
+  /** Whether the main palette is visible */
   @Input() showMainNodePalette = false;
+
+  /** Coordinates where the palette should be rendered. */
   @Input() position?: { x: number, y: number } | null = null;
+
+  /** Emitted when the user selects a node to create. Payload: { nodeType, operator? } */
   @Output() nodeSelected = new EventEmitter<{ nodeType: NodeType, operator?: LogicOperatorMetadata }>();
+  //#endregion
 
-  NodeType = NodeType; //* for .html file
-  operatorsGrouped: GroupedOperators = {};
 
-  // Palette Status
+  /** Expose enum to template */
+  NodeType = NodeType;
+
+  /** Operators grouped by category */
+  private operatorsGrouped: GroupedOperators = {};
+
+  /** Cached group names for template iteration (prevents repeated Object.keys calls) */
+  logicGroupKeys: string[] = [];
+
+  /** Whether the logic groups sub-palette is shown */
   showLogicGroups = false;
+
+  /** Currently selected logic group */
   selectedLogicGroup: string | null = null;
+
+  /** Whether the operators submenu is shown */
   showGroupOperators = false;
+
 
   constructor(
     private nodesApi: OperatorNodesApiService,
     private messageService: MessageService
   ) { }
 
+  //#region Lifecycle
   ngOnInit(): void {
     this.loadGroupedOperators();
   }
@@ -43,11 +63,10 @@ export class NodePaletteComponent implements OnInit {
       return {
         position: 'fixed',
         left: `${this.position.x}px`,
-        top: `${this.position.y}px`,
-        'z-index': '100'
+        top: `${this.position.y}px`
       } as { [key: string]: string };
     }
-    return { position: 'relative', 'pointer-events': 'none' } as { [key: string]: string };
+    return {} as { [key: string]: string };
   }
 
   //#endregion
@@ -88,6 +107,12 @@ export class NodePaletteComponent implements OnInit {
     this.selectedLogicGroup = groupName;
     this.showGroupOperators = true;
   }
+
+  //#endregion
+
+  //#region Template Helpers
+  trackByGroupName = trackByGroupName;
+  trackByOperator = trackByOperator;
   //#endregion
 
   //#region REST Methods
@@ -98,6 +123,7 @@ export class NodePaletteComponent implements OnInit {
     this.nodesApi.getGroupedOperators().subscribe({
       next: (operatorsGrouped: GroupedOperators) => {
         this.operatorsGrouped = operatorsGrouped;
+        this.logicGroupKeys = Object.keys(operatorsGrouped);
       },
       error: (err) => {
         this.messageService.add({
@@ -112,13 +138,6 @@ export class NodePaletteComponent implements OnInit {
   //#endregion
 
   //#region Getters
-  /**
-   * @returns the names of all logic groups
-   */
-  getLogicGroups(): string[] {
-    return Object.keys(this.operatorsGrouped);
-  }
-
   /**
    * Returns the operators of the given logic group
    *
