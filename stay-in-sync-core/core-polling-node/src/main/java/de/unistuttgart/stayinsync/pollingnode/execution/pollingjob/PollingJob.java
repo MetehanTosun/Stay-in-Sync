@@ -56,9 +56,8 @@ public class PollingJob implements Job {
             throw new JobExecutionException(exceptionMessage);
         }
 
-        if (pollingJobDetails.workerPodName() != null) {
-            requestCounter(pollingJobDetails.workerPodName()).increment();
-        }
+        String workerPodName = getCurrentPodName();
+        requestCounter(workerPodName).increment();
 
         try {
             final JsonObject jsonObject = restClient.pollJsonObjectFromApi(requestBuilder.buildRequest(pollingJobDetails.requestBuildingDetails()));
@@ -96,14 +95,26 @@ public class PollingJob implements Job {
     }
 
     /**
-     * Gibt einen Counter für die Anzahl der Polling-Requests zurück.
-     * Der Counter wird mit dem Namen des Polling-Nodes als Label versehen.
+     * Returns a Counter for the number of polling requests.
+     * The counter is labeled with the name of the polling node.
      *
-     * @param pollingNode Name des Polling-Nodes
-     * @return Counter für die Metrik "polling_requests_total"
+     * @param pollingNode the name of the polling node
+     * @return Counter for the metric "polling_requests_total"
      */
     private Counter requestCounter(String pollingNode) {
         return registry.counter("polling_requests_total", "pollingNode", pollingNode);
     }
+
+    /**
+     * Retrieves the current pod name from the environment variable "HOSTNAME".
+     * If the environment variable is not set or empty, returns "core-polling-node" as default.
+     *
+     * @return the current pod name or "core-polling-node" if not set
+     */
+    private String getCurrentPodName() {
+        String podName = System.getenv("HOSTNAME");
+        return (podName != null && !podName.isEmpty()) ? podName : "core-polling-node";
+    }
+
 
 }

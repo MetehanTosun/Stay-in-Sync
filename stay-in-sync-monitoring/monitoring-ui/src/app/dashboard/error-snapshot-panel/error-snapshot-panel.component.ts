@@ -1,7 +1,6 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { DatePipe, NgClass, NgForOf, NgIf, NgStyle } from '@angular/common';
-import { SnapshotModel } from '../../core/models/snapshot.model';
 import { TransformationService } from '../../core/services/transformation.service';
 import { Panel } from 'primeng/panel';
 import { Message } from 'primeng/message';
@@ -11,6 +10,7 @@ import { TransformationModelForSnapshotPanel } from '../../core/models/transform
 import { TableModule } from 'primeng/table';
 import { Button } from 'primeng/button';
 import { SnapshotService } from '../../core/services/snapshot.service';
+import {SnapshotDTO} from '../../core/models/snapshot.model';
 
 /**
  * ErrorSnapshotPanelComponent
@@ -53,7 +53,7 @@ export class ErrorSnapshotPanelComponent implements OnInit, OnDestroy {
   /**
    * A map of transformation IDs to their last 5 snapshots.
    */
-  transformationSnapshots = new Map<number, SnapshotModel[]>();
+  transformationSnapshots = new Map<number, SnapshotDTO[]>();
 
   private routeSub?: Subscription;
   private sse?: EventSource;
@@ -113,7 +113,7 @@ export class ErrorSnapshotPanelComponent implements OnInit, OnDestroy {
    */
   loadSnapshotsForTransformations() {
     this.transformationSnapshots.clear();
-    this.transformations.forEach((transformation) => {
+    for (const transformation of this.transformations) {
       if (typeof transformation.id === 'number') {
         this.snapshotService
           .getLastFiveSnapshots(transformation.id.toString())
@@ -121,7 +121,7 @@ export class ErrorSnapshotPanelComponent implements OnInit, OnDestroy {
             this.transformationSnapshots.set(transformation.id!, snapshots);
           });
       }
-    });
+    }
   }
 
   /**
@@ -132,7 +132,7 @@ export class ErrorSnapshotPanelComponent implements OnInit, OnDestroy {
    */
   getSnapshotsForTransformation(
     transformationId: number | undefined
-  ): SnapshotModel[] {
+  ): SnapshotDTO[] {
     return this.transformationSnapshots.get(<number>transformationId) ?? [];
   }
 
@@ -158,11 +158,11 @@ export class ErrorSnapshotPanelComponent implements OnInit, OnDestroy {
     // Transformation update events
     this.sse.addEventListener('transformation-update', (event: any) => {
       const data = JSON.parse(event.data) as number[]; // Array of transformation IDs
-      this.transformations.forEach((t) => {
+      for (const t of this.transformations) {
         if (data.includes(t.id!)) {
           t.error = true; // Mark transformation as error
         }
-      });
+      }
     });
 
     // Job update events (optional usage)
