@@ -31,88 +31,84 @@ public class ExtendedLogicGraphTests {
         evaluator = new LogicGraphEvaluator();
     }
 
-    private Map<String, Object> createDataContext(String json, Map<String, SnapshotEntry> snapshot) throws IOException {
-        JsonNode data = objectMapper.readTree(json);
-        ObjectNode sourceNode = objectMapper.createObjectNode();
-        sourceNode.set("sensor", data);
+    // =====================================================================================
+    // CORE EVALUATOR TESTS - Basic functionality and error handling
+    // =====================================================================================
 
-        Map<String, Object> dataContext = new HashMap<>();
-        dataContext.put("source", sourceNode);
+    @Test
+    public void testEvaluateGraph_NullGraphThrowsException() {
+        GraphEvaluationException exception = assertThrows(
+                GraphEvaluationException.class,
+                () -> evaluator.evaluateGraph(null, new HashMap<>())
+        );
 
-        if (snapshot != null) {
-            dataContext.put("__snapshot", snapshot);
-        }
-        return dataContext;
+        assertEquals(GraphEvaluationException.ErrorType.INVALID_INPUT, exception.getErrorType());
+        assertTrue(exception.getMessage().contains("cannot be null or empty"));
     }
 
     @Test
-    public void testChangeDetection_WithTimeWindow() throws IOException, GraphEvaluationException {
-        System.out.println("--- TEST: Time Window Feature ('Sliding Window') ---");
-
-        // ARRANGE
-        ProviderNode tempProvider = createProviderNode("source.sensor.temperature", 0);
-        ProviderNode humidityProvider = createProviderNode("source.sensor.humidity", 1);
-
-        // ACCEPTANCE CRITERIA 1: User can activate time window and set duration
-        ConfigNode configNode = createConfigNode(2, tempProvider, humidityProvider);
-        configNode.setMode(ConfigNode.ChangeDetectionMode.AND);
-        configNode.setTimeWindowEnabled(true);
-        configNode.setTimeWindowMillis(10000); // 10 seconds
-        System.out.println("[SETUP] Acceptance Criteria 1: ConfigNode created. Mode=AND, Time Window=10s activated.");
-
-        FinalNode finalNode = createFinalNode(3, configNode);
-        List<Node> graph = Arrays.asList(tempProvider, humidityProvider, configNode, finalNode);
-
-        // --- Time Simulation ---
-        long timeRun1 = System.currentTimeMillis();
-        long timeRun2 = timeRun1 + 5000;  // 5 seconds after Run 1
-        long timeRun3 = timeRun1 + 12000; // 12 seconds after Run 1
-
-        // === RUN 1: One of two changes occurs ===
-        System.out.println("\n[RUN 1] Situation: Only temperature changes.");
-        Map<String, SnapshotEntry> initialSnapshot = Map.of(
-                "source.sensor.temperature", new SnapshotEntry(20.0, timeRun1 - 20000),
-                "source.sensor.humidity", new SnapshotEntry(50, timeRun1 - 20000)
+    public void testEvaluateGraph_EmptyGraphThrowsException() {
+        GraphEvaluationException exception = assertThrows(
+                GraphEvaluationException.class,
+                () -> evaluator.evaluateGraph(List.of(), new HashMap<>())
         );
-        Map<String, Object> context1 = createDataContext("{\"temperature\": 21.0, \"humidity\": 50}", initialSnapshot);
 
-        injectCurrentTime(configNode, timeRun1);
+        assertEquals(GraphEvaluationException.ErrorType.INVALID_INPUT, exception.getErrorType());
+        assertTrue(exception.getMessage().contains("cannot be null or empty"));
+    }
+
+    @Test
+    public void testEvaluateGraph_NodeCalculationFailureThrowsException() throws IOException {
+        ProviderNode invalidProvider = createProviderNode("source.sensor.nonexistent.deeply.nested.path", 0);
+        FinalNode finalNode = createFinalNode(1, invalidProvider);
+        List<Node> graph = Arrays.asList(invalidProvider, finalNode);
+
+        Map<String, Object> context = createDataContext("{}", null);
+
+        GraphEvaluationException exception = assertThrows(
+                GraphEvaluationException.class,
+                () -> evaluator.evaluateGraph(graph, context)
+        );
+
+        assertEquals(GraphEvaluationException.ErrorType.EXECUTION_FAILED, exception.getErrorType());
+        assertTrue(exception.getMessage().contains("unexpected error occurred"));
+    }
+
+    @Test
+    public void testEvaluateGraph_NullDataContextHandling() throws IOException {
+        ProviderNode tempProvider = createProviderNode("source.sensor.temperature", 0);
+        FinalNode finalNode = createFinalNode(1, tempProvider);
+        List<Node> graph = Arrays.asList(tempProvider, finalNode);
+
+        assertThrows(
+                Exception.class,
+                () -> evaluator.evaluateGraph(graph, null)
+        );
+    }
+
+    @Test
+    public void testEvaluateGraph_ResultResetBetweenEvaluations() throws IOException, GraphEvaluationException {
+        ProviderNode tempProvider = createProviderNode("source.sensor.temperature", 0);
+        ConstantNode threshold = createConstantNode("Threshold", 20.0, 1);
+        LogicNode comparison = createLogicNode("TempCheck", LogicOperator.GREATER_THAN, 2, tempProvider, threshold);
+        FinalNode finalNode = createFinalNode(3, comparison);
+        List<Node> graph = Arrays.asList(tempProvider, threshold, comparison, finalNode);
+
+        // First evaluation - should be true
+        Map<String, Object> context1 = createDataContext("{\"temperature\": 25.0}", null);
         boolean result1 = evaluator.evaluateGraph(graph, context1);
+        assertTrue(result1);
 
-        System.out.println("[RUN 1] RESULT: Transformation was NOT triggered (false).");
-        assertFalse(result1, "Should be false since only one value changed.");
-
-        // Get new snapshot from ConfigNode after first run
-        Map<String, SnapshotEntry> snapshotForRun2 = configNode.getNewSnapshotData();
-
-        // === RUN 2: Second change WITHIN the window ===
-        System.out.println("\n[RUN 2] Situation: Second change occurs 5s later (within the 10s window).");
-        Map<String, Object> context2 = createDataContext("{\"temperature\": 21.0, \"humidity\": 55}", snapshotForRun2);
-
-        injectCurrentTime(configNode, timeRun2);
+        // Second evaluation with different data - should be false
+        Map<String, Object> context2 = createDataContext("{\"temperature\": 15.0}", null);
         boolean result2 = evaluator.evaluateGraph(graph, context2);
+        assertFalse(result2);
 
-        System.out.println("[RUN 2] RESULT: Transformation WAS triggered (true).");
-        // ACCEPTANCE CRITERIA 2: Transformation is triggered when all changes are within the window
-        assertTrue(result2, "Should be true since both changes occurred within the window.");
-        System.out.println("✓ Acceptance Criteria 1 met: Transformation triggered for changes within time window.");
-
-        // === RUN 3: Second change OUTSIDE the window ===
-        System.out.println("\n[RUN 3] Situation: Second change occurs 12s after the first (outside the 10s window).");
-        Map<String, SnapshotEntry> snapshotForRun3 = snapshotForRun2; // We use the state after RUN 1
-        Map<String, Object> context3 = createDataContext("{\"temperature\": 21.0, \"humidity\": 55}", snapshotForRun3);
-
-        injectCurrentTime(configNode, timeRun3);
-        boolean result3 = evaluator.evaluateGraph(graph, context3);
-
-        System.out.println("[RUN 3] RESULT: Transformation was NOT triggered (false).");
-        // ACCEPTANCE CRITERIA 3: Transformation is NOT triggered when a change is outside the window
-        assertFalse(result3, "Should be false since the first change is now outside the window.");
-        System.out.println("✓ Acceptance Criteria 2 met: Transformation NOT triggered for change outside time window.");
+        assertNotEquals(result1, result2);
     }
 
     // =====================================================================================
-    // NEW TEST CASE FOR CHANGE DETECTION
+    // CHANGE DETECTION TESTS - ConfigNode functionality
     // =====================================================================================
 
     @Test
@@ -125,7 +121,6 @@ public class ExtendedLogicGraphTests {
         configNode.setMode(ConfigNode.ChangeDetectionMode.OR);
 
         FinalNode finalNode = createFinalNode(3, configNode);
-
         List<Node> graph = Arrays.asList(tempProvider, humidityProvider, configNode, finalNode);
 
         // Test Case 1: First run (no snapshot), should detect change -> true
@@ -169,7 +164,6 @@ public class ExtendedLogicGraphTests {
         assertTrue(evaluator.evaluateGraph(graph, context3), "Should be true if both values change in AND mode");
     }
 
-    // ### ADDED TEST FOR BYPASS SWITCH ###
     @Test
     public void testChangeDetection_BypassSwitch() throws IOException, GraphEvaluationException {
         // Test: The bypass switch on the ConfigNode disables the check
@@ -179,36 +173,82 @@ public class ExtendedLogicGraphTests {
         FinalNode finalNode = createFinalNode(2, configNode);
         List<Node> graph = Arrays.asList(tempProvider, configNode, finalNode);
 
-        // Snapshot says the old value was 20.0
         Map<String, SnapshotEntry> snapshot = Map.of("source.sensor.temperature", new SnapshotEntry(20.0, 0L));
-        // The new value is 25.0 - a clear change
         Map<String, Object> context = createDataContext("{\"temperature\": 25.0}", snapshot);
 
-        // Despite the change, the result must be false because the bypass is active
-        assertFalse(evaluator.evaluateGraph(graph, context), "Should be false when bypass is active, even if data changed");
+        assertFalse(evaluator.evaluateGraph(graph, context),
+                "Should be false when bypass is active, even if data changed");
+    }
+
+    @Test
+    public void testChangeDetection_WithTimeWindow() throws IOException, GraphEvaluationException {
+        // Test: Time Window Feature ('Sliding Window')
+        // Acceptance Criteria:
+        // 1. User can activate time window and set duration
+        // 2. Transformation is triggered when all changes are within the window
+        // 3. Transformation is NOT triggered when a change is outside the window
+
+        ProviderNode tempProvider = createProviderNode("source.sensor.temperature", 0);
+        ProviderNode humidityProvider = createProviderNode("source.sensor.humidity", 1);
+
+        ConfigNode configNode = createConfigNode(2, tempProvider, humidityProvider);
+        configNode.setMode(ConfigNode.ChangeDetectionMode.AND);
+        configNode.setTimeWindowEnabled(true);
+        configNode.setTimeWindowMillis(10000); // 10 seconds
+
+        FinalNode finalNode = createFinalNode(3, configNode);
+        List<Node> graph = Arrays.asList(tempProvider, humidityProvider, configNode, finalNode);
+
+        // Time Simulation
+        long timeRun1 = System.currentTimeMillis();
+        long timeRun2 = timeRun1 + 5000;  // 5 seconds after Run 1
+        long timeRun3 = timeRun1 + 12000; // 12 seconds after Run 1
+
+        // RUN 1: One of two changes occurs
+        Map<String, SnapshotEntry> initialSnapshot = Map.of(
+                "source.sensor.temperature", new SnapshotEntry(20.0, timeRun1 - 20000),
+                "source.sensor.humidity", new SnapshotEntry(50, timeRun1 - 20000)
+        );
+        Map<String, Object> context1 = createDataContext("{\"temperature\": 21.0, \"humidity\": 50}", initialSnapshot);
+        injectCurrentTime(configNode, timeRun1);
+        boolean result1 = evaluator.evaluateGraph(graph, context1);
+        assertFalse(result1, "Should be false since only one value changed.");
+
+        // RUN 2: Second change WITHIN the window
+        Map<String, SnapshotEntry> snapshotForRun2 = configNode.getNewSnapshotData();
+        Map<String, Object> context2 = createDataContext("{\"temperature\": 21.0, \"humidity\": 55}", snapshotForRun2);
+        injectCurrentTime(configNode, timeRun2);
+        boolean result2 = evaluator.evaluateGraph(graph, context2);
+        assertTrue(result2, "Should be true since both changes occurred within the window.");
+
+        // RUN 3: Second change OUTSIDE the window
+        Map<String, SnapshotEntry> snapshotForRun3 = snapshotForRun2;
+        Map<String, Object> context3 = createDataContext("{\"temperature\": 21.0, \"humidity\": 55}", snapshotForRun3);
+        injectCurrentTime(configNode, timeRun3);
+        boolean result3 = evaluator.evaluateGraph(graph, context3);
+        assertFalse(result3, "Should be false since the first change is now outside the window.");
     }
 
     @Test
     public void testChangeDetection_CombinedWithOperator() throws IOException, GraphEvaluationException {
         // Test Logic: Trigger when (temperature changes) OR (status is "ERROR")
+        // This demonstrates integration of change detection with standard logic operators
 
-        // --- Path A: Change Detection ---
+        // Path A: Change Detection
         ProviderNode tempProvider = createProviderNode("source.sensor.temperature", 0);
-        ConfigNode configNode = createConfigNode(1, tempProvider); // Monitors only temperature
-        configNode.setActive(true); // Ensure change detection is active
+        ConfigNode configNode = createConfigNode(1, tempProvider);
+        configNode.setActive(true);
 
-        // --- Path B: Operator Logic ---
+        // Path B: Operator Logic
         ProviderNode statusProvider = createProviderNode("source.sensor.status", 2);
         ConstantNode errorStatus = createConstantNode("ErrorStatus", "ERROR", 3);
         LogicNode statusCheck = createLogicNode("StatusCheckIsError", LogicOperator.EQUALS, 4, statusProvider, errorStatus);
 
-        // --- Combination ---
+        // Combination
         LogicNode combinedOr = createLogicNode("CombinedOr", LogicOperator.OR, 5, configNode, statusCheck);
         FinalNode finalNode = createFinalNode(6, combinedOr);
 
         List<Node> graph = Arrays.asList(tempProvider, configNode, statusProvider, errorStatus, statusCheck, combinedOr, finalNode);
-
-        // --- Test Cases ---
 
         // Case 1: No change, Status OK -> false
         Map<String, SnapshotEntry> snapshot1 = Map.of("source.sensor.temperature", new SnapshotEntry(20.0, 0L));
@@ -236,7 +276,7 @@ public class ExtendedLogicGraphTests {
     }
 
     // =====================================================================================
-    // YOUR ORIGINAL TESTS, CORRECTED
+    // NUMBER PREDICATE TESTS
     // =====================================================================================
 
     @Test
@@ -273,6 +313,10 @@ public class ExtendedLogicGraphTests {
         assertFalse(evaluator.evaluateGraph(graph, context3), "35.0 should not be between 10.0 and 30.0");
     }
 
+    // =====================================================================================
+    // BOOLEAN PREDICATE TESTS
+    // =====================================================================================
+
     @Test
     public void testBooleanPredicates() throws IOException, GraphEvaluationException {
         ProviderNode activeProvider = createProviderNode("source.sensor.isActive", 0);
@@ -293,6 +337,10 @@ public class ExtendedLogicGraphTests {
         assertFalse(evaluator.evaluateGraph(graph, context3), "Should be false when in maintenance mode");
     }
 
+    // =====================================================================================
+    // STRING PREDICATE TESTS
+    // =====================================================================================
+
     @Test
     public void testStringPredicates() throws IOException, GraphEvaluationException {
         ProviderNode deviceNameProvider = createProviderNode("source.sensor.deviceName", 0);
@@ -312,24 +360,9 @@ public class ExtendedLogicGraphTests {
         assertFalse(evaluator.evaluateGraph(graph, context2), "Should be false for non-sensor device");
     }
 
-    @Test
-    public void testComplexLogicalOperators() throws IOException, GraphEvaluationException {
-        ProviderNode tempProvider = createProviderNode("source.sensor.temperature", 0);
-        ProviderNode humidityProvider = createProviderNode("source.sensor.humidity", 1);
-        ProviderNode maintenanceProvider = createProviderNode("source.sensor.maintenanceMode", 2);
-        ConstantNode tempThreshold = createConstantNode("TempThreshold", 25.0, 3);
-        ConstantNode humidityThreshold = createConstantNode("HumidityThreshold", 80.0, 4);
-        LogicNode tempCheck = createLogicNode("TempCheck", LogicOperator.GREATER_THAN, 5, tempProvider, tempThreshold);
-        LogicNode humidityCheck = createLogicNode("HumidityCheck", LogicOperator.GREATER_THAN, 6, humidityProvider, humidityThreshold);
-        LogicNode tempOrHumidity = createLogicNode("TempOrHumidity", LogicOperator.OR, 7, tempCheck, humidityCheck);
-        LogicNode notMaintenance = createLogicNode("NotMaintenance", LogicOperator.NOT, 8, maintenanceProvider);
-        LogicNode finalAnd = createLogicNode("FinalCheck", LogicOperator.AND, 9, tempOrHumidity, notMaintenance);
-        FinalNode finalNode = createFinalNode(10, finalAnd);
-        List<Node> graph = Arrays.asList(tempProvider, humidityProvider, maintenanceProvider, tempThreshold, humidityThreshold, tempCheck, humidityCheck, tempOrHumidity, notMaintenance, finalAnd, finalNode);
-
-        Map<String, Object> context1 = createDataContext("{\"temperature\": 30.0, \"humidity\": 60.0, \"maintenanceMode\": false}", null);
-        assertTrue(evaluator.evaluateGraph(graph, context1), "Should be true for high temp and not in maintenance");
-    }
+    // =====================================================================================
+    // ARRAY PREDICATE TESTS
+    // =====================================================================================
 
     @Test
     public void testArrayPredicates() throws IOException, GraphEvaluationException {
@@ -352,6 +385,10 @@ public class ExtendedLogicGraphTests {
         assertFalse(evaluator.evaluateGraph(graph, context3), "Should be false when sensor count is insufficient");
     }
 
+    // =====================================================================================
+    // OBJECT PREDICATE TESTS
+    // =====================================================================================
+
     @Test
     public void testObjectPredicates() throws IOException, GraphEvaluationException {
         ProviderNode configProvider = createProviderNode("source.sensor.config", 0);
@@ -369,6 +406,10 @@ public class ExtendedLogicGraphTests {
         Map<String, Object> context2 = createDataContext("{\"config\": {\"threshold\": 25.0, \"name\": \"TempSensor\"}}", null);
         assertFalse(evaluator.evaluateGraph(graph, context2), "Should be false when interval key is missing");
     }
+
+    // =====================================================================================
+    // EXISTENCE PREDICATE TESTS
+    // =====================================================================================
 
     @Test
     public void testExistencePredicates() throws IOException, GraphEvaluationException {
@@ -391,11 +432,48 @@ public class ExtendedLogicGraphTests {
     }
 
     // =====================================================================================
+    // COMPLEX LOGICAL OPERATOR TESTS
+    // =====================================================================================
+
+    @Test
+    public void testComplexLogicalOperators() throws IOException, GraphEvaluationException {
+        // Test complex combination: (temp > 25 OR humidity > 80) AND NOT maintenance
+        ProviderNode tempProvider = createProviderNode("source.sensor.temperature", 0);
+        ProviderNode humidityProvider = createProviderNode("source.sensor.humidity", 1);
+        ProviderNode maintenanceProvider = createProviderNode("source.sensor.maintenanceMode", 2);
+        ConstantNode tempThreshold = createConstantNode("TempThreshold", 25.0, 3);
+        ConstantNode humidityThreshold = createConstantNode("HumidityThreshold", 80.0, 4);
+        LogicNode tempCheck = createLogicNode("TempCheck", LogicOperator.GREATER_THAN, 5, tempProvider, tempThreshold);
+        LogicNode humidityCheck = createLogicNode("HumidityCheck", LogicOperator.GREATER_THAN, 6, humidityProvider, humidityThreshold);
+        LogicNode tempOrHumidity = createLogicNode("TempOrHumidity", LogicOperator.OR, 7, tempCheck, humidityCheck);
+        LogicNode notMaintenance = createLogicNode("NotMaintenance", LogicOperator.NOT, 8, maintenanceProvider);
+        LogicNode finalAnd = createLogicNode("FinalCheck", LogicOperator.AND, 9, tempOrHumidity, notMaintenance);
+        FinalNode finalNode = createFinalNode(10, finalAnd);
+        List<Node> graph = Arrays.asList(tempProvider, humidityProvider, maintenanceProvider, tempThreshold, humidityThreshold, tempCheck, humidityCheck, tempOrHumidity, notMaintenance, finalAnd, finalNode);
+
+        Map<String, Object> context1 = createDataContext("{\"temperature\": 30.0, \"humidity\": 60.0, \"maintenanceMode\": false}", null);
+        assertTrue(evaluator.evaluateGraph(graph, context1), "Should be true for high temp and not in maintenance");
+    }
+
+    // =====================================================================================
     // HELPER METHODS
     // =====================================================================================
 
+    private Map<String, Object> createDataContext(String json, Map<String, SnapshotEntry> snapshot) throws IOException {
+        JsonNode data = objectMapper.readTree(json);
+        ObjectNode sourceNode = objectMapper.createObjectNode();
+        sourceNode.set("sensor", data);
+
+        Map<String, Object> dataContext = new HashMap<>();
+        dataContext.put("source", sourceNode);
+
+        if (snapshot != null) {
+            dataContext.put("__snapshot", snapshot);
+        }
+        return dataContext;
+    }
+
     private void injectCurrentTime(ConfigNode node, long timeMillis) {
-        // This call assumes you have added the `setTestTime` method to your ConfigNode class.
         node.setTestTime(timeMillis);
     }
 

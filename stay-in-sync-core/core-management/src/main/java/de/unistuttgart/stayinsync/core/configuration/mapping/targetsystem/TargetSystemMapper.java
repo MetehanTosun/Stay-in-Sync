@@ -5,7 +5,7 @@ import org.mapstruct.Mapping;
 import org.mapstruct.MappingConstants;
 import org.mapstruct.MappingTarget;
 
-import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.TargetSystem;
+import de.unistuttgart.stayinsync.core.configuration.persistence.entities.sync.TargetSystem;
 import de.unistuttgart.stayinsync.core.configuration.rest.dtos.targetsystem.TargetSystemDTO;
 
 @Mapper(componentModel = MappingConstants.ComponentModel.JAKARTA_CDI)

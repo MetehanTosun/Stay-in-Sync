@@ -1,16 +1,14 @@
 package de.unistuttgart.stayinsync.core.service;
 
-import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.SyncJob;
+import de.unistuttgart.stayinsync.core.configuration.persistence.entities.sync.SyncJob;
 import de.unistuttgart.stayinsync.core.configuration.exception.CoreManagementException;
 import de.unistuttgart.stayinsync.core.configuration.mapping.SyncJobFullUpdateMapper;
 import de.unistuttgart.stayinsync.core.configuration.service.SyncJobService;
 import io.quarkus.panache.mock.PanacheMock;
 import io.quarkus.test.junit.QuarkusTest;
-import jakarta.enterprise.event.Event;
 import jakarta.inject.Inject;
 import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
-import org.mockito.Mock;
 
 import java.util.Optional;
 

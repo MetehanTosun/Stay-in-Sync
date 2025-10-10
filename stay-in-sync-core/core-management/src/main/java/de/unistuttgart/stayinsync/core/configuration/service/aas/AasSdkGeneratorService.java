@@ -2,8 +2,8 @@ package de.unistuttgart.stayinsync.core.configuration.service.aas;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import de.unistuttgart.stayinsync.core.configuration.domain.entities.aas.AasElementLite;
-import de.unistuttgart.stayinsync.core.configuration.domain.entities.aas.AasTargetApiRequestConfiguration;
+import de.unistuttgart.stayinsync.core.configuration.persistence.entities.aas.AasElementLite;
+import de.unistuttgart.stayinsync.core.configuration.persistence.entities.aas.AasTargetApiRequestConfiguration;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 

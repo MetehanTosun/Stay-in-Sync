@@ -1,6 +1,6 @@
 package de.unistuttgart.stayinsync.core.configuration.mapping;
 
-import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.ApiHeader;
+import de.unistuttgart.stayinsync.core.configuration.persistence.entities.sync.ApiHeader;
 import de.unistuttgart.stayinsync.core.configuration.rest.dtos.ApiHeaderDTO;
 import de.unistuttgart.stayinsync.core.configuration.rest.dtos.CreateApiHeaderDTO;
 import org.mapstruct.Mapper;

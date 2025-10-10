@@ -1,7 +1,6 @@
 package de.unistuttgart.stayinsync.core.configuration.mapping.targetsystem;
 
-import de.unistuttgart.stayinsync.core.configuration.domain.entities.aas.AasTargetApiRequestConfiguration;
-
+import de.unistuttgart.stayinsync.core.configuration.persistence.entities.aas.AasTargetApiRequestConfiguration;
 import de.unistuttgart.stayinsync.core.configuration.rest.dtos.aas.AasTargetArcDTO;
 import de.unistuttgart.stayinsync.transport.dto.targetsystems.AasTargetArcMessageDTO;
 import org.mapstruct.Mapper;

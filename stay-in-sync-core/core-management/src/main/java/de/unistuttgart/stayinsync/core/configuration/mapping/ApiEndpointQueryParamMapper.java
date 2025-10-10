@@ -1,6 +1,6 @@
 package de.unistuttgart.stayinsync.core.configuration.mapping;
 
-import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.ApiEndpointQueryParam;
+import de.unistuttgart.stayinsync.core.configuration.persistence.entities.sync.ApiEndpointQueryParam;
 import de.unistuttgart.stayinsync.core.configuration.rest.dtos.ApiEndpointQueryParamDTO;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;

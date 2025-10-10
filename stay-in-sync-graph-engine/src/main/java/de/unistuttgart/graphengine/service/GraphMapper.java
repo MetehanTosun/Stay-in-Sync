@@ -154,6 +154,9 @@ public class GraphMapper {
                         case "CONSTANT":
                             node = new ConstantNode(dto.getName(), dto.getValue());
                             break;
+                        case "SCHEMA":
+                            node = new SchemaNode(dto.getValue() != null ? dto.getValue().toString() : "");
+                            break;
                         case "LOGIC":
                             node = new LogicNode(dto.getName(), LogicOperator.valueOf(dto.getOperatorType()));
                             break;

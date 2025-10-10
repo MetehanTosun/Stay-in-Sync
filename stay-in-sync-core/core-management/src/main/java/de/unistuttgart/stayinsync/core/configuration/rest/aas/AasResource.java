@@ -1,13 +1,13 @@
 package de.unistuttgart.stayinsync.core.configuration.rest.aas;
 
-import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.SourceSystem;
+import de.unistuttgart.stayinsync.core.configuration.persistence.entities.sync.SourceSystem;
 import de.unistuttgart.stayinsync.core.configuration.rest.dtos.aas.AasTestResultDTO;
 import de.unistuttgart.stayinsync.core.configuration.rest.dtos.aas.SubmodelElementNodeDTO;
 import de.unistuttgart.stayinsync.core.configuration.rest.dtos.aas.SubmodelSummaryDTO;
 import de.unistuttgart.stayinsync.core.configuration.service.aas.AasTraversalClient;
 import de.unistuttgart.stayinsync.core.configuration.service.aas.AasStructureSnapshotService;
-import de.unistuttgart.stayinsync.core.configuration.domain.entities.aas.AasSubmodelLite;
-import de.unistuttgart.stayinsync.core.configuration.domain.entities.aas.AasElementLite;
+import de.unistuttgart.stayinsync.core.configuration.persistence.entities.aas.AasSubmodelLite;
+import de.unistuttgart.stayinsync.core.configuration.persistence.entities.aas.AasElementLite;
 import de.unistuttgart.stayinsync.core.configuration.service.aas.SourceSystemAasService;
 import io.quarkus.logging.Log;
 import io.smallrye.mutiny.Uni;

@@ -2,7 +2,7 @@ package de.unistuttgart.stayinsync.core.configuration.util;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.*;
+import de.unistuttgart.stayinsync.core.configuration.persistence.entities.sync.*;
 import de.unistuttgart.stayinsync.core.configuration.rest.dtos.*;
 import de.unistuttgart.stayinsync.core.configuration.rest.dtos.targetsystem.ActionDefinitionDTO;
 import de.unistuttgart.stayinsync.core.configuration.rest.dtos.targetsystem.CreateArcDTO;
@@ -217,7 +217,7 @@ public class DevelopmentDataSeeder {
                 function transform() {
                     stayinsync.log('Transformation started: Upserting products...', 'INFO');
                 
-                    const products = source.Dummy_JSON.products.products;
+                    const products = source.Dummy_JSON.syncProductsArc.products;
                     const productsFromSource = products.slice(1,2);
                 
                     if (!productsFromSource || productsFromSource.length === 0) {
