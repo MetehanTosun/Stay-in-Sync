@@ -188,6 +188,56 @@ export class VflowCanvasComponent implements OnInit {
         ];
     }
   }
+
+  hasLabel(item: any): item is { label: string; action?: () => void } {
+    return item && typeof item.label === 'string';
+  }
+
+  getLabel(item: any): string {
+    return this.hasLabel(item) ? item.label : '';
+  }
+
+  hasSubmenu(item: any): item is { submenu: NodeMenuItem[] } {
+    return item && Array.isArray(item.submenu);
+  }
+
+  getSubmenu(item: any): NodeMenuItem[] {
+    return this.hasSubmenu(item) ? item.submenu : [];
+  }
+
+  runAction(item: any) {
+    if (this.hasLabel(item) && typeof item.action === 'function') {
+      // Stop propagation of clicks from context menu so other handlers don't react
+      try {
+        item.action();
+      } catch (e) {
+        console.error('Error running menu action', e);
+      }
+      this.closeNodeContextMenu();
+    }
+  }
+
+  // Safely check for jsonPath on node data (VFlowNodeData is a union)
+  hasJsonPath(node?: CustomVFlowNode | null): node is CustomVFlowNode & { data: { jsonPath: string } } {
+    return !!node && !!node.data && typeof (node.data as any).jsonPath === 'string';
+  }
+
+  getNodeJsonPath(node?: CustomVFlowNode | null): string {
+    return this.hasJsonPath(node) ? (node!.data as any).jsonPath : '';
+  }
+
+  getNodeName(node?: CustomVFlowNode | null): string {
+    if (!node || !node.data) return '';
+    return (node.data as any).name ?? '';
+  }
+
+  hasValue(node?: CustomVFlowNode | null): node is CustomVFlowNode & { data: { value: unknown } } {
+    return !!node && !!node.data && 'value' in (node.data as any);
+  }
+
+  getNodeValue(node?: CustomVFlowNode | null): any {
+    return this.hasValue(node) ? (node!.data as any).value : null;
+  }
   //#endregion
 
   //#region Element Creation

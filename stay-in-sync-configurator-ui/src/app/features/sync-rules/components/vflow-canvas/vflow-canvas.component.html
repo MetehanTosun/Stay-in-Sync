@@ -30,17 +30,18 @@
 <div *ngIf="showNodeContextMenu && selectedNode" class="context-menu" [style.left.px]="nodeContextMenuPosition.x"
   [style.top.px]="nodeContextMenuPosition.y" (click)="$event.stopPropagation()">
   <ng-container *ngFor="let item of selectedNode.contextMenuItems">
-    <!-- Render only if the item has a label or action -->
-    <div *ngIf="item.label || item.action" class="context-menu-item" (click)="item.action && item.action()">
-      {{ item.label }}
+    <div *ngIf="hasLabel(item)" class="context-menu-item" (click)="runAction(item)">
+      {{ getLabel(item) }}
     </div>
+
     <!-- Horizontal line before submenu -->
-    <hr *ngIf="item.submenu" class="submenu-divider" />
+    <hr *ngIf="hasSubmenu(item)" class="submenu-divider" />
+
     <!-- Embedded Submenu -->
-    <div *ngIf="item.submenu">
+    <div *ngIf="hasSubmenu(item)">
       <div class="submenu-grid">
-        <div *ngFor="let subItem of item.submenu" class="submenu-item" (click)="subItem.action && subItem.action()">
-          {{ subItem.label }}
+        <div *ngFor="let subItem of getSubmenu(item)" class="submenu-item" (click)="runAction(subItem)">
+          {{ getLabel(subItem) }}
         </div>
       </div>
     </div>
@@ -65,17 +66,17 @@
 
 <!-- Modals -->
 <!-- Set Node Name -->
-<app-set-node-name-modal *ngIf="editNodeNameModalOpen" [currentName]="nodeBeingEdited?.data!.name"
+<app-set-node-name-modal *ngIf="editNodeNameModalOpen" [currentName]="getNodeName(nodeBeingEdited)"
   (save)="onNodeNameSaved($event)" (close)="closeModals()">
 </app-set-node-name-modal>
 
 <!-- Set Provider JSON Path -->
-<app-provider-node-modal *ngIf="editJsonPathModalOpen" [currentJsonPath]="nodeBeingEdited?.data!.jsonPath!"
+<app-provider-node-modal *ngIf="editJsonPathModalOpen" [currentJsonPath]="getNodeJsonPath(nodeBeingEdited)"
   (save)="onJsonPathSaved($event)" (modalsClosed)="closeModals()">
 </app-provider-node-modal>
 
 <!-- Set Constant Value -->
-<app-constant-node-modal *ngIf="editNodeValueModalOpen" [currentValue]="nodeBeingEdited?.data!.value"
+<app-constant-node-modal *ngIf="editNodeValueModalOpen" [currentValue]="getNodeValue(nodeBeingEdited)"
   (save)="onValueSaved($event)" (modalsClosed)="closeModals()">
 </app-constant-node-modal>
 
