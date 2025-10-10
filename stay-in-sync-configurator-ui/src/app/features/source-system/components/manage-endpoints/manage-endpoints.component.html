@@ -5,9 +5,8 @@
   -------------------------------------------------------------------------------------------------
 -->
 
-
+<div style="height: 55rem">
 <p-table [style]="{ 'margin': '1.5rem 0' }" [value]="endpoints" [loading]="loading"
-
          [paginator]="true"
          paginatorPosition="bottom"
          [rows]="10"
@@ -38,7 +37,7 @@
           <ng-template #filter let-filter="filterCallback">
             <p-select [options]="httpRequestTypes"
                       (onChange)="filter($event.value)"
-                      placeholder="Select One"
+                      placeholder="Select Method"
                       [showClear]="true"
                       [style]="{ 'min-width': '12rem' }">
               <ng-template let-option #item>
@@ -82,7 +81,7 @@
     </tr>
   </ng-template>
 </p-table>
-
+</div>
 <!--
   Section: Import Endpoints
 -->

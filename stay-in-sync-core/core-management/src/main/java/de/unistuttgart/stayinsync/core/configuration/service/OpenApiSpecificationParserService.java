@@ -1,10 +1,10 @@
 package de.unistuttgart.stayinsync.core.configuration.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.SourceSystem;
-import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.SourceSystemEndpoint;
+import de.unistuttgart.stayinsync.core.configuration.persistence.entities.sync.SourceSystem;
+import de.unistuttgart.stayinsync.core.configuration.persistence.entities.sync.SourceSystemEndpoint;
 import de.unistuttgart.stayinsync.core.configuration.rest.dtos.ApiEndpointQueryParamDTO;
-import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.TargetSystem;
+import de.unistuttgart.stayinsync.core.configuration.persistence.entities.sync.TargetSystem;
 import de.unistuttgart.stayinsync.core.configuration.rest.dtos.CreateTargetSystemEndpointDTO;
 import de.unistuttgart.stayinsync.core.configuration.rest.dtos.CreateApiHeaderDTO;
 import de.unistuttgart.stayinsync.core.configuration.rest.dtos.CreateSourceSystemEndpointDTO;

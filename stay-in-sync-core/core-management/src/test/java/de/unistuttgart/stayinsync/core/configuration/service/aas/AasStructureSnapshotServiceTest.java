@@ -1,9 +1,9 @@
 package de.unistuttgart.stayinsync.core.configuration.service.aas;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import de.unistuttgart.stayinsync.core.configuration.domain.entities.aas.AasElementLite;
-import de.unistuttgart.stayinsync.core.configuration.domain.entities.aas.AasSubmodelLite;
-import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.SourceSystem;
+import de.unistuttgart.stayinsync.core.configuration.persistence.entities.aas.AasElementLite;
+import de.unistuttgart.stayinsync.core.configuration.persistence.entities.aas.AasSubmodelLite;
+import de.unistuttgart.stayinsync.core.configuration.persistence.entities.sync.SourceSystem;
 import io.quarkus.test.InjectMock;
 import io.quarkus.test.junit.QuarkusTest;
 import io.smallrye.mutiny.Uni;

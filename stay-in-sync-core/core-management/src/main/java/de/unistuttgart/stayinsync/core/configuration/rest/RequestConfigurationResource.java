@@ -1,7 +1,7 @@
 package de.unistuttgart.stayinsync.core.configuration.rest;
 
-import de.unistuttgart.stayinsync.core.configuration.domain.entities.aas.AasSourceApiRequestConfiguration;
-import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.SourceSystemApiRequestConfiguration;
+import de.unistuttgart.stayinsync.core.configuration.persistence.entities.aas.AasSourceApiRequestConfiguration;
+import de.unistuttgart.stayinsync.core.configuration.persistence.entities.sync.SourceSystemApiRequestConfiguration;
 import de.unistuttgart.stayinsync.core.configuration.exception.CoreManagementException;
 import de.unistuttgart.stayinsync.core.configuration.mapping.AasApiRequestConfigurationMapper;
 import de.unistuttgart.stayinsync.core.configuration.mapping.SourceSystemApiRequestConfigurationFullUpdateMapper;

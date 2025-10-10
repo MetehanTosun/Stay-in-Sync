@@ -1,6 +1,6 @@
 package de.unistuttgart.stayinsync.core.service;
 
-import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.TargetSystemEndpoint;
+import de.unistuttgart.stayinsync.core.configuration.persistence.entities.sync.TargetSystemEndpoint;
 import de.unistuttgart.stayinsync.core.configuration.rest.dtos.targetsystem.TargetSystemDTO;
 import de.unistuttgart.stayinsync.core.configuration.service.OpenApiSpecificationParserService;
 import de.unistuttgart.stayinsync.core.configuration.service.TargetSystemService;

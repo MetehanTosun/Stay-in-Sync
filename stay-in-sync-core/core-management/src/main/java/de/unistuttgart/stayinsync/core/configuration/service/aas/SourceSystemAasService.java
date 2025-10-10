@@ -1,6 +1,6 @@
 package de.unistuttgart.stayinsync.core.configuration.service.aas;
 
-import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.SourceSystem;
+import de.unistuttgart.stayinsync.core.configuration.persistence.entities.sync.SourceSystem;
 import de.unistuttgart.stayinsync.core.configuration.exception.CoreManagementException;
 import io.quarkus.logging.Log;
 import jakarta.enterprise.context.ApplicationScoped;

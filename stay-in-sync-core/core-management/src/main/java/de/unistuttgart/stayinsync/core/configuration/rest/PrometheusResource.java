@@ -1,15 +1,13 @@
 package de.unistuttgart.stayinsync.core.configuration.rest;
 
-import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.SourceSystem;
-import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.TargetSystem;
-import io.quarkus.logging.Log;
+import de.unistuttgart.stayinsync.core.configuration.persistence.entities.sync.SourceSystem;
+import de.unistuttgart.stayinsync.core.configuration.persistence.entities.sync.TargetSystem;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.transaction.Transactional;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.core.MediaType;
-import jakarta.ws.rs.core.Response;
 
 import java.util.*;
 

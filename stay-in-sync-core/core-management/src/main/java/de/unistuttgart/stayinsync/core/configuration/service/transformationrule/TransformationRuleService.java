@@ -13,8 +13,8 @@ import de.unistuttgart.graphengine.service.GraphMapper;
 import de.unistuttgart.graphengine.service.GraphValidatorService;
 import de.unistuttgart.graphengine.validation_error.GraphStatus;
 import de.unistuttgart.graphengine.validation_error.ValidationError;
-import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.LogicGraphEntity;
-import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.TransformationRule;
+import de.unistuttgart.stayinsync.core.configuration.persistence.entities.sync.LogicGraphEntity;
+import de.unistuttgart.stayinsync.core.configuration.persistence.entities.sync.TransformationRule;
 import de.unistuttgart.stayinsync.core.configuration.exception.CoreManagementException; // Import der korrekten Exception
 import io.quarkus.logging.Log;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -23,7 +23,6 @@ import jakarta.transaction.Transactional;
 import jakarta.ws.rs.core.Response;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 
 import static jakarta.transaction.Transactional.TxType.SUPPORTS;

@@ -15,9 +15,8 @@
       <label for="headerType">Type</label>
     </p-floatlabel>
     <p-floatlabel  variant="on">
-
       <input id="headerName" pInputText formControlName="headerName"/>
-      <label for="headerType">Type</label>
+      <label for="headerType">Name</label>
     </p-floatlabel>
     <button
       pButton
@@ -36,9 +35,13 @@
   </form>
 
 </div>
-<div class="!mt-5">
-
-<p-table [value]="headers" [paginator]="true" [rows]="10" [responsiveLayout]="'scroll'">
+<div class="!mt-5 " style="height: 50rem">
+<p-table [value]="headers"
+         paginator="true"
+         paginatorPosition="bottom"
+         [rows]="10"
+         [scrollable]="true"
+         scrollHeight="flex">
   <ng-template pTemplate="header">
     <tr>
       <th>Header Name</th>

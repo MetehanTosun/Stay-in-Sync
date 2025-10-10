@@ -1,8 +1,8 @@
 package de.unistuttgart.stayinsync.core.service;
 
-import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.TargetSystemEndpoint;
-import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.TargetSystem;
-import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.Transformation;
+import de.unistuttgart.stayinsync.core.configuration.persistence.entities.sync.TargetSystemEndpoint;
+import de.unistuttgart.stayinsync.core.configuration.persistence.entities.sync.TargetSystem;
+import de.unistuttgart.stayinsync.core.configuration.persistence.entities.sync.Transformation;
 import jakarta.persistence.EntityManager;
 import jakarta.transaction.Transactional;
 import de.unistuttgart.stayinsync.core.configuration.mapping.TargetSystemEndpointFullUpdateMapper;
