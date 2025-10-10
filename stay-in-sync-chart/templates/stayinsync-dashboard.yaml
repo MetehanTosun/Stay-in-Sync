@@ -454,12 +454,16 @@ data:
                     "type": "prometheus",
                     "uid": "prometheus"
                   },
-                  "editorMode": "code",
-                  "expr": "rate(polling_requests_total{pollingNode=\"$WorkerpodName\"}[1m]) * 60",
+                  "disableTextWrap": false,
+                  "editorMode": "builder",
+                  "expr": "rate(polling_requests_total{pollingNode=\"$WorkerpodName\", job=\"quarkus_metrics\"}[1m]) * 60",
+                  "fullMetaSearch": false,
+                  "includeNullMetadata": true,
                   "instant": false,
                   "legendFormat": "__auto",
                   "range": true,
-                  "refId": "A"
+                  "refId": "A",
+                  "useBackend": false
                 }
               ],
               "title": "Polling Requests per Minute",
