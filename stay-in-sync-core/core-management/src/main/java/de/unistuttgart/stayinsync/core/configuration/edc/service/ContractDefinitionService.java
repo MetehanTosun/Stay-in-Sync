@@ -30,7 +30,7 @@ public class ContractDefinitionService extends EdcEntityService<ContractDefiniti
     public ContractDefinitionDto getEntityWithSyncCheck(final Long id) throws EntityNotFoundException, EntityFetchingException {
         final ContractDefinition persistedContractDefinition = this.getContractDefinitionFromDatabase(id);
         final EDCInstance edcOfContractDefinition = persistedContractDefinition.getTargetEdc();
-        final ContractDefinitionEdcClient client = ContractDefinitionEdcClient.createClient(edcOfContractDefinition.getControlPlaneManagementUrl());
+        final ContractDefinitionEdcClient client = ContractDefinitionEdcClient.createClient(edcOfContractDefinition.getControlPlaneManagementUrl(), edcOfContractDefinition.getProtocolVersion());
         try {
 
             final ContractDefinitionDto fetchedContractDefinitionFromEdc = this.extractContractDefinitionDtosFromResponse(client.getContractDefinitionById(edcOfContractDefinition.getApiKey(), persistedContractDefinition.getContractDefinitionId())).getFirst();
@@ -70,7 +70,7 @@ public class ContractDefinitionService extends EdcEntityService<ContractDefiniti
     public ContractDefinitionDto createEntityInDatabaseAndEdc(final Long edcId, final ContractDefinitionDto contractDefinitionDto) throws EntityNotFoundException, EntityCreationFailedException {
         final EDCInstance contractDefinitionsEdc = getEdcInstanceFromDatabase(edcId);
         final ContractDefinition contractDefinitionToPersist = ContractDefinitionMapper.mapper.dtoToEntity(contractDefinitionDto);
-        ContractDefinitionEdcClient client = ContractDefinitionEdcClient.createClient(contractDefinitionToPersist.getTargetEdc().getControlPlaneManagementUrl());
+        ContractDefinitionEdcClient client = ContractDefinitionEdcClient.createClient(contractDefinitionToPersist.getTargetEdc().getControlPlaneManagementUrl(), contractDefinitionToPersist.getTargetEdc().getProtocolVersion());
         try {
             final ContractDefinitionDto uploadedContractDefinition = this.extractContractDefinitionDtosFromResponse(client.createContractDefinition(contractDefinitionToPersist.getTargetEdc().getApiKey(), contractDefinitionDto)).getFirst();
             if (uploadedContractDefinition.equals(ContractDefinitionMapper.mapper.entityToDto(contractDefinitionToPersist))) {
@@ -93,7 +93,7 @@ public class ContractDefinitionService extends EdcEntityService<ContractDefiniti
     @Override
     public ContractDefinitionDto updateEntityInDatabaseAndEdc(final Long contractDefinitionId, final ContractDefinitionDto updatedContractDefinitionDto) throws EntityNotFoundException, EntityUpdateFailedException {
         final ContractDefinition persistedContractDefinition = this.getContractDefinitionFromDatabase(contractDefinitionId);
-        final ContractDefinitionEdcClient client = ContractDefinitionEdcClient.createClient(persistedContractDefinition.getTargetEdc().getControlPlaneManagementUrl());
+        final ContractDefinitionEdcClient client = ContractDefinitionEdcClient.createClient(persistedContractDefinition.getTargetEdc().getControlPlaneManagementUrl(), persistedContractDefinition.getTargetEdc().getProtocolVersion());
         try {
             final ContractDefinitionDto returnedContractDefinitionAfterUpdateOnEdc = extractContractDefinitionDtosFromResponse(client.updateContractDefinition(persistedContractDefinition.getTargetEdc().getApiKey(), persistedContractDefinition.getContractDefinitionId(), updatedContractDefinitionDto)).getFirst();
             persistedContractDefinition.updateValuesWithContractDefinitionDto(returnedContractDefinitionAfterUpdateOnEdc);
@@ -108,7 +108,7 @@ public class ContractDefinitionService extends EdcEntityService<ContractDefiniti
     @Override
     public void deleteEntityFromDatabaseAndEdc(final Long id) throws EntityNotFoundException, EntityDeletionFailedException {
         ContractDefinition contractDefinitionToDelete = this.getContractDefinitionFromDatabase(id);
-        ContractDefinitionEdcClient client = ContractDefinitionEdcClient.createClient(contractDefinitionToDelete.getTargetEdc().getControlPlaneManagementUrl());
+        ContractDefinitionEdcClient client = ContractDefinitionEdcClient.createClient(contractDefinitionToDelete.getTargetEdc().getControlPlaneManagementUrl(), contractDefinitionToDelete.getTargetEdc().getProtocolVersion());
         try (RestResponse<Void> response = client.deleteContractDefinition(
                 contractDefinitionToDelete.getTargetEdc().getApiKey(),
                 contractDefinitionToDelete.getContractDefinitionId()
@@ -172,7 +172,7 @@ public class ContractDefinitionService extends EdcEntityService<ContractDefiniti
     }
 
     private void checkForAllContractDefinitionsForThirdPartyChanges(final List<ContractDefinition> contractDefinitionsToCheck, final EDCInstance edcInstance) throws AuthorizationFailedException, DatabaseEntityOutOfSyncException, ConnectionToEdcFailedException, ResponseInvalidFormatException {
-        final Map<String, ContractDefinitionDto> edcContractDefinitionDtosMappedToOwnContractDefinitionIds = extractContractDefinitionDtosFromResponse(ContractDefinitionEdcClient.createClient(edcInstance.getControlPlaneManagementUrl()).getAllContractDefinitions(edcInstance.getApiKey()))
+        final Map<String, ContractDefinitionDto> edcContractDefinitionDtosMappedToOwnContractDefinitionIds = extractContractDefinitionDtosFromResponse(ContractDefinitionEdcClient.createClient(edcInstance.getControlPlaneManagementUrl(), edcInstance.getProtocolVersion()).getAllContractDefinitions(edcInstance.getApiKey()))
                 .stream()
                 .collect(Collectors.toMap(ContractDefinitionDto::contractDefinitionId, contractDefinition -> contractDefinition));
 

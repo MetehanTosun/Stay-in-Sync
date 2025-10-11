@@ -43,9 +43,9 @@ public interface ContractDefinitionEdcClient {
                                                 @PathParam("id") String contractDefinitionId);
 
 
-    static ContractDefinitionEdcClient createClient(final String baseUrl) {
+    static ContractDefinitionEdcClient createClient(final String baseUrl, final String protocolVersion) {
         return RestClientBuilder.newBuilder()
-                .baseUri(URI.create(baseUrl))
+                .baseUri(URI.create(baseUrl + "/" + protocolVersion))
                 .build(ContractDefinitionEdcClient.class);
     }
 }

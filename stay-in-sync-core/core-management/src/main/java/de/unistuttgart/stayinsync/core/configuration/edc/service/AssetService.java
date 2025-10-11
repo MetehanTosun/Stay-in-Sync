@@ -30,7 +30,7 @@ public class AssetService extends EdcEntityService<AssetDto>{
     public AssetDto getEntityWithSyncCheck(final Long id) throws EntityNotFoundException, EntityFetchingException {
         final Asset persistedAsset = this.getAssetFromDatabase(id);
         final EDCInstance edcOfAsset = persistedAsset.getTargetEdc();
-        final AssetEdcClient client = AssetEdcClient.createClient(edcOfAsset.getControlPlaneManagementUrl());
+        final AssetEdcClient client = AssetEdcClient.createClient(edcOfAsset.getControlPlaneManagementUrl(), edcOfAsset.getProtocolVersion());
         try {
 
             final AssetDto fetchedAssetFromEdc = this.extractAssetDtosFromResponse(client.getAssetById(edcOfAsset.getApiKey(), persistedAsset.getAssetId())).getFirst();
@@ -71,7 +71,7 @@ public class AssetService extends EdcEntityService<AssetDto>{
     public AssetDto createEntityInDatabaseAndEdc(final Long edcId, final AssetDto assetDto) throws EntityNotFoundException, EntityCreationFailedException {
         final EDCInstance assetsEdc = getEdcInstanceFromDatabase(edcId);
         final Asset assetToPersist = AssetMapper.mapper.dtoToEntity(assetDto);
-        AssetEdcClient client = AssetEdcClient.createClient(assetToPersist.getTargetEdc().getControlPlaneManagementUrl());
+        AssetEdcClient client = AssetEdcClient.createClient(assetToPersist.getTargetEdc().getControlPlaneManagementUrl(), assetToPersist.getTargetEdc().getProtocolVersion());
         try {
             final AssetDto uploadedAsset = this.extractAssetDtosFromResponse(client.createAsset(assetToPersist.getTargetEdc().getApiKey(), assetDto)).getFirst();
             if (uploadedAsset.equals(AssetMapper.mapper.entityToDto(assetToPersist))) {
@@ -94,7 +94,7 @@ public class AssetService extends EdcEntityService<AssetDto>{
     @Override
     public AssetDto updateEntityInDatabaseAndEdc(final Long assetId, final AssetDto updatedAssetDto) throws EntityNotFoundException, EntityUpdateFailedException {
         final Asset persistedAsset = this.getAssetFromDatabase(assetId);
-        final AssetEdcClient client = AssetEdcClient.createClient(persistedAsset.getTargetEdc().getControlPlaneManagementUrl());
+        final AssetEdcClient client = AssetEdcClient.createClient(persistedAsset.getTargetEdc().getControlPlaneManagementUrl(), persistedAsset.getTargetEdc().getProtocolVersion());
         try {
             final AssetDto returnedAssetAfterUpdateOnEdc = extractAssetDtosFromResponse(client.updateAsset(persistedAsset.getTargetEdc().getApiKey(), persistedAsset.getAssetId(), updatedAssetDto)).getFirst();
             persistedAsset.updateValuesWithAssetDto(returnedAssetAfterUpdateOnEdc);
@@ -109,7 +109,7 @@ public class AssetService extends EdcEntityService<AssetDto>{
     @Override
     public void deleteEntityFromDatabaseAndEdc(final Long id) throws EntityNotFoundException, EntityDeletionFailedException {
         Asset assetToDelete = this.getAssetFromDatabase(id);
-        AssetEdcClient client = AssetEdcClient.createClient(assetToDelete.getTargetEdc().getControlPlaneManagementUrl());
+        AssetEdcClient client = AssetEdcClient.createClient(assetToDelete.getTargetEdc().getControlPlaneManagementUrl(), assetToDelete.getTargetEdc().getProtocolVersion());
         try (RestResponse<Void> response = client.deleteAsset(
                 assetToDelete.getTargetEdc().getApiKey(),
                 assetToDelete.getAssetId()
@@ -173,7 +173,7 @@ public class AssetService extends EdcEntityService<AssetDto>{
     }
 
     private void checkForAllAssetsForThirdPartyChanges(final List<Asset> assetsToCheck, final EDCInstance edcInstance) throws AuthorizationFailedException, DatabaseEntityOutOfSyncException, ConnectionToEdcFailedException, ResponseInvalidFormatException {
-        final Map<String, AssetDto> edcAssetDtosMappedToOwnAssetIds = extractAssetDtosFromResponse(AssetEdcClient.createClient(edcInstance.getControlPlaneManagementUrl()).getAllAssets(edcInstance.getApiKey()))
+        final Map<String, AssetDto> edcAssetDtosMappedToOwnAssetIds = extractAssetDtosFromResponse(AssetEdcClient.createClient(edcInstance.getControlPlaneManagementUrl(), edcInstance.getProtocolVersion()).getAllAssets(edcInstance.getApiKey()))
                 .stream()
                 .collect(Collectors.toMap(AssetDto::assetId, asset -> asset));
 

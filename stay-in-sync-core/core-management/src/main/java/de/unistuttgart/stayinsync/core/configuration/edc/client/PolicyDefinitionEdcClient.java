@@ -44,9 +44,9 @@ public interface PolicyDefinitionEdcClient {
 
 
 
-    static PolicyDefinitionEdcClient createClient(final String baseUrl) {
+    static PolicyDefinitionEdcClient createClient(final String baseUrl, final String protocolVersion) {
         return RestClientBuilder.newBuilder()
-                .baseUri(URI.create(baseUrl))
+                .baseUri(URI.create(baseUrl + "/" + protocolVersion))
                 .build(PolicyDefinitionEdcClient.class);
     }
 }

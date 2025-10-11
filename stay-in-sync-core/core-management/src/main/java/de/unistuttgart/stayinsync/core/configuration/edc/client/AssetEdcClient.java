@@ -42,9 +42,9 @@ public interface AssetEdcClient {
                                    @PathParam("id") String assetId);
 
 
-    static AssetEdcClient createClient(final String baseUrl) {
+    static AssetEdcClient createClient(final String baseUrl, final String protocolVersion) {
         return RestClientBuilder.newBuilder()
-                .baseUri(URI.create(  baseUrl))
+                .baseUri(URI.create(baseUrl + "/" + protocolVersion))
                 .build(AssetEdcClient.class);
     }
 }
