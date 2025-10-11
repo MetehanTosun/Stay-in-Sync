@@ -63,7 +63,7 @@
         <td>{{ asset.contentType }}</td>
         <td>
           <button pButton pRipple type="button" icon="pi pi-pencil" class="p-button-rounded p-button-text p-button-info mr-2" (click)="editAsset(asset)" pTooltip="Edit Asset"></button>
-          <button *ngIf="asset.syncStatus && asset.syncStatus !== 'SYNCED'" pButton pRipple type="button" icon="pi pi-sync" class="p-button-rounded p-button-text p-button-warning mr-2" (click)="redeployAsset(asset)" pTooltip="Redeploy Asset"></button>
+          <button *ngIf="asset.thirdPartyChanges" pButton pRipple type="button" icon="pi pi-sync" class="p-button-rounded p-button-text p-button-warning mr-2" (click)="redeployAsset(asset)" pTooltip="Redeploy Asset"></button>
           <button pButton pRipple type="button" icon="pi pi-trash" class="p-button-rounded p-button-text p-button-danger" (click)="deleteAsset(asset)" pTooltip="Delete Asset"></button>
         </td>
       </tr>
@@ -148,7 +148,7 @@
         <td>{{ policy.bpn }}</td>
         <td>
           <button pButton pRipple type="button" icon="pi pi-pencil" class="p-button-rounded p-button-text p-button-info mr-2" pTooltip="Edit Access Policy" (click)="editAccessPolicy(policy)" ></button>
-          <button *ngIf="policy.syncStatus && policy.syncStatus !== 'SYNCED'" pButton pRipple type="button" icon="pi pi-sync" class="p-button-rounded p-button-text p-button-warning mr-2" (click)="redeployPolicy(policy)" pTooltip="Redeploy Policy"></button>
+          <button *ngIf="policy.thirdPartyChanges" pButton pRipple type="button" icon="pi pi-sync" class="p-button-rounded p-button-text p-button-warning mr-2" (click)="redeployPolicy(policy)" pTooltip="Redeploy Policy"></button>
           <button pButton pRipple type="button" icon="pi pi-trash" class="p-button-rounded p-button-text p-button-danger" pTooltip="Delete Access Policy" (click)="deleteAccessPolicy(policy)"></button>
         </td>
       </tr>
@@ -212,7 +212,7 @@
         <td>{{ contractPolicy.bpn }}</td>
         <td>
           <button pButton pRipple type="button" icon="pi pi-pencil" class="p-button-rounded p-button-text p-button-info mr-2" pTooltip="Edit Contract Definition" (click)="editContractPolicy(contractPolicy)"></button>
-          <button *ngIf="contractPolicy.syncStatus && contractPolicy.syncStatus !== 'SYNCED'" pButton pRipple type="button" icon="pi pi-sync" class="p-button-rounded p-button-text p-button-warning mr-2" (click)="redeployContractDefinition(contractPolicy)" pTooltip="Redeploy Contract Definition"></button>
+          <button *ngIf="contractPolicy.thirdPartyChanges" pButton pRipple type="button" icon="pi pi-sync" class="p-button-rounded p-button-text p-button-warning mr-2" (click)="redeployContractDefinition(contractPolicy)" pTooltip="Redeploy Contract Definition"></button>
           <button pButton pRipple type="button" icon="pi pi-trash" class="p-button-rounded p-button-text p-button-danger" pTooltip="Delete Contract Definition" (click)="deleteContractPolicy(contractPolicy)"></button>
         </td>
       </tr>
@@ -230,23 +230,24 @@
 <p-dialog header="Create New Asset" [(visible)]="displayNewAssetDialog" [modal]="true" [style]="{ width: '50vw' }" (onHide)="hideNewAssetDialog()" [draggable]="false" [resizable]="false">
   <div class="p-fluid pt-3">
     <div class="field col-12 mt-3">
-      <label for="targetSystemEndpoint" class="font-bold block mb-2">TargetSystem Endpoint:</label>
+      <label for="targetSystem" class="font-bold block mb-2">Target System:</label>
       <p-autoComplete
-        id="targetSystemEndpoint"
-        [(ngModel)]="selectedEndpoint"
-        [suggestions]="endpointSuggestions"
-        (completeMethod)="searchEndpoints($event)"
-        (onSelect)="onEndpointSelect($event)"
-        (onClear)="onEndpointSelect($event)"
+        id="targetSystem"
+        [(ngModel)]="selectedTargetSystem"
+        [suggestions]="targetSystemSuggestions"
+        (completeMethod)="searchTargetSystems($event)"
+        (onSelect)="onTargetSystemSelect($event)"
+        (onClear)="onTargetSystemSelect({ value: null })"
+        field="alias"
         [forceSelection]="true"
-        placeholder="Type or select an endpoint URL"
+        placeholder="Select a Target System"
         styleClass="w-full"
         inputStyleClass="w-full"
         [appendTo]="'body'"
       ></p-autoComplete>
     </div>
 
-    <div *ngIf="selectedEndpoint" class="dynamic-fields-section">
+    <div *ngIf="selectedTargetSystem" class="dynamic-fields-section">
       <p-divider align="center" type="dashed" styleClass="my-4">
         <b>Asset Details</b>
       </p-divider>
@@ -256,37 +257,47 @@
           <label class="font-bold">Asset Attributes</label>
           <button pButton pRipple type="button" icon="pi pi-plus" class="p-button-text p-button-sm" (click)="addAssetAttribute()" pTooltip="Add new attribute" tooltipPosition="top"></button>
         </div>
-        <div *ngFor="let attr of assetAttributes; let i = index" class="p-inputgroup mb-2">
-          <input type="text" pInputText [(ngModel)]="attr.key" (ngModelChange)="syncAssetJsonFromForm()" placeholder="Attribute Key" class="w-5" />
-          <input type="text" pInputText [(ngModel)]="attr.value" (ngModelChange)="syncAssetJsonFromForm()" placeholder="Attribute Value" class="w-5" />
+        <div *ngFor="let attr of assetAttributes; let i = index" class="flex align-items-center gap-2 mb-2">
+          <input type="text" pInputText [(ngModel)]="attr.key" (ngModelChange)="syncAssetJsonFromForm()" placeholder="Attribute Key" class="flex-1" />
+          <input type="text" pInputText [(ngModel)]="attr.value" (ngModelChange)="syncAssetJsonFromForm()" placeholder="Attribute Value" class="flex-1" />
           <button pButton pRipple type="button" icon="pi pi-times" class="p-button-danger p-button-text" (click)="removeAssetAttribute(i)" [disabled]="assetAttributes.length === 1"></button>
         </div>
       </div>
 
       <p-divider align="center" type="dashed" styleClass="my-4">
-        <b>Parameterization</b>
+        <b>Data Address</b>
       </p-divider>
 
       <div class="field">
-        <label for="pathParamId" class="font-bold block mb-2">PathParam {{'{'}}id{{'}'}}</label>
-        <input id="pathParamId" type="text" pInputText [(ngModel)]="pathParamId" (ngModelChange)="syncAssetJsonFromForm()" placeholder="e.g., {assetId}" class="w-full" />
+        <label for="pathParamId" class="font-bold block mb-2">Path</label>
+        <input id="pathParamId" type="text" pInputText [(ngModel)]="pathParamId" (ngModelChange)="syncAssetJsonFromForm()" placeholder="e.g., /v1/my-data" class="w-full" />
       </div>
 
       <div class="field">
-        <label for="queryParams" class="font-bold block mb-2">Query Parameters</label>
-        <p-multiSelect id="queryParams" [options]="queryParamOptions" [(ngModel)]="queryParams" (ngModelChange)="syncAssetJsonFromForm()" placeholder="Select Query Parameters" styleClass="w-full" [appendTo]="'body'"></p-multiSelect>
+        <div class="flex justify-content-between align-items-center mb-2">
+          <label class="font-bold">Query Parameters</label>
+          <button pButton pRipple type="button" icon="pi pi-plus" class="p-button-text p-button-sm" (click)="addQueryParam()" pTooltip="Add Query Parameter"></button>
+        </div>
+        <div *ngFor="let param of queryParams; let i = index" class="flex align-items-center gap-2 mb-2">
+          <input type="text" pInputText [(ngModel)]="param.key" (ngModelChange)="syncAssetJsonFromForm()" placeholder="Parameter Key" class="flex-1" />
+          <input type="text" pInputText [(ngModel)]="param.value" (ngModelChange)="syncAssetJsonFromForm()" placeholder="Parameter Value" class="flex-1" />
+          <button pButton pRipple type="button" icon="pi pi-times" class="p-button-danger p-button-text" (click)="removeQueryParam(i)" [disabled]="queryParams.length === 1 && (!param.key && !param.value)"></button>
+        </div>
       </div>
 
       <div class="field">
-        <label for="headerParams" class="font-bold block mb-2">Header Parameters</label>
-        <p-multiSelect id="headerParams" [options]="headerParamOptions" [(ngModel)]="headerParams" (ngModelChange)="syncAssetJsonFromForm()" placeholder="Select Header Parameters" styleClass="w-full" [appendTo]="'body'"></p-multiSelect>
-      </div>
-
-      <div class="field">
-        <label for="authorizationData" class="font-bold block mb-2">Authorization Data</label>
-        <input id="authorizationData" type="text" pInputText [(ngModel)]="authorizationData" (ngModelChange)="syncAssetJsonFromForm()" placeholder="e.g., Bearer Token" class="w-full" />
+        <div class="flex justify-content-between align-items-center mb-2">
+          <label class="font-bold">Header Parameters</label>
+          <button pButton pRipple type="button" icon="pi pi-plus" class="p-button-text p-button-sm" (click)="addHeaderParam()" pTooltip="Add Header"></button>
+        </div>
+        <div *ngFor="let header of headerParams; let i = index" class="flex align-items-center gap-2 mb-2">
+          <input type="text" pInputText [(ngModel)]="header.key" (ngModelChange)="syncAssetJsonFromForm()" placeholder="Header Name" class="flex-1" />
+          <input type="text" pInputText [(ngModel)]="header.value" (ngModelChange)="syncAssetJsonFromForm()" placeholder="Header Value" class="flex-1" />
+          <button pButton pRipple type="button" icon="pi pi-times" class="p-button-danger p-button-text" (click)="removeHeaderParam(i)" [disabled]="headerParams.length === 1 && (!header.key && !header.value)"></button>
+        </div>
       </div>
     </div>
+
 
     <div class="field col-12 mt-3">
       <label class="font-bold block mb-2">Asset JSON</label>
@@ -302,10 +313,79 @@
 
 <p-dialog header="Edit Asset" [(visible)]="displayEditAssetDialog" [modal]="true" [style]="{ width: '50vw' }" (onHide)="hideEditAssetDialog()" [draggable]="false" [resizable]="false">
   <ng-container *ngIf="assetToEditODRL">
-    <div class="p-fluid grid pt-3">
-      <div class="field col-12">
-        <label for="editAssetJsonEditor" class="block mb-2">JSON Content</label>
-        <ngx-monaco-editor id="editAssetJsonEditor" [options]="editorOptions" [(ngModel)]="expertModeJsonContent" style="height: 400px; border: 1px solid var(--surface-d);"></ngx-monaco-editor>
+    <div class="p-fluid pt-3">
+      <div class="field col-12 mt-3" *ngIf="false"> <!-- Hide for now in edit mode to avoid complexity -->
+        <label for="editTargetSystem" class="font-bold block mb-2">Target System:</label>
+        <p-autoComplete
+          id="editTargetSystem"
+          [(ngModel)]="selectedTargetSystem"
+          [suggestions]="targetSystemSuggestions"
+          (completeMethod)="searchTargetSystems($event)"
+          (onSelect)="onTargetSystemSelect($event)"
+          (onClear)="onTargetSystemSelect({ value: null })"
+          field="alias"
+          [forceSelection]="true"
+          placeholder="Type or select an endpoint URL"
+          styleClass="w-full"
+          inputStyleClass="w-full"
+          [appendTo]="'body'"
+        ></p-autoComplete>
+      </div>
+
+      <div class="dynamic-fields-section">
+        <p-divider align="center" type="dashed" styleClass="my-4">
+          <b>Asset Details</b>
+        </p-divider>
+
+        <div class="field">
+          <div class="flex justify-content-between align-items-center mb-2">
+            <label class="font-bold">Asset Attributes</label>
+            <button pButton pRipple type="button" icon="pi pi-plus" class="p-button-text p-button-sm" (click)="addAssetAttribute()" pTooltip="Add new attribute" tooltipPosition="top"></button>
+          </div>
+          <div *ngFor="let attr of assetAttributes; let i = index" class="flex align-items-center gap-2 mb-2">
+            <input type="text" pInputText [(ngModel)]="attr.key" (ngModelChange)="syncAssetJsonFromForm()" placeholder="Attribute Key" class="flex-1" />
+            <input type="text" pInputText [(ngModel)]="attr.value" (ngModelChange)="syncAssetJsonFromForm()" placeholder="Attribute Value" class="flex-1" />
+            <button pButton pRipple type="button" icon="pi pi-times" class="p-button-danger p-button-text" (click)="removeAssetAttribute(i)" [disabled]="assetAttributes.length === 1 && !attr.key && !attr.value"></button>
+          </div>
+        </div>
+
+        <p-divider align="center" type="dashed" styleClass="my-4">
+          <b>Data Address</b>
+        </p-divider>
+
+        <div class="field">
+          <label for="editPathParamId" class="font-bold block mb-2">Path</label>
+          <input id="editPathParamId" type="text" pInputText [(ngModel)]="pathParamId" (ngModelChange)="syncAssetJsonFromForm()" placeholder="e.g., /v1/my-data" class="w-full" />
+        </div>
+
+        <div class="field">
+          <div class="flex justify-content-between align-items-center mb-2">
+            <label class="font-bold">Query Parameters</label>
+            <button pButton pRipple type="button" icon="pi pi-plus" class="p-button-text p-button-sm" (click)="addQueryParam()" pTooltip="Add Query Parameter"></button>
+          </div>
+          <div *ngFor="let param of queryParams; let i = index" class="flex align-items-center gap-2 mb-2">
+            <input type="text" pInputText [(ngModel)]="param.key" (ngModelChange)="syncAssetJsonFromForm()" placeholder="Parameter Key" class="flex-1" />
+            <input type="text" pInputText [(ngModel)]="param.value" (ngModelChange)="syncAssetJsonFromForm()" placeholder="Parameter Value" class="flex-1" />
+            <button pButton pRipple type="button" icon="pi pi-times" class="p-button-danger p-button-text" (click)="removeQueryParam(i)" [disabled]="queryParams.length === 1 && (!param.key && !param.value)"></button>
+          </div>
+        </div>
+
+        <div class="field">
+          <div class="flex justify-content-between align-items-center mb-2">
+            <label class="font-bold">Header Parameters</label>
+            <button pButton pRipple type="button" icon="pi pi-plus" class="p-button-text p-button-sm" (click)="addHeaderParam()" pTooltip="Add Header"></button>
+          </div>
+          <div *ngFor="let header of headerParams; let i = index" class="flex align-items-center gap-2 mb-2">
+            <input type="text" pInputText [(ngModel)]="header.key" (ngModelChange)="syncAssetJsonFromForm()" placeholder="Header Name" class="flex-1" />
+            <input type="text" pInputText [(ngModel)]="header.value" (ngModelChange)="syncAssetJsonFromForm()" placeholder="Header Value" class="flex-1" />
+            <button pButton pRipple type="button" icon="pi pi-times" class="p-button-danger p-button-text" (click)="removeHeaderParam(i)" [disabled]="headerParams.length === 1 && (!header.key && !header.value)"></button>
+          </div>
+        </div>
+      </div>
+
+      <div class="field col-12 mt-3">
+        <label class="font-bold block mb-2">Asset JSON</label>
+        <ngx-monaco-editor id="editAssetJsonEditor" [options]="editorOptions" [(ngModel)]="expertModeJsonContent" style="height: 300px; border: 1px solid var(--surface-d);"></ngx-monaco-editor>
       </div>
     </div>
   </ng-container>

@@ -7,7 +7,7 @@ import { TableModule } from 'primeng/table';
 import { ActivatedRoute } from '@angular/router';
 import { Button } from 'primeng/button';
 import { TransformationService } from '../../core/services/transformation.service';
-import { DropdownModule } from 'primeng/dropdown';
+import {Select} from 'primeng/select';
 
 @Component({
   selector: 'app-logs-panel',
@@ -19,7 +19,7 @@ import { DropdownModule } from 'primeng/dropdown';
     NgIf,
     TableModule,
     Button,
-    DropdownModule
+    Select
   ],
   standalone: true
 })

@@ -1,5 +1,6 @@
 package de.unistuttgart.stayinsync.core.configuration.service;
 
+import de.unistuttgart.stayinsync.core.configuration.domain.entities.aas.AasTargetApiRequestConfiguration;
 import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.SyncSystemEndpoint;
 import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.TargetSystemApiRequestConfiguration;
 import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.TargetSystemApiRequestConfigurationAction;
@@ -7,6 +8,7 @@ import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.Transf
 import de.unistuttgart.stayinsync.core.configuration.exception.CoreManagementException;
 import de.unistuttgart.stayinsync.core.configuration.rest.dtos.typegeneration.GetTypeDefinitionsResponseDTO;
 import de.unistuttgart.stayinsync.core.configuration.rest.dtos.typegeneration.TypeLibraryDTO;
+import de.unistuttgart.stayinsync.core.configuration.service.aas.AasTargetDtsGeneratorService;
 import de.unistuttgart.stayinsync.transport.domain.TargetApiRequestConfigurationActionRole;
 import io.quarkus.cache.CacheResult;
 import io.swagger.v3.oas.models.OpenAPI;
@@ -18,6 +20,7 @@ import io.swagger.v3.oas.models.parameters.RequestBody;
 import io.swagger.v3.oas.models.responses.ApiResponse;
 import io.swagger.v3.parser.OpenAPIV3Parser;
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
 import jakarta.ws.rs.core.Response;
 
 import java.util.*;
@@ -26,29 +29,32 @@ import java.util.stream.Collectors;
 @ApplicationScoped
 public class TargetDtsBuilderGeneratorService {
 
+    @Inject
+    AasTargetDtsGeneratorService aasTargetDtsGeneratorService;
+
     public GetTypeDefinitionsResponseDTO generateForTransformation(Long transformationId) {
         Transformation transformation = Transformation.<Transformation>findByIdOptional(transformationId)
                 .orElseThrow(() -> new CoreManagementException(Response.Status.NOT_FOUND, "Transformation not found", "Transformation with id %d not found.", transformationId));
 
-        Set<TargetSystemApiRequestConfiguration> targetArcs = transformation.targetSystemApiRequestConfigurations;
+        Set<TargetSystemApiRequestConfiguration> restArcs = transformation.targetSystemApiRequestConfigurations;
 
-        Map<Long, OpenAPI> parsedSpecs = getParsedOpenApiSpecifications(targetArcs);
-        DtsGenerationContext context = new DtsGenerationContext();
-
-        TypeLibraryDTO sharedModelsLibrary = generateSharedModelsLibrary(parsedSpecs, context);
+        Map<Long, OpenAPI> parsedSpecs = getParsedOpenApiSpecifications(restArcs);
+        DtsGenerationContext restContext = new DtsGenerationContext();
+        TypeLibraryDTO sharedModelsLibrary = generateSharedModelsLibrary(parsedSpecs, restContext);
         final boolean hasSharedModels = sharedModelsLibrary != null && !sharedModelsLibrary.content().isEmpty();
 
-        List<TypeLibraryDTO> arcLibraries = targetArcs.stream()
-                .map(arc -> generateArcLibrary(arc, parsedSpecs.get(arc.targetSystem.id), context, hasSharedModels))
+        List<TypeLibraryDTO> restArcLibraries = restArcs.stream()
+                .map(arc -> generateArcLibrary(arc, parsedSpecs.get(arc.targetSystem.id), restContext, hasSharedModels))
                 .toList();
 
-        String globalNamespace = generatedGlobalTargetsNamespace(targetArcs);
-        TypeLibraryDTO manifestLibrary = new TypeLibraryDTO("stayinsync/targets/manifest.d.ts", globalNamespace);
+        Set<AasTargetApiRequestConfiguration> aasArcs = transformation.aasTargetApiRequestConfigurations;
+        List<TypeLibraryDTO> aasArcLibraries = aasTargetDtsGeneratorService.generateForAasArcs(aasArcs);
 
+        String globalNamespace = generatedGlobalTargetsNamespace(restArcs, aasArcs);
+        TypeLibraryDTO manifestLibrary = new TypeLibraryDTO("stayinsync/targets/manifest.d.ts", globalNamespace);
         TypeLibraryDTO baseDirectiveLibrary = new TypeLibraryDTO("stayinsync/targets/base.d.ts",
                 "/** A shared base interface for all generated target directives. */\ndeclare interface TargetDirective {}");
-
-        TypeLibraryDTO contractLibrary = generateContractLibrary(targetArcs);
+        TypeLibraryDTO contractLibrary = generateContractLibrary(restArcs, aasArcs);
 
         List<TypeLibraryDTO> allLibraries = new ArrayList<>();
         allLibraries.add(baseDirectiveLibrary);
@@ -56,7 +62,8 @@ public class TargetDtsBuilderGeneratorService {
         if (sharedModelsLibrary != null) {
             allLibraries.add(sharedModelsLibrary);
         }
-        allLibraries.addAll(arcLibraries);
+        allLibraries.addAll(restArcLibraries);
+        allLibraries.addAll(aasArcLibraries);
         allLibraries.add(manifestLibrary);
 
         return new GetTypeDefinitionsResponseDTO(allLibraries);
@@ -121,16 +128,30 @@ public class TargetDtsBuilderGeneratorService {
         return new TypeLibraryDTO(filePath, dtsContent.toString());
     }
 
-    private String generatedGlobalTargetsNamespace(Set<TargetSystemApiRequestConfiguration> arcs) {
-        if (arcs == null || arcs.isEmpty()) {
-            return "";
+    private String generatedGlobalTargetsNamespace(Set<TargetSystemApiRequestConfiguration> restArcs, Set<AasTargetApiRequestConfiguration> aasArcs) {
+        StringBuilder content = new StringBuilder();
+
+        if (restArcs != null) {
+            restArcs.forEach(arc ->
+                    content.append(String.format("  /** ARC for REST target '%s'. */\n", arc.alias))
+                            .append(String.format("  %s: %s_Client;\n", arc.alias, toPascalCase(arc.alias)))
+            );
         }
 
-        String content = arcs.stream()
-                .map(arc -> String.format("  %s: %s_Client;", arc.alias, toPascalCase(arc.alias)))
-                .collect(Collectors.joining("\n"));
+        if (aasArcs != null) {
+            aasArcs.forEach(arc ->
+                    content.append(String.format("\n  /** ARC for AAS target '%s' (Submodel: %s). */\n", arc.alias, arc.submodel.submodelIdShort))
+                            .append(String.format("  %s: %s_Client;\n", arc.alias, toPascalCase(arc.alias)))
+            );
+        }
 
-        return String.format("declare const targets: {\n%s\n}", content);
+        return String.format(
+                "/**\n * Global object providing access to all configured Target ARCs.\n" +
+                        " * Use this to define the instructions (Directives) for your target systems.\n" +
+                        " */\n" +
+                        "declare const targets: {\n%s}",
+                content
+        );
     }
 
     private String generateMainUpsertBuilder(TargetSystemApiRequestConfiguration arc) {
@@ -401,26 +422,45 @@ public class TargetDtsBuilderGeneratorService {
         return mapOpenApiToTsType(schema.getType());
     }
 
-    private TypeLibraryDTO generateContractLibrary(Set<TargetSystemApiRequestConfiguration> arcs){
+    private TypeLibraryDTO generateContractLibrary(Set<TargetSystemApiRequestConfiguration> restArcs, Set<AasTargetApiRequestConfiguration> aasArcs){
         StringBuilder content = new StringBuilder();
 
-        // --- DirectiveMap Interface Declarations ---
-        content.append("/**\n * A map of directives to be returned by the transform function.\n");
-        content.append(" * The keys must match the aliases of your configured Target ARCs.\n");
-        content.append(" * All configured ARCs MUST be present as keys in the returned object.\n */\n");
+        // --- DirectiveMap Interface declaration ---
+        content.append("/**\n");
+        content.append(" * Defines the required structure for the return value of the 'transform' function.\n");
+        content.append(" * Each key MUST match the alias of a configured Target ARC.\n");
+        content.append(" * The value for each key MUST be an array of the corresponding directive types.\n");
+        content.append(" */\n");
         content.append("declare interface DirectiveMap {\n");
 
-        for (TargetSystemApiRequestConfiguration arc : arcs){
-            String alias = arc.alias;
-            String directiveTypeName = toPascalCase(alias) + "_UpsertDirective";
-            content.append(String.format(" %s: %s[];\n", alias, directiveTypeName));
+        if (restArcs != null) {
+            for (TargetSystemApiRequestConfiguration arc : restArcs) {
+                String alias = arc.alias;
+                String directiveTypeName = toPascalCase(alias) + "_UpsertDirective";
+                content.append(String.format("  /** Directives for the REST ARC '%s'. */\n", alias));
+                content.append(String.format("  %s: %s[];\n", alias, directiveTypeName));
+            }
+        }
+
+        if (aasArcs != null) {
+            for (AasTargetApiRequestConfiguration arc : aasArcs) {
+                String alias = arc.alias;
+                String directiveBaseName = toPascalCase(alias);
+                String unionType = String.format("(%s_SetValueDirective | %s_AddElementDirective | %s_DeleteElementDirective)",
+                        directiveBaseName, directiveBaseName, directiveBaseName);
+
+                content.append(String.format("\n  /** Directives for the AAS ARC '%s' (Submodel: %s). */\n", alias, arc.submodel.submodelIdShort));
+                content.append(String.format("  %s: %s[];\n", alias, unionType));
+            }
         }
 
         content.append("}\n\n");
 
-        // --- Transform Signature Declarations ---
-        content.append("/**\n * This is the main entry point for your transformation logic.\n");
-        content.append(" * It must return an object conforming to the DirectiveMap interface.\n */\n");
+        // --- transform() function-signature declaration ---
+        content.append("/**\n");
+        content.append(" * This is the main entry point for your transformation logic.\n");
+        content.append(" * It MUST return an object that conforms to the DirectiveMap interface.\n");
+        content.append(" */\n");
         content.append("declare function transform(): DirectiveMap;\n");
 
         return new TypeLibraryDTO("stayinsync/targets/contract.d.ts", content.toString());
@@ -444,7 +484,11 @@ public class TargetDtsBuilderGeneratorService {
         if (s == null || s.isEmpty()) {
             return s;
         }
-        return s.substring(0, 1).toUpperCase() + s.substring(1);
+
+        //return s.substring(0, 1).toUpperCase() + s.substring(1);
+        return Arrays.stream(s.split("[_\\- ]"))
+                .map(word -> word.substring(0, 1).toUpperCase() + word.substring(1))
+                .collect(Collectors.joining());
     }
 
     private String enumNameToPascalCase(String enumName) {

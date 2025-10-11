@@ -48,7 +48,11 @@ export let MOCK_ODRL_ASSETS: Record<string, any[]> = {
       dataAddress: {
         type: 'HttpData',
         baseUrl: 'https://jsonplaceholder.typicode.com/todos/1',
+        queryParams: 'page=1&limit=10', // Example for query params parsing
+        'header:Authorization': 'Bearer MOCK_TOKEN_123', // Example for header parsing
+        'header:X-Custom-Header': 'StayInSync'
       },
+      thirdPartyChanges: false,
     },
     {
       '@id': 'asset-2',
@@ -63,6 +67,7 @@ export let MOCK_ODRL_ASSETS: Record<string, any[]> = {
         type: 'HttpData',
         baseUrl: 'https://jsonplaceholder.typicode.com/posts/1',
       },
+      thirdPartyChanges: true, // This will make the redeploy button appear
     },
   ],
   'edc-instance-2': [],
@@ -92,6 +97,7 @@ export let MOCK_POLICIES: Record<string, any[]> = {
           },
         ],
       },
+      thirdPartyChanges: true, // This will make the redeploy button appear
     },
   ],
   'edc-instance-2': [],
@@ -108,6 +114,7 @@ export let MOCK_CONTRACT_DEFINITIONS: Record<string, OdrlContractDefinition[]> =
       accessPolicyId: 'policy-bpn-dev',
       contractPolicyId: 'policy-bpn-dev',
       assetsSelector: [],
+      thirdPartyChanges: true, // This will make the redeploy button appear
     } as any,
   ],
   'edc-instance-2': [],
