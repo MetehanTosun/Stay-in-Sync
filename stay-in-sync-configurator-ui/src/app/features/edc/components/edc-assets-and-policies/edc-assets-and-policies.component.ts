@@ -678,9 +678,6 @@ accessPolicySuggestions: OdrlPolicyDefinition[] = [];
     if (!currentAssetJson['@context']) {
       currentAssetJson['@context'] = { "edc": "https://w3id.org/edc/v0.0.1/ns/" };
     }
-    if (!currentAssetJson['@id']) {
-      currentAssetJson['@id'] = `urn:uuid:${this.generateUuid()}`; // Generate UUID for new assets
-    }
     if (!currentAssetJson.properties) {
       currentAssetJson.properties = {};
     }
@@ -755,14 +752,6 @@ accessPolicySuggestions: OdrlPolicyDefinition[] = [];
   removeHeaderParam(index: number) {
     this.headerParams.splice(index, 1);
     this.syncAssetJsonFromForm();
-  }
-
-
-  private generateUuid(): string {
-    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
-      const r = Math.random() * 16 | 0, v = c === 'x' ? r : (r & 0x3 | 0x8);
-      return v.toString(16);
-    });
   }
 
   // End New Asset Dialog specific methods
@@ -942,12 +931,6 @@ accessPolicySuggestions: OdrlPolicyDefinition[] = [];
         try {
           const fileContent = await file.text();
           let assetJson = JSON.parse(fileContent);
-
-          // Korrektur und Validierung des Asset-JSONs
-          if (!assetJson['@id']) {
-            assetJson['@id'] = `urn:uuid:${this.generateUuid()}`;
-            console.log('Generated new @id for asset:', assetJson['@id']);
-          }
 
           if (!assetJson['@context'] || !assetJson['@context'].edc) {
             assetJson['@context'] = { "edc": "https://w3id.org/edc/v0.0.1/ns/" };
@@ -1567,7 +1550,7 @@ accessPolicySuggestions: OdrlPolicyDefinition[] = [];
     // Create a default empty JSON structure
     this.expertModeJsonContent = JSON.stringify({
       '@context': { edc: 'https://w3id.org/edc/v0.0.1/ns/' },
-      '@id': `contract-def-new-${Date.now()}`,
+      '@id': '',
       accessPolicyId: '',
       contractPolicyId: '',
       assetsSelector: [],
@@ -1608,13 +1591,6 @@ accessPolicySuggestions: OdrlPolicyDefinition[] = [];
     try {
       const raw = JSON.parse(this.expertModeJsonContent || '{}');
 
-      // Ensure required fields for backend DTO
-      let contractDefinitionId = String(raw['@id'] || '').trim();
-      if (!contractDefinitionId) {
-        contractDefinitionId = `contract-def-${Date.now()}`;
-        raw['@id'] = contractDefinitionId;
-      }
-
       // Type guard for Access Policy ID
       let accessPolicyIdStr = '';
       const selectedPolicy = this.newContractPolicy.accessPolicyId;
@@ -1654,7 +1630,7 @@ accessPolicySuggestions: OdrlPolicyDefinition[] = [];
 
       // Build backend DTO shape
       const dto = {
-        contractDefinitionId,
+        contractDefinitionId: raw['@id'] || '', // Send the user-provided ID or an empty string
         assetId,
         accessPolicyIdStr: accessPolicyIdStr,
         contractPolicyIdStr: accessPolicyIdStr,

@@ -93,12 +93,10 @@ export class PolicyService {
       ? raw.policy.permission
       : [];
 
-  // Generiere automatisch eine Policy-ID, wenn keine vorhanden ist
-  const policyId = String(raw?.['@id'] ?? '').trim() || `policy-${Date.now()}`;
-
   const normalizedPolicy = {
     '@context': raw?.['@context'] ?? { odrl: 'http://www.w3.org/ns/odrl/2/' },
-    '@id': policyId,
+    // The backend will generate the @id
+    '@id': raw?.['@id'] || '',
     permission
   };
 
