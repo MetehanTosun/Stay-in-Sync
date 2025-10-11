@@ -6,6 +6,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import de.unistuttgart.stayinsync.core.configuration.edc.dto.PolicyDto;
 import de.unistuttgart.stayinsync.core.configuration.edc.entities.Policy;
 import io.quarkus.logging.Log;
+
+import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.Named;
 import org.mapstruct.factory.Mappers;
@@ -13,6 +15,7 @@ import org.mapstruct.factory.Mappers;
 import java.util.HashMap;
 import java.util.Map;
 
+@Mapper
 public interface PolicyMapper {
 
     PolicyMapper mapper = Mappers.getMapper(PolicyMapper.class);

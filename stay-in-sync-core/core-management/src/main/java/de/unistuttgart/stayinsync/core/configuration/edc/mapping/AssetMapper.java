@@ -27,7 +27,7 @@ public interface AssetMapper {
     @Mapping(target = "context", expression = "java(getDefaultContext())")
     @Mapping(target = "type", constant = "Asset")
     @Mapping(source = "assetId", target = "assetId")
-    @Mapping(source = "thirdPartyChanges", target = "thirdPartyChanges")
+    @Mapping(source = "entityOutOfSync", target = "entityOutOfSync")
     @Mapping(source = "properties", target = "properties")
     @Mapping(source = "dataAddress", target = "dataAddress")
     @Mapping(source = "id", target = "id")
@@ -43,10 +43,10 @@ public interface AssetMapper {
      * @return Die Asset-Entity (targetEDC muss noch gesetzt werden!)
      */
     @Mapping(target = "id", ignore = true)
-    @Mapping(target = "targetEDC", ignore = true) // Muss vom Caller gesetzt werden
+    @Mapping(target = "targetEdc", ignore = true) 
     @Mapping(target = "type", constant = "Asset")
     @Mapping(source = "assetId", target = "assetId")
-    @Mapping(source = "thirdPartyChanges", target = "thirdPartyChanges", defaultValue = "false")
+    @Mapping(source = "entityOutOfSync", target = "entityOutOfSync", defaultValue = "false")
     @Mapping(source = "properties", target = "properties")
     @Mapping(source = "dataAddress", target = "dataAddress")
     Asset dtoToEntity(AssetDto dto);

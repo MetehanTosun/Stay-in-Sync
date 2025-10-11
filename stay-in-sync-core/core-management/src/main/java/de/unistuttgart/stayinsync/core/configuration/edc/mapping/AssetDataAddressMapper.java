@@ -2,6 +2,8 @@ package de.unistuttgart.stayinsync.core.configuration.edc.mapping;
 
 import de.unistuttgart.stayinsync.core.configuration.edc.dto.AssetDataAddressDto;
 import de.unistuttgart.stayinsync.core.configuration.edc.entities.AssetDataAddress;
+
+import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.Named;
 import org.mapstruct.factory.Mappers;
@@ -12,6 +14,7 @@ import java.util.Map;
 /**
  * Mapstruct Mapper that maps AssetDataAddress entity to AssetDataAddressDto.
  */
+@Mapper
 public interface AssetDataAddressMapper {
 
     AssetDataAddressMapper mapper = Mappers.getMapper(AssetDataAddressMapper.class);

@@ -11,10 +11,7 @@ public record EDCInstanceDto(
         String protocolVersion,
         String description,
         String bpn,
-        String apiKey,
-        String edcAssetEndpoint,
-        String edcPolicyEndpoint,
-        String edcContractDefinitionEndpoint
+        String apiKey
 ) {
 
 }

@@ -3,6 +3,8 @@ package de.unistuttgart.stayinsync.core.configuration.edc.mapping;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+
+import de.unistuttgart.stayinsync.core.configuration.edc.dto.ContextDto;
 import de.unistuttgart.stayinsync.core.configuration.edc.dto.ContractDefinitionDto;
 import de.unistuttgart.stayinsync.core.configuration.edc.entities.ContractDefinition;
 import io.quarkus.logging.Log;
@@ -82,5 +84,9 @@ public interface ContractDefinitionMapper {
             Log.error("Failed to serialize asset selector to JSON string", e);
             return "{}";
         }
+    }
+
+    default ContextDto getDefaultContext() {
+        return new ContextDto();
     }
 }
