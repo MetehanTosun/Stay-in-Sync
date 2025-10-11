@@ -2,12 +2,15 @@ package de.unistuttgart.stayinsync.core.configuration.edc.mapping;
 
 import de.unistuttgart.stayinsync.core.configuration.edc.dto.EDCInstanceDto;
 import de.unistuttgart.stayinsync.core.configuration.edc.entities.EDCInstance;
+
+import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.factory.Mappers;
 
 /**
  * Mapper für die Konvertierung zwischen EDCInstance-Entitäten und DTOs.
  */
+@Mapper
 public interface EDCInstanceMapper {
     
     EDCInstanceMapper mapper = Mappers.getMapper(EDCInstanceMapper.class);

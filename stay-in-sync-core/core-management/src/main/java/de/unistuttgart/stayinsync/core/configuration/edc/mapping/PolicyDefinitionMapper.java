@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import de.unistuttgart.stayinsync.core.configuration.edc.dto.ContextDto;
 import de.unistuttgart.stayinsync.core.configuration.edc.dto.PolicyDefinitionDto;
 import de.unistuttgart.stayinsync.core.configuration.edc.entities.EDCInstance;
 import de.unistuttgart.stayinsync.core.configuration.edc.entities.PolicyDefinition;
@@ -34,7 +35,6 @@ public interface PolicyDefinitionMapper {
      */
     @Mapping(target = "context", expression = "java(getDefaultContext())")
     @Mapping(target = "type", constant = "PolicyDefinition")
-    @Mapping(target = "targetEDC", ignore = true)
     PolicyDefinitionDto entityToDto(PolicyDefinition policy);
 
     /**
@@ -43,8 +43,12 @@ public interface PolicyDefinitionMapper {
      * @param policyDto Das zu konvertierende DTO
      * @return Die erzeugte Entität oder null, wenn die Eingabe null ist
      */
-    @Mapping(target = "targetEDC", ignore = true)
+    @Mapping(target = "targetEdc", ignore = true) 
     PolicyDefinition dtoToEntity(PolicyDefinitionDto policyDto);
+
+    default ContextDto getDefaultContext() {
+        return new ContextDto();
+    }
 
 
 }

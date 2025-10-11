@@ -36,7 +36,7 @@ public class PolicyDefinition extends PanacheEntity {
 
     @ManyToOne
     @JoinColumn(name = "edc_instance")
-    private EDCInstance targetEDC;
+    private EDCInstance targetEdc;
 
     @Column(name = "entity_out_of_sync")
     private boolean entityOutOfSync = false;
