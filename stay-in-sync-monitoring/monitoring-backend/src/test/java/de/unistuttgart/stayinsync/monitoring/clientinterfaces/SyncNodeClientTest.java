@@ -1,12 +1,12 @@
 package de.unistuttgart.stayinsync.monitoring.clientinterfaces;
 
-import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import de.unistuttgart.stayinsync.transport.dto.Snapshot.SnapshotDTO;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.*;
 
+import java.lang.reflect.Field;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
@@ -19,8 +19,7 @@ import static org.mockito.Mockito.*;
 
 /**
  * Unit tests for SyncNodeClient using Mockito to mock HTTP requests.
- * This version does not require TestUtils and uses constructor injection
- * for mocks where needed.
+ * Updated to use reflection to inject mocks, since SyncNodeClient has no-arg constructor.
  */
 class SyncNodeClientTest {
 
@@ -37,15 +36,23 @@ class SyncNodeClientTest {
     private final String baseUrl = "http://localhost:9999";
 
     @BeforeEach
-    void setUp() {
+    void setUp() throws Exception {
         MockitoAnnotations.openMocks(this);
-
-        // Create a real ObjectMapper for JSON serialization
         mapper = new ObjectMapper();
 
-        // Use a small helper constructor for testing to inject mocks
+        // Use default constructor
         client = new SyncNodeClient();
 
+        // === Inject mocks via reflection ===
+        injectField("httpClient", mockHttpClient);
+        injectField("mapper", mapper);
+        injectField("baseUrl", baseUrl);
+    }
+
+    private void injectField(String fieldName, Object value) throws Exception {
+        Field field = SyncNodeClient.class.getDeclaredField(fieldName);
+        field.setAccessible(true);
+        field.set(client, value);
     }
 
     // === getLatestAll ===
