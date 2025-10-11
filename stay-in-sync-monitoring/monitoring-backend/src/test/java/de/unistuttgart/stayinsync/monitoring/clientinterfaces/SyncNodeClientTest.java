@@ -44,7 +44,7 @@ class SyncNodeClientTest {
         mapper = new ObjectMapper();
 
         // Use a small helper constructor for testing to inject mocks
-        client = new SyncNodeClient(mockHttpClient, mapper, "http://localhost:9999");
+        client = new SyncNodeClient();
 
     }
 
