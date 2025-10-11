@@ -110,7 +110,7 @@
     </div>
     <div class="p-col p-mt-4">
       <h3 class="p-mb-2">API Headers</h3>
-      <app-manage-api-headers *ngIf="selectedSystem" [syncSystemId]="selectedSystem.id!"></app-manage-api-headers>
+      <app-manage-api-headers *ngIf="selectedSystem" [syncSystemId]="selectedSystem.id!" [allowValues]="true"></app-manage-api-headers>
     </div>
     <div class="p-col p-mt-4">
       <h3 class="p-mb-2">Endpoints</h3>

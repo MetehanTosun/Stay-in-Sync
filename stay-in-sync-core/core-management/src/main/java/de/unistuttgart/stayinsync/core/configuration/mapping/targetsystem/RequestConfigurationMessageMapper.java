@@ -7,7 +7,7 @@ import org.mapstruct.Mapping;
 import org.mapstruct.MappingConstants;
 
 @Mapper(componentModel = MappingConstants.ComponentModel.JAKARTA_CDI,
-        uses = { ActionMessageMapper.class })
+        uses = { ActionMessageMapper.class, TargetRequestHeaderMessageMapper.class })
 public interface RequestConfigurationMessageMapper {
 
     /**
@@ -18,5 +18,6 @@ public interface RequestConfigurationMessageMapper {
      * @return The DTO for the message queue.
      */
     @Mapping(source = "targetSystem.apiUrl", target = "baseUrl")
+    @Mapping(source = "targetSystem.apiRequestHeaders", target = "headers")
     RequestConfigurationMessageDTO mapToMessageDTO(TargetSystemApiRequestConfiguration entity);
 }

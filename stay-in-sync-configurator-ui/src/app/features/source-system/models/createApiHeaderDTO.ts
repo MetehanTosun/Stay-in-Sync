@@ -13,6 +13,7 @@ import { ApiRequestHeaderType } from './apiRequestHeaderType';
 export interface CreateApiHeaderDTO { 
     headerType?: ApiRequestHeaderType;
     headerName?: string;
+    values?: Array<string>;
 }
 export namespace CreateApiHeaderDTO {
 }

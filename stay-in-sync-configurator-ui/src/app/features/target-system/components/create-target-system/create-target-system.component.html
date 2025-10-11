@@ -69,7 +69,7 @@
   </ng-container>
 
   <div *ngIf="currentStep === 1" style="margin-top:1rem;">
-    <app-manage-api-headers [syncSystemId]="createdTargetSystemId"></app-manage-api-headers>
+    <app-manage-api-headers [syncSystemId]="createdTargetSystemId" [allowValues]="true"></app-manage-api-headers>
   </div>
 
   <div *ngIf="currentStep === 2" style="margin-top:1rem;">

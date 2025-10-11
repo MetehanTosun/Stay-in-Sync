@@ -177,7 +177,7 @@ public class OpenApiSpecificationParserService {
             if (!alreadyExists) {
                 Log.infof("Found new header definition in spec: '%s'. Creating entity for SourceSystem ID %d.", headerName, sourceSystem.id);
 
-                CreateApiHeaderDTO headerDTO = new CreateApiHeaderDTO(headerType, headerName);
+                CreateApiHeaderDTO headerDTO = new CreateApiHeaderDTO(headerType, headerName, java.util.Set.of());
 
                 apiHeaderService.persistRequestHeader(headerDTO, sourceSystem.id);
             } else {

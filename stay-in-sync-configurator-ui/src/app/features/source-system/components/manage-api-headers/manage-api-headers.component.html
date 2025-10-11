@@ -15,16 +15,27 @@
       <label for="headerType">Type</label>
     </p-floatlabel>
     <p-floatlabel  variant="on">
-
       <input id="headerName" pInputText formControlName="headerName"/>
-      <label for="headerType">Type</label>
+      <label for="headerName">Name</label>
+    </p-floatlabel>
+    <p-floatlabel  variant="on" *ngIf="allowValues">
+      <input id="headerValue" pInputText formControlName="headerValue"/>
+      <label for="headerValue">Value</label>
     </p-floatlabel>
     <button
       pButton
       type="button"
-      label="Add Header"
+      [label]="editing ? 'Update Header' : 'Add Header'"
       [disabled]="form.invalid"
       (click)="addHeader()">
+    </button>
+    <button
+      *ngIf="editing"
+      pButton
+      type="button"
+      class="p-button-text"
+      label="Cancel"
+      (click)="cancelEdit()">
     </button>
     <button
       *ngIf="isAas"
@@ -33,6 +44,9 @@
       class="p-ml-2 p-button-text"
       (click)="onRetest.emit()">
     </button>
+    <span *ngIf="editing" class="p-ml-2" style="align-self:center;color:var(--text-color-secondary)">
+      Editing
+    </span>
   </form>
 
 </div>
@@ -43,6 +57,7 @@
     <tr>
       <th>Header Name</th>
       <th>Header Type</th>
+      <th *ngIf="allowValues">Value</th>
       <th>Actions</th>
     </tr>
   </ng-template>
@@ -50,13 +65,21 @@
     <tr>
       <td>{{ h.headerName }}</td>
       <td>{{ h.headerType }}</td>
+      <td *ngIf="allowValues">{{ h.values?.[0] }}</td>
       <td>
         <button
           pButton
           type="button"
           icon="pi pi-trash"
-          class="p-button-text"
+          class="p-button-text p-button-danger"
           (click)="deleteHeader(h)">
+        </button>
+        <button
+          pButton
+          type="button"
+          icon="pi pi-pencil"
+          class="p-button-text"
+          (click)="editHeader(h)">
         </button>
       </td>
     </tr>
