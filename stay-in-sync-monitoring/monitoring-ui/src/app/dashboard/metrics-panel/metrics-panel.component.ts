@@ -20,14 +20,15 @@ export class MetricsPanelComponent implements OnInit {
   grafanaBaseUrl: string = '';
 
   constructor(
-    private route: ActivatedRoute,
-    private transformationService: TransformationService,
-    private configService: ConfigService
+    private readonly route: ActivatedRoute,
+    private readonly transformationService: TransformationService,
+    private readonly configService: ConfigService
   ) {}
 
-  async ngOnInit(): Promise<void> {
-    // BaseUrl zuerst vom Backend holen
-    this.grafanaBaseUrl = await this.configService.getGrafanaBaseUrl();
+ngOnInit(){
+  // BaseUrl zuerst vom Backend holen
+  this.configService.getGrafanaBaseUrl().then(baseUrl => {
+    this.grafanaBaseUrl = baseUrl;
 
     this.route.queryParams.subscribe(params => {
       this.selectedNodeId = params['input'] || '';
@@ -46,8 +47,8 @@ export class MetricsPanelComponent implements OnInit {
         this.loadTransformationsAndBuildUrl(this.selectedNodeId);
       }
     });
-  }
-
+  });
+}
   private loadTransformationsAndBuildUrl(nodeId: string) {
     this.transformationService.getTransformations(nodeId).subscribe({
       next: (transformations) => {

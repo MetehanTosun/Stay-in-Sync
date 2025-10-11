@@ -1,13 +1,15 @@
 package de.unistuttgart.stayinsync.core.configuration.service;
 
-import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.SourceSystem;
-import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.SourceSystemEndpoint;
-import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.SourceSystemApiRequestConfiguration;
-import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.ApiHeader;
-import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.authconfig.SyncSystemAuthConfig;
-import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.SourceSystemVariable;
-import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.ApiEndpointQueryParam;
-import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.ApiEndpointQueryParamValue;
+import de.unistuttgart.stayinsync.core.configuration.persistence.entities.aas.AasElementLite;
+import de.unistuttgart.stayinsync.core.configuration.persistence.entities.aas.AasSubmodelLite;
+import de.unistuttgart.stayinsync.core.configuration.persistence.entities.sync.SourceSystem;
+import de.unistuttgart.stayinsync.core.configuration.persistence.entities.sync.SourceSystemEndpoint;
+import de.unistuttgart.stayinsync.core.configuration.persistence.entities.sync.SourceSystemApiRequestConfiguration;
+import de.unistuttgart.stayinsync.core.configuration.persistence.entities.sync.ApiHeader;
+import de.unistuttgart.stayinsync.core.configuration.persistence.entities.sync.authconfig.SyncSystemAuthConfig;
+import de.unistuttgart.stayinsync.core.configuration.persistence.entities.sync.SourceSystemVariable;
+import de.unistuttgart.stayinsync.core.configuration.persistence.entities.sync.ApiEndpointQueryParam;
+import de.unistuttgart.stayinsync.core.configuration.persistence.entities.sync.ApiEndpointQueryParamValue;
 import de.unistuttgart.stayinsync.core.configuration.mapping.SourceSystemFullUpdateMapper;
 import de.unistuttgart.stayinsync.core.configuration.rest.dtos.CreateSourceSystemDTO;
 import de.unistuttgart.stayinsync.core.configuration.exception.CoreManagementException;
@@ -81,9 +83,9 @@ public class SourceSystemService {
                 Log.debugf("Starting deletion of related entities for source system ID: %d", id);
                 
                 // Cleanup AAS snapshot lites (elements first, then submodels)
-                long deletedElements = de.unistuttgart.stayinsync.core.configuration.domain.entities.aas.AasElementLite.delete("submodelLite.sourceSystem.id", id);
+                long deletedElements = AasElementLite.delete("submodelLite.sourceSystem.id", id);
                 Log.debugf("Deleted %d AAS element lites", deletedElements);
-                long deletedSubmodels = de.unistuttgart.stayinsync.core.configuration.domain.entities.aas.AasSubmodelLite.delete("sourceSystem.id", id);
+                long deletedSubmodels = AasSubmodelLite.delete("sourceSystem.id", id);
                 Log.debugf("Deleted %d AAS submodel lites", deletedSubmodels);
 
                 

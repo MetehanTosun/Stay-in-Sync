@@ -1,64 +1,40 @@
-<p-card header="Sync Job Overview" class="sync-job-card" [style]="{ width: '100rem' }">
-  <div class="p-fluid">
+<p-card header="🔄 Sync Job Overview" class="sync-job-card" [style]="{ width: '80rem', 'max-width': '100%' }">
+  <div class="p-fluid sync-job-details">
     <div class="p-field">
-      <label for="name"><strong>Name:</strong></label>
-      <p>{{ syncJob.name }}</p>
+      <label><strong>Name:</strong></label>
+      <p>{{ syncJob?.name || '—' }}</p>
     </div>
 
     <div class="p-field">
-      <label for="description"><strong>Description:</strong></label>
-      <p>{{ syncJob.description }}</p>
+      <label><strong>Description:</strong></label>
+      <p>{{ syncJob?.description || '—' }}</p>
     </div>
 
-    <div class="p-field">
-      <label><strong>Source Systems:</strong></label>
-      <ul class="p-list">
-        <li *ngFor="let sourceSystem of syncJob.sourceSystems">{{ sourceSystem.name }}</li>
-      </ul>
-    </div>
+    <div class="p-field transformations-field">
+      <label><strong>Transformations:</strong></label>
 
-    <div class="p-field">
-      <label><strong>Used Endpoints:</strong></label>
-      <ul class="p-list">
-        <li *ngFor="let endpoint of syncJob.endpoints">{{ endpoint }}</li>
-      </ul>
-    </div>
+      <ng-container *ngIf="syncJob?.transformations?.length; else noTransformations">
+        <ul class="transformation-list">
+          <li *ngFor="let t of syncJob.transformations" class="transformation-item">
+            <div class="transformation-header">
+              <span class="transformation-name">{{ t.name || 'Unnamed Transformation' }}</span>
+            </div>
 
-    <div class="p-field">
-      <label><strong>Variables:</strong></label>
-      <ul class="p-list">
-        <li *ngFor="let variable of syncJob.variables">{{ variable }}</li>
-      </ul>
-    </div>
+            <div class="transformation-body">
+              <span class="transformation-rule">
+                <strong>Rule:</strong>
+                <span *ngIf="t.transformationRule; else noRule">{{ t.transformationRule }}</span>
+              </span>
+              <ng-template #noRule><em>—</em></ng-template>
+              <span *ngIf="t.script?.name" class="transformation-script"> <strong>Script:</strong> {{ t.script?.name }}</span>
+            </div>
+          </li>
+        </ul>
+      </ng-container>
 
-<div class="p-field">
-  <label><strong>Transformations:</strong></label>
-  <ul class="p-list">
-    <li *ngFor="let transformation of syncJob.transformations">
-      <div class="transformation-item">
-        <span class="transformation-name"><strong>{{ transformation.name }}</strong></span>
-        <span class="transformation-rule">Rule: {{ transformation.transformationRule }}</span>
-        <span *ngIf="transformation.script?.name" class="transformation-script">Script: {{ transformation.script?.name }}</span>
-      </div>
-    </li>
-  </ul>
-</div>
-
-    <div class="p-field">
-      <label><strong>Simulation Mode:</strong></label>
-      <p>
-        <p-tag [value]="syncJob.isSimulation ? 'Enabled' : 'Disabled'"
-               [severity]="syncJob.isSimulation ? 'info' : 'success'">
-        </p-tag>
-      </p>
-    </div>
-
-    <div class="p-field">
-      <label><strong>Used ARCs:</strong></label>
-      <ul class="p-list">
-        <li *ngFor="let arc of syncJob.arcs">{{ arc }}</li>
-      </ul>
+      <ng-template #noTransformations>
+        <p class="empty-message"><em>No transformations defined.</em></p>
+      </ng-template>
     </div>
   </div>
 </p-card>
-

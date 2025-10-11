@@ -1,6 +1,7 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
-import { SnapshotModel } from '../models/snapshot.model';
+import {SnapshotDTO} from '../models/snapshot.model';
+import {Observable} from 'rxjs';
 
 /**
  * SnapshotService
@@ -23,7 +24,7 @@ export class SnapshotService {
    * @returns Observable emitting the latest SnapshotModel.
    */
   getLatestSnapshot(transformationId: string) {
-    return this.http.get<SnapshotModel>(`${this.baseUrl}/latest`, {
+    return this.http.get<SnapshotDTO>(`${this.baseUrl}/latest`, {
       params: { transformationId },
     });
   }
@@ -35,8 +36,19 @@ export class SnapshotService {
    * @returns Observable emitting an array of SnapshotModel.
    */
   getLastFiveSnapshots(transformationId: string) {
-    return this.http.get<SnapshotModel[]>(`${this.baseUrl}/list`, {
+    return this.http.get<SnapshotDTO[]>(`${this.baseUrl}/list`, {
       params: { transformationId },
     });
   }
+
+  /**
+  * Retrieves a snapshot by its ID.
+  *
+  * @param id The ID of the snapshot.
+   * @returns Observable that emits the corresponding SnapshotDTO object.
+  */
+  getById(id: string): Observable<SnapshotDTO> {
+    return this.http.get<SnapshotDTO>(`${this.baseUrl}/${id}`);
+  }
+
 }

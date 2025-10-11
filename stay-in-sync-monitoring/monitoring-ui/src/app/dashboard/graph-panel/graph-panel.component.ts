@@ -36,8 +36,8 @@ export class GraphPanelComponent implements AfterViewInit {
   markedNodes: { [nodeId: string]: boolean } = {};
 
   constructor(
-    private graphService: MonitoringGraphService,
-    private router: Router
+    private readonly graphService: MonitoringGraphService,
+    private readonly router: Router
   ) {}
 
   /**
@@ -94,14 +94,13 @@ export class GraphPanelComponent implements AfterViewInit {
       const changedJobIds: number[] = JSON.parse(e.data);
 
       // Mark nodes belonging to changed jobs as error/active
-      this.nodes.forEach((node) => {
+      for (const node of this.nodes) {
         if (node.type === 'SyncNode') {
           node.status = changedJobIds.includes(Number(node.id))
             ? 'error'
             : 'active';
         }
-      });
-
+      }
       this.filteredNodes = this.filterNodes(this.searchTerm);
       this.filteredLinks = this.filterLinks();
       this.updateGraph(this.filteredNodes, this.filteredLinks);
@@ -161,7 +160,6 @@ export class GraphPanelComponent implements AfterViewInit {
 
   /**
    * Filters nodes by the given search term.
-   * TODO: Replace ID/type filtering with sync-job-based filtering.
    *
    * @param term Search term.
    * @returns Nodes matching the search term.
@@ -172,7 +170,7 @@ export class GraphPanelComponent implements AfterViewInit {
     }
     return this.nodes.filter(
       (node) =>
-        node.id.toLowerCase().includes(term.toLowerCase()) ||
+        node.label.toLowerCase().includes(term.toLowerCase()) ||
         node.type.toLowerCase().includes(term.toLowerCase())
     );
   }

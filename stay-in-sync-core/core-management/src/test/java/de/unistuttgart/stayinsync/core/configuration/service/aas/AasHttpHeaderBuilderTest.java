@@ -1,7 +1,7 @@
 package de.unistuttgart.stayinsync.core.configuration.service.aas;
 
-import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.SyncSystem;
-import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.authconfig.BasicAuthConfig;
+import de.unistuttgart.stayinsync.core.configuration.persistence.entities.sync.SyncSystem;
+import de.unistuttgart.stayinsync.core.configuration.persistence.entities.sync.authconfig.BasicAuthConfig;
 import org.junit.jupiter.api.Test;
 
 import java.util.Map;

@@ -46,7 +46,7 @@
           <td>{{ snapshot.createdAt | date:'short' }}</td>
           <td>
             <p-button icon="pi pi-refresh" class="p-button-sm"
-                      (click)="replaySnapshot(snapshot.snapshotId)"></p-button>
+                      (onClick)="replaySnapshot(snapshot.snapshotId)"></p-button>
           </td>
         </tr>
       </ng-template>

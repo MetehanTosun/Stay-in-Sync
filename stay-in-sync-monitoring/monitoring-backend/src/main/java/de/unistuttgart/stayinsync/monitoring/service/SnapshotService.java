@@ -66,8 +66,9 @@ public class SnapshotService {
      * @param id the ID of the snapshot
      * @return the corresponding {@link SnapshotDTO}, or {@code null} if the fetch fails
      */
-    public SnapshotDTO getById(Long id) {
+    public SnapshotDTO getById(String id) {
         try {
+            Log.debug("Fetching latest snapshot for id=" + id);
             return syncNodeClient.getById(id);
         } catch (Exception e) {
             Log.error("Failed to fetch snapshot with id=" + id, e);

@@ -1,6 +1,6 @@
 package de.unistuttgart.stayinsync.core.configuration.mapping;
 
-import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.ApiEndpointQueryParamValue;
+import de.unistuttgart.stayinsync.core.configuration.persistence.entities.sync.ApiEndpointQueryParamValue;
 import de.unistuttgart.stayinsync.core.configuration.rest.dtos.ApiEndpointQueryParamValueDTO;
 import de.unistuttgart.stayinsync.transport.dto.ApiRequestParameterMessageDTO;
 import org.mapstruct.Mapper;

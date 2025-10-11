@@ -1,8 +1,8 @@
 package de.unistuttgart.stayinsync.core.configuration.service;
 
-import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.ApiHeader;
-import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.ApiHeaderValue;
-import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.SyncSystem;
+import de.unistuttgart.stayinsync.core.configuration.persistence.entities.sync.ApiHeader;
+import de.unistuttgart.stayinsync.core.configuration.persistence.entities.sync.ApiHeaderValue;
+import de.unistuttgart.stayinsync.core.configuration.persistence.entities.sync.SyncSystem;
 import de.unistuttgart.stayinsync.core.configuration.exception.CoreManagementException;
 import jakarta.ws.rs.core.Response;
 import de.unistuttgart.stayinsync.core.configuration.mapping.ApiHeaderFullUpdateMapper;
