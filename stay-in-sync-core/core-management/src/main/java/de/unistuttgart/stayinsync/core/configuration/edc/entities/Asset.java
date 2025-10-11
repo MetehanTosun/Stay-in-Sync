@@ -36,9 +36,9 @@ public class Asset extends PanacheEntity {
 
     @ManyToOne(optional = false, fetch = FetchType.LAZY)
     @JoinColumn(name = "target_edc_id", nullable = false)
-    private EDCInstance targetEDC;
+    private EDCInstance targetEdc;
 
-    @Column(name = "third_party_changes")
+    @Column(name = "entity_out_of_sync")
     private boolean entityOutOfSync = false;
 
     /**

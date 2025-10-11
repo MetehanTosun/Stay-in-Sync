@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonView;
 import de.unistuttgart.stayinsync.core.configuration.edc.dto.AssetDto;
 import de.unistuttgart.stayinsync.core.configuration.edc.dto.EdcEntityDto;
 import de.unistuttgart.stayinsync.core.configuration.edc.dto.VisibilitySidesForDto;
+import io.quarkus.logging.Log;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.POST;
 import jakarta.ws.rs.Path;
@@ -68,5 +69,21 @@ public abstract class EdcEntityResource <D extends EdcEntityDto> {
      * @return Response with DELETED status if the entity was deleted from both layers.
      */
     public abstract Response deleteEntity(final Long edcId, final Long entityId);
+
+    protected Response handleNotFoundException(final Long id){
+        final String exceptionMessage = "The Entity was not found with the id in the database.";
+        Log.warnf(exceptionMessage, id);
+        return Response.status(Response.Status.NOT_FOUND)
+                .entity(exceptionMessage)
+                .build();
+    }
+
+    protected Response handleNullArgument(){
+        final String exceptionMessage = "Invalid Id, can not be null. No Entity found.";
+        Log.warnf(exceptionMessage);
+        return Response.status(Response.Status.BAD_REQUEST)
+                .entity(exceptionMessage)
+                .build();
+    }
 
 }

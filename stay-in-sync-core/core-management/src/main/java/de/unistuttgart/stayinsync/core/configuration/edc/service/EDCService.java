@@ -8,7 +8,6 @@ import de.unistuttgart.stayinsync.core.configuration.edc.exception.EntityUpdateF
 import de.unistuttgart.stayinsync.core.configuration.edc.mapping.EDCInstanceMapper;
 import io.quarkus.logging.Log;
 import jakarta.enterprise.context.ApplicationScoped;
-import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
 
 import java.util.List;
@@ -21,8 +20,6 @@ import java.util.UUID;
 @ApplicationScoped
 public class EDCService {
 
-    @Inject
-    EDCInstanceMapper mapper;
 
     /**
      * Findet eine EDC-Instanz anhand ihrer ID.
@@ -43,7 +40,7 @@ public class EDCService {
         }
 
         Log.info("EDC-Instanz gefunden: " + instance.getName());
-        return mapper.entityToDto(instance);
+        return EDCInstanceMapper.mapper.entityToDto(instance);
     }
 
     /**
@@ -56,7 +53,7 @@ public class EDCService {
 
         List<EDCInstance> instances = EDCInstance.listAll();
         List<EDCInstanceDto> dtos = instances.stream()
-                .map(mapper::entityToDto)
+                .map(EDCInstanceMapper.mapper::entityToDto)
                 .toList();
 
         Log.info(instances.size() + " EDC-Instanzen gefunden");
@@ -91,7 +88,7 @@ public class EDCService {
     public EDCInstanceDto update(final UUID id, final EDCInstanceDto updatedDto) throws EntityUpdateFailedException {
         Log.debug("Aktualisieren der EDC-Instanz mit ID: " + id);
         final EDCInstance persistedInstance = EDCInstance.findById(id);
-        final EDCInstance updatedInstance = mapper.dtoToEntity(updatedDto);
+        final EDCInstance updatedInstance = EDCInstanceMapper.mapper.dtoToEntity(updatedDto);
         if (persistedInstance == null) {
             final String exceptionMessage = "Keine EDC-Instanz mit ID " + id + " für Update gefunden";
             Log.error(exceptionMessage);
@@ -104,12 +101,9 @@ public class EDCService {
         persistedInstance.setProtocolVersion(updatedInstance.getProtocolVersion());
         persistedInstance.setDescription(updatedInstance.getDescription());
         persistedInstance.setBpn(updatedInstance.getBpn());
-        persistedInstance.setEdcAssetEndpoint(updatedInstance.getEdcAssetEndpoint());
-        persistedInstance.setEdcPolicyEndpoint(updatedInstance.getEdcPolicyEndpoint());
-        persistedInstance.setEdcContractDefinitionEndpoint(updatedInstance.getEdcContractDefinitionEndpoint());
 
         Log.info("EDC-Instanz mit ID " + id + " erfolgreich aktualisiert");
-        return mapper.entityToDto(persistedInstance);
+        return EDCInstanceMapper.mapper.entityToDto(persistedInstance);
 
 
     }
