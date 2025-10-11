@@ -35,6 +35,13 @@ import static jakarta.transaction.Transactional.TxType.SUPPORTS;
 @ApplicationScoped
 public class TransformationRuleService {
 
+    // Default graph layout constants
+    private static final int DEFAULT_FINAL_NODE_ID = 0;
+    private static final int DEFAULT_CONFIG_NODE_ID = 1;
+    private static final double DEFAULT_FINAL_NODE_OFFSET_X = 750.0;
+    private static final double DEFAULT_CONFIG_NODE_OFFSET_Y = 300.0;
+    private static final int DEFAULT_EDGE_ORDER_INDEX = 0;
+
     @Inject
     GraphMapper mapper;
     @Inject
@@ -60,24 +67,21 @@ public class TransformationRuleService {
         try {
             // FinalNode
             NodeDTO finalNodeDto = new NodeDTO();
-            finalNodeDto.setId(0);
-            finalNodeDto.setName("Final Result");
+            finalNodeDto.setId(DEFAULT_FINAL_NODE_ID);
             finalNodeDto.setNodeType("FINAL");
-            finalNodeDto.setOffsetX(750);
+            finalNodeDto.setOffsetX(DEFAULT_FINAL_NODE_OFFSET_X);
 
             // ConfigNode
             NodeDTO configNodeDto = new NodeDTO();
-            configNodeDto.setId(1);
-            configNodeDto.setName("Configuration");
+            configNodeDto.setId(DEFAULT_CONFIG_NODE_ID);
             configNodeDto.setNodeType("CONFIG");
-            configNodeDto.setOffsetY(300);
-            configNodeDto.setChangeDetectionMode("OR");
+            configNodeDto.setOffsetY(DEFAULT_CONFIG_NODE_OFFSET_Y);
             configNodeDto.setInputTypes(List.of("ANY"));
             configNodeDto.setOutputType("BOOLEAN");
 
             InputDTO initialEdge = new InputDTO();
-            initialEdge.setId(1);
-            initialEdge.setOrderIndex(0);
+            initialEdge.setId(DEFAULT_CONFIG_NODE_ID);
+            initialEdge.setOrderIndex(DEFAULT_EDGE_ORDER_INDEX);
             finalNodeDto.setInputNodes(List.of(initialEdge));
 
             GraphDTO defaultGraphDto = new GraphDTO();
