@@ -35,13 +35,13 @@ import org.eclipse.microprofile.config.inject.ConfigProperty;
 public class SyncNodeClient {
 
     /** HTTP client used for making requests to SyncNode. */
-    private final HttpClient client = HttpClient.newHttpClient();
+    private HttpClient client = HttpClient.newHttpClient();
 
     /**
      * ObjectMapper configured to handle Java time types properly and
      * avoid serializing dates as timestamps.
      */
-    private final ObjectMapper mapper = new ObjectMapper()
+    private ObjectMapper mapper = new ObjectMapper()
             .registerModule(new JavaTimeModule())
             .disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
 
@@ -133,6 +133,14 @@ public class SyncNodeClient {
             return List.of();
         }
     }
+
+    // For testing purposes
+    public SyncNodeClient(HttpClient client, ObjectMapper mapper, String baseUrl) {
+        this.client = client;
+        this.mapper = mapper;
+        this.baseUrl = baseUrl;
+    }
+
 
     /**
      * Fetches a snapshot by its ID.

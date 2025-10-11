@@ -1,90 +1,178 @@
 package de.unistuttgart.stayinsync.monitoring.clientinterfaces;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import de.unistuttgart.stayinsync.transport.dto.Snapshot.SnapshotDTO;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.*;
 
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+import java.util.List;
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.*;
 
 /**
- * Improved test class for SyncNodeClient.
- * These tests verify initialization, basic method behavior,
- * and consistency of getLatestAll() results.
+ * Unit tests for SyncNodeClient using Mockito to mock HTTP requests.
+ * This version does not require TestUtils and uses constructor injection
+ * for mocks where needed.
  */
 class SyncNodeClientTest {
 
     private SyncNodeClient client;
 
+    @Mock
+    private HttpClient mockHttpClient;
+
+    @Mock
+    private HttpResponse<String> mockResponse;
+
+    private ObjectMapper mapper;
+
+    private final String baseUrl = "http://localhost:9999";
+
     @BeforeEach
     void setUp() {
-        client = new SyncNodeClient();
+        MockitoAnnotations.openMocks(this);
+
+        // Create a real ObjectMapper for JSON serialization
+        mapper = new ObjectMapper();
+
+        // Use a small helper constructor for testing to inject mocks
+        client = new SyncNodeClient(mockHttpClient, mapper, "http://localhost:9999");
+
     }
 
-    /**
-     * Test that SyncNodeClient can be instantiated with the no-arg constructor
-     * and does not throw an exception.
-     */
+    // === getLatestAll ===
     @Test
-    void testClientInitialization() {
-        assertNotNull(client, "SyncNodeClient instance should not be null");
-    }
+    void testGetLatestAll_success() throws Exception {
+        Map<Long, SnapshotDTO> map = Map.of(1L, new SnapshotDTO());
+        String json = mapper.writeValueAsString(map);
 
-    /**
-     * Test that getLatestAll() returns a non-null Map.
-     */
-    @Test
-    void testGetLatestAll_ReturnsNonNull() {
-        Map<Long, SnapshotDTO> result = assertDoesNotThrow(client::getLatestAll,
-                "getLatestAll() should not throw an exception");
-        assertNotNull(result, "getLatestAll() should not return null");
-    }
+        when(mockHttpClient.<String>send(any(HttpRequest.class), any(HttpResponse.BodyHandler.class)))
+                .thenReturn(mockResponse);
+        when(mockResponse.statusCode()).thenReturn(200);
+        when(mockResponse.body()).thenReturn(json);
 
-    /**
-     * Test that getLatestAll() returns a Map of the expected type.
-     */
-    @Test
-    void testGetLatestAll_ReturnsExpectedType() {
         Map<Long, SnapshotDTO> result = client.getLatestAll();
-        assertNotNull(result, "Result should not be null");
-        assertTrue(result instanceof Map, "Result should be of type Map<Long, SnapshotDTO>");
+        assertEquals(1, result.size());
     }
 
-    /**
-     * Test that multiple calls to getLatestAll() return consistent results
-     * and do not throw exceptions.
-     */
     @Test
-    void testGetLatestAll_MultipleCalls() {
-        for (int i = 0; i < 5; i++) {
-            Map<Long, SnapshotDTO> result = assertDoesNotThrow(client::getLatestAll,
-                    "getLatestAll() call " + (i + 1) + " should not throw an exception");
-            assertNotNull(result, "Result of call " + (i + 1) + " should not be null");
-        }
-    }
+    void testGetLatestAll_errorStatus() throws Exception {
+        when(mockHttpClient.<String>send(any(), any())).thenReturn(mockResponse);
+        when(mockResponse.statusCode()).thenReturn(500);
 
-    /**
-     * Test that getLatestAll() handles empty results gracefully.
-     */
-    @Test
-    void testGetLatestAll_EmptyMapHandled() {
         Map<Long, SnapshotDTO> result = client.getLatestAll();
-        assertNotNull(result, "Result should not be null even if empty");
-        assertDoesNotThrow(() -> result.forEach((k, v) -> assertNotNull(v, "SnapshotDTO should not be null")),
-                "All values in the map should be non-null");
+        assertTrue(result.isEmpty());
     }
 
-    /**
-     * Test repeated calls do not modify returned map unexpectedly (basic immutability check).
-     */
     @Test
-    void testGetLatestAll_ConsistencyAcrossCalls() {
-        Map<Long, SnapshotDTO> firstCall = client.getLatestAll();
-        Map<Long, SnapshotDTO> secondCall = client.getLatestAll();
+    void testGetLatestAll_exception() throws Exception {
+        when(mockHttpClient.<String>send(any(), any())).thenThrow(new RuntimeException("Error"));
 
-        assertEquals(firstCall.keySet(), secondCall.keySet(), "Keys should remain consistent across calls");
+        Map<Long, SnapshotDTO> result = client.getLatestAll();
+        assertTrue(result.isEmpty());
+    }
+
+    // === getLatest ===
+    @Test
+    void testGetLatest_success() throws Exception {
+        SnapshotDTO dto = new SnapshotDTO();
+        String json = mapper.writeValueAsString(dto);
+
+        when(mockHttpClient.<String>send(any(), any())).thenReturn(mockResponse);
+        when(mockResponse.statusCode()).thenReturn(200);
+        when(mockResponse.body()).thenReturn(json);
+
+        SnapshotDTO result = client.getLatest(42L);
+        assertNotNull(result);
+    }
+
+    @Test
+    void testGetLatest_errorStatus() throws Exception {
+        when(mockHttpClient.<String>send(any(), any())).thenReturn(mockResponse);
+        when(mockResponse.statusCode()).thenReturn(404);
+
+        SnapshotDTO result = client.getLatest(42L);
+        assertNull(result);
+    }
+
+    @Test
+    void testGetLatest_exception() throws Exception {
+        when(mockHttpClient.<String>send(any(), any())).thenThrow(new RuntimeException("Error"));
+
+        SnapshotDTO result = client.getLatest(42L);
+        assertNull(result);
+    }
+
+    // === getLastFive ===
+    @Test
+    void testGetLastFive_success() throws Exception {
+        List<SnapshotDTO> list = List.of(new SnapshotDTO(), new SnapshotDTO());
+        String json = mapper.writeValueAsString(list);
+
+        when(mockHttpClient.<String>send(any(), any())).thenReturn(mockResponse);
+        when(mockResponse.statusCode()).thenReturn(200);
+        when(mockResponse.body()).thenReturn(json);
+
+        List<SnapshotDTO> result = client.getLastFive(7L);
+        assertEquals(2, result.size());
+    }
+
+    @Test
+    void testGetLastFive_errorStatus() throws Exception {
+        when(mockHttpClient.<String>send(any(), any())).thenReturn(mockResponse);
+        when(mockResponse.statusCode()).thenReturn(500);
+
+        List<SnapshotDTO> result = client.getLastFive(7L);
+        assertTrue(result.isEmpty());
+    }
+
+    @Test
+    void testGetLastFive_exception() throws Exception {
+        when(mockHttpClient.<String>send(any(), any())).thenThrow(new RuntimeException("Crash"));
+
+        List<SnapshotDTO> result = client.getLastFive(7L);
+        assertTrue(result.isEmpty());
+    }
+
+    // === getById ===
+    @Test
+    void testGetById_success() throws Exception {
+        SnapshotDTO dto = new SnapshotDTO();
+        String json = mapper.writeValueAsString(dto);
+
+        when(mockHttpClient.<String>send(any(), any())).thenReturn(mockResponse);
+        when(mockResponse.statusCode()).thenReturn(200);
+        when(mockResponse.body()).thenReturn(json);
+
+        SnapshotDTO result = client.getById(99L);
+        assertNotNull(result);
+    }
+
+    @Test
+    void testGetById_errorStatus() throws Exception {
+        when(mockHttpClient.<String>send(any(), any())).thenReturn(mockResponse);
+        when(mockResponse.statusCode()).thenReturn(400);
+
+        SnapshotDTO result = client.getById(99L);
+        assertNull(result);
+    }
+
+    @Test
+    void testGetById_exception() throws Exception {
+        when(mockHttpClient.<String>send(any(), any())).thenThrow(new RuntimeException("Fail"));
+
+        SnapshotDTO result = client.getById(99L);
+        assertNull(result);
     }
 }
+
 
 

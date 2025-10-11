@@ -25,7 +25,7 @@ import java.nio.charset.StandardCharsets;
 @ApplicationScoped
 public class PrometheusClient {
 
-    private final HttpClient client = HttpClient.newHttpClient();
+     HttpClient client = HttpClient.newHttpClient();
 
     @ConfigProperty(name = "prometheus.url")
     String prometheusUrl;
