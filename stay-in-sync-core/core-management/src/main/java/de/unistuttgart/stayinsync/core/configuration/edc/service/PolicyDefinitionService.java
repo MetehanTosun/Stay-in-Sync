@@ -29,7 +29,8 @@ public class PolicyDefinitionService extends EdcEntityService<PolicyDefinitionDt
     public PolicyDefinitionDto getEntityWithSyncCheck(final Long id) throws EntityNotFoundException, EntityFetchingException{
         final PolicyDefinition persistedPolicyDefinition = this.getPolicyDefinitionFromDatabase(id);
         final EDCInstance edcOfPolicyDefinition = persistedPolicyDefinition.getTargetEdc();
-        final PolicyDefinitionEdcClient client = PolicyDefinitionEdcClient.createClient(edcOfPolicyDefinition.getControlPlaneManagementUrl());
+        final PolicyDefinitionEdcClient client = PolicyDefinitionEdcClient.createClient(edcOfPolicyDefinition.getControlPlaneManagementUrl(), edcOfPolicyDefinition.getProtocolVersion());
+
         try {
 
             final PolicyDefinitionDto fetchedPolicyDefinitionFromEdc = this.extractPolicyDefinitionDtosFromResponse(client.getPolicyDefinitionById(edcOfPolicyDefinition.getApiKey(), persistedPolicyDefinition.getPolicyDefinitionId())).getFirst();
@@ -69,8 +70,8 @@ public class PolicyDefinitionService extends EdcEntityService<PolicyDefinitionDt
     public PolicyDefinitionDto createEntityInDatabaseAndEdc(final Long edcId, final PolicyDefinitionDto policyDefinitionDto) throws EntityNotFoundException, EntityCreationFailedException {
         final EDCInstance policyDefinitionsEdc = getEdcInstanceFromDatabase(edcId);
         final PolicyDefinition policyDefinitionToPersist = PolicyDefinitionMapper.mapper.dtoToEntity(policyDefinitionDto);
-        PolicyDefinitionEdcClient client = PolicyDefinitionEdcClient.createClient(policyDefinitionToPersist.getTargetEdc().getControlPlaneManagementUrl());
-        try {
+        PolicyDefinitionEdcClient client = PolicyDefinitionEdcClient.createClient(policyDefinitionToPersist.getTargetEdc().getControlPlaneManagementUrl(), policyDefinitionToPersist.getTargetEdc().getProtocolVersion());
+try {
             final PolicyDefinitionDto uploadedPolicyDefinition = this.extractPolicyDefinitionDtosFromResponse(client.createPolicyDefinition(policyDefinitionToPersist.getTargetEdc().getApiKey(), policyDefinitionDto)).getFirst();
             if (uploadedPolicyDefinition.equals(PolicyDefinitionMapper.mapper.entityToDto(policyDefinitionToPersist))) {
                 policyDefinitionToPersist.setTargetEdc(policyDefinitionsEdc);
@@ -93,7 +94,8 @@ public class PolicyDefinitionService extends EdcEntityService<PolicyDefinitionDt
     @Override
     public PolicyDefinitionDto updateEntityInDatabaseAndEdc(final Long  policyDefinitionId, final PolicyDefinitionDto updatedPolicyDefinitionDto)  throws EntityNotFoundException, EntityUpdateFailedException {
         final PolicyDefinition persistedPolicyDefinition = this.getPolicyDefinitionFromDatabase(policyDefinitionId);
-        final PolicyDefinitionEdcClient client = PolicyDefinitionEdcClient.createClient(persistedPolicyDefinition.getTargetEdc().getControlPlaneManagementUrl());
+        final PolicyDefinitionEdcClient client = PolicyDefinitionEdcClient.createClient(persistedPolicyDefinition.getTargetEdc().getControlPlaneManagementUrl(), persistedPolicyDefinition.getTargetEdc().getProtocolVersion());
+
         try {
             final PolicyDefinitionDto returnedPolicyDefinitionAfterUpdateOnEdc = extractPolicyDefinitionDtosFromResponse(client.updatePolicyDefinition(persistedPolicyDefinition.getTargetEdc().getApiKey(), persistedPolicyDefinition.getPolicyDefinitionId(), updatedPolicyDefinitionDto)).getFirst();
             persistedPolicyDefinition.updateValuesWithPolicyDefinitionDto(returnedPolicyDefinitionAfterUpdateOnEdc);
@@ -109,7 +111,8 @@ public class PolicyDefinitionService extends EdcEntityService<PolicyDefinitionDt
     @Override
     public void deleteEntityFromDatabaseAndEdc(final Long policyDefinitionId) throws EntityNotFoundException, EntityDeletionFailedException {
         PolicyDefinition policyDefinitionToDelete = this.getPolicyDefinitionFromDatabase(policyDefinitionId);
-        PolicyDefinitionEdcClient client = PolicyDefinitionEdcClient.createClient(policyDefinitionToDelete.getTargetEdc().getControlPlaneManagementUrl());
+        PolicyDefinitionEdcClient client = PolicyDefinitionEdcClient.createClient(policyDefinitionToDelete.getTargetEdc().getControlPlaneManagementUrl(), policyDefinitionToDelete.getTargetEdc().getProtocolVersion());
+
         try (RestResponse<Void> response = client.deletePolicyDefinition(
                 policyDefinitionToDelete.getTargetEdc().getApiKey(),
                 policyDefinitionToDelete.getPolicyDefinitionId()
@@ -173,7 +176,7 @@ public class PolicyDefinitionService extends EdcEntityService<PolicyDefinitionDt
     }
 
     private void checkForAllPolicyDefinitionsForThirdPartyChanges(final List<PolicyDefinition> policyDefinitionsToCheck, final EDCInstance edcInstance) throws AuthorizationFailedException, DatabaseEntityOutOfSyncException, ConnectionToEdcFailedException, ResponseInvalidFormatException {
-        final Map<String, PolicyDefinitionDto> edcPolicyDefinitionDtosMappedToOwnPolicyDefinitionIds = extractPolicyDefinitionDtosFromResponse(PolicyDefinitionEdcClient.createClient(edcInstance.getControlPlaneManagementUrl()).getAllPolicyDefinitions(edcInstance.getApiKey()))
+        final Map<String, PolicyDefinitionDto> edcPolicyDefinitionDtosMappedToOwnPolicyDefinitionIds = extractPolicyDefinitionDtosFromResponse(PolicyDefinitionEdcClient.createClient(edcInstance.getControlPlaneManagementUrl(), edcInstance.getProtocolVersion()).getAllPolicyDefinitions(edcInstance.getApiKey()))
                 .stream()
                 .collect(Collectors.toMap(PolicyDefinitionDto::policyDefinitionId, policyDefinition -> policyDefinition));
 
