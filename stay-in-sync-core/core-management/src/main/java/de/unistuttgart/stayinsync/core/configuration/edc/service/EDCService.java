@@ -11,7 +11,7 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.transaction.Transactional;
 
 import java.util.List;
-import java.util.UUID;
+
 
 /**
  * Service für die Verwaltung von EDC-Instanzen.
@@ -28,7 +28,7 @@ public class EDCService {
      * @return Die gefundene EDC-Instanz als DTO
      * @throws CustomException wenn keine EDC-Instanz mit der angegebenen ID gefunden wurde
      */
-    public EDCInstanceDto findById(final UUID id) throws CustomException {
+    public EDCInstanceDto findById(final Long id) throws CustomException {
         Log.info("Suche nach EDC-Instanz mit ID: " + id);
 
         final EDCInstance instance = EDCInstance.findById(id);
@@ -85,7 +85,7 @@ public class EDCService {
      * @throws CustomException wenn keine EDC-Instanz mit der angegebenen ID gefunden wurde
      */
     @Transactional
-    public EDCInstanceDto update(final UUID id, final EDCInstanceDto updatedDto) throws EntityUpdateFailedException {
+    public EDCInstanceDto update(final Long id, final EDCInstanceDto updatedDto) throws EntityUpdateFailedException {
         Log.debug("Aktualisieren der EDC-Instanz mit ID: " + id);
         final EDCInstance persistedInstance = EDCInstance.findById(id);
         final EDCInstance updatedInstance = EDCInstanceMapper.mapper.dtoToEntity(updatedDto);
@@ -115,7 +115,7 @@ public class EDCService {
      * @return true, wenn die EDC-Instanz erfolgreich gelöscht wurde, sonst false
      */
     @Transactional
-    public boolean delete(final UUID id) {
+    public boolean delete(final Long id) {
         Log.info("Löschen der EDC-Instanz mit ID: " + id);
 
         boolean deleted = EDCInstance.deleteById(id);

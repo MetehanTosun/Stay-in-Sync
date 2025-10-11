@@ -21,7 +21,7 @@ public interface EDCInstanceMapper {
      * @param entity Die zu konvertierende Entität
      * @return Das erzeugte DTO oder null, wenn die Entität null ist
      */
-    @Mapping(source = "id", target = "id")
+    
     EDCInstanceDto entityToDto(EDCInstance entity);
     
     /**
@@ -31,6 +31,6 @@ public interface EDCInstanceMapper {
      * @param dto Das zu konvertierende DTO
      * @return Die erzeugte oder aktualisierte Entität oder null, wenn das DTO null ist
      */
-    @Mapping(source = "id", target = "id")
+   
     EDCInstance dtoToEntity(EDCInstanceDto dto);
 }

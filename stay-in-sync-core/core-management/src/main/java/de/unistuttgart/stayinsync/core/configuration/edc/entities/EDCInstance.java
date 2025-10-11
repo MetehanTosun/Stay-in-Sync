@@ -1,6 +1,7 @@
 package de.unistuttgart.stayinsync.core.configuration.edc.entities;
 
 import de.unistuttgart.stayinsync.core.model.UuidEntity;
+import io.quarkus.hibernate.orm.panache.PanacheEntity;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -14,7 +15,7 @@ import java.util.List;
 @NoArgsConstructor // für JPA & MapStruct
 @Entity
 @Table(name = "edc_instance")
-public class EDCInstance extends UuidEntity {
+public class EDCInstance extends PanacheEntity {
 
     @Column(nullable = false)
     private String name;
