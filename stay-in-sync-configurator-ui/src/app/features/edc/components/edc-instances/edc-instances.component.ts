@@ -90,7 +90,7 @@ export class EdcInstancesComponent implements OnInit {
       id: '',
       name: '',
       url: '',
-      protocolVersion: '',
+      protocolVersion: 'v',
       description: '',
       bpn: '',
       apiKey: '',
