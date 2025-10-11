@@ -8,7 +8,7 @@ import org.mapstruct.Mapping;
 import org.mapstruct.factory.Mappers;
 
 /**
- * Mapstruct Asset Mapper that converts the
+ * Mapstruct Asset Mapper that converts entities to dtos and dtos to entities.
  */
 @Mapper(uses = {AssetPropertiesMapper.class, AssetDataAddressMapper.class})
 public interface AssetMapper {

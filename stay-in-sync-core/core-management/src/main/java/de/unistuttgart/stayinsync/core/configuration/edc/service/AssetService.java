@@ -2,7 +2,6 @@ package de.unistuttgart.stayinsync.core.configuration.edc.service;
 
 import de.unistuttgart.stayinsync.core.configuration.edc.client.AssetEdcClient;
 import de.unistuttgart.stayinsync.core.configuration.edc.dto.AssetDto;
-import de.unistuttgart.stayinsync.core.configuration.edc.dto.EdcEntityDto;
 import de.unistuttgart.stayinsync.core.configuration.edc.entities.Asset;
 import de.unistuttgart.stayinsync.core.configuration.edc.entities.EDCInstance;
 import de.unistuttgart.stayinsync.core.configuration.edc.exception.*;
@@ -26,11 +25,11 @@ import java.util.stream.Collectors;
 @ApplicationScoped
 public class AssetService extends EdcEntityService<AssetDto>{
 
-    @Override
     @Transactional
+    @Override
     public AssetDto getEntityWithSyncCheck(final Long id) throws EntityNotFoundException, EntityFetchingException {
         final Asset persistedAsset = this.getAssetFromDatabase(id);
-        final EDCInstance edcOfAsset = persistedAsset.getTargetEDC();
+        final EDCInstance edcOfAsset = persistedAsset.getTargetEdc();
         final AssetEdcClient client = AssetEdcClient.createClient(edcOfAsset.getControlPlaneManagementUrl());
         try {
 
@@ -51,8 +50,8 @@ public class AssetService extends EdcEntityService<AssetDto>{
         }
     }
 
-    @Override
     @Transactional
+    @Override
     public List<AssetDto> getEntitiesAsListWithSyncCheck(final Long edcId) throws EntityNotFoundException, EntityFetchingException {
         final EDCInstance edcInstance = getEdcInstanceFromDatabase(edcId);
         final List<Asset> persistedAssetsForEdcInstance = getAllAssetsForEdcInstanceFromDatabase(edcInstance);
@@ -67,19 +66,22 @@ public class AssetService extends EdcEntityService<AssetDto>{
     }
 
 
-    @Override
     @Transactional
+    @Override
     public AssetDto createEntityInDatabaseAndEdc(final Long edcId, final AssetDto assetDto) throws EntityNotFoundException, EntityCreationFailedException {
         final EDCInstance assetsEdc = getEdcInstanceFromDatabase(edcId);
         final Asset assetToPersist = AssetMapper.mapper.dtoToEntity(assetDto);
-        AssetEdcClient client = AssetEdcClient.createClient(assetToPersist.getTargetEDC().getControlPlaneManagementUrl());
+        AssetEdcClient client = AssetEdcClient.createClient(assetToPersist.getTargetEdc().getControlPlaneManagementUrl());
         try {
-            final AssetDto uploadedAsset = this.extractAssetDtosFromResponse(client.createAsset(assetToPersist.getTargetEDC().getApiKey(), assetDto)).getFirst();
+            final AssetDto uploadedAsset = this.extractAssetDtosFromResponse(client.createAsset(assetToPersist.getTargetEdc().getApiKey(), assetDto)).getFirst();
             if (uploadedAsset.equals(AssetMapper.mapper.entityToDto(assetToPersist))) {
-                assetToPersist.setTargetEDC(assetsEdc);
+                assetToPersist.setTargetEdc(assetsEdc);
                 Asset.persist(assetToPersist);
             } else {
-                client.deleteAsset(assetToPersist.getTargetEDC().getApiKey(), assetToPersist.getAssetId());
+                Log.warnf("The Asset was created on the edc, but its information on the edc did not match the information " +
+                        "in the database during a later check. Database asset entry is now updated based on the information for it on the edc.");
+                assetToPersist.updateValuesWithAssetDto(uploadedAsset);
+                Asset.persist(assetToPersist);
             }
             return uploadedAsset;
         } catch (ResponseInvalidFormatException | DatabaseEntityOutOfSyncException | AuthorizationFailedException | ConnectionToEdcFailedException e) {
@@ -88,13 +90,13 @@ public class AssetService extends EdcEntityService<AssetDto>{
         }
     }
 
-    @Override
     @Transactional
+    @Override
     public AssetDto updateEntityInDatabaseAndEdc(final Long assetId, final AssetDto updatedAssetDto) throws EntityNotFoundException, EntityUpdateFailedException {
         final Asset persistedAsset = this.getAssetFromDatabase(assetId);
-        final AssetEdcClient client = AssetEdcClient.createClient(persistedAsset.getTargetEDC().getControlPlaneManagementUrl());
+        final AssetEdcClient client = AssetEdcClient.createClient(persistedAsset.getTargetEdc().getControlPlaneManagementUrl());
         try {
-            final AssetDto returnedAssetAfterUpdateOnEdc = extractAssetDtosFromResponse(client.updateAsset(persistedAsset.getTargetEDC().getApiKey(), persistedAsset.getAssetId(), updatedAssetDto)).getFirst();
+            final AssetDto returnedAssetAfterUpdateOnEdc = extractAssetDtosFromResponse(client.updateAsset(persistedAsset.getTargetEdc().getApiKey(), persistedAsset.getAssetId(), updatedAssetDto)).getFirst();
             persistedAsset.updateValuesWithAssetDto(returnedAssetAfterUpdateOnEdc);
             return AssetMapper.mapper.entityToDto(persistedAsset);
         } catch (ResponseInvalidFormatException | DatabaseEntityOutOfSyncException | AuthorizationFailedException |
@@ -103,19 +105,23 @@ public class AssetService extends EdcEntityService<AssetDto>{
         }
     }
 
-    @Override
     @Transactional
+    @Override
     public void deleteEntityFromDatabaseAndEdc(final Long id) throws EntityNotFoundException, EntityDeletionFailedException {
         Asset assetToDelete = this.getAssetFromDatabase(id);
-        AssetEdcClient client = AssetEdcClient.createClient(assetToDelete.getTargetEDC().getControlPlaneManagementUrl());
-        RestResponse<Void> response = client.deleteAsset(assetToDelete.getTargetEDC().getApiKey(), assetToDelete.getAssetId());
-        if (response.getStatus() == 200) {
-            Asset.deleteById(id);
-            Log.infof("Asset successfully deleted from Edc and Database.", id);
-        } else {
-            final String exceptionMessage = "Asset could not be deleted from edc.";
-            Log.errorf(exceptionMessage, id);
-            throw new EntityDeletionFailedException(exceptionMessage);
+        AssetEdcClient client = AssetEdcClient.createClient(assetToDelete.getTargetEdc().getControlPlaneManagementUrl());
+        try (RestResponse<Void> response = client.deleteAsset(
+                assetToDelete.getTargetEdc().getApiKey(),
+                assetToDelete.getAssetId()
+        )) {
+            if (response.getStatus() == 200) {
+                Asset.deleteById(id);
+                Log.infof("Asset successfully deleted from Edc and Database.", id);
+            } else {
+                final String exceptionMessage = "Asset could not be deleted from edc.";
+                Log.errorf(exceptionMessage, id);
+                throw new EntityDeletionFailedException(exceptionMessage);
+            }
         }
     }
 
@@ -145,7 +151,7 @@ public class AssetService extends EdcEntityService<AssetDto>{
     private List<Asset> getAllAssetsForEdcInstanceFromDatabase(final EDCInstance edcInstance) {
         final List<Asset> allAssets = Asset.listAll();
         return allAssets.stream()
-                .filter(asset -> asset.getTargetEDC().equals(edcInstance))
+                .filter(asset -> asset.getTargetEdc().equals(edcInstance))
                 .toList();
     }
 
@@ -189,11 +195,7 @@ public class AssetService extends EdcEntityService<AssetDto>{
     private List<AssetDto> extractAssetDtosFromResponse(final RestResponse<Object> response) throws
             ResponseInvalidFormatException, DatabaseEntityOutOfSyncException, AuthorizationFailedException, ConnectionToEdcFailedException {
         final int status = response.getStatus();
-        this.handleEntityNotFoundResponse(status);
-        this.handleAuthorizationErrorResponse(status);
-        this.handleTimeOutErrorResponse(status);
-        this.handleBadRequestResponse(status);
-        this.handleNoApiEndpointResponse(status);
+        this.handleNegativeResponseCodes(status);
 
         final boolean acceptableResponse = status >= 200 && status < 300;
         final boolean deletionStatusOrEmptyResponse = status == 204 || response.getEntity() == null;
@@ -208,6 +210,8 @@ public class AssetService extends EdcEntityService<AssetDto>{
         throw new ResponseInvalidFormatException(
                 "Edc asset request failed with status " + status);
     }
+
+
 
 
     /**
@@ -243,14 +247,10 @@ public class AssetService extends EdcEntityService<AssetDto>{
                 }
             }
 
-            throw new ResponseInvalidFormatException(
-                    "Unexpected EDC response format - neither Asset object nor Asset array"
-            );
+            throw new ResponseInvalidFormatException("Unexpected EDC response format - neither Asset object nor Asset array");
 
         } catch (ClassCastException e) {
-            throw new ResponseInvalidFormatException(
-                    "Failed to parse EDC response structure", e
-            );
+            throw new ResponseInvalidFormatException("Failed to parse EDC response structure", e);
         }
     }
 
@@ -263,76 +263,8 @@ public class AssetService extends EdcEntityService<AssetDto>{
             return jsonObject.mapTo(AssetDto.class);
         } catch (IllegalArgumentException e) {
             Log.error("Failed to parse JSON to AssetDto: " + jsonObject.encode(), e);
-            throw new ResponseInvalidFormatException(
-                    "Failed to parse JSON to AssetDto", e
-            );
+            throw new ResponseInvalidFormatException("Failed to parse JSON to AssetDto", e);
         }
     }
-
-    /**
-     * Handles case where entity was not found on EDC side.
-     */
-    private void handleEntityNotFoundResponse(final int responseStatus) throws DatabaseEntityOutOfSyncException {
-        final boolean entityNotFound = responseStatus == 404;
-        if (entityNotFound) {
-            final String exceptionMessage = "Entity not found on EDC (status 404). " +
-                    "This usually means the asset was deleted externally — database and EDC are out of sync.";
-            Log.errorf(exceptionMessage + " [status=%d]", responseStatus);
-            throw new DatabaseEntityOutOfSyncException(exceptionMessage);
-        }
-    }
-
-    /**
-     * Handles EDC authorization errors.
-     */
-    private void handleAuthorizationErrorResponse(final int responseStatus) throws AuthorizationFailedException {
-        final boolean authorizationError = responseStatus == 401 || responseStatus == 403;
-        if (authorizationError) {
-            final String exceptionMessage = "Authorization failed (status " + responseStatus +
-                    "). API key or credentials for the EDC instance are likely invalid.";
-            Log.errorf(exceptionMessage);
-            throw new AuthorizationFailedException(exceptionMessage);
-        }
-    }
-
-    /**
-     * Handles connection timeout or gateway timeout errors when contacting the EDC.
-     */
-    private void handleTimeOutErrorResponse(final int responseStatus) throws ConnectionToEdcFailedException {
-        final boolean timeoutError = responseStatus == 408 || responseStatus == 504;
-        if (timeoutError) {
-            final String exceptionMessage = "Connection to EDC timed out (status " + responseStatus +
-                    "). The EDC instance may be temporarily unreachable or overloaded.";
-            Log.errorf(exceptionMessage);
-            throw new ConnectionToEdcFailedException(exceptionMessage);
-        }
-    }
-
-    /**
-     * Handles bad request errors (e.g. malformed payload, invalid structure).
-     */
-    private void handleBadRequestResponse(final int responseStatus) throws ConnectionToEdcFailedException {
-        final boolean badRequest = responseStatus == 400;
-        if (badRequest) {
-            final String exceptionMessage = "Bad request sent to EDC (status 400). " +
-                    "Check payload formatting and required fields.";
-            Log.errorf(exceptionMessage);
-            throw new ConnectionToEdcFailedException(exceptionMessage);
-        }
-    }
-
-    /**
-     * Handles cases where the EDC API endpoint is not available.
-     */
-    private void handleNoApiEndpointResponse(final int responseStatus) throws ConnectionToEdcFailedException {
-        final boolean noApiEndpoint = responseStatus == 502 || responseStatus == 503;
-        if (noApiEndpoint) {
-            final String exceptionMessage = "EDC API endpoint not reachable (status " + responseStatus +
-                    "). The connector service may be down or misconfigured.";
-            Log.errorf(exceptionMessage);
-            throw new ConnectionToEdcFailedException(exceptionMessage);
-        }
-    }
-
 
 }

@@ -24,10 +24,10 @@ public class AssetResource extends EdcEntityResource<AssetDto>{
     @Inject
     AssetService service;
     
-    @Override
     @GET
     @Path("/{edcId}/assets/{assetId}")
     @JsonView(VisibilitySidesForDto.Ui.class)
+    @Override
     public Response getEntity(@PathParam("edcId") final Long edcId, @PathParam("assetId") final Long id) {
         if(id == null){
             return handleNullArgument();
@@ -51,10 +51,10 @@ public class AssetResource extends EdcEntityResource<AssetDto>{
         }
     }
 
-    @Override
     @GET
     @Path("/{edcId}/assets")
     @JsonView(VisibilitySidesForDto.Ui.class)
+    @Override
     public Response getListOfEntities(@PathParam("edcId") final Long edcId) {
         if(edcId == null){
             return handleNullArgument();
@@ -157,20 +157,6 @@ public class AssetResource extends EdcEntityResource<AssetDto>{
         }
     }
 
-    private Response handleNotFoundException(final Long id){
-        final String exceptionMessage = "The Entity was not found with the id in the database.";
-        Log.warnf(exceptionMessage, id);
-        return Response.status(Response.Status.NOT_FOUND)
-                .entity(exceptionMessage)
-                .build();
-    }
 
-    private Response handleNullArgument(){
-            final String exceptionMessage = "Invalid Id. Can not be null.";
-            Log.warnf(exceptionMessage);
-            return Response.status(Response.Status.BAD_REQUEST)
-                    .entity(exceptionMessage)
-                    .build();
-    }
 
 }

@@ -44,7 +44,7 @@ public interface AssetEdcClient {
 
     static AssetEdcClient createClient(final String baseUrl) {
         return RestClientBuilder.newBuilder()
-                .baseUri(URI.create(baseUrl))
+                .baseUri(URI.create(  baseUrl))
                 .build(AssetEdcClient.class);
     }
 }
