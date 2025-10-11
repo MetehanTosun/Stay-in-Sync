@@ -28,6 +28,30 @@ public class GraphHasher {
     ObjectMapper objectMapper;
 
     /**
+     * Thread-local MessageDigest instance for efficient SHA-256 computation.
+     * <p>
+     * Using ThreadLocal ensures thread-safety while avoiding the overhead of
+     * creating a new MessageDigest instance for every hash operation.
+     * <p>
+     * Throws GraphSerializationException (unchecked) if SHA-256 is unavailable,
+     * which should never happen on a standard JVM.
+     */
+    private static final ThreadLocal<MessageDigest> DIGEST_THREAD_LOCAL = ThreadLocal.withInitial(() -> {
+        try {
+            return MessageDigest.getInstance("SHA-256");
+        } catch (NoSuchAlgorithmException e) {
+            // SHA-256 should always be available in standard JVMs
+            Log.fatalf(e, "CRITICAL: SHA-256 algorithm not available on this system");
+            throw new GraphSerializationException(
+                GraphSerializationException.ErrorType.HASH_COMPUTATION_FAILED,
+                "SHA-256 algorithm is not available on this system. " +
+                "This indicates a critical JVM configuration issue.",
+                e
+            );
+        }
+    });
+
+    /**
      * Generates a stable SHA-256 hash from a graph structure.
      * <p>
      * The graph is first serialized to JSON, then hashed using SHA-256.
@@ -35,9 +59,9 @@ public class GraphHasher {
      *
      * @param graphNodes The list of nodes representing the graph.
      * @return A hexadecimal string representing the SHA-256 hash of the graph.
-     * @throws GraphSerializationException if serialization or hash computation fails.
+     * @throws GraphSerializationException (unchecked) if serialization fails or SHA-256 is unavailable.
      */
-    public String hash(List<Node> graphNodes) throws GraphSerializationException {
+    public String hash(List<Node> graphNodes) {
         if (graphNodes == null) {
             throw new GraphSerializationException(
                 GraphSerializationException.ErrorType.INVALID_FORMAT,
@@ -49,8 +73,11 @@ public class GraphHasher {
             // Serialize graph to JSON for consistent hashing
             String graphAsString = objectMapper.writeValueAsString(graphNodes);
             
+            // Get thread-local MessageDigest and reset it for reuse
+            MessageDigest digest = DIGEST_THREAD_LOCAL.get();
+            digest.reset();
+            
             // Compute SHA-256 hash
-            MessageDigest digest = MessageDigest.getInstance("SHA-256");
             byte[] hashBytes = digest.digest(graphAsString.getBytes(StandardCharsets.UTF_8));
             
             // Convert to hex string
@@ -66,14 +93,6 @@ public class GraphHasher {
             throw new GraphSerializationException(
                 GraphSerializationException.ErrorType.SERIALIZATION_FAILED,
                 String.format("Failed to serialize graph with %d nodes for hash computation", graphNodes.size()),
-                e
-            );
-        } catch (NoSuchAlgorithmException e) {
-            // SHA-256 should always be available in any standard JVM
-            Log.fatalf(e, "CRITICAL: SHA-256 algorithm not available on this system");
-            throw new GraphSerializationException(
-                GraphSerializationException.ErrorType.HASH_COMPUTATION_FAILED,
-                "SHA-256 algorithm is not available on this system",
                 e
             );
         }

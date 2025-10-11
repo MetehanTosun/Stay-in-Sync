@@ -4,9 +4,8 @@ package de.unistuttgart.graphengine.exception;
  * A runtime exception thrown when a graph cannot be constructed or initialized
  * due to structural or configuration problems.
  * <p>
- * This is an unchecked exception (RuntimeException) because graph construction
- * failures typically indicate programming errors or invalid data that cannot
- * be recovered from at runtime.
+ * This extends LogicEngineException, making it part of the unified exception
+ * hierarchy for the graph engine.
  * <p>
  * Common scenarios include:
  * <ul>
@@ -18,7 +17,7 @@ package de.unistuttgart.graphengine.exception;
  *
  * @see NodeConfigurationException for checked exceptions during node creation
  */
-public class GraphConstructionException extends RuntimeException {
+public class GraphConstructionException extends LogicEngineException {
 
     /**
      * Defines the specific type of construction error that occurred.
@@ -40,7 +39,7 @@ public class GraphConstructionException extends RuntimeException {
      * @param message   A human-readable message detailing the failure.
      */
     public GraphConstructionException(ErrorType errorType, String message) {
-        super(message);
+        super("Graph Construction Error", message);
         this.errorType = errorType;
     }
 
@@ -52,7 +51,7 @@ public class GraphConstructionException extends RuntimeException {
      * @param cause     The original exception that caused this failure.
      */
     public GraphConstructionException(ErrorType errorType, String message, Throwable cause) {
-        super(message, cause);
+        super("Graph Construction Error", message, cause);
         this.errorType = errorType;
     }
 

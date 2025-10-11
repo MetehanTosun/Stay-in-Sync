@@ -248,6 +248,10 @@ public class GraphMapper {
         Log.debug("Pass 2: Connecting Node instances based on InputDTOs.");
         for (NodeDTO dto : graphDto.getNodes()) {
             Node targetNode = createdNodes.get(dto.getId());
+            // Skip if node was not created in Pass 1 (e.g., due to configuration error)
+            if (targetNode == null) {
+                continue;
+            }
             if (dto.getInputNodes() != null && !dto.getInputNodes().isEmpty()) {
                 // Ensure the input list is sorted by orderIndex
                 dto.getInputNodes().sort(Comparator.comparingInt(InputDTO::getOrderIndex));
@@ -272,13 +276,24 @@ public class GraphMapper {
 
     /**
      * Extracts the numeric order index from a vflow target handle string.
+     * <p>
+     * Uses indexOf() and substring() instead of split() for better performance,
+     * avoiding unnecessary array allocation for each edge processing.
+     * <p>
+     * Expected format: "target-{orderIndex}" (e.g., "target-0", "target-1")
+     *
+     * @param targetHandle The target handle string to parse.
+     * @return The parsed order index, or 0 if parsing fails or string is invalid.
      */
     private int parseOrderIndexFromTargetHandle(String targetHandle) {
-        if (targetHandle != null && targetHandle.contains("-")) {
-            try {
-                return Integer.parseInt(targetHandle.split("-")[1]);
-            } catch (Exception e) {
-                Log.warnf(e, "Could not parse orderIndex from targetHandle: '%s'. Defaulting to 0.", targetHandle);
+        if (targetHandle != null) {
+            int dashIndex = targetHandle.indexOf('-');
+            if (dashIndex != -1 && dashIndex < targetHandle.length() - 1) {
+                try {
+                    return Integer.parseInt(targetHandle.substring(dashIndex + 1));
+                } catch (NumberFormatException e) {
+                    Log.warnf(e, "Could not parse orderIndex from targetHandle: '%s'. Defaulting to 0.", targetHandle);
+                }
             }
         }
         return 0;

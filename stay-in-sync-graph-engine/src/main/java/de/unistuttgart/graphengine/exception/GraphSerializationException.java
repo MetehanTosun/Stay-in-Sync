@@ -2,8 +2,17 @@ package de.unistuttgart.graphengine.exception;
 
 /**
  * An exception thrown when graph serialization, deserialization, or hash computation fails.
- * This typically occurs when a graph cannot be converted to/from JSON or when
- * cryptographic operations fail during hash generation.
+ * <p>
+ * This exception extends {@link LogicEngineException}, making it an unchecked exception.
+ * This is particularly useful for operations that occur during initialization (e.g., in ThreadLocal)
+ * where checked exceptions cannot be thrown.
+ * <p>
+ * Common scenarios:
+ * <ul>
+ *   <li>Hash computation during cache initialization</li>
+ *   <li>JSON serialization/deserialization failures</li>
+ *   <li>Cryptographic algorithm unavailability (SHA-256)</li>
+ * </ul>
  */
 public class GraphSerializationException extends LogicEngineException {
 
