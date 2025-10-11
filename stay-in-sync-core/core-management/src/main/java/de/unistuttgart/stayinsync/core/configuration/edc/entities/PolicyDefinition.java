@@ -1,6 +1,12 @@
 package de.unistuttgart.stayinsync.core.configuration.edc.entities;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import de.unistuttgart.stayinsync.core.configuration.edc.dto.AssetDto;
+import de.unistuttgart.stayinsync.core.configuration.edc.dto.PolicyDefinitionDto;
+import de.unistuttgart.stayinsync.core.configuration.edc.mapping.AssetDataAddressMapper;
+import de.unistuttgart.stayinsync.core.configuration.edc.mapping.AssetPropertiesMapper;
+import de.unistuttgart.stayinsync.core.configuration.edc.mapping.PolicyDefinitionMapper;
+import de.unistuttgart.stayinsync.core.configuration.edc.mapping.PolicyMapper;
 import io.quarkus.hibernate.orm.panache.PanacheEntity;
 import jakarta.persistence.*;
 import lombok.Getter;
@@ -19,9 +25,8 @@ import lombok.Setter;
 @Table(name = "edc_policydefinition")
 public class PolicyDefinition extends PanacheEntity {
 
-    @JsonProperty("@id")
     @Column(nullable = false, unique = true)
-    private String policyId;
+    private String policyDefinitionId;
 
     @OneToOne
     private Policy policy;
@@ -31,6 +36,20 @@ public class PolicyDefinition extends PanacheEntity {
 
     @ManyToOne
     @JoinColumn(name = "edc_instance")
-    private EDCInstance edcInstance;
+    private EDCInstance targetEDC;
+
+    @Column(name = "entity_out_of_sync")
+    private boolean entityOutOfSync = false;
+
+    /**
+     * Update PolicyDefinition with the contents of the given policyDefinitionDto
+     * @param policyDefinitionDto contains data for the update.
+     */
+    public void updateValuesWithPolicyDefinitionDto(final PolicyDefinitionDto policyDefinitionDto){
+        this.setPolicyDefinitionId(policyDefinitionDto.policyDefinitionId());
+        this.setPolicy(PolicyMapper.mapper.dtoToEntity(policyDefinitionDto.policy()));
+        this.setDisplayName(policyDefinitionDto.displayName());
+        this.setEntityOutOfSync(false);
+    }
 
 }

@@ -1,0 +1,50 @@
+package de.unistuttgart.stayinsync.core.configuration.edc.mapping;
+
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
+import de.unistuttgart.stayinsync.core.configuration.edc.dto.PolicyDefinitionDto;
+import de.unistuttgart.stayinsync.core.configuration.edc.entities.EDCInstance;
+import de.unistuttgart.stayinsync.core.configuration.edc.entities.PolicyDefinition;
+import io.quarkus.logging.Log;
+import org.mapstruct.Mapper;
+import org.mapstruct.Mapping;
+import org.mapstruct.Named;
+import org.mapstruct.factory.Mappers;
+
+import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.UUID;
+
+/**
+ * Mapstruct PolicyDefinition Mapper that converts entities to dtos and dtos to entities.
+ */
+@Mapper(uses = {PolicyMapper.class})
+public interface PolicyDefinitionMapper {
+
+    PolicyDefinitionMapper mapper = Mappers.getMapper(PolicyDefinitionMapper.class);
+
+    /**
+     * Konvertiert eine EDCPolicy-Entität in ein EDCPolicyDto.
+     *
+     * @param policy Die zu konvertierende Entität
+     * @return Das erzeugte DTO oder null, wenn die Eingabe null ist
+     */
+    @Mapping(target = "context", expression = "java(getDefaultContext())")
+    @Mapping(target = "type", constant = "PolicyDefinition")
+    @Mapping(target = "targetEDC", ignore = true)
+    PolicyDefinitionDto entityToDto(PolicyDefinition policy);
+
+    /**
+     * Konvertiert ein EDCPolicyDto in eine EDCPolicy-Entität.
+     *
+     * @param policyDto Das zu konvertierende DTO
+     * @return Die erzeugte Entität oder null, wenn die Eingabe null ist
+     */
+    @Mapping(target = "targetEDC", ignore = true)
+    PolicyDefinition dtoToEntity(PolicyDefinitionDto policyDto);
+
+
+}

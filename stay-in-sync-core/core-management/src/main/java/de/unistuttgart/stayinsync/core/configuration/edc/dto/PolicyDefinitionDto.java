@@ -19,19 +19,18 @@ import java.util.UUID;
  * und beinhaltet alle relevanten Informationen einer Policy.
  */
 public record PolicyDefinitionDto (
-        @JsonView(VisibilitySidesForDto.Ui.class)
-        String displayName,
         @JsonProperty("@context")
         ContextDto context,
-        //TODO Im Mapper auf PolicyDefinition festsetzen
         @JsonProperty("@type")
         String type,
         @JsonProperty("@id")
         String policyDefinitionId,
-        PolicyDto policy
-) {
-    
+        PolicyDto policy,
+        @JsonView(VisibilitySidesForDto.Ui.class)
+        String displayName,
+        @JsonView(VisibilitySidesForDto.Ui.class)
+        Boolean entityOutOfSync
 
-
+) implements EdcEntityDto {
 
 }
