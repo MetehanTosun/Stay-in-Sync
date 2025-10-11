@@ -1,6 +1,7 @@
 package de.unistuttgart.stayinsync.core.configuration.service.transformationrule;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import de.unistuttgart.graphengine.cache.GraphInstanceCache;
 import de.unistuttgart.graphengine.service.GraphMapper;
 import de.unistuttgart.graphengine.validation_error.ValidationError;
 import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.TransformationRule;
@@ -19,6 +20,9 @@ import static jakarta.transaction.Transactional.TxType.SUPPORTS;
 
 @ApplicationScoped
 public class GraphStorageService {
+
+    @Inject
+    GraphInstanceCache graphCache;
 
     /**
      * A record to hold the result of a graph persistence operation.
@@ -77,15 +81,42 @@ public class GraphStorageService {
     }
 
     /**
-     * Deletes a TransformationRule by its ID.
+     * Deletes a TransformationRule by its ID and removes associated cache entries.
+     * <p>
+     * This method performs two operations:
+     * <ol>
+     *   <li>Removes all cached graph instances for this transformation from {@link GraphInstanceCache}</li>
+     *   <li>Deletes the transformation rule entity from the database</li>
+     * </ol>
+     * <p>
+     * Cache removal is performed first to ensure memory is freed even if database deletion fails.
+     * If the database deletion fails, the cache entries are already removed, preventing memory leaks.
      *
      * @param id The ID of the rule to delete.
-     * @return true if the entity was deleted.
+     * @return true if the entity was deleted from the database.
+     * @throws CoreManagementException if the database deletion fails.
      */
     @Transactional
     public boolean deleteRuleById(Long id) {
         Log.debugf("Deleting rule with id: %d", id);
-        return TransformationRule.deleteById(id);
+        
+        // Step 1: Remove from cache first (memory cleanup)
+        int removedCacheEntries = graphCache.remove(id);
+        if (removedCacheEntries > 0) {
+            Log.infof("Removed %d cached graph instance(s) for transformation rule %d", 
+                removedCacheEntries, id);
+        }
+        
+        // Step 2: Delete from database
+        boolean deleted = TransformationRule.deleteById(id);
+        
+        if (deleted) {
+            Log.infof("Successfully deleted transformation rule with id %d", id);
+        } else {
+            Log.warnf("Transformation rule with id %d was not found in database", id);
+        }
+        
+        return deleted;
     }
 
     /**
