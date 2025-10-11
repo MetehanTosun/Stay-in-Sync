@@ -74,10 +74,34 @@ public class GraphMapper {
         Log.debugf("Creating flat NodeDTOs from %d VFlowNodeDTOs.", vflowNodes.size());
         Map<String, NodeDTO> nodeDtoMap = new HashMap<>();
         for (VFlowNodeDTO vflowNode : vflowNodes) {
+            // Validate vflowNode and its data
+            if (vflowNode == null) {
+                Log.warn("Encountered null VFlowNodeDTO in list, skipping.");
+                continue;
+            }
+            if (vflowNode.getId() == null || vflowNode.getId().isBlank()) {
+                Log.warn("VFlowNodeDTO has null or blank ID, skipping.");
+                continue;
+            }
+            if (vflowNode.getData() == null) {
+                Log.warnf("VFlowNodeDTO with ID '%s' has null data, skipping.", vflowNode.getId());
+                continue;
+            }
+            if (vflowNode.getPoint() == null) {
+                Log.warnf("VFlowNodeDTO with ID '%s' has null point, skipping.", vflowNode.getId());
+                continue;
+            }
+            
             NodeDTO nodeDto = new NodeDTO();
             VFlowNodeDataDTO data = vflowNode.getData();
 
-            nodeDto.setId(Integer.parseInt(vflowNode.getId()));
+            try {
+                nodeDto.setId(Integer.parseInt(vflowNode.getId()));
+            } catch (NumberFormatException e) {
+                Log.warnf(e, "Cannot parse VFlowNode ID '%s' as integer, skipping.", vflowNode.getId());
+                continue;
+            }
+            
             nodeDto.setName(data.getName());
             nodeDto.setNodeType(data.getNodeType());
             nodeDto.setOffsetX(vflowNode.getPoint().getX());
@@ -107,6 +131,19 @@ public class GraphMapper {
         Log.debugf("Applying %d VFlow edges to connect NodeDTOs.", vflowEdges.size());
         int appliedEdges = 0;
         for (VFlowEdgeDTO edge : vflowEdges) {
+            if (edge == null) {
+                Log.warn("Encountered null VFlowEdgeDTO in list, skipping.");
+                continue;
+            }
+            if (edge.getSource() == null || edge.getSource().isBlank()) {
+                Log.warn("Edge has null or blank source ID, skipping.");
+                continue;
+            }
+            if (edge.getTarget() == null || edge.getTarget().isBlank()) {
+                Log.warn("Edge has null or blank target ID, skipping.");
+                continue;
+            }
+            
             NodeDTO targetNodeDto = nodeDtoMap.get(edge.getTarget());
             if (targetNodeDto == null) {
                 Log.warnf("Edge references a non-existent target node with ID: %s", edge.getTarget());
@@ -114,7 +151,12 @@ public class GraphMapper {
             }
 
             InputDTO inputDto = new InputDTO();
-            inputDto.setId(Integer.parseInt(edge.getSource()));
+            try {
+                inputDto.setId(Integer.parseInt(edge.getSource()));
+            } catch (NumberFormatException e) {
+                Log.warnf(e, "Cannot parse edge source ID '%s' as integer, skipping edge.", edge.getSource());
+                continue;
+            }
             inputDto.setOrderIndex(parseOrderIndexFromTargetHandle(edge.getTargetHandle()));
 
             targetNodeDto.getInputNodes().add(inputDto);
@@ -144,6 +186,17 @@ public class GraphMapper {
         // Pass 1: Create all node instances.
         Log.debug("Pass 1: Creating all Node instances from DTOs.");
             for (NodeDTO dto : graphDto.getNodes()) {
+                if (dto == null) {
+                    Log.warn("Encountered null NodeDTO in graph, skipping.");
+                    continue;
+                }
+                if (dto.getNodeType() == null || dto.getNodeType().isBlank()) {
+                    Log.warnf("NodeDTO with ID %d has null or blank nodeType, skipping.", dto.getId());
+                    mappingErrors.add(new NodeConfigurationError(dto.getId(), dto.getName(), 
+                        "Node type cannot be null or blank"));
+                    continue;
+                }
+                
                 try {
                     Node node;
                     switch (dto.getNodeType()) {
