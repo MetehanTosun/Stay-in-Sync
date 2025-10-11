@@ -134,15 +134,11 @@ export class AssetService {
       || firstProps['asset:prop:contenttype']
       || firstProps.contentType
       || '';
-
-    const type = raw?.type
-      || raw?.dataAddress?.type
-      || '';
-
-    const url = raw?.url
+    
+    const type = raw?.dataAddress?.type || 'HttpData';
+    const url = raw?.dataAddress?.base_url
       || raw?.dataAddress?.baseUrl
       || raw?.dataAddress?.baseURL
-      || raw?.dataAddress?.base_url
       || '';
 
     const result = {
@@ -156,8 +152,8 @@ export class AssetService {
       targetEDCId: raw?.targetEDCId || raw?.target_edc_id || '',
       dataAddress: {
         id: raw?.dataAddress?.id,
-        type: raw?.dataAddress?.type || type,
-        base_url: raw?.dataAddress?.baseUrl || raw?.dataAddress?.baseURL || raw?.dataAddress?.base_url || url,
+        type: type,
+        base_url: url,
         proxyPath: raw?.dataAddress?.proxyPath ?? true,
         proxyQueryParams: raw?.dataAddress?.proxyQueryParams ?? true,
       },
