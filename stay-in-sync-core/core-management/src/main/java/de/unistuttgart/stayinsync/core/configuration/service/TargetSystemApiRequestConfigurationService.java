@@ -6,8 +6,8 @@ import de.unistuttgart.stayinsync.core.configuration.persistence.entities.sync.T
 import de.unistuttgart.stayinsync.core.configuration.persistence.entities.sync.TargetSystemEndpoint;
 import de.unistuttgart.stayinsync.core.configuration.exception.CoreManagementException;
 import de.unistuttgart.stayinsync.core.configuration.mapping.targetsystem.RequestConfigurationMapper;
-import de.unistuttgart.stayinsync.core.configuration.rest.dtos.targetsystem.CreateArcDTO;
 import de.unistuttgart.stayinsync.core.configuration.rest.dtos.targetsystem.ActionDefinitionDTO;
+import de.unistuttgart.stayinsync.core.configuration.rest.dtos.targetsystem.CreateArcDTO;
 import de.unistuttgart.stayinsync.transport.domain.TargetApiRequestConfigurationActionRole;
 import io.quarkus.logging.Log;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -15,7 +15,10 @@ import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
 import jakarta.ws.rs.core.Response;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import static jakarta.transaction.Transactional.TxType.REQUIRED;
