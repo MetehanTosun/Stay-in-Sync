@@ -1,7 +1,7 @@
 package de.unistuttgart.stayinsync.core.configuration.rest;
 
 
-import de.unistuttgart.stayinsync.core.configuration.domain.entities.aas.AasTargetApiRequestConfiguration;
+import de.unistuttgart.stayinsync.core.configuration.persistence.entities.aas.AasTargetApiRequestConfiguration;
 import de.unistuttgart.stayinsync.core.configuration.mapping.targetsystem.AasTargetApiRequestConfigurationMapper;
 import de.unistuttgart.stayinsync.core.configuration.rest.dtos.aas.AasTargetArcDTO;
 import de.unistuttgart.stayinsync.core.configuration.rest.dtos.aas.CreateAasTargetArcDTO;

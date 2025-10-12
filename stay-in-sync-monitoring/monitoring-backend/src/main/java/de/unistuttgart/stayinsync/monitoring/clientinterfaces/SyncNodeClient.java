@@ -140,12 +140,15 @@ public class SyncNodeClient {
      * @param id the snapshot ID
      * @return the corresponding {@link SnapshotDTO}, or {@code null} if not found or request fails
      */
-    public SnapshotDTO getById(Long id) {
+    public SnapshotDTO getById(String id) {
         try {
             HttpRequest request = HttpRequest.newBuilder()
                     .uri(URI.create(baseUrl + "/monitoring/snapshots/" + id))
                     .GET()
                     .build();
+
+
+            Log.info(request);
 
             HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
 

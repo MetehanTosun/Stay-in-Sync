@@ -1,6 +1,6 @@
 package de.unistuttgart.stayinsync.core.configuration.mapping.targetsystem;
 
-import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.TargetSystemApiRequestConfiguration;
+import de.unistuttgart.stayinsync.core.configuration.persistence.entities.sync.TargetSystemApiRequestConfiguration;
 import de.unistuttgart.stayinsync.core.configuration.rest.dtos.targetsystem.CreateArcDTO;
 import de.unistuttgart.stayinsync.core.configuration.rest.dtos.targetsystem.GetRequestConfigurationDTO;
 import de.unistuttgart.stayinsync.transport.dto.targetsystems.RequestConfigurationMessageDTO;

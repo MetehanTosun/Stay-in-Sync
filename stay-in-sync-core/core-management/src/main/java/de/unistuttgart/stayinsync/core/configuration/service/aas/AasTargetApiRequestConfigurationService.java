@@ -1,11 +1,11 @@
 package de.unistuttgart.stayinsync.core.configuration.service.aas;
 
-import de.unistuttgart.stayinsync.core.configuration.domain.entities.aas.AasSubmodelLite;
-import de.unistuttgart.stayinsync.core.configuration.domain.entities.aas.AasTargetApiRequestConfiguration;
-import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.SourceSystem;
-import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.Transformation;
 import de.unistuttgart.stayinsync.core.configuration.exception.CoreManagementException;
 import de.unistuttgart.stayinsync.core.configuration.mapping.targetsystem.AasTargetApiRequestConfigurationMapper;
+import de.unistuttgart.stayinsync.core.configuration.persistence.entities.aas.AasSubmodelLite;
+import de.unistuttgart.stayinsync.core.configuration.persistence.entities.aas.AasTargetApiRequestConfiguration;
+import de.unistuttgart.stayinsync.core.configuration.persistence.entities.sync.SourceSystem;
+import de.unistuttgart.stayinsync.core.configuration.persistence.entities.sync.Transformation;
 import de.unistuttgart.stayinsync.core.configuration.rest.dtos.aas.AasTargetArcDTO;
 import de.unistuttgart.stayinsync.core.configuration.rest.dtos.aas.CreateAasTargetArcDTO;
 import io.quarkus.logging.Log;

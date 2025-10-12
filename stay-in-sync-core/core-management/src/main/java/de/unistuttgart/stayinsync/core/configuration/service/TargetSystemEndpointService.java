@@ -1,12 +1,19 @@
 package de.unistuttgart.stayinsync.core.configuration.service;
 
-import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.TargetSystem;
-import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.TargetSystemEndpoint;
+import static jakarta.transaction.Transactional.TxType.REQUIRED;
+import static jakarta.transaction.Transactional.TxType.SUPPORTS;
+
+import java.util.List;
+import java.util.Optional;
+import java.util.stream.Collectors;
+
+import de.unistuttgart.stayinsync.core.configuration.persistence.entities.sync.TargetSystem;
+import de.unistuttgart.stayinsync.core.configuration.persistence.entities.sync.TargetSystemEndpoint;
 import de.unistuttgart.stayinsync.core.configuration.exception.CoreManagementException;
 import de.unistuttgart.stayinsync.core.configuration.mapping.TargetSystemEndpointFullUpdateMapper;
 import de.unistuttgart.stayinsync.core.configuration.rest.dtos.CreateTargetSystemEndpointDTO;
-import io.quarkus.hibernate.orm.panache.Panache;
 import io.quarkus.logging.Log;
+import io.quarkus.hibernate.orm.panache.Panache;
 import io.smallrye.common.constraint.NotNull;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
@@ -14,13 +21,6 @@ import jakarta.transaction.Transactional;
 import jakarta.validation.Valid;
 import jakarta.validation.Validator;
 import jakarta.ws.rs.core.Response;
-
-import java.util.List;
-import java.util.Optional;
-import java.util.stream.Collectors;
-
-import static jakarta.transaction.Transactional.TxType.REQUIRED;
-import static jakarta.transaction.Transactional.TxType.SUPPORTS;
 
 @ApplicationScoped
 @Transactional(REQUIRED)

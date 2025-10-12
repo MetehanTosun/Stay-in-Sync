@@ -1,9 +1,9 @@
 package de.unistuttgart.stayinsync.core.configuration.service;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.SourceSystem;
-import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.SourceSystemEndpoint;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import de.unistuttgart.stayinsync.core.configuration.persistence.entities.sync.SourceSystem;
+import de.unistuttgart.stayinsync.core.configuration.persistence.entities.sync.SourceSystemEndpoint;
 import de.unistuttgart.stayinsync.core.configuration.exception.CoreManagementException;
 import de.unistuttgart.stayinsync.core.configuration.mapping.SourceSystemEndpointFullUpdateMapper;
 import de.unistuttgart.stayinsync.core.configuration.rest.dtos.CreateSourceSystemEndpointDTO;

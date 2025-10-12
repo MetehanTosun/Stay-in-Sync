@@ -1,9 +1,9 @@
 package de.unistuttgart.stayinsync.core.configuration.service;
 
-import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.TargetSystem;
-import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.TargetSystemApiRequestConfiguration;
-import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.TargetSystemApiRequestConfigurationAction;
-import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.TargetSystemEndpoint;
+import de.unistuttgart.stayinsync.core.configuration.persistence.entities.sync.TargetSystem;
+import de.unistuttgart.stayinsync.core.configuration.persistence.entities.sync.TargetSystemApiRequestConfiguration;
+import de.unistuttgart.stayinsync.core.configuration.persistence.entities.sync.TargetSystemApiRequestConfigurationAction;
+import de.unistuttgart.stayinsync.core.configuration.persistence.entities.sync.TargetSystemEndpoint;
 import de.unistuttgart.stayinsync.core.configuration.exception.CoreManagementException;
 import de.unistuttgart.stayinsync.core.configuration.mapping.targetsystem.RequestConfigurationMapper;
 import de.unistuttgart.stayinsync.core.configuration.rest.dtos.targetsystem.ActionDefinitionDTO;

@@ -81,7 +81,7 @@ public class SnapshotResource {
     )
     public SnapshotDTO getById(
             @Parameter(description = "The ID of the snapshot")
-            @PathParam("id") Long id) {
+            @PathParam("id") String id) {
         return snapshotService.getById(id);
     }
 }

@@ -1,6 +1,6 @@
 package de.unistuttgart.stayinsync.core.persistence.entities;
 
-import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.*;
+import de.unistuttgart.stayinsync.core.configuration.persistence.entities.sync.*;
 import io.quarkus.test.TestTransaction;
 import io.quarkus.test.junit.QuarkusTest;
 import org.junit.jupiter.api.BeforeEach;

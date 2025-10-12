@@ -1,8 +1,10 @@
 package de.unistuttgart.stayinsync.core.service;
 
-import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.TargetSystem;
-import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.TargetSystemEndpoint;
-import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.Transformation;
+import de.unistuttgart.stayinsync.core.configuration.persistence.entities.sync.TargetSystemEndpoint;
+import de.unistuttgart.stayinsync.core.configuration.persistence.entities.sync.TargetSystem;
+import de.unistuttgart.stayinsync.core.configuration.persistence.entities.sync.Transformation;
+import jakarta.persistence.EntityManager;
+import jakarta.transaction.Transactional;
 import de.unistuttgart.stayinsync.core.configuration.mapping.TargetSystemEndpointFullUpdateMapper;
 import de.unistuttgart.stayinsync.core.configuration.rest.dtos.CreateTargetSystemEndpointDTO;
 import de.unistuttgart.stayinsync.core.configuration.rest.dtos.targetsystem.TargetSystemDTO;
@@ -10,16 +12,13 @@ import de.unistuttgart.stayinsync.core.configuration.service.TargetSystemEndpoin
 import de.unistuttgart.stayinsync.core.configuration.service.TargetSystemService;
 import io.quarkus.test.junit.QuarkusTest;
 import jakarta.inject.Inject;
-import jakarta.persistence.EntityManager;
-import jakarta.transaction.Transactional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
 import java.util.Optional;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 @QuarkusTest
 public class TargetSystemEndpointServiceTest {

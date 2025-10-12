@@ -3,12 +3,12 @@ package de.unistuttgart.stayinsync.core.service.transformationrule;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import de.unistuttgart.graphengine.dto.transformationrule.GraphDTO;
 import de.unistuttgart.graphengine.dto.vFlow.VFlowGraphDTO;
-import de.unistuttgart.graphengine.validation_error.GraphStatus;
-import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.LogicGraphEntity;
-import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.TransformationRule;
+import de.unistuttgart.stayinsync.core.configuration.persistence.entities.sync.LogicGraphEntity;
+import de.unistuttgart.stayinsync.core.configuration.persistence.entities.sync.TransformationRule;
 import de.unistuttgart.stayinsync.core.configuration.exception.CoreManagementException;
 import de.unistuttgart.stayinsync.core.configuration.rest.dtos.TransformationRuleDTO;
 import de.unistuttgart.stayinsync.core.configuration.service.transformationrule.TransformationRuleMapperService;
+import de.unistuttgart.graphengine.validation_error.GraphStatus;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 

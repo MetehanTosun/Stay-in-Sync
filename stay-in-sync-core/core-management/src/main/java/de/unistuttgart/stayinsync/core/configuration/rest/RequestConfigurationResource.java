@@ -1,22 +1,22 @@
 package de.unistuttgart.stayinsync.core.configuration.rest;
 
-import de.unistuttgart.stayinsync.core.configuration.domain.entities.aas.AasSourceApiRequestConfiguration;
-import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.SourceSystemApiRequestConfiguration;
+import de.unistuttgart.stayinsync.core.configuration.persistence.entities.aas.AasSourceApiRequestConfiguration;
+import de.unistuttgart.stayinsync.core.configuration.persistence.entities.sync.SourceSystemApiRequestConfiguration;
+import de.unistuttgart.stayinsync.core.configuration.exception.CoreManagementException;
 import de.unistuttgart.stayinsync.core.configuration.mapping.AasApiRequestConfigurationMapper;
 import de.unistuttgart.stayinsync.core.configuration.mapping.SourceSystemApiRequestConfigurationFullUpdateMapper;
-import de.unistuttgart.stayinsync.core.configuration.rest.dtos.CreateRequestConfigurationDTO;
 import de.unistuttgart.stayinsync.core.configuration.rest.dtos.CreateSourceArcDTO;
+import de.unistuttgart.stayinsync.core.configuration.rest.dtos.CreateRequestConfigurationDTO;
 import de.unistuttgart.stayinsync.core.configuration.rest.dtos.GetRequestConfigurationDTO;
 import de.unistuttgart.stayinsync.core.configuration.rest.dtos.aas.AasArcDTO;
 import de.unistuttgart.stayinsync.core.configuration.service.SourceSystemApiRequestConfigurationService;
+import de.unistuttgart.stayinsync.core.configuration.service.aas.AasApiRequestConfigurationService;
 import io.quarkus.logging.Log;
 import jakarta.inject.Inject;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotNull;
 import jakarta.ws.rs.*;
-import jakarta.ws.rs.core.Context;
-import jakarta.ws.rs.core.HttpHeaders;
-import jakarta.ws.rs.core.Response;
-import jakarta.ws.rs.core.UriInfo;
+import jakarta.ws.rs.core.*;
 import org.eclipse.microprofile.openapi.annotations.Operation;
 import org.eclipse.microprofile.openapi.annotations.enums.SchemaType;
 import org.eclipse.microprofile.openapi.annotations.headers.Header;
@@ -28,6 +28,7 @@ import org.eclipse.microprofile.openapi.annotations.responses.APIResponse;
 
 import java.net.URI;
 import java.util.*;
+import java.util.stream.Collectors;
 
 import static jakarta.ws.rs.core.MediaType.APPLICATION_JSON;
 
