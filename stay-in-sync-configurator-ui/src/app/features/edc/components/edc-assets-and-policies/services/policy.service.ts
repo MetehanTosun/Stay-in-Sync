@@ -123,7 +123,7 @@ export class PolicyService {
 
   // Prüfen, ob es sich um ein Update oder eine neue Policy handelt
   const isUpdate = !!raw.dbId;
-  
+
   // 1) Robuste Normalisierung aus Editor:
   //    - Erlaube sowohl { permission: [...] } als auch { policy: { permission: [...] } }
   const permission = Array.isArray(raw?.permission)
@@ -142,15 +142,16 @@ export class PolicyService {
   };
 
   const dto = {
-    policyId: normalizedPolicy['@id'],
-    policy: normalizedPolicy
+    policyId: String(raw?.['@id']),
+    policy: normalizedPolicy,
+    rawJson: JSON.stringify(raw)
   };
-  
+
   // Wenn dbId vorhanden ist, handelt es sich um ein Update
   if (isUpdate) {
     console.log(`[PolicyService] Updating policy with dbId ${raw.dbId} for EDC ${edcId}`);
     console.log('[PolicyService] Update DTO ->', dto);
-    
+
     // PUT request für Update
     return this.http.put(`${this.baseUrl}/${edcId}/policies/${raw.dbId}`, dto, { observe: 'response' })
       .pipe(
@@ -163,7 +164,7 @@ export class PolicyService {
   } else {
     console.log('[PolicyService] Creating new policy for EDC', edcId);
     console.log('[PolicyService] Create DTO ->', dto);
-    
+
     // POST request für neue Policy
     return this.http.post(`${this.baseUrl}/${edcId}/policies`, dto, { observe: 'response' })
       .pipe(
@@ -236,7 +237,7 @@ export class PolicyService {
   }
 
   // Normalize backend responses for create/update policies: ensure body.id/policyId present
-  private ensurePolicyResponseBody(resp: HttpResponse<any>, sentDto: { policyId: string; policy: any }): HttpResponse<any> {
+  private ensurePolicyResponseBody(resp: HttpResponse<any>, sentDto: { policyId: string; policy: any; rawJson: string }): HttpResponse<any> {
     const body = resp?.body || {};
     let id = body?.id || body?.policyId;
     if (!id) {
@@ -256,7 +257,8 @@ export class PolicyService {
     const normalizedBody = {
       ...body,
       id: body?.id || id,
-      policyId: body?.policyId || sentDto?.policyId,
+      policyId: sentDto.policyId,
+      rawJson: sentDto.rawJson
     };
     // Return a cloned HttpResponse with normalized body
     return new HttpResponse<any>({

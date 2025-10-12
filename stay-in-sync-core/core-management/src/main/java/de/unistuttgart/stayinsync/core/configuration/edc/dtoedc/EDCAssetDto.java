@@ -100,7 +100,7 @@ public class EDCAssetDto {
     public EDCAssetDto() {
         this.context = new HashMap<>(Map.of("edc", "https://w3id.org/edc/v0.0.1/ns/"));
         this.properties = new HashMap<>();
-        // Standardwerte für die Properties initialisieren
+        //Standardwerte für die Properties initialisieren
         initializeDefaultProperties();
     }
     

@@ -19,11 +19,11 @@ public interface EDCClient {
 
     @POST
     @Path("/policydefinitions")
-    RestResponse<JsonObject> createPolicy(@HeaderParam("X-Api-Key") String apiKey, CreateEDCPolicyDTO jsonLdData);
+    RestResponse<JsonObject> createPolicy(@HeaderParam("X-Api-Key") String apiKey, String jsonLdData);
 
     @POST
     @Path("/contractdefinitions")
-    RestResponse<JsonObject> createContractDefinition(@HeaderParam("X-Api-Key") String apiKey, CreateEDCContractDefinitionDTO jsonLdData);
+    RestResponse<JsonObject> createContractDefinition(@HeaderParam("X-Api-Key") String apiKey, String jsonLdData);
 
     @GET
     @Path("/assets")

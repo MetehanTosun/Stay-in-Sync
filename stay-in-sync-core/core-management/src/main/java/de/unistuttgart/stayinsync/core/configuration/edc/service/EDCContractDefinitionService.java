@@ -162,6 +162,7 @@ public class EDCContractDefinitionService {
                 // Setzen der Asset- und Policy-IDs
                 if (contractDefinition.getAsset() != null && contractDefinition.getAsset().getAssetId() != null) {
                     edcContractDefinitionDTO.setAssetId(contractDefinition.getAsset().getAssetId());
+
                 } else {
                     LOG.warn("Asset ID is missing, contract definition may be invalid in EDC");
                 }
@@ -187,7 +188,7 @@ public class EDCContractDefinitionService {
                 
                 // Senden der Contract Definition an den EDC
                 LOG.info("Sending contract definition to EDC: " + contractDefinition.getContractDefinitionId());
-                RestResponse<JsonObject> response = client.createContractDefinition("TEST2", edcContractDefinitionDTO);
+                RestResponse<JsonObject> response = client.createContractDefinition("TEST2", contractDefinition.rawJson);
                 
                 if (response.getStatus() >= 400) {
                     LOG.error("Error creating contract definition in EDC: " + response.getStatus() + ", " + response.getEntity());

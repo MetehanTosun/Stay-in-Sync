@@ -131,6 +131,7 @@ public class EDCPolicyResource {
             }
             
             // Speichere die Policy
+            entity.setPolicyJson(dto.getRawJson());
             EDCPolicy created = service.create(entity);
             EDCPolicyDto result = EDCPolicyMapper.policyMapper.policyToPolicyDto(created);
             

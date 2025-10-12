@@ -38,6 +38,9 @@ public class EDCContractDefinition extends UuidEntity {
     @JoinColumn(name = "edc_instance_id")
     private EDCInstance edcInstance;
 
+    @Column(columnDefinition = "LONGTEXT")
+    public String rawJson;
+
     public String getContractDefinitionId() {
         return contractDefinitionId;
     }

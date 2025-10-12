@@ -233,7 +233,7 @@ public class EDCPolicyService {
                     
                     // Send to EDC - using a placeholder API Key here
                     LOG.info("Calling EDC API with apiKey: TEST2");
-                    RestResponse<JsonObject> response = client.createPolicy("TEST2", edcPolicyDTO);
+                    RestResponse<JsonObject> response = client.createPolicy("TEST2", policy.getPolicyJson());
                     
                     if (response.getStatus() >= 400) {
                         LOG.error("Error sending policy to EDC: " + response.getStatus() + ", " + response.getEntity());
@@ -321,7 +321,7 @@ public class EDCPolicyService {
                         
                         // Send to EDC
                         LOG.info("Creating updated policy in EDC: " + policyLinkedToDatabase.getPolicyId());
-                        RestResponse<JsonObject> createResponse = client.createPolicy("TEST2", edcPolicyDTO);
+                        RestResponse<JsonObject> createResponse = client.createPolicy("TEST2", updatedPolicy.getPolicyJson());
                         
                         if (createResponse.getStatus() >= 400) {
                             LOG.error("Error updating policy in EDC: " + createResponse.getStatus() + ", " + createResponse.getEntity());

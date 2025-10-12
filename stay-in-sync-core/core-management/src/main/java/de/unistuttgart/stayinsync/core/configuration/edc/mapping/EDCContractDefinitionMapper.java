@@ -25,7 +25,7 @@ public class EDCContractDefinitionMapper {
         var entity = new EDCContractDefinition();
         entity.id = dto.getId(); // leer bei create, gesetzt bei update
         entity.setContractDefinitionId(dto.getContractDefinitionId());
-
+        entity.rawJson = dto.getRawJson();
         // Resolve asset by assetId if present
         if (dto.getAssetId() != null && !dto.getAssetId().isBlank()) {
             var asset = EDCAsset.findByAssetId(dto.getAssetId());

@@ -7,9 +7,9 @@ export interface OdrlPolicyDefinition {
   policy?: OdrlPolicy;
   permission?: OdrlPermission[];
     bpn?: string;
-   
+
    // UI/Backend-Helper-Felder
-  
+
   dbId?: string;  // neue UUID vom Backend
   policyId?: string; // Business-Key aus DB
 }
@@ -40,6 +40,7 @@ export interface OdrlContractDefinition {
   id: any;
   '@context': any;
   '@id': string;
+  rawJson?: string;
   accessPolicyId: string;
   contractPolicyId: string;
   assetsSelector: OdrlCriterion[];

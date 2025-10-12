@@ -13,12 +13,12 @@ import java.util.UUID;
  * Data Transfer Object (DTO) für EDC Policies.
  * Diese Klasse repräsentiert eine Policy im Eclipse Dataspace Connector (EDC) System.
  * Eine Policy definiert Zugriffsregeln und Bedingungen für Assets im EDC.
- * 
+ * <p>
  * Das DTO wird für die Kommunikation zwischen Frontend, Backend und EDC verwendet
  * und beinhaltet alle relevanten Informationen einer Policy.
  */
 public class EDCPolicyDto {
-    
+
     /**
      * Die ID des DTOs (DB-UUID). Wird in der JSON-Antwort mit ausgegeben,
      * damit das Frontend Updates/Löschungen adressieren kann.
@@ -34,7 +34,6 @@ public class EDCPolicyDto {
      * Die eindeutige ID der Policy im EDC-System.
      */
     @NotBlank
-    @JsonProperty("@id")
     private String policyId;
 
     /**
@@ -48,6 +47,8 @@ public class EDCPolicyDto {
      */
     @NotNull
     private Map<String, Object> policy;
+
+    private String rawJson;
 
     /**
      * Der Kontext der Policy, wird als @context im JSON dargestellt.
@@ -63,39 +64,17 @@ public class EDCPolicyDto {
         this.context = new HashMap<>(Map.of("odrl", "http://www.w3.org/ns/odrl/2/"));
     }
 
-    /**
-     * Vollständiger Konstruktor.
-     * 
-     * @param id Die ID des DTOs
-     * @param edcId Die ID der EDC-Instanz
-     * @param policyId Die ID der Policy
-     * @param displayName Der Anzeigename der Policy
-     * @param policy Die Policy-Regeln als Map
-     * @param context Der Kontext der Policy
-     */
-    public EDCPolicyDto(UUID id, UUID edcId, String policyId, String displayName, 
-                        Map<String, Object> policy, Map<String, String> context) {
-        this.id = id;
-        this.edcId = edcId;
-        this.policyId = policyId;
-        this.displayName = displayName;
-        this.policy = policy != null ? policy : new HashMap<>();
-        this.context = context != null ? context : new HashMap<>(Map.of("odrl", "http://www.w3.org/ns/odrl/2/"));
-    }
-
-    /**
-     * Konstruktor mit minimalen erforderlichen Parametern.
-     * 
-     * @param edcId Die ID der EDC-Instanz
-     * @param policyId Die ID der Policy
-     * @param displayName Der Anzeigename der Policy
-     * @param policy Die Policy-Regeln als Map
-     */
-    public EDCPolicyDto(UUID edcId, String policyId, String displayName, Map<String, Object> policy) {
-        this(null, edcId, policyId, displayName, policy, new HashMap<>(Map.of("odrl", "http://www.w3.org/ns/odrl/2/")));
-    }
 
     // Getter und Setter
+
+
+    public String getRawJson() {
+        return rawJson;
+    }
+
+    public void setRawJson(String rawJson) {
+        this.rawJson = rawJson;
+    }
 
     public UUID getId() {
         return id;
@@ -151,11 +130,11 @@ public class EDCPolicyDto {
         if (o == null || getClass() != o.getClass()) return false;
         EDCPolicyDto that = (EDCPolicyDto) o;
         return Objects.equals(id, that.id) &&
-               Objects.equals(edcId, that.edcId) &&
-               Objects.equals(policyId, that.policyId) &&
-               Objects.equals(displayName, that.displayName) &&
-               Objects.equals(policy, that.policy) &&
-               Objects.equals(context, that.context);
+                Objects.equals(edcId, that.edcId) &&
+                Objects.equals(policyId, that.policyId) &&
+                Objects.equals(displayName, that.displayName) &&
+                Objects.equals(policy, that.policy) &&
+                Objects.equals(context, that.context);
     }
 
     @Override

@@ -12,7 +12,7 @@ import java.util.UUID;
 public class CreateEDCContractDefinitionDTO {
 
     @JsonProperty("@id")
-    String id = "contract-def-" + UUID.randomUUID().toString();
+    String id;
 
     @JsonProperty("@type")
     String type = "ContractDefinition";
@@ -28,6 +28,16 @@ public class CreateEDCContractDefinitionDTO {
 
     @JsonProperty("assetId")
     String assetId;
+
+    String rawJson;
+
+    public String getRawJson() {
+        return rawJson;
+    }
+
+    public void setRawJson(String rawJson) {
+        this.rawJson = rawJson;
+    }
 
     public String getId() {
         return id;
