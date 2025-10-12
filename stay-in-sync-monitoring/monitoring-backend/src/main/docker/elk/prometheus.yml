@@ -3,17 +3,13 @@ global:
   evaluation_interval: 30s
 
 scrape_configs:
-  # --- Lokale Checks (explizite Ports) ---
+  # --- Local checks (explicit ports) ---
   - job_name: 'blackbox_http_local'
     metrics_path: /probe
     params:
       module: [http_2xx]
     static_configs:
       - targets:
-          - http://localhost:8090/q/health/live   # Core Management
-          - http://localhost:8099/q/health/live   # Monitoring Backend
-          - http://localhost:8095/q/health/live   # Polling Node (lokal)
-          - http://localhost:8091/q/health/live   # Sync Node (lokal)
           - http://host.docker.internal:8090/q/health/live   # Core Management
           - http://host.docker.internal:8099/q/health/live   # Monitoring Backend
           - http://host.docker.internal:8095/q/health/live   # Polling Node (lokal)
@@ -34,11 +30,11 @@ scrape_configs:
     kubernetes_sd_configs:
       - role: pod
     relabel_configs:
-      # nur Pods mit bestimmten Labels überwachen
+      # Monitor only pods with specific labels
       - source_labels: [__meta_kubernetes_pod_label_app]
         action: keep
         regex: (polling-node|sync-node)
-      # Health-Endpoint als Target
+      # Health-Endpoint as Target
       - source_labels: [__meta_kubernetes_pod_ip]
         target_label: __param_target
         replacement: http://$1:8080/q/health

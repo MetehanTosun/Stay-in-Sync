@@ -1,7 +1,7 @@
 package de.unistuttgart.stayinsync.core.service.transformationrule;
 
-import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.LogicGraphEntity;
-import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.TransformationRule;
+import de.unistuttgart.stayinsync.core.configuration.persistence.entities.sync.LogicGraphEntity;
+import de.unistuttgart.stayinsync.core.configuration.persistence.entities.sync.TransformationRule;
 import de.unistuttgart.stayinsync.core.configuration.exception.CoreManagementException;
 import de.unistuttgart.stayinsync.core.configuration.service.transformationrule.GraphStorageService;
 import io.quarkus.test.junit.QuarkusTest;

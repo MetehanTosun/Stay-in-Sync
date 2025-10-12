@@ -2,13 +2,13 @@ package de.unistuttgart.stayinsync.core.configuration.service.aas;
 
 import io.smallrye.mutiny.Uni;
 import io.vertx.core.http.HttpMethod;
-import io.vertx.mutiny.ext.web.client.HttpResponse;
 import io.vertx.mutiny.core.buffer.Buffer;
+import io.vertx.mutiny.ext.web.client.HttpResponse;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 
-import java.util.Map;
 import java.util.Arrays;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @ApplicationScoped

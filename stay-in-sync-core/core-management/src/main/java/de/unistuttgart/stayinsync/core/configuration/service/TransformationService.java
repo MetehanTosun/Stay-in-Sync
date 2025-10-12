@@ -1,9 +1,12 @@
 package de.unistuttgart.stayinsync.core.configuration.service;
 
-import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.*;
+
+import de.unistuttgart.stayinsync.core.configuration.persistence.entities.aas.AasTargetApiRequestConfiguration;
+import de.unistuttgart.stayinsync.core.configuration.persistence.entities.sync.*;
 import de.unistuttgart.stayinsync.core.configuration.exception.CoreManagementException;
 import de.unistuttgart.stayinsync.core.configuration.mapping.TransformationMapper;
 import de.unistuttgart.stayinsync.core.configuration.mapping.targetsystem.RequestConfigurationMapper;
+import de.unistuttgart.stayinsync.core.configuration.persistence.entities.sync.Transformation;
 import de.unistuttgart.stayinsync.core.configuration.rest.dtos.TransformationAssemblyDTO;
 import de.unistuttgart.stayinsync.core.configuration.rest.dtos.TransformationDetailsDTO;
 import de.unistuttgart.stayinsync.core.configuration.rest.dtos.TransformationShellDTO;
@@ -11,7 +14,7 @@ import de.unistuttgart.stayinsync.core.configuration.rest.dtos.targetsystem.GetR
 import de.unistuttgart.stayinsync.core.configuration.rest.dtos.TransformationStatusUpdate;
 import de.unistuttgart.stayinsync.core.configuration.rest.dtos.targetsystem.UpdateTransformationRequestConfigurationDTO;
 import de.unistuttgart.stayinsync.core.configuration.service.transformationrule.GraphStorageService;
-import de.unistuttgart.stayinsync.core.configuration.rabbitmq.producer.TransformationJobMessageProducer;
+import de.unistuttgart.stayinsync.core.configuration.messaging.producer.TransformationJobMessageProducer;
 import de.unistuttgart.stayinsync.transport.domain.JobDeploymentStatus;
 import io.quarkus.logging.Log;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -123,25 +126,42 @@ public class TransformationService {
 
     @Transactional
     public TransformationDetailsDTO updateTargetArcs(Long transformationId, UpdateTransformationRequestConfigurationDTO dto) {
-        Log.debugf("Updating Target ARCs for Transformation with id %d", transformationId);
+        Log.debugf("Updating ALL Target ARCs for Transformation with id %d", transformationId);
 
         Transformation transformation = Transformation.<Transformation>findByIdOptional(transformationId)
                 .orElseThrow(() -> new CoreManagementException(Response.Status.NOT_FOUND, "Transformation not found", "Transformation with id %d not found.", transformationId));
 
         transformation.targetSystemApiRequestConfigurations.clear();
+        transformation.aasTargetApiRequestConfigurations.clear();
 
-        if (dto.targetArcIds() != null && !dto.targetArcIds().isEmpty()) {
-            List<TargetSystemApiRequestConfiguration> arcsToLink = TargetSystemApiRequestConfiguration.list("id in ?1", dto.targetArcIds());
+        if (dto.restTargetArcIds() != null && !dto.restTargetArcIds().isEmpty()) {
+            List<TargetSystemApiRequestConfiguration> restArcsToLink = TargetSystemApiRequestConfiguration.list("id in ?1", dto.restTargetArcIds());
 
-            if (arcsToLink.size() != dto.targetArcIds().size()) {
-                throw new CoreManagementException(Response.Status.BAD_REQUEST, "Invalid ARC ID", "One or more provided Target ARC IDs could not be found.");
+            if (restArcsToLink.size() != dto.restTargetArcIds().size()) {
+                throw new CoreManagementException(Response.Status.BAD_REQUEST, "Invalid REST ARC ID", "One or more provided REST Target ARC IDs could not be found.");
             }
 
-            transformation.targetSystemApiRequestConfigurations.addAll(arcsToLink);
+            transformation.targetSystemApiRequestConfigurations.addAll(restArcsToLink);
+            restArcsToLink.forEach(arc -> arc.transformations.add(transformation));
         }
 
-        Log.infof("Successfully updated Target ARCs for Transformation %d. New count: %d",
-                transformationId, transformation.targetSystemApiRequestConfigurations.size());
+        if (dto.aasTargetArcIds() != null && !dto.aasTargetArcIds().isEmpty()) {
+            List<AasTargetApiRequestConfiguration> aasArcsToLink = AasTargetApiRequestConfiguration.list("id in ?1", dto.aasTargetArcIds());
+
+            if (aasArcsToLink.size() != dto.aasTargetArcIds().size()) {
+                throw new CoreManagementException(Response.Status.BAD_REQUEST, "Invalid AAS ARC ID", "One or more provided AAS Target ARC IDs could not be found.");
+            }
+
+            transformation.aasTargetApiRequestConfigurations.addAll(aasArcsToLink);
+            aasArcsToLink.forEach(arc -> arc.transformations.add(transformation));
+        }
+
+        transformation.persist();
+
+        Log.infof("Successfully updated Target ARCs for Transformation %d. REST ARC count: %d, AAS ARC count: %d",
+                transformationId,
+                transformation.targetSystemApiRequestConfigurations.size(),
+                transformation.aasTargetApiRequestConfigurations.size());
 
         return mapper.mapToDetailsDTO(transformation);
     }
@@ -155,7 +175,13 @@ public class TransformationService {
     @Transactional(SUPPORTS)
     public Transformation findByIdDirect(Long id) {
         Log.debugf("Finding transformation with id %d", id);
-        return Transformation.findById(id);
+        Transformation transformation = Transformation.findById(id);
+
+        if (transformation == null) {
+            throw new CoreManagementException(Response.Status.NOT_FOUND, "Transformation not found", "No Transformation found using id %d", id);
+        }
+
+        return transformation;
     }
 
     public Optional<TransformationScript> findScriptById(Long transformationId) {
@@ -196,7 +222,7 @@ public class TransformationService {
         return Transformation.deleteById(id);
     }
 
-    public void updateDeploymentStatus(Long transformationId, JobDeploymentStatus deploymentStatus) {
+    public void updateDeploymentStatus(Long transformationId, JobDeploymentStatus deploymentStatus, String hostName) {
         Transformation transformation = findByIdDirect(transformationId);
         Log.infof("Settings deployment status of transformation with id %d to %s", transformationId, deploymentStatus);
 
@@ -204,7 +230,11 @@ public class TransformationService {
             Log.warnf("The transformation with id %d is currently in the deployment state of %s and thus can not be deployed or stopped", transformationId, transformation.deploymentStatus);
         } else {
             transformation.deploymentStatus = deploymentStatus;
-            statusEmitter.send(new TransformationStatusUpdate(transformationId, transformation.syncJob.id, deploymentStatus));
+            transformation.workerHostName = hostName;
+
+            if (statusEmitter.hasRequests()) {
+                statusEmitter.send(new TransformationStatusUpdate(transformationId, transformation.syncJob.id, deploymentStatus));
+            }
             switch (deploymentStatus) {
                 case DEPLOYING -> {
                     deployAssociatedRequestConfigs(transformation);
@@ -212,6 +242,7 @@ public class TransformationService {
                 }
                 case STOPPING, RECONFIGURING -> {
                     deployAssociatedRequestConfigs(transformation);
+                    sourceRequestConfigService.undeployAllUnused();
                     transformationMessageProducer.reconfigureDeployedTransformationJob(mapper.mapToMessageDTO(transformation));
                 }
             }
@@ -246,9 +277,7 @@ public class TransformationService {
         transformation.sourceSystemApiRequestConfigurations //
                 .stream() //
                 .filter(apiRequestConfiguration -> apiRequestConfiguration.deploymentStatus.equals(JobDeploymentStatus.UNDEPLOYED))
-                .forEach(apiRequestConfiguration -> sourceRequestConfigService.updateDeploymentStatus(apiRequestConfiguration.id, JobDeploymentStatus.DEPLOYING));
-
-        sourceRequestConfigService.undeployAllUnused();
+                .forEach(apiRequestConfiguration -> sourceRequestConfigService.updateDeploymentStatus(apiRequestConfiguration.id, JobDeploymentStatus.DEPLOYING, null));
     }
 
     private boolean isTransitioning(JobDeploymentStatus jobDeploymentStatus) {

@@ -1,0 +1,44 @@
+﻿- job_name: 'blackbox_http_sourceSystems'
+  metrics_path: /probe
+  params:
+    module: [http_2xx]
+  http_sd_configs:
+    - url: http://core-management:80/api/monitoring/prometheus/flat/sources
+      refresh_interval: 30s
+  relabel_configs:
+    - source_labels: [__address__]
+      target_label: __param_target
+    - source_labels: [__param_target]
+      target_label: instance
+    - target_label: __address__
+      replacement: stay-in-sync-prometheus-blackbox-exporter:9115
+
+
+- job_name: 'blackbox_http_targetSystems'
+  metrics_path: /probe
+  params:
+    module: [http_2xx]
+  http_sd_configs:
+    - url: http://core-management:80/api/monitoring/prometheus/flat/targets
+      refresh_interval: 30s
+  relabel_configs:
+    - source_labels: [__address__]
+      target_label: __param_target
+    - source_labels: [__param_target]
+      target_label: instance
+    - target_label: __address__
+      replacement: stay-in-sync-prometheus-blackbox-exporter:9115
+
+
+
+- job_name: 'quarkus_metrics'
+  scrape_interval: 15s
+  metrics_path: /q/metrics
+  static_configs:
+    - targets:
+        - core-management:80
+        - monitoring-backend:80
+        - core-polling-node:80
+        - core-sync-node:80
+
+

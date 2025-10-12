@@ -1,11 +1,11 @@
 <!-- Wenn kein Node ausgewählt -->
-<p-message *ngIf="!selectedNodeId" severity="info" text="Please select a SyncNode"></p-message>
+<p-message *ngIf="!selectedNodeId || selectedNodeId.startsWith('POLL')" severity="info" text="Please select a SyncNode"></p-message>
 
 <!-- Wenn keine Transformationen -->
-<p-message *ngIf="selectedNodeId && transformations.length === 0" severity="warn" text="There are no transformations"></p-message>
+<p-message *ngIf="selectedNodeId && transformations.length === 0&& !(selectedNodeId.startsWith('POLL'))" severity="warn" text="There are no transformations"></p-message>
 
 <!-- Wenn Transformationen vorhanden -->
-<div *ngIf="selectedNodeId && transformations.length > 0" class="grid gap-4">
+<div *ngIf="selectedNodeId && transformations.length > 0 && !(selectedNodeId.startsWith('POLL'))" class="grid gap-4">
   <p-panel
     *ngFor="let transformation of transformations"
     [toggleable]="true"
@@ -46,7 +46,7 @@
           <td>{{ snapshot.createdAt | date:'short' }}</td>
           <td>
             <p-button icon="pi pi-refresh" class="p-button-sm"
-                      (click)="replaySnapshot(snapshot.snapshotId)"></p-button>
+                      (onClick)="replaySnapshot(snapshot.snapshotId)"></p-button>
           </td>
         </tr>
       </ng-template>

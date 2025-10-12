@@ -1,7 +1,7 @@
 package de.unistuttgart.stayinsync.core.configuration.service;
 
-import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.ApiEndpointQueryParam;
-import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.SyncSystemEndpoint;
+import de.unistuttgart.stayinsync.core.configuration.persistence.entities.sync.ApiEndpointQueryParam;
+import de.unistuttgart.stayinsync.core.configuration.persistence.entities.sync.SyncSystemEndpoint;
 import de.unistuttgart.stayinsync.core.configuration.exception.CoreManagementException;
 import de.unistuttgart.stayinsync.core.configuration.mapping.ApiEndpointQueryParamMapper;
 import de.unistuttgart.stayinsync.core.configuration.rest.dtos.ApiEndpointQueryParamDTO;

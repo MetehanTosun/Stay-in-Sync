@@ -13,6 +13,8 @@ import {ApiHeaderDTO} from '../../models/apiHeaderDTO';
 import {CreateApiHeaderDTO} from '../../models/createApiHeaderDTO';
 import {HttpErrorService} from '../../../../core/services/http-error.service';
 import {ConfirmationDialogComponent, ConfirmationDialogData} from '../confirmation-dialog/confirmation-dialog.component';
+import {FloatLabel} from 'primeng/floatlabel';
+import {Select, SelectModule} from 'primeng/select';
 
 /**
  * Component for managing API header templates for a given system.
@@ -29,7 +31,9 @@ import {ConfirmationDialogComponent, ConfirmationDialogData} from '../confirmati
     InputTextModule,
     DropdownModule,
     CardModule,
-    ConfirmationDialogComponent
+    ConfirmationDialogComponent,
+    FloatLabel,
+    SelectModule
   ],
   templateUrl: './manage-api-headers.component.html'
 })

@@ -3,6 +3,8 @@ import { BehaviorSubject, Observable, of, throwError } from 'rxjs';
 import { catchError, map, tap } from 'rxjs/operators';
 import {
   ApiRequestConfiguration,
+  AasArc,
+  AnyArc,
   ArcMap,
 } from '../../features/script-editor/models/arc.models';
 import { ScriptEditorService } from './script-editor.service';
@@ -11,7 +13,7 @@ import { HttpClient } from '@angular/common/http';
 // Defines the shape of the state managed by this service.
 interface ArcState {
   allSystemNames: string[];
-  arcsBySystem: Map<string, ApiRequestConfiguration[]>;
+  arcsBySystem: Map<string, AnyArc[]>;
   loadingSystems: Set<string>;
 }
 
@@ -107,6 +109,8 @@ export class ArcStateService {
           arcsBySystem: updatedArcsBySystem,
           loadingSystems: newState.loadingSystems,
         });
+        console.log("here arcs");
+        console.log(this.arcsBySystem$);
 
         this.regenerateAllTypeDefinitions();
       }),
@@ -198,7 +202,7 @@ export class ArcStateService {
    * Call this after a new ARC is created to add it to the state instantly.
    * @param newArc The newly created ARC. It MUST include `sourceSystemName`.
    */
-  public addOrUpdateArc(newArc: ApiRequestConfiguration): void {
+  public addOrUpdateArc(newArc: AnyArc): void {
     console.log('%c[ArcState] addOrUpdateArc called with:', 'color: #8b5cf6;', newArc);
     if (!newArc.sourceSystemName) {
       console.error(
@@ -228,7 +232,7 @@ export class ArcStateService {
    * Call this after an ARC is successfully deleted to remove it from the state.
    * @param arcToRemove The ARC that was deleted. It MUST include `sourceSystemName`.
    */
-  public removeArc(arcToRemove: ApiRequestConfiguration): void {
+  public removeArc(arcToRemove: AnyArc): void {
     console.log('%c[ArcState] removeArc called with:', 'color: #ef4444;', arcToRemove);
     if (!arcToRemove.sourceSystemName) {
       console.error('Cannot remove ARC from state: sourceSystemName is missing.', arcToRemove);

@@ -14,6 +14,7 @@ export interface TargetArcConfiguration {
   targetSystemName: string;
   arcPatternType: 'BASIC_API' | 'OBJECT_UPSERT' | 'LIST_UPSERT' | 'CUSTOM_WORKFLOW';
   actions: TargetArcAction[];
+  arcType: 'REST';
 }
 
 export interface TargetArcAction {
@@ -43,8 +44,43 @@ export interface CreateTargetArcDTO {
     }[];
 }
 
+export interface CreateAasTargetArcDTO {
+  alias: string;
+  targetSystemId: number;
+  submodelId: number;
+}
+
+export interface AasTargetArcConfiguration {
+  id: number;
+  alias: string;
+  targetSystemId: number;
+  targetSystemName: string;
+  submodelId: number;
+  submodelIdShort: string;
+  arcType: 'AAS';
+}
+
+export type AnyTargetArc = TargetArcConfiguration | AasTargetArcConfiguration;
+
+export interface CreateAasTargetArcDTO {
+    alias: string;
+    targetSystemId: number;
+    submodelId: number;
+}
+
+export interface UpdateTransformationRequestConfigurationDTO {
+  restTargetArcIds: number[];
+  aasTargetArcIds: number[];
+}
+
 export interface UpdateTransformationArcsDTO {
   targetArcIds: number[];
+}
+
+export interface SubmodelDescription {
+  id: number;
+  submodelId: string;
+  idShort: string;
 }
 
 export interface TypeLibrary {

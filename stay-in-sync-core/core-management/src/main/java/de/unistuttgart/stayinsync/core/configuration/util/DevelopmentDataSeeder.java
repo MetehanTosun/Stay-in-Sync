@@ -2,7 +2,7 @@ package de.unistuttgart.stayinsync.core.configuration.util;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.*;
+import de.unistuttgart.stayinsync.core.configuration.persistence.entities.sync.*;
 import de.unistuttgart.stayinsync.core.configuration.rest.dtos.*;
 import de.unistuttgart.stayinsync.core.configuration.rest.dtos.targetsystem.ActionDefinitionDTO;
 import de.unistuttgart.stayinsync.core.configuration.rest.dtos.targetsystem.CreateArcDTO;
@@ -27,9 +27,6 @@ import java.util.stream.Collectors;
 
 @ApplicationScoped
 public class DevelopmentDataSeeder {
-
-    @Inject
-    AfterSeedRunner afterSeedRunner;
 
     @ConfigProperty(name = "quarkus.profile")
     String profile;
@@ -111,7 +108,7 @@ public class DevelopmentDataSeeder {
         Transformation transformation = transformationService.createTransformation(shellDTO);
         Log.info("-> Created Transformation 'TestTransformation'");
 
-        UpdateTransformationRequestConfigurationDTO updateTargetArcsDto = new UpdateTransformationRequestConfigurationDTO(Set.of(targetArc.id));
+        UpdateTransformationRequestConfigurationDTO updateTargetArcsDto = new UpdateTransformationRequestConfigurationDTO(Set.of(targetArc.id),Collections.emptySet());
         transformationService.updateTargetArcs(transformation.id, updateTargetArcsDto);
         Log.info("-> Linked Target ARC to Transformation");
 
@@ -192,7 +189,7 @@ public class DevelopmentDataSeeder {
 
 
         return new CreateSourceArcDTO(
-                "products",
+                "syncProductsArc",
                 sourceSystem.id,
                 sourceSystemEndpoint.id,
                 Collections.emptyMap(),
@@ -220,7 +217,8 @@ public class DevelopmentDataSeeder {
                 function transform() {
                     stayinsync.log('Transformation started: Upserting products...', 'INFO');
                 
-                    const productsFromSource = source.Dummy_JSON.products.products;
+                    const products = source.Dummy_JSON.syncProductsArc.products;
+                    const productsFromSource = products.slice(1,2);
                 
                     if (!productsFromSource || productsFromSource.length === 0) {
                         stayinsync.log('No products found in source data. Finishing.', 'WARN');
@@ -229,9 +227,9 @@ public class DevelopmentDataSeeder {
                 
                     const directives = productsFromSource.map(product => {
                         return targets.synchronizeProducts.defineUpsert()
-                            // CHECK: Find product with its sku. Assumption: sku is unique
+                            // CHECK: Find product with its title. Assumption: sku is unique
                             .usingCheck(config => {
-                                config.withQueryParamQ(product.sku); // DummyJSON 'q' is search param
+                                config.withQueryParamQ(product.title); // DummyJSON 'q' is search param
                             })
                             // CREATE: If not found, create new Product
                             .usingCreate(config => {
@@ -243,7 +241,7 @@ public class DevelopmentDataSeeder {
                             })
                             // UPDATE: If found, update price and description
                             .usingUpdate(config => {
-                                config.withPathParamProduct_id(checkResponse => {
+                                config.withPathParamProductId(checkResponse => {
                                     // Assumption: /products/search-answer contains a list and we take the first occurence
                                     return checkResponse.products[0].id;
                                 }).withPayload({
@@ -269,7 +267,8 @@ public class DevelopmentDataSeeder {
                 scriptCode,
                 Set.of(sourceArcAlias),
                 ScriptStatus.VALIDATED,
-                Set.of(targetArcId)
+                Set.of(targetArcId),
+                Set.of()
         );
     }
 }
