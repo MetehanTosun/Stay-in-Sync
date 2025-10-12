@@ -2,7 +2,7 @@ import { Directive, ElementRef, EventEmitter, OnDestroy, OnInit, Output, Rendere
 
 /**
  * Directive: srClickOutside
- * Emits an event when the user clicks outside the canvas element.
+ * Emits an event when the user clicks outside the host element.
  *
  * Usage in a template:
  *   <div srClickOutside (srClickOutside)="onOutside($event)">...</div>
@@ -10,7 +10,7 @@ import { Directive, ElementRef, EventEmitter, OnDestroy, OnInit, Output, Rendere
 @Directive({ selector: '[srClickOutside]', standalone: true })
 export class ClickOutsideDirective implements OnInit, OnDestroy {
   /**
-   * Emitted when a click occurs outside the canvas element.
+   * Emitted when a click occurs outside the host element.
    * Payload: the MouseEvent.
    */
   @Output('srClickOutside') outside = new EventEmitter<MouseEvent>();
@@ -22,7 +22,7 @@ export class ClickOutsideDirective implements OnInit, OnDestroy {
 
   /**
    * Initializes the document-level mousedown listener. If the clicked target is
-   * not contained within the canvas element, the directive emits the `outside`
+   * not contained within the host element, the directive emits the `outside`
    * event.
    */
   ngOnInit(): void {

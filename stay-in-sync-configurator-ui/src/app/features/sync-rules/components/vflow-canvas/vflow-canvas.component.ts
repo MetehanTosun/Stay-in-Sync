@@ -6,6 +6,7 @@ import { ConfigNodeData, CustomVFlowNode, LogicNodeData, LogicOperatorMetadata, 
 import { ConstantNodeComponent, FinalNodeComponent, LogicNodeComponent, ProviderNodeComponent, SetConstantValueModalComponent, SetJsonPathModalComponent } from '..';
 import { CommonModule } from '@angular/common';
 import { SetNodeNameModalComponent } from '../modals/set-node-name-modal/set-node-name-modal.component';
+import { ClickOutsideDirective } from '../../directives/click-outside.directive';
 import { ValidationError } from '../../models/interfaces/validation-error.interface';
 import { ConfigNodeComponent } from '../nodes/config-node/config-node.component';
 import { MessageService } from 'primeng/api';
@@ -20,6 +21,7 @@ import { MessageService } from 'primeng/api';
     Vflow,
     CommonModule,
     SetNodeNameModalComponent,
+    ClickOutsideDirective,
     SetJsonPathModalComponent,
     SetConstantValueModalComponent
   ],
@@ -237,6 +239,32 @@ export class VflowCanvasComponent implements OnInit {
 
   getNodeValue(node?: CustomVFlowNode | null): any {
     return this.hasValue(node) ? (node!.data as any).value : null;
+  }
+
+
+
+  /**
+   * Handler for clicks outside the canvas element.
+   * If a node context menu is open, close it and re-input the selected node to force a re-render.
+   */
+  onOutsideCanvas(_event: MouseEvent) {
+    if (this.showNodeContextMenu && this.selectedNode) {
+      const index = this.nodes.findIndex(n => n.id === this.selectedNode!.id);
+      if (index !== -1) {
+        const node = this.nodes[index];
+        // Re-insert node to re-render
+        this.nodes = [
+          ...this.nodes.slice(0, index),
+          { ...node },
+          ...this.nodes.slice(index + 1)
+        ];
+        this.hasUnsavedChanges = true;
+      }
+    }
+
+    this.closeNodeContextMenu();
+    this.closeEdgeContextMenu();
+    this.closeModals();
   }
   //#endregion
 
