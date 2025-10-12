@@ -1,10 +1,8 @@
 package de.unistuttgart.stayinsync.core.configuration.edc.dto;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import jakarta.validation.constraints.NotBlank;
 
 import java.util.Map;
-import java.util.UUID;
 
 public record ContractDefinitionDto(
         @JsonProperty("@context")

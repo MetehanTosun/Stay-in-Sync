@@ -1,14 +1,12 @@
 package de.unistuttgart.stayinsync.core.configuration.edc.entities;
 
-import de.unistuttgart.stayinsync.core.model.UuidEntity;
 import io.quarkus.hibernate.orm.panache.PanacheEntity;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
-import java.util.HashMap;
-import java.util.Map;
+
 
 /**
  * Entity-Klasse für EDC-DataAddress.

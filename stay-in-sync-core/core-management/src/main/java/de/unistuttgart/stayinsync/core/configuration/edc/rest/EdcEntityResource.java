@@ -1,14 +1,9 @@
 package de.unistuttgart.stayinsync.core.configuration.edc.rest;
 
-import com.fasterxml.jackson.annotation.JsonView;
-import de.unistuttgart.stayinsync.core.configuration.edc.dto.AssetDto;
+
 import de.unistuttgart.stayinsync.core.configuration.edc.dto.EdcEntityDto;
-import de.unistuttgart.stayinsync.core.configuration.edc.dto.VisibilitySidesForDto;
 import io.quarkus.logging.Log;
-import jakarta.ws.rs.GET;
-import jakarta.ws.rs.POST;
-import jakarta.ws.rs.Path;
-import jakarta.ws.rs.PathParam;
+
 import jakarta.ws.rs.core.Response;
 
 /**

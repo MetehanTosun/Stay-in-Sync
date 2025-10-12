@@ -13,7 +13,6 @@ import org.mapstruct.Named;
 import org.mapstruct.factory.Mappers;
 
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 public interface ContractDefinitionMapper {

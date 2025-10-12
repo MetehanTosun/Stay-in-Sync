@@ -4,7 +4,6 @@ import de.unistuttgart.stayinsync.core.configuration.edc.dto.AssetPropertiesDto;
 import de.unistuttgart.stayinsync.core.configuration.edc.entities.AssetProperties;
 
 import org.mapstruct.Mapper;
-import org.mapstruct.Mapping;
 import org.mapstruct.factory.Mappers;
 
 /**

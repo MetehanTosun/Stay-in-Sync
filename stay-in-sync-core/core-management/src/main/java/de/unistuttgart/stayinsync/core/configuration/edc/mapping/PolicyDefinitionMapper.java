@@ -1,23 +1,15 @@
 package de.unistuttgart.stayinsync.core.configuration.edc.mapping;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
+
 
 import de.unistuttgart.stayinsync.core.configuration.edc.dto.ContextDto;
 import de.unistuttgart.stayinsync.core.configuration.edc.dto.PolicyDefinitionDto;
-import de.unistuttgart.stayinsync.core.configuration.edc.entities.EDCInstance;
 import de.unistuttgart.stayinsync.core.configuration.edc.entities.PolicyDefinition;
-import io.quarkus.logging.Log;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
-import org.mapstruct.Named;
 import org.mapstruct.factory.Mappers;
 
-import java.io.IOException;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.UUID;
+
 
 /**
  * Mapstruct PolicyDefinition Mapper that converts entities to dtos and dtos to entities.

@@ -1,11 +1,8 @@
 package de.unistuttgart.stayinsync.core.configuration.edc.entities;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
-import de.unistuttgart.stayinsync.core.configuration.edc.dto.AssetDto;
+
 import de.unistuttgart.stayinsync.core.configuration.edc.dto.PolicyDefinitionDto;
-import de.unistuttgart.stayinsync.core.configuration.edc.mapping.AssetDataAddressMapper;
-import de.unistuttgart.stayinsync.core.configuration.edc.mapping.AssetPropertiesMapper;
-import de.unistuttgart.stayinsync.core.configuration.edc.mapping.PolicyDefinitionMapper;
+
 import de.unistuttgart.stayinsync.core.configuration.edc.mapping.PolicyMapper;
 import io.quarkus.hibernate.orm.panache.PanacheEntity;
 import jakarta.persistence.*;
