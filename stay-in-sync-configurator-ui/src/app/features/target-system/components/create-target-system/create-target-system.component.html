@@ -83,7 +83,7 @@
   </ng-container>
 
   <div *ngIf="currentStep === 1" style="margin-top:1rem;">
-    <app-manage-api-headers [syncSystemId]="createdTargetSystemId" [isAas]="isAas()" (onCreated)="onHeaderCreated()" (onDeleted)="onHeaderDeleted()" (onRetest)="testAasConnection()"></app-manage-api-headers>
+    <app-manage-api-headers [syncSystemId]="createdTargetSystemId" [allowValues]="true" [isAas]="isAas()" (onCreated)="onHeaderCreated()" (onDeleted)="onHeaderDeleted()" (onRetest)="testAasConnection()"></app-manage-api-headers>
   </div>
 
   <ng-container *ngIf="currentStep === 2">

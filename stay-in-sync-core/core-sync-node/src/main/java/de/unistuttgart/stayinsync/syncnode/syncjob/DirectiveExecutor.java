@@ -133,6 +133,10 @@ public class DirectiveExecutor {
                     .ssl(useSsl)
                     .putHeader("Content-Type", "application/json");
 
+            if (arcConfig.headers() != null) {
+                arcConfig.headers().forEach(h -> request.putHeader(h.headerName(), h.headerValue()));
+            }
+
             Log.infof("TID: %d - Executing CREATE: POST %s", transformationId, targetApiUrl + resolvedPath);
             return request.sendBuffer(payloadBuffer)
                     .onItem().invoke(createResponse -> {
@@ -173,6 +177,10 @@ public class DirectiveExecutor {
             HttpRequest<Buffer> request = client.put(port, uri.getHost(), resolvedPath)
                     .ssl(useSsl)
                     .putHeader("Content-Type", "application/json");
+
+            if (arcConfig.headers() != null) {
+                arcConfig.headers().forEach(h -> request.putHeader(h.headerName(), h.headerValue()));
+            }
 
             Log.infof("TID: %d - Executing UPDATE: PUT %s", transformationId, targetApiUrl + resolvedPath);
             return request.sendBuffer(payloadBuffer)

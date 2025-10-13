@@ -42,6 +42,8 @@ export class ManageApiHeadersComponent implements OnInit {
   @Input() syncSystemId!: number;
   /** When true, hide Accept/Content-Type and show AAS-specific hint */
   @Input() isAas: boolean = false;
+  /** When true, allow entering and updating concrete header values */
+  @Input() allowValues: boolean = false;
   @Output() onCreated = new EventEmitter<void>();
   @Output() onDeleted = new EventEmitter<void>();
   @Output() onRetest = new EventEmitter<void>();
@@ -49,6 +51,7 @@ export class ManageApiHeadersComponent implements OnInit {
   headers: ApiHeaderDTO[] = [];
   form!: FormGroup;
   loading = false;
+  editing: ApiHeaderDTO | null = null;
 
   /** Confirmation dialog properties */
   showConfirmationDialog = false;
@@ -89,7 +92,8 @@ export class ManageApiHeadersComponent implements OnInit {
   ngOnInit() {
     this.form = this.fb.group({
       headerName: ['', Validators.required],
-      headerType: [ApiRequestHeaderType.Custom, Validators.required]
+      headerType: [ApiRequestHeaderType.Custom, Validators.required],
+      headerValue: ['']
     });
     this.loadHeaders();
   }
@@ -118,19 +122,59 @@ export class ManageApiHeadersComponent implements OnInit {
    */
   addHeader() {
     if (this.form.invalid) return;
-    const dto: CreateApiHeaderDTO = this.form.value;
-    this.hdrSvc
-      .apiConfigSyncSystemSyncSystemIdRequestHeaderPost(this.syncSystemId, dto)
-      .subscribe({
+    if (this.editing) {
+      const existingValues = (this.editing.values as any) ? Array.from(this.editing.values as any) as string[] : [];
+      const nextValues = this.allowValues && this.form.value.headerValue
+        ? [this.form.value.headerValue]
+        : existingValues;
+      const updated: ApiHeaderDTO = {
+        id: this.editing.id,
+        headerName: this.form.value.headerName,
+        headerType: this.form.value.headerType,
+        values: nextValues as any
+      } as any;
+      this.hdrSvc.apiConfigSyncSystemRequestHeaderIdPut(this.editing.id!, updated).subscribe({
         next: () => {
+          this.editing = null;
           this.form.reset({headerType: ApiRequestHeaderType.Custom});
           this.loadHeaders();
-          this.onCreated.emit();
         },
-        error: (err) => {
-          this.errorSerice.handleError(err);
-        }
+        error: (err) => this.errorSerice.handleError(err)
       });
+    } else {
+      const dto: CreateApiHeaderDTO = {
+        headerName: this.form.value.headerName,
+        headerType: this.form.value.headerType,
+        // @ts-ignore
+        values: this.allowValues && this.form.value.headerValue ? [this.form.value.headerValue] : undefined
+      } as any;
+      this.hdrSvc
+        .apiConfigSyncSystemSyncSystemIdRequestHeaderPost(this.syncSystemId, dto)
+        .subscribe({
+          next: () => {
+            this.form.reset({headerType: ApiRequestHeaderType.Custom});
+            this.loadHeaders();
+            this.onCreated.emit();
+          },
+          error: (err) => {
+            this.errorSerice.handleError(err);
+          }
+        });
+    }
+  }
+
+  editHeader(h: ApiHeaderDTO) {
+    this.editing = h;
+    this.form.patchValue({
+      headerName: h.headerName,
+      headerType: h.headerType,
+      headerValue: h.values && (h.values as any)[0] ? (h.values as any)[0] : ''
+    });
+  }
+
+  cancelEdit() {
+    this.editing = null;
+    this.form.reset({ headerType: ApiRequestHeaderType.Custom });
   }
 
   /**

@@ -137,7 +137,7 @@
           <div class="p-col-12 p-md-6" style="padding: 0.5rem;">
             <p-card [style]="{'height': '100%'}">
               <h4 style="margin-bottom: 1rem; font-size: 1.125rem; font-weight: 600;">API Headers</h4>
-              <app-manage-api-headers *ngIf="selectedSystem" [syncSystemId]="selectedSystem.id!"></app-manage-api-headers>
+              <app-manage-api-headers *ngIf="selectedSystem" [syncSystemId]="selectedSystem.id!" [allowValues]="true"></app-manage-api-headers>
             </p-card>
           </div>
           <div class="p-col-12 p-md-6" style="padding: 0.5rem;">

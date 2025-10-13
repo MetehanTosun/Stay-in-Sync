@@ -56,7 +56,7 @@
 
     </p-tabPanel>
     <p-tabPanel *ngIf="!isAasSelected()" header="Headers">
-      <app-manage-api-headers [syncSystemId]="selectedSystem!.id!"></app-manage-api-headers>
+      <app-manage-api-headers [syncSystemId]="selectedSystem!.id!" [allowValues]="false"></app-manage-api-headers>
     </p-tabPanel>
     <p-tabPanel *ngIf="!isAasSelected()" header="Endpoints">
 
