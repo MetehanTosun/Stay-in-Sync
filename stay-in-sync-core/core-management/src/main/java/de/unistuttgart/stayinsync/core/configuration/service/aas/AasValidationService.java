@@ -1,8 +1,8 @@
 package de.unistuttgart.stayinsync.core.configuration.service.aas;
 
-import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.SourceSystem;
-import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.TargetSystem;
-import de.unistuttgart.stayinsync.core.configuration.exception.CoreManagementWebException;
+import de.unistuttgart.stayinsync.core.configuration.persistence.entities.sync.SourceSystem;
+import de.unistuttgart.stayinsync.core.configuration.persistence.entities.sync.TargetSystem;
+import de.unistuttgart.stayinsync.core.configuration.exception.CoreManagementException;
 import io.quarkus.logging.Log;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.ws.rs.core.Response;
@@ -23,16 +23,16 @@ public class AasValidationService {
      */
     public SourceSystem validateAasSource(SourceSystem sourceSystem) {
         if (sourceSystem == null) {
-            throw new CoreManagementWebException(Response.Status.NOT_FOUND, "Source system not found", "Source system is null");
+            throw new CoreManagementException(Response.Status.NOT_FOUND, "Source system not found", "Source system is null");
         }
         if (sourceSystem.apiType == null || !"AAS".equalsIgnoreCase(sourceSystem.apiType)) {
-            throw new CoreManagementWebException(Response.Status.BAD_REQUEST, "Invalid apiType", "apiType must be AAS");
+            throw new CoreManagementException(Response.Status.BAD_REQUEST, "Invalid apiType", "apiType must be AAS");
         }
         if (sourceSystem.apiUrl == null || sourceSystem.apiUrl.isBlank()) {
-            throw new CoreManagementWebException(Response.Status.BAD_REQUEST, "Missing baseUrl", "apiUrl is required for AAS");
+            throw new CoreManagementException(Response.Status.BAD_REQUEST, "Missing baseUrl", "apiUrl is required for AAS");
         }
         if (sourceSystem.aasId == null || sourceSystem.aasId.isBlank()) {
-            throw new CoreManagementWebException(Response.Status.BAD_REQUEST, "Missing aasId", "aasId is required for AAS");
+            throw new CoreManagementException(Response.Status.BAD_REQUEST, "Missing aasId", "aasId is required for AAS");
         }
         Log.debugf("Validated AAS SourceSystem id=%d", sourceSystem.id);
         return sourceSystem;
@@ -47,16 +47,16 @@ public class AasValidationService {
      */
     public TargetSystem validateAasTarget(TargetSystem targetSystem) {
         if (targetSystem == null) {
-            throw new CoreManagementWebException(Response.Status.NOT_FOUND, "Target system not found", "Target system is null");
+            throw new CoreManagementException(Response.Status.NOT_FOUND, "Target system not found", "Target system is null");
         }
         if (targetSystem.apiType == null || !"AAS".equalsIgnoreCase(targetSystem.apiType)) {
-            throw new CoreManagementWebException(Response.Status.BAD_REQUEST, "Invalid apiType", "apiType must be AAS");
+            throw new CoreManagementException(Response.Status.BAD_REQUEST, "Invalid apiType", "apiType must be AAS");
         }
         if (targetSystem.apiUrl == null || targetSystem.apiUrl.isBlank()) {
-            throw new CoreManagementWebException(Response.Status.BAD_REQUEST, "Missing baseUrl", "apiUrl is required for AAS");
+            throw new CoreManagementException(Response.Status.BAD_REQUEST, "Missing baseUrl", "apiUrl is required for AAS");
         }
         if (targetSystem.aasId == null || targetSystem.aasId.isBlank()) {
-            throw new CoreManagementWebException(Response.Status.BAD_REQUEST, "Missing aasId", "aasId is required for AAS");
+            throw new CoreManagementException(Response.Status.BAD_REQUEST, "Missing aasId", "aasId is required for AAS");
         }
         Log.debugf("Validated AAS TargetSystem id=%d", targetSystem.id);
         return targetSystem;

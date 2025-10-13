@@ -40,10 +40,12 @@ import { ResponsePreviewModalComponent } from '../response-preview-modal/respons
 import { ConfirmationDialogComponent, ConfirmationDialogData } from '../confirmation-dialog/confirmation-dialog.component';
 import { OpenApiImportService } from '../../../../core/services/openapi-import.service';
 import { ManageEndpointsFormService } from '../../services/manage-endpoints-form.service';
-import { TypeScriptGenerationService, TypeScriptGenerationState } from '../../services/typescript-generation.service';
-import { ResponsePreviewService, ResponsePreviewData } from '../../services/response-preview.service';
+import { TypeScriptGenerationService } from '../../services/typescript-generation.service';
+import { ResponsePreviewService } from '../../services/response-preview.service';
 import { MessageService } from 'primeng/api';
-import { ToastModule } from 'primeng/toast';
+import {JobStatusTagComponent} from '../../../../shared/components/job-status-tag/job-status-tag.component';
+import {Select} from 'primeng/select';
+import {FloatLabel} from 'primeng/floatlabel';
 /**
  * Component for managing endpoints of a source system: list, create, edit, delete, and import.
  */
@@ -68,7 +70,8 @@ import { ToastModule } from 'primeng/toast';
     MonacoEditorModule,
     DragDropModule,
     TooltipModule,
-    ToastModule
+    Select,
+    FloatLabel,
   ],
   templateUrl: './manage-endpoints.component.html',
   styleUrls: ['./manage-endpoints.component.css']
@@ -96,9 +99,9 @@ export class ManageEndpointsComponent implements OnInit, OnDestroy {
   editDialog: boolean = false;
   editingEndpoint: SourceSystemEndpointDTO | null = null;
   editForm!: FormGroup;
-  jsonEditorOptions = { 
-    theme: 'vs-dark', 
-    language: 'json', 
+  jsonEditorOptions = {
+    theme: 'vs-dark',
+    language: 'json',
     automaticLayout: true,
     minimap: { enabled: false },
     scrollBeyondLastLine: false,
@@ -108,10 +111,10 @@ export class ManageEndpointsComponent implements OnInit, OnDestroy {
     formatOnPaste: true,
     formatOnType: true
   };
-  
-  typescriptEditorOptions = { 
-    theme: 'vs-dark', 
-    language: 'typescript', 
+
+  typescriptEditorOptions = {
+    theme: 'vs-dark',
+    language: 'typescript',
     automaticLayout: true,
     minimap: { enabled: false },
     scrollBeyondLastLine: false,
@@ -160,27 +163,27 @@ export class ManageEndpointsComponent implements OnInit, OnDestroy {
   requestBodyEditorEndpoint: SourceSystemEndpointDTO | null = null;
   requestBodyEditorModel: NgxEditorModel = { value: '', language: 'json' };
   requestBodyEditorError: string | null = null;
-  
+
   // Response Preview Modal properties
   responsePreviewModalVisible: boolean = false;
   selectedResponsePreviewEndpoint: SourceSystemEndpointDTO | null = null;
-  
+
   // TypeScript generation properties
   generatedTypeScript: string = '';
   editGeneratedTypeScript: string = '';
-  
+
   // Monaco Editor models for TypeScript
   typescriptModel: NgxEditorModel = { value: '', language: 'typescript' };
   editTypeScriptModel: NgxEditorModel = { value: '', language: 'typescript' };
-  
+
   // Tab state management
   activeTabIndex: number = 0;
   editActiveTabIndex: number = 0;
-  
+
   // Loading states for TypeScript generation
   isGeneratingTypeScript: boolean = false;
   isGeneratingEditTypeScript: boolean = false;
-  
+
   // Error states for TypeScript generation
   typescriptError: string | null = null;
   editTypeScriptError: string | null = null;
@@ -195,7 +198,7 @@ export class ManageEndpointsComponent implements OnInit, OnDestroy {
     severity: 'warning'
   };
   endpointToDelete: SourceSystemEndpointDTO | null = null;
-  
+
   // Performance and timeout settings
   private readonly TYPESCRIPT_GENERATION_TIMEOUT = 30000; // 30 seconds
   private readonly MAX_JSON_SCHEMA_SIZE = 1024 * 1024; // 1MB
@@ -235,51 +238,34 @@ export class ManageEndpointsComponent implements OnInit, OnDestroy {
   ngOnInit(): void {
     this.endpointForm = this.formService.createEndpointForm();
     this.editForm = this.formService.createEditForm();
-    
-    // Setup TypeScript generation subscriptions
-    this.setupTypeScriptGeneration();
-    
-    // Subscribe to TypeScript generation states
+
+    // Subscribe to TypeScript generation states (keep advanced flow)
     this.typeScriptService.getMainGenerationState().subscribe(state => {
       this.isGeneratingTypeScript = state.isGenerating;
       this.generatedTypeScript = state.code;
       this.typescriptError = state.error;
       this.typescriptModel.value = state.code;
     });
-
     this.typeScriptService.getEditGenerationState().subscribe(state => {
       this.isGeneratingEditTypeScript = state.isGenerating;
       this.editGeneratedTypeScript = state.code;
       this.editTypeScriptError = state.error;
       this.editTypeScriptModel.value = state.code;
     });
-    
+
+    // Also trigger generation when schemas change
+    this.endpointForm.get('responseBodySchema')?.valueChanges.subscribe(() => this.loadTypeScriptForMainForm());
+    this.editForm.get('responseBodySchema')?.valueChanges.subscribe(() => this.loadTypeScriptForEditForm());
+
     // Reset tab indices when forms are reset
     this.endpointForm.valueChanges.subscribe(() => {
       // Keep track of form state for tab management
     });
-    
+
+    this.loadEndpoints()
     this.loadSourceSystemAndSetApiUrl();
   }
 
-  /**
-   * Setup TypeScript generation form listeners
-   */
-  private setupTypeScriptGeneration(): void {
-    // Listen for changes in response schemas to trigger TypeScript generation
-    this.endpointForm.get('responseSchema')?.valueChanges.subscribe(schema => {
-      if (schema && this.sourceSystemId) {
-        this.typeScriptService.generateTypeScript(schema, this.sourceSystemId);
-      }
-    });
-    
-    this.editForm.get('responseSchema')?.valueChanges.subscribe(schema => {
-      if (schema && this.sourceSystemId) {
-        this.typeScriptService.generateEditTypeScript(schema, this.sourceSystemId);
-      }
-    });
-  }
-  
   /**
    * Clean up resources when component is destroyed
    */
@@ -372,7 +358,7 @@ export class ManageEndpointsComponent implements OnInit, OnDestroy {
         }
       });
   }
-  
+
   /**
    * Load TypeScript data for the main form with comprehensive error handling
    */
@@ -380,7 +366,7 @@ export class ManageEndpointsComponent implements OnInit, OnDestroy {
     const responseBodySchema = this.endpointForm.get('responseBodySchema')?.value;
     this.typescriptError = null; // Clear previous errors
     this.clearTypeScriptGenerationTimeout(false);
-    
+
     if (responseBodySchema) {
       // Validate JSON schema first
       const validation = this.validateJsonSchema(responseBodySchema);
@@ -389,24 +375,24 @@ export class ManageEndpointsComponent implements OnInit, OnDestroy {
         this.generatedTypeScript = this.getTypeScriptErrorFallback(responseBodySchema);
         return;
       }
-      
+
       this.isGeneratingTypeScript = true;
       this.generatedTypeScript = '';
-      
+
       // Set timeout for generation
       this.handleTypeScriptGenerationTimeout(false);
-      
+
       // Use backend service for TypeScript generation
       const request: TypeScriptGenerationRequest = {
         jsonSchema: responseBodySchema
       };
-      
+
       // For now, use a temporary endpoint ID (0) since we don't have a real endpoint yet
       // In the future, this should use the actual endpoint ID when editing existing endpoints
       this.endpointSvc.generateTypeScript(0, request).subscribe({
         next: (response: TypeScriptGenerationResponse) => {
           this.clearTypeScriptGenerationTimeout(false);
-          
+
           if (response.error) {
             this.typescriptError = this.formatErrorMessage(response.error, 'Backend generation failed');
             this.generatedTypeScript = this.getTypeScriptErrorFallback(responseBodySchema);
@@ -436,7 +422,7 @@ export class ManageEndpointsComponent implements OnInit, OnDestroy {
       this.isGeneratingTypeScript = false;
     }
   }
-  
+
   /**
    * Load TypeScript data for the edit form with comprehensive error handling
    */
@@ -444,7 +430,7 @@ export class ManageEndpointsComponent implements OnInit, OnDestroy {
     const responseBodySchema = this.editForm.get('responseBodySchema')?.value;
     this.editTypeScriptError = null; // Clear previous errors
     this.clearTypeScriptGenerationTimeout(true);
-    
+
     if (responseBodySchema) {
       // Validate JSON schema first
       const validation = this.validateJsonSchema(responseBodySchema);
@@ -453,25 +439,25 @@ export class ManageEndpointsComponent implements OnInit, OnDestroy {
         this.editGeneratedTypeScript = this.getTypeScriptErrorFallback(responseBodySchema);
         return;
       }
-      
+
       this.isGeneratingEditTypeScript = true;
       this.editGeneratedTypeScript = '';
-      
+
       // Set timeout for generation
       this.handleTypeScriptGenerationTimeout(true);
-      
+
       // Use backend service for TypeScript generation
       const request: TypeScriptGenerationRequest = {
         jsonSchema: responseBodySchema
       };
-      
+
       // Use the actual endpoint ID if available, otherwise use 0
       const endpointId = this.editingEndpoint?.id || 0;
-      
+
       this.endpointSvc.generateTypeScript(endpointId, request).subscribe({
         next: (response: TypeScriptGenerationResponse) => {
           this.clearTypeScriptGenerationTimeout(true);
-          
+
           if (response.error) {
             this.editTypeScriptError = this.formatErrorMessage(response.error, 'Backend generation failed');
             this.editGeneratedTypeScript = this.getTypeScriptErrorFallback(responseBodySchema);
@@ -501,7 +487,7 @@ export class ManageEndpointsComponent implements OnInit, OnDestroy {
       this.isGeneratingEditTypeScript = false;
     }
   }
-  
+
   /**
    * Load TypeScript data from backend responseDts (when available)
    */
@@ -513,7 +499,7 @@ export class ManageEndpointsComponent implements OnInit, OnDestroy {
     }
     return null;
   }
-  
+
   /**
    * Comprehensive JSON validation with size and format checks
    */
@@ -522,35 +508,35 @@ export class ManageEndpointsComponent implements OnInit, OnDestroy {
     if (!jsonSchema || jsonSchema.trim().length === 0) {
       return { isValid: false, error: 'JSON schema is empty' };
     }
-    
+
     // Check schema size
     if (jsonSchema.length > this.MAX_JSON_SCHEMA_SIZE) {
-      return { 
-        isValid: false, 
-        error: `JSON schema is too large (${(jsonSchema.length / 1024).toFixed(1)}KB). Maximum size is ${(this.MAX_JSON_SCHEMA_SIZE / 1024).toFixed(0)}KB.` 
+      return {
+        isValid: false,
+        error: `JSON schema is too large (${(jsonSchema.length / 1024).toFixed(1)}KB). Maximum size is ${(this.MAX_JSON_SCHEMA_SIZE / 1024).toFixed(0)}KB.`
       };
     }
-    
+
     // Validate JSON syntax
     try {
       const parsed = JSON.parse(jsonSchema);
-      
+
       // Check if it's a valid JSON Schema structure
       if (typeof parsed !== 'object' || parsed === null) {
         return { isValid: false, error: 'JSON schema must be an object' };
       }
-      
+
       // Basic JSON Schema validation
       if (!this.isValidJsonSchemaStructure(parsed)) {
         return { isValid: false, error: 'Invalid JSON Schema structure. Expected properties like "type", "properties", or "$schema"' };
       }
-      
+
       return { isValid: true };
     } catch (e) {
       return { isValid: false, error: `Invalid JSON syntax: ${e instanceof Error ? e.message : 'Unknown error'}` };
     }
   }
-  
+
   /**
    * Check if parsed JSON has valid JSON Schema structure
    */
@@ -562,28 +548,28 @@ export class ManageEndpointsComponent implements OnInit, OnDestroy {
     const hasRef = schema.hasOwnProperty('$ref');
     const hasItems = schema.hasOwnProperty('items');
     const hasEnum = schema.hasOwnProperty('enum');
-    
+
     // Must have at least one of these properties to be a valid schema
     return hasType || hasProperties || hasSchema || hasRef || hasItems || hasEnum;
   }
-  
+
   /**
    * Legacy method for backward compatibility
    */
   private isValidJson(str: string): boolean {
     return this.validateJsonSchema(str).isValid;
   }
-  
+
   /**
    * Handle timeout for TypeScript generation
    */
   private handleTypeScriptGenerationTimeout(isEditForm: boolean = false): void {
     const timeoutId = isEditForm ? this.editTypeScriptGenerationTimeout : this.typescriptGenerationTimeout;
-    
+
     if (timeoutId) {
       clearTimeout(timeoutId);
     }
-    
+
     const newTimeoutId = setTimeout(() => {
       if (isEditForm) {
         this.editTypeScriptError = 'TypeScript generation timed out. Please try again or check your JSON schema.';
@@ -593,20 +579,20 @@ export class ManageEndpointsComponent implements OnInit, OnDestroy {
         this.isGeneratingTypeScript = false;
       }
     }, this.TYPESCRIPT_GENERATION_TIMEOUT);
-    
+
     if (isEditForm) {
       this.editTypeScriptGenerationTimeout = newTimeoutId;
     } else {
       this.typescriptGenerationTimeout = newTimeoutId;
     }
   }
-  
+
   /**
    * Clear timeout for TypeScript generation
    */
   private clearTypeScriptGenerationTimeout(isEditForm: boolean = false): void {
     const timeoutId = isEditForm ? this.editTypeScriptGenerationTimeout : this.typescriptGenerationTimeout;
-    
+
     if (timeoutId) {
       clearTimeout(timeoutId);
       if (isEditForm) {
@@ -616,14 +602,14 @@ export class ManageEndpointsComponent implements OnInit, OnDestroy {
       }
     }
   }
-  
+
   /**
    * Format error messages for better user experience
    */
   private formatErrorMessage(error: string, context: string): string {
     // Remove technical details and make error more user-friendly
     let formattedError = error;
-    
+
     // Common error patterns
     if (error.includes('HttpErrorResponse')) {
       formattedError = 'Network error: Unable to connect to the server';
@@ -636,10 +622,10 @@ export class ManageEndpointsComponent implements OnInit, OnDestroy {
     } else if (error.includes('size') || error.includes('large')) {
       formattedError = 'Schema is too large to process';
     }
-    
+
     return `${context}: ${formattedError}`;
   }
-  
+
   /**
    * Get TypeScript error fallback content
    */
@@ -658,7 +644,7 @@ ${jsonSchema}
 
 // Please fix the JSON Schema and try again.`;
   }
-  
+
   /**
    * Generate a placeholder TypeScript interface from JSON schema
    * This is a temporary implementation until we get the real responseDts from backend
@@ -671,7 +657,7 @@ ${jsonSchema}
       return '// Invalid JSON Schema\n// Unable to generate TypeScript interface';
     }
   }
-  
+
   /**
    * Convert JSON Schema to TypeScript interface
    */
@@ -679,10 +665,10 @@ ${jsonSchema}
     if (!schema || typeof schema !== 'object') {
       return '// Invalid schema';
     }
-    
+
     let result = '// Generated TypeScript interface from JSON Schema\n';
     result += '// Auto-generated by Stay-in-Sync Configurator\n\n';
-    
+
     if (schema.type === 'object' && schema.properties) {
       result += '/**\n';
       result += ' * Response body interface generated from JSON Schema\n';
@@ -691,17 +677,17 @@ ${jsonSchema}
       }
       result += ' */\n';
       result += 'interface ResponseBody {\n';
-      
+
       for (const [key, prop] of Object.entries(schema.properties)) {
         const propSchema = prop as any;
         const type = this.getTypeScriptType(propSchema);
         const required = schema.required?.includes(key) ? '' : '?';
-        
+
         // Add JSDoc comment for the property
         if (propSchema.description) {
           result += `  /** ${propSchema.description} */\n`;
         }
-        
+
         result += `  ${key}${required}: ${type};\n`;
       }
       result += '}\n\n';
@@ -729,10 +715,10 @@ ${jsonSchema}
       result += ';\n\n';
       result += 'export default ResponseBody;';
     }
-    
+
     return result;
   }
-  
+
   /**
    * Get TypeScript type from JSON Schema type
    */
@@ -740,9 +726,9 @@ ${jsonSchema}
     if (!schema || typeof schema !== 'object') {
       return 'any';
     }
-    
+
     const type = schema.type;
-    
+
     switch (type) {
       case 'string':
         // Handle string enums
@@ -761,7 +747,7 @@ ${jsonSchema}
           return 'string';
         }
         return 'string';
-        
+
       case 'number':
       case 'integer':
         // Handle number enums
@@ -770,17 +756,17 @@ ${jsonSchema}
           return enumValues;
         }
         return 'number';
-        
+
       case 'boolean':
         return 'boolean';
-        
+
       case 'array':
         if (schema.items) {
           const itemType = this.getTypeScriptType(schema.items);
           return `${itemType}[]`;
         }
         return 'any[]';
-        
+
       case 'object':
         if (schema.properties) {
           let result = '{\n';
@@ -794,10 +780,10 @@ ${jsonSchema}
           return result;
         }
         return 'object';
-        
+
       case 'null':
         return 'null';
-        
+
       default:
         // Handle $ref or other complex types
         if (schema.$ref) {
@@ -811,6 +797,7 @@ ${jsonSchema}
    * Create a new endpoint using form data and refresh list upon success.
    */
   addEndpoint() {
+    this.addEndpointVisible = false;
     let requestBodySchema = this.endpointForm.get('requestBodySchema')?.value || '';
     let resolvedSchema = requestBodySchema;
     try {
@@ -860,10 +847,10 @@ ${jsonSchema}
         this.activeTabIndex = 0; // Reset to JSON tab
         this.isGeneratingTypeScript = false; // Reset loading state
         this.typescriptError = null; // Reset error state
-        
+
         // Clear timeouts
         this.clearTypeScriptGenerationTimeout(false);
-        
+
         // Ensure proper tab integration after form reset
         this.resetTabIntegration();
         this.onCreated.emit();
@@ -927,14 +914,14 @@ ${jsonSchema}
     this.editDialog = true;
     this.editJsonError = null;
     this.editActiveTabIndex = 0; // Reset to JSON tab
-    
+
     // Load TypeScript for the edit form
     this.loadTypeScriptForEditForm();
-    
+
     // Ensure proper tab integration
     this.initializeTabIntegration();
   }
-  
+
   /**
    * Initialize tab integration and ensure proper state
    */
@@ -957,15 +944,15 @@ ${jsonSchema}
     this.editActiveTabIndex = 0; // Reset to JSON tab
     this.isGeneratingEditTypeScript = false; // Reset loading state
     this.editTypeScriptError = null; // Reset error state
-    
+
     // Clear timeouts
     this.clearTypeScriptGenerationTimeout(true);
     this.clearTypeScriptGenerationTimeout(false);
-    
+
     // Clean up tab integration
     this.cleanupTabIntegration();
   }
-  
+
   /**
    * Clean up tab integration state
    */
@@ -974,7 +961,7 @@ ${jsonSchema}
     this.editActiveTabIndex = 0;
     this.activeTabIndex = 0;
   }
-  
+
   /**
    * Reset tab integration after form reset
    */
@@ -986,7 +973,7 @@ ${jsonSchema}
     this.typescriptError = null;
     this.isGeneratingTypeScript = false;
   }
-  
+
   /**
    * Handle tab change in main form
    */
@@ -997,7 +984,7 @@ ${jsonSchema}
       this.loadTypeScriptForMainForm();
     }
   }
-  
+
   /**
    * Handle tab change in edit form
    */
@@ -1169,10 +1156,10 @@ ${jsonSchema}
     }
     const cleaned: any = {};
     const relevantProps = [
-      'type', 'properties', 'required', 'items', 'allOf', 'anyOf', 'oneOf', 
-      'not', 'additionalProperties', 'description', 'format', '$ref', 
-      'nullable', 'readOnly', 'writeOnly', 'example', 'deprecated', 
-      'xml', 'discriminator', 'enum', 'const', 'default', 'minItems', 
+      'type', 'properties', 'required', 'items', 'allOf', 'anyOf', 'oneOf',
+      'not', 'additionalProperties', 'description', 'format', '$ref',
+      'nullable', 'readOnly', 'writeOnly', 'example', 'deprecated',
+      'xml', 'discriminator', 'enum', 'const', 'default', 'minItems',
       'maxItems', 'uniqueItems', 'minProperties', 'maxProperties',
       'minLength', 'maxLength', 'pattern', 'minimum', 'maximum',
       'exclusiveMinimum', 'exclusiveMaximum', 'multipleOf'
@@ -1182,7 +1169,7 @@ ${jsonSchema}
         if (typeof schema[prop] === 'object' && !Array.isArray(schema[prop])) {
           cleaned[prop] = this.cleanJsonSchema(schema[prop]);
         } else if (Array.isArray(schema[prop])) {
-          cleaned[prop] = schema[prop].map((item: any) => 
+          cleaned[prop] = schema[prop].map((item: any) =>
             typeof item === 'object' ? this.cleanJsonSchema(item) : item
           );
         } else {
@@ -1395,7 +1382,7 @@ ${jsonSchema}
     if (!isNaN(Number(value))) {
       return Number(value);
     }
-    if ((value.startsWith('"') && value.endsWith('"')) || 
+    if ((value.startsWith('"') && value.endsWith('"')) ||
         (value.startsWith("'") && value.endsWith("'"))) {
       return value.slice(1, -1);
     }
@@ -1646,9 +1633,9 @@ ${jsonSchema}
         { regex: new RegExp(`:${paramName}\\b`, 'g'), replacement: `{${paramName}}` },
         { regex: new RegExp(`<${paramName}>`, 'g'), replacement: `{${paramName}}` },
         { regex: new RegExp(`\\[${paramName}\\]`, 'g'), replacement: `{${paramName}}` },
-        { 
-          regex: new RegExp(`(?<!\\{|:|<|\\[)\\b${paramName}\\b(?!\\}|>|\\])(?=/|$)`, 'g'), 
-          replacement: `{${paramName}}` 
+        {
+          regex: new RegExp(`(?<!\\{|:|<|\\[)\\b${paramName}\\b(?!\\}|>|\\])(?=/|$)`, 'g'),
+          replacement: `{${paramName}}`
         }
       ];
       patterns.forEach(pattern => {
@@ -1702,6 +1689,7 @@ ${jsonSchema}
   }
 
   public currentOpenApiSpec: string | any = '';
+  addEndpointVisible: boolean = false;
 
   /**
    * Resolves a $ref schema from the current OpenAPI spec (recursively).
@@ -1733,7 +1721,7 @@ ${jsonSchema}
       }
     } catch (e) {}
     return schemaRef;
-    
+
   }
 
   /**

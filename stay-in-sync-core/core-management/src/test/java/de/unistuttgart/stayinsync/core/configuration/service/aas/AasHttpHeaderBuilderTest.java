@@ -1,7 +1,7 @@
 package de.unistuttgart.stayinsync.core.configuration.service.aas;
 
-import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.SourceSystem;
-import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.authconfig.BasicAuthConfig;
+import de.unistuttgart.stayinsync.core.configuration.persistence.entities.sync.SyncSystem;
+import de.unistuttgart.stayinsync.core.configuration.persistence.entities.sync.authconfig.BasicAuthConfig;
 import org.junit.jupiter.api.Test;
 
 import java.util.Map;
@@ -13,7 +13,7 @@ public class AasHttpHeaderBuilderTest {
     @Test
     void buildsReadHeadersWithBasicAuth() {
         HttpHeaderBuilder builder = new HttpHeaderBuilder();
-        SourceSystem sys = new SourceSystem();
+        SyncSystem sys = new SyncSystem();
         sys.id = 1L; // Set ID but database lookup will fail gracefully
         BasicAuthConfig auth = new BasicAuthConfig();
         auth.username = "user";

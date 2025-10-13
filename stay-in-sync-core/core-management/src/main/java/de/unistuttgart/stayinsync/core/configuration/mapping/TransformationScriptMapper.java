@@ -1,6 +1,6 @@
 package de.unistuttgart.stayinsync.core.configuration.mapping;
 
-import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.TransformationScript;
+import de.unistuttgart.stayinsync.core.configuration.persistence.entities.sync.TransformationScript;
 import de.unistuttgart.stayinsync.core.configuration.rest.dtos.TransformationScriptDTO;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;

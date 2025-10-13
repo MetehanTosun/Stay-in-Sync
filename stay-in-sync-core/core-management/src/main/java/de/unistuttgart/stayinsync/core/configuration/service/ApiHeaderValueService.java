@@ -1,7 +1,7 @@
 package de.unistuttgart.stayinsync.core.configuration.service;
 
-import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.ApiHeaderValue;
-import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.ApiRequestConfiguration;
+import de.unistuttgart.stayinsync.core.configuration.persistence.entities.sync.ApiHeaderValue;
+import de.unistuttgart.stayinsync.core.configuration.persistence.entities.sync.ApiRequestConfiguration;
 import de.unistuttgart.stayinsync.core.configuration.exception.CoreManagementException;
 import de.unistuttgart.stayinsync.core.configuration.mapping.ApiHeaderValueMapper;
 import de.unistuttgart.stayinsync.core.configuration.rest.dtos.ApiHeaderValueDTO;

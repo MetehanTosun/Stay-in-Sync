@@ -1,6 +1,6 @@
 package de.unistuttgart.stayinsync.core.configuration.rest.aas.source;
 
-import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.SourceSystem;
+import de.unistuttgart.stayinsync.core.configuration.persistence.entities.sync.SourceSystem;
 import de.unistuttgart.stayinsync.core.configuration.rest.dtos.aas.AasTestResultDTO;
 import de.unistuttgart.stayinsync.core.configuration.rest.dtos.aas.SubmodelSummaryDTO;
 import de.unistuttgart.stayinsync.core.configuration.service.aas.AasTraversalClient;
@@ -141,10 +141,10 @@ public class SourceAasTestController {
         } else {
             // SNAPSHOT source
             Log.infof("List submodels SNAPSHOT: sourceSystemId=%d", sourceSystemId);
-            List<de.unistuttgart.stayinsync.core.configuration.domain.entities.aas.AasSubmodelLite> submodels = 
-                de.unistuttgart.stayinsync.core.configuration.domain.entities.aas.AasSubmodelLite.list("sourceSystem.id", sourceSystemId);
+            List<de.unistuttgart.stayinsync.core.configuration.persistence.entities.aas.AasSubmodelLite> submodels = 
+                de.unistuttgart.stayinsync.core.configuration.persistence.entities.aas.AasSubmodelLite.list("sourceSystem.id", sourceSystemId);
             List<SubmodelSummaryDTO> result = new ArrayList<>();
-            for (de.unistuttgart.stayinsync.core.configuration.domain.entities.aas.AasSubmodelLite sm : submodels) {
+            for (de.unistuttgart.stayinsync.core.configuration.persistence.entities.aas.AasSubmodelLite sm : submodels) {
                 result.add(new SubmodelSummaryDTO(sm.submodelId, sm.submodelIdShort, sm.semanticId, sm.kind, sm.id));
             }
             return Uni.createFrom().item(Response.ok(result).build());

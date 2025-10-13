@@ -11,6 +11,8 @@ import { MessageService } from 'primeng/api';
 import { ApiEndpointQueryParamResourceService } from '../../service/apiEndpointQueryParamResource.service';
 import { ApiEndpointQueryParamDTO } from '../../models/apiEndpointQueryParamDTO';
 import { ApiEndpointQueryParamType } from '../../models/apiEndpointQueryParamType';
+import {FloatLabel} from 'primeng/floatlabel';
+import {Select} from 'primeng/select';
 
 /**
  * Component to manage API endpoint query parameters.
@@ -29,7 +31,8 @@ import { ApiEndpointQueryParamType } from '../../models/apiEndpointQueryParamTyp
     InputTextModule,
     DropdownModule,
     CardModule,
-    ToastModule,
+    FloatLabel,
+    Select,
     // ggf. weitere Module
   ]
 })
@@ -169,12 +172,7 @@ export class ManageEndpointParamsComponent implements OnInit, OnChanges {
         },
         error: (err) => {
           console.error('Failed to add query param', err);
-          this.messageService.add({ 
-            severity: 'error', 
-            summary: 'Error', 
-            detail: 'Failed to create parameter', 
-            life: 4000 
-          });
+          this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Failed to create parameter', life: 4000 });
         }
       });
   }
@@ -193,12 +191,7 @@ export class ManageEndpointParamsComponent implements OnInit, OnChanges {
         },
         error: (err) => {
           console.error('Failed to delete query param', err);
-          this.messageService.add({ 
-            severity: 'error', 
-            summary: 'Error', 
-            detail: 'Failed to delete parameter', 
-            life: 4000 
-          });
+          this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Failed to delete parameter', life: 4000 });
         }
       });
   }
@@ -213,4 +206,4 @@ export class ManageEndpointParamsComponent implements OnInit, OnChanges {
     const cleanName = paramName.replace(/[{}]/g, '');
     return `{${cleanName}}`;
   }
-} 
+}

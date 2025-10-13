@@ -1,6 +1,6 @@
 package de.unistuttgart.stayinsync.core.service;
 
-import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.*;
+import de.unistuttgart.stayinsync.core.configuration.persistence.entities.sync.*;
 import de.unistuttgart.stayinsync.core.configuration.rest.dtos.typegeneration.GetTypeDefinitionsResponseDTO;
 import de.unistuttgart.stayinsync.core.configuration.rest.dtos.typegeneration.TypeLibraryDTO;
 import de.unistuttgart.stayinsync.core.configuration.service.TargetDtsBuilderGeneratorService;
@@ -149,9 +149,12 @@ class TargetDtsBuilderGeneratorServiceTest {
     void testParseSpecification() {
         OpenAPI spec = service.parseSpecification(getTestOpenApiSpec());
         assertNotNull(spec);
+
         assertEquals("Product API", spec.getInfo().getTitle());
         assertEquals("1.0.0", spec.getInfo().getVersion());
+
         assertNotNull(spec.getPaths());
+
         assertTrue(spec.getPaths().containsKey("/products"));
         assertTrue(spec.getPaths().containsKey("/products/{id}"));
     }

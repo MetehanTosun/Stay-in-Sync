@@ -36,7 +36,7 @@ export class DashboardComponent {
     { route: '/error-snapshots', label: 'Error Snapshots', icon: 'pi pi-camera' }
   ];
 
-  constructor(private router: Router) {}
+  constructor(private readonly router: Router) {}
 
   /**
    * Handles node selection from the GraphPanel.

@@ -1,7 +1,8 @@
 package de.unistuttgart.stayinsync.core.configuration.rest.dtos.aas;
 
-import java.util.List;
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
+
+import java.util.List;
 
 @Schema(name = "SubmodelElementNode", description = "Snapshot node representing a SubmodelElement from the Core database (lite).")
 public record SubmodelElementNodeDTO(

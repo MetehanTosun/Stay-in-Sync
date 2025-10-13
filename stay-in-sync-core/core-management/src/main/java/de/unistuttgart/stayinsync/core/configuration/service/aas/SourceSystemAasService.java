@@ -1,7 +1,7 @@
 package de.unistuttgart.stayinsync.core.configuration.service.aas;
 
-import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.SourceSystem;
-import de.unistuttgart.stayinsync.core.configuration.exception.CoreManagementWebException;
+import de.unistuttgart.stayinsync.core.configuration.persistence.entities.sync.SourceSystem;
+import de.unistuttgart.stayinsync.core.configuration.exception.CoreManagementException;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.core.Response;
@@ -28,18 +28,13 @@ public class SourceSystemAasService {
     }
 
     /**
-     * Throws CoreManagementWebException for HTTP errors.
-     * Uses the proper exception handling mechanism instead of manual response mapping.
-     * 
-     * @param statusCode the HTTP status code
-     * @param statusMessage the HTTP status message
-     * @param body the response body
-     * @throws CoreManagementWebException with appropriate status and message
+     * Throws CoreManagementException for HTTP errors.
+     * Uses the central exception handling mechanism with proper status mapping.
      */
     public void throwHttpError(int statusCode, String statusMessage, String body) {
         Response.Status status = mapStatusCode(statusCode);
         String message = body != null && !body.isBlank() ? body : (statusMessage != null ? statusMessage : "Upstream error");
-        throw new CoreManagementWebException(status, "AAS Operation Failed", message);
+        throw new CoreManagementException(status, "AAS Operation Failed", message);
     }
 
     /**

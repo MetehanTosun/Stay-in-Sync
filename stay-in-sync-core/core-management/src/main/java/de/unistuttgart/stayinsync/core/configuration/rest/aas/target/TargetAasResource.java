@@ -1,6 +1,6 @@
 package de.unistuttgart.stayinsync.core.configuration.rest.aas.target;
 
-import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.TargetSystem;
+import de.unistuttgart.stayinsync.core.configuration.persistence.entities.sync.TargetSystem;
 import de.unistuttgart.stayinsync.core.configuration.service.aas.AasTraversalClient;
 import de.unistuttgart.stayinsync.core.configuration.service.aas.AasStructureSnapshotService;
 import de.unistuttgart.stayinsync.core.configuration.service.aas.TargetSystemAasService;

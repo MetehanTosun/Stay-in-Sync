@@ -1,51 +1,36 @@
-<app-search-bar
-  [customPlaceholder]="'Search target systems by name, description, API URL...'"
-  (search)="onSearchChange($event)"
-  (clear)="onSearchClear()">
-</app-search-bar>
-
-<p-table [value]="displaySystems" [loading]="loading" [paginator]="true" [rows]="10" [responsiveLayout]="'scroll'">
+<div style="height: 50rem">
+<p-table [value]="displaySystems" [paginator]="true"
+         [paginator]="true"
+         paginatorPosition="bottom"
+         [rows]="10"
+         [scrollable]="true"
+         scrollHeight="flex">
+  <ng-template pTemplate="header">
+    <tr>
+      <th>Name</th>
+      <th>API URL</th>
+      <th>Description</th>
+      <th>Actions</th>
+    </tr>
+    <tr>
+      <th>
+        <p-columnFilter type="text" field="name" matchMode="contains" placeholder="Search by name" [showMenu]="false"
+                        ariaLabel="Filter Name"></p-columnFilter>
+      </th>
+      <th>
+        <p-columnFilter type="text" field="apiUrl" matchMode="contains" placeholder="Search by address"
+                        ariaLabel="Filter Name"></p-columnFilter>
+      </th>
+      <th></th>
+      <th>
+      </th>
+    </tr>
+  </ng-template>
   <ng-template #caption>
     <div class="flex items-center justify-between">
       <span class="text-xl font-bold">Target Systems</span>
       <button pButton type="button" label="Create Target System" icon="pi pi-plus" (click)="openCreate()"></button>
     </div>
-  </ng-template>
-  <ng-template pTemplate="header">
-    <tr>
-      <th style="width: 25%;">
-        <div class="column-header">
-          <span>Name</span>
-          <div class="search-indicator" *ngIf="false">
-            <i class="pi pi-search" title="Name matches found"></i>
-          </div>
-        </div>
-      </th>
-      <th style="width: 25%;">
-        <div class="column-header">
-          <span>API URL</span>
-          <div class="search-indicator" *ngIf="false">
-            <i class="pi pi-search" title="URL matches found"></i>
-          </div>
-        </div>
-      </th>
-      <th style="width: 25%;">
-        <div class="column-header">
-          <span>Description</span>
-          <div class="search-indicator" *ngIf="false">
-            <i class="pi pi-search" title="Description matches found"></i>
-          </div>
-        </div>
-      </th>
-      <th style="width: 25%;">
-        <div class="column-header">
-          <span>Actions</span>
-          <div class="search-indicator" *ngIf="false">
-            <i class="pi pi-cog" title="Endpoint/Header matches found"></i>
-          </div>
-        </div>
-      </th>
-    </tr>
   </ng-template>
   <ng-template pTemplate="body" let-system let-rowIndex="rowIndex">
     <tr [class.search-result]="isSearchActive">
@@ -92,8 +77,10 @@
         </div>
       </td>
     </tr>
+
   </ng-template>
 </p-table>
+</div>
 
 <p-dialog [(visible)]="showDialog" [modal]="true" [style]="{width: '900px'}" [header]="dialogTitle">
   <form [formGroup]="form" class="p-fluid">
@@ -173,4 +160,3 @@
   (confirmed)="onConfirmationConfirmed()"
   (cancelled)="onConfirmationCancelled()">
 </app-confirmation-dialog>
-

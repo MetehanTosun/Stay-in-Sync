@@ -1,14 +1,47 @@
-<p-panel header="Target Directives" [toggleable]="true" styleClass="h-full flex flex-column">
+<p-panel
+  header="Target Directives"
+  [toggleable]="true"
+  styleClass="h-full flex flex-column"
+>
+  <!-- Header with title and actions -->
+  <ng-template pTemplate="header">
+    <div class="flex justify-content-between w-full align-items-center">
+      <span class="p-panel-title">Target Directives</span>
+      <div class="flex gap-2">
+        <!-- Menu Button Create -->
+        <p-menu #menu [model]="createMenuItems" [popup]="true"></p-menu>
+        <p-button
+          label="Create New"
+          icon="pi pi-plus"
+          (click)="menu.toggle($event)"
+          styleClass="p-button-sm"
+        ></p-button>
 
+        <!-- From Library Button -->
+        <p-button
+          label="From Library"
+          icon="pi pi-book"
+          styleClass="p-button-sm p-button-secondary"
+          (click)="showLibrary()"
+        ></p-button>
+      </div>
+    </div>
+  </ng-template>
+
+  <div *ngIf="isLoading" class="text-center p-4 flex-grow-1">
+    <p-progressSpinner styleClass="w-3rem h-3rem"></p-progressSpinner>
+  </div>
+
+  <!-- TreeTable of all active Target Arcs in script -->
   <p-treeTable
+    *ngIf="!isLoading"
     [value]="activeArcsTree"
-    [loading]="isLoading"
     styleClass="compact-treetable flex-grow-1"
   >
     <ng-template pTemplate="header">
       <tr>
-        <th style="width: 75%;">Name</th>
-        <th style="width: 25%;">Action</th>
+        <th style="width: 75%">Name</th>
+        <th style="width: 25%" class="text-center">Action</th>
       </tr>
     </ng-template>
 
@@ -16,15 +49,29 @@
       <tr>
         <td>
           <p-treeTableToggler [rowNode]="rowNode"></p-treeTableToggler>
-          {{ rowData.name }}
+
+          <i
+            *ngIf="rowData.type === 'arc' && isRestArc(rowData.arc)"
+            class="pi pi-globe mr-2"
+            pTooltip="REST ARC"
+          ></i>
+          <i
+            *ngIf="rowData.type === 'arc' && isAasArc(rowData.arc)"
+            class="pi pi-database mr-2"
+            pTooltip="AAS ARC"
+          ></i>
+
+          <span [class.font-bold]="rowData.type === 'system'">{{
+            rowData.name
+          }}</span>
         </td>
-        <td>
+        <td class="text-center">
           <p-button
             *ngIf="rowData.type === 'arc'"
             icon="pi pi-trash"
             styleClass="p-button-rounded p-button-danger p-button-text"
-            (click)="removeArc(rowData.id)"
-            pTooltip="Remove Directive"
+            (click)="removeArc(rowData.arc)"
+            pTooltip="Remove from Transformation"
           ></p-button>
         </td>
       </tr>
@@ -32,53 +79,76 @@
 
     <ng-template pTemplate="emptymessage">
       <tr>
-        <td colspan="2" class="text-center">No directives are configured for this Transformation.</td>
+        <td colspan="2" class="text-center p-3 text-color-secondary">
+          No directives are configured for this Transformation.
+        </td>
       </tr>
     </ng-template>
   </p-treeTable>
-
-  <ng-template pTemplate="footer">
-    <div class="flex gap-2">
-      <p-button label="Create New" icon="pi pi-plus" (click)="showArcWizard()"></p-button>
-      <p-button label="From Library" icon="pi pi-book" styleClass="p-button-secondary" (click)="showLibrary()"></p-button>
-    </div>
-  </ng-template>
 </p-panel>
 
-<!-- Dialog for Library -->
-<p-dialog header="ARC Library" [(visible)]="displayLibrary" [modal]="true" [style]="{width: '50vw'}">
+<!-- "From Library"-Dialog -->
+<p-dialog
+  header="Add ARC from Library"
+  [(visible)]="displayLibrary"
+  [modal]="true"
+  [style]="{ width: '60vw' }"
+>
   <p-accordion [multiple]="true" (onOpen)="onTabOpen($event)">
-    <p-accordionTab *ngFor="let system of librarySystems" [header]="system.name">
-
+    <p-accordionTab
+      *ngFor="let system of librarySystems"
+      [header]="system.name + ' (' + system.apiType + ')'"
+    >
       <div *ngIf="system.isLoading" class="text-center p-2">
         <p-progressSpinner styleClass="w-2rem h-2rem"></p-progressSpinner>
       </div>
 
       <ul *ngIf="!system.isLoading" class="list-none p-0 m-0">
-        <li *ngFor="let arc of system.arcs" class="flex align-items-center justify-content-between p-2 border-bottom-1 surface-border">
-          <span>{{ arc.alias }}</span>
+        <li
+          *ngFor="let arc of system.arcs"
+          class="flex align-items-center justify-content-between p-2 border-bottom-1 surface-border"
+        >
+          <span>
+            {{ arc.alias }}
+            <small *ngIf="isAasArc(arc)" class="text-color-secondary ml-2"
+              >({{ arc.submodelIdShort }})</small
+            >
+          </span>
 
           <p-button
             [label]="activeArcIds.has(arc.id) ? 'Added' : 'Add'"
             [icon]="activeArcIds.has(arc.id) ? 'pi pi-check' : 'pi pi-plus'"
-            [styleClass]="'p-button-sm' + (activeArcIds.has(arc.id) ? ' p-button-success' : '')"
+            [styleClass]="
+              'p-button-sm' +
+              (activeArcIds.has(arc.id) ? ' p-button-success' : '')
+            "
             [disabled]="activeArcIds.has(arc.id)"
-            (click)="addArc(arc.id)">
+            (click)="addArc(arc)"
+          >
           </p-button>
-
         </li>
         <li *ngIf="system.arcs.length === 0" class="p-2 text-center text-muted">
-            There were no ARCs created for this Target System yet.
+          No ARCs have been created for this Target System yet.
         </li>
       </ul>
     </p-accordionTab>
-
   </p-accordion>
 </p-dialog>
 
-<!-- Target ARC Wizard -->
+<!-- REST ARC Wizard -->
 <app-target-arc-wizard
-  *ngIf="isWizardVisible"
-  [(visible)]="isWizardVisible"
-  (saveSuccess)="onWizardSaveSuccess($event)">
+  *ngIf="isRestWizardVisible"
+  [visible]="isRestWizardVisible"
+  (visibleChange)="isRestWizardVisible = $event"
+  (saveSuccess)="onRestWizardSaveSuccess($event)"
+>
 </app-target-arc-wizard>
+
+<!-- AAS ARC Wizard -->
+<app-target-arc-wizard-aas
+  *ngIf="isAasWizardVisible"
+  [visible]="isAasWizardVisible"
+  (visibleChange)="isAasWizardVisible = $event"
+  (saveSuccess)="onAasWizardSaveSuccess($event)"
+>
+</app-target-arc-wizard-aas>

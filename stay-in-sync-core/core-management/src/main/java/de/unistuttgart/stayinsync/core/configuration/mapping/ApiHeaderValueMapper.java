@@ -1,6 +1,6 @@
 package de.unistuttgart.stayinsync.core.configuration.mapping;
 
-import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.ApiHeaderValue;
+import de.unistuttgart.stayinsync.core.configuration.persistence.entities.sync.ApiHeaderValue;
 import de.unistuttgart.stayinsync.core.configuration.rest.dtos.ApiHeaderDTO;
 import de.unistuttgart.stayinsync.core.configuration.rest.dtos.ApiHeaderValueDTO;
 import de.unistuttgart.stayinsync.transport.dto.ApiRequestHeaderMessageDTO;

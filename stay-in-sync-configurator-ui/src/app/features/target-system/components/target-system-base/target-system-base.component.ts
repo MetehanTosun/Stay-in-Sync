@@ -7,9 +7,8 @@ import { ButtonModule } from 'primeng/button';
 import { DialogModule } from 'primeng/dialog';
 import { InputTextModule } from 'primeng/inputtext';
 import { TextareaModule } from 'primeng/textarea';
-import { ToolbarModule } from 'primeng/toolbar';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
-import { ConfirmationService, MessageService } from 'primeng/api';
+import { ConfirmationService } from 'primeng/api';
 import { ConfirmationDialogComponent, ConfirmationDialogData } from '../../../source-system/components/confirmation-dialog/confirmation-dialog.component';
 import { TabViewModule } from 'primeng/tabview';
 import { TargetSystemResourceService } from '../../service/targetSystemResource.service';
@@ -17,7 +16,6 @@ import { TargetSystemDTO } from '../../models/targetSystemDTO';
 import { CreateTargetSystemComponent } from '../create-target-system/create-target-system.component';
 import { ManageTargetEndpointsComponent } from '../manage-target-endpoints/manage-target-endpoints.component';
 import { ManageApiHeadersComponent } from '../../../source-system/components/manage-api-headers/manage-api-headers.component';
-import { SearchBarComponent } from '../../../source-system/components/search-bar/search-bar.component';
 import { AasManagementComponent } from '../aas-management/aas-management.component';
 
 @Component({
@@ -37,7 +35,6 @@ import { AasManagementComponent } from '../aas-management/aas-management.compone
     CreateTargetSystemComponent,
     ManageTargetEndpointsComponent,
     ManageApiHeadersComponent,
-    SearchBarComponent,
     TextareaModule,
     ConfirmationDialogComponent,
     AasManagementComponent

@@ -13,7 +13,8 @@ import {ApiHeaderDTO} from '../../models/apiHeaderDTO';
 import {CreateApiHeaderDTO} from '../../models/createApiHeaderDTO';
 import {HttpErrorService} from '../../../../core/services/http-error.service';
 import {ConfirmationDialogComponent, ConfirmationDialogData} from '../confirmation-dialog/confirmation-dialog.component';
-import {MessageService} from 'primeng/api';
+import {FloatLabel} from 'primeng/floatlabel';
+import {Select, SelectModule} from 'primeng/select';
 
 /**
  * Component for managing API header templates for a given system.
@@ -30,7 +31,9 @@ import {MessageService} from 'primeng/api';
     InputTextModule,
     DropdownModule,
     CardModule,
-    ConfirmationDialogComponent
+    ConfirmationDialogComponent,
+    FloatLabel,
+    SelectModule
   ],
   templateUrl: './manage-api-headers.component.html'
 })
@@ -76,10 +79,8 @@ export class ManageApiHeadersComponent implements OnInit {
   constructor(
     private fb: FormBuilder,
     private hdrSvc: ApiHeaderResourceService,
-    protected errorSerice: HttpErrorService,
-    private messageService: MessageService
-  ) {
-  }
+    protected errorSerice: HttpErrorService
+  ) {}
 
 
   /**

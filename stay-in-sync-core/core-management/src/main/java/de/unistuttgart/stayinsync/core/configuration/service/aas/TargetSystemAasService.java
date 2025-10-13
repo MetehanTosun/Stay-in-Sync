@@ -1,7 +1,7 @@
 package de.unistuttgart.stayinsync.core.configuration.service.aas;
 
-import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.TargetSystem;
-import de.unistuttgart.stayinsync.core.configuration.exception.CoreManagementWebException;
+import de.unistuttgart.stayinsync.core.configuration.persistence.entities.sync.TargetSystem;
+import de.unistuttgart.stayinsync.core.configuration.exception.CoreManagementException;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.core.Response;
@@ -39,7 +39,7 @@ public class TargetSystemAasService {
     public void throwHttpError(int statusCode, String statusMessage, String body) {
         Response.Status status = mapStatusCode(statusCode);
         String message = body != null && !body.isBlank() ? body : (statusMessage != null ? statusMessage : "Upstream error");
-        throw new CoreManagementWebException(status, "AAS Operation Failed", message);
+        throw new CoreManagementException(status, "AAS Operation Failed", message);
     }
 
     /**

@@ -1,10 +1,10 @@
 package de.unistuttgart.stayinsync.core.configuration.service.aas;
 
-import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.ApiHeader;
-import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.SyncSystem;
-import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.authconfig.ApiKeyAuthConfig;
-import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.authconfig.BasicAuthConfig;
-import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.authconfig.SyncSystemAuthConfig;
+import de.unistuttgart.stayinsync.core.configuration.persistence.entities.sync.ApiHeader;
+import de.unistuttgart.stayinsync.core.configuration.persistence.entities.sync.SyncSystem;
+import de.unistuttgart.stayinsync.core.configuration.persistence.entities.sync.authconfig.ApiKeyAuthConfig;
+import de.unistuttgart.stayinsync.core.configuration.persistence.entities.sync.authconfig.BasicAuthConfig;
+import de.unistuttgart.stayinsync.core.configuration.persistence.entities.sync.authconfig.SyncSystemAuthConfig;
 import io.quarkus.logging.Log;
 import jakarta.enterprise.context.ApplicationScoped;
 

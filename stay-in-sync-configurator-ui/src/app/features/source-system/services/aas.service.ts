@@ -1,6 +1,8 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpParams, HttpHeaders } from '@angular/common/http';
 import { Observable } from 'rxjs';
+import { AasArc, AasArcSaveRequest } from '../../script-editor/models/arc.models';
+import { AasTargetArcConfiguration, CreateAasTargetArcDTO } from '../../script-editor/models/target-system.models';
 
 @Injectable({ providedIn: 'root' })
 export class AasService {
@@ -169,6 +171,29 @@ export class AasService {
     
     // Backend expects normal Base64 with padding, not Base64-URL
     return btoa(id);
+  }
+
+  createAasArc(dto: AasArcSaveRequest): Observable<AasArc> {
+    const url = `/api/config/aas-request-configuration`;
+    return this.http.post<AasArc>(url, dto);
+  }
+
+  updateAasArc(arcId: number, dto: AasArcSaveRequest): Observable<AasArc> {
+    const url = `/api/config/aas-request-configuration/${arcId}`;
+    return this.http.put<AasArc>(url, dto);
+  }
+
+  deleteAasArc(arcId: number): Observable<void> {
+    const url = `/api/config/aas-request-configuration/${arcId}`;
+    return this.http.delete<void>(url);
+  }
+
+  createAasTargetArc(dto: CreateAasTargetArcDTO): Observable<AasTargetArcConfiguration> {
+    return this.http.post<AasTargetArcConfiguration>('/api/config/aas-target-request-configuration', dto);
+  }
+
+  deleteAasTargetArc(arcId: number): Observable<void> {
+    return this.http.delete<void>(`/api/config/aas-target-request-configuration/${arcId}`);
   }
 
   private encodePathSegments(path: string): string {
