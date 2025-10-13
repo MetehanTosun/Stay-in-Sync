@@ -13,6 +13,9 @@ import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+import de.unistuttgart.stayinsync.core.configuration.persistence.entities.sync.SourceSystem;
+import de.unistuttgart.stayinsync.core.configuration.persistence.entities.sync.SourceSystemEndpoint;
+
 @QuarkusTest
 @DisplayName("SourceSystem Entity Tests")
 class SourceSystemTest {

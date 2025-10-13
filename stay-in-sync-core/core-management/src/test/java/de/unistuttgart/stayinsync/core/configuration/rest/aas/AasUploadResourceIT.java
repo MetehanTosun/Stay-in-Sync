@@ -1,6 +1,6 @@
 package de.unistuttgart.stayinsync.core.configuration.rest.aas;
 
-import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.SourceSystem;
+import de.unistuttgart.stayinsync.core.configuration.persistence.entities.sync.SourceSystem;
 import de.unistuttgart.stayinsync.core.configuration.service.aas.AasTraversalClient;
 import de.unistuttgart.stayinsync.core.configuration.service.aas.AasStructureSnapshotService;
 import io.quarkus.test.junit.QuarkusTest;

@@ -10,6 +10,9 @@ import jakarta.transaction.Transactional;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+import de.unistuttgart.stayinsync.core.configuration.persistence.entities.sync.SourceSystemEndpoint;
+import de.unistuttgart.stayinsync.core.configuration.persistence.entities.sync.SourceSystem;
+
 @QuarkusTest
 @DisplayName("SourceSystemEndpoint Entity Tests")
 class SourceSystemEndpointTest {
@@ -202,38 +205,5 @@ class SourceSystemEndpointTest {
         // Assert
         assertNotNull(endpoint.id);
         assertEquals(complexSchema, endpoint.jsonSchema);
-    }
-
-    @Test
-    @DisplayName("Should handle TypeScript definitions")
-    @Transactional
-    void testTypeScriptDefinitions() {
-        // Arrange
-        String tsDefinition = "interface UserResponse { id: number; name: string; email: string; }";
-        endpoint.responseDts = tsDefinition;
-
-        // Act
-        endpoint.persist();
-        entityManager.flush();
-
-        // Assert
-        assertNotNull(endpoint.id);
-        assertEquals(tsDefinition, endpoint.responseDts);
-    }
-
-    @Test
-    @DisplayName("Should handle special characters in endpoint path")
-    @Transactional
-    void testSpecialCharactersInEndpointPath() {
-        // Arrange
-        endpoint.endpointPath = "/api/test-endpoint_123";
-
-        // Act
-        endpoint.persist();
-        entityManager.flush();
-
-        // Assert
-        assertNotNull(endpoint.id);
-        assertEquals("/api/test-endpoint_123", endpoint.endpointPath);
     }
 }

@@ -9,7 +9,9 @@ import jakarta.persistence.PersistenceContext;
 import jakarta.transaction.Transactional;
 
 import static org.junit.jupiter.api.Assertions.*;
-import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.SourceSystem;
+import de.unistuttgart.stayinsync.core.configuration.persistence.entities.sync.SourceSystem;
+import de.unistuttgart.stayinsync.core.configuration.persistence.entities.aas.AasElementLite;
+import de.unistuttgart.stayinsync.core.configuration.persistence.entities.aas.AasSubmodelLite;
 
 @QuarkusTest
 @DisplayName("AasElementLite Entity Tests")

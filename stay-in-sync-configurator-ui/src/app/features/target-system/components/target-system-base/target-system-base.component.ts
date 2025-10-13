@@ -8,7 +8,7 @@ import { DialogModule } from 'primeng/dialog';
 import { InputTextModule } from 'primeng/inputtext';
 import { TextareaModule } from 'primeng/textarea';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
-import { ConfirmationService } from 'primeng/api';
+import { ConfirmationService, MessageService } from 'primeng/api';
 import { ConfirmationDialogComponent, ConfirmationDialogData } from '../../../source-system/components/confirmation-dialog/confirmation-dialog.component';
 import { TabViewModule } from 'primeng/tabview';
 import { TargetSystemResourceService } from '../../service/targetSystemResource.service';
@@ -39,7 +39,8 @@ import { AasManagementComponent } from '../aas-management/aas-management.compone
     ConfirmationDialogComponent,
     AasManagementComponent
   ],
-  styleUrls: ['./target-system-base.component.css']
+  styleUrls: ['./target-system-base.component.css'],
+  providers: [MessageService]
 })
 export class TargetSystemBaseComponent implements OnInit {
   systems: TargetSystemDTO[] = [];

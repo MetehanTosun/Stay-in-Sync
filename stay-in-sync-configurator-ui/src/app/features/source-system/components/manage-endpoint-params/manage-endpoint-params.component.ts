@@ -33,8 +33,10 @@ import {Select} from 'primeng/select';
     CardModule,
     FloatLabel,
     Select,
+    ToastModule,
     // ggf. weitere Module
   ]
+  , providers: [MessageService]
 })
 export class ManageEndpointParamsComponent implements OnInit, OnChanges {
   /**

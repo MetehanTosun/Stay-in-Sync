@@ -13,6 +13,9 @@ import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+import de.unistuttgart.stayinsync.core.configuration.persistence.entities.sync.TargetSystem;
+import de.unistuttgart.stayinsync.core.configuration.persistence.entities.sync.TargetSystemEndpoint;
+
 @QuarkusTest
 @DisplayName("TargetSystem Entity Tests")
 class TargetSystemTest {
@@ -154,7 +157,7 @@ class TargetSystemTest {
         endpoint1 = new TargetSystemEndpoint();
         endpoint1.endpointPath = "/api/target";
         endpoint1.httpRequestType = "GET";
-        endpoint1.syncSystem = (SyncSystem) targetSystem;
+        endpoint1.syncSystem = targetSystem;
 
         targetSystem.syncSystemEndpoints.add(endpoint1);
 
@@ -195,7 +198,7 @@ class TargetSystemTest {
     @Transactional
     void testSpecialCharactersInName() {
         // Arrange
-        targetSystem.name = "Test-Target_System 123";
+        targetSystem.name = "Target@System#1";
 
         // Act
         targetSystem.persist();
@@ -203,6 +206,6 @@ class TargetSystemTest {
 
         // Assert
         assertNotNull(targetSystem.id);
-        assertEquals("Test-Target_System 123", targetSystem.name);
+        assertEquals("Target@System#1", targetSystem.name);
     }
 }

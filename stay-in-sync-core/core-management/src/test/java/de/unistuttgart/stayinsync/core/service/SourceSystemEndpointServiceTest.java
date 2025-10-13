@@ -141,7 +141,7 @@ public class SourceSystemEndpointServiceTest {
         replacementEndpoint.responseBodySchema = "{\"type\": \"object\", \"properties\": {\"newField\": {\"type\": \"string\"}}}";
 
         // Act
-        Long anyExistingSourceSystemId = de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.SourceSystem.<de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.SourceSystem>findAll()
+        Long anyExistingSourceSystemId = de.unistuttgart.stayinsync.core.configuration.persistence.entities.sync.SourceSystem.<de.unistuttgart.stayinsync.core.configuration.persistence.entities.sync.SourceSystem>findAll()
                 .firstResultOptional()
                 .map(ss -> ss.id)
                 .orElseThrow(() -> new IllegalStateException("No SourceSystem present for test"));
