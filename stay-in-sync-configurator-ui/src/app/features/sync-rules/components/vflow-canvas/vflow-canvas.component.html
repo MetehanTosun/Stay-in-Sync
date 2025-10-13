@@ -80,6 +80,11 @@
   [currentValue]="getNodeValue(nodeBeingEdited)" (save)="onValueSaved($event)" (modalsClosed)="closeModals()">
 </app-set-constant-value-modal>
 
+<!-- Set Schema -->
+<app-set-schema-modal [(visible)]="editSchemaModalOpen" (visibleChange)="editSchemaModalOpen = $event"
+  [currentSchema]="getNodeSchema(nodeBeingEdited)" (save)="onSchemaSaved($event)" (modalsClosed)="closeModals()">
+</app-set-schema-modal>
+
 <!-- Pending Edge Removal -->
 <div *ngIf="showRemoveEdgesModal" class="modal-backdrop"></div>
 <div id="pending-edge-removal-modal" *ngIf="showRemoveEdgesModal">

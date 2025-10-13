@@ -13,6 +13,7 @@ export class CanvasFacadeService {
 
   constructor(private messageService: MessageService) { }
 
+  // #region Wiring
   /**
    * Registers the canvas
    * @param canvas VflowCanvasComponent instance (ViewChild)
@@ -28,9 +29,17 @@ export class CanvasFacadeService {
   unregister() {
     this.canvas = null;
   }
+  // #endregion
 
+  // #region Node Methods
   /**
    * Adds a node to the canvas
+   *
+   * @param nodeType The node type of to be created node
+   * @param pos The position of the new node
+   * @param providerData Optional: The JSON path of the new (provider) node
+   * @param constantValue Optional: The value of the new (constant/schema) node
+   * @param operator Optional: The operator of the new (logic) node
    */
   addNode(nodeType: NodeType, pos: { x: number, y: number }, providerData?: { jsonPath: string; outputType: string }, constantValue?: any, operator?: any) {
     if (!this.canvas) {
@@ -58,7 +67,9 @@ export class CanvasFacadeService {
     }
     this.canvas.centerOnNode(nodeId);
   }
+  // #endregion
 
+  // #region Graph Methods
   /**
    * Triggers graph save on the registered canvas
    */
@@ -73,4 +84,5 @@ export class CanvasFacadeService {
     }
     return this.canvas.saveGraph();
   }
+  // #endregion
 }

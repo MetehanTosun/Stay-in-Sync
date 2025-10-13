@@ -3,13 +3,13 @@ import { ActivatedRoute } from '@angular/router';
 import { Connection, Edge, EdgeChange, NodeChange, Vflow, VflowComponent } from 'ngx-vflow';
 import { GraphAPIService, OperatorNodesApiService } from '../../service';
 import { ConfigNodeData, CustomVFlowNode, LogicNodeData, LogicOperatorMetadata, NodeMenuItem, NodeType, VFlowGraphDTO } from '../../models';
-import { ConstantNodeComponent, FinalNodeComponent, LogicNodeComponent, ProviderNodeComponent, SetConstantValueModalComponent, SetJsonPathModalComponent } from '..';
+import { ConstantNodeComponent, FinalNodeComponent, LogicNodeComponent, ProviderNodeComponent, SchemaNodeComponent, SetConstantValueModalComponent, SetJsonPathModalComponent, SetSchemaModalComponent } from '..';
 import { CommonModule } from '@angular/common';
 import { SetNodeNameModalComponent } from '../modals/set-node-name-modal/set-node-name-modal.component';
-import { ClickOutsideDirective } from '../../directives/click-outside.directive';
 import { ValidationError } from '../../models/interfaces/validation-error.interface';
 import { ConfigNodeComponent } from '../nodes/config-node/config-node.component';
 import { MessageService } from 'primeng/api';
+import { ClickOutsideDirective } from '../../directives/click-outside.directive';
 
 /**
  * The canvas of the rule editor on which the rule graph is visualized
@@ -23,7 +23,8 @@ import { MessageService } from 'primeng/api';
     SetNodeNameModalComponent,
     ClickOutsideDirective,
     SetJsonPathModalComponent,
-    SetConstantValueModalComponent
+    SetConstantValueModalComponent,
+    SetSchemaModalComponent
   ],
   templateUrl: './vflow-canvas.component.html',
   styleUrl: './vflow-canvas.component.css'
@@ -55,6 +56,7 @@ export class VflowCanvasComponent implements OnInit {
   editNodeNameModalOpen = false;
   editJsonPathModalOpen = false;
   editNodeValueModalOpen = false;
+  editSchemaModalOpen = false;
   nodeBeingEdited: CustomVFlowNode | null = null;
   showRemoveEdgesModal: boolean = false;
 
@@ -188,6 +190,11 @@ export class VflowCanvasComponent implements OnInit {
             ]
           }
         ];
+      case NodeType.SCHEMA:
+        return [
+          { label: 'Edit Schema', action: () => this.startEditingSchema(node) },
+          { label: 'Delete Node', action: () => this.deleteNode(node) }
+        ];
     }
   }
 
@@ -209,7 +216,6 @@ export class VflowCanvasComponent implements OnInit {
 
   runAction(item: any) {
     if (this.hasLabel(item) && typeof item.action === 'function') {
-      // Stop propagation of clicks from context menu so other handlers don't react
       try {
         item.action();
       } catch (e) {
@@ -241,13 +247,24 @@ export class VflowCanvasComponent implements OnInit {
     return this.hasValue(node) ? (node!.data as any).value : null;
   }
 
+  isSchemaNode(node?: CustomVFlowNode | null): node is CustomVFlowNode & { data: { value: string } } {
+    return !!node && !!node.data && (node.data as any).outputType === 'JSON';
+  }
 
+  getNodeSchema(node?: CustomVFlowNode | null): string {
+    return this.isSchemaNode(node) ? node.data.value : '';
+  }
 
   /**
    * Handler for clicks outside the canvas element.
    * If a node context menu is open, close it and re-input the selected node to force a re-render.
    */
   onOutsideCanvas(_event: MouseEvent) {
+    // If the click happened inside the context menu or suggestions menu, do not treat it as outside
+    const target = (_event.target as HTMLElement) || null;
+    const clickedInsideMenu = target && (target.closest('.context-menu') || target.closest('.suggestions-menu'));
+    if (clickedInsideMenu) return;
+
     if (this.showNodeContextMenu && this.selectedNode) {
       const index = this.nodes.findIndex(n => n.id === this.selectedNode!.id);
       if (index !== -1) {
@@ -275,8 +292,8 @@ export class VflowCanvasComponent implements OnInit {
    *
    * @param nodeType The node type of to be created node
    * @param pos The position of the new node
-   * @param providerJsonPath Optional: The JSON path of the new (provider) node
-   * @param constantValue Optional: The value of the new (constant) node
+   * @param providerData Optional: The JSON path of the new (provider) node
+   * @param constantValue Optional: The value of the new (constant/schema) node
    * @param operatorData Optional: The operator of the new (logic) node
    */
   addNode(
@@ -305,6 +322,12 @@ export class VflowCanvasComponent implements OnInit {
         ...operatorData,
         name: operatorData.operatorName,
         operatorType: operatorData.operatorName,  // Map operatorName to operatorType for the Backend
+      }
+    } else if (nodeType === NodeType.SCHEMA && constantValue !== undefined) {
+      nodeData = {
+        name: `Schema: ${this.lastNodeId + 1}`,
+        value: constantValue,
+        outputType: 'JSON'
       }
     } else {
       this.messageService.add({
@@ -337,10 +360,6 @@ export class VflowCanvasComponent implements OnInit {
     newNode.contextMenuItems = this.getNodeMenuItems(newNode);
     this.nodes = [...this.nodes, newNode];
     this.hasUnsavedChanges = true;
-
-
-    console.log(providerData)
-    console.log(newNode)
   }
 
   /**
@@ -677,8 +696,6 @@ export class VflowCanvasComponent implements OnInit {
   loadGraph(ruleId: number) {
     this.graphApi.getGraph(ruleId).subscribe({
       next: (graph: VFlowGraphDTO) => {
-        console.log("Received:", graph); // TODO-s DELETE
-
         // loads nodes
         this.nodes = graph.nodes.map(node => ({
           ...node,
@@ -786,6 +803,8 @@ export class VflowCanvasComponent implements OnInit {
         return { width: 320, height: 60 };
       case NodeType.CONFIG:
         return { width: 220, height: 60 };
+      case NodeType.SCHEMA:
+        return { width: 320, height: 80 };
     }
   }
 
@@ -798,7 +817,8 @@ export class VflowCanvasComponent implements OnInit {
   openSuggestionsMenu(node: CustomVFlowNode) {
     const latestNode = this.nodes.find(n => n.id === node.id);
     if (latestNode && "outputType" in latestNode.data) {
-      const outputType = latestNode.data.outputType;
+      const outputType = (latestNode.data as { outputType?: string }).outputType;
+      if (typeof outputType !== 'string') return;
       this.nodesApi.getOperators().subscribe({
         next: (operators: LogicOperatorMetadata[]) => {
           this.suggestions = operators.filter(o => o.inputTypes.includes(outputType));
@@ -850,6 +870,46 @@ export class VflowCanvasComponent implements OnInit {
     const latestNode = this.nodes.find(n => n.id === node.id);
     this.nodeBeingEdited = latestNode ?? node;
     this.editNodeNameModalOpen = true;
+  }
+
+  /**
+   * Opens the schema edit modal for the given node
+   * @param node
+   */
+  startEditingSchema(node: CustomVFlowNode) {
+    const latestNode = this.nodes.find(n => n.id === node.id);
+    this.nodeBeingEdited = latestNode ?? node;
+    this.editSchemaModalOpen = true;
+  }
+
+  /**
+   * Handler when schema save is triggered from modal
+   * @param schema
+   */
+  onSchemaSaved(schema: string) {
+    if (this.nodeBeingEdited) {
+      const index = this.nodes.findIndex(n => n.id === this.nodeBeingEdited!.id);
+      if (index !== -1) {
+        const updatedNode = {
+          ...this.nodes[index],
+          data: {
+            ...this.nodes[index].data,
+            value: schema
+          }
+        };
+
+        // Re-insert the node into the nodes array to rerender it correctly
+        this.nodes = [
+          ...this.nodes.slice(0, index),
+          updatedNode,
+          ...this.nodes.slice(index + 1)
+        ];
+        this.hasUnsavedChanges = true;
+      }
+      this.editSchemaModalOpen = false;
+      this.nodeBeingEdited = null;
+      this.closeNodeContextMenu();
+    }
   }
 
   /**
@@ -1000,6 +1060,7 @@ export class VflowCanvasComponent implements OnInit {
       case NodeType.PROVIDER: return ProviderNodeComponent;
       case NodeType.CONSTANT: return ConstantNodeComponent;
       case NodeType.LOGIC: return LogicNodeComponent;
+      case NodeType.SCHEMA: return SchemaNodeComponent;
       case NodeType.FINAL: return FinalNodeComponent;
       case NodeType.CONFIG: return ConfigNodeComponent;
       default:

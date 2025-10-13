@@ -24,7 +24,6 @@ export class NodePaletteComponent implements OnInit {
 
   /** Emitted when the user selects a node to create. Payload: { nodeType, operator? } */
   @Output() nodeSelected = new EventEmitter<{ nodeType: NodeType, operator?: LogicOperatorMetadata }>();
-  //#endregion
 
 
   /** Expose enum to template */
@@ -44,6 +43,7 @@ export class NodePaletteComponent implements OnInit {
 
   /** Whether the operators submenu is shown */
   showGroupOperators = false;
+  //#endregion
 
 
   constructor(

@@ -16,13 +16,14 @@ import { MessageService } from 'primeng/api';
   styleUrls: ['../modal-shared.component.css', './set-constant-value-modal.component.css']
 })
 export class SetConstantValueModalComponent {
+  // #region Fields
   /** Controls dialog visibility (two-way binding with `visibleChange`) */
   @Input() visible = true;
 
   /** Emits when dialog visibility changes (two-way binding with `visible`) */
   @Output() visibleChange = new EventEmitter<boolean>();
 
-  /** The current value to be edited (empty when creating)  */
+  /** The current value passed into the modal when editing an existing constant */
   @Input() currentValue: string = '';
 
   /** Emitted when a new constant value is created (payload: parsed value) */
@@ -44,6 +45,7 @@ export class SetConstantValueModalComponent {
   ngOnInit() {
     this.constantValue = this.currentValue || '';
   }
+  // #endregion
 
   constructor(private messageService: MessageService) {}
 

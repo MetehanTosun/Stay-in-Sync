@@ -1,5 +1,5 @@
 import { MessageService } from "primeng/api";
-import { ConfigNodeComponent, ConstantNodeComponent, FinalNodeComponent, LogicNodeComponent, ProviderNodeComponent } from "../../components";
+import { ConfigNodeComponent, ConstantNodeComponent, FinalNodeComponent, LogicNodeComponent, ProviderNodeComponent, SchemaNodeComponent } from "../../components";
 
 /**
  * Enum representing the different types of nodes in a transformation rule graph
@@ -29,6 +29,11 @@ export enum NodeType {
    * Final nodes control the behavior of a transformation graphs logic
    */
   CONFIG = 'CONFIG'
+  ,
+  /**
+   * Schema nodes containing a JSON schema
+   */
+  SCHEMA = 'SCHEMA'
 }
 
 /**
@@ -43,6 +48,7 @@ export function getNodeComponent(nodeType: NodeType, messageService: MessageServ
     case NodeType.CONSTANT: return ConstantNodeComponent;
     case NodeType.PROVIDER: return ProviderNodeComponent;
     case NodeType.LOGIC: return LogicNodeComponent;
+    case NodeType.SCHEMA: return SchemaNodeComponent;
     case NodeType.CONFIG: return ConfigNodeComponent;
     case NodeType.FINAL: return FinalNodeComponent;
     default:

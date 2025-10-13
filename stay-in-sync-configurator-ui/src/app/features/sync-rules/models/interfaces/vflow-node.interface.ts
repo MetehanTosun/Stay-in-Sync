@@ -67,6 +67,20 @@ export interface FinalNodeData extends BaseNodeData {
 }
 
 /**
+ * Data interface for schema nodes
+ */
+export interface SchemaNodeData extends BaseNodeData {
+  /**
+   * Contains the JSON Schema stored as a string
+   */
+  value: string;
+  /**
+   * Optional output type metadata (if needed by other nodes)
+   */
+  outputType?: "JSON";
+}
+
+/**
  * Union type for all node data types
  */
 export type VFlowNodeData =
@@ -74,7 +88,8 @@ export type VFlowNodeData =
   | ProviderNodeData
   | LogicNodeData
   | ConfigNodeData
-  | FinalNodeData;
+  | FinalNodeData
+  | SchemaNodeData;
 
 /**
  * Custom interface of this components vflow nodes

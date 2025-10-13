@@ -17,7 +17,7 @@ import { Button } from 'primeng/button';
   styleUrls: ['../modal-shared.component.css', './set-json-path-modal.component.css']
 })
 export class SetJsonPathModalComponent {
-
+  // #region Fields
   /** Controls dialog visibility (two-way binding with `visibleChange`) */
   @Input() visible = true;
 
@@ -47,12 +47,14 @@ export class SetJsonPathModalComponent {
 
   /** Filtered list of suggestion paths matching current input */
   filteredPaths: string[] = [];
+  // #endregion
 
   constructor(
     private arcApi: ArcAPIService,
     private messageService: MessageService
   ) { }
 
+  // #region Lifecylce
   /**
    * Load JSON paths and current JSON path if available
    */
@@ -67,7 +69,9 @@ export class SetJsonPathModalComponent {
       this.filteredPaths = this.getJsonPathKeys();
     });
   }
+  // #endregion
 
+  // #region Handlers
   onInputChange(event: any) {
     const value = event.target.value;
     if (value.trim() === '') {
@@ -78,43 +82,7 @@ export class SetJsonPathModalComponent {
       );
     }
   }
-
-  getFilteredPaths(): string[] {
-    if (this.filteredPaths.length === 1 && this.filteredPaths[0] === this.jsonPath) {
-      return [];
-    }
-    return this.filteredPaths;
-  }
-
-  selectPath(path: string) {
-    this.jsonPath = path;
-    this.filteredPaths = this.getJsonPathKeys().filter(p =>
-      p.toLowerCase().includes(path.toLowerCase())
-    );
-  }
-
-  /**
- * Returns the keys of the jsonPaths object for use in the template
- */
-  getJsonPathKeys(): string[] {
-    return Object.keys(this.jsonPaths);
-  }
-
-  isValidArrayPath(path: string): boolean {
-    if (path.includes('[*]')) {
-      return false;
-    }
-
-    // Check if all array notations have valid indices
-    const arrayMatches = path.match(/\[([^\]]*)\]/g);
-    if (arrayMatches) {
-      return arrayMatches.every(match => {
-        const index = match.slice(1, -1); // Remove the brackets [ and ]
-        return /^\d+$/.test(index); // Check if it's a valid number
-      });
-    }
-    return true;
-  }
+  // #endregion
 
   //#region Modal Methods
   /**
@@ -167,4 +135,53 @@ export class SetJsonPathModalComponent {
     this.visibleChange.emit(false);
   }
   //#endregion
+
+  // #region Helpers
+  /**
+   * Filters the currently suggested json paths based on the current user input
+   */
+  getFilteredPaths(): string[] {
+    if (this.filteredPaths.length === 1 && this.filteredPaths[0] === this.jsonPath) {
+      return [];
+    }
+    return this.filteredPaths;
+  }
+
+  /**
+   * Selects the given path for the provider node
+   */
+  selectPath(path: string) {
+    this.jsonPath = path;
+    this.filteredPaths = this.getJsonPathKeys().filter(p =>
+      p.toLowerCase().includes(path.toLowerCase())
+    );
+  }
+
+  /**
+   * Returns the keys of the jsonPaths object for use in the template
+   */
+  getJsonPathKeys(): string[] {
+    return Object.keys(this.jsonPaths);
+  }
+
+  /**
+   * Returns true if the given path is a valid path with an array.
+   * Returns false otherwise
+   */
+  isValidArrayPath(path: string): boolean {
+    if (path.includes('[*]')) {
+      return false;
+    }
+
+    // Check if all array notations have valid indices
+    const arrayMatches = path.match(/\[([^\]]*)\]/g);
+    if (arrayMatches) {
+      return arrayMatches.every(match => {
+        const index = match.slice(1, -1); // Remove the brackets [ and ]
+        return /^\d+$/.test(index); // Check if it's a valid number
+      });
+    }
+    return true;
+  }
+  // #endregion
 }

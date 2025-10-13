@@ -57,6 +57,11 @@
   (constantCreated)="onConstantCreated($event)" (modalsClosed)="onModalsClosed()">
 </app-set-constant-value-modal>
 
+<!-- Schema Modal -->
+<app-set-schema-modal [(visible)]="showSchemaModal" (visibleChange)="showSchemaModal = $event"
+  (save)="onSchemaCreated($event)" (modalsClosed)="onModalsClosed()">
+</app-set-schema-modal>
+
 <!-- Rule Configuration Modal -->
 <app-set-rule-configuration-modal [(visible)]="showConfigModal" [ruleName]="ruleName" [ruleDescription]="ruleDescription"
   (visibleChange)="showConfigModal = $event" (close)="onModalsClosed()" (save)="onRuleConfigurationSaved($event)">

@@ -1,7 +1,7 @@
 import { Component, OnInit, OnDestroy, AfterViewInit, ViewChild } from '@angular/core';
 import { ClickOutsideDirective } from '../../directives/click-outside.directive';
 import { ActivatedRoute, Router } from '@angular/router';
-import { NodePaletteComponent, VflowCanvasComponent, SetConstantValueModalComponent, SetJsonPathModalComponent } from '../../components';
+import { NodePaletteComponent, VflowCanvasComponent, SetConstantValueModalComponent, SetJsonPathModalComponent, SetSchemaModalComponent } from '../../components';
 import { CanvasFacadeService } from '../../service/canvas/canvas-facade.service';
 import { LogicOperatorMetadata, NodeType } from '../../models';
 import { CommonModule } from '@angular/common';
@@ -24,6 +24,7 @@ import { MessageService } from 'primeng/api';
     NodePaletteComponent,
     SetJsonPathModalComponent,
     SetConstantValueModalComponent,
+    SetSchemaModalComponent,
     ErrorPanelComponent,
     Button,
     Toolbar,
@@ -34,7 +35,7 @@ import { MessageService } from 'primeng/api';
   styleUrls: ['./edit-rule.component.css']
 })
 export class EditRuleComponent implements OnInit, AfterViewInit, OnDestroy {
-  //#region Lifecycle
+  // #region Fields
   ruleName = 'New Rule';
   ruleId: number | undefined = undefined;
   ruleDescription: string = '';
@@ -49,6 +50,7 @@ export class EditRuleComponent implements OnInit, AfterViewInit, OnDestroy {
   pendingNodePos: { x: number, y: number } | null = null;
   showProviderModal: boolean = false;
   showConstantModal: boolean = false;
+  showSchemaModal: boolean = false;
   showConfigModal: boolean = false;
 
   // Error Panel Attribute
@@ -57,6 +59,7 @@ export class EditRuleComponent implements OnInit, AfterViewInit, OnDestroy {
 
   @ViewChild(NodePaletteComponent, { static: false }) nodePalette?: NodePaletteComponent;
   @ViewChild(VflowCanvasComponent, { static: false }) canvas?: VflowCanvasComponent;
+  // #endregion
 
   constructor(
     private route: ActivatedRoute,
@@ -66,6 +69,7 @@ export class EditRuleComponent implements OnInit, AfterViewInit, OnDestroy {
     public canvasFacade: CanvasFacadeService
   ) { }
 
+  //#region Lifecycle
   /**
    * Loads the rule data into the page
    */
@@ -168,6 +172,10 @@ export class EditRuleComponent implements OnInit, AfterViewInit, OnDestroy {
           this.clearNodeSelection();
           this.pendingNodePos = null;
           break;
+        case NodeType.SCHEMA:
+          this.closeAllModals();
+          this.showSchemaModal = true;
+          break;
       }
     }
   }
@@ -200,6 +208,11 @@ export class EditRuleComponent implements OnInit, AfterViewInit, OnDestroy {
           this.pendingNodePos = pos;
           this.closeAllModals();
           this.showConstantModal = true;
+          break;
+        case NodeType.SCHEMA:
+          this.pendingNodePos = pos;
+          this.closeAllModals();
+          this.showSchemaModal = true;
           break;
         case NodeType.LOGIC:
           this.canvasFacade.addNode(this.selectedNodeType, pos, undefined, undefined, this.selectedOperator || undefined);
@@ -253,6 +266,17 @@ export class EditRuleComponent implements OnInit, AfterViewInit, OnDestroy {
   onConstantCreated(constantValue: any): void {
     if (this.pendingNodePos) {
       this.canvasFacade.addNode(NodeType.CONSTANT, this.pendingNodePos, undefined, constantValue);
+    }
+    this.onModalsClosed();
+  }
+
+  /**
+   * Forwards the to be created schema node's schema string to node creation
+   */
+  onSchemaCreated(value: string): void {
+    if (this.pendingNodePos) {
+      // Pass schema string to the canvas via the constantValue parameter
+      this.canvasFacade.addNode(NodeType.SCHEMA, this.pendingNodePos, undefined, value);
     }
     this.onModalsClosed();
   }
