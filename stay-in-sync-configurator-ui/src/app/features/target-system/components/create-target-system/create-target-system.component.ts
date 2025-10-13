@@ -75,6 +75,7 @@ export class CreateTargetSystemComponent implements OnInit, OnChanges {
     { label: 'AAS', value: 'AAS' }
   ];
   authTypeOptions = [
+    { label: 'None', value: ApiAuthType.None },
     { label: 'Basic', value: ApiAuthType.Basic },
     { label: 'API Key', value: ApiAuthType.ApiKey }
   ];

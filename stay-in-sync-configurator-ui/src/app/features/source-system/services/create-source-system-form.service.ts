@@ -178,6 +178,7 @@ export class CreateSourceSystemFormService {
    */
   getAuthTypeOptions(): Array<{label: string, value: ApiAuthType}> {
     return [
+      {label: 'None', value: ApiAuthType.None},
       {label: 'Basic', value: ApiAuthType.Basic},
       {label: 'API Key', value: ApiAuthType.ApiKey}
     ];

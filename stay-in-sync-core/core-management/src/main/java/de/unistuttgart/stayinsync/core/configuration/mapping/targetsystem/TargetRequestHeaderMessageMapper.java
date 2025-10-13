@@ -1,6 +1,6 @@
 package de.unistuttgart.stayinsync.core.configuration.mapping.targetsystem;
 
-import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.ApiHeader;
+import de.unistuttgart.stayinsync.core.configuration.persistence.entities.sync.ApiHeader;
 import de.unistuttgart.stayinsync.transport.dto.ApiRequestHeaderMessageDTO;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;

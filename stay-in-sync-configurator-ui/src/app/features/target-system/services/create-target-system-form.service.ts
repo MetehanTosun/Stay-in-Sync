@@ -66,6 +66,8 @@ export class CreateTargetSystemFormService {
       } else if (authType === ApiAuthType.ApiKey) {
         grp.get('apiKey')!.setValidators([Validators.required]);
         grp.get('headerName')!.setValidators([Validators.required]);
+      } else {
+        // None selected: no required fields
       }
       
       ['username', 'password', 'apiKey', 'headerName'].forEach(k => 
