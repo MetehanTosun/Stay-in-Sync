@@ -11,6 +11,7 @@ import { FileUploadModule } from 'primeng/fileupload';
 import { CheckboxModule } from 'primeng/checkbox';
 import { TreeNode } from 'primeng/api';
 import { MessageService } from 'primeng/api';
+import { ToastModule } from 'primeng/toast';
 import { AasManagementService, AasElementLivePanel } from '../../services/aas-management.service';
 import { AasUtilityService } from '../../services/aas-utility.service';
 import { TargetSystemDTO } from '../../models/targetSystemDTO';
@@ -192,6 +193,7 @@ import { AasElementDialogComponent, AasElementDialogData, AasElementDialogResult
     TextareaModule,
     FileUploadModule,
     CheckboxModule,
+    ToastModule,
     AasElementDialogComponent
   ],
   styles: [`
@@ -323,23 +325,12 @@ export class AasManagementComponent implements OnInit {
       
       if (afterCount > beforeCount) {
         console.log(`[TargetAasManage] Success! New submodel found on attempt ${attempt}`);
-        this.messageService.add({
-          severity: 'success',
-          summary: 'Submodel Visible',
-          detail: `New submodel is now visible in the tree!`,
-          life: 3000
-        });
         return;
       }
     }
     
     console.log(`[TargetAasManage] All ${maxRetries} attempts failed. New submodel not yet available.`);
-    this.messageService.add({
-      severity: 'warn',
-      summary: 'Submodel Created',
-      detail: 'Submodel was created but may take a few seconds to appear. Use "Refresh Snapshot" button to check manually.',
-      life: 8000
-    });
+    // No additional toasts; remain silent
   }
 
   async onNodeExpand(event: any): Promise<void> {
@@ -544,19 +535,20 @@ export class AasManagementComponent implements OnInit {
       await this.aasManagement.createSubmodel(this.system.id, body);
       this.showSubmodelDialog = false;
       
-      // Target System now adds submodel to AAS shell like Source System, so it should be available faster
-      console.log('[TargetAasManage] Waiting for backend to make submodel available...');
-      this.retryDiscoverWithDelay(3, 2000); // 3 attempts with 2s, 4s, 6s delays
+      // Refresh snapshot silently
+      await this.discoverSnapshot();
       
       this.messageService.add({
+        key: 'targetAAS',
         severity: 'success',
         summary: 'Submodel Created',
-        detail: 'Submodel has been successfully created. Checking for visibility...',
+        detail: 'Submodel created successfully.',
         life: 3000
       });
     } catch (e: any) {
       console.error('Error creating submodel:', e);
       this.messageService.add({
+        key: 'targetAAS',
         severity: 'error',
         summary: 'Error',
         detail: e?.message || 'Failed to create submodel. Please check the JSON format.',
@@ -585,6 +577,7 @@ export class AasManagementComponent implements OnInit {
       // Show toast for duplicate idShort error
       if (result.error.includes('Duplicate entry') || result.error.includes('uk_element_submodel_idshortpath')) {
         this.messageService.add({
+          key: 'targetAAS',
           severity: 'error',
           summary: 'Duplicate Element',
           detail: 'An element with this idShort already exists. Please use a different idShort.',
@@ -592,6 +585,7 @@ export class AasManagementComponent implements OnInit {
         });
       } else {
         this.messageService.add({
+          key: 'targetAAS',
           severity: 'error',
           summary: 'Error',
           detail: result.error,
@@ -626,6 +620,7 @@ export class AasManagementComponent implements OnInit {
       
       // Show success toast
       this.messageService.add({
+        key: 'targetAAS',
         severity: 'success',
         summary: 'Element Created',
         detail: 'Element has been successfully created.',
@@ -656,6 +651,7 @@ export class AasManagementComponent implements OnInit {
       const errorMessage = String((error as any)?.error || (error as any)?.message || 'Failed to create element');
       if (errorMessage.includes('Duplicate entry')) {
         this.messageService.add({
+          key: 'targetAAS',
           severity: 'error',
           summary: 'Duplicate Element',
           detail: 'An element with this idShort already exists. Please use a different idShort.',
@@ -663,6 +659,7 @@ export class AasManagementComponent implements OnInit {
         });
       } else {
         this.messageService.add({
+          key: 'targetAAS',
           severity: 'error',
           summary: 'Error',
           detail: errorMessage,
@@ -679,8 +676,10 @@ export class AasManagementComponent implements OnInit {
       await this.aasManagement.deleteSubmodel(this.system.id, submodelId);
       this.refreshRequested.emit();
       await this.discoverSnapshot();
-    } catch (error) {
+      this.messageService.add({ key: 'targetAAS', severity: 'success', summary: 'Submodel deleted', detail: 'Submodel removed from shell' });
+    } catch (error: any) {
       console.error('Error deleting submodel:', error);
+      this.messageService.add({ key: 'targetAAS', severity: 'error', summary: 'Error', detail: ((error as any)?.message || 'Failed to delete submodel') });
     }
   }
 
@@ -693,9 +692,10 @@ export class AasManagementComponent implements OnInit {
       // Trigger discover to refresh the entire tree (same as source system)
       console.log('[TargetAasManagement] deleteElement: Triggering discover to refresh tree');
       this.discoverSnapshot();
-      
-    } catch (error) {
+      this.messageService.add({ key: 'targetAAS', severity: 'success', summary: 'Element Deleted', detail: 'Element has been successfully deleted.', life: 3000 });
+    } catch (error: any) {
       console.error('Error deleting element:', error);
+      this.messageService.add({ key: 'targetAAS', severity: 'error', summary: 'Error', detail: ((error as any)?.message || 'Failed to delete element') });
     }
   }
 
@@ -783,11 +783,11 @@ export class AasManagementComponent implements OnInit {
   uploadAasx(): void {
     if (this.isUploadingAasx) return;
     if (!this.aasxSelectedFile || !this.system?.id) {
-      this.messageService.add({ severity: 'warn', summary: 'No file selected', detail: 'Please choose an .aasx file.' });
+      this.messageService.add({ key: 'targetAAS', severity: 'warn', summary: 'No file selected', detail: 'Please choose an .aasx file.' });
       return;
     }
     
-    this.messageService.add({ severity: 'info', summary: 'Uploading AASX', detail: `${this.aasxSelectedFile?.name} (${this.aasxSelectedFile?.size} bytes)` });
+    this.messageService.add({ key: 'targetAAS', severity: 'info', summary: 'Uploading AASX', detail: `${this.aasxSelectedFile?.name} (${this.aasxSelectedFile?.size} bytes)` });
     this.isUploadingAasx = true;
     
     // If preview is available and user made a selection, use selective attach; else default upload
@@ -801,10 +801,10 @@ export class AasManagementComponent implements OnInit {
       this.showAasxUpload = false;
       // Refresh the tree to show uploaded content
       this.discoverSnapshot();
-      this.messageService.add({ severity: 'success', summary: 'Upload accepted', detail: 'AASX uploaded successfully.' });
+      this.messageService.add({ key: 'targetAAS', severity: 'success', summary: 'Upload accepted', detail: 'AASX uploaded successfully.' });
     }).catch((error: any) => {
       this.isUploadingAasx = false;
-      this.messageService.add({ severity: 'error', summary: 'Upload failed', detail: error?.message || 'See console for details' });
+      this.messageService.add({ key: 'targetAAS', severity: 'error', summary: 'Upload failed', detail: error?.message || 'See console for details' });
     });
   }
 }

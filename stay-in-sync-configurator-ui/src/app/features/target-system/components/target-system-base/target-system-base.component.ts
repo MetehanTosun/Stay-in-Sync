@@ -17,6 +17,7 @@ import { CreateTargetSystemComponent } from '../create-target-system/create-targ
 import { ManageTargetEndpointsComponent } from '../manage-target-endpoints/manage-target-endpoints.component';
 import { ManageApiHeadersComponent } from '../../../source-system/components/manage-api-headers/manage-api-headers.component';
 import { AasManagementComponent } from '../aas-management/aas-management.component';
+import { ToastModule } from 'primeng/toast';
 
 @Component({
   standalone: true,
@@ -37,7 +38,8 @@ import { AasManagementComponent } from '../aas-management/aas-management.compone
     ManageApiHeadersComponent,
     TextareaModule,
     ConfirmationDialogComponent,
-    AasManagementComponent
+    AasManagementComponent,
+    ToastModule
   ],
   styleUrls: ['./target-system-base.component.css'],
   providers: [MessageService]
@@ -153,7 +155,7 @@ export class TargetSystemBaseComponent implements OnInit {
 
   remove(row: TargetSystemDTO): void {
     if (!row.id) return;
-    this.api.delete(row.id).subscribe({ next: () => this.load() });
+    this.api.delete(row.id).subscribe({ next: () => { this.load(); this.messageService.add({ key: 'targetBase', severity: 'success', summary: 'Target System Deleted', detail: 'Target system has been removed.', life: 3000 }); } });
   }
 
   closeDialog(): void { this.showDialog = false; }

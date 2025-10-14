@@ -255,6 +255,7 @@ export class CreateTargetSystemComponent implements OnInit, OnChanges {
         }
         this.aasTestOk = true;
         this.messageService.add({ 
+          key: 'targetAAS',
           severity: 'success', 
           summary: 'Connection successful', 
           detail: 'Shell reachable', 
@@ -265,6 +266,7 @@ export class CreateTargetSystemComponent implements OnInit, OnChanges {
         this.aasTestOk = false;
         this.aasError = result.error || 'Connection failed';
         this.messageService.add({ 
+          key: 'targetAAS',
           severity: 'error', 
           summary: 'Connection failed', 
           detail: 'Please verify Base URL, AAS ID and auth.', 
@@ -278,6 +280,7 @@ export class CreateTargetSystemComponent implements OnInit, OnChanges {
       this.aasError = 'Connection failed';
       this.errorService.handleError(err as any);
       this.messageService.add({ 
+        key: 'targetAAS',
         severity: 'error', 
         summary: 'Connection failed', 
         detail: 'Please verify Base URL, AAS ID and auth.', 
@@ -333,7 +336,7 @@ export class CreateTargetSystemComponent implements OnInit, OnChanges {
     if (this.isUploadingAasx) return;
     if (!this.aasxSelectedFile || !this.createdTargetSystemId) return;
     this.isUploadingAasx = true;
-    this.messageService.add({ severity: 'info', summary: 'Uploading AASX', detail: `${this.aasxSelectedFile?.name} (${this.aasxSelectedFile?.size} bytes)` });
+    this.messageService.add({ key: 'targetAAS', severity: 'info', summary: 'Uploading AASX', detail: `${this.aasxSelectedFile?.name} (${this.aasxSelectedFile?.size} bytes)` });
     const hasSelection = this.aasxSelection?.submodels?.some(s => s.full);
     const selectedIds: string[] = hasSelection ? this.aasxSelection.submodels.map(s => s.id).filter(Boolean) : [];
     const req$ = hasSelection
@@ -349,12 +352,12 @@ export class CreateTargetSystemComponent implements OnInit, OnChanges {
         setTimeout(() => this.onDiscover('LIVE', selectedIds), 1200);
         setTimeout(() => this.onDiscover('LIVE', selectedIds), 2500);
         setTimeout(() => this.onDiscover('LIVE', selectedIds), 5000);
-        this.messageService.add({ severity: 'success', summary: 'Upload accepted', detail: 'AASX uploaded and attached', life: 3000 });
+        this.messageService.add({ key: 'targetAAS', severity: 'success', summary: 'Upload accepted', detail: 'AASX uploaded and attached', life: 3000 });
       },
       error: (err) => {
         this.isUploadingAasx = false;
         const detail = err?.error || err?.message || 'See console for details';
-        this.messageService.add({ severity: 'error', summary: 'Upload failed', detail });
+        this.messageService.add({ key: 'targetAAS', severity: 'error', summary: 'Upload failed', detail });
       }
     });
   }
@@ -603,7 +606,11 @@ export class CreateTargetSystemComponent implements OnInit, OnChanges {
     try {
       const body = JSON.parse(this.newSubmodelJson);
       this.aasClient.createSubmodel('target', this.createdTargetSystemId, body).subscribe({
-        next: () => { this.showSubmodelDialog = false; this.discoverSubmodels(); },
+        next: () => { 
+          this.showSubmodelDialog = false; 
+          this.discoverSubmodels(); 
+          this.messageService.add({ key: 'targetAAS', severity: 'success', summary: 'Submodel created', detail: 'Submodel was created successfully.', life: 3000 });
+        },
         error: () => {}
       });
     } catch {}
@@ -631,6 +638,7 @@ export class CreateTargetSystemComponent implements OnInit, OnChanges {
       // Show toast for duplicate idShort error
       if (result.error.includes('Duplicate entry') || result.error.includes('uk_element_submodel_idshortpath')) {
         this.messageService.add({
+          key: 'targetAAS',
           severity: 'error',
           summary: 'Duplicate Element',
           detail: 'An element with this idShort already exists. Please use a different idShort.',
@@ -638,6 +646,7 @@ export class CreateTargetSystemComponent implements OnInit, OnChanges {
         });
       } else {
         this.messageService.add({
+          key: 'targetAAS',
           severity: 'error',
           summary: 'Error',
           detail: result.error,
@@ -668,6 +677,7 @@ export class CreateTargetSystemComponent implements OnInit, OnChanges {
       
       // Show success toast
       this.messageService.add({
+        key: 'targetAAS',
         severity: 'success',
         summary: 'Element Created',
         detail: 'Element has been successfully created.',
@@ -684,6 +694,7 @@ export class CreateTargetSystemComponent implements OnInit, OnChanges {
       const errorMessage = String((error as any)?.error || (error as any)?.message || 'Failed to create element');
       if (errorMessage.includes('Duplicate entry')) {
         this.messageService.add({
+          key: 'targetAAS',
           severity: 'error',
           summary: 'Duplicate Element',
           detail: 'An element with this idShort already exists. Please use a different idShort.',
@@ -691,6 +702,7 @@ export class CreateTargetSystemComponent implements OnInit, OnChanges {
         });
       } else {
         this.messageService.add({
+          key: 'targetAAS',
           severity: 'error',
           summary: 'Error',
           detail: errorMessage,
@@ -708,7 +720,7 @@ export class CreateTargetSystemComponent implements OnInit, OnChanges {
     if (!this.createdTargetSystemId || !this.deleteSubmodelId) { this.showDeleteSubmodelDialog = false; return; }
     const smIdB64 = this.encodeIdToBase64Url(this.deleteSubmodelId);
     this.aasClient.deleteSubmodel('target', this.createdTargetSystemId, smIdB64).subscribe({
-      next: () => { this.showDeleteSubmodelDialog = false; this.deleteSubmodelId = null; this.discoverSubmodels(); this.messageService.add({ severity: 'success', summary: 'Submodel deleted', detail: 'Submodel removed from shell' }); },
+      next: () => { this.showDeleteSubmodelDialog = false; this.deleteSubmodelId = null; this.discoverSubmodels(); this.messageService.add({ key: 'targetAAS', severity: 'success', summary: 'Submodel deleted', detail: 'Submodel removed from shell' }); },
       error: () => { this.showDeleteSubmodelDialog = false; }
     });
   }
@@ -747,6 +759,7 @@ export class CreateTargetSystemComponent implements OnInit, OnChanges {
         
         // Show success message
         this.messageService.add({
+          key: 'targetAAS',
           severity: 'success',
           summary: 'Element Deleted',
           detail: 'Element has been successfully deleted.',
@@ -772,6 +785,7 @@ export class CreateTargetSystemComponent implements OnInit, OnChanges {
           this.removeElementFromTree(submodelId, idShortPath);
           
           this.messageService.add({
+            key: 'targetAAS',
             severity: 'success',
             summary: 'Element Removed',
             detail: `Element '${idShortPath.split('.').pop()}' has been removed from the tree.`,

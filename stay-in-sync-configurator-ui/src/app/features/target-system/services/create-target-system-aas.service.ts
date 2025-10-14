@@ -214,10 +214,8 @@ export class CreateTargetSystemAasService {
       this.aasClient.createSubmodel('target', systemId, submodelData).subscribe({
         next: () => {
           this.messageService.add({ 
-            severity: 'success', 
-            summary: 'Submodel created', 
-            detail: 'New submodel added to shell' 
-          });
+            key: 'targetAAS',
+            severity: 'success', summary: 'Submodel created', detail: 'Submodel was created successfully.' });
           resolve();
         },
         error: (err) => reject(err)
@@ -234,10 +232,8 @@ export class CreateTargetSystemAasService {
       this.aasClient.createElement('target', systemId, smIdB64, elementData, parentPath).subscribe({
         next: () => {
           this.messageService.add({ 
-            severity: 'success', 
-            summary: 'Element created', 
-            detail: 'New element added to submodel' 
-          });
+            key: 'targetAAS',
+            severity: 'success', summary: 'Element created', detail: 'Element was created successfully.' });
           resolve();
         },
         error: (err) => reject(err)
@@ -254,10 +250,8 @@ export class CreateTargetSystemAasService {
       this.aasClient.deleteSubmodel('target', systemId, smIdB64).subscribe({
         next: () => {
           this.messageService.add({ 
-            severity: 'success', 
-            summary: 'Submodel deleted', 
-            detail: 'Submodel removed from shell' 
-          });
+            key: 'targetAAS',
+            severity: 'success', summary: 'Submodel deleted', detail: 'Submodel, elements, and shell reference removed.' });
           resolve();
         },
         error: (err) => reject(err)
@@ -274,10 +268,8 @@ export class CreateTargetSystemAasService {
       this.aasClient.deleteElement('target', systemId, smIdB64, elementPath).subscribe({
         next: () => {
           this.messageService.add({ 
-            severity: 'success', 
-            summary: 'Element deleted', 
-            detail: 'Element removed from submodel' 
-          });
+            key: 'targetAAS',
+            severity: 'success', summary: 'Element deleted', detail: 'Element was deleted successfully.' });
           resolve();
         },
         error: (err) => reject(err)
@@ -332,11 +324,7 @@ export class CreateTargetSystemAasService {
         
       req$.subscribe({
         next: () => {
-          this.messageService.add({ 
-            severity: 'success', 
-            summary: 'Upload accepted', 
-            detail: 'AASX uploaded and attached' 
-          });
+          this.messageService.add({ key: 'targetAAS', severity: 'success', summary: 'Upload accepted', detail: 'AASX uploaded successfully.' });
           resolve();
         },
         error: (err) => reject(err)

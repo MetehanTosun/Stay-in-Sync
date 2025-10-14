@@ -248,6 +248,7 @@ export class AasManagementService {
         next: (response: any) => {
           console.log('[AasManagement] createSubmodel: Success response:', response);
           this.messageService.add({ 
+            key: 'targetAAS',
             severity: 'success', 
             summary: 'Submodel created', 
             detail: 'New submodel added to shell' 
@@ -257,6 +258,7 @@ export class AasManagementService {
         error: (error: any) => {
           console.error('[AasManagement] createSubmodel: Error:', error);
           this.messageService.add({ 
+            key: 'targetAAS',
             severity: 'error', 
             summary: 'Create failed', 
             detail: error?.error || error?.message || 'See console for details' 
@@ -277,6 +279,7 @@ export class AasManagementService {
       this.aasClientService.createElement('target', systemId, smIdB64, elementData, parentPath).subscribe({
         next: () => {
           this.messageService.add({ 
+            key: 'targetAAS',
             severity: 'success', 
             summary: 'Element created', 
             detail: 'New element added to submodel' 
@@ -285,6 +288,7 @@ export class AasManagementService {
         },
         error: (error: any) => {
           this.messageService.add({ 
+            key: 'targetAAS',
             severity: 'error', 
             summary: 'Create failed', 
             detail: error?.error || error?.message || 'See console for details' 
@@ -305,6 +309,7 @@ export class AasManagementService {
       this.aasClientService.deleteSubmodel('target', systemId, smIdB64).subscribe({
         next: () => {
           this.messageService.add({ 
+            key: 'targetAAS',
             severity: 'success', 
             summary: 'Submodel deleted', 
             detail: 'Submodel removed from shell' 
@@ -313,6 +318,7 @@ export class AasManagementService {
         },
         error: (error: any) => {
           this.messageService.add({ 
+            key: 'targetAAS',
             severity: 'error', 
             summary: 'Delete failed', 
             detail: error?.error || error?.message || 'See console for details' 
@@ -333,6 +339,7 @@ export class AasManagementService {
       this.aasClientService.deleteElement('target', systemId, smIdB64, elementPath).subscribe({
         next: () => {
           this.messageService.add({ 
+            key: 'targetAAS',
             severity: 'success', 
             summary: 'Element deleted', 
             detail: 'Element removed from submodel' 
@@ -341,6 +348,7 @@ export class AasManagementService {
         },
         error: (error: any) => {
           this.messageService.add({ 
+            key: 'targetAAS',
             severity: 'error', 
             summary: 'Delete failed', 
             detail: error?.error || error?.message || 'See console for details' 
@@ -431,6 +439,9 @@ export class AasManagementService {
       this.aasClientService.attachSelectedAasx('target', systemId, file, selection).subscribe({
         next: () => {
           console.log('[AasManagement] Selected AASX content attached successfully');
+          
+          // Inform user about successful attachment
+          this.messageService.add({ key: 'targetAAS', severity: 'success', summary: 'Upload accepted', detail: 'Selected AASX content attached successfully.' });
           resolve();
         },
         error: (error: any) => {
@@ -449,6 +460,8 @@ export class AasManagementService {
       this.aasClientService.uploadAasx('target', systemId, file).subscribe({
         next: () => {
           console.log('[AasManagement] AASX uploaded successfully');
+          // Inform user about successful upload
+          this.messageService.add({ key: 'targetAAS', severity: 'success', summary: 'Upload accepted', detail: 'AASX uploaded successfully.' });
           resolve();
         },
         error: (error: any) => {

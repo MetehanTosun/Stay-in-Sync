@@ -15,14 +15,15 @@ import {DropdownModule} from 'primeng/dropdown';
 import {InputTextModule} from 'primeng/inputtext';
 import {TextareaModule} from 'primeng/textarea';
 import {FileUploadModule} from 'primeng/fileupload';
+import { ToastModule } from 'primeng/toast';
+import { MessageService } from 'primeng/api';
 
 import {CreateSourceSystemComponent} from '../create-source-system/create-source-system.component';
 import {ConfirmationDialogComponent, ConfirmationDialogData} from '../confirmation-dialog/confirmation-dialog.component';
 import {SourceSystemAasManagementComponent} from '../source-system-aas-management/source-system-aas-management.component';
-
-import {SourceSystemSearchPipe, SearchOptions, SearchResultCount} from '../../pipes/source-system-search.pipe';
-
-import {SourceSystemResourceService} from '../../service/sourceSystemResource.service';
+import { ManageApiHeadersComponent } from '../manage-api-headers/manage-api-headers.component';
+import { ManageEndpointsComponent } from '../manage-endpoints/manage-endpoints.component';
+import { SourceSystemResourceService } from '../../service/sourceSystemResource.service';
 import {SourceSystemDTO} from '../../models/sourceSystemDTO';
 import {SourceSystem} from '../../models/sourceSystem';
 import {HttpErrorService} from '../../../../core/services/http-error.service';
@@ -81,7 +82,12 @@ interface AasElementLivePanel {
     FormsModule,
     JobStatusTagComponent,
     Select,
-  ]
+    ToastModule,
+    ManageApiHeadersComponent,
+    ManageEndpointsComponent,
+    SourceSystemAasManagementComponent,
+  ],
+  providers: [MessageService]
 })
 export class SourceSystemBaseComponent implements OnInit {
   /**
@@ -104,30 +110,7 @@ export class SourceSystemBaseComponent implements OnInit {
    */
   showCreateDialog = false;
 
-  /**
-   * Controls visibility of the detail/manage dialog
-   */
-  showDetailDialog = false;
-
-  /**
-   * Currently selected system for viewing or editing
-   */
-  selectedSystem: SourceSystemDTO | null = null;
-
-  /**
-   * Reactive form for editing system metadata
-   */
-  metadataForm!: FormGroup;
-
-  /**
-   * Selected endpoint for parameter management
-   */
-  selectedEndpointForParams: SourceSystemEndpointDTO | null = null;
-
-  /**
-   * List of endpoints for the currently selected system
-   */
-  endpointsForSelectedSystem: SourceSystemEndpointDTO[] = [];
+  // design reverted; routes handle manage flow
 
   /**
    * Currently selected file for upload
@@ -139,10 +122,8 @@ export class SourceSystemBaseComponent implements OnInit {
    */
   searchTerm: string = '';
 
-  /**
-   * Search configuration options
-   */
-  searchOptions: SearchOptions = {};
+  // simplified search options placeholder if needed
+  searchOptions: any = {};
 
   /**
    * Filtered systems based on search criteria
@@ -152,7 +133,7 @@ export class SourceSystemBaseComponent implements OnInit {
   /**
    * Search result count information
    */
-  searchResultCount: SearchResultCount | null = null;
+  searchResultCount: any | null = null;
 
   /**
    * Flag indicating if search is currently active
@@ -229,9 +210,9 @@ export class SourceSystemBaseComponent implements OnInit {
     private fb: FormBuilder,
     protected erorrService: HttpErrorService,
     private apiEndpointSvc: SourceSystemEndpointResourceService,
-    private searchPipe: SourceSystemSearchPipe,
     private aasService: AasService,
-    private router: Router
+    private router: Router,
+    private messageService: MessageService
   ) {
   }
 
@@ -277,7 +258,6 @@ export class SourceSystemBaseComponent implements OnInit {
    * Resets selection and shows the dialog
    */
   openCreate(): void {
-    this.selectedSystem = null;
     this.showCreateDialog = true;
   }
 
@@ -321,6 +301,7 @@ export class SourceSystemBaseComponent implements OnInit {
           this.loadSystems();
           this.showConfirmationDialog = false;
           this.systemToDelete = null;
+          this.messageService.add({ key: 'sourceBase', severity: 'success', summary: 'Source System Deleted', detail: 'Source system has been removed.', life: 3000 });
         },
         error: (error) => {
           this.erorrService.handleError(error);
@@ -348,10 +329,6 @@ export class SourceSystemBaseComponent implements OnInit {
   }
 
   // AAS: Manage Page helpers
-  isAasSelected(): boolean {
-    return (this.selectedSystem?.apiType || '').toUpperCase().includes('AAS');
-  }
-
   onAasRefreshRequested(): void {
     // Handle refresh request from AAS management component
     this.loadSystems();
@@ -470,18 +447,8 @@ export class SourceSystemBaseComponent implements OnInit {
    * Gets responsive search options based on screen size
    * @returns Search options optimized for current screen
    */
-  getResponsiveSearchOptions(): SearchOptions {
-    const baseOptions = this.searchOptions;
-
-    if (this.isSmallScreen()) {
-      return {
-        ...baseOptions,
-        highlightMatches: false,
-        searchScope: 'all'
-      };
-    }
-
-    return baseOptions;
+  getResponsiveSearchOptions(): any {
+    return {};
   }
 
   /**
@@ -506,6 +473,15 @@ export class SourceSystemBaseComponent implements OnInit {
       return text || '';
     }
 
-    return this.searchPipe.highlightMatches(text, this.searchTerm, this.searchOptions);
+    // simple fallback: highlight by wrapping matches in <mark>
+    try {
+      const term = (this.searchTerm || '').trim();
+      if (!term) return text || '';
+      const esc = term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      const re = new RegExp(esc, 'gi');
+      return String(text || '').replace(re, (m) => `<mark>${m}</mark>`);
+    } catch {
+      return text || '';
+    }
   }
 }

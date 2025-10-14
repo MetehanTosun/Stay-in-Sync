@@ -228,13 +228,13 @@ export class CreateSourceSystemComponent implements OnInit, OnChanges {
   uploadAasx(): void {
     if (this.isUploadingAasx) return;
     if (!this.aasxSelectedFile) {
-      this.messageService.add({ severity: 'warn', summary: 'No file selected', detail: 'Please choose an .aasx file.' });
+      this.messageService.add({ key: 'sourceAAS', severity: 'warn', summary: 'No file selected', detail: 'Please choose an .aasx file.' });
       return;
     }
     const proceed = () => {
       if (!this.createdSourceSystemId) return;
       
-      this.messageService.add({ severity: 'info', summary: 'Uploading AASX', detail: `${this.aasxSelectedFile?.name} (${this.aasxSelectedFile?.size} bytes)` });
+      this.messageService.add({ key: 'sourceAAS', severity: 'info', summary: 'Uploading AASX', detail: `${this.aasxSelectedFile?.name} (${this.aasxSelectedFile?.size} bytes)` });
       this.isUploadingAasx = true;
       // If preview is available and user made a selection, use selective attach; else default upload
       const hasSelection = (this.aasxSelection?.submodels?.some(s => s.full) ?? false);
@@ -248,12 +248,12 @@ export class CreateSourceSystemComponent implements OnInit, OnChanges {
             // Directly rediscover from snapshot (do not refresh: would wipe imported AASX structures)
             
             this.discoverSubmodels();
-            this.messageService.add({ severity: 'success', summary: 'Upload accepted', detail: 'AASX uploaded. Snapshot refresh started.' });
+            this.messageService.add({ key: 'sourceAAS', severity: 'success', summary: 'Upload accepted', detail: 'AASX uploaded. Snapshot refresh started.' });
           },
           error: (err) => {
             
             this.isUploadingAasx = false;
-            this.messageService.add({ severity: 'error', summary: 'Upload failed', detail: (err?.message || 'See console for details') });
+            this.messageService.add({ key: 'sourceAAS', severity: 'error', summary: 'Upload failed', detail: (err?.message || 'See console for details') });
             this.errorService.handleError(err);
           }
         });
@@ -405,11 +405,11 @@ save(): void {
         if (data && data.idShort) {
           this.aasPreview = { idShort: data.idShort, assetKind: data.assetKind };
           this.aasTestOk = true;
-          this.messageService.add({ severity: 'success', summary: 'Connection successful', detail: `Shell reachable (${data.idShort})`, life: 3000 });
+          this.messageService.add({ key: 'sourceAAS', severity: 'success', summary: 'Connection successful', detail: `Shell reachable (${data.idShort})`, life: 3000 });
         } else {
           this.aasPreview = null;
           this.aasTestOk = true;
-          this.messageService.add({ severity: 'success', summary: 'Connection successful', detail: 'Shell reachable', life: 3000 });
+          this.messageService.add({ key: 'sourceAAS', severity: 'success', summary: 'Connection successful', detail: 'Shell reachable', life: 3000 });
         }
         // ensure snapshot contains idShort for submodels by refreshing once after a successful test
         this.aasService.refreshSnapshot(this.createdSourceSystemId).subscribe({ next: () => {}, error: () => {} });
@@ -441,7 +441,7 @@ save(): void {
             break;
         }
         this.aasError = `Connection failed. ${detail}`;
-        this.messageService.add({ severity: 'error', summary: 'Connection failed', detail, life: 5000 });
+        this.messageService.add({ key: 'sourceAAS', severity: 'error', summary: 'Connection failed', detail, life: 5000 });
         this.aasTestOk = false;
       }
     });
@@ -1370,6 +1370,7 @@ save(): void {
         next: () => {
           this.showSubmodelDialog = false;
           this.discoverSubmodels();
+          this.messageService.add({ key: 'sourceAAS', severity: 'success', summary: 'Submodel created', detail: 'Submodel was created successfully.', life: 3000 });
         },
         error: (err) => this.errorService.handleError(err)
       });
@@ -1400,6 +1401,7 @@ save(): void {
       // Show toast for duplicate idShort error
       if (result.error.includes('Duplicate entry') || result.error.includes('uk_element_submodel_idshortpath')) {
         this.messageService.add({
+          key: 'sourceAAS',
           severity: 'error',
           summary: 'Duplicate Element',
           detail: 'An element with this idShort already exists. Please use a different idShort.',
@@ -1407,6 +1409,7 @@ save(): void {
         });
       } else {
         this.messageService.add({
+          key: 'sourceAAS',
           severity: 'error',
           summary: 'Error',
           detail: result.error,
@@ -1435,6 +1438,7 @@ save(): void {
       
       // Show success toast
       this.messageService.add({
+        key: 'sourceAAS',
         severity: 'success',
         summary: 'Element Created',
         detail: 'Element has been successfully created.',
@@ -1451,6 +1455,7 @@ save(): void {
       const errorMessage = String((error as any)?.error || (error as any)?.message || 'Failed to create element');
       if (errorMessage.includes('Duplicate entry')) {
         this.messageService.add({
+          key: 'sourceAAS',
           severity: 'error',
           summary: 'Duplicate Element',
           detail: 'An element with this idShort already exists. Please use a different idShort.',
@@ -1458,6 +1463,7 @@ save(): void {
         });
       } else {
         this.messageService.add({
+          key: 'sourceAAS',
           severity: 'error',
           summary: 'Error',
           detail: errorMessage,
@@ -1593,6 +1599,7 @@ save(): void {
         
         // Show success message
         this.messageService.add({
+          key: 'sourceAAS',
           severity: 'success',
           summary: 'Element Deleted',
           detail: 'Element has been successfully deleted.',
@@ -1618,6 +1625,7 @@ save(): void {
           this.removeElementFromTree(submodelId, idShortPath);
           
           this.messageService.add({
+            key: 'sourceAAS',
             severity: 'success',
             summary: 'Element Removed',
             detail: `Element '${idShortPath.split('.').pop()}' has been removed from the tree.`,
@@ -1702,7 +1710,7 @@ save(): void {
         this.showDeleteSubmodelDialog = false;
         this.deleteSubmodelId = null;
         this.discoverSubmodels();
-        this.messageService.add({ severity: 'success', summary: 'Submodel deleted', detail: 'Submodel, elements, and shell reference removed.' });
+        this.messageService.add({ key: 'sourceAAS', severity: 'success', summary: 'Submodel deleted', detail: 'Submodel, elements, and shell reference removed.' });
       },
       error: (err) => {
         this.showDeleteSubmodelDialog = false;

@@ -9,6 +9,7 @@ import { InputTextModule } from 'primeng/inputtext';
 import { TextareaModule } from 'primeng/textarea';
 import { FileUploadModule } from 'primeng/fileupload';
 import { MessageModule } from 'primeng/message';
+import { ToastModule } from 'primeng/toast';
 import { CheckboxModule } from 'primeng/checkbox';
 import { TreeNode } from 'primeng/api';
 import { MessageService } from 'primeng/api';
@@ -33,10 +34,12 @@ import { AasUtilityService } from '../../../target-system/services/aas-utility.s
     TextareaModule,
     FileUploadModule,
     MessageModule,
+    ToastModule,
     CheckboxModule,
     FormsModule,
     AasElementDialogComponent
-  ]
+  ],
+  providers: [MessageService]
 })
 export class SourceSystemAasManagementComponent implements OnInit {
   @Input() system: SourceSystemDTO | null = null;
@@ -326,9 +329,10 @@ export class SourceSystemAasManagementComponent implements OnInit {
         next: () => {
           this.showAasSubmodelDialog = false;
           this.discoverAasSnapshot();
+          this.messageService.add({ key: 'sourceAAS', severity: 'success', summary: 'Submodel created', detail: 'Submodel was created successfully.', life: 3000 });
         },
         error: (err) => {
-          // Error handling
+          this.messageService.add({ key: 'sourceAAS', severity: 'error', summary: 'Error', detail: (err?.message || 'Failed to create submodel'), life: 5000 });
         }
       });
     } catch (e) {
@@ -362,6 +366,7 @@ export class SourceSystemAasManagementComponent implements OnInit {
       // Show toast for duplicate idShort error
       if (result.error.includes('Duplicate entry') || result.error.includes('uk_element_submodel_idshortpath')) {
         this.messageService.add({
+          key: 'sourceAAS',
           severity: 'error',
           summary: 'Duplicate Element',
           detail: 'An element with this idShort already exists. Please use a different idShort.',
@@ -369,6 +374,7 @@ export class SourceSystemAasManagementComponent implements OnInit {
         });
       } else {
         this.messageService.add({
+          key: 'sourceAAS',
           severity: 'error',
           summary: 'Error',
           detail: result.error,
@@ -397,6 +403,7 @@ export class SourceSystemAasManagementComponent implements OnInit {
       
       // Show success toast
       this.messageService.add({
+        key: 'sourceAAS',
         severity: 'success',
         summary: 'Element Created',
         detail: 'Element has been successfully created.',
@@ -435,6 +442,7 @@ export class SourceSystemAasManagementComponent implements OnInit {
       const errorMessage = String((error as any)?.error || (error as any)?.message || 'Failed to create element');
       if (errorMessage.includes('Duplicate entry')) {
         this.messageService.add({
+          key: 'sourceAAS',
           severity: 'error',
           summary: 'Duplicate Element',
           detail: 'An element with this idShort already exists. Please use a different idShort.',
@@ -442,6 +450,7 @@ export class SourceSystemAasManagementComponent implements OnInit {
         });
       } else {
         this.messageService.add({
+          key: 'sourceAAS',
           severity: 'error',
           summary: 'Error',
           detail: errorMessage,
@@ -597,9 +606,10 @@ export class SourceSystemAasManagementComponent implements OnInit {
     this.aasManagementService.deleteSubmodel(this.system.id, submodelId).subscribe({
       next: () => {
         this.discoverAasSnapshot();
+        this.messageService.add({ key: 'sourceAAS', severity: 'success', summary: 'Submodel deleted', detail: 'Submodel, elements, and shell reference removed.' });
       },
       error: (err) => {
-        // Error handling
+        this.messageService.add({ key: 'sourceAAS', severity: 'error', summary: 'Error', detail: (err?.message || 'Failed to delete submodel') });
       }
     });
   }
@@ -621,10 +631,11 @@ export class SourceSystemAasManagementComponent implements OnInit {
         console.log('[SourceAasManage] deleteAasElement: Element deleted successfully');
         // Use the same refresh logic as create dialog
         this.refreshAasTreeAfterDelete(submodelId, idShortPath);
+        this.messageService.add({ key: 'sourceAAS', severity: 'success', summary: 'Element Deleted', detail: 'Element has been successfully deleted.', life: 3000 });
       },
       error: (err) => {
         console.error('[SourceAasManage] deleteAasElement: Error deleting element', err);
-        // Error handling
+        this.messageService.add({ key: 'sourceAAS', severity: 'error', summary: 'Error', detail: (err?.message || 'Failed to delete element') });
       }
     });
   }
@@ -733,11 +744,11 @@ export class SourceSystemAasManagementComponent implements OnInit {
   uploadAasx(): void {
     if (this.isUploadingAasx) return;
     if (!this.aasxSelectedFile || !this.system?.id) {
-      this.messageService.add({ severity: 'warn', summary: 'No file selected', detail: 'Please choose an .aasx file.' });
+      this.messageService.add({ key: 'sourceAAS', severity: 'warn', summary: 'No file selected', detail: 'Please choose an .aasx file.' });
       return;
     }
     
-    this.messageService.add({ severity: 'info', summary: 'Uploading AASX', detail: `${this.aasxSelectedFile?.name} (${this.aasxSelectedFile?.size} bytes)` });
+    this.messageService.add({ key: 'sourceAAS', severity: 'info', summary: 'Uploading AASX', detail: `${this.aasxSelectedFile?.name} (${this.aasxSelectedFile?.size} bytes)` });
     this.isUploadingAasx = true;
     
     // If preview is available and user made a selection, use selective attach; else default upload
@@ -752,11 +763,11 @@ export class SourceSystemAasManagementComponent implements OnInit {
         this.showAasxUpload = false;
         // Refresh the tree to show uploaded content
         this.discoverAasSnapshot();
-        this.messageService.add({ severity: 'success', summary: 'Upload accepted', detail: 'AASX uploaded. Snapshot refresh started.' });
+        this.messageService.add({ key: 'sourceAAS', severity: 'success', summary: 'Upload accepted', detail: 'AASX uploaded. Snapshot refresh started.' });
       },
       error: (err) => {
         this.isUploadingAasx = false;
-        this.messageService.add({ severity: 'error', summary: 'Upload failed', detail: (err?.message || 'See console for details') });
+        this.messageService.add({ key: 'sourceAAS', severity: 'error', summary: 'Upload failed', detail: (err?.message || 'See console for details') });
       }
     });
   }
