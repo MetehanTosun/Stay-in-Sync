@@ -2,7 +2,7 @@ import { Component, OnInit, OnDestroy, AfterViewInit, ViewChild } from '@angular
 import { ClickOutsideDirective } from '../../directives/click-outside.directive';
 import { ActivatedRoute, Router } from '@angular/router';
 import { NodePaletteComponent, VflowCanvasComponent, SetConstantValueModalComponent, SetJsonPathModalComponent, SetSchemaModalComponent } from '../../components';
-import { CanvasFacadeService } from '../../service/canvas/canvas-facade.service';
+import { CanvasFacadeService } from '../../service/facade/canvas-facade.service';
 import { LogicOperatorMetadata, NodeType } from '../../models';
 import { CommonModule } from '@angular/common';
 import { TransformationRulesApiService } from '../../service';
