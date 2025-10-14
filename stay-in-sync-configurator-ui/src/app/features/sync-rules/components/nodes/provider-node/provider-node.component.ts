@@ -10,7 +10,7 @@ import { CustomNodeComponent, HandleComponent, SelectableDirective } from 'ngx-v
   standalone: true,
   imports: [HandleComponent, SelectableDirective, CommonModule],
   templateUrl: './provider-node.component.html',
-  styleUrl: './provider-node.component.css'
+  styleUrls: ['./provider-node.component.css']
 })
 export class ProviderNodeComponent extends CustomNodeComponent {
   displayTooltips = false;

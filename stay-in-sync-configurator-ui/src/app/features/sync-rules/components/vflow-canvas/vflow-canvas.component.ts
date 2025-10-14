@@ -4,10 +4,9 @@ import { Connection, Edge, EdgeChange, NodeChange, Vflow, VflowComponent } from 
 import { GraphAPIService, OperatorNodesApiService } from '../../service';
 import { ConfigNodeData, ConstantNodeData, CustomVFlowNode, LogicOperatorMetadata, NodeMenuItem, NodeType, ProviderNodeData, SchemaNodeData, VFlowGraphDTO } from '../../models';
 import { getDefaultNodeSize, inferTypeFromValue, getExpectedInputType, getNodeType, calculateVFlowCoordinates, hasProp, hasPropOfType, getPropIfExists, buildNodeData, calculateNodeCenter, createNode } from './vflow-canvas.utils';
-import { FinalNodeComponent, SetConstantValueModalComponent, SetJsonPathModalComponent, SetSchemaModalComponent } from '..';
+import { FinalNodeComponent, SetConstantValueModalComponent, SetJsonPathModalComponent, SetSchemaModalComponent, SetNodeNameModalComponent } from '..';
 import { CommonModule } from '@angular/common';
-import { SetNodeNameModalComponent } from '../modals/set-node-name-modal/set-node-name-modal.component';
-import { ValidationError } from '../../models/interfaces/validation-error.interface';
+import { ValidationError } from '../../models';
 import { MessageService } from 'primeng/api';
 import { ClickOutsideDirective } from '../../directives/click-outside.directive';
 
@@ -27,7 +26,7 @@ import { ClickOutsideDirective } from '../../directives/click-outside.directive'
     SetSchemaModalComponent
   ],
   templateUrl: './vflow-canvas.component.html',
-  styleUrl: './vflow-canvas.component.css'
+  styleUrls: ['./vflow-canvas.component.css']
 })
 export class VflowCanvasComponent implements OnInit {
   //#region Fields

@@ -27,7 +27,7 @@ import { MessageService } from 'primeng/api';
     CreateRuleModalComponent
   ],
   templateUrl: './rules-overview.component.html',
-  styleUrl: './rules-overview.component.css'
+  styleUrls: ['./rules-overview.component.css']
 })
 export class RulesOverviewComponent implements OnInit {
   //#region Fields

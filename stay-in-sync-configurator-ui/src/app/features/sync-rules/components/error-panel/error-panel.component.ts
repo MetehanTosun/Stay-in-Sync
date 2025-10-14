@@ -1,6 +1,6 @@
 import { CommonModule } from '@angular/common';
 import { Component, EventEmitter, Input, Output } from '@angular/core';
-import { ValidationError } from '../../models/interfaces/validation-error.interface';
+import { ValidationError } from '../../models';
 
 /**
  * This component allows the user to view all validation errors the backend gathers while saving the graph
@@ -10,7 +10,7 @@ import { ValidationError } from '../../models/interfaces/validation-error.interf
   standalone: true,
   imports: [CommonModule],
   templateUrl: './error-panel.component.html',
-  styleUrl: './error-panel.component.css'
+  styleUrls: ['./error-panel.component.css']
 })
 export class ErrorPanelComponent {
   /**
