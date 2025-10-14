@@ -119,7 +119,6 @@ export function getPropIfExists<T>(obj: any | undefined | null, propName: string
  * Build node data for a new node. This function does not mutate component state.
  * @param nodeType the NodeType
  * @param opts provider/constant/operator inputs
- * @param nextNodeId optional next numeric node id used for schema naming
  * @param messageService optional MessageService to report an error when inputs are invalid
  */
 export function buildNodeData(
@@ -129,12 +128,11 @@ export function buildNodeData(
     constantValue?: any,
     operatorData?: any
   },
-  nextNodeId?: number,
   messageService?: MessageService
 ): any | undefined {
   if (nodeType === NodeType.PROVIDER && opts.providerData) {
     return {
-      name: opts.providerData.jsonPath,
+      name: getSourceProperty(opts.providerData.jsonPath),
       jsonPath: opts.providerData.jsonPath,
       outputType: opts.providerData.outputType
     };
@@ -151,14 +149,12 @@ export function buildNodeData(
   if (nodeType === NodeType.LOGIC && opts.operatorData) {
     return {
       ...opts.operatorData,
-      name: opts.operatorData.operatorName,
       operatorType: opts.operatorData.operatorName,
     };
   }
 
   if (nodeType === NodeType.SCHEMA && opts.constantValue !== undefined) {
     return {
-      name: `Schema: ${nextNodeId ?? 0}`,
       value: opts.constantValue,
       outputType: 'JSON'
     };
@@ -179,7 +175,7 @@ export function calculateNodeCenter(nodeType: NodeType, pos: { x: number, y: num
   const size = getDefaultNodeSize(nodeType);
   return {
     x: pos.x - size.width / 2,
-    y: pos.y - size.height /2
+    y: pos.y - size.height / 2
   };
 }
 
@@ -200,6 +196,15 @@ export function createNode(nodeType: NodeType, id: string, point: { x: number, y
     contextMenuItems: []
   };
   return newNode;
+}
+
+/**
+ * Returns the property whose value is read from the given jsonpath.
+ * Reutrns 'unknown' if unable to extract property.
+ */
+function getSourceProperty(jsonPath: string): string {
+  const parts = jsonPath.split('.');
+  return parts[parts.length - 1] || 'unknown';
 }
 //#endregion
 

@@ -16,16 +16,6 @@ export class ProviderNodeComponent extends CustomNodeComponent {
   displayTooltips = false;
 
   /**
-   * @returns The Property whose value is read by this provider node
-   */
-  getSourceProperty(): string {
-    const path = this.node()?.data?.jsonPath;
-    if (!path) return 'unknown';
-    const parts = path.split('.');
-    return parts[parts.length - 1] || 'unknown';
-  }
-
-  /**
    * @returns The entire JSON path with the leading 'source.' removed
    */
   getTrimmedJsonpath(): string {

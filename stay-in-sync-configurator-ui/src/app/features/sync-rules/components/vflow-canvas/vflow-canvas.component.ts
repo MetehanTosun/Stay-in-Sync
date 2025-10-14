@@ -399,8 +399,7 @@ export class VflowCanvasComponent implements OnInit {
     constantValue?: any,
     operatorData?: LogicOperatorMetadata,
   ) {
-    const nextNodeId = this.lastNodeId + 1;
-    const nodeData = buildNodeData(nodeType, { providerData, constantValue, operatorData }, nextNodeId, this.messageService);
+    const nodeData = buildNodeData(nodeType, { providerData, constantValue, operatorData }, this.messageService);
     if (!nodeData) return;
 
     const nodeCenter = calculateNodeCenter(nodeType, pos);

@@ -6,7 +6,7 @@
 
   <!-- Node Body -->
   <div class="node-content">
-    <div class="node-title">{{ getSourceProperty() }}</div>
+    <div class="node-title">{{ node().data?.name }}</div>
     <div class="node-path"><strong>Path:</strong> {{ getTrimmedJsonpath() || 'Not set' }}</div>
   </div>
 
