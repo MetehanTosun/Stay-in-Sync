@@ -213,6 +213,10 @@ export class TargetSystemBaseComponent implements OnInit {
     this.load();
   }
 
+  onCreated(_created: TargetSystemDTO): void {
+    this.load();
+  }
+
   // Empty state functionality
   isSearchActive: boolean = false;
 

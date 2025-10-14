@@ -69,6 +69,7 @@ export class CreateTargetSystemComponent implements OnInit, OnChanges {
   selectedFile: File | null = null;
   fileSelected = false;
   private isCreating = false;
+  private createdEventEmitted = false;
 
   typeOptions = [
     { label: 'REST-OpenAPI', value: 'REST_OPENAPI' },
@@ -128,6 +129,7 @@ export class CreateTargetSystemComponent implements OnInit, OnChanges {
     this.selectedFile = null;
     this.fileSelected = false;
     this.currentStep = 0;
+    this.createdEventEmitted = false;
   }
 
   save(): void {
@@ -147,6 +149,10 @@ export class CreateTargetSystemComponent implements OnInit, OnChanges {
           this.currentStep = 1;
           this.messageService.add({ severity: 'success', summary: 'Created', detail: 'Target system created', life: 2500 });
           console.log('[CreateTargetSystem] Target system created, moving to step 1', { id: resp.id, name: resp.name });
+          if (!this.createdEventEmitted) {
+            this.created.emit(resp);
+            this.createdEventEmitted = true;
+          }
           this.isCreating = false;
         },
         error: (err) => {
@@ -185,14 +191,11 @@ export class CreateTargetSystemComponent implements OnInit, OnChanges {
 
   finish(): void {
     // Emit the created event when user clicks Finish
-    if (this.createdTargetSystemId) {
+    if (this.createdTargetSystemId && !this.createdEventEmitted) {
       console.log('[CreateTargetSystem] Emitting created event on finish', { id: this.createdTargetSystemId });
-      console.log('[CreateTargetSystem] Event emitter exists:', !!this.created);
-      console.log('[CreateTargetSystem] Event emitter observers count:', this.created.observers.length);
-      
-      // Create a mock response object with the created system ID
       const createdSystem = { id: this.createdTargetSystemId, name: this.form.get('name')?.value || 'Unknown' } as TargetSystemDTO;
       this.created.emit(createdSystem);
+      this.createdEventEmitted = true;
       console.log('[CreateTargetSystem] Created event emitted successfully on finish');
     }
     
@@ -225,6 +228,7 @@ export class CreateTargetSystemComponent implements OnInit, OnChanges {
       this.api.create(base).subscribe({
         next: (resp) => { 
           this.createdTargetSystemId = resp.id!; 
+          if (!this.createdEventEmitted) { this.created.emit(resp); this.createdEventEmitted = true; }
           this.isCreating = false; 
           this.isTesting = false; 
           this.testAasConnection(); 

@@ -107,7 +107,7 @@
   </ng-template>
 </p-dialog>
 
-<app-create-target-system [(visible)]="wizardVisible"></app-create-target-system>
+<app-create-target-system [(visible)]="wizardVisible" (created)="onCreated($event)"></app-create-target-system>
 
 <p-dialog [(visible)]="showDetailDialog" [modal]="true" [style]="{ width: '80vw', height: '80vh' }" header="Manage Target System">
   <div class="p-grid p-dir-col">
