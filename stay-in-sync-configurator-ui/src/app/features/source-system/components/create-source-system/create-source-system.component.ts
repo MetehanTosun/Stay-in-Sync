@@ -16,6 +16,7 @@ import {FileSelectEvent, FileUploadEvent, FileUploadModule} from 'primeng/fileup
 import {TreeModule} from 'primeng/tree';
 import {MessageService, TreeNode} from 'primeng/api';
 import { AasElementDialogComponent, AasElementDialogData, AasElementDialogResult } from '../../../../shared/components/aas-element-dialog/aas-element-dialog.component';
+import { ToastModule } from 'primeng/toast';
 
 
 
@@ -73,8 +74,10 @@ interface ElementLivePanel {
     FileUploadModule,
     TreeModule,
     CheckboxModule,
-    AasElementDialogComponent
-  ]
+    AasElementDialogComponent,
+    ToastModule
+  ],
+  providers: [MessageService]
 })
 export class CreateSourceSystemComponent implements OnInit, OnChanges {
   @Input() visible = false;
