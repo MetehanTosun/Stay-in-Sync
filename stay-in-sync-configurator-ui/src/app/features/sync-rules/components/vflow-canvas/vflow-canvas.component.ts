@@ -281,8 +281,8 @@ export class VflowCanvasComponent implements OnInit {
         this.edges = graph.edges;
 
         this.graphErrors.emit(graph.errors ? graph.errors : []);
-        this.nodes.findIndex(n => n.type === FinalNodeComponent)
-        this.centerOnNode(0);
+        const finalNodeIndex = this.nodes.findIndex(n => n.type === FinalNodeComponent)
+        this.centerOnNode(finalNodeIndex);
       },
       error: (err) => {
         this.messageService.add({
@@ -356,7 +356,7 @@ export class VflowCanvasComponent implements OnInit {
       const canvasHeight = canvasElement.clientHeight;
 
       const targetX = node.point.x - canvasWidth / 2 + (node.width ?? getDefaultNodeSize(node.data.nodeType).width) / 2;
-      const targetY = node.point.y - canvasHeight / 2 + (node.height ?? getDefaultNodeSize(node.data.nodeType).height) * 2;
+      const targetY = node.point.y - canvasHeight / 2 + (node.height ?? getDefaultNodeSize(node.data.nodeType).height) / 2;
 
       this.vflowInstance.panTo({ x: -targetX, y: -targetY });
     }
