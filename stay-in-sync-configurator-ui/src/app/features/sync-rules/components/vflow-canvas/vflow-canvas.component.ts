@@ -4,7 +4,7 @@ import { Connection, Edge, EdgeChange, NodeChange, Vflow, VflowComponent } from 
 import { GraphAPIService, OperatorNodesApiService } from '../../service';
 import { ConfigNodeData, ConstantNodeData, CustomVFlowNode, LogicOperatorMetadata, NodeMenuItem, NodeType, ProviderNodeData, SchemaNodeData, VFlowGraphDTO } from '../../models';
 import { getDefaultNodeSize, inferTypeFromValue, getExpectedInputType, getNodeType, calculateVFlowCoordinates, hasProp, hasPropOfType, getPropIfExists, buildNodeData, calculateNodeCenter, createNode } from './vflow-canvas.utils';
-import { FinalNodeComponent, SetConstantValueModalComponent, SetJsonPathModalComponent, SetSchemaModalComponent, SetNodeNameModalComponent } from '..';
+import { FinalNodeComponent, SetConstantValueModalComponent, SetJsonPathModalComponent, SetSchemaModalComponent, SetNodeNameModalComponent, ConfigNodeComponent } from '..';
 import { CommonModule } from '@angular/common';
 import { ValidationError } from '../../models';
 import { MessageService } from 'primeng/api';
@@ -369,7 +369,8 @@ export class VflowCanvasComponent implements OnInit {
     const change = changes.pop()!;
     if (change.type === 'select' && (change as any).selected) {
       const edge = this.edges.find(e => e.id === change.id);
-      if (edge) {
+      const configNodeIndex = this.nodes.findIndex(n => n.type === ConfigNodeComponent)
+      if (edge && edge.source != configNodeIndex.toString()) {
         this.selectedEdge = edge;
         this.edgeContextMenuPosition = this.lastMousePosition;
         this.showEdgeContextMenu = true;

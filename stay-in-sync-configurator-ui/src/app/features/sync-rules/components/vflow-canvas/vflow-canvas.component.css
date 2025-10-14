@@ -68,20 +68,16 @@ vflow::ng-deep svg.root-svg {
 }
 
 
-#delete-edge-button {
-  background: #fee2e2;
+.delete-button {
   color: #dc2626;
   border: none;
-  border-radius: 4px;
-  padding: 6px 18px;
   font-size: 15px;
   font-weight: 500;
   cursor: pointer;
   transition: background 0.15s, color 0.15s;
-  margin: 4px 0;
 }
 
-#delete-edge-button:hover {
+.delete-button:hover {
   background: #fecaca;
   color: #b91c1c;
 }

@@ -34,7 +34,9 @@
   [style.left.px]="nodeContextMenuPosition.x" [style.top.px]="nodeContextMenuPosition.y"
   (click)="$event.stopPropagation()">
   <ng-container *ngFor="let item of selectedNode.contextMenuItems">
-    <div *ngIf="hasLabel(item)" class="context-menu-item" (click)="runAction(item)">
+    <div *ngIf="hasLabel(item)" class="context-menu-item"
+      [class.delete-button]="getLabel(item).toLowerCase().includes('delete')"
+      (click)="runAction(item)">
       {{ getLabel(item) }}
     </div>
 
@@ -65,7 +67,7 @@
 <!-- MARK: Edge Menu -->
 <div *ngIf="showEdgeContextMenu" class="context-menu" [style.left.px]="edgeContextMenuPosition.x"
   [style.top.px]="edgeContextMenuPosition.y" (click)="$event.stopPropagation()">
-  <button id="delete-edge-button" (click)="deleteSelectedEdge($event)">Delete Edge</button>
+  <button class="delete-button" (click)="deleteSelectedEdge($event)">Delete Edge</button>
 </div>
 
 <!-- MARK: Modals -->
