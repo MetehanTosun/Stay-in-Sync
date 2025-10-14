@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, EventEmitter, Input, Output, SimpleChanges, OnDestroy, ViewChild, ElementRef, OnInit } from '@angular/core';
+import { Component, EventEmitter, Input, Output, SimpleChanges, OnDestroy, ViewChild, ElementRef, OnInit, OnChanges } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Dialog } from 'primeng/dialog';
 import { Button } from 'primeng/button';
@@ -18,7 +18,7 @@ import { describeTopLevel, getTruncatedFileName, runTopLevelCheck, setEditorCont
   templateUrl: './set-schema-modal.component.html',
   styleUrls: ['../modal-shared.component.css', './set-schema-modal.component.css']
 })
-export class SetSchemaModalComponent implements OnDestroy, OnInit {
+export class SetSchemaModalComponent implements OnChanges, OnDestroy {
 
   //#region Fields
   /** Controls dialog visibility (two-way binding with `visibleChange`) */
@@ -59,7 +59,6 @@ export class SetSchemaModalComponent implements OnDestroy, OnInit {
   } as const;
   editorModel: NgxEditorModel = { value: '', language: 'json' };
   private monacoEditorRef: monaco.editor.IStandaloneCodeEditor | null = null;
-  private monacoInstance: typeof monaco | null = (window as any).monaco || null;
 
   /**
    * Disposable returned by Monaco's `model.onDidChangeContent` listener.
@@ -76,14 +75,6 @@ export class SetSchemaModalComponent implements OnDestroy, OnInit {
   //#endregion
 
   //#region Lifecycle
-  /**
-   * Initializes the editor with the current schema (if applicable)
-   */
-  ngOnInit() {
-    this.schemaText = this.currentSchema || '';
-    this.editorModel.value = this.schemaText || '';
-  }
-
   /**
    * Syncs editor content when the modal visibility or provided `currentSchema` change.
    */

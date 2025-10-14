@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, EventEmitter, Input, Output } from '@angular/core';
+import { Component, EventEmitter, Input, OnChanges, Output, SimpleChanges } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Dialog } from 'primeng/dialog';
 import { Button } from 'primeng/button';
@@ -15,7 +15,7 @@ import { MessageService } from 'primeng/api';
   templateUrl: './set-constant-value-modal.component.html',
   styleUrls: ['../modal-shared.component.css', './set-constant-value-modal.component.css']
 })
-export class SetConstantValueModalComponent {
+export class SetConstantValueModalComponent implements OnChanges {
   //#region Fields
   /** Controls dialog visibility (two-way binding with `visibleChange`) */
   @Input() visible = true;
@@ -40,14 +40,19 @@ export class SetConstantValueModalComponent {
 
   /** Controls whether the tip is displayed in the UI */
   isTipPopupVisible: boolean = false;
+  //#endregion
 
-  /** Initialize the constant's value from the input prop */
-  ngOnInit() {
+  //#region Lifecylce
+  /**
+   * Syncs editor content when the modal visibility or provided `currentValue` change.
+   */
+  ngOnChanges(changes: SimpleChanges) {
+    if (!changes['visible'] && !changes['currentValue']) return;
     this.constantValue = this.currentValue || '';
   }
   //#endregion
 
-  constructor(private messageService: MessageService) {}
+  constructor(private messageService: MessageService) { }
 
   //#region Modal Methods
   /**

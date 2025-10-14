@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Input, Output } from '@angular/core';
+import { Component, EventEmitter, Input, OnChanges, Output, SimpleChanges } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Dialog } from 'primeng/dialog';
 import { Button } from 'primeng/button';
@@ -12,7 +12,7 @@ import { Button } from 'primeng/button';
   templateUrl: './set-node-name-modal.component.html',
   styleUrls: ['../modal-shared.component.css', './set-node-name-modal.component.css']
 })
-export class SetNodeNameModalComponent {
+export class SetNodeNameModalComponent implements OnChanges {
   /** Controls dialog visibility (two-way binding with `visibleChange`) */
   @Input() visible = true;
 
@@ -34,6 +34,14 @@ export class SetNodeNameModalComponent {
   /** Load the current name */
   ngOnInit() {
     this.newName = this.currentName;
+  }
+
+  /**
+   * Syncs editor content when the modal visibility or provided `currentName` change.
+   */
+  ngOnChanges(changes: SimpleChanges) {
+    if (!changes['visible'] && !changes['currentName']) return;
+    this.newName = this.currentName || '';
   }
 
   /**

@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Input, Output } from '@angular/core';
+import { Component, EventEmitter, Input, OnChanges, Output, SimpleChanges } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ArcAPIService } from '../../../service/api/arc-api.service';
 import { CommonModule } from '@angular/common';
@@ -16,7 +16,7 @@ import { Button } from 'primeng/button';
   templateUrl: './set-json-path-modal.component.html',
   styleUrls: ['../modal-shared.component.css', './set-json-path-modal.component.css']
 })
-export class SetJsonPathModalComponent {
+export class SetJsonPathModalComponent implements OnChanges {
   //#region Fields
   /** Controls dialog visibility (two-way binding with `visibleChange`) */
   @Input() visible = true;
@@ -56,9 +56,10 @@ export class SetJsonPathModalComponent {
 
   //#region Lifecylce
   /**
-   * Load JSON paths and current JSON path if available
+   * Syncs editor content when the modal visibility or provided `currentJsonPath` change.
    */
-  ngOnInit() {
+  ngOnChanges(changes: SimpleChanges) {
+    if (!changes['visible'] && !changes['currentJsonPath']) return;
 
     // Remove leading `source.` prefix when showing/editing the path in the modal
     this.jsonPath = this.currentJsonPath.replace(/^source\./, '') || '';
