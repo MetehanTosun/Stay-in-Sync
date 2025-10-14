@@ -17,7 +17,7 @@ import { Button } from 'primeng/button';
   styleUrls: ['../modal-shared.component.css', './set-json-path-modal.component.css']
 })
 export class SetJsonPathModalComponent {
-  // #region Fields
+  //#region Fields
   /** Controls dialog visibility (two-way binding with `visibleChange`) */
   @Input() visible = true;
 
@@ -47,14 +47,14 @@ export class SetJsonPathModalComponent {
 
   /** Filtered list of suggestion paths matching current input */
   filteredPaths: string[] = [];
-  // #endregion
+  //#endregion
 
   constructor(
     private arcApi: ArcAPIService,
     private messageService: MessageService
   ) { }
 
-  // #region Lifecylce
+  //#region Lifecylce
   /**
    * Load JSON paths and current JSON path if available
    */
@@ -69,9 +69,9 @@ export class SetJsonPathModalComponent {
       this.filteredPaths = this.getJsonPathKeys();
     });
   }
-  // #endregion
+  //#endregion
 
-  // #region Handlers
+  //#region Handlers
   onInputChange(event: any) {
     const value = event.target.value;
     if (value.trim() === '') {
@@ -82,7 +82,7 @@ export class SetJsonPathModalComponent {
       );
     }
   }
-  // #endregion
+  //#endregion
 
   //#region Modal Methods
   /**
@@ -136,7 +136,7 @@ export class SetJsonPathModalComponent {
   }
   //#endregion
 
-  // #region Helpers
+  //#region Helpers
   /**
    * Filters the currently suggested json paths based on the current user input
    */
@@ -183,5 +183,5 @@ export class SetJsonPathModalComponent {
     }
     return true;
   }
-  // #endregion
+  //#endregion
 }

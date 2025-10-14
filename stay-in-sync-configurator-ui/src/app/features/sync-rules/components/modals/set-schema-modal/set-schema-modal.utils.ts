@@ -1,8 +1,5 @@
 import * as monaco from 'monaco-editor';
 import type { NgxEditorModel } from 'ngx-monaco-editor-v2';
-/**
- * Utility helpers used by the SetSchemaModalComponent
- */
 
 /**
  * Return a truncated filename; keeping the extension when possible

@@ -30,7 +30,7 @@ import { MessageService } from 'primeng/api';
   styleUrl: './rules-overview.component.css'
 })
 export class RulesOverviewComponent implements OnInit {
-  // #region Fields
+  //#region Fields
   rules: TransformationRule[] = [];
   isLoading = true;
   showCreateRule = false; // bound to the extracted modal's `visible`
@@ -42,7 +42,7 @@ export class RulesOverviewComponent implements OnInit {
     { label: 'Draft', value: 'DRAFT' },
     { label: 'Finalized', value: 'FINALIZED' }
   ];
-  // #endregion
+  //#endregion
 
   constructor(
     private router: Router,
@@ -50,16 +50,16 @@ export class RulesOverviewComponent implements OnInit {
     private messageService: MessageService
   ) {}
 
-  // #region Lifecycle
+  //#region Lifecycle
   /**
    * Initialize the page by loading the available rules.
    */
   ngOnInit(): void {
     this.loadRules();
   }
-  // #endregion
+  //#endregion
 
-  // #region UI Events
+  //#region UI Events
   /**
    * Handler for the `(created)` event emitted by the Create Rule modal.
    * Validates payload and forwards to the API to create the rule.
@@ -92,18 +92,18 @@ export class RulesOverviewComponent implements OnInit {
       }
     });
   }
-  // #endregion
+  //#endregion
 
-  // #region Navigation
+  //#region Navigation
   /**
    * Navigate to the rule editor for the given rule id.
    */
   editRule(ruleId: number) {
     this.router.navigate(['/sync-rules/edit-rule', ruleId]);
   }
-  // #endregion
+  //#endregion
 
-  // #region REST Methods
+  //#region REST Methods
   /**
    * Load all transformation rules from the backend and update component state.
    */
@@ -145,9 +145,9 @@ export class RulesOverviewComponent implements OnInit {
       }
     });
   }
-  // #endregion
+  //#endregion
 
-  // #region Helpers
+  //#region Helpers
   /**
    * Map backend status to PrimeNG tag severity.
    */
@@ -165,5 +165,5 @@ export class RulesOverviewComponent implements OnInit {
     const term = this.searchTerm.trim().toLowerCase();
     return this.rules.filter((rule) => rule.name.toLowerCase().includes(term));
   }
-  // #endregion
+  //#endregion
 }

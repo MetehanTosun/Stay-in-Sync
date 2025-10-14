@@ -35,7 +35,7 @@ import { MessageService } from 'primeng/api';
   styleUrls: ['./edit-rule.component.css']
 })
 export class EditRuleComponent implements OnInit, AfterViewInit, OnDestroy {
-  // #region Fields
+  //#region Fields
   ruleName = 'New Rule';
   ruleId: number | undefined = undefined;
   ruleDescription: string = '';
@@ -59,7 +59,7 @@ export class EditRuleComponent implements OnInit, AfterViewInit, OnDestroy {
 
   @ViewChild(NodePaletteComponent, { static: false }) nodePalette?: NodePaletteComponent;
   @ViewChild(VflowCanvasComponent, { static: false }) canvas?: VflowCanvasComponent;
-  // #endregion
+  //#endregion
 
   constructor(
     private route: ActivatedRoute,

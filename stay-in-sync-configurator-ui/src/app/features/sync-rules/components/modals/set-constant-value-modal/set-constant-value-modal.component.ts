@@ -16,7 +16,7 @@ import { MessageService } from 'primeng/api';
   styleUrls: ['../modal-shared.component.css', './set-constant-value-modal.component.css']
 })
 export class SetConstantValueModalComponent {
-  // #region Fields
+  //#region Fields
   /** Controls dialog visibility (two-way binding with `visibleChange`) */
   @Input() visible = true;
 
@@ -45,7 +45,7 @@ export class SetConstantValueModalComponent {
   ngOnInit() {
     this.constantValue = this.currentValue || '';
   }
-  // #endregion
+  //#endregion
 
   constructor(private messageService: MessageService) {}
 
@@ -174,14 +174,6 @@ export class SetConstantValueModalComponent {
     } catch (error) {
       return false;
     }
-  }
-
-  /**
-   * Helper method to get current datetime in ISO 8601 format for user reference
-   * Can be used in the UI to show an example
-   */
-  getCurrentDateTimeExample(): string {
-    return new Date().toISOString();
   }
   //#endregion
 }

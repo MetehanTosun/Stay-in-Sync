@@ -1,34 +1,38 @@
 <!-- MARK: VFlow -->
-<div id="vflow-container" (click)="storeMousePosition($event)"  (contextmenu)="onCanvasRightClick($event)" #canvasContainer srClickOutside (srClickOutside)="onOutsideCanvas($event)">
-  <vflow view="auto" [nodes]="nodes" [edges]="edges" [background]="{ type: 'dots', backgroundColor: 'var(--sr-canvas-bg)' }" (click)="onCanvasClick($event)"
+<div id="vflow-container" (click)="storeMousePosition($event)" (contextmenu)="onCanvasRightClick($event)"
+  #canvasContainer srClickOutside (srClickOutside)="onOutsideCanvas($event)">
+  <vflow view="auto" [nodes]="nodes" [edges]="edges"
+    [background]="{ type: 'dots', backgroundColor: 'var(--sr-canvas-bg)' }" (click)="onCanvasClick($event)"
     (onConnect)="addEdge($event)" (onNodesChange.position)="onNodePositionChange($event)"
     (onNodesChange.select)="onNodeSelect($event)" (onEdgesChange.select)="onEdgeSelect($event)" />
 </div>
 
 <!-- MARK: Type Error Modal -->
-<div *ngIf="showTypeIncompatibilityModal" class="modal-backdrop"></div>
-<div *ngIf="showTypeIncompatibilityModal" class="error-modal" (click)="closeTypeIncompatibilityModal()">
-  <!-- Modal Header -->
-  <h3>
-    <span>⚠️</span>
-    {{ lastAttemptedConnection ? 'Type Incompatibility' : 'Source Incompatibility' }}
-  </h3>
+<div *ngIf="showTypeIncompatibilityModal" class="modal-backdrop">
+  <div class="error-modal" role="dialog" aria-modal="true" (click)="closeTypeIncompatibilityModal()">
+    <!-- Modal Header -->
+    <h3>
+      <span>⚠️</span>
+      {{ lastAttemptedConnection ? 'Type Incompatibility' : 'Source Incompatibility' }}
+    </h3>
 
-  <!-- Modal Body -->
-  <p class="error-message">{{ typeIncompatibilityMessage }}</p>
-  <div *ngIf="lastAttemptedConnection">
-    <div>Source: <b>{{ lastAttemptedConnection!.sourceType }}</b></div>
-    <div>Target: <b>{{ lastAttemptedConnection!.targetType }}</b></div>
+    <!-- Modal Body -->
+    <p class="error-message">{{ typeIncompatibilityMessage }}</p>
+    <div *ngIf="lastAttemptedConnection">
+      <div>Source: <b>{{ lastAttemptedConnection!.sourceType }}</b></div>
+      <div>Target: <b>{{ lastAttemptedConnection!.targetType }}</b></div>
+    </div>
+    <p class="error-note" *ngIf="lastAttemptedConnection">These data types are not compatible.</p>
+
+    <!-- Modal Footer -->
+    <button id="close-incompatibility-modal-button" (click)="closeTypeIncompatibilityModal()">✓ OK</button>
   </div>
-  <p class="error-note" *ngIf="lastAttemptedConnection">These data types are not compatible.</p>
-
-  <!-- Modal Footer -->
-  <button id="close-incompatibility-modal-button" (click)="closeTypeIncompatibilityModal()">✓ OK</button>
 </div>
 
 <!-- MARK: Node Menu -->
-<div *ngIf="showNodeContextMenu && selectedNode" class="context-menu" [style.left.px]="nodeContextMenuPosition.x"
-  [style.top.px]="nodeContextMenuPosition.y" (click)="$event.stopPropagation()">
+<div *ngIf="showNodeContextMenu && selectedNode" class="context-menu" role="menu"
+  [style.left.px]="nodeContextMenuPosition.x" [style.top.px]="nodeContextMenuPosition.y"
+  (click)="$event.stopPropagation()">
   <ng-container *ngFor="let item of selectedNode.contextMenuItems">
     <div *ngIf="hasLabel(item)" class="context-menu-item" (click)="runAction(item)">
       {{ getLabel(item) }}
@@ -40,7 +44,7 @@
     <!-- Embedded Submenu -->
     <div *ngIf="hasSubmenu(item)">
       <div class="submenu-grid">
-        <div *ngFor="let subItem of getSubmenu(item)" class="submenu-item" (click)="runAction(subItem)">
+        <div *ngFor="let subItem of getSubmenu(item)" class="submenu-item" role="menuitem" (click)="runAction(subItem)">
           {{ getLabel(subItem) }}
         </div>
       </div>
@@ -48,9 +52,9 @@
   </ng-container>
 </div>
 
-<!-- MARK: Node Suggestion Menu -->
+<!-- MARK: Node Suggestions -->
 <div *ngIf="showSuggestions" class="suggestions-menu" [style.left.px]="nodeContextMenuPosition.x + 140"
-  [style.top.px]="nodeContextMenuPosition.y">
+  [style.top.px]="nodeContextMenuPosition.y" role="menu">
   <ul>
     <li *ngFor="let suggestion of suggestions" (click)="onSuggestionSelected(suggestion)">
       {{ suggestion.operatorName }}
@@ -64,7 +68,7 @@
   <button id="delete-edge-button" (click)="deleteSelectedEdge($event)">Delete Edge</button>
 </div>
 
-<!-- Modals -->
+<!-- MARK: Modals -->
 <!-- Set Node Name -->
 <app-set-node-name-modal [(visible)]="editNodeNameModalOpen" (visibleChange)="editNodeNameModalOpen = $event"
   [currentName]="getNodeName(nodeBeingEdited)" (save)="onNodeNameSaved($event)" (close)="closeModals()">
@@ -85,7 +89,7 @@
   [currentSchema]="getNodeSchema(nodeBeingEdited)" (save)="onSchemaSaved($event)" (modalsClosed)="closeModals()">
 </app-set-schema-modal>
 
-<!-- Pending Edge Removal -->
+<!-- Change constant node data type + edge removal -->
 <div *ngIf="showRemoveEdgesModal" class="modal-backdrop"></div>
 <div id="pending-edge-removal-modal" *ngIf="showRemoveEdgesModal">
   This action sets a new data type of this node and will remove all connected edges.

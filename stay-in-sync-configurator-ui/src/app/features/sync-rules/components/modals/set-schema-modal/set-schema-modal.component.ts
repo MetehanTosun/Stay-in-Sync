@@ -20,7 +20,7 @@ import { describeTopLevel, getTruncatedFileName, runTopLevelCheck, setEditorCont
 })
 export class SetSchemaModalComponent implements OnDestroy, OnInit {
 
-  // #region Fields
+  //#region Fields
   /** Controls dialog visibility (two-way binding with `visibleChange`) */
   @Input() visible = true;
 
@@ -73,9 +73,9 @@ export class SetSchemaModalComponent implements OnDestroy, OnInit {
    * The currently uploaded file as and html element
    */
   @ViewChild('schemaFile', { static: false }) schemaFileInput?: ElementRef<HTMLInputElement> | null;
-  // #endregion
+  //#endregion
 
-  // #region Lifecycle
+  //#region Lifecycle
   /**
    * Initializes the editor with the current schema (if applicable)
    */
@@ -106,11 +106,11 @@ export class SetSchemaModalComponent implements OnDestroy, OnInit {
     this.monacoContentChangeDisposable = null;
     this.monacoEditorRef = null;
   }
-  // #endregion
+  //#endregion
 
   constructor(private messageService: MessageService) { }
 
-  // #region Editor lifecycle
+  //#region Editor lifecycle
   /**
    * Stores the Monaco editor reference at editor initialization.
    * Attaches a content-change listener that keeps `schemaText` in sync
@@ -156,9 +156,9 @@ export class SetSchemaModalComponent implements OnDestroy, OnInit {
     this.visible = false;
     this.visibleChange.emit(false);
   }
-  // #endregion
+  //#endregion
 
-  // #region File handling
+  //#region File handling
   /**
    * Handler for file input change.
    * Loads the uploaded JSON file into editor
@@ -233,9 +233,9 @@ export class SetSchemaModalComponent implements OnDestroy, OnInit {
   getTruncatedFileName(name: string): string {
     return getTruncatedFileName(name);
   }
-  // #endregion
+  //#endregion
 
-  // #region Modal Actions
+  //#region Modal Actions
   /**
    * Validate and submit the current schema text.
    */
@@ -304,9 +304,9 @@ export class SetSchemaModalComponent implements OnDestroy, OnInit {
 
     runTopLevelCheck(this.schemaText);
   }
-  // #endregion
+  //#endregion
 
-  // #region Utilities
+  //#region Utilities
   /**
    * Synchronizes the given string value into both the simple `NgxEditorModel` and
    * the Monaco editor model (if available).
@@ -324,5 +324,5 @@ export class SetSchemaModalComponent implements OnDestroy, OnInit {
       });
     }
   }
-  // #endregion
+  //#endregion
 }
