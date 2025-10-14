@@ -1,4 +1,5 @@
 <p-card header="Target Endpoints" styleClass="p-p-4">
+  <p-toast key="endpoints"></p-toast>
   <div class="p-d-flex p-ai-center p-mb-3" style="gap: .5rem;">
     <button pButton type="button" icon="pi pi-cloud-download" label="Import Endpoints" [disabled]="importing" (click)="importEndpoints()"></button>
     <p-progressSpinner *ngIf="importing" styleClass="p-ml-2" strokeWidth="4"></p-progressSpinner>

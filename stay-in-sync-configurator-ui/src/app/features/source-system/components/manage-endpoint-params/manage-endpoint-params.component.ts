@@ -171,6 +171,7 @@ export class ManageEndpointParamsComponent implements OnInit, OnChanges {
           this.queryParamForm.reset({ queryParamType: ApiEndpointQueryParamType.Query });
           this.loadQueryParams(this.endpointId);
           this.onCreated.emit();
+          this.messageService.add({ key: 'params', severity: 'success', summary: 'Parameter Created', detail: 'Query parameter created.', life: 3000 });
         },
         error: (err) => {
           console.error('Failed to add query param', err);
@@ -190,6 +191,7 @@ export class ManageEndpointParamsComponent implements OnInit, OnChanges {
         next: () => {
           this.queryParams = this.queryParams.filter(p => p.id !== paramId);
           this.onDeleted.emit();
+          this.messageService.add({ key: 'params', severity: 'success', summary: 'Parameter Deleted', detail: 'Query parameter deleted.', life: 3000 });
         },
         error: (err) => {
           console.error('Failed to delete query param', err);

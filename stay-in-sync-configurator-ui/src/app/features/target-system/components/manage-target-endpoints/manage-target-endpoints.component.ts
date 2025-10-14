@@ -292,12 +292,7 @@ export class ManageTargetEndpointsComponent implements OnInit {
       next: () => {
         this.form.reset({ endpointPath: '', httpRequestType: 'GET', requestBodySchema: '', responseBodySchema: '' });
         this.load();
-        this.messageService.add({
-          severity: 'success',
-          summary: 'Endpoint Created',
-          detail: 'Endpoint has been successfully created.',
-          life: 3000
-        });
+        this.messageService.add({ key: 'endpoints', severity: 'success', summary: 'Endpoint Created', detail: 'Endpoint has been successfully created.', life: 3000 });
       },
       error: (error) => {
         console.error('[ManageTargetEndpoints] Error creating endpoint:', error);
@@ -326,12 +321,7 @@ export class ManageTargetEndpointsComponent implements OnInit {
         next: () => { 
           this.showDialog = false; 
           this.load(); 
-          this.messageService.add({
-            severity: 'success',
-            summary: 'Endpoint Updated',
-            detail: 'Endpoint has been successfully updated.',
-            life: 3000
-          });
+          this.messageService.add({ key: 'endpoints', severity: 'success', summary: 'Endpoint Updated', detail: 'Endpoint has been successfully updated.', life: 3000 });
         },
         error: (error) => {
           console.error('[ManageTargetEndpoints] Error updating endpoint:', error);
@@ -350,12 +340,7 @@ export class ManageTargetEndpointsComponent implements OnInit {
         next: () => { 
           this.showDialog = false; 
           this.load(); 
-          this.messageService.add({
-            severity: 'success',
-            summary: 'Endpoint Created',
-            detail: 'Endpoint has been successfully created.',
-            life: 3000
-          });
+          this.messageService.add({ key: 'endpoints', severity: 'success', summary: 'Endpoint Created', detail: 'Endpoint has been successfully created.', life: 3000 });
         },
         error: (error) => {
           console.error('[ManageTargetEndpoints] Error creating endpoint:', error);
@@ -384,12 +369,7 @@ export class ManageTargetEndpointsComponent implements OnInit {
       this.api.delete(this.endpointToDelete.id).subscribe({ 
         next: () => {
           this.load();
-          this.messageService.add({
-            severity: 'success',
-            summary: 'Endpoint Deleted',
-            detail: 'Endpoint has been successfully deleted.',
-            life: 3000
-          });
+          this.messageService.add({ key: 'endpoints', severity: 'success', summary: 'Endpoint Deleted', detail: 'Endpoint has been successfully deleted.', life: 3000 });
           this.endpointToDelete = null;
         },
         error: (error) => {

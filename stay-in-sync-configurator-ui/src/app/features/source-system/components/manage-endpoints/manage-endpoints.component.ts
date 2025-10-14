@@ -43,6 +43,7 @@ import { ManageEndpointsFormService } from '../../services/manage-endpoints-form
 import { TypeScriptGenerationService } from '../../services/typescript-generation.service';
 import { ResponsePreviewService } from '../../services/response-preview.service';
 import { MessageService } from 'primeng/api';
+import { ToastModule } from 'primeng/toast';
 import {JobStatusTagComponent} from '../../../../shared/components/job-status-tag/job-status-tag.component';
 import {Select} from 'primeng/select';
 import {FloatLabel} from 'primeng/floatlabel';
@@ -72,6 +73,7 @@ import {FloatLabel} from 'primeng/floatlabel';
     TooltipModule,
     Select,
     FloatLabel,
+    ToastModule,
   ],
   templateUrl: './manage-endpoints.component.html',
   styleUrls: ['./manage-endpoints.component.css']
@@ -225,11 +227,7 @@ export class ManageEndpointsComponent implements OnInit, OnDestroy {
    * Show toast message with debounce to prevent duplicates
    */
   private showToast(severity: 'success' | 'error' | 'info' | 'warn', summary: string, detail: string) {
-    this.messageService.add({
-      severity,
-      summary,
-      detail
-    });
+    this.messageService.add({ key: 'endpoints', severity, summary, detail });
   }
 
   /**
@@ -854,6 +852,7 @@ ${jsonSchema}
         // Ensure proper tab integration after form reset
         this.resetTabIntegration();
         this.onCreated.emit();
+        this.showToast('success','Endpoint Created','Endpoint has been successfully created.');
       },
       error: (error) => {
         console.error('[ManageEndpoints] Error creating endpoint:', error);
@@ -887,6 +886,7 @@ ${jsonSchema}
             this.endpoints = this.endpoints.filter(e => e.id !== this.endpointToDelete!.id);
             this.endpointToDelete = null;
             this.onDeleted.emit();
+            this.showToast('success','Endpoint Deleted','Endpoint has been successfully deleted.');
           },
           error: (error) => {
             console.error('Error deleting endpoint:', error);
@@ -1048,6 +1048,7 @@ ${jsonSchema}
           this.closeEditDialog();
           this.loadEndpoints();
           this.onUpdated.emit();
+          this.showToast('success','Endpoint Updated','Endpoint has been successfully updated.');
         },
         error: (error) => {
           console.error('=== EDIT ERROR ===');

@@ -15,6 +15,8 @@ import {HttpErrorService} from '../../../../core/services/http-error.service';
 import {ConfirmationDialogComponent, ConfirmationDialogData} from '../confirmation-dialog/confirmation-dialog.component';
 import {FloatLabel} from 'primeng/floatlabel';
 import {Select, SelectModule} from 'primeng/select';
+import { MessageService } from 'primeng/api';
+import { ToastModule } from 'primeng/toast';
 
 /**
  * Component for managing API header templates for a given system.
@@ -33,7 +35,8 @@ import {Select, SelectModule} from 'primeng/select';
     CardModule,
     ConfirmationDialogComponent,
     FloatLabel,
-    SelectModule
+    SelectModule,
+    ToastModule
   ],
   templateUrl: './manage-api-headers.component.html'
 })
@@ -82,7 +85,8 @@ export class ManageApiHeadersComponent implements OnInit {
   constructor(
     private fb: FormBuilder,
     private hdrSvc: ApiHeaderResourceService,
-    protected errorSerice: HttpErrorService
+    protected errorSerice: HttpErrorService,
+    private messageService: MessageService
   ) {}
 
 
@@ -138,6 +142,7 @@ export class ManageApiHeadersComponent implements OnInit {
           this.editing = null;
           this.form.reset({headerType: ApiRequestHeaderType.Custom});
           this.loadHeaders();
+          this.messageService.add({ key: 'headers', severity: 'success', summary: 'Header Updated', detail: 'API header updated.', life: 3000 });
         },
         error: (err) => this.errorSerice.handleError(err)
       });
@@ -155,6 +160,7 @@ export class ManageApiHeadersComponent implements OnInit {
             this.form.reset({headerType: ApiRequestHeaderType.Custom});
             this.loadHeaders();
             this.onCreated.emit();
+            this.messageService.add({ key: 'headers', severity: 'success', summary: 'Header Created', detail: 'API header created.', life: 3000 });
           },
           error: (err) => {
             this.errorSerice.handleError(err);
@@ -206,6 +212,7 @@ export class ManageApiHeadersComponent implements OnInit {
             this.headers = this.headers.filter(h => h.id !== this.headerToDelete!.id);
             this.headerToDelete = null;
             this.onDeleted.emit();
+            this.messageService.add({ key: 'headers', severity: 'success', summary: 'Header Deleted', detail: 'API header deleted.', life: 3000 });
           },
           error: (err) => {
             this.errorSerice.handleError(err);
