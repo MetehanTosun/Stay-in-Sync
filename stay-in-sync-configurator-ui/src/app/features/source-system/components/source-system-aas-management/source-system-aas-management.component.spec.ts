@@ -1,3 +1,9 @@
+/**
+ * Unit tests for `SourceSystemAasManagementComponent`.
+ * Covers AAS selection, ID derivation, connection tests, snapshot discovery,
+ * node interactions (expand/select), and CRUD actions for submodels/elements,
+ * including value setting flows.
+ */
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { HttpClientTestingModule } from '@angular/common/http/testing';
 import { provideNoopAnimations } from '@angular/platform-browser/animations';
@@ -7,6 +13,7 @@ import { of } from 'rxjs';
 import { AasService } from '../../services/aas.service';
 import { AasUtilityService } from '../../../target-system/services/aas-utility.service';
 
+/** Test suite for core AAS management behaviors on the source system page. */
 describe('SourceSystemAasManagementComponent', () => {
   let component: SourceSystemAasManagementComponent;
   let fixture: ComponentFixture<SourceSystemAasManagementComponent>;
@@ -52,10 +59,12 @@ describe('SourceSystemAasManagementComponent', () => {
     mockAasManagementService = TestBed.inject(SourceSystemAasManagementService) as jasmine.SpyObj<SourceSystemAasManagementService>;
   });
 
+  /** Component should be created successfully. */
   it('should create', () => {
     expect(component).toBeTruthy();
   });
 
+  /** Verifies detection of whether an AAS system is selected. */
   it('should check if AAS is selected', () => {
     component.system = { apiType: 'AAS' } as any;
     expect(component.isAasSelected()).toBe(true);
@@ -64,6 +73,7 @@ describe('SourceSystemAasManagementComponent', () => {
     expect(component.isAasSelected()).toBe(false);
   });
 
+  /** Derives the AAS identifier from explicit `aasId` or from `apiUrl`. */
   it('should get AAS ID', () => {
     component.system = { aasId: 'test-id' } as any;
     expect(component.getAasId()).toBe('test-id');
@@ -72,6 +82,7 @@ describe('SourceSystemAasManagementComponent', () => {
     expect(component.getAasId()).toBe('12345');
   });
 
+  /** Tests connection to AAS backend service. */
   it('should test AAS connection', () => {
     component.system = { id: 1 } as any;
     mockAasManagementService.testConnection.and.returnValue(of({}));
@@ -82,6 +93,7 @@ describe('SourceSystemAasManagementComponent', () => {
     expect(component.aasTestLoading).toBe(false);
   });
 
+  /** Discovers and loads the AAS snapshot tree. */
   it('should discover AAS snapshot', () => {
     component.system = { id: 1 } as any;
     const mockNodes = [{ key: '1', label: 'Test' }];
@@ -94,6 +106,7 @@ describe('SourceSystemAasManagementComponent', () => {
     expect(component.aasTreeLoading).toBe(false);
   });
 
+  /** Expands a node to load its children for a given submodel. */
   it('should handle AAS node expand', () => {
     component.system = { id: 1 } as any;
     const mockNode = { data: { type: 'submodel', id: 'sm1' } };
@@ -105,6 +118,7 @@ describe('SourceSystemAasManagementComponent', () => {
     expect(mockAasManagementService.loadChildren).toHaveBeenCalledWith(1, 'sm1', undefined, mockNode);
   });
 
+  /** Selects a node to load and display live element details. */
   it('should handle AAS node select', () => {
     component.system = { id: 1 } as any;
     const mockNode = { data: { type: 'element', submodelId: 'sm1', idShortPath: 'path1' } };
@@ -118,11 +132,13 @@ describe('SourceSystemAasManagementComponent', () => {
     expect(mockAasManagementService.loadElementDetails).toHaveBeenCalledWith(1, 'sm1', 'path1', mockNode);
   });
 
+  /** Opens the dialog for creating a new submodel. */
   it('should open AAS create submodel dialog', () => {
     component.openAasCreateSubmodel();
     expect(component.showAasSubmodelDialog).toBe(true);
   });
 
+  /** Sets the creation template for a new submodel. */
   it('should set AAS submodel template', () => {
     component.setAasSubmodelTemplate('minimal');
     expect(component.aasNewSubmodelJson).toBe(component.aasMinimalSubmodelTemplate);
@@ -134,6 +150,7 @@ describe('SourceSystemAasManagementComponent', () => {
     expect(component.aasNewSubmodelJson).toBe(component.aasCollectionSubmodelTemplate);
   });
 
+  /** Creates a new submodel and closes the dialog. */
   it('should create AAS submodel', () => {
     component.system = { id: 1 } as any;
     component.aasNewSubmodelJson = '{"id": "test", "idShort": "Test"}';
@@ -146,6 +163,7 @@ describe('SourceSystemAasManagementComponent', () => {
     expect(component.showAasSubmodelDialog).toBe(false);
   });
 
+  /** Opens the dialog for creating a new element under the given parent. */
   it('should open AAS create element dialog', () => {
     component.system = { id: 1 } as any;
     component.openAasCreateElement('sm1', 'parent/path');
@@ -158,6 +176,7 @@ describe('SourceSystemAasManagementComponent', () => {
     expect(component.showElementDialog).toBe(true);
   });
 
+  /** Opens the dialog to set a value for a selected element. */
   it('should open AAS set value dialog', () => {
     const mockElement = { idShortPath: 'path1', valueType: 'xs:string' };
     component.aasSelectedLivePanel = { value: 'test value' } as any;
@@ -172,6 +191,7 @@ describe('SourceSystemAasManagementComponent', () => {
     expect(component.showAasValueDialog).toBe(true);
   });
 
+  /** Sets a property value and refreshes element details. */
   it('should set AAS value', () => {
     component.system = { id: 1 } as any;
     component.aasValueSubmodelId = 'sm1';
@@ -189,6 +209,7 @@ describe('SourceSystemAasManagementComponent', () => {
     expect(component.showAasValueDialog).toBe(false);
   });
 
+  /** Deletes a submodel. */
   it('should delete AAS submodel', () => {
     component.system = { id: 1 } as any;
     mockAasManagementService.deleteSubmodel.and.returnValue(of({}));
@@ -199,6 +220,7 @@ describe('SourceSystemAasManagementComponent', () => {
     expect(mockAasManagementService.deleteSubmodel).toHaveBeenCalledWith(1, 'sm1');
   });
 
+  /** Deletes an element and refreshes children. */
   it('should delete AAS element', () => {
     component.system = { id: 1 } as any;
     mockAasManagementService.deleteElement.and.returnValue(of({}));
