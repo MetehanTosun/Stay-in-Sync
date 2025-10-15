@@ -282,6 +282,13 @@ rabbitmq:
     enabled: false
   replicaCount: 1
 fluent-bit:
+  extraVolumeMounts:
+    - name: lua-scripts
+      mountPath: /fluent-bit/scripts
+  extraVolumes:
+    - name: lua-scripts
+      configMap:
+        name: fluent-bit-lua-scripts
   image:
     repository: bitnamilegacy/fluent-bit
     tag: 4.0.7-debian-12-r0
@@ -376,6 +383,12 @@ fluent-bit:
           Match   quarkus.monitoring
           Add     service monitoring-backend
           Add     job     monitoring
+      
+      [FILTER]
+          Name    lua
+          Match   quarkus.*
+          script  /fluent-bit/scripts/filter.lua
+          call    parse_nested_log
 
     outputs: |
       # Loki Output

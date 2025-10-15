@@ -1,0 +1,35 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: fluent-bit-lua-scripts
+data:
+  filter.lua: |
+    function parse_nested_log(tag, timestamp, record)
+        local msg_str = record["message"]
+        if type(msg_str) ~= "string" then
+            return 1, timestamp, record
+        end
+
+        local syncJobId = string.match(msg_str, '"syncJobId"%s*:%s*"([^"]+)"')
+        if syncJobId then record["syncJobId"] = syncJobId end
+
+        local level = string.match(msg_str, '"level"%s*:%s*"([^"]+)"')
+        if level then record["level"] = level end
+
+        local mdc = record["mdc"]
+        if type(mdc) == "table" then
+            local scriptId = mdc["scriptId"]
+            if scriptId then
+                local adj = string.match(scriptId, "script%-for%-(%d+)")
+                if adj then record["scriptId"] = adj end
+            end
+
+            local transformationId = mdc["transformationId"]
+            if transformationId then
+                local adj = string.match(transformationId, "(%d+)")
+                if adj then record["transformationId"] = adj end
+            end
+        end
+
+        return 1, timestamp, record
+    end
