@@ -565,48 +565,14 @@ save(): void {
   loadRootElements(submodelId: string, attachToNode?: TreeNode): void {
     if (!this.createdSourceSystemId) return;
     this.childrenLoading[submodelId] = true;
-    
-    console.log('[SourceCreate] loadRootElements: Starting to load root elements', {
-      submodelId,
-      attachToNode: attachToNode?.label
-    });
-    
     this.aasService.listElements(this.createdSourceSystemId, submodelId, { depth: 'shallow', source: 'SNAPSHOT' })
       .subscribe({
         next: (resp) => {
           this.childrenLoading[submodelId] = false;
           const list = Array.isArray(resp) ? resp : (resp?.result ?? []);
-          
-          console.log('[SourceCreate] loadRootElements: ROOT ELEMENTS LOADED', {
-            submodelId,
-            totalCount: list.length,
-            elements: list.map((el: any, index: number) => ({
-              index,
-              idShort: el.idShort,
-              idShortPath: el.idShortPath,
-              hasChildren: el.hasChildren,
-              modelType: el.modelType,
-              value: el.value,
-              submodelElements: el.submodelElements
-            }))
-          });
-          
           this.elementsBySubmodel[submodelId] = list;
           if (attachToNode) {
             const mappedChildren = list.map((el: any) => this.mapElementToNode(submodelId, el));
-            
-            console.log('[SourceCreate] loadRootElements: MAPPED CHILDREN', {
-              submodelId,
-              mappedCount: mappedChildren.length,
-              children: mappedChildren.map((child: any, index: number) => ({
-                index,
-                key: child.key,
-                label: child.label,
-                leaf: child.leaf,
-                data: child.data
-              }))
-            });
-            
             attachToNode.children = mappedChildren;
             this.treeNodes = [...this.treeNodes];
             // Background: hydrate precise types via LIVE element details
@@ -617,10 +583,6 @@ save(): void {
         },
         error: (err) => {
           this.childrenLoading[submodelId] = false;
-          console.error('[SourceCreate] loadRootElements: ERROR', {
-            submodelId,
-            error: err
-          });
           this.errorService.handleError(err);
         }
       });

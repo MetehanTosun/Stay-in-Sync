@@ -1,3 +1,4 @@
+/** Unit tests for `CreateSourceSystemComponent`. */
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { ReactiveFormsModule, FormsModule } from '@angular/forms';
 import { RouterTestingModule } from '@angular/router/testing';
@@ -9,6 +10,7 @@ import { CreateSourceSystemComponent } from './create-source-system.component';
 import { AasService } from '../../services/aas.service';
 import { HttpErrorService } from '../../../../core/services/http-error.service';
 
+/** Verifies dialog flows, AAS actions, and tree interactions. */
 describe('CreateSourceSystemComponent', () => {
   let component: CreateSourceSystemComponent;
   let fixture: ComponentFixture<CreateSourceSystemComponent>;
@@ -17,6 +19,7 @@ describe('CreateSourceSystemComponent', () => {
   let componentMessageService: MessageService;
   let httpErrorService: jasmine.SpyObj<HttpErrorService>;
 
+  /** Configure TestBed and initialize spies/state. */
   beforeEach(async () => {
     const aasServiceSpy = jasmine.createSpyObj('AasService', [
       'createElement', 'deleteElement', 'getElement', 'listElements', 'encodeIdToBase64Url', 'refreshSnapshot', 'listSubmodels', 'aasTest', 'setPropertyValue'
@@ -44,24 +47,26 @@ describe('CreateSourceSystemComponent', () => {
     aasService = TestBed.inject(AasService) as jasmine.SpyObj<AasService>;
     messageService = TestBed.inject(MessageService) as jasmine.SpyObj<MessageService>;
     httpErrorService = TestBed.inject(HttpErrorService) as jasmine.SpyObj<HttpErrorService>;
-    // Use the component's scoped MessageService instance (component has its own provider)
+ 
     componentMessageService = fixture.debugElement.injector.get(MessageService);
     spyOn(componentMessageService, 'add');
 
-    // Set up component state
+   
     component.createdSourceSystemId = 1;
     aasService.listElements.and.returnValue(of([]));
     aasService.refreshSnapshot.and.returnValue(of({} as any));
     aasService.listSubmodels.and.returnValue(of([]));
 
-    // Prevent async afterAll subscribe errors by returning an Observable
+   
     spyOn<any>(component, 'hydrateNodeTypesForNodes').and.returnValue(of([]));
   });
 
+  /** Dialog open behavior for element creation. */
   describe('openCreateElement (dialog flow)', () => {
+    /** Should open dialog without throwing. */
     it('should open dialog with data', () => {
       component.openCreateElement('sm1', 'parent');
-      // no exception
+
       expect(true).toBeTrue();
     });
 
@@ -78,6 +83,7 @@ describe('CreateSourceSystemComponent', () => {
     });
   });
 
+  /** Deletion flows and error handling. */
   describe('deleteElement', () => {
     beforeEach(() => {
       aasService.encodeIdToBase64Url.and.returnValue('encoded-id');
@@ -235,6 +241,7 @@ describe('CreateSourceSystemComponent', () => {
     });
   });
 
+  /** Mapping helpers produce correct TreeNode shape. */
   describe('mapElementToNode', () => {
     it('should map element to tree node correctly', () => {
       const element = {
@@ -247,7 +254,7 @@ describe('CreateSourceSystemComponent', () => {
 
       const result = component['mapElementToNode'](submodelId, element);
 
-      // idShortPath may be undefined; key should still include submodel
+      
       expect(String(result.key).startsWith(`${submodelId}::`)).toBeTrue();
       expect(result.label).toBe('test-element');
       expect(result.data.type).toBe('element');
@@ -271,6 +278,7 @@ describe('CreateSourceSystemComponent', () => {
     });
   });
 
+  /** Loads children with shallow depth and proper params. */
   describe('loadChildren', () => {
     it('should load children and filter correctly', () => {
       const submodelId = 'test-submodel';

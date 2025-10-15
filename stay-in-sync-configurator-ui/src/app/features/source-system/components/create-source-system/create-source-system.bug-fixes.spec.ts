@@ -46,7 +46,7 @@ describe('CreateSourceSystemComponent Bug Fixes', () => {
     aasService.refreshSnapshot.and.returnValue(of({} as any));
     (aasService as any).listSubmodels = (aasService as any).listSubmodels || jasmine.createSpy('listSubmodels').and.returnValue(of([]));
 
-    // Stub async helper to avoid subscribe errors in afterAll
+    
     spyOn<any>(component, 'hydrateNodeTypesForNodes').and.returnValue(of([]));
   });
 
@@ -57,8 +57,8 @@ describe('CreateSourceSystemComponent Bug Fixes', () => {
       const mockResponse = [
         { idShort: 'child1', idShortPath: 'parent/child1' },
         { idShort: 'child2', idShortPath: 'parent/child2' },
-        { idShort: 'nested', idShortPath: 'parent/child1/nested' }, // Should be filtered out
-        { idShort: 'deep', idShortPath: 'parent/child1/nested/deep' } // Should be filtered out
+        { idShort: 'nested', idShortPath: 'parent/child1/nested' }, 
+        { idShort: 'deep', idShortPath: 'parent/child1/nested/deep' } 
       ];
 
       aasService.listElements.and.returnValue(of(mockResponse));
@@ -79,7 +79,7 @@ describe('CreateSourceSystemComponent Bug Fixes', () => {
       const mockResponse = [
         { idShort: 'root1' },
         { idShort: 'root2' },
-        { idShort: 'nested', idShortPath: 'root1/nested' } // Should be filtered out
+        { idShort: 'nested', idShortPath: 'root1/nested' } 
       ];
 
       aasService.listElements.and.returnValue(of(mockResponse));
@@ -188,7 +188,6 @@ describe('CreateSourceSystemComponent Bug Fixes', () => {
         }
       };
 
-      // Simulate the DIRECT FALLBACK scenario
       const rawData = node.data.raw;
       let extractedValue = rawData.value;
 
@@ -198,14 +197,14 @@ describe('CreateSourceSystemComponent Bug Fixes', () => {
     it('should not use valueType as value', () => {
       const rawData = {
         idShort: 'test-element',
-        value: 'xs:string', // This is actually valueType, not value
+        value: 'xs:string', 
         valueType: 'xs:string',
         modelType: 'Property'
       };
 
       let extractedValue: any = rawData.value;
       
-      // The fix should detect this and set to undefined
+
       if (extractedValue === rawData.valueType) {
         extractedValue = undefined;
       }
@@ -221,8 +220,7 @@ describe('CreateSourceSystemComponent Bug Fixes', () => {
       };
 
       let extractedValue: any = rawData.value;
-      
-      // Only create mock if no value exists
+
       if (!extractedValue && rawData.modelType === 'MultiLanguageProperty') {
         extractedValue = [{"language": "en", "text": "sample value"}];
       }
@@ -257,7 +255,7 @@ describe('CreateSourceSystemComponent Bug Fixes', () => {
 
       component.deleteElement('test-submodel-id', longPath);
 
-      // deleteElement gets raw id; encoding happens inside service if needed
+     
       expect(aasService.deleteElement).toHaveBeenCalledWith(1, 'test-submodel-id', longPath);
     });
 
@@ -265,7 +263,7 @@ describe('CreateSourceSystemComponent Bug Fixes', () => {
       const path = 'test/path/with/special/chars';
       const expectedEncoded = 'test/path/with/special/chars'.split('/').map(seg => encodeURIComponent(seg)).join('/');
       
-      // This tests the encodePathSegments method logic
+
       const segments = path.split('/');
       const encodedSegments = segments.map(seg => encodeURIComponent(seg));
       const result = encodedSegments.join('/');
@@ -288,7 +286,7 @@ describe('CreateSourceSystemComponent Bug Fixes', () => {
 
       component.deleteElement('test-submodel-id', 'test/element/path');
 
-      // success toast may be shown elsewhere in the app; do not assert here
+    
     });
   });
 });

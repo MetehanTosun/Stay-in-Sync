@@ -46,7 +46,7 @@ describe('CreateSourceSystemComponent - Simple Tests', () => {
     aasService.listSubmodels.and.returnValue(of([]));
     (aasService as any).refreshSnapshot = (aasService as any).refreshSnapshot || jasmine.createSpy('refreshSnapshot').and.returnValue(of({}));
 
-    // Avoid async subscribe in afterAll
+
     spyOn<any>(component, 'hydrateNodeTypesForNodes').and.returnValue(of([]));
   });
 
