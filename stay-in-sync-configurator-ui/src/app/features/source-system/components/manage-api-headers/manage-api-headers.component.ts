@@ -89,7 +89,7 @@ export class ManageApiHeadersComponent implements OnInit {
     private messageService: MessageService
   ) {}
 
-
+  /** PrimeNG form initialization and initial data load. */
   /**
    * Initializes the header management form and loads existing headers.
    */
@@ -150,7 +150,6 @@ export class ManageApiHeadersComponent implements OnInit {
       const dto: CreateApiHeaderDTO = {
         headerName: this.form.value.headerName,
         headerType: this.form.value.headerType,
-        // @ts-ignore
         values: this.allowValues && this.form.value.headerValue ? [this.form.value.headerValue] : undefined
       } as any;
       this.hdrSvc
@@ -178,6 +177,7 @@ export class ManageApiHeadersComponent implements OnInit {
     });
   }
 
+  /** Cancel edit mode and reset the form. */
   cancelEdit() {
     this.editing = null;
     this.form.reset({ headerType: ApiRequestHeaderType.Custom });

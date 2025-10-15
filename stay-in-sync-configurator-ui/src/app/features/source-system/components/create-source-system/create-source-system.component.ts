@@ -1360,7 +1360,7 @@ save(): void {
       this.handleElementCreation(result.element);
     } else if (result.error) {
       console.error('[SourceCreate] Element creation failed:', result.error);
-      // Show toast for duplicate idShort error
+     
       if (result.error.includes('Duplicate entry') || result.error.includes('uk_element_submodel_idshortpath')) {
         this.messageService.add({
           key: 'sourceAAS',
@@ -1387,7 +1387,7 @@ save(): void {
     try {
       console.log('[SourceCreate] Creating element:', elementData);
       
-      // Use the AAS service to create the element
+   
       const smIdB64 = this.aasService.encodeIdToBase64Url(elementData.submodelId);
       await this.aasService.createElement(
         this.createdSourceSystemId,
@@ -1398,7 +1398,7 @@ save(): void {
       
       console.log('[SourceCreate] Element created successfully');
       
-      ``
+      
       this.messageService.add({
         key: 'sourceAAS',
         severity: 'success',

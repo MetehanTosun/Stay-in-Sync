@@ -1,3 +1,4 @@
+<!-- Manage API Headers: form for adding/updating headers and a table to list them -->
 <div class="">
   <p-toast key="headers"></p-toast>
   <form [formGroup]="form" class="inline-flex gap-10 p-4 mt-1!">
@@ -55,15 +56,11 @@
       </tr>
     </ng-template>
   </p-table>
-  <!-- AAS hint -->
   <div *ngIf="isAas" class="p-mb-3" style="color:#555;">
     Accept/Content-Type werden bei AAS automatisch gesetzt und sind hier ausgeblendet.
   </div>
 </div>
 
-<!--
-  Confirmation dialog for deletion
--->
 <app-confirmation-dialog
   [(visible)]="showConfirmationDialog"
   [data]="confirmationData"
