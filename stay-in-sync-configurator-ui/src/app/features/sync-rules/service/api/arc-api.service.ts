@@ -147,7 +147,7 @@ export class ArcAPIService {
       }
 
       // Store the property type
-      propertyTypes[propName] = propType;
+      propertyTypes[propName] = propType.toUpperCase();
 
       return propName;
     }

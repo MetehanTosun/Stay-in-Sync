@@ -41,7 +41,7 @@ export function getDefaultNodeSize(nodeType: NodeType): { width: number; height:
     case NodeType.CONSTANT:
       return { width: 220, height: 138 };
     case NodeType.PROVIDER:
-      return { width: 420, height: 208 };
+      return { width: 320, height: 208 };
     case NodeType.LOGIC:
       return { width: 320, height: 175 };
     case NodeType.FINAL:

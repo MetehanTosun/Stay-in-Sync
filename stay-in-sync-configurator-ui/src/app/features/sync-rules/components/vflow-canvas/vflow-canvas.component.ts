@@ -655,7 +655,6 @@ export class VflowCanvasComponent implements OnInit {
   openSuggestionsMenu(node: CustomVFlowNode) {
     const outputType = (node.data as { outputType?: string }).outputType;
     if (!outputType) return;
-
     this.nodesApi.getOperators().subscribe({
       next: (operators: LogicOperatorMetadata[]) => {
         this.suggestions = operators.filter(o => o.inputTypes.includes(outputType));
@@ -843,6 +842,7 @@ export class VflowCanvasComponent implements OnInit {
       case NodeType.SCHEMA:
         return [
           { label: 'Edit Schema', action: () => this.startEditingSchema(node) },
+          { label: 'Suggestions', action: () => this.openSuggestionsMenu(node) },
           { label: 'Delete Node', action: () => this.deleteNode(node) }
         ];
     }

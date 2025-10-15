@@ -8,3 +8,9 @@
 	justify-content: center;
 }
 
+.node-path {
+  padding: 8px;
+  max-width: 320px;
+  overflow-x: auto;
+}
+
