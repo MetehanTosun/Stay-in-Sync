@@ -78,39 +78,31 @@ interface AasElementLivePanel {
   styleUrl: './source-system-page.component.css',
   providers: [MessageService]
 })
+/**
+ * Source system page: manages base info, endpoints, and AAS snapshot/live views,
+ * including element creation, value setting, and AASX upload flows.
+ */
 export class SourceSystemPageComponent implements OnInit {
   private originalName: string = "";
   private originalApiUrl: string = "";
   ngOnInit(): void {
     const id = Number.parseInt(this.route.snapshot.paramMap.get('id')!);
     this.sourceSystemService.apiConfigSourceSystemIdGet(id).subscribe({
-      next: data => {
-        console.log(data);
-        this.selectedSystem = data;
-      },
-      error: err => {
-        console.log(err);
-      }
+      next: data => { this.selectedSystem = data; },
+      error: err => { this.httpErrorService.handleError(err); }
     });
 
   }
 
 
-  /**
-   * Flag indicating whether data is currently loading
-   */
+  /** Indicates whether page data is currently loading. */
   loading = false;
 
-  /**
-   * Currently selected system for viewing or editing
-   */
+  /** Currently selected system for viewing and editing. */
   selectedSystem?: SourceSystemDTO;
 
 
-  /**
-   * Selected endpoint for parameter management
-   */
-    // AAS Manage Page state
+  /** AAS Snapshot/Live management state. */
   aasTreeNodes: TreeNode[] = [];
   aasTreeLoading = false;
   aasTestLoading = false;

@@ -1,3 +1,4 @@
+/* Styles for the Create Target System dialog layout and form fields */
 .big-dialog .p-dialog-content {
   display: flex;
   flex-direction: column;
@@ -12,5 +13,3 @@
 .p-field .p-dropdown {
   width: 100%;
 }
-
-
