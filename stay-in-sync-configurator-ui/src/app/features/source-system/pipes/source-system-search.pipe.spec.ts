@@ -1,7 +1,7 @@
 import { TestBed } from '@angular/core/testing';
 import { SourceSystemSearchPipe, SearchOptions, NoResultsInfo } from './source-system-search.pipe';
-import { SourceSystemDTO } from '../features/source-system/models/sourceSystemDTO';
-import { SourceSystemEndpointDTO } from '../features/source-system/models/sourceSystemEndpointDTO';
+import { SourceSystemDTO } from '../models/sourceSystemDTO';
+import { SourceSystemEndpointDTO } from '../models/sourceSystemEndpointDTO';
 
 describe('SourceSystemSearchPipe', () => {
   let pipe: SourceSystemSearchPipe;
