@@ -70,7 +70,7 @@ export class CreateTargetSystemDialogService {
         try {
           const text = String(reader.result || '').trim();
           if (text) {
-            JSON.parse(text); // Validate JSON
+            JSON.parse(text); 
             resolve(text);
           } else {
             reject(new Error('Empty file content'));

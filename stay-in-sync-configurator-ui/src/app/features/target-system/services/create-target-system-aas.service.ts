@@ -75,7 +75,6 @@ export class CreateTargetSystemAasService {
         error: (e: any) => {
           const status = e?.status;
           if (status === 400 || status === 404) {
-            // Fallback: try deep and filter to roots
             this.aasClient.listElements('target', systemId, smIdEnc, 'all').subscribe({
               next: (resp2: any) => {
                 const arr: any[] = Array.isArray(resp2) ? resp2 : (resp2?.result ?? []);
@@ -117,7 +116,6 @@ export class CreateTargetSystemAasService {
         error: (e: any) => {
           const status = e?.status;
           if (status === 400 || status === 404) {
-            // Fallback: deep and filter direct children
             this.aasClient.listElements('target', systemId, smIdEnc, 'all').subscribe({
               next: (resp2: any) => {
                 const arr: any[] = Array.isArray(resp2) ? resp2 : (resp2?.result ?? []);
@@ -153,7 +151,6 @@ export class CreateTargetSystemAasService {
     return new Promise((resolve, reject) => {
       const smIdEnc = this.encodeIdToBase64Url(submodelId);
       
-      // URL encode the element path to handle spaces and special characters
       const encodedElementPath = encodeURIComponent(elementPath);
       console.log('[CreateTargetSystemAasService] loadElementDetails:', {
         original: elementPath,

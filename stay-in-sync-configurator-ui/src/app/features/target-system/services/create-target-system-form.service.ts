@@ -34,7 +34,6 @@ export class CreateTargetSystemFormService {
    * Setup form value change subscriptions
    */
   setupFormSubscriptions(form: FormGroup): void {
-    // API Type changes
     form.get('apiType')!.valueChanges.subscribe((apiType: string) => {
       const aasIdCtrl = form.get('aasId')!;
       const openApiCtrl = form.get('openApiSpec')!;
@@ -52,7 +51,6 @@ export class CreateTargetSystemFormService {
       openApiCtrl.updateValueAndValidity();
     });
 
-    // Auth Type changes
     form.get('apiAuthType')!.valueChanges.subscribe((authType: ApiAuthType) => {
       const grp = form.get('authConfig') as FormGroup;
       ['username', 'password', 'apiKey', 'headerName'].forEach(k => {
@@ -67,7 +65,6 @@ export class CreateTargetSystemFormService {
         grp.get('apiKey')!.setValidators([Validators.required]);
         grp.get('headerName')!.setValidators([Validators.required]);
       } else {
-        // None selected: no required fields
       }
       
       ['username', 'password', 'apiKey', 'headerName'].forEach(k => 
@@ -122,7 +119,6 @@ export class CreateTargetSystemFormService {
     const base: any = { ...form.getRawValue() };
     
     if (selectedFile) {
-      // File will be read and content added to base.openAPI
       return { base, hasFile: true };
     } else {
       const val = base.openApiSpec;
@@ -130,7 +126,6 @@ export class CreateTargetSystemFormService {
         base.openAPI = val;
       }
       delete base.openApiSpec;
-      // Strip auth fields not used by backend DTO
       delete base.apiAuthType;
       delete base.authConfig;
       return { base, hasFile: false };

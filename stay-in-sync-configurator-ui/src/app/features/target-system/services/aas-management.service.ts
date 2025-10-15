@@ -31,6 +31,10 @@ export interface AasElementLivePanel {
   annotations?: AasAnnotationView[];
 }
 
+/**
+ * Service responsible for managing AAS (Asset Administration Shell) operations for target systems.
+ * Provides methods for discovering submodels, loading elements, and handling AASX file interactions.
+ */
 @Injectable({
   providedIn: 'root'
 })
@@ -42,31 +46,24 @@ export class AasManagementService {
   ) {}
 
   /**
-   * Discover AAS submodels
+   * Discovers all submodels of an AAS for a given target system.
+   * First attempts to load from SNAPSHOT source, then falls back to LIVE mode if SNAPSHOT fails.
+   * @param systemId ID of the target system.
+   * @returns Promise resolving to an array of TreeNode objects representing submodels.
    */
   async discoverSubmodels(systemId: number): Promise<TreeNode[]> {
     return new Promise((resolve, reject) => {
-      console.log('[AasManagement] discoverSubmodels: Starting with systemId:', systemId);
-      // Try SNAPSHOT first, then fallback to no source parameter (LIVE)
       this.aasClientService.listSubmodels('target', systemId, { source: 'SNAPSHOT' }).subscribe({
         next: (response: any) => {
-          console.log('[AasManagement] discoverSubmodels: SNAPSHOT response:', response);
           const submodels = Array.isArray(response) ? response : (response?.result ?? []);
-          console.log('[AasManagement] discoverSubmodels: Extracted submodels:', submodels.length, submodels);
           const treeNodes = submodels.map((sm: any) => this.mapSmToNode(sm));
-          console.log('[AasManagement] discoverSubmodels: Mapped treeNodes:', treeNodes.length, treeNodes);
           resolve(treeNodes);
         },
         error: (error: any) => {
-          console.log('[AasManagement] discoverSubmodels: SNAPSHOT failed, trying LIVE:', error);
-          // Fallback to LIVE (no source parameter)
           this.aasClientService.listSubmodels('target', systemId).subscribe({
             next: (response: any) => {
-              console.log('[AasManagement] discoverSubmodels: LIVE response:', response);
               const submodels = Array.isArray(response) ? response : (response?.result ?? []);
-              console.log('[AasManagement] discoverSubmodels: Extracted submodels:', submodels.length, submodels);
               const treeNodes = submodels.map((sm: any) => this.mapSmToNode(sm));
-              console.log('[AasManagement] discoverSubmodels: Mapped treeNodes:', treeNodes.length, treeNodes);
               resolve(treeNodes);
             },
             error: (liveError: any) => {
@@ -80,11 +77,14 @@ export class AasManagementService {
   }
 
   /**
-   * Load submodel elements
+   * Loads all elements of a specific submodel from the AAS.
+   * Builds tree nodes for display in the UI.
+   * @param systemId ID of the target system.
+   * @param submodelId ID of the submodel.
+   * @returns Promise resolving to TreeNode objects representing the submodel elements.
    */
   async loadSubmodelElements(systemId: number, submodelId: string): Promise<TreeNode[]> {
     return new Promise((resolve, reject) => {
-      // Use normal Base64 with padding for BaSyx compatibility
       const smIdB64 = btoa(submodelId);
       this.aasClientService.listElements('target', systemId, smIdB64).subscribe({
         next: (response: any) => {
@@ -94,20 +94,11 @@ export class AasManagementService {
           } else if (response && response.result && Array.isArray(response.result)) {
             elements = response.result;
           }
-          
           const treeNodes = elements.map(el => {
-            // Ensure idShortPath is set correctly - build full path like Source System
             let idShortPath = el.idShortPath || el.idShort;
             if (!el.idShortPath && el.idShort) {
-              // For root elements, just use idShort
               idShortPath = el.idShort;
             }
-            console.log('[AasManagement] loadSubmodelElements: Mapping element', {
-              idShort: el.idShort,
-              idShortPath: idShortPath,
-              modelType: el.modelType
-            });
-            
             return {
               label: el.idShort || 'Element',
               data: {
@@ -131,13 +122,15 @@ export class AasManagementService {
   }
 
   /**
-   * Load element children
+   * Loads all child elements of a given parent element within a submodel.
+   * @param systemId ID of the target system.
+   * @param submodelId ID of the submodel.
+   * @param parentPath Path of the parent element within the submodel hierarchy.
+   * @returns Promise resolving to TreeNode objects representing child elements.
    */
   async loadElementChildren(systemId: number, submodelId: string, parentPath: string): Promise<TreeNode[]> {
     return new Promise((resolve, reject) => {
-      // Use normal Base64 with padding for BaSyx compatibility
       const smId = btoa(submodelId);
-      
       this.aasClientService.listElements('target', systemId, smId, 'shallow', parentPath).subscribe({
         next: (response: any) => {
           let children: any[] = [];
@@ -146,21 +139,11 @@ export class AasManagementService {
           } else if (response && response.result && Array.isArray(response.result)) {
             children = response.result;
           }
-          
           const treeNodes = children.map(el => {
-            // Ensure idShortPath is set correctly - build full path like Source System
             let idShortPath = el.idShortPath || el.idShort;
             if (!el.idShortPath && el.idShort) {
-              // Build full path: parentPath + '/' + idShort
               idShortPath = parentPath ? `${parentPath}/${el.idShort}` : el.idShort;
             }
-            console.log('[AasManagement] loadElementChildren: Mapping child element', {
-              idShort: el.idShort,
-              idShortPath: idShortPath,
-              modelType: el.modelType,
-              parentPath: parentPath
-            });
-            
             return {
               label: el.idShort || 'Element',
               data: {
@@ -184,20 +167,17 @@ export class AasManagementService {
   }
 
   /**
-   * Load element details
+   * Loads detailed live information of a specific AAS element.
+   * Includes variable definitions, annotations, and reference mappings.
+   * @param systemId ID of the target system.
+   * @param submodelId ID of the submodel.
+   * @param elementPath Path of the element to load.
+   * @returns Promise resolving to an AasElementLivePanel object containing element details.
    */
   async loadElementDetails(systemId: number, submodelId: string, elementPath: string): Promise<AasElementLivePanel> {
     return new Promise((resolve, reject) => {
-      // Use normal Base64 with padding for BaSyx compatibility
       const smId = btoa(submodelId);
-      
-      // URL encode the element path to handle spaces and special characters
       const encodedElementPath = encodeURIComponent(elementPath);
-      console.log('[AasManagement] loadElementDetails: Encoding element path', {
-        original: elementPath,
-        encoded: encodedElementPath
-      });
-      
       this.aasClientService.getElement('target', systemId, smId, encodedElementPath).subscribe({
         next: (element: any) => {
           const livePanel: AasElementLivePanel = {
@@ -239,14 +219,15 @@ export class AasManagementService {
   }
 
   /**
-   * Create submodel
+   * Creates a new submodel in the target AAS system.
+   * Displays a success or error message upon completion.
+   * @param systemId ID of the target system.
+   * @param submodelData The submodel data payload to create.
    */
   async createSubmodel(systemId: number, submodelData: any): Promise<void> {
     return new Promise((resolve, reject) => {
-      console.log('[AasManagement] createSubmodel: Starting with systemId:', systemId, 'submodelData:', submodelData);
       this.aasClientService.createSubmodel('target', systemId, submodelData).subscribe({
         next: (response: any) => {
-          console.log('[AasManagement] createSubmodel: Success response:', response);
           this.messageService.add({ 
             key: 'targetAAS',
             severity: 'success', 
@@ -270,11 +251,15 @@ export class AasManagementService {
   }
 
   /**
-   * Create element
+   * Creates a new element in a given submodel.
+   * Displays success or error messages upon completion.
+   * @param systemId ID of the target system.
+   * @param submodelId ID of the submodel.
+   * @param elementData The data for the element to be created.
+   * @param parentPath Optional parent path for nested elements.
    */
   async createElement(systemId: number, submodelId: string, elementData: any, parentPath?: string): Promise<void> {
     return new Promise((resolve, reject) => {
-      // Use normal Base64 with padding for BaSyx compatibility
       const smIdB64 = btoa(submodelId);
       this.aasClientService.createElement('target', systemId, smIdB64, elementData, parentPath).subscribe({
         next: () => {
@@ -300,11 +285,13 @@ export class AasManagementService {
   }
 
   /**
-   * Delete submodel
+   * Deletes a submodel from the target system's AAS.
+   * Displays success or error messages upon completion.
+   * @param systemId ID of the target system.
+   * @param submodelId ID of the submodel to delete.
    */
   async deleteSubmodel(systemId: number, submodelId: string): Promise<void> {
     return new Promise((resolve, reject) => {
-      // Use normal Base64 with padding for BaSyx compatibility
       const smIdB64 = btoa(submodelId);
       this.aasClientService.deleteSubmodel('target', systemId, smIdB64).subscribe({
         next: () => {
@@ -330,11 +317,13 @@ export class AasManagementService {
   }
 
   /**
-   * Delete element
+   * Deletes a specific element within a submodel.
+   * @param systemId ID of the target system.
+   * @param submodelId ID of the submodel.
+   * @param elementPath Path of the element to delete.
    */
   async deleteElement(systemId: number, submodelId: string, elementPath: string): Promise<void> {
     return new Promise((resolve, reject) => {
-      // Use normal Base64 with padding for BaSyx compatibility
       const smIdB64 = btoa(submodelId);
       this.aasClientService.deleteElement('target', systemId, smIdB64, elementPath).subscribe({
         next: () => {
@@ -360,11 +349,15 @@ export class AasManagementService {
   }
 
   /**
-   * Set element value
+   * Updates the value of a specific property element in a submodel.
+   * Displays a success or error message upon completion.
+   * @param systemId ID of the target system.
+   * @param submodelId ID of the submodel.
+   * @param elementPath Path of the element whose value should be updated.
+   * @param value The new value to set.
    */
   async setElementValue(systemId: number, submodelId: string, elementPath: string, value: any): Promise<void> {
     return new Promise((resolve, reject) => {
-      // Use normal Base64 with padding for BaSyx compatibility
       const smIdB64 = btoa(submodelId);
       this.aasClientService.patchElementValue('target', systemId, smIdB64, elementPath, value).subscribe({
         next: () => {
@@ -388,7 +381,9 @@ export class AasManagementService {
   }
 
   /**
-   * Check if element is a leaf
+   * Determines if an element is a leaf node (i.e., has no children).
+   * @param element The element to check.
+   * @returns True if the element is not a collection, list, or entity; otherwise false.
    */
   private isLeafElement(element: any): boolean {
     const type = element.modelType;
@@ -396,7 +391,9 @@ export class AasManagementService {
   }
 
   /**
-   * Map submodel to tree node
+   * Maps a submodel object into a TreeNode representation for UI display.
+   * @param sm The submodel object.
+   * @returns TreeNode representing the submodel in the UI.
    */
   private mapSmToNode(sm: any): TreeNode {
     const id = sm.submodelId || sm.id || (sm.keys && sm.keys[0]?.value);
@@ -414,13 +411,15 @@ export class AasManagementService {
   }
 
   /**
-   * Preview AASX file
+   * Generates a preview of an uploaded AASX file before attaching or importing.
+   * @param systemId ID of the target system.
+   * @param file The AASX file to preview.
+   * @returns Promise resolving to the preview response data.
    */
   async previewAasx(systemId: number, file: File): Promise<any> {
     return new Promise((resolve, reject) => {
       this.aasClientService.previewAasx('target', systemId, file).subscribe({
         next: (response) => {
-          console.log('[AasManagement] AASX preview loaded successfully');
           resolve(response);
         },
         error: (error: any) => {
@@ -432,15 +431,16 @@ export class AasManagementService {
   }
 
   /**
-   * Attach selected AASX content
+   * Attaches selected content from a previewed AASX file to the target AAS system.
+   * Displays success or error messages based on backend response.
+   * @param systemId ID of the target system.
+   * @param file The AASX file being attached.
+   * @param selection The selected content to attach from the file.
    */
   async attachSelectedAasx(systemId: number, file: File, selection: any): Promise<void> {
     return new Promise((resolve, reject) => {
       this.aasClientService.attachSelectedAasx('target', systemId, file, selection).subscribe({
         next: () => {
-          console.log('[AasManagement] Selected AASX content attached successfully');
-          
-          // Inform user about successful attachment
           this.messageService.add({ key: 'targetAAS', severity: 'success', summary: 'Upload accepted', detail: 'Selected AASX content attached successfully.' });
           resolve();
         },
@@ -453,14 +453,15 @@ export class AasManagementService {
   }
 
   /**
-   * Upload AASX file
+   * Uploads a full AASX file to the backend and integrates it with the target AAS.
+   * Displays success or error messages based on upload result.
+   * @param systemId ID of the target system.
+   * @param file The AASX file to upload.
    */
   async uploadAasx(systemId: number, file: File): Promise<void> {
     return new Promise((resolve, reject) => {
       this.aasClientService.uploadAasx('target', systemId, file).subscribe({
         next: () => {
-          console.log('[AasManagement] AASX uploaded successfully');
-          // Inform user about successful upload
           this.messageService.add({ key: 'targetAAS', severity: 'success', summary: 'Upload accepted', detail: 'AASX uploaded successfully.' });
           resolve();
         },
