@@ -227,24 +227,23 @@
 <p-dialog header="Create New Asset" [(visible)]="displayNewAssetDialog" [modal]="true" [style]="{ width: '50vw' }" (onHide)="hideNewAssetDialog()" [draggable]="false" [resizable]="false">
   <div class="p-fluid pt-3">
     <div class="field col-12 mt-3">
-      <label for="transformationSelect" class="font-bold block mb-2">Transformation / Target System:</label>
-      <p-autoComplete
-        id="transformationSelect"
-        [(ngModel)]="selectedTargetSystem"
-        [suggestions]="transformationSuggestions"
-        (completeMethod)="searchTransformations($event)"
-        (onSelect)="onTransformationSelect($event.value)"
-        (onClear)="onTransformationSelect(null)"
-        field="alias"
-        [forceSelection]="true"
-        placeholder="Select a Transformation"
+      <label for="transformationDropdown" class="font-bold block mb-2">Transformation / Target System:</label>
+      <p-dropdown
+        id="transformationDropdown"
+        [(ngModel)]="selectedTransformation"
+        [options]="allTransformations"
+        (onChange)="onTransformationSelect($event.value)"
+        optionLabel="alias"
+        placeholder="Select a System"
+        [filter]="true"
+        filterBy="alias,id"
+        [showClear]="true"
         styleClass="w-full"
-        inputStyleClass="w-full"
         [appendTo]="'body'"
-      ></p-autoComplete>
+      ></p-dropdown>
     </div>
 
-    <div *ngIf="selectedTargetSystem" class="dynamic-fields-section">
+    <div *ngIf="selectedTransformation" class="dynamic-fields-section">
       <p-divider align="center" type="dashed" styleClass="my-4">
         <b>Asset Details</b>
       </p-divider>

@@ -34,7 +34,7 @@ import { EdcInstanceService } from '../edc-instances/services/edc-instance.servi
 import {lastValueFrom, Subject, Subscription} from 'rxjs';
 import {debounceTime, tap} from "rxjs/operators";
 import { MultiSelectModule } from 'primeng/multiselect';
-import { TargetSystem } from '../../models/target-system.model';
+import { Transformation } from '../../models/transformation.model';
 import { Template } from '../templates/models/template.model';
 import { TemplateService } from '../templates/services/template.service';
 
@@ -186,9 +186,8 @@ accessPolicySuggestions: OdrlPolicyDefinition[] = [];
   private templateJsonSyncSubject = new Subject<void>();
 
   // New Asset Dialog specific properties
-  allTargetSystems: TargetSystem[] = [];
-  transformationSuggestions: TargetSystem[] = [];
-  selectedTargetSystem: TargetSystem | null = null;
+  allTransformations: Transformation[] = [];
+  selectedTransformation: Transformation | null = null;
   assetAttributes: { key: string; value: string }[] = [{ key: '', value: '' }]; // Start with one empty row
   pathParamId: string = '';
   queryParams: { key: string; value: string }[] = [{ key: '', value: '' }];
@@ -285,7 +284,7 @@ accessPolicySuggestions: OdrlPolicyDefinition[] = [];
 
   private loadTransformations() {
     this.assetService.getTransformations().subscribe(systems => {
-      this.allTargetSystems = systems;
+      this.allTransformations = systems;
     });
   }
 
@@ -537,17 +536,10 @@ accessPolicySuggestions: OdrlPolicyDefinition[] = [];
   }
 
   // New Asset Dialog specific methods
-  searchTransformations(event: { query: string }) {
-    const query = event.query.toLowerCase();
-    this.transformationSuggestions = this.allTargetSystems.filter(system =>
-      system.alias.toLowerCase().includes(query)
-    );
-  }
-
-  onTransformationSelect(selectedSystem: TargetSystem | null): void {
-    if (selectedSystem && selectedSystem.id) {
-      this.assetService.getTargetArcConfig(selectedSystem.id).subscribe(config => {
-        this.populateAssetFormFromOdrl(config || {}); // Pass the response to populate the form
+  onTransformationSelect(selectedTransformation: Transformation | null): void {
+    if (selectedTransformation && selectedTransformation.id) {
+      this.assetService.getTargetArcConfig(selectedTransformation.id).subscribe(config => {
+        this.populateAssetFormFromOdrl(config?.dataAddress || {}); // Pass the nested dataAddress object
         this.syncAssetJsonFromForm();
       });
     } else {
@@ -767,6 +759,7 @@ accessPolicySuggestions: OdrlPolicyDefinition[] = [];
     });
     this.headerParams.forEach(h => {
       if (h.key) {
+        // The backend expects the key to be prefixed with "header:".
         currentAssetJson.dataAddress[`header:${h.key}`] = h.value;
       }
     });
@@ -840,7 +833,7 @@ accessPolicySuggestions: OdrlPolicyDefinition[] = [];
   }
 
   private resetAssetFormFields(): void {
-    this.selectedTargetSystem = null;
+    this.selectedTransformation = null;
     this.assetAttributes = [{ key: '', value: '' }];
     this.pathParamId = '';
     this.queryParams = []; // Reset to an empty array

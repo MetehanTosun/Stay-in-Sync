@@ -3,7 +3,7 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable, throwError, of } from 'rxjs';
 import { catchError, map, delay } from 'rxjs/operators';
 import { Asset } from '../models/asset.model';
-import { TargetSystem } from '../../../models/target-system.model';
+import { Transformation } from '../../../models/transformation.model';
 import { MOCK_ODRL_ASSETS, MOCK_TRANSFORMATIONS, MOCK_TARGET_ARC_CONFIGS } from '../../../mocks/mock-data';
 
 @Injectable({
@@ -127,12 +127,12 @@ export class AssetService {
   /**
    * Fetches the list of available Transformations
    */
-  getTransformations(): Observable<TargetSystem[]> {
+  getTransformations(): Observable<Transformation[]> {
     if (this.mockMode) {
       console.warn('Mock Mode: Fetching transformations.');
       return of(MOCK_TRANSFORMATIONS).pipe(delay(100));
     }
-    return this.http.get<TargetSystem[]>(this.transformationsUrl).pipe(
+    return this.http.get<Transformation[]>(this.transformationsUrl).pipe(
       catchError(err => {
         console.error('Failed to fetch transformations', err);
         return throwError(() => new Error('Could not load transformations from backend.'));
