@@ -1,7 +1,6 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
-import { Observable, from, switchMap } from 'rxjs';
-import { ConfigService } from '../config.service';
+import { Observable} from 'rxjs';
 import {
   ReplayExecuteRequestDTO,
   ReplayExecuteResponseDTO,
@@ -12,18 +11,10 @@ import {
 })
 export class ReplayService {
   private readonly http = inject(HttpClient);
-  private readonly config = inject(ConfigService);
 
   executeReplay(
     dto: ReplayExecuteRequestDTO
   ): Observable<ReplayExecuteResponseDTO> {
-    return from(this.config.getCoreManagementUrl()).pipe(
-      switchMap(baseUrl =>
-        this.http.post<ReplayExecuteResponseDTO>(
-          `${baseUrl}/api/replay/execute`,
-          dto
-        )
-      )
-    );
+    return this.http.post<ReplayExecuteResponseDTO>('api/replay/execute', dto);
   }
 }

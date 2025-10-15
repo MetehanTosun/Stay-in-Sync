@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable, from, switchMap } from 'rxjs';
+import { Observable} from 'rxjs';
 import { TransformationScriptDTO } from '../../models/transformation-script.model';
 import { ConfigService } from '../config.service';
 
@@ -11,12 +11,6 @@ export class ScriptService {
   getByTransformationId(
     transformationId: number | string
   ): Observable<TransformationScriptDTO> {
-    return from(this.config.getCoreManagementUrl()).pipe(
-      switchMap(baseUrl =>
-        this.http.get<TransformationScriptDTO>(
-          `${baseUrl}/api/config/transformation/${transformationId}/script`
-        )
-      )
-    );
+        return this.http.get<TransformationScriptDTO>('/api/replay/' + transformationId);
   }
 }
