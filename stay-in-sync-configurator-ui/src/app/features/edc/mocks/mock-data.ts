@@ -1,5 +1,6 @@
 import { EdcInstance } from '../components/edc-instances/models/edc-instance.model';
 import { OdrlContractDefinition } from '../components/edc-assets-and-policies/models/policy.model';
+import { TargetSystem } from '../models/target-system.model';
 
 /**
  * Mock EDC Instances
@@ -48,7 +49,10 @@ export let MOCK_ODRL_ASSETS: Record<string, any[]> = {
       dataAddress: {
         type: 'HttpData',
         baseUrl: 'https://jsonplaceholder.typicode.com/todos/1',
-      },
+        queryParams: 'page=1&limit=10', // Example for query params parsing
+        'header:Authorization': 'Bearer MOCK_TOKEN_123', // Example for header parsing
+        'header:X-Custom-Header': 'StayInSync'
+      }
     },
     {
       '@id': 'asset-2',
@@ -103,4 +107,36 @@ export let MOCK_POLICIES: Record<string, any[]> = {
 export let MOCK_CONTRACT_DEFINITIONS: Record<string, OdrlContractDefinition[]> = {
   'edc-instance-1': [],
   'edc-instance-2': [],
+};
+
+/**
+ * Mock Transformations (Target Systems)
+ */
+export const MOCK_TRANSFORMATIONS: TargetSystem[] = [
+  { id: '1', alias: 'User Management API' },
+  { id: '2', alias: 'Events API' },
+  { id: '3', alias: 'Product Catalog API' }
+];
+
+/**
+ * Mock Target Arc Configurations
+ */
+export const MOCK_TARGET_ARC_CONFIGS: { [key: string]: any } = {
+  "1": {
+    "dataAddress": {
+      "baseUrl": "https://api.example.com/users",
+      "proxyQueryParams": "true",
+      "header:Authorization": "Bearer <YOUR_USER_API_TOKEN>"
+    }
+  },
+  "2": {
+    "dataAddress": {
+      "baseUrl": "https://api.example.com/events",
+      "queryParams": "activeOnly=true&include=details",
+      "header:Accept": "application/json"
+    }
+  },
+  "3": {
+    "dataAddress": {} // Example of a system with no default config
+  }
 };
