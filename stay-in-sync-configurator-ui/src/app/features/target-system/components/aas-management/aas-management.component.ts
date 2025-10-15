@@ -17,6 +17,11 @@ import { AasUtilityService } from '../../services/aas-utility.service';
 import { TargetSystemDTO } from '../../models/targetSystemDTO';
 import { AasElementDialogComponent, AasElementDialogData, AasElementDialogResult } from '../../../../shared/components/aas-element-dialog/aas-element-dialog.component';
 
+/**
+ * Component responsible for managing AAS (Asset Administration Shell) interactions for a Target System.
+ * Provides UI for viewing, creating, deleting, and editing submodels and elements.
+ * Also supports AASX upload and preview functionality.
+ */
 @Component({
   standalone: true,
   selector: 'app-aas-management',
@@ -106,6 +111,9 @@ export class AasManagementComponent implements OnInit {
     private messageService: MessageService
   ) {}
 
+  /**
+   * Initializes the AAS Management component and triggers submodel discovery when a system is provided.
+   */
   ngOnInit(): void {
     if (this.system) {
       this.discoverSnapshot();
@@ -113,30 +121,28 @@ export class AasManagementComponent implements OnInit {
   }
 
   /**
-   * Test AAS connection
+   * Simulates testing the AAS connection for the selected Target System.
+   * Displays a loading indicator during the test.
    */
   testAasConnection(): void {
     if (!this.system?.id) return;
     this.aasTestLoading = true;
     this.aasTestError = null;
-    
-    // TODO: Implement test connection for target system
     setTimeout(() => {
       this.aasTestLoading = false;
-      // For now, just simulate success
     }, 1000);
   }
 
+  /**
+   * Discovers all submodels for the selected Target System.
+   * Fetches data from backend service and updates the tree structure.
+   */
   async discoverSnapshot(): Promise<void> {
     if (!this.system?.id) return;
-    
-    console.log('[TargetAasManage] discoverSnapshot: Starting with systemId:', this.system.id);
     this.isLoading = true;
     try {
       const newTreeNodes = await this.aasManagement.discoverSubmodels(this.system.id);
-      console.log('[TargetAasManage] discoverSnapshot: Got new treeNodes:', newTreeNodes.length, newTreeNodes);
       this.treeNodes = newTreeNodes;
-      console.log('[TargetAasManage] discoverSnapshot: Updated this.treeNodes:', this.treeNodes.length, this.treeNodes);
     } catch (error) {
       console.error('[TargetAasManage] discoverSnapshot: Error discovering submodels:', error);
     } finally {
@@ -144,30 +150,29 @@ export class AasManagementComponent implements OnInit {
     }
   }
 
+  /**
+   * Repeatedly attempts to rediscover AAS submodels after a delay, up to a defined maximum number of retries.
+   * @param maxRetries Maximum number of attempts.
+   * @param initialDelay Delay in milliseconds before the first retry.
+   */
   private async retryDiscoverWithDelay(maxRetries: number, initialDelay: number): Promise<void> {
     for (let attempt = 1; attempt <= maxRetries; attempt++) {
-      const delay = initialDelay * attempt; // 2s, 4s, 6s
-      console.log(`[TargetAasManage] Attempt ${attempt}/${maxRetries}: Waiting ${delay}ms before checking for new submodel...`);
-      
+      const delay = initialDelay * attempt;
       await new Promise(resolve => setTimeout(resolve, delay));
-      
-      console.log(`[TargetAasManage] Attempt ${attempt}: Checking for new submodel...`);
       const beforeCount = this.treeNodes.length;
       await this.discoverSnapshot();
       const afterCount = this.treeNodes.length;
-      
-      console.log(`[TargetAasManage] Attempt ${attempt}: Tree count ${beforeCount} -> ${afterCount}`);
-      
       if (afterCount > beforeCount) {
-        console.log(`[TargetAasManage] Success! New submodel found on attempt ${attempt}`);
         return;
       }
     }
-    
-    console.log(`[TargetAasManage] All ${maxRetries} attempts failed. New submodel not yet available.`);
     // No additional toasts; remain silent
   }
 
+  /**
+   * Handles expansion of a tree node and loads submodel or element children dynamically.
+   * @param event PrimeNG Tree expansion event.
+   */
   async onNodeExpand(event: any): Promise<void> {
     const node = event.node;
     if (node.data?.type === 'submodel' && (!node.children || node.children.length === 0)) {
@@ -177,6 +182,11 @@ export class AasManagementComponent implements OnInit {
     }
   }
 
+  /**
+   * Handles selection of a node within the AAS tree.
+   * Loads live element details when an element node is selected.
+   * @param event PrimeNG Tree selection event.
+   */
   async onNodeSelect(event: any): Promise<void> {
     this.selectedNode = event.node;
     if (event.node?.data?.type === 'element') {
@@ -184,9 +194,12 @@ export class AasManagementComponent implements OnInit {
     }
   }
 
+  /**
+   * Loads all elements of a submodel from the backend and attaches them to the node.
+   * @param node The submodel TreeNode to load elements for.
+   */
   private async loadSubmodelElements(node: TreeNode): Promise<void> {
     if (!this.system?.id || !node.data?.id) return;
-    
     try {
       const elements = await this.aasManagement.loadSubmodelElements(this.system.id, node.data.id);
       node.children = elements;
@@ -196,9 +209,12 @@ export class AasManagementComponent implements OnInit {
     }
   }
 
+  /**
+   * Loads all child elements of an AAS element within a submodel and updates the tree structure.
+   * @param node The TreeNode representing the parent element.
+   */
   private async loadElementChildren(node: TreeNode): Promise<void> {
     if (!this.system?.id || !node.data?.submodelId || !node.data?.idShortPath) return;
-    
     try {
       const children = await this.aasManagement.loadElementChildren(
         this.system.id, 
@@ -212,6 +228,10 @@ export class AasManagementComponent implements OnInit {
     }
   }
 
+  /**
+   * Loads detailed information about an individual AAS element.
+   * @param node The selected TreeNode whose details should be fetched.
+   */
   private async loadElementDetails(node: TreeNode): Promise<void> {
     if (!this.system?.id || !node.data?.submodelId || !node.data?.idShortPath) {
       console.error('[TargetAasManage] loadElementDetails: Missing required data', {
@@ -222,31 +242,13 @@ export class AasManagementComponent implements OnInit {
       });
       return;
     }
-    
-    console.log('[TargetAasManage] loadElementDetails: Loading element details', {
-      systemId: this.system.id,
-      submodelId: node.data.submodelId,
-      idShortPath: node.data.idShortPath,
-      nodeKey: node.key,
-      nodeLabel: node.label,
-      fullNodeData: node.data
-    });
-    
     this.detailsLoading = true;
     try {
-      console.log('[TargetAasManage] Calling aasManagement.loadElementDetails with:', {
-        systemId: this.system.id,
-        submodelId: node.data.submodelId,
-        idShortPath: node.data.idShortPath
-      });
-      
       this.selectedLivePanel = await this.aasManagement.loadElementDetails(
         this.system.id,
         node.data.submodelId,
         node.data.idShortPath
       );
-      
-      console.log('[TargetAasManage] Element details loaded successfully:', this.selectedLivePanel);
     } catch (error) {
       console.error('[TargetAasManage] Error loading element details:', error);
       console.error('[TargetAasManage] Error details:', {
@@ -265,65 +267,39 @@ export class AasManagementComponent implements OnInit {
   }
 
   /**
-   * Fix tree structure after live refresh to ensure correct idShortPath
+   * Fixes idShortPath values in the AAS tree after a live refresh or element creation.
+   * @param elementData Data of the affected element used for path correction.
    */
   private fixTreeStructureAfterRefresh(elementData: any): void {
-    console.log('[TargetAasManage] fixTreeStructureAfterRefresh called with:', elementData);
-    
     if (!elementData) {
-      console.log('[TargetAasManage] fixTreeStructureAfterRefresh: Missing elementData');
       return;
     }
-    
     const elementIdShort = elementData.body?.idShort;
     if (!elementIdShort) {
-      console.log('[TargetAasManage] fixTreeStructureAfterRefresh: Missing elementIdShort', {
-        body: elementData.body
-      });
       return;
     }
-    
-    // Build the correct idShortPath
     let correctIdShortPath: string;
     if (elementData.parentPath) {
       correctIdShortPath = elementData.parentPath + '/' + elementIdShort;
     } else {
-      // For root elements, just use the idShort
       correctIdShortPath = elementIdShort;
     }
-    
-    console.log('[TargetAasManage] Fixing tree structure after live refresh', {
-      parentPath: elementData.parentPath,
-      elementIdShort: elementIdShort,
-      correctIdShortPath: correctIdShortPath,
-      fullElementData: elementData
-    });
-    
-    // Find and update the element in the tree
     this.updateElementInTree(this.treeNodes, elementIdShort, correctIdShortPath);
-    
-    console.log('[TargetAasManage] Fixed tree structure', {
-      elementIdShort,
-      correctIdShortPath
-    });
   }
 
   /**
-   * Update element in tree structure with correct idShortPath
+   * Updates a specific element's idShortPath within the AAS tree.
+   * @param nodes The list of TreeNodes to search through.
+   * @param elementIdShort The idShort of the element to update.
+   * @param correctIdShortPath The corrected idShortPath value.
    */
   private updateElementInTree(nodes: TreeNode[], elementIdShort: string, correctIdShortPath: string): void {
     if (!nodes) return;
-    
     for (const node of nodes) {
       if (node.data?.idShort === elementIdShort) {
-        console.log('[TargetAasManage] Updating element in tree', {
-          old: node.data.idShortPath,
-          new: correctIdShortPath
-        });
         node.data.idShortPath = correctIdShortPath;
         return;
       }
-      
       if (node.children) {
         this.updateElementInTree(node.children, elementIdShort, correctIdShortPath);
       }
@@ -331,6 +307,11 @@ export class AasManagementComponent implements OnInit {
   }
 
 
+  /**
+   * Determines the display type of a node (e.g., Submodel, Property, Collection).
+   * @param node TreeNode to evaluate.
+   * @returns The readable node type string.
+   */
   getNodeType(node: TreeNode): string {
     if (node.data?.type === 'submodel') {
       return node.data?.modelType || (node.data?.raw?.kind?.toLowerCase?.().includes('template') ? 'Submodel Template' : 'Submodel');
@@ -338,6 +319,11 @@ export class AasManagementComponent implements OnInit {
     return node.data?.modelType || node.data?.raw?.modelType || (node.data?.raw?.valueType ? 'Property' : 'Element');
   }
 
+  /**
+   * Determines if a new child element can be added to the selected node.
+   * @param node The TreeNode to check.
+   * @returns True if the node supports children.
+   */
   canAddChild(node: TreeNode): boolean {
     const type = node.data?.modelType;
     return type === 'SubmodelElementCollection' || type === 'SubmodelElementList' || type === 'Entity';
@@ -362,17 +348,17 @@ export class AasManagementComponent implements OnInit {
     if (kind === 'collection') this.newSubmodelJson = this.collectionSubmodelTemplate;
   }
 
+  /**
+   * Creates a new submodel using JSON data from the submodel creation dialog.
+   * Displays a success or error message depending on the outcome.
+   */
   async createSubmodel(): Promise<void> {
     if (!this.system?.id) return;
-    
     try {
       const body = JSON.parse(this.newSubmodelJson);
       await this.aasManagement.createSubmodel(this.system.id, body);
       this.showSubmodelDialog = false;
-      
-      // Refresh snapshot silently
       await this.discoverSnapshot();
-      
       this.messageService.add({
         key: 'targetAAS',
         severity: 'success',
@@ -392,9 +378,13 @@ export class AasManagementComponent implements OnInit {
     }
   }
 
+  /**
+   * Opens the dialog for creating a new AAS element under the specified submodel or parent path.
+   * @param submodelId The ID of the target submodel.
+   * @param parentPath Optional parent path for nested creation.
+   */
   openCreateElement(submodelId: string, parentPath?: string): void {
     if (!this.system?.id) return;
-    
     this.elementDialogData = {
       submodelId: submodelId,
       parentPath: parentPath,
@@ -404,12 +394,16 @@ export class AasManagementComponent implements OnInit {
     this.showElementDialog = true;
   }
 
+  /**
+   * Handles the result of the element creation dialog.
+   * Displays success or error messages and triggers UI updates accordingly.
+   * @param result Result object returned from the element dialog.
+   */
   onElementDialogResult(result: AasElementDialogResult): void {
     if (result.success && result.element) {
       this.handleElementCreation(result.element);
     } else if (result.error) {
       console.error('[TargetAasManage] Element creation failed:', result.error);
-      // Show toast for duplicate idShort error
       if (result.error.includes('Duplicate entry') || result.error.includes('uk_element_submodel_idshortpath')) {
         this.messageService.add({
           key: 'targetAAS',
@@ -430,30 +424,23 @@ export class AasManagementComponent implements OnInit {
     }
   }
 
+  /**
+   * Creates a new element in the AAS via the management service and updates the UI tree structure.
+   * Handles duplicate element errors and refreshes data after creation.
+   * @param elementData The element data payload to create.
+   */
   private async handleElementCreation(elementData: any): Promise<void> {
     if (!this.system?.id) return;
-    
     try {
-      console.log('[TargetAasManage] Creating element:', elementData);
-      
-      // Encode parentPath for BaSyx (convert / to .)
       const encodedParentPath = elementData.parentPath ? 
         elementData.parentPath.replace(/\//g, '.') : 
         undefined;
-      
-      console.log('[TargetAasManage] Encoded parentPath:', encodedParentPath);
-      
-      // Use the AAS management service to create the element
       await this.aasManagement.createElement(
         this.system.id,
         elementData.submodelId,
         elementData.body,
         encodedParentPath
       );
-      
-      console.log('[TargetAasManage] Element created successfully');
-      
-      // Show success toast
       this.messageService.add({
         key: 'targetAAS',
         severity: 'success',
@@ -461,28 +448,14 @@ export class AasManagementComponent implements OnInit {
         detail: 'Element has been successfully created.',
         life: 3000
       });
-      
-      // Use live refresh like in create dialog
-      console.log('[TargetAasManage] Triggering live refresh after element creation');
       await this.discoverSnapshot();
-      
-      // Fix tree structure immediately after element creation
-      console.log('[TargetAasManage] Fixing tree structure immediately after element creation');
       this.fixTreeStructureAfterRefresh(elementData);
-      
-      // Force live refresh after a short delay to ensure backend is updated
       setTimeout(async () => {
-        console.log('[TargetAasManage] Force live refresh for deep elements');
         await this.discoverSnapshot();
-        
-        // Fix tree structure again after live refresh
         this.fixTreeStructureAfterRefresh(elementData);
       }, 1000);
-      
     } catch (error) {
       console.error('[TargetAasManage] Error creating element:', error);
-      
-      // Show error toast
       const errorMessage = String((error as any)?.error || (error as any)?.message || 'Failed to create element');
       if (errorMessage.includes('Duplicate entry')) {
         this.messageService.add({
@@ -504,9 +477,13 @@ export class AasManagementComponent implements OnInit {
     }
   }
 
+  /**
+   * Deletes an AAS submodel and refreshes the tree structure.
+   * Displays a success or error message based on the backend response.
+   * @param submodelId ID of the submodel to delete.
+   */
   async deleteSubmodel(submodelId: string): Promise<void> {
     if (!this.system?.id) return;
-    
     try {
       await this.aasManagement.deleteSubmodel(this.system.id, submodelId);
       this.refreshRequested.emit();
@@ -518,14 +495,16 @@ export class AasManagementComponent implements OnInit {
     }
   }
 
+  /**
+   * Deletes a specific AAS element and refreshes the AAS tree.
+   * Displays confirmation messages after deletion.
+   * @param submodelId ID of the submodel containing the element.
+   * @param elementPath The element path identifying the item to delete.
+   */
   async deleteElement(submodelId: string, elementPath: string): Promise<void> {
     if (!this.system?.id) return;
-    
     try {
       await this.aasManagement.deleteElement(this.system.id, submodelId, elementPath);
-      
-      // Trigger discover to refresh the entire tree (same as source system)
-      console.log('[TargetAasManagement] deleteElement: Triggering discover to refresh tree');
       this.discoverSnapshot();
       this.messageService.add({ key: 'targetAAS', severity: 'success', summary: 'Element Deleted', detail: 'Element has been successfully deleted.', life: 3000 });
     } catch (error: any) {
@@ -536,7 +515,6 @@ export class AasManagementComponent implements OnInit {
 
   openSetValue(submodelId: string, elementData: any): void {
     // TODO: Implement set value dialog
-    console.log('Set value clicked', submodelId, elementData);
   }
 
   private findParentNode(submodelId: string, elementPath: string): TreeNode | null {
@@ -569,19 +547,21 @@ export class AasManagementComponent implements OnInit {
     return current;
   }
 
-  // AASX upload methods
+  /** Opens the dialog for uploading or attaching an AASX file. */
   openAasxUpload(): void {
     this.showAasxUpload = true;
     this.aasxSelectedFile = null;
   }
 
+  /**
+   * Handles AASX file selection and loads a preview of its content.
+   * @param event File upload event from the file selector.
+   */
   onAasxFileSelected(event: any): void {
     this.aasxSelectedFile = event.files?.[0] || null;
     if (this.aasxSelectedFile && this.system?.id) {
-      // Load preview to enable selective attach
       this.aasManagement.previewAasx(this.system.id, this.aasxSelectedFile).then((resp: any) => {
         this.aasxPreview = resp?.submodels || (resp?.result ?? []);
-        // Normalize to array of {id,idShort,kind}
         const arr = Array.isArray(this.aasxPreview) ? this.aasxPreview : (this.aasxPreview?.submodels ?? []);
         this.aasxSelection = { submodels: (arr || []).map((sm: any) => ({ id: sm.id || sm.submodelId, full: true, elements: [] })) };
       }).catch((err: any) => {
@@ -615,26 +595,25 @@ export class AasManagementComponent implements OnInit {
   }
 
 
+  /**
+   * Uploads or attaches an AASX file to the backend for integration with the AAS.
+   * Displays notifications for upload progress and completion.
+   */
   uploadAasx(): void {
     if (this.isUploadingAasx) return;
     if (!this.aasxSelectedFile || !this.system?.id) {
       this.messageService.add({ key: 'targetAAS', severity: 'warn', summary: 'No file selected', detail: 'Please choose an .aasx file.' });
       return;
     }
-    
     this.messageService.add({ key: 'targetAAS', severity: 'info', summary: 'Uploading AASX', detail: `${this.aasxSelectedFile?.name} (${this.aasxSelectedFile?.size} bytes)` });
     this.isUploadingAasx = true;
-    
-    // If preview is available and user made a selection, use selective attach; else default upload
     const hasSelection = (this.aasxSelection?.submodels?.some(s => s.full) ?? false);
     const req$ = hasSelection ? 
       this.aasManagement.attachSelectedAasx(this.system.id, this.aasxSelectedFile, this.aasxSelection) : 
       this.aasManagement.uploadAasx(this.system.id, this.aasxSelectedFile);
-    
     req$.then(() => {
       this.isUploadingAasx = false;
       this.showAasxUpload = false;
-      // Refresh the tree to show uploaded content
       this.discoverSnapshot();
       this.messageService.add({ key: 'targetAAS', severity: 'success', summary: 'Upload accepted', detail: 'AASX uploaded successfully.' });
     }).catch((error: any) => {
