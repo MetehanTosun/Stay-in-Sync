@@ -146,6 +146,10 @@ export class ManageTargetEndpointsComponent implements OnInit {
 
   constructor(private api: TargetSystemEndpointResourceService, private fb: FormBuilder, private tsService: TargetSystemResourceService, private openapi: OpenApiImportService, private http: HttpClient, private messageService: MessageService) {}
 
+  /**
+   * Initializes the component, sets up the reactive form,
+   * and triggers the initial endpoint loading.
+   */
   ngOnInit(): void {
     this.form = this.fb.group({
       endpointPath: ['', [Validators.required, this.pathValidator()]],
@@ -155,12 +159,15 @@ export class ManageTargetEndpointsComponent implements OnInit {
     });
     this.load();
 
-    // Auto-generate TypeScript when responseBodySchema changes (like Source Systems)
     this.form.get('responseBodySchema')?.valueChanges.subscribe(value => {
       this.generateTypeScriptForForm();
     });
   }
 
+  /**
+   * Loads all existing endpoints for the selected Target System.
+   * Updates the table and loading state accordingly.
+   */
   load(): void {
     if (!this.targetSystemId) return;
     this.loading = true;
@@ -170,7 +177,11 @@ export class ManageTargetEndpointsComponent implements OnInit {
     });
   }
 
-  // -------- Import from OpenAPI (similar to Source Systems) --------
+  /**
+   * Imports endpoint definitions from an OpenAPI specification.
+   * Handles both remote (URL-based) and local (raw string) specifications.
+   * Creates new endpoints and persists their parameters if available.
+   */
   async importEndpoints(): Promise<void> {
     this.importing = true;
     try {
@@ -223,8 +234,6 @@ export class ManageTargetEndpointsComponent implements OnInit {
           const key = `${ep.httpRequestType} ${ep.endpointPath}`;
           const params = paramsByKey[key] || [];
           if (ep.id && params.length) {
-            
-            // Filter out duplicates within the same import batch
             const seenParams = new Set<string>();
             const uniqueParams = params.filter(p => {
               const paramKey = `${p.name}:${p.in === 'path' ? 'PATH' : 'QUERY'}`;
@@ -234,14 +243,12 @@ export class ManageTargetEndpointsComponent implements OnInit {
               seenParams.add(paramKey);
               return true;
             });
-            
             if (uniqueParams.length > 0) {
               await this.openapi.persistParamsForEndpoint(ep.id, uniqueParams);
             }
           }
         }
         this.load();
-      } else {
       }
     } catch (error) {
       console.error('[ManageTargetEndpoints] Import failed:', error);
@@ -250,6 +257,11 @@ export class ManageTargetEndpointsComponent implements OnInit {
     }
   }
 
+  /**
+   * Attempts to fetch possible OpenAPI specification files from common URLs.
+   * @param baseUrl The base API URL to try candidate paths from.
+   * @returns Parsed OpenAPI specification object if found.
+   */
   private async loadSpecCandidates(baseUrl: string): Promise<any> {
     const urls = [
       baseUrl,
@@ -273,6 +285,7 @@ export class ManageTargetEndpointsComponent implements OnInit {
     return null;
   }
 
+  /** Prepares the form for creating a new Target Endpoint. */
   openCreate(): void {
     this.editing = null;
     this.dialogTitle = 'New Endpoint';
@@ -280,6 +293,10 @@ export class ManageTargetEndpointsComponent implements OnInit {
     // no dialog; inline create form is visible by default
   }
 
+  /**
+   * Creates a new endpoint from the form values.
+   * Displays a success toast and reloads the endpoint list.
+   */
   addEndpoint(): void {
     if (this.form.invalid) return;
     const payload: CreateTargetSystemEndpointDTO = {
@@ -300,6 +317,10 @@ export class ManageTargetEndpointsComponent implements OnInit {
     });
   }
 
+  /**
+   * Opens the edit dialog and fills the form with the selected endpoint data.
+   * @param row The endpoint to edit.
+   */
   openEdit(row: TargetSystemEndpointDTO): void {
     this.editing = row;
     this.dialogTitle = 'Edit Endpoint';
@@ -307,6 +328,10 @@ export class ManageTargetEndpointsComponent implements OnInit {
     this.showDialog = true;
   }
 
+  /**
+   * Saves endpoint changes. Updates an existing one or creates a new one if none is selected.
+   * Displays success or error messages accordingly.
+   */
   save(): void {
     if (this.editing?.id) {
       const dto: TargetSystemEndpointDTO = {
@@ -349,6 +374,10 @@ export class ManageTargetEndpointsComponent implements OnInit {
     }
   }
 
+  /**
+   * Opens a confirmation dialog before deleting the selected endpoint.
+   * @param row The endpoint to delete.
+   */
   delete(row: TargetSystemEndpointDTO): void {
     this.endpointToDelete = row;
     this.confirmationData = {
@@ -362,7 +391,8 @@ export class ManageTargetEndpointsComponent implements OnInit {
   }
 
   /**
-   * Handle confirmation dialog events.
+   * Executes endpoint deletion after user confirmation.
+   * Updates the list and shows a success message upon completion.
    */
   onConfirmationConfirmed(): void {
     if (this.endpointToDelete && this.endpointToDelete.id) {
@@ -384,33 +414,51 @@ export class ManageTargetEndpointsComponent implements OnInit {
     this.endpointToDelete = null;
   }
 
+  /** Opens the parameters dialog for the selected endpoint. */
   openParams(row: TargetSystemEndpointDTO): void {
     this.selectedEndpointForParams = row;
     this.paramsDialog = true;
   }
 
+  /**
+   * Opens a draggable overlay editor for editing the endpoint's request body schema.
+   * @param row The endpoint whose request body should be edited.
+   */
   openRequestBodyEditor(row: TargetSystemEndpointDTO): void {
     this.requestBodyEditorEndpoint = row;
     this.requestBodyEditorModel = { value: row.requestBodySchema || '// No request body schema', language: 'json' };
     this.requestBodyEditorError = null;
   }
 
+  /** Closes the request body schema editor overlay. */
   closeRequestBodyEditor(): void {
     this.requestBodyEditorEndpoint = null;
     this.requestBodyEditorModel = { value: '', language: 'json' };
     this.requestBodyEditorError = null;
   }
 
+  /**
+   * Handles live updates from the Monaco editor when request body schema changes.
+   * @param event Editor change event containing the updated JSON.
+   */
   onRequestBodyModelChange(event: any): void {
     const value = typeof event === 'string' ? event : (event?.detail ?? event?.target?.value ?? String(event));
     this.requestBodyEditorModel = { ...this.requestBodyEditorModel, value };
   }
 
+  /**
+   * Opens a modal dialog to preview the generated TypeScript for a given endpoint response.
+   * @param row The endpoint whose response should be previewed.
+   */
   openResponsePreview(row: TargetSystemEndpointDTO): void {
     this.selectedResponsePreviewEndpoint = row;
     this.responsePreviewDialog = true;
   }
 
+  /**
+   * Generates a TypeScript interface from the JSON response schema
+   * currently entered in the form.
+   */
   generateTypeScriptForForm(): void {
     const schema = this.form.value.responseBodySchema;
     if (!schema) { this.typescriptModel = { value: '// No schema provided', language: 'typescript' }; return; }
@@ -419,6 +467,9 @@ export class ManageTargetEndpointsComponent implements OnInit {
     });
   }
 
+  /**
+   * Generates TypeScript model preview for a selected endpoint response body.
+   */
   generateTypeScriptForPreview(): void {
     const schema = this.responseJsonModel.value as string;
     if (!schema) { return; }
@@ -430,12 +481,20 @@ export class ManageTargetEndpointsComponent implements OnInit {
     });
   }
 
+  /**
+   * Triggers TypeScript generation when switching to the TypeScript tab in the dialog.
+   * @param event Tab change event.
+   */
   onDialogTabChange(event: any): void {
     if (event?.index === 1) {
       this.generateTypeScriptForForm();
     }
   }
 
+  /**
+   * Triggers TypeScript regeneration for preview when switching tabs in the preview modal.
+   * @param event Tab change event.
+   */
   onResponseTabChange(event: any): void {
     if (event?.index === 1) {
       this.generateTypeScriptForPreview();
@@ -443,7 +502,8 @@ export class ManageTargetEndpointsComponent implements OnInit {
   }
 
   /**
-   * Custom validator for path format
+   * Custom validator to ensure endpoint paths start with "/" and have valid parameter syntax.
+   * @returns Validator function.
    */
   private pathValidator(): ValidatorFn {
     return (control: AbstractControl): ValidationErrors | null => {
@@ -470,7 +530,8 @@ export class ManageTargetEndpointsComponent implements OnInit {
   }
 
   /**
-   * Custom validator for JSON format
+   * Custom validator to verify that provided JSON strings are valid objects.
+   * @returns Validator function.
    */
   private jsonValidator(): ValidatorFn {
     return (control: AbstractControl): ValidationErrors | null => {
@@ -490,7 +551,8 @@ export class ManageTargetEndpointsComponent implements OnInit {
   }
 
   /**
-   * Get tooltip text for Add Endpoint button
+   * Builds tooltip text describing validation issues preventing endpoint creation.
+   * @returns Combined tooltip message or empty string if form is valid.
    */
   getAddEndpointTooltip(): string {
     if (this.form.valid) {
@@ -499,7 +561,6 @@ export class ManageTargetEndpointsComponent implements OnInit {
 
     const errors: string[] = [];
     
-    // Check endpoint path
     const pathControl = this.form.get('endpointPath');
     if (pathControl?.invalid) {
       if (pathControl.errors?.['required']) {
@@ -509,13 +570,11 @@ export class ManageTargetEndpointsComponent implements OnInit {
       }
     }
 
-    // Check request body schema
     const requestBodyControl = this.form.get('requestBodySchema');
     if (requestBodyControl?.invalid && requestBodyControl.errors?.['jsonFormat']) {
       errors.push('Invalid JSON in Request Body Schema');
     }
 
-    // Check response body schema
     const responseBodyControl = this.form.get('responseBodySchema');
     if (responseBodyControl?.invalid && responseBodyControl.errors?.['jsonFormat']) {
       errors.push('Invalid JSON in Response Body Schema');

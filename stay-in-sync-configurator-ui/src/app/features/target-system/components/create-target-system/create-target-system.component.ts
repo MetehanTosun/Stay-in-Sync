@@ -94,16 +94,22 @@ export class CreateTargetSystemComponent implements OnInit, OnChanges {
     private dialogService: CreateTargetSystemDialogService
   ) {}
 
+  /**
+   * Initializes the component form and subscribes to API type changes
+   * to dynamically update the stepper sequence.
+   */
   ngOnInit(): void {
     this.form = this.formService.createForm();
     this.formService.setupFormSubscriptions(this.form);
-    
-    // Update steps when API type changes
     this.form.get('apiType')!.valueChanges.subscribe((apiType: string) => {
       this.steps = this.formService.getSteps(apiType);
     });
   }
 
+  /**
+   * Updates the form fields when a target system input changes.
+   * @param changes Object containing the changed input values.
+   */
   ngOnChanges(changes: SimpleChanges): void {
     if (changes['targetSystem'] && this.targetSystem) {
       this.form.patchValue({
@@ -116,12 +122,20 @@ export class CreateTargetSystemComponent implements OnInit, OnChanges {
     }
   }
 
+  /**
+   * Handles file selection for OpenAPI specifications.
+   * Disables the OpenAPI URL field once a file is chosen.
+   * @param event File selection event from the file upload component.
+   */
   onFileSelected(event: any): void {
     this.selectedFile = event.files?.[0] ?? null;
     this.fileSelected = true;
     this.form.get('openApiSpec')!.disable();
   }
 
+  /**
+   * Cancels the current dialog and resets all form and state variables.
+   */
   cancel(): void {
     this.visible = false;
     this.visibleChange.emit(false);
@@ -132,6 +146,10 @@ export class CreateTargetSystemComponent implements OnInit, OnChanges {
     this.createdEventEmitted = false;
   }
 
+  /**
+   * Submits the form to create a new target system.
+   * Handles both file-based and URL-based OpenAPI submissions.
+   */
   save(): void {
     if (this.form.invalid) {
       this.form.markAllAsTouched();
@@ -147,7 +165,6 @@ export class CreateTargetSystemComponent implements OnInit, OnChanges {
         next: (resp) => {
           this.createdTargetSystemId = resp.id!;
           this.currentStep = 1;
-          console.log('[CreateTargetSystem] Target system created, moving to step 1', { id: resp.id, name: resp.name });
           if (!this.createdEventEmitted) {
             this.created.emit(resp);
             this.createdEventEmitted = true;
@@ -175,6 +192,10 @@ export class CreateTargetSystemComponent implements OnInit, OnChanges {
     }
   }
 
+  /**
+   * Navigates to the next step in the creation wizard.
+   * Automatically triggers save if necessary.
+   */
   goNext(): void {
     if (this.currentStep === 0) {
       if (this.createdTargetSystemId) { this.currentStep = 1; return; }
@@ -184,21 +205,21 @@ export class CreateTargetSystemComponent implements OnInit, OnChanges {
     }
   }
 
+  /** Navigates back to the previous step in the wizard. */
   goBack(): void {
     if (this.currentStep > 0) this.currentStep -= 1;
   }
 
+  /**
+   * Completes the wizard, emits the created event,
+   * and resets all temporary data and dialog states.
+   */
   finish(): void {
-    // Emit the created event when user clicks Finish
     if (this.createdTargetSystemId && !this.createdEventEmitted) {
-      console.log('[CreateTargetSystem] Emitting created event on finish', { id: this.createdTargetSystemId });
       const createdSystem = { id: this.createdTargetSystemId, name: this.form.get('name')?.value || 'Unknown' } as TargetSystemDTO;
       this.created.emit(createdSystem);
       this.createdEventEmitted = true;
-      console.log('[CreateTargetSystem] Created event emitted successfully on finish');
     }
-    
-    // Close the dialog
     this.visible = false;
     this.visibleChange.emit(false);
     this.formService.resetForm(this.form);
@@ -216,10 +237,13 @@ export class CreateTargetSystemComponent implements OnInit, OnChanges {
   aasTestOk: boolean | null = null;
   aasError: string | null = null;
   aasPreview: { idShort?: string; assetKind?: string } | null = null;
+  /**
+   * Tests connectivity to the AAS backend and displays the connection result.
+   * Creates the target system if it doesn't exist before testing.
+   */
   async testAasConnection(): Promise<void> {
     if (this.isTesting) return;
     this.isTesting = true;
-    
     if (!this.createdTargetSystemId) {
       if (this.isCreating) { return; }
       const { base } = this.formService.getFormDataForSubmission(this.form);
@@ -240,15 +264,12 @@ export class CreateTargetSystemComponent implements OnInit, OnChanges {
       });
       return;
     }
-    
     this.aasError = null;
     this.aasPreview = null;
     this.aasTestOk = null;
-    
     try {
       const result = await this.aasService.testConnection(this.createdTargetSystemId);
       this.isTesting = false;
-      
       if (result.success) {
         if (result.data && result.data.idShort) {
           this.aasPreview = { idShort: result.data.idShort, assetKind: result.data.assetKind };
@@ -289,6 +310,11 @@ export class CreateTargetSystemComponent implements OnInit, OnChanges {
     }
   }
 
+  /**
+   * Checks if all required form fields and AAS connection validations are met
+   * before allowing navigation to the next wizard step.
+   * @returns True if navigation to the next step is allowed.
+   */
   canProceedFromStep1(): boolean {
     return this.formService.isFormValidForStep(this.form, 0, this.form.get('apiType')!.value, this.aasTestOk);
   }
@@ -300,10 +326,15 @@ export class CreateTargetSystemComponent implements OnInit, OnChanges {
   aasxPreview: any = null;
   aasxSelection: { submodels: Array<{ id: string; full: boolean; elements: string[] }> } = { submodels: [] };
 
+  /** Opens the dialog for uploading an AASX package. */
   openAasxUpload(): void {
     this.showAasxUpload = true;
     this.aasxSelectedFile = null;
   }
+  /**
+   * Handles the selection of an AASX file and previews its content.
+   * @param event File upload event containing the selected file.
+   */
   onAasxFileSelected(event: any): void {
     this.aasxSelectedFile = event.files?.[0] || null;
     if (!this.aasxSelectedFile || !this.createdTargetSystemId) {
@@ -332,6 +363,10 @@ export class CreateTargetSystemComponent implements OnInit, OnChanges {
     sel.full = !!checked;
     if (sel.full) sel.elements = [];
   }
+  /**
+   * Uploads the selected AASX file and triggers tree refreshes
+   * to reflect updated submodels.
+   */
   uploadAasx(): void {
     if (this.isUploadingAasx) return;
     if (!this.aasxSelectedFile || !this.createdTargetSystemId) return;
@@ -346,9 +381,7 @@ export class CreateTargetSystemComponent implements OnInit, OnChanges {
       next: () => {
         this.isUploadingAasx = false;
         this.showAasxUpload = false;
-        // Reflect immediately: list LIVE and refresh roots for selected IDs
         this.onDiscover('LIVE', selectedIds);
-        // Short retries in case upstream processing is async
         setTimeout(() => this.onDiscover('LIVE', selectedIds), 1200);
         setTimeout(() => this.onDiscover('LIVE', selectedIds), 2500);
         setTimeout(() => this.onDiscover('LIVE', selectedIds), 5000);
@@ -370,26 +403,32 @@ export class CreateTargetSystemComponent implements OnInit, OnChanges {
   selectedLivePanel: any = null;
   selectedLiveLoading = false;
 
+  /**
+   * Loads available submodels for the target AAS system.
+   * Refreshes the tree representation in the UI.
+   */
   discoverSubmodels(): void {
-    // Ensure system exists before discovery (mirror Source behavior)
     if (!this.createdTargetSystemId) { if (!this.isCreating) { this.save(); } return; }
     this.isDiscovering = true;
-    console.log('[TargetCreate] discoverSubmodels -> targetId=', this.createdTargetSystemId);
     this.aasClient.listSubmodels('target', this.createdTargetSystemId, {}).subscribe({
       next: (resp) => {
         this.isDiscovering = false;
         this.submodels = Array.isArray(resp) ? resp : (resp?.result ?? []);
-        console.log('[TargetCreate] submodels resp=', resp, 'parsedCount=', this.submodels.length);
         this.treeNodes = this.submodels.map((sm: any) => this.mapSubmodelToNode(sm));
       },
       error: (_err) => { this.isDiscovering = false; console.error('[TargetCreate] discover error', _err); this.errorService.handleError(_err); }
     });
   }
 
+  /**
+   * Reloads AAS submodels and optionally refreshes specific nodes.
+   * @param source Indicates whether discovery is from 'LIVE' or cached data.
+   * @param refreshIds List of submodel IDs to refresh after discovery.
+   */
   onDiscover(source: 'LIVE' = 'LIVE', refreshIds: string[] = []): void {
     if (!this.createdTargetSystemId) return;
     this.isDiscovering = true;
-    const params = {}; // no source param for target
+    const params = {};
     this.aasClient.listSubmodels('target', this.createdTargetSystemId, params).subscribe({
       next: (resp) => {
         this.isDiscovering = false;
@@ -404,18 +443,22 @@ export class CreateTargetSystemComponent implements OnInit, OnChanges {
     });
   }
   // duplicate removed; see method above
+  /**
+   * Handles expansion of a tree node by dynamically loading its children.
+   * @param event Node expansion event.
+   */
   onNodeExpand(event: any): void {
-    const node: TreeNode = event.node; if (!node) return; console.log('[TargetCreate] onNodeExpand node=', node);
-    
-    // Don't expand if node is a leaf (no children)
+    const node: TreeNode = event.node; if (!node) return;
     if (node.leaf) {
-      console.log('[TargetCreate] onNodeExpand - Node is leaf, skipping expansion');
       return;
     }
-    
     if (node.data?.type === 'submodel') { this.loadRootElements(node.data.id, node); }
     else if (node.data?.type === 'element') { this.loadChildren(node.data.submodelId, node.data.idShortPath, node); }
   }
+  /**
+   * Handles selection of a tree node and displays its details.
+   * @param event Node selection event.
+   */
   onNodeSelect(event: any): void {
     const node: TreeNode = event.node; this.selectedNode = node; this.selectedLivePanel = null;
     if (!node || node.data?.type !== 'element') return;
@@ -423,12 +466,16 @@ export class CreateTargetSystemComponent implements OnInit, OnChanges {
     this.loadLiveElementDetails(smId, idShortPath, node);
     setTimeout(() => { const el = document.getElementById('element-details'); el?.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 0);
   }
+  /**
+   * Loads all root-level elements for a given submodel and attaches them to the tree.
+   * @param submodelId The submodel ID whose root elements should be loaded.
+   * @param attach Optional TreeNode to attach the results to.
+   */
   private loadRootElements(submodelId: string, attach?: TreeNode): void {
     if (!this.createdTargetSystemId) return;
-    const smIdEnc = this.encodeIdToBase64Url(submodelId); console.log('[TargetCreate] loadRootElements smIdRaw=', submodelId, 'smIdB64=', smIdEnc);
-    // Use shallow; backend will deep-fallback when needed
+    const smIdEnc = this.encodeIdToBase64Url(submodelId);
     this.aasClient.listElements('target', this.createdTargetSystemId, smIdEnc, 'shallow').subscribe({
-      next: (resp) => { const list = Array.isArray(resp) ? resp : (resp?.result ?? []); console.log('[TargetCreate] loadRootElements respCount=', list.length, 'rawResp=', resp);
+      next: (resp) => { const list = Array.isArray(resp) ? resp : (resp?.result ?? []);
         const roots = list.filter((el: any) => {
           const p = el?.idShortPath || el?.idShort;
           return p && !String(p).includes('/');
@@ -439,7 +486,6 @@ export class CreateTargetSystemComponent implements OnInit, OnChanges {
         console.error('[TargetCreate] loadRootElements error', e);
         const status = e?.status;
         if (status === 400 || status === 404) {
-          // Frontend fallback: try deep and filter to roots
           this.aasClient.listElements('target', this.createdTargetSystemId!, smIdEnc, 'all').subscribe({
             next: (resp2) => {
               const arr: any[] = Array.isArray(resp2) ? resp2 : (resp2?.result ?? []);
@@ -458,13 +504,17 @@ export class CreateTargetSystemComponent implements OnInit, OnChanges {
       }
     });
   }
+  /**
+   * Loads all direct child elements of a given AAS parent element.
+   * @param submodelId The submodel ID.
+   * @param parentPath The hierarchical path of the parent element.
+   * @param node The tree node to which children will be attached.
+   */
   private loadChildren(submodelId: string, parentPath: string, node: TreeNode): void {
     if (!this.createdTargetSystemId) return;
-    const smIdEnc = this.encodeIdToBase64Url(submodelId); console.log('[TargetCreate] loadChildren smIdRaw=', submodelId, 'smIdB64=', smIdEnc, 'parentPath=', parentPath);
-    // Use shallow; backend will deep-fallback when needed
+    const smIdEnc = this.encodeIdToBase64Url(submodelId);
     this.aasClient.listElements('target', this.createdTargetSystemId, smIdEnc, 'shallow', parentPath).subscribe({
-      next: (resp) => { const list = Array.isArray(resp) ? resp : (resp?.result ?? []); console.log('[TargetCreate] loadChildren respCount=', list.length, 'rawResp=', resp);
-        // Backend already returns correct direct children, no filtering needed
+      next: (resp) => { const list = Array.isArray(resp) ? resp : (resp?.result ?? []);
         node.children = list.map((el: any) => {
           if (!el.idShortPath && el.idShort) { el.idShortPath = parentPath ? `${parentPath}/${el.idShort}` : el.idShort; }
           return this.mapElementToNode(submodelId, el);
@@ -475,21 +525,15 @@ export class CreateTargetSystemComponent implements OnInit, OnChanges {
         console.error('[TargetCreate] loadChildren error', e);
         const status = e?.status;
         if (status === 400 || status === 404) {
-          // Frontend fallback: deep and filter direct children of parentPath
           this.aasClient.listElements('target', this.createdTargetSystemId!, smIdEnc, 'all').subscribe({
             next: (resp2) => {
               const arr: any[] = Array.isArray(resp2) ? resp2 : (resp2?.result ?? []);
-              // Backend filtering should handle this, but keep minimal direct child filtering for fallback
               const prefix = parentPath ? (parentPath.endsWith('/') ? parentPath : parentPath + '/') : '';
               const children = arr.filter((el: any) => {
                 const p = el?.idShortPath || el?.idShort;
                 if (!p) return false;
                 if (!parentPath) return !String(p).includes('/');
-                
-                // FIX: Only include direct children, not nested elements
                 if (!String(p).startsWith(prefix)) return false;
-                
-                // Check if this is a direct child (no additional '/' after the prefix)
                 const relativePath = String(p).substring(prefix.length);
                 return relativePath && !relativePath.includes('/');
               });
@@ -505,6 +549,12 @@ export class CreateTargetSystemComponent implements OnInit, OnChanges {
       }
     });
   }
+  /**
+   * Loads detailed information about a live AAS element and updates the detail view.
+   * @param smId Submodel ID of the element.
+   * @param idShortPath Path of the selected element.
+   * @param node Optional TreeNode to attach updates to.
+   */
   private loadLiveElementDetails(smId: string, idShortPath: string | undefined, node?: TreeNode): void {
     const systemId = this.createdTargetSystemId; if (!systemId) return;
     this.selectedLiveLoading = true;
@@ -656,6 +706,10 @@ export class CreateTargetSystemComponent implements OnInit, OnChanges {
     }
   }
 
+  /**
+   * Handles the creation of new AAS elements and updates the AAS tree view.
+   * @param elementData Data of the newly created element.
+   */
   private async handleElementCreation(elementData: any): Promise<void> {
     if (!this.createdTargetSystemId) return;
     
@@ -724,40 +778,21 @@ export class CreateTargetSystemComponent implements OnInit, OnChanges {
       error: () => { this.showDeleteSubmodelDialog = false; }
     });
   }
+  /**
+   * Deletes an AAS element and removes it from the tree structure.
+   * @param submodelId Submodel ID containing the element.
+   * @param idShortPath The path of the element to delete.
+   */
   deleteElement(submodelId: string, idShortPath: string): void {
     if (!this.createdTargetSystemId || !submodelId || !idShortPath) {
-      console.log('[TargetCreate] deleteElement: Missing required data', {
-        createdTargetSystemId: this.createdTargetSystemId,
-        submodelId,
-        idShortPath
-      });
       return;
     }
-    
-    // Use the original submodelId, not base64 encoded
-    // The backend will handle the encoding internally
-    
-    console.log('[TargetCreate] deleteElement: Deleting element', {
-      systemId: this.createdTargetSystemId,
-      submodelId,
-      idShortPath
-    });
-    
-    // Skip existence check for deep elements and proceed directly with deletion
-    console.log('[TargetCreate] deleteElement: Proceeding directly with deletion (skipping existence check for deep elements)');
     this.performDelete(submodelId, idShortPath);
   }
-  
   private performDelete(submodelId: string, idShortPath: string): void {
     this.aasClient.deleteElement('target', this.createdTargetSystemId, submodelId, idShortPath).subscribe({
       next: () => {
-        console.log('[TargetCreate] deleteElement: Element deleted successfully');
-        
-        // Trigger discover to refresh the entire tree
-        console.log('[TargetCreate] deleteElement: Triggering discover to refresh tree');
         this.discoverSubmodels();
-        
-        // Show success message
         this.messageService.add({
           key: 'targetAAS',
           severity: 'success',
@@ -768,22 +803,8 @@ export class CreateTargetSystemComponent implements OnInit, OnChanges {
       },
       error: (err) => {
         console.error('[TargetCreate] deleteElement: Error deleting element', err);
-        console.log('[TargetCreate] deleteElement: Error details', {
-          status: err.status,
-          statusText: err.statusText,
-          url: err.url,
-          message: err.message,
-          idShortPath,
-          submodelId
-        });
-        
-        // Check if it's a 404 error (element not found)
         if (err.status === 404) {
-          console.log('[TargetCreate] deleteElement: Element not found, removing from tree anyway');
-          
-          // Remove the element from the tree directly
           this.removeElementFromTree(submodelId, idShortPath);
-          
           this.messageService.add({
             key: 'targetAAS',
             severity: 'success',
@@ -797,61 +818,24 @@ export class CreateTargetSystemComponent implements OnInit, OnChanges {
       }
     });
   }
-
+  /**
+   * Removes an element from the AAS tree locally without backend call.
+   * @param submodelId ID of the submodel.
+   * @param idShortPath Path of the element to remove.
+   */
   private removeElementFromTree(submodelId: string, idShortPath: string): void {
-    console.log('[TargetCreate] removeElementFromTree: Removing element from tree', {
-      submodelId,
-      idShortPath
-    });
-    
     const elementKey = `${submodelId}::${idShortPath}`;
     const parentPath = idShortPath.includes('.') ? idShortPath.substring(0, idShortPath.lastIndexOf('.')) : '';
     const parentKey = parentPath ? `${submodelId}::${parentPath}` : submodelId;
-    
-    console.log('[TargetCreate] removeElementFromTree: Keys', {
-      elementKey,
-      parentKey,
-      parentPath
-    });
-    
-    // Try to find and remove the element from the tree
     let elementRemoved = false;
-    
-    // Find the parent node
     const parentNode = this.findNodeByKey(parentKey, this.treeNodes);
     if (parentNode && parentNode.children) {
-      console.log('[TargetCreate] removeElementFromTree: Parent node found', {
-        parentLabel: parentNode.label,
-        childrenCount: parentNode.children.length
-      });
-      
-      // Remove the element from parent's children
       const initialLength = parentNode.children.length;
-      parentNode.children = parentNode.children.filter(child => {
-        const shouldKeep = child.key !== elementKey;
-        if (!shouldKeep) {
-          console.log('[TargetCreate] removeElementFromTree: Removing child', {
-            childKey: child.key,
-            childLabel: child.label
-          });
-        }
-        return shouldKeep;
-      });
-      
+      parentNode.children = parentNode.children.filter(child => child.key !== elementKey);
       elementRemoved = initialLength > parentNode.children.length;
-      console.log('[TargetCreate] removeElementFromTree: Element removed', {
-        initialLength,
-        finalLength: parentNode.children.length,
-        removed: elementRemoved
-      });
     }
-    
-    // Force tree update
     this.treeNodes = [...this.treeNodes];
-    
-    // If element wasn't found in the tree, refresh the parent node
     if (!elementRemoved) {
-      console.log('[TargetCreate] removeElementFromTree: Element not found in tree, refreshing parent node');
       this.refreshNodeLive(submodelId, parentPath, parentNode || undefined);
     }
   }
@@ -861,6 +845,11 @@ export class CreateTargetSystemComponent implements OnInit, OnChanges {
   valueElementPath = '';
   valueNew = '';
   valueTypeHint = 'xs:string';
+  /**
+   * Opens the dialog to update the value of a property element.
+   * @param smId Submodel ID of the property.
+   * @param element The selected AAS element.
+   */
   openSetValue(smId: string, element: any): void {
     this.valueSubmodelId = smId;
     this.valueElementPath = element.idShortPath || element.data?.idShortPath || element.raw?.idShortPath || element.idShort;
@@ -868,9 +857,12 @@ export class CreateTargetSystemComponent implements OnInit, OnChanges {
     this.valueNew = '';
     this.showValueDialog = true;
   }
+  /**
+   * Saves the updated property value to the backend and refreshes the UI.
+   */
   setValue(): void {
     if (!this.createdTargetSystemId || !this.valueSubmodelId || !this.valueElementPath) return;
-    const smIdB64 = this.encodeIdToBase64Url(this.valueSubmodelId); // send plain ID for LIVE upstream calls
+    const smIdB64 = this.encodeIdToBase64Url(this.valueSubmodelId);
     const parsedValue = this.parseValueForType(this.valueNew, this.valueTypeHint);
     this.aasClient.patchElementValue('target', this.createdTargetSystemId, smIdB64, this.valueElementPath, parsedValue as any).subscribe({
       next: () => { this.showValueDialog = false; const parent = this.valueElementPath.includes('/') ? this.valueElementPath.substring(0, this.valueElementPath.lastIndexOf('/')) : ''; this.refreshNodeLive(this.valueSubmodelId, parent, undefined); this.messageService.add({ severity: 'success', summary: 'Value updated', detail: 'Property value saved', life: 2500 }); },
@@ -961,10 +953,13 @@ export class CreateTargetSystemComponent implements OnInit, OnChanges {
     return undefined;
   }
 
+  /**
+   * Encodes an ID into Base64 URL-safe format for API calls.
+   * @param id The ID string to encode.
+   * @returns Encoded Base64 URL-safe string.
+   */
   private encodeIdToBase64Url(id: string): string {
     if (!id) return id;
-    
-    // Use the same encoding as the backend
     const b64 = btoa(id);
     return b64
       .replace(/=+$/g, '')
