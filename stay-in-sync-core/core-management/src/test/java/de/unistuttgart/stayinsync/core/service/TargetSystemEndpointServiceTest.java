@@ -56,7 +56,7 @@ public class TargetSystemEndpointServiceTest {
     TargetSystemEndpoint.deleteAll();
     TargetSystem.deleteAll();
     // create a minimal TargetSystem to attach endpoints to
-    TargetSystemDTO dto = new TargetSystemDTO(null, "TS-A", "http://ts", null, "REST", null, java.util.Set.of());
+    TargetSystemDTO dto = new TargetSystemDTO(null, "TS-A", "http://ts", null, "REST", null, null, java.util.Set.of());
     var created = targetSystemService.createTargetSystem(dto);
     targetSystemId = created.id();
   }

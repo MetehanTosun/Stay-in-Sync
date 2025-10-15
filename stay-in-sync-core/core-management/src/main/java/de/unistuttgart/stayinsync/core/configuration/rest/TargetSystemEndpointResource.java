@@ -29,6 +29,11 @@ import java.util.List;
 
 import static jakarta.ws.rs.core.MediaType.APPLICATION_JSON;
 
+/**
+ * REST resource for managing Target System Endpoints.
+ * Provides CRUD operations for endpoints associated with a Target System
+ * and supports TypeScript interface generation from JSON schemas.
+ */
 @Path("api/config/target-systems/")
 @Produces(APPLICATION_JSON)
 @Consumes(APPLICATION_JSON)
@@ -43,6 +48,14 @@ public class TargetSystemEndpointResource {
     @Inject
     TypeScriptTypeGenerator typeScriptTypeGenerator;
 
+    /**
+     * Creates one or multiple new Target System Endpoints for a given Target System.
+     *
+     * @param targetSystemId The ID of the Target System for which endpoints are created.
+     * @param dtos List of CreateTargetSystemEndpointDTO containing endpoint creation data.
+     * @param uriInfo Context information for URI building.
+     * @return HTTP 201 response containing the created Target System Endpoints.
+     */
     @POST
     @Path("{targetSystemId}/endpoints")
     @Operation(summary = "Creates target-system-endpoints for a target system")
@@ -56,6 +69,12 @@ public class TargetSystemEndpointResource {
         return Response.status(Response.Status.CREATED).entity(mapper.mapToDTOList(persisted)).build();
     }
 
+    /**
+     * Retrieves all Target System Endpoints for a given Target System.
+     *
+     * @param targetSystemId The ID of the Target System.
+     * @return List of TargetSystemEndpointDTO representing all endpoints for the system.
+     */
     @GET
     @Path("{targetSystemId}/endpoints")
     @Operation(summary = "Returns all target-system-endpoints for a target system")
@@ -66,6 +85,13 @@ public class TargetSystemEndpointResource {
         return mapper.mapToDTOList(endpoints);
     }
 
+    /**
+     * Retrieves a specific Target System Endpoint by its ID.
+     * Returns HTTP 404 if the endpoint cannot be found.
+     *
+     * @param id The ID of the Target System Endpoint.
+     * @return HTTP 200 response containing the endpoint details or 404 if not found.
+     */
     @GET
     @Path("/endpoints/{id}")
     @Operation(summary = "Returns a target-system-endpoint by id")
@@ -80,6 +106,14 @@ public class TargetSystemEndpointResource {
                 .orElseThrow(() -> new CoreManagementException(Response.Status.NOT_FOUND, "Unable to find target-system-endpoint", "No target-system-endpoint found using id %d", id));
     }
 
+    /**
+     * Replaces an existing Target System Endpoint with new data.
+     * If the endpoint does not exist, a 404 response is returned.
+     *
+     * @param id The ID of the Target System Endpoint to replace.
+     * @param dto DTO object containing updated endpoint information.
+     * @return HTTP 204 (No Content) on success, or 404 if not found.
+     */
     @PUT
     @Path("/endpoints/{id}")
     @Operation(summary = "Replaces a target-system-endpoint")
@@ -94,6 +128,11 @@ public class TargetSystemEndpointResource {
                 .orElse(Response.status(Response.Status.NOT_FOUND).build());
     }
 
+    /**
+     * Deletes a Target System Endpoint by its ID.
+     *
+     * @param id The ID of the Target System Endpoint to delete.
+     */
     @DELETE
     @Path("/endpoints/{id}")
     @Operation(summary = "Deletes a target-system-endpoint")
@@ -103,6 +142,14 @@ public class TargetSystemEndpointResource {
         Log.debugf("target-system-endpoint with id %d deleted", id);
     }
 
+    /**
+     * Generates a TypeScript interface from a provided JSON schema for a specific Target System Endpoint.
+     * Returns a TypeScriptGenerationResponse object containing the generated code or an error message.
+     *
+     * @param id The ID of the Target System Endpoint for which TypeScript should be generated.
+     * @param request The TypeScriptGenerationRequest containing the JSON schema.
+     * @return HTTP 200 with generated TypeScript code, or 400 if schema is invalid.
+     */
     @POST
     @Path("/endpoints/{id}/generate-typescript")
     @Consumes(APPLICATION_JSON)
@@ -156,5 +203,3 @@ public class TargetSystemEndpointResource {
         }
     }
 }
-
-
