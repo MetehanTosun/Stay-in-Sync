@@ -48,7 +48,7 @@ export class RulesOverviewComponent implements OnInit {
     private router: Router,
     private rulesApi: TransformationRulesApiService,
     private messageService: MessageService
-  ) {}
+  ) { }
 
   //#region Lifecycle
   /**
@@ -74,23 +74,7 @@ export class RulesOverviewComponent implements OnInit {
       });
       return;
     }
-
-    this.rulesApi.createRule(dto).subscribe({
-      next: (res: HttpResponse<TransformationRule>) => {
-        if (!res.body?.id) {
-          throw new Error('Rule ID was not return - unable to forward to editor');
-        }
-        this.editRule(res.body.id!);
-      },
-      error: (err) => {
-        this.messageService.add({
-          severity: 'error',
-          summary: 'Creating Rule',
-          detail: 'An error accurred while creating a rule. \n Please check the logs or console.'
-        });
-        console.error(err);
-      }
-    });
+    this.createRule(dto);
   }
   //#endregion
 
@@ -119,6 +103,28 @@ export class RulesOverviewComponent implements OnInit {
         console.error(err);
       },
       complete: () => (this.isLoading = false)
+    });
+  }
+
+  /**
+   * Creates a new rule with the data from the given DTO
+   */
+  createRule(dto: RuleCreationDTO) {
+    this.rulesApi.createRule(dto).subscribe({
+      next: (res: HttpResponse<TransformationRule>) => {
+        if (!res.body?.id) {
+          throw new Error('Rule ID was not return - unable to forward to editor');
+        }
+        this.editRule(res.body.id!);
+      },
+      error: (err) => {
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Creating Rule',
+          detail: 'An error accurred while creating a rule. \n Please check the logs or console.'
+        });
+        console.error(err);
+      }
     });
   }
 

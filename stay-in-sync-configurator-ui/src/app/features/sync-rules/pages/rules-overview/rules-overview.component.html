@@ -119,6 +119,7 @@
 <!-- MARK: Create Rule Modal -->
 <app-create-rule-modal
   [(visible)]="showCreateRule"
+  [rules]="rules"
   (created)="onCreateRule($event)"
   (cancelled)="showCreateRule = false"
 ></app-create-rule-modal>

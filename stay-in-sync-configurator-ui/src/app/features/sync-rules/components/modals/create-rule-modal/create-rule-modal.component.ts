@@ -3,7 +3,8 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Dialog } from 'primeng/dialog';
 import { Button } from 'primeng/button';
-import { RuleCreationDTO } from '../../../models';
+import { RuleCreationDTO, TransformationRule } from '../../../models';
+import { MessageService } from 'primeng/api';
 
 /**
  * This component manages the modal for creating a new sync rule
@@ -16,6 +17,7 @@ import { RuleCreationDTO } from '../../../models';
   styleUrls: ['../modal-shared.component.css', './create-rule-modal.component.css']
 })
 export class CreateRuleModalComponent {
+  //#region Fields
   /**
    * Controls dialog visibility (two-way binding with `visibleChange`)
    */
@@ -25,6 +27,11 @@ export class CreateRuleModalComponent {
    * Emits when dialog visibility changes (two-way binding with `visible`)
    */
   @Output() visibleChange = new EventEmitter<boolean>();
+
+  /**
+   * List of current rules. Used to check rule name availability
+   */
+  @Input() rules: TransformationRule[] = [];
 
   /**
    * Emitted when the user successfully submits the form.
@@ -41,14 +48,17 @@ export class CreateRuleModalComponent {
    * RuleCreationDTO containing the currently chosen rule data
    */
   newRule: RuleCreationDTO = { name: '', description: '' };
+  //#endregion
 
+  constructor(private messageService: MessageService) { }
+
+  //#region Handlers
   /**
    * Validate the user input for a new rule and hide the modal if user input is valid
    */
   onSave() {
-    if (!this.newRule.name?.trim()) {
-      return; // TODO-s toast to tell user needs name
-    }
+    if (this.nameIsEmtpy() || !this.nameIsAvailable()) return
+
     this.created.emit({ ...this.newRule });
     this.hide();
   }
@@ -60,12 +70,46 @@ export class CreateRuleModalComponent {
     this.cancelled.emit();
     this.hide();
   }
+  //#endregion
 
+  //#region Helpers
   /**
    * Hides the dialog and emits `visibleChange` with `false`
    */
-  hide() {
+  private hide() {
     this.visible = false;
     this.visibleChange.emit(false);
   }
+
+  /**
+   * Returns true if rule name is empty
+   */
+  private nameIsEmtpy(): boolean {
+    if (!this.newRule.name?.trim()) {
+      this.messageService.add({
+        severity: 'error',
+        summary: 'Invalid Name Input',
+        detail: `Please enter a rule name`
+      });
+      return true
+    }
+    return false
+  }
+
+  /**
+   * Returns true if rule name is unique
+   */
+  private nameIsAvailable(): boolean {
+    const existingRule = this.rules.find(rule => rule.name.trim().toLowerCase() === this.newRule.name.trim().toLowerCase());
+    if (existingRule) {
+      this.messageService.add({
+        severity: 'error',
+        summary: 'Name Conflict',
+        detail: `A rule with the name "${this.newRule.name}" already exists.`
+      });
+      return false;
+    }
+    return true;
+  }
+  //#endregion
 }
