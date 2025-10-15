@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { DialogModule } from 'primeng/dialog';
 import { ButtonModule } from 'primeng/button';
 
+/** Data model for the confirmation dialog. */
 export interface ConfirmationDialogData {
   title: string;
   message: string;
@@ -18,8 +19,11 @@ export interface ConfirmationDialogData {
   templateUrl: './confirmation-dialog.component.html',
   styleUrls: ['./confirmation-dialog.component.css']
 })
+/** Standalone confirmation dialog with severity, content, and actions. */
 export class ConfirmationDialogComponent {
+  /** Controls dialog visibility (two-way bound via `visibleChange`). */
   @Input() visible: boolean = false;
+  /** Dialog content and presentation options. */
   @Input() data: ConfirmationDialogData = {
     title: 'Confirm Action',
     message: 'Are you sure you want to proceed?',
@@ -28,25 +32,32 @@ export class ConfirmationDialogComponent {
     severity: 'warning'
   };
 
+  /** Emits on visibility changes to support two-way binding. */
   @Output() visibleChange = new EventEmitter<boolean>();
+  /** Emitted when user confirms the action. */
   @Output() confirmed = new EventEmitter<void>();
+  /** Emitted when user cancels the action. */
   @Output() cancelled = new EventEmitter<void>();
 
+  /** Emit confirmation and close the dialog. */
   onConfirm(): void {
     this.confirmed.emit();
     this.closeDialog();
   }
 
+  /** Emit cancellation and close the dialog. */
   onCancel(): void {
     this.cancelled.emit();
     this.closeDialog();
   }
 
+  /** Close the dialog and propagate visibility change. */
   closeDialog(): void {
     this.visible = false;
     this.visibleChange.emit(false);
   }
 
+  /** Map severity to PrimeNG button class. */
   getSeverityClass(): string {
     switch (this.data.severity) {
       case 'danger':
@@ -60,6 +71,7 @@ export class ConfirmationDialogComponent {
     }
   }
 
+  /** Map severity to icon class. */
   getIconClass(): string {
     switch (this.data.severity) {
       case 'danger':

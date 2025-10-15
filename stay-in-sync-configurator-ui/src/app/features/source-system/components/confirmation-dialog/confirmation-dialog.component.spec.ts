@@ -1,12 +1,15 @@
+/** Unit tests for `ConfirmationDialogComponent`. */
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideNoopAnimations } from '@angular/platform-browser/animations';
 import { ConfirmationDialogComponent } from './confirmation-dialog.component';
 
 
+/** Verifies dialog behavior, events, and bindings. */
 fdescribe('ConfirmationDialogComponent', () => {
   let component: ConfirmationDialogComponent;
   let fixture: ComponentFixture<ConfirmationDialogComponent>;
 
+  /** Configure testing module with standalone component and no animations. */
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [ConfirmationDialogComponent],
@@ -19,10 +22,12 @@ fdescribe('ConfirmationDialogComponent', () => {
     fixture.detectChanges();
   });
 
+  /** Should instantiate the component. */
   it('should create', () => {
     expect(component).toBeTruthy();
   });
 
+  /** Emits confirmed and closes on confirm. */
   it('emits confirmed and closes on confirm', () => {
     spyOn(component.confirmed, 'emit');
     spyOn(component.visibleChange, 'emit');
@@ -32,6 +37,7 @@ fdescribe('ConfirmationDialogComponent', () => {
     expect(component.visibleChange.emit).toHaveBeenCalledWith(false);
   });
 
+  /** Emits cancelled and closes on cancel. */
   it('emits cancelled and closes on cancel', () => {
     spyOn(component.cancelled, 'emit');
     spyOn(component.visibleChange, 'emit');
@@ -41,6 +47,7 @@ fdescribe('ConfirmationDialogComponent', () => {
     expect(component.visibleChange.emit).toHaveBeenCalledWith(false);
   });
 
+  /** Reflects severity via button and icon classes. */
   it('returns proper classes for severity', () => {
     component.data = { ...component.data, severity: 'danger', title: '', message: '' };
     fixture.detectChanges();
@@ -48,6 +55,7 @@ fdescribe('ConfirmationDialogComponent', () => {
     expect(component.getIconClass()).toContain('exclamation');
   });
 
+  /** Binds header and message text from `data`. */
   it('binds header and message from data', () => {
     component.data = { ...component.data, title: 'Delete item', message: 'Are you sure?' };
     fixture.detectChanges();
@@ -59,6 +67,7 @@ fdescribe('ConfirmationDialogComponent', () => {
     expect(compiled.querySelector('.confirmation-message')?.textContent || '').toContain('Are you sure?');
   });
 
+  /** Falls back to default button labels when not provided. */
   it('uses default button labels when none provided', () => {
     component.data = { ...component.data, confirmLabel: undefined, cancelLabel: undefined };
     fixture.detectChanges();
@@ -68,6 +77,7 @@ fdescribe('ConfirmationDialogComponent', () => {
     expect(labels.join(' ')).toMatch(/Confirm/i);
   });
 
+  /** Displays custom button labels when provided. */
   it('uses custom button labels when provided', () => {
     component.data = { ...component.data, confirmLabel: 'Yes, delete', cancelLabel: 'Nope' };
     fixture.detectChanges();
