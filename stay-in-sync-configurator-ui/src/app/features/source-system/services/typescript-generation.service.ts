@@ -99,29 +99,23 @@ export class TypeScriptGenerationService {
     stateSubject: BehaviorSubject<TypeScriptGenerationState>
   ): void {
     inputSubject.pipe(
-      debounceTime(500), // Wait 500ms after user stops typing
+      debounceTime(500),
       distinctUntilChanged((prev, curr) => prev.schema === curr.schema),
       switchMap(({ schema, sourceSystemId }) => {
-        // Set loading state
         stateSubject.next({
           isGenerating: true,
           code: stateSubject.value.code,
           error: null
         });
-
-        // Validate schema first
         if (!this.isValidSchema(schema)) {
           return of({
             success: false,
             error: 'Invalid JSON schema format'
           });
         }
-
-        // Generate TypeScript
         return this.performTypeScriptGeneration(schema, sourceSystemId);
       }),
       catchError((error) => {
-        console.error('TypeScript generation error:', error);
         return of({
           success: false,
           error: 'Failed to generate TypeScript code'
@@ -153,8 +147,6 @@ export class TypeScriptGenerationService {
         const request: TypeScriptGenerationRequest = {
           jsonSchema: schema
         };
-
-        // Mock implementation since generateTypeScript doesn't exist in backend
         setTimeout(() => {
           observer.next({
             success: true,
@@ -180,7 +172,6 @@ export class TypeScriptGenerationService {
 
     try {
       const parsed = JSON.parse(schema);
-      // Basic schema validation - should be an object
       return typeof parsed === 'object' && parsed !== null;
     } catch (error) {
       return false;

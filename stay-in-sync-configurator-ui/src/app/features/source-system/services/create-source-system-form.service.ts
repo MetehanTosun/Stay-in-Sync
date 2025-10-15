@@ -39,7 +39,6 @@ export class CreateSourceSystemFormService {
    * Setup form subscriptions for dynamic validation
    */
   setupFormSubscriptions(form: FormGroup): void {
-    // Subscribe to API type changes
     form.get('apiType')?.valueChanges.subscribe((apiType: string) => {
       const aasIdCtrl = form.get('aasId');
       const openApiCtrl = form.get('openApiSpec');
@@ -56,17 +55,14 @@ export class CreateSourceSystemFormService {
       openApiCtrl?.updateValueAndValidity();
     });
 
-    // Subscribe to authentication type changes
     form.get('apiAuthType')?.valueChanges.subscribe((authType: ApiAuthType) => {
       const authConfigGroup = form.get('authConfig') as FormGroup;
       
-      // Reset all validators first
       ['username', 'password', 'apiKey', 'headerName'].forEach(key => {
         authConfigGroup.get(key)?.clearValidators();
         authConfigGroup.get(key)?.updateValueAndValidity();
       });
 
-      // Set validators based on auth type
       if (authType === ApiAuthType.Basic) {
         authConfigGroup.get('username')?.setValidators([Validators.required]);
         authConfigGroup.get('password')?.setValidators([Validators.required]);
@@ -75,7 +71,6 @@ export class CreateSourceSystemFormService {
         authConfigGroup.get('headerName')?.setValidators([Validators.required]);
       }
 
-      // Update validity
       ['username', 'password', 'apiKey', 'headerName'].forEach(key => {
         authConfigGroup.get(key)?.updateValueAndValidity();
       });
@@ -195,9 +190,5 @@ export class CreateSourceSystemFormService {
       apiType: sourceSystem.apiType,
       aasId: sourceSystem.aasId
     });
-
-    // Set auth data if available
-    // Note: SourceSystemDTO doesn't have basicAuth/apiKeyAuth properties
-    // These would need to be loaded separately if needed
   }
 }

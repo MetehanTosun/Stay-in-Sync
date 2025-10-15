@@ -31,21 +31,21 @@ describe('ManageEndpointParamsComponent', () => {
   });
 
   it('should create', () => {
-    svc.apiConfigEndpointEndpointIdQueryParamGet.and.returnValue(of([]));
+    svc.apiConfigEndpointEndpointIdQueryParamGet.and.returnValue(of([] as any));
     fixture.detectChanges();
     expect(component).toBeTruthy();
   });
 
   it('loads params on init', () => {
     const params: ApiEndpointQueryParamDTO[] = [{ id: 1, paramName: 'limit', queryParamType: 'QUERY' } as any];
-    svc.apiConfigEndpointEndpointIdQueryParamGet.and.returnValue(of(params));
+    svc.apiConfigEndpointEndpointIdQueryParamGet.and.returnValue(of(params as any));
     fixture.detectChanges();
     expect(component.queryParams).toEqual(params);
     expect(component.queryParamsLoading).toBeFalse();
   });
 
   it('adds param and emits onCreated', () => {
-    svc.apiConfigEndpointEndpointIdQueryParamGet.and.returnValue(of([]));
+    svc.apiConfigEndpointEndpointIdQueryParamGet.and.returnValue(of([] as any));
     svc.apiConfigEndpointEndpointIdQueryParamPost.and.returnValue(of({} as any));
     fixture.detectChanges();
     spyOn(component.onCreated, 'emit');
@@ -57,7 +57,7 @@ describe('ManageEndpointParamsComponent', () => {
   });
 
   it('deletes param and emits onDeleted', () => {
-    svc.apiConfigEndpointEndpointIdQueryParamGet.and.returnValue(of([{ id: 7, paramName: 'id', queryParamType: 'PATH' } as any]));
+    svc.apiConfigEndpointEndpointIdQueryParamGet.and.returnValue(of([{ id: 7, paramName: 'id', queryParamType: 'PATH' } as any] as any));
     svc.apiConfigEndpointQueryParamIdDelete.and.returnValue(of({} as any));
     fixture.detectChanges();
     spyOn(component.onDeleted, 'emit');

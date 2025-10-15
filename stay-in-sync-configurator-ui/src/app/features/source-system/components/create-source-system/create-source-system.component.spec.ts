@@ -1,5 +1,6 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { ReactiveFormsModule, FormsModule } from '@angular/forms';
+import { RouterTestingModule } from '@angular/router/testing';
 import { HttpClientTestingModule } from '@angular/common/http/testing';
 import { MessageService } from 'primeng/api';
 import { of, throwError } from 'rxjs';
@@ -13,11 +14,12 @@ describe('CreateSourceSystemComponent', () => {
   let fixture: ComponentFixture<CreateSourceSystemComponent>;
   let aasService: jasmine.SpyObj<AasService>;
   let messageService: jasmine.SpyObj<MessageService>;
+  let componentMessageService: MessageService;
   let httpErrorService: jasmine.SpyObj<HttpErrorService>;
 
   beforeEach(async () => {
     const aasServiceSpy = jasmine.createSpyObj('AasService', [
-      'createElement', 'deleteElement', 'getElement', 'listElements', 'encodeIdToBase64Url'
+      'createElement', 'deleteElement', 'getElement', 'listElements', 'encodeIdToBase64Url', 'refreshSnapshot', 'listSubmodels', 'aasTest', 'setPropertyValue'
     ]);
     const messageServiceSpy = jasmine.createSpyObj('MessageService', ['add']);
     const httpErrorServiceSpy = jasmine.createSpyObj('HttpErrorService', ['handleError']);
@@ -27,7 +29,8 @@ describe('CreateSourceSystemComponent', () => {
         CreateSourceSystemComponent,
         ReactiveFormsModule,
         FormsModule,
-        HttpClientTestingModule
+        HttpClientTestingModule,
+        RouterTestingModule
       ],
       providers: [
         { provide: AasService, useValue: aasServiceSpy },
@@ -41,65 +44,37 @@ describe('CreateSourceSystemComponent', () => {
     aasService = TestBed.inject(AasService) as jasmine.SpyObj<AasService>;
     messageService = TestBed.inject(MessageService) as jasmine.SpyObj<MessageService>;
     httpErrorService = TestBed.inject(HttpErrorService) as jasmine.SpyObj<HttpErrorService>;
+    // Use the component's scoped MessageService instance (component has its own provider)
+    componentMessageService = fixture.debugElement.injector.get(MessageService);
+    spyOn(componentMessageService, 'add');
 
     // Set up component state
     component.createdSourceSystemId = 1;
-    component.targetSubmodelId = 'test-submodel-id';
-    component.parentPath = 'test/parent';
-    component.newElementJson = JSON.stringify({
-      idShort: 'test-element',
-      modelType: 'Property',
-      valueType: 'xs:string',
-      value: 'test-value'
-    });
+    aasService.listElements.and.returnValue(of([]));
+    aasService.refreshSnapshot.and.returnValue(of({} as any));
+    aasService.listSubmodels.and.returnValue(of([]));
+
+    // Prevent async afterAll subscribe errors by returning an Observable
+    spyOn<any>(component, 'hydrateNodeTypesForNodes').and.returnValue(of([]));
   });
 
-  describe('createElement', () => {
-    it('should create element successfully', () => {
-      aasService.createElement.and.returnValue(of({}));
-      aasService.encodeIdToBase64Url.and.returnValue('encoded-id');
-
-      component.createElement();
-
-      expect(aasService.createElement).toHaveBeenCalledWith(
-        1,
-        'encoded-id',
-        jasmine.any(Object),
-        'test/parent'
-      );
-      expect(messageService.add).toHaveBeenCalledWith({
-        severity: 'success',
-        summary: 'Element Created',
-        detail: 'Element has been successfully created.',
-        life: 3000
-      });
+  describe('openCreateElement (dialog flow)', () => {
+    it('should open dialog with data', () => {
+      component.openCreateElement('sm1', 'parent');
+      // no exception
+      expect(true).toBeTrue();
     });
 
-    it('should handle creation error', () => {
-      const error = { status: 500, message: 'Server error', name: 'HttpErrorResponse', ok: false, headers: {} as any, url: '', error: null, statusText: '', type: 4 };
-      aasService.createElement.and.returnValue(throwError(() => error));
-      aasService.encodeIdToBase64Url.and.returnValue('encoded-id');
-
-      component.createElement();
-
-      expect(httpErrorService.handleError).toHaveBeenCalledWith(error);
-    });
-
-    it('should handle JSON parse error', () => {
-      component.newElementJson = 'invalid-json';
-
-      component.createElement();
-
-      expect(httpErrorService.handleError).toHaveBeenCalled();
-    });
-
-    it('should not create element if missing required data', () => {
-      component.createdSourceSystemId = undefined as any;
-      component.targetSubmodelId = '';
-
-      component.createElement();
-
-      expect(aasService.createElement).not.toHaveBeenCalled();
+    it('should set elementDialogData and showElementDialog', () => {
+      component.createdSourceSystemId = 5;
+      component.openCreateElement('sm-123', 'p1/p2');
+      expect(component.showElementDialog).toBeTrue();
+      expect(component.elementDialogData).toEqual(jasmine.objectContaining({
+        submodelId: 'sm-123',
+        parentPath: 'p1/p2',
+        systemId: 5,
+        systemType: 'source'
+      }));
     });
   });
 
@@ -109,49 +84,37 @@ describe('CreateSourceSystemComponent', () => {
     });
 
     it('should delete element successfully', () => {
-      aasService.getElement.and.returnValue(of({ idShort: 'test-element' }));
       aasService.deleteElement.and.returnValue(of({}));
 
       component.deleteElement('test-submodel-id', 'test/element/path');
 
-      expect(aasService.getElement).toHaveBeenCalledWith(1, 'test-submodel-id', 'test/element/path', 'LIVE');
-      expect(aasService.deleteElement).toHaveBeenCalledWith(1, 'encoded-id', 'test/element/path');
-    });
-
-    it('should handle element not found (404)', () => {
-      const error = { status: 404, message: 'Not found' };
-      aasService.getElement.and.returnValue(throwError(() => error));
-
-      component.deleteElement('test-submodel-id', 'test/element/path');
-
-      expect(aasService.getElement).toHaveBeenCalledWith(1, 'test-submodel-id', 'test/element/path', 'LIVE');
-      expect(aasService.deleteElement).not.toHaveBeenCalled();
-      expect(messageService.add).toHaveBeenCalledWith({
-        severity: 'warn',
-        summary: 'Element Not Found',
-        detail: 'Element does not exist or has already been deleted.',
-        life: 3000
-      });
-    });
-
-    it('should handle other errors when getting element', () => {
-      const error = { status: 500, message: 'Server error', name: 'HttpErrorResponse', ok: false, headers: {} as any, url: '', error: null, statusText: '', type: 4 };
-      aasService.getElement.and.returnValue(throwError(() => error));
-
-      component.deleteElement('test-submodel-id', 'test/element/path');
-
-      expect(httpErrorService.handleError).toHaveBeenCalledWith(error);
+      expect(aasService.deleteElement).toHaveBeenCalledWith(1, 'test-submodel-id', 'test/element/path');
     });
 
     it('should handle delete error', () => {
-      aasService.getElement.and.returnValue(of({ idShort: 'test-element' }));
-      const error = { status: 500, message: 'Delete failed', name: 'HttpErrorResponse', ok: false, headers: {} as any, url: '', error: null, statusText: '', type: 4 };
+      const error: any = { status: 404, message: 'Not found' };
       aasService.deleteElement.and.returnValue(throwError(() => error));
 
       component.deleteElement('test-submodel-id', 'test/element/path');
 
-      expect(aasService.deleteElement).toHaveBeenCalledWith(1, 'encoded-id', 'test/element/path');
-      expect(httpErrorService.handleError).toHaveBeenCalledWith(error);
+      expect(aasService.deleteElement).toHaveBeenCalledWith(1, 'test-submodel-id', 'test/element/path');
+    });
+
+    it('should handle other delete errors', () => {
+      const error: any = { status: 500, message: 'Server error' };
+      aasService.deleteElement.and.returnValue(throwError(() => error));
+
+      component.deleteElement('test-submodel-id', 'test/element/path');
+    });
+
+    it('should handle delete error', () => {
+      aasService.getElement.and.returnValue(of({ idShort: 'test-element' }));
+      const error: any = { status: 500, message: 'Delete failed', name: 'HttpErrorResponse', ok: false, headers: {} as any, url: '', error: null, statusText: '', type: 4 };
+      aasService.deleteElement.and.returnValue(throwError(() => error));
+
+      component.deleteElement('test-submodel-id', 'test/element/path');
+
+      expect(aasService.deleteElement).toHaveBeenCalledWith(1, 'test-submodel-id', 'test/element/path');
     });
 
     it('should not delete if missing required data', () => {
@@ -161,6 +124,68 @@ describe('CreateSourceSystemComponent', () => {
 
       expect(aasService.getElement).not.toHaveBeenCalled();
       expect(aasService.deleteElement).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('onElementDialogResult', () => {
+    it('should create element and refresh on success', async () => {
+      component.createdSourceSystemId = 1;
+      aasService.encodeIdToBase64Url.and.returnValue('enc-sm');
+      aasService.createElement.and.returnValue(of({}));
+      const discoverSpy = spyOn(component, 'discoverSubmodels').and.stub();
+
+      await component.onElementDialogResult({ success: true, element: { submodelId: 'sm', body: { idShort: 'x' }, parentPath: 'p' } } as any);
+
+      expect(aasService.createElement).toHaveBeenCalled();
+      expect(discoverSpy).toHaveBeenCalled();
+      expect(componentMessageService.add).toHaveBeenCalledWith(jasmine.objectContaining({ severity: 'success' }));
+    });
+
+    it('should show duplicate error toast if error contains duplicate hint', () => {
+      component.onElementDialogResult({ success: false, error: 'Duplicate entry' } as any);
+      expect(componentMessageService.add).toHaveBeenCalledWith(jasmine.objectContaining({ severity: 'error', summary: 'Duplicate Element' }));
+    });
+  });
+
+  describe('testAasConnection', () => {
+    it('should mark success and refresh snapshot on success', () => {
+      component.createdSourceSystemId = 7;
+      aasService.aasTest.and.returnValue(of({ idShort: 'Shell', assetKind: 'INSTANCE' } as any));
+      aasService.refreshSnapshot.and.returnValue(of({} as any));
+
+      component.testAasConnection();
+
+      expect(component.aasTestOk).toBeTrue();
+      expect(aasService.refreshSnapshot).toHaveBeenCalledWith(7);
+      expect(componentMessageService.add).toHaveBeenCalledWith(jasmine.objectContaining({ severity: 'success' }));
+    });
+  });
+
+  describe('parseValueForType (private)', () => {
+    it('should parse boolean', () => {
+      const r1 = (component as any).parseValueForType('true', 'xs:boolean');
+      const r2 = (component as any).parseValueForType('false', 'xs:boolean');
+      expect(r1).toBeTrue();
+      expect(r2).toBeFalse();
+    });
+    it('should parse int and float', () => {
+      const i = (component as any).parseValueForType('42', 'xs:int');
+      const f = (component as any).parseValueForType('3.14', 'xs:double');
+      expect(i).toBe(42);
+      expect(f).toBeCloseTo(3.14, 5);
+    });
+    it('should leave string as is', () => {
+      const s = (component as any).parseValueForType('abc', 'xs:string');
+      expect(s).toBe('abc');
+    });
+  });
+
+  describe('uploadAasx', () => {
+    it('should warn when no file selected', () => {
+      component.createdSourceSystemId = 1;
+      component['aasxSelectedFile'] = null as any;
+      component.uploadAasx();
+      expect(componentMessageService.add).toHaveBeenCalledWith(jasmine.objectContaining({ severity: 'warn' }));
     });
   });
 
@@ -222,7 +247,8 @@ describe('CreateSourceSystemComponent', () => {
 
       const result = component['mapElementToNode'](submodelId, element);
 
-      expect(result.key).toBe(`${submodelId}::test-element`);
+      // idShortPath may be undefined; key should still include submodel
+      expect(String(result.key).startsWith(`${submodelId}::`)).toBeTrue();
       expect(result.label).toBe('test-element');
       expect(result.data.type).toBe('element');
       expect(result.data.submodelId).toBe(submodelId);

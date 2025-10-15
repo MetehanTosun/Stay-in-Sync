@@ -8,6 +8,7 @@ export type AasSystemType = 'source' | 'target';
 export class AasClientService {
   constructor(private http: HttpClient) {}
 
+  /** Build base URL for a system type and id. */
   private base(systemType: AasSystemType, systemId: number): string {
     if (systemType === 'source') {
       return `/api/config/source-system/${systemId}/aas`;
@@ -15,23 +16,26 @@ export class AasClientService {
     return `/api/config/target-system/${systemId}/aas`;
   }
 
+  /** Test AAS connection. */
   test(systemType: AasSystemType, systemId: number): Observable<any> {
     return this.http.post(`${this.base(systemType, systemId)}/test`, {});
   }
 
+  /** Request snapshot refresh (source systems only). */
   refreshSnapshot(systemType: AasSystemType, systemId: number): Observable<any> {
-    // Only supported for source systems
     if (systemType !== 'source') {
       throw new Error('refreshSnapshot is only supported for source systems');
     }
     return this.http.post(`${this.base(systemType, systemId)}/snapshot/refresh`, {});
   }
 
+  /** List submodels. */
   listSubmodels(systemType: AasSystemType, systemId: number, params?: any): Observable<any> {
     const url = `${this.base(systemType, systemId)}/submodels`;
     return this.http.get(url, { params });
   }
 
+  /** List elements of a submodel. */
   listElements(systemType: AasSystemType, systemId: number, smId: string, depth?: string, parentPath?: string, source?: string): Observable<any> {
     const url = `${this.base(systemType, systemId)}/submodels/${smId}/elements`;
     const params: any = {};
@@ -41,6 +45,7 @@ export class AasClientService {
     return this.http.get(url, { params });
   }
 
+  /** Get element details. */
   getElement(systemType: AasSystemType, systemId: number, smId: string, path: string, source?: string): Observable<any> {
     const url = `${this.base(systemType, systemId)}/submodels/${smId}/elements/${this.encodePathSegments(path)}`;
     const params: any = {};
@@ -48,18 +53,22 @@ export class AasClientService {
     return this.http.get(url, { params });
   }
 
+  /** Create submodel. */
   createSubmodel(systemType: AasSystemType, systemId: number, body: any): Observable<any> {
     return this.http.post(`${this.base(systemType, systemId)}/submodels`, body);
   }
 
+  /** Replace submodel. */
   putSubmodel(systemType: AasSystemType, systemId: number, smId: string, body: any): Observable<any> {
     return this.http.put(`${this.base(systemType, systemId)}/submodels/${smId}`, body);
   }
 
+  /** Delete submodel. */
   deleteSubmodel(systemType: AasSystemType, systemId: number, smId: string): Observable<any> {
     return this.http.delete(`${this.base(systemType, systemId)}/submodels/${smId}`);
   }
 
+  /** Create element under a submodel. */
   createElement(systemType: AasSystemType, systemId: number, smId: string, body: any, parentPath?: string): Observable<any> {
     const url = `${this.base(systemType, systemId)}/submodels/${smId}/elements`;
     const params: any = {};
@@ -67,32 +76,24 @@ export class AasClientService {
     return this.http.post(url, body, { params });
   }
 
+  /** Replace element content. */
   putElement(systemType: AasSystemType, systemId: number, smId: string, path: string, body: any): Observable<any> {
     return this.http.put(`${this.base(systemType, systemId)}/submodels/${smId}/elements/${this.encodePathSegments(path)}`, body);
   }
 
+  /** Delete element. */
   deleteElement(systemType: AasSystemType, systemId: number, smId: string, path: string): Observable<any> {
-    // BaSyx API expects UTF8-BASE64-URL-encoded submodelIdentifier
     const encodedSmId = this.encodeIdToBase64Url(smId);
     const url = `${this.base(systemType, systemId)}/submodels/${encodedSmId}/elements/${this.encodePathSegments(path)}`;
-    
-    console.log('Delete element:', {
-      systemType,
-      systemId,
-      smId,
-      encodedSmId,
-      path,
-      url,
-      urlLength: url.length
-    });
-    
     return this.http.delete(url);
   }
 
+  /** Patch element value. */
   patchElementValue(systemType: AasSystemType, systemId: number, smId: string, path: string, body: any): Observable<any> {
     return this.http.patch(`${this.base(systemType, systemId)}/submodels/${smId}/elements/${this.encodePathSegments(path)}/value`, body);
   }
 
+  /** Upload an AASX file. */
   uploadAasx(systemType: AasSystemType, systemId: number, file: File): Observable<any> {
     const url = `${this.base(systemType, systemId)}/upload`;
     const form = new FormData();
@@ -100,6 +101,7 @@ export class AasClientService {
     return this.http.post(url, form);
   }
 
+  /** Preview an AASX file. */
   previewAasx(systemType: AasSystemType, systemId: number, file: File): Observable<any> {
     const url = `${this.base(systemType, systemId)}/upload/preview`;
     const form = new FormData();
@@ -108,6 +110,7 @@ export class AasClientService {
     
   }
 
+  /** Attach selected content from an uploaded AASX. */
   attachSelectedAasx(systemType: AasSystemType, systemId: number, file: File, selection: any): Observable<any> {
     const url = `${this.base(systemType, systemId)}/upload/attach-selected`;
     const form = new FormData();
@@ -116,15 +119,14 @@ export class AasClientService {
     return this.http.post(url, form);
   }
 
+  /** Convert slash-separated element paths to dot-separated. */
   private encodePathSegments(path: string): string {
-    // BaSyx expects dot-separated paths, not slash-separated
     return path.replace(/\//g, '.');
   }
 
+  /** Encode identifier using Base64. */
   private encodeIdToBase64Url(id: string): string {
     if (!id) return id;
-    
-    // Backend expects normal Base64 with padding, not Base64-URL
     return btoa(id);
   }
 }

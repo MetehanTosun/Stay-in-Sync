@@ -26,12 +26,15 @@ describe('AasService', () => {
       const element = { idShort: 'test-element', modelType: 'Property' };
       const parentPath = 'parent/path';
 
-      service.createElement(sourceSystemId, submodelId, element, parentPath).subscribe();
+      // AasService.createElement expects submodelId to already be Base64-encoded
+      const encoded = service.encodeIdToBase64Url(submodelId);
+      service.createElement(sourceSystemId, encoded, element, parentPath).subscribe();
 
-      const req = httpMock.expectOne(`/api/config/source-system/${sourceSystemId}/aas/submodels/${service.encodeIdToBase64Url(submodelId)}/elements`);
+      const req = httpMock.expectOne(r => r.method === 'POST' && r.url === `/api/config/source-system/${sourceSystemId}/aas/submodels/${encoded}/elements`);
       expect(req.request.method).toBe('POST');
       expect(req.request.body).toEqual(element);
       expect(req.request.params.get('parentPath')).toBe('parent.path');
+      req.flush({});
     });
 
     it('should create element without parentPath', () => {
@@ -39,12 +42,14 @@ describe('AasService', () => {
       const submodelId = 'test-submodel-id';
       const element = { idShort: 'test-element', modelType: 'Property' };
 
-      service.createElement(sourceSystemId, submodelId, element).subscribe();
+      const encoded = service.encodeIdToBase64Url(submodelId);
+      service.createElement(sourceSystemId, encoded, element).subscribe();
 
-      const req = httpMock.expectOne(`/api/config/source-system/${sourceSystemId}/aas/submodels/${service.encodeIdToBase64Url(submodelId)}/elements`);
+      const req = httpMock.expectOne(r => r.method === 'POST' && r.url === `/api/config/source-system/${sourceSystemId}/aas/submodels/${encoded}/elements`);
       expect(req.request.method).toBe('POST');
       expect(req.request.body).toEqual(element);
       expect(req.request.params.get('parentPath')).toBeNull();
+      req.flush({});
     });
   });
 
@@ -81,9 +86,10 @@ describe('AasService', () => {
 
       service.getElement(sourceSystemId, submodelId, idShortPath, source).subscribe();
 
-      const req = httpMock.expectOne(`/api/config/source-system/${sourceSystemId}/aas/submodels/${service.encodeIdToBase64Url(submodelId)}/elements/test.element.path`);
+      const req = httpMock.expectOne(r => r.method === 'GET' && r.url === `/api/config/source-system/${sourceSystemId}/aas/submodels/${service.encodeIdToBase64Url(submodelId)}/elements/test.element.path`);
       expect(req.request.method).toBe('GET');
       expect(req.request.params.get('source')).toBe(source);
+      req.flush({});
     });
   });
 
@@ -95,11 +101,12 @@ describe('AasService', () => {
 
       service.listElements(sourceSystemId, submodelId, options).subscribe();
 
-      const req = httpMock.expectOne(`/api/config/source-system/${sourceSystemId}/aas/submodels/${service.encodeIdToBase64Url(submodelId)}/elements`);
+      const req = httpMock.expectOne(r => r.method === 'GET' && r.url === `/api/config/source-system/${sourceSystemId}/aas/submodels/${service.encodeIdToBase64Url(submodelId)}/elements`);
       expect(req.request.method).toBe('GET');
       expect(req.request.params.get('depth')).toBe('shallow');
       expect(req.request.params.get('parentPath')).toBe('parent');
       expect(req.request.params.get('source')).toBe('LIVE');
+      req.flush([]);
     });
   });
 

@@ -32,9 +32,7 @@ interface ElementLivePanel {
   annotations?: AnnotationView[];
 }
 
-@Injectable({
-  providedIn: 'root'
-})
+@Injectable({ providedIn: 'root' })
 export class CreateSourceSystemAasService {
 
   private typeCache: Record<string, Record<string, string>> = {};
@@ -45,9 +43,7 @@ export class CreateSourceSystemAasService {
     private errorService: HttpErrorService
   ) {}
 
-  /**
-   * Test AAS connection
-   */
+  /** Test the AAS connection for a source system and toast the outcome. */
   async testConnection(sourceSystemId: number): Promise<any> {
     try {
       const result = await this.aasService.aasTest(sourceSystemId).toPromise();
@@ -59,9 +55,7 @@ export class CreateSourceSystemAasService {
     }
   }
 
-  /**
-   * Discover submodels and return tree nodes
-   */
+  /** Discover submodels and return TreeNode structures. */
   async discoverSubmodels(sourceSystemId: number): Promise<TreeNode[]> {
     try {
       const resp = await this.aasService.listSubmodels(sourceSystemId, 'SNAPSHOT').toPromise();
@@ -73,9 +67,7 @@ export class CreateSourceSystemAasService {
     }
   }
 
-  /**
-   * Handle discovery process (called from discover button)
-   */
+  /** Perform discovery and return tree nodes, raw submodels and elements map. */
   async onDiscover(sourceSystemId: number): Promise<{ 
     treeNodes: TreeNode[], 
     submodels: any[], 
@@ -86,7 +78,6 @@ export class CreateSourceSystemAasService {
       const submodels = await this.aasService.listSubmodels(sourceSystemId, 'SNAPSHOT').toPromise();
       const elementsBySubmodel: Record<string, any[]> = {};
 
-      // Load root elements for each submodel
       for (const node of treeNodes) {
         if (node.data?.type === 'submodel') {
           try {
@@ -94,7 +85,7 @@ export class CreateSourceSystemAasService {
             elementsBySubmodel[node.data.id] = elements;
             node.children = elements.map(el => this.mapElementToNode(el, node.data.id));
           } catch (err) {
-            console.error(`Failed to load elements for submodel ${node.data.id}:`, err);
+            
           }
         }
       }
@@ -106,23 +97,18 @@ export class CreateSourceSystemAasService {
     }
   }
 
-  /**
-   * Load root elements for a submodel
-   */
+  /** Load root elements for a submodel. */
   async loadRootElements(sourceSystemId: number, submodelId: string): Promise<any[]> {
     try {
       const smIdB64 = this.encodeIdToBase64Url(submodelId);
       const resp = await this.aasService.listElements(sourceSystemId, smIdB64, { source: 'SNAPSHOT' }).toPromise();
       return Array.isArray(resp) ? resp : (resp?.result ?? []);
     } catch (error) {
-      console.error('Failed to load root elements:', error);
       return [];
     }
   }
 
-  /**
-   * Load children elements for expansion
-   */
+  /** Load children elements for expansion and attach to the given node. */
   async loadChildren(
     sourceSystemId: number, 
     submodelId: string, 
@@ -137,14 +123,11 @@ export class CreateSourceSystemAasService {
       attach.children = elements.map((el: any) => this.mapElementToNode(el, submodelId, parentPath));
       attach.loading = false;
     } catch (error) {
-      console.error('Failed to load children:', error);
       attach.loading = false;
     }
   }
 
-  /**
-   * Load element details for live panel
-   */
+  /** Load element details for the live panel. */
   async loadLiveElementDetails(
     sourceSystemId: number, 
     smId: string, 
@@ -157,14 +140,11 @@ export class CreateSourceSystemAasService {
       
       return this.mapElementToLivePanel(resp, node);
     } catch (error) {
-      console.error('Failed to load live element details:', error);
       throw error;
     }
   }
 
-  /**
-   * Map submodel to tree node
-   */
+  /** Map a submodel object to a TreeNode. */
   mapSubmodelToNode(sm: any): TreeNode {
     return {
       label: sm.idShort || sm.id || "Submodel",
@@ -181,9 +161,7 @@ export class CreateSourceSystemAasService {
     };
   }
 
-  /**
-   * Map element to tree node
-   */
+  /** Map a submodel element to a TreeNode. */
   mapElementToNode(el: any, submodelId: string, parentPath?: string): TreeNode {
     const currentPath = parentPath ? `${parentPath}.${el.idShort}` : el.idShort;
     const modelType = this.inferModelType(el);
@@ -204,9 +182,7 @@ export class CreateSourceSystemAasService {
     };
   }
 
-  /**
-   * Infer model type from element
-   */
+  /** Infer a model type string from an element payload. */
   inferModelType(el: any): string {
     if (el.modelType) return el.modelType;
     if (el.valueType) return 'Property';
@@ -218,9 +194,7 @@ export class CreateSourceSystemAasService {
     return 'Unknown';
   }
 
-  /**
-   * Check if element is a leaf (no children)
-   */
+  /** Determine whether a mapped element should be a leaf. */
   isLeafElement(el: any): boolean {
     const modelType = this.inferModelType(el);
     const nonLeafTypes = [
@@ -231,9 +205,7 @@ export class CreateSourceSystemAasService {
     return !nonLeafTypes.includes(modelType);
   }
 
-  /**
-   * Encode ID to Base64 URL
-   */
+  /** Encode an identifier to Base64 URL-safe form. */
   encodeIdToBase64Url(id: string): string {
     if (!id) return id;
     const b64 = typeof window !== 'undefined' && (window as any).btoa
@@ -245,9 +217,7 @@ export class CreateSourceSystemAasService {
       .replace(/=/g, '');
   }
 
-  /**
-   * Find node by key in tree
-   */
+  /** Find a node by its key within a tree. */
   findNodeByKey(key: string, nodes: TreeNode[] | undefined): TreeNode | null {
     if (!nodes) return null;
     for (const n of nodes) {
@@ -258,9 +228,7 @@ export class CreateSourceSystemAasService {
     return null;
   }
 
-  /**
-   * Refresh node live data
-   */
+  /** Refresh a node's live data if it represents an element. */
   async refreshNodeLive(
     sourceSystemId: number, 
     node: TreeNode, 
@@ -278,14 +246,11 @@ export class CreateSourceSystemAasService {
         );
       }
     } catch (error) {
-      console.error('Failed to refresh node live data:', error);
     }
     return null;
   }
 
-  /**
-   * Map element to live panel data
-   */
+  /** Map an element API response to a live panel view model. */
   private mapElementToLivePanel(resp: any, node?: TreeNode): ElementLivePanel {
     const modelType = resp.modelType || this.inferModelType(resp);
     
@@ -294,17 +259,14 @@ export class CreateSourceSystemAasService {
       type: modelType
     };
 
-    // Add value for properties
     if (resp.value !== undefined) {
       panel.value = resp.value;
       panel.valueType = resp.valueType;
     }
 
-    // Add range values
     if (resp.min !== undefined) panel.min = resp.min;
     if (resp.max !== undefined) panel.max = resp.max;
 
-    // Add operation variables
     if (resp.inputVariables) {
       panel.inputVariables = resp.inputVariables.map((v: any) => ({
         idShort: v.idShort || 'Input',
@@ -329,11 +291,9 @@ export class CreateSourceSystemAasService {
       }));
     }
 
-    // Add relationship references
     if (resp.first) panel.firstRef = resp.first;
     if (resp.second) panel.secondRef = resp.second;
 
-    // Add annotations
     if (resp.annotations) {
       panel.annotations = resp.annotations.map((ann: any) => ({
         idShort: ann.idShort || 'Annotation',

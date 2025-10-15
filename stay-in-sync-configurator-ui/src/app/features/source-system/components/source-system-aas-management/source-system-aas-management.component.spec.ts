@@ -1,12 +1,18 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { HttpClientTestingModule } from '@angular/common/http/testing';
+import { provideNoopAnimations } from '@angular/platform-browser/animations';
 import { SourceSystemAasManagementComponent } from './source-system-aas-management.component';
 import { SourceSystemAasManagementService } from '../../services/source-system-aas-management.service';
 import { of } from 'rxjs';
+import { AasService } from '../../services/aas.service';
+import { AasUtilityService } from '../../../target-system/services/aas-utility.service';
 
 describe('SourceSystemAasManagementComponent', () => {
   let component: SourceSystemAasManagementComponent;
   let fixture: ComponentFixture<SourceSystemAasManagementComponent>;
   let mockAasManagementService: jasmine.SpyObj<SourceSystemAasManagementService>;
+  let mockAasService: jasmine.SpyObj<AasService>;
+  let mockAasUtility: jasmine.SpyObj<AasUtilityService>;
 
   beforeEach(async () => {
     const spy = jasmine.createSpyObj('SourceSystemAasManagementService', [
@@ -22,11 +28,22 @@ describe('SourceSystemAasManagementComponent', () => {
       'parseValueForType',
       'findNodeByKey'
     ]);
+    mockAasService = jasmine.createSpyObj('AasService', [
+      'encodeIdToBase64Url', 'createElement', 'listElements', 'previewAasx', 'attachSelectedAasx', 'uploadAasx'
+    ]);
+    mockAasService.encodeIdToBase64Url.and.callFake((id: string) => btoa(id).replace(/=+$/,'').replace(/\+/g,'-').replace(/\//g,'_'));
+    mockAasService.createElement.and.returnValue(of({}) as any);
+    mockAasService.listElements.and.returnValue(of([]) as any);
+    mockAasUtility = jasmine.createSpyObj('AasUtilityService', ['getAasId']);
+    mockAasUtility.getAasId.and.callFake((sys: any) => sys?.aasId || (sys?.apiUrl ? String(sys.apiUrl).split('/').pop() : ''));
 
     await TestBed.configureTestingModule({
-      imports: [SourceSystemAasManagementComponent],
+      imports: [HttpClientTestingModule, SourceSystemAasManagementComponent],
       providers: [
-        { provide: SourceSystemAasManagementService, useValue: spy }
+        { provide: SourceSystemAasManagementService, useValue: spy },
+        { provide: AasService, useValue: mockAasService },
+        { provide: AasUtilityService, useValue: mockAasUtility },
+        provideNoopAnimations()
       ]
     }).compileComponents();
 
@@ -130,35 +147,15 @@ describe('SourceSystemAasManagementComponent', () => {
   });
 
   it('should open AAS create element dialog', () => {
-    component.openAasCreateElement('sm1', 'parent/path');
-    expect(component.aasTargetSubmodelId).toBe('sm1');
-    expect(component.aasParentPath).toBe('parent/path');
-    expect(component.showAasElementDialog).toBe(true);
-  });
-
-  it('should set AAS element template', () => {
-    component.setAasElementTemplate('property');
-    expect(component.aasNewElementJson).toBe(component.aasElementTemplateProperty);
-
-    component.setAasElementTemplate('range');
-    expect(component.aasNewElementJson).toBe(component.aasElementTemplateRange);
-
-    component.setAasElementTemplate('unknown');
-    expect(component.aasNewElementJson).toBe('{}');
-  });
-
-  it('should create AAS element', () => {
     component.system = { id: 1 } as any;
-    component.aasTargetSubmodelId = 'sm1';
-    component.aasParentPath = 'parent';
-    component.aasNewElementJson = '{"modelType": "Property", "idShort": "Test"}';
-    mockAasManagementService.createElement.and.returnValue(of({}));
-    mockAasManagementService.loadChildren.and.returnValue(of(undefined));
-
-    component.aasCreateElement();
-
-    expect(mockAasManagementService.createElement).toHaveBeenCalledWith(1, 'sm1', { modelType: 'Property', idShort: 'Test' }, 'parent');
-    expect(component.showAasElementDialog).toBe(false);
+    component.openAasCreateElement('sm1', 'parent/path');
+    expect(component.elementDialogData).toEqual(jasmine.objectContaining({
+      submodelId: 'sm1',
+      parentPath: 'parent/path',
+      systemId: 1,
+      systemType: 'source'
+    }));
+    expect(component.showElementDialog).toBe(true);
   });
 
   it('should open AAS set value dialog', () => {

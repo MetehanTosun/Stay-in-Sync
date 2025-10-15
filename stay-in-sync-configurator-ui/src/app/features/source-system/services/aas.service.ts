@@ -8,16 +8,25 @@ import { AasTargetArcConfiguration, CreateAasTargetArcDTO } from '../../script-e
 export class AasService {
   constructor(private http: HttpClient) {}
 
+  /**
+   * Test connection to an AAS backend for a given source system.
+   */
   aasTest(sourceSystemId: number): Observable<any> {
     const url = `/api/config/source-system/${sourceSystemId}/aas/test`;
     return this.http.post(url, {});
   }
 
+  /**
+   * Request a snapshot refresh for the given source system.
+   */
   refreshSnapshot(sourceSystemId: number): Observable<any> {
     const url = `/api/config/source-system/${sourceSystemId}/aas/snapshot/refresh`;
     return this.http.post(url, {});
   }
 
+  /**
+   * Upload an AASX file for the given source system.
+   */
   uploadAasx(sourceSystemId: number, file: File): Observable<any> {
     const url = `/api/config/source-system/${sourceSystemId}/aas/upload`;
     const form = new FormData();
@@ -26,6 +35,9 @@ export class AasService {
     return this.http.post(url, form);
   }
 
+  /**
+   * Preview contents of an AASX file without attaching it.
+   */
   previewAasx(sourceSystemId: number, file: File): Observable<any> {
     const url = `/api/config/source-system/${sourceSystemId}/aas/upload/preview`;
     const form = new FormData();
@@ -33,6 +45,9 @@ export class AasService {
     return this.http.post(url, form);
   }
 
+  /**
+   * Attach selected submodels/elements from an uploaded AASX file.
+   */
   attachSelectedAasx(sourceSystemId: number, file: File, selection: any): Observable<any> {
     const url = `/api/config/source-system/${sourceSystemId}/aas/upload/attach-selected`;
     const form = new FormData();
@@ -41,12 +56,18 @@ export class AasService {
     return this.http.post(url, form);
   }
 
+  /**
+   * List submodels for a given source system from the specified source (SNAPSHOT or LIVE).
+   */
   listSubmodels(sourceSystemId: number, source: 'SNAPSHOT' | 'LIVE' = 'SNAPSHOT'): Observable<any> {
     const url = `/api/config/source-system/${sourceSystemId}/aas/submodels`;
     const params = new HttpParams().set('source', source);
     return this.http.get(url, { params });
   }
 
+  /**
+   * List elements for a submodel with optional depth/parentPath/source options.
+   */
   listElements(
     sourceSystemId: number,
     submodelId: string,
@@ -61,22 +82,12 @@ export class AasService {
     const submodelIdEnc = this.encodeIdToBase64Url(submodelId);
     const url = `/api/config/source-system/${sourceSystemId}/aas/submodels/${submodelIdEnc}/elements`;
     
-    console.log('[AasService] listElements: FRONTEND REQUEST', {
-      sourceSystemId,
-      submodelId,
-      submodelIdEnc,
-      options,
-      url,
-      params: {
-        depth: params.get('depth'),
-        parentPath: params.get('parentPath'),
-        source: params.get('source')
-      }
-    });
-    
     return this.http.get(url, { params });
   }
 
+  /**
+   * Get a single element details from the specified source (default LIVE).
+   */
   getElement(
     sourceSystemId: number,
     submodelId: string,
@@ -90,37 +101,34 @@ export class AasService {
     return this.http.get(url, { params });
   }
 
+  /**
+   * Create a submodel for the given source system.
+   */
   createSubmodel(sourceSystemId: number, submodel: any): Observable<any> {
     const url = `/api/config/source-system/${sourceSystemId}/aas/submodels`;
     return this.http.post(url, submodel);
   }
 
+  /**
+   * Create an element under a submodel. submodelId must be Base64-encoded.
+   */
   createElement(
     sourceSystemId: number,
     submodelId: string,
     element: any,
     parentPath?: string
   ): Observable<any> {
-    // submodelId is already Base64-encoded, use it directly
     const url = `/api/config/source-system/${sourceSystemId}/aas/submodels/${submodelId}/elements`;
     
-    // Encode parentPath to dot-separated format for BaSyx compatibility
     const encodedParentPath = parentPath && parentPath.trim() ? this.encodePathSegments(parentPath) : undefined;
     const params = encodedParentPath ? new HttpParams().set('parentPath', encodedParentPath) : undefined;
-    
-    console.log('[AasService] createElement: API call', {
-      url,
-      urlLength: url.length,
-      sourceSystemId,
-      submodelId,
-      parentPath,
-      encodedParentPath,
-      element
-    });
     
     return this.http.post(url, element, { params });
   }
 
+  /**
+   * Set a property value for an element.
+   */
   setPropertyValue(
     sourceSystemId: number,
     submodelId: string,
@@ -133,43 +141,34 @@ export class AasService {
     return this.http.patch(url, body, { headers });
   }
 
+  /**
+   * Delete a submodel by Base64-encoded identifier.
+   */
   deleteSubmodel(sourceSystemId: number, submodelId: string): Observable<any> {
     const url = `/api/config/source-system/${sourceSystemId}/aas/submodels/${submodelId}`;
     return this.http.delete(url);
   }
 
+  /**
+   * Delete an element under a submodel by raw IDs (submodelId will be encoded internally).
+   */
   deleteElement(
     sourceSystemId: number,
     submodelId: string,
     elementPath: string
   ): Observable<any> {
-    // BaSyx API expects UTF8-BASE64-URL-encoded submodelIdentifier
     const encodedSubmodelId = this.encodeIdToBase64Url(submodelId);
     const encodedPath = this.encodePathSegments(elementPath);
     const url = `/api/config/source-system/${sourceSystemId}/aas/submodels/${encodedSubmodelId}/elements/${encodedPath}`;
     
-    console.log('[AasService] deleteElement: API call', {
-      url,
-      urlLength: url.length,
-      sourceSystemId,
-      submodelId,
-      encodedSubmodelId,
-      elementPath,
-      encodedPath,
-      pathLength: elementPath.length,
-      encodedPathLength: encodedPath.length
-    });
-    
-    // Log the full URL for debugging
-    console.log('[AasService] deleteElement: Full URL', url);
-    
     return this.http.delete(url);
   }
 
+  /**
+   * Encode an identifier to Base64 for backend compatibility.
+   */
   encodeIdToBase64Url(id: string): string {
     if (!id) return id;
-    
-    // Backend expects normal Base64 with padding, not Base64-URL
     return btoa(id);
   }
 
@@ -196,18 +195,11 @@ export class AasService {
     return this.http.delete<void>(`/api/config/aas-target-request-configuration/${arcId}`);
   }
 
+  /**
+   * Convert slash-separated element paths to dot-separated notation.
+   */
   private encodePathSegments(path: string): string {
-    // BaSyx expects dot-separated paths, not slash-separated
-    const result = path.replace(/\//g, '.');
-    
-    console.log('[AasService] encodePathSegments: Converting slash to dot', {
-      original: path,
-      result: result,
-      originalLength: path.length,
-      resultLength: result.length
-    });
-    
-    return result;
+    return path.replace(/\//g, '.');
   }
 }
 

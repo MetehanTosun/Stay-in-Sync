@@ -51,8 +51,6 @@ export class ManageEndpointsFormService {
       requestBodySchema: endpoint.requestBodySchema,
       responseBodySchema: endpoint.responseBodySchema
     });
-
-    // TODO: Handle query params and path params arrays
   }
 
   /**
@@ -145,12 +143,10 @@ export class ManageEndpointsFormService {
       const value = control.value;
       if (!value) return null;
 
-      // Path should start with /
       if (!value.startsWith('/')) {
         return { pathFormat: { message: 'Path must start with /' } };
       }
 
-      // Check for valid path parameter format {param}
       const pathParamRegex = /\{[a-zA-Z_][a-zA-Z0-9_]*\}/g;
       const invalidParams = value.match(/\{[^}]*\}/g)?.filter((param: string) => 
         !pathParamRegex.test(param)
@@ -242,13 +238,9 @@ export class ManageEndpointsFormService {
     const requestBodyRequired = form.get('requestBodyRequired')?.value;
     const requestBodySchema = form.get('requestBodySchema')?.value;
     const responseSchema = form.get('responseSchema')?.value;
-
-    // If request body is required, schema must be valid
     if (requestBodyRequired && !this.validateJsonSchema(requestBodySchema)) {
       return false;
     }
-
-    // Response schema should be valid if provided
     if (responseSchema && !this.validateJsonSchema(responseSchema)) {
       return false;
     }
@@ -300,8 +292,6 @@ export class ManageEndpointsFormService {
     if (schema.type === 'array' && schema.items) {
       return [this.generateExampleFromParsedSchema(schema.items)];
     }
-
-    // Generate example values based on type
     switch (schema.type) {
       case 'string':
         return schema.example || 'string';

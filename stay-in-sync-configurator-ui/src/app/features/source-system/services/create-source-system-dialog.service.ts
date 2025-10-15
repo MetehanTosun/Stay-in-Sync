@@ -17,18 +17,14 @@ export class CreateSourceSystemDialogService {
     private aasManagementService: CreateSourceSystemAasService
   ) {}
 
-  /**
-   * AASX Upload Management
-   */
+  /** AASX upload dialog management. */
   openAasxUpload(): void {
-    // Implementation for opening AASX upload dialog
   }
 
   onAasxFileSelected(event: any, aasxPreview: any, aasxSelection: any): void {
     const file = event.files[0];
     if (file) {
-      // Preview AASX file logic would go here
-      console.log('AASX file selected:', file.name);
+      
     }
   }
 
@@ -80,9 +76,7 @@ export class CreateSourceSystemDialogService {
     }
   }
 
-  /**
-   * Submodel Creation
-   */
+  /** Submodel creation helpers. */
   openCreateSubmodel(): { 
     showDialog: boolean, 
     template: string 
@@ -109,9 +103,7 @@ export class CreateSourceSystemDialogService {
     }
   }
 
-  /**
-   * Element Creation
-   */
+  /** Element creation helpers. */
   openCreateElement(smId: string, parent?: string): {
     showDialog: boolean,
     targetSubmodelId: string,
@@ -163,9 +155,7 @@ export class CreateSourceSystemDialogService {
     }
   }
 
-  /**
-   * Delete Operations
-   */
+  /** Delete operations. */
   async deleteSubmodel(sourceSystemId: number, submodelId: string): Promise<any> {
     try {
       const smIdB64 = this.aasManagementService.encodeIdToBase64Url(submodelId);
@@ -194,9 +184,7 @@ export class CreateSourceSystemDialogService {
     }
   }
 
-  /**
-   * Value Setting
-   */
+  /** Value-setting helpers for elements. */
   openSetValue(smId: string, element: any): {
     showDialog: boolean,
     submodelId: string,

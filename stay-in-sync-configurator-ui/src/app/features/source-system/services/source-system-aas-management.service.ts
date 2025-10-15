@@ -45,23 +45,21 @@ export class SourceSystemAasManagementService {
   ) {}
 
   /**
-   * Test AAS connection
+   * Test the AAS connection for a given source system.
    */
   testConnection(systemId: number): Observable<any> {
     return this.aasService.aasTest(systemId);
   }
 
   /**
-   * Discover AAS snapshot and return tree nodes
+   * Discover the AAS snapshot and return tree nodes.
    */
   discoverSnapshot(systemId: number): Observable<TreeNode[]> {
     return new Observable(observer => {
       this.aasService.listSubmodels(systemId, 'SNAPSHOT').subscribe({
         next: (resp) => {
-          // Check if response is an error object
           if (resp && resp.errorTitle && resp.errorMessage) {
-            console.error('[SourceAasManage] discoverSnapshot: Backend error', { error: resp });
-            observer.next([]); // Return empty array on error
+            observer.next([]);
             observer.complete();
             return;
           }
@@ -72,8 +70,7 @@ export class SourceSystemAasManagementService {
           observer.complete();
         },
         error: (err) => {
-          console.error('[SourceAasManage] discoverSnapshot: Error', err);
-          observer.next([]); // Return empty array on error
+          observer.next([]);
           observer.complete();
         }
       });
@@ -81,16 +78,14 @@ export class SourceSystemAasManagementService {
   }
 
   /**
-   * Load AAS children for a node
+   * Load AAS children for a node and attach them to the given TreeNode.
    */
   loadChildren(systemId: number, submodelId: string, parentPath: string | undefined, attach: TreeNode): Observable<void> {
     return new Observable(observer => {
       this.aasService.listElements(systemId, submodelId, { depth: 'shallow', parentPath, source: 'SNAPSHOT' }).subscribe({
         next: (resp) => {
-          // Check if response is an error object
           if (resp && resp.errorTitle && resp.errorMessage) {
-            console.error('[SourceAasManage] loadChildren: Backend error', { error: resp });
-            attach.children = []; // Set empty children on error
+            attach.children = [];
             observer.next();
             observer.complete();
             return;
@@ -102,8 +97,7 @@ export class SourceSystemAasManagementService {
           observer.complete();
         },
         error: (err) => {
-          console.error('[SourceAasManage] loadChildren: Error', err);
-          attach.children = []; // Set empty children on error
+          attach.children = [];
           observer.next();
           observer.complete();
         }
@@ -112,7 +106,7 @@ export class SourceSystemAasManagementService {
   }
 
   /**
-   * Load live element details
+   * Load live element details for a given element path.
    */
   loadElementDetails(systemId: number, smId: string, idShortPath: string | undefined, node?: TreeNode): Observable<AasElementLivePanel> {
     return new Observable(observer => {
@@ -122,18 +116,12 @@ export class SourceSystemAasManagementService {
       const last = safePath.split('/').pop() as string;
       const parent = safePath.includes('/') ? safePath.substring(0, safePath.lastIndexOf('/')) : '';
 
-
-      // Use getElement API for direct element loading with values
-      // Try SNAPSHOT first, then LIVE as fallback for manually created elements
+      // Try SNAPSHOT first, then LIVE as fallback for manually created elements.
       const tryLoadElementDetails = (source: 'SNAPSHOT' | 'LIVE') => {
-        
         this.aasService.getElement(systemId, smId, safePath, source)
           .subscribe({
             next: (found: any) => {
-              // Check if response is an error object
               if (found && found.errorTitle && found.errorMessage) {
-                console.error('[SourceAasManage] loadElementDetails: Backend error', { source, error: found });
-                // If SNAPSHOT failed and we haven't tried LIVE yet, try LIVE
                 if (source === 'SNAPSHOT') {
                   tryLoadElementDetails('LIVE');
                 } else {
@@ -144,8 +132,6 @@ export class SourceSystemAasManagementService {
               }
               
               if (found) {
-                
-                // Check if SNAPSHOT has no meaningful value and we should try LIVE
                 const hasValue = found.value !== undefined && found.value !== null && found.value !== '';
                 const isSnapshotWithoutValue = source === 'SNAPSHOT' && !hasValue;
                 
@@ -158,7 +144,6 @@ export class SourceSystemAasManagementService {
                 observer.next(livePanel);
                 observer.complete();
               } else {
-                // If SNAPSHOT failed and we haven't tried LIVE yet, try LIVE
                 if (source === 'SNAPSHOT') {
                   tryLoadElementDetails('LIVE');
                 } else {
@@ -168,8 +153,6 @@ export class SourceSystemAasManagementService {
               }
             },
             error: (err: any) => {
-              console.error('[SourceAasManage] loadElementDetails: Error with source', { source, err });
-              // If SNAPSHOT failed and we haven't tried LIVE yet, try LIVE
               if (source === 'SNAPSHOT') {
                 tryLoadElementDetails('LIVE');
               } else {
@@ -180,28 +163,27 @@ export class SourceSystemAasManagementService {
           });
       };
       
-      // Start with SNAPSHOT, fallback to LIVE
+      // Start with SNAPSHOT, fallback to LIVE.
       tryLoadElementDetails('SNAPSHOT');
     });
   }
 
   /**
-   * Create submodel
+   * Create a submodel for a source system.
    */
   createSubmodel(systemId: number, submodelData: any): Observable<any> {
     return this.aasService.createSubmodel(systemId, submodelData);
   }
 
   /**
-   * Create element
+   * Create an element under the given submodel.
    */
   createElement(systemId: number, submodelId: string, elementData: any, parentPath?: string): Observable<any> {
-    // Use aasClientService like target system does
     return this.aasClient.createElement('source', systemId, submodelId, elementData, parentPath);
   }
 
   /**
-   * Delete submodel
+   * Delete a submodel by raw identifier (will be encoded internally).
    */
   deleteSubmodel(systemId: number, submodelId: string): Observable<any> {
     const smIdB64 = this.aasService.encodeIdToBase64Url(submodelId);
@@ -209,15 +191,14 @@ export class SourceSystemAasManagementService {
   }
 
   /**
-   * Delete element
+   * Delete an element by raw submodel ID and element path.
    */
   deleteElement(systemId: number, submodelId: string, idShortPath: string): Observable<any> {
-    // Pass raw submodelId; AasService handles Base64 encoding internally for deleteElement
     return this.aasService.deleteElement(systemId, submodelId, idShortPath);
   }
 
   /**
-   * Set property value
+   * Set a property value on an element.
    */
   setPropertyValue(systemId: number, submodelId: string, elementPath: string, value: any): Observable<any> {
     const smIdB64 = this.aasService.encodeIdToBase64Url(submodelId);
@@ -225,7 +206,7 @@ export class SourceSystemAasManagementService {
   }
 
   /**
-   * Map submodel to tree node
+   * Map a Submodel to a TreeNode representation.
    */
   private mapSubmodelToNode(sm: any): TreeNode {
     const id = sm.submodelId || sm.id || (sm.keys && sm.keys[0]?.value);
@@ -243,7 +224,7 @@ export class SourceSystemAasManagementService {
   }
 
   /**
-   * Map element to tree node
+   * Map a SubmodelElement to a TreeNode representation.
    */
   private mapElementToNode(submodelId: string, el: any): TreeNode {
     const computedType = this.inferModelType(el);
@@ -260,13 +241,10 @@ export class SourceSystemAasManagementService {
   }
 
   /**
-   * Map element to live panel
+   * Map an element payload to an AasElementLivePanel view model.
    */
   private mapElementToLivePanel(found: any): AasElementLivePanel {
-    // Use the same logic as inferModelType for consistent type detection
     let liveType = found?.modelType || found?.type || (found?.valueType ? 'Property' : undefined);
-    
-    // Fallback: Use inferModelType method for consistent type detection
     if (!liveType) {
       liveType = this.inferModelType(found);
     }
@@ -311,7 +289,6 @@ export class SourceSystemAasManagementService {
     const firstRef = stringifyRef((found as any).first || (found as any).firstReference);
     const secondRef = stringifyRef((found as any).second || (found as any).secondReference);
 
-    // Handle different value structures for Collections and Lists
     let elementValue = (found as any).value;
     if (liveType === 'SubmodelElementCollection' && !elementValue && (found as any).submodelElements) {
       elementValue = (found as any).submodelElements;
@@ -319,15 +296,8 @@ export class SourceSystemAasManagementService {
     if (liveType === 'SubmodelElementList' && !elementValue && (found as any).valueListElement) {
       elementValue = (found as any).valueListElement;
     }
-
-    // For Collections and Lists, if we don't have the actual elements in the data,
-    // we need to calculate the count differently. The backend only provides hasChildren: true
-    // but doesn't include the actual child elements in the response.
     if ((liveType === 'SubmodelElementCollection' || liveType === 'SubmodelElementList') && !Array.isArray(elementValue)) {
-      // If hasChildren is true but we don't have the actual elements, 
-      // we can't determine the exact count from the data alone.
-      // The count will be shown as "?" or we need to make an additional API call.
-      elementValue = found.hasChildren ? ['...'] : []; // Placeholder to indicate children exist
+      elementValue = found.hasChildren ? ['...'] : [];
     }
 
 
@@ -348,7 +318,7 @@ export class SourceSystemAasManagementService {
   }
 
   /**
-   * Infer model type from element
+   * Infer a model type string from a generic element payload.
    */
   private inferModelType(el: any): string | undefined {
     if (!el) return undefined;
@@ -375,7 +345,7 @@ export class SourceSystemAasManagementService {
   }
 
   /**
-   * Parse value for type
+   * Parse user-entered string value according to a type hint.
    */
   parseValueForType(raw: string, valueType?: string): any {
     if (!valueType) return raw;
@@ -396,7 +366,7 @@ export class SourceSystemAasManagementService {
   }
 
   /**
-   * Find node by key
+   * Find a node by its composite key in a tree.
    */
   findNodeByKey(key: string, nodes: TreeNode[] | undefined): TreeNode | null {
     if (!nodes) return null;
@@ -409,7 +379,7 @@ export class SourceSystemAasManagementService {
   }
 
   /**
-   * Check if element is leaf
+   * Determine whether an element should be treated as a leaf.
    */
   isLeafElement(element: any): boolean {
     const typeHasChildren = element?.modelType === 'SubmodelElementCollection' || 

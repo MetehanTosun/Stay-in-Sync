@@ -104,7 +104,6 @@ export class ResponsePreviewService {
       const schema = JSON.parse(endpoint.requestBodySchema);
       return this.generateExampleFromSchema(schema);
     } catch (error) {
-      console.error('Failed to parse request body schema:', error);
       return {};
     }
   }
@@ -113,8 +112,6 @@ export class ResponsePreviewService {
    * Generate example query parameters
    */
   generateExampleQueryParams(endpoint: SourceSystemEndpointDTO): { [key: string]: any } {
-    // Note: SourceSystemEndpointDTO doesn't have queryParams property
-    // This would need to be loaded separately if needed
     return {};
   }
 
@@ -122,8 +119,6 @@ export class ResponsePreviewService {
    * Generate example path parameters
    */
   generateExamplePathParams(endpoint: SourceSystemEndpointDTO): { [key: string]: any } {
-    // Note: SourceSystemEndpointDTO doesn't have pathParams property
-    // This would need to be loaded separately if needed
     return {};
   }
 
@@ -137,7 +132,6 @@ export class ResponsePreviewService {
     let path = endpoint.endpointPath;
     if (path.startsWith('/')) path = path.substring(1);
 
-    // Replace path parameters
     if (pathParams) {
       Object.entries(pathParams).forEach(([key, value]) => {
         path = path.replace(`{${key}}`, encodeURIComponent(String(value)));
@@ -153,18 +147,13 @@ export class ResponsePreviewService {
   validateRequest(request: ApiTestRequest): { valid: boolean; errors: string[] } {
     const errors: string[] = [];
 
-    // Validate endpoint
     if (!request.endpoint) {
       errors.push('Endpoint is required');
     }
 
-    // Validate source system
     if (!request.sourceSystem) {
       errors.push('Source system is required');
     }
-
-    // Note: SourceSystemEndpointDTO doesn't have pathParams/queryParams/requestBodyRequired properties
-    // These validations would need to be implemented differently if needed
 
     return {
       valid: errors.length === 0,
@@ -182,11 +171,9 @@ export class ResponsePreviewService {
 
     if (typeof response === 'string') {
       try {
-        // Try to parse and re-stringify for formatting
         const parsed = JSON.parse(response);
         return JSON.stringify(parsed, null, 2);
       } catch {
-        // Return as-is if not JSON
         return response;
       }
     }
@@ -203,8 +190,7 @@ export class ResponsePreviewService {
     }
 
     const headers: { [key: string]: string } = {};
-    
-    // Handle different header formats
+
     if (typeof response.headers.keys === 'function') {
       response.headers.keys().forEach((key: string) => {
         headers[key] = response.headers.get(key);
@@ -223,15 +209,10 @@ export class ResponsePreviewService {
     const url = this.buildApiUrl(request.sourceSystem, request.endpoint, request.pathParams);
     const method = request.endpoint.httpRequestType.toUpperCase();
 
-    // Build headers
     let headers = new HttpHeaders({
       'Content-Type': 'application/json'
     });
 
-    // Note: SourceSystemDTO doesn't have basicAuth/apiKeyAuth properties
-    // Authentication would need to be handled differently if needed
-
-    // Build query parameters
     let params = new HttpParams();
     if (request.queryParams) {
       Object.entries(request.queryParams).forEach(([key, value]) => {
@@ -248,7 +229,6 @@ export class ResponsePreviewService {
       responseType: 'text' as const
     };
 
-    // Perform request based on method
     switch (method) {
       case 'GET':
         return this.http.get(url, options);
