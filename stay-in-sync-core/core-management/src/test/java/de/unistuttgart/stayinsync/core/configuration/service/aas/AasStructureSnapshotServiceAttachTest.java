@@ -22,6 +22,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.when;
 
+/**
+ * Integration tests for {@link de.unistuttgart.stayinsync.core.configuration.service.aas.AasStructureSnapshotService}.
+ * Verifies the correct behavior of AASX submodel attachment during live AAS interaction.
+ * Tests include creation, reference addition, and verification of attached submodels.
+ */
 @QuarkusTest
 public class AasStructureSnapshotServiceAttachTest {
 
@@ -34,10 +39,13 @@ public class AasStructureSnapshotServiceAttachTest {
     @InjectMock
     AasTraversalClient traversal;
 
+    /**
+     * Initializes a minimal test {@link SourceSystem} entity before each test.
+     * Ensures that the database contains a valid AAS source configuration for integration tests.
+     */
     @BeforeEach
     @Transactional
     void setupDb() {
-        // minimal SourceSystem
         SourceSystem ss = new SourceSystem();
         ss.name = "TestSys";
         ss.apiUrl = "http://localhost:8081";
@@ -46,30 +54,39 @@ public class AasStructureSnapshotServiceAttachTest {
         ss.persist();
     }
 
+    /**
+     * Tests attaching a minimal AASX package containing an XML-based submodel definition.
+     * Simulates AAS traversal client interactions for submodel creation, reference addition,
+     * and validation of successful attachment.
+     *
+     * @throws Exception if AASX creation or attachment fails.
+     */
     @Test
     void attachesXmlOnlyTemplate() throws Exception {
         byte[] bytes = buildXmlOnlyAasx("https://example.com/sm/minimal", "Minimal");
 
-        // Prepare responses first to avoid nested stubbing
         HttpResponse<Buffer> r404 = buildResp(404, "");
         HttpResponse<Buffer> r201 = buildResp(201, "{\"id\":\"https://example.com/sm/minimal\"}");
         HttpResponse<Buffer> r204 = buildResp(204, "");
         HttpResponse<Buffer> r200Empty = buildResp(200, "[]");
         HttpResponse<Buffer> r200WithRef = buildResp(200, "[{\"type\":\"ModelReference\",\"keys\":[{\"type\":\"Submodel\",\"value\":\"https://example.com/sm/minimal\"}]}]");
 
-        // mock: submodel not found initially
         when(traversal.getSubmodel(anyString(), anyString(), anyMap())).thenReturn(Uni.createFrom().item(r404));
-        // mock create response with id in body
         when(traversal.createSubmodel(anyString(), anyString(), anyMap())).thenReturn(Uni.createFrom().item(r201));
-        // mock add ref
         when(traversal.addSubmodelReferenceToShell(anyString(), anyString(), anyString(), anyMap())).thenReturn(Uni.createFrom().item(r204));
-        // mock list refs after add
         when(traversal.listSubmodelReferences(anyString(), anyString(), anyMap())).thenReturn(Uni.createFrom().item(r200Empty), Uni.createFrom().item(r200WithRef));
 
         int attached = service.attachSubmodelsLive(SourceSystem.<SourceSystem>findAll().firstResult().id, bytes);
         assertThat(attached).isGreaterThanOrEqualTo(1);
     }
 
+    /**
+     * Utility method for building mocked {@link HttpResponse} instances with a given status code and body.
+     *
+     * @param code The HTTP status code to simulate.
+     * @param body The response body content.
+     * @return A mocked {@link HttpResponse} containing the provided data.
+     */
     @SuppressWarnings("unchecked")
     private HttpResponse<Buffer> buildResp(int code, String body) {
         HttpResponse<?> raw = Mockito.mock(HttpResponse.class);
@@ -80,6 +97,14 @@ public class AasStructureSnapshotServiceAttachTest {
         return resp;
     }
 
+    /**
+     * Creates a minimal in-memory AASX (ZIP) file containing a simple XML submodel.
+     *
+     * @param id The full identifier (URI) of the submodel.
+     * @param idShort The short name (idShort) of the submodel.
+     * @return A byte array representing the generated AASX archive.
+     * @throws Exception if ZIP creation fails.
+     */
     private byte[] buildXmlOnlyAasx(String id, String idShort) throws Exception {
         String xml = """
                 <?xml version=\"1.0\" encoding=\"UTF-8\"?>

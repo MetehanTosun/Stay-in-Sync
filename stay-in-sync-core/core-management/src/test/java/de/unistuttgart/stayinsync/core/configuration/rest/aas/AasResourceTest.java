@@ -18,16 +18,23 @@ import static org.hamcrest.Matchers.equalTo;
 import static org.mockito.ArgumentMatchers.anyMap;
 import static org.mockito.ArgumentMatchers.anyString;
 
+/**
+ * Integration tests for AAS resource endpoints related to Source Systems.
+ * Verifies AAS connection tests and submodel listing using mocked AAS traversal client responses.
+ */
 @QuarkusTest
 public class AasResourceTest {
 
     @InjectMock
     AasTraversalClient traversal;
 
+    /**
+     * Prepares test data before each test case by creating and persisting a SourceSystem entity.
+     * Enables RestAssured logging to assist in debugging failed validations.
+     */
     @BeforeEach
     @Transactional
     void seed() {
-        // Clean up in correct order to avoid foreign key constraints
         SourceSystem ss = new SourceSystem();
         ss.apiType = "AAS";
         ss.apiUrl = "http://aas.example";
@@ -37,6 +44,10 @@ public class AasResourceTest {
         RestAssured.enableLoggingOfRequestAndResponseIfValidationFails();
     }
 
+    /**
+     * Tests successful AAS shell retrieval through the /aas/test endpoint.
+     * Mocks a valid AAS response and verifies that the API returns HTTP 200 with the expected JSON structure.
+     */
     @Test
     void testEndpoint_ok() {
         HttpResponse<Buffer> httpResp = mockResp(200, "{\"idShort\":\"shell\"}");
@@ -51,13 +62,16 @@ public class AasResourceTest {
             .body("idShort", equalTo("shell"));
     }
 
+    /**
+     * Tests successful retrieval of submodels from the AAS using the /aas/submodels endpoint.
+     * Verifies that the API returns a list of submodels and responds with HTTP 200.
+     */
     @Test
     void listSubmodels_live_ok() {
         String payload = "{\"result\":[{\"type\":\"ModelReference\",\"keys\":[{\"type\":\"Submodel\",\"value\":\"id\"}]}]}";
         HttpResponse<Buffer> httpResp = mockResp(200, payload);
         Mockito.when(traversal.listSubmodels(anyString(), anyString(), anyMap())).thenReturn(Uni.createFrom().item(httpResp));
         
-        // Mock getSubmodel to return success for the submodel reference
         HttpResponse<Buffer> getSubmodelResp = mockResp(200, "{\"idShort\":\"test-submodel\"}");
         Mockito.when(traversal.getSubmodel(anyString(), anyString(), anyMap())).thenReturn(Uni.createFrom().item(getSubmodelResp));
 
@@ -69,6 +83,13 @@ public class AasResourceTest {
             .body("size()", equalTo(1));
     }
 
+    /**
+     * Utility method to create a mocked HTTP response for traversal client calls.
+     *
+     * @param code The HTTP status code to simulate.
+     * @param body The response body as a JSON string.
+     * @return A mocked {@link HttpResponse} containing the given code and body.
+     */
     private HttpResponse<Buffer> mockResp(int code, String body) {
         @SuppressWarnings("unchecked")
         HttpResponse<Buffer> resp = (HttpResponse<Buffer>) Mockito.mock(HttpResponse.class);
@@ -78,6 +99,3 @@ public class AasResourceTest {
         return resp;
     }
 }
-
-
-

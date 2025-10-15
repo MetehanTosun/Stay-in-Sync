@@ -15,17 +15,17 @@ describe('CreateTargetSystemDialogService', () => {
 
   it('getSubmodelTemplates should include minimal/property/collection', () => {
     const t = service.getSubmodelTemplates();
-    expect(t.minimal).toContain('NewSubmodel');
-    expect(t.property).toContain('Property');
-    expect(t.collection).toContain('SubmodelElementCollection');
+    expect(t['minimal']).toContain('NewSubmodel');
+    expect(t['property']).toContain('Property');
+    expect(t['collection']).toContain('SubmodelElementCollection');
   });
 
   it('getElementTemplates should include common element types', () => {
     const t = service.getElementTemplates();
-    expect(t.property).toContain('Property');
-    expect(t.range).toContain('Range');
-    expect(t.mlp).toContain('MultiLanguageProperty');
-    expect(t.operation).toContain('Operation');
+    expect(t['property']).toContain('Property');
+    expect(t['range']).toContain('Range');
+    expect(t['mlp']).toContain('MultiLanguageProperty');
+    expect(t['operation']).toContain('Operation');
   });
 
   it('setTemplate should pick by key and fallback', () => {

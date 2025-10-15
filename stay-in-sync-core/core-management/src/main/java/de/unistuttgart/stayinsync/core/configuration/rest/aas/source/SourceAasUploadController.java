@@ -21,6 +21,11 @@ import org.jboss.resteasy.reactive.RestForm;
 
 import java.nio.file.Files;
 
+/**
+ * REST controller handling AASX (Asset Administration Shell package) uploads for Source Systems.
+ * Provides endpoints to upload, preview, and attach AASX content (submodels and elements) to
+ * the local AAS snapshot and backend system.
+ */
 @Path("/api/config/source-system/{sourceSystemId}/aas")
 @RegisterForReflection
 @Blocking
@@ -32,6 +37,13 @@ public class SourceAasUploadController {
     @Context
     HttpServerRequest request;
 
+    /**
+     * Refreshes the AAS snapshot for the specified Source System.
+     * Invokes the AasStructureSnapshotService to rebuild the snapshot based on current AAS data.
+     *
+     * @param sourceSystemId The ID of the Source System.
+     * @return HTTP 202 Accepted response once snapshot refresh is triggered.
+     */
     @POST
     @Path("/snapshot/refresh")
     public Response refreshSnapshot(@PathParam("sourceSystemId") Long sourceSystemId) {
@@ -39,6 +51,14 @@ public class SourceAasUploadController {
         return Response.accepted().build();
     }
 
+    /**
+     * Uploads a complete AASX package for ingestion into the snapshot.
+     * Attaches all submodels from the AASX file to the existing AAS and refreshes the snapshot.
+     *
+     * @param sourceSystemId The ID of the Source System.
+     * @param file The uploaded AASX file.
+     * @return HTTP Response indicating success or failure of the upload.
+     */
     @POST
     @Path("/upload")
     @Consumes(MediaType.MULTIPART_FORM_DATA)
@@ -62,7 +82,6 @@ public class SourceAasUploadController {
             }
             String filename = file.fileName();
             byte[] fileBytes = Files.readAllBytes(file.uploadedFile());
-            // Attach only submodels from AASX to existing AAS upstream, then refresh local snapshot
             Log.infof("AASX upload received: sourceSystemId=%d file=%s size=%d bytes", sourceSystemId, filename, fileBytes.length);
             int attached = snapshotService.attachSubmodelsLive(sourceSystemId, fileBytes);
             Log.infof("AASX live attach done: attached=%d. Refreshing snapshot...", attached);
@@ -80,6 +99,14 @@ public class SourceAasUploadController {
         }
     }
 
+    /**
+     * Previews attachable items (submodels or collections) from an uploaded AASX file.
+     * Does not persist or modify data; only returns a preview structure.
+     *
+     * @param sourceSystemId The ID of the Source System.
+     * @param file The uploaded AASX file for preview.
+     * @return HTTP 200 response containing preview JSON or error message.
+     */
     @POST
     @Path("/upload/preview")
     @Consumes(MediaType.MULTIPART_FORM_DATA)
@@ -106,6 +133,15 @@ public class SourceAasUploadController {
         }
     }
 
+    /**
+     * Attaches only selected submodels or collections from an uploaded AASX file.
+     * Uses the provided JSON selection to determine which parts to attach, then refreshes the snapshot.
+     *
+     * @param sourceSystemId The ID of the Source System.
+     * @param file The uploaded AASX file.
+     * @param selectionJson JSON string specifying which submodels or collections to attach.
+     * @return HTTP Response containing details about the attached content.
+     */
     @POST
     @Path("/upload/attach-selected")
     @Consumes(MediaType.MULTIPART_FORM_DATA)

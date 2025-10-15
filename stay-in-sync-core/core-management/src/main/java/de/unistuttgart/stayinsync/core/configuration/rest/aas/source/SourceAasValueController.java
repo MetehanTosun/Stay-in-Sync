@@ -21,8 +21,8 @@ import org.eclipse.microprofile.openapi.annotations.responses.APIResponse;
 import org.eclipse.microprofile.openapi.annotations.responses.APIResponses;
 
 /**
- * AAS Value Management Controller for Source Systems.
- * Handles value operations for AAS elements within submodels.
+ * REST controller responsible for managing AAS element values within submodels of Source Systems.
+ * Provides endpoints to retrieve and update AAS element values via the AasTraversalClient.
  */
 @Path("/api/config/source-system/{sourceSystemId}/aas")
 @Produces(MediaType.APPLICATION_JSON)
@@ -39,6 +39,15 @@ public class SourceAasValueController {
     @Inject
     HttpHeaderBuilder headerBuilder;
 
+    /**
+     * Retrieves the current value of an AAS element within a specific submodel.
+     * Communicates with the AAS via the traversal client using the provided Source System configuration.
+     *
+     * @param sourceSystemId ID of the Source System.
+     * @param smId ID of the submodel containing the element.
+     * @param path Hierarchical path of the target element.
+     * @return A reactive Uni<Response> containing the element value or an error message.
+     */
     @GET
     @Path("/submodels/{smId}/elements/{path:.+}/value")
     @Operation(summary = "Get element value", description = "Retrieves the value of an element")
@@ -60,10 +69,20 @@ public class SourceAasValueController {
                 return Response.ok(resp.bodyAsString()).build();
             }
             aasService.throwHttpError(sc, resp.statusMessage(), resp.bodyAsString());
-            return null; // This line will never be reached due to exception
+            return null;
         });
     }
 
+    /**
+     * Updates the value of an existing AAS element in a submodel.
+     * Validates the Source System configuration and performs the update through the traversal client.
+     *
+     * @param sourceSystemId ID of the Source System.
+     * @param smId ID of the submodel containing the element.
+     * @param path Hierarchical path of the element.
+     * @param body JSON string containing the new element value.
+     * @return HTTP Response indicating success or error status.
+     */
     @PATCH
     @Path("/submodels/{smId}/elements/{path:.+}/value")
     @Operation(summary = "Update element value", description = "Updates the value of an element")
@@ -89,9 +108,16 @@ public class SourceAasValueController {
             return Response.noContent().build();
         }
         aasService.throwHttpError(sc, resp.statusMessage(), resp.bodyAsString());
-        return null; // This line will never be reached due to exception
+        return null;
     }
 
+    /**
+     * Safely extracts and truncates the body from an HTTP response for logging.
+     * Prevents excessive log size by limiting the response body length to 500 characters.
+     *
+     * @param resp HTTP response object to extract the body from.
+     * @return Truncated response body string or null if unavailable.
+     */
     private String safeBody(HttpResponse<Buffer> resp) {
         try {
             String b = resp.bodyAsString();

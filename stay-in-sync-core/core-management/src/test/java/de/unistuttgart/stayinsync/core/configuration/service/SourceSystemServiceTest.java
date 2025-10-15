@@ -14,6 +14,11 @@ import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+/**
+ * Integration tests for {@link de.unistuttgart.stayinsync.core.configuration.service.SourceSystemService}.
+ * Verifies CRUD operations for Source Systems, including creation, update, retrieval, and deletion.
+ * Tests cover both success cases and expected failure scenarios for invalid entities.
+ */
 @QuarkusTest
 class SourceSystemServiceTest {
 
@@ -22,10 +27,13 @@ class SourceSystemServiceTest {
 
     private SourceSystem testSourceSystem;
 
+    /**
+     * Initializes a test {@link SourceSystem} entity before each test.
+     * Persists it to the database to ensure consistent state for all CRUD operation tests.
+     */
     @BeforeEach
     @Transactional
     void setUp() {
-        // Create a test source system
         testSourceSystem = new SourceSystem();
         testSourceSystem.name = "Test Source System";
         testSourceSystem.apiUrl = "http://test-source.example.com";
@@ -34,64 +42,71 @@ class SourceSystemServiceTest {
         testSourceSystem.persist();
     }
 
+    /**
+     * Tests retrieval of all existing Source Systems.
+     * Ensures that the persisted test system is included in the result list.
+     */
     @Test
     @DisplayName("Should find all source systems")
     @Transactional
     void testFindAllSourceSystems() {
-        // Act
         List<SourceSystem> result = sourceSystemService.findAllSourceSystems();
 
-        // Assert
         assertNotNull(result);
         assertFalse(result.isEmpty());
         assertTrue(result.stream().anyMatch(ss -> ss.name.equals("Test Source System")));
     }
 
+    /**
+     * Tests successful retrieval of a Source System by its ID.
+     * Verifies that all fields match the persisted entity.
+     */
     @Test
     @DisplayName("Should find source system by ID")
     @Transactional
     void testFindSourceSystemById() {
-        // Act
         Optional<SourceSystem> result = sourceSystemService.findSourceSystemById(testSourceSystem.id);
 
-        // Assert
         assertTrue(result.isPresent());
         assertEquals("Test Source System", result.get().name);
         assertEquals("http://test-source.example.com", result.get().apiUrl);
     }
 
+    /**
+     * Tests retrieval of a non-existent Source System.
+     * Verifies that an empty {@link Optional} is returned.
+     */
     @Test
     @DisplayName("Should return empty optional for non-existent source system")
     @Transactional
     void testFindSourceSystemByIdNotFound() {
-        // Act
         Optional<SourceSystem> result = sourceSystemService.findSourceSystemById(9999L);
 
-        // Assert
         assertFalse(result.isPresent());
     }
 
+    /**
+     * Tests creation of a new Source System from a {@link CreateSourceSystemDTO}.
+     * Verifies correct field persistence and automatic ID generation.
+     */
     @Test
     @DisplayName("Should create source system from DTO")
     @Transactional
     void testCreateSourceSystem() {
-        // Arrange
         CreateSourceSystemDTO createDto = new CreateSourceSystemDTO(
-                null, // id
+                null,
                 "New Source System",
                 "http://new-source.example.com",
                 "New source description",
                 "REST",
-                null, // aasId
-                null, // apiAuthType
-                null, // authConfig
-                null  // openApiSpec
+                null,
+                null,
+                null,
+                null
         );
 
-        // Act
         SourceSystem result = sourceSystemService.createSourceSystem(createDto);
 
-        // Assert
         assertNotNull(result);
         assertNotNull(result.id);
         assertEquals("New Source System", result.name);
@@ -100,55 +115,57 @@ class SourceSystemServiceTest {
         assertEquals("REST", result.apiType);
     }
 
+    /**
+     * Tests creation of a Source System that includes an OpenAPI specification.
+     * Verifies that the specification content is stored correctly.
+     */
     @Test
     @DisplayName("Should create source system with OpenAPI spec")
     @Transactional
     void testCreateSourceSystemWithOpenApiSpec() {
-        // Arrange
         String openApiSpec = "{\"openapi\":\"3.0.0\",\"info\":{\"title\":\"Test API\"}}";
         CreateSourceSystemDTO createDto = new CreateSourceSystemDTO(
-                null, // id
+                null,
                 "Source with OpenAPI",
                 "http://openapi-source.example.com",
                 "Source with OpenAPI spec",
                 "REST",
-                null, // aasId
-                null, // apiAuthType
-                null, // authConfig
+                null,
+                null,
+                null,
                 openApiSpec
         );
 
-        // Act
         SourceSystem result = sourceSystemService.createSourceSystem(createDto);
 
-        // Assert
         assertNotNull(result);
         assertNotNull(result.id);
         assertEquals("Source with OpenAPI", result.name);
         assertEquals(openApiSpec, result.openApiSpec);
     }
 
+    /**
+     * Tests updating an existing Source System using a {@link CreateSourceSystemDTO}.
+     * Ensures all fields are updated and persisted correctly.
+     */
     @Test
     @DisplayName("Should update source system")
     @Transactional
     void testUpdateSourceSystem() {
-        // Arrange
         CreateSourceSystemDTO updateDto = new CreateSourceSystemDTO(
-                testSourceSystem.id, // id
+                testSourceSystem.id,
                 "Updated Source System",
                 "http://updated-source.example.com",
                 "Updated description",
                 "GraphQL",
-                null, // aasId
-                null, // apiAuthType
-                null, // authConfig
-                null  // openApiSpec
+                null,
+                null,
+                null,
+                null
         );
 
-        // Act
         Optional<SourceSystem> result = sourceSystemService.updateSourceSystem(updateDto);
 
-        // Assert
         assertTrue(result.isPresent());
         SourceSystem updated = result.get();
         assertEquals("Updated Source System", updated.name);
@@ -157,53 +174,57 @@ class SourceSystemServiceTest {
         assertEquals("GraphQL", updated.apiType);
     }
 
+    /**
+     * Tests behavior when updating a non-existent Source System.
+     * Verifies that the returned {@link Optional} is empty.
+     */
     @Test
     @DisplayName("Should return empty optional when updating non-existent source system")
     @Transactional
     void testUpdateNonExistentSourceSystem() {
-        // Arrange
         CreateSourceSystemDTO updateDto = new CreateSourceSystemDTO(
-                9999L, // non-existent id
+                9999L,
                 "Updated Source System",
                 "http://updated-source.example.com",
                 "Updated description",
                 "GraphQL",
-                null, // aasId
-                null, // apiAuthType
-                null, // authConfig
-                null  // openApiSpec
+                null,
+                null,
+                null,
+                null
         );
 
-        // Act
         Optional<SourceSystem> result = sourceSystemService.updateSourceSystem(updateDto);
 
-        // Assert
         assertFalse(result.isPresent());
     }
 
+    /**
+     * Tests deletion of an existing Source System by its ID.
+     * Verifies that the system is removed from the database and cannot be retrieved afterward.
+     */
     @Test
     @DisplayName("Should delete source system by ID")
     @Transactional
     void testDeleteSourceSystem() {
-        // Act
         boolean result = sourceSystemService.deleteSourceSystemById(testSourceSystem.id);
 
-        // Assert
         assertTrue(result);
         
-        // Verify the source system is deleted
         Optional<SourceSystem> deleted = sourceSystemService.findSourceSystemById(testSourceSystem.id);
         assertFalse(deleted.isPresent());
     }
 
+    /**
+     * Tests deletion behavior for a non-existent Source System ID.
+     * Verifies that the method returns false without throwing an exception.
+     */
     @Test
     @DisplayName("Should return false when deleting non-existent source system")
     @Transactional
     void testDeleteNonExistentSourceSystem() {
-        // Act
         boolean result = sourceSystemService.deleteSourceSystemById(9999L);
 
-        // Assert
         assertFalse(result);
     }
 }

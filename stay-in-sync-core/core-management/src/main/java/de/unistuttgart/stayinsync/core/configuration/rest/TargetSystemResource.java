@@ -18,6 +18,11 @@ import java.util.List;
 
 import static jakarta.ws.rs.core.MediaType.APPLICATION_JSON;
 
+/**
+ * REST resource for managing Target Systems within the configuration service.
+ * Provides CRUD operations for creating, retrieving, updating, and deleting Target Systems.
+ * Integrates with the TargetSystemService for persistence and the TargetSystemMapper for DTO conversion.
+ */
 @Path("/api/config/target-systems")
 @Produces(APPLICATION_JSON)
 @Consumes(APPLICATION_JSON)
@@ -30,6 +35,13 @@ public class TargetSystemResource {
     @Inject
     TargetSystemMapper mapper;
 
+    /**
+     * Creates a new Target System and returns the created entity with its URI.
+     *
+     * @param dto DTO containing Target System configuration details.
+     * @param uriInfo URI context used to build the location header for the created resource.
+     * @return HTTP 201 response with the created Target System entity.
+     */
     @POST
     @Operation(summary = "Creates a new TargetSystem")
     public Response createTargetSystem(TargetSystemDTO dto, @Context UriInfo uriInfo) {
@@ -40,6 +52,15 @@ public class TargetSystemResource {
         return Response.created(builder.build()).entity(created).build();
     }
 
+    /**
+     * Updates an existing Target System by its ID.
+     * Validates that the ID in the path matches the ID in the provided DTO.
+     *
+     * @param id ID of the Target System to update.
+     * @param dto Updated Target System DTO.
+     * @return HTTP 200 response with the updated Target System entity.
+     * @throws CoreManagementException if the path ID and DTO ID do not match.
+     */
     @PUT
     @Path("/{id}")
     @Operation(summary = "Updates an existing TargetSystem")
@@ -55,6 +76,12 @@ public class TargetSystemResource {
         return Response.ok(updated).build();
     }
 
+    /**
+     * Retrieves a Target System by its ID.
+     *
+     * @param id ID of the Target System to retrieve.
+     * @return HTTP 200 response with the Target System entity or HTTP 404 if not found.
+     */
     @GET
     @Path("/{id}")
     @Operation(summary = "Returns a TargetSystem by its ID")
@@ -68,6 +95,11 @@ public class TargetSystemResource {
                         "No TargetSystem found using id %d", id));
     }
 
+    /**
+     * Retrieves all existing Target Systems.
+     *
+     * @return List of all Target System DTOs.
+     */
     @GET
     @Operation(summary = "Returns all TargetSystems")
     public List<TargetSystemDTO> getAllTargetSystems() {
@@ -76,6 +108,13 @@ public class TargetSystemResource {
         return all;
     }
 
+    /**
+     * Deletes a Target System by its ID.
+     * Logs success or warning depending on whether the deletion was successful.
+     *
+     * @param id ID of the Target System to delete.
+     * @return HTTP 204 response if deleted, or throws HTTP 404 exception if not found.
+     */
     @DELETE
     @Path("/{id}")
     @Operation(summary = "Deletes a TargetSystem")

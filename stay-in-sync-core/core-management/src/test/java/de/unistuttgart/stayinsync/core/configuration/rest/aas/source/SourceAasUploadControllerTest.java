@@ -25,6 +25,11 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyMap;
 import static org.mockito.ArgumentMatchers.anyString;
 
+/**
+ * Integration tests for {@link de.unistuttgart.stayinsync.core.configuration.rest.aas.source.SourceAasUploadController}.
+ * Verifies upload and attachment functionality for AASX files in Source Systems.
+ * Tests include upload success, error handling, and operations with non-existent source systems.
+ */
 @QuarkusTest
 public class SourceAasUploadControllerTest {
 
@@ -33,10 +38,13 @@ public class SourceAasUploadControllerTest {
 
     private SourceSystem sourceSystem;
 
+    /**
+     * Initializes a test SourceSystem entity and enables detailed RestAssured logging
+     * in case of validation failures.
+     */
     @BeforeEach
     @Transactional
     void setUp() {
-        // Clean up in correct order to avoid foreign key constraints
         sourceSystem = new SourceSystem();
         sourceSystem.apiType = "AAS";
         sourceSystem.apiUrl = "http://aas.example";
@@ -46,6 +54,13 @@ public class SourceAasUploadControllerTest {
         RestAssured.enableLoggingOfRequestAndResponseIfValidationFails();
     }
 
+    /**
+     * Creates a mock HttpResponse object with a specified status code and response body.
+     *
+     * @param statusCode The HTTP status code for the mock response.
+     * @param body The response body content as a string.
+     * @return A mocked {@link HttpResponse} instance configured with the given data.
+     */
     private HttpResponse<Buffer> mockResponse(int statusCode, String body) {
         HttpResponse<Buffer> response = Mockito.mock(HttpResponse.class);
         Mockito.when(response.statusCode()).thenReturn(statusCode);
@@ -54,16 +69,18 @@ public class SourceAasUploadControllerTest {
         return response;
     }
 
+    /**
+     * Tests successful upload of an AASX file to a Source System.
+     * Verifies that the upload endpoint returns HTTP 202 Accepted upon successful processing.
+     */
     @Test
     void testUploadAasx_Success() {
-        // Given
         String aasxContent = "test-aasx-content";
         int attachedCount = 2;
         
         Mockito.when(snapshotService.attachSubmodelsLive(any(Long.class), any(byte[].class)))
                .thenReturn(attachedCount);
 
-        // When & Then
         given()
             .multiPart("file", "test.aasx", aasxContent.getBytes())
             .when()
@@ -72,13 +89,15 @@ public class SourceAasUploadControllerTest {
             .statusCode(202);
     }
 
+    /**
+     * Tests behavior when uploading an invalid AASX file.
+     * Verifies that a RuntimeException results in a 500 Internal Server Error response.
+     */
     @Test
     void testUploadAasx_BadRequest() {
-        // Given
         Mockito.when(snapshotService.attachSubmodelsLive(any(Long.class), any(byte[].class)))
                .thenThrow(new RuntimeException("Invalid AASX file"));
 
-        // When & Then
         given()
             .multiPart("file", "invalid.aasx", "invalid-content".getBytes())
             .when()
@@ -87,9 +106,12 @@ public class SourceAasUploadControllerTest {
             .statusCode(500);
     }
 
+    /**
+     * Tests attaching selected submodels from an uploaded AASX file.
+     * Verifies that the service correctly processes the selection JSON and returns 202 Accepted.
+     */
     @Test
     void testAttachSelectedAasx_Success() {
-        // Given
         String aasxContent = "test-aasx-content";
         String selectionJson = "{\"submodels\":[{\"id\":\"test-submodel\",\"full\":true,\"elements\":[]}]}";
         int attachedCount = 1;
@@ -97,7 +119,6 @@ public class SourceAasUploadControllerTest {
         Mockito.when(snapshotService.attachSelectedFromAasx(any(Long.class), any(byte[].class), any(io.vertx.core.json.JsonObject.class)))
                .thenReturn(attachedCount);
 
-        // When & Then
         given()
             .multiPart("file", "test.aasx", aasxContent.getBytes())
             .multiPart("selection", selectionJson, "application/json")
@@ -107,13 +128,15 @@ public class SourceAasUploadControllerTest {
             .statusCode(202);
     }
 
+    /**
+     * Tests behavior when trying to attach submodels from an AASX file to a non-existent Source System.
+     * Verifies that the endpoint still responds with HTTP 202 to maintain consistent API behavior.
+     */
     @Test
     void testAttachSelectedAasx_NonExistentSourceSystem() {
-        // Given
         String aasxContent = "test-aasx-content";
         String selectionJson = "{\"submodels\":[{\"id\":\"test-submodel\",\"full\":true,\"elements\":[]}]}";
 
-        // When & Then
         given()
             .multiPart("file", "test.aasx", aasxContent.getBytes())
             .multiPart("selection", selectionJson, "application/json")
@@ -123,12 +146,14 @@ public class SourceAasUploadControllerTest {
             .statusCode(202);
     }
 
+    /**
+     * Tests upload behavior when the Source System ID does not exist.
+     * Verifies that the system returns HTTP 202 Accepted as a default non-blocking response.
+     */
     @Test
     void testUploadAasx_NonExistentSourceSystem() {
-        // Given
         String aasxContent = "test-aasx-content";
 
-        // When & Then
         given()
             .multiPart("file", "test.aasx", aasxContent.getBytes())
             .when()

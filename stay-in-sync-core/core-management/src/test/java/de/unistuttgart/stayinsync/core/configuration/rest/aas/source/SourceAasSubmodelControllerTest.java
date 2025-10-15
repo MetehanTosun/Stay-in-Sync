@@ -22,6 +22,11 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyMap;
 import static org.mockito.ArgumentMatchers.anyString;
 
+/**
+ * Integration tests for {@link de.unistuttgart.stayinsync.core.configuration.rest.aas.source.SourceAasSubmodelController}.
+ * Verifies the REST endpoints for creating, updating, and deleting AAS submodels in Source Systems.
+ * Uses mocked dependencies for AasTraversalClient, SourceSystemAasService, and HttpHeaderBuilder.
+ */
 @QuarkusTest
 public class SourceAasSubmodelControllerTest {
 
@@ -34,11 +39,22 @@ public class SourceAasSubmodelControllerTest {
     @InjectMock
     HttpHeaderBuilder headerBuilder;
 
+    /**
+     * Configures RestAssured to log requests and responses when a validation fails.
+     * Ensures test output visibility in case of assertion mismatches.
+     */
     @BeforeEach
     void setUp() {
         RestAssured.enableLoggingOfRequestAndResponseIfValidationFails();
     }
 
+    /**
+     * Utility method to create a mock HttpResponse with the given status code and body.
+     *
+     * @param statusCode The HTTP status code to mock.
+     * @param body The response body content.
+     * @return A mocked HttpResponse object with the specified values.
+     */
     private HttpResponse<Buffer> mockResponse(int statusCode, String body) {
         HttpResponse<Buffer> response = Mockito.mock(HttpResponse.class);
         Mockito.when(response.statusCode()).thenReturn(statusCode);
@@ -47,9 +63,12 @@ public class SourceAasSubmodelControllerTest {
         return response;
     }
 
+    /**
+     * Tests successful creation of a submodel in a Source System.
+     * Verifies that a 201 status code and correct response body are returned when the request succeeds.
+     */
     @Test
     void testCreateSubmodel_Success() {
-        // Given
         Long sourceSystemId = 1L;
         String submodelJson = "{\"id\":\"test-submodel\",\"idShort\":\"TestSubmodel\",\"modelType\":\"Submodel\"}";
         String responseBody = "{\"id\":\"test-submodel\",\"idShort\":\"TestSubmodel\",\"modelType\":\"Submodel\"}";
@@ -72,7 +91,6 @@ public class SourceAasSubmodelControllerTest {
         Mockito.when(traversal.addSubmodelReferenceToShell(anyString(), anyString(), anyString(), anyMap()))
                .thenReturn(Uni.createFrom().item(refResponse));
 
-        // When & Then
         given()
             .contentType("application/json")
             .body(submodelJson)
@@ -83,9 +101,12 @@ public class SourceAasSubmodelControllerTest {
             .body(equalTo(responseBody));
     }
 
+    /**
+     * Tests submodel creation with invalid JSON input.
+     * Expects a 400 Bad Request response when the payload is malformed.
+     */
     @Test
     void testCreateSubmodel_BadRequest() {
-        // Given
         Long sourceSystemId = 1L;
         String invalidJson = "invalid-json";
         
@@ -105,7 +126,6 @@ public class SourceAasSubmodelControllerTest {
         Mockito.doThrow(new de.unistuttgart.stayinsync.core.configuration.exception.CoreManagementWebException(jakarta.ws.rs.core.Response.Status.BAD_REQUEST, "OK", "Bad Request"))
                 .when(aasService).throwHttpError(400, "OK", "Bad Request");
 
-        // When & Then
         given()
             .contentType("application/json")
             .body(invalidJson)
@@ -115,9 +135,12 @@ public class SourceAasSubmodelControllerTest {
             .statusCode(400);
     }
 
+    /**
+     * Tests successful update of an existing submodel.
+     * Verifies that a 200 OK status and updated response body are returned.
+     */
     @Test
     void testUpdateSubmodel_Success() {
-        // Given
         String smId = "test-submodel";
         String submodelJson = "{\"id\":\"test-submodel\",\"idShort\":\"UpdatedSubmodel\",\"modelType\":\"Submodel\"}";
         String responseBody = "{\"id\":\"test-submodel\",\"idShort\":\"UpdatedSubmodel\",\"modelType\":\"Submodel\"}";
@@ -136,7 +159,6 @@ public class SourceAasSubmodelControllerTest {
         Mockito.when(traversal.putSubmodel(anyString(), anyString(), anyString(), anyMap()))
                .thenReturn(Uni.createFrom().item(mockResponse));
 
-        // When & Then
         given()
             .contentType("application/json")
             .body(submodelJson)
@@ -147,9 +169,12 @@ public class SourceAasSubmodelControllerTest {
             .body(equalTo(responseBody));
     }
 
+    /**
+     * Tests successful deletion of a submodel from a Source System.
+     * Verifies that a 200 status code is returned after deletion.
+     */
     @Test
     void testDeleteSubmodel_Success() {
-        // Given
         String smId = "test-submodel";
         
         SourceSystem mockSystem = new SourceSystem();
@@ -166,7 +191,6 @@ public class SourceAasSubmodelControllerTest {
         Mockito.when(traversal.deleteSubmodel(anyString(), anyString(), anyMap()))
                .thenReturn(Uni.createFrom().item(mockResponse));
 
-        // When & Then
         given()
             .when()
             .delete("/api/config/source-system/{sourceSystemId}/aas/submodels/{smId}", 1L, smId)
@@ -174,9 +198,12 @@ public class SourceAasSubmodelControllerTest {
             .statusCode(200);
     }
 
+    /**
+     * Tests deletion of a non-existent submodel.
+     * Expects a 404 Not Found response when the target submodel does not exist.
+     */
     @Test
     void testDeleteSubmodel_NotFound() {
-        // Given
         String smId = "non-existent-submodel";
         
         SourceSystem mockSystem = new SourceSystem();
@@ -195,7 +222,6 @@ public class SourceAasSubmodelControllerTest {
         Mockito.doThrow(new de.unistuttgart.stayinsync.core.configuration.exception.CoreManagementWebException(jakarta.ws.rs.core.Response.Status.NOT_FOUND, "OK", "Submodel not found"))
                 .when(aasService).throwHttpError(404, "OK", "Submodel not found");
 
-        // When & Then
         given()
             .when()
             .delete("/api/config/source-system/{sourceSystemId}/aas/submodels/{smId}", 1L, smId)
@@ -203,23 +229,24 @@ public class SourceAasSubmodelControllerTest {
             .statusCode(404);
     }
 
+    /**
+     * Tests creation of a submodel for a Source System that does not exist.
+     * Expects a 404 Not Found response indicating that the Source System could not be found.
+     */
     @Test
     void testCreateSubmodel_NonExistentSourceSystem() {
-        // Given
         String submodelJson = "{\"id\":\"test-submodel\",\"idShort\":\"TestSubmodel\",\"modelType\":\"Submodel\"}";
         
         Mockito.when(aasService.validateAasSource(Mockito.isNull()))
                 .thenThrow(new de.unistuttgart.stayinsync.core.configuration.exception.CoreManagementException(
                         jakarta.ws.rs.core.Response.Status.NOT_FOUND, "Source system not found", "Source system is null"));
         
-        // Mock the error mapping service to return the correct HTTP response
         jakarta.ws.rs.core.Response errorResponse = jakarta.ws.rs.core.Response.status(404)
                 .entity("Source system not found")
                 .build();
         Mockito.doThrow(new de.unistuttgart.stayinsync.core.configuration.exception.CoreManagementWebException(jakarta.ws.rs.core.Response.Status.NOT_FOUND, "Source system not found", "Source system is null"))
                 .when(aasService).throwHttpError(404, "Source system not found", "Source system is null");
 
-        // When & Then
         given()
             .contentType("application/json")
             .body(submodelJson)

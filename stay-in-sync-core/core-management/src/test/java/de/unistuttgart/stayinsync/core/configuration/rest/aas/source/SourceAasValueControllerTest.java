@@ -24,6 +24,11 @@ import static org.mockito.ArgumentMatchers.anyMap;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 
+/**
+ * Integration tests for {@link de.unistuttgart.stayinsync.core.configuration.rest.aas.source.SourceAasValueController}.
+ * Tests focus on retrieving and updating AAS element values from Source Systems through the REST API.
+ * Scenarios include success cases, not found errors, invalid payloads, and non-existent Source Systems.
+ */
 @QuarkusTest
 public class SourceAasValueControllerTest {
 
@@ -36,11 +41,22 @@ public class SourceAasValueControllerTest {
     @InjectMock
     HttpHeaderBuilder headerBuilder;
 
+    /**
+     * Enables detailed RestAssured logging in case of validation failures
+     * to assist in debugging failed REST assertions.
+     */
     @BeforeEach
     void setUp() {
         RestAssured.enableLoggingOfRequestAndResponseIfValidationFails();
     }
 
+    /**
+     * Utility helper to create a mock HTTP response object with a specified status and body content.
+     *
+     * @param statusCode HTTP status code for the mock response.
+     * @param body Response body string to include.
+     * @return A mocked {@link HttpResponse} with the given status and body.
+     */
     private HttpResponse<Buffer> mockResponse(int statusCode, String body) {
         HttpResponse<Buffer> response = Mockito.mock(HttpResponse.class);
         Mockito.when(response.statusCode()).thenReturn(statusCode);
@@ -49,9 +65,12 @@ public class SourceAasValueControllerTest {
         return response;
     }
 
+    /**
+     * Tests successful retrieval of an AAS element value from a Source System.
+     * Verifies that the endpoint returns HTTP 200 and the expected JSON response body.
+     */
     @Test
     void testGetElementValue_Success() {
-        // Given
         Long sourceSystemId = 1L;
         String smId = "test-submodel";
         String path = "test-element";
@@ -66,14 +85,12 @@ public class SourceAasValueControllerTest {
         
         HttpResponse<Buffer> mockResponse = mockResponse(200, expectedValue);
         
-        // Mock the service to return a valid SourceSystem when validateAasSource is called with any SourceSystem
         Mockito.when(aasService.validateAasSource(any(SourceSystem.class))).thenReturn(mockSystem);
         Mockito.when(headerBuilder.buildMergedHeaders(any(SourceSystem.class), any(HttpHeaderBuilder.Mode.class)))
                .thenReturn(Map.of("Authorization", "Bearer token"));
         Mockito.when(traversal.getElement(anyString(), anyString(), anyString(), anyMap()))
                .thenReturn(Uni.createFrom().item(mockResponse));
 
-        // When & Then
         given()
             .when()
             .get("/api/config/source-system/{sourceSystemId}/aas/submodels/{smId}/elements/{path}/value",
@@ -83,9 +100,12 @@ public class SourceAasValueControllerTest {
             .body(equalTo(expectedValue));
     }
 
+    /**
+     * Tests behavior when attempting to retrieve a non-existent AAS element.
+     * Expects the endpoint to return HTTP 404 (Not Found).
+     */
     @Test
     void testGetElementValue_NotFound() {
-        // Given
         Long sourceSystemId = 1L;
         String smId = "test-submodel";
         String path = "non-existent-element";
@@ -106,7 +126,6 @@ public class SourceAasValueControllerTest {
         Mockito.doThrow(new de.unistuttgart.stayinsync.core.configuration.exception.CoreManagementWebException(jakarta.ws.rs.core.Response.Status.NOT_FOUND, "OK", "Element not found"))
                 .when(aasService).throwHttpError(404, "OK", "Element not found");
 
-        // When & Then
         given()
             .when()
             .get("/api/config/source-system/{sourceSystemId}/aas/submodels/{smId}/elements/{path}/value",
@@ -115,9 +134,12 @@ public class SourceAasValueControllerTest {
             .statusCode(404);
     }
 
+    /**
+     * Tests successful update of an AAS element value in a Source System.
+     * Verifies that the endpoint returns HTTP 204 (No Content) on success.
+     */
     @Test
     void testPatchElementValue_Success() {
-        // Given
         Long sourceSystemId = 1L;
         String smId = "test-submodel";
         String path = "test-element";
@@ -138,7 +160,6 @@ public class SourceAasValueControllerTest {
         Mockito.when(traversal.patchElementValue(anyString(), anyString(), anyString(), anyString(), anyMap()))
                .thenReturn(Uni.createFrom().item(mockResponse));
 
-        // When & Then
         given()
             .contentType("application/json")
             .body(requestBody)
@@ -149,9 +170,12 @@ public class SourceAasValueControllerTest {
             .statusCode(204);
     }
 
+    /**
+     * Tests behavior when an invalid JSON payload is sent during a PATCH request.
+     * Expects the endpoint to return HTTP 400 (Bad Request).
+     */
     @Test
     void testPatchElementValue_BadRequest() {
-        // Given
         Long sourceSystemId = 1L;
         String smId = "test-submodel";
         String path = "test-element";
@@ -173,7 +197,6 @@ public class SourceAasValueControllerTest {
         Mockito.doThrow(new de.unistuttgart.stayinsync.core.configuration.exception.CoreManagementWebException(jakarta.ws.rs.core.Response.Status.BAD_REQUEST, "OK", "Bad Request"))
                 .when(aasService).throwHttpError(400, "OK", "Bad Request");
 
-        // When & Then
         given()
             .contentType("application/json")
             .body(requestBody)
@@ -184,21 +207,22 @@ public class SourceAasValueControllerTest {
             .statusCode(400);
     }
 
+    /**
+     * Tests behavior when attempting to access an AAS element for a Source System that does not exist.
+     * Expects the endpoint to return HTTP 404 (Not Found).
+     */
     @Test
     void testGetElementValue_NonExistentSourceSystem() {
-        // Given - Mock the service to throw CoreManagementException when validateAasSource is called with null
         Mockito.when(aasService.validateAasSource(Mockito.isNull()))
                .thenThrow(new de.unistuttgart.stayinsync.core.configuration.exception.CoreManagementException(
                    jakarta.ws.rs.core.Response.Status.NOT_FOUND, "Source system not found", "Source system is null"));
         
-        // Mock the error mapping service to return the correct HTTP response
         jakarta.ws.rs.core.Response errorResponse = jakarta.ws.rs.core.Response.status(404)
                 .entity("Source system not found")
                 .build();
         Mockito.doThrow(new de.unistuttgart.stayinsync.core.configuration.exception.CoreManagementWebException(jakarta.ws.rs.core.Response.Status.NOT_FOUND, "Source system not found", "Source system is null"))
                 .when(aasService).throwHttpError(404, "Source system not found", "Source system is null");
 
-        // When & Then
         given()
             .when()
             .get("/api/config/source-system/99999/aas/submodels/test/elements/test/value")

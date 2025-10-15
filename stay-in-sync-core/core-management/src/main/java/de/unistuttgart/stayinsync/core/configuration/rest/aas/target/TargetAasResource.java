@@ -24,13 +24,17 @@ import org.eclipse.microprofile.openapi.annotations.responses.APIResponses;
 import org.jboss.resteasy.reactive.multipart.FileUpload;
 import java.nio.file.Files;
 
+/**
+ * REST resource for handling Asset Administration Shell (AAS) operations related to Target Systems.
+ * Provides endpoints for listing, retrieving, creating, updating, and deleting AAS submodel elements.
+ * Includes smart traversal, caching, and fallback mechanisms for nested AAS structures.
+ */
 @Path("/api/config/target-system/{targetSystemId}/aas")
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
 @Blocking
 public class TargetAasResource {
 
-    // Cache for loaded parent elements to avoid Vert.x blocking issues
     private final java.util.concurrent.ConcurrentHashMap<String, io.vertx.core.json.JsonObject> parentElementCache = new java.util.concurrent.ConcurrentHashMap<>();
 
     @Inject
@@ -47,6 +51,13 @@ public class TargetAasResource {
 
 
 
+    /**
+     * Decodes a Base64-encoded submodel ID if applicable.
+     * Returns the original string if decoding fails.
+     *
+     * @param smId Submodel ID, potentially Base64-encoded.
+     * @return Decoded submodel ID or the original string.
+     */
     private String normalizeSubmodelId(String smId) {
         if (smId == null) return null;
         try {
@@ -62,12 +73,18 @@ public class TargetAasResource {
         }
     }
 
+    /**
+     * Derives the idShort identifier from a given AAS element ID by parsing the URI structure.
+     * Handles various ID patterns to extract meaningful short names.
+     *
+     * @param id Full AAS element ID string.
+     * @return Derived idShort or the original ID if no structure match is found.
+     */
     private String deriveIdShortFromId(String id) {
         if (id == null) return null;
         String s = id;
         int hash = s.lastIndexOf('#');
         int slash = s.lastIndexOf('/');
-        // Split by '/'
         String[] parts = s.split("/");
         if (parts.length >= 3) {
             String last = parts[parts.length - 1];
@@ -76,11 +93,9 @@ public class TargetAasResource {
             boolean lastNum = last.matches("\\d+");
             boolean prevNum = prev.matches("\\d+");
             if (lastNum && prevNum) {
-                // pattern .../<name>/<version>/<revision>
                 return prev2;
             }
             if (lastNum && !prevNum) {
-                // pattern .../<name>/<number>
                 return prev;
             }
         }
@@ -89,12 +104,23 @@ public class TargetAasResource {
         return s;
     }
 
+    /**
+     * Retrieves submodel elements for a given Target System and Submodel.
+     * Supports shallow and deep traversal modes and includes multiple fallback
+     * mechanisms for nested elements and cached parents to ensure data completeness.
+     *
+     * @param targetSystemId ID of the target system.
+     * @param smId Submodel ID.
+     * @param depth Traversal depth ("shallow" or "all").
+     * @param parentPath Optional parent element path.
+     * @return A reactive Uni<Response> containing JSON-encoded element data.
+     */
     @GET
     @Path("/submodels/{smId}/elements")
-	public Uni<Response> listElements(@PathParam("targetSystemId") Long targetSystemId,
-									 @PathParam("smId") String smId,
-									 @QueryParam("depth") @DefaultValue("shallow") String depth,
-									 @QueryParam("parentPath") String parentPath) {
+    public Uni<Response> listElements(@PathParam("targetSystemId") Long targetSystemId,
+                                      @PathParam("smId") String smId,
+                                      @QueryParam("depth") @DefaultValue("shallow") String depth,
+                                      @QueryParam("parentPath") String parentPath) {
 		TargetSystem ts = TargetSystem.<TargetSystem>findByIdOptional(targetSystemId).orElse(null);
 		ts = aasService.validateAasTarget(ts);
 		var headers = headerBuilder.buildMergedHeaders(ts, HttpHeaderBuilder.Mode.READ);
@@ -715,6 +741,15 @@ public class TargetAasResource {
 		});
 	}
 
+    /**
+     * Retrieves a single AAS element from a given Target System and Submodel.
+     * Includes fallback logic to perform a deep traversal search if direct access fails.
+     *
+     * @param targetSystemId ID of the target system.
+     * @param smId Submodel ID.
+     * @param path Element path within the submodel.
+     * @return HTTP Response containing the requested element or error information.
+     */
     @GET
     @Path("/submodels/{smId}/elements/{path:.+}")
     public Response getElement(@PathParam("targetSystemId") Long targetSystemId,
@@ -747,6 +782,13 @@ public class TargetAasResource {
         return Response.status(sc).entity(resp.bodyAsString()).build();
     }
 
+    /**
+     * Recursively searches for an AAS element by its path within a given JSON array.
+     *
+     * @param elements JSON array of AAS elements.
+     * @param targetPath The target idShortPath to match.
+     * @return The matching JSON object or null if not found.
+     */
     private io.vertx.core.json.JsonObject findElementByPathRecursive(io.vertx.core.json.JsonArray elements, String targetPath) {
         if (elements == null) return null;
         for (int i = 0; i < elements.size(); i++) {
@@ -760,6 +802,15 @@ public class TargetAasResource {
         return null;
     }
 
+    /**
+     * Recursively traverses nested submodel elements and collections to find a specific element path.
+     * Supports SubmodelElementList, SubmodelElementCollection, and Entity structures.
+     *
+     * @param element Current JSON element to check.
+     * @param currentPath Current hierarchical path of the element.
+     * @param targetPath Target idShortPath to locate.
+     * @return The matching JSON object or null if not found.
+     */
     private io.vertx.core.json.JsonObject descendAndMatch(io.vertx.core.json.JsonObject element, String currentPath, String targetPath) {
         if (targetPath.equals(currentPath)) return element;
         String modelType = element.getString("modelType");
@@ -770,7 +821,6 @@ public class TargetAasResource {
                     var child = arr.getJsonObject(i);
                     if (child == null) continue;
                     String childIdShort = child.getString("idShort");
-                    // For SubmodelElementList, children might not have idShort, use index
                     if (childIdShort == null || childIdShort.isBlank()) {
                         if ("SubmodelElementList".equalsIgnoreCase(modelType)) {
                             childIdShort = Integer.toString(i);
@@ -781,8 +831,6 @@ public class TargetAasResource {
                     String childPath = currentPath + "/" + childIdShort;
                     var found = descendAndMatch(child, childPath, targetPath);
                     if (found != null) return found;
-                    
-                    // Special handling for SubmodelElementList: check if child has nested value array
                     if ("SubmodelElementList".equalsIgnoreCase(modelType)) {
                         var nestedValue = child.getValue("value");
                         if (nestedValue instanceof io.vertx.core.json.JsonArray nestedArr) {
@@ -795,7 +843,6 @@ public class TargetAasResource {
                                     var nestedFound = descendAndMatch(nestedChild, nestedPath, targetPath);
                                     if (nestedFound != null) return nestedFound;
                                 } else {
-                                    // Handle cases where nested child has no idShort (use index)
                                     String nestedPath = childPath + "/" + j;
                                     var nestedFound = descendAndMatch(nestedChild, nestedPath, targetPath);
                                     if (nestedFound != null) return nestedFound;
@@ -821,10 +868,16 @@ public class TargetAasResource {
         }
         return null;
     }
-
-
-
-
+    /**
+     * Creates a new submodel element within a specific Target System.
+     * Automatically resolves parent paths for collections, lists, and entities based on model type.
+     *
+     * @param targetSystemId ID of the target system.
+     * @param smId Submodel ID.
+     * @param parentPath Optional parent path for the new element.
+     * @param body JSON representation of the element to create.
+     * @return HTTP Response with creation status and element data.
+     */
     @POST
     @Path("/submodels/{smId}/elements")
     public Response createElement(@PathParam("targetSystemId") Long targetSystemId,
@@ -834,7 +887,6 @@ public class TargetAasResource {
         TargetSystem ts = TargetSystem.<TargetSystem>findByIdOptional(targetSystemId).orElse(null);
         ts = aasService.validateAasTarget(ts);
         var headers = headerBuilder.buildMergedHeaders(ts, HttpHeaderBuilder.Mode.WRITE_JSON);
-        // Resolve parent path for collections/lists/entities like in Source AAS resource
         String effectiveParentPath = parentPath;
         if (parentPath != null && !parentPath.isBlank()) {
             try {
@@ -858,15 +910,23 @@ public class TargetAasResource {
                 }
             } catch (Exception ignore) { }
         }
-        // Use raw smId (Base64URL) for upstream
         var resp = traversal.createElement(ts.apiUrl, smId, effectiveParentPath, body, headers).await().indefinitely();
         if (resp.statusCode() >= 200 && resp.statusCode() < 300) {
             return Response.status(Response.Status.CREATED).entity(resp.bodyAsString()).build();
         }
         aasService.throwHttpError(resp.statusCode(), resp.statusMessage(), resp.bodyAsString());
-        return null; // This line will never be reached due to exception
+        return null;
     }
 
+    /**
+     * Updates or replaces an existing submodel element in the specified Target System.
+     *
+     * @param targetSystemId ID of the target system.
+     * @param smId Submodel ID.
+     * @param path Element path to update.
+     * @param body JSON body containing the new element data.
+     * @return HTTP Response reflecting the operation result.
+     */
     @PUT
     @Path("/submodels/{smId}/elements/{path:.+}")
     public Response putElement(@PathParam("targetSystemId") Long targetSystemId,
@@ -880,6 +940,14 @@ public class TargetAasResource {
         return Response.status(resp.statusCode()).entity(resp.bodyAsString()).build();
     }
 
+    /**
+     * Deletes a submodel element in the specified Target System.
+     *
+     * @param targetSystemId ID of the target system.
+     * @param smId Submodel ID.
+     * @param path Path of the element to delete.
+     * @return HTTP Response containing the deletion result.
+     */
     @DELETE
     @Path("/submodels/{smId}/elements/{path:.+}")
     public Response deleteElement(@PathParam("targetSystemId") Long targetSystemId,
@@ -891,7 +959,6 @@ public class TargetAasResource {
         var resp = traversal.deleteElement(ts.apiUrl, smId, path, headers).await().indefinitely();
         return Response.status(resp.statusCode()).entity(resp.bodyAsString()).build();
     }
-
 
 }
 

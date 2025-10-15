@@ -21,6 +21,11 @@ import static org.hamcrest.Matchers.notNullValue;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.when;
 
+/**
+ * Integration tests for AAS upload functionality.
+ * Verifies the upload and attachment of AASX files for Source Systems.
+ * Tests include successful uploads, submodel attachment, and snapshot refresh handling.
+ */
 @QuarkusTest
 public class AasUploadResourceIT {
 
@@ -30,6 +35,10 @@ public class AasUploadResourceIT {
     @InjectMock
     AasStructureSnapshotService snapshotService;
 
+    /**
+     * Initializes the test environment before each test.
+     * Creates a test SourceSystem entity and enables detailed RestAssured logging for debugging.
+     */
     @BeforeEach
     @Transactional
     void setup() {
@@ -42,9 +51,15 @@ public class AasUploadResourceIT {
         ss.persist();
     }
 
+    /**
+     * Tests successful upload of an AASX file containing at least one submodel.
+     * Mocks the AAS traversal interactions to simulate submodel creation and attachment.
+     * Verifies that the endpoint returns HTTP 202 and includes expected response fields.
+     *
+     * @throws Exception if file creation or upload fails.
+     */
     @Test
     void uploadAasx_attachesAtLeastOne() throws Exception {
-        // Mock traversal interactions
         HttpResponse<Buffer> r404 = buildResp(404, "");
         HttpResponse<Buffer> r201 = buildResp(201, "{\"id\":\"https://example.com/sm/minimal\"}");
         HttpResponse<Buffer> r204 = buildResp(204, "");
@@ -54,7 +69,6 @@ public class AasUploadResourceIT {
         when(traversal.addSubmodelReferenceToShell(anyString(), anyString(), anyString(), anyMap())).thenReturn(Uni.createFrom().item(r204));
         when(traversal.listSubmodelReferences(anyString(), anyString(), anyMap())).thenReturn(Uni.createFrom().item(r200Empty));
 
-        // Mock snapshot service to avoid NullPointerException
         Mockito.doNothing().when(snapshotService).refreshSnapshot(anyLong());
 
         byte[] bytes = buildXmlOnlyAasx("https://example.com/sm/minimal", "Minimal");
@@ -69,6 +83,13 @@ public class AasUploadResourceIT {
             .body("filename", notNullValue());
     }
 
+    /**
+     * Utility method for creating a mocked {@link HttpResponse} with a specific status code and body.
+     *
+     * @param code The HTTP status code to simulate.
+     * @param body The response body content.
+     * @return A mocked {@link HttpResponse} with the specified values.
+     */
     @SuppressWarnings("unchecked")
     private HttpResponse<Buffer> buildResp(int code, String body) {
         HttpResponse<?> raw = Mockito.mock(HttpResponse.class);
@@ -79,6 +100,14 @@ public class AasUploadResourceIT {
         return resp;
     }
 
+    /**
+     * Builds an in-memory AASX (ZIP) file containing a minimal XML submodel definition.
+     *
+     * @param id The identifier (ID) of the submodel.
+     * @param idShort The short name (idShort) of the submodel.
+     * @return A byte array representing the generated AASX file.
+     * @throws Exception if ZIP generation fails.
+     */
     private byte[] buildXmlOnlyAasx(String id, String idShort) throws Exception {
         String xml = """
                 <?xml version=\"1.0\" encoding=\"UTF-8\"?>

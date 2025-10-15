@@ -18,8 +18,8 @@ import org.eclipse.microprofile.openapi.annotations.responses.APIResponse;
 import org.eclipse.microprofile.openapi.annotations.responses.APIResponses;
 
 /**
- * AAS Test and Discovery Controller for Target Systems.
- * Handles AAS connectivity testing and submodel discovery.
+ * REST controller for testing AAS (Asset Administration Shell) connectivity and submodel discovery
+ * for Target Systems. Provides endpoints to verify AAS communication and retrieve available submodels.
  */
 @Path("/api/config/target-system/{targetSystemId}/aas")
 @Produces(MediaType.APPLICATION_JSON)
@@ -36,6 +36,13 @@ public class TargetAasTestController {
     @Inject
     HttpHeaderBuilder headerBuilder;
 
+    /**
+     * Tests the connectivity to a Target System's AAS server.
+     * Validates the Target System configuration, builds request headers, and performs a shell retrieval test.
+     *
+     * @param targetSystemId ID of the Target System to test.
+     * @return Reactive Uni<Response> representing the result of the test request.
+     */
     @POST
     @Path("/test")
     @Operation(summary = "Test AAS connectivity", description = "Tests the connectivity to the target AAS server")
@@ -54,6 +61,15 @@ public class TargetAasTestController {
         return uni.map(resp -> Response.status(resp.statusCode()).entity(resp.bodyAsString()).build());
     }
 
+    /**
+     * Lists all submodels available in a Target System’s AAS.
+     * Attempts to retrieve and normalize submodel references, resolving each submodel by ID.
+     * Includes fallback behavior and validation logic for invalid or incomplete responses.
+     *
+     * @param targetSystemId ID of the Target System.
+     * @param source Source type, defaults to LIVE (SNAPSHOT not supported for Target Systems).
+     * @return HTTP Response containing a list of submodels or error information.
+     */
     @GET
     @Path("/submodels")
     @Operation(summary = "List submodels", description = "Lists all submodels from the target AAS")
@@ -67,12 +83,11 @@ public class TargetAasTestController {
                                   @QueryParam("source") @DefaultValue("LIVE") String source) {
         TargetSystem ts = TargetSystem.<TargetSystem>findByIdOptional(targetSystemId).orElse(null);
         ts = aasService.validateAasTarget(ts);
-        
-        // Target System only supports LIVE (no SNAPSHOT database)
+
         if ("SNAPSHOT".equalsIgnoreCase(source)) {
             Log.infof("Target listSubmodels: SNAPSHOT requested but not supported, falling back to LIVE");
         }
-        
+
         var headers = headerBuilder.buildMergedHeaders(ts, HttpHeaderBuilder.Mode.READ);
         try {
             var refsResp = traversal.listSubmodels(ts.apiUrl, ts.aasId, headers).await().indefinitely();
@@ -115,7 +130,6 @@ public class TargetAasTestController {
             }
             return Response.ok(out.encode()).build();
         } catch (Exception e) {
-            // Fallback: pass-through refs on error
             var fallback = traversal.listSubmodels(ts.apiUrl, ts.aasId, headers).await().indefinitely();
             return Response.status(fallback.statusCode()).entity(fallback.bodyAsString()).build();
         }
@@ -130,6 +144,13 @@ public class TargetAasTestController {
         }
     }
 
+    /**
+     * Parses the JSON response body of a submodel reference list.
+     * Detects whether the list is wrapped in an object or a plain JSON array.
+     *
+     * @param body Raw JSON response from the AAS traversal.
+     * @return SubmodelRefsParseResult containing extracted submodel references and wrapping state.
+     */
     private SubmodelRefsParseResult parseSubmodelReferences(String body) {
         io.vertx.core.json.JsonArray refs;
         boolean wrapped = false;
@@ -147,6 +168,13 @@ public class TargetAasTestController {
         return new SubmodelRefsParseResult(refs, wrapped);
     }
 
+    /**
+     * Extracts the Submodel ID value from a submodel reference object.
+     * Handles both wrapped and unwrapped key structures within the AAS response format.
+     *
+     * @param ref JSON object representing a submodel reference.
+     * @return Extracted Submodel ID or null if not found.
+     */
     private String extractSubmodelIdFromRef(io.vertx.core.json.JsonObject ref) {
         if (ref == null) return null;
         try {
@@ -167,6 +195,14 @@ public class TargetAasTestController {
         return null;
     }
 
+    /**
+     * Builds a standardized JSON object representing a submodel list item.
+     * Automatically derives the idShort if it is missing from the submodel object.
+     *
+     * @param sm JSON object of the submodel.
+     * @param normalizedSmId Normalized Submodel ID.
+     * @return JSON object containing submodel ID, idShort, and kind.
+     */
     private io.vertx.core.json.JsonObject buildSubmodelListItem(io.vertx.core.json.JsonObject sm, String normalizedSmId) {
         String id = sm.getString("id", normalizedSmId);
         String idShort = sm.getString("idShort");
@@ -182,6 +218,12 @@ public class TargetAasTestController {
                 .put("kind", sm.getString("kind"));
     }
 
+    /**
+     * Decodes a Base64-encoded Submodel ID, falling back to the original ID if decoding fails.
+     *
+     * @param smId The Submodel ID, potentially Base64 encoded.
+     * @return Decoded Submodel ID string or the original if decoding fails.
+     */
     private String normalizeSubmodelId(String smId) {
         if (smId == null) return null;
         try {
@@ -197,12 +239,18 @@ public class TargetAasTestController {
         }
     }
 
+    /**
+     * Derives the idShort value from a full AAS Submodel ID.
+     * Applies several heuristics to handle hierarchical patterns and numeric suffixes.
+     *
+     * @param id Full Submodel ID string.
+     * @return Derived idShort value or the original string if no match found.
+     */
     private String deriveIdShortFromId(String id) {
         if (id == null) return null;
         String s = id;
         int hash = s.lastIndexOf('#');
         int slash = s.lastIndexOf('/');
-        // Split by '/'
         String[] parts = s.split("/");
         if (parts.length >= 3) {
             String last = parts[parts.length - 1];
@@ -211,11 +259,9 @@ public class TargetAasTestController {
             boolean lastNum = last.matches("\\d+");
             boolean prevNum = prev.matches("\\d+");
             if (lastNum && prevNum) {
-                // pattern .../<name>/<version>/<revision>
                 return prev2;
             }
             if (lastNum && !prevNum) {
-                // pattern .../<name>/<number>
                 return prev;
             }
         }

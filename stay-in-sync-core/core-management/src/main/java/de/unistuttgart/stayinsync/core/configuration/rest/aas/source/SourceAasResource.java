@@ -29,6 +29,11 @@ import org.jboss.resteasy.reactive.multipart.FileUpload;
 import java.nio.file.Files;
 
 
+/**
+ * REST resource for handling AAS (Asset Administration Shell) operations related to Source Systems.
+ * Provides endpoints for listing, creating, updating, and deleting AAS submodels and elements.
+ * Supports both LIVE and SNAPSHOT data sources.
+ */
 @Path("/api/config/source-system/{sourceSystemId}/aas")
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
@@ -48,8 +53,16 @@ public class SourceAasResource {
     @Inject
     de.unistuttgart.stayinsync.core.configuration.service.aas.HttpHeaderBuilder headerBuilder;
 
-
-
+    /**
+     * Retrieves submodel elements for a given Source System and submodel.
+     * Supports both LIVE and SNAPSHOT sources and handles nested element flattening for lists and collections.
+     * @param sourceSystemId ID of the source system.
+     * @param smId Submodel ID.
+     * @param depth Depth mode (shallow or all).
+     * @param parentPath Optional path of parent element.
+     * @param source Data source type (LIVE or SNAPSHOT).
+     * @return A reactive Uni<Response> containing the elements.
+     */
     @GET
     @Path("/submodels/{smId}/elements")
     public Uni<Response> listElements(@PathParam("sourceSystemId") Long sourceSystemId,
@@ -71,7 +84,7 @@ public class SourceAasResource {
                     String body = resp.bodyAsString();
                     Log.infof("Source listElements MAIN: status=%d depth=%s parentPath=%s", sc, depth, parentPath);
                     
-                    // SUCCESS PATH: Check if server returned parent object instead of children array
+                    /* SUCCESS PATH: Check if server returned parent object instead of children array */
                     if (parentPath != null && !parentPath.isBlank() && body != null && !body.isBlank()) {
                         Response r = buildChildrenResponseFromParentBody(body, parentPath, false);
                         if (r != null) return r;
@@ -79,7 +92,7 @@ public class SourceAasResource {
                     
                     return Response.ok(body).build();
                 }
-                // Fallback for nested collections returning 404/400 on parent path
+                /* Fallback for nested collections returning 404/400 on parent path */
                 if ((sc == 404 || sc == 400) && parentPath != null && !parentPath.isBlank()) {
                     return buildDeepChildrenFallbackResponse(apiUrl, smId, parentPath, headersLive);
                 }
@@ -94,7 +107,7 @@ public class SourceAasResource {
             var headers = headerBuilder.buildMergedHeaders(ss, de.unistuttgart.stayinsync.core.configuration.service.aas.HttpHeaderBuilder.Mode.READ);
             final String apiUrl = ss.apiUrl;
             final java.util.Map<String,String> headersSnapshot = headers;
-            // Convert parentPath from slash notation to dot notation for BaSyx compatibility
+            /* Convert parentPath from slash notation to dot notation for BaSyx compatibility */
             final String dotNotationPath = parentPath.replace("/", ".");
             Log.infof("Source listElements SNAPSHOT: Converting parentPath from slash to dot notation: %s -> %s", parentPath, dotNotationPath);
             return traversal.listElements(apiUrl, smId, depth, dotNotationPath, headersSnapshot).map(resp -> {
@@ -102,7 +115,7 @@ public class SourceAasResource {
                 if (sc >= 200 && sc < 300) {
                     String body = resp.bodyAsString();
                     Log.infof("Source listElements SNAPSHOT: status=%d depth=%s parentPath=%s", sc, depth, parentPath);
-                    // SUCCESS PATH: Check if server returned parent object instead of children array
+                    /* SUCCESS PATH: Check if server returned parent object instead of children array */
                     if (parentPath != null && !parentPath.isBlank() && body != null && !body.isBlank()) {
                         Response r = buildChildrenResponseFromParentBody(body, parentPath, true);
                         if (r != null) return r;
@@ -127,7 +140,7 @@ public class SourceAasResource {
                 if (sc >= 200 && sc < 300) {
                     String body = resp.bodyAsString();
                     
-                    // Apply same SubmodelElementList flattening logic as in main listElements
+                    /* Apply same SubmodelElementList flattening logic as in main listElements */
                     if (parentPath != null && !parentPath.isBlank() && body != null && !body.isBlank()) {
                         try {
                             if (body.trim().startsWith("{")) {
@@ -210,7 +223,7 @@ public class SourceAasResource {
             if (sc >= 200 && sc < 300) {
                 String body = resp.bodyAsString();
                 
-                // Apply same SubmodelElementList flattening logic as in main listElements
+                /* Apply same SubmodelElementList flattening logic as in main listElements */
                 if (parentPath != null && !parentPath.isBlank() && body != null && !body.isBlank()) {
                     try {
                         if (body.trim().startsWith("{")) {
@@ -250,9 +263,15 @@ public class SourceAasResource {
         });
     }
 
-
-
-
+    /**
+     * Creates a new element within a specified submodel for the given Source System.
+     * Automatically adjusts the parent path based on BaSyx structure types.
+     * @param sourceSystemId ID of the source system.
+     * @param smId Submodel ID.
+     * @param parentPath Optional parent path within the submodel.
+     * @param body JSON payload of the new element.
+     * @return HTTP Response with creation result.
+     */
     @POST
     @Path("/submodels/{smId}/elements")
     public Response createElement(@PathParam("sourceSystemId") Long sourceSystemId,
@@ -265,7 +284,7 @@ public class SourceAasResource {
         Log.infof("Create element LIVE: apiUrl=%s smId=%s parentPath=%s", ss.apiUrl, smId, parentPath);
         Log.debugf("WRITE headers: %s body=%s", headers, body);
         String effectiveParentPath = (parentPath != null && !parentPath.isBlank()) ? parentPath : null;
-        // Adjust parent path for types that require sub-paths in BaSyx (collections/lists: /value, entity: /statements)
+        /* Adjust parent path for types that require sub-paths in BaSyx (collections/lists: /value, entity: /statements) */
         if (effectiveParentPath != null) {
             try {
                 String normalizedSmId = normalizeSubmodelId(smId);
@@ -290,7 +309,7 @@ public class SourceAasResource {
                 Log.warnf("Could not inspect parent element for path suffix resolution: %s", e.getMessage());
             }
         }
-        // Use raw smId (Base64URL) for upstream like Target System
+        /* Use raw smId (Base64URL) for upstream like Target System */
         var resp = traversal.createElement(ss.apiUrl, smId, effectiveParentPath, body, headers).await().indefinitely();
         int sc = resp.statusCode();
         Log.infof("Create element upstream status=%d msg=%s body=%s", sc, resp.statusMessage(), safeBody(resp));
@@ -302,7 +321,14 @@ public class SourceAasResource {
         aasService.throwHttpError(sc, resp.statusMessage(), resp.bodyAsString());
         return null; // This line will never be reached due to exception
     }
-
+    /**
+     * Updates (replaces) an existing AAS element in a submodel.
+     * @param sourceSystemId ID of the source system.
+     * @param smId Submodel ID.
+     * @param path Path of the element within the submodel.
+     * @param body JSON payload containing updated element data.
+     * @return HTTP Response with the update result.
+     */
     @PUT
     @Path("/submodels/{smId}/elements/{path:.+}")
     public Response putElement(@PathParam("sourceSystemId") Long sourceSystemId,
@@ -322,7 +348,14 @@ public class SourceAasResource {
         aasService.throwHttpError(sc, resp.statusMessage(), resp.bodyAsString());
         return null; // This line will never be reached due to exception
     }
-
+    /**
+     * Deletes a specific element from a submodel for the given Source System.
+     * Also updates the snapshot cache to reflect the deletion.
+     * @param sourceSystemId ID of the source system.
+     * @param smId Submodel ID.
+     * @param path Path of the element to delete.
+     * @return HTTP Response with deletion status.
+     */
     @DELETE
     @Path("/submodels/{smId}/elements/{path:.+}")
     public Response deleteElement(@PathParam("sourceSystemId") Long sourceSystemId,
@@ -344,6 +377,11 @@ public class SourceAasResource {
         return null; // This line will never be reached due to exception
     }
 
+    /**
+     * Safely retrieves the HTTP response body while truncating long outputs for logging.
+     * @param resp The HTTP response object.
+     * @return Truncated response body or null if unavailable.
+     */
     private String safeBody(HttpResponse<Buffer> resp) {
         try {
             String b = resp.bodyAsString();
@@ -354,22 +392,30 @@ public class SourceAasResource {
         }
     }
 
-    // Helper: Resolve a single element LIVE via deep scan if parentPath resolution fails (for view panel)
+    /**
+     * Attempts to resolve an element deeply via recursive traversal when direct retrieval fails.
+     * Used for nested or indirectly accessible elements.
+     * @param apiUrl Base API URL.
+     * @param smId Submodel ID.
+     * @param idShortPath Path to the element.
+     * @param headers HTTP headers for the request.
+     * @return JSON object of the resolved element or null if not found.
+     */
     private io.vertx.core.json.JsonObject resolveElementDeep(String apiUrl, String smId, String idShortPath, java.util.Map<String,String> headers) {
         try {
-            // Try direct GET first (deep)
+            /* Try direct GET first (deep) */
             var direct = traversal.getElement(apiUrl, smId, idShortPath, headers).await().indefinitely();
             if (direct.statusCode() >= 200 && direct.statusCode() < 300) {
                 String body = direct.bodyAsString();
                 if (body != null && !body.isBlank()) {
                     if (body.trim().startsWith("{")) return new io.vertx.core.json.JsonObject(body);
-                    // if wrapped
+                    /* if wrapped */
                     return new io.vertx.core.json.JsonObject().put("result", new io.vertx.core.json.JsonArray(body));
                 }
             }
         } catch (Exception ignore) {}
         try {
-            // Fallback: list all (deep) and recursively pick matching idShortPath
+            /* Fallback: list all (deep) and recursively pick matching idShortPath */
             var all = traversal.listElements(apiUrl, smId, "all", null, headers).await().indefinitely();
             if (all.statusCode() >= 200 && all.statusCode() < 300) {
                 String body = all.bodyAsString();
@@ -384,6 +430,14 @@ public class SourceAasResource {
         return null;
     }
 
+    /**
+     * Builds a children array response from a parent element's JSON body.
+     * Handles special structures like SubmodelElementList and Entity.
+     * @param body Parent JSON body.
+     * @param parentPath Parent element path.
+     * @param snapshotMode Whether the mode is snapshot (true) or live (false).
+     * @return HTTP Response containing the processed children or null if parsing fails.
+     */
     private Response buildChildrenResponseFromParentBody(String body, String parentPath, boolean snapshotMode) {
         try {
             if (body.trim().startsWith("{")) {
@@ -399,7 +453,7 @@ public class SourceAasResource {
                 }
                 if (directChildren != null) {
                     Log.infof("Source listElements: parent modelType=%s children=%d parentPath=%s", modelType, directChildren.size(), parentPath);
-                    // Special handling for SubmodelElementList flattening
+                    /* Special handling for SubmodelElementList flattening */
                     if ("SubmodelElementList".equalsIgnoreCase(modelType)) {
                         io.vertx.core.json.JsonArray flattened = new io.vertx.core.json.JsonArray();
                         for (int i = 0; i < directChildren.size(); i++) {
@@ -423,7 +477,7 @@ public class SourceAasResource {
                         }
                         if (!flattened.isEmpty()) return Response.ok(flattened.encode()).build();
                     }
-                    // Regular children processing
+                    /* Regular children processing */
                     io.vertx.core.json.JsonArray out = new io.vertx.core.json.JsonArray();
                     for (int i = 0; i < directChildren.size(); i++) {
                         var el = directChildren.getJsonObject(i);
@@ -443,6 +497,15 @@ public class SourceAasResource {
         return null;
     }
 
+    /**
+     * Fallback handler that performs a deep fetch of all elements and extracts children for a given parent path.
+     * Used when the parent element returns 404 or 400 in nested structures.
+     * @param apiUrl API base URL.
+     * @param smId Submodel ID.
+     * @param parentPath Parent element path.
+     * @param headers HTTP headers.
+     * @return HTTP Response with filtered child elements.
+     */
     private Response buildDeepChildrenFallbackResponse(String apiUrl, String smId, String parentPath, java.util.Map<String,String> headers) {
         try {
             Log.infof("Source listElements 404/400-fallback: trying deep fetch for parentPath=%s", parentPath);
@@ -458,7 +521,7 @@ public class SourceAasResource {
                     var el = arr.getJsonObject(i);
                     String p = el.getString("idShortPath", el.getString("idShort"));
                     if (p == null) continue;
-                    if (p.equals(parentPath)) continue; // skip parent itself
+                    if (p.equals(parentPath)) continue; /* skip parent itself */
                     if (p.startsWith(prefix)) {
                         String rest = p.substring(prefix.length());
                         if (!rest.contains("/")) {
@@ -475,6 +538,12 @@ public class SourceAasResource {
         return Response.ok("[]").build();
     }
 
+    /**
+     * Recursively searches for an element by its idShortPath within an array of elements.
+     * @param elements JSON array of elements to search through.
+     * @param targetPath Path to match.
+     * @return The found JSON object or null if not found.
+     */
     private io.vertx.core.json.JsonObject findElementByPathRecursive(io.vertx.core.json.JsonArray elements, String targetPath) {
         if (elements == null) return null;
         for (int i = 0; i < elements.size(); i++) {
@@ -482,17 +551,24 @@ public class SourceAasResource {
             if (el == null) continue;
             String idShort = el.getString("idShort");
             if (idShort == null || idShort.isBlank()) continue;
-            // Start recursive descent from this element
+            /* Start recursive descent from this element */
             var found = descendAndMatch(el, idShort, targetPath);
             if (found != null) return found;
         }
         return null;
     }
 
+    /**
+     * Recursively traverses nested element hierarchies to match the target path.
+     * @param element Current JSON element being checked.
+     * @param currentPath The current hierarchical path of the element.
+     * @param targetPath The full path being searched for.
+     * @return JSON object if found, otherwise null.
+     */
     private io.vertx.core.json.JsonObject descendAndMatch(io.vertx.core.json.JsonObject element, String currentPath, String targetPath) {
         if (targetPath.equals(currentPath)) return element;
         String modelType = element.getString("modelType");
-        // Collections and Lists: values are arrays of child elements
+        /* Collections and Lists: values are arrays of child elements */
         if ("SubmodelElementCollection".equalsIgnoreCase(modelType) || "SubmodelElementList".equalsIgnoreCase(modelType)) {
             var value = element.getValue("value");
             if (value instanceof io.vertx.core.json.JsonArray arr) {
@@ -507,7 +583,7 @@ public class SourceAasResource {
                 }
             }
         } else if ("Entity".equalsIgnoreCase(modelType)) {
-            // Entities may keep children under 'statements'
+            /* Entities may keep children under 'statements' */
             var statements = element.getValue("statements");
             if (statements instanceof io.vertx.core.json.JsonArray arr) {
                 for (int i = 0; i < arr.size(); i++) {
@@ -524,6 +600,14 @@ public class SourceAasResource {
         return null;
     }
 
+    /**
+     * Retrieves a specific AAS element either from the LIVE backend or from the SNAPSHOT database.
+     * @param sourceSystemId ID of the source system.
+     * @param smId Submodel ID.
+     * @param path Path to the element.
+     * @param source Data source (LIVE or SNAPSHOT).
+     * @return HTTP Response with the retrieved element.
+     */
     @GET
     @Path("/submodels/{smId}/elements/{path:.+}")
     public Response getElement(@PathParam("sourceSystemId") Long sourceSystemId,
@@ -558,6 +642,11 @@ public class SourceAasResource {
         return Response.ok(json.encode()).build();
     }
 
+    /**
+     * Decodes a Base64-encoded submodel ID if applicable, returning the original string if decoding fails.
+     * @param smId The submodel ID string to decode.
+     * @return Decoded submodel ID or the original string if decoding fails.
+     */
     private String normalizeSubmodelId(String smId) {
         if (smId == null) return null;
         try {

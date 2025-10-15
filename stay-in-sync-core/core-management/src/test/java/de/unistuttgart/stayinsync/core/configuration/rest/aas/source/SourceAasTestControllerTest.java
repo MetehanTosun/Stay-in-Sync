@@ -22,6 +22,11 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyMap;
 import static org.mockito.ArgumentMatchers.anyString;
 
+/**
+ * Integration tests for {@link de.unistuttgart.stayinsync.core.configuration.rest.aas.source.SourceAasTestController}.
+ * Verifies the functionality of the /aas/test endpoint for different Source System states.
+ * Tests include successful AAS connection, failed connection handling, and non-existent source system scenarios.
+ */
 @QuarkusTest
 public class SourceAasTestControllerTest {
 
@@ -34,11 +39,22 @@ public class SourceAasTestControllerTest {
     @InjectMock
     HttpHeaderBuilder headerBuilder;
 
+    /**
+     * Configures RestAssured to log request and response data when validation fails.
+     * This helps with debugging failing test cases.
+     */
     @BeforeEach
     void setUp() {
         RestAssured.enableLoggingOfRequestAndResponseIfValidationFails();
     }
 
+    /**
+     * Creates a mock HTTP response with the specified status code and body.
+     *
+     * @param statusCode The HTTP status code for the mock response.
+     * @param body The mock response body as a string.
+     * @return A mocked {@link HttpResponse} object with predefined status and body.
+     */
     private HttpResponse<Buffer> mockResponse(int statusCode, String body) {
         HttpResponse<Buffer> response = Mockito.mock(HttpResponse.class);
         Mockito.when(response.statusCode()).thenReturn(statusCode);
@@ -47,9 +63,12 @@ public class SourceAasTestControllerTest {
         return response;
     }
 
+    /**
+     * Tests a successful AAS test connection.
+     * Ensures that a valid Source System with a reachable AAS endpoint returns a 200 OK status and expected JSON body.
+     */
     @Test
     void testAasTest_Success() {
-        // Given
         Long sourceSystemId = 1L;
         String responseBody = "{\"idShort\":\"shell\",\"assetKind\":\"asset\"}";
         
@@ -67,7 +86,6 @@ public class SourceAasTestControllerTest {
         Mockito.when(traversal.getShell(anyString(), anyString(), anyMap()))
                .thenReturn(Uni.createFrom().item(mockResponse));
 
-        // When & Then
         given()
             .contentType("application/json")
             .body("{}")
@@ -78,9 +96,12 @@ public class SourceAasTestControllerTest {
             .body(equalTo(responseBody));
     }
 
+    /**
+     * Tests behavior when the AAS connection fails.
+     * Simulates an HTTP 500 error from the AAS API and verifies that the endpoint responds with the correct status code.
+     */
     @Test
     void testAasTest_ConnectionFailed() {
-        // Given
         Long sourceSystemId = 1L;
         String responseBody = "{\"status\":\"error\",\"message\":\"Connection failed\"}";
         
@@ -100,7 +121,6 @@ public class SourceAasTestControllerTest {
         Mockito.doThrow(new de.unistuttgart.stayinsync.core.configuration.exception.CoreManagementWebException(jakarta.ws.rs.core.Response.Status.INTERNAL_SERVER_ERROR, "OK", responseBody))
                 .when(aasService).throwHttpError(500, "OK", responseBody);
 
-        // When & Then
         given()
             .contentType("application/json")
             .body("{}")
@@ -110,18 +130,19 @@ public class SourceAasTestControllerTest {
             .statusCode(500);
     }
 
+    /**
+     * Tests behavior when a non-existent Source System ID is provided.
+     * Verifies that the system returns a 404 Not Found error as expected.
+     */
     @Test
     void testAasTest_NonExistentSourceSystem() {
-        // Given
         Mockito.when(aasService.validateAasSource(Mockito.isNull()))
                 .thenThrow(new de.unistuttgart.stayinsync.core.configuration.exception.CoreManagementException(
                         jakarta.ws.rs.core.Response.Status.NOT_FOUND, "Source system not found", "Source system is null"));
         
-        // Mock the error mapping service to return the correct HTTP response
         Mockito.doThrow(new de.unistuttgart.stayinsync.core.configuration.exception.CoreManagementWebException(jakarta.ws.rs.core.Response.Status.NOT_FOUND, "Source system not found", "Source system is null"))
                 .when(aasService).throwHttpError(404, "Source system not found", "Source system is null");
 
-        // When & Then
         given()
             .contentType("application/json")
             .body("{}")

@@ -19,8 +19,9 @@ import org.eclipse.microprofile.openapi.annotations.responses.APIResponse;
 import org.eclipse.microprofile.openapi.annotations.responses.APIResponses;
 
 /**
- * AAS Value Management Controller for Target Systems.
- * Handles value operations for AAS elements within submodels.
+ * REST controller responsible for managing AAS (Asset Administration Shell) element values
+ * within Target Systems. Provides endpoints for retrieving and updating AAS element values
+ * through the AasTraversalClient and TargetSystemAasService.
  */
 @Path("/api/config/target-system/{targetSystemId}/aas")
 @Produces(MediaType.APPLICATION_JSON)
@@ -45,6 +46,16 @@ public class TargetAasValueController {
         @APIResponse(responseCode = "404", description = "Target system, submodel or element not found"),
         @APIResponse(responseCode = "500", description = "Failed to retrieve element value")
     })
+    /**
+     * Retrieves the current value of a specific AAS element within a submodel.
+     * Validates the Target System configuration and performs a GET request to the AAS API.
+     * Logs request and response details for traceability.
+     *
+     * @param targetSystemId The ID of the Target System containing the submodel.
+     * @param smId The ID of the submodel containing the element.
+     * @param path The hierarchical path to the element whose value should be retrieved.
+     * @return A reactive Uni<Response> containing the element value or an error message.
+     */
     public Uni<Response> getElementValue(@PathParam("targetSystemId") Long targetSystemId,
                                         @PathParam("smId") String smId,
                                         @PathParam("path") String path) {
@@ -72,6 +83,17 @@ public class TargetAasValueController {
         @APIResponse(responseCode = "404", description = "Target system, submodel or element not found"),
         @APIResponse(responseCode = "500", description = "Failed to update element value")
     })
+    /**
+     * Updates the value of a specific AAS element within a submodel in the Target System.
+     * Validates the Target System configuration and executes a PATCH request to the AAS API.
+     * Logs both the request body and upstream response for transparency.
+     *
+     * @param targetSystemId The ID of the Target System.
+     * @param smId The ID of the submodel containing the element.
+     * @param path The hierarchical path to the element whose value is to be updated.
+     * @param body JSON payload containing the new value for the element.
+     * @return HTTP Response indicating the result of the update operation.
+     */
     public Response patchElementValue(@PathParam("targetSystemId") Long targetSystemId,
                                       @PathParam("smId") String smId,
                                       @PathParam("path") String path,

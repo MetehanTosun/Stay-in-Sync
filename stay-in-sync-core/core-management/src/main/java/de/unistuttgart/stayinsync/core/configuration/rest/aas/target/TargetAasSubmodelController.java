@@ -18,8 +18,9 @@ import org.eclipse.microprofile.openapi.annotations.responses.APIResponse;
 import org.eclipse.microprofile.openapi.annotations.responses.APIResponses;
 
 /**
- * AAS Submodel Management Controller for Target Systems.
- * Handles CRUD operations for AAS submodels.
+ * REST controller for managing AAS (Asset Administration Shell) submodels in Target Systems.
+ * Provides endpoints for creating, updating, and deleting AAS submodels.
+ * Integrates with TargetSystemAasService and AasTraversalClient to perform AAS operations.
  */
 @Path("/api/config/target-system/{targetSystemId}/aas")
 @Produces(MediaType.APPLICATION_JSON)
@@ -36,6 +37,14 @@ public class TargetAasSubmodelController {
     @Inject
     HttpHeaderBuilder headerBuilder;
 
+    /**
+     * Creates a new AAS submodel for the specified Target System.
+     * Automatically adds a submodel reference to the AAS shell after creation if possible.
+     *
+     * @param targetSystemId ID of the Target System.
+     * @param body JSON representation of the submodel to create.
+     * @return HTTP Response indicating creation success or failure.
+     */
     @POST
     @Path("/submodels")
     @Operation(summary = "Create submodel", description = "Creates a new submodel in the target AAS")
@@ -45,8 +54,8 @@ public class TargetAasSubmodelController {
         @APIResponse(responseCode = "404", description = "Target system not found"),
         @APIResponse(responseCode = "500", description = "Failed to create submodel")
     })
-    public Response createSubmodel(@PathParam("targetSystemId") Long targetSystemId, 
-                                  @RequestBody(description = "Submodel JSON", content = @Content(schema = @Schema(implementation = String.class))) String body) {
+    public Response createSubmodel(@PathParam("targetSystemId") Long targetSystemId,
+                                   @RequestBody(description = "Submodel JSON", content = @Content(schema = @Schema(implementation = String.class))) String body) {
         TargetSystem ts = TargetSystem.<TargetSystem>findByIdOptional(targetSystemId).orElse(null);
         ts = aasService.validateAasTarget(ts);
         var headers = headerBuilder.buildMergedHeaders(ts, HttpHeaderBuilder.Mode.WRITE_JSON);
@@ -76,6 +85,13 @@ public class TargetAasSubmodelController {
         return null; // This line will never be reached due to exception
     }
 
+    /**
+     * Safely extracts and truncates the body of an HTTP response for logging purposes.
+     * Prevents overly long messages by limiting output length.
+     *
+     * @param resp The HTTP response to process.
+     * @return Truncated body string or an error message if extraction fails.
+     */
     private static String safeBody(io.vertx.mutiny.ext.web.client.HttpResponse<io.vertx.mutiny.core.buffer.Buffer> resp) {
         try {
             String body = resp.bodyAsString();
@@ -85,6 +101,14 @@ public class TargetAasSubmodelController {
         }
     }
 
+    /**
+     * Updates an existing AAS submodel within the specified Target System.
+     *
+     * @param targetSystemId ID of the Target System.
+     * @param smId ID of the submodel to update.
+     * @param body JSON string containing the updated submodel data.
+     * @return HTTP Response with the update result.
+     */
     @PUT
     @Path("/submodels/{smId}")
     @Operation(summary = "Update submodel", description = "Updates an existing submodel in the target AAS")
@@ -104,6 +128,13 @@ public class TargetAasSubmodelController {
         return Response.status(resp.statusCode()).entity(resp.bodyAsString()).build();
     }
 
+    /**
+     * Deletes an AAS submodel from the specified Target System.
+     *
+     * @param targetSystemId ID of the Target System.
+     * @param smId ID of the submodel to delete.
+     * @return HTTP Response indicating success or failure of deletion.
+     */
     @DELETE
     @Path("/submodels/{smId}")
     @Operation(summary = "Delete submodel", description = "Deletes a submodel from the target AAS")

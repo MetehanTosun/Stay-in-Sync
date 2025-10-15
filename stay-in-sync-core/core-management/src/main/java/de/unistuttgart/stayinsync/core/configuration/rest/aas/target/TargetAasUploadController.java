@@ -21,6 +21,11 @@ import org.jboss.resteasy.reactive.RestForm;
 
 import java.nio.file.Files;
 
+/**
+ * REST controller for handling AASX (Asset Administration Shell package) uploads for Target Systems.
+ * Provides endpoints for uploading, previewing, and selectively attaching submodels or collections
+ * from AASX files to Target System AAS structures.
+ */
 @Path("/api/config/target-system/{targetSystemId}/aas")
 @RegisterForReflection
 @Blocking
@@ -32,6 +37,14 @@ public class TargetAasUploadController {
     @Context
     HttpServerRequest request;
 
+    /**
+     * Previews attachable items (submodels or collections) from an uploaded AASX file for a Target System.
+     * This endpoint allows clients to inspect AASX file contents without persisting any data.
+     *
+     * @param targetSystemId ID of the Target System.
+     * @param file The uploaded AASX file as multipart form data.
+     * @return HTTP Response with a JSON preview of the AASX content or an error message.
+     */
     @POST
     @Path("/upload/preview")
     @Consumes(MediaType.MULTIPART_FORM_DATA)
@@ -58,6 +71,14 @@ public class TargetAasUploadController {
         }
     }
 
+    /**
+     * Uploads a complete AASX file and attaches all contained submodels to the Target System AAS.
+     * The method validates the file, logs upload metadata, and triggers the backend attachment process.
+     *
+     * @param targetSystemId ID of the Target System.
+     * @param file The uploaded AASX file as multipart form data.
+     * @return HTTP Response indicating success, invalid file, or conflict (duplicate IDs).
+     */
     @POST
     @Path("/upload")
     @Consumes(MediaType.MULTIPART_FORM_DATA)
@@ -84,7 +105,6 @@ public class TargetAasUploadController {
             Log.infof("TargetAasResource.uploadAasx: received targetSystemId=%d file=%s size=%d bytes", targetSystemId, filename, fileBytes.length);
             int attached = snapshotService.attachSubmodelsLiveToTarget(targetSystemId, fileBytes);
             Log.infof("TargetAasResource.uploadAasx: attachSubmodelsLiveToTarget attached=%d", attached);
-            // Mirror Source behavior: trigger a lightweight refresh on Source side; for Target we simply return accepted
             io.vertx.core.json.JsonObject result = new io.vertx.core.json.JsonObject()
                     .put("filename", filename)
                     .put("attachedSubmodels", attached);
@@ -98,6 +118,15 @@ public class TargetAasUploadController {
         }
     }
 
+    /**
+     * Attaches only selected submodels or top-level elements from an uploaded AASX file to the Target System.
+     * Accepts a JSON selection parameter defining which components to import.
+     *
+     * @param targetSystemId ID of the Target System.
+     * @param file The uploaded AASX file as multipart form data.
+     * @param selectionJson JSON string specifying which submodels or elements to attach.
+     * @return HTTP Response with details of attached items or an error message.
+     */
     @POST
     @Path("/upload/attach-selected")
     @Consumes(MediaType.MULTIPART_FORM_DATA)

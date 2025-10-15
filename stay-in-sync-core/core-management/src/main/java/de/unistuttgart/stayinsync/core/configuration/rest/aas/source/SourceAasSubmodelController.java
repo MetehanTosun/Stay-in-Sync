@@ -18,8 +18,10 @@ import org.eclipse.microprofile.openapi.annotations.responses.APIResponse;
 import org.eclipse.microprofile.openapi.annotations.responses.APIResponses;
 
 /**
- * AAS Submodel Management Controller for Source Systems.
- * Handles CRUD operations for AAS submodels.
+ * REST controller responsible for managing AAS (Asset Administration Shell) submodels
+ * within Source Systems. Provides endpoints to create, update, and delete submodels.
+ * Uses AasTraversalClient for communication with AAS APIs and maintains snapshots
+ * via AasStructureSnapshotService.
  */
 @Path("/api/config/source-system/{sourceSystemId}/aas")
 @Produces(MediaType.APPLICATION_JSON)
@@ -39,6 +41,15 @@ public class SourceAasSubmodelController {
     @Inject
     de.unistuttgart.stayinsync.core.configuration.service.aas.HttpHeaderBuilder headerBuilder;
 
+    /**
+     * Creates a new AAS submodel for the given Source System.
+     * Automatically adds a submodel reference to the AAS shell if successful.
+     * Also updates the local snapshot with the new submodel structure.
+     *
+     * @param sourceSystemId ID of the source system.
+     * @param body JSON representation of the submodel to create.
+     * @return HTTP Response indicating success or failure.
+     */
     @POST
     @Path("/submodels")
     @Operation(summary = "Create submodel", description = "Creates a new submodel in the AAS")
@@ -82,6 +93,15 @@ public class SourceAasSubmodelController {
         return null; // This line will never be reached due to exception
     }
 
+    /**
+     * Updates an existing AAS submodel in the given Source System.
+     * If successful, updates the local snapshot to reflect the modified submodel.
+     *
+     * @param sourceSystemId ID of the source system.
+     * @param smId ID of the submodel to update.
+     * @param body JSON representation of the updated submodel.
+     * @return HTTP Response containing the updated submodel or an error message.
+     */
     @PUT
     @Path("/submodels/{smId}")
     @Operation(summary = "Update submodel", description = "Updates an existing submodel in the AAS")
@@ -109,6 +129,14 @@ public class SourceAasSubmodelController {
         return null; // This line will never be reached due to exception
     }
 
+    /**
+     * Deletes an AAS submodel from the specified Source System.
+     * If successful, removes the submodel entry from the snapshot.
+     *
+     * @param sourceSystemId ID of the source system.
+     * @param smId ID of the submodel to delete.
+     * @return HTTP Response indicating success or failure of the deletion.
+     */
     @DELETE
     @Path("/submodels/{smId}")
     @Operation(summary = "Delete submodel", description = "Deletes a submodel from the AAS")
@@ -134,6 +162,13 @@ public class SourceAasSubmodelController {
         return null; // This line will never be reached due to exception
     }
 
+    /**
+     * Safely extracts the HTTP response body for logging.
+     * Truncates the body to 200 characters to avoid overly long log messages.
+     *
+     * @param resp HTTP response object containing the body.
+     * @return The truncated body string or an error message if extraction fails.
+     */
     private static String safeBody(io.vertx.mutiny.ext.web.client.HttpResponse<io.vertx.mutiny.core.buffer.Buffer> resp) {
         try {
             String body = resp.bodyAsString();

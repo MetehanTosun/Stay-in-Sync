@@ -22,8 +22,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * AAS Test and Discovery Controller for Source Systems.
- * Handles AAS connectivity testing and submodel discovery.
+ * REST controller responsible for testing AAS connectivity and listing submodels
+ * for Source Systems. Handles communication with the AAS via the traversal client.
  */
 @Path("/api/config/source-system/{sourceSystemId}/aas")
 @Produces(MediaType.APPLICATION_JSON)
@@ -40,6 +40,14 @@ public class SourceAasTestController {
     @Inject
     de.unistuttgart.stayinsync.core.configuration.service.aas.HttpHeaderBuilder headerBuilder;
 
+    /**
+     * Tests the connectivity to an AAS (Asset Administration Shell) for a given Source System.
+     * Validates the system configuration, builds the necessary headers, and attempts to
+     * retrieve the AAS shell. Logs detailed information about the request and response.
+     *
+     * @param sourceSystemId The ID of the Source System to test.
+     * @return A reactive Uni<Response> with the test result.
+     */
     @POST
     @Path("/test")
     @Operation(summary = "Test AAS connectivity", description = "Tests the connectivity to the AAS server")
@@ -67,6 +75,18 @@ public class SourceAasTestController {
                 });
     }
 
+    /**
+     * Retrieves the list of submodels for a given Source System.
+     * Supports both LIVE and SNAPSHOT modes:
+     * <ul>
+     *   <li>LIVE mode - Fetches submodels directly from the AAS API and filters out stale references.</li>
+     *   <li>SNAPSHOT mode - Loads submodels from the local database cache.</li>
+     * </ul>
+     *
+     * @param sourceSystemId The ID of the Source System.
+     * @param source The source mode (LIVE or SNAPSHOT), defaults to SNAPSHOT.
+     * @return A reactive Uni<Response> containing a list of SubmodelSummaryDTOs.
+     */
     @GET
     @Path("/submodels")
     @Operation(summary = "List submodels", description = "Lists all submodels from the AAS")
@@ -93,7 +113,6 @@ public class SourceAasTestController {
                 if (sc >= 200 && sc < 300) {
                     String body = resp.bodyAsString();
                     try {
-                        // Filter out refs that point to non-existing submodels (404), to avoid stale entries
                         io.vertx.core.json.JsonArray refs;
                         boolean wrapped = false;
                         if (body != null && body.trim().startsWith("{")) {
@@ -108,7 +127,6 @@ public class SourceAasTestController {
                             io.vertx.core.json.JsonObject ref = refs.getJsonObject(i);
                             String submodelId = ref.getString("keys", "");
                             if (submodelId != null && !submodelId.isEmpty()) {
-                                // Test if this submodel actually exists by trying to get it
                                 try {
                                     var testResp = traversal.getSubmodel(apiUrl, submodelId, headersLive).await().indefinitely();
                                     if (testResp.statusCode() >= 200 && testResp.statusCode() < 300) {
@@ -139,7 +157,6 @@ public class SourceAasTestController {
                 return null; // This line will never be reached due to exception
             });
         } else {
-            // SNAPSHOT source
             Log.infof("List submodels SNAPSHOT: sourceSystemId=%d", sourceSystemId);
             List<de.unistuttgart.stayinsync.core.configuration.persistence.entities.aas.AasSubmodelLite> submodels = 
                 de.unistuttgart.stayinsync.core.configuration.persistence.entities.aas.AasSubmodelLite.list("sourceSystem.id", sourceSystemId);
@@ -151,6 +168,13 @@ public class SourceAasTestController {
         }
     }
 
+    /**
+     * Safely extracts and truncates the body of an HTTP response for logging purposes.
+     * Prevents long payloads from cluttering log output.
+     *
+     * @param resp The HTTP response to process.
+     * @return A shortened string representation of the body, or an error indicator if reading fails.
+     */
     private static String safeBody(HttpResponse<Buffer> resp) {
         try {
             String body = resp.bodyAsString();

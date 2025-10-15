@@ -55,7 +55,7 @@ public class TargetSystemAasService {
             case 403 -> Response.Status.FORBIDDEN;
             case 404 -> Response.Status.NOT_FOUND;
             case 409 -> Response.Status.CONFLICT;
-            case 422 -> Response.Status.BAD_REQUEST; // UNPROCESSABLE_ENTITY not available in JAX-RS
+            case 422 -> Response.Status.BAD_REQUEST; 
             case 500 -> Response.Status.INTERNAL_SERVER_ERROR;
             case 502 -> Response.Status.BAD_GATEWAY;
             case 503 -> Response.Status.SERVICE_UNAVAILABLE;

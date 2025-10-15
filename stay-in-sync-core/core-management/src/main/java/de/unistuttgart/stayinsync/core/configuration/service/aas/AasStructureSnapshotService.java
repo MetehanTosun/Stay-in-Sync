@@ -17,6 +17,11 @@ import jakarta.inject.Inject;
 import java.util.HashSet;
 import java.util.Set;
 
+/**
+ * Service responsible for managing and refreshing AAS structure snapshots.
+ * Handles the import, parsing, and persistence of submodels and their elements
+ * from both live AAS API sources and AASX archive files.
+ */
 @ApplicationScoped
 public class AasStructureSnapshotService {
 
@@ -29,11 +34,22 @@ public class AasStructureSnapshotService {
     @Inject
     HttpHeaderBuilder headerBuilder;
 
+    /**
+     * Initializes the snapshot for a given source system by triggering a full refresh.
+     *
+     * @param sourceSystemId The ID of the source system whose snapshot should be built.
+     */
     @Transactional
     public void buildInitialSnapshot(Long sourceSystemId) {
         refreshSnapshot(sourceSystemId);
     }
 
+    /**
+     * Refreshes the AAS snapshot for a specific source system by fetching submodels
+     * and elements from the connected AAS API and storing them locally.
+     *
+     * @param sourceSystemId The ID of the source system to refresh.
+     */
     @Transactional
     public void refreshSnapshot(Long sourceSystemId) {
         var ssOpt = SourceSystem.<SourceSystem>findByIdOptional(sourceSystemId);
@@ -112,6 +128,15 @@ public class AasStructureSnapshotService {
         public DuplicateIdException(String message) { super(message); }
     }
 
+    /**
+     * Parses and imports an AASX archive into the database, extracting submodels
+     * and elements from JSON and XML sources.
+     *
+     * @param sourceSystemId The ID of the source system to which data should be attached.
+     * @param filename The original name of the uploaded AASX file.
+     * @param fileBytes The raw file contents of the AASX archive.
+     * @throws InvalidAasxException If the archive is invalid or cannot be processed.
+     */
     @Transactional
     public void ingestAasx(Long sourceSystemId, String filename, byte[] fileBytes) {
         if (fileBytes == null || fileBytes.length == 0) {
@@ -301,10 +326,12 @@ public class AasStructureSnapshotService {
     }
 
     /**
-     * Parse an AASX and attach ONLY the contained submodels to the existing AAS in the upstream BaSyx server.
-     * - For each detected submodel JSON: POST /submodels, then POST /shells/{aasId}/submodel-refs
-     * - Skips duplicates (by submodel id)
-     * - Returns count of successfully attached submodels
+     * Attaches submodels from an AASX file directly to a live SourceSystem via API calls.
+     * Creates and links submodels to the AAS shell upstream.
+     *
+     * @param sourceSystemId The ID of the source system.
+     * @param fileBytes The content of the AASX archive.
+     * @return The number of successfully attached submodels.
      */
     @Transactional
     public int attachSubmodelsLive(Long sourceSystemId, byte[] fileBytes) {
@@ -539,7 +566,12 @@ public class AasStructureSnapshotService {
     }
 
     /**
-     * Same as attachSubmodelsLive but for TargetSystem by id. Does not touch snapshots.
+     * Same as {@link #attachSubmodelsLive(Long, byte[])} but operates on a TargetSystem.
+     * Uploads and attaches submodels directly to the target system’s AAS shell.
+     *
+     * @param targetSystemId The ID of the target system.
+     * @param fileBytes The content of the AASX archive.
+     * @return The number of successfully attached submodels.
      */
     @Transactional
     public int attachSubmodelsLiveToTarget(Long targetSystemId, byte[] fileBytes) {
@@ -708,8 +740,11 @@ public class AasStructureSnapshotService {
     }
 
     /**
-     * Build a lightweight preview of attachable items from an AASX file.
-     * Returns a JSON object: { "submodels": [ { id, idShort, kind, from: "json"|"xml", elements: [ { idShort, modelType } ] } ] }
+     * Builds a lightweight JSON preview of attachable items from an AASX file.
+     * Used to show submodels and their elements before attaching them.
+     *
+     * @param fileBytes The content of the AASX archive.
+     * @return A JSON object describing available submodels and elements.
      */
     public io.vertx.core.json.JsonObject previewAasx(byte[] fileBytes) {
         if (fileBytes == null || fileBytes.length == 0) {
@@ -857,8 +892,12 @@ public class AasStructureSnapshotService {
     }
 
     /**
-     * Attach only selected parts from an AASX: full submodels or selected top-level elements (collections/lists) of submodels.
-     * selection JSON format: { "submodels": [ { "id": "...", "full": true }, { "id": "...", "elements": ["address","items"] } ] }
+     * Attaches only selected submodels or elements from an AASX to a SourceSystem.
+     *
+     * @param sourceSystemId The ID of the source system.
+     * @param fileBytes The content of the AASX archive.
+     * @param selection JSON structure specifying which submodels or elements to attach.
+     * @return The number of successfully attached items.
      */
     @Transactional
     public int attachSelectedFromAasx(Long sourceSystemId, byte[] fileBytes, io.vertx.core.json.JsonObject selection) {
@@ -1053,7 +1092,12 @@ public class AasStructureSnapshotService {
     }
 
     /**
-     * Attach only selected parts from an AASX to a TargetSystem by id.
+     * Attaches only selected submodels or elements from an AASX to a TargetSystem.
+     *
+     * @param targetSystemId The ID of the target system.
+     * @param fileBytes The content of the AASX archive.
+     * @param selection JSON structure specifying which submodels or elements to attach.
+     * @return The number of successfully attached items.
      */
     @Transactional
     public int attachSelectedFromAasxToTarget(Long targetSystemId, byte[] fileBytes, io.vertx.core.json.JsonObject selection) {
