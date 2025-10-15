@@ -1398,7 +1398,7 @@ save(): void {
       
       console.log('[SourceCreate] Element created successfully');
       
-      // Show success toast
+      ``
       this.messageService.add({
         key: 'sourceAAS',
         severity: 'success',
@@ -1407,13 +1407,13 @@ save(): void {
         life: 3000
       });
       
-      // Refresh the tree
+      
       this.discoverSubmodels();
       
     } catch (error) {
       console.error('[SourceCreate] Error creating element:', error);
       
-      // Show error toast
+      
       const errorMessage = String((error as any)?.error || (error as any)?.message || 'Failed to create element');
       if (errorMessage.includes('Duplicate entry')) {
         this.messageService.add({
@@ -1492,7 +1492,7 @@ save(): void {
               childrenCount: mapped.length
             });
           } else {
-            // root
+        
             const attachNode = this.findNodeByKey(submodelId, this.treeNodes);
             if (attachNode) {
               attachNode.children = mapped;
@@ -1505,7 +1505,7 @@ save(): void {
             }
           }
           
-          // Force tree update
+      
           this.treeNodes = [...this.treeNodes];
           console.log('[SourceCreate] refreshNodeLive: Tree updated');
         },
@@ -1521,7 +1521,7 @@ save(): void {
   }
 
   deleteSubmodel(submodelId: string): void {
-    // route through confirmation dialog
+    
     this.deleteSubmodelId = submodelId;
     this.showDeleteSubmodelDialog = true;
   }
@@ -1536,8 +1536,7 @@ save(): void {
       return;
     }
     
-    // Use the original submodelId, not base64 encoded
-    // The backend will handle the encoding internally
+    
     
     console.log('[SourceCreate] deleteElement: Deleting element', {
       systemId: this.createdSourceSystemId,
@@ -1545,7 +1544,7 @@ save(): void {
       idShortPath
     });
     
-    // Skip existence check for deep elements and proceed directly with deletion
+
     console.log('[SourceCreate] deleteElement: Proceeding directly with deletion (skipping existence check for deep elements)');
     this.performDelete(submodelId, idShortPath);
   }
@@ -1555,11 +1554,11 @@ save(): void {
       next: () => {
         console.log('[SourceCreate] deleteElement: Element deleted successfully');
         
-        // Trigger discover to refresh the entire tree
+     
         console.log('[SourceCreate] deleteElement: Triggering discover to refresh tree');
         this.discoverSubmodels();
         
-        // Show success message
+        
         this.messageService.add({
           key: 'sourceAAS',
           severity: 'success',
@@ -1579,11 +1578,11 @@ save(): void {
           submodelId
         });
         
-        // Check if it's a 404 error (element not found)
+        
         if (err.status === 404) {
           console.log('[SourceCreate] deleteElement: Element not found, removing from tree anyway');
           
-          // Remove the element from the tree directly
+          
           this.removeElementFromTree(submodelId, idShortPath);
           
           this.messageService.add({
@@ -1616,10 +1615,10 @@ save(): void {
       parentPath
     });
     
-    // Try to find and remove the element from the tree
+    
     let elementRemoved = false;
     
-    // Find the parent node
+    
     const parentNode = this.findNodeByKey(parentKey, this.treeNodes);
     if (parentNode && parentNode.children) {
       console.log('[SourceCreate] removeElementFromTree: Parent node found', {
@@ -1627,7 +1626,7 @@ save(): void {
         childrenCount: parentNode.children.length
       });
       
-      // Remove the element from parent's children
+      
       const initialLength = parentNode.children.length;
       parentNode.children = parentNode.children.filter(child => {
         const shouldKeep = child.key !== elementKey;
@@ -1648,17 +1647,17 @@ save(): void {
       });
     }
     
-    // Force tree update
+  
     this.treeNodes = [...this.treeNodes];
     
-    // If element wasn't found in the tree, refresh the parent node
+   
     if (!elementRemoved) {
       console.log('[SourceCreate] removeElementFromTree: Element not found in tree, refreshing parent node');
       this.refreshNodeLive(submodelId, parentPath, parentNode || undefined);
     }
   }
 
-  // Delete Submodel confirmation
+
   showDeleteSubmodelDialog = false;
   deleteSubmodelId: string | null = null;
   proceedDeleteSubmodel(): void {
@@ -1681,7 +1680,7 @@ save(): void {
     });
   }
 
-  // PATCH value dialog
+  
   showValueDialog = false;
   valueSubmodelId = '';
   valueElementPath = '';
@@ -1691,7 +1690,7 @@ save(): void {
     this.valueSubmodelId = smId;
     this.valueElementPath = element.idShortPath || element.data?.idShortPath || element.raw?.idShortPath || element.idShort;
     this.valueTypeHint = element.valueType || 'xs:string';
-    // Prefill with current LIVE value if available
+    
     if (this.selectedLivePanel && this.selectedNode && this.selectedNode.data?.idShortPath === this.valueElementPath) {
       this.valueNew = (this.selectedLivePanel.value ?? '').toString();
     } else {
@@ -1707,11 +1706,11 @@ save(): void {
       .subscribe({
         next: () => {
           this.showValueDialog = false;
-          // Refresh LIVE details of the selected node if matching
+          
           if (this.selectedNode && this.selectedNode.data?.idShortPath === this.valueElementPath) {
             this.loadLiveElementDetails(this.valueSubmodelId, this.valueElementPath, this.selectedNode);
           } else {
-            // Otherwise refresh parent listing
+           
             const parent = this.valueElementPath.includes('/') ? this.valueElementPath.substring(0, this.valueElementPath.lastIndexOf('/')) : '';
             const parentNode = parent ? this.findNodeByKey(`${this.valueSubmodelId}::${parent}`, this.treeNodes) : this.findNodeByKey(this.valueSubmodelId, this.treeNodes);
             this.refreshNodeLive(this.valueSubmodelId, parent, parentNode || undefined);
@@ -1737,7 +1736,7 @@ save(): void {
       const n = parseFloat(raw);
       return isNaN(n) ? raw : n;
     }
-    return raw; // default string
+    return raw; 
   }
   /**
    * Advances the stepper to the next step.
@@ -1745,7 +1744,7 @@ save(): void {
    */
   goNext(): void {
     if (this.currentStep === 0) {
-      // Avoid duplicate creation: if already created (e.g., via Test), just advance
+    
       if (this.createdSourceSystemId) {
         this.currentStep = 1;
         return;

@@ -1,3 +1,4 @@
+/** Unit tests covering bug fixes for `CreateSourceSystemComponent`. */
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { HttpClientTestingModule } from '@angular/common/http/testing';
 import { RouterTestingModule } from '@angular/router/testing';
@@ -8,6 +9,7 @@ import { CreateSourceSystemComponent } from './create-source-system.component';
 import { AasService } from '../../services/aas.service';
 import { HttpErrorService } from '../../../../core/services/http-error.service';
 
+/** Verifies regressions remain fixed: duplicates, empty collections, value extraction, deletion, encoding, toasts. */
 describe('CreateSourceSystemComponent Bug Fixes', () => {
   let component: CreateSourceSystemComponent;
   let fixture: ComponentFixture<CreateSourceSystemComponent>;
@@ -15,6 +17,7 @@ describe('CreateSourceSystemComponent Bug Fixes', () => {
   let messageService: jasmine.SpyObj<MessageService>;
   let httpErrorService: jasmine.SpyObj<HttpErrorService>;
 
+  /** Configure TestBed and seed spies for AAS-related calls. */
   beforeEach(async () => {
     const aasServiceSpy = jasmine.createSpyObj('AasService', [
       'createElement', 'deleteElement', 'getElement', 'listElements', 'encodeIdToBase64Url', 'refreshSnapshot'
@@ -50,6 +53,7 @@ describe('CreateSourceSystemComponent Bug Fixes', () => {
     spyOn<any>(component, 'hydrateNodeTypesForNodes').and.returnValue(of([]));
   });
 
+  /** Prevent listing duplicates by filtering to direct children only. */
   describe('Bug Fix: Duplicate Elements Prevention', () => {
     it('should filter children correctly to prevent duplicates', () => {
       const submodelId = 'test-submodel';
@@ -95,6 +99,7 @@ describe('CreateSourceSystemComponent Bug Fixes', () => {
     });
   });
 
+  /** Treat empty collections/lists as leaf nodes to avoid pointless expansion. */
   describe('Bug Fix: Empty Collections/Lists Prevention', () => {
     it('should prevent expansion of empty collections', () => {
       const element = {
@@ -136,6 +141,7 @@ describe('CreateSourceSystemComponent Bug Fixes', () => {
     });
   });
 
+  /** Recognize element types from provided `type` field for deep elements. */
   describe('Bug Fix: Type Recognition for Deep Elements', () => {
     it('should recognize File type from type field', () => {
       const element = {
@@ -176,6 +182,7 @@ describe('CreateSourceSystemComponent Bug Fixes', () => {
     });
   });
 
+  /** Extract real values for detail panel and avoid mistaking valueType as value. */
   describe('Bug Fix: Value Extraction for Detail Panel', () => {
     it('should extract value from node.data.raw', () => {
       const node = {
@@ -229,6 +236,7 @@ describe('CreateSourceSystemComponent Bug Fixes', () => {
     });
   });
 
+  /** Handle 404 deletes gracefully and proceed with UI cleanup. */
   describe('Bug Fix: Delete Element Error Handling', () => {
     it('should handle 404 errors gracefully during deletion', () => {
       const error = { status: 404, message: 'Element not found' } as any;
@@ -248,6 +256,7 @@ describe('CreateSourceSystemComponent Bug Fixes', () => {
     });
   });
 
+  /** Ensure robust handling for long/complex element paths. */
   describe('Bug Fix: URL Encoding for Long Paths', () => {
     it('should handle long element paths correctly', () => {
       const longPath = 'ConditionsOfReliabilityCharacteristics/RatedVoltage/SubProperty/DeepNested/Value';
@@ -272,6 +281,7 @@ describe('CreateSourceSystemComponent Bug Fixes', () => {
     });
   });
 
+  /** Toasts are emitted by the component in success/error scenarios where applicable. */
   describe('Bug Fix: Toast Message Handling', () => {
     it('should open dialog for element creation (toast handled elsewhere)', () => {
       component.openCreateElement('test-submodel', undefined);
