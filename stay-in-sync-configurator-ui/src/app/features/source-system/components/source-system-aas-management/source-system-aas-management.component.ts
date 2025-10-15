@@ -317,6 +317,24 @@ export class SourceSystemAasManagementComponent implements OnInit {
     if (kind === 'collection') this.aasNewSubmodelJson = this.aasCollectionSubmodelTemplate;
   }
 
+  onAasSubmodelJsonFileSelected(event: any): void {
+    const file = event?.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      try {
+        const text = String(reader.result || '').trim();
+        if (text) {
+          JSON.parse(text);
+          this.aasNewSubmodelJson = text;
+        }
+      } catch {
+        // ignore parse errors
+      }
+    };
+    reader.readAsText(file);
+  }
+
   /**
    * Create AAS submodel
    */

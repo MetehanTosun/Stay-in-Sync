@@ -24,6 +24,9 @@ import {DropdownModule} from 'primeng/dropdown';
 import {FileUploadModule} from 'primeng/fileupload';
 import {ActivatedRoute} from '@angular/router';
 import {InplaceModule} from 'primeng/inplace';
+import { AasElementDialogComponent, AasElementDialogData, AasElementDialogResult } from '../../../../shared/components/aas-element-dialog/aas-element-dialog.component';
+import { CheckboxModule } from 'primeng/checkbox';
+import { CreateSourceSystemDialogService } from '../../services/create-source-system-dialog.service';
 
 
 interface AasOperationVarView { idShort: string; modelType?: string; valueType?: string }
@@ -64,7 +67,9 @@ interface AasElementLivePanel {
     ManageApiHeadersComponent,
     ManageEndpointsComponent,
     FormsModule,
-    InplaceModule
+    InplaceModule,
+    AasElementDialogComponent,
+    CheckboxModule
   ],
   templateUrl: './source-system-page.component.html',
   styleUrl: './source-system-page.component.css'
@@ -114,6 +119,17 @@ export class SourceSystemPageComponent implements OnInit {
   aasValueElementPath = '';
   aasValueNew = '';
   aasValueTypeHint = 'xs:string';
+
+  // Shared element dialog
+  showElementDialog = false;
+  elementDialogData: AasElementDialogData | null = null;
+
+  // AASX upload
+  showAasxUpload = false;
+  aasxSelectedFile: File | null = null;
+  isUploadingAasx = false;
+  aasxPreview: any = null;
+  aasxSelection: { submodels: Array<{ id: string; full: boolean; elements: string[] }> } = { submodels: [] };
 
   // Cache: submodelId -> (idShortPath -> modelType)
   private aasTypeCache: Record<string, Record<string, string>> = {};
@@ -250,29 +266,78 @@ export class SourceSystemPageComponent implements OnInit {
   aasNewElementJson = '{\n  "modelType": "Property",\n  "idShort": "NewProp",\n  "valueType": "xs:string",\n  "value": "42"\n}';
 
   openAasCreateElement(smId: string, parent?: string): void {
-    this.aasTargetSubmodelId = smId;
-    this.aasParentPath = parent || '';
-    this.showAasElementDialog = true;
+    if (!this.selectedSystem?.id) return;
+    this.elementDialogData = {
+      submodelId: smId,
+      parentPath: parent,
+      systemId: this.selectedSystem.id!,
+      systemType: 'source'
+    };
+    this.showElementDialog = true;
   }
 
-  aasCreateElement(): void {
-    if (!this.selectedSystem?.id || !this.aasTargetSubmodelId) return;
-    try {
-      const body = JSON.parse(this.aasNewElementJson);
-      const smIdB64 = this.aasService.encodeIdToBase64Url(this.aasTargetSubmodelId);
-      this.aasService.createElement(this.selectedSystem.id, smIdB64, body, this.aasParentPath || undefined)
+  onElementDialogResult(result: AasElementDialogResult): void {
+    if (result.success && result.element) {
+      const el = result.element;
+      const smIdB64 = this.aasService.encodeIdToBase64Url(el.submodelId);
+      this.aasService.createElement(this.selectedSystem!.id!, smIdB64, el.body, el.parentPath)
         .subscribe({
           next: () => {
-            this.showAasElementDialog = false;
-            this.refreshAasNodeLive(this.aasTargetSubmodelId, this.aasParentPath, undefined);
+            this.showElementDialog = false;
+            this.refreshAasNodeLive(el.submodelId, el.parentPath || '', undefined);
           },
           error: (err) => this.erorrService.handleError(err)
         });
-    } catch (e) {
-      this.erorrService.handleError(e as any);
     }
   }
 
+  openAasxUpload(): void {
+    this.showAasxUpload = true;
+    this.aasxSelectedFile = null;
+  }
+
+  onAasxFileSelected(event: any): void {
+    this.aasxSelectedFile = event.files?.[0] || null;
+    if (this.aasxSelectedFile && this.selectedSystem?.id) {
+      this.aasService.previewAasx(this.selectedSystem.id, this.aasxSelectedFile).subscribe({
+        next: (resp) => {
+          this.aasxPreview = resp?.submodels || (resp?.result ?? []);
+          const arr = Array.isArray(this.aasxPreview) ? this.aasxPreview : (this.aasxPreview?.submodels ?? []);
+          this.aasxSelection = { submodels: (arr || []).map((sm: any) => ({ id: sm.id || sm.submodelId, full: true, elements: [] })) };
+        },
+        error: () => { this.aasxPreview = null; this.aasxSelection = { submodels: [] }; }
+      });
+    }
+  }
+
+  private getSmId(sm: any): string { return sm?.id || sm?.submodelId || ''; }
+  getOrInitAasxSelFor(sm: any): { id: string; full: boolean; elements: string[] } {
+    const id = this.getSmId(sm);
+    let found = this.aasxSelection.submodels.find((s) => s.id === id);
+    if (!found) { found = { id, full: true, elements: [] }; this.aasxSelection.submodels.push(found); }
+    return found;
+  }
+  toggleAasxSubmodelFull(sm: any, checked: boolean): void {
+    const sel = this.getOrInitAasxSelFor(sm);
+    sel.full = !!checked;
+    if (sel.full) sel.elements = [];
+  }
+
+  uploadAasx(): void {
+    if (this.isUploadingAasx) return;
+    if (!this.aasxSelectedFile || !this.selectedSystem?.id) return;
+    this.isUploadingAasx = true;
+    this.createDialogService.uploadAasx(this.selectedSystem.id, this.aasxSelectedFile, this.aasxSelection)
+      .then(() => {
+        this.isUploadingAasx = false;
+        this.showAasxUpload = false;
+        this.discoverAasSnapshot();
+      })
+      .catch((err) => {
+        this.isUploadingAasx = false;
+        this.erorrService.handleError(err);
+      });
+  }
 
 
   constructor(
@@ -283,7 +348,8 @@ export class SourceSystemPageComponent implements OnInit {
     private apiEndpointSvc: SourceSystemEndpointResourceService,
     private searchPipe: SourceSystemSearchPipe,
     private aasService: AasService,
-    private readonly httpErrorService: HttpErrorService
+    private readonly httpErrorService: HttpErrorService,
+    private readonly createDialogService: CreateSourceSystemDialogService
   ) {
   }
 
@@ -338,7 +404,13 @@ export class SourceSystemPageComponent implements OnInit {
     }).subscribe({
       next: (resp) => {
         const list = Array.isArray(resp) ? resp : (resp?.result ?? []);
-        attach.children = list.map((el: any) => this.mapElToNode(submodelId, el));
+        const mapped = list.map((el: any) => {
+          if (!el.idShortPath && el.idShort) {
+            el.idShortPath = parentPath ? `${parentPath}/${el.idShort}` : el.idShort;
+          }
+          return this.mapElToNode(submodelId, el);
+        });
+        attach.children = mapped;
         this.aasTreeNodes = [...this.aasTreeNodes];
         // Background precise type hydration via LIVE element details
         this.hydrateAasNodeTypesForNodes(submodelId, attach.children as TreeNode[]);
@@ -371,7 +443,8 @@ export class SourceSystemPageComponent implements OnInit {
             node.children = mapped;
             this.aasTreeNodes = [...this.aasTreeNodes];
           } else {
-            const attachNode = this.findAasNodeByKey(submodelId, this.aasTreeNodes);
+            const attachKey = parentPath ? `${submodelId}::${parentPath}` : submodelId;
+            const attachNode = this.findAasNodeByKey(attachKey, this.aasTreeNodes);
             if (attachNode) {
               attachNode.children = mapped;
               this.aasTreeNodes = [...this.aasTreeNodes];
@@ -392,6 +465,7 @@ export class SourceSystemPageComponent implements OnInit {
     const last = safePath.split('/').pop() as string;
     const parent = safePath.includes('/') ? safePath.substring(0, safePath.lastIndexOf('/')) : '';
     // Robust: try direct element details endpoint (backend has deep fallback)
+    if (!systemId) { this.aasSelectedLiveLoading = false; return; }
     this.aasService.getElement(systemId, smId, safePath, 'LIVE').subscribe({
       next: (found: any) => {
         this.aasSelectedLiveLoading = false;
@@ -600,7 +674,7 @@ export class SourceSystemPageComponent implements OnInit {
   }
 
   aasSetValue(): void {
-    if (!this.selectedSystem?.id || !this.aasValueSubmodelId || !this.aasValueElementPath) return;
+    if (!this.selectedSystem || !this.selectedSystem.id || !this.aasValueSubmodelId || !this.aasValueElementPath) return;
     const smIdB64 = this.aasService.encodeIdToBase64Url(this.aasValueSubmodelId);
     const parsedValue = this.parseValueForType(this.aasValueNew, this.aasValueTypeHint);
     this.aasService.setPropertyValue(this.selectedSystem.id, smIdB64, this.aasValueElementPath, parsedValue as any)
@@ -652,12 +726,22 @@ export class SourceSystemPageComponent implements OnInit {
 
   deleteAasElement(submodelId: string, idShortPath: string): void {
     if (!this.selectedSystem?.id || !submodelId || !idShortPath) return;
-    const smIdB64 = this.aasService.encodeIdToBase64Url(submodelId);
-    this.aasService.deleteElement(this.selectedSystem.id, smIdB64, idShortPath).subscribe({
+    // Pass raw submodelId; service will encode internally
+    this.aasService.deleteElement(this.selectedSystem.id, submodelId, idShortPath).subscribe({
       next: () => {
-        const parent = idShortPath.includes('/') ? idShortPath.substring(0, idShortPath.lastIndexOf('/')) : '';
+        let parent = '';
+        if (idShortPath.includes('/')) {
+          parent = idShortPath.substring(0, idShortPath.lastIndexOf('/'));
+        } else if (idShortPath.includes('.')) {
+          parent = idShortPath.substring(0, idShortPath.lastIndexOf('.'));
+        }
         const parentNode = parent ? this.findAasNodeByKey(`${submodelId}::${parent}`, this.aasTreeNodes) : this.findAasNodeByKey(submodelId, this.aasTreeNodes);
-        this.loadAasChildren(submodelId, parent || undefined, parentNode || ({} as TreeNode));
+        if (parentNode) {
+          this.loadAasChildren(submodelId, parent || undefined, parentNode);
+        } else {
+          // Fallback: refresh appropriate branch using LIVE view
+          this.refreshAasNodeLive(submodelId, parent || '', undefined);
+        }
       },
       error: (err) => this.erorrService.handleError(err)
     });
@@ -688,8 +772,9 @@ export class SourceSystemPageComponent implements OnInit {
   private mapElToNode(submodelId: string, el: any): TreeNode {
     const computedType = this.inferModelType(el);
     const label = el.idShort;
-    const typeHasChildren = el?.modelType === 'SubmodelElementCollection' || el?.modelType === 'SubmodelElementList' || el?.modelType === 'Operation' || el?.modelType === 'Entity';
-    const hasChildren = el?.hasChildren === true || typeHasChildren;
+    const typeHasChildren = computedType === 'SubmodelElementCollection' || computedType === 'SubmodelElementList' || computedType === 'Operation' || computedType === 'Entity';
+    // If type is unknown, allow expansion to let user try to open children; LIVE hydration will correct it
+    const hasChildren = el?.hasChildren === true || typeHasChildren || computedType === undefined;
     return {
       key: `${submodelId}::${el.idShortPath || el.idShort}`,
       label,

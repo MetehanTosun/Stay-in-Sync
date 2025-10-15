@@ -212,8 +212,8 @@ export class SourceSystemAasManagementService {
    * Delete element
    */
   deleteElement(systemId: number, submodelId: string, idShortPath: string): Observable<any> {
-    const smIdB64 = this.aasService.encodeIdToBase64Url(submodelId);
-    return this.aasService.deleteElement(systemId, smIdB64, idShortPath);
+    // Pass raw submodelId; AasService handles Base64 encoding internally for deleteElement
+    return this.aasService.deleteElement(systemId, submodelId, idShortPath);
   }
 
   /**

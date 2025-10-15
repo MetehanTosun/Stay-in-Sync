@@ -138,6 +138,9 @@
 <!-- Dialog: Create Submodel (AAS Manage) -->
 <p-dialog header="Create Submodel" [(visible)]="showAasSubmodelDialog" [modal]="true" [style]="{width:'40vw'}">
   <textarea pInputTextarea [(ngModel)]="aasNewSubmodelJson" rows="10" style="width:100%"></textarea>
+  <div class="p-mt-2">
+    <p-fileupload mode="basic" [auto]="false" [showUploadButton]="false" [showCancelButton]="false" accept=".json" (onSelect)="onAasSubmodelJsonFileSelected($event)"></p-fileupload>
+  </div>
   <ng-template pTemplate="footer">
     <button pButton type="button" class="p-button-text" label="Cancel" (click)="showAasSubmodelDialog=false"></button>
     <button pButton type="button" label="Create" (click)="aasCreateSubmodel()"></button>
