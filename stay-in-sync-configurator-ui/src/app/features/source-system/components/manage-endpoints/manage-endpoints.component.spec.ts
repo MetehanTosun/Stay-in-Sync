@@ -1,3 +1,4 @@
+/** Unit tests for `ManageEndpointsComponent`. */
 import { ComponentFixture, TestBed, waitForAsync, fakeAsync, tick } from '@angular/core/testing';
 import { ReactiveFormsModule } from '@angular/forms';
 import { of, throwError, Subject } from 'rxjs';
@@ -21,7 +22,7 @@ import { ManageEndpointsFormService } from '../../services/manage-endpoints-form
 import { TypeScriptGenerationService } from '../../services/typescript-generation.service';
 import { ResponsePreviewService } from '../../services/response-preview.service';
 
-// Lightweight dummies for services used by the component during init
+/** Lightweight dummies for services used by the component during init. */
 class DummyOpenApiImportService {
   discoverEndpointsFromSpec() { return []; }
   discoverEndpointsFromSpecUrl() { return Promise.resolve([]); }
@@ -39,6 +40,7 @@ class DummyEndpointResourceService {
   generateTypeScript() { return of(new HttpResponse<TypeScriptGenerationResponse>({ body: { generatedTypeScript: '' } })); }
 }
 
+/** Smoke tests for core CRUD flows and modal interactions. */
 describe('ManageEndpointsComponent (updated smoke tests)', () => {
   let fixture: ComponentFixture<ManageEndpointsComponent>;
   let component: ManageEndpointsComponent;
@@ -70,6 +72,7 @@ describe('ManageEndpointsComponent (updated smoke tests)', () => {
     httpMock = TestBed.inject(HttpTestingController);
   });
 
+  /** Ensure no unexpected HTTP requests remain. */
   afterEach(() => {
       httpMock.verify();
   });
@@ -78,6 +81,7 @@ describe('ManageEndpointsComponent (updated smoke tests)', () => {
       expect(component).toBeTruthy();
     });
 
+  /** Loads endpoints via GET and updates state. */
   it('loadEndpoints should GET and set endpoints', () => {
     component.loadEndpoints();
     const req = httpMock.expectOne('/api/config/source-system/1/endpoint');
@@ -89,6 +93,7 @@ describe('ManageEndpointsComponent (updated smoke tests)', () => {
     expect(component.loading).toBeFalse();
   });
 
+  /** Adds endpoint via POST, reloads list, and resets form. */
   it('addEndpoint should POST then reload and reset form', () => {
       component.ngOnInit();
     // Flush initial load(s)
@@ -108,6 +113,7 @@ describe('ManageEndpointsComponent (updated smoke tests)', () => {
       expect(component.endpointForm.get('httpRequestType')?.value).toBe('GET');
     });
 
+  /** Deletes endpoint upon confirmation and updates list. */
   it('delete flow should DELETE and update list', () => {
     component.endpoints = [{ id: 10, sourceSystemId: 1, endpointPath: '/x', httpRequestType: 'GET' } as any];
     component.deleteEndpoint(component.endpoints[0]);
@@ -128,6 +134,7 @@ describe('ManageEndpointsComponent (updated smoke tests)', () => {
 })
 class MockManageEndpointsComponent extends ManageEndpointsComponent {}
 
+/** Request body editor and validation scenarios. */
 describe('ManageEndpointsComponent - Request Body', () => {
   let component: ManageEndpointsComponent;
   let fixture: ComponentFixture<ManageEndpointsComponent>;
@@ -158,6 +165,7 @@ describe('ManageEndpointsComponent - Request Body', () => {
     httpMock = TestBed.inject(HttpTestingController);
   });
 
+  /** Accepts valid JSON in requestBodySchema. */
   it('should accept valid JSON in requestBodySchema', () => {
     // flush any initial GETs
     httpMock.match(r => r.method === 'GET' && r.url.includes('/api/config/source-system/1/endpoint'))
@@ -171,6 +179,7 @@ describe('ManageEndpointsComponent - Request Body', () => {
     expect(component.jsonError).toBeNull();
   });
 
+  /** Allows invalid JSON string to be saved as-is. */
   it('should allow invalid JSON in requestBodySchema (kept as string)', () => {
     // flush any initial GETs
     httpMock.match(r => r.method === 'GET' && r.url.includes('/api/config/source-system/1/endpoint'))
@@ -183,6 +192,7 @@ describe('ManageEndpointsComponent - Request Body', () => {
     expect(component.jsonError).toBeNull();
   });
 
+  /** Allows empty requestBodySchema without errors. */
   it('should allow empty requestBodySchema', () => {
     httpMock.match(r => r.method === 'GET' && r.url.includes('/api/config/source-system/1/endpoint'))
       .forEach(r => r.flush([]));
@@ -194,6 +204,7 @@ describe('ManageEndpointsComponent - Request Body', () => {
     expect(component.jsonError).toBeNull();
   });
 
+  /** Saving invalid JSON locally should not set an error. */
   it('should show no error when saving invalid JSON (local set only)', () => {
     const ep: any = { id: 1, sourceSystemId: 1, endpointPath: '/test', httpRequestType: 'POST' };
     component.requestBodyEditorEndpoint = ep;
@@ -203,6 +214,7 @@ describe('ManageEndpointsComponent - Request Body', () => {
     expect(ep.requestBodySchema).toBe('{foo: bar}');
   });
 
+  /** Saves valid JSON via request body editor panel. */
   it('should save valid JSON in request body editor panel', () => {
     component.requestBodyEditorEndpoint = { id: 1, sourceSystemId: 1, endpointPath: '/test', httpRequestType: 'POST' } as any;
     component.requestBodyEditorModel = { value: '{"foo": "bar"}', language: 'json' };
@@ -214,6 +226,7 @@ describe('ManageEndpointsComponent - Request Body', () => {
   });
 });
 
+/** Response body schema handling and TypeScript generation flows. */
 describe('ManageEndpointsComponent - Response Body', () => {
   let component: ManageEndpointsComponent;
   let fixture: ComponentFixture<ManageEndpointsComponent>;
@@ -249,6 +262,7 @@ describe('ManageEndpointsComponent - Response Body', () => {
     httpMock.match(r => r.method === 'GET' && r.url.includes('/api/config/source-system/1/endpoint')).forEach(r => r.flush([]));
   });
 
+  /** Accepts valid JSON in responseBodySchema. */
   it('should accept valid JSON in responseBodySchema', () => {
     httpMock.match(r => r.method === 'GET' && r.url.includes('/api/config/source-system/1/endpoint'))
       .forEach(r => r.flush([]));
@@ -265,6 +279,7 @@ describe('ManageEndpointsComponent - Response Body', () => {
     expect(component.jsonError).toBeNull();
   });
 
+  /** Rejects invalid JSON in responseBodySchema and prevents POST. */
   it('should reject invalid JSON in responseBodySchema', () => {
     component.endpointForm.patchValue({
       endpointPath: '/test',
@@ -276,6 +291,7 @@ describe('ManageEndpointsComponent - Response Body', () => {
     expect(mockEndpointService.apiConfigSourceSystemSourceSystemIdEndpointPost).not.toHaveBeenCalled();
   });
 
+  /** Allows empty responseBodySchema, no generation attempts. */
   it('should allow empty responseBodySchema', () => {
     httpMock.match(r => r.method === 'GET' && r.url.includes('/api/config/source-system/1/endpoint'))
       .forEach(r => r.flush([]));
@@ -292,6 +308,7 @@ describe('ManageEndpointsComponent - Response Body', () => {
     expect(component.jsonError).toBeNull();
   });
 
+  /** Extracts schema from OpenAPI-like object and triggers generation. */
   it('should extract response body schema from OpenAPI spec', () => {
     const mockSpec = {
       openapi: '3.0.0',
@@ -323,6 +340,7 @@ describe('ManageEndpointsComponent - Response Body', () => {
     expect(() => component.loadTypeScriptForMainForm()).not.toThrow();
   });
 
+  /** Shows response preview modal with selected endpoint. */
   it('should show response preview modal', () => {
     const endpoint: SourceSystemEndpointDTO = {
       id: 1,
@@ -338,6 +356,7 @@ describe('ManageEndpointsComponent - Response Body', () => {
     expect(component.selectedResponsePreviewEndpoint).toEqual(endpoint);
   });
 
+  /** Closes response preview modal and resets selection. */
   it('should close response preview modal', () => {
     component.responsePreviewModalVisible = true;
     component.selectedResponsePreviewEndpoint = { id: 1, sourceSystemId: 1, endpointPath: '/test', httpRequestType: 'GET' } as any;
@@ -348,6 +367,7 @@ describe('ManageEndpointsComponent - Response Body', () => {
     expect(component.selectedResponsePreviewEndpoint).toBeNull();
   });
 
+  /** Handles external visibility change for response preview modal. */
   it('should handle response preview modal visibility change', () => {
     component.responsePreviewModalVisible = true;
     component.selectedResponsePreviewEndpoint = { id: 1, sourceSystemId: 1, endpointPath: '/test', httpRequestType: 'GET' } as any;
@@ -359,6 +379,7 @@ describe('ManageEndpointsComponent - Response Body', () => {
   });
 
 
+  /** TypeScript tab behaviors and generation edge cases. */
   describe('TypeScript Tab Functionality', () => {
     const validJsonSchema = '{"type": "object", "properties": {"id": {"type": "number"}, "name": {"type": "string"}}}';
     const invalidJsonSchema = '{invalid json}';
@@ -368,6 +389,7 @@ describe('ManageEndpointsComponent - Response Body', () => {
       component.ngOnInit();
     });
 
+    /** Generates TypeScript from a valid JSON schema. */
     it('should generate TypeScript from valid JSON schema', fakeAsync(() => {
       const mockResponse: TypeScriptGenerationResponse = {
         generatedTypeScript: 'interface ResponseBody { id: number; name: string; }'
@@ -383,6 +405,7 @@ describe('ManageEndpointsComponent - Response Body', () => {
       expect(component.isGeneratingTypeScript).toBeFalse();
     }));
 
+    /** Handles backend error response during TypeScript generation. */
     it('should handle TypeScript generation error', fakeAsync(() => {
       const mockResponse: TypeScriptGenerationResponse = {
         error: 'Invalid JSON schema provided'
@@ -397,6 +420,7 @@ describe('ManageEndpointsComponent - Response Body', () => {
       expect(component.generatedTypeScript).toContain('Error: Unable to generate TypeScript');
     }));
 
+    /** Handles network error during TypeScript generation. */
     it('should handle network error during TypeScript generation', fakeAsync(() => {
       mockEndpointService.generateTypeScript.and.returnValue(throwError(() => new Error('Network error')));
 
@@ -408,6 +432,7 @@ describe('ManageEndpointsComponent - Response Body', () => {
       expect(component.generatedTypeScript).toContain('Error: Unable to generate TypeScript');
     }));
 
+    /** Validates oversized JSON schema input. */
     it('should validate JSON schema size', () => {
       const big = 'x'.repeat(1024 * 1024 + 5);
       const validation = (component as any)['validateJsonSchema'](big);
@@ -415,6 +440,7 @@ describe('ManageEndpointsComponent - Response Body', () => {
       expect(validation.error).toContain('too large');
     });
 
+    /** Validates JSON schema structure rules. */
     it('should validate JSON schema structure', () => {
       const validSchema = '{"type": "object", "properties": {"test": {"type": "string"}}}';
       const invalidSchema = '{"notASchema": true}';
@@ -427,6 +453,7 @@ describe('ManageEndpointsComponent - Response Body', () => {
       expect(invalidValidation.error).toContain('Invalid JSON Schema structure');
     });
 
+    /** Loads TypeScript on switching to TypeScript tab. */
     it('should handle tab change to TypeScript tab', fakeAsync(() => {
       const mockResponse: TypeScriptGenerationResponse = {
         generatedTypeScript: 'interface ResponseBody { id: number; }'
@@ -441,6 +468,7 @@ describe('ManageEndpointsComponent - Response Body', () => {
       expect(component.generatedTypeScript.length).toBeGreaterThan(0);
     }));
 
+    /** Avoids unnecessary regeneration when already generated. */
     it('should not regenerate TypeScript if already generated', fakeAsync(() => {
       const mockResponse: TypeScriptGenerationResponse = {
         generatedTypeScript: 'interface ResponseBody { id: number; }'
@@ -459,6 +487,7 @@ describe('ManageEndpointsComponent - Response Body', () => {
       expect(mockEndpointService.generateTypeScript.calls.count()).toBeGreaterThanOrEqual(initialCallCount);
     }));
 
+    /** Generates TypeScript for the edit form schema. */
     it('should handle edit form TypeScript generation', fakeAsync(() => {
       const mockResponse: TypeScriptGenerationResponse = {
         generatedTypeScript: 'interface ResponseBody { id: number; name: string; }'
@@ -475,6 +504,7 @@ describe('ManageEndpointsComponent - Response Body', () => {
     }));
 
 
+    /** Times out long-running TypeScript generation requests. */
     it('should handle timeout during TypeScript generation', fakeAsync(() => {
       const neverEmits$ = new Subject<any>();
       mockEndpointService.generateTypeScript.and.returnValue(neverEmits$ as any);
@@ -486,6 +516,7 @@ describe('ManageEndpointsComponent - Response Body', () => {
       expect(component.typescriptError).toContain('timed out');
     }));
 
+    /** Formats TypeScript error messages consistently. */
     it('should format error messages correctly', () => {
       const networkError = component['formatErrorMessage']('HttpErrorResponse: Network error', 'Test context');
       const timeoutError = component['formatErrorMessage']('Request timeout', 'Test context');
@@ -497,6 +528,7 @@ describe('ManageEndpointsComponent - Response Body', () => {
     });
 
 
+    /** Generates TypeScript from complex nested JSON schema. */
     it('should generate TypeScript from complex nested JSON schema', fakeAsync(() => {
       const complexSchema = '{"type": "object", "properties": {"user": {"type": "object", "properties": {"id": {"type": "number"}, "profile": {"type": "object", "properties": {"name": {"type": "string"}, "email": {"type": "string"}}}}}}}';
       const mockResponse: TypeScriptGenerationResponse = {
@@ -512,6 +544,7 @@ describe('ManageEndpointsComponent - Response Body', () => {
       expect(component.typescriptError).toBeNull();
     }));
 
+    /** Generates TypeScript from an array-based JSON schema. */
     it('should generate TypeScript from array schema', fakeAsync(() => {
       const arraySchema = '{"type": "object", "properties": {"items": {"type": "array", "items": {"type": "string"}}, "count": {"type": "number"}}}';
       const mockResponse: TypeScriptGenerationResponse = {
@@ -526,6 +559,7 @@ describe('ManageEndpointsComponent - Response Body', () => {
       expect(component.generatedTypeScript.length).toBeGreaterThan(0);
     }));
 
+    /** Generates TypeScript for union types in JSON schema. */
     it('should generate TypeScript from union type schema', fakeAsync(() => {
       const unionSchema = '{"type": "object", "properties": {"status": {"type": "string", "enum": ["active", "inactive"]}, "value": {"oneOf": [{"type": "string"}, {"type": "number"}]}}}';
       const mockResponse: TypeScriptGenerationResponse = {
@@ -540,6 +574,7 @@ describe('ManageEndpointsComponent - Response Body', () => {
       expect(component.generatedTypeScript.length).toBeGreaterThan(0);
     }));
 
+    /** Handles special characters in JSON schema keys. */
     it('should handle special characters in JSON schema', fakeAsync(() => {
       const specialCharSchema = '{"type": "object", "properties": {"user_name": {"type": "string"}, "email@domain": {"type": "string"}, "$metadata": {"type": "object"}}}';
       const mockResponse: TypeScriptGenerationResponse = {
@@ -554,6 +589,7 @@ describe('ManageEndpointsComponent - Response Body', () => {
       expect(component.generatedTypeScript.length).toBeGreaterThan(0);
     }));
 
+    /** Handles Unicode text in JSON schema. */
     it('should handle Unicode characters in JSON schema', fakeAsync(() => {
       const unicodeSchema = '{"type": "object", "properties": {"name": {"type": "string", "description": "User\'s name with émojis 🎉"}, "message": {"type": "string"}}}';
       const mockResponse: TypeScriptGenerationResponse = {
@@ -568,6 +604,7 @@ describe('ManageEndpointsComponent - Response Body', () => {
       expect(component.generatedTypeScript.length).toBeGreaterThan(0);
     }));
 
+    /** Supports selected OpenAPI 3.0 format hints. */
     it('should handle OpenAPI 3.0 specific features', fakeAsync(() => {
       const openApi3Schema = '{"type": "object", "properties": {"id": {"type": "integer", "format": "int64"}, "email": {"type": "string", "format": "email"}, "createdAt": {"type": "string", "format": "date-time"}}}';
       const mockResponse: TypeScriptGenerationResponse = {
@@ -582,6 +619,7 @@ describe('ManageEndpointsComponent - Response Body', () => {
       expect(component.generatedTypeScript.length).toBeGreaterThan(0);
     }));
 
+    /** Handles custom type references in schema. */
     it('should handle custom type definitions', fakeAsync(() => {
       const customTypeSchema = '{"type": "object", "properties": {"data": {"$ref": "#/components/schemas/User"}, "metadata": {"type": "object"}}}';
       const mockResponse: TypeScriptGenerationResponse = {
@@ -596,6 +634,7 @@ describe('ManageEndpointsComponent - Response Body', () => {
       expect(component.generatedTypeScript.length).toBeGreaterThan(0);
     }));
 
+    /** Gracefully handles malformed JSON schema errors. */
     it('should handle malformed JSON schema gracefully', fakeAsync(() => {
       const malformedSchema = '{"type": "object", "properties": {"id": {"type": "invalid_type"}}}';
       const mockResponse: TypeScriptGenerationResponse = {
@@ -611,6 +650,7 @@ describe('ManageEndpointsComponent - Response Body', () => {
       expect(component.generatedTypeScript.length).toBeGreaterThan(0);
     }));
 
+    /** Supports multiple rapid generation requests without breaking. */
     it('should handle concurrent TypeScript generation requests', fakeAsync(() => {
       const mockResponse: TypeScriptGenerationResponse = {
         generatedTypeScript: 'interface ResponseBody { id: number; }'
@@ -634,6 +674,7 @@ describe('ManageEndpointsComponent - Response Body', () => {
       expect(component.generatedTypeScript).toContain('interface ResponseBody');
     }));
 
+    /** Returns empty TypeScript and no errors for empty schema. */
     it('should handle empty response body schema', fakeAsync(() => {
       component.endpointForm.patchValue({ responseBodySchema: '' });
       component.loadTypeScriptForMainForm();
@@ -644,6 +685,7 @@ describe('ManageEndpointsComponent - Response Body', () => {
       expect(mockEndpointService.generateTypeScript).not.toHaveBeenCalled();
     }));
 
+    /** Validates whitespace-only schema as invalid. */
     it('should handle whitespace-only response body schema', fakeAsync(() => {
       component.endpointForm.patchValue({ responseBodySchema: '   ' });
       component.loadTypeScriptForMainForm();
@@ -653,6 +695,7 @@ describe('ManageEndpointsComponent - Response Body', () => {
       expect(component.typescriptError).toContain('JSON schema is empty');
     }));
 
+    /** Treats null schema as empty. */
     it('should handle null response body schema', fakeAsync(() => {
       component.endpointForm.patchValue({ responseBodySchema: null });
       component.loadTypeScriptForMainForm();
@@ -663,6 +706,7 @@ describe('ManageEndpointsComponent - Response Body', () => {
       expect(mockEndpointService.generateTypeScript).not.toHaveBeenCalled();
     }));
 
+    /** Initializes Monaco editor options for TypeScript tab. */
     it('should handle Monaco editor initialization for TypeScript', fakeAsync(() => {
       const mockResponse: TypeScriptGenerationResponse = {
         generatedTypeScript: 'interface ResponseBody { id: number; }'
@@ -678,6 +722,7 @@ describe('ManageEndpointsComponent - Response Body', () => {
       expect(component.typescriptEditorOptions.language).toBe('typescript');
     }));
 
+    /** Switches between JSON and TypeScript tabs preserving state. */
     it('should handle tab switching between JSON and TypeScript', fakeAsync(() => {
       const mockResponse: TypeScriptGenerationResponse = {
         generatedTypeScript: 'interface ResponseBody { id: number; }'
