@@ -1,7 +1,9 @@
+<!-- Root container for the Source System Page -->
 <div>
   <p-toast key="sourceAAS"></p-toast>
   <p-tabView *ngIf="selectedSystem">
 
+    <!-- Tab for viewing and editing base system information -->
     <p-tabPanel header="System">
 
       <div class="flex align-items-center gap-3">
@@ -56,14 +58,17 @@
 
 
     </p-tabPanel>
+    <!-- Tab for managing custom API headers -->
     <p-tabPanel *ngIf="!isAasSelected()" header="Headers">
       <app-manage-api-headers [syncSystemId]="selectedSystem!.id!" [allowValues]="false"></app-manage-api-headers>
     </p-tabPanel>
+    <!-- Tab for managing REST API endpoints -->
     <p-tabPanel *ngIf="!isAasSelected()" header="Endpoints">
 
       <app-manage-endpoints [sourceSystemId]="selectedSystem!.id!"></app-manage-endpoints>
 
     </p-tabPanel>
+    <!-- Tab for browsing and managing the AAS Snapshot (digital twin data structure) -->
     <p-tabPanel *ngIf="isAasSelected()" header="AAS Snapshot">
       <div class="p-d-flex p-ai-center p-jc-between" style="margin-bottom: .5rem;">
         <div>
@@ -185,6 +190,7 @@
         </div>
       </div>
     </p-tabPanel>
+    <!-- Tab for configuring AAS connection details and testing connectivity -->
     <p-tabPanel *ngIf="isAasSelected()" header="AAS Configuration">
       <div class="p-grid p-fluid">
         <div class="p-col-12 p-md-6">
@@ -202,6 +208,7 @@
         <small *ngIf="aasTestError" style="color:#d32f2f;">{{ aasTestError }}</small>
       </div>
     </p-tabPanel>
+    <!-- Tab for performing AAS-related actions such as refreshing the snapshot -->
     <p-tabPanel *ngIf="isAasSelected()" header="AAS Actions">
       <div class="p-d-flex p-ai-center" style="gap: .75rem;">
         <button pButton type="button" label="Refresh Snapshot" (click)="discoverAasSnapshot()"
@@ -210,6 +217,7 @@
     </p-tabPanel>
   </p-tabView>
 
+  <!-- Dialog for editing a property value within an AAS element -->
   <p-dialog header="Set Property Value" [(visible)]="showAasValueDialog" [modal]="true" [style]="{width:'35vw'}">
     <div class="p-field">
       <label>Submodel ID</label>
@@ -230,6 +238,7 @@
     </ng-template>
   </p-dialog>
 
+  <!-- Dialog for creating a new submodel within the AAS -->
   <p-dialog header="Create Submodel" [(visible)]="showAasSubmodelDialog" [modal]="true" [style]="{width:'40vw'}">
     <textarea pInputTextarea [(ngModel)]="aasNewSubmodelJson" rows="10" style="width:100%"></textarea>
     <ng-template pTemplate="footer">
@@ -246,12 +255,14 @@
     </div>
   </p-dialog>
 
+  <!-- Dialog component for creating or editing AAS elements -->
   <app-aas-element-dialog
     [(visible)]="showElementDialog"
     [data]="elementDialogData"
     (result)="onElementDialogResult($event)">
   </app-aas-element-dialog>
 
+  <!-- Dialog for uploading an AASX package and selecting included submodels -->
   <p-dialog header="Upload AASX" [(visible)]="showAasxUpload" [modal]="true" [style]="{width:'35vw'}">
     <div class="p-field">
       <p-fileupload mode="basic" [auto]="false" [showUploadButton]="false" [showCancelButton]="false" accept=".aasx" (onSelect)="onAasxFileSelected($event)"></p-fileupload>

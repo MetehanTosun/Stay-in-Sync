@@ -41,6 +41,10 @@ import { AasUtilityService } from '../../../target-system/services/aas-utility.s
   ],
   providers: [MessageService]
 })
+/**
+ * AAS management UI for the source system: discovery, live details,
+ * CRUD operations for submodels and elements, value setting, and AASX upload/attach.
+ */
 export class SourceSystemAasManagementComponent implements OnInit {
   @Input() system: SourceSystemDTO | null = null;
   @Output() refreshRequested = new EventEmitter<void>();
@@ -142,25 +146,10 @@ export class SourceSystemAasManagementComponent implements OnInit {
    */
   private fixTreeStructureAfterRefresh(elementData: any): void {
     if (!elementData || !elementData.parentPath) return;
-    
-    console.log('[SourceAasManage] Fixing tree structure after live refresh', {
-      parentPath: elementData.parentPath,
-      elementIdShort: elementData.body?.idShort
-    });
-    
     const elementIdShort = elementData.body?.idShort;
     if (!elementIdShort) return;
-    
-    // Build the correct idShortPath
     const correctIdShortPath = elementData.parentPath + '/' + elementIdShort;
-    
-    // Find and update the element in the tree
     this.updateElementInTree(this.aasTreeNodes, elementIdShort, correctIdShortPath);
-    
-    console.log('[SourceAasManage] Fixed tree structure', {
-      elementIdShort,
-      correctIdShortPath
-    });
   }
 
   /**
@@ -171,10 +160,6 @@ export class SourceSystemAasManagementComponent implements OnInit {
     
     for (const node of nodes) {
       if (node.data?.idShort === elementIdShort) {
-        console.log('[SourceAasManage] Updating element in tree', {
-          old: node.data.idShortPath,
-          new: correctIdShortPath
-        });
         node.data.idShortPath = correctIdShortPath;
         return;
       }
@@ -268,9 +253,7 @@ export class SourceSystemAasManagementComponent implements OnInit {
       next: () => {
         this.aasTreeNodes = [...this.aasTreeNodes];
       },
-      error: (err) => {
-        // Error handling
-      }
+      error: () => {}
     });
   }
 
@@ -295,9 +278,7 @@ export class SourceSystemAasManagementComponent implements OnInit {
           this.aasTreeNodes = [...this.aasTreeNodes];
         }
       },
-      error: (err) => {
-        this.aasSelectedLiveLoading = false;
-      }
+      error: () => { this.aasSelectedLiveLoading = false; }
     });
   }
 
@@ -380,8 +361,6 @@ export class SourceSystemAasManagementComponent implements OnInit {
     if (result.success && result.element) {
       this.handleElementCreation(result.element);
     } else if (result.error) {
-      console.error('[SourceAasManage] Element creation failed:', result.error);
-      // Show toast for duplicate idShort error
       if (result.error.includes('Duplicate entry') || result.error.includes('uk_element_submodel_idshortpath')) {
         this.messageService.add({
           key: 'sourceAAS',
@@ -406,9 +385,6 @@ export class SourceSystemAasManagementComponent implements OnInit {
     if (!this.system?.id) return;
     
     try {
-      console.log('[SourceAasManage] Creating element:', elementData);
-      
-      // Use the AAS service to create the element
       const smIdB64 = this.aasService.encodeIdToBase64Url(elementData.submodelId);
       await this.aasService.createElement(
         this.system.id,
@@ -416,10 +392,6 @@ export class SourceSystemAasManagementComponent implements OnInit {
         elementData.body,
         elementData.parentPath
       ).toPromise();
-      
-      console.log('[SourceAasManage] Element created successfully');
-      
-      // Show success toast
       this.messageService.add({
         key: 'sourceAAS',
         severity: 'success',
@@ -427,26 +399,12 @@ export class SourceSystemAasManagementComponent implements OnInit {
         detail: 'Element has been successfully created.',
         life: 3000
       });
-      
-      // Use live refresh like in create dialog
-      console.log('[SourceAasManage] Triggering live refresh after element creation');
       this.discoverAasSnapshot();
-      
-      // Fix tree structure immediately after element creation
-      console.log('[SourceAasManage] Fixing tree structure immediately after element creation');
       this.fixTreeStructureAfterRefresh(elementData);
-      
-      // Force live refresh after a short delay to ensure backend is updated
       setTimeout(() => {
-        console.log('[SourceAasManage] Force live refresh for deep elements');
         this.discoverAasSnapshot();
-        
-        // Fix tree structure again after live refresh
         this.fixTreeStructureAfterRefresh(elementData);
-        
-        // Reload element details if we have a selected node
         if (this.selectedAasNode && this.selectedAasNode.data?.type === 'element') {
-          console.log('[SourceAasManage] Reloading element details after creation');
           const smId = this.selectedAasNode.data.submodelId;
           const idShortPath = this.selectedAasNode.data.idShortPath;
           this.loadAasLiveElementDetails(smId, idShortPath, this.selectedAasNode);
@@ -454,9 +412,6 @@ export class SourceSystemAasManagementComponent implements OnInit {
       }, 1000);
       
     } catch (error) {
-      console.error('[SourceAasManage] Error creating element:', error);
-      
-      // Show error toast
       const errorMessage = String((error as any)?.error || (error as any)?.message || 'Failed to create element');
       if (errorMessage.includes('Duplicate entry')) {
         this.messageService.add({
@@ -518,28 +473,13 @@ export class SourceSystemAasManagementComponent implements OnInit {
    */
   private refreshAasNodeLive(submodelId: string, parentPath: string, node?: TreeNode): void {
     if (!this.system?.id) {
-      console.log('[SourceAasManage] refreshAasNodeLive: No system ID');
       return;
     }
     
     const key = parentPath ? `${submodelId}::${parentPath}` : submodelId;
-    console.log('[SourceAasManage] refreshAasNodeLive: Starting refresh', {
-      submodelId,
-      parentPath,
-      key,
-      node: node?.label
-    });
-    
-    // Use the same service call as create dialog
     this.aasService.listElements(this.system.id, submodelId, { depth: 'shallow', parentPath: parentPath || undefined, source: 'LIVE' })
       .subscribe({
         next: (resp) => {
-          console.log('[SourceAasManage] refreshAasNodeLive: Response received', {
-            key,
-            response: resp,
-            node: node?.label
-          });
-          
           const list = Array.isArray(resp) ? resp : (resp?.result ?? []);
           const mapped = list.map((el: any) => {
             if (!el.idShortPath && el.idShort) {
@@ -547,13 +487,6 @@ export class SourceSystemAasManagementComponent implements OnInit {
             }
             return this.mapElementToNode(submodelId, el);
           });
-          
-          console.log('[SourceAasManage] refreshAasNodeLive: Mapped elements', {
-            key,
-            mappedCount: mapped.length,
-            mapped: mapped.map((m: any) => m.label)
-          });
-          
           if (node) {
             node.children = mapped;
             this.aasTreeNodes = [...this.aasTreeNodes];
@@ -565,10 +498,7 @@ export class SourceSystemAasManagementComponent implements OnInit {
             }
           }
         },
-        error: (err) => {
-          console.error('[SourceAasManage] refreshAasNodeLive: Error', err);
-          // Error handling
-        }
+        error: () => {}
       });
   }
 
@@ -599,7 +529,6 @@ export class SourceSystemAasManagementComponent implements OnInit {
       .subscribe({
         next: () => {
           this.showAasValueDialog = false;
-          // refresh live details
           const node = this.selectedAasNode;
           if (node?.data) {
             this.loadAasLiveElementDetails(node.data.submodelId, node.data.idShortPath, node);
@@ -609,9 +538,7 @@ export class SourceSystemAasManagementComponent implements OnInit {
             this.refreshAasNodeLive(this.aasValueSubmodelId, parent, parentNode || undefined);
           }
         },
-        error: (err) => {
-          // Error handling
-        }
+        error: () => {}
       });
   }
 
@@ -637,24 +564,12 @@ export class SourceSystemAasManagementComponent implements OnInit {
    */
   deleteAasElement(submodelId: string, idShortPath: string): void {
     if (!this.system?.id || !submodelId || !idShortPath) return;
-    
-    console.log('[SourceAasManage] deleteAasElement: Starting deletion', {
-      systemId: this.system.id,
-      submodelId,
-      idShortPath
-    });
-    
     this.aasManagementService.deleteElement(this.system.id, submodelId, idShortPath).subscribe({
       next: () => {
-        console.log('[SourceAasManage] deleteAasElement: Element deleted successfully');
-        // Use the same refresh logic as create dialog
         this.refreshAasTreeAfterDelete(submodelId, idShortPath);
         this.messageService.add({ key: 'sourceAAS', severity: 'success', summary: 'Element Deleted', detail: 'Element has been successfully deleted.', life: 3000 });
       },
-      error: (err) => {
-        console.error('[SourceAasManage] deleteAasElement: Error deleting element', err);
-        this.messageService.add({ key: 'sourceAAS', severity: 'error', summary: 'Error', detail: (err?.message || 'Failed to delete element') });
-      }
+      error: (err) => { this.messageService.add({ key: 'sourceAAS', severity: 'error', summary: 'Error', detail: (err?.message || 'Failed to delete element') }); }
     });
   }
 
@@ -678,34 +593,16 @@ export class SourceSystemAasManagementComponent implements OnInit {
    * Refresh AAS tree after delete (same logic as create dialog)
    */
   private refreshAasTreeAfterDelete(submodelId: string, idShortPath: string): void {
-    console.log('[SourceAasManage] refreshAasTreeAfterDelete: Starting refresh', {
-      submodelId,
-      idShortPath
-    });
-    
     const parent = idShortPath.includes('.') ? idShortPath.substring(0, idShortPath.lastIndexOf('.')) : '';
-    console.log('[SourceAasManage] refreshAasTreeAfterDelete: Parent path', {
-      idShortPath,
-      parent
-    });
-    
     if (parent) {
       const key = `${submodelId}::${parent}`;
       const parentNode = this.findAasNodeByKey(key, this.aasTreeNodes);
-      console.log('[SourceAasManage] refreshAasTreeAfterDelete: Parent node found', {
-        key,
-        parentNode: parentNode,
-        found: !!parentNode
-      });
-      
       if (parentNode) {
         this.refreshAasNodeLive(submodelId, parent, parentNode);
       } else {
-        console.log('[SourceAasManage] refreshAasTreeAfterDelete: Parent node not found, refreshing root');
         this.refreshAasNodeLive(submodelId, '', undefined);
       }
     } else {
-      console.log('[SourceAasManage] refreshAasTreeAfterDelete: No parent path, refreshing root');
       this.refreshAasNodeLive(submodelId, '', undefined);
     }
   }

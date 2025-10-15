@@ -15,6 +15,11 @@ import { ActivatedRoute } from '@angular/router';
 import { of } from 'rxjs';
 import { MessageService } from 'primeng/api';
 
+/**
+ * Test suite for the SourceSystemPageComponent.
+ * Verifies correct component creation, initialization logic, 
+ * and the behavior of AAS-related UI actions and service calls.
+ */
 describe('SourceSystemPageComponent', () => {
   let component: SourceSystemPageComponent;
   let fixture: ComponentFixture<SourceSystemPageComponent>;
@@ -25,6 +30,10 @@ describe('SourceSystemPageComponent', () => {
   let mockErrSvc: jasmine.SpyObj<HttpErrorService>;
   let mockDialogSvc: jasmine.SpyObj<CreateSourceSystemDialogService>;
 
+  /**
+   * Sets up the Angular testing module before each test.
+   * Mocks all required services and initializes the SourceSystemPageComponent instance.
+   */
   beforeEach(async () => {
     mockSourceSvc = jasmine.createSpyObj('SourceSystemResourceService', ['apiConfigSourceSystemIdGet', 'apiConfigSourceSystemIdPut']);
     mockEndpointSvc = jasmine.createSpyObj('SourceSystemEndpointResourceService', ['dummy']);
@@ -72,14 +81,17 @@ describe('SourceSystemPageComponent', () => {
     fixture.detectChanges();
   });
 
+  /** Ensures the component instance is created successfully. */
   it('should create', () => {
     expect(component).toBeTruthy();
   });
 
+  /** Checks if the selected system is loaded correctly from the route parameter. */
   it('loads selected system on init', () => {
     expect(component.selectedSystem?.id).toBe(1);
   });
 
+  /** Verifies that the isAasSelected method correctly identifies AAS vs REST systems. */
   it('isAasSelected reflects apiType', () => {
     component.selectedSystem = { id: 1, apiType: 'AAS' } as any;
     expect(component.isAasSelected()).toBeTrue();
@@ -87,16 +99,19 @@ describe('SourceSystemPageComponent', () => {
     expect(component.isAasSelected()).toBeFalse();
   });
 
+  /** Ensures the "Create Submodel" dialog visibility toggles correctly. */
   it('openAasCreateSubmodel toggles dialog', () => {
     component.openAasCreateSubmodel();
     expect(component.showAasSubmodelDialog).toBeTrue();
   });
 
+  /** Verifies that the submodel JSON template is correctly applied based on type selection. */
   it('setAasSubmodelTemplate switches JSON', () => {
     component.setAasSubmodelTemplate('property');
     expect(component.aasNewSubmodelJson).toContain('"Property"');
   });
 
+  /** Tests if the dialog data for creating a new AAS element is properly initialized. */
   it('openAasCreateElement preps dialog data', () => {
     component.selectedSystem = { id: 1 } as any;
     component.openAasCreateElement('sm1', 'p');
@@ -104,6 +119,7 @@ describe('SourceSystemPageComponent', () => {
     expect(component.showElementDialog).toBeTrue();
   });
 
+  /** Ensures successful dialog result triggers AAS element creation via the service. */
   it('onElementDialogResult success calls createElement', () => {
     component.selectedSystem = { id: 1 } as any;
     const el = { submodelId: 'sm1', body: { a: 1 }, parentPath: '' };
@@ -111,6 +127,7 @@ describe('SourceSystemPageComponent', () => {
     expect(mockAasSvc.createElement).toHaveBeenCalled();
   });
 
+  /** Verifies the aasTest method resets loading and error states on success. */
   it('aasTest success clears loading and error', () => {
     component.selectedSystem = { id: 1 } as any;
     component.aasTest();
@@ -118,18 +135,21 @@ describe('SourceSystemPageComponent', () => {
     expect(component.aasTestError).toBeNull();
   });
 
+  /** Checks that submodel deletion properly encodes IDs and invokes the service. */
   it('deleteAasSubmodel encodes id and calls service', () => {
     component.selectedSystem = { id: 1 } as any;
     component.deleteAasSubmodel('sm1');
     expect(mockAasSvc.deleteSubmodel).toHaveBeenCalled();
   });
 
+  /** Ensures element deletion calls the backend service with raw submodel and path IDs. */
   it('deleteAasElement calls service with raw ids', () => {
     component.selectedSystem = { id: 1 } as any;
     component.deleteAasElement('sm1', 'p/x');
     expect(mockAasSvc.deleteElement).toHaveBeenCalledWith(1, 'sm1', 'p/x');
   });
 
+  /** Confirms that selecting an AASX file triggers preview generation and submodel selection. */
   it('onAasxFileSelected sets preview and selection', () => {
     component.selectedSystem = { id: 1 } as any;
     const file = new File([new Blob(["test"])], 'test.aasx');
@@ -137,6 +157,7 @@ describe('SourceSystemPageComponent', () => {
     expect(component.aasxSelection.submodels.length).toBeGreaterThan(0);
   });
 
+  /** Verifies that expanding a submodel node triggers listElements to load its contents. */
   it('onAasNodeExpand (submodel) triggers listElements', () => {
     component.selectedSystem = { id: 1 } as any;
     const node = { data: { type: 'submodel', id: 'sm1' } };
@@ -144,6 +165,7 @@ describe('SourceSystemPageComponent', () => {
     expect(mockAasSvc.listElements).toHaveBeenCalled();
   });
 
+  /** Checks that selecting an element node triggers getElement to fetch its details. */
   it('onAasNodeSelect triggers getElement for element node', () => {
     component.selectedSystem = { id: 1 } as any;
     const node = { data: { type: 'element', submodelId: 'sm1', idShortPath: 'x' } };
