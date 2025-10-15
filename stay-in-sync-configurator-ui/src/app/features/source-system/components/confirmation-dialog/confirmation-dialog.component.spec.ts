@@ -1,14 +1,16 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { provideNoopAnimations } from '@angular/platform-browser/animations';
 import { ConfirmationDialogComponent } from './confirmation-dialog.component';
 
 
-describe('ConfirmationDialogComponent', () => {
+fdescribe('ConfirmationDialogComponent', () => {
   let component: ConfirmationDialogComponent;
   let fixture: ComponentFixture<ConfirmationDialogComponent>;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [ConfirmationDialogComponent]
+      imports: [ConfirmationDialogComponent],
+      providers: [provideNoopAnimations()]
     }).compileComponents();
 
     fixture = TestBed.createComponent(ConfirmationDialogComponent);
@@ -41,7 +43,37 @@ describe('ConfirmationDialogComponent', () => {
 
   it('returns proper classes for severity', () => {
     component.data = { ...component.data, severity: 'danger', title: '', message: '' };
+    fixture.detectChanges();
     expect(component.getSeverityClass()).toContain('danger');
     expect(component.getIconClass()).toContain('exclamation');
+  });
+
+  it('binds header and message from data', () => {
+    component.data = { ...component.data, title: 'Delete item', message: 'Are you sure?' };
+    fixture.detectChanges();
+    const compiled = fixture.nativeElement as HTMLElement;
+    // PrimeNG dialog header text
+    const headerEl = compiled.querySelector('.p-dialog-header') || compiled.querySelector('.p-dialog .p-dialog-header');
+    expect(headerEl?.textContent || '').toContain('Delete item');
+    // Message text
+    expect(compiled.querySelector('.confirmation-message')?.textContent || '').toContain('Are you sure?');
+  });
+
+  it('uses default button labels when none provided', () => {
+    component.data = { ...component.data, confirmLabel: undefined, cancelLabel: undefined };
+    fixture.detectChanges();
+    const buttons = fixture.nativeElement.querySelectorAll('button');
+    const labels = Array.from(buttons).map((b: any) => (b.textContent || '').trim());
+    expect(labels.join(' ')).toMatch(/Cancel/i);
+    expect(labels.join(' ')).toMatch(/Confirm/i);
+  });
+
+  it('uses custom button labels when provided', () => {
+    component.data = { ...component.data, confirmLabel: 'Yes, delete', cancelLabel: 'Nope' };
+    fixture.detectChanges();
+    const buttons = fixture.nativeElement.querySelectorAll('button');
+    const labels = Array.from(buttons).map((b: any) => (b.textContent || '').trim());
+    expect(labels).toContain('Nope');
+    expect(labels).toContain('Yes, delete');
   });
 });
