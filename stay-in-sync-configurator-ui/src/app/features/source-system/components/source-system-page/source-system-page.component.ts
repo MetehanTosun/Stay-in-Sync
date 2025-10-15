@@ -27,6 +27,8 @@ import {InplaceModule} from 'primeng/inplace';
 import { AasElementDialogComponent, AasElementDialogData, AasElementDialogResult } from '../../../../shared/components/aas-element-dialog/aas-element-dialog.component';
 import { CheckboxModule } from 'primeng/checkbox';
 import { CreateSourceSystemDialogService } from '../../services/create-source-system-dialog.service';
+import { ToastModule } from 'primeng/toast';
+import { MessageService } from 'primeng/api';
 
 
 interface AasOperationVarView { idShort: string; modelType?: string; valueType?: string }
@@ -69,10 +71,12 @@ interface AasElementLivePanel {
     FormsModule,
     InplaceModule,
     AasElementDialogComponent,
-    CheckboxModule
+    CheckboxModule,
+    ToastModule
   ],
   templateUrl: './source-system-page.component.html',
-  styleUrl: './source-system-page.component.css'
+  styleUrl: './source-system-page.component.css',
+  providers: [MessageService]
 })
 export class SourceSystemPageComponent implements OnInit {
   private originalName: string = "";
@@ -252,11 +256,13 @@ export class SourceSystemPageComponent implements OnInit {
         next: () => {
           this.showAasSubmodelDialog = false;
           this.discoverAasSnapshot();
+          this.messageService.add({ key: 'sourceAAS', severity: 'success', summary: 'Submodel created', detail: 'Submodel was created successfully.' });
         },
-        error: (err) => this.erorrService.handleError(err)
+        error: (err) => { this.erorrService.handleError(err); this.messageService.add({ key: 'sourceAAS', severity: 'error', summary: 'Error', detail: (err?.message || 'Failed to create submodel') }); }
       });
     } catch (e) {
       this.erorrService.handleError(e as any);
+      this.messageService.add({ key: 'sourceAAS', severity: 'error', summary: 'Error', detail: 'Invalid JSON for submodel.' });
     }
   }
 
@@ -285,8 +291,9 @@ export class SourceSystemPageComponent implements OnInit {
           next: () => {
             this.showElementDialog = false;
             this.refreshAasNodeLive(el.submodelId, el.parentPath || '', undefined);
+            this.messageService.add({ key: 'sourceAAS', severity: 'success', summary: 'Element created', detail: 'Element has been created.' });
           },
-          error: (err) => this.erorrService.handleError(err)
+          error: (err) => { this.erorrService.handleError(err); this.messageService.add({ key: 'sourceAAS', severity: 'error', summary: 'Error', detail: (err?.message || 'Failed to create element') }); }
         });
     }
   }
@@ -332,10 +339,12 @@ export class SourceSystemPageComponent implements OnInit {
         this.isUploadingAasx = false;
         this.showAasxUpload = false;
         this.discoverAasSnapshot();
+        this.messageService.add({ key: 'sourceAAS', severity: 'success', summary: 'Upload accepted', detail: 'AASX uploaded successfully.' });
       })
       .catch((err) => {
         this.isUploadingAasx = false;
         this.erorrService.handleError(err);
+        this.messageService.add({ key: 'sourceAAS', severity: 'error', summary: 'Upload failed', detail: (err?.message || 'See console for details') });
       });
   }
 
@@ -349,7 +358,8 @@ export class SourceSystemPageComponent implements OnInit {
     private searchPipe: SourceSystemSearchPipe,
     private aasService: AasService,
     private readonly httpErrorService: HttpErrorService,
-    private readonly createDialogService: CreateSourceSystemDialogService
+    private readonly createDialogService: CreateSourceSystemDialogService,
+    private readonly messageService: MessageService
   ) {
   }
 
@@ -719,8 +729,9 @@ export class SourceSystemPageComponent implements OnInit {
     this.aasService.deleteSubmodel(this.selectedSystem.id, smIdB64).subscribe({
       next: () => {
         this.discoverAasSnapshot();
+        this.messageService.add({ key: 'sourceAAS', severity: 'success', summary: 'Submodel deleted', detail: 'Submodel removed from shell.' });
       },
-      error: (err) => this.erorrService.handleError(err)
+      error: (err) => { this.erorrService.handleError(err); this.messageService.add({ key: 'sourceAAS', severity: 'error', summary: 'Error', detail: (err?.message || 'Failed to delete submodel') }); }
     });
   }
 
@@ -742,8 +753,9 @@ export class SourceSystemPageComponent implements OnInit {
           // Fallback: refresh appropriate branch using LIVE view
           this.refreshAasNodeLive(submodelId, parent || '', undefined);
         }
+        this.messageService.add({ key: 'sourceAAS', severity: 'success', summary: 'Element deleted', detail: 'Element has been deleted.' });
       },
-      error: (err) => this.erorrService.handleError(err)
+      error: (err) => { this.erorrService.handleError(err); this.messageService.add({ key: 'sourceAAS', severity: 'error', summary: 'Error', detail: (err?.message || 'Failed to delete element') }); }
     });
   }
 
@@ -816,11 +828,13 @@ export class SourceSystemPageComponent implements OnInit {
     this.aasService.aasTest(this.selectedSystem.id).subscribe({
       next: () => {
         this.aasTestLoading = false;
+        this.messageService.add({ key: 'sourceAAS', severity: 'success', summary: 'Connection successful', detail: 'AAS connection works.' });
       },
       error: (err) => {
         this.aasTestLoading = false;
         this.aasTestError = 'Connection failed. Please verify Base URL, AAS ID and auth.';
         this.erorrService.handleError(err);
+        this.messageService.add({ key: 'sourceAAS', severity: 'error', summary: 'Connection failed', detail: this.aasTestError });
       }
     });
   }
