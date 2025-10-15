@@ -55,7 +55,7 @@
 </div>
 
 <!-- MARK: Node Suggestions -->
-<div *ngIf="showSuggestions" class="suggestions-menu" [style.left.px]="nodeContextMenuPosition.x + 140"
+<div *ngIf="showSuggestions" class="suggestions-menu" [style.left.px]="nodeContextMenuPosition.x + 150"
   [style.top.px]="nodeContextMenuPosition.y" role="menu">
   <ul>
     <li *ngFor="let suggestion of suggestions" (click)="onSuggestionSelected(suggestion)">
