@@ -1,11 +1,5 @@
 package de.unistuttgart.stayinsync.monitoring.clientinterfaces;
 
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import de.unistuttgart.stayinsync.transport.dto.Snapshot.SnapshotDTO;
-import io.quarkus.logging.Log;
-import jakarta.enterprise.context.ApplicationScoped;
-
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
@@ -13,11 +7,17 @@ import java.net.http.HttpResponse;
 import java.util.List;
 import java.util.Map;
 
+import org.eclipse.microprofile.config.inject.ConfigProperty;
+
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 
+import de.unistuttgart.stayinsync.transport.dto.Snapshot.SnapshotDTO;
+import io.quarkus.logging.Log;
+import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
-import org.eclipse.microprofile.config.inject.ConfigProperty;
 
 /**
  * Client for communicating with the SyncNode service.
@@ -52,9 +52,10 @@ public class SyncNodeClient {
      */
     public SyncNodeClient(HttpClient client, ObjectMapper mapper, String baseUrl) {
         this.client = client != null ? client : HttpClient.newHttpClient();
-        this.mapper = mapper != null ? mapper : new ObjectMapper()
-                .registerModule(new JavaTimeModule())
-                .disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
+        this.mapper = mapper != null ? mapper
+                : new ObjectMapper()
+                        .registerModule(new JavaTimeModule())
+                        .disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
         this.baseUrl = baseUrl != null ? baseUrl : "http://localhost:8091";
     }
 
@@ -73,7 +74,8 @@ public class SyncNodeClient {
                 return Map.of();
             }
 
-            return mapper.readValue(response.body(), new TypeReference<Map<Long, SnapshotDTO>>() {});
+            return mapper.readValue(response.body(), new TypeReference<Map<Long, SnapshotDTO>>() {
+            });
         } catch (Exception e) {
             Log.error("Failed to fetch /latestAll from SyncNode", e);
             return Map.of();
@@ -113,14 +115,15 @@ public class SyncNodeClient {
                 return List.of();
             }
 
-            return mapper.readValue(response.body(), new TypeReference<List<SnapshotDTO>>() {});
+            return mapper.readValue(response.body(), new TypeReference<List<SnapshotDTO>>() {
+            });
         } catch (Exception e) {
             Log.error("Failed to fetch last five snapshots", e);
             return List.of();
         }
     }
 
-    public SnapshotDTO getById(Long id) {
+    public SnapshotDTO getById(String id) {
         try {
             HttpRequest request = HttpRequest.newBuilder()
                     .uri(URI.create(baseUrl + "/monitoring/snapshots/" + id))
@@ -140,4 +143,3 @@ public class SyncNodeClient {
         }
     }
 }
-
