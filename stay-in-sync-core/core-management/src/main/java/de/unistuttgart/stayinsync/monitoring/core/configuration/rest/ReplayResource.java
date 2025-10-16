@@ -1,126 +1,80 @@
-// src/main/java/de/unistuttgart/stayinsync/monitoring/core/configuration/rest/ReplayResource.java
 package de.unistuttgart.stayinsync.monitoring.core.configuration.rest;
 
-import java.util.Map;
-
-import io.quarkus.logging.Log;
 import org.eclipse.microprofile.rest.client.inject.RestClient;
 
-import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-import de.unistuttgart.stayinsync.core.configuration.rest.dtos.TransformationScriptDTO;
 import de.unistuttgart.stayinsync.core.configuration.rest.dtos.replay.ReplayExecuteRequestDTO;
 import de.unistuttgart.stayinsync.core.configuration.rest.dtos.replay.ReplayExecuteResponseDTO;
 import de.unistuttgart.stayinsync.monitoring.core.configuration.clients.SnapshotClient;
 import de.unistuttgart.stayinsync.monitoring.core.configuration.clients.TransformationScriptClient;
 import de.unistuttgart.stayinsync.monitoring.core.configuration.service.ReplayExecutor;
-import de.unistuttgart.stayinsync.transport.dto.Snapshot.SnapshotDTO;
-import de.unistuttgart.stayinsync.transport.dto.Snapshot.TransformationResultDTO;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.POST;
 import jakarta.ws.rs.Path;
-import jakarta.ws.rs.PathParam;
-import jakarta.ws.rs.ProcessingException;
 import jakarta.ws.rs.Produces;
-import jakarta.ws.rs.WebApplicationException;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 
+/**
+ * REST resource for replaying transformation scripts either from raw input or
+ * from a stored snapshot.
+ * <p>
+ * Endpoints:
+ * <ul>
+ * <li><code>POST /api/replay/execute</code> — Execute a provided script and
+ * source payload.</li>
+ * </ul>
+ * This resource coordinates with {@link ReplayExecutor} to run code in a
+ * sandboxed GraalJS context and
+ * with remote services to fetch snapshots and scripts.
+ * </p>
+ *
+ * @author Mohammed-Ammar Hassnou
+ */
 @Path("/api/replay")
 @Consumes(MediaType.APPLICATION_JSON)
 @Produces(MediaType.APPLICATION_JSON)
 public class ReplayResource {
 
+    // Executes JavaScript transform() in a restricted GraalJS context.
     @Inject
     ReplayExecutor executor;
 
+    // Used to create/handle JSON nodes passed to the executor.
     @Inject
     ObjectMapper objectMapper;
 
+    // REST client to retrieve snapshots by id from the snapshot service.
     @Inject
     @RestClient
     SnapshotClient snapshotClient;
 
+    // REST client to lookup transformation scripts by transformation id.
     @Inject
     @RestClient
     TransformationScriptClient transformationScriptClient;
 
-    // Execute raw payload
+    /**
+     * Execute a user-provided JavaScript transformation with the given source data.
+     *
+     * @endpoint POST /api/replay/execute
+     * @param req contains the script name (optional), JavaScript code, and source
+     *            JSON
+     * @return {@code 200 OK} with {@link ReplayExecuteResponseDTO} including
+     *         output, captured variables, and error info
+     */
     @POST
     @Path("/execute")
     public Response execute(ReplayExecuteRequestDTO req) {
+        // Delegate to ReplayExecutor to run transform() and capture variables.
         var result = executor.execute(
                 req.scriptName() == null ? "replay.js" : req.scriptName(),
                 req.javascriptCode(),
                 req.sourceData());
 
-        var resp = new ReplayExecuteResponseDTO(result.outputData(), result.variables(), result.errorInfo());
-        return Response.ok(resp).build();
-    }
-
-    // Execute a stored snapshot (load snapshot → fetch script → execute)
-    @POST
-    @Path("/execute/snapshot/{snapshotId}")
-    public Response executeSnapshot(@PathParam("snapshotId") String snapshotId) {
-        // 1) Load snapshot via SnapshotClient
-        SnapshotDTO snap;
-        try {
-            snap = snapshotClient.byId(snapshotId);
-        } catch (WebApplicationException | ProcessingException e) {
-            return Response.status(Response.Status.BAD_GATEWAY)
-                    .entity(Map.of("error", "Failed to call snapshot service: " + e.getMessage()))
-                    .build();
-        }
-
-        if (snap == null || snap.getTransformationResult() == null) {
-            return Response.status(Response.Status.NOT_FOUND).entity(Map.of("error", "Snapshot not found")).build();
-        }
-
-        TransformationResultDTO tr = snap.getTransformationResult();
-        if (tr.getTransformationId() == null) {
-            return Response.status(Response.Status.BAD_REQUEST)
-                    .entity(Map.of("error", "Snapshot missing transformationId")).build();
-        }
-
-        // 2) Fetch script by transformationId
-        TransformationScriptDTO scriptDto;
-        try {
-            scriptDto = transformationScriptClient.findByTransformationId(tr.getTransformationId());
-        } catch (WebApplicationException | ProcessingException e) {
-            return Response.status(Response.Status.BAD_GATEWAY)
-                    .entity(Map.of("error", "Failed to call transformation script service: " + e.getMessage()))
-                    .build();
-        }
-
-        if (scriptDto == null || (scriptDto.javascriptCode() == null && scriptDto.typescriptCode() == null)) {
-            return Response.status(Response.Status.NOT_FOUND)
-                    .entity(Map.of("error", "Script not found for transformation " + tr.getTransformationId())).build();
-        }
-
-        // 3) Ensure we have JS. If only TS present, fail with 501 (you can extend to
-        // compile TS→JS later)
-        String javascript = scriptDto.javascriptCode() != null ? scriptDto.javascriptCode()
-                : null;
-
-        if (javascript == null) {
-            return Response.status(Response.Status.NOT_IMPLEMENTED)
-                    .entity(Map.of("error", "Transformation only has TypeScript; runtime JS not available"))
-                    .build();
-        }
-
-        JsonNode source = tr.getSourceData() == null ? objectMapper.createObjectNode() : tr.getSourceData();
-
-        if(tr.getSourceData() == null){
-
-            Log.errorf("Sourcedata for Snapshow is null");
-        }
-        var result = executor.execute(
-                "transformation-" + tr.getTransformationId() + ".js",
-                javascript,
-                source);
-
+        // Wrap the executor result into the transport DTO for the REST response.
         var resp = new ReplayExecuteResponseDTO(result.outputData(), result.variables(), result.errorInfo());
         return Response.ok(resp).build();
     }
