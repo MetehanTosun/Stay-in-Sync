@@ -60,3 +60,7 @@ Chart.lock
 
 # Ignore tasks directory
 tasks/
+
+# Quarkus dev mode logs
+backend.log
+*.log

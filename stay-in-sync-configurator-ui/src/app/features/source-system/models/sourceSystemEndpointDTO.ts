@@ -12,7 +12,7 @@
 
 export interface SourceSystemEndpointDTO { 
     id?: number;
-    sourceSystemId?: number;
+    sourceSystemId: number;
     endpointPath: string;
     httpRequestType: string;
     requestBodySchema?: string;

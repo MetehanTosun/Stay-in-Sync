@@ -1,0 +1,155 @@
+/* AAS Management Component Styles */
+
+.ml-2 {
+  margin-left: 0.5rem;
+}
+
+.ml-3 {
+  margin-left: 0.75rem;
+}
+
+/* Tree node styling */
+.p-tree .p-tree-container .p-treenode .p-treenode-content {
+  padding: 0.25rem 0.5rem;
+}
+
+.p-tree .p-tree-container .p-treenode .p-treenode-content:hover {
+  background-color: var(--surface-hover);
+}
+
+/* Element details panel */
+#aas-element-details {
+  background-color: var(--surface-card);
+  border: 1px solid var(--surface-border);
+  border-radius: 4px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+#aas-element-details h4 {
+  color: var(--text-color);
+  margin-bottom: 1rem;
+}
+
+#aas-element-details .p-field {
+  margin-bottom: 0.75rem;
+}
+
+#aas-element-details .p-field:last-child {
+  margin-bottom: 0;
+}
+
+/* Template buttons */
+.p-mt-2 {
+  margin-top: 0.5rem;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+  .p-d-flex {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+  
+  #aas-element-details {
+    position: relative !important;
+    top: auto !important;
+    max-height: none !important;
+  }
+}
+
+/* Loading states */
+.p-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Error message styling */
+.p-message-error {
+  background-color: var(--red-50);
+  border: 1px solid var(--red-200);
+  color: var(--red-800);
+}
+
+.p-message-error .p-message-icon {
+  color: var(--red-600);
+}
+
+/* Tree node badges */
+.p-tree .p-treenode-content .p-badge {
+  font-size: 0.75rem;
+  padding: 0.1rem 0.4rem;
+  border-radius: 999px;
+  border: 1px solid var(--surface-border);
+  color: var(--text-color-secondary);
+  background-color: var(--surface-100);
+}
+
+/* Button groups */
+.p-button-group {
+  display: flex;
+  gap: 0.25rem;
+  flex-wrap: wrap;
+}
+
+.p-button-group .p-button {
+  margin: 0;
+}
+
+/* Dialog content */
+.p-dialog .p-dialog-content {
+  padding: 1rem;
+}
+
+.p-dialog .p-dialog-footer {
+  padding: 0.75rem 1rem;
+  border-top: 1px solid var(--surface-border);
+}
+
+/* Form styling */
+.p-field label {
+  font-weight: 500;
+  margin-bottom: 0.25rem;
+  display: block;
+}
+
+.p-field small {
+  color: var(--text-color-secondary);
+  font-size: 0.875rem;
+  margin-top: 0.25rem;
+  display: block;
+}
+
+/* Textarea styling */
+textarea {
+  font-family: 'Courier New', monospace;
+  font-size: 0.875rem;
+  line-height: 1.4;
+}
+
+/* File upload styling */
+.p-fileupload {
+  border: 1px dashed var(--surface-border);
+  border-radius: 4px;
+  padding: 0.5rem;
+  text-align: center;
+}
+
+.p-fileupload:hover {
+  border-color: var(--primary-color);
+  background-color: var(--primary-50);
+}
+
+/* Tree selection */
+.p-tree .p-treenode-content.p-treenode-selectable:focus {
+  outline: 2px solid var(--primary-color);
+  outline-offset: 2px;
+}
+
+/* Sticky positioning for details panel */
+@media (min-width: 769px) {
+  #aas-element-details {
+    position: sticky;
+    top: 0.5rem;
+    align-self: flex-start;
+  }
+}

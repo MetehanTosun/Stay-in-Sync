@@ -1,23 +1,16 @@
 package de.unistuttgart.stayinsync.monitoring.core.configuration.service;
 
-import java.util.LinkedHashMap;
-import java.util.Map;
-
-import org.graalvm.polyglot.Context;
-import org.graalvm.polyglot.Engine;
-import org.graalvm.polyglot.HostAccess;
-import org.graalvm.polyglot.PolyglotException;
-import org.graalvm.polyglot.ResourceLimits;
-import org.graalvm.polyglot.Value;
-
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.oracle.truffle.api.debug.DebugValue;
-
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
+import org.graalvm.polyglot.*;
+
+import java.util.LinkedHashMap;
+import java.util.Map;
 
 /**
  * Runs a transformation script in a sandboxed GraalJS context.

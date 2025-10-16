@@ -2,7 +2,6 @@ package de.unistuttgart.stayinsync.core.configuration.persistence.entities.aas;
 
 import io.quarkus.hibernate.orm.panache.PanacheEntity;
 import jakarta.persistence.*;
-import jakarta.persistence.Index;
 import lombok.Getter;
 
 @Entity

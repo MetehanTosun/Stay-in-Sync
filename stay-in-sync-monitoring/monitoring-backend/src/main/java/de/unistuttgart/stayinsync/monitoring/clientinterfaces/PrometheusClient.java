@@ -25,10 +25,29 @@ import java.nio.charset.StandardCharsets;
 @ApplicationScoped
 public class PrometheusClient {
 
-    private final HttpClient client = HttpClient.newHttpClient();
+    /** HTTP client used to query Prometheus. */
+    HttpClient client = HttpClient.newHttpClient();
 
+    /** Prometheus base URL injected from configuration. */
     @ConfigProperty(name = "prometheus.url")
     String prometheusUrl;
+
+    /**
+     * Default constructor for production usage.
+     */
+    public PrometheusClient() {}
+
+    /**
+     * Package-private constructor for testing purposes.
+     * Allows injection of a custom HttpClient and Prometheus URL.
+     *
+     * @param client the HttpClient to use
+     * @param prometheusUrl the Prometheus base URL
+     */
+    PrometheusClient(HttpClient client, String prometheusUrl) {
+        this.client = client;
+        this.prometheusUrl = prometheusUrl;
+    }
 
     /**
      * Checks whether a given target URL is up according to Prometheus blackbox probe results.
@@ -54,13 +73,12 @@ public class PrometheusClient {
             // Send HTTP request
             HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
 
-            // Parse JSON response safely using try-with-resources
+            // Parse JSON response safely
             try (JsonReader reader = Json.createReader(new StringReader(response.body()))) {
                 JsonObject json = reader.readObject();
                 JsonArray result = json.getJsonObject("data").getJsonArray("result");
 
                 if (result.isEmpty()) {
-                    // No result means the target is unknown/down
                     return false;
                 }
 
@@ -74,3 +92,4 @@ public class PrometheusClient {
         }
     }
 }
+
