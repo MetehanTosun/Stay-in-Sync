@@ -12,16 +12,16 @@ For this purpose, this component uses mainly the Rules Overview page and the Rul
 
 ## Rules Overview
 
-This page lists all graph-based transformation rules in a table.
-Included features in this page are:
+Inside the rules overview you'll find all graph-based transformation rules in a table
+
+Here you may **search**, **create**, **edit** or **delete** a rule.
+
+###
 
 - **Search** for rules by name using the search bar on the top right.
-- **Create** a new rule with the button on the top right or by right clicking the canvas.  
-*This will open up a modal dialog and requires you to input both a name and description of this new rule*
-- **Edit** an existing rule using the edit action. - *This will open the Rule Editor*
-- **Delete** a rule using the delete action.
-
-Additionally, if you click on the name of a  particular rule, the rule will expand with its description inside the table.
+- **Create** a new rule with the button on the top right.  
+- **Edit** an existing rule using the edit action to the right. - *This will open the Rule Editor*
+- **Delete** a rule using the delete action to the right.
 
 ## Rule Editor
 
@@ -29,35 +29,79 @@ Additionally, if you click on the name of a  particular rule, the rule will expa
 
 ### Create a new Node
 
-#### Using the "Add Node" button
+- **Node Palette**
 
-1. Open the node palette with the "Add Node" button on the top right
-2. Choose a node type:
-   - **Provider node**: An input node that contains a variable pulled from an ARC
-   - **Logic node**: Logical operation nodes used to evaluate the values of one or more nodes
-   - **Constant node**: An static node containing a set value
-3. If you have chosen to create a logic node, the palette expands with the categories the logic nodes are grouped under.
-In which you than can choose the to be created logic node.
-4. After selecting a node you may click on the canvas to create the node on the cursor position.
-If you have selected to create a provider or constant node, you will be prompted to add additional information to configure the node.
+To add a new node you'll need to open the node palette with the "Add Node" button on the top right
 
-#### Using right-click on the canvas
+or by right clicking the canvas - the area the graph is rendered on.
 
-Alternatively you can right click the canvas to display the node palate next to your cursor. Following the steps 2 and 3 from before, the node will now be created where the node palate was initially called from.
+- **Node type**
 
-### Additional Nodes
+Inside the node palette you'll have to choose a node type:
 
-> Those nodes cannot be created or deleted
+- **Provider node**: An input node that contains a variable pulled from an ARC
+- **Logic node**: Logical operation nodes used to evaluate the values of one or multiple nodes
+- **Constant node**: A static node containing a set value
+- **Schema node**: A static node similar to a constant node - used for JSON schemas
+
+---
+
+- *Note: Logic nodes*
+
+In contrast to the other node types, logic nodes have 2 sub-palettes.
+
+In the first one, you can choose between different categories of operations (e.g. number, boolean),
+
+after which you may choose the logic node to create.
+
+---
+
+- **Additional Information**
+
+After choosing a node you may be asked to provide additional information about the node you want to create.
+
+- **Node Instantiation**
+
+Lastly depending on wether you opened the node palette with the top right button or via right click,
+
+the pending node creation will wait for you to click on the desired node position
+
+or the node may be created where the node palette was opened.
+
+### Editing Node Data
+
+To edit a node you may click on a node.
+
+This will open a node context menu that differs between all node types.
+
+### Special Nodes
+
+> The following nodes are created on rule creation and cannot be created or deleted
 
 - **Final node**: This node receives only boolean inputs and represents the end result of the transformation graphs boolean condition
 - **Config node**: This node controls the behavior of a transformation graphs logic and only accepts values from provider nodes.  
-  If enabled, all nodes aside the ones connected to the config node will be ignored  
-  and you may choose from two operations `AND` or `OR`, after which the node will register any changes to the values of connected Provider nodes.
-  - `AND`: True, if all values changed
-  - `OR`: True, if any value changed
+
+---
+
+- *Note: Config nodes*
+
+You may configure the config nodes by toggling their mode, status or setting the time window.
+
+- **Mode: `AND`** - outputs true if all connected provider nodes changed their values
+- **Mode: `OR`** - outputs true if one of all connected provider nodes changed their value
+
+The status just toggles if the node is activated or deactivated.
+
+The time window sets how long the Config node waits for multiple provider changes when in AND mode.
+
+You may choose from 5, 10, 15, 20, 25 or 30 seconds
+
+---
 
 ### Error Panel
 
-This page component displays all validation errors that the application identifies when you try to save the transformation graph.  
-If any validation errors are identified, the rule will be saved as a draft until you fix the error.  
-Certain errors contain information about the problematic node. In this case you can click on the error panel item to quickly navigate to the node.
+On the right you find the Error Panel.
+
+This component displays all the validation errors the application identifies while saving the rule.
+
+Errors about specific nodes are clickable and allow you to jump to their position.
