@@ -655,10 +655,8 @@ export class VflowCanvasComponent implements OnInit {
   openSuggestionsMenu(node: CustomVFlowNode) {
     const outputType = (node.data as { outputType?: string }).outputType;
     if (!outputType) return;
-        console.log(this.nodeContextMenuPosition)
     this.nodesApi.getOperators().subscribe({
       next: (operators: LogicOperatorMetadata[]) => {
-        console.log(this.nodeContextMenuPosition)
         this.suggestions = operators.filter(o => o.inputTypes.includes(outputType));
         this.showSuggestions = true;
       },
