@@ -141,6 +141,12 @@ public class ExtendedLogicGraphTests {
             Map<String, Object> context2 = createDataContext("{\"temperature\": 20.0, \"humidity\": 50}", snapshotForRun2);
             boolean result2 = evaluator.evaluateGraph(graph, context2);
             assertFalse(result2, "Should not detect change when data is identical to snapshot");
+
+            // Test Case 3: Third run, temperature changes -> true (OR mode triggers)
+            Map<String, SnapshotEntry> snapshotForRun3 = configNode.getNewSnapshotData();
+            Map<String, Object> context3 = createDataContext("{\"temperature\": 25.0, \"humidity\": 50}", snapshotForRun3);
+            boolean result3 = evaluator.evaluateGraph(graph, context3);
+            assertTrue(result3, "Should detect change when temperature changes (OR mode)");
         });
     }
 
