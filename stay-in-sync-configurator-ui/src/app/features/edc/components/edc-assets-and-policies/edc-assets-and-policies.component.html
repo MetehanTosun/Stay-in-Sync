@@ -253,7 +253,7 @@
           <label class="font-bold">Asset Attributes</label>
           <button pButton pRipple type="button" icon="pi pi-plus" class="p-button-text p-button-sm" (click)="addAssetAttribute()" pTooltip="Add new attribute" tooltipPosition="top"></button>
         </div>
-        <div *ngFor="let attr of assetAttributes; let i = index" class="flex align-items-center gap-2 mb-2">
+        <div *ngFor="let attr of assetAttributes; let i = index; trackBy: trackByIndex" class="flex align-items-center gap-2 mb-2">
           <input type="text" pInputText [(ngModel)]="attr.key" (ngModelChange)="syncAssetJsonFromForm()" placeholder="Attribute Key" class="flex-1" />
           <input type="text" pInputText [(ngModel)]="attr.value" (ngModelChange)="syncAssetJsonFromForm()" placeholder="Attribute Value" class="flex-1" />
           <button pButton pRipple type="button" icon="pi pi-times" class="p-button-danger p-button-text" (click)="removeAssetAttribute(i)" [disabled]="assetAttributes.length === 1"></button>
@@ -270,7 +270,7 @@
           <label class="font-bold">Query Parameters</label>
           <button pButton pRipple type="button" icon="pi pi-plus" class="p-button-text p-button-sm" (click)="addQueryParam()" pTooltip="Add Query Parameter"></button>
         </div>
-        <div *ngFor="let param of queryParams; let i = index" class="flex align-items-center gap-2 mb-2">
+        <div *ngFor="let param of queryParams; let i = index; trackBy: trackByIndex" class="flex align-items-center gap-2 mb-2">
           <input type="text" pInputText [(ngModel)]="param.key" (ngModelChange)="syncAssetJsonFromForm()" placeholder="Parameter Key" class="flex-1" />
           <input type="text" pInputText [(ngModel)]="param.value" (ngModelChange)="syncAssetJsonFromForm()" placeholder="Parameter Value" class="flex-1" />
           <button pButton pRipple type="button" icon="pi pi-times" class="p-button-danger p-button-text" (click)="removeQueryParam(i)"></button>
@@ -282,7 +282,7 @@
           <label class="font-bold">Header Parameters</label>
           <button pButton pRipple type="button" icon="pi pi-plus" class="p-button-text p-button-sm" (click)="addHeaderParam()" pTooltip="Add Header"></button>
         </div>
-        <div *ngFor="let header of headerParams; let i = index" class="flex align-items-center gap-2 mb-2">
+        <div *ngFor="let header of headerParams; let i = index; trackBy: trackByIndex" class="flex align-items-center gap-2 mb-2">
           <input type="text" pInputText [(ngModel)]="header.key" (ngModelChange)="syncAssetJsonFromForm()" placeholder="Header Name" class="flex-1" />
           <input type="text" pInputText [(ngModel)]="header.value" (ngModelChange)="syncAssetJsonFromForm()" placeholder="Header Value" class="flex-1" />
           <button pButton pRipple type="button" icon="pi pi-times" class="p-button-danger p-button-text" (click)="removeHeaderParam(i)"></button>
@@ -293,7 +293,7 @@
     <div class="field col-12 mt-3">
       <label class="font-bold block mb-2">Asset JSON</label>
       <button pButton pRipple type="button" label="Upload from JSON" icon="pi pi-upload" class="p-button-outlined w-full mb-2" (click)="assetTemplateFileInput.click()"></button>
-      <ngx-monaco-editor id="newAssetJsonEditor" [options]="editorOptions" [(ngModel)]="expertModeJsonContent" style="height: 300px; border: 1px solid var(--surface-d);"></ngx-monaco-editor>
+      <ngx-monaco-editor id="newAssetJsonEditor" [options]="editorOptions" [(ngModel)]="expertModeJsonContent" (ngModelChange)="syncAssetFormFromJsonWithDebounce()" style="height: 300px; border: 1px solid var(--surface-d);"></ngx-monaco-editor>
     </div>
   </div>
   <ng-template pTemplate="footer">
@@ -315,7 +315,7 @@
             <label class="font-bold">Asset Attributes</label>
             <button pButton pRipple type="button" icon="pi pi-plus" class="p-button-text p-button-sm" (click)="addAssetAttribute()" pTooltip="Add new attribute" tooltipPosition="top"></button>
           </div>
-          <div *ngFor="let attr of assetAttributes; let i = index" class="flex align-items-center gap-2 mb-2">
+          <div *ngFor="let attr of assetAttributes; let i = index; trackBy: trackByIndex" class="flex align-items-center gap-2 mb-2">
             <input type="text" pInputText [(ngModel)]="attr.key" (ngModelChange)="syncAssetJsonFromForm()" placeholder="Attribute Key" class="flex-1" />
             <input type="text" pInputText [(ngModel)]="attr.value" (ngModelChange)="syncAssetJsonFromForm()" placeholder="Attribute Value" class="flex-1" />
             <button pButton pRipple type="button" icon="pi pi-times" class="p-button-danger p-button-text" (click)="removeAssetAttribute(i)" [disabled]="assetAttributes.length === 1"></button>
@@ -332,7 +332,7 @@
             <label class="font-bold">Query Parameters</label>
             <button pButton pRipple type="button" icon="pi pi-plus" class="p-button-text p-button-sm" (click)="addQueryParam()" pTooltip="Add Query Parameter"></button>
           </div>
-          <div *ngFor="let param of queryParams; let i = index" class="flex align-items-center gap-2 mb-2">
+          <div *ngFor="let param of queryParams; let i = index; trackBy: trackByIndex" class="flex align-items-center gap-2 mb-2">
             <input type="text" pInputText [(ngModel)]="param.key" (ngModelChange)="syncAssetJsonFromForm()" placeholder="Parameter Key" class="flex-1" />
             <input type="text" pInputText [(ngModel)]="param.value" (ngModelChange)="syncAssetJsonFromForm()" placeholder="Parameter Value" class="flex-1" />
             <button pButton pRipple type="button" icon="pi pi-times" class="p-button-danger p-button-text" (click)="removeQueryParam(i)"></button>
@@ -344,7 +344,7 @@
             <label class="font-bold">Header Parameters</label>
             <button pButton pRipple type="button" icon="pi pi-plus" class="p-button-text p-button-sm" (click)="addHeaderParam()" pTooltip="Add Header"></button>
           </div>
-          <div *ngFor="let header of headerParams; let i = index" class="flex align-items-center gap-2 mb-2">
+          <div *ngFor="let header of headerParams; let i = index; trackBy: trackByIndex" class="flex align-items-center gap-2 mb-2">
             <input type="text" pInputText [(ngModel)]="header.key" (ngModelChange)="syncAssetJsonFromForm()" placeholder="Header Name" class="flex-1" />
             <input type="text" pInputText [(ngModel)]="header.value" (ngModelChange)="syncAssetJsonFromForm()" placeholder="Header Value" class="flex-1" />
             <button pButton pRipple type="button" icon="pi pi-times" class="p-button-danger p-button-text" (click)="removeHeaderParam(i)"></button>
@@ -354,7 +354,7 @@
 
       <div class="field col-12 mt-3">
         <label class="font-bold block mb-2">Asset JSON</label>
-        <ngx-monaco-editor id="editAssetJsonEditor" [options]="editorOptions" [(ngModel)]="expertModeJsonContent" style="height: 300px; border: 1px solid var(--surface-d);"></ngx-monaco-editor>
+        <ngx-monaco-editor id="editAssetJsonEditor" [options]="editorOptions" [(ngModel)]="expertModeJsonContent" (ngModelChange)="syncAssetFormFromJsonWithDebounce()" style="height: 300px; border: 1px solid var(--surface-d);"></ngx-monaco-editor>
       </div>
     </div>
   </ng-container>
