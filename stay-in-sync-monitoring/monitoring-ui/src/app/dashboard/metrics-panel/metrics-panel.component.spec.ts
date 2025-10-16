@@ -36,12 +36,10 @@ describe('MetricsPanelComponent', () => {
     component = fixture.componentInstance;
   });
 
-  // --- ✅ 1. Smoke test
   it('should create', () => {
     expect(component).toBeTruthy();
   });
 
-  // --- ✅ 2. should build grafana URL without selected node
   it('should build grafanaUrl when no node selected', fakeAsync(async () => {
     mockRoute.queryParams = of({});
     fixture.detectChanges();
@@ -51,7 +49,6 @@ describe('MetricsPanelComponent', () => {
     expect(component.grafanaUrl).toContain('https://grafana.local/dashboard?orgId=');
   }));
 
-  // --- ✅ 3. should handle POLL_ node
   it('should set isPollingNode true and build url accordingly', fakeAsync(async () => {
     mockRoute.queryParams = of({ input: 'POLL_NODE1' });
     fixture.detectChanges();
@@ -63,7 +60,6 @@ describe('MetricsPanelComponent', () => {
     expect(component.grafanaUrl).toContain('var-WorkerpodName=NODE1');
   }));
 
-  // --- ✅ 4. should load transformations and build url for normal node
   it('should load transformations for a normal node', fakeAsync(async () => {
     const mockTransformations = [{ id: 10 }, { id: 20 }];
     mockTransformationService.getTransformations.and.returnValue(of(mockTransformations));
@@ -79,7 +75,6 @@ describe('MetricsPanelComponent', () => {
     expect(component.grafanaUrl).toContain('var-transformationId=20');
   }));
 
-  // --- ✅ 5. should handle error when transformationService fails
   it('should build grafanaUrl even if transformations fail', fakeAsync(async () => {
     spyOn(console, 'error');
     mockTransformationService.getTransformations.and.returnValue(throwError(() => new Error('fail')));

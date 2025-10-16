@@ -65,12 +65,10 @@ describe('LogsPanelComponent', () => {
     component = fixture.componentInstance;
   });
 
-  // --- Smoke Test
   it('should create', () => {
     expect(component).toBeTruthy();
   });
 
-  // --- Polling Node Test
   it('should fetch logs by service for POLL node', fakeAsync(() => {
     mockRoute.queryParams = of({ input: 'POLL_NODE1' });
     const logsMock = [{ message: 'log1', timestamp: '0' }];
@@ -84,7 +82,6 @@ describe('LogsPanelComponent', () => {
     expect(component.loading).toBeFalse();
   }));
 
-  // --- Normal Node with transformations
   it('should fetch transformations and logs', fakeAsync(() => {
     mockRoute.queryParams = of({ input: 'NODE123' });
     mockTransformationService.getTransformations.and.returnValue(of([{ id: 10 }, { id: 20 }]));
@@ -98,7 +95,6 @@ describe('LogsPanelComponent', () => {
     expect(component.loading).toBeFalse();
   }));
 
-  // --- No Node selected
   it('should fetch all logs if no node selected', fakeAsync(() => {
     mockRoute.queryParams = of({});
     const logsMock = [{ message: 'logX', timestamp: '0' }];
@@ -110,7 +106,6 @@ describe('LogsPanelComponent', () => {
     expect(component.logs).toEqual(logsMock);
   }));
 
-  // --- Error Handling
   it('should handle error fetching transformations', fakeAsync(() => {
     spyOn(console, 'error');
     mockRoute.queryParams = of({ input: 'NODE_ERR' });
@@ -122,14 +117,12 @@ describe('LogsPanelComponent', () => {
     expect(component.errorMessage).toBe('Error loading transformations');
   }));
 
-  // --- Reload Logs triggers fetch
   it('reloadLogs should update endTime and fetch logs', fakeAsync(() => {
     spyOn(component, 'fetchLogs');
     component.reloadLogs();
     expect(component.fetchLogs).toHaveBeenCalled();
   }));
 
-  // --- onServiceChange resets POLL node
   it('onServiceChange resets POLL node', () => {
     component.selectedNodeId = 'POLL_NODE1';
     component.selectedTransformationId = '123';
