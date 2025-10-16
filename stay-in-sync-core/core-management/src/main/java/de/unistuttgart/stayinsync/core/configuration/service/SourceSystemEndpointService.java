@@ -177,9 +177,14 @@ public class SourceSystemEndpointService {
         }
     }
 
-    public Optional<SourceSystemEndpoint> replaceSourceSystemEndpoint(@NotNull @Valid SourceSystemEndpoint sourceSystemEndpoint) {
-        System.out.println("### TEST replace: " + sourceSystemEndpoint.requestBodySchema);
-        Log.debug("Replacing endpoint: " + sourceSystemEndpoint);
+    public Optional<SourceSystemEndpoint> replaceSourceSystemEndpoint(@NotNull @Valid SourceSystemEndpoint sourceSystemEndpoint, Long sourceSystemId) {
+        Log.infof("=== SOURCE SYSTEM ENDPOINT SERVICE REPLACE DEBUG ===");
+        Log.infof("Replacing endpoint ID: %s", sourceSystemEndpoint.id);
+        Log.infof("Endpoint path: %s", sourceSystemEndpoint.endpointPath);
+        Log.infof("HTTP method: %s", sourceSystemEndpoint.httpRequestType);
+        Log.infof("Request body schema: %s", sourceSystemEndpoint.requestBodySchema);
+        Log.infof("Response body schema: %s", sourceSystemEndpoint.responseBodySchema);
+        Log.infof("Source system ID: %s", sourceSystemEndpoint.sourceSystem != null ? sourceSystemEndpoint.sourceSystem.id : "null");
 
       
         if (sourceSystemEndpoint.requestBodySchema != null && !sourceSystemEndpoint.requestBodySchema.isBlank()) {
@@ -201,10 +206,18 @@ public class SourceSystemEndpointService {
         return SourceSystemEndpoint.findByIdOptional(sourceSystemEndpoint.id)
                 .map(SourceSystemEndpoint.class::cast) // Only here for type erasure within the IDE
                 .map(targetSouceSystemEndpoint -> {
+                    // Get the source system to maintain the relationship
+                    SourceSystem sourceSystem = sourceSystemService.findSourceSystemById(sourceSystemId).orElseThrow(() ->
+                            new CoreManagementException(Response.Status.NOT_FOUND, "Unable to find Source System", "There is no source-system with id " + sourceSystemId));
+                    
                     this.sourceSystemEndpointFullMapper.mapFullUpdate(sourceSystemEndpoint, targetSouceSystemEndpoint);
                  
                     targetSouceSystemEndpoint.requestBodySchema = sourceSystemEndpoint.requestBodySchema;
                     targetSouceSystemEndpoint.responseBodySchema = sourceSystemEndpoint.responseBodySchema;
+                    
+                    // CRITICAL: Set the sourceSystem relationship to prevent it from becoming null
+                    targetSouceSystemEndpoint.sourceSystem = sourceSystem;
+                    targetSouceSystemEndpoint.syncSystem = sourceSystem;
                     
             
                     if (targetSouceSystemEndpoint.responseBodySchema != null && !targetSouceSystemEndpoint.responseBodySchema.isBlank()) {
@@ -219,8 +232,16 @@ public class SourceSystemEndpointService {
                         targetSouceSystemEndpoint.responseDts = null;
                     }
                     
-                    System.out.println("### TEST replace (entity): " + targetSouceSystemEndpoint.requestBodySchema);
-                    Log.info("Wird gespeichert (replace): " + targetSouceSystemEndpoint.requestBodySchema);
+                    Log.infof("=== AFTER UPDATE MAPPING ===");
+                    Log.infof("Updated endpoint ID: %s", targetSouceSystemEndpoint.id);
+                    Log.infof("Updated endpoint path: %s", targetSouceSystemEndpoint.endpointPath);
+                    Log.infof("Updated HTTP method: %s", targetSouceSystemEndpoint.httpRequestType);
+                    Log.infof("Updated request body schema: %s", targetSouceSystemEndpoint.requestBodySchema);
+                    Log.infof("Updated response body schema: %s", targetSouceSystemEndpoint.responseBodySchema);
+                    Log.infof("Updated response DTS: %s", targetSouceSystemEndpoint.responseDts);
+                    
+                    targetSouceSystemEndpoint.persist();
+                    Log.infof("=== ENDPOINT PERSISTED SUCCESSFULLY ===");
                     return targetSouceSystemEndpoint;
                 });
     }

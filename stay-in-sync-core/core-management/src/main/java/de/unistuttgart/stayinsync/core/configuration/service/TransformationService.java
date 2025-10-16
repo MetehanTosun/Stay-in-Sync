@@ -1,7 +1,6 @@
 package de.unistuttgart.stayinsync.core.configuration.service;
 
 
-import de.unistuttgart.stayinsync.core.configuration.exception.CoreManagementWebException;
 import de.unistuttgart.stayinsync.core.configuration.persistence.entities.aas.AasTargetApiRequestConfiguration;
 import de.unistuttgart.stayinsync.core.configuration.persistence.entities.sync.*;
 import de.unistuttgart.stayinsync.core.configuration.exception.CoreManagementException;
@@ -17,7 +16,6 @@ import de.unistuttgart.stayinsync.core.configuration.rest.dtos.targetsystem.Upda
 import de.unistuttgart.stayinsync.core.configuration.service.transformationrule.GraphStorageService;
 import de.unistuttgart.stayinsync.core.configuration.messaging.producer.TransformationJobMessageProducer;
 import de.unistuttgart.stayinsync.transport.domain.JobDeploymentStatus;
-import io.quarkus.hibernate.orm.panache.PanacheEntityBase;
 import io.quarkus.logging.Log;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
@@ -180,7 +178,7 @@ public class TransformationService {
         Transformation transformation = Transformation.findById(id);
 
         if (transformation == null) {
-            throw new CoreManagementWebException(Response.Status.NOT_FOUND, "Transformation not found", "No Transformation found using id %d", id);
+            throw new CoreManagementException(Response.Status.NOT_FOUND, "Transformation not found", "No Transformation found using id %d", id);
         }
 
         return transformation;

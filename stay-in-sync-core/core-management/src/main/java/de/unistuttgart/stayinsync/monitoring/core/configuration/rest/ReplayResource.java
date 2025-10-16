@@ -1,22 +1,29 @@
 // src/main/java/de/unistuttgart/stayinsync/monitoring/core/configuration/rest/ReplayResource.java
 package de.unistuttgart.stayinsync.monitoring.core.configuration.rest;
 
+import java.util.Map;
+
+import io.quarkus.logging.Log;
 import org.eclipse.microprofile.rest.client.inject.RestClient;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import de.unistuttgart.stayinsync.core.configuration.rest.dtos.TransformationScriptDTO;
 import de.unistuttgart.stayinsync.core.configuration.rest.dtos.replay.ReplayExecuteRequestDTO;
 import de.unistuttgart.stayinsync.core.configuration.rest.dtos.replay.ReplayExecuteResponseDTO;
 import de.unistuttgart.stayinsync.monitoring.core.configuration.clients.SnapshotClient;
 import de.unistuttgart.stayinsync.monitoring.core.configuration.clients.TransformationScriptClient;
 import de.unistuttgart.stayinsync.monitoring.core.configuration.service.ReplayExecutor;
+import de.unistuttgart.stayinsync.transport.dto.Snapshot.SnapshotDTO;
+import de.unistuttgart.stayinsync.transport.dto.Snapshot.TransformationResultDTO;
 import jakarta.inject.Inject;
-import jakarta.ws.rs.Consumes;
-import jakarta.ws.rs.POST;
-import jakarta.ws.rs.Path;
-import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
+import org.eclipse.microprofile.rest.client.inject.RestClient;
+
+import java.util.Map;
 
 @Path("/api/replay")
 @Consumes(MediaType.APPLICATION_JSON)

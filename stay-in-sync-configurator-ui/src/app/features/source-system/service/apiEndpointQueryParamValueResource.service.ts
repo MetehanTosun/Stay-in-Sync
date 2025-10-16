@@ -50,8 +50,7 @@ export class ApiEndpointQueryParamValueResourceService {
     context?: HttpContext
   }): Observable<any> {
 
-    return this.httpClient.request<any>('delete', `/api/config/request-configuration/query-param-value/${id})}`
-    );
+    return this.httpClient.request<any>('delete', `/api/config/request-configuration/query-param-value/${id}`);
   }
 
   /**

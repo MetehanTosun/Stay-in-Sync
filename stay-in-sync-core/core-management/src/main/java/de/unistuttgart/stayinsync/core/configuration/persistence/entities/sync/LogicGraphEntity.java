@@ -2,7 +2,9 @@ package de.unistuttgart.stayinsync.core.configuration.persistence.entities.sync;
 
 import de.unistuttgart.graphengine.dto.transformationrule.GraphDTO;
 import io.quarkus.hibernate.orm.panache.PanacheEntity;
-import jakarta.persistence.*;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Lob;
 import lombok.Getter;
 import lombok.Setter;
 

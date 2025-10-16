@@ -8,81 +8,238 @@
   <p-steps [model]="steps" [activeIndex]="currentStep" class="mb-4"></p-steps>
 
   <ng-container *ngIf="currentStep === 0">
-    <form [formGroup]="form" class="p-fluid p-formgrid p-grid" style="margin: 1.5rem 0; padding: 1rem;">
-      <div class="p-field p-col-12 p-md-6" style="margin-bottom: 1rem;">
-      <label for="name">Name</label>
-      <input id="name" type="text" pInputText formControlName="name"/>
-    </div>
-    <div class="p-field p-col-12 p-md-6" style="margin-bottom: 1rem;">
-      <label for="apiUrl">API URL</label>
-      <input id="apiUrl" type="text" pInputText formControlName="apiUrl"/>
-    </div>
-    <div class="p-field p-col-12" style="margin-bottom: 1rem;">
-      <label for="description">Description</label>
-      <textarea id="description" rows="3" pInputTextarea formControlName="description" style="width: 100%;"></textarea>
-    </div>
-    <div class="p-field p-col-12 p-md-6" style="margin-bottom: 1rem;">
-      <label for="apiType">Type*</label>
-      <p-dropdown id="apiType" [options]="typeOptions" formControlName="apiType"></p-dropdown>
-    </div>
-    <div class="p-field p-col-12 p-md-6" style="margin-bottom: 1rem;">
-      <label for="apiAuthType">Authentication</label>
-      <p-dropdown id="apiAuthType" [options]="authTypeOptions" formControlName="apiAuthType"></p-dropdown>
-    </div>
-    <div class="p-col-12 p-formgrid p-grid" formGroupName="authConfig">
-      <ng-container *ngIf="form.get('apiAuthType')?.value === ApiAuthType.Basic">
-        <div class="p-field p-col-12 p-md-6" style="margin-bottom: 1rem;">
-          <label for="username">Username*</label>
-          <input id="username" type="text" pInputText formControlName="username"/>
+    <form [formGroup]="form" class="p-fluid">
+      <div class="p-field">
+        <label for="name">Name*</label>
+        <input id="name" type="text" pInputText formControlName="name"/>
+      </div>
+      <div class="p-field">
+        <label for="apiUrl">Base URL*</label>
+        <input id="apiUrl" type="text" pInputText formControlName="apiUrl"/>
+      </div>
+      <!-- AAS-only field -->
+      <div class="p-field" *ngIf="isAas()">
+        <label for="aasId">AAS ID*</label>
+        <input id="aasId" type="text" pInputText formControlName="aasId"/>
+      </div>
+      <div class="p-field">
+        <label for="description">Description</label>
+        <textarea id="description" rows="3" pInputTextarea formControlName="description" style="width: 100%"></textarea>
+      </div>
+
+      <div class="p-field">
+        <label for="apiType">Type*</label>
+        <p-dropdown id="apiType" [options]="typeOptions" formControlName="apiType"></p-dropdown>
+      </div>
+      <div class="p-field">
+        <label for="apiAuthType">Authentication</label>
+        <p-dropdown id="apiAuthType" [options]="authTypeOptions" formControlName="apiAuthType"></p-dropdown>
+      </div>
+      <div formGroupName="authConfig">
+        <ng-container *ngIf="form.get('apiAuthType')?.value === ApiAuthType.Basic">
+          <div class="p-field">
+            <label for="username">Username*</label>
+            <input id="username" type="text" pInputText formControlName="username"/>
+          </div>
+          <div class="p-field">
+            <label for="password">Password*</label>
+            <input id="password" type="password" pInputText formControlName="password"/>
+          </div>
+        </ng-container>
+        <ng-container *ngIf="form.get('apiAuthType')?.value === ApiAuthType.ApiKey">
+          <div class="p-field">
+            <label for="apiKey">API Key*</label>
+            <input id="apiKey" type="text" pInputText formControlName="apiKey"/>
+          </div>
+          <div class="p-field">
+            <label for="headerName">Header Name*</label>
+            <input id="headerName" type="text" pInputText formControlName="headerName"/>
+          </div>
+        </ng-container>
+      </div>
+      <div class="p-field" *ngIf="isRest()">
+        <label for="openApiSpec">OpenAPI Spec URL</label>
+        <input id="openApiSpec" type="text" pInputText formControlName="openApiSpec" placeholder="https://..."/>
+      </div>
+      <div class="p-field" *ngIf="isRest()">
+        <label>OR Upload File</label>
+        <p-fileupload #fu mode="basic" [auto]="false" [showUploadButton]="false" [showCancelButton]="false" accept=".json,.yaml,.yml" (onSelect)="onFileSelected($event)"></p-fileupload>
+        <small *ngIf="selectedFile">{{ selectedFile.name }}</small>
+      </div>
+
+      <!-- AAS: Test connection -->
+      <div class="p-field" *ngIf="isAas()">
+        <button pButton type="button" label="Test connection" (click)="testAasConnection()" [disabled]="isTesting"></button>
+        <span *ngIf="isTesting" class="ml-2">Testing...</span>
+        <div class="mt-2" *ngIf="aasPreview && aasTestOk">
+          <strong>Connection successful!</strong>
         </div>
-        <div class="p-field p-col-12 p-md-6" style="margin-bottom: 1rem;">
-          <label for="password">Password*</label>
-          <input id="password" type="password" pInputText formControlName="password"/>
+        <div class="mt-2" *ngIf="aasError && aasTestOk === false" style="color:#d32f2f;">
+          {{ aasError }}
         </div>
-      </ng-container>
-      <ng-container *ngIf="form.get('apiAuthType')?.value === ApiAuthType.ApiKey">
-        <div class="p-field p-col-12 p-md-6" style="margin-bottom: 1rem;">
-          <label for="apiKey">API Key*</label>
-          <input id="apiKey" type="text" pInputText formControlName="apiKey"/>
-        </div>
-        <div class="p-field p-col-12 p-md-6" style="margin-bottom: 1rem;">
-          <label for="headerName">Header Name*</label>
-          <input id="headerName" type="text" pInputText formControlName="headerName"/>
-        </div>
-      </ng-container>
-    </div>
-    <div class="p-field p-col-12 p-md-6" style="margin-bottom: 1rem;">
-      <label for="openApiSpec">OpenAPI Spec URL</label>
-      <input id="openApiSpec" type="text" pInputText formControlName="openApiSpec" placeholder="https://..."/>
-    </div>
-    <div class="p-field p-col-12 p-md-6" style="margin-bottom: 1rem;">
-      <label>OR Upload File</label>
-      <p-fileupload #fu mode="basic"
-                    [auto]="false"
-                    [showUploadButton]="false"
-                    [showCancelButton]="false"
-                    accept=".json,.yaml,.yml"
-                    (onSelect)="onFileSelected($event)"/>
-      <small *ngIf="selectedFile">{{ selectedFile.name }}</small>
-    </div>
+      </div>
     </form>
   </ng-container>
 
   <div *ngIf="currentStep === 1" style="margin-top:1rem;">
-    <app-manage-api-headers [syncSystemId]="createdTargetSystemId"></app-manage-api-headers>
+    <app-manage-api-headers [syncSystemId]="createdTargetSystemId" [allowValues]="true" [isAas]="isAas()" (onRetest)="testAasConnection()"></app-manage-api-headers>
   </div>
 
-  <div *ngIf="currentStep === 2" style="margin-top:1rem;">
-    <app-manage-target-endpoints [targetSystemId]="createdTargetSystemId"></app-manage-target-endpoints>
-  </div>
+  <ng-container *ngIf="currentStep === 2">
+    <ng-container *ngIf="isRest(); else aasTree">
+      <app-manage-target-endpoints [targetSystemId]="createdTargetSystemId"></app-manage-target-endpoints>
+    </ng-container>
+    <ng-template #aasTree>
+      <div class="p-field">
+        <button pButton type="button" label="Discover Submodels" (click)="discoverSubmodels()" [disabled]="isDiscovering"></button>
+        <button pButton type="button" class="p-button-text ml-2" label="Upload AASX" (click)="openAasxUpload()" [disabled]="!createdTargetSystemId"></button>
+        <button pButton type="button" class="p-button-text ml-2" label="+ Submodel" (click)="openCreateSubmodel()"></button>
+        <span *ngIf="isDiscovering" class="ml-2">Loading...</span>
+      </div>
+      <div style="display:flex; gap:1rem; align-items:flex-start;">
+        <div style="flex: 1 1 65%; min-width: 0;">
+          <p-tree [value]="treeNodes" (onNodeExpand)="onNodeExpand($event)" (onNodeSelect)="onNodeSelect($event)" selectionMode="single">
+            <ng-template let-node pTemplate="default">
+              <div style="display:flex;align-items:center;gap:.5rem;">
+                <span>{{ node.label }}</span>
+                <span style="font-size:.75rem;padding:.1rem .4rem;border-radius:999px;border:1px solid var(--surface-border);color:var(--text-color-secondary);">
+                  {{ node.data?.type==='submodel' ? (node.data?.modelType || (node.data?.raw?.kind?.toLowerCase?.().includes('template') ? 'Submodel Template' : 'Submodel')) : (node.data?.modelType || node.data?.raw?.modelType || (node.data?.raw?.valueType ? 'Property' : 'Element')) }}
+                </span>
+                <button *ngIf="node.data?.type==='submodel'" pButton type="button" class="p-button-text" label="Create element" (click)="openCreateElement(node.data.id)"></button>
+                <button *ngIf="node.data?.type==='submodel'" pButton type="button" class="p-button-text p-button-danger" label="Delete submodel" (click)="deleteSubmodel(node.data.id)"></button>
+                <button *ngIf="node.data?.type==='element' && (node.data?.modelType==='SubmodelElementCollection' || node.data?.modelType==='SubmodelElementList' || node.data?.modelType==='Entity')" pButton type="button" class="p-button-text" label="Add child" (click)="openCreateElement(node.data.submodelId, node.data.idShortPath)"></button>
+                <button *ngIf="node.data?.type==='element' && (node.data?.modelType==='Property' || node.data?.raw?.valueType)" pButton type="button" class="p-button-text" label="Set value" (click)="openSetValue(node.data.submodelId, node.data)"></button>
+                <button *ngIf="node.data?.type==='element'" pButton type="button" class="p-button-text p-button-danger" label="Delete" (click)="deleteElement(node.data.submodelId, node.data.idShortPath)"></button>
+              </div>
+            </ng-template>
+          </p-tree>
+        </div>
+        <div id="element-details" class="p-card" *ngIf="selectedNode && selectedNode.data?.type==='element'" style="flex: 0 0 35%; padding:1rem;border:1px solid var(--surface-border);border-radius:4px; position: sticky; top: .5rem; align-self: flex-start; max-height: calc(100vh - 1rem); overflow: auto;">
+          <div class="p-d-flex p-ai-center p-jc-between">
+            <h4 style="margin:0;">Details</h4>
+            <span *ngIf="selectedLiveLoading">Loading...</span>
+          </div>
+          <div *ngIf="selectedLivePanel">
+            <div><strong>Label:</strong> {{ selectedLivePanel.label }}</div>
+            <div><strong>Type:</strong> {{ selectedLivePanel.type }}</div>
+            <div *ngIf="selectedLivePanel.valueType"><strong>valueType:</strong> {{ selectedLivePanel.valueType }}</div>
+            <div *ngIf="selectedLivePanel.type==='MultiLanguageProperty' && (selectedLivePanel.value?.length || 0) > 0">
+              <strong>values:</strong>
+              <div style="margin:.25rem 0 .5rem 0;">
+                <div *ngFor="let v of selectedLivePanel.value" style="display:flex;gap:.5rem;align-items:baseline;">
+                  <span style="font-size:.75rem;padding:.1rem .4rem;border:1px solid var(--surface-border);border-radius:999px;color:var(--text-color-secondary);min-width:2.5rem;text-align:center;">{{ v?.language || '-' }}</span>
+                  <span>{{ v?.text || '' }}</span>
+                </div>
+              </div>
+            </div>
+            <div *ngIf="selectedLivePanel.value !== undefined && selectedLivePanel.type!=='SubmodelElementCollection' && selectedLivePanel.type!=='SubmodelElementList' && selectedLivePanel.type!=='MultiLanguageProperty' && selectedLivePanel.type!=='RelationshipElement' && selectedLivePanel.type!=='AnnotatedRelationshipElement'">
+              <strong>value:</strong> {{ (selectedLivePanel.value | json) }}
+            </div>
+            <div *ngIf="selectedLivePanel.type==='RelationshipElement' || selectedLivePanel.type==='AnnotatedRelationshipElement'">
+              <div *ngIf="selectedLivePanel.firstRef"><strong>First Reference:</strong> {{ selectedLivePanel.firstRef }}</div>
+              <div *ngIf="selectedLivePanel.secondRef"><strong>Second Reference:</strong> {{ selectedLivePanel.secondRef }}</div>
+              <div *ngIf="selectedLivePanel.type==='AnnotatedRelationshipElement' && selectedLivePanel.annotations?.length">
+                <strong>Annotations:</strong>
+                <div style="margin:.25rem 0 .5rem 0;">
+                  <div *ngFor="let ann of selectedLivePanel.annotations" style="display:flex;gap:.5rem;align-items:baseline;margin:.25rem 0;">
+                    <span style="font-size:.75rem;padding:.1rem .4rem;border:1px solid var(--surface-border);border-radius:999px;color:var(--text-color-secondary);min-width:2.5rem;text-align:center;">{{ ann?.idShort || '-' }}</span>
+                    <span>{{ ann?.value || '' }}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div *ngIf="selectedLivePanel.type==='SubmodelElementCollection'">
+              <div><strong>Items:</strong> {{ selectedLivePanel.value?.length || 0 }}</div>
+            </div>
+            <div *ngIf="selectedLivePanel.type==='SubmodelElementList'">
+              <div><strong>Count:</strong> {{ selectedLivePanel.value?.length || 0 }}</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </ng-template>
+  </ng-container>
 
   <ng-template pTemplate="footer">
     <div class="p-d-flex p-jc-between">
       <button pButton type="button" label="Back" class="p-button-text" (click)="goBack()" [disabled]="currentStep === 0"></button>
-      <button *ngIf="currentStep === 0 || currentStep === 1" pButton type="button" label="Next" (click)="goNext()" [disabled]="currentStep === 0 ? form.invalid : false"></button>
-      <button *ngIf="currentStep === 2" pButton type="button" label="Finish" (click)="cancel()"></button>
+      <button *ngIf="currentStep === 0 || currentStep === 1" pButton type="button" label="Next" (click)="goNext()" [disabled]="currentStep === 0 ? !canProceedFromStep1() : false"></button>
+      <button *ngIf="currentStep === 2" pButton type="button" label="Finish" (click)="finish()"></button>
     </div>
   </ng-template>
 </p-dialog>
 
+<!-- Dialog: Confirm Delete Submodel -->
+<p-dialog header="Delete Submodel" [(visible)]="showDeleteSubmodelDialog" [modal]="true" [style]="{width:'32vw'}">
+  <p>Do you really want to delete this submodel? All its elements and the shell reference will be removed. This action cannot be undone.</p>
+  <ng-template pTemplate="footer">
+    <button pButton type="button" class="p-button-text" label="Cancel" (click)="showDeleteSubmodelDialog=false"></button>
+    <button pButton type="button" class="p-button-danger" label="Delete" (click)="proceedDeleteSubmodel()"></button>
+  </ng-template>
+</p-dialog>
 
+<!-- Dialog: Create Submodel -->
+<p-dialog header="Create Submodel" [(visible)]="showSubmodelDialog" [modal]="true" [style]="{width:'40vw'}">
+  <textarea pInputTextarea [(ngModel)]="newSubmodelJson" rows="10" style="width:100%"></textarea>
+  <ng-template pTemplate="footer">
+    <button pButton type="button" class="p-button-text" label="Cancel" (click)="showSubmodelDialog=false"></button>
+    <button pButton type="button" label="Create" (click)="createSubmodel()"></button>
+  </ng-template>
+  <div class="p-mt-2" style="display:flex;gap:.5rem;flex-wrap:wrap;">
+    <button pButton type="button" class="p-button-text" label="Template: Minimal" (click)="setSubmodelTemplate('minimal')"></button>
+    <button pButton type="button" class="p-button-text" label="Template: With Property" (click)="setSubmodelTemplate('property')"></button>
+    <button pButton type="button" class="p-button-text" label="Template: With Collection" (click)="setSubmodelTemplate('collection')"></button>
+  </div>
+</p-dialog>
+
+<!-- Element Creation Dialog -->
+<app-aas-element-dialog
+  [(visible)]="showElementDialog"
+  [data]="elementDialogData"
+  (result)="onElementDialogResult($event)">
+</app-aas-element-dialog>
+
+<!-- Dialog: Upload AASX -->
+<p-dialog header="Upload AASX" [(visible)]="showAasxUpload" [modal]="true" [style]="{width:'35vw'}">
+  <div class="p-field">
+    <p-fileupload mode="basic" [auto]="false" [showUploadButton]="false" [showCancelButton]="false" accept=".aasx" (onSelect)="onAasxFileSelected($event)"></p-fileupload>
+    <small *ngIf="aasxSelectedFile">{{ aasxSelectedFile.name }}</small>
+  </div>
+  <div *ngIf="aasxPreview?.length" class="p-mt-3">
+    <div *ngFor="let sm of aasxPreview" class="p-mb-2">
+      <div style="display:flex;align-items:center;gap:.5rem;">
+        <p-checkbox binary="true" [ngModel]="getOrInitAasxSelFor(sm).full" (ngModelChange)="toggleAasxSubmodelFull(sm, $event)"></p-checkbox>
+        <span class="font-bold">{{ sm.idShort || sm.id }}</span>
+        <span style="font-size:.75rem;padding:.1rem .4rem;border:1px solid var(--surface-border);border-radius:999px;color:var(--text-color-secondary);">Submodel</span>
+      </div>
+    </div>
+  </div>
+  <div *ngIf="aasxSelectedFile && (!aasxPreview || aasxPreview.length === 0)" class="p-mt-3">
+    <small style="color:var(--text-color-secondary);">No submodels found in this AASX file.</small>
+  </div>
+  <ng-template pTemplate="footer">
+    <button pButton type="button" class="p-button-text" label="Cancel" (click)="showAasxUpload=false"></button>
+    <button pButton type="button" label="Upload" (click)="uploadAasx()" [disabled]="isUploadingAasx || !aasxSelectedFile || !aasxPreview?.length"></button>
+  </ng-template>
+</p-dialog>
+
+<!-- Dialog: Set Property Value -->
+<p-dialog header="Set Property Value" [(visible)]="showValueDialog" [modal]="true" [style]="{width:'35vw'}">
+  <div class="p-field">
+    <label>Submodel ID</label>
+    <input pInputText [value]="valueSubmodelId" disabled />
+  </div>
+  <div class="p-field">
+    <label>Element Path</label>
+    <input pInputText [value]="valueElementPath" disabled />
+  </div>
+  <div class="p-field">
+    <label>New Value</label>
+    <input pInputText [(ngModel)]="valueNew" />
+    <small>valueType: {{ valueTypeHint }}</small>
+  </div>
+  <ng-template pTemplate="footer">
+    <button pButton type="button" class="p-button-text" label="Cancel" (click)="showValueDialog=false"></button>
+    <button pButton type="button" label="Save" (click)="setValue()"></button>
+  </ng-template>
+</p-dialog>
