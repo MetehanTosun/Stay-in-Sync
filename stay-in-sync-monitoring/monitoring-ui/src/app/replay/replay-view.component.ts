@@ -6,17 +6,17 @@ import { ActivatedRoute } from '@angular/router';
 import { NgxJsonViewerModule } from 'ngx-json-viewer';
 import { MonacoEditorModule } from 'ngx-monaco-editor-v2';
 import { PrimeTemplate } from 'primeng/api';
+import { Button } from 'primeng/button';
 import { TableModule } from 'primeng/table';
 import { Tab, TabList, TabPanel, TabPanels, Tabs } from 'primeng/tabs';
 import * as ts from 'typescript';
 import { LogEntry } from '../core/models/log.model';
-import { LogService } from '../core/services/log.service';
 import { SnapshotDTO } from '../core/models/snapshot.model';
 import { TransformationScriptDTO } from '../core/models/transformation-script.model';
+import { LogService } from '../core/services/log.service';
 import { ReplayService } from '../core/services/replay/replay.service';
 import { ScriptService } from '../core/services/replay/script.service';
-import {SnapshotService} from '../core/services/snapshot.service';
-import {Button} from 'primeng/button';
+import { SnapshotService } from '../core/services/snapshot.service';
 
 // IMPORTANT: Import monaco types for the onInit handler
 declare const monaco: any;
@@ -59,6 +59,7 @@ export class ReplayViewComponent implements OnInit {
   variables: Record<string, any> = {};
   errorInfo: string | null = null;
   snapshotId: string | null = null;
+  generatedSdkCode: any;
 
   scriptDisplay = '// loading TypeScript…';
   logs: LogEntry[] = [];
@@ -186,6 +187,7 @@ declare var __capture: (name: string, value: any) => void;
         // Fetch TypeScript code by transformationId
         this.scripts.getByTransformationId(transformationId).subscribe({
           next: (script: TransformationScriptDTO) => {
+            this.generatedSdkCode = script.generatedSdkCode;
             // Set the editor content
             this.scriptDisplay =
               script.typescriptCode || '// No TypeScript code available';
@@ -278,6 +280,7 @@ declare var __capture: (name: string, value: any) => void;
       scriptName: 'replay.js',
       javascriptCode: transpiledCode,
       sourceData: this.data()?.transformationResult?.sourceData || {},
+      generatedSdkCode: this.generatedSdkCode,
     };
 
     // Call backend endpoint
