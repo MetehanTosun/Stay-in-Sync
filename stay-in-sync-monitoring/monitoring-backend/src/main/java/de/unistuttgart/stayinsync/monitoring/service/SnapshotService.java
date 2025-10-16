@@ -68,7 +68,7 @@ public class SnapshotService {
      *
      * @param id the ID of the snapshot
      * @return the corresponding {@link SnapshotDTO}, or {@code null} if the fetch
-     *         fails
+     *         failss
      */
     public SnapshotDTO getById(String id) {
         try {
