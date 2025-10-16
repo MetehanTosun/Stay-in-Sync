@@ -8,6 +8,7 @@ public record TargetSystemDTO(
         String apiUrl,
         String description,
         String apiType,
+        String aasId,
         String openAPI,
         Set<Long> targetSystemEndpointIds) {
 }

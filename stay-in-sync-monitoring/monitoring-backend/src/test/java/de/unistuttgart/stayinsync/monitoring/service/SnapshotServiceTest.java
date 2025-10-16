@@ -84,29 +84,29 @@ class SnapshotServiceTest {
     void getById_shouldReturnSnapshot() {
         // Arrange
         SnapshotDTO snapshot = new SnapshotDTO();
-        snapshot.setSnapshotId(String.valueOf(123L));
-        when(syncNodeClient.getById(123L)).thenReturn(snapshot);
+        snapshot.setSnapshotId(String.valueOf("123"));
+        when(syncNodeClient.getById(Long.valueOf("123"))).thenReturn(snapshot);
 
         // Act
-        SnapshotDTO result = snapshotService.getById(123L);
+        SnapshotDTO result = snapshotService.getById("123");
 
         // Assert
         assertThat(result).isNotNull();
         assertThat(result.getSnapshotId()).isEqualTo(String.valueOf(123L));
-        verify(syncNodeClient).getById(123L);
+        verify(syncNodeClient).getById(Long.valueOf("123"));
     }
 
     @Test
     void getById_shouldReturnNullOnError() {
         // Arrange
-        when(syncNodeClient.getById(123L)).thenThrow(new RuntimeException("not found"));
+        when(syncNodeClient.getById(Long.valueOf("123"))).thenThrow(new RuntimeException("not found"));
 
         // Act
-        SnapshotDTO result = snapshotService.getById(123L);
+        SnapshotDTO result = snapshotService.getById("123");
 
         // Assert
         assertThat(result).isNull();
-        verify(syncNodeClient).getById(123L);
+        verify(syncNodeClient).getById(Long.valueOf("123"));
     }
 }
 

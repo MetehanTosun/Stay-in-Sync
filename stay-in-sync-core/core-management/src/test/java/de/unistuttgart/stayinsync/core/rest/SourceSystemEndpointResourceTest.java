@@ -1,6 +1,6 @@
 package de.unistuttgart.stayinsync.core.rest;
 
-import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.SourceSystem;
+import de.unistuttgart.stayinsync.core.configuration.persistence.entities.sync.SourceSystem;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.TestTransaction;
 import io.restassured.http.ContentType;
@@ -82,7 +82,7 @@ public class SourceSystemEndpointResourceTest {
                 .when()
                 .put("/api/config/source-system/endpoint/99999")
                 .then()
-                .statusCode(500);
+                .statusCode(404);
     }
 
     @Test
@@ -204,6 +204,6 @@ public class SourceSystemEndpointResourceTest {
                 .when()
                 .put("/api/config/source-system/endpoint/99999")
                 .then()
-                .statusCode(500);
+                .statusCode(404);
     }
 } 

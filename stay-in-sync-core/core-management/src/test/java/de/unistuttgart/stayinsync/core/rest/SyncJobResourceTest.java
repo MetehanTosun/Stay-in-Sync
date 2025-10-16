@@ -1,6 +1,6 @@
 //package de.unistuttgart.stayinsync.rest;
 //
-//import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.SyncJob;
+//import de.unistuttgart.stayinsync.core.configuration.persistence.entities.sync.SyncJob;
 //import de.unistuttgart.stayinsync.core.configuration.mapping.SyncJobFullUpdateMapper;
 //import de.unistuttgart.stayinsync.core.configuration.rest.dtos.SyncJobDTO;
 //import de.unistuttgart.stayinsync.core.configuration.service.SyncJobService;

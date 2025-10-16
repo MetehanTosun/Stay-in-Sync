@@ -1,9 +1,9 @@
 import { TestBed } from '@angular/core/testing';
-import {HttpTestingController, provideHttpClientTesting} from '@angular/common/http/testing';
+import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { SnapshotService } from './snapshot.service';
-import { SnapshotModel } from '../models/snapshot.model';
-import {ConfigService} from './config.service';
-import {provideHttpClient} from '@angular/common/http';
+import { ConfigService } from './config.service';
+import { provideHttpClient } from '@angular/common/http';
+import { SnapshotDTO } from '../models/snapshot.model';
 
 describe('SnapshotService', () => {
   let service: SnapshotService;
@@ -11,8 +11,11 @@ describe('SnapshotService', () => {
 
   beforeEach(() => {
     TestBed.configureTestingModule({
-      providers: [ConfigService, provideHttpClient(),
-        provideHttpClientTesting() ],
+      providers: [
+        ConfigService,
+        provideHttpClient(),
+        provideHttpClientTesting()
+      ],
     });
 
     service = TestBed.inject(SnapshotService);
@@ -28,7 +31,7 @@ describe('SnapshotService', () => {
   });
 
   it('should fetch latest snapshot', () => {
-    const mockSnapshot: SnapshotModel = { snapshotId: '1', createdAt: '123456' };
+    const mockSnapshot: SnapshotDTO = { snapshotId: '1', createdAt: '123456' };
 
     service.getLatestSnapshot('t1').subscribe(snapshot => {
       expect(snapshot).toEqual(mockSnapshot);
@@ -41,7 +44,7 @@ describe('SnapshotService', () => {
   });
 
   it('should fetch last five snapshots', () => {
-    const mockSnapshots: SnapshotModel[] = [
+    const mockSnapshots: SnapshotDTO[] = [
       { snapshotId: '1', createdAt: '123' },
       { snapshotId: '2', createdAt: '124' },
     ];
@@ -54,5 +57,17 @@ describe('SnapshotService', () => {
     expect(req.request.method).toBe('GET');
     expect(req.request.params.get('transformationId')).toBe('t2');
     req.flush(mockSnapshots);
+  });
+
+  it('should fetch snapshot by ID', () => {
+    const mockSnapshot: SnapshotDTO = { snapshotId: '42', createdAt: '999999' };
+
+    service.getById('42').subscribe(snapshot => {
+      expect(snapshot).toEqual(mockSnapshot);
+    });
+
+    const req = httpMock.expectOne('/api/snapshots/42');
+    expect(req.request.method).toBe('GET');
+    req.flush(mockSnapshot);
   });
 });

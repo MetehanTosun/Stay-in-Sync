@@ -13,6 +13,9 @@ import de.unistuttgart.graphengine.service.GraphMapper;
 import de.unistuttgart.graphengine.service.GraphValidatorService;
 import de.unistuttgart.graphengine.validation_error.GraphStatus;
 import de.unistuttgart.graphengine.validation_error.ValidationError;
+import de.unistuttgart.stayinsync.core.configuration.persistence.entities.sync.LogicGraphEntity;
+import de.unistuttgart.stayinsync.core.configuration.persistence.entities.sync.TransformationRule;
+import de.unistuttgart.stayinsync.core.configuration.exception.CoreManagementException; // Import der korrekten Exception
 import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.LogicGraphEntity;
 import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.TransformationRule;
 import de.unistuttgart.stayinsync.core.configuration.exception.CoreManagementException;

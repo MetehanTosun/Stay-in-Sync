@@ -57,6 +57,13 @@ export class SourceSystemEndpointResourceService {
     context?: HttpContext
   }): Observable<any> {
     return this.httpClient.request<any>('delete', `/api/config/source-system/endpoint/${id}`,
+      {
+        context: options?.context,
+        observe: observe,
+        reportProgress: reportProgress,
+        responseType: 'json',
+        withCredentials: false
+      }
     );
   }
 
@@ -83,7 +90,15 @@ export class SourceSystemEndpointResourceService {
     context?: HttpContext
   }): Observable<any> {
 
-    return this.httpClient.request<SourceSystemEndpointDTO>('get', `/api/config/source-system/endpoint/${id}`,);
+    return this.httpClient.request<SourceSystemEndpointDTO>('get', `/api/config/source-system/endpoint/${id}`,
+      {
+        context: options?.context,
+        observe: observe,
+        reportProgress: reportProgress,
+        responseType: 'json',
+        withCredentials: false
+      }
+    );
   }
 
   /**
@@ -109,7 +124,15 @@ export class SourceSystemEndpointResourceService {
     httpHeaderAccept?: undefined,
     context?: HttpContext
   }): Observable<any> {
-    return this.httpClient.request<any>('put', `/api/config/source-system/endpoint/${id})}`,
+    return this.httpClient.request<any>('put', `/api/config/source-system/endpoint/${id}`,
+      {
+        body: sourceSystemEndpointDTO,
+        context: options?.context,
+        observe: observe,
+        reportProgress: reportProgress,
+        responseType: 'json',
+        withCredentials: false
+      }
     );
   }
 
@@ -135,7 +158,15 @@ export class SourceSystemEndpointResourceService {
     httpHeaderAccept?: 'application/json',
     context?: HttpContext
   }): Observable<any> {
-    return this.httpClient.request<Array<SourceSystemEndpointDTO>>('get', `/api/config/source-system/${sourceSystemId}/endpoint`);
+    return this.httpClient.request<Array<SourceSystemEndpointDTO>>('get', `/api/config/source-system/${sourceSystemId}/endpoint`,
+      {
+        context: options?.context,
+        observe: observe,
+        reportProgress: reportProgress,
+        responseType: 'json',
+        withCredentials: false
+      }
+    );
   }
 
   /**
@@ -164,6 +195,11 @@ export class SourceSystemEndpointResourceService {
     return this.httpClient.request<any>('post', `/api/config/source-system/${sourceSystemId}/endpoint`,
       {
         body: createSourceSystemEndpointDTO,
+        context: options?.context,
+        observe: observe,
+        reportProgress: reportProgress,
+        responseType: 'json',
+        withCredentials: false
       }
     );
   }

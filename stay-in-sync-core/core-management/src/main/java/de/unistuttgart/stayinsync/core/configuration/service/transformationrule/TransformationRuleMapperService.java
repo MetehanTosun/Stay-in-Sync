@@ -6,7 +6,7 @@ import de.unistuttgart.graphengine.dto.vFlow.*;
 import de.unistuttgart.graphengine.dto.transformationrule.GraphDTO;
 import de.unistuttgart.graphengine.dto.transformationrule.InputDTO;
 import de.unistuttgart.graphengine.dto.transformationrule.NodeDTO;
-import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.TransformationRule;
+import de.unistuttgart.stayinsync.core.configuration.persistence.entities.sync.TransformationRule;
 import de.unistuttgart.stayinsync.core.configuration.exception.CoreManagementException;
 import de.unistuttgart.stayinsync.core.configuration.rest.dtos.TransformationRuleDTO;
 import io.quarkus.logging.Log;

@@ -2,7 +2,7 @@ package de.unistuttgart.stayinsync.core.configuration.util;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.*;
+import de.unistuttgart.stayinsync.core.configuration.persistence.entities.sync.*;
 import de.unistuttgart.stayinsync.core.configuration.rest.dtos.*;
 import de.unistuttgart.stayinsync.core.configuration.rest.dtos.targetsystem.ActionDefinitionDTO;
 import de.unistuttgart.stayinsync.core.configuration.rest.dtos.targetsystem.CreateArcDTO;
@@ -27,9 +27,6 @@ import java.util.stream.Collectors;
 
 @ApplicationScoped
 public class DevelopmentDataSeeder {
-
-    @Inject
-    AfterSeedRunner afterSeedRunner;
 
     @ConfigProperty(name = "quarkus.profile")
     String profile;
@@ -98,8 +95,14 @@ public class DevelopmentDataSeeder {
         Log.info("-> Created SourceSystem 'Dummy_JSON' and Source ARC 'products'");
 
         TargetSystemDTO targetDto = new TargetSystemDTO(
-                null, sourceDto.name(), sourceDto.apiUrl(), sourceDto.description(),
-                sourceDto.apiType(), sourceDto.openApiSpec(), null);
+                null,
+                sourceDto.name(),
+                sourceDto.apiUrl(),
+                sourceDto.description(),
+                sourceDto.apiType(),
+                null, // aasId (none for REST in dev seed)
+                sourceDto.openApiSpec(),
+                null);
         TargetSystemDTO targetSystemDTO = targetSystemService.createTargetSystem(targetDto);
         TargetSystem targetSystem = TargetSystem.findById(targetSystemDTO.id());
         Log.info("-> Created TargetSystem 'Dummy_JSON'");
@@ -220,7 +223,7 @@ public class DevelopmentDataSeeder {
                 function transform() {
                     stayinsync.log('Transformation started: Upserting products...', 'INFO');
                 
-                    const products = source.Dummy_JSON.products.products;
+                    const products = source.Dummy_JSON.syncProductsArc.products;
                     const productsFromSource = products.slice(1,2);
                 
                     if (!productsFromSource || productsFromSource.length === 0) {

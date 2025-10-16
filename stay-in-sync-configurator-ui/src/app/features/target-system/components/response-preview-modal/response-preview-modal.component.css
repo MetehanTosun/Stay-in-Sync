@@ -1,3 +1,4 @@
+/* Root layout styles for the Response Preview modal container */
 .response-preview-container {
   height: 100%;
   display: flex;
@@ -5,6 +6,7 @@
   position: relative;
 }
 
+/* Overlay shown while data or TypeScript preview is loading */
 .loading-overlay {
   display: flex;
   flex-direction: column;
@@ -20,6 +22,7 @@
   font-size: 1rem;
 }
 
+/* General error message box styling */
 .error-message {
   display: flex;
   align-items: center;
@@ -36,6 +39,7 @@
   font-size: 1.2rem;
 }
 
+/* Message displayed when no preview data is available */
 .no-data-message {
   display: flex;
   align-items: center;
@@ -52,6 +56,7 @@
   font-size: 1.2rem;
 }
 
+/* Container for the code editor section including header and Monaco editor */
 .editor-container {
   display: flex;
   flex-direction: column;
@@ -85,6 +90,7 @@
   font-weight: 500;
 }
 
+/* Wrapper to ensure the Monaco editor fills the available modal space */
 .monaco-wrapper {
   flex: 1;
   min-height: 500px;
@@ -141,6 +147,7 @@
   height: 100% !important;
 }
 
+/* Footer area with action buttons inside the modal */
 .dialog-footer {
   display: flex;
   justify-content: flex-end;
@@ -149,7 +156,7 @@
   border-top: 1px solid var(--surface-200);
 }
 
-/* Responsive Design */
+/* Responsive adjustments for tablet and smaller devices */
 @media (max-width: 768px) {
   .editor-header {
     flex-direction: column;
@@ -181,7 +188,7 @@
   }
 }
 
-/* Dark theme adjustments */
+/* Dark theme color adjustments for all key components */
 :host-context(.dark) .error-message {
   background-color: rgba(239, 68, 68, 0.1);
   border-color: rgba(239, 68, 68, 0.3);
@@ -203,7 +210,7 @@
   border-color: var(--surface-600);
 }
 
-/* TypeScript Loading and Error States */
+/* Visual style for loading indicator during TypeScript generation */
 .typescript-loading {
   display: flex;
   align-items: center;
@@ -223,6 +230,7 @@
   color: var(--text-color-secondary);
 }
 
+/* Style for displaying TypeScript compilation or parsing errors */
 .typescript-error {
   background-color: var(--red-50);
   border: 1px solid var(--red-200);
@@ -265,7 +273,7 @@
   background-color: var(--red-50);
 }
 
-/* Dark theme adjustments for TypeScript states */
+/* Dark theme color adjustments for all key components */
 :host-context(.dark) .typescript-loading {
   background-color: var(--surface-800);
   border-color: var(--surface-700);
@@ -291,7 +299,7 @@
   border-color: rgba(239, 68, 68, 0.3);
 }
 
-/* Fallback editor styles */
+/* Fallback text editor shown when Monaco editor is unavailable */
 .fallback-editor {
   width: 100%;
   height: 100%;
@@ -323,7 +331,7 @@
   color: var(--text-color-secondary);
 }
 
-/* New Code Editor Styles */
+/* Custom-built lightweight code editor layout used for JSON and TS previews */
 .code-editor {
   width: 100%;
   height: 100%;
@@ -376,7 +384,7 @@
   color: #d4d4d4;
 }
 
-/* Custom Tab Navigation */
+/* Custom tab navigation for switching between JSON and TypeScript views */
 .custom-tab-nav {
   display: flex;
   background: var(--surface-100);
@@ -426,7 +434,7 @@
   flex-direction: column;
 }
 
-/* Dark theme adjustments for code editor */
+/* Dark theme color adjustments for all key components */
 :host-context(.dark) .code-editor {
   border-color: var(--surface-600);
 }
@@ -447,7 +455,7 @@
   color: #e6e6e6;
 }
 
-/* Dark theme adjustments for custom tabs */
+/* Dark theme color adjustments for all key components */
 :host-context(.dark) .custom-tab-nav {
   background: var(--surface-800);
   border-color: var(--surface-600);

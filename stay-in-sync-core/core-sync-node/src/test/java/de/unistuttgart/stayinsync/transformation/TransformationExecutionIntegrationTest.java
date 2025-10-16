@@ -93,7 +93,8 @@ public class TransformationExecutionIntegrationTest {
                                 new ActionMessageDTO(TargetApiRequestConfigurationActionRole.CHECK, 1, "GET", "/products/search"),
                                 new ActionMessageDTO(TargetApiRequestConfigurationActionRole.CREATE, 2, "POST", "/products"),
                                 new ActionMessageDTO(TargetApiRequestConfigurationActionRole.UPDATE, 3, "PUT", "/products/{id}")
-                        )
+                        ),
+                        List.of()
                 )
         );
         return new TransformationMessageDTO(1L, "Test Transformation", null, null,

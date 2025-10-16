@@ -29,3 +29,16 @@
     - target_label: __address__
       replacement: stay-in-sync-prometheus-blackbox-exporter:9115
 
+
+
+- job_name: 'quarkus_metrics'
+  scrape_interval: 15s
+  metrics_path: /q/metrics
+  static_configs:
+    - targets:
+        - core-management:80
+        - monitoring-backend:80
+        - core-polling-node:80
+        - core-sync-node:80
+
+

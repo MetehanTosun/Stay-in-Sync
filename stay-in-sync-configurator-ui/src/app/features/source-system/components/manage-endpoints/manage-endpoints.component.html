@@ -4,10 +4,9 @@
   - Display, create, edit, delete, and import endpoints for a source system
   -------------------------------------------------------------------------------------------------
 -->
-
-
+<div style="height: 55rem">
+<p-toast key="endpoints"></p-toast>
 <p-table [style]="{ 'margin': '1.5rem 0' }" [value]="endpoints" [loading]="loading"
-
          [paginator]="true"
          paginatorPosition="bottom"
          [rows]="10"
@@ -38,7 +37,7 @@
           <ng-template #filter let-filter="filterCallback">
             <p-select [options]="httpRequestTypes"
                       (onChange)="filter($event.value)"
-                      placeholder="Select One"
+                      placeholder="Select Method"
                       [showClear]="true"
                       [style]="{ 'min-width': '12rem' }">
               <ng-template let-option #item>
@@ -82,7 +81,7 @@
     </tr>
   </ng-template>
 </p-table>
-
+</div>
 <!--
   Section: Import Endpoints
 -->
@@ -152,12 +151,11 @@
   </ng-template>
 </p-dialog>
 
+<!-- Cleanup of duplicate/old sections; using origin/main layout above -->
 <!-- Request Body Editor Overlay (outside of p-card/Dialog) -->
-<div *ngIf="requestBodyEditorEndpoint" class="request-body-editor-overlay" cdkDrag
-     cdkDragRootElement=".request-body-editor-overlay">
+<div *ngIf="requestBodyEditorEndpoint" class="request-body-editor-overlay" cdkDrag cdkDragRootElement=".request-body-editor-overlay">
   <div class="editor-header" cdkDragHandle>
-    <span>Request-Body-Schema für {{ requestBodyEditorEndpoint.endpointPath }}
-      ({{ requestBodyEditorEndpoint.httpRequestType }})</span>
+    <span>Request-Body-Schema für {{ requestBodyEditorEndpoint.endpointPath }} ({{ requestBodyEditorEndpoint.httpRequestType }})</span>
     <button class="close-btn" (click)="closeRequestBodyEditor()">&#10005;</button>
   </div>
   <ngx-monaco-editor [options]="jsonEditorOptions" [model]="requestBodyEditorModel"

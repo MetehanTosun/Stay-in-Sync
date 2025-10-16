@@ -1,22 +1,22 @@
 // src/app/replay/replay-view.component.ts
-import { CommonModule, JsonPipe, NgIf } from '@angular/common';
+import { CommonModule, NgIf } from '@angular/common';
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
 import { NgxJsonViewerModule } from 'ngx-json-viewer';
 import { MonacoEditorModule } from 'ngx-monaco-editor-v2';
 import { PrimeTemplate } from 'primeng/api';
-import { Button } from 'primeng/button';
 import { TableModule } from 'primeng/table';
 import { Tab, TabList, TabPanel, TabPanels, Tabs } from 'primeng/tabs';
 import * as ts from 'typescript';
 import { LogEntry } from '../core/models/log.model';
 import { LogService } from '../core/services/log.service';
-import { SnapshotDTO } from './models/snapshot.model';
-import { TransformationScriptDTO } from './models/transformation-script.model';
-import { ReplayService } from './replay.service';
-import { ScriptService } from './script.service';
-import { SnapshotService } from './snapshot.service';
+import { SnapshotDTO } from '../core/models/snapshot.model';
+import { TransformationScriptDTO } from '../core/models/transformation-script.model';
+import { ReplayService } from '../core/services/replay/replay.service';
+import { ScriptService } from '../core/services/replay/script.service';
+import {SnapshotService} from '../core/services/snapshot.service';
+import {Button} from 'primeng/button';
 
 // IMPORTANT: Import monaco types for the onInit handler
 declare const monaco: any;
@@ -27,7 +27,6 @@ declare const monaco: any;
   imports: [
     CommonModule,
     NgIf,
-    JsonPipe,
     PrimeTemplate,
     TableModule,
     Tabs,
@@ -37,8 +36,8 @@ declare const monaco: any;
     TabPanel,
     MonacoEditorModule,
     FormsModule,
-    Button,
     NgxJsonViewerModule,
+    Button,
   ],
   templateUrl: './replay-view.component.html',
   styleUrl: './replay-view.component.css',
