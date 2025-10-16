@@ -1,7 +1,8 @@
 package de.unistuttgart.graphengine.nodes;
 
-import com.fasterxml.jackson.databind.JsonNode; // Jackson-Import
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.JsonNodeType;
+import com.fasterxml.jackson.databind.node.MissingNode;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -81,13 +82,44 @@ public class JsonPathValueExtractor {
 
     /**
      * Navigates through a JsonNode using a dot-separated path string.
+     * Supports array index notation like "sensors[0]" or "items[2]".
      * @return The target JsonNode, or a MissingNode if the path is invalid.
      */
     private JsonNode navigateTo(JsonNode rootNode, String path) {
         JsonNode currentNode = rootNode;
         String[] segments = path.split("\\.");
+        
         for (String segment : segments) {
-            currentNode = currentNode.path(segment);
+            // Check if segment contains array index notation: e.g., "sensors[0]"
+            int bracketIndex = segment.indexOf('[');
+            
+            if (bracketIndex != -1 && segment.charAt(segment.length() - 1) == ']') {
+                // Extract field name and index
+                String fieldName = segment.substring(0, bracketIndex);
+                String indexStr = segment.substring(bracketIndex + 1, segment.length() - 1);
+                
+                try {
+                    int arrayIndex = Integer.parseInt(indexStr);
+                    
+                    // Navigate to the field first (if field name is not empty)
+                    if (bracketIndex > 0) {
+                        currentNode = currentNode.path(fieldName);
+                    }
+                    
+                    // Then navigate to the array element
+                    if (currentNode.isArray() && arrayIndex >= 0 && arrayIndex < currentNode.size()) {
+                        currentNode = currentNode.get(arrayIndex);
+                    } else {
+                        return MissingNode.getInstance();
+                    }
+                } catch (NumberFormatException e) {
+                    // Invalid index format
+                    return MissingNode.getInstance();
+                }
+            } else {
+                // Regular field access without array index
+                currentNode = currentNode.path(segment);
+            }
         }
         return currentNode;
     }

@@ -28,6 +28,14 @@ public class GraphHasher {
     ObjectMapper objectMapper;
 
     /**
+     * Public setter for testing purposes.
+     * Allows tests to inject an ObjectMapper without Quarkus DI.
+     */
+    public void setObjectMapper(ObjectMapper objectMapper) {
+        this.objectMapper = objectMapper;
+    }
+
+    /**
      * Thread-local MessageDigest instance for efficient SHA-256 computation.
      * <p>
      * Using ThreadLocal ensures thread-safety while avoiding the overhead of
@@ -36,7 +44,18 @@ public class GraphHasher {
      * Throws GraphSerializationException (unchecked) if SHA-256 is unavailable,
      * which should never happen on a standard JVM.
      */
-    private static final ThreadLocal<MessageDigest> DIGEST_THREAD_LOCAL = ThreadLocal.withInitial(() -> {
+    private static final ThreadLocal<MessageDigest> DIGEST_THREAD_LOCAL = ThreadLocal.withInitial(
+        GraphHasher::createMessageDigest
+    );
+
+    /**
+     * Creates a new MessageDigest instance for SHA-256.
+     * Package-private for testing.
+     *
+     * @return A new MessageDigest instance configured for SHA-256
+     * @throws GraphSerializationException if SHA-256 algorithm is not available
+     */
+    public static MessageDigest createMessageDigest() {
         try {
             return MessageDigest.getInstance("SHA-256");
         } catch (NoSuchAlgorithmException e) {
@@ -49,7 +68,7 @@ public class GraphHasher {
                 e
             );
         }
-    });
+    }
 
     /**
      * Generates a stable SHA-256 hash from a graph structure.
