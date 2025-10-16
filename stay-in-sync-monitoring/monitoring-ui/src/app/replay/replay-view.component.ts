@@ -174,6 +174,11 @@ declare var __capture: (name: string, value: any) => void;
     // Load snapshot
     this.snapshots.getById(this.snapshotId).subscribe({
       next: (snap) => {
+        if (!snap) {
+          this.error.set('Snapshot not found or is null.');
+          this.loading.set(false);
+          return;
+        }
         this.data.set(snap);
 
         const transformationId = snap.transformationResult?.transformationId;
