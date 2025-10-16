@@ -30,12 +30,22 @@ public class ProviderNodeTest {
 
     @Test
     @DisplayName("should create ProviderNode with valid jsonPath")
-    void testConstructor_WithValidJsonPath_ShouldSucceed() throws Exception {
+    void testConstructor_WithValidJsonPath_ShouldSucceed()  {
         // ARRANGE & ACT
         ProviderNode node = new ProviderNode("source.system1.value");
 
         // ASSERT
         assertEquals("source.system1.value", node.getJsonPath());
+    }
+
+    @Test
+    @DisplayName("should allow 'source' as valid jsonPath")
+    void testConstructor_WithSourceOnly_ShouldSucceed() {
+        // ARRANGE & ACT
+        ProviderNode node = new ProviderNode("source");
+
+        // ASSERT
+        assertEquals("source", node.getJsonPath());
     }
 
     @Test
@@ -82,18 +92,6 @@ public class ProviderNodeTest {
         assertTrue(exception.getMessage().contains("jsonPath for ProviderNode must start with 'source'"));
     }
 
-    @Test
-    @DisplayName("should throw exception for invalid jsonPath format")
-    void testConstructor_WithInvalidFormat_ShouldThrowException() {
-        // ACT & ASSERT
-        NodeConfigurationException exception = assertThrows(NodeConfigurationException.class, () -> {
-            new ProviderNode("source"); // Missing sourceName
-        });
-
-        assertTrue(exception.getMessage().contains("Invalid jsonPath format"));
-        assertTrue(exception.getMessage().contains("Must contain 'source.{sourceName}'"));
-    }
-
     // ===== CALCULATE METHOD TESTS =====
 
     @Test
@@ -104,8 +102,33 @@ public class ProviderNodeTest {
     }
 
     @Test
+    @DisplayName("should calculate and return entire source object when jsonPath is 'source'")
+    void testCalculate_WithSourcePath_ShouldReturnEntireSourceObject()  {
+        // ARRANGE
+        ProviderNode node = new ProviderNode("source");
+
+        Map<String, Object> sourceData = Map.of(
+                "system1", Map.of("value", 42),
+                "system2", Map.of("value", 100)
+        );
+        JsonNode sourceNode = objectMapper.valueToTree(sourceData);
+        dataContext.put("source", sourceNode);
+
+        // ACT
+        node.calculate(dataContext);
+
+        // ASSERT
+        assertNotNull(node.getCalculatedResult());
+        assertTrue(node.getCalculatedResult() instanceof JsonNode);
+
+        JsonNode result = (JsonNode) node.getCalculatedResult();
+        assertEquals(42, result.get("system1").get("value").asInt());
+        assertEquals(100, result.get("system2").get("value").asInt());
+    }
+
+    @Test
     @DisplayName("should throw exception when 'source' key missing from dataContext")
-    void testCalculate_WithoutSourceKey_ShouldThrowException() throws Exception {
+    void testCalculate_WithoutSourceKey_ShouldThrowException() {
         // ARRANGE
         ProviderNode node = new ProviderNode("source.system1.value");
         // dataContext without 'source' key
@@ -116,13 +139,12 @@ public class ProviderNodeTest {
         });
 
         assertEquals(GraphEvaluationException.ErrorType.DATA_NOT_FOUND, exception.getErrorType());
-        // CORRECTED: Updated to match new exception message
         assertTrue(exception.getMessage().contains("The dataContext must contain a non-null entry for the key 'source'"));
     }
 
     @Test
     @DisplayName("should throw exception when source value is null")
-    void testCalculate_WithNullSourceValue_ShouldThrowException() throws Exception {
+    void testCalculate_WithNullSourceValue_ShouldThrowException() {
         // ARRANGE
         ProviderNode node = new ProviderNode("source.system1.value");
         dataContext.put("source", null);
@@ -133,16 +155,15 @@ public class ProviderNodeTest {
         });
 
         assertEquals(GraphEvaluationException.ErrorType.DATA_NOT_FOUND, exception.getErrorType());
-        // CORRECTED: Updated to match new exception message
         assertTrue(exception.getMessage().contains("The dataContext must contain a non-null entry for the key 'source'"));
     }
 
     @Test
     @DisplayName("should throw exception when source value is not a JsonNode")
-    void testCalculate_WithNonJsonNodeSource_ShouldThrowException() throws Exception {
+    void testCalculate_WithNonJsonNodeSource_ShouldThrowException()  {
         // ARRANGE
         ProviderNode node = new ProviderNode("source.system1.value");
-        dataContext.put("source", "not a json node"); // String instead of JsonNode
+        dataContext.put("source", "not a json node");
 
         // ACT & ASSERT
         GraphEvaluationException exception = assertThrows(GraphEvaluationException.class, () -> {
@@ -156,11 +177,10 @@ public class ProviderNodeTest {
 
     @Test
     @DisplayName("should extract value successfully from valid path")
-    void testCalculate_WithValidPath_ShouldExtractValue() throws Exception {
+    void testCalculate_WithValidPath_ShouldExtractValue()  {
         // ARRANGE
         ProviderNode node = new ProviderNode("source.system1.sensors.temperature");
 
-        // Create nested JSON structure
         Map<String, Object> sourceData = Map.of(
                 "system1", Map.of(
                         "sensors", Map.of(
@@ -180,7 +200,7 @@ public class ProviderNodeTest {
 
     @Test
     @DisplayName("should set null when path does not exist")
-    void testCalculate_WithNonExistentPath_ShouldSetNull() throws Exception {
+    void testCalculate_WithNonExistentPath_ShouldSetNull()  {
         // ARRANGE
         ProviderNode node = new ProviderNode("source.system1.nonexistent.path");
 
@@ -197,7 +217,7 @@ public class ProviderNodeTest {
 
     @Test
     @DisplayName("should handle complex jsonPath correctly")
-    void testCalculate_WithComplexPath_ShouldWork() throws Exception {
+    void testCalculate_WithComplexPath_ShouldWork()  {
         // ARRANGE
         ProviderNode node = new ProviderNode("source.complex.nested.deep.structure.value");
 
@@ -226,11 +246,11 @@ public class ProviderNodeTest {
 
     @Test
     @DisplayName("should handle empty object in source")
-    void testCalculate_WithEmptySource_ShouldSetNull() throws Exception {
+    void testCalculate_WithEmptySource_ShouldSetNull()  {
         // ARRANGE
         ProviderNode node = new ProviderNode("source.system1.value");
 
-        JsonNode sourceNode = objectMapper.createObjectNode(); // Empty JSON object
+        JsonNode sourceNode = objectMapper.createObjectNode();
         dataContext.put("source", sourceNode);
 
         // ACT
@@ -242,7 +262,7 @@ public class ProviderNodeTest {
 
     @Test
     @DisplayName("should handle different value types correctly")
-    void testCalculate_WithDifferentValueTypes_ShouldWork() throws Exception {
+    void testCalculate_WithDifferentValueTypes_ShouldWork()  {
         // Test String value
         ProviderNode stringNode = new ProviderNode("source.data.stringValue");
         Map<String, Object> stringData = Map.of("data", Map.of("stringValue", "test"));
@@ -270,7 +290,7 @@ public class ProviderNodeTest {
 
     @Test
     @DisplayName("should handle minimal valid jsonPath")
-    void testConstructor_WithMinimalValidPath_ShouldSucceed() throws Exception {
+    void testConstructor_WithMinimalValidPath_ShouldSucceed()  {
         // ARRANGE & ACT
         ProviderNode node = new ProviderNode("source.sys");
 
@@ -280,12 +300,12 @@ public class ProviderNodeTest {
 
     @Test
     @DisplayName("should handle arcId getter and setter")
-    void testArcIdHandling() throws Exception {
+    void testArcIdHandling() {
         // ARRANGE
         ProviderNode node = new ProviderNode("source.system1.value");
 
         // ACT & ASSERT
-        assertNull(node.getArcId()); // Default should be null
+        assertNull(node.getArcId());
 
         node.setArcId(123);
         assertEquals(Integer.valueOf(123), node.getArcId());
