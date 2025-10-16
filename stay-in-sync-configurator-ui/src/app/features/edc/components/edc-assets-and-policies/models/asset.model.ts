@@ -22,4 +22,6 @@ export interface Asset {
   targetEDCId: string;       // UUID der EDC-Instanz
   dataAddress: EDCDataAddress;
   properties?: EDCProperty[];
+  queryParams?: string;
+  headers?: { [key: string]: string };
 }

@@ -21,22 +21,22 @@ import { ToastModule } from 'primeng/toast';
 import { AutoCompleteModule } from 'primeng/autocomplete';
 import { MessageModule } from 'primeng/message';
 import { MonacoEditorModule } from 'ngx-monaco-editor-v2';
-
+import { forkJoin } from 'rxjs';
 
 
 // App imports
 import { Asset } from './models/asset.model';
 import { OdrlContractDefinition, OdrlPolicyDefinition, OdrlCriterion, OdrlConstraint, OdrlPermission, UiContractDefinition } from './models/policy.model';
 import { EdcInstance } from '../edc-instances/models/edc-instance.model';
-import { Template } from '../../models/template.model';
 import { AssetService } from './services/asset.service';
 import { PolicyService } from './services/policy.service';
 import { EdcInstanceService } from '../edc-instances/services/edc-instance.service';
 import {lastValueFrom, Subject, Subscription} from 'rxjs';
 import {debounceTime, tap} from "rxjs/operators";
 import { MultiSelectModule } from 'primeng/multiselect';
-import { forkJoin } from 'rxjs';
-import { TemplateService } from '../../services/template.service';
+import { Transformation } from '../../models/transformation.model';
+import { Template } from '../templates/models/template.model';
+import { TemplateService } from '../templates/services/template.service';
 
 @Component({
   selector: 'app-edc-assets-and-policies',
@@ -149,6 +149,10 @@ accessPolicySuggestions: OdrlPolicyDefinition[] = [];
     return control.label;
   }
 
+  trackByIndex(index: number, item: any): number {
+    return index;
+  }
+
   isContractJsonComplex: boolean = false; // This is for contract definitions
 
 
@@ -184,17 +188,16 @@ accessPolicySuggestions: OdrlPolicyDefinition[] = [];
   private contractJsonSyncSubject = new Subject<void>();
   private templateJsonSyncSubscription: Subscription | null = null;
   private templateJsonSyncSubject = new Subject<void>();
+  private assetJsonSyncSubscription: Subscription | null = null;
+  private assetJsonSyncSubject = new Subject<void>();
 
   // New Asset Dialog specific properties
-  selectedEndpoint: string | null = null;
-  endpointSuggestions: string[] = [];
+  allTransformations: Transformation[] = [];
+  selectedTransformation: Transformation | null = null;
   assetAttributes: { key: string; value: string }[] = [{ key: '', value: '' }]; // Start with one empty row
   pathParamId: string = '';
-  queryParams: string[] = [];
-  headerParams: string[] = [];
-  authorizationData: string = '';
-  queryParamOptions: { label: string; value: string }[] = [];
-  headerParamOptions: { label: string; value: string }[] = [];
+  queryParams: { key: string; value: string }[] = [{ key: '', value: '' }];
+  headerParams: { key: string; value: string }[] = [{ key: '', value: '' }];
 
   constructor(
     private assetService: AssetService,
@@ -224,6 +227,12 @@ accessPolicySuggestions: OdrlPolicyDefinition[] = [];
       this.syncPolicyFromTemplate();
     });
 
+    this.assetJsonSyncSubscription = this.assetJsonSyncSubject.pipe(
+      debounceTime(500)
+    ).subscribe(() => {
+      this.syncAssetFormFromJson();
+    });
+
   }
 
   ngOnInit(): void {
@@ -243,14 +252,14 @@ accessPolicySuggestions: OdrlPolicyDefinition[] = [];
 
     this.loadAccessPolicyTemplates();
     this.loadAssetTemplates();
-    this.loadParamOptions();
-    this.loadAllBpns();
+    this.loadTransformations();
   }
 
   ngOnDestroy(): void {
     this.jsonSyncSubscription?.unsubscribe();
     this.contractJsonSyncSubscription?.unsubscribe();
     this.templateJsonSyncSubscription?.unsubscribe();
+    this.assetJsonSyncSubscription?.unsubscribe();
   }
 
 
@@ -260,12 +269,7 @@ accessPolicySuggestions: OdrlPolicyDefinition[] = [];
     });
   }
 
-  private loadParamOptions() {
-    this.assetService.getParamOptions().subscribe((options: { query: { label: string; value: string }[]; header: { label: string; value: string }[] }) => {
-      this.queryParamOptions = options.query;
-      this.headerParamOptions = options.header;
-    });
-  }
+
 
   private loadAssetTemplates() {
     // Mock data for asset templates
@@ -291,19 +295,31 @@ accessPolicySuggestions: OdrlPolicyDefinition[] = [];
     ];
   }
 
-  private loadAllBpns() {
-  this.edcInstanceService.getEdcInstances().subscribe({
-    next: (instances) => {
-      // Set sorgt für eindeutige BPNs
-      const bpnSet = new Set(instances.map(i => i.bpn));
-      this.allBpns = [...bpnSet];
-    },
-    error: (err) => {
-      console.error('Fehler beim Laden der EDC-Instanzen', err);
-      this.allBpns = [];
-    }
-  });
-}
+  private loadTransformations() {
+    this.assetService.getTransformations().subscribe(systems => {
+      this.allTransformations = systems;
+    });
+  }
+
+  addQueryParam() {
+    this.queryParams.push({ key: '', value: '' });
+  }
+
+  removeQueryParam(index: number) {
+    this.queryParams.splice(index, 1);
+    this.syncAssetJsonFromForm();
+  }
+
+  addHeaderParam() {
+    this.headerParams.push({ key: '', value: '' });
+  }
+
+  removeHeaderParam(index: number) {
+    this.headerParams.splice(index, 1);
+    this.syncAssetJsonFromForm();
+  }
+
+
 
 
   /**
@@ -380,10 +396,10 @@ accessPolicySuggestions: OdrlPolicyDefinition[] = [];
   loadPoliciesAndDefinitions() {
   this.policyLoading = true;
 
-  forkJoin({
+    forkJoin({
     accessPolicies: this.policyService.getPolicies(this.instance.id),
     contractDefinitions: this.policyService.getContractDefinitions(this.instance.id)
-  }).subscribe({
+    }).subscribe({
     next: ({ accessPolicies, contractDefinitions }) => {
       // Policy-Map für schnellen Lookup (ODRL-ID => Policy)
       const policyMap = new Map<string, OdrlPolicyDefinition>();
@@ -433,7 +449,7 @@ accessPolicySuggestions: OdrlPolicyDefinition[] = [];
       this.allAccessPolicies = accessPolicies;
       this.filteredAccessPolicies = [...this.allAccessPolicies];
     },
-    error: (error) => {
+      error: (error: any) => {
       console.error('Failed to load policies:', error);
       this.messageService.add({
         severity: 'error',
@@ -511,6 +527,9 @@ accessPolicySuggestions: OdrlPolicyDefinition[] = [];
 
   // Asset methods
   openNewAssetDialog() {
+    // Always start with a clean slate by resetting all form fields
+    this.resetAssetFormFields();
+
     // Find the default template, which is the first in the list
     const defaultTemplate = this.assetTemplates.length > 0 ? this.assetTemplates[0] : null;
     if (defaultTemplate) {
@@ -524,21 +543,22 @@ accessPolicySuggestions: OdrlPolicyDefinition[] = [];
       this.populateAssetFormFromOdrl(templateContent);
     } else {
       // Fallback if no templates are loaded, create an empty form
-      this.resetAssetFormFields();
       this.syncAssetJsonFromForm();
     }
     this.displayNewAssetDialog = true;
   }
 
   // New Asset Dialog specific methods
-  searchEndpoints(event: { query: string }) {
-    this.assetService.getEndpointSuggestions(event.query).subscribe(suggestions => {
-      this.endpointSuggestions = suggestions;
-    });
-  }
-
-  onEndpointSelect(event: any) {
-    this.syncAssetJsonFromForm();
+  onTransformationSelect(selectedTransformation: Transformation | null): void {
+    if (selectedTransformation && selectedTransformation.id) {
+      this.assetService.getTargetArcConfig(selectedTransformation.id).subscribe(config => {
+        this.populateAssetFormFromOdrl(config?.dataAddress || {}); // Pass the nested dataAddress object
+        this.syncAssetJsonFromForm();
+      });
+    } else {
+      this.resetAssetFormFields();
+      this.syncAssetJsonFromForm();
+    }
   }
 
   hideNewAssetDialog() {
@@ -549,72 +569,19 @@ accessPolicySuggestions: OdrlPolicyDefinition[] = [];
   try {
     const assetJson = JSON.parse(this.expertModeJsonContent);
 
-    // Stellen sicher, dass eine Asset-ID vorhanden ist - wenn leer, werfen wir einen Fehler
+    // Final validation before sending
     if (!assetJson['@id'] || assetJson['@id'].trim() === '') {
       throw new Error('Bitte eine Asset-ID eingeben. Dies ist ein Pflichtfeld.');
     }
-
-    // Wichtig: Setze die target_edc_id auf die ID der aktuellen Instanz
+    
+    // The service layer requires the targetEDCId to be set.
     assetJson.targetEDCId = this.instance.id;
-
-    // Stellen sicher, dass properties vorhanden sind
-    if (!assetJson.properties) {
-      assetJson.properties = {};
-    }
-
-    // Grundlegende Pflichtfelder überprüfen und einfügen
-    if (!assetJson.properties['asset:prop:name'] || assetJson.properties['asset:prop:name'].trim() === '') {
-      // Verwende die Asset-ID als Namen, wenn kein Name angegeben wurde
-      assetJson.properties['asset:prop:name'] = assetJson['@id'];
-    }
-
-    // Stelle sicher, dass die Beschreibung nicht leer ist
-    if (!assetJson.properties['asset:prop:description'] || assetJson.properties['asset:prop:description'].trim() === '') {
-      assetJson.properties['asset:prop:description'] = `Beschreibung für ${assetJson['@id']}`;
-    }
-
-    if (!assetJson.properties['asset:prop:contenttype']) {
-      assetJson.properties['asset:prop:contenttype'] = 'application/json';
-    }
-
-    // DataAddress überprüfen und korrigieren
-    if (!assetJson.dataAddress) {
-      assetJson.dataAddress = { type: 'HttpData' };
-    }
-
-    if (!assetJson.dataAddress.type) {
-      assetJson.dataAddress.type = 'HttpData';
-    }
-
-    // Normalisiere für Backend: camelCase baseUrl verwenden
-    if (assetJson.dataAddress.base_url || assetJson.dataAddress.baseURL) {
-      assetJson.dataAddress.baseUrl = assetJson.dataAddress.base_url || assetJson.dataAddress.baseURL;
-      delete assetJson.dataAddress.base_url;
-      delete assetJson.dataAddress.baseURL;
-    }
-
-    if (!assetJson.dataAddress.baseUrl || String(assetJson.dataAddress.baseUrl).trim() === '') {
-      assetJson.dataAddress.baseUrl = 'https://example.com/api/' + assetJson['@id'];
-    }
-
-    // Proxy-Einstellungen hinzufügen, falls nicht vorhanden
-    if (assetJson.dataAddress.proxyPath === undefined) {
-      assetJson.dataAddress.proxyPath = true;
-    }
-
-    if (assetJson.dataAddress.proxyQueryParams === undefined) {
-      assetJson.dataAddress.proxyQueryParams = true;
-    }
-
-    // Backend erwartet ein Array von Properties; bei Objekt zu Array wrappen
-    if (assetJson.properties && !Array.isArray(assetJson.properties)) {
-      assetJson.properties = [assetJson.properties];
-    }
-
-    console.log('Sende Asset an Backend:', JSON.stringify(assetJson, null, 2));
-    console.log('Verwende EDC-Instanz-ID:', this.instance.id);
+    
+    // The createAsset service method expects assetId to be a top-level property for the mock to work correctly.
+    assetJson.assetId = assetJson['@id'];
+    
+    console.log('Sending Asset to Backend:', JSON.stringify(assetJson, null, 2));
     try {
-      // Verwende lastValueFrom statt toPromise() für Observables
       const response = await lastValueFrom(this.assetService.createAsset(this.instance.id, assetJson));
       console.log('Asset successfully created:', response);
       this.messageService.add({
@@ -622,25 +589,8 @@ accessPolicySuggestions: OdrlPolicyDefinition[] = [];
         summary: 'Success',
         detail: 'Asset created successfully.'
       });
-
-      // Dialog schließen vor dem Neuladen
       this.hideNewAssetDialog();
-
-      // Längere Verzögerung, um sicherzustellen, dass das Backend die Änderung verarbeitet hat
-      console.log('Waiting for backend to process the changes...');
-      await new Promise(resolve => setTimeout(resolve, 1000));
-
-      // Mehrfaches Neuladen für bessere Zuverlässigkeit
-      console.log('Reloading assets first time...');
       await this.loadAssets();
-
-      // Zweiter Reload nach weiterer Verzögerung
-      setTimeout(async () => {
-        console.log('Reloading assets second time for consistency...');
-        await this.loadAssets();
-        console.log('Assets after second reload:', this.assets);
-      }, 500);
-
     } catch (err: any) {
       console.error('Error creating asset:', err);
       // Detailliertere Fehlermeldung
@@ -700,9 +650,6 @@ accessPolicySuggestions: OdrlPolicyDefinition[] = [];
     if (!currentAssetJson['@context']) {
       currentAssetJson['@context'] = { "edc": "https://w3id.org/edc/v0.0.1/ns/" };
     }
-    if (!currentAssetJson['@id']) {
-      currentAssetJson['@id'] = `urn:uuid:${this.generateUuid()}`; // Generate UUID for new assets
-    }
     if (!currentAssetJson.properties) {
       currentAssetJson.properties = {};
     }
@@ -710,15 +657,6 @@ accessPolicySuggestions: OdrlPolicyDefinition[] = [];
       currentAssetJson.dataAddress = { type: 'HttpData' }; // Default type
     }
 
-    // Update dataAddress.base_url von selectedEndpoint
-    if (this.selectedEndpoint) {
-      currentAssetJson.dataAddress.base_url = this.selectedEndpoint;
-    } else {
-      // Behalte bestehende base_url bei oder setze Standard
-      if (!currentAssetJson.dataAddress.base_url) {
-        currentAssetJson.dataAddress.base_url = '';
-      }
-    }
 
     // Stelle sicher, dass proxyPath und proxyQueryParams existieren
     if (currentAssetJson.dataAddress.proxyPath === undefined) {
@@ -745,22 +683,32 @@ accessPolicySuggestions: OdrlPolicyDefinition[] = [];
     });
 
     // Update Parameterization fields in dataAddress
-    currentAssetJson.dataAddress.pathParamId = this.pathParamId || undefined;
-    currentAssetJson.dataAddress.queryParams = this.queryParams.length > 0 ? this.queryParams : undefined;
-    currentAssetJson.dataAddress.headerParams = this.headerParams.length > 0 ? this.headerParams : undefined;
-    currentAssetJson.dataAddress.authorizationData = this.authorizationData || undefined;
+    if (this.pathParamId) {
+      currentAssetJson.dataAddress.path = this.pathParamId;
+    }
 
+    // Combine query params into a single string
+    const queryParamsString = this.queryParams
+      .filter(p => p.key)
+      .map(p => `${encodeURIComponent(p.key)}=${encodeURIComponent(p.value)}`)
+      .join('&');
+    currentAssetJson.dataAddress.queryParams = queryParamsString || undefined;
+
+    // Collect headers into a map, removing old header properties first
+    Object.keys(currentAssetJson.dataAddress).forEach(key => {
+      if (key.toLowerCase().startsWith('header:')) {
+        delete currentAssetJson.dataAddress[key];
+      }
+    });
+    this.headerParams.forEach(h => {
+      if (h.key) {
+        // The backend expects the key to be prefixed with "header:".
+        currentAssetJson.dataAddress[`header:${h.key}`] = h.value;
+      }
+    });
     this.expertModeJsonContent = JSON.stringify(currentAssetJson, null, 2);
   }
 
-  private generateUuid(): string {
-    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
-      const r = Math.random() * 16 | 0, v = c === 'x' ? r : (r & 0x3 | 0x8);
-      return v.toString(16);
-    });
-  }
-
-  // End New Asset Dialog specific methods
 
   async onAssetTemplateFileSelect(event: Event) {
     const element = event.currentTarget as HTMLInputElement;
@@ -789,12 +737,27 @@ accessPolicySuggestions: OdrlPolicyDefinition[] = [];
   private populateAssetFormFromOdrl(odrlAsset: any): void {
     // Hier liegt ein kritischer Fehler vor: base_url vs. baseUrl
     // Wir müssen alle möglichen Felder prüfen, da das Backend base_url erwartet, aber das Frontend
-    // möglicherweise andere Bezeichnungen verwendet
-    this.selectedEndpoint = odrlAsset.dataAddress?.base_url || odrlAsset.dataAddress?.baseURL || odrlAsset.dataAddress?.baseUrl || null;
-    this.pathParamId = odrlAsset.dataAddress?.pathParamId || '';
-    this.queryParams = odrlAsset.dataAddress?.queryParams || [];
-    this.headerParams = odrlAsset.dataAddress?.headerParams || [];
-    this.authorizationData = odrlAsset.dataAddress?.authorizationData || '';
+    this.pathParamId = odrlAsset.path || '';
+
+    // Parse queryParams string into key-value pairs
+    this.queryParams = [];
+    const queryParamsString = odrlAsset.queryParams || '';
+    if (queryParamsString) {
+      queryParamsString.split('&').forEach((pair: string) => {
+        const [key, value] = pair.split('=');
+        if (key) {
+          this.queryParams.push({ key: decodeURIComponent(key), value: decodeURIComponent(value || '') });
+        }
+      });
+    }
+
+    // Parse headers from dataAddress properties
+    this.headerParams = [];
+    for (const key in odrlAsset) {
+      if (key.toLowerCase().startsWith('header:')) {
+        this.headerParams.push({ key: key.substring(7), value: odrlAsset[key] });
+      }
+    }
 
     this.assetAttributes = [];
     if (odrlAsset.properties) {
@@ -813,14 +776,30 @@ accessPolicySuggestions: OdrlPolicyDefinition[] = [];
   }
 
   private resetAssetFormFields(): void {
-    this.selectedEndpoint = null;
+    this.selectedTransformation = null;
     this.assetAttributes = [{ key: '', value: '' }];
     this.pathParamId = '';
-    this.queryParams = [];
-    this.headerParams = [];
-    this.authorizationData = '';
+    this.queryParams = []; // Reset to an empty array
+    this.headerParams = []; // Reset to an empty array for consistency
   }
 
+  /**
+   * Triggers the debounced synchronization from the asset JSON editor to the form fields.
+   */
+  syncAssetFormFromJsonWithDebounce(): void {
+    this.assetJsonSyncSubject.next();
+  }
+
+  syncAssetFormFromJson(): void {
+    try {
+      const assetJson = JSON.parse(this.expertModeJsonContent || '{}');
+      // The populating function expects the dataAddress object, not the whole asset
+      this.populateAssetFormFromOdrl(assetJson.dataAddress || {});
+    } catch (e) {
+      // If JSON is invalid, do nothing to avoid clearing the form fields while user is typing.
+      console.warn('syncAssetFormFromJson: Could not parse JSON, aborting sync.');
+    }
+  }
   // End Asset Template methods
 
   /**
@@ -925,11 +904,6 @@ accessPolicySuggestions: OdrlPolicyDefinition[] = [];
           const fileContent = await file.text();
           let assetJson = JSON.parse(fileContent);
 
-          // Korrektur und Validierung des Asset-JSONs
-          if (!assetJson['@id']) {
-            assetJson['@id'] = `urn:uuid:${this.generateUuid()}`;
-            console.log('Generated new @id for asset:', assetJson['@id']);
-          }
 
           if (!assetJson['@context'] || !assetJson['@context'].edc) {
             assetJson['@context'] = { "edc": "https://w3id.org/edc/v0.0.1/ns/" };
@@ -1030,6 +1004,7 @@ accessPolicySuggestions: OdrlPolicyDefinition[] = [];
     this.assetToEditODRL = this.allOdrlAssets.find(a => a['@id'] === asset.assetId) ?? null;
     if (this.assetToEditODRL) {
       this.expertModeJsonContent = JSON.stringify(this.assetToEditODRL, null, 2);
+      this.populateAssetFormFromOdrl(this.assetToEditODRL.dataAddress || {});
       this.displayEditAssetDialog = true;
       return;
     }
@@ -1040,6 +1015,7 @@ accessPolicySuggestions: OdrlPolicyDefinition[] = [];
         next: (raw: any) => {
           this.assetToEditODRL = raw as any;
           this.expertModeJsonContent = JSON.stringify(this.assetToEditODRL, null, 2);
+          this.populateAssetFormFromOdrl(this.assetToEditODRL.dataAddress || {});
           this.displayEditAssetDialog = true;
         },
         error: () => {
@@ -1067,56 +1043,13 @@ accessPolicySuggestions: OdrlPolicyDefinition[] = [];
         throw new Error("The '@id' of the asset cannot be changed during an edit.");
       }
 
-      // Stellen sicher, dass alle erforderlichen Felder korrekt sind
-      if (!assetJson.properties) {
-        assetJson.properties = {};
-      }
-
-      // Pflichtfelder überprüfen
-      if (!assetJson.properties['asset:prop:name']) {
-        assetJson.properties['asset:prop:name'] = 'Unnamed Asset';
-      }
-
-      if (!assetJson.properties['asset:prop:contenttype']) {
-        assetJson.properties['asset:prop:contenttype'] = 'application/json';
-      }
-
-      // DataAddress überprüfen
-      if (!assetJson.dataAddress) {
-        assetJson.dataAddress = { type: 'HttpData' };
-      }
-
-      if (!assetJson.dataAddress.type) {
-        assetJson.dataAddress.type = 'HttpData';
-      }
-
-      // Normalisiere für Backend auf baseUrl (camelCase)
-      if (assetJson.dataAddress.base_url || assetJson.dataAddress.baseURL) {
-        assetJson.dataAddress.baseUrl = assetJson.dataAddress.base_url || assetJson.dataAddress.baseURL;
-        delete assetJson.dataAddress.base_url;
-        delete assetJson.dataAddress.baseURL;
-      }
-
-      if (!assetJson.dataAddress.baseUrl) {
-        assetJson.dataAddress.baseUrl = 'https://example.com/api';
-      }
-
-      // Properties ggf. von Objekt zu Array wandeln
-      if (assetJson.properties && !Array.isArray(assetJson.properties)) {
-        assetJson.properties = [assetJson.properties];
-      }
-
-      // Proxy-Einstellungen
-      if (assetJson.dataAddress.proxyPath === undefined) {
-        assetJson.dataAddress.proxyPath = true;
-      }
-
-      if (assetJson.dataAddress.proxyQueryParams === undefined) {
-        assetJson.dataAddress.proxyQueryParams = true;
-      }
-
-      console.log('Sende bearbeitetes Asset an Backend:', JSON.stringify(assetJson, null, 2));
-      await this.assetService.createAsset(this.instance.id, assetJson);
+      // The JSON from the editor is the source of truth.
+      // Add the assetId for the service call.
+      assetJson.assetId = assetJson['@id'];
+      
+      // Use the update service method instead of create
+      console.log('Sending updated asset to backend:', JSON.stringify(assetJson, null, 2));
+      await lastValueFrom(this.assetService.updateAsset(this.instance.id, this.assetToEditODRL['@id'], assetJson));
       this.messageService.add({ severity: 'success', summary: 'Success', detail: 'Asset updated successfully.' });
       this.loadAssets();
       this.hideEditAssetDialog();
@@ -2242,12 +2175,19 @@ accessPolicySuggestions: OdrlPolicyDefinition[] = [];
 
   viewAssetDetails(event: TableRowSelectEvent): void {
   this.viewingEntityType = 'asset';
-  const asset = event.data as Asset;
+  const selectedAsset = event.data as Asset;
 
-  // Direkt das Backend-Asset anzeigen
-  this.jsonToView = JSON.stringify(asset, null, 2);
-  this.viewDialogHeader = `Details for Asset: ${asset.description || asset.assetId}`;
-  this.displayViewDialog = true;
+  // Find the original, raw JSON object from the list we stored when loading assets.
+  // This ensures we show the true structure, not the transformed UI model.
+  const rawAsset = this.allOdrlAssets.find(a => a['@id'] === selectedAsset.assetId);
+
+  if (rawAsset) {
+    this.jsonToView = JSON.stringify(rawAsset, null, 2);
+    this.viewDialogHeader = `Details for Asset: ${selectedAsset.name || selectedAsset.assetId}`;
+    this.displayViewDialog = true;
+  } else {
+    this.messageService.add({ severity: 'warn', summary: 'Not Found', detail: 'Could not find the original raw JSON for this asset.' });
+  }
 }
 
 
