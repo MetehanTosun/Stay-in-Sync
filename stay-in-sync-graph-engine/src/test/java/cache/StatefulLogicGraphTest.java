@@ -137,7 +137,7 @@ public class StatefulLogicGraphTest {
 
         boolean result1 = statefulGraph.evaluate(sourceDataMap);
 
-        assertTrue(result1);
+        assertFalse(result1); // First execution should return false (initialize snapshot)
         assertEquals(1, statefulGraph.getSnapshotSize());
     }
 
@@ -186,9 +186,9 @@ public class StatefulLogicGraphTest {
         boolean result2 = statefulGraph.evaluate(sourceData2);
         boolean result3 = statefulGraph.evaluate(sourceData3);
 
-        assertTrue(result1);
-        assertFalse(result2);
-        assertTrue(result3);
+        assertFalse(result1); // First run: initialize snapshot, return false
+        assertFalse(result2); // No change
+        assertTrue(result3);  // Value changed
     }
 
     @Test
