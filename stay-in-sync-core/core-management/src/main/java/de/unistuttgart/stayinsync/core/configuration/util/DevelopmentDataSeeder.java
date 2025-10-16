@@ -95,8 +95,14 @@ public class DevelopmentDataSeeder {
         Log.info("-> Created SourceSystem 'Dummy_JSON' and Source ARC 'products'");
 
         TargetSystemDTO targetDto = new TargetSystemDTO(
-                null, sourceDto.name(), sourceDto.apiUrl(), sourceDto.description(),
-                sourceDto.apiType(), sourceDto.openApiSpec(), null);
+                null,
+                sourceDto.name(),
+                sourceDto.apiUrl(),
+                sourceDto.description(),
+                sourceDto.apiType(),
+                null, // aasId (none for REST in dev seed)
+                sourceDto.openApiSpec(),
+                null);
         TargetSystemDTO targetSystemDTO = targetSystemService.createTargetSystem(targetDto);
         TargetSystem targetSystem = TargetSystem.findById(targetSystemDTO.id());
         Log.info("-> Created TargetSystem 'Dummy_JSON'");

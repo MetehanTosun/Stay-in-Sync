@@ -17,6 +17,7 @@ export interface CreateSourceSystemDTO {
     apiUrl: string;
     description?: string;
     apiType: string;
+    aasId?: string;
     apiAuthType?: ApiAuthType;
     authConfig?: ApiAuthConfigurationDTO;
     openApiSpec?: string;

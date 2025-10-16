@@ -1,0 +1,391 @@
+import { Injectable } from '@angular/core';
+import { Observable } from 'rxjs';
+import { TreeNode } from 'primeng/api';
+import { AasService } from '../services/aas.service';
+import { AasClientService } from '../services/aas-client.service';
+import { HttpErrorService } from '../../../core/services/http-error.service';
+
+export interface AasOperationVarView { 
+  idShort: string; 
+  modelType?: string; 
+  valueType?: string 
+}
+
+export interface AasAnnotationView { 
+  idShort: string; 
+  modelType?: string; 
+  valueType?: string; 
+  value?: any 
+}
+
+export interface AasElementLivePanel {
+  label: string;
+  type: string;
+  value?: any;
+  valueType?: string;
+  min?: any;
+  max?: any;
+  inputVariables?: AasOperationVarView[];
+  outputVariables?: AasOperationVarView[];
+  inoutputVariables?: AasOperationVarView[];
+  firstRef?: string;
+  secondRef?: string;
+  annotations?: AasAnnotationView[];
+}
+
+@Injectable({
+  providedIn: 'root'
+})
+export class SourceSystemAasManagementService {
+
+  constructor(
+    private aasService: AasService,
+    private aasClient: AasClientService,
+    private errorService: HttpErrorService
+  ) {}
+
+  /**
+   * Test the AAS connection for a given source system.
+   */
+  testConnection(systemId: number): Observable<any> {
+    return this.aasService.aasTest(systemId);
+  }
+
+  /**
+   * Discover the AAS snapshot and return tree nodes.
+   */
+  discoverSnapshot(systemId: number): Observable<TreeNode[]> {
+    return new Observable(observer => {
+      this.aasService.listSubmodels(systemId, 'SNAPSHOT').subscribe({
+        next: (resp) => {
+          if (resp && resp.errorTitle && resp.errorMessage) {
+            observer.next([]);
+            observer.complete();
+            return;
+          }
+          
+          const submodels = Array.isArray(resp) ? resp : (resp?.result ?? []);
+          const treeNodes = submodels.map((sm: any) => this.mapSubmodelToNode(sm));
+          observer.next(treeNodes);
+          observer.complete();
+        },
+        error: (err) => {
+          observer.next([]);
+          observer.complete();
+        }
+      });
+    });
+  }
+
+  /**
+   * Load AAS children for a node and attach them to the given TreeNode.
+   */
+  loadChildren(systemId: number, submodelId: string, parentPath: string | undefined, attach: TreeNode): Observable<void> {
+    return new Observable(observer => {
+      this.aasService.listElements(systemId, submodelId, { depth: 'shallow', parentPath, source: 'SNAPSHOT' }).subscribe({
+        next: (resp) => {
+          if (resp && resp.errorTitle && resp.errorMessage) {
+            attach.children = [];
+            observer.next();
+            observer.complete();
+            return;
+          }
+          
+          const list = Array.isArray(resp) ? resp : (resp?.result ?? []);
+          attach.children = list.map((el: any) => this.mapElementToNode(submodelId, el));
+          observer.next();
+          observer.complete();
+        },
+        error: (err) => {
+          attach.children = [];
+          observer.next();
+          observer.complete();
+        }
+      });
+    });
+  }
+
+  /**
+   * Load live element details for a given element path.
+   */
+  loadElementDetails(systemId: number, smId: string, idShortPath: string | undefined, node?: TreeNode): Observable<AasElementLivePanel> {
+    return new Observable(observer => {
+      const keyStr = (node && typeof node.key === 'string') ? (node.key as string) : '';
+      const keyPath = keyStr.includes('::') ? keyStr.split('::')[1] : '';
+      const safePath = idShortPath || keyPath || (node?.data?.raw?.idShort || '');
+      const last = safePath.split('/').pop() as string;
+      const parent = safePath.includes('/') ? safePath.substring(0, safePath.lastIndexOf('/')) : '';
+
+      // Try SNAPSHOT first, then LIVE as fallback for manually created elements.
+      const tryLoadElementDetails = (source: 'SNAPSHOT' | 'LIVE') => {
+        this.aasService.getElement(systemId, smId, safePath, source)
+          .subscribe({
+            next: (found: any) => {
+              if (found && found.errorTitle && found.errorMessage) {
+                if (source === 'SNAPSHOT') {
+                  tryLoadElementDetails('LIVE');
+                } else {
+                  observer.next({ label: last, type: 'Unknown', value: 'Backend Error: ' + found.errorMessage } as AasElementLivePanel);
+                  observer.complete();
+                }
+                return;
+              }
+              
+              if (found) {
+                const hasValue = found.value !== undefined && found.value !== null && found.value !== '';
+                const isSnapshotWithoutValue = source === 'SNAPSHOT' && !hasValue;
+                
+                if (isSnapshotWithoutValue) {
+                  tryLoadElementDetails('LIVE');
+                  return;
+                }
+                
+                const livePanel = this.mapElementToLivePanel(found);
+                observer.next(livePanel);
+                observer.complete();
+              } else {
+                if (source === 'SNAPSHOT') {
+                  tryLoadElementDetails('LIVE');
+                } else {
+                  observer.next({ label: last, type: 'Unknown' } as AasElementLivePanel);
+                  observer.complete();
+                }
+              }
+            },
+            error: (err: any) => {
+              if (source === 'SNAPSHOT') {
+                tryLoadElementDetails('LIVE');
+              } else {
+                this.errorService.handleError(err);
+                observer.error(err);
+              }
+            }
+          });
+      };
+      
+      // Start with SNAPSHOT, fallback to LIVE.
+      tryLoadElementDetails('SNAPSHOT');
+    });
+  }
+
+  /**
+   * Create a submodel for a source system.
+   */
+  createSubmodel(systemId: number, submodelData: any): Observable<any> {
+    return this.aasService.createSubmodel(systemId, submodelData);
+  }
+
+  /**
+   * Create an element under the given submodel.
+   */
+  createElement(systemId: number, submodelId: string, elementData: any, parentPath?: string): Observable<any> {
+    return this.aasClient.createElement('source', systemId, submodelId, elementData, parentPath);
+  }
+
+  /**
+   * Delete a submodel by raw identifier (will be encoded internally).
+   */
+  deleteSubmodel(systemId: number, submodelId: string): Observable<any> {
+    const smIdB64 = this.aasService.encodeIdToBase64Url(submodelId);
+    return this.aasService.deleteSubmodel(systemId, smIdB64);
+  }
+
+  /**
+   * Delete an element by raw submodel ID and element path.
+   */
+  deleteElement(systemId: number, submodelId: string, idShortPath: string): Observable<any> {
+    return this.aasService.deleteElement(systemId, submodelId, idShortPath);
+  }
+
+  /**
+   * Set a property value on an element.
+   */
+  setPropertyValue(systemId: number, submodelId: string, elementPath: string, value: any): Observable<any> {
+    const smIdB64 = this.aasService.encodeIdToBase64Url(submodelId);
+    return this.aasService.setPropertyValue(systemId, smIdB64, elementPath, value);
+  }
+
+  /**
+   * Map a Submodel to a TreeNode representation.
+   */
+  private mapSubmodelToNode(sm: any): TreeNode {
+    const id = sm.submodelId || sm.id || (sm.keys && sm.keys[0]?.value);
+    const label = (sm.submodelIdShort || sm.idShort) || id;
+    const kindRaw = (sm.kind || sm.submodelKind || '').toString();
+    const isTemplate = kindRaw && kindRaw.toLowerCase().includes('template');
+    const modelType = isTemplate ? 'Submodel Template' : 'Submodel';
+    return { 
+      key: id, 
+      label, 
+      data: { type: 'submodel', id, modelType, raw: sm }, 
+      leaf: false, 
+      children: [] 
+    } as TreeNode;
+  }
+
+  /**
+   * Map a SubmodelElement to a TreeNode representation.
+   */
+  private mapElementToNode(submodelId: string, el: any): TreeNode {
+    const computedType = this.inferModelType(el);
+    const label = el.idShort;
+    const typeHasChildren = el?.modelType === 'SubmodelElementCollection' || el?.modelType === 'SubmodelElementList' || el?.modelType === 'Operation' || el?.modelType === 'Entity';
+    const hasChildren = el?.hasChildren === true || typeHasChildren;
+    return {
+      key: `${submodelId}::${el.idShortPath || el.idShort}`,
+      label,
+      data: { type: 'element', submodelId, idShortPath: el.idShortPath || el.idShort, modelType: computedType, raw: el },
+      leaf: !hasChildren,
+      children: []
+    } as TreeNode;
+  }
+
+  /**
+   * Map an element payload to an AasElementLivePanel view model.
+   */
+  private mapElementToLivePanel(found: any): AasElementLivePanel {
+    let liveType = found?.modelType || found?.type || (found?.valueType ? 'Property' : undefined);
+    if (!liveType) {
+      liveType = this.inferModelType(found);
+    }
+    const minValue = (found as any).min ?? (found as any).minValue;
+    const maxValue = (found as any).max ?? (found as any).maxValue;
+    const inputVars = Array.isArray((found as any).inputVariables) ? (found as any).inputVariables : [];
+    const outputVars = Array.isArray((found as any).outputVariables) ? (found as any).outputVariables : [];
+    const inoutVars = Array.isArray((found as any).inoutputVariables) ? (found as any).inoutputVariables : [];
+    const ann1 = (found as any).annotations;
+    const ann2 = (found as any).annotation;
+    const annotationsRaw = Array.isArray(ann1) ? ann1 : (Array.isArray(ann2) ? ann2 : []);
+
+    const mapVar = (v: any): AasOperationVarView | null => {
+      const val = v?.value ?? v;
+      const idShort = val?.idShort;
+      if (!idShort) return null;
+      return { idShort, modelType: val?.modelType, valueType: val?.valueType };
+    };
+
+    const mapAnnotation = (a: any): AasAnnotationView | null => {
+      const val = a?.value ?? a;
+      const idShort = val?.idShort;
+      if (!idShort) return null;
+      return { idShort, modelType: val?.modelType, valueType: val?.valueType, value: val?.value };
+    };
+
+    const stringifyRef = (ref: any): string | undefined => {
+      if (!ref) return undefined;
+      const keys = ref?.keys;
+      if (Array.isArray(keys) && keys.length) {
+        try {
+          return keys.map((k: any) => `${k?.type ?? ''}:${k?.value ?? ''}`).join(' / ');
+        } catch {
+          return JSON.stringify(ref);
+        }
+      }
+      if (typeof ref === 'string') return ref;
+      if (ref?.value) return String(ref.value);
+      try { return JSON.stringify(ref); } catch { return String(ref); }
+    };
+
+    const firstRef = stringifyRef((found as any).first || (found as any).firstReference);
+    const secondRef = stringifyRef((found as any).second || (found as any).secondReference);
+
+    let elementValue = (found as any).value;
+    if (liveType === 'SubmodelElementCollection' && !elementValue && (found as any).submodelElements) {
+      elementValue = (found as any).submodelElements;
+    }
+    if (liveType === 'SubmodelElementList' && !elementValue && (found as any).valueListElement) {
+      elementValue = (found as any).valueListElement;
+    }
+    if ((liveType === 'SubmodelElementCollection' || liveType === 'SubmodelElementList') && !Array.isArray(elementValue)) {
+      elementValue = found.hasChildren ? ['...'] : [];
+    }
+
+
+    return {
+      label: found.idShort,
+      type: liveType || 'Unknown',
+      value: elementValue,
+      valueType: (found as any).valueType,
+      min: minValue,
+      max: maxValue,
+      inputVariables: inputVars.map(mapVar).filter(Boolean) as AasOperationVarView[],
+      outputVariables: outputVars.map(mapVar).filter(Boolean) as AasOperationVarView[],
+      inoutputVariables: inoutVars.map(mapVar).filter(Boolean) as AasOperationVarView[],
+      firstRef,
+      secondRef,
+      annotations: annotationsRaw.map(mapAnnotation).filter(Boolean) as AasAnnotationView[]
+    };
+  }
+
+  /**
+   * Infer a model type string from a generic element payload.
+   */
+  private inferModelType(el: any): string | undefined {
+    if (!el) return undefined;
+    if (el.modelType) return el.modelType;
+    // Detect Range before Property
+    if (el.min !== undefined || el.max !== undefined || el.minValue !== undefined || el.maxValue !== undefined) return 'Range';
+    if (el.valueType) return 'Property';
+    if (Array.isArray(el.inputVariables) || Array.isArray(el.outputVariables) || Array.isArray(el.inoutputVariables)) return 'Operation';
+    if (Array.isArray(el.value)) {
+      const isML = el.value.every((v: any) => v && (v.language !== undefined) && (v.text !== undefined));
+      if (isML) return 'MultiLanguageProperty';
+      if (el.typeValueListElement || el.orderRelevant !== undefined) return 'SubmodelElementList';
+      return 'SubmodelElementCollection';
+    }
+    if (el.first || el.firstReference) {
+      const ann = el.annotations || el.annotation;
+      return Array.isArray(ann) ? 'AnnotatedRelationshipElement' : 'RelationshipElement';
+    }
+    if (Array.isArray(el.annotations) || Array.isArray(el.annotation)) return 'AnnotatedRelationshipElement';
+    if (Array.isArray(el.statements)) return 'Entity';
+    if (Array.isArray(el.keys)) return 'ReferenceElement';
+    if (el.contentType && (el.fileName || el.path)) return 'File';
+    return undefined;
+  }
+
+  /**
+   * Parse user-entered string value according to a type hint.
+   */
+  parseValueForType(raw: string, valueType?: string): any {
+    if (!valueType) return raw;
+    const t = valueType.toLowerCase();
+    if (t.includes('boolean')) {
+      if (raw === 'true' || raw === 'false') return raw === 'true';
+      return !!raw;
+    }
+    if (t.includes('int') || t.includes('integer') || t.includes('long')) {
+      const n = parseInt(raw, 10);
+      return isNaN(n) ? raw : n;
+    }
+    if (t.includes('float') || t.includes('double') || t.includes('decimal')) {
+      const n = parseFloat(raw);
+      return isNaN(n) ? raw : n;
+    }
+    return raw;
+  }
+
+  /**
+   * Find a node by its composite key in a tree.
+   */
+  findNodeByKey(key: string, nodes: TreeNode[] | undefined): TreeNode | null {
+    if (!nodes) return null;
+    for (const n of nodes) {
+      if ((n.key as string) === key) return n;
+      const found = this.findNodeByKey(key, n.children as TreeNode[]);
+      if (found) return found;
+    }
+    return null;
+  }
+
+  /**
+   * Determine whether an element should be treated as a leaf.
+   */
+  isLeafElement(element: any): boolean {
+    const typeHasChildren = element?.modelType === 'SubmodelElementCollection' || 
+                           element?.modelType === 'SubmodelElementList' || 
+                           element?.modelType === 'Operation' || 
+                           element?.modelType === 'Entity';
+    return !(element?.hasChildren === true || typeHasChildren);
+  }
+}

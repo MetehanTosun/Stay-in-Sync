@@ -22,6 +22,7 @@ public interface ApiHeaderFullUpdateMapper {
 
 
     @Mapping(target = "id", ignore = true)
+    @Mapping(target = "syncSystem", ignore = true)
     void mapFullUpdate(ApiHeader apiEndpointQueryParam, @MappingTarget ApiHeader targetSouceSystemEndpoint);
 
     ApiHeader mapToEntity(CreateApiHeaderDTO apiEndpointQueryParamDTO);

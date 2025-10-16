@@ -1,20 +1,22 @@
 <p-card header="Target Endpoints" styleClass="p-p-4">
+  <!-- Main card container for managing Target System endpoints -->
+  <p-toast key="endpoints"></p-toast>
   <div class="p-d-flex p-ai-center p-mb-3" style="gap: .5rem;">
+    <!-- Import button for fetching or auto-generating target endpoints -->
     <button pButton type="button" icon="pi pi-cloud-download" label="Import Endpoints" [disabled]="importing" (click)="importEndpoints()"></button>
     <p-progressSpinner *ngIf="importing" styleClass="p-ml-2" strokeWidth="4"></p-progressSpinner>
   </div>
 
   <div id="create-endpoint-form"></div>
+  <!-- Form for creating or editing a Target Endpoint -->
   <form [formGroup]="form" class="p-fluid p-formgrid p-grid" style="margin: 1.5rem 0; padding: 1rem;">
     <div class="p-field p-col-12" style="margin-bottom: 1rem;">
-      <label for="endpointPath">Endpoint Path</label>
+      <label for="endpointPath">Endpoint Path*</label>
       <input id="endpointPath" pInputText formControlName="endpointPath">
     </div>
     <div class="p-field p-col-12" style="margin-bottom: 1rem;">
-      <label for="httpRequestType">HTTP Method</label>
-      <select id="httpRequestType" formControlName="httpRequestType">
-        <option *ngFor="let m of httpRequestTypes" [value]="m">{{ m }}</option>
-      </select>
+      <label for="httpRequestType">Method*</label>
+      <p-dropdown id="httpRequestType" [options]="httpRequestTypes" formControlName="httpRequestType"></p-dropdown>
     </div>
     <div class="p-field p-col-12" style="margin-bottom: 1rem;" *ngIf="form.get('httpRequestType')?.value === 'POST' || form.get('httpRequestType')?.value === 'PUT'">
       <label>Request Body Schema (JSON)</label>
@@ -22,6 +24,7 @@
     </div>
     <div class="p-field p-col-12" style="margin-bottom: 1rem;">
       <label>Response Body Schema</label>
+      <!-- TabView for editing the response schema in JSON or TypeScript format -->
       <p-tabView (onChange)="onDialogTabChange($event)">
         <p-tabPanel header="JSON">
           <ngx-monaco-editor [options]="jsonEditorOptions" formControlName="responseBodySchema"></ngx-monaco-editor>
@@ -32,9 +35,11 @@
       </p-tabView>
     </div>
     <div class="p-col-12" style="margin: 2rem 0;">
-      <button pButton type="button" label="Add Endpoint" [disabled]="form.invalid" (click)="addEndpoint()"></button>
+      <button pButton type="button" label="Add Endpoint" [disabled]="!form.valid" (click)="addEndpoint()" 
+              [pTooltip]="getAddEndpointTooltip()" tooltipPosition="top"></button>
     </div>
   </form>
+  <!-- Table displaying all configured Target Endpoints with actions -->
   <p-table [value]="endpoints" [loading]="loading" [paginator]="true" [rows]="10" [style]="{ 'margin': '1.5rem 0' }">
     <ng-template pTemplate="header">
       <tr>
@@ -57,7 +62,6 @@
         </td>
         <td>
           <button pButton icon="pi pi-pencil" class="p-button-text" (click)="openEdit(row)"></button>
-          <button pButton icon="pi pi-trash" class="p-button-text p-button-danger" (click)="delete(row)"></button>
           <button pButton
                   type="button"
                   icon="pi pi-cog"
@@ -65,24 +69,23 @@
                   pTooltip="Manage query parameters"
                   tooltipPosition="top"
                   (click)="selectedEndpointForParams = row"></button>
+          <button pButton icon="pi pi-trash" class="p-button-text p-button-danger" (click)="delete(row)"></button>
         </td>
       </tr>
     </ng-template>
   </p-table>
 </p-card>
 
-<!-- Edit Dialog only -->
+<!-- Dialog for editing an existing Target Endpoint -->
 <p-dialog [(visible)]="showDialog" [modal]="true" [style]="{width: '60vw', height: '80vh'}" [header]="dialogTitle">
   <form [formGroup]="form" class="p-fluid p-formgrid p-grid" style="margin: 1.5rem 0; padding: 1rem;">
     <div class="p-field p-col-12" style="margin-bottom: 1rem;">
-      <label for="endpointPath">Endpoint Path</label>
+      <label for="endpointPath">Endpoint Path*</label>
       <input id="endpointPath" pInputText formControlName="endpointPath">
     </div>
     <div class="p-field p-col-12" style="margin-bottom: 1rem;">
-      <label for="httpRequestType">HTTP Method</label>
-      <select id="httpRequestType" formControlName="httpRequestType">
-        <option *ngFor="let m of httpRequestTypes" [value]="m">{{ m }}</option>
-      </select>
+      <label for="httpRequestType">Method*</label>
+      <p-dropdown id="httpRequestType" [options]="httpRequestTypes" formControlName="httpRequestType"></p-dropdown>
     </div>
     <div class="p-field p-col-12" style="margin-bottom: 1rem;" *ngIf="form.get('httpRequestType')?.value === 'POST' || form.get('httpRequestType')?.value === 'PUT'">
       <label>Request Body Schema (JSON)</label>
@@ -90,6 +93,7 @@
     </div>
     <div class="p-field p-col-12" style="margin-bottom: 1rem;">
       <label>Response Body Schema</label>
+      <!-- TabView for editing the response schema in JSON or TypeScript format -->
       <p-tabView (onChange)="onDialogTabChange($event)">
         <p-tabPanel header="JSON">
           <ngx-monaco-editor [options]="jsonEditorOptions" formControlName="responseBodySchema"></ngx-monaco-editor>
@@ -102,17 +106,18 @@
   </form>
   <ng-template pTemplate="footer">
     <button pButton label="Cancel" class="p-button-text" (click)="showDialog=false"></button>
-    <button pButton label="Save" (click)="save()" [disabled]="form.invalid"></button>
+    <button pButton label="Save" (click)="save()" [disabled]="!form.valid"></button>
   </ng-template>
 </p-dialog>
 
+<!-- Section for managing query parameters of the selected endpoint -->
 <ng-container *ngIf="selectedEndpointForParams as ep">
   <div class="p-mt-3" style="margin: 1.5rem 0;">
     <app-manage-endpoint-params [endpointId]="ep.id!" [endpointPath]="ep.endpointPath"></app-manage-endpoint-params>
   </div>
 </ng-container>
 
-<!-- Request Body Editor Overlay (draggable like Source System) -->
+<!-- Draggable overlay editor for modifying request body schema JSON -->
 <div *ngIf="requestBodyEditorEndpoint"
      class="request-body-editor-overlay"
      cdkDrag
@@ -129,6 +134,8 @@
   </div>
 </div>
 
+<!-- Modal for previewing target endpoint response body structure -->
+<p-toast></p-toast>
 <app-target-response-preview-modal
   [(visible)]="responsePreviewDialog"
   [endpointId]="selectedResponsePreviewEndpoint?.id"
@@ -138,4 +145,10 @@
   [responseDts]="selectedResponsePreviewEndpoint?.responseDts">
 </app-target-response-preview-modal>
 
-
+<!-- Confirmation dialog for endpoint deletion -->
+<app-confirmation-dialog
+  [(visible)]="showConfirmationDialog"
+  [data]="confirmationData"
+  (confirmed)="onConfirmationConfirmed()"
+  (cancelled)="onConfirmationCancelled()">
+</app-confirmation-dialog>
