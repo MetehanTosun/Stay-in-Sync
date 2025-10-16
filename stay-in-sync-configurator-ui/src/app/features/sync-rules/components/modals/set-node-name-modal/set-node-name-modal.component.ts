@@ -12,7 +12,7 @@ import { Button } from 'primeng/button';
   templateUrl: './set-node-name-modal.component.html',
   styleUrls: ['../modal-shared.component.css', './set-node-name-modal.component.css']
 })
-export class SetNodeNameModalComponent implements OnChanges, OnInit {
+export class SetNodeNameModalComponent implements OnChanges {
   /** Controls dialog visibility (two-way binding with `visibleChange`) */
   @Input() visible = true;
 
@@ -30,11 +30,6 @@ export class SetNodeNameModalComponent implements OnChanges, OnInit {
 
   /** User input for the new node name */
   newName = '';
-
-  /** Load the current name */
-  ngOnInit() {
-    this.newName = this.currentName;
-  }
 
   /**
    * Syncs editor content when the modal visibility or provided `currentName` change.
