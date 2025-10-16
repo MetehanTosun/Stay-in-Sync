@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Input, OnChanges, Output, SimpleChanges } from '@angular/core';
+import { Component, EventEmitter, Input, OnChanges, Output, SimpleChanges, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Dialog } from 'primeng/dialog';
 import { Button } from 'primeng/button';
@@ -12,7 +12,7 @@ import { Button } from 'primeng/button';
   templateUrl: './set-node-name-modal.component.html',
   styleUrls: ['../modal-shared.component.css', './set-node-name-modal.component.css']
 })
-export class SetNodeNameModalComponent implements OnChanges {
+export class SetNodeNameModalComponent implements OnChanges, OnInit {
   /** Controls dialog visibility (two-way binding with `visibleChange`) */
   @Input() visible = true;
 
@@ -20,7 +20,7 @@ export class SetNodeNameModalComponent implements OnChanges {
   @Output() visibleChange = new EventEmitter<boolean>();
 
   /** The current node name when editing an existing node (empty when creating) */
-  @Input() currentName: string = '';
+  @Input() currentName = '';
 
   /** Emitted when the user saves the new name */
   @Output() save = new EventEmitter<string>();
@@ -29,7 +29,7 @@ export class SetNodeNameModalComponent implements OnChanges {
   @Output() close = new EventEmitter<void>();
 
   /** User input for the new node name */
-  newName: string = '';
+  newName = '';
 
   /** Load the current name */
   ngOnInit() {

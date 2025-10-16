@@ -19,10 +19,10 @@ export class SetRuleConfigurationModal {
   @Output() visibleChange = new EventEmitter<boolean>();
 
   /** Current rule name */
-  @Input() ruleName: string = '';
+  @Input() ruleName = '';
 
   /** Current rule description */
-  @Input() ruleDescription: string = '';
+  @Input() ruleDescription = '';
 
   /** Emitted when the user saves the rule configuration (payload: { name, description }) */
   @Output() save = new EventEmitter<{name: string, description: string}>();

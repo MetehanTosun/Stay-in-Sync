@@ -28,7 +28,7 @@ export class SetSchemaModalComponent implements OnChanges, OnDestroy {
   @Output() visibleChange = new EventEmitter<boolean>();
 
   /** Current rule schema */
-  @Input() currentSchema: string = '';
+  @Input() currentSchema = '';
 
 
   /** Emitted when the user saves the schema (payload: schema as string) */
@@ -38,7 +38,7 @@ export class SetSchemaModalComponent implements OnChanges, OnDestroy {
   @Output() modalsClosed = new EventEmitter<void>();
 
   // Current written schema and found errors
-  schemaText: string = '';
+  schemaText = '';
   parseError: string | null = null;
   schemaValidationErrors: string[] = [];
 

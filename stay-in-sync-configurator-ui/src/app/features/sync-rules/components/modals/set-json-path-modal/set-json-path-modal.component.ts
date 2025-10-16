@@ -25,7 +25,7 @@ export class SetJsonPathModalComponent implements OnChanges {
   @Output() visibleChange = new EventEmitter<boolean>();
 
   /** The currently JSON path to be edited (empty when creating) */
-  @Input() currentJsonPath: string = '';
+  @Input() currentJsonPath = '';
 
   /** Emitted when the user creates a new provider node (payload: { jsonPath, outputType }) */
   @Output() providerCreated = new EventEmitter<{ jsonPath: string, outputType: string }>();
@@ -37,13 +37,13 @@ export class SetJsonPathModalComponent implements OnChanges {
   @Output() modalsClosed = new EventEmitter<void>();
 
   /** Cached mapping of extracted JSON paths and their output types (populated from API) */
-  jsonPaths: { [key: string]: string } = {};
+  jsonPaths: Record<string, string> = {};
 
   /** JSON path the user selects */
-  jsonPath: string = '';
+  jsonPath = '';
 
   /** Whether the suggestions dropdown is currently visible */
-  showSuggestions: boolean = false;
+  showSuggestions = false;
 
   /** Filtered list of suggestion paths matching current input */
   filteredPaths: string[] = [];

@@ -24,7 +24,7 @@ export class SetConstantValueModalComponent implements OnChanges {
   @Output() visibleChange = new EventEmitter<boolean>();
 
   /** The current value passed into the modal when editing an existing constant */
-  @Input() currentValue: string = '';
+  @Input() currentValue = '';
 
   /** Emitted when a new constant value is created (payload: parsed value) */
   @Output() constantCreated = new EventEmitter<any>();
@@ -36,10 +36,10 @@ export class SetConstantValueModalComponent implements OnChanges {
   @Output() modalsClosed = new EventEmitter<void>();
 
   /** String containing the user entered value */
-  constantValue: string = '';
+  constantValue = '';
 
   /** Controls whether the tip is displayed in the UI */
-  isTipPopupVisible: boolean = false;
+  isTipPopupVisible = false;
   //#endregion
 
   //#region Lifecylce

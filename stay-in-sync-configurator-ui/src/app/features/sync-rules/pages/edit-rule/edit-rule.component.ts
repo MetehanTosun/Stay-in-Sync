@@ -38,7 +38,7 @@ export class EditRuleComponent implements OnInit, AfterViewInit, OnDestroy {
   //#region Fields
   ruleName = 'New Rule';
   ruleId: number | undefined = undefined;
-  ruleDescription: string = '';
+  ruleDescription = '';
 
   // Palette Attributes
   showMainNodePalette = false;
@@ -48,10 +48,10 @@ export class EditRuleComponent implements OnInit, AfterViewInit, OnDestroy {
 
   // Node Creation
   pendingNodePos: { x: number, y: number } | null = null;
-  showProviderModal: boolean = false;
-  showConstantModal: boolean = false;
-  showSchemaModal: boolean = false;
-  showConfigModal: boolean = false;
+  showProviderModal = false;
+  showConstantModal = false;
+  showSchemaModal = false;
+  showConfigModal = false;
 
   // Error Panel Attribute
   //* Needed as an intermediate attribute

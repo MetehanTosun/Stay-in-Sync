@@ -17,6 +17,4 @@ export interface LogicOperatorMetadata {
 /**
  * Interface for operators grouped by their category
  */
-export interface GroupedOperators {
-  [category: string]: LogicOperatorMetadata[];
-}
+export type GroupedOperators = Record<string, LogicOperatorMetadata[]>;

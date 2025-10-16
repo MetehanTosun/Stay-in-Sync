@@ -32,7 +32,7 @@ export class VflowCanvasComponent implements OnInit {
   //#region Fields
   nodes: CustomVFlowNode[] = [];
   edges: Edge[] = [];
-  hasUnsavedChanges: boolean = false;
+  hasUnsavedChanges = false;
   ruleId: number | undefined = undefined;
   lastNodeId = 0;
 
@@ -57,7 +57,7 @@ export class VflowCanvasComponent implements OnInit {
   editNodeValueModalOpen = false;
   editSchemaModalOpen = false;
   nodeBeingEdited: CustomVFlowNode | null = null;
-  showRemoveEdgesModal: boolean = false;
+  showRemoveEdgesModal = false;
 
   // Autocomplete Feature
   suggestions: LogicOperatorMetadata[] = []
@@ -764,7 +764,7 @@ export class VflowCanvasComponent implements OnInit {
       return false;
     }
 
-    let sourceType = (sourceNode?.data as { outputType: string }).outputType ?? 'ANY';
+    const sourceType = (sourceNode?.data as { outputType: string }).outputType ?? 'ANY';
 
     const targetType = getExpectedInputType(targetNode!, targetHandle);
 

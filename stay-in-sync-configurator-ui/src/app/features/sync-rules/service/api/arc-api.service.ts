@@ -28,7 +28,7 @@ export class ArcAPIService {
   /**
    * Retrieves JSON paths generated from configuration resources.
    */
-  getJsonPaths(): Observable<{ [key: string]: string }> {
+  getJsonPaths(): Observable<Record<string, string>> {
     return this.getConfigurationResources().pipe(
       map(configResources => this.generateJsonPaths(configResources))
     );
@@ -42,8 +42,8 @@ export class ArcAPIService {
    * @param configResources An array of ConfigurationResource objects containing metadata for generating JSON paths
    * @returns A mapping of JSON paths with their respective data type
    */
-  private generateJsonPaths(configResources: ConfigurationResource[]): { [key: string]: string } {
-    const jsonPaths: { [key: string]: string } = {};
+  private generateJsonPaths(configResources: ConfigurationResource[]): Record<string, string> {
+    const jsonPaths: Record<string, string> = {};
 
     configResources.forEach(resource => {
       const pathPrefix = `${resource.sourceSystemName}.${resource.alias}`;
@@ -82,12 +82,12 @@ export class ArcAPIService {
    * @returns An object containing mappings of interfaces to their properties and property types.
    */
   private parseInterfaces(responseDts: string): {
-    interfaces: { [key: string]: string[] };
-    propertyTypes: { [key: string]: { [key: string]: string } };
+    interfaces: Record<string, string[]>;
+    propertyTypes: Record<string, Record<string, string>>;
   } {
     const INTERFACE_REGEX = /interface\s+(\w+)\s*\{([^{}]*)\}/g;
-    const interfaces: { [key: string]: string[] } = {};
-    const propertyTypes: { [key: string]: { [key: string]: string } } = {};
+    const interfaces: Record<string, string[]> = {};
+    const propertyTypes: Record<string, Record<string, string>> = {};
 
     let interfaceMatch;
 
@@ -112,7 +112,7 @@ export class ArcAPIService {
    */
   private extractProperties(
     interfaceProperties: string,
-    propertyTypes: { [key: string]: string }
+    propertyTypes: Record<string, string>
   ): string[] {
     return interfaceProperties
       .split(/[;\n]/) // Split into individual properties
@@ -132,7 +132,7 @@ export class ArcAPIService {
    */
   private parseProperty(
     prop: string,
-    propertyTypes: { [key: string]: string }
+    propertyTypes: Record<string, string>
   ): string {
     const colonIndex = prop.indexOf(':'); // Separate property from type
 

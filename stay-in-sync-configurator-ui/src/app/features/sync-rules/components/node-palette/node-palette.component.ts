@@ -64,9 +64,9 @@ export class NodePaletteComponent implements OnInit {
         position: 'fixed',
         left: `${this.position.x}px`,
         top: `${this.position.y}px`
-      } as { [key: string]: string };
+      } as Record<string, string>;
     }
-    return {} as { [key: string]: string };
+    return {} as Record<string, string>;
   }
 
   //#endregion
