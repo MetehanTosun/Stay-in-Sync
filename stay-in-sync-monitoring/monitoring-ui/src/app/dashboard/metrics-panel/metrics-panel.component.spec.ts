@@ -60,7 +60,7 @@ describe('MetricsPanelComponent', () => {
 
     expect(component.isPollingNode).toBeTrue();
     expect(component.pollingNodeName).toBe('NODE1');
-    expect(component.grafanaUrl).toContain('var-NODE1=1');
+    expect(component.grafanaUrl).toContain('var-WorkerpodName=NODE1');
   }));
 
   // --- ✅ 4. should load transformations and build url for normal node

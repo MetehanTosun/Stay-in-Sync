@@ -6,11 +6,15 @@ import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
+import org.eclipse.microprofile.openapi.annotations.Operation;
+import org.eclipse.microprofile.openapi.annotations.media.Content;
+import org.eclipse.microprofile.openapi.annotations.media.ExampleObject;
+import org.eclipse.microprofile.openapi.annotations.responses.APIResponse;
 
+import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
-import java.net.URI;
 
 @ApplicationScoped
 @Path("/api/replay")
@@ -25,6 +29,29 @@ public class ReplayResource {
 
     @POST
     @Path("/execute")
+    @Operation(summary = "Führt einen Replay-Vorgang im Core Management Service aus")
+    @APIResponse(
+            responseCode = "200",
+            description = "Replay erfolgreich ausgeführt",
+            content = @Content(
+                    mediaType = "application/json",
+                    examples = @ExampleObject(
+                            name = "success-response",
+                            value = "{\"status\":\"success\",\"message\":\"Replay executed successfully\"}"
+                    )
+            )
+    )
+    @APIResponse(
+            responseCode = "500",
+            description = "Fehler beim Proxy-Aufruf",
+            content = @Content(
+                    mediaType = "application/json",
+                    examples = @ExampleObject(
+                            name = "error-response",
+                            value = "{\"error\":\"Proxy call failed\"}"
+                    )
+            )
+    )
     public Response executeReplay(String dto) {
         try {
             HttpRequest request = HttpRequest.newBuilder()
@@ -48,6 +75,29 @@ public class ReplayResource {
 
     @GET
     @Path("/{transformationId}")
+    @Operation(summary = "Ruft das Replay-Skript für eine gegebene Transformations-ID aus dem Core Management Service ab")
+    @APIResponse(
+            responseCode = "200",
+            description = "Skript erfolgreich abgerufen",
+            content = @Content(
+                    mediaType = "application/json",
+                    examples = @ExampleObject(
+                            name = "script-response",
+                            value = "{\"id\":\"1234\",\"script\":\"print('Hello World')\"}"
+                    )
+            )
+    )
+    @APIResponse(
+            responseCode = "500",
+            description = "Fehler beim Proxy-Aufruf",
+            content = @Content(
+                    mediaType = "application/json",
+                    examples = @ExampleObject(
+                            name = "error-response",
+                            value = "{\"error\":\"Proxy call failed\"}"
+                    )
+            )
+    )
     public Response getScriptByTransformationId(@PathParam("transformationId") String transformationId) {
         try {
             String url = coreManagementUrl + "/api/config/transformation/" + transformationId + "/script";
@@ -69,4 +119,3 @@ public class ReplayResource {
         }
     }
 }
-
