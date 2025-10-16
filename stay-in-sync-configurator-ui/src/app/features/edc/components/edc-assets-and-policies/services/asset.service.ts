@@ -73,7 +73,7 @@ export class AssetService {
   createAsset(edcId: string, asset: Asset): Observable<Asset> {
     if (this.mockMode) {
       console.warn('Mock Mode: Creating asset.');
-      // Create a clean version of the asset for the mock DB, removing frontend-only helper properties.
+
       const { assetId, targetEDCId, ...rest } = asset;
       const cleanAsset = { ...rest, '@id': asset.assetId };
 
@@ -94,7 +94,7 @@ export class AssetService {
       console.warn(`Mock Mode: Updating asset ${assetId}.`);
       const index = (MOCK_ODRL_ASSETS[edcId] || []).findIndex(a => a['@id'] === assetId);
       if (index > -1) {
-        // Create a clean version for the mock DB, just like in createAsset
+
         const { assetId, targetEDCId, ...rest } = asset;
         const cleanAsset = { ...rest, '@id': asset.assetId };
         (MOCK_ODRL_ASSETS[edcId] || [])[index] = cleanAsset;
@@ -165,8 +165,7 @@ export class AssetService {
   }
 
   getEndpointSuggestions(query: string): Observable<string[]> {
-    // This method is less relevant now but kept for potential future use.
-    // In a real scenario, this would call a backend endpoint.
+
     if (this.mockMode) {
       const suggestions = ['https://example.com/api/v1', 'https://example.com/api/v2'];
       return of(suggestions.filter(s => s.includes(query)));
@@ -190,12 +189,12 @@ export class AssetService {
       type: dataAddress?.type || 'HttpData',
       url: dataAddress?.baseUrl || dataAddress?.base_url || '',
       targetEDCId: raw?.targetEDCId || raw?.target_edc_id || '',
-      // IMPORTANT: Pass the original dataAddress through, so the "Details" view shows the raw truth,
-      // including the "header:..." prefixed properties.
+
+
       dataAddress: dataAddress,
       queryParams: dataAddress?.queryParams, // Keep for easy access in details view
-      headers: {}, // This is now redundant as headers are in dataAddress, but keep for model compatibility
-      // Preserve the full properties object by mapping its keys to the EDCProperty format
+      headers: {},
+
       properties: Object.keys(props).map(key => ({
         id: key,
         description: props[key]
