@@ -21,7 +21,6 @@ describe('ErrorSnapshotPanelComponent', () => {
   let router: jasmine.SpyObj<Router>;
 
   beforeEach(waitForAsync(() => {
-    // Mocks
     const transformationMock = jasmine.createSpyObj('TransformationService', ['getTransformations']);
     const snapshotMock = jasmine.createSpyObj('SnapshotService', ['getLastFiveSnapshots']);
     const routerMock = jasmine.createSpyObj('Router', ['navigate']);
@@ -51,7 +50,6 @@ describe('ErrorSnapshotPanelComponent', () => {
     snapshotService = TestBed.inject(SnapshotService) as jasmine.SpyObj<SnapshotService>;
     router = TestBed.inject(Router) as jasmine.SpyObj<Router>;
 
-    // SSE Mock
     class MockEventSource {
       addEventListener = jasmine.createSpy();
       close = jasmine.createSpy();

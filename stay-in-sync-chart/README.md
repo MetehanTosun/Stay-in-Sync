@@ -76,6 +76,7 @@ And add following to your hosts file:
 <your minikube ip> smtp.tx.test
 <your minikube ip> stay-in-sync-management.test
 <your minikube ip> stay-in-sync-monitoring.test
+<your minikube ip> grafana.stayinsync.local
 ```
 
 If you are having issues with resolving ingresses after successfully deploying the chart, please try following the
