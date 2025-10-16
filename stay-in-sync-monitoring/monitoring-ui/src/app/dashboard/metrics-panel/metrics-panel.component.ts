@@ -70,10 +70,23 @@ ngOnInit(){
 
     let urlParams = `orgId=${orgId}&from=${from}&to=${to}&refresh=${refresh}&theme=light`;
 
-    if (this.isPollingNode) {
-      urlParams += `&var-${this.pollingNodeName}=1`;
+
+    if (!this.selectedNodeId) {
+      urlParams += `&var-WorkerpodName=$__all&var-transformationId=$__all`;
+
+
+    } else if (this.isPollingNode) {
+      urlParams += `&var-WorkerpodName=${this.pollingNodeName}&var-transformationId=$__all`;
+
     } else if (this.transformationIds.length > 0) {
-      urlParams += '&' + this.transformationIds.map(id => `var-transformationId=${id}`).join('&');
+      const transformationVars = this.transformationIds
+        .map(id => `var-transformationId=${id}`)
+        .join('&');
+      urlParams += `&var-WorkerpodName=$__all&${transformationVars}`;
+
+      // 🔹 Fallback: Keine Transformationsdaten gefunden
+    } else {
+      urlParams += `&var-WorkerpodName=$__all&var-transformationId=$__all`;
     }
 
     this.grafanaUrl = `${this.grafanaBaseUrl}?${urlParams}`;
