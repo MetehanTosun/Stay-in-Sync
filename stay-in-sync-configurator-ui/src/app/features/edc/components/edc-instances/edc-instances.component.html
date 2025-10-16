@@ -10,7 +10,7 @@
     selectionMode="single"
     (onRowSelect)="onInstanceRowSelect($event)"
     [paginator]="true"
-    [globalFilterFields]="['name', 'url', 'protocolVersion', 'bpn', 'description']"
+    [globalFilterFields]="['name', 'controlPlaneManagementUrl', 'protocolVersion', 'bpn', 'description']"
     [tableStyle]="{ 'min-width': '75rem' }"
     styleClass="p-datatable-striped p-datatable-gridlines p-datatable-clickable"
     responsiveLayout="scroll"
@@ -48,7 +48,7 @@
     <ng-template pTemplate="header">
       <tr>
         <th style="width: 25%" pSortableColumn="name">Name <p-sortIcon field="name"></p-sortIcon></th>
-        <th style="width: 40%" pSortableColumn="url">URL <p-sortIcon field="url"></p-sortIcon></th>
+        <th style="width: 40%" pSortableColumn="controlPlaneManagementUrl">URL <p-sortIcon field="controlPlaneManagementUrl"></p-sortIcon></th>
         <th style="width: 15%" pSortableColumn="protocolVersion">Protocol Ver.<p-sortIcon field="protocolVersion"></p-sortIcon></th>
         <th style="width: 15%" pSortableColumn="bpn">BPN <p-sortIcon field="bpn"></p-sortIcon></th>
         <th style="width: 5%">Actions</th>
@@ -58,7 +58,7 @@
           <p-columnFilter type="text" field="name" placeholder="Search by Name"></p-columnFilter>
         </th>
         <th>
-          <p-columnFilter type="text" field="url" placeholder="Search by URL"></p-columnFilter>
+          <p-columnFilter type="text" field="controlPlaneManagementUrl" placeholder="Search by URL"></p-columnFilter>
         </th>
         <th>
           <p-columnFilter type="text" field="protocolVersion" placeholder="Search by Protocol"></p-columnFilter>
@@ -73,7 +73,7 @@
     <ng-template pTemplate="body" let-instance let-ri="rowIndex">
       <tr [pSelectableRow]="instance" [pSelectableRowIndex]="ri" [pTooltip]="'Click to view assets and policies for this instance. ' + (instance.description || '')" tooltipPosition="top">
         <td>{{ instance.name }}</td>
-        <td>{{ instance.url }}</td>
+        <td>{{ instance.controlPlaneManagementUrl }}</td>
         <td><p-tag [value]="instance.protocolVersion"></p-tag></td>
         <td>{{ instance.bpn }}</td>
         <td>
@@ -122,9 +122,9 @@
         </div>
       </div>
       <div class="field grid align-items-center mb-3">
-        <label for="instanceUrl" class="col-4">Management URL</label>
+        <label for="instanceControlPlaneManagementUrl" class="col-4">Management URL</label>
         <div class="col-8">
-          <input id="instanceUrl" type="text" pInputText [(ngModel)]="newInstance.url" required class="w-full" placeholder="e.g., http://localhost:19193" />
+          <input id="instanceControlPlaneManagementUrl" type="text" pInputText [(ngModel)]="newInstance.controlPlaneManagementUrl" required class="w-full" placeholder="e.g., http://localhost:19193" />
         </div>
       </div>
       <div class="field grid align-items-center mb-3">
@@ -189,9 +189,9 @@
           </div>
         </div>
         <div class="field grid align-items-center mb-3">
-          <label for="editUrl" class="col-4">Management URL</label>
+          <label for="editControlPlaneManagementUrl" class="col-4">Management URL</label>
           <div class="col-8">
-            <input id="editUrl" type="text" pInputText [(ngModel)]="instanceToEdit.url" required class="w-full" />
+            <input id="editControlPlaneManagementUrl" type="text" pInputText [(ngModel)]="instanceToEdit.controlPlaneManagementUrl" required class="w-full" />
           </div>
         </div>
         <div class="field grid align-items-center mb-3">

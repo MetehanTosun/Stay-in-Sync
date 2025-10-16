@@ -8,7 +8,7 @@ export let MOCK_EDC_INSTANCES: EdcInstance[] = [
   {
     id: 'edc-instance-1',
     name: 'Development Connector (Mock)',
-    url: 'http://localhost:19193/management',
+    controlPlaneManagementUrl: 'http://localhost:19193/management',
     protocolVersion: '1.0.0',
     description: 'Local EDC for development purposes.',
     bpn: 'BPNL000000000DEV',
@@ -20,7 +20,7 @@ export let MOCK_EDC_INSTANCES: EdcInstance[] = [
   {
     id: 'edc-instance-2',
     name: 'Staging Connector (Mock)',
-    url: 'https://edc.staging.example.com/management',
+    controlPlaneManagementUrl: 'https://edc.staging.example.com/management',
     protocolVersion: '1.0.0',
     description: 'Staging environment connector.',
     bpn: 'BPNL000000000STG',

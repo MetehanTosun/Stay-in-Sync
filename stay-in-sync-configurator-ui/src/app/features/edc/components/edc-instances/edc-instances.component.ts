@@ -89,7 +89,7 @@ export class EdcInstancesComponent implements OnInit {
     return {
       id: '',
       name: '',
-      url: '',
+      controlPlaneManagementUrl: '',
       protocolVersion: '',
       description: '',
       bpn: '',
@@ -121,7 +121,7 @@ export class EdcInstancesComponent implements OnInit {
   }
 
 saveNewInstance(): void {
-  if (this.newInstance.name && this.newInstance.url && this.newInstance.bpn) {
+  if (this.newInstance.name && this.newInstance.controlPlaneManagementUrl && this.newInstance.bpn) {
     this.edcInstanceService.createEdcInstance(this.newInstance).subscribe({
       next: (created) => {
         this.edcInstances = [...this.edcInstances, created];
@@ -134,7 +134,7 @@ saveNewInstance(): void {
       }
     });
   } else {
-    this.messageService.add({ severity: 'warn', summary: 'Validation Error', detail: 'Name, URL, and BPN are required.' });
+    this.messageService.add({ severity: 'warn', summary: 'Validation Error', detail: 'Name, Management URL, and BPN are required.' });
   }
 }
 
@@ -150,7 +150,7 @@ saveNewInstance(): void {
   }
 
   saveEditedInstance(): void {
-  if (this.instanceToEdit && this.instanceToEdit.name && this.instanceToEdit.url && this.instanceToEdit.bpn) {
+  if (this.instanceToEdit && this.instanceToEdit.name && this.instanceToEdit.controlPlaneManagementUrl && this.instanceToEdit.bpn) {
     this.edcInstanceService.updateEdcInstance(this.instanceToEdit.id, this.instanceToEdit).subscribe({
       next: (updated) => {
         this.edcInstances = this.edcInstances.map(instance =>
@@ -165,7 +165,7 @@ saveNewInstance(): void {
       }
     });
   } else {
-    this.messageService.add({ severity: 'warn', summary: 'Validation Error', detail: 'Name, URL, and BPN are required.' });
+    this.messageService.add({ severity: 'warn', summary: 'Validation Error', detail: 'Name, Management URL, and BPN are required.' });
   }
 }
 
