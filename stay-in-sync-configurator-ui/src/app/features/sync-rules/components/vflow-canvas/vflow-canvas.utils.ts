@@ -203,7 +203,7 @@ export function createNode(nodeType: NodeType, id: string, point: { x: number, y
  * Returns the property whose value is read from the given jsonpath.
  * Reutrns 'unknown' if unable to extract property.
  */
-function getSourceProperty(jsonPath: string): string {
+export function getSourceProperty(jsonPath: string): string {
   const parts = jsonPath.split('.');
   return parts[parts.length - 1] || 'unknown';
 }

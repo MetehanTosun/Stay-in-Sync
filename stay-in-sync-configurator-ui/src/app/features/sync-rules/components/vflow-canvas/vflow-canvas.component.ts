@@ -3,7 +3,7 @@ import { ActivatedRoute } from '@angular/router';
 import { Connection, Edge, EdgeChange, NodeChange, Vflow, VflowComponent } from 'ngx-vflow';
 import { GraphAPIService, OperatorNodesApiService } from '../../service';
 import { ConfigNodeData, ConstantNodeData, CustomVFlowNode, LogicNodeData, LogicOperatorMetadata, NodeMenuItem, NodeType, ProviderNodeData, SchemaNodeData, VFlowGraphDTO } from '../../models';
-import { getDefaultNodeSize, inferTypeFromValue, getExpectedInputType, getNodeType, calculateVFlowCoordinates, hasProp, hasPropOfType, getPropIfExists, buildNodeData, calculateNodeCenter, createNode } from './vflow-canvas.utils';
+import { getDefaultNodeSize, inferTypeFromValue, getExpectedInputType, getNodeType, calculateVFlowCoordinates, hasProp, hasPropOfType, getPropIfExists, buildNodeData, calculateNodeCenter, createNode, getSourceProperty } from './vflow-canvas.utils';
 import { FinalNodeComponent, SetConstantValueModalComponent, SetJsonPathModalComponent, SetSchemaModalComponent, SetNodeNameModalComponent, ConfigNodeComponent } from '..';
 import { CommonModule } from '@angular/common';
 import { ValidationError } from '../../models';
@@ -446,10 +446,10 @@ export class VflowCanvasComponent implements OnInit {
    */
   onNodeNameSaved(newName: string) {
     if (this.nodeBeingEdited) {
-      const nodeData = this.nodeBeingEdited.data;
+      const nodeData = this.nodeBeingEdited.data as LogicNodeData;
 
       if (nodeData.nodeType === NodeType.LOGIC && newName.trim().length === 0) {
-        nodeData.name = (nodeData as LogicNodeData).operatorType
+        nodeData.name = nodeData.operatorType
       }
       else { nodeData.name = newName; }
 
@@ -529,13 +529,17 @@ export class VflowCanvasComponent implements OnInit {
   /**
    * Updates the the currently selected node's JSON path with the new value
    *
-   * @param nodeData - Object containing jsonPath and outputType
+   * @param pathData - Object containing jsonPath and outputType
    */
-  onJsonPathSaved(nodeData: { jsonPath: string, outputType: string }) {
+  onJsonPathSaved(pathData: { jsonPath: string, outputType: string }) {
     if (this.nodeBeingEdited) {
-      const oldNodeData = this.nodeBeingEdited.data as ProviderNodeData;
-      oldNodeData.jsonPath = nodeData.jsonPath;
-      oldNodeData.outputType = nodeData.outputType;
+      const nodeData = this.nodeBeingEdited.data as ProviderNodeData;
+
+      if (nodeData.name === getSourceProperty(nodeData.jsonPath))
+        nodeData.name = getSourceProperty(pathData.jsonPath);
+
+      nodeData.jsonPath = pathData.jsonPath;
+      nodeData.outputType = pathData.outputType;
 
       this.reinsertNode(this.nodeBeingEdited)
     }
