@@ -125,13 +125,13 @@ export class NodePaletteComponent implements OnInit {
         this.operatorsGrouped = operatorsGrouped;
         this.logicGroupKeys = Object.keys(operatorsGrouped);
       },
-      error: (err) => {
+      error: (err: unknown) => {
         this.messageService.add({
           severity: 'error',
-          summary: 'Loading operator nodes',
-          detail: 'An error occurred while loading the logic operator nodes.'
+          summary: 'Unable to Load Operator Nodes',
+          detail: (err as any)?.message || 'An unexpected error occurred. Please try again later.'
         });
-        console.error(err);
+        console.error('Failed to load operator nodes', err);
       },
     });
   }

@@ -63,7 +63,7 @@ export class SetConstantValueModalComponent implements OnChanges {
     if (!this.constantValue.trim()) {
       this.messageService.add({
         severity: 'warn',
-        summary: 'No constant value',
+        summary: 'Invalid Constant Value',
         detail: "Please enter a constant value"
       })
       return;

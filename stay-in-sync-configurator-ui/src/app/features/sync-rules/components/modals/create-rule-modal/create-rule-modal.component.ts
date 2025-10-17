@@ -87,8 +87,8 @@ export class CreateRuleModalComponent {
   private nameIsEmtpy(): boolean {
     if (!this.newRule.name?.trim()) {
       this.messageService.add({
-        severity: 'error',
-        summary: 'Invalid Name Input',
+        severity: 'warn',
+        summary: 'Invalid Rule Name',
         detail: `Please enter a rule name`
       });
       return true

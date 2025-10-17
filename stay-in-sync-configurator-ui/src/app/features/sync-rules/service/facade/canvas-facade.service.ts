@@ -45,10 +45,10 @@ export class CanvasFacadeService {
     if (!this.canvas) {
       this.messageService.add({
         severity: 'error',
-        summary: 'Unable to access canvas',
-        detail: 'Cannot add node: Canvas is not available',
+        summary: 'Unable to Create Node',
+        detail: 'Canvas is not available',
       });
-      return null;
+      return;
     }
     return this.canvas.addNode(nodeType, pos, providerData, constantValue, operator);
   }
@@ -60,8 +60,8 @@ export class CanvasFacadeService {
     if (!this.canvas) {
       this.messageService.add({
         severity: 'error',
-        summary: 'Unable to access canvas',
-        detail: 'Cannot center on node: Canvas is not available',
+        summary: 'Unable to Focus Node',
+        detail: 'Canvas is not available',
       });
       return;
     }
@@ -77,8 +77,8 @@ export class CanvasFacadeService {
     if (!this.canvas) {
       this.messageService.add({
         severity: 'error',
-        summary: 'Unable to access canvas',
-        detail: 'Cannot save graph: Canvas is not available',
+        summary: 'Unable to Save Graph',
+        detail: 'Canvas is not available',
       });
       return;
     }

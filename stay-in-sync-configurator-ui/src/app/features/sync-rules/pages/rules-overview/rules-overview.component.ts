@@ -86,13 +86,13 @@ export class RulesOverviewComponent implements OnInit {
   loadRules() {
     this.rulesApi.getRules().subscribe({
       next: (rules: TransformationRule[]) => (this.rules = rules),
-      error: (err) => {
+      error: (err: unknown) => {
         this.messageService.add({
           severity: 'error',
-          summary: 'Loading Rules',
-          detail: 'An error accurred while loading the rules. \n Please check the logs or console.'
+          summary: 'Error while Loading Rules',
+          detail: (err as any)?.message || 'An unexpected error occurred. Please try again later.'
         });
-        console.error(err);
+        console.error('Failed to load rules', err);
       },
       complete: () => (this.isLoading = false)
     });
@@ -109,13 +109,13 @@ export class RulesOverviewComponent implements OnInit {
         }
         this.editRule(res.body.id!);
       },
-      error: (err) => {
+      error: (err: unknown) => {
         this.messageService.add({
           severity: 'error',
-          summary: 'Creating Rule',
-          detail: 'An error accurred while creating a rule. \n Please check the logs or console.'
+          summary: 'Error while Creating Rule',
+          detail: (err as any)?.message || 'An unexpected error occurred. Please try again later.'
         });
-        console.error(err);
+        console.error('Failed to create rule', err);
       }
     });
   }
@@ -128,18 +128,18 @@ export class RulesOverviewComponent implements OnInit {
       next: () => {
         this.messageService.add({
           severity: 'success',
-          summary: 'Deleting Rule',
-          detail: 'Rule was successfully deleted'
+          summary: 'Rule deleted',
+          detail: 'The rule was successfully deleted'
         });
         this.loadRules();
       },
-      error: (err) => {
+      error: (err: unknown) => {
         this.messageService.add({
           severity: 'error',
-          summary: 'Deleting Rule',
-          detail: 'An error accurred while deleting a rule. \n Please check the logs or console.'
+          summary: 'Unable to Delete Rule',
+          detail: (err as any)?.message || 'An unexpected error occurred. Please try again later.'
         });
-        console.error(err);
+        console.error('Failed to delete rule', err);
       }
     });
   }

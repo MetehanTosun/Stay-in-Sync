@@ -131,8 +131,8 @@ export class SetSchemaModalComponent implements OnChanges, OnDestroy {
       console.warn('Monaco editor init failed', e);
       this.messageService.add({
         severity: 'error',
-        summary: 'Unable to load editor',
-        detail: 'Unable to load the editor'
+        summary: 'Unable to Load Editor',
+        detail: 'Editor initialization failed.'
       });
     }
   }
@@ -163,7 +163,11 @@ export class SetSchemaModalComponent implements OnChanges, OnDestroy {
 
     // Limit file size to configured max
     if (file.size > this.MAX_FILE_SIZE) {
-      this.messageService.add({ severity: 'error', summary: 'File too large', detail: 'Please upload a file smaller than 1 MB.' });
+      this.messageService.add({
+        severity: 'error',
+        summary: 'File too large',
+        detail: `Please upload a file under ${this.MAX_FILE_SIZE / 1024} KB.`
+      });
       return;
     }
 
@@ -185,7 +189,7 @@ export class SetSchemaModalComponent implements OnChanges, OnDestroy {
           if (topType !== 'object' && topType !== 'boolean') {
             const msg = `Top-level JSON Schema must be an object or boolean (true/false); found ${topType}.`;
             this.schemaValidationErrors = [msg];
-            this.messageService.add({ severity: 'error', summary: 'Schema invalid', detail: msg });
+            this.messageService.add({ severity: 'error', summary: 'Invalid Schema', detail: msg });
           } else {
             this.schemaValidationErrors = [];
           }
@@ -196,7 +200,7 @@ export class SetSchemaModalComponent implements OnChanges, OnDestroy {
       }
     };
     reader.onerror = () => {
-      this.messageService.add({ severity: 'error', summary: 'File read error', detail: 'Unable to read the selected file.' });
+      this.messageService.add({ severity: 'error', summary: 'Unable to Read File', detail: 'Please check the selected file again.' });
     };
     reader.readAsText(file, 'utf-8');
   }
@@ -232,7 +236,7 @@ export class SetSchemaModalComponent implements OnChanges, OnDestroy {
    */
   submit(): void {
     if (!this.schemaText.trim()) {
-      this.messageService.add({ severity: 'warn', summary: 'No schema', detail: 'Please enter a JSON Schema' });
+      this.messageService.add({ severity: 'warn', summary: 'Invalid Schema', detail: 'Please enter a JSON Schema' });
       return;
     }
 
@@ -247,7 +251,7 @@ export class SetSchemaModalComponent implements OnChanges, OnDestroy {
       if (topType !== 'object' && topType !== 'boolean') {
         const msg = `Top-level JSON Schema must be an object or boolean (true/false); found ${topType}.`;
         this.schemaValidationErrors = [msg];
-        this.messageService.add({ severity: 'error', summary: 'Schema invalid', detail: msg });
+        this.messageService.add({ severity: 'error', summary: 'Invalid Schema', detail: msg });
         return;
       }
 
@@ -260,7 +264,7 @@ export class SetSchemaModalComponent implements OnChanges, OnDestroy {
       this.messageService.add({
         severity: 'error',
         summary: 'Invalid JSON',
-        detail: `Schema is not valid: ${errMsg}`
+        detail: `Schema is invalid: ${errMsg}`
       });
       return;
     }
@@ -310,8 +314,8 @@ export class SetSchemaModalComponent implements OnChanges, OnDestroy {
     if (!ok) {
       this.messageService.add({
         severity: 'error',
-        summary: 'Unable to load schema',
-        detail: 'Unable to load schema into the editor'
+        summary: 'Unable to Load Schema',
+        detail: 'Failed loading schema into the editor'
       });
     }
   }

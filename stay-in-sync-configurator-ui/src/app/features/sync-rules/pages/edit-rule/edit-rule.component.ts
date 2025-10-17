@@ -306,7 +306,7 @@ export class EditRuleComponent implements OnInit, AfterViewInit, OnDestroy {
    */
   onRuleConfigurationSaved(ruleConfiguration: { name: string, description: string }): void {
     if (!this.ruleId) {
-      this.messageService.add({ severity: 'error', summary: 'Update failed', detail: 'Rule id missing' });
+      this.messageService.add({ severity: 'error', summary: 'Update failed', detail: 'Rule ID is missing' });
       return;
     }
 
@@ -314,16 +314,20 @@ export class EditRuleComponent implements OnInit, AfterViewInit, OnDestroy {
       next: (updatedRule) => {
         this.messageService.add({
           severity: 'success',
-          summary: 'Updated Rule Configurations',
-          detail: 'Rule was successfully updated'
+          summary: 'Configuration Updated',
+          detail: 'The rule configuration was successfully updated'
         });
 
         this.ruleName = updatedRule.name;
         this.ruleDescription = updatedRule.description || '';
       },
-      error: (error) => {
-        console.error('Failed to update rule:', error);
-        this.messageService.add({ severity: 'error', summary: 'Update failed', detail: 'Could not update rule' });
+      error: (err: unknown) => {
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Update failed',
+          detail: (err as any)?.message || 'An unexpected error occurred. Please try again later.'
+        });
+        console.error('Failed to update rule:', err);
       }
     });
     this.onModalsClosed();

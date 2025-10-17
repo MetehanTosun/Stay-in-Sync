@@ -95,7 +95,7 @@ export class VflowCanvasComponent implements OnInit {
     } else {
       this.messageService.add({
         severity: 'error',
-        summary: 'No rule id',
+        summary: 'No Rule ID',
         detail: "Unable to load graph - cannot read rule id"
       })
     }
@@ -284,13 +284,13 @@ export class VflowCanvasComponent implements OnInit {
         const finalNodeIndex = this.nodes.findIndex(n => n.type === FinalNodeComponent)
         this.centerOnNode(finalNodeIndex);
       },
-      error: (err) => {
+      error: (err: unknown) => {
         this.messageService.add({
           severity: 'error',
-          summary: 'Loading the graph',
-          detail: 'An error accurred while loading the graph. \n Please check the logs or the console.'
+          summary: 'Unable to Load Graph',
+          detail: (err as any)?.message || 'An unexpected error occurred. Please try again later.'
         });
-        console.error(err);
+        console.error('Failed to load graph', err);
       }
     })
   }
@@ -311,14 +311,20 @@ export class VflowCanvasComponent implements OnInit {
       next: (res) => {
         this.hasUnsavedChanges = false;
         this.graphErrors.emit(res.errors ? res.errors : []);
+
+        this.messageService.add({
+          severity: 'success',
+          summary: 'Graph Saved',
+          detail: 'The graph has been successfully saved.'
+        });
       },
-      error: (err) => {
+      error: (err: unknown) => {
         this.messageService.add({
           severity: 'error',
-          summary: 'Saving the graph',
-          detail: 'An error accurred while saving the graph. \n Please check the logs or the console.'
+          summary: 'Unable to Save Graph',
+          detail: (err as any)?.message || 'An unexpected error occurred. Please try again later.'
         });
-        console.error('Error response body:', err.error);
+        console.error('Failed to save graph', err);
       }
     });
   }
@@ -668,13 +674,13 @@ export class VflowCanvasComponent implements OnInit {
         this.suggestions = operators.filter(o => o.inputTypes.includes(outputType));
         this.showSuggestions = true;
       },
-      error: (err) => {
+      error: (err: unknown) => {
         this.messageService.add({
           severity: 'error',
-          summary: 'Loading the logic operators',
-          detail: 'An error accurred while accessing the the logic operators. \n Please check the logs or the console.'
+          summary: 'Unable to Load Logic Operators',
+          detail: (err as any)?.message || 'An unexpected error occurred. Please try again later.'
         });
-        console.error(err);
+        console.error('Failed to load logic operators', err);
       }
     })
   }

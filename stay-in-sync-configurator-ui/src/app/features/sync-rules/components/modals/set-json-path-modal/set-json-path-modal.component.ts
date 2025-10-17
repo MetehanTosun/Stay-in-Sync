@@ -95,7 +95,7 @@ export class SetJsonPathModalComponent implements OnChanges {
     if (!this.jsonPath.trim()) {
       this.messageService.add({
         severity: 'warn',
-        summary: 'No JSON Path',
+        summary: 'Invalid JSON Path',
         detail: "Please enter a JSON Path"
       })
       return;
@@ -104,8 +104,8 @@ export class SetJsonPathModalComponent implements OnChanges {
     if (!this.isValidArrayPath(this.jsonPath)) {
       this.messageService.add({
         severity: 'warn',
-        summary: 'No valid array index',
-        detail: "Please replace [*] with a specific array index (e.g. [0], [1], ...)"
+        summary: 'Invalid array index',
+        detail: "Replace [*] with a valid array element (e.g. [0], [1], ...)"
       })
       return;
     }
