@@ -232,13 +232,6 @@
         <small *ngIf="aasTestError" style="color:#d32f2f;">{{ aasTestError }}</small>
       </div>
     </p-tabPanel>
-    <!-- Tab for performing AAS-related actions such as refreshing the snapshot -->
-    <p-tabPanel *ngIf="isAasSelected()" header="AAS Actions">
-      <div class="p-d-flex p-ai-center" style="gap: .75rem;">
-        <button pButton type="button" label="Refresh Snapshot" (click)="discoverAasSnapshot()"
-                [disabled]="aasTreeLoading"></button>
-      </div>
-    </p-tabPanel>
   </p-tabView>
 
   <!-- Dialog for editing a property value within an AAS element -->
