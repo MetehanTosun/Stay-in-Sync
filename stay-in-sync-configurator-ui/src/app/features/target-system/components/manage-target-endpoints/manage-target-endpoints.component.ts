@@ -595,4 +595,12 @@ export class ManageTargetEndpointsComponent implements OnInit {
     return errors.length > 0 ? errors.join(', ') : '';
   }
 
+  /**
+   * Builds tooltip text for the Save button (alias for getAddEndpointTooltip)
+   * @returns Combined tooltip message or empty string if form is valid.
+   */
+  getSaveTooltip(): string {
+    return this.getAddEndpointTooltip();
+  }
+
 }
