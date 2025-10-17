@@ -1,6 +1,6 @@
 import { CommonModule } from '@angular/common';
 import { Component, OnInit } from '@angular/core';
-import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
+import { ReactiveFormsModule, FormBuilder, FormGroup, Validators, FormsModule } from '@angular/forms';
 import { CardModule } from 'primeng/card';
 import { TableModule } from 'primeng/table';
 import { ButtonModule } from 'primeng/button';
@@ -18,6 +18,7 @@ import { ManageTargetEndpointsComponent } from '../manage-target-endpoints/manag
 import { ManageApiHeadersComponent } from '../../../source-system/components/manage-api-headers/manage-api-headers.component';
 import { AasManagementComponent } from '../aas-management/aas-management.component';
 import { ToastModule } from 'primeng/toast';
+import { Inplace } from 'primeng/inplace';
 
 /**
  * Component responsible for displaying, creating, editing, and managing Target Systems.
@@ -30,6 +31,7 @@ import { ToastModule } from 'primeng/toast';
   imports: [
     CommonModule,
     ReactiveFormsModule,
+    FormsModule,
     CardModule,
     TableModule,
     ButtonModule,
@@ -43,7 +45,8 @@ import { ToastModule } from 'primeng/toast';
     TextareaModule,
     ConfirmationDialogComponent,
     AasManagementComponent,
-    ToastModule
+    ToastModule,
+    Inplace
   ],
   styleUrls: ['./target-system-base.component.css'],
   providers: [MessageService]
@@ -311,5 +314,44 @@ export class TargetSystemBaseComponent implements OnInit {
       detail: 'Header has been successfully deleted.',
       life: 3000
     });
+  }
+
+  // Inline editing handlers
+  private originalSystem: TargetSystemDTO | null = null;
+
+  onInplaceActivate(): void {
+    if (this.selectedSystem) {
+      this.originalSystem = { ...this.selectedSystem };
+    }
+  }
+
+  onSave(closeCallback: () => void): void {
+    if (!this.selectedSystem?.id) return;
+    this.api.update(this.selectedSystem.id, this.selectedSystem).subscribe({
+      next: () => {
+        closeCallback();
+        this.load();
+        this.messageService.add({
+          key: 'targetBase',
+          severity: 'success',
+          summary: 'Updated',
+          detail: 'Target System updated successfully.',
+          life: 3000
+        });
+      },
+      error: () => {
+        if (this.originalSystem) {
+          Object.assign(this.selectedSystem!, this.originalSystem);
+        }
+        closeCallback();
+      }
+    });
+  }
+
+  onClose(closeCallback: () => void): void {
+    if (this.selectedSystem && this.originalSystem) {
+      Object.assign(this.selectedSystem, this.originalSystem);
+    }
+    closeCallback();
   }
 }

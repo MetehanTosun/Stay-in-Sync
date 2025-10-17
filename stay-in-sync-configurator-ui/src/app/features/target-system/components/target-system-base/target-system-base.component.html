@@ -124,24 +124,82 @@
     <p-tabView>
       <!-- Tab: System (Metadata) -->
       <p-tabPanel header="System">
-        <h3 style="margin-bottom: 1.5rem; font-size: 1.25rem; font-weight: 600;">System</h3>
-        <form *ngIf="manageForm" [formGroup]="manageForm" class="p-fluid" (ngSubmit)="saveManagedMetadata()">
-          <div class="p-field" style="margin-bottom: 1rem;">
-            <label for="m_name" style="font-weight: 500; margin-bottom: 0.5rem; display: block;">Name*</label>
-            <input id="m_name" pInputText formControlName="name" style="width: 100%;" />
-          </div>
-          <div class="p-field" style="margin-bottom: 1rem;">
-            <label for="m_apiUrl" style="font-weight: 500; margin-bottom: 0.5rem; display: block;">Api address*</label>
-            <input id="m_apiUrl" pInputText formControlName="apiUrl" style="width: 100%;" />
-          </div>
-          <div class="p-field" style="margin-bottom: 1rem;">
-            <label for="m_description" style="font-weight: 500; margin-bottom: 0.5rem; display: block;">Description</label>
-            <textarea id="m_description" pInputTextarea rows="3" formControlName="description" style="width: 100%;"></textarea>
-          </div>
-          <div class="p-field" style="margin-bottom: 1rem;">
-            <button pButton type="submit" label="Save" [disabled]="manageForm.invalid"></button>
-          </div>
-        </form>
+
+        <div class="flex align-items-center gap-3">
+          <label class="text-xl font-bold" style="line-height: 3rem;">System Name:</label>
+          <span>
+            <p-inplace #inplace (onActivate)="onInplaceActivate()" styleClass="flex align-items-center">
+            <ng-template pTemplate="display">
+              <span class="text-xl font-semibold">{{ selectedSystem?.name }}</span>
+            </ng-template>
+
+            <ng-template pTemplate="content" let-closeCallback="closeCallback">
+        <span class="inline-flex align-items-center gap-2">
+          <input
+            type="text"
+            [(ngModel)]="selectedSystem!.name"
+            pInputText
+            autofocus
+            (keyup.enter)="onSave(closeCallback)"/>
+          <p-button icon="pi pi-times" aria-label="Cancel" (click)="onClose(closeCallback)" text severity="danger"/>
+          <p-button icon="pi pi-check" aria-label="Save" (click)="onSave(closeCallback)" text severity="success"/>
+        </span>
+            </ng-template>
+          </p-inplace>
+                    </span>
+
+        </div>
+
+        <div class="flex align-items-center gap-3">
+          <label class="text-xl font-bold" style="line-height: 3rem;">Api address:</label>
+          <span>
+            <p-inplace #inplace (onActivate)="onInplaceActivate()" styleClass="flex align-items-center">
+            <ng-template pTemplate="display">
+              <span class="text-xl font-semibold">{{ selectedSystem?.apiUrl }}</span>
+            </ng-template>
+
+            <ng-template pTemplate="content" let-closeCallback="closeCallback">
+        <span class="inline-flex align-items-center gap-2">
+          <input
+            type="text"
+            [(ngModel)]="selectedSystem!.apiUrl"
+            pInputText
+            autofocus
+            (keyup.enter)="onSave(closeCallback)"/>
+          <p-button icon="pi pi-times" aria-label="Cancel" (click)="onClose(closeCallback)" text severity="danger"/>
+          <p-button icon="pi pi-check" aria-label="Save" (click)="onSave(closeCallback)" text severity="success"/>
+        </span>
+            </ng-template>
+          </p-inplace>
+                    </span>
+
+        </div>
+
+        <div class="flex align-items-center gap-3" style="margin-top: 1rem;">
+          <label class="text-xl font-bold" style="line-height: 3rem;">Description:</label>
+          <span>
+            <p-inplace #inplace (onActivate)="onInplaceActivate()" styleClass="flex align-items-center">
+            <ng-template pTemplate="display">
+              <span class="text-xl font-semibold">{{ selectedSystem?.description || '-' }}</span>
+            </ng-template>
+
+            <ng-template pTemplate="content" let-closeCallback="closeCallback">
+        <span class="inline-flex align-items-center gap-2">
+          <textarea
+            [(ngModel)]="selectedSystem!.description"
+            pInputTextarea
+            rows="3"
+            autofocus
+            style="min-width: 400px;"></textarea>
+          <p-button icon="pi pi-times" aria-label="Cancel" (click)="onClose(closeCallback)" text severity="danger"/>
+          <p-button icon="pi pi-check" aria-label="Save" (click)="onSave(closeCallback)" text severity="success"/>
+        </span>
+            </ng-template>
+          </p-inplace>
+                    </span>
+
+        </div>
+
       </p-tabPanel>
 
       <!-- Tab: Headers (REST only) -->
