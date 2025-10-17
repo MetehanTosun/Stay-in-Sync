@@ -130,10 +130,10 @@ public class ExtendedLogicGraphTests {
             FinalNode finalNode = createFinalNode(3, configNode);
             List<Node> graph = Arrays.asList(tempProvider, humidityProvider, configNode, finalNode);
 
-            // Test Case 1: First run (no snapshot), should initialize snapshot -> false
+            // Test Case 1: First run (no snapshot), should detect change -> true
             Map<String, Object> context1 = createDataContext("{\"temperature\": 20.0, \"humidity\": 50}", null);
             boolean result1 = evaluator.evaluateGraph(graph, context1);
-            assertFalse(result1, "Should return false on first run (only initialize snapshot)");
+            assertTrue(result1, "Should detect change on first run (no snapshot)");
             assertNotNull(configNode.getNewSnapshotData(), "Should create a new snapshot on first run");
 
             // Test Case 2: Second run, no change -> false
