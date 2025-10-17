@@ -107,9 +107,7 @@ public class GraphValidatorServiceTest {
         List<ValidationError> errors = validator.validateGraph(graph, graph.size());
 
         // ASSERT
-        assertEquals(2, errors.size());
-        assertTrue(errors.get(0) instanceof CycleError,
-        "The FinalNode must have exactly one input connection besides the ConfigNode connection.");
+        assertEquals(1, errors.size());
         assertTrue(errors.get(0) instanceof CycleError, "Should return a CycleError.");
     }
 
@@ -127,10 +125,9 @@ public class GraphValidatorServiceTest {
         List<ValidationError> errors = validator.validateGraph(graph, graph.size());
 
         // ASSERT
+        assertEquals(1, errors.size());
         assertTrue(errors.get(0) instanceof FinalNodeError);
-        assertTrue(errors.get(0).getMessage().contains(
-                "The FinalNode must have exactly one input connection besides the ConfigNode connection."));
-        assertTrue(errors.get(1).getMessage().contains("The FinalNode input must be of type BOOLEAN"));
+        assertTrue(errors.get(0).getMessage().contains("The FinalNode input must be of type BOOLEAN"));
     }
 
     // endregion
@@ -204,8 +201,7 @@ public class GraphValidatorServiceTest {
         // ASSERT
         assertEquals(1, errors.size());
         assertTrue(errors.get(0) instanceof FinalNodeError);
-        assertEquals("The FinalNode must have exactly one input connection besides the ConfigNode connection.",
-                errors.get(0).getMessage());
+        assertEquals("The FinalNode must have exactly one input connection.", errors.get(0).getMessage());
     }
 
     @Test
@@ -223,8 +219,7 @@ public class GraphValidatorServiceTest {
         // ASSERT
         assertEquals(1, errors.size());
         assertTrue(errors.get(0) instanceof FinalNodeError);
-        assertEquals("The FinalNode must have exactly one input connection besides the ConfigNode connection.",
-                errors.get(0).getMessage());
+        assertEquals("The FinalNode must have exactly one input connection.", errors.get(0).getMessage());
     }
 
     @Test
@@ -247,8 +242,7 @@ public class GraphValidatorServiceTest {
         // ASSERT
         assertEquals(1, errors.size());
         assertTrue(errors.get(0) instanceof FinalNodeError);
-        assertEquals("The FinalNode must have exactly one input connection besides the ConfigNode connection.",
-                errors.get(0).getMessage());
+        assertEquals("The FinalNode must have exactly one input connection.", errors.get(0).getMessage());
     }
 
     @Test
