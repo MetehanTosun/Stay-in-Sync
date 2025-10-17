@@ -225,31 +225,34 @@ export class ManageTargetEndpointsComponent implements OnInit {
         return true;
       });
       
+      let createdList: any[] = [];
       if (toCreate.length) {
         const created = await firstValueFrom(this.api.create(this.targetSystemId, toCreate as any));
-        const createdList = (created as any[]) || [];
-        
-        // Map created endpoints to keys and persist params with batch duplicate check
-        for (const ep of createdList) {
-          const key = `${ep.httpRequestType} ${ep.endpointPath}`;
-          const params = paramsByKey[key] || [];
-          if (ep.id && params.length) {
-            const seenParams = new Set<string>();
-            const uniqueParams = params.filter(p => {
-              const paramKey = `${p.name}:${p.in === 'path' ? 'PATH' : 'QUERY'}`;
-              if (seenParams.has(paramKey)) {
-                return false;
-              }
-              seenParams.add(paramKey);
-              return true;
-            });
-            if (uniqueParams.length > 0) {
-              await this.openapi.persistParamsForEndpoint(ep.id, uniqueParams);
+        createdList = (created as any[]) || [];
+      }
+
+      // Persist params for both newly created and already existing endpoints.
+      // Duplicate params are skipped in persistParamsForEndpoint based on current backend state.
+      const allEndpoints = [...createdList, ...existing];
+      for (const ep of allEndpoints) {
+        const key = `${ep.httpRequestType} ${ep.endpointPath}`;
+        const params = paramsByKey[key] || [];
+        if (ep.id && params.length) {
+          const seenParams = new Set<string>();
+          const uniqueParams = params.filter(p => {
+            const paramKey = `${p.name}:${p.in === 'path' ? 'PATH' : 'QUERY'}`;
+            if (seenParams.has(paramKey)) {
+              return false;
             }
+            seenParams.add(paramKey);
+            return true;
+          });
+          if (uniqueParams.length > 0) {
+            await this.openapi.persistParamsForEndpoint(ep.id, uniqueParams);
           }
         }
-        this.load();
       }
+      this.load();
     } catch (error) {
       console.error('[ManageTargetEndpoints] Import failed:', error);
     } finally {

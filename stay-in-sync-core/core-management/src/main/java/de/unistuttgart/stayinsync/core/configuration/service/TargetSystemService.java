@@ -41,8 +41,6 @@ public class TargetSystemService {
         Log.debugf("Creating new TargetSystem with id: %d", dto.id());
         TargetSystem entity = mapper.toEntity(dto);
         entity.persist();
-        // Synchronize endpoints and configurations from provided OpenAPI specification
-        openApiSpecificationParserService.synchronizeFromSpec(entity);
         return mapper.toDto(entity);
     }
 
@@ -56,8 +54,6 @@ public class TargetSystemService {
                         "TargetSystem with id %d not found.", id));
 
         mapper.updateFromDto(dto, entity);
-        // Re-synchronize from spec in case it changed (method is a no-op if spec is blank)
-        openApiSpecificationParserService.synchronizeFromSpec(entity);
         return mapper.toDto(entity);
     }
 
