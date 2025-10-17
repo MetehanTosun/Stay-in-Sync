@@ -62,18 +62,10 @@ export class RulesOverviewComponent implements OnInit {
   //#region UI Events
   /**
    * Handler for the `(created)` event emitted by the Create Rule modal.
-   * Validates payload and forwards to the API to create the rule.
+   * Forwards to the API to create the rule.
    * On success navigates to the newly created rule's editor.
    */
   onCreateRule(dto: RuleCreationDTO) {
-    if (!dto?.name?.trim() || !dto?.description?.trim()) {
-      this.messageService.add({
-        severity: 'error',
-        summary: 'Invalid Rule Inputs',
-        detail: 'Entered invalid rule configurations'
-      });
-      return;
-    }
     this.createRule(dto);
   }
   //#endregion
