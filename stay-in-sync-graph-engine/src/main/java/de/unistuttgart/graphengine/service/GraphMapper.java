@@ -93,7 +93,7 @@ public class GraphMapper {
             nodeDto.setChangeDetectionMode(data.getChangeDetectionMode());
             nodeDto.setChangeDetectionActive(data.isChangeDetectionActive());
             
-            if (nodeDto.getNodeType().equals("CONFIG"))
+            if (nodeDto.getNodeType().equals("CONFIG") && data.getTimeWindowMillis() != null)
                 nodeDto.setTimeWindowMillis(data.getTimeWindowMillis());
 
             nodeDtoMap.put(vflowNode.getId(), nodeDto);
