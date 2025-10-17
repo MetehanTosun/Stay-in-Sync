@@ -20,6 +20,7 @@ import { ManageEndpointParamsComponent } from '../../../source-system/components
 import { TabViewModule } from 'primeng/tabview';
 import { MonacoEditorModule, NgxEditorModel } from 'ngx-monaco-editor-v2';
 import { DragDropModule } from '@angular/cdk/drag-drop';
+import { Select } from 'primeng/select';
 import { TargetSystemResourceService } from '../../service/targetSystemResource.service';
 import { TargetSystemDTO } from '../../models/targetSystemDTO';
 import { OpenApiImportService } from '../../../../core/services/openapi-import.service';
@@ -49,7 +50,8 @@ import { TooltipModule } from 'primeng/tooltip';
     TargetResponsePreviewModalComponent,
     ConfirmationDialogComponent,
     ToastModule,
-    TooltipModule
+    TooltipModule,
+    Select
   ],
   templateUrl: './manage-target-endpoints.component.html',
   styles: [`
@@ -107,6 +109,13 @@ export class ManageTargetEndpointsComponent implements OnInit {
   form!: FormGroup;
   editing: TargetSystemEndpointDTO | null = null;
   httpRequestTypes: Array<'GET'|'POST'|'PUT'|'DELETE'|'PATCH'> = ['GET','POST','PUT','DELETE','PATCH'];
+  httpRequestTypeOptions = [
+    { label: 'GET', value: 'GET' },
+    { label: 'POST', value: 'POST' },
+    { label: 'PUT', value: 'PUT' },
+    { label: 'DELETE', value: 'DELETE' },
+    { label: 'PATCH', value: 'PATCH' },
+  ];
   paramsDialog = false;
   selectedEndpointForParams: TargetSystemEndpointDTO | null = null;
   requestBodyDialog = false;
@@ -293,7 +302,7 @@ export class ManageTargetEndpointsComponent implements OnInit {
     this.editing = null;
     this.dialogTitle = 'New Endpoint';
     this.form.reset({ endpointPath: '', httpRequestType: 'GET', requestBodySchema: '', responseBodySchema: '' });
-    // no dialog; inline create form is visible by default
+    this.showDialog = true;
   }
 
   /**

@@ -15,8 +15,12 @@
   <ng-template #caption>
     <div class="flex items-center justify-between">
       <span class="text-xl font-bold">Api Endpoints</span>
-      <button pButton type="button" label="Add Api Endpoint" icon="pi pi-plus"
-              (click)="addEndpointVisible = true"></button>
+      <div class="inline-flex items-center gap-2">
+        <button pButton type="button" icon="pi pi-cloud-download" label="Import Endpoints" [disabled]="!apiUrl || importing" (click)="importEndpoints()"></button>
+        <p-progressSpinner *ngIf="importing" [style]="{width: '20px', height: '20px'}" strokeWidth="2"></p-progressSpinner>
+        <button pButton type="button" label="Add Api Endpoint" icon="pi pi-plus"
+                (click)="addEndpointVisible = true"></button>
+      </div>
     </div>
   </ng-template>
   <ng-template pTemplate="header">
@@ -82,20 +86,7 @@
   </ng-template>
 </p-table>
 </div>
-<!--
-  Section: Import Endpoints
--->
-<div class="p-mb-3">
-  <button
-    pButton
-    type="button"
-    icon="pi pi-cloud-download"
-    label="Import Endpoints"
-    [disabled]="!apiUrl || importing"
-    (click)="importEndpoints()">
-  </button>
-  <p-progressSpinner *ngIf="importing" styleClass="p-ml-2" strokeWidth="4"></p-progressSpinner>
-</div>
+<!-- Import button moved to table caption -->
 <!--
   Section: Edit Endpoint Dialog
 -->
