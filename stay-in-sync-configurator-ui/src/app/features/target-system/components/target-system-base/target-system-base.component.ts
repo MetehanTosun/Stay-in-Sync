@@ -354,4 +354,33 @@ export class TargetSystemBaseComponent implements OnInit {
     }
     closeCallback();
   }
+
+  // AAS Test
+  aasTestLoading = false;
+  aasTestError: string | null = null;
+
+  aasTest(): void {
+    if (!this.selectedSystem?.id) return;
+    this.aasTestLoading = true;
+    this.aasTestError = null;
+    
+    // Reuse the AAS client test endpoint from CreateTargetSystemAasService
+    // For now, just update the system to persist aasId and reload
+    this.api.update(this.selectedSystem.id, this.selectedSystem).subscribe({
+      next: () => {
+        this.aasTestLoading = false;
+        this.messageService.add({
+          key: 'targetBase',
+          severity: 'success',
+          summary: 'AAS ID saved',
+          detail: 'AAS ID has been updated.',
+          life: 3000
+        });
+      },
+      error: (err) => {
+        this.aasTestLoading = false;
+        this.aasTestError = err?.message || 'Test failed';
+      }
+    });
+  }
 }

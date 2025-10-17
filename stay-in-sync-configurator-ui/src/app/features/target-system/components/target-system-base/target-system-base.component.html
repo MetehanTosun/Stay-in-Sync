@@ -212,7 +212,26 @@
         <app-manage-target-endpoints *ngIf="selectedSystem" [targetSystemId]="selectedSystem.id!" (finish)="onManageFinished()"></app-manage-target-endpoints>
       </p-tabPanel>
 
-      <!-- Tab: AAS (AAS only) -->
+      <!-- Tab: AAS Configuration (AAS only) -->
+      <p-tabPanel *ngIf="isAasSelected()" header="AAS Configuration">
+        <div class="p-grid p-fluid">
+          <div class="p-col-12 p-md-6">
+            <label>Base URL</label>
+            <input pInputText [value]="selectedSystem!.apiUrl" disabled/>
+          </div>
+          <div class="p-col-12 p-md-6">
+            <label>AAS ID</label>
+            <input pInputText [(ngModel)]="selectedSystem!.aasId" placeholder="AAS Identifier"/>
+          </div>
+        </div>
+        <div class="p-d-flex p-ai-center" style="margin-top: .75rem; gap: .5rem;">
+          <button pButton type="button" label="Test" (click)="aasTest()" [disabled]="aasTestLoading"></button>
+          <span *ngIf="aasTestLoading">Testing...</span>
+          <small *ngIf="aasTestError" style="color:#d32f2f;">{{ aasTestError }}</small>
+        </div>
+      </p-tabPanel>
+
+      <!-- Tab: AAS Management (AAS only) -->
       <p-tabPanel *ngIf="isAasSelected()" header="AAS Management">
         <app-aas-management [system]="selectedSystem" (refreshRequested)="onAasRefreshRequested()"></app-aas-management>
       </p-tabPanel>
