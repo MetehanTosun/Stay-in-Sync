@@ -1,7 +1,7 @@
 import { EdcInstance } from '../components/edc-instances/models/edc-instance.model';
 import { OdrlContractDefinition } from '../components/edc-assets-and-policies/models/policy.model';
 import { TargetSystem } from '../models/target-system.model';
-
+import { Transformation } from '../models/transformation.model';
 /**
  * Mock EDC Instances
  */
@@ -122,21 +122,48 @@ export const MOCK_TRANSFORMATIONS: TargetSystem[] = [
  * Mock Target Arc Configurations
  */
 export const MOCK_TARGET_ARC_CONFIGS: { [key: string]: any } = {
-  "1": {
-    "dataAddress": {
-      "baseUrl": "https://api.example.com/users",
-      "proxyQueryParams": "true",
-      "header:Authorization": "Bearer <YOUR_USER_API_TOKEN>"
-    }
+  '1': {
+    id: 101,
+    alias: 'Get All Users',
+    actions: [{
+      name: 'Get All Users Action',
+      description: 'Fetches a list of all users from the system.',
+      httpMethod: 'GET',
+      path: '/users',
+      headers: [
+        {key: 'Accept', value: 'application/json'}
+      ],
+      queryParameters: [
+        {key: 'page', value: '1'},
+        {key: 'limit', value: '100'}
+      ]
+    }]
   },
-  "2": {
-    "dataAddress": {
-      "baseUrl": "https://api.example.com/events",
-      "queryParams": "activeOnly=true&include=details",
-      "header:Accept": "application/json"
-    }
+  '2': {
+    id: 102,
+    alias: 'Create New Event',
+    actions: [{
+      name: 'Create Event Action',
+      description: 'Creates a new event in the calendar.',
+      httpMethod: 'POST',
+      path: '/events',
+      headers: [
+        { key: 'Content-Type', value: 'application/json' },
+        { key: 'Authorization', value: 'Bearer <YOUR_EVENT_API_TOKEN>' }
+      ],
+      queryParameters: []
+    }]
   },
-  "3": {
-    "dataAddress": {} // Example of a system with no default config
+  '3': {
+    id: 103,
+    alias: 'Product Catalog API',
+    actions: [{
+      name: 'Get Product by SKU',
+      description: 'Retrieves product details for a given SKU.',
+      httpMethod: 'GET',
+      path: '/products/{sku}',
+      headers: [],
+      queryParameters: []
+    }]
   }
 };

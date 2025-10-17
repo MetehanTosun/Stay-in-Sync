@@ -552,7 +552,7 @@ accessPolicySuggestions: OdrlPolicyDefinition[] = [];
   onTransformationSelect(selectedTransformation: Transformation | null): void {
     if (selectedTransformation && selectedTransformation.id) {
       this.assetService.getTargetArcConfig(selectedTransformation.id).subscribe(config => {
-        this.populateAssetFormFromOdrl(config?.dataAddress || {}); // Pass the nested dataAddress object
+        this.populateFormFromTargetArc(config); // Use the new, specific helper method
         this.syncAssetJsonFromForm();
       });
     } else {
@@ -775,8 +775,38 @@ accessPolicySuggestions: OdrlPolicyDefinition[] = [];
     }
   }
 
+  /**
+   * Populates the asset form from a /target-arc/{id} response.
+   * This "translates" the backend's structure into the UI form fields.
+   */
+  private populateFormFromTargetArc(arcConfig: any): void {
+    this.resetAssetFormFields(); // Start with a clean slate
+
+    const action = arcConfig?.actions?.[0];
+    if (!action) {
+      // If there's no action, there's nothing to populate
+      return;
+    }
+
+    // "Translate" the fields
+    this.pathParamId = action.path || '';
+
+    if (Array.isArray(action.queryParameters)) {
+      this.queryParams = action.queryParameters.map((p: { key: string, value: string }) => ({ ...p }));
+    }
+
+    if (Array.isArray(action.headers)) {
+      this.headerParams = action.headers.map((h: { key: string, value: string }) => ({ ...h }));
+    }
+
+    // Also update the properties in the JSON editor
+    const assetJson = JSON.parse(this.expertModeJsonContent || '{}');
+    assetJson.properties['asset:prop:name'] = action.name || arcConfig.alias || '';
+    assetJson.properties['asset:prop:description'] = action.description || '';
+    this.expertModeJsonContent = JSON.stringify(assetJson, null, 2);
+  }
+
   private resetAssetFormFields(): void {
-    this.selectedTransformation = null;
     this.assetAttributes = [{ key: '', value: '' }];
     this.pathParamId = '';
     this.queryParams = []; // Reset to an empty array
