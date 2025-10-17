@@ -76,17 +76,19 @@ public class GraphValidatorService {
 
         FinalNode finalNode = finalNodes.get(0);
         if (graphNodes.size() > 1) {
-            if (finalNode.getInputNodes() == null || finalNode.getInputNodes().size() != 1) {
-                errors.add(new FinalNodeError("The FinalNode must have exactly one input connection."));
-                return;
+            if (finalNode.getInputNodes() == null
+                    || finalNode.getInputNodes().stream().filter(n -> n instanceof ConfigNode).count() != 1L) {
+                errors.add(new FinalNodeError(
+                    "The FinalNode must have exactly one input connection besides the ConfigNode connection."));
             }
 
-            Node finalInput = finalNode.getInputNodes().get(0);
-            if (finalInput.getOutputType() != Boolean.class) {
-                errors.add(new FinalNodeError(String.format(
-                        "The FinalNode input must be of type BOOLEAN, but received type '%s' from node '%s'.",
-                        finalInput.getOutputType().getSimpleName(), finalInput.getName())));
-            }
+            finalNode.getInputNodes().forEach(finalInput -> {
+                if (finalInput.getOutputType() != Boolean.class) {
+                    errors.add(new FinalNodeError(String.format(
+                            "The FinalNode input must be of type BOOLEAN, but received type '%s' from node '%s'.",
+                            finalInput.getOutputType().getSimpleName(), finalInput.getName())));
+                }
+            });
         }
     }
 
