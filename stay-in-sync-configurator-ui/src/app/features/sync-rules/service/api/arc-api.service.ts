@@ -148,7 +148,7 @@ export class ArcAPIService {
 
       // Store the property type
       const nativeTypes = ['string', 'number', 'boolean', 'object', 'array', 'null', 'any', 'unknown'];
-      propertyTypes[propName] = nativeTypes.includes(propName) ? propType.toUpperCase() : propType;
+      propertyTypes[propName] = nativeTypes.includes(propType) ? propType.toUpperCase() : propType;
 
       return propName;
     }
