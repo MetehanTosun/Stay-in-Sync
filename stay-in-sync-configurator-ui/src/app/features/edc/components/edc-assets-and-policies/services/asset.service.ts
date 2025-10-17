@@ -11,7 +11,7 @@ import { MOCK_ODRL_ASSETS, MOCK_TRANSFORMATIONS, MOCK_TARGET_ARC_CONFIGS } from 
 })
 export class AssetService {
   // UI Testing method. To use the real backend, change this to false!
-  private mockMode = true;
+  private mockMode = false;
 
   private baseUrl = 'http://localhost:8090/api/config/edcs';
   private transformationsUrl = 'http://localhost:8090/api/config/transformations';
