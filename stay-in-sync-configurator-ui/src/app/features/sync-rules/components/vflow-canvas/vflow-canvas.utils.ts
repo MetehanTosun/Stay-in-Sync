@@ -149,6 +149,7 @@ export function buildNodeData(
   if (nodeType === NodeType.LOGIC && opts.operatorData) {
     return {
       ...opts.operatorData,
+      name: opts.operatorData.operatorName,
       operatorType: opts.operatorData.operatorName,
     };
   }

@@ -1,6 +1,7 @@
 import { CommonModule } from '@angular/common';
 import { Component } from '@angular/core';
 import { CustomNodeComponent, HandleComponent, SelectableDirective } from 'ngx-vflow';
+import { LogicNodeData } from '../../../models';
 
 /**
  * A node representing a logical operator within a vflow graph
@@ -14,4 +15,15 @@ import { CustomNodeComponent, HandleComponent, SelectableDirective } from 'ngx-v
 })
 export class LogicNodeComponent extends CustomNodeComponent {
   displayTooltips = false;
+
+  /**
+   * Returns the node name if it differs from the operator type (default value)
+   */
+  getNodeName(): string {
+    const data = this.node().data as LogicNodeData;
+    if (data.name === data.operatorType) {
+      return "";
+    }
+    return data.name;
+  }
 }

@@ -2,7 +2,7 @@ import { Component, ElementRef, EventEmitter, OnInit, Output, ViewChild } from '
 import { ActivatedRoute } from '@angular/router';
 import { Connection, Edge, EdgeChange, NodeChange, Vflow, VflowComponent } from 'ngx-vflow';
 import { GraphAPIService, OperatorNodesApiService } from '../../service';
-import { ConfigNodeData, ConstantNodeData, CustomVFlowNode, LogicOperatorMetadata, NodeMenuItem, NodeType, ProviderNodeData, SchemaNodeData, VFlowGraphDTO } from '../../models';
+import { ConfigNodeData, ConstantNodeData, CustomVFlowNode, LogicNodeData, LogicOperatorMetadata, NodeMenuItem, NodeType, ProviderNodeData, SchemaNodeData, VFlowGraphDTO } from '../../models';
 import { getDefaultNodeSize, inferTypeFromValue, getExpectedInputType, getNodeType, calculateVFlowCoordinates, hasProp, hasPropOfType, getPropIfExists, buildNodeData, calculateNodeCenter, createNode } from './vflow-canvas.utils';
 import { FinalNodeComponent, SetConstantValueModalComponent, SetJsonPathModalComponent, SetSchemaModalComponent, SetNodeNameModalComponent, ConfigNodeComponent } from '..';
 import { CommonModule } from '@angular/common';
@@ -447,7 +447,11 @@ export class VflowCanvasComponent implements OnInit {
   onNodeNameSaved(newName: string) {
     if (this.nodeBeingEdited) {
       const nodeData = this.nodeBeingEdited.data;
-      nodeData.name = newName;
+
+      if (nodeData.nodeType === NodeType.LOGIC && newName.trim().length === 0) {
+        nodeData.name = (nodeData as LogicNodeData).operatorType
+      }
+      else { nodeData.name = newName; }
 
       this.reinsertNode(this.nodeBeingEdited);
 
