@@ -777,8 +777,10 @@ export class SourceSystemPageComponent implements OnInit {
     const computedType = this.inferModelType(el);
     const label = el.idShort;
     const typeHasChildren = computedType === 'SubmodelElementCollection' || computedType === 'SubmodelElementList' || computedType === 'Operation' || computedType === 'Entity';
+    // RelationshipElement and AnnotatedRelationshipElement should be leaves (no children)
+    const isRelationship = computedType === 'RelationshipElement' || computedType === 'AnnotatedRelationshipElement';
     // If type is unknown, allow expansion to let user try to open children; LIVE hydration will correct it
-    const hasChildren = el?.hasChildren === true || typeHasChildren || computedType === undefined;
+    const hasChildren = !isRelationship && (el?.hasChildren === true || typeHasChildren || computedType === undefined);
     return {
       key: `${submodelId}::${el.idShortPath || el.idShort}`,
       label,
