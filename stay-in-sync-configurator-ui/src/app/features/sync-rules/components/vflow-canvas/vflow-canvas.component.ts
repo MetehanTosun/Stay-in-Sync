@@ -375,8 +375,7 @@ export class VflowCanvasComponent implements OnInit {
     const change = changes.pop()!;
     if (change.type === 'select' && (change as any).selected) {
       const edge = this.edges.find(e => e.id === change.id);
-      const configNodeIndex = this.nodes.findIndex(n => n.type === ConfigNodeComponent)
-      if (edge && edge.source != configNodeIndex.toString()) {
+      if (edge) {
         this.selectedEdge = edge;
         this.edgeContextMenuPosition = this.lastMousePosition;
         this.showEdgeContextMenu = true;
