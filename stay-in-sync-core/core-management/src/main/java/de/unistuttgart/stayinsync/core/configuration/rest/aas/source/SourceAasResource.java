@@ -106,7 +106,7 @@ public class SourceAasResource {
             });
         }
         
-        // Apply same special logic for SNAPSHOT source when parentPath is provided
+         Apply same special logic for SNAPSHOT source when parentPath is provided
         if ("SNAPSHOT".equalsIgnoreCase(source) && parentPath != null && !parentPath.isBlank()) {
             var headers = headerBuilder.buildMergedHeaders(ss, de.unistuttgart.stayinsync.core.configuration.service.aas.HttpHeaderBuilder.Mode.READ);
             final String apiUrl = ss.apiUrl;
@@ -180,7 +180,7 @@ public class SourceAasResource {
                     return Response.ok(body).build();
                 }
                 aasService.throwHttpError(sc, resp.statusMessage(), resp.bodyAsString());
-                return null; // This line will never be reached due to exception
+                return null;  This line will never be reached due to exception
             });
         }
         java.util.List<AasElementLite> elements;
@@ -263,7 +263,7 @@ public class SourceAasResource {
                 return Response.ok(body).build();
             }
             aasService.throwHttpError(sc, resp.statusMessage(), resp.bodyAsString());
-            return null; // This line will never be reached due to exception
+            return null;  This line will never be reached due to exception
         });
     }
 
@@ -323,7 +323,7 @@ public class SourceAasResource {
             return Response.status(Response.Status.CREATED).entity(resp.bodyAsString()).build();
         }
         aasService.throwHttpError(sc, resp.statusMessage(), resp.bodyAsString());
-        return null; // This line will never be reached due to exception
+        return null;  This line will never be reached due to exception
     }
     /**
      * Updates (replaces) an existing AAS element in a submodel.
@@ -350,7 +350,7 @@ public class SourceAasResource {
             return Response.ok(resp.bodyAsString()).build();
         }
         aasService.throwHttpError(sc, resp.statusMessage(), resp.bodyAsString());
-        return null; // This line will never be reached due to exception
+        return null;  This line will never be reached due to exception
     }
     /**
      * Deletes a specific element from a submodel for the given Source System.
@@ -378,7 +378,7 @@ public class SourceAasResource {
             return Response.noContent().build();
         }
         aasService.throwHttpError(sc, resp.statusMessage(), resp.bodyAsString());
-        return null; // This line will never be reached due to exception
+        return null;  This line will never be reached due to exception
     }
 
     /**
@@ -676,7 +676,7 @@ public class SourceAasResource {
             if (resolved != null) return Response.ok(resolved.encode()).build();
             return Response.status(sc).entity(resp.bodyAsString()).build();
         }
-        // SNAPSHOT
+         SNAPSHOT
         String normalizedSmId = normalizeSubmodelId(smId);
         var submodel = AasSubmodelLite.<AasSubmodelLite>find("sourceSystem.id = ?1 and submodelId = ?2", sourceSystemId, normalizedSmId).firstResult();
         if (submodel == null) return Response.status(Response.Status.NOT_FOUND).entity("Submodel not found in snapshot").build();
