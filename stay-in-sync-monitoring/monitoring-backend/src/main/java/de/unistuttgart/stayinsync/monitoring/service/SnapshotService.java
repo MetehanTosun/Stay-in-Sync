@@ -69,7 +69,7 @@ public class SnapshotService {
     public SnapshotDTO getById(String id) {
         try {
             Log.debug("Fetching latest snapshot for id=" + id);
-            return syncNodeClient.getById(Long.valueOf(id));
+            return syncNodeClient.getById(id);
         } catch (Exception e) {
             Log.error("Failed to fetch snapshot with id=" + id, e);
             return null;

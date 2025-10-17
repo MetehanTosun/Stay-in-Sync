@@ -17,12 +17,10 @@ describe('SearchBarComponent', () => {
     fixture.detectChanges();
   });
 
-  // --- ✅ 1. Smoke test
   it('should create', () => {
     expect(component).toBeTruthy();
   });
 
-  // --- ✅ 2. should emit search term on input event
   it('should emit value when user types in input', () => {
     spyOn(component.search, 'emit');
 
@@ -34,7 +32,6 @@ describe('SearchBarComponent', () => {
     expect(component.search.emit).toHaveBeenCalledWith('error logs');
   });
 
-  // --- ✅ 3. should emit search term when clicking search button
   it('should emit value when clicking search button', () => {
     spyOn(component.search, 'emit');
 
@@ -49,7 +46,6 @@ describe('SearchBarComponent', () => {
     expect(component.search.emit).toHaveBeenCalledWith('metrics');
   });
 
-  // --- ✅ 4. should log search events (optional)
   it('should log when search is triggered (console check)', () => {
     const consoleSpy = spyOn(console, 'log');
     component.onSearch('xyz');
