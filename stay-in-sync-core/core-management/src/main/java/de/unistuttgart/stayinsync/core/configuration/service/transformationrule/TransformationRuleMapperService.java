@@ -147,7 +147,9 @@ public class TransformationRuleMapperService {
             data.setInputLimit(nodeDto.getInputLimit());
             data.setChangeDetectionMode(nodeDto.getChangeDetectionMode());
             data.setChangeDetectionActive(nodeDto.isChangeDetectionActive());
-            data.setTimeWindowMillis(nodeDto.getTimeWindowMillis());
+
+            if (nodeDto.getNodeType().equals("CONFIG"))
+                data.setTimeWindowMillis(nodeDto.getTimeWindowMillis());
 
             vflowNode.setData(data);
             vflowNodes.add(vflowNode);
