@@ -56,6 +56,30 @@
 
       </div>
 
+      <div class="flex align-items-center gap-3" style="margin-top: 1rem;">
+        <label class="text-xl font-bold" style="line-height: 3rem;">Description:</label>
+        <span>
+          <p-inplace #inplace (onActivate)="onInplaceActivate()" styleClass="flex align-items-center">
+          <ng-template pTemplate="display">
+            <span class="text-xl font-semibold">{{ selectedSystem?.description || '-' }}</span>
+          </ng-template>
+
+          <ng-template pTemplate="content" let-closeCallback="closeCallback">
+      <span class="inline-flex align-items-center gap-2">
+        <textarea
+          [(ngModel)]="selectedSystem!.description"
+          pInputTextarea
+          rows="3"
+          autofocus
+          style="min-width: 400px;"></textarea>
+        <p-button icon="pi pi-times" aria-label="Cancel" (click)="onClose(closeCallback)" text severity="danger"/>
+        <p-button icon="pi pi-check" aria-label="Save" (click)="onSave(closeCallback)" text severity="success"/>
+      </span>
+          </ng-template>
+        </p-inplace>
+                  </span>
+
+      </div>
 
     </p-tabPanel>
     <!-- Tab for managing custom API headers -->
