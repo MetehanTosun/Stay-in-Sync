@@ -60,8 +60,8 @@ public class ProviderNode extends Node {
         }
 
         String[] parts = jsonPath.split("\\.");
-        if (parts.length < 1) {
-            throw new NodeConfigurationException("Invalid jsonPath format on node " + getId() + ": Must at least be 'source'.");
+        if (parts.length < 2) {
+            throw new NodeConfigurationException("Invalid jsonPath format on node " + getId() + ": Must contain 'source.{sourceName}'.");
         }
 
         this.jsonPath = jsonPath;
@@ -107,11 +107,6 @@ public class ProviderNode extends Node {
         }
 
         JsonNode sourceScope = (JsonNode) sourceObject;
-
-        if (jsonPath.equals("source")) {
-            this.setCalculatedResult(sourceScope);
-            return;
-        }
 
         // Create the internal path (without the first "source" part)
         String[] jsonPathKeys = jsonPath.split("\\.");
