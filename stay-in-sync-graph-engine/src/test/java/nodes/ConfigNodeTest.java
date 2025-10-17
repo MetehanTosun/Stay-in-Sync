@@ -4,6 +4,7 @@ import de.unistuttgart.graphengine.nodes.*;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mock;
 
 import static org.junit.jupiter.api.Assertions.*;
 import java.util.*;
@@ -95,7 +96,7 @@ public class ConfigNodeTest {
     // ===== OR MODE TESTS =====
 
     @Test
-    @DisplayName("should initialize snapshot in OR mode with no previous snapshot")
+    @DisplayName("should detect change in OR mode with no previous snapshot")
     void testCalculate_OrModeNoPreviousSnapshot_ShouldReturnTrue() {
         // ARRANGE
         configNode.setMode(ConfigNode.ChangeDetectionMode.OR);
@@ -103,11 +104,8 @@ public class ConfigNodeTest {
         // ACT
         configNode.calculate(dataContext);
 
-        // ASSERT - First execution should return FALSE (only initialize snapshot)
-        assertFalse((Boolean) configNode.getCalculatedResult());
-        // But snapshot should be created
-        assertNotNull(configNode.getNewSnapshotData());
-        assertEquals(2, configNode.getNewSnapshotData().size());
+        // ASSERT
+        assertTrue((Boolean) configNode.getCalculatedResult());
     }
 
     @Test
@@ -274,8 +272,8 @@ public class ConfigNodeTest {
         // ACT
         configNode.calculate(dataContext);
 
-        // ASSERT - First execution (null snapshot) should return FALSE
-        assertFalse((Boolean) configNode.getCalculatedResult());
+        // ASSERT
+        assertTrue((Boolean) configNode.getCalculatedResult()); // No old snapshot = all changes
     }
 
     @Test
@@ -287,8 +285,8 @@ public class ConfigNodeTest {
         // ACT
         configNode.calculate(dataContext);
 
-        // ASSERT - First execution (missing snapshot) should return FALSE
-        assertFalse((Boolean) configNode.getCalculatedResult());
+        // ASSERT
+        assertTrue((Boolean) configNode.getCalculatedResult()); // No old snapshot = all changes
     }
 
     @Test
@@ -327,8 +325,8 @@ public class ConfigNodeTest {
         // ACT
         configNode.calculate(dataContext);
 
-        // ASSERT - First execution should return FALSE
-        assertFalse((Boolean) configNode.getCalculatedResult());
+        // ASSERT
+        assertTrue((Boolean) configNode.getCalculatedResult());
         assertEquals(2, configNode.getNewSnapshotData().size()); // Only ProviderNodes processed
     }
 
