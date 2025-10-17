@@ -853,6 +853,21 @@ ${jsonSchema}
   }
 
   /**
+   * Opens the edit dialog and fills the form with the selected endpoint data.
+   * @param endpoint The endpoint to edit.
+   */
+  openEdit(endpoint: SourceSystemEndpointDTO): void {
+    this.editingEndpoint = endpoint;
+    this.editForm.reset({
+      endpointPath: endpoint.endpointPath,
+      httpRequestType: endpoint.httpRequestType,
+      requestBodySchema: endpoint.requestBodySchema || '',
+      responseBodySchema: endpoint.responseBodySchema || ''
+    });
+    this.editDialog = true;
+  }
+
+  /**
    * Show confirmation dialog for deleting an endpoint.
    */
   deleteEndpoint(endpoint: SourceSystemEndpointDTO) {
