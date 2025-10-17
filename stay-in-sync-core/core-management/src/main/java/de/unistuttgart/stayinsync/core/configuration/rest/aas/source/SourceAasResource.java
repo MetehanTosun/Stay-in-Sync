@@ -78,7 +78,7 @@ public class SourceAasResource {
             var headers = headerBuilder.buildMergedHeaders(ss, de.unistuttgart.stayinsync.core.configuration.service.aas.HttpHeaderBuilder.Mode.READ);
             final String apiUrl = ss.apiUrl;
             final java.util.Map<String,String> headersLive = headers;
-            return traversal.listElements(apiUrl, smId, depth, parentPath, headersLive).map(resp -> {
+            return traversal.listElements(apiUrl, smId, depth, parentPath, headersLive).onItem().transformToUni(resp -> {
                 int sc = resp.statusCode();
                 if (sc >= 200 && sc < 300) {
                     String body = resp.bodyAsString();
@@ -87,18 +87,22 @@ public class SourceAasResource {
                     /* SUCCESS PATH: Check if server returned parent object instead of children array */
                     if (parentPath != null && !parentPath.isBlank() && body != null && !body.isBlank()) {
                         Response r = buildChildrenResponseFromParentBody(body, parentPath, false);
-                        if (r != null) return r;
+                        if (r != null) return Uni.createFrom().item(r);
                     }
                     
-                    return Response.ok(body).build();
+                    return Uni.createFrom().item(Response.ok(body).build());
                 }
                 /* Fallback for nested collections returning 404/400 on parent path */
                 if ((sc == 404 || sc == 400) && parentPath != null && !parentPath.isBlank()) {
-                    return buildDeepChildrenFallbackResponse(apiUrl, smId, parentPath, headersLive);
+                        Log.infof("Source listElements 404/400-fallback: trying deep fetch for parentPath=%s", parentPath);
+                    return buildDeepChildrenFallbackResponseReactive(apiUrl, smId, parentPath, headersLive);
                 }
                 
                 Log.infof("Source listElements MAIN: final return status=%d", sc);
-                return Response.status(sc).entity(resp.bodyAsString()).build();
+                return Uni.createFrom().item(Response.status(sc).entity(resp.bodyAsString()).build());
+            }).onFailure().recoverWithItem(ex -> {
+                Log.errorf(ex, "Source listElements LIVE: Unexpected error");
+                return Response.serverError().entity(ex.getMessage()).build();
             });
         }
         
@@ -498,6 +502,49 @@ public class SourceAasResource {
     }
 
     /**
+     * Reactive fallback: When a nested collection returns 404/400, fetch entire submodel with level=deep,
+     * then filter to direct children of the given parent path.
+     * @param apiUrl Base URL for traversal client.
+     * @param smId Submodel ID.
+     * @param parentPath Parent element path.
+     * @param headers HTTP headers.
+     * @return Uni<Response> with filtered child elements.
+     */
+    private Uni<Response> buildDeepChildrenFallbackResponseReactive(String apiUrl, String smId, String parentPath, java.util.Map<String,String> headers) {
+        return traversal.listElements(apiUrl, smId, "all", null, headers)
+            .onItem().transform(all -> {
+                if (all.statusCode() >= 200 && all.statusCode() < 300) {
+                    String body = all.bodyAsString();
+                    io.vertx.core.json.JsonArray arr = body != null && body.trim().startsWith("{")
+                            ? new io.vertx.core.json.JsonObject(body).getJsonArray("result", new io.vertx.core.json.JsonArray())
+                            : new io.vertx.core.json.JsonArray(body);
+                    String prefix = parentPath.endsWith("/") ? parentPath : parentPath + "/";
+                    io.vertx.core.json.JsonArray children = new io.vertx.core.json.JsonArray();
+                    for (int i = 0; i < arr.size(); i++) {
+                        var el = arr.getJsonObject(i);
+                        String p = el.getString("idShortPath", el.getString("idShort"));
+                        if (p == null) continue;
+                        if (p.equals(parentPath)) continue; /* skip parent itself */
+                        if (p.startsWith(prefix)) {
+                            String rest = p.substring(prefix.length());
+                            if (!rest.contains("/")) {
+                                children.add(el);
+                            }
+                        }
+                    }
+                    return Response.ok(children.encode()).build();
+                }
+                Log.infof("Source listElements 404/400-fallback: deep fetch returned status=%d for parentPath=%s", all.statusCode(), parentPath);
+                return Response.ok("[]").build();
+            })
+            .onFailure().recoverWithItem(ex -> {
+                Log.infof("Source listElements 404/400-fallback: exception in fallback processing: %s", ex.getMessage());
+                Log.infof("Source listElements 404/400-fallback: returning final empty array for parentPath=%s", parentPath);
+                return Response.ok("[]").build();
+            });
+    }
+
+    /**
      * Fallback handler that performs a deep fetch of all elements and extracts children for a given parent path.
      * Used when the parent element returns 404 or 400 in nested structures.
      * @param apiUrl API base URL.
@@ -505,7 +552,9 @@ public class SourceAasResource {
      * @param parentPath Parent element path.
      * @param headers HTTP headers.
      * @return HTTP Response with filtered child elements.
+     * @deprecated Use buildDeepChildrenFallbackResponseReactive instead to avoid blocking the event loop
      */
+    @Deprecated
     private Response buildDeepChildrenFallbackResponse(String apiUrl, String smId, String parentPath, java.util.Map<String,String> headers) {
         try {
             Log.infof("Source listElements 404/400-fallback: trying deep fetch for parentPath=%s", parentPath);
