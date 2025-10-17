@@ -218,7 +218,7 @@ export class TargetSystemBaseComponent implements OnInit {
     this.showDetailDialog = true;
   }
 
-  // Confirmation Dialog state & handlers
+  
   showConfirmationDialog = false;
   confirmationData: ConfirmationDialogData = {
     title: 'Confirm Delete',
@@ -264,7 +264,7 @@ export class TargetSystemBaseComponent implements OnInit {
     const payload: TargetSystemDTO = { ...this.selectedSystem, ...this.manageForm.value } as TargetSystemDTO;
     this.api.update(this.selectedSystem.id!, payload).subscribe({ next: () => { this.load(); } });
   }
-  // AAS-related methods
+  
   /**
    * Determines if the selected Target System is of type AAS.
    * @returns True if the API type is 'AAS', otherwise false.
@@ -284,7 +284,7 @@ export class TargetSystemBaseComponent implements OnInit {
     this.load();
   }
 
-  // Empty state functionality
+  
   isSearchActive: boolean = false;
 
   /**
@@ -318,7 +318,7 @@ export class TargetSystemBaseComponent implements OnInit {
     });
   }
 
-  // Inline editing handlers
+  
   private originalSystem: TargetSystemDTO | null = null;
 
   onInplaceActivate(): void {
@@ -357,7 +357,7 @@ export class TargetSystemBaseComponent implements OnInit {
     closeCallback();
   }
 
-  // AAS Test
+  
   aasTestLoading = false;
   aasTestError: string | null = null;
 
@@ -366,8 +366,8 @@ export class TargetSystemBaseComponent implements OnInit {
     this.aasTestLoading = true;
     this.aasTestError = null;
     
-    // Reuse the AAS client test endpoint from CreateTargetSystemAasService
-    // For now, just update the system to persist aasId and reload
+    
+    
     this.api.update(this.selectedSystem.id, this.selectedSystem).subscribe({
       next: () => {
         this.aasTestLoading = false;

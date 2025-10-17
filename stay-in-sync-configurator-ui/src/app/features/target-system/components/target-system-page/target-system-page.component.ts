@@ -41,7 +41,7 @@ export class TargetSystemPageComponent implements OnInit {
   selectedSystem?: TargetSystemDTO;
   private originalSystem: TargetSystemDTO | null = null;
 
-  // AAS Test state
+  
   aasTestLoading = false;
   aasTestError: string | null = null;
 
@@ -125,7 +125,7 @@ export class TargetSystemPageComponent implements OnInit {
   }
 
   onAasRefreshRequested(): void {
-    // Reload target system if needed
+    
   }
 }
 

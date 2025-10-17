@@ -124,7 +124,7 @@ export class ManageTargetEndpointsComponent implements OnInit {
   responsePreviewDialog = false;
   selectedResponsePreviewEndpoint: TargetSystemEndpointDTO | null = null;
   
-  // Confirmation dialog variables
+  
   showConfirmationDialog = false;
   confirmationData: ConfirmationDialogData = {
     title: '',
@@ -194,13 +194,13 @@ export class ManageTargetEndpointsComponent implements OnInit {
   async importEndpoints(): Promise<void> {
     this.importing = true;
     try {
-      // Load target-system to decide where to fetch OpenAPI spec
+      
       const ts = await firstValueFrom(this.tsService.getById(this.targetSystemId));
 
       let endpoints: any[] = [];
       let spec: any | null = null;
 
-      // 1) If openAPI is provided and is raw content (uploaded file), parse locally
+      
       if ((ts as any).openAPI && typeof (ts as any).openAPI === 'string' && !(ts as any).openAPI.startsWith('http')) {
         try {
           try {
@@ -216,14 +216,14 @@ export class ManageTargetEndpointsComponent implements OnInit {
         }
       }
 
-      // 2) Fallback: Use URL (either openAPI URL or apiUrl base + candidates)
+      
       const apiUrl = ((ts as any).openAPI && (ts as any).openAPI.startsWith('http')) ? (ts as any).openAPI.trim() : (ts.apiUrl || '');
       if ((!spec || endpoints.length === 0) && apiUrl) {
         endpoints = await this.openapi.discoverEndpointsFromSpecUrl(apiUrl);
         spec = await this.loadSpecCandidates(apiUrl);
       }
       const paramsByKey = spec ? this.openapi.discoverParamsFromSpec(spec) : {};
-      // filter out duplicates by METHOD + PATH (matches backend unique key)
+      
       const existing = await firstValueFrom(this.api.list(this.targetSystemId));
       const existingKeys = new Set(existing.map(e => `${e.httpRequestType} ${e.endpointPath}`));
       const seenNew = new Set<string>();
@@ -240,8 +240,8 @@ export class ManageTargetEndpointsComponent implements OnInit {
         createdList = (created as any[]) || [];
       }
 
-      // Persist params for both newly created and already existing endpoints.
-      // Duplicate params are skipped in persistParamsForEndpoint based on current backend state.
+      
+      
       const allEndpoints = [...createdList, ...existing];
       for (const ep of allEndpoints) {
         const key = `${ep.httpRequestType} ${ep.endpointPath}`;
@@ -368,8 +368,8 @@ export class ManageTargetEndpointsComponent implements OnInit {
       const payload: CreateTargetSystemEndpointDTO = {
         endpointPath: this.form.value.endpointPath,
         httpRequestType: this.form.value.httpRequestType,
-        // Backend DTO now supports request/response body on create
-        // These are optional; send if present
+        
+        
         ...(this.form.value.requestBodySchema ? { requestBodySchema: this.form.value.requestBodySchema } : {}),
         ...(this.form.value.responseBodySchema ? { responseBodySchema: this.form.value.responseBodySchema } : {})
       } as any;
@@ -522,12 +522,12 @@ export class ManageTargetEndpointsComponent implements OnInit {
       const value = control.value;
       if (!value) return null;
 
-      // Path should start with /
+      
       if (!value.startsWith('/')) {
         return { pathFormat: { message: 'Path must start with /' } };
       }
 
-      // Check for valid path parameter format {param}
+      
       const pathParamRegex = /\{[a-zA-Z_][a-zA-Z0-9_]*\}/g;
       const invalidParams = value.match(/\{[^}]*\}/g)?.filter((param: string) => 
         !pathParamRegex.test(param)
