@@ -90,24 +90,29 @@
 <!--
   Section: Edit Endpoint Dialog
 -->
-<p-dialog header="Edit Endpoint" [(visible)]="editDialog" modal="true" [style]="{ width: '600px' }">
+<p-dialog [(visible)]="editDialog" [modal]="true" [style]="{ width: '60rem', height: '50rem' }">
+  <ng-template #header>
+    <div class="inline-flex items-center justify-center gap-2">
+      <span class="font-bold whitespace-nowrap">Edit Endpoint</span>
+    </div>
+  </ng-template>
   <form [formGroup]="editForm" class="p-fluid p-formgrid p-grid">
-    <div class="p-field p-col-12">
-      <label>Path</label>
-      <input pInputText formControlName="endpointPath"/>
+    <div class="p-field p-col-12" style="margin-bottom: 1rem;">
+      <label for="editEndpointPath">Endpoint Path*</label>
+      <input id="editEndpointPath" pInputText formControlName="endpointPath"/>
     </div>
-    <div class="p-field p-col-12">
-      <label>Method</label>
-      <p-dropdown [options]="httpRequestTypes" formControlName="httpRequestType"></p-dropdown>
+    <div class="p-field p-col-12" style="margin-bottom: 1rem;">
+      <label for="editHttpRequestType">Method*</label>
+      <p-dropdown id="editHttpRequestType" [options]="httpRequestTypes" formControlName="httpRequestType"></p-dropdown>
     </div>
-    <div class="p-field p-col-12"
+    <div class="p-field p-col-12" style="margin-bottom: 1rem;"
          *ngIf="editForm.get('httpRequestType')?.value === 'POST' || editForm.get('httpRequestType')?.value === 'PUT'">
-      <label>Request-Body-Schema (JSON)</label>
+      <label>Request Body Schema (JSON)</label>
       <ngx-monaco-editor [options]="jsonEditorOptions" formControlName="requestBodySchema"></ngx-monaco-editor>
       <div *ngIf="editJsonError" class="p-error">{{ editJsonError }}</div>
     </div>
-    <div class="p-field p-col-12">
-      <label>Response-Body-Schema</label>
+    <div class="p-field p-col-12" style="margin-bottom: 1rem;">
+      <label for="editResponseBodySchema">Response-Body-Schema</label>
       <p-tabView [(activeIndex)]="editActiveTabIndex" (onChange)="onEditTabChange($event)">
         <p-tabPanel header="JSON">
           <ngx-monaco-editor [options]="jsonEditorOptions" formControlName="responseBodySchema"></ngx-monaco-editor>
@@ -136,10 +141,10 @@
       </p-tabView>
     </div>
   </form>
-  <ng-template pTemplate="footer">
-    <button pButton type="button" label="Cancel" class="p-button-text" (click)="closeEditDialog()"></button>
-    <button pButton type="button" label="Save" (click)="saveEdit()" [disabled]="editForm.invalid" 
-            [pTooltip]="getEditEndpointTooltip()" tooltipPosition="top"></button>
+  <ng-template #footer>
+    <p-button label="Cancel" [text]="true" severity="secondary" (click)="closeEditDialog()"/>
+    <p-button label="Save" [outlined]="true" severity="secondary" (click)="saveEdit()" [disabled]="editForm.invalid" 
+              [pTooltip]="getEditEndpointTooltip()" tooltipPosition="top"/>
   </ng-template>
 </p-dialog>
 
