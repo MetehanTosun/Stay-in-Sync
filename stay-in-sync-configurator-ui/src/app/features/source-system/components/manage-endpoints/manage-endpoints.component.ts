@@ -1732,4 +1732,39 @@ ${jsonSchema}
     return errors.length > 0 ? errors.join(', ') : '';
   }
 
+  /**
+   * Get tooltip text for Edit Endpoint button
+   */
+  getEditEndpointTooltip(): string {
+    if (this.editForm.valid) {
+      return '';
+    }
+
+    const errors: string[] = [];
+    
+    // Check endpoint path
+    const pathControl = this.editForm.get('endpointPath');
+    if (pathControl?.invalid) {
+      if (pathControl.errors?.['required']) {
+        errors.push('Path is required');
+      } else if (pathControl.errors?.['pathFormat']) {
+        errors.push('Path must start with /');
+      }
+    }
+
+    // Check request body schema
+    const requestBodyControl = this.editForm.get('requestBodySchema');
+    if (requestBodyControl?.invalid && requestBodyControl.errors?.['jsonFormat']) {
+      errors.push('Invalid JSON in Request Body Schema');
+    }
+
+    // Check response body schema
+    const responseBodyControl = this.editForm.get('responseBodySchema');
+    if (responseBodyControl?.invalid && responseBodyControl.errors?.['jsonFormat']) {
+      errors.push('Invalid JSON in Response Body Schema');
+    }
+
+    return errors.length > 0 ? errors.join(', ') : '';
+  }
+
 }

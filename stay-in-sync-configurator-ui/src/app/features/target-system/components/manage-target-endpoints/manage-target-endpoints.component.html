@@ -104,7 +104,8 @@
   </form>
   <ng-template #footer>
     <p-button label="Cancel" [text]="true" severity="secondary" (click)="showDialog = false"/>
-    <p-button label="Save" [outlined]="true" severity="secondary" (click)="save()" [disabled]="form.invalid"/>
+    <p-button label="Save" [outlined]="true" severity="secondary" (click)="save()" [disabled]="form.invalid"
+              [pTooltip]="getSaveTooltip()" tooltipPosition="top"/>
   </ng-template>
 </p-dialog>
 

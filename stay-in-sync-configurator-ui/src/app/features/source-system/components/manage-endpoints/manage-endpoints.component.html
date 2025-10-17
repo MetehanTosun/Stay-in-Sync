@@ -138,7 +138,8 @@
   </form>
   <ng-template pTemplate="footer">
     <button pButton type="button" label="Cancel" class="p-button-text" (click)="closeEditDialog()"></button>
-    <button pButton type="button" label="Save" (click)="saveEdit()" [disabled]="editForm.invalid"></button>
+    <button pButton type="button" label="Save" (click)="saveEdit()" [disabled]="editForm.invalid" 
+            [pTooltip]="getEditEndpointTooltip()" tooltipPosition="top"></button>
   </ng-template>
 </p-dialog>
 
@@ -249,7 +250,7 @@
   <ng-template #footer>
     <p-button label="Cancel" [text]="true" severity="secondary" (click)="addEndpointVisible = false"/>
     <p-button label="Save" [outlined]="true" severity="secondary" (click)="addEndpoint()"
-              [disabled]="endpointForm.invalid"/>
+              [disabled]="endpointForm.invalid" [pTooltip]="getAddEndpointTooltip()" tooltipPosition="top"/>
   </ng-template>
 </p-dialog>
 
