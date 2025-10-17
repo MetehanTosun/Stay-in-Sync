@@ -5,20 +5,9 @@
     <span class="ml-3"><strong>AAS ID:</strong> {{ getAasId() }}</span>
   </div>
   <div>
-    <button pButton type="button" label="Test Connection" class="p-button-text" (click)="testAasConnection()" [disabled]="aasTestLoading">
-      <span *ngIf="aasTestLoading">Testing...</span>
-      <span *ngIf="!aasTestLoading">Test Connection</span>
-    </button>
     <button pButton type="button" label="Refresh Snapshot" class="p-button-text" (click)="discoverSnapshot()" [disabled]="isLoading"></button>
     <button pButton type="button" label="Upload AASX" class="p-button-text" (click)="openAasxUpload()"></button>
     <button pButton type="button" label="+ Submodel" class="p-button-text" (click)="openCreateSubmodel()"></button>
-  </div>
-</div>
-
-<div *ngIf="aasTestError" class="p-message p-message-error" style="margin-bottom: 1rem;">
-  <div class="p-message-wrapper">
-    <span class="p-message-icon pi pi-exclamation-triangle"></span>
-    <div class="p-message-text">{{ aasTestError }}</div>
   </div>
 </div>
 
