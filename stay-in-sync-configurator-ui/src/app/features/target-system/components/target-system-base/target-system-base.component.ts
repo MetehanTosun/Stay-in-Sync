@@ -1,6 +1,7 @@
 import { CommonModule } from '@angular/common';
 import { Component, OnInit } from '@angular/core';
 import { ReactiveFormsModule, FormBuilder, FormGroup, Validators, FormsModule } from '@angular/forms';
+import { RouterModule } from '@angular/router';
 import { CardModule } from 'primeng/card';
 import { TableModule } from 'primeng/table';
 import { ButtonModule } from 'primeng/button';
@@ -32,6 +33,7 @@ import { Inplace } from 'primeng/inplace';
     CommonModule,
     ReactiveFormsModule,
     FormsModule,
+    RouterModule,
     CardModule,
     TableModule,
     ButtonModule,

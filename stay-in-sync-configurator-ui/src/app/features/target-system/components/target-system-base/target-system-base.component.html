@@ -60,7 +60,7 @@
       </td>
       <td>
         <div class="actions-cell">
-          <button pButton type="button" label="Manage" class="p-button-text p-button-sm" (click)="manage(system)"></button>
+          <button pButton type="button" label="Manage" class="p-button-text p-button-sm" [routerLink]="['/target-system', system.id]"></button>
           <button pButton type="button" icon="pi pi-trash" class="p-button-text p-button-sm p-button-danger" (click)="confirmDelete(system)"></button>
         </div>
       </td>
