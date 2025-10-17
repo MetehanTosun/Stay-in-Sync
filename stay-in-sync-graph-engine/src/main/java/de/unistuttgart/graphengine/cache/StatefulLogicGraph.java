@@ -60,8 +60,7 @@ public class StatefulLogicGraph {
         // Find and validate ConfigNode presence
         this.configNode = findConfigNode(graphDefinition);
         
-        Log.debugf("Successfully initialized StatefulLogicGraph with %d nodes and ConfigNode '%s'",
-            graphDefinition.size(), configNode.getName());
+        Log.debugf("Successfully initialized StatefulLogicGraph");
     }
 
     /**

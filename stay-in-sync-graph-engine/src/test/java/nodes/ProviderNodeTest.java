@@ -30,7 +30,7 @@ public class ProviderNodeTest {
 
     @Test
     @DisplayName("should create ProviderNode with valid jsonPath")
-    void testConstructor_WithValidJsonPath_ShouldSucceed() throws Exception {
+    void testConstructor_WithValidJsonPath_ShouldSucceed()  {
         // ARRANGE & ACT
         ProviderNode node = new ProviderNode("source.system1.value");
 
@@ -105,7 +105,7 @@ public class ProviderNodeTest {
 
     @Test
     @DisplayName("should throw exception when 'source' key missing from dataContext")
-    void testCalculate_WithoutSourceKey_ShouldThrowException() throws Exception {
+    void testCalculate_WithoutSourceKey_ShouldThrowException() {
         // ARRANGE
         ProviderNode node = new ProviderNode("source.system1.value");
         // dataContext without 'source' key
@@ -122,7 +122,7 @@ public class ProviderNodeTest {
 
     @Test
     @DisplayName("should throw exception when source value is null")
-    void testCalculate_WithNullSourceValue_ShouldThrowException() throws Exception {
+    void testCalculate_WithNullSourceValue_ShouldThrowException() {
         // ARRANGE
         ProviderNode node = new ProviderNode("source.system1.value");
         dataContext.put("source", null);
@@ -139,7 +139,7 @@ public class ProviderNodeTest {
 
     @Test
     @DisplayName("should throw exception when source value is not a JsonNode")
-    void testCalculate_WithNonJsonNodeSource_ShouldThrowException() throws Exception {
+    void testCalculate_WithNonJsonNodeSource_ShouldThrowException() {
         // ARRANGE
         ProviderNode node = new ProviderNode("source.system1.value");
         dataContext.put("source", "not a json node"); // String instead of JsonNode
@@ -156,7 +156,7 @@ public class ProviderNodeTest {
 
     @Test
     @DisplayName("should extract value successfully from valid path")
-    void testCalculate_WithValidPath_ShouldExtractValue() throws Exception {
+    void testCalculate_WithValidPath_ShouldExtractValue() {
         // ARRANGE
         ProviderNode node = new ProviderNode("source.system1.sensors.temperature");
 
@@ -180,7 +180,7 @@ public class ProviderNodeTest {
 
     @Test
     @DisplayName("should set null when path does not exist")
-    void testCalculate_WithNonExistentPath_ShouldSetNull() throws Exception {
+    void testCalculate_WithNonExistentPath_ShouldSetNull(){
         // ARRANGE
         ProviderNode node = new ProviderNode("source.system1.nonexistent.path");
 
@@ -197,7 +197,7 @@ public class ProviderNodeTest {
 
     @Test
     @DisplayName("should handle complex jsonPath correctly")
-    void testCalculate_WithComplexPath_ShouldWork() throws Exception {
+    void testCalculate_WithComplexPath_ShouldWork() {
         // ARRANGE
         ProviderNode node = new ProviderNode("source.complex.nested.deep.structure.value");
 
@@ -226,7 +226,7 @@ public class ProviderNodeTest {
 
     @Test
     @DisplayName("should handle empty object in source")
-    void testCalculate_WithEmptySource_ShouldSetNull() throws Exception {
+    void testCalculate_WithEmptySource_ShouldSetNull() {
         // ARRANGE
         ProviderNode node = new ProviderNode("source.system1.value");
 
@@ -242,7 +242,7 @@ public class ProviderNodeTest {
 
     @Test
     @DisplayName("should handle different value types correctly")
-    void testCalculate_WithDifferentValueTypes_ShouldWork() throws Exception {
+    void testCalculate_WithDifferentValueTypes_ShouldWork(){
         // Test String value
         ProviderNode stringNode = new ProviderNode("source.data.stringValue");
         Map<String, Object> stringData = Map.of("data", Map.of("stringValue", "test"));
@@ -270,7 +270,7 @@ public class ProviderNodeTest {
 
     @Test
     @DisplayName("should handle minimal valid jsonPath")
-    void testConstructor_WithMinimalValidPath_ShouldSucceed() throws Exception {
+    void testConstructor_WithMinimalValidPath_ShouldSucceed() {
         // ARRANGE & ACT
         ProviderNode node = new ProviderNode("source.sys");
 
@@ -280,7 +280,7 @@ public class ProviderNodeTest {
 
     @Test
     @DisplayName("should handle arcId getter and setter")
-    void testArcIdHandling() throws Exception {
+    void testArcIdHandling() {
         // ARRANGE
         ProviderNode node = new ProviderNode("source.system1.value");
 

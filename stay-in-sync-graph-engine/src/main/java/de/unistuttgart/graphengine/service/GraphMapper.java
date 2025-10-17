@@ -180,78 +180,107 @@ public class GraphMapper {
             return new MappingResult(new ArrayList<>(), new ArrayList<>());
         }
         Log.debugf("Mapping GraphDTO with %d nodes to internal domain model.", graphDto.getNodes().size());
-        Map<Integer, Node> createdNodes = new HashMap<>();
+        
         List<ValidationError> mappingErrors = new ArrayList<>();
+        Map<Integer, Node> createdNodes = createNodesFromDTOs(graphDto.getNodes(), mappingErrors);
+        connectNodes(graphDto.getNodes(), createdNodes);
+        
+        Log.infof("Successfully mapped GraphDTO to an internal graph with %d nodes.", createdNodes.size());
+        return new MappingResult(new ArrayList<>(createdNodes.values()), mappingErrors);
+    }
 
-        // Pass 1: Create all node instances.
+    /**
+     * Pass 1: Creates all node instances from the list of NodeDTOs.
+     * Validates each DTO and adds any configuration errors to the mappingErrors list.
+     *
+     * @param nodeDtos The list of NodeDTOs to create nodes from.
+     * @param mappingErrors The list to collect any mapping errors.
+     * @return A map of node IDs to their created Node instances.
+     */
+    private Map<Integer, Node> createNodesFromDTOs(List<NodeDTO> nodeDtos, List<ValidationError> mappingErrors) {
         Log.debug("Pass 1: Creating all Node instances from DTOs.");
-            for (NodeDTO dto : graphDto.getNodes()) {
-                if (dto == null) {
-                    Log.warn("Encountered null NodeDTO in graph, skipping.");
-                    continue;
-                }
-                if (dto.getNodeType() == null || dto.getNodeType().isBlank()) {
-                    Log.warnf("NodeDTO with ID %d has null or blank nodeType, skipping.", dto.getId());
-                    mappingErrors.add(new NodeConfigurationError(dto.getId(), dto.getName(), 
-                        "Node type cannot be null or blank"));
-                    continue;
-                }
-                
-                try {
-                    Node node;
-                    switch (dto.getNodeType()) {
-                        case "PROVIDER":
-                            node = new ProviderNode(dto.getJsonPath());
-                            ((ProviderNode) node).setArcId(dto.getArcId());
-                            break;
-                        case "CONSTANT":
-                            node = new ConstantNode(dto.getName(), dto.getValue());
-                            break;
-                        case "SCHEMA":
-                            node = new SchemaNode(dto.getValue() != null ? dto.getValue().toString() : "");
-                            break;
-                        case "LOGIC":
-                            node = new LogicNode(dto.getName(), LogicOperator.valueOf(dto.getOperatorType()));
-                            break;
-                        case "FINAL":
-                            node = new FinalNode();
-                            break;
-                        case "CONFIG":
-                            ConfigNode configNode = new ConfigNode();
-                            configNode.setActive(dto.isChangeDetectionActive());
-                            if (dto.getChangeDetectionMode() != null) {
-                                configNode.setMode(ConfigNode.ChangeDetectionMode.valueOf(dto.getChangeDetectionMode()));
-                            }
-                            configNode.setTimeWindowEnabled(dto.isTimeWindowEnabled());
-                            configNode.setTimeWindowMillis(dto.getTimeWindowMillis());
-                            node = configNode;
-                            break;
-                        default:
-                            throw new NodeConfigurationException("Unknown nodeType: " + dto.getNodeType());
-                    }
-                    node.setId(dto.getId());
-                    node.setName(dto.getName());
-                    node.setOffsetX(dto.getOffsetX());
-                    node.setOffsetY(dto.getOffsetY());
-                    createdNodes.put(node.getId(), node);
-                }
-
-                catch (NodeConfigurationException e) {
-                    Log.warnf(e, "A node with invalid configuration was found (ID: %d). It will be skipped.", dto.getId());
-                        mappingErrors.add(new NodeConfigurationError(dto.getId(), dto.getName(), e.getMessage()));
-                    }
+        Map<Integer, Node> createdNodes = new HashMap<>();
+        
+        for (NodeDTO dto : nodeDtos) {
+            if (dto == null) {
+                Log.warn("Encountered null NodeDTO in graph, skipping.");
+                continue;
             }
-
+            if (dto.getNodeType() == null || dto.getNodeType().isBlank()) {
+                Log.warnf("NodeDTO with ID %d has null or blank nodeType, skipping.", dto.getId());
+                mappingErrors.add(new NodeConfigurationError(dto.getId(), dto.getName(), 
+                    "Node type cannot be null or blank"));
+                continue;
+            }
+            
+            try {
+                Node node = createNodeFromDTO(dto);
+                node.setId(dto.getId());
+                node.setName(dto.getName());
+                node.setOffsetX(dto.getOffsetX());
+                node.setOffsetY(dto.getOffsetY());
+                createdNodes.put(node.getId(), node);
+            } catch (NodeConfigurationException e) {
+                Log.warnf(e, "A node with invalid configuration was found (ID: %d). It will be skipped.", dto.getId());
+                mappingErrors.add(new NodeConfigurationError(dto.getId(), dto.getName(), e.getMessage()));
+            }
+        }
+        
         Log.debugf("Created %d Node instances.", createdNodes.size());
+        return createdNodes;
+    }
 
-        // Pass 2: Apply input connections from the inputNodes property of each NodeDTO.
+    /**
+     * Creates a specific Node instance based on the NodeDTO's type.
+     *
+     * @param dto The NodeDTO containing the node configuration.
+     * @return The created Node instance.
+     * @throws NodeConfigurationException if the node type is unknown or configuration is invalid.
+     */
+    private Node createNodeFromDTO(NodeDTO dto) throws NodeConfigurationException {
+        switch (dto.getNodeType()) {
+            case "PROVIDER":
+                ProviderNode providerNode = new ProviderNode(dto.getJsonPath());
+                providerNode.setArcId(dto.getArcId());
+                return providerNode;
+            case "CONSTANT":
+                return new ConstantNode(dto.getName(), dto.getValue());
+            case "SCHEMA":
+                return new SchemaNode(dto.getValue() != null ? dto.getValue().toString() : "");
+            case "LOGIC":
+                return new LogicNode(dto.getName(), LogicOperator.valueOf(dto.getOperatorType()));
+            case "FINAL":
+                return new FinalNode();
+            case "CONFIG":
+                ConfigNode configNode = new ConfigNode();
+                configNode.setActive(dto.isChangeDetectionActive());
+                if (dto.getChangeDetectionMode() != null) {
+                    configNode.setMode(ConfigNode.ChangeDetectionMode.valueOf(dto.getChangeDetectionMode()));
+                }
+                configNode.setTimeWindowEnabled(dto.isTimeWindowEnabled());
+                configNode.setTimeWindowMillis(dto.getTimeWindowMillis());
+                return configNode;
+            default:
+                throw new NodeConfigurationException("Unknown nodeType: " + dto.getNodeType());
+        }
+    }
+
+    /**
+     * Pass 2: Connects all node instances based on the InputDTO connections in each NodeDTO.
+     *
+     * @param nodeDtos The list of NodeDTOs containing connection information.
+     * @param createdNodes The map of already created Node instances.
+     */
+    private void connectNodes(List<NodeDTO> nodeDtos, Map<Integer, Node> createdNodes) {
         Log.debug("Pass 2: Connecting Node instances based on InputDTOs.");
-        for (NodeDTO dto : graphDto.getNodes()) {
+        
+        for (NodeDTO dto : nodeDtos) {
             Node targetNode = createdNodes.get(dto.getId());
             // Skip if node was not created in Pass 1 (e.g., due to configuration error)
             if (targetNode == null) {
                 continue;
             }
+            
             if (dto.getInputNodes() != null && !dto.getInputNodes().isEmpty()) {
                 // Ensure the input list is sorted by orderIndex
                 dto.getInputNodes().sort(Comparator.comparingInt(InputDTO::getOrderIndex));
@@ -262,16 +291,15 @@ public class GraphMapper {
                     if (sourceNode != null) {
                         orderedInputs.add(sourceNode);
                     } else {
-                        Log.warnf("Could not find source node with id %d for target node %d. Connection skipped.", inputDto.getId(), targetNode.getId());
+                        Log.warnf("Could not find source node with id %d for target node %d. Connection skipped.", 
+                            inputDto.getId(), targetNode.getId());
                     }
                 }
                 targetNode.setInputNodes(orderedInputs);
             }
         }
+        
         Log.debug("Finished connecting nodes.");
-
-        Log.infof("Successfully mapped GraphDTO to an internal graph with %d nodes.", createdNodes.size());
-        return new MappingResult(new ArrayList<>(createdNodes.values()), mappingErrors);
     }
 
     /**
