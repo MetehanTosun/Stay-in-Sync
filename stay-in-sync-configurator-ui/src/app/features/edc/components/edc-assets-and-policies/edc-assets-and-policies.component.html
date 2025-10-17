@@ -293,7 +293,7 @@
     <div class="field col-12 mt-3">
       <label class="font-bold block mb-2">Asset JSON</label>
       <button pButton pRipple type="button" label="Upload from JSON" icon="pi pi-upload" class="p-button-outlined w-full mb-2" (click)="assetTemplateFileInput.click()"></button>
-      <ngx-monaco-editor id="newAssetJsonEditor" [options]="editorOptions" [(ngModel)]="expertModeJsonContent" style="height: 300px; border: 1px solid var(--surface-d);"></ngx-monaco-editor>
+      <ngx-monaco-editor id="newAssetJsonEditor" [options]="editorOptions" [(ngModel)]="expertModeJsonContent" (ngModelChange)="syncAssetFormFromJsonWithDebounce()" style="height: 300px; border: 1px solid var(--surface-d);"></ngx-monaco-editor>
     </div>
   </div>
   <ng-template pTemplate="footer">
@@ -354,7 +354,7 @@
 
       <div class="field col-12 mt-3">
         <label class="font-bold block mb-2">Asset JSON</label>
-        <ngx-monaco-editor id="editAssetJsonEditor" [options]="editorOptions" [(ngModel)]="expertModeJsonContent" style="height: 300px; border: 1px solid var(--surface-d);"></ngx-monaco-editor>
+        <ngx-monaco-editor id="editAssetJsonEditor" [options]="editorOptions" [(ngModel)]="expertModeJsonContent" (ngModelChange)="syncAssetFormFromJsonWithDebounce()" style="height: 300px; border: 1px solid var(--surface-d);"></ngx-monaco-editor>
       </div>
     </div>
   </ng-container>
