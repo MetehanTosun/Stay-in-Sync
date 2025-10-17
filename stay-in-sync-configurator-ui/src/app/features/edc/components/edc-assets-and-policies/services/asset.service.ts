@@ -13,9 +13,9 @@ export class AssetService {
   // UI Testing method. To use the real backend, change this to false!
   private mockMode = false;
 
-  private baseUrl = 'http://localhost:8090/api/config/edcs';
-  private transformationsUrl = 'http://localhost:8090/api/config/transformations';
-  private targetArcUrl = 'http://localhost:8090/api/config/target-arc';
+  private baseUrl = '/api/config/edcs';
+  private transformationsUrl = '/api/config/transformations';
+  private targetArcUrl = '/api/config/target-arc';
 
   constructor(private http: HttpClient) {}
 
