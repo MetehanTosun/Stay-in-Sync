@@ -35,7 +35,10 @@
             "styles": [
               "src/styles.css"
             ],
-            "scripts": []
+            "scripts": [],
+            "allowedCommonJsDependencies": [
+              "typescript"
+            ]
           },
           "configurations": {
             "production": {

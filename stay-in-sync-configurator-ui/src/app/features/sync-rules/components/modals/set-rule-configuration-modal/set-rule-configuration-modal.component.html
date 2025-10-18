@@ -1,0 +1,21 @@
+<p-dialog header="Edit Rule" [(visible)]="visible" [modal]="true" [closable]="false" [style]="{ width: '520px' }">
+  <form (ngSubmit)="submit()" class="p-fluid">
+
+    <div class="form-field">
+      <label for="rule-name">Rule Name</label>
+      <input id="rule-name" name="rule-name" [(ngModel)]="ruleName" class="form-input" placeholder="Rule name" required />
+    </div>
+
+    <div class="form-field">
+      <label for="rule-description">Description</label>
+      <textarea id="rule-description" name="rule-description" [(ngModel)]="ruleDescription" class="form-input" rows="4" placeholder="Short description"></textarea>
+    </div>
+
+    <!-- MARK: Form Actions -->
+    <div class="form-actions">
+      <p-button id="save-button" label="Save" icon="pi pi-save" type="submit" styleClass="save-btn"></p-button>
+      <p-button id="cancel-button" label="Cancel" icon="pi pi-times" type="button" (click)="closeModal()" styleClass="cancel-btn p-button-secondary"></p-button>
+    </div>
+  </form>
+</p-dialog>
+

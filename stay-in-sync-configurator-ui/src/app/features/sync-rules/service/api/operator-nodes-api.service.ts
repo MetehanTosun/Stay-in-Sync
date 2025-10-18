@@ -1,7 +1,7 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { map, Observable } from 'rxjs';
-import { LogicOperatorMeta } from '../../models';
+import { GroupedOperators, LogicOperatorMetadata } from '../../models';
 
 /**
  * An injectable singleton class which allows the communication with the backend
@@ -15,28 +15,30 @@ export class OperatorNodesApiService {
 
   constructor(private http: HttpClient) { }
 
-  //#region Read Operations
+  //#region Read
   /**
-   * Sends a GET request to receive a collection of all available logic operators
+   * Sends a GET request for all logic operators
    */
-  getOperators(): Observable<LogicOperatorMeta[]> {
-    return this.http.get<LogicOperatorMeta[]>(this.apiUrl);
+  getOperators(): Observable<LogicOperatorMetadata[]> {
+    return this.http.get<LogicOperatorMetadata[]>(this.apiUrl);
   }
 
   /**
    * Groups the all Operators by category
    * @returns Map of Operators identified by category
    */
-  getGroupedOperators(): Observable<Map<string, LogicOperatorMeta[]>> {
+  getGroupedOperators(): Observable<GroupedOperators> {
     return this.getOperators().pipe(
       map(operators => {
-        const groups = new Map<string, LogicOperatorMeta[]>();
+        const groups: GroupedOperators = {};
+
         operators.forEach(op => {
-          if (!groups.has(op.category)) {
-            groups.set(op.category, []);
+          if (!groups[op.category]) {
+            groups[op.category] = [];
           }
-          groups.get(op.category)!.push(op);
+          groups[op.category].push(op);
         });
+
         return groups;
       })
     );

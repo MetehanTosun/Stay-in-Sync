@@ -77,6 +77,7 @@ public class TransformationRuleService {
             configNodeDto.setOffsetY(DEFAULT_CONFIG_NODE_OFFSET_Y);
             configNodeDto.setInputTypes(List.of("ANY"));
             configNodeDto.setOutputType("BOOLEAN");
+            configNodeDto.setTimeWindowMillis(5000);
 
             InputDTO initialEdge = new InputDTO();
             initialEdge.setId(DEFAULT_CONFIG_NODE_ID);

@@ -1,7 +1,9 @@
 import { CommonModule } from '@angular/common';
 import { Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
-import { LogicOperatorMeta, NodeType } from '../../models';
+import { GroupedOperators, LogicOperatorMetadata, NodeType } from '../../models';
 import { OperatorNodesApiService } from '../../service';
+import { trackByGroupName, trackByOperator } from './node-palette.utils';
+import { MessageService } from 'primeng/api';
 
 /**
  * Responsible for the main logic of the node selection/creation palette
@@ -10,26 +12,63 @@ import { OperatorNodesApiService } from '../../service';
   selector: 'app-node-palette',
   imports: [CommonModule],
   templateUrl: './node-palette.component.html',
-  styleUrl: './node-palette.component.css'
+  styleUrls: ['./node-palette.component.css']
 })
 export class NodePaletteComponent implements OnInit {
-  //#region Setup
+  //#region  Fields
+  /** Whether the main palette is visible */
   @Input() showMainNodePalette = false;
-  @Output() nodeSelected = new EventEmitter<{ nodeType: NodeType, operator?: LogicOperatorMeta }>();
 
-  NodeType = NodeType; //* for .html file
-  operatorsGrouped: Map<string, LogicOperatorMeta[]> = new Map<string, LogicOperatorMeta[]>();
+  /** Coordinates where the palette should be rendered. */
+  @Input() position?: { x: number, y: number } | null = null;
 
-  // Palette Status
+  /** Emitted when the user selects a node to create. Payload: { nodeType, operator? } */
+  @Output() nodeSelected = new EventEmitter<{ nodeType: NodeType, operator?: LogicOperatorMetadata }>();
+
+
+  /** Expose enum to template */
+  NodeType = NodeType;
+
+  /** Operators grouped by category */
+  private operatorsGrouped: GroupedOperators = {};
+
+  /** Cached group names for template iteration (prevents repeated Object.keys calls) */
+  logicGroupKeys: string[] = [];
+
+  /** Whether the logic groups sub-palette is shown */
   showLogicGroups = false;
+
+  /** Currently selected logic group */
   selectedLogicGroup: string | null = null;
+
+  /** Whether the operators submenu is shown */
   showGroupOperators = false;
+  //#endregion
 
-  constructor(private nodesApi: OperatorNodesApiService) { }
 
+  constructor(
+    private nodesApi: OperatorNodesApiService,
+    private messageService: MessageService
+  ) { }
+
+  //#region Lifecycle
   ngOnInit(): void {
     this.loadGroupedOperators();
   }
+  //#endregion
+
+  //#region Style helpers
+  get paletteStyle() {
+    if (this.showMainNodePalette && this.position && this.position.x > 0) {
+      return {
+        position: 'fixed',
+        left: `${this.position.x}px`,
+        top: `${this.position.y}px`
+      } as Record<string, string>;
+    }
+    return {} as Record<string, string>;
+  }
+
   //#endregion
 
   //#region Template Methods
@@ -39,7 +78,7 @@ export class NodePaletteComponent implements OnInit {
    * @param nodeType The type of node that is to be created
    * @param operator The logic operator that is to be created, only for logic nodes
    */
-  selectNode(nodeType: NodeType, operator?: LogicOperatorMeta) {
+  selectNode(nodeType: NodeType, operator?: LogicOperatorMetadata) {
     this.nodeSelected.emit({ nodeType, operator });
   }
 
@@ -68,6 +107,12 @@ export class NodePaletteComponent implements OnInit {
     this.selectedLogicGroup = groupName;
     this.showGroupOperators = true;
   }
+
+  //#endregion
+
+  //#region Template Helpers
+  trackByGroupName = trackByGroupName;
+  trackByOperator = trackByOperator;
   //#endregion
 
   //#region REST Methods
@@ -76,33 +121,31 @@ export class NodePaletteComponent implements OnInit {
    */
   loadGroupedOperators() {
     this.nodesApi.getGroupedOperators().subscribe({
-      next: (operatorsGrouped: Map<string, LogicOperatorMeta[]>) => {
+      next: (operatorsGrouped: GroupedOperators) => {
         this.operatorsGrouped = operatorsGrouped;
+        this.logicGroupKeys = Object.keys(operatorsGrouped);
       },
-      error: (err) => {
-        alert(err.error?.message || err.message);
-        console.log(err); // TODO-s err
+      error: (err: unknown) => {
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Unable to Load Operator Nodes',
+          detail: (err as any)?.message || 'An unexpected error occurred. Please try again later.'
+        });
+        console.error('Failed to load operator nodes', err);
       },
-    })
+    });
   }
   //#endregion
 
   //#region Getters
-  /**
-   * @returns the names of all logic groups
-   */
-  getLogicGroups(): string[] {
-    return Array.from(this.operatorsGrouped.keys());
-  }
-
   /**
    * Returns the operators of the given logic group
    *
    * @param groupName
    * @returns Array of logic operators
    */
-  getOperatorsForGroup(groupName: string): LogicOperatorMeta[] {
-    return this.operatorsGrouped.get(groupName) || [];
+  getOperatorsForGroup(groupName: string): LogicOperatorMetadata[] {
+    return this.operatorsGrouped[groupName] || [];
   }
   //#endregion
 }
