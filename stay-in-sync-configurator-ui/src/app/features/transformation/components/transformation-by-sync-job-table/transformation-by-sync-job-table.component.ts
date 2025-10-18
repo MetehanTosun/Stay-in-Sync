@@ -110,7 +110,7 @@ export class TransformationBySyncJobTableComponent implements OnInit {
   getSelectableTransformationRules(currentRowData: any) {
     return this.allTransformationRules.map(rule => ({
       ...rule,
-      disabled: rule.transformationId !== null && rule.id !== currentRowData.transformationRule?.id
+      disabled: rule.id !== null && rule.id !== currentRowData.transformationRule?.id
     }));
   }
 

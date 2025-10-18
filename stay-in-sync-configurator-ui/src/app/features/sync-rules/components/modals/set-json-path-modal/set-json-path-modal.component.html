@@ -1,0 +1,23 @@
+<p-dialog header="Edit Provider" [(visible)]="visible" [modal]="true" [closable]="false" [style]="{ width: '520px' }">
+  <form (ngSubmit)="submit()" class="p-fluid">
+    <div class="form-field">
+      
+      <label for="provider-value">Provider Value</label>
+      <div class="autocomplete-container">
+        <input id="provider-value" name="provider-value" [(ngModel)]="jsonPath" (input)="onInputChange($event)" class="form-input"
+          placeholder="Type or select JSON Path" required />
+        <div class="suggestions-dropdown">
+          <div *ngFor="let path of getFilteredPaths()" class="suggestion-item" (click)="selectPath(path)">
+            {{ path }}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- MARK: Form Actions -->
+    <div class="form-actions">
+      <p-button id="save-button" label="Save" icon="pi pi-save" type="submit" styleClass="save-btn"></p-button>
+      <p-button id="cancel-button" label="Cancel" icon="pi pi-times" type="button" (click)="closeModal()" styleClass="cancel-btn p-button-secondary"></p-button>
+    </div>
+  </form>
+</p-dialog>

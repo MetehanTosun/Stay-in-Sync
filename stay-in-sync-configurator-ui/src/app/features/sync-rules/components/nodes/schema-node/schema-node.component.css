@@ -1,0 +1,28 @@
+@import '../node-shared.css';
+
+.schema-node {
+  background: #2e7d32;
+  border: 3px solid #1b5e20;
+  color: #fff;
+  align-items: flex-start;
+}
+
+.schema-node .node-content {
+  background: transparent;
+  padding: 0;
+}
+
+.schema-node .preview-value {
+  background: rgba(255,255,255,0.06);
+  padding: 8px;
+  border-radius: 4px;
+  box-sizing: border-box;
+  max-width: 320px;
+  overflow-x: auto;
+}
+
+.schema-node .preview-value code {
+  display: block;
+  white-space: pre;
+  color: #f1f8e9;
+}

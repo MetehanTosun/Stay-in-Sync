@@ -111,6 +111,27 @@ public class RequestConfigurationResource {
     }
 */
 
+    @GET
+    @Path("endpoint/request-configuration/")
+    @Operation(summary = "Returns all api-request-configurations")
+    @APIResponse(
+            responseCode = "200",
+            description = "Gets all api-request-configurations",
+            content = @Content(
+                    mediaType = APPLICATION_JSON,
+                    schema = @Schema(implementation = GetRequestConfigurationDTO.class, type = SchemaType.ARRAY)
+            )
+    )
+    @APIResponse(
+            responseCode = "500",
+            description = "Unable to retrieve api-request-configurations"
+    )
+    public List<GetRequestConfigurationDTO> getAllApiRequestConfigurations() {
+        var allConfigurations = sourceSystemApiRequestConfigurationService.findAllApiRequestConfigurations();
+        Log.debugf("Total number of api request configurations: %d", allConfigurations.size());
+        return fullUpdateMapper.mapToDTOList(allConfigurations);
+    }
+
     @POST
     @Path("/request-configuration/by-source-system-names")
     public Response getArcsBySourceSystemNames(Set<String> sourceSystemNames) {

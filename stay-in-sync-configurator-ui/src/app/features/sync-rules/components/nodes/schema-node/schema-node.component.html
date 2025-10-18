@@ -1,0 +1,21 @@
+<div class="schema-node" selectable (mouseenter)="displayTooltips = true" (mouseleave)="displayTooltips = false">
+  <!-- Node Header -->
+  <div class="node-header">
+    <span class="node-type">Schema</span>
+  </div>
+
+  <!-- Node Body -->
+  <div class="node-content">
+    <div class="preview-label">Preview:</div>
+    <div class="preview-value">
+      <code>{{ getSchemaPreview() }}</code>
+    </div>
+  </div>
+
+  <!-- I/O Handlers -->
+  <handle type="source" position="right"></handle>
+
+  <div class="tooltip-output" *ngIf="displayTooltips">
+    {{ 'JSON' }}
+  </div>
+</div>

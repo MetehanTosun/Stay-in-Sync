@@ -1,0 +1,57 @@
+.schema-textarea {
+  width: 100%;
+  font-family: monospace;
+  font-size: 0.9rem;
+}
+
+.schema-editor-wrapper {
+  height: 100%;
+  min-height: 450px;
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+}
+
+.schema-editor-wrapper ngx-monaco-editor,
+.schema-editor-wrapper .ngx-monaco-editor,
+.schema-editor-wrapper .monaco-editor {
+  height: 100% !important;
+}
+
+::ng-deep .set-schema-dialog .p-dialog-content form.p-fluid {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+::ng-deep .set-schema-dialog .p-dialog-content .form-field {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+}
+
+.form-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  margin-top: 0.75rem;
+}
+
+.file-upload {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.actions-right {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.uploaded-name {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}

@@ -3,5 +3,5 @@
  */
 export interface RuleCreationDTO {
   name: string;
-  description: string;
+  description?: string;
 }

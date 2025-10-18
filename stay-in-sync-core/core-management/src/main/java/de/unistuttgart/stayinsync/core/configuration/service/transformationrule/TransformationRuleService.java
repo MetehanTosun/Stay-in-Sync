@@ -73,6 +73,7 @@ public class TransformationRuleService {
             configNodeDto.setChangeDetectionMode("OR");
             configNodeDto.setInputTypes(List.of("ANY"));
             configNodeDto.setOutputType("BOOLEAN");
+            configNodeDto.setTimeWindowMillis(5000);
 
             InputDTO initialEdge = new InputDTO();
             initialEdge.setId(1);
