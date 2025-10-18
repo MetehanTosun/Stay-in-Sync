@@ -41,7 +41,7 @@ public class AndOperatorTest {
 
     @Test
     @DisplayName("should return true when all inputs are true")
-    void testExecute_WhenAllInputsAreTrue_ShouldReturnTrue() throws GraphEvaluationException {
+    void testExecute_WhenAllInputsAreTrue_ShouldReturnTrue() {
         // ARRANGE
         when(mockLogicNode.getInputNodes()).thenReturn(List.of(mockInputNode1, mockInputNode2));
         when(mockInputNode1.getCalculatedResult()).thenReturn(true);
@@ -56,7 +56,7 @@ public class AndOperatorTest {
 
     @Test
     @DisplayName("should return false when any input is false")
-    void testExecute_WhenAnyInputIsFalse_ShouldReturnFalse() throws GraphEvaluationException {
+    void testExecute_WhenAnyInputIsFalse_ShouldReturnFalse() {
         // ARRANGE
         when(mockLogicNode.getInputNodes()).thenReturn(List.of(mockInputNode1, mockInputNode2));
         when(mockInputNode1.getCalculatedResult()).thenReturn(true);
