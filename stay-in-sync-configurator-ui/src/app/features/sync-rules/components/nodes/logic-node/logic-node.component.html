@@ -6,8 +6,8 @@
 
   <!-- Node Body -->
   <div class="node-content">
-    <div class="node-title">{{ node().data?.name }}</div>
-    <div class="operator-category">{{ node().data?.operatorType }}</div>
+    <div class="node-title">{{ getNodeName() }}</div>
+    <div class="operator-type">{{ node().data?.operatorType }}</div>
   </div>
 
   <!-- I/O Handlers -->

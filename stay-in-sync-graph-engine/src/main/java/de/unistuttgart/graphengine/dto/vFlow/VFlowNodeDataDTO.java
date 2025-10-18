@@ -67,6 +67,11 @@ public class VFlowNodeDataDTO {
      */
     private boolean changeDetectionActive;
 
+    /**
+     * A Long representing the time window a config node checks for changes
+     */
+    private Long timeWindowMillis;
+
     public String getName() {
         return name;
     }
@@ -153,5 +158,13 @@ public class VFlowNodeDataDTO {
 
     public void setChangeDetectionActive(boolean changeDetectionActive) {
         this.changeDetectionActive = changeDetectionActive;
+    }
+
+    public Long getTimeWindowMillis() {
+        return timeWindowMillis;
+    }
+
+    public void setTimeWindowMillis(Long timeWindowMillis) {
+        this.timeWindowMillis = timeWindowMillis;
     }
 }
