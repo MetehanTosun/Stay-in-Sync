@@ -10,12 +10,12 @@ import de.unistuttgart.stayinsync.monitoring.core.configuration.clients.Snapshot
 import de.unistuttgart.stayinsync.monitoring.core.configuration.clients.TransformationScriptClient;
 import de.unistuttgart.stayinsync.monitoring.core.configuration.service.ReplayExecutor;
 import jakarta.inject.Inject;
-import jakarta.ws.rs.Consumes;
-import jakarta.ws.rs.POST;
-import jakarta.ws.rs.Path;
-import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
+import org.eclipse.microprofile.rest.client.inject.RestClient;
+
+import java.util.Map;
 
 /**
  * REST resource for replaying transformation scripts either from raw input or
@@ -72,10 +72,11 @@ public class ReplayResource {
         var result = executor.execute(
                 req.scriptName() == null ? "replay.js" : req.scriptName(),
                 req.javascriptCode(),
-                req.sourceData());
+                req.sourceData(),
+                req.generatedSdkCode());
 
-        // Wrap the executor result into the transport DTO for the REST response.
         var resp = new ReplayExecuteResponseDTO(result.outputData(), result.variables(), result.errorInfo());
         return Response.ok(resp).build();
     }
 }
+// Execute a stored snapshot (load snapshot → fetch script → execute)

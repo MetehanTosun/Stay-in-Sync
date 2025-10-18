@@ -1,0 +1,154 @@
+package de.unistuttgart.stayinsync.core.configuration.rest.aas.target;
+
+import de.unistuttgart.stayinsync.core.configuration.persistence.entities.sync.TargetSystem;
+import de.unistuttgart.stayinsync.core.configuration.service.aas.AasTraversalClient;
+import de.unistuttgart.stayinsync.core.configuration.service.aas.TargetSystemAasService;
+import de.unistuttgart.stayinsync.core.configuration.service.aas.HttpHeaderBuilder;
+import io.quarkus.logging.Log;
+import io.smallrye.common.annotation.Blocking;
+import jakarta.inject.Inject;
+import jakarta.ws.rs.*;
+import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.Response;
+import org.eclipse.microprofile.openapi.annotations.Operation;
+import org.eclipse.microprofile.openapi.annotations.parameters.RequestBody;
+import org.eclipse.microprofile.openapi.annotations.media.Content;
+import org.eclipse.microprofile.openapi.annotations.media.Schema;
+import org.eclipse.microprofile.openapi.annotations.responses.APIResponse;
+import org.eclipse.microprofile.openapi.annotations.responses.APIResponses;
+
+/**
+ * REST controller for managing AAS (Asset Administration Shell) submodels in Target Systems.
+ * Provides endpoints for creating, updating, and deleting AAS submodels.
+ * Integrates with TargetSystemAasService and AasTraversalClient to perform AAS operations.
+ */
+@Path("/api/config/target-system/{targetSystemId}/aas")
+@Produces(MediaType.APPLICATION_JSON)
+@Consumes(MediaType.APPLICATION_JSON)
+@Blocking
+public class TargetAasSubmodelController {
+
+    @Inject
+    TargetSystemAasService aasService;
+
+    @Inject
+    AasTraversalClient traversal;
+
+    @Inject
+    HttpHeaderBuilder headerBuilder;
+
+    /**
+     * Creates a new AAS submodel for the specified Target System.
+     * Automatically adds a submodel reference to the AAS shell after creation if possible.
+     *
+     * @param targetSystemId ID of the Target System.
+     * @param body JSON representation of the submodel to create.
+     * @return HTTP Response indicating creation success or failure.
+     */
+    @POST
+    @Path("/submodels")
+    @Operation(summary = "Create submodel", description = "Creates a new submodel in the target AAS")
+    @APIResponses(value = {
+        @APIResponse(responseCode = "201", description = "Submodel created successfully"),
+        @APIResponse(responseCode = "400", description = "Invalid request"),
+        @APIResponse(responseCode = "404", description = "Target system not found"),
+        @APIResponse(responseCode = "500", description = "Failed to create submodel")
+    })
+    public Response createSubmodel(@PathParam("targetSystemId") Long targetSystemId,
+                                   @RequestBody(description = "Submodel JSON", content = @Content(schema = @Schema(implementation = String.class))) String body) {
+        TargetSystem ts = TargetSystem.<TargetSystem>findByIdOptional(targetSystemId).orElse(null);
+        ts = aasService.validateAasTarget(ts);
+        var headers = headerBuilder.buildMergedHeaders(ts, HttpHeaderBuilder.Mode.WRITE_JSON);
+        var resp = traversal.createSubmodel(ts.apiUrl, body, headers).await().indefinitely();
+        int sc = resp.statusCode();
+        Log.infof("Create submodel upstream status=%d msg=%s body=%s", sc, resp.statusMessage(), safeBody(resp));
+        if (sc >= 200 && sc < 300) {
+            try {
+                String submodelId = io.vertx.core.json.JsonObject.mapFrom(io.vertx.core.json.jackson.DatabindCodec.mapper().readTree(resp.bodyAsString())).getString("id");
+                if (submodelId == null || submodelId.isBlank()) {
+                    var reqId = io.vertx.core.json.JsonObject.mapFrom(io.vertx.core.json.jackson.DatabindCodec.mapper().readTree(body)).getString("id");
+                    if (reqId != null && !reqId.isBlank()) submodelId = reqId;
+                }
+                if (submodelId != null && !submodelId.isBlank()) {
+                    var refHeaders = headerBuilder.buildMergedHeaders(ts, HttpHeaderBuilder.Mode.WRITE_JSON);
+                    var refResp = traversal.addSubmodelReferenceToShell(ts.apiUrl, ts.aasId, submodelId, refHeaders).await().indefinitely();
+                    Log.infof("Add submodel-ref upstream status=%d msg=%s body=%s", refResp.statusCode(), refResp.statusMessage(), safeBody(refResp));
+                } else {
+                    Log.warn("Could not resolve submodelId for auto-referencing");
+                }
+            } catch (Exception e) {
+                Log.warn("Auto-reference add failed", e);
+            }
+            return Response.status(Response.Status.CREATED).entity(resp.bodyAsString()).build();
+        }
+        aasService.throwHttpError(sc, resp.statusMessage(), resp.bodyAsString());
+        return null; // This line will never be reached due to exception
+    }
+
+    /**
+     * Safely extracts and truncates the body of an HTTP response for logging purposes.
+     * Prevents overly long messages by limiting output length.
+     *
+     * @param resp The HTTP response to process.
+     * @return Truncated body string or an error message if extraction fails.
+     */
+    private static String safeBody(io.vertx.mutiny.ext.web.client.HttpResponse<io.vertx.mutiny.core.buffer.Buffer> resp) {
+        try {
+            String body = resp.bodyAsString();
+            return body != null && body.length() > 200 ? body.substring(0, 200) + "..." : body;
+        } catch (Exception e) {
+            return "<error reading body>";
+        }
+    }
+
+    /**
+     * Updates an existing AAS submodel within the specified Target System.
+     *
+     * @param targetSystemId ID of the Target System.
+     * @param smId ID of the submodel to update.
+     * @param body JSON string containing the updated submodel data.
+     * @return HTTP Response with the update result.
+     */
+    @PUT
+    @Path("/submodels/{smId}")
+    @Operation(summary = "Update submodel", description = "Updates an existing submodel in the target AAS")
+    @APIResponses(value = {
+        @APIResponse(responseCode = "200", description = "Submodel updated successfully"),
+        @APIResponse(responseCode = "400", description = "Invalid request"),
+        @APIResponse(responseCode = "404", description = "Target system or submodel not found"),
+        @APIResponse(responseCode = "500", description = "Failed to update submodel")
+    })
+    public Response putSubmodel(@PathParam("targetSystemId") Long targetSystemId,
+                                @PathParam("smId") String smId,
+                                @RequestBody(description = "Submodel JSON", content = @Content(schema = @Schema(implementation = String.class))) String body) {
+        TargetSystem ts = TargetSystem.<TargetSystem>findByIdOptional(targetSystemId).orElse(null);
+        ts = aasService.validateAasTarget(ts);
+        var headers = headerBuilder.buildMergedHeaders(ts, HttpHeaderBuilder.Mode.WRITE_JSON);
+        var resp = traversal.putSubmodel(ts.apiUrl, smId, body, headers).await().indefinitely();
+        return Response.status(resp.statusCode()).entity(resp.bodyAsString()).build();
+    }
+
+    /**
+     * Deletes an AAS submodel from the specified Target System.
+     *
+     * @param targetSystemId ID of the Target System.
+     * @param smId ID of the submodel to delete.
+     * @return HTTP Response indicating success or failure of deletion.
+     */
+    @DELETE
+    @Path("/submodels/{smId}")
+    @Operation(summary = "Delete submodel", description = "Deletes a submodel from the target AAS")
+    @APIResponses(value = {
+        @APIResponse(responseCode = "200", description = "Submodel deleted successfully"),
+        @APIResponse(responseCode = "404", description = "Target system or submodel not found"),
+        @APIResponse(responseCode = "500", description = "Failed to delete submodel")
+    })
+    public Response deleteSubmodel(@PathParam("targetSystemId") Long targetSystemId,
+                                   @PathParam("smId") String smId) {
+        TargetSystem ts = TargetSystem.<TargetSystem>findByIdOptional(targetSystemId).orElse(null);
+        ts = aasService.validateAasTarget(ts);
+        var headers = headerBuilder.buildMergedHeaders(ts, HttpHeaderBuilder.Mode.WRITE_JSON);
+        var resp = traversal.deleteSubmodel(ts.apiUrl, smId, headers).await().indefinitely();
+        return Response.status(resp.statusCode()).entity(resp.bodyAsString()).build();
+    }
+}

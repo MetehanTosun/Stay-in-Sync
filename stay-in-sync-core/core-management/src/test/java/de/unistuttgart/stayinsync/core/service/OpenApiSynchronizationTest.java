@@ -11,7 +11,8 @@ import jakarta.transaction.Transactional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @QuarkusTest
 public class OpenApiSynchronizationTest {
@@ -55,7 +56,7 @@ public class OpenApiSynchronizationTest {
                           description: created
                 """;
 
-        var ts = targetSystemService.createTargetSystem(new TargetSystemDTO(null, "TS-OAS", "http://ts", null, "REST", minimalOpenApi, java.util.Set.of()));
+        var ts = targetSystemService.createTargetSystem(new TargetSystemDTO(null, "TS-OAS", "http://ts", null, "REST", null, minimalOpenApi, java.util.Set.of()));
         targetSystemId = ts.id();
     }
 

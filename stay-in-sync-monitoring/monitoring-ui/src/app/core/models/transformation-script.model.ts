@@ -6,4 +6,5 @@ export interface TransformationScriptDTO {
   requiredArcAliases: string[];
   status: string; // or a proper enum if you want
   targetArcIds: number[];
+  generatedSdkCode: string;
 }

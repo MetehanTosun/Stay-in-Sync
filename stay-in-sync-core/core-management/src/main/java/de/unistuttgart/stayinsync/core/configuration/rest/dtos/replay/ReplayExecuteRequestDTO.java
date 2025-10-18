@@ -34,5 +34,6 @@ import com.fasterxml.jackson.databind.JsonNode;
 public record ReplayExecuteRequestDTO(
                 String scriptName,
                 String javascriptCode,
-                JsonNode sourceData) {
+                JsonNode sourceData,
+                String generatedSdkCode) {
 }

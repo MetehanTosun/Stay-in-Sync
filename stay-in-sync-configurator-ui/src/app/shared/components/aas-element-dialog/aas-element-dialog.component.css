@@ -1,0 +1,36 @@
+/* AAS Element Dialog Styles */
+.p-field {
+  margin-bottom: 1rem;
+}
+
+.p-field label {
+  font-weight: 500;
+  margin-bottom: 0.5rem;
+  display: block;
+}
+
+.p-field small {
+  color: var(--text-color-secondary);
+  font-size: 0.875rem;
+}
+
+.p-mt-2 {
+  margin-top: 0.5rem;
+}
+
+.p-button-text {
+  font-size: 0.875rem;
+  padding: 0.25rem 0.5rem;
+}
+
+/* Template buttons styling */
+.p-mt-2 .p-button-text {
+  border: 1px solid var(--surface-border);
+  background: var(--surface-card);
+  color: var(--text-color);
+}
+
+.p-mt-2 .p-button-text:hover {
+  background: var(--surface-hover);
+  border-color: var(--primary-color);
+}

@@ -3,6 +3,7 @@ export interface ReplayExecuteRequestDTO {
   scriptName: string;
   javascriptCode: string;
   sourceData: any; // backend uses JsonNode → 'any' is safe in TS
+  generatedSdkCode: string;
 }
 
 // Response DTO (what we get back from backend)

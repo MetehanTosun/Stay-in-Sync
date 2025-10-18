@@ -1,23 +1,16 @@
 package de.unistuttgart.stayinsync.monitoring.core.configuration.service;
 
-import java.util.LinkedHashMap;
-import java.util.Map;
-
-import org.graalvm.polyglot.Context;
-import org.graalvm.polyglot.Engine;
-import org.graalvm.polyglot.HostAccess;
-import org.graalvm.polyglot.PolyglotException;
-import org.graalvm.polyglot.ResourceLimits;
-import org.graalvm.polyglot.Value;
-
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.oracle.truffle.api.debug.DebugValue;
-
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
+import org.graalvm.polyglot.*;
+
+import java.util.LinkedHashMap;
+import java.util.Map;
 
 /**
  * Executes a user-provided JavaScript transformation in a sandboxed GraalJS
@@ -111,8 +104,10 @@ public class ReplayExecutor {
         // source.*
         ObjectNode a = sourceData.withObject("source");
 
-        // Debug logging to aid diagnosing replay input.
-        System.out.println("DEBUG: Executing replay with sourceData: " + sourceData.toPrettyString());
+        System.out.println(generatedSdkCode);
+
+        // System.out.println("DEBUG: Executing replay with sourceData: " +
+        // sourceData.toPrettyString());
 
         // Will collect variables captured from the JS context after execution.
         final Map<String, Object> capturedVars = new LinkedHashMap<>();
@@ -124,7 +119,7 @@ public class ReplayExecutor {
         // "(?m)(function\\s+transform\\s*\\(\\s*\\)\\s*\\{)",
         // "$1 debugger;");
 
-        System.out.println(javascriptCode);
+        // System.out.println(javascriptCode);
 
         // Wrap user code to call transform() and set debugger breakpoints for success
         // and error.
@@ -182,9 +177,34 @@ public class ReplayExecutor {
             } catch (JsonProcessingException e) {
                 return new Result(null, capturedVars, "JSON serialization error: " + e.getMessage());
             }
-            context.eval("js", "var source = " + sourceJson + ";");
+
+            var bindings = context.getBindings("js");
+            bindings.putMember("sourceJson", sourceJson);
+            context.eval("js", "globalThis.source = (JSON.parse(sourceJson)).source");
+            // 2) bind the SDK string
+            if (generatedSdkCode == null)
+                generatedSdkCode = "";
+            bindings.putMember("sdkCode", generatedSdkCode);
 
             // Load user code + wrapper; this defines the __replayEntry function.
+            // 3) execute the SDK in the GLOBAL scope so `var targets` becomes global
+            // Use *indirect eval* to ensure top-level `var targets = {}` lands on
+            // globalThis.
+            context.eval("js", "(0, eval)(sdkCode)");
+
+            // 4) (optional) harden: if SDK was empty, provide a stub to avoid
+            // ReferenceError
+            context.eval("js",
+                    "if (typeof globalThis.targets === 'undefined') {" +
+                            "  globalThis.targets = {" +
+                            "    synchronizeProducts: { defineUpsert: function(){ return { " +
+                            "      usingCheck(){return this}, usingCreate(){return this}, usingUpdate(){return this}, build(){return this} "
+                            +
+                            "    }} }" +
+                            "  };" +
+                            "}");
+            // Remove usage of Truffle Debugger session since __capture replaces it
+            // Load user code + wrapper (defines __replayEntry)
             Value entry = context.eval("js", wrapped);
 
             // Invoke the wrapper, which calls transform() and returns a status object.
