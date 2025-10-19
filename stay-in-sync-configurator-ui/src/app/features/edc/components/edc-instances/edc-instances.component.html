@@ -1,0 +1,230 @@
+<div class="card">
+  <p-toast></p-toast>
+  <p-table
+    #dt2
+    [value]="edcInstances"
+    dataKey="id"
+    [rows]="10"
+    [rowsPerPageOptions]="[10, 25, 50]"
+    [loading]="loading"
+    selectionMode="single"
+    (onRowSelect)="onInstanceRowSelect($event)"
+    [paginator]="true"
+    [globalFilterFields]="['name', 'controlPlaneManagementUrl', 'protocolVersion', 'bpn', 'description']"
+    [tableStyle]="{ 'min-width': '75rem' }"
+    styleClass="p-datatable-striped p-datatable-gridlines p-datatable-clickable"
+    responsiveLayout="scroll"
+  >
+    <ng-template pTemplate="caption">
+      <div class="flex align-items-center justify-content-between">
+        <h5 class="m-0">Manage EDC Instances</h5>
+        <div class="flex align-items-center">
+          <p-iconfield iconPosition="left" class="mr-2">
+            <p-inputicon>
+              <i class="pi pi-search"></i>
+            </p-inputicon>
+            <input
+              pInputText
+              type="text"
+              (input)="onGlobalFilter($event)"
+              placeholder="Search keyword"
+              class="w-full"
+            />
+          </p-iconfield>
+          <button
+            pButton
+            pRipple
+            label="New Instance"
+            icon="pi pi-plus"
+            class="p-button-success"
+            (click)="openNewInstanceDialog()"
+            pTooltip="Add a new EDC instance"
+            tooltipPosition="bottom"
+          ></button>
+        </div>
+      </div>
+    </ng-template>
+
+    <ng-template pTemplate="header">
+      <tr>
+        <th style="width: 25%" pSortableColumn="name">Name <p-sortIcon field="name"></p-sortIcon></th>
+        <th style="width: 40%" pSortableColumn="controlPlaneManagementUrl">URL <p-sortIcon field="controlPlaneManagementUrl"></p-sortIcon></th>
+        <th style="width: 15%" pSortableColumn="protocolVersion">Protocol Ver.<p-sortIcon field="protocolVersion"></p-sortIcon></th>
+        <th style="width: 15%" pSortableColumn="bpn">BPN <p-sortIcon field="bpn"></p-sortIcon></th>
+        <th style="width: 5%">Actions</th>
+      </tr>
+      <tr>
+        <th>
+          <p-columnFilter type="text" field="name" placeholder="Search by Name"></p-columnFilter>
+        </th>
+        <th>
+          <p-columnFilter type="text" field="controlPlaneManagementUrl" placeholder="Search by URL"></p-columnFilter>
+        </th>
+        <th>
+          <p-columnFilter type="text" field="protocolVersion" placeholder="Search by Protocol"></p-columnFilter>
+        </th>
+        <th>
+          <p-columnFilter type="text" field="bpn" placeholder="Search by BPN"></p-columnFilter>
+        </th>
+        <th></th>
+      </tr>
+    </ng-template>
+
+    <ng-template pTemplate="body" let-instance let-ri="rowIndex">
+      <tr [pSelectableRow]="instance" [pSelectableRowIndex]="ri" [pTooltip]="'Click to view assets and policies for this instance. ' + (instance.description || '')" tooltipPosition="top">
+        <td>{{ instance.name }}</td>
+        <td>{{ instance.controlPlaneManagementUrl }}</td>
+        <td><p-tag [value]="instance.protocolVersion"></p-tag></td>
+        <td>{{ instance.bpn }}</td>
+        <td>
+          <button
+            pButton
+            pRipple
+            type="button"
+            icon="pi pi-pencil"
+            class="p-button-rounded p-button-text p-button-info"
+            (click)="editInstance(instance)"
+            pTooltip="Edit Instance"
+            tooltipPosition="top"
+          ></button>
+          <button
+            pButton
+            pRipple
+            type="button"
+            icon="pi pi-trash"
+            class="p-button-rounded p-button-text p-button-danger ml-2"
+            (click)="deleteInstance(instance)"
+            pTooltip="Delete Instance"
+            tooltipPosition="top"
+          ></button>
+        </td>
+      </tr>
+    </ng-template>
+
+    <ng-template pTemplate="emptymessage">
+      <tr>
+        <td [attr.colspan]="5">
+          No EDC instances found.
+        </td>
+      </tr>
+    </ng-template>
+  </p-table>
+</div>
+
+<!-- New EDC Instance Dialog -->
+<p-dialog header="Add New EDC Instance" [(visible)]="displayNewInstanceDialog" [modal]="true" [style]="{ width: '500px' }" (onHide)="hideNewInstanceDialog()" [draggable]="false" [resizable]="false">
+  <div class="p-fluid pt-3">
+    <div class="px-4">
+      <div class="field grid align-items-center mb-3">
+        <label for="instanceName" class="col-4">Instance Name</label>
+        <div class="col-8">
+          <input id="instanceName" type="text" pInputText [(ngModel)]="newInstance.name" required autofocus class="w-full" />
+        </div>
+      </div>
+      <div class="field grid align-items-center mb-3">
+        <label for="instanceControlPlaneManagementUrl" class="col-4">Management URL</label>
+        <div class="col-8">
+          <input id="instanceControlPlaneManagementUrl" type="text" pInputText [(ngModel)]="newInstance.controlPlaneManagementUrl" required class="w-full" placeholder="e.g., http://localhost:19193" />
+        </div>
+      </div>
+      <div class="field grid align-items-center mb-3">
+        <label for="instanceUrl" class="col-4">EDC Asset Endpoint</label>
+        <div class="col-8">
+          <input id="instanceedcAssetEndpoint" type="text" pInputText [(ngModel)]="newInstance.edcAssetEndpoint" required class="w-full" placeholder="" />
+        </div>
+      </div>
+      <div class="field grid align-items-center mb-3">
+        <label for="instanceUrl" class="col-4">EDC Policy Endpoint</label>
+        <div class="col-8">
+          <input id="instanceedcPolicyEndpoint" type="text" pInputText [(ngModel)]="newInstance.edcPolicyEndpoint" required class="w-full" placeholder="" />
+        </div>
+      </div>
+       <div class="field grid align-items-center mb-3">
+        <label for="instanceUrl" class="col-4">EDC Contract Definition Endpoint</label>
+        <div class="col-8">
+          <input id="instanceedcContractDefinitionEndpoint" type="text" pInputText [(ngModel)]="newInstance.edcContractDefinitionEndpoint" required class="w-full" placeholder="" />
+        </div>
+      </div>
+      <div class="field grid align-items-center mb-3">
+        <label for="instanceBpn" class="col-4">BPN</label>
+        <div class="col-8">
+          <input id="instanceBpn" type="text" pInputText [(ngModel)]="newInstance.bpn" required class="w-full" />
+        </div>
+      </div>
+      <div class="field grid align-items-center mb-3">
+        <label for="instanceProtocol" class="col-4">Protocol Version</label>
+        <div class="col-8">
+          <input id="instanceProtocol" type="text" pInputText [(ngModel)]="newInstance.protocolVersion" class="w-full" />
+        </div>
+      </div>
+      <div class="field grid align-items-center mb-3">
+        <label for="instanceDescription" class="col-4">Description</label>
+        <div class="col-8">
+          <textarea id="instanceDescription" pInputTextarea [(ngModel)]="newInstance.description" rows="3" class="w-full" placeholder="Optional description for tooltip"></textarea>
+        </div>
+      </div>
+      <div class="field grid align-items-center mb-3">
+        <label for="instanceApiKey" class="col-4">API Key</label>
+        <div class="col-8">
+          <p-password id="instanceApiKey" [(ngModel)]="newInstance.apiKey" [toggleMask]="true" [feedback]="false" styleClass="w-full" inputStyleClass="w-full"></p-password>
+        </div>
+      </div>
+    </div>
+  </div>
+  <ng-template pTemplate="footer">
+    <button pButton pRipple label="Cancel" icon="pi pi-times" class="p-button-text" (click)="hideNewInstanceDialog()"></button>
+    <button pButton pRipple label="Save" icon="pi pi-check" class="p-button-text" (click)="saveNewInstance()"></button>
+  </ng-template>
+</p-dialog>
+
+<!-- Edit Instance Dialog -->
+<p-dialog header="Edit EDC Instance" [(visible)]="displayEditInstanceDialog" [modal]="true" [style]="{ width: '500px' }" (onHide)="hideEditInstanceDialog()" [draggable]="false" [resizable]="false">
+  <ng-container *ngIf="instanceToEdit">
+    <div class="p-fluid pt-3">
+      <div class="px-4">
+        <div class="field grid align-items-center mb-3">
+          <label for="editName" class="col-4">Instance Name</label>
+          <div class="col-8">
+            <input id="editName" type="text" pInputText [(ngModel)]="instanceToEdit.name" required autofocus class="w-full" />
+          </div>
+        </div>
+        <div class="field grid align-items-center mb-3">
+          <label for="editControlPlaneManagementUrl" class="col-4">Management URL</label>
+          <div class="col-8">
+            <input id="editControlPlaneManagementUrl" type="text" pInputText [(ngModel)]="instanceToEdit.controlPlaneManagementUrl" required class="w-full" />
+          </div>
+        </div>
+        <div class="field grid align-items-center mb-3">
+          <label for="editBpn" class="col-4">BPN</label>
+          <div class="col-8">
+            <input id="editBpn" type="text" pInputText [(ngModel)]="instanceToEdit.bpn" required class="w-full" />
+          </div>
+        </div>
+        <div class="field grid align-items-center mb-3">
+          <label for="editProtocol" class="col-4">Protocol Version</label>
+          <div class="col-8">
+            <input id="editProtocol" type="text" pInputText [(ngModel)]="instanceToEdit.protocolVersion" class="w-full" />
+          </div>
+        </div>
+        <div class="field grid align-items-center mb-3">
+          <label for="editDescription" class="col-4">Description</label>
+          <div class="col-8">
+            <textarea id="editDescription" pInputTextarea [(ngModel)]="instanceToEdit.description" rows="3" class="w-full"></textarea>
+          </div>
+        </div>
+        <div class="field grid align-items-center mb-3">
+          <label for="editApiKey" class="col-4">API Key</label>
+          <div class="col-8">
+            <p-password id="editApiKey" [(ngModel)]="instanceToEdit.apiKey" [toggleMask]="true" [feedback]="false" styleClass="w-full" inputStyleClass="w-full"></p-password>
+          </div>
+        </div>
+      </div>
+    </div>
+  </ng-container>
+  <ng-template pTemplate="footer">
+    <button pButton pRipple label="Cancel" icon="pi pi-times" class="p-button-text" (click)="hideEditInstanceDialog()"></button>
+    <button pButton pRipple label="Save Changes" icon="pi pi-check" class="p-button-text" (click)="saveEditedInstance()"></button>
+  </ng-template>
+</p-dialog>
+
+<p-confirmDialog [style]="{width: '450px'}"></p-confirmDialog>

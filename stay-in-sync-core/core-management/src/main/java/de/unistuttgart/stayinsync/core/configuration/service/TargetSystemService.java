@@ -82,7 +82,7 @@ public class TargetSystemService {
         TargetSystem target = targetOpt.get();
 
         // Delete endpoints and their children (instance-based, like SourceSystem)
-        List<TargetSystemEndpoint> endpoints = TargetSystemEndpoint.findByTargetSystemId(id);
+        List<TargetSystemEndpoint> endpoints = TargetSystemEndpoint.list("targetSystem.id", id);
         for (TargetSystemEndpoint endpoint : endpoints) {
             // Variables
             List<TargetSystemVariable> variables = TargetSystemVariable.list("targetSystemEndpoint.id", endpoint.id);

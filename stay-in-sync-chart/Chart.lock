@@ -1,12 +1,12 @@
 dependencies:
 - name: rabbitmq
-  repository: https://charts.bitnami.com/bitnami
+  repository: https://charts.bitnami-legacy.com/bitnami
   version: 16.0.14
 - name: mariadb
-  repository: https://charts.bitnami.com/bitnami
+  repository: https://charts.bitnami-legacy.com/bitnami
   version: 20.5.6
 - name: mongodb
-  repository: https://charts.bitnami.com/bitnami
+  repository: https://charts.bitnami-legacy.com/bitnami
   version: 16.5.45
 - name: kube-prometheus-stack
   repository: https://prometheus-community.github.io/helm-charts
