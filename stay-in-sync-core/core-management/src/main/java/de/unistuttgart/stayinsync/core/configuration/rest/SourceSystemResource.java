@@ -29,8 +29,6 @@ import org.eclipse.microprofile.openapi.annotations.responses.APIResponse;
 
 import java.net.URI;
 import java.util.List;
-import java.util.Optional;
-import java.util.stream.Collectors;
 
 import static jakarta.ws.rs.core.MediaType.APPLICATION_JSON;
 
@@ -54,14 +52,7 @@ public class SourceSystemResource {
     @GET
     @Operation(summary = "Returns all source systems")
     @APIResponse(responseCode = "200", description = "List of all source systems", content = @Content(mediaType = APPLICATION_JSON, schema = @Schema(type = SchemaType.ARRAY, implementation = SourceSystem.class)))
-    public List<SourceSystemDTO> getAllSs(@QueryParam("name") Optional<String> name) {
-
-        if (name.isPresent()) {
-            List<SourceSystem> filteredByName = sourceSystemService.findAllSourceSystems().stream()
-                    .filter(sourceSystem -> sourceSystem.name.equals(name.get()))
-                    .collect(Collectors.toList());
-            return sourceSystemFullUpdateMapper.mapToDTOList(filteredByName);
-        }
+    public List<SourceSystemDTO> getAllSs() {
         return sourceSystemFullUpdateMapper.mapToDTOList(sourceSystemService.findAllSourceSystems());
     }
 
@@ -115,17 +106,17 @@ public class SourceSystemResource {
                              @Valid @NotNull CreateSourceSystemDTO sourceSystemDTO) {
         // Create a new DTO with the correct ID from the path parameter
         CreateSourceSystemDTO updatedDTO = new CreateSourceSystemDTO(
-                id,
-                sourceSystemDTO.name(),
-                sourceSystemDTO.apiUrl(),
-                sourceSystemDTO.description(),
-                sourceSystemDTO.apiType(),
-                sourceSystemDTO.aasId(),
-                sourceSystemDTO.apiAuthType(),
-                sourceSystemDTO.authConfig(),
-                sourceSystemDTO.openApiSpec()
+            id,
+            sourceSystemDTO.name(),
+            sourceSystemDTO.apiUrl(),
+            sourceSystemDTO.description(),
+            sourceSystemDTO.apiType(),
+            sourceSystemDTO.aasId(),
+            sourceSystemDTO.apiAuthType(),
+            sourceSystemDTO.authConfig(),
+            sourceSystemDTO.openApiSpec()
         );
-
+        
         return sourceSystemService.updateSourceSystem(updatedDTO)
                 .map(updated -> Response.ok(sourceSystemFullUpdateMapper.mapToDTO(updated)).build())
                 .orElseThrow(() -> new CoreManagementException(

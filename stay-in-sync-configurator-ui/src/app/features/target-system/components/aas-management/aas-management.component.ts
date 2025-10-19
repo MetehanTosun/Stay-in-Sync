@@ -52,26 +52,26 @@ export class AasManagementComponent implements OnInit {
   isLoading = false;
   detailsLoading = false;
 
-  
+  // AAS Test properties
   aasTestLoading = false;
   aasTestError: string | null = null;
 
-  
+  // Element creation dialog
   showElementDialog = false;
   elementDialogData: AasElementDialogData | null = null;
 
-  
+  // Submodel creation dialog
   showSubmodelDialog = false;
   newSubmodelJson = '{\n  "id": "https://example.com/ids/sm/new",\n  "idShort": "NewSubmodel"\n}';
 
-  
+  // AASX upload properties
   showAasxUpload = false;
   aasxSelectedFile: File | null = null;
   isUploadingAasx = false;
   aasxPreview: any = null;
   aasxSelection: { submodels: Array<{ id: string; full: boolean; elements: string[] }> } = { submodels: [] };
 
-  
+  // Templates
   minimalSubmodelTemplate: string = `{
   "id": "https://example.com/ids/sm/new",
   "idShort": "NewSubmodel",
@@ -166,7 +166,7 @@ export class AasManagementComponent implements OnInit {
         return;
       }
     }
-    
+    // No additional toasts; remain silent
   }
 
   /**
@@ -337,7 +337,7 @@ export class AasManagementComponent implements OnInit {
     return type === 'SubmodelElementCollection' || type === 'SubmodelElementList';
   }
 
-  
+  // Event handlers for AAS management actions
   openCreateSubmodel(): void {
     this.showSubmodelDialog = true;
   }
@@ -514,27 +514,27 @@ export class AasManagementComponent implements OnInit {
   }
 
   openSetValue(submodelId: string, elementData: any): void {
-    
+    // TODO: Implement set value dialog
   }
 
   private findParentNode(submodelId: string, elementPath: string): TreeNode | null {
     const parentPath = this.aasUtility.getParentPath(elementPath);
     
-    
+    // Find the submodel node
     const submodelNode = this.treeNodes.find(node => node.data?.id === submodelId);
     if (!submodelNode) return null;
     
-    
+    // If no parent path, return the submodel node
     if (!parentPath) return submodelNode;
     
-    
+    // Find the parent element node
     return this.findNodeByPath(submodelNode, parentPath);
   }
 
   private findNodeByPath(parentNode: TreeNode, path: string): TreeNode | null {
     if (!parentNode.children) return null;
     
-    
+    // Use dot-separated paths for BaSyx compatibility
     const pathParts = path.split('.');
     let current = parentNode;
     
@@ -571,7 +571,7 @@ export class AasManagementComponent implements OnInit {
     }
   }
 
-  
+  // AASX selective attach helpers
   private getSmId(sm: any): string {
     return sm?.id || sm?.submodelId || '';
   }

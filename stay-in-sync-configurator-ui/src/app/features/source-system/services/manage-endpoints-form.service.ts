@@ -113,7 +113,7 @@ export class ManageEndpointsFormService {
    * Update existing endpoint
    */
   updateEndpoint(endpoint: SourceSystemEndpointDTO): Observable<SourceSystemEndpointDTO> {
-    
+    // Mock implementation since updateEndpoint doesn't exist in backend
     return new Observable(observer => {
       setTimeout(() => {
         observer.next(endpoint);
@@ -126,7 +126,7 @@ export class ManageEndpointsFormService {
    * Delete endpoint
    */
   deleteEndpoint(endpointId: number): Observable<void> {
-    
+    // Mock implementation since deleteEndpoint doesn't exist in backend
     return new Observable(observer => {
       setTimeout(() => {
         observer.next();
