@@ -12,7 +12,7 @@ export class EdcInstanceService {
   // UI Testing method. To use the real backend, change this to false!
   private mockMode = false;
 
-  private backendUrl = 'http://localhost:8090/api/config/edcs';
+  private backendUrl = '/api/config/edcs';
 
   constructor(private http: HttpClient) {}
 

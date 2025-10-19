@@ -10,7 +10,7 @@ import { Template } from '../models/template.model';
   providedIn: 'root'
 })
 export class TemplateService {
-  private apiUrl = 'http://localhost:8090/api/config/templates';
+  private apiUrl = '/api/config/templates';
 
   constructor(private http: HttpClient) { }
 
