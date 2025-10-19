@@ -150,6 +150,7 @@ monitoring-backend:
       GRAFANA_BASE_URL: http://grafana.stayinsync.local/d/abd0d0fc-75cf-4a29-abeb-7c96b57a1629/stayinsync-monitoring-metrics
 kube-prometheus-stack:
   prometheus:
+    enabled: true
     prometheusSpec:
       additionalScrapeConfigsSecret:
         enabled: true
@@ -182,6 +183,10 @@ kube-prometheus-stack:
     grafana.ini:
       security:
         allow_embedding: true
+      auth.anonymous:
+        enabled: true
+        org_name: Main Org.
+        org_role: Viewer
     sidecar:
       dashboards:
         enabled: true
@@ -195,7 +200,7 @@ kube-prometheus-stack:
           - name: Prometheus
             type: prometheus
             access: proxy
-            url: http://test-kube-prometheus-stack-prometheus:9090
+            url: http://stay-in-sync-kube-promethe-prometheus:9090
 
 loki:
   fullnameOverride: loki
@@ -277,6 +282,17 @@ rabbitmq:
     enabled: false
   replicaCount: 1
 fluent-bit:
+  extraVolumeMounts:
+    - name: lua-scripts
+      mountPath: /fluent-bit/scripts
+  extraVolumes:
+    - name: lua-scripts
+      configMap:
+        name: fluent-bit-lua-scripts
+  image:
+    repository: bitnamilegacy/fluent-bit
+    tag: 4.0.7-debian-12-r0
+    pullPolicy: Never
   fullnameOverride: fluent-bit
   config:
     inputs: |
@@ -367,6 +383,12 @@ fluent-bit:
           Match   quarkus.monitoring
           Add     service monitoring-backend
           Add     job     monitoring
+      
+      [FILTER]
+          Name    lua
+          Match   quarkus.*
+          script  /fluent-bit/scripts/filter.lua
+          call    parse_nested_log
 
     outputs: |
       # Loki Output
@@ -412,6 +434,7 @@ fluent-bit:
         port: 5173
         targetPort: 5173
         protocol: TCP
+
 
 mariadb:
   fullnameOverride: stay-in-sync-mariadb

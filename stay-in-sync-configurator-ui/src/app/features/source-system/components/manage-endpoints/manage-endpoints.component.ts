@@ -21,9 +21,11 @@ import {ProgressSpinnerModule} from 'primeng/progressspinner';
 import {TabViewModule} from 'primeng/tabview';
 import { MonacoEditorModule, NgxEditorModel } from 'ngx-monaco-editor-v2';
 import { DragDropModule } from '@angular/cdk/drag-drop';
+import { TooltipModule } from 'primeng/tooltip';
 
 import {SourceSystemEndpointResourceService} from '../../service/sourceSystemEndpointResource.service';
 import {HttpClient} from '@angular/common/http';
+import { firstValueFrom } from 'rxjs';
 import {SourceSystemResourceService} from '../../service/sourceSystemResource.service';
 import {TypeScriptGenerationRequest} from '../../models/typescriptGenerationRequest';
 import {TypeScriptGenerationResponse} from '../../models/typescriptGenerationResponse';
@@ -37,11 +39,14 @@ import { ManageEndpointParamsComponent } from '../manage-endpoint-params/manage-
 import { ResponsePreviewModalComponent } from '../response-preview-modal/response-preview-modal.component';
 import { ConfirmationDialogComponent, ConfirmationDialogData } from '../confirmation-dialog/confirmation-dialog.component';
 import { OpenApiImportService } from '../../../../core/services/openapi-import.service';
+import { ManageEndpointsFormService } from '../../services/manage-endpoints-form.service';
+import { TypeScriptGenerationService } from '../../services/typescript-generation.service';
+import { ResponsePreviewService } from '../../services/response-preview.service';
+import { MessageService } from 'primeng/api';
+import { ToastModule } from 'primeng/toast';
 import {JobStatusTagComponent} from '../../../../shared/components/job-status-tag/job-status-tag.component';
 import {Select} from 'primeng/select';
 import {FloatLabel} from 'primeng/floatlabel';
-
-
 /**
  * Component for managing endpoints of a source system: list, create, edit, delete, and import.
  */
@@ -65,8 +70,10 @@ import {FloatLabel} from 'primeng/floatlabel';
     ConfirmationDialogComponent,
     MonacoEditorModule,
     DragDropModule,
+    TooltipModule,
     Select,
     FloatLabel,
+    ToastModule,
   ],
   templateUrl: './manage-endpoints.component.html',
   styleUrls: ['./manage-endpoints.component.css']
@@ -76,6 +83,9 @@ export class ManageEndpointsComponent implements OnInit, OnDestroy {
   @Input() sourceSystemId!: number;
   @Output() backStep = new EventEmitter<void>();
   @Output() finish = new EventEmitter<void>();
+  @Output() onCreated = new EventEmitter<void>();
+  @Output() onDeleted = new EventEmitter<void>();
+  @Output() onUpdated = new EventEmitter<void>();
   endpoints: SourceSystemEndpointDTO[] = [];
   endpointForm!: FormGroup;
   loading = false;
@@ -196,6 +206,10 @@ export class ManageEndpointsComponent implements OnInit, OnDestroy {
   private readonly MAX_JSON_SCHEMA_SIZE = 1024 * 1024; // 1MB
   private typescriptGenerationTimeout: any = null;
   private editTypeScriptGenerationTimeout: any = null;
+  private lastToastTime: number = 0;
+  private readonly TOAST_DEBOUNCE_TIME = 1000; // 1 second
+  private toastCounter: number = 0;
+  private activeToasts: Set<string> = new Set();
 
   constructor(
     private fb: FormBuilder,
@@ -203,33 +217,43 @@ export class ManageEndpointsComponent implements OnInit, OnDestroy {
     private sourceSystemService: SourceSystemResourceService,
     private http: HttpClient,
     private openapi: OpenApiImportService,
+    private formService: ManageEndpointsFormService,
+    private typeScriptService: TypeScriptGenerationService,
+    private responsePreviewService: ResponsePreviewService,
+    private messageService: MessageService
   ) {}
+
+  /**
+   * Show toast message with debounce to prevent duplicates
+   */
+  private showToast(severity: 'success' | 'error' | 'info' | 'warn', summary: string, detail: string) {
+    this.messageService.add({ key: 'endpoints', severity, summary, detail });
+  }
 
   /**
    * Initialize forms and load endpoints and source system API URL.
    */
   ngOnInit(): void {
-    this.endpointForm = this.fb.group({
-      endpointPath: ['', Validators.required],
-      httpRequestType: ['GET', Validators.required],
-      requestBodySchema: [''],
-      responseBodySchema: ['']
+    this.endpointForm = this.formService.createEndpointForm();
+    this.editForm = this.formService.createEditForm();
+
+    // Subscribe to TypeScript generation states (keep advanced flow)
+    this.typeScriptService.getMainGenerationState().subscribe(state => {
+      this.isGeneratingTypeScript = state.isGenerating;
+      this.generatedTypeScript = state.code;
+      this.typescriptError = state.error;
+      this.typescriptModel.value = state.code;
     });
-    this.editForm = this.fb.group({
-      endpointPath: ['', Validators.required],
-      httpRequestType: ['GET', Validators.required],
-      requestBodySchema: [''],
-      responseBodySchema: ['']
+    this.typeScriptService.getEditGenerationState().subscribe(state => {
+      this.isGeneratingEditTypeScript = state.isGenerating;
+      this.editGeneratedTypeScript = state.code;
+      this.editTypeScriptError = state.error;
+      this.editTypeScriptModel.value = state.code;
     });
 
-    // Listen for changes in responseBodySchema to update TypeScript
-    this.endpointForm.get('responseBodySchema')?.valueChanges.subscribe(value => {
-      this.loadTypeScriptForMainForm();
-    });
-
-    this.editForm.get('responseBodySchema')?.valueChanges.subscribe(value => {
-      this.loadTypeScriptForEditForm();
-    });
+    // Also trigger generation when schemas change
+    this.endpointForm.get('responseBodySchema')?.valueChanges.subscribe(() => this.loadTypeScriptForMainForm());
+    this.editForm.get('responseBodySchema')?.valueChanges.subscribe(() => this.loadTypeScriptForEditForm());
 
     // Reset tab indices when forms are reset
     this.endpointForm.valueChanges.subscribe(() => {
@@ -256,13 +280,28 @@ export class ManageEndpointsComponent implements OnInit, OnDestroy {
     this.sourceSystemService.apiConfigSourceSystemIdGet(this.sourceSystemId)
       .subscribe({
         next: (sourceSystem: SourceSystemDTO) => {
-          if (sourceSystem.openApiSpec && typeof sourceSystem.openApiSpec === 'string') {
-            if (sourceSystem.openApiSpec.startsWith('http')) {
-              this.apiUrl = sourceSystem.openApiSpec.trim();
-              this.currentOpenApiSpec = '';
+          
+          // Handle different types of openApiSpec
+          if (sourceSystem.openApiSpec) {
+            if (typeof sourceSystem.openApiSpec === 'string') {
+              if (sourceSystem.openApiSpec.startsWith('http')) {
+                this.apiUrl = sourceSystem.openApiSpec.trim();
+                this.currentOpenApiSpec = '';
+              } else {
+                // Spec was provided as raw content (uploaded file). Keep a local copy to parse client-side.
+                this.currentOpenApiSpec = sourceSystem.openApiSpec;
+                this.apiUrl = sourceSystem.apiUrl!;
+              }
+            } else if (sourceSystem.openApiSpec && typeof sourceSystem.openApiSpec === 'object' && 'size' in sourceSystem.openApiSpec) {
+              // Convert Blob to string
+              const reader = new FileReader();
+              reader.onload = () => {
+                this.currentOpenApiSpec = reader.result as string;
+                this.apiUrl = sourceSystem.apiUrl!;
+              };
+              reader.readAsText(sourceSystem.openApiSpec as any);
             } else {
-              // Spec was provided as raw content (uploaded file). Keep a local copy to parse client-side.
-              this.currentOpenApiSpec = sourceSystem.openApiSpec;
+              this.currentOpenApiSpec = '';
               this.apiUrl = sourceSystem.apiUrl!;
             }
           } else {
@@ -274,6 +313,9 @@ export class ManageEndpointsComponent implements OnInit, OnDestroy {
           this.apiUrl = null;
         }
       });
+    
+    // Load endpoints after source system is loaded
+    this.loadEndpoints();
   }
 
   /**
@@ -282,15 +324,9 @@ export class ManageEndpointsComponent implements OnInit, OnDestroy {
   loadEndpoints() {
     if (!this.sourceSystemId) return;
     this.loading = true;
-    this.endpointSvc
-      .apiConfigSourceSystemSourceSystemIdEndpointGet(this.sourceSystemId)
+    this.http.get<SourceSystemEndpointDTO[]>(`/api/config/source-system/${this.sourceSystemId}/endpoint`)
       .subscribe({
         next: (eps: SourceSystemEndpointDTO[]) => {
-          console.log('[Backend-Response] Endpoints:', eps);
-          eps.forEach((ep, idx) => {
-            console.log(`[Endpoint ${idx}] responseBodySchema:`, ep.responseBodySchema);
-            console.log(`[Endpoint ${idx}] responseDts:`, ep.responseDts);
-          });
           this.endpoints = eps;
           this.loading = false;
           // Reset tab indices when endpoints are reloaded
@@ -306,7 +342,8 @@ export class ManageEndpointsComponent implements OnInit, OnDestroy {
           this.clearTypeScriptGenerationTimeout(false);
           this.clearTypeScriptGenerationTimeout(true);
         },
-        error: () => {
+        error: (error) => {
+          console.error('[ManageEndpoints] Error loading endpoints:', error);
           this.loading = false;
         }
       });
@@ -778,16 +815,15 @@ ${jsonSchema}
       }
     }
 
-    const dto: any = {
+    const dto: SourceSystemEndpointDTO = {
+      sourceSystemId: this.sourceSystemId!,
       endpointPath: this.endpointForm.get('endpointPath')?.value,
       httpRequestType: this.endpointForm.get('httpRequestType')?.value,
       requestBodySchema: resolvedSchema,
       responseBodySchema: responseBodySchema
     };
-    this.endpointSvc.apiConfigSourceSystemSourceSystemIdEndpointPost(
-      this.sourceSystemId,
-      [dto]
-    ).subscribe({
+    this.http.post<SourceSystemEndpointDTO[]>(`/api/config/source-system/${this.sourceSystemId}/endpoint`, [dto])
+      .subscribe({
       next: () => {
         this.loadEndpoints();
         this.endpointForm.reset({
@@ -807,9 +843,28 @@ ${jsonSchema}
 
         // Ensure proper tab integration after form reset
         this.resetTabIntegration();
+        this.onCreated.emit();
+        this.showToast('success','Endpoint Created','Endpoint has been successfully created.');
       },
-      error: () => {}
+      error: (error) => {
+        console.error('[ManageEndpoints] Error creating endpoint:', error);
+      }
     });
+  }
+
+  /**
+   * Opens the edit dialog and fills the form with the selected endpoint data.
+   * @param endpoint The endpoint to edit.
+   */
+  openEdit(endpoint: SourceSystemEndpointDTO): void {
+    this.editingEndpoint = endpoint;
+    this.editForm.reset({
+      endpointPath: endpoint.endpointPath,
+      httpRequestType: endpoint.httpRequestType,
+      requestBodySchema: endpoint.requestBodySchema || '',
+      responseBodySchema: endpoint.responseBodySchema || ''
+    });
+    this.editDialog = true;
   }
 
   /**
@@ -832,14 +887,16 @@ ${jsonSchema}
    */
   onConfirmationConfirmed(): void {
     if (this.endpointToDelete && this.endpointToDelete.id) {
-      this.endpointSvc
-        .apiConfigSourceSystemEndpointIdDelete(this.endpointToDelete.id)
+      this.http.delete(`/api/config/source-system/endpoint/${this.endpointToDelete.id}`)
         .subscribe({
           next: () => {
             this.endpoints = this.endpoints.filter(e => e.id !== this.endpointToDelete!.id);
             this.endpointToDelete = null;
+            this.onDeleted.emit();
+            this.showToast('success','Endpoint Deleted','Endpoint has been successfully deleted.');
           },
-          error: () => {
+          error: (error) => {
+            console.error('Error deleting endpoint:', error);
             this.endpointToDelete = null;
           }
         });
@@ -955,12 +1012,13 @@ ${jsonSchema}
     }
     this.editJsonError = null;
     const dto: SourceSystemEndpointDTO = {
-      id: this.editingEndpoint.id!,
-      sourceSystemId: this.sourceSystemId,
+      id: this.editingEndpoint.id,
+      sourceSystemId: this.sourceSystemId!,
       endpointPath: this.editForm.value.endpointPath,
       httpRequestType: this.editForm.value.httpRequestType,
       requestBodySchema: this.editForm.value.requestBodySchema,
-      responseBodySchema: this.editForm.value.responseBodySchema
+      responseBodySchema: this.editForm.value.responseBodySchema,
+      responseDts: this.editingEndpoint.responseDts
     };
     if (dto.requestBodySchema) {
       try {
@@ -978,14 +1036,27 @@ ${jsonSchema}
         return;
       }
     }
-    this.endpointSvc
-      .apiConfigSourceSystemEndpointIdPut(this.editingEndpoint.id!, dto, 'body')
+    // Use direct HTTP call like Target System
+    this.http.put(`/api/config/source-system/endpoint/${this.editingEndpoint.id}`, dto)
       .subscribe({
-        next: () => {
+        next: (response) => {
           this.closeEditDialog();
           this.loadEndpoints();
+          this.onUpdated.emit();
+          this.showToast('success','Endpoint Updated','Endpoint has been successfully updated.');
         },
-        error: () => {}
+        error: (error) => {
+          console.error('Error updating endpoint:', error);
+          let errorMessage = 'Failed to update endpoint';
+          if (error.status === 500) {
+            errorMessage = 'Server error (500): Please check the backend logs';
+          } else if (error.status === 404) {
+            errorMessage = 'Endpoint not found (404)';
+          } else if (error.status === 400) {
+            errorMessage = 'Bad request (400): Please check your input data';
+          }
+          // Error handling - no toast message needed
+        }
       });
   }
 
@@ -993,6 +1064,7 @@ ${jsonSchema}
    * Show the request body editor for a given endpoint.
    */
   showRequestBodyEditor(endpoint: SourceSystemEndpointDTO) {
+    
     this.requestBodyEditorEndpoint = endpoint;
     if (!endpoint.requestBodySchema) {
       this.requestBodyEditorModel = {
@@ -1099,15 +1171,19 @@ ${jsonSchema}
    * Resolves a schema reference ($ref) in the OpenAPI spec and returns the resolved schema as a string.
    */
   private resolveSchemaReference(schemaInput: any): string {
+    
     try {
       let schemaObj = typeof schemaInput === 'string' ? JSON.parse(schemaInput) : schemaInput;
+      
       if (schemaObj && schemaObj.$ref && this.currentOpenApiSpec) {
         const openApi = typeof this.currentOpenApiSpec === 'string'
           ? JSON.parse(this.currentOpenApiSpec)
           : this.currentOpenApiSpec;
+        
         if (schemaObj.$ref.startsWith('#/components/schemas/')) {
           const schemaName = schemaObj.$ref.replace('#/components/schemas/', '');
           const resolved = openApi.components?.schemas?.[schemaName];
+          
           if (resolved) {
             if (resolved.$ref) {
               return this.resolveSchemaReference(resolved);
@@ -1116,7 +1192,8 @@ ${jsonSchema}
           }
         }
       }
-    } catch (e) {}
+    } catch (e) {
+    }
     return typeof schemaInput === 'string' ? schemaInput : JSON.stringify(schemaInput, null, 2);
   }
 
@@ -1371,7 +1448,8 @@ ${jsonSchema}
             spec = parseYAML(this.currentOpenApiSpec as string);
           }
           endpoints = this.openapi.discoverEndpointsFromSpec(spec);
-        } catch {
+        } catch (error) {
+          console.error('[ManageEndpoints] Error parsing local spec:', error);
           spec = null;
           endpoints = [];
         }
@@ -1382,19 +1460,52 @@ ${jsonSchema}
         endpoints = await this.openapi.discoverEndpointsFromSpecUrl(this.apiUrl);
         spec = await this.loadSpecCandidates(this.apiUrl);
       }
+      // 3) Filter out duplicates by METHOD + PATH (matches backend unique key)
+      const existing = await firstValueFrom(this.http.get<SourceSystemEndpointDTO[]>(`/api/config/source-system/${this.sourceSystemId}/endpoint`));
+      const existingKeys = new Set(existing.map((e: any) => `${e.httpRequestType} ${e.endpointPath}`));
+      const seenNew = new Set<string>();
+      const toCreate = endpoints.filter((e: any) => {
+        const key = `${e.httpRequestType} ${e.endpointPath}`;
+        if (existingKeys.has(key) || seenNew.has(key)) return false;
+        seenNew.add(key);
+        return true;
+      }).map((e: any) => ({
+        ...e,
+        sourceSystemId: this.sourceSystemId!
+      }));
 
-      // 3) Persist endpoints and discovered params if available
+      // 4) Persist endpoints and discovered params if available
       const paramsByKey = spec ? this.openapi.discoverParamsFromSpec(spec) : {};
-      if (endpoints.length) {
-        const created = await this.endpointSvc.apiConfigSourceSystemSourceSystemIdEndpointPost(this.sourceSystemId, endpoints as any).toPromise();
+      if (toCreate.length) {
+        const created = await firstValueFrom(this.http.post<SourceSystemEndpointDTO[]>(`/api/config/source-system/${this.sourceSystemId}/endpoint`, toCreate));
         const createdList = (created as any[]) || [];
+        
         for (const ep of createdList) {
           const key = `${ep.httpRequestType} ${ep.endpointPath}`;
           const params = paramsByKey[key] || [];
-          if (ep.id && params.length) await this.openapi.persistParamsForEndpoint(ep.id, params);
+          if (ep.id && params.length) {
+            
+            // Filter out duplicates within the same import batch
+            const seenParams = new Set<string>();
+            const uniqueParams = params.filter(p => {
+              const paramKey = `${p.name}:${p.in === 'path' ? 'PATH' : 'QUERY'}`;
+              if (seenParams.has(paramKey)) {
+                return false;
+              }
+              seenParams.add(paramKey);
+              return true;
+            });
+            
+            if (uniqueParams.length > 0) {
+              await this.openapi.persistParamsForEndpoint(ep.id, uniqueParams);
+            }
+          }
         }
         this.loadEndpoints();
+      } else {
       }
+    } catch (error) {
+      console.error('[ManageEndpoints] Import failed:', error);
     } finally {
       this.importing = false;
     }
@@ -1415,7 +1526,7 @@ ${jsonSchema}
     for (const url of urls) {
       try {
         const isJson = url.endsWith('.json') || (!url.endsWith('.yaml') && !url.endsWith('.yml'));
-        const raw = await this.http.get(url, { responseType: isJson ? 'json' : 'text' as 'json' }).toPromise();
+        const raw = await firstValueFrom(this.http.get(url, { responseType: isJson ? 'json' : 'text' as 'json' }));
         const spec: any = isJson ? raw : parseYAML(raw as string);
         if (spec && spec.paths) return spec;
       } catch { /* try next */ }
@@ -1468,15 +1579,18 @@ ${jsonSchema}
       this.importing = false;
       return;
     }
-    const endpointDTOs = discoveredEndpoints.map(item => item.endpoint);
-    this.endpointSvc
-      .apiConfigSourceSystemSourceSystemIdEndpointPost(this.sourceSystemId, endpointDTOs)
+    const endpointDTOs = discoveredEndpoints.map(item => ({
+      ...item.endpoint,
+      sourceSystemId: this.sourceSystemId!
+    }));
+    this.http.post<SourceSystemEndpointDTO[]>(`/api/config/source-system/${this.sourceSystemId}/endpoint`, endpointDTOs)
       .subscribe({
         next: () => {
           this.loadEndpoints();
           setTimeout(() => {}, 1000);
         },
-        error: () => {
+        error: (error) => {
+          console.error('[ManageEndpoints] Error saving discovered endpoints:', error);
           this.importing = false;
         }
       });
@@ -1596,6 +1710,76 @@ ${jsonSchema}
     } catch (e) {}
     return schemaRef;
 
+  }
+
+  /**
+   * Get tooltip text for Add Endpoint button
+   */
+  getAddEndpointTooltip(): string {
+    if (this.endpointForm.valid) {
+      return '';
+    }
+
+    const errors: string[] = [];
+    
+    // Check endpoint path
+    const pathControl = this.endpointForm.get('endpointPath');
+    if (pathControl?.invalid) {
+      if (pathControl.errors?.['required']) {
+        errors.push('Path is required');
+      } else if (pathControl.errors?.['pathFormat']) {
+        errors.push('Path must start with /');
+      }
+    }
+
+    // Check request body schema
+    const requestBodyControl = this.endpointForm.get('requestBodySchema');
+    if (requestBodyControl?.invalid && requestBodyControl.errors?.['jsonFormat']) {
+      errors.push('Invalid JSON in Request Body Schema');
+    }
+
+    // Check response body schema
+    const responseBodyControl = this.endpointForm.get('responseBodySchema');
+    if (responseBodyControl?.invalid && responseBodyControl.errors?.['jsonFormat']) {
+      errors.push('Invalid JSON in Response Body Schema');
+    }
+
+    return errors.length > 0 ? errors.join(', ') : '';
+  }
+
+  /**
+   * Get tooltip text for Edit Endpoint button
+   */
+  getEditEndpointTooltip(): string {
+    if (this.editForm.valid) {
+      return '';
+    }
+
+    const errors: string[] = [];
+    
+    // Check endpoint path
+    const pathControl = this.editForm.get('endpointPath');
+    if (pathControl?.invalid) {
+      if (pathControl.errors?.['required']) {
+        errors.push('Path is required');
+      } else if (pathControl.errors?.['pathFormat']) {
+        errors.push('Path must start with /');
+      }
+    }
+
+    // Check request body schema
+    const requestBodyControl = this.editForm.get('requestBodySchema');
+    if (requestBodyControl?.invalid && requestBodyControl.errors?.['jsonFormat']) {
+      errors.push('Invalid JSON in Request Body Schema');
+    }
+
+    // Check response body schema
+    const responseBodyControl = this.editForm.get('responseBodySchema');
+    if (responseBodyControl?.invalid && responseBodyControl.errors?.['jsonFormat']) {
+      errors.push('Invalid JSON in Response Body Schema');
+    }
+
+    return errors.length > 0 ? errors.join(', ') : '';
   }
 
 }

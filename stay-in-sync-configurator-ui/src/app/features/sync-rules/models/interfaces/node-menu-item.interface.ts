@@ -1,7 +1,11 @@
 /**
- * Interface representing an item of a node's context menu
+ * Type representing an item or a collection of items of a node's context menu
  */
-export interface NodeMenuItem {
-  label: string;
-  action: () => void;
-}
+export type NodeMenuItem =
+  | {
+    label: string;
+    action: () => void;
+  }
+  | {
+    submenu: NodeMenuItem[];
+  }

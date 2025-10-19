@@ -15,6 +15,8 @@ import {HttpErrorService} from '../../../../core/services/http-error.service';
 import {ConfirmationDialogComponent, ConfirmationDialogData} from '../confirmation-dialog/confirmation-dialog.component';
 import {FloatLabel} from 'primeng/floatlabel';
 import {Select, SelectModule} from 'primeng/select';
+import { MessageService } from 'primeng/api';
+import { ToastModule } from 'primeng/toast';
 
 /**
  * Component for managing API header templates for a given system.
@@ -33,7 +35,8 @@ import {Select, SelectModule} from 'primeng/select';
     CardModule,
     ConfirmationDialogComponent,
     FloatLabel,
-    SelectModule
+    SelectModule,
+    ToastModule
   ],
   templateUrl: './manage-api-headers.component.html'
 })
@@ -42,12 +45,16 @@ export class ManageApiHeadersComponent implements OnInit {
   @Input() syncSystemId!: number;
   /** When true, hide Accept/Content-Type and show AAS-specific hint */
   @Input() isAas: boolean = false;
+  /** When true, allow entering and updating concrete header values */
+  @Input() allowValues: boolean = false;
   @Output() onCreated = new EventEmitter<void>();
+  @Output() onDeleted = new EventEmitter<void>();
   @Output() onRetest = new EventEmitter<void>();
 
   headers: ApiHeaderDTO[] = [];
   form!: FormGroup;
   loading = false;
+  editing: ApiHeaderDTO | null = null;
 
   /** Confirmation dialog properties */
   showConfirmationDialog = false;
@@ -78,17 +85,19 @@ export class ManageApiHeadersComponent implements OnInit {
   constructor(
     private fb: FormBuilder,
     private hdrSvc: ApiHeaderResourceService,
-    protected errorSerice: HttpErrorService
-  ) {
-  }
+    protected errorSerice: HttpErrorService,
+    private messageService: MessageService
+  ) {}
 
+  /** PrimeNG form initialization and initial data load. */
   /**
    * Initializes the header management form and loads existing headers.
    */
   ngOnInit() {
     this.form = this.fb.group({
       headerName: ['', Validators.required],
-      headerType: [ApiRequestHeaderType.Custom, Validators.required]
+      headerType: [ApiRequestHeaderType.Custom, Validators.required],
+      headerValue: ['']
     });
     this.loadHeaders();
   }
@@ -117,19 +126,61 @@ export class ManageApiHeadersComponent implements OnInit {
    */
   addHeader() {
     if (this.form.invalid) return;
-    const dto: CreateApiHeaderDTO = this.form.value;
-    this.hdrSvc
-      .apiConfigSyncSystemSyncSystemIdRequestHeaderPost(this.syncSystemId, dto)
-      .subscribe({
+    if (this.editing) {
+      const existingValues = (this.editing.values as any) ? Array.from(this.editing.values as any) as string[] : [];
+      const nextValues = this.allowValues && this.form.value.headerValue
+        ? [this.form.value.headerValue]
+        : existingValues;
+      const updated: ApiHeaderDTO = {
+        id: this.editing.id,
+        headerName: this.form.value.headerName,
+        headerType: this.form.value.headerType,
+        values: nextValues as any
+      } as any;
+      this.hdrSvc.apiConfigSyncSystemRequestHeaderIdPut(this.editing.id!, updated).subscribe({
         next: () => {
+          this.editing = null;
           this.form.reset({headerType: ApiRequestHeaderType.Custom});
           this.loadHeaders();
-          this.onCreated.emit();
+          this.messageService.add({ key: 'headers', severity: 'success', summary: 'Header Updated', detail: 'API header updated.', life: 3000 });
         },
-        error: (err) => {
-          this.errorSerice.handleError(err);
-        }
+        error: (err) => this.errorSerice.handleError(err)
       });
+    } else {
+      const dto: CreateApiHeaderDTO = {
+        headerName: this.form.value.headerName,
+        headerType: this.form.value.headerType,
+        values: this.allowValues && this.form.value.headerValue ? [this.form.value.headerValue] : undefined
+      } as any;
+      this.hdrSvc
+        .apiConfigSyncSystemSyncSystemIdRequestHeaderPost(this.syncSystemId, dto)
+        .subscribe({
+          next: () => {
+            this.form.reset({headerType: ApiRequestHeaderType.Custom});
+            this.loadHeaders();
+            this.onCreated.emit();
+            this.messageService.add({ key: 'headers', severity: 'success', summary: 'Header Created', detail: 'API header created.', life: 3000 });
+          },
+          error: (err) => {
+            this.errorSerice.handleError(err);
+          }
+        });
+    }
+  }
+
+  editHeader(h: ApiHeaderDTO) {
+    this.editing = h;
+    this.form.patchValue({
+      headerName: h.headerName,
+      headerType: h.headerType,
+      headerValue: h.values && (h.values as any)[0] ? (h.values as any)[0] : ''
+    });
+  }
+
+  /** Cancel edit mode and reset the form. */
+  cancelEdit() {
+    this.editing = null;
+    this.form.reset({ headerType: ApiRequestHeaderType.Custom });
   }
 
   /**
@@ -160,6 +211,8 @@ export class ManageApiHeadersComponent implements OnInit {
           next: () => {
             this.headers = this.headers.filter(h => h.id !== this.headerToDelete!.id);
             this.headerToDelete = null;
+            this.onDeleted.emit();
+            this.messageService.add({ key: 'headers', severity: 'success', summary: 'Header Deleted', detail: 'API header deleted.', life: 3000 });
           },
           error: (err) => {
             this.errorSerice.handleError(err);

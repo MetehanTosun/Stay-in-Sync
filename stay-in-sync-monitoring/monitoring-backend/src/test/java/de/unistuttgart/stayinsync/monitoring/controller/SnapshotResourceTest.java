@@ -80,7 +80,7 @@ class SnapshotResourceTest {
         dto.setSnapshotId("snap-10");
         dto.setCreatedAt(Instant.now());
 
-        when(snapshotService.getById(10L)).thenReturn(dto);
+        when(snapshotService.getById("10")).thenReturn(dto);
 
         // Act + Assert
         given()
@@ -91,6 +91,6 @@ class SnapshotResourceTest {
                 .body("snapshotId", equalTo("snap-10"))
                 .body("createdAt", notNullValue());
 
-        verify(snapshotService).getById(10L);
+        verify(snapshotService).getById("10");
     }
 }

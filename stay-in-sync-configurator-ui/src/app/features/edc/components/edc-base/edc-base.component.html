@@ -1,1 +1,10 @@
-<p>edc-base works!</p>
+<div class="edc-base-container">
+
+  <div class="content">
+    <div *ngIf="!selectedInstance">
+      <app-edc-instances (instanceSelected)="onInstanceSelected($event)"></app-edc-instances>
+      <app-templates></app-templates>
+    </div>
+    <app-edc-assets-and-policies *ngIf="selectedInstance" [instance]="selectedInstance" (back)="onBack()"></app-edc-assets-and-policies>
+  </div>
+</div>

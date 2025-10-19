@@ -1,7 +1,7 @@
 package de.unistuttgart.stayinsync.core.configuration.rest;
 
-import de.unistuttgart.stayinsync.core.configuration.domain.entities.aas.AasSourceApiRequestConfiguration;
-import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.SourceSystemApiRequestConfiguration;
+import de.unistuttgart.stayinsync.core.configuration.persistence.entities.aas.AasSourceApiRequestConfiguration;
+import de.unistuttgart.stayinsync.core.configuration.persistence.entities.sync.SourceSystemApiRequestConfiguration;
 import de.unistuttgart.stayinsync.core.configuration.exception.CoreManagementException;
 import de.unistuttgart.stayinsync.core.configuration.mapping.AasApiRequestConfigurationMapper;
 import de.unistuttgart.stayinsync.core.configuration.mapping.SourceSystemApiRequestConfigurationFullUpdateMapper;
@@ -110,6 +110,27 @@ public class RequestConfigurationResource {
         return Response.created(builder.build()).build();
     }
 */
+
+    @GET
+    @Path("endpoint/request-configuration/")
+    @Operation(summary = "Returns all api-request-configurations")
+    @APIResponse(
+            responseCode = "200",
+            description = "Gets all api-request-configurations",
+            content = @Content(
+                    mediaType = APPLICATION_JSON,
+                    schema = @Schema(implementation = GetRequestConfigurationDTO.class, type = SchemaType.ARRAY)
+            )
+    )
+    @APIResponse(
+            responseCode = "500",
+            description = "Unable to retrieve api-request-configurations"
+    )
+    public List<GetRequestConfigurationDTO> getAllApiRequestConfigurations() {
+        var allConfigurations = sourceSystemApiRequestConfigurationService.findAllApiRequestConfigurations();
+        Log.debugf("Total number of api request configurations: %d", allConfigurations.size());
+        return fullUpdateMapper.mapToDTOList(allConfigurations);
+    }
 
     @POST
     @Path("/request-configuration/by-source-system-names")

@@ -2,10 +2,10 @@
   <!-- Left pane: Monaco Editor -->
   <section class="left-pane">
     <header class="pane-header">
-      <h2>Script (read-only)</h2>
-      <button class="btn btn-secondary" (click)="onReplayClick()">
+      <h2>Script</h2>
+      <p-button (onClick)="onReplayClick()">
         Replay
-      </button>
+      </p-button>
     </header>
     <div class="editor-wrapper">
       <ngx-monaco-editor
@@ -19,7 +19,7 @@
 
   <!-- Right pane: Tabs -->
   <section class="right-pane">
-    <p-tabs>
+    <p-tabs [ngStyle]="{ height: '100%' }">
       <p-tablist>
         <p-tab value="0">SourceData</p-tab>
         <p-tab value="1">Variables</p-tab>
@@ -30,18 +30,21 @@
 
       <p-tabpanels>
         <p-tabpanel value="0">
-          <div class="tab-content">
+          <div class="tab-content json-viewer-wrapper">
             <ng-container *ngIf="!loading(); else loadingTpl">
               <ng-container *ngIf="!error(); else errorTpl">
                 <h3>Source Data</h3>
-                <ngx-json-viewer
-                  [json]="data()?.transformationResult?.sourceData"
-                  [expanded]="false"
-                ></ngx-json-viewer>
+                <div class="json-scroll-container">
+                  <ngx-json-viewer
+                    [json]="data()?.transformationResult?.sourceData"
+                    [expanded]="false"
+                  ></ngx-json-viewer>
+                </div>
               </ng-container>
             </ng-container>
           </div>
         </p-tabpanel>
+
 
         <p-tabpanel value="1">
           <div class="tab-content">
@@ -85,7 +88,6 @@
         <p-tabpanel value="4">
           <ng-container *ngIf="!loading(); else loadingTpl">
             <ng-container *ngIf="!error(); else errorTpl">
-              <h3>Logs</h3>
               <p-table
                 [value]="logs"
                 [scrollable]="true"

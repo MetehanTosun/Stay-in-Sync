@@ -1,6 +1,6 @@
 package de.unistuttgart.stayinsync.core.configuration.mapping;
 
-import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.ApiHeader;
+import de.unistuttgart.stayinsync.core.configuration.persistence.entities.sync.ApiHeader;
 import de.unistuttgart.stayinsync.core.configuration.rest.dtos.ApiHeaderDTO;
 import de.unistuttgart.stayinsync.core.configuration.rest.dtos.CreateApiHeaderDTO;
 import org.mapstruct.Mapper;
@@ -22,6 +22,7 @@ public interface ApiHeaderFullUpdateMapper {
 
 
     @Mapping(target = "id", ignore = true)
+    @Mapping(target = "syncSystem", ignore = true)
     void mapFullUpdate(ApiHeader apiEndpointQueryParam, @MappingTarget ApiHeader targetSouceSystemEndpoint);
 
     ApiHeader mapToEntity(CreateApiHeaderDTO apiEndpointQueryParamDTO);

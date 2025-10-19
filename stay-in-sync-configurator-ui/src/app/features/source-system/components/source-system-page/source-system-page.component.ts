@@ -24,6 +24,11 @@ import {DropdownModule} from 'primeng/dropdown';
 import {FileUploadModule} from 'primeng/fileupload';
 import {ActivatedRoute} from '@angular/router';
 import {InplaceModule} from 'primeng/inplace';
+import { AasElementDialogComponent, AasElementDialogData, AasElementDialogResult } from '../../../../shared/components/aas-element-dialog/aas-element-dialog.component';
+import { CheckboxModule } from 'primeng/checkbox';
+import { CreateSourceSystemDialogService } from '../../services/create-source-system-dialog.service';
+import { ToastModule } from 'primeng/toast';
+import { MessageService } from 'primeng/api';
 
 
 interface AasOperationVarView { idShort: string; modelType?: string; valueType?: string }
@@ -64,44 +69,40 @@ interface AasElementLivePanel {
     ManageApiHeadersComponent,
     ManageEndpointsComponent,
     FormsModule,
-    InplaceModule
+    InplaceModule,
+    AasElementDialogComponent,
+    CheckboxModule,
+    ToastModule
   ],
   templateUrl: './source-system-page.component.html',
-  styleUrl: './source-system-page.component.css'
+  styleUrl: './source-system-page.component.css',
+  providers: [MessageService]
 })
+/**
+ * Source system page: manages base info, endpoints, and AAS snapshot/live views,
+ * including element creation, value setting, and AASX upload flows.
+ */
 export class SourceSystemPageComponent implements OnInit {
   private originalName: string = "";
   private originalApiUrl: string = "";
   ngOnInit(): void {
     const id = Number.parseInt(this.route.snapshot.paramMap.get('id')!);
     this.sourceSystemService.apiConfigSourceSystemIdGet(id).subscribe({
-      next: data => {
-        console.log(data);
-        this.selectedSystem = data;
-      },
-      error: err => {
-        console.log(err);
-      }
+      next: data => { this.selectedSystem = data; },
+      error: err => { this.httpErrorService.handleError(err); }
     });
 
   }
 
 
-  /**
-   * Flag indicating whether data is currently loading
-   */
+  /** Indicates whether page data is currently loading. */
   loading = false;
 
-  /**
-   * Currently selected system for viewing or editing
-   */
+  /** Currently selected system for viewing and editing. */
   selectedSystem?: SourceSystemDTO;
 
 
-  /**
-   * Selected endpoint for parameter management
-   */
-    // AAS Manage Page state
+  /** AAS Snapshot/Live management state. */
   aasTreeNodes: TreeNode[] = [];
   aasTreeLoading = false;
   aasTestLoading = false;
@@ -115,7 +116,18 @@ export class SourceSystemPageComponent implements OnInit {
   aasValueNew = '';
   aasValueTypeHint = 'xs:string';
 
-  // Cache: submodelId -> (idShortPath -> modelType)
+  
+  showElementDialog = false;
+  elementDialogData: AasElementDialogData | null = null;
+
+  
+  showAasxUpload = false;
+  aasxSelectedFile: File | null = null;
+  isUploadingAasx = false;
+  aasxPreview: any = null;
+  aasxSelection: { submodels: Array<{ id: string; full: boolean; elements: string[] }> } = { submodels: [] };
+
+  
   private aasTypeCache: Record<string, Record<string, string>> = {};
 
   private ensureAasTypeMap(submodelId: string): void {
@@ -184,7 +196,7 @@ export class SourceSystemPageComponent implements OnInit {
     }
   }
 
-  // AAS create dialogs
+  
   showAasSubmodelDialog = false;
   aasNewSubmodelJson = '{\n  "id": "https://example.com/ids/sm/new",\n  "idShort": "NewSubmodel"\n}';
   aasMinimalSubmodelTemplate: string = `{
@@ -236,11 +248,13 @@ export class SourceSystemPageComponent implements OnInit {
         next: () => {
           this.showAasSubmodelDialog = false;
           this.discoverAasSnapshot();
+          this.messageService.add({ key: 'sourceAAS', severity: 'success', summary: 'Submodel created', detail: 'Submodel was created successfully.' });
         },
-        error: (err) => this.erorrService.handleError(err)
+        error: (err) => { this.erorrService.handleError(err); this.messageService.add({ key: 'sourceAAS', severity: 'error', summary: 'Error', detail: (err?.message || 'Failed to create submodel') }); }
       });
     } catch (e) {
       this.erorrService.handleError(e as any);
+      this.messageService.add({ key: 'sourceAAS', severity: 'error', summary: 'Error', detail: 'Invalid JSON for submodel.' });
     }
   }
 
@@ -250,29 +264,81 @@ export class SourceSystemPageComponent implements OnInit {
   aasNewElementJson = '{\n  "modelType": "Property",\n  "idShort": "NewProp",\n  "valueType": "xs:string",\n  "value": "42"\n}';
 
   openAasCreateElement(smId: string, parent?: string): void {
-    this.aasTargetSubmodelId = smId;
-    this.aasParentPath = parent || '';
-    this.showAasElementDialog = true;
+    if (!this.selectedSystem?.id) return;
+    this.elementDialogData = {
+      submodelId: smId,
+      parentPath: parent,
+      systemId: this.selectedSystem.id!,
+      systemType: 'source'
+    };
+    this.showElementDialog = true;
   }
 
-  aasCreateElement(): void {
-    if (!this.selectedSystem?.id || !this.aasTargetSubmodelId) return;
-    try {
-      const body = JSON.parse(this.aasNewElementJson);
-      const smIdB64 = this.aasService.encodeIdToBase64Url(this.aasTargetSubmodelId);
-      this.aasService.createElement(this.selectedSystem.id, smIdB64, body, this.aasParentPath || undefined)
+  onElementDialogResult(result: AasElementDialogResult): void {
+    if (result.success && result.element) {
+      const el = result.element;
+      const smIdB64 = this.aasService.encodeIdToBase64Url(el.submodelId);
+      this.aasService.createElement(this.selectedSystem!.id!, smIdB64, el.body, el.parentPath)
         .subscribe({
           next: () => {
-            this.showAasElementDialog = false;
-            this.refreshAasNodeLive(this.aasTargetSubmodelId, this.aasParentPath, undefined);
+            this.showElementDialog = false;
+            this.refreshAasNodeLive(el.submodelId, el.parentPath || '', undefined);
+            this.messageService.add({ key: 'sourceAAS', severity: 'success', summary: 'Element created', detail: 'Element has been created.' });
           },
-          error: (err) => this.erorrService.handleError(err)
+          error: (err) => { this.erorrService.handleError(err); this.messageService.add({ key: 'sourceAAS', severity: 'error', summary: 'Error', detail: (err?.message || 'Failed to create element') }); }
         });
-    } catch (e) {
-      this.erorrService.handleError(e as any);
     }
   }
 
+  openAasxUpload(): void {
+    this.showAasxUpload = true;
+    this.aasxSelectedFile = null;
+  }
+
+  onAasxFileSelected(event: any): void {
+    this.aasxSelectedFile = event.files?.[0] || null;
+    if (this.aasxSelectedFile && this.selectedSystem?.id) {
+      this.aasService.previewAasx(this.selectedSystem.id, this.aasxSelectedFile).subscribe({
+        next: (resp) => {
+          this.aasxPreview = resp?.submodels || (resp?.result ?? []);
+          const arr = Array.isArray(this.aasxPreview) ? this.aasxPreview : (this.aasxPreview?.submodels ?? []);
+          this.aasxSelection = { submodels: (arr || []).map((sm: any) => ({ id: sm.id || sm.submodelId, full: true, elements: [] })) };
+        },
+        error: () => { this.aasxPreview = null; this.aasxSelection = { submodels: [] }; }
+      });
+    }
+  }
+
+  private getSmId(sm: any): string { return sm?.id || sm?.submodelId || ''; }
+  getOrInitAasxSelFor(sm: any): { id: string; full: boolean; elements: string[] } {
+    const id = this.getSmId(sm);
+    let found = this.aasxSelection.submodels.find((s) => s.id === id);
+    if (!found) { found = { id, full: true, elements: [] }; this.aasxSelection.submodels.push(found); }
+    return found;
+  }
+  toggleAasxSubmodelFull(sm: any, checked: boolean): void {
+    const sel = this.getOrInitAasxSelFor(sm);
+    sel.full = !!checked;
+    if (sel.full) sel.elements = [];
+  }
+
+  uploadAasx(): void {
+    if (this.isUploadingAasx) return;
+    if (!this.aasxSelectedFile || !this.selectedSystem?.id) return;
+    this.isUploadingAasx = true;
+    this.createDialogService.uploadAasx(this.selectedSystem.id, this.aasxSelectedFile, this.aasxSelection)
+      .then(() => {
+        this.isUploadingAasx = false;
+        this.showAasxUpload = false;
+        this.discoverAasSnapshot();
+        this.messageService.add({ key: 'sourceAAS', severity: 'success', summary: 'Upload accepted', detail: 'AASX uploaded successfully.' });
+      })
+      .catch((err) => {
+        this.isUploadingAasx = false;
+        this.erorrService.handleError(err);
+        this.messageService.add({ key: 'sourceAAS', severity: 'error', summary: 'Upload failed', detail: (err?.message || 'See console for details') });
+      });
+  }
 
 
   constructor(
@@ -283,12 +349,14 @@ export class SourceSystemPageComponent implements OnInit {
     private apiEndpointSvc: SourceSystemEndpointResourceService,
     private searchPipe: SourceSystemSearchPipe,
     private aasService: AasService,
-    private readonly httpErrorService: HttpErrorService
+    private readonly httpErrorService: HttpErrorService,
+    private readonly createDialogService: CreateSourceSystemDialogService,
+    private readonly messageService: MessageService
   ) {
   }
 
 
-  // AAS: Manage Page helpers
+  
   isAasSelected(): boolean {
     return (this.selectedSystem?.apiType || '').toUpperCase().includes('AAS');
   }
@@ -338,11 +406,17 @@ export class SourceSystemPageComponent implements OnInit {
     }).subscribe({
       next: (resp) => {
         const list = Array.isArray(resp) ? resp : (resp?.result ?? []);
-        attach.children = list.map((el: any) => this.mapElToNode(submodelId, el));
+        const mapped = list.map((el: any) => {
+          if (!el.idShortPath && el.idShort) {
+            el.idShortPath = parentPath ? `${parentPath}/${el.idShort}` : el.idShort;
+          }
+          return this.mapElToNode(submodelId, el);
+        });
+        attach.children = mapped;
         this.aasTreeNodes = [...this.aasTreeNodes];
-        // Background precise type hydration via LIVE element details
+        
         this.hydrateAasNodeTypesForNodes(submodelId, attach.children as TreeNode[]);
-        // hydrate types in background
+        
         this.ensureAasTypeMap(submodelId);
       },
       error: (err) => this.erorrService.handleError(err)
@@ -371,7 +445,8 @@ export class SourceSystemPageComponent implements OnInit {
             node.children = mapped;
             this.aasTreeNodes = [...this.aasTreeNodes];
           } else {
-            const attachNode = this.findAasNodeByKey(submodelId, this.aasTreeNodes);
+            const attachKey = parentPath ? `${submodelId}::${parentPath}` : submodelId;
+            const attachNode = this.findAasNodeByKey(attachKey, this.aasTreeNodes);
             if (attachNode) {
               attachNode.children = mapped;
               this.aasTreeNodes = [...this.aasTreeNodes];
@@ -391,7 +466,8 @@ export class SourceSystemPageComponent implements OnInit {
     const safePath = idShortPath || keyPath || (node?.data?.raw?.idShort || '');
     const last = safePath.split('/').pop() as string;
     const parent = safePath.includes('/') ? safePath.substring(0, safePath.lastIndexOf('/')) : '';
-    // Robust: try direct element details endpoint (backend has deep fallback)
+    
+    if (!systemId) { this.aasSelectedLiveLoading = false; return; }
     this.aasService.getElement(systemId, smId, safePath, 'LIVE').subscribe({
       next: (found: any) => {
         this.aasSelectedLiveLoading = false;
@@ -450,10 +526,10 @@ export class SourceSystemPageComponent implements OnInit {
           secondRef,
           annotations: annotationsRaw.map(mapAnnotation).filter(Boolean) as AasAnnotationView[]
         } as any;
-        // Fallback: If AnnotatedRelationshipElement has no annotations in direct payload, load children as annotations
+        
         if ((liveType === 'AnnotatedRelationshipElement') && (((this.aasSelectedLivePanel?.annotations?.length ?? 0) === 0))) {
           const pathForChildren = safePath;
-          // Try deep list to get full element (with annotations)
+          
           this.aasService
             .listElements(systemId, smId, {depth: 'all', source: 'LIVE'})
             .subscribe({
@@ -470,7 +546,7 @@ export class SourceSystemPageComponent implements OnInit {
                     value: a?.value
                   } as AasAnnotationView));
                 } else {
-                  // Fallback: treat shallow children as annotations
+                  
                   const list: any[] = arr.filter((el: any) => {
                     const p = el?.idShortPath || el?.idShort;
                     if (!p || !p.startsWith(pathForChildren + '/')) return false;
@@ -506,7 +582,7 @@ export class SourceSystemPageComponent implements OnInit {
         }
       },
       error: (_err: any) => {
-        // Fallback: list under parent shallow and pick child
+        
         this.aasService
           .listElements(systemId, smId, {depth: 'shallow', parentPath: parent || undefined, source: 'LIVE'})
           .subscribe({
@@ -600,14 +676,14 @@ export class SourceSystemPageComponent implements OnInit {
   }
 
   aasSetValue(): void {
-    if (!this.selectedSystem?.id || !this.aasValueSubmodelId || !this.aasValueElementPath) return;
+    if (!this.selectedSystem || !this.selectedSystem.id || !this.aasValueSubmodelId || !this.aasValueElementPath) return;
     const smIdB64 = this.aasService.encodeIdToBase64Url(this.aasValueSubmodelId);
     const parsedValue = this.parseValueForType(this.aasValueNew, this.aasValueTypeHint);
     this.aasService.setPropertyValue(this.selectedSystem.id, smIdB64, this.aasValueElementPath, parsedValue as any)
       .subscribe({
         next: () => {
           this.showAasValueDialog = false;
-          // refresh live details
+          
           const node = this.selectedAasNode;
           if (node?.data) {
             this.loadAasLiveElementDetails(node.data.submodelId, node.data.idShortPath, node);
@@ -645,21 +721,33 @@ export class SourceSystemPageComponent implements OnInit {
     this.aasService.deleteSubmodel(this.selectedSystem.id, smIdB64).subscribe({
       next: () => {
         this.discoverAasSnapshot();
+        this.messageService.add({ key: 'sourceAAS', severity: 'success', summary: 'Submodel deleted', detail: 'Submodel removed from shell.' });
       },
-      error: (err) => this.erorrService.handleError(err)
+      error: (err) => { this.erorrService.handleError(err); this.messageService.add({ key: 'sourceAAS', severity: 'error', summary: 'Error', detail: (err?.message || 'Failed to delete submodel') }); }
     });
   }
 
   deleteAasElement(submodelId: string, idShortPath: string): void {
     if (!this.selectedSystem?.id || !submodelId || !idShortPath) return;
-    const smIdB64 = this.aasService.encodeIdToBase64Url(submodelId);
-    this.aasService.deleteElement(this.selectedSystem.id, smIdB64, idShortPath).subscribe({
+    
+    this.aasService.deleteElement(this.selectedSystem.id, submodelId, idShortPath).subscribe({
       next: () => {
-        const parent = idShortPath.includes('/') ? idShortPath.substring(0, idShortPath.lastIndexOf('/')) : '';
+        let parent = '';
+        if (idShortPath.includes('/')) {
+          parent = idShortPath.substring(0, idShortPath.lastIndexOf('/'));
+        } else if (idShortPath.includes('.')) {
+          parent = idShortPath.substring(0, idShortPath.lastIndexOf('.'));
+        }
         const parentNode = parent ? this.findAasNodeByKey(`${submodelId}::${parent}`, this.aasTreeNodes) : this.findAasNodeByKey(submodelId, this.aasTreeNodes);
-        this.loadAasChildren(submodelId, parent || undefined, parentNode || ({} as TreeNode));
+        if (parentNode) {
+          this.loadAasChildren(submodelId, parent || undefined, parentNode);
+        } else {
+          
+          this.refreshAasNodeLive(submodelId, parent || '', undefined);
+        }
+        this.messageService.add({ key: 'sourceAAS', severity: 'success', summary: 'Element deleted', detail: 'Element has been deleted.' });
       },
-      error: (err) => this.erorrService.handleError(err)
+      error: (err) => { this.erorrService.handleError(err); this.messageService.add({ key: 'sourceAAS', severity: 'error', summary: 'Error', detail: (err?.message || 'Failed to delete element') }); }
     });
   }
 
@@ -688,8 +776,11 @@ export class SourceSystemPageComponent implements OnInit {
   private mapElToNode(submodelId: string, el: any): TreeNode {
     const computedType = this.inferModelType(el);
     const label = el.idShort;
-    const typeHasChildren = el?.modelType === 'SubmodelElementCollection' || el?.modelType === 'SubmodelElementList' || el?.modelType === 'Operation' || el?.modelType === 'Entity';
-    const hasChildren = el?.hasChildren === true || typeHasChildren;
+    const typeHasChildren = computedType === 'SubmodelElementCollection' || computedType === 'SubmodelElementList' || computedType === 'Operation' || computedType === 'Entity';
+    
+    const isLeafType = computedType === 'RelationshipElement' || computedType === 'AnnotatedRelationshipElement' || computedType === 'ReferenceElement';
+    
+    const hasChildren = !isLeafType && (el?.hasChildren === true || typeHasChildren || computedType === undefined);
     return {
       key: `${submodelId}::${el.idShortPath || el.idShort}`,
       label,
@@ -699,11 +790,11 @@ export class SourceSystemPageComponent implements OnInit {
     } as TreeNode;
   }
 
-  // Infer a more precise modelType when missing
+  
   private inferModelType(el: any): string | undefined {
     if (!el) return undefined;
     if (el.modelType) return el.modelType;
-    // Detect Range before Property
+    
     if (el.min !== undefined || el.max !== undefined || el.minValue !== undefined || el.maxValue !== undefined) return 'Range';
     if (el.valueType) return 'Property';
     if (Array.isArray(el.inputVariables) || Array.isArray(el.outputVariables) || Array.isArray(el.inoutputVariables)) return 'Operation';
@@ -731,11 +822,13 @@ export class SourceSystemPageComponent implements OnInit {
     this.aasService.aasTest(this.selectedSystem.id).subscribe({
       next: () => {
         this.aasTestLoading = false;
+        this.messageService.add({ key: 'sourceAAS', severity: 'success', summary: 'Connection successful', detail: 'AAS connection works.' });
       },
       error: (err) => {
         this.aasTestLoading = false;
         this.aasTestError = 'Connection failed. Please verify Base URL, AAS ID and auth.';
         this.erorrService.handleError(err);
+        this.messageService.add({ key: 'sourceAAS', severity: 'error', summary: 'Connection failed', detail: this.aasTestError });
       }
     });
   }

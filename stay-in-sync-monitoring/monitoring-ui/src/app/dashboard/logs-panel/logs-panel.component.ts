@@ -2,7 +2,7 @@ import { Component, OnDestroy, OnInit } from '@angular/core';
 import { LogEntry } from '../../core/models/log.model';
 import { LogService } from '../../core/services/log.service';
 import { FormsModule } from '@angular/forms';
-import { DatePipe, NgClass, NgForOf, NgIf } from '@angular/common';
+import { DatePipe, NgClass, NgIf } from '@angular/common';
 import { TableModule } from 'primeng/table';
 import { ActivatedRoute } from '@angular/router';
 import { Button } from 'primeng/button';
@@ -62,7 +62,7 @@ export class LogsPanelComponent implements OnInit, OnDestroy {
     { label: 'docker', value: 'docker' }
   ];
 
-  private intervalId?: number;
+  private readonly intervalId?: number;
 
   // Currently selected transformation ID (for filtering logs)
   selectedTransformationId: string = '';
@@ -71,9 +71,9 @@ export class LogsPanelComponent implements OnInit, OnDestroy {
   selectedService: string = '';
 
   constructor(
-    private logService: LogService,
-    private route: ActivatedRoute,
-    private transformationService: TransformationService
+    private readonly logService: LogService,
+    private readonly route: ActivatedRoute,
+    private readonly transformationService: TransformationService
   ) {}
 
   /**
@@ -229,6 +229,25 @@ export class LogsPanelComponent implements OnInit, OnDestroy {
   }
 
   /**
+   * Handles changes to the selected service.
+   *
+   * If the currently selected node ID starts with 'POLL', it resets the node ID
+   * and the selected transformation ID to ensure proper filtering behavior.
+   * After making these adjustments, it triggers a log fetch to update the displayed logs.
+   */
+  onServiceChange() {
+    if (this.selectedNodeId?.startsWith('POLL')) {
+      // Reset the selected node ID and transformation ID
+      this.selectedNodeId = undefined;
+      this.selectedTransformationId = '';
+    }
+    // Fetch logs with the updated filters
+    this.fetchLogs();
+  }
+
+
+
+  /**
    * Builds a fallback message for unstructured log entries
    * by extracting common fields (component, query, etc.).
    */
@@ -255,7 +274,7 @@ export class LogsPanelComponent implements OnInit, OnDestroy {
    * Extracts a value of the form key=value from a raw log string.
    */
   private extractValue(text: string, key: string): string | null {
-    const match = text.match(new RegExp(`${key}=([^\\s]+)`));
+    const match = new RegExp(`${key}=(S+)`).exec(text);
     return match ? match[1] : null;
   }
 
@@ -263,7 +282,7 @@ export class LogsPanelComponent implements OnInit, OnDestroy {
    * Extracts a quoted value of the form key="..." from a raw log string.
    */
   private extractQuotedValue(text: string, key: string): string | null {
-    const match = text.match(new RegExp(`${key}="([^"]+)"`));
+    const match = new RegExp(`${key}="([^"]+)"`).exec(text);
     return match ? match[1] : null;
   }
 

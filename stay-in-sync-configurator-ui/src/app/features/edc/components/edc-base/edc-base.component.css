@@ -1,0 +1,19 @@
+:host {
+  display: block;
+}
+
+.edc-base-container {
+
+  display: flex;
+}
+
+/* Sidebar styles removed as it's no longer part of the layout */
+
+.content {
+  /* margin-left removed as sidebar is gone */
+  flex: 1;
+  padding: 2rem;
+
+  overflow-y: auto;
+  color: inherit;
+}

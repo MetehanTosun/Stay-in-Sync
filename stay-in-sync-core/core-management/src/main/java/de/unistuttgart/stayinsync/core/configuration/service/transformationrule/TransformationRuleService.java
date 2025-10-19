@@ -13,8 +13,8 @@ import de.unistuttgart.graphengine.service.GraphMapper;
 import de.unistuttgart.graphengine.service.GraphValidatorService;
 import de.unistuttgart.graphengine.validation_error.GraphStatus;
 import de.unistuttgart.graphengine.validation_error.ValidationError;
-import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.LogicGraphEntity;
-import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.TransformationRule;
+import de.unistuttgart.stayinsync.core.configuration.persistence.entities.sync.LogicGraphEntity;
+import de.unistuttgart.stayinsync.core.configuration.persistence.entities.sync.TransformationRule;
 import de.unistuttgart.stayinsync.core.configuration.exception.CoreManagementException; // Import der korrekten Exception
 import io.quarkus.logging.Log;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -23,7 +23,6 @@ import jakarta.transaction.Transactional;
 import jakarta.ws.rs.core.Response;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 
 import static jakarta.transaction.Transactional.TxType.SUPPORTS;
@@ -58,18 +57,23 @@ public class TransformationRuleService {
         }
 
         try {
+            // FinalNode
             NodeDTO finalNodeDto = new NodeDTO();
             finalNodeDto.setId(0);
             finalNodeDto.setName("Final Result");
             finalNodeDto.setNodeType("FINAL");
+            finalNodeDto.setOffsetX(750);
 
+            // ConfigNode
             NodeDTO configNodeDto = new NodeDTO();
             configNodeDto.setId(1);
             configNodeDto.setName("Configuration");
             configNodeDto.setNodeType("CONFIG");
+            configNodeDto.setOffsetY(300);
             configNodeDto.setChangeDetectionMode("OR");
             configNodeDto.setInputTypes(List.of("ANY"));
             configNodeDto.setOutputType("BOOLEAN");
+            configNodeDto.setTimeWindowMillis(5000);
 
             InputDTO initialEdge = new InputDTO();
             initialEdge.setId(1);

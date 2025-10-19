@@ -5,20 +5,20 @@ import static jakarta.transaction.Transactional.TxType.*;
 import java.util.List;
 import java.util.Optional;
 
-import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.TargetSystem;
-import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.TargetSystemEndpoint;
-import de.unistuttgart.stayinsync.core.configuration.domain.entities.edc.EDCAsset;
-import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.TargetSystemApiQueryParam;
-import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.TargetSystemApiRequestHeader;
-import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.TargetSystemVariable;
-import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.ApiHeader;
-import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.ApiEndpointQueryParam;
-import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.ApiEndpointQueryParamValue;
-import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.ApiHeaderValue;
-import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.TargetSystemApiRequestConfiguration;
-import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.TargetSystemApiRequestConfigurationAction;
+import de.unistuttgart.stayinsync.core.configuration.persistence.entities.sync.TargetSystem;
+import de.unistuttgart.stayinsync.core.configuration.persistence.entities.sync.TargetSystemEndpoint;
+import de.unistuttgart.stayinsync.core.configuration.persistence.entities.edc.EDCAsset;
+import de.unistuttgart.stayinsync.core.configuration.persistence.entities.sync.TargetSystemApiQueryParam;
+import de.unistuttgart.stayinsync.core.configuration.persistence.entities.sync.TargetSystemApiRequestHeader;
+import de.unistuttgart.stayinsync.core.configuration.persistence.entities.sync.TargetSystemVariable;
+import de.unistuttgart.stayinsync.core.configuration.persistence.entities.sync.ApiHeader;
+import de.unistuttgart.stayinsync.core.configuration.persistence.entities.sync.ApiEndpointQueryParam;
+import de.unistuttgart.stayinsync.core.configuration.persistence.entities.sync.ApiEndpointQueryParamValue;
+import de.unistuttgart.stayinsync.core.configuration.persistence.entities.sync.ApiHeaderValue;
+import de.unistuttgart.stayinsync.core.configuration.persistence.entities.sync.TargetSystemApiRequestConfiguration;
+import de.unistuttgart.stayinsync.core.configuration.persistence.entities.sync.TargetSystemApiRequestConfigurationAction;
 import de.unistuttgart.stayinsync.core.configuration.exception.CoreManagementException;
-import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.authconfig.SyncSystemAuthConfig;
+import de.unistuttgart.stayinsync.core.configuration.persistence.entities.sync.authconfig.SyncSystemAuthConfig;
 import de.unistuttgart.stayinsync.core.configuration.mapping.targetsystem.TargetSystemMapper;
 import de.unistuttgart.stayinsync.core.configuration.rest.dtos.targetsystem.TargetSystemDTO;
 import io.quarkus.logging.Log;
@@ -41,8 +41,6 @@ public class TargetSystemService {
         Log.debugf("Creating new TargetSystem with id: %d", dto.id());
         TargetSystem entity = mapper.toEntity(dto);
         entity.persist();
-        // Synchronize endpoints and configurations from provided OpenAPI specification
-        openApiSpecificationParserService.synchronizeFromSpec(entity);
         return mapper.toDto(entity);
     }
 
@@ -56,8 +54,6 @@ public class TargetSystemService {
                         "TargetSystem with id %d not found.", id));
 
         mapper.updateFromDto(dto, entity);
-        // Re-synchronize from spec in case it changed (method is a no-op if spec is blank)
-        openApiSpecificationParserService.synchronizeFromSpec(entity);
         return mapper.toDto(entity);
     }
 
@@ -86,7 +82,7 @@ public class TargetSystemService {
         TargetSystem target = targetOpt.get();
 
         // Delete endpoints and their children (instance-based, like SourceSystem)
-        List<TargetSystemEndpoint> endpoints = TargetSystemEndpoint.findByTargetSystemId(id);
+        List<TargetSystemEndpoint> endpoints = TargetSystemEndpoint.list("targetSystem.id", id);
         for (TargetSystemEndpoint endpoint : endpoints) {
             // Variables
             List<TargetSystemVariable> variables = TargetSystemVariable.list("targetSystemEndpoint.id", endpoint.id);

@@ -7,8 +7,8 @@ import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
-import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.TargetSystem;
-import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.TargetSystemEndpoint;
+import de.unistuttgart.stayinsync.core.configuration.persistence.entities.sync.TargetSystem;
+import de.unistuttgart.stayinsync.core.configuration.persistence.entities.sync.TargetSystemEndpoint;
 import de.unistuttgart.stayinsync.core.configuration.exception.CoreManagementException;
 import de.unistuttgart.stayinsync.core.configuration.mapping.TargetSystemEndpointFullUpdateMapper;
 import de.unistuttgart.stayinsync.core.configuration.rest.dtos.CreateTargetSystemEndpointDTO;
@@ -64,8 +64,7 @@ public class TargetSystemEndpointService {
     @Transactional(SUPPORTS)
     public List<TargetSystemEndpoint> findAllEndpointsWithTargetSystemIdLike(Long targetSystemId) {
         Log.debugf("Finding all endpoints of target system with id = %s", targetSystemId);
-        return Optional.ofNullable(TargetSystemEndpoint.findByTargetSystemId(targetSystemId))
-                .orElseGet(List::of);
+        return TargetSystemEndpoint.list("targetSystem.id", targetSystemId);
     }
 
     @Transactional(SUPPORTS)

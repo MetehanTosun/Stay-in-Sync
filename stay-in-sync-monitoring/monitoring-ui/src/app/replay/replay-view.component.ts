@@ -1,5 +1,5 @@
 // src/app/replay/replay-view.component.ts
-import { CommonModule, JsonPipe, NgIf } from '@angular/common';
+import { CommonModule, NgIf } from '@angular/common';
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
@@ -11,12 +11,12 @@ import { TableModule } from 'primeng/table';
 import { Tab, TabList, TabPanel, TabPanels, Tabs } from 'primeng/tabs';
 import * as ts from 'typescript';
 import { LogEntry } from '../core/models/log.model';
+import { SnapshotDTO } from '../core/models/snapshot.model';
+import { TransformationScriptDTO } from '../core/models/transformation-script.model';
 import { LogService } from '../core/services/log.service';
-import { SnapshotDTO } from './models/snapshot.model';
-import { TransformationScriptDTO } from './models/transformation-script.model';
-import { ReplayService } from './replay.service';
-import { ScriptService } from './script.service';
-import { SnapshotService } from './snapshot.service';
+import { ReplayService } from '../core/services/replay/replay.service';
+import { ScriptService } from '../core/services/replay/script.service';
+import { SnapshotService } from '../core/services/snapshot.service';
 
 // IMPORTANT: Import monaco types for the onInit handler
 declare const monaco: any;
@@ -27,7 +27,6 @@ declare const monaco: any;
   imports: [
     CommonModule,
     NgIf,
-    JsonPipe,
     PrimeTemplate,
     TableModule,
     Tabs,
@@ -37,8 +36,8 @@ declare const monaco: any;
     TabPanel,
     MonacoEditorModule,
     FormsModule,
-    Button,
     NgxJsonViewerModule,
+    Button,
   ],
   templateUrl: './replay-view.component.html',
   styleUrl: './replay-view.component.css',
@@ -60,6 +59,7 @@ export class ReplayViewComponent implements OnInit {
   variables: Record<string, any> = {};
   errorInfo: string | null = null;
   snapshotId: string | null = null;
+  generatedSdkCode: any;
 
   scriptDisplay = '// loading TypeScript…';
   logs: LogEntry[] = [];
@@ -174,6 +174,11 @@ declare var __capture: (name: string, value: any) => void;
     // Load snapshot
     this.snapshots.getById(this.snapshotId).subscribe({
       next: (snap) => {
+        if (!snap) {
+          this.error.set('Snapshot not found or is null.');
+          this.loading.set(false);
+          return;
+        }
         this.data.set(snap);
 
         const transformationId = snap.transformationResult?.transformationId;
@@ -187,6 +192,7 @@ declare var __capture: (name: string, value: any) => void;
         // Fetch TypeScript code by transformationId
         this.scripts.getByTransformationId(transformationId).subscribe({
           next: (script: TransformationScriptDTO) => {
+            this.generatedSdkCode = script.generatedSdkCode;
             // Set the editor content
             this.scriptDisplay =
               script.typescriptCode || '// No TypeScript code available';
@@ -279,6 +285,7 @@ declare var __capture: (name: string, value: any) => void;
       scriptName: 'replay.js',
       javascriptCode: transpiledCode,
       sourceData: this.data()?.transformationResult?.sourceData || {},
+      generatedSdkCode: this.generatedSdkCode,
     };
 
     // Call backend endpoint

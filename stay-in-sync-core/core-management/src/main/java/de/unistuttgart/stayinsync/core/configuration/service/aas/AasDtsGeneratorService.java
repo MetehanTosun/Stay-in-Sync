@@ -1,7 +1,7 @@
 package de.unistuttgart.stayinsync.core.configuration.service.aas;
 
-import de.unistuttgart.stayinsync.core.configuration.domain.entities.aas.AasElementLite;
-import de.unistuttgart.stayinsync.core.configuration.domain.entities.aas.AasSubmodelLite;
+import de.unistuttgart.stayinsync.core.configuration.persistence.entities.aas.AasElementLite;
+import de.unistuttgart.stayinsync.core.configuration.persistence.entities.aas.AasSubmodelLite;
 import jakarta.enterprise.context.ApplicationScoped;
 
 import java.util.HashSet;

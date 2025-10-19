@@ -3,9 +3,8 @@ package de.unistuttgart.stayinsync.core.configuration.service.transformationrule
 import com.fasterxml.jackson.databind.ObjectMapper;
 import de.unistuttgart.graphengine.service.GraphMapper;
 import de.unistuttgart.graphengine.validation_error.ValidationError;
-import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.TransformationRule;
+import de.unistuttgart.stayinsync.core.configuration.persistence.entities.sync.TransformationRule;
 import de.unistuttgart.stayinsync.core.configuration.exception.CoreManagementException;
-
 import io.quarkus.logging.Log;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
@@ -19,15 +18,6 @@ import static jakarta.transaction.Transactional.TxType.SUPPORTS;
 
 @ApplicationScoped
 public class GraphStorageService {
-
-    @Inject
-    GraphMapper mapper;
-
-    @Inject
-    ObjectMapper jsonObjectMapper;
-
-    @Inject
-    GraphCompilerService graphCompilerService;
 
     /**
      * A record to hold the result of a graph persistence operation.
@@ -107,24 +97,4 @@ public class GraphStorageService {
         Log.debug("Finding all TransformationRules.");
         return TransformationRule.listAll();
     }
-
-    /**
-     * A private helper method to "hydrate" a graph entity into an executable list of nodes.
-     * It centralizes the mapping and compiling logic for loading a graph.
-
-     private List<Node> hydrateGraph(LogicGraphEntity entity) {
-     try {
-     GraphDTO dto = jsonObjectMapper.readValue(entity.graphDefinitionJson, GraphDTO.class);
-
-     List<Node> rawGraph = mapper.toNodeGraph(dto);
-
-     List<Node> compiledGraph = graphCompilerService.compile(rawGraph);
-
-     return compiledGraph;
-
-     } catch (IOException e) {
-     throw new RuntimeException("Failed to deserialize graph from JSON.", e);
-     }
-     }
-     */
 }

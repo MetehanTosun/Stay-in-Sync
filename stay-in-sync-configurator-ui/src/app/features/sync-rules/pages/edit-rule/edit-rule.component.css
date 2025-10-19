@@ -17,56 +17,9 @@
   flex: 1;
 }
 
-#config-button .pi {
+.config-button .pi {
   font-size: 1.5rem;
-  color: var(--sr-font-alt-color);
   cursor: pointer;
-}
-
-.return-button {
-  background: none;
-  border: none;
-  color: #007bff;
-  font-size: 1.05rem;
-  font-weight: 500;
-  padding: 0.5rem 1.1rem;
-  border-radius: 4px;
-  cursor: pointer;
-  transition: background 0.15s, color 0.15s;
-}
-
-.return-button:hover {
-  background: #e7f1ff;
-  color: #0056b3;
-}
-
-/* MARK: Toolbar */
-.toolbar {
-  display: flex;
-  gap: 0.75rem;
-  align-items: center;
-}
-
-.toolbar button {
-  display: flex;
-  align-items: center;
-  gap: 0.4rem;
-  background: #007bff;
-  color: #fff;
-  border: none;
-  border-radius: 4px;
-  padding: 0.7rem 1.3rem;
-  font-size: 1rem;
-  font-weight: 500;
-  letter-spacing: 0.01em;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.07);
-  cursor: pointer;
-  transition: background 0.18s, box-shadow 0.18s;
-}
-
-.toolbar button:hover {
-  background: #0263ca;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.10);
 }
 
 /* MARK: Canvas Wrapper */
@@ -82,7 +35,6 @@
   display: flex;
   flex-direction: column;
   min-width: 0;
-  min-height: 0;
 }
 
 .vflow-wrapper app-vflow-canvas {
@@ -95,21 +47,11 @@
 }
 
 /* MARK: Node Palette */
-.node-palette-wrapper {
-  margin: 0 auto 2rem auto;
-  max-width: 1200px;
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 0.5rem;
-}
-
-#node-selection-indicator {
+.node-selection-indicator {
   margin-top: 0.5rem;
   color: #007bff;
   font-size: 1.02rem;
   font-weight: 500;
-  background: var(--sr-node-selection-indicator);
   border-radius: 4px;
   padding: 0.4rem 1rem;
 }
