@@ -1,21 +1,23 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
-import { Observable, throwError, of } from 'rxjs';
+import { Observable, throwError, of, forkJoin } from 'rxjs';
 import { catchError, map, delay } from 'rxjs/operators';
 import { Asset } from '../models/asset.model';
 import { Transformation } from '../../../models/transformation.model';
-import { MOCK_ODRL_ASSETS, MOCK_TRANSFORMATIONS, MOCK_TARGET_ARC_CONFIGS } from '../../../mocks/mock-data';
+import { MOCK_ODRL_ASSETS, MOCK_TRANSFORMATIONS, MOCK_TARGET_ARC_CONFIGS, MOCK_TARGET_SYSTEMS } from '../../../mocks/mock-data';
 
 @Injectable({
   providedIn: 'root'
 })
 export class AssetService {
   // UI Testing method. To use the real backend, change this to false!
-  private mockMode = false;
+  private mockMode = true;
 
-  private baseUrl = '/api/config/edcs';
-  private transformationsUrl = '/api/config/transformations';
-  private targetArcUrl = '/api/config/target-arc';
+  private backendApiUrl = 'http://localhost:8090/api/config'; // Central base URL for the backend
+  private baseUrl = `${this.backendApiUrl}/edcs`;
+  private transformationsUrl = `${this.backendApiUrl}/transformations`;
+  private targetArcUrl = `${this.backendApiUrl}/target-arc`;
+  private targetSystemsUrl = `${this.backendApiUrl}/target-systems`;
 
   constructor(private http: HttpClient) {}
 
@@ -130,17 +132,29 @@ export class AssetService {
   }
 
   /**
-   * Fetches the list of available Transformations
+   * Fetches a combined list of available Transformations and Target Systems.
    */
-  getTransformations(): Observable<Transformation[]> {
+  getSelectableSystems(): Observable<Transformation[]> {
     if (this.mockMode) {
-      console.warn('Mock Mode: Fetching transformations.');
-      return of(MOCK_TRANSFORMATIONS).pipe(delay(100));
+      console.warn('Mock Mode: Fetching combined Transformations and Target Systems.');
+      const transformations = MOCK_TRANSFORMATIONS.map((t: Transformation) => ({ ...t, type: 'Transformation' }));
+      const targetSystems = MOCK_TARGET_SYSTEMS.map((t: Transformation) => ({ ...t, type: 'Target System' }));
+      return of([...transformations, ...targetSystems]).pipe(delay(100));
     }
-    return this.http.get<Transformation[]>(this.transformationsUrl).pipe(
+
+    // Use forkJoin to fetch from both endpoints in parallel
+    return forkJoin({
+      transformations: this.http.get<Transformation[]>(this.transformationsUrl),
+      targetSystems: this.http.get<Transformation[]>(this.targetSystemsUrl)
+    }).pipe(      map(({ transformations, targetSystems }: { transformations: Transformation[], targetSystems: Transformation[] }) => {
+        // Add a 'type' property to distinguish them in the UI if needed later
+        const typedTransformations = transformations.map(t => ({ ...t, type: 'Transformation' }));
+        const typedTargetSystems = targetSystems.map(t => ({ ...t, type: 'Target System' }));
+        return [...typedTransformations, ...typedTargetSystems];
+      }),
       catchError(err => {
-        console.error('Failed to fetch transformations', err);
-        return throwError(() => new Error('Could not load transformations from backend.'));
+        console.error('Failed to fetch selectable systems', err);
+        return throwError(() => new Error('Could not load systems from backend.'));
       })
     );
   }
@@ -171,7 +185,7 @@ export class AssetService {
       return of(suggestions.filter(s => s.includes(query)));
     }
     // Replace with a real backend call if needed
-    return this.http.get<string[]>(this.baseUrl + '/endpoint-suggestions', { params: { q: query } });
+    return this.http.get<string[]>(`${this.backendApiUrl}/endpoint-suggestions`, { params: { q: query } });
   }
 
   // Maps backend JSON (JSON-LD style) to our Asset interface used by the UI table

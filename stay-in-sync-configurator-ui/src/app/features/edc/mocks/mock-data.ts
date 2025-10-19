@@ -1,6 +1,5 @@
 import { EdcInstance } from '../components/edc-instances/models/edc-instance.model';
 import { OdrlContractDefinition } from '../components/edc-assets-and-policies/models/policy.model';
-import { TargetSystem } from '../models/target-system.model';
 import { Transformation } from '../models/transformation.model';
 /**
  * Mock EDC Instances
@@ -112,7 +111,7 @@ export let MOCK_CONTRACT_DEFINITIONS: Record<string, OdrlContractDefinition[]> =
 /**
  * Mock Transformations (Target Systems)
  */
-export const MOCK_TRANSFORMATIONS: TargetSystem[] = [
+export const MOCK_TRANSFORMATIONS: Transformation[] = [
   { id: '1', alias: 'User Management API' },
   { id: '2', alias: 'Events API' },
   { id: '3', alias: 'Product Catalog API' }
@@ -167,3 +166,11 @@ export const MOCK_TARGET_ARC_CONFIGS: { [key: string]: any } = {
     }]
   }
 };
+
+/**
+ * Mock Target Systems
+ */
+export const MOCK_TARGET_SYSTEMS: Transformation[] = [
+  { id: '10', alias: 'CRM Backend' },
+  { id: '11', alias: 'Inventory Management' },
+];

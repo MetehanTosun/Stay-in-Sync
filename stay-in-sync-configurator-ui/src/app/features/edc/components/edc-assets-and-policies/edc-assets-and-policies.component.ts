@@ -192,8 +192,8 @@ accessPolicySuggestions: OdrlPolicyDefinition[] = [];
   private assetJsonSyncSubject = new Subject<void>();
 
   // New Asset Dialog specific properties
-  allTransformations: Transformation[] = [];
-  selectedTransformation: Transformation | null = null;
+  allSelectableSystems: Transformation[] = [];
+  selectedSystem: Transformation | null = null;
   assetAttributes: { key: string; value: string }[] = [{ key: '', value: '' }]; // Start with one empty row
   pathParamId: string = '';
   queryParams: { key: string; value: string }[] = [{ key: '', value: '' }];
@@ -252,7 +252,7 @@ accessPolicySuggestions: OdrlPolicyDefinition[] = [];
 
     this.loadAccessPolicyTemplates();
     this.loadAssetTemplates();
-    this.loadTransformations();
+    this.loadSelectableSystems();
   }
 
   ngOnDestroy(): void {
@@ -295,9 +295,9 @@ accessPolicySuggestions: OdrlPolicyDefinition[] = [];
     ];
   }
 
-  private loadTransformations() {
-    this.assetService.getTransformations().subscribe(systems => {
-      this.allTransformations = systems;
+  private loadSelectableSystems() {
+    this.assetService.getSelectableSystems().subscribe(systems => {
+      this.allSelectableSystems = systems;
     });
   }
 
@@ -549,9 +549,9 @@ accessPolicySuggestions: OdrlPolicyDefinition[] = [];
   }
 
   // New Asset Dialog specific methods
-  onTransformationSelect(selectedTransformation: Transformation | null): void {
-    if (selectedTransformation && selectedTransformation.id) {
-      this.assetService.getTargetArcConfig(selectedTransformation.id).subscribe(config => {
+  onSystemSelect(selectedSystem: Transformation | null): void {
+    if (selectedSystem && selectedSystem.id) {
+      this.assetService.getTargetArcConfig(selectedSystem.id).subscribe(config => {
         this.populateFormFromTargetArc(config); // Use the new, specific helper method
         this.syncAssetJsonFromForm();
       });
@@ -573,13 +573,13 @@ accessPolicySuggestions: OdrlPolicyDefinition[] = [];
     if (!assetJson['@id'] || assetJson['@id'].trim() === '') {
       throw new Error('Bitte eine Asset-ID eingeben. Dies ist ein Pflichtfeld.');
     }
-    
+
     // The service layer requires the targetEDCId to be set.
     assetJson.targetEDCId = this.instance.id;
-    
+
     // The createAsset service method expects assetId to be a top-level property for the mock to work correctly.
     assetJson.assetId = assetJson['@id'];
-    
+
     console.log('Sending Asset to Backend:', JSON.stringify(assetJson, null, 2));
     try {
       const response = await lastValueFrom(this.assetService.createAsset(this.instance.id, assetJson));
@@ -807,6 +807,7 @@ accessPolicySuggestions: OdrlPolicyDefinition[] = [];
   }
 
   private resetAssetFormFields(): void {
+    this.selectedSystem = null;
     this.assetAttributes = [{ key: '', value: '' }];
     this.pathParamId = '';
     this.queryParams = []; // Reset to an empty array
@@ -1076,7 +1077,7 @@ accessPolicySuggestions: OdrlPolicyDefinition[] = [];
       // The JSON from the editor is the source of truth.
       // Add the assetId for the service call.
       assetJson.assetId = assetJson['@id'];
-      
+
       // Use the update service method instead of create
       console.log('Sending updated asset to backend:', JSON.stringify(assetJson, null, 2));
       await lastValueFrom(this.assetService.updateAsset(this.instance.id, this.assetToEditODRL['@id'], assetJson));

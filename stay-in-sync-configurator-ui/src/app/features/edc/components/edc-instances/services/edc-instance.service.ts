@@ -10,7 +10,7 @@ import { MOCK_EDC_INSTANCES } from '../../../mocks/mock-data';
 export class EdcInstanceService {
 
   // UI Testing method. To use the real backend, change this to false!
-  private mockMode = false;
+  private mockMode = true;
 
   private backendUrl = '/api/config/edcs';
 
