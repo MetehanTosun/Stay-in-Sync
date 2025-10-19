@@ -1,7 +1,7 @@
 package de.unistuttgart.stayinsync.core.configuration.edc.rest;
 
 import de.unistuttgart.stayinsync.core.configuration.edc.dtoedc.EDCAssetDto;
-import de.unistuttgart.stayinsync.transport.exception.CustomException;
+import de.unistuttgart.stayinsync.core.configuration.edc.exception.CustomException;
 import de.unistuttgart.stayinsync.core.configuration.edc.service.EDCAssetService;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;

@@ -11,7 +11,7 @@ import de.unistuttgart.stayinsync.core.configuration.edc.entities.EDCProperty;
 import de.unistuttgart.stayinsync.core.configuration.edc.mapping.EDCAssetMapper;
 import de.unistuttgart.stayinsync.core.configuration.edc.service.edcconnector.CreateEDCAssetDTO;
 import de.unistuttgart.stayinsync.core.configuration.edc.service.edcconnector.EDCClient;
-import de.unistuttgart.stayinsync.transport.exception.CustomException;
+import de.unistuttgart.stayinsync.core.configuration.edc.exception.CustomException;
 import io.quarkus.logging.Log;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;

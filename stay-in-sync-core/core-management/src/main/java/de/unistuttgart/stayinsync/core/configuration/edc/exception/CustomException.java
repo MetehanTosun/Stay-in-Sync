@@ -1,4 +1,4 @@
-package de.unistuttgart.stayinsync.transport.exception;
+package de.unistuttgart.stayinsync.core.configuration.edc.exception;
 
 /**
  * Custom exception class for handling application-specific errors.
