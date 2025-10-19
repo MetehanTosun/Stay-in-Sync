@@ -30,7 +30,7 @@
   <!-- Right pane: Tabbed results display (SourceData, Variables, Errors, Output, Logs) -->
   <section class="right-pane">
     <!-- Tab container using PrimeNG Tabs component -->
-    <p-tabs [ngStyle]="{ height: '100%' }">
+    <p-tabs [(value)]="selectedTab" [ngStyle]="{ height: '100%' }">
       <p-tablist>
         <p-tab value="0">SourceData</p-tab>
         <p-tab value="1">Variables</p-tab>
@@ -48,7 +48,7 @@
                 <h3>Source Data</h3>
                 <div class="json-scroll-container">
                   <ngx-json-viewer
-                    [json]="data()?.transformationResult?.sourceData"
+                    [json]="formattedSourceData"
                     [expanded]="false"
                   ></ngx-json-viewer>
                 </div>
@@ -63,10 +63,12 @@
             <ng-container *ngIf="!loading(); else loadingTpl">
               <ng-container *ngIf="!error(); else errorTpl">
                 <h3>Variable Snapshot</h3>
-                <ngx-json-viewer
-                  [json]="variables"
-                  [expanded]="false"
-                ></ngx-json-viewer>
+                <div class="json-scroll-container">
+                  <ngx-json-viewer
+                    [json]="variables"
+                    [expanded]="false"
+                  ></ngx-json-viewer>
+                </div>
               </ng-container>
             </ng-container>
           </div>
@@ -90,10 +92,12 @@
             <ng-container *ngIf="!loading(); else loadingTpl">
               <ng-container *ngIf="!error(); else errorTpl">
                 <h3>Output Data</h3>
-                <ngx-json-viewer
-                  [json]="outputData"
-                  [expanded]="false"
-                ></ngx-json-viewer>
+                <div class="json-scroll-container">
+                  <ngx-json-viewer
+                    [json]="outputData"
+                    [expanded]="false"
+                  ></ngx-json-viewer>
+                </div>
               </ng-container>
             </ng-container>
           </div>

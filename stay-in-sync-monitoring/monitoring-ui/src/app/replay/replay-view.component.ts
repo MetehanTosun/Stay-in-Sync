@@ -81,6 +81,7 @@ export class ReplayViewComponent implements OnInit {
   loading = signal<boolean>(true);
   error = signal<string | null>(null);
   data = signal<SnapshotDTO | null>(null);
+  selectedTab = '0';
 
   // --- Replay results and context ---
   // These fields are populated after calling the backend replay endpoint.
@@ -94,6 +95,8 @@ export class ReplayViewComponent implements OnInit {
   // Populated after fetching the script for the snapshot's transformation.
   scriptDisplay = '// loading TypeScript…';
   logs: LogEntry[] = [];
+  // Formatted source data for display (flattens top-level `source` key)
+  formattedSourceData: any = null;
 
   /** Monaco editor configuration for displaying/transpiling the TypeScript transform. */
   editorOptions = {
@@ -234,6 +237,21 @@ declare var __capture: (name: string, value: any) => void;
           return;
         }
         this.data.set(snap);
+
+        // Build a display-friendly source object (flatten top-level `source`)
+        const rawSource = snap?.transformationResult?.sourceData as any;
+        const flattened =
+          rawSource &&
+          typeof rawSource === 'object' &&
+          'source' in rawSource &&
+          rawSource.source &&
+          typeof rawSource.source === 'object'
+            ? rawSource.source
+            : rawSource ?? {};
+        // Preserve existing fields
+        const displayObj = { ...(flattened || {}) } as any;
+
+        this.formattedSourceData = displayObj;
 
         const transformationId = snap.transformationResult?.transformationId;
         if (transformationId == null) {
