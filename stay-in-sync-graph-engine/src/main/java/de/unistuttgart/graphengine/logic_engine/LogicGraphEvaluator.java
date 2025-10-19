@@ -1,6 +1,5 @@
 package de.unistuttgart.graphengine.logic_engine;
 
-import com.fasterxml.jackson.databind.JsonNode;
 import de.unistuttgart.graphengine.exception.GraphEvaluationException;
 import de.unistuttgart.graphengine.nodes.Node;
 import de.unistuttgart.graphengine.service.GraphTopologicalSorter;

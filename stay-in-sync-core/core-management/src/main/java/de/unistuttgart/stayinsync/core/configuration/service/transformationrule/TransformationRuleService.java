@@ -15,7 +15,7 @@ import de.unistuttgart.graphengine.validation_error.GraphStatus;
 import de.unistuttgart.graphengine.validation_error.ValidationError;
 import de.unistuttgart.stayinsync.core.configuration.persistence.entities.sync.LogicGraphEntity;
 import de.unistuttgart.stayinsync.core.configuration.persistence.entities.sync.TransformationRule;
-import de.unistuttgart.stayinsync.core.configuration.exception.CoreManagementException; // Import der korrekten Exception
+import de.unistuttgart.stayinsync.core.configuration.exception.CoreManagementException;
 import io.quarkus.logging.Log;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
@@ -33,6 +33,13 @@ import static jakarta.transaction.Transactional.TxType.SUPPORTS;
  */
 @ApplicationScoped
 public class TransformationRuleService {
+
+    // Default graph layout constants
+    private static final int DEFAULT_FINAL_NODE_ID = 0;
+    private static final int DEFAULT_CONFIG_NODE_ID = 1;
+    private static final double DEFAULT_FINAL_NODE_OFFSET_X = 750.0;
+    private static final double DEFAULT_CONFIG_NODE_OFFSET_Y = 300.0;
+    private static final int DEFAULT_EDGE_ORDER_INDEX = 0;
 
     @Inject
     GraphMapper mapper;
@@ -59,25 +66,22 @@ public class TransformationRuleService {
         try {
             // FinalNode
             NodeDTO finalNodeDto = new NodeDTO();
-            finalNodeDto.setId(0);
-            finalNodeDto.setName("Final Result");
+            finalNodeDto.setId(DEFAULT_FINAL_NODE_ID);
             finalNodeDto.setNodeType("FINAL");
-            finalNodeDto.setOffsetX(750);
+            finalNodeDto.setOffsetX(DEFAULT_FINAL_NODE_OFFSET_X);
 
             // ConfigNode
             NodeDTO configNodeDto = new NodeDTO();
-            configNodeDto.setId(1);
-            configNodeDto.setName("Configuration");
+            configNodeDto.setId(DEFAULT_CONFIG_NODE_ID);
             configNodeDto.setNodeType("CONFIG");
-            configNodeDto.setOffsetY(300);
-            configNodeDto.setChangeDetectionMode("OR");
+            configNodeDto.setOffsetY(DEFAULT_CONFIG_NODE_OFFSET_Y);
             configNodeDto.setInputTypes(List.of("ANY"));
             configNodeDto.setOutputType("BOOLEAN");
             configNodeDto.setTimeWindowMillis(5000);
 
             InputDTO initialEdge = new InputDTO();
-            initialEdge.setId(1);
-            initialEdge.setOrderIndex(0);
+            initialEdge.setId(DEFAULT_CONFIG_NODE_ID);
+            initialEdge.setOrderIndex(DEFAULT_EDGE_ORDER_INDEX);
             finalNodeDto.setInputNodes(List.of(initialEdge));
 
             GraphDTO defaultGraphDto = new GraphDTO();
@@ -196,6 +200,9 @@ public class TransformationRuleService {
                 errors = jsonObjectMapper.readValue(entity.validationErrorsJson, new TypeReference<>() {});
             } catch (JsonProcessingException e) {
                 Log.errorf(e, "Failed to parse validation errors for entity id %d", entity.id);
+                throw new CoreManagementException(Response.Status.INTERNAL_SERVER_ERROR,
+                        "Data Corruption Error",
+                        "Failed to parse validation errors for rule %d", entity.id);
             }
         }
 

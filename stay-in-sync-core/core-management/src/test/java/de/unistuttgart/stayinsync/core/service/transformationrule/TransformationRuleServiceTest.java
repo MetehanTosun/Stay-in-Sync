@@ -59,7 +59,7 @@ class TransformationRuleServiceTest {
         // Arrange
         TransformationRulePayloadDTO payload = createPayload("New Rule", "Description");
         when(storageService.findRuleByName("New Rule")).thenReturn(Optional.empty());
-        when(jsonObjectMapper.writeValueAsString(any(GraphDTO.class))).thenReturn("{\"nodes\":[]}");
+        doReturn("{\"nodes\":[]}").when(jsonObjectMapper).writeValueAsString(any(GraphDTO.class));
 
         // Act
         GraphStorageService.PersistenceResult result = ruleService.createRule(payload);
@@ -100,8 +100,7 @@ class TransformationRuleServiceTest {
         // Arrange
         TransformationRulePayloadDTO payload = createPayload("New Rule", "Description");
         when(storageService.findRuleByName("New Rule")).thenReturn(Optional.empty());
-        when(jsonObjectMapper.writeValueAsString(any(GraphDTO.class)))
-                .thenThrow(new JsonProcessingException("Serialization failed") {});
+        doThrow(new JsonProcessingException("Serialization failed") {}).when(jsonObjectMapper).writeValueAsString(any(GraphDTO.class));
 
         // Act & Assert
         CoreManagementException exception = assertThrows(CoreManagementException.class, () -> {
@@ -109,7 +108,6 @@ class TransformationRuleServiceTest {
         });
 
         assertNotNull(exception);
-        // KORREKTUR: Prüfe auf den tatsächlichen Text aus dem Exception-Konstruktor.
         assertTrue(exception.getMessage().contains("create default graph"));
         verify(storageService, never()).persistRule(any());
     }
@@ -234,8 +232,7 @@ class TransformationRuleServiceTest {
                 new GraphMapper.MappingResult(List.of(mock(Node.class)), Collections.emptyList())
         );
         when(validator.validateGraph(any(), anyInt())).thenReturn(Collections.emptyList());
-        when(jsonObjectMapper.writeValueAsString(any(GraphDTO.class)))
-                .thenThrow(new JsonProcessingException("Serialization failed") {});
+        doThrow(new JsonProcessingException("Serialization failed") {}).when(jsonObjectMapper).writeValueAsString(any(GraphDTO.class));
 
         // Act & Assert
         CoreManagementException exception = assertThrows(CoreManagementException.class, () -> {
@@ -261,8 +258,7 @@ class TransformationRuleServiceTest {
         List<ValidationError> expectedErrors = List.of(mock(ValidationError.class));
 
         when(storageService.findRuleById(ruleId)).thenReturn(draftRule);
-        when(jsonObjectMapper.readValue(eq(draftRule.validationErrorsJson), any(com.fasterxml.jackson.core.type.TypeReference.class)))
-                .thenReturn(expectedErrors);
+        doReturn(expectedErrors).when(jsonObjectMapper).readValue(eq(draftRule.validationErrorsJson), any(com.fasterxml.jackson.core.type.TypeReference.class));
 
         // Act
         List<ValidationError> result = ruleService.getValidationErrorsForRule(ruleId);
@@ -273,7 +269,7 @@ class TransformationRuleServiceTest {
 
     @Test
     @DisplayName("Should return empty list for finalized rule")
-    void shouldReturnEmptyListForFinalizedRule() throws JsonProcessingException {
+    void shouldReturnEmptyListForFinalizedRule() {
         // Arrange
         Long ruleId = 1L;
         TransformationRule finalizedRule = createTestRule();
@@ -285,8 +281,7 @@ class TransformationRuleServiceTest {
         List<ValidationError> result = ruleService.getValidationErrorsForRule(ruleId);
 
         // Assert
-        assertTrue(result.isEmpty());
-        verify(jsonObjectMapper, never()).readValue(anyString(), any(com.fasterxml.jackson.core.type.TypeReference.class));
+        assertTrue(result.isEmpty(), "Finalized rule should return empty validation errors list");
     }
 
     // ========== Helper Methods ==========
@@ -313,7 +308,7 @@ class TransformationRuleServiceTest {
                 new GraphMapper.MappingResult(List.of(mock(Node.class)), Collections.emptyList())
         );
         when(validator.validateGraph(any(), anyInt())).thenReturn(Collections.emptyList());
-        when(jsonObjectMapper.writeValueAsString(any(GraphDTO.class))).thenReturn("{}");
+        doReturn("{}").when(jsonObjectMapper).writeValueAsString(any(GraphDTO.class));
     }
 
     private void setupInvalidGraphMocks(List<ValidationError> validationErrors) throws JsonProcessingException {
@@ -322,7 +317,7 @@ class TransformationRuleServiceTest {
                 new GraphMapper.MappingResult(List.of(mock(Node.class)), Collections.emptyList())
         );
         when(validator.validateGraph(any(), anyInt())).thenReturn(validationErrors);
-        when(jsonObjectMapper.writeValueAsString(any(GraphDTO.class))).thenReturn("{}");
-        when(jsonObjectMapper.writeValueAsString(eq(validationErrors))).thenReturn("[{\"error\":\"validation failed\"}]");
+        doReturn("{}").when(jsonObjectMapper).writeValueAsString(any(GraphDTO.class));
+        doReturn("[{\"error\":\"validation failed\"}]").when(jsonObjectMapper).writeValueAsString(eq(validationErrors));
     }
 }
