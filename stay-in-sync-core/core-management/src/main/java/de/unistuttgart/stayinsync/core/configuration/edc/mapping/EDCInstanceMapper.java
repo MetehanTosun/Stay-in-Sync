@@ -1,23 +1,19 @@
 package de.unistuttgart.stayinsync.core.configuration.edc.mapping;
 
 import de.unistuttgart.stayinsync.core.configuration.edc.dtoedc.EDCInstanceDto;
-import de.unistuttgart.stayinsync.core.configuration.edc.entities.EDCInstance;
-import org.mapstruct.Mapper;
-import org.mapstruct.Mapping;
-import org.mapstruct.factory.Mappers;
+import de.unistuttgart.stayinsync.core.configuration.edc.entities.EdcInstance;
+import org.mapstruct.*;
+import jakarta.inject.Singleton;
 
-import java.util.Optional;
-import java.util.Set;
-import java.util.UUID;
-import java.util.stream.Collectors;
+import java.util.List;
 
 /**
  * Mapper für die Konvertierung zwischen EDCInstance-Entitäten und DTOs.
+ * Implementiert mit MapStruct für automatische Konvertierung.
  */
 @Mapper(componentModel = "cdi")
+@Singleton
 public interface EDCInstanceMapper {
-    
-    EDCInstanceMapper mapper = Mappers.getMapper(EDCInstanceMapper.class);
     
     /**
      * Konvertiert eine EDCInstance-Entität in ein DTO.
@@ -25,17 +21,63 @@ public interface EDCInstanceMapper {
      * @param entity Die zu konvertierende Entität
      * @return Das erzeugte DTO oder null, wenn die Entität null ist
      */
-    @Mapping(source = "id", target = "id")
-    EDCInstanceDto toDto(EDCInstance entity);
+    EDCInstanceDto toDto(EdcInstance entity);
+    
+    /**
+     * Konvertiert eine Liste von EDCInstance-Entitäten in DTOs
+     *
+     * @param entities Die Liste von Entitäten
+     * @return Liste von DTOs
+     */
+    List<EDCInstanceDto> toDtoList(List<EdcInstance> entities);
     
     /**
      * Konvertiert ein DTO in eine EDCInstance-Entität.
-     * Falls ein DTO mit einer ID übergeben wird, wird versucht, die existierende Entität zu finden.
      * 
      * @param dto Das zu konvertierende DTO
-     * @return Die erzeugte oder aktualisierte Entität oder null, wenn das DTO null ist
+     * @return Die erzeugte Entität oder null, wenn das DTO null ist
      */
-    @Mapping(source = "id", target = "id")
-    EDCInstance fromDto(EDCInstanceDto dto);
-
+    EdcInstance fromDto(EDCInstanceDto dto);
+    
+    /**
+     * Aktualisiert ein existierendes EDCInstance-Objekt mit Werten aus dem DTO.
+     * Alle anderen Felder bleiben unberührt.
+     *
+     * @param dto Die Quelldaten als DTO
+     * @param entity Das zu aktualisierende Ziel-Entity
+     */
+    @InheritConfiguration(name = "fromDto")
+    void updateEntityFromDto(EDCInstanceDto dto, @MappingTarget EdcInstance entity);
+    
+    /**
+     * Nach dem Mapping führt diese Methode zusätzliche Operationen durch.
+     * Sucht nach einer existierenden Entität mit der ID aus dem DTO, falls vorhanden.
+     * 
+     * @param dto Die Quell-DTO
+     * @param entity Die neu erstellte Entität
+     * @return Die finale Entität (entweder die existierende oder die neue)
+     */
+    @AfterMapping
+    default EdcInstance handleExistingEntity(EDCInstanceDto dto, @MappingTarget EdcInstance entity) {
+        if (dto.id() != null) {
+            EdcInstance existingEntity = EdcInstance.findById(dto.id());
+            
+            if (existingEntity != null) {
+                // Kopiere alle Felder von der neuen Entity zur existierenden
+                existingEntity.name = entity.name;
+                existingEntity.controlPlaneManagementUrl = entity.controlPlaneManagementUrl;
+                existingEntity.protocolVersion = entity.protocolVersion;
+                existingEntity.description = entity.description;
+                existingEntity.bpn = entity.bpn;
+                existingEntity.apiKey = entity.apiKey;
+                existingEntity.edcAssetEndpoint = entity.edcAssetEndpoint;
+                existingEntity.edcPolicyEndpoint = entity.edcPolicyEndpoint;
+                existingEntity.edcContractDefinitionEndpoint = entity.edcContractDefinitionEndpoint;
+                
+                return existingEntity;
+            }
+        }
+        
+        return entity;
+    }
 }

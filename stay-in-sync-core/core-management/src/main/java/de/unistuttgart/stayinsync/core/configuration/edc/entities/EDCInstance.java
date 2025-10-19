@@ -1,57 +1,53 @@
 package de.unistuttgart.stayinsync.core.configuration.edc.entities;
 
-import de.unistuttgart.stayinsync.core.model.UuidEntity;
+import io.quarkus.hibernate.orm.panache.PanacheEntity;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
-import lombok.Getter;
 import lombok.NoArgsConstructor;
-import lombok.Setter;
 
 import java.util.ArrayList;
 import java.util.List;
 
-@Getter
-@Setter
 @NoArgsConstructor // für JPA & MapStruct
 @Entity
 @Table(name = "edc_instance")
-public class EDCInstance extends UuidEntity {
+public class EdcInstance extends PanacheEntity {
 
     @Column(nullable = false)
-    private String name;
+    public String name;
 
     @Column(name = "control_plane_management_url")
-    private String controlPlaneManagementUrl;
+    public String controlPlaneManagementUrl;
 
-    private String protocolVersion;
+    public String protocolVersion;
 
-    private String description;
+    public String description;
 
-    private String bpn;
+    public String bpn;
 
-    private String apiKey;
+    public String apiKey;
 
-    private String edcAssetEndpoint;
+    public String edcAssetEndpoint;
 
-    private String edcPolicyEndpoint;
+    public String edcPolicyEndpoint;
 
-    private String edcContractDefinitionEndpoint;
+    public String edcContractDefinitionEndpoint;
 
     /**
      * Die mit dieser EDC-Instanz verknüpften Policies.
      * Diese Liste enthält alle Policies, die für diese EDC-Instanz definiert sind.
      */
     @OneToMany(mappedBy = "edcInstance")
-    private List<EDCPolicy> policies = new ArrayList<>();
+    public List<Policy> policies = new ArrayList<>();
     
     /**
      * Fügt eine Policy zu dieser EDC-Instanz hinzu.
      * 
      * @param policy Die hinzuzufügende Policy
      */
-    public void addPolicy(EDCPolicy policy) {
+    public void addPolicy(Policy policy) {
         if (policies == null) {
             policies = new ArrayList<>();
         }
@@ -65,7 +61,7 @@ public class EDCInstance extends UuidEntity {
      * @param policy Die zu entfernende Policy
      * @return true, wenn die Policy erfolgreich entfernt wurde, sonst false
      */
-    public boolean removePolicy(EDCPolicy policy) {
+    public boolean removePolicy(Policy policy) {
         if (policies != null && policies.remove(policy)) {
             policy.setEdcInstance(null);
             return true;

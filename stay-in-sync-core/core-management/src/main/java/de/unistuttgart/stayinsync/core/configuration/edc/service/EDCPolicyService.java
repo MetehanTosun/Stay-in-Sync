@@ -19,11 +19,10 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.UUID;
 
-import de.unistuttgart.stayinsync.core.configuration.edc.entities.EDCInstance;
-import de.unistuttgart.stayinsync.core.configuration.edc.entities.EDCPolicy;
-import de.unistuttgart.stayinsync.core.configuration.edc.entities.EDCContractDefinition;
+import de.unistuttgart.stayinsync.core.configuration.edc.entities.EdcInstance;
+import de.unistuttgart.stayinsync.core.configuration.edc.entities.Policy;
+import de.unistuttgart.stayinsync.core.configuration.edc.entities.ContractDefinition;
 
 
 /**
@@ -47,26 +46,26 @@ public class EDCPolicyService {
                 .build(EDCClient.class);
     }
 
-    /**
-     * Returns all policies that are associated with a specific EDC instance.
+        /**
+     * Returns a list of all policies for a specific EDC.
      *
-     * @param edcId the UUID of the EDC instance
-     * @return List with all policies for that EDC instance
+     * @param edcId The ID of the EDC instance
+     * @return A list of all policies for the given EDC ID
      */
-    public List<EDCPolicy> listAllByEdcId(final UUID edcId) {
+    public List<Policy> listAllByEdcId(final Long edcId) {
         LOG.info("Fetching policies for EDC: " + edcId);
-        EDCInstance edcInstance = EDCInstance.findById(edcId);
+        EdcInstance edcInstance = EdcInstance.findById(edcId);
         if (edcInstance == null) {
             LOG.warn("No EDC instance found with id " + edcId);
             return new ArrayList<>();
         }
         
-        TypedQuery<EDCPolicy> query = entityManager.createQuery(
-                "SELECT p FROM EDCPolicy p WHERE p.edcInstance.id = :edcId", 
-                EDCPolicy.class);
+        TypedQuery<Policy> query = entityManager.createQuery(
+                "SELECT p FROM Policy p WHERE p.edcInstance.id = :edcId", 
+                Policy.class);
         query.setParameter("edcId", edcId);
         
-        List<EDCPolicy> policyList = query.getResultList();
+        List<Policy> policyList = query.getResultList();
         LOG.info("Found " + policyList.size() + " policies for EDC " + edcId);
         return policyList;
     }
@@ -75,18 +74,18 @@ public class EDCPolicyService {
      * Returns a policy found in the database with the id and belonging to the specific EDC instance.
      *
      * @param id used to find the policy
-     * @param edcId the UUID of the EDC instance
+     * @param edcId the ID of the EDC instance
      * @return found policy or empty if not found
      */
-    public Optional<EDCPolicy> findByIdAndEdcId(final UUID id, final UUID edcId) {
+    public Optional<Policy> findByIdAndEdcId(final Long id, final Long edcId) {
         LOG.info("Fetching policy " + id + " for EDC: " + edcId);
-        TypedQuery<EDCPolicy> query = entityManager.createQuery(
+        TypedQuery<Policy> query = entityManager.createQuery(
                 "SELECT p FROM EDCPolicy p WHERE p.id = :policyId AND p.edcInstance.id = :edcId", 
-                EDCPolicy.class);
+                Policy.class);
         query.setParameter("policyId", id);
         query.setParameter("edcId", edcId);
         
-        List<EDCPolicy> results = query.getResultList();
+        List<Policy> results = query.getResultList();
         if (results.isEmpty()) {
             LOG.warn("No policy found with id " + id + " for EDC " + edcId);
             return Optional.empty();
@@ -103,7 +102,7 @@ public class EDCPolicyService {
      * @return the created EDCPolicy.
      */
     @Transactional
-    public EDCPolicy create(final EDCPolicy policy) {
+    public Policy create(final Policy policy) {
         // Log important information before persisting
         LOG.info("Creating policy with ID: " + policy.id + ", policyId: " + policy.getPolicyId());
         LOG.info("Policy has EDC instance: " + (policy.getEdcInstance() != null));
@@ -120,12 +119,12 @@ public class EDCPolicyService {
             try {
                 // Log EDC instance details
                 LOG.info("EDC instance found: ID=" + policy.getEdcInstance().id + 
-                       ", Name=" + policy.getEdcInstance().getName() + 
-                       ", URL=" + policy.getEdcInstance().getControlPlaneManagementUrl() +
-                       ", PolicyEndpoint=" + policy.getEdcInstance().getEdcPolicyEndpoint());
+                       ", Name=" + policy.getEdcInstance().name + 
+                       ", URL=" + policy.getEdcInstance().controlPlaneManagementUrl +
+                       ", PolicyEndpoint=" + policy.getEdcInstance().edcPolicyEndpoint);
                        
                 // Create EDC client with URL from EDC instance or fallback to hardcoded URL
-                String edcUrl = policy.getEdcInstance().getControlPlaneManagementUrl();
+                String edcUrl = policy.getEdcInstance().controlPlaneManagementUrl;
                 EDCClient client;
                 
                 if (edcUrl != null && !edcUrl.trim().isEmpty()) {
@@ -272,8 +271,8 @@ public class EDCPolicyService {
      * @return Optional with the updated EDCPolicy or an empty Optional if nothing was found.
      */
     @Transactional
-    public Optional<EDCPolicy> update(final UUID id, final EDCPolicy updatedPolicy) {
-        final EDCPolicy policyLinkedToDatabase = EDCPolicy.findById(id);
+    public Optional<Policy> update(final Long id, final Policy updatedPolicy) {
+        final Policy policyLinkedToDatabase = Policy.findById(id);
         if (policyLinkedToDatabase == null) {
             return Optional.empty();
         }
@@ -348,11 +347,11 @@ public class EDCPolicyService {
      * @return true if deletion was successful, false otherwise
      */
     @Transactional
-    public boolean delete(final UUID id) {
+    public boolean delete(final Long id) {
         LOG.info("Attempting to delete policy with ID: " + id);
         
         // First, check if the policy exists
-        EDCPolicy policyToDelete = EDCPolicy.findById(id);
+        Policy policyToDelete = Policy.findById(id);
         if (policyToDelete == null) {
             LOG.warn("Policy with ID " + id + " not found, cannot delete");
             return false;
@@ -392,16 +391,16 @@ public class EDCPolicyService {
         // Next, delete any contract definitions that reference this policy
         try {
             // Find contract definitions where this policy is either the access policy or contract policy
-            TypedQuery<EDCContractDefinition> query = entityManager.createQuery(
+            TypedQuery<ContractDefinition> query = entityManager.createQuery(
                 "SELECT cd FROM EDCContractDefinition cd WHERE cd.accessPolicy.id = :policyId OR cd.contractPolicy.id = :policyId", 
-                EDCContractDefinition.class);
+                ContractDefinition.class);
             query.setParameter("policyId", policyToDelete.id);
-            List<EDCContractDefinition> contractDefs = query.getResultList();
+            List<ContractDefinition> contractDefs = query.getResultList();
             
             if (!contractDefs.isEmpty()) {
                 LOG.info("Found " + contractDefs.size() + " contract definitions referencing policy " + id + ". Deleting them first.");
                 
-                for (EDCContractDefinition cd : contractDefs) {
+                for (ContractDefinition cd : contractDefs) {
                     LOG.info("Deleting contract definition " + cd.id + " with contractDefinitionId=" + cd.getContractDefinitionId());
                     entityManager.remove(cd);
                 }
@@ -424,7 +423,7 @@ public class EDCPolicyService {
         } catch (Exception e) {
             LOG.error("Error deleting policy " + id + " via EntityManager", e);
             // Fall back to PanacheEntityBase.deleteById
-            boolean result = EDCPolicy.deleteById(id);
+            boolean result = Policy.deleteById(id);
             LOG.info("Delete operation for policy " + id + " via PanacheEntityBase returned: " + result);
             return result;
         }

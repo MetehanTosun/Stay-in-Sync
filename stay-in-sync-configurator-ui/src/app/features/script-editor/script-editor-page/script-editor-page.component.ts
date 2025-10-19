@@ -22,7 +22,7 @@ import {ToastModule} from 'primeng/toast';
 // Monaco Editor Module
 import {MonacoEditorModule} from 'ngx-monaco-editor-v2';
 
-import {ApiRequestConfiguration} from '../models/arc.models';
+import {AasArc, AnyArc, ApiRequestConfiguration, SubmodelDescription} from '../models/arc.models';
 import {ArcStateService} from '../../../core/services/arc-state.service';
 import {SourceSystem, SourceSystemEndpoint} from '../../source-system/models/source-system.models';
 import {ArcManagementPanelComponent} from '../arc-management-panel/arc-management-panel.component';
@@ -33,6 +33,8 @@ import { TypeDefinitionsResponse } from '../models/target-system.models';
 import { TargetArcPanelComponent } from '../target-arc-panel/target-arc-panel.component';
 import { ConfirmDialog } from 'primeng/confirmdialog';
 import {Inplace} from 'primeng/inplace';
+import { ArcWizardAasComponent } from '../arc-wizard-aas/arc-wizard-aas.component';
+import { AasService } from '../../source-system/services/aas.service';
 
 interface MonacoExtraLib {
   uri: String;
@@ -57,6 +59,7 @@ interface MonacoExtraLib {
     ProgressSpinnerModule,
     ArcManagementPanelComponent,
     ArcWizardComponent,
+    ArcWizardAasComponent,
     ConfirmDialog,
     ToastModule,
     InputTextModule,
@@ -97,6 +100,13 @@ export class ScriptEditorPageComponent implements OnInit, OnDestroy {
     arcToClone?: ApiRequestConfiguration
   } | null | undefined = null;
 
+  isAasWizardVisible = false;
+  aasWizardContext: {
+    system: SourceSystem;
+    submodel: SubmodelDescription;
+    arcToEdit?: AasArc;
+  } | null = null;
+
   private onModelChange = new Subject<void>();
 
   private cdr = inject(ChangeDetectorRef);
@@ -105,6 +115,7 @@ export class ScriptEditorPageComponent implements OnInit, OnDestroy {
   private arcStateService = inject(ArcStateService);
   private monacoEditorService = inject(MonacoEditorService);
   private confirmationService = inject(ConfirmationService);
+  private aasService = inject(AasService);
 
   private route = inject(ActivatedRoute);
 
@@ -136,13 +147,11 @@ export class ScriptEditorPageComponent implements OnInit, OnDestroy {
     this.monaco = monaco;
     console.log('Monaco editor instance initialized', editorInstance);
 
-    console.log('[ScriptEditorPage] Subscribing to type definition updates...');
     this.subscriptions.add(
       this.monacoEditorService.typeUpdateRequested$.subscribe(response => {
         if (!response) {
           return;
         }
-        console.log('[ScriptEditorPage] Received type update request. Applying to Monaco instance.');
         this.applyTypeDefinitions(response);
       })
     );
@@ -266,6 +275,60 @@ export class ScriptEditorPageComponent implements OnInit, OnDestroy {
     });
   }
 
+  handleCreateAasArc(context: { system: SourceSystem; submodel: SubmodelDescription }): void {
+    console.log(context);
+    this.aasWizardContext = {
+        system: context.system,
+        submodel: context.submodel,
+        arcToEdit: undefined
+    };
+    this.isAasWizardVisible = true;
+  }
+
+  handleEditAasArc(context: { system: SourceSystem; submodel: SubmodelDescription; arc: AasArc }): void {
+    this.aasWizardContext = {
+        system: context.system,
+        submodel: context.submodel,
+        arcToEdit: context.arc
+    };
+    this.isAasWizardVisible = true;
+  }
+
+  handleDeleteAasArc(context: { arc: AasArc }): void {
+    const arc = context.arc;
+
+    this.confirmationService.confirm({
+      header: 'Confirm Deletion',
+      icon: 'pi pi-exclamation-triangle',
+      message: `Are you sure you want to delete the AAS ARC "${arc.alias}"?`,
+      accept: () => {
+        this.isLoading = true;
+        this.loadingMessage = `Deleting AAS ARC "${arc.alias}"...`;
+
+        this.aasService.deleteAasArc(arc.id).subscribe({
+          next: () => {
+            this.arcStateService.removeArc(arc);
+            this.messageService.add({ severity: 'success', summary: 'Deleted', detail: 'AAS ARC has been deleted.' });
+            this.isLoading = false;
+          },
+          error: (err) => {
+            this.messageService.add({ severity: 'error', summary: 'Delete Failed', detail: err.error?.message || 'Could not delete the AAS ARC.' });
+            this.isLoading = false;
+          }
+        });
+      }
+    });
+  }
+
+  handleAasArcSave(savedArc: AasArc): void {
+    this.arcStateService.addOrUpdateArc(savedArc as AnyArc);
+    this.messageService.add({
+      severity: 'success',
+      summary: 'AAS ARC Saved',
+      detail: `Configuration '${savedArc.alias}' is now available.`
+    });
+  }
+
   private applyTypeDefinitions(response: TypeDefinitionsResponse): void {
     if (!this.monaco) {
       console.error("Cannot apply types, monaco instance is not available.");
@@ -273,10 +336,28 @@ export class ScriptEditorPageComponent implements OnInit, OnDestroy {
     }
 
     if (response && response.libraries) {
-      for (const lib of response.libraries) {
-        this.monaco.languages.typescript.typescriptDefaults.addExtraLib(lib.content, `file:///${lib.filePath}`);
+      console.log(`[Monaco] Applying ${response.libraries.length} type definitions from backend.`);
+
+      for (const newLib of response.libraries) {
+        const libUri = `file:///${newLib.filePath}`;
+
+        const existingLibIndex = this.currentExtraLibs.findIndex(lib => lib.uri === libUri);
+
+        if (existingLibIndex > -1) {
+          console.log(`[Monaco] Replacing existing library: ${libUri}`);
+          const oldLib = this.currentExtraLibs[existingLibIndex];
+          oldLib.disposable.dispose();
+
+          this.currentExtraLibs.splice(existingLibIndex, 1);
+        }
+        const newDisposable = this.monaco.languages.typescript.typescriptDefaults.addExtraLib(
+          newLib.content,
+          libUri
+        );
+        this.currentExtraLibs.push({ uri: libUri, disposable: newDisposable });
       }
-      console.log('Target type definitions successfully applied to Monaco editor.');
+
+      console.log('[Monaco] Type definitions applied successfully.');
     }
   }
 
@@ -319,7 +400,13 @@ export class ScriptEditorPageComponent implements OnInit, OnDestroy {
       return;
     }
 
-    const activeTargetArcIds = this.targetArcPanel.activeArcs.map(arc => arc.id);
+    const restTargetArcIds = this.targetArcPanel.activeArcs
+      .filter(arc => arc.arcType === 'REST')
+      .map(arc => arc.id);
+
+    const aasTargetArcIds = this.targetArcPanel.activeArcs
+      .filter(arc => arc.arcType === 'AAS')
+      .map(arc => arc.id);
 
     let scriptStatus: 'DRAFT' | 'VALIDATED' = 'DRAFT';
     let transpiledCode = '';
@@ -358,16 +445,16 @@ export class ScriptEditorPageComponent implements OnInit, OnDestroy {
     }
 
     const requiredArcAliases = Array.from(requiredArcSet);
-    console.log('%c[Editor] Extracted ARC dependencies:', 'color: #f97316;', requiredArcAliases);
 
     const payload: ScriptPayload = {
-      name: this.scriptPayload!.name,
-      typescriptCode: this.code,
-      javascriptCode: transpiledCode,
-      requiredArcAliases: requiredArcAliases,
-      status: scriptStatus,
-      targetArcIds: activeTargetArcIds
-    };
+        name: this.scriptPayload!.name,
+        typescriptCode: this.code,
+        javascriptCode: transpiledCode,
+        requiredArcAliases: requiredArcAliases,
+        status: scriptStatus,
+        restTargetArcIds: restTargetArcIds,
+        aasTargetArcIds: aasTargetArcIds
+      };
 
     this.isSaving = true;
     this.scriptEditorService.saveScriptForTransformation(Number(this.currentTransformationId), payload).subscribe({
@@ -407,7 +494,6 @@ export class ScriptEditorPageComponent implements OnInit, OnDestroy {
     }
 
     if (systemNamesInEditor.size > 0) {
-      console.log('%c[Editor] Detected system names:', 'color: #eab308;', Array.from(systemNamesInEditor));
       this.arcStateService.loadTypesForSourceSystemNames(Array.from(systemNamesInEditor)).subscribe();
     }
   }

@@ -1,0 +1,60 @@
+<!-- AAS Element Creation Dialog -->
+<p-dialog 
+  header="Create Element" 
+  [(visible)]="visible" 
+  [modal]="true" 
+  [style]="{width:'40vw'}"
+  (onHide)="cancel()">
+  
+  <div class="p-field">
+    <label>Submodel ID</label>
+    <input pInputText [value]="submodelId" disabled />
+  </div>
+  
+  <div class="p-field">
+    <label>Parent Path</label>
+    <input pInputText [(ngModel)]="parentPath" placeholder="e.g. address or address/street" />
+    <small>Optional. Use idShort path with slashes for nesting.</small>
+  </div>
+  
+  <div class="p-field">
+    <label>Import JSON</label>
+    <p-fileupload 
+      mode="basic" 
+      [auto]="false" 
+      [showUploadButton]="false" 
+      [showCancelButton]="false" 
+      accept=".json" 
+      (onSelect)="onElementJsonFileSelected($event)">
+    </p-fileupload>
+  </div>
+  
+  <div class="p-field">
+    <label>Element JSON</label>
+    <textarea 
+      pInputTextarea 
+      [(ngModel)]="elementJson" 
+      rows="10" 
+      style="width:100%">
+    </textarea>
+  </div>
+  
+  <ng-template pTemplate="footer">
+    <button pButton type="button" class="p-button-text" label="Cancel" (click)="cancel()"></button>
+    <button pButton type="button" label="Create" (click)="createElement()"></button>
+  </ng-template>
+  
+  <div class="p-mt-2" style="display:flex;gap:.5rem;flex-wrap:wrap;">
+    <button pButton type="button" class="p-button-text" label="Template: Property" (click)="setElementTemplate('property')"></button>
+    <button pButton type="button" class="p-button-text" label="Template: Range" (click)="setElementTemplate('range')"></button>
+    <button pButton type="button" class="p-button-text" label="Template: MultiLanguageProperty" (click)="setElementTemplate('mlp')"></button>
+    <button pButton type="button" class="p-button-text" label="Template: ReferenceElement" (click)="setElementTemplate('ref')"></button>
+    <button pButton type="button" class="p-button-text" label="Template: RelationshipElement" (click)="setElementTemplate('rel')"></button>
+    <button pButton type="button" class="p-button-text" label="Template: AnnotatedRelationshipElement" (click)="setElementTemplate('annrel')"></button>
+    <button pButton type="button" class="p-button-text" label="Template: Collection" (click)="setElementTemplate('collection')"></button>
+    <button pButton type="button" class="p-button-text" label="Template: List" (click)="setElementTemplate('list')"></button>
+    <button pButton type="button" class="p-button-text" label="Template: File" (click)="setElementTemplate('file')"></button>
+    <button pButton type="button" class="p-button-text" label="Template: Operation" (click)="setElementTemplate('operation')"></button>
+    <button pButton type="button" class="p-button-text" label="Template: Entity" (click)="setElementTemplate('entity')"></button>
+  </div>
+</p-dialog>

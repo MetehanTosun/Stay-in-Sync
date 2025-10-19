@@ -1,6 +1,6 @@
 package de.unistuttgart.stayinsync.core.configuration.mapping;
 
-import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.SourceSystemApiRequestConfiguration;
+import de.unistuttgart.stayinsync.core.configuration.persistence.entities.sync.SourceSystemApiRequestConfiguration;
 import de.unistuttgart.stayinsync.core.configuration.rest.dtos.CreateSourceArcDTO;
 import de.unistuttgart.stayinsync.core.configuration.rest.dtos.CreateRequestConfigurationDTO;
 import de.unistuttgart.stayinsync.core.configuration.rest.dtos.GetRequestConfigurationDTO;
@@ -19,14 +19,23 @@ public interface SourceSystemApiRequestConfigurationFullUpdateMapper {
 
     CreateRequestConfigurationDTO mapToDTO(SourceSystemApiRequestConfiguration input);
 
-    @Mapping(target = "name", source = "alias")
-    @Mapping(target = "apiConnectionDetails", source = ".", qualifiedByName = "mapToApiConnectionDetails")
-    SourceSystemApiRequestConfigurationMessageDTO mapToMessageDTO(SourceSystemApiRequestConfiguration entity);
+    default SourceSystemApiRequestConfigurationMessageDTO mapToMessageDTO(SourceSystemApiRequestConfiguration entity) {
+        ApiConnectionDetailsDTO conn = mapToApiConnectionDetails(entity);
+        return new SourceSystemApiRequestConfigurationMessageDTO(
+                entity.alias,
+                entity.id,
+                entity.pollingIntervallTimeInMs,
+                entity.deploymentStatus,
+                null, // workerPodName - not available in entity
+                conn
+        );
+    }
 
     SourceSystemApiRequestConfiguration mapToEntity(CreateRequestConfigurationDTO input);
 
     List<GetRequestConfigurationDTO> mapToDTOList(List<SourceSystemApiRequestConfiguration> input);
 
+    @Mapping(target = "arcType", constant = "REST")
     @Mapping(target = "sourceSystemName", source = "sourceSystem.name")
     @Mapping(target = "endpointId", source = "sourceSystemEndpoint.id")
     @Mapping(target = "apiRequestParameters", source = "queryParameterValues")

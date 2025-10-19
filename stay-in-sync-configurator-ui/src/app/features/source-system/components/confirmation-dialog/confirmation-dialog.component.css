@@ -1,3 +1,9 @@
+/*
+  Styles for ConfirmationDialogComponent
+  - Layout: content, icon, message, footer
+  - Severity: icon color variations
+  - Responsive: mobile adjustments
+*/
 .confirmation-content {
   display: flex;
   align-items: flex-start;

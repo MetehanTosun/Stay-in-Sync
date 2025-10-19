@@ -3,14 +3,16 @@ package de.unistuttgart.stayinsync.core.configuration.service;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.*;
+import de.unistuttgart.stayinsync.core.configuration.persistence.entities.aas.AasSourceApiRequestConfiguration;
+import de.unistuttgart.stayinsync.core.configuration.persistence.entities.sync.*;
 import de.unistuttgart.stayinsync.core.configuration.exception.CoreManagementException;
+import de.unistuttgart.stayinsync.core.configuration.mapping.AasApiRequestConfigurationMapper;
 import de.unistuttgart.stayinsync.core.configuration.mapping.SourceSystemApiRequestConfigurationFullUpdateMapper;
 import de.unistuttgart.stayinsync.core.configuration.rest.dtos.CreateSourceArcDTO;
 import de.unistuttgart.stayinsync.core.configuration.rest.dtos.CreateRequestConfigurationDTO;
 import de.unistuttgart.stayinsync.core.configuration.rest.dtos.GetRequestConfigurationDTO;
 import de.unistuttgart.stayinsync.core.configuration.util.TypeScriptTypeGenerator;
-import de.unistuttgart.stayinsync.core.configuration.rabbitmq.producer.PollingJobMessageProducer;
+import de.unistuttgart.stayinsync.core.configuration.messaging.producer.PollingJobMessageProducer;
 import de.unistuttgart.stayinsync.transport.domain.ApiEndpointQueryParamType;
 import de.unistuttgart.stayinsync.transport.domain.JobDeploymentStatus;
 import io.quarkus.logging.Log;
@@ -23,10 +25,7 @@ import jakarta.validation.Validator;
 import jakarta.ws.rs.NotFoundException;
 import jakarta.ws.rs.core.Response;
 
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 
 import static jakarta.transaction.Transactional.TxType.REQUIRED;
 import static jakarta.transaction.Transactional.TxType.SUPPORTS;
@@ -45,6 +44,9 @@ public class SourceSystemApiRequestConfigurationService {
 
     @Inject
     SourceSystemApiRequestConfigurationFullUpdateMapper fullUpdateMapper;
+
+    @Inject
+    AasApiRequestConfigurationMapper aasArcMapper;
 
     @Inject
     PollingJobMessageProducer pollingJobMessageProducer;
@@ -67,7 +69,7 @@ public class SourceSystemApiRequestConfigurationService {
         return sourceSystemApiRequestConfiguration;
     }
 
-    public void updateDeploymentStatus(Long requestConfigId, JobDeploymentStatus jobDeploymentStatus) {
+    public void updateDeploymentStatus(Long requestConfigId, JobDeploymentStatus jobDeploymentStatus, String hostname) {
         SourceSystemApiRequestConfiguration sourceSystemApiRequestConfiguration = findApiRequestConfigurationById(requestConfigId);
 
         if (isTransitioning(sourceSystemApiRequestConfiguration.deploymentStatus) && isTransitioning(jobDeploymentStatus)) {
@@ -75,6 +77,7 @@ public class SourceSystemApiRequestConfigurationService {
         } else {
             Log.infof("Settings deployment status of request config with id %d to %s", requestConfigId, jobDeploymentStatus);
             sourceSystemApiRequestConfiguration.deploymentStatus = jobDeploymentStatus;
+            sourceSystemApiRequestConfiguration.workerPodName = hostname;
             switch (jobDeploymentStatus) {
                 case DEPLOYING -> {
                     pollingJobMessageProducer.publishPollingJob(fullUpdateMapper.mapToMessageDTO(sourceSystemApiRequestConfiguration));
@@ -88,10 +91,16 @@ public class SourceSystemApiRequestConfigurationService {
 
 
     @Transactional(SUPPORTS)
-    public List<SourceSystemApiRequestConfiguration> findAllRequestConfigurationsWithSourceSystemIdLike(Long sourceSystemId) {
-        Log.debugf("Finding all request-configurations of source system with id = %s", sourceSystemId);
-        return Optional.ofNullable(SourceSystemApiRequestConfiguration.findBySourceSystemId(sourceSystemId))
-                .orElseGet(List::of);
+    public List<Object> findAllRequestConfigurationsWithSourceSystemIdLike(Long sourceSystemId) {
+        List<SourceSystemApiRequestConfiguration> restArcs = SourceSystemApiRequestConfiguration.findBySourceSystemId(sourceSystemId);
+        List<AasSourceApiRequestConfiguration> aasArcs = AasSourceApiRequestConfiguration.list("sourceSystem.id", sourceSystemId);
+        Log.debugf("Found %d REST ARCs and %d AAS ARCs for source-system: %d", restArcs.size(), aasArcs.size(), sourceSystemId);
+
+        List<Object> combinedDtos = new ArrayList<>();
+        combinedDtos.addAll(fullUpdateMapper.mapToDTOList(restArcs));
+        combinedDtos.addAll(aasArcs.stream().map(aasArcMapper::mapToDto).toList());
+
+        return combinedDtos;
     }
 
     @Transactional(SUPPORTS)
@@ -278,7 +287,7 @@ public class SourceSystemApiRequestConfigurationService {
     public void undeployAllUnused() {
         List<SourceSystemApiRequestConfiguration> sourceSystemApiRequestConfigurations = SourceSystemApiRequestConfiguration.listAllActiveAndUnused();
         Log.infof("%d unused polling configurations have been found and will be scheduled for undeployment", sourceSystemApiRequestConfigurations.size());
-        sourceSystemApiRequestConfigurations.stream().forEach(apiRequestConfiguration -> updateDeploymentStatus(apiRequestConfiguration.id, JobDeploymentStatus.STOPPING));
+        sourceSystemApiRequestConfigurations.stream().forEach(apiRequestConfiguration -> updateDeploymentStatus(apiRequestConfiguration.id, JobDeploymentStatus.STOPPING, null));
     }
 
 }

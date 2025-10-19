@@ -1,49 +1,54 @@
 package de.unistuttgart.stayinsync.core.configuration.edc.mapping;
 
 import de.unistuttgart.stayinsync.core.configuration.edc.dtoedc.EDCContractDefinitionDto;
-import de.unistuttgart.stayinsync.core.configuration.edc.entities.EDCAsset;
-import de.unistuttgart.stayinsync.core.configuration.edc.entities.EDCContractDefinition;
-import de.unistuttgart.stayinsync.core.configuration.edc.entities.EDCPolicy;
+import de.unistuttgart.stayinsync.core.configuration.edc.entities.Asset;
+import de.unistuttgart.stayinsync.core.configuration.edc.entities.ContractDefinition;
+import de.unistuttgart.stayinsync.core.configuration.edc.entities.Policy;
+import org.mapstruct.Mapper;
+import org.mapstruct.Mapping;
+import org.mapstruct.factory.Mappers;
 
-public class EDCContractDefinitionMapper {
+@Mapper(componentModel = "cdi")
+public interface EDCContractDefinitionMapper {
 
-    private EDCContractDefinitionMapper(){}
+    EDCContractDefinitionMapper INSTANCE = Mappers.getMapper(EDCContractDefinitionMapper.class);
 
-    public static EDCContractDefinitionDto toDto(EDCContractDefinition entity) {
-        if (entity == null) return null;
-        var dto = new EDCContractDefinitionDto()
-            .setId(entity != null ? entity.id : null)
-            .setContractDefinitionId(entity != null ? entity.getContractDefinitionId() : null)
-            .setAssetId(entity != null && entity.getAsset() != null ? entity.getAsset().getAssetId() : null)
-            .setAccessPolicyId(entity != null && entity.getAccessPolicy() != null ? entity.getAccessPolicy().id : null)
-            .setContractPolicyId(entity != null && entity.getContractPolicy() != null ? entity.getContractPolicy().id : null);
-        return dto;
-    }
+    @Mapping(target = "assetId", source = "asset.assetId")
+    @Mapping(target = "accessPolicyId", source = "accessPolicy.id")
+    @Mapping(target = "contractPolicyId", source = "contractPolicy.id")
+    @Mapping(target = "accessPolicyIdStr", ignore = true)
+    @Mapping(target = "contractPolicyIdStr", ignore = true)
+    EDCContractDefinitionDto toDto(ContractDefinition entity);
 
-    public static EDCContractDefinition fromDto(EDCContractDefinitionDto dto) {
+    /**
+     * Manual conversion from DTO to entity
+     */
+    static ContractDefinition fromDto(EDCContractDefinitionDto dto) {
         if (dto == null) return null;
-        var entity = new EDCContractDefinition();
-        entity.id = dto.getId(); // leer bei create, gesetzt bei update
-        entity.setContractDefinitionId(dto.getContractDefinitionId());
-        entity.rawJson = dto.getRawJson();
+        
+        var entity = new ContractDefinition();
+        entity.id = dto.id();
+        entity.contractDefinitionId = dto.contractDefinitionId();
+        entity.rawJson = dto.rawJson();
+        
         // Resolve asset by assetId if present
-        if (dto.getAssetId() != null && !dto.getAssetId().isBlank()) {
-            var asset = EDCAsset.findByAssetId(dto.getAssetId());
-            entity.setAsset(asset);
+        if (dto.assetId() != null && !dto.assetId().isBlank()) {
+            var asset = Asset.findByAssetId(dto.assetId());
+            entity.asset = asset;
         }
 
-        // Set access policy based on UUID or string id
-        if (dto.getAccessPolicyId() != null) {
-            entity.setAccessPolicy(EDCPolicy.findById(dto.getAccessPolicyId()));
-        } else if (dto.getAccessPolicyIdStr() != null && !dto.getAccessPolicyIdStr().isBlank()) {
-            entity.setAccessPolicy(EDCPolicy.findByPolicyId(dto.getAccessPolicyIdStr()));
+        // Set access policy based on Long ID or string id
+        if (dto.accessPolicyId() != null) {
+            entity.accessPolicy = Policy.findById(dto.accessPolicyId());
+        } else if (dto.accessPolicyIdStr() != null && !dto.accessPolicyIdStr().isBlank()) {
+            entity.accessPolicy = Policy.findByPolicyId(dto.accessPolicyIdStr());
         }
 
-        // Set contract policy based on UUID or string id
-        if (dto.getContractPolicyId() != null) {
-            entity.setContractPolicy(EDCPolicy.findById(dto.getContractPolicyId()));
-        } else if (dto.getContractPolicyIdStr() != null && !dto.getContractPolicyIdStr().isBlank()) {
-            entity.setContractPolicy(EDCPolicy.findByPolicyId(dto.getContractPolicyIdStr()));
+        // Set contract policy based on Long ID or string id
+        if (dto.contractPolicyId() != null) {
+            entity.contractPolicy = Policy.findById(dto.contractPolicyId());
+        } else if (dto.contractPolicyIdStr() != null && !dto.contractPolicyIdStr().isBlank()) {
+            entity.contractPolicy = Policy.findByPolicyId(dto.contractPolicyIdStr());
         }
 
         return entity;

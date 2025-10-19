@@ -40,10 +40,11 @@
 
     <ng-template pTemplate="header">
       <tr>
-        <th style="width: 15%" pSortableColumn="assetId">ID <p-sortIcon field="assetId"></p-sortIcon></th>
-        <th style="width: 40%" pSortableColumn="name">Name <p-sortIcon field="name"></p-sortIcon></th>
+        <th style="width: 10%" pSortableColumn="assetId">ID <p-sortIcon field="assetId"></p-sortIcon></th>
+        <th style="width: 30%" pSortableColumn="name">Name <p-sortIcon field="name"></p-sortIcon></th>
         <th style="width: 10%" pSortableColumn="type">Type <p-sortIcon field="type"></p-sortIcon></th>
-        <th style="width: 20%" pSortableColumn="contentType">Content Type <p-sortIcon field="contentType"></p-sortIcon></th>
+        <th style="width: 15%" pSortableColumn="contentType">Content Type <p-sortIcon field="contentType"></p-sortIcon></th>
+        <th style="width: 20%" pSortableColumn="targetSystemId">Target System <p-sortIcon field="targetSystemId"></p-sortIcon></th>
         <th style="width: 15%">Actions</th>
       </tr>
       <tr>
@@ -51,6 +52,7 @@
         <th><p-columnFilter type="text" field="name" placeholder="Filter by Name"></p-columnFilter></th>
         <th><p-columnFilter type="text" field="type" placeholder="Filter by Type"></p-columnFilter></th>
         <th><p-columnFilter type="text" field="contentType" placeholder="Filter by Content Type"></p-columnFilter></th>
+        <th><p-columnFilter type="text" field="targetSystemId" placeholder="Filter by Target System"></p-columnFilter></th>
         <th></th>
       </tr>
     </ng-template>
@@ -61,6 +63,7 @@
         <td>{{ asset.name }}</td>
         <td><p-tag [value]="asset.type"></p-tag></td>
         <td>{{ asset.contentType }}</td>
+        <td>{{ getTargetSystemName(asset.targetSystemId) }}</td>
         <td>
           <button pButton pRipple type="button" icon="pi pi-pencil" class="p-button-rounded p-button-text p-button-info mr-2" (click)="editAsset(asset)" pTooltip="Edit Asset"></button>
           <button pButton pRipple type="button" icon="pi pi-trash" class="p-button-rounded p-button-text p-button-danger" (click)="deleteAsset(asset)" pTooltip="Delete Asset"></button>
@@ -227,7 +230,7 @@
 <p-dialog header="Create New Asset" [(visible)]="displayNewAssetDialog" [modal]="true" [style]="{ width: '50vw' }" (onHide)="hideNewAssetDialog()" [draggable]="false" [resizable]="false">
   <div class="p-fluid pt-3">
     <div class="field col-12 mt-3">
-      <label for="transformationDropdown" class="font-bold block mb-2">Transformation / Target System:</label>
+      <label for="transformationDropdown" class="font-bold block mb-2">Transformation:</label>
       <p-dropdown
         id="systemDropdown"
         [(ngModel)]="selectedSystem"
@@ -237,6 +240,23 @@
         placeholder="Select a System"
         [filter]="true"
         filterBy="alias,id"
+        [showClear]="true"
+        styleClass="w-full"
+        [appendTo]="'body'"
+      ></p-dropdown>
+    </div>
+    
+    <div class="field col-12 mt-3">
+      <label for="targetSystemDropdown" class="font-bold block mb-2">Target System:</label>
+      <p-dropdown
+        id="targetSystemDropdown"
+        [(ngModel)]="selectedTargetSystem"
+        [options]="targetSystems"
+        optionLabel="name"
+        optionValue="id"
+        placeholder="Select a Target System"
+        [filter]="true"
+        filterBy="name,id"
         [showClear]="true"
         styleClass="w-full"
         [appendTo]="'body'"

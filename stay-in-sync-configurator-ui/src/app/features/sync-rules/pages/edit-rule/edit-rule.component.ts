@@ -1,14 +1,17 @@
-import { Component, ElementRef, OnInit, ViewChild } from '@angular/core';
+import { Component, OnInit, OnDestroy, AfterViewInit, ViewChild } from '@angular/core';
+import { ClickOutsideDirective } from '../../directives/click-outside.directive';
 import { ActivatedRoute, Router } from '@angular/router';
-import { ConstantNodeModalComponent, NodePaletteComponent, ProviderNodeModalComponent, VflowCanvasComponent } from '../../components';
-import { LogicOperatorMeta, NodeType } from '../../models';
+import { NodePaletteComponent, VflowCanvasComponent, SetConstantValueModalComponent, SetJsonPathModalComponent, SetSchemaModalComponent } from '../../components';
+import { CanvasFacadeService } from '../../service/facade/canvas-facade.service';
+import { LogicOperatorMetadata, NodeType } from '../../models';
 import { CommonModule } from '@angular/common';
 import { TransformationRulesApiService } from '../../service';
 import { ErrorPanelComponent } from '../../components/error-panel/error-panel.component';
 import { ValidationError } from '../../models/interfaces/validation-error.interface';
-import { RuleConfigurationComponent } from '../../components/modals/rule-configuration/rule-configuration.component';
-import {Button} from 'primeng/button';
-import {Toolbar} from 'primeng/toolbar';
+import { SetRuleConfigurationModal } from '../../components/modals/set-rule-configuration-modal/set-rule-configuration-modal.component';
+import { Button } from 'primeng/button';
+import { Toolbar } from 'primeng/toolbar';
+import { MessageService } from 'primeng/api';
 
 /**
  * The rule editor page component in which the user can view and edit a transformation rule graph
@@ -19,18 +22,20 @@ import {Toolbar} from 'primeng/toolbar';
     CommonModule,
     VflowCanvasComponent,
     NodePaletteComponent,
-    ProviderNodeModalComponent,
-    ConstantNodeModalComponent,
+    SetJsonPathModalComponent,
+    SetConstantValueModalComponent,
+    SetSchemaModalComponent,
     ErrorPanelComponent,
     Button,
     Toolbar,
-    RuleConfigurationComponent
+    SetRuleConfigurationModal,
+    ClickOutsideDirective
   ],
   templateUrl: './edit-rule.component.html',
-  styleUrl: './edit-rule.component.css'
+  styleUrls: ['./edit-rule.component.css']
 })
-export class EditRuleComponent implements OnInit {
-  //#region Setup
+export class EditRuleComponent implements OnInit, AfterViewInit, OnDestroy {
+  //#region Fields
   ruleName = 'New Rule';
   ruleId: number | undefined = undefined;
   ruleDescription = '';
@@ -39,26 +44,35 @@ export class EditRuleComponent implements OnInit {
   showMainNodePalette = false;
   nodePalettePosition = { x: 0, y: 0 };
   selectedNodeType: NodeType | null = null;
-  selectedOperator: LogicOperatorMeta | null = null;
+  selectedOperator: LogicOperatorMetadata | null = null;
 
-  // Modal states
+  // Node Creation
+  pendingNodePos: { x: number, y: number } | null = null;
   showProviderModal = false;
   showConstantModal = false;
-  pendingNodePos: { x: number, y: number } | null = null;
-  showRuleConfiguration = false;
+  showSchemaModal = false;
+  showConfigModal = false;
 
   // Error Panel Attribute
   //* Needed as an intermediate attribute
   graphErrors: ValidationError[] = [];
 
-  private documentClickListener: any;
+  @ViewChild(NodePaletteComponent, { static: false }) nodePalette?: NodePaletteComponent;
+  @ViewChild(VflowCanvasComponent, { static: false }) canvas?: VflowCanvasComponent;
+  //#endregion
 
-  @ViewChild(NodePaletteComponent) nodePalette!: NodePaletteComponent;
-  @ViewChild(VflowCanvasComponent) canvas!: VflowCanvasComponent;
-  @ViewChild('nodePalette', { static: true }) nodePaletteRef!: ElementRef;
+  constructor(
+    private route: ActivatedRoute,
+    private router: Router,
+    private rulesApi: TransformationRulesApiService,
+    private messageService: MessageService,
+    public canvasFacade: CanvasFacadeService
+  ) { }
 
-  constructor(private route: ActivatedRoute, private router: Router, private rulesApi: TransformationRulesApiService) { }
-
+  //#region Lifecycle
+  /**
+   * Loads the rule data into the page
+   */
   ngOnInit(): void {
     const routeId = this.route.snapshot.paramMap.get('id');
     this.ruleId = routeId ? Number(routeId) : undefined;
@@ -66,37 +80,39 @@ export class EditRuleComponent implements OnInit {
     if (this.ruleId) {
       this.rulesApi.getRule(this.ruleId).subscribe(rule => {
         this.ruleName = rule.name;
-        this.ruleDescription = rule.description;
+        this.ruleDescription = rule.description || '';
       });
     }
 
-    document.addEventListener('mousedown', this.handlePageClick, true);
   }
-  //#endregion
 
-  //#region Navigation
   /**
-   * Navigates back to the rules overview page
+   * Registers this component's canvas to the canvas facade.
    */
-  return() {
-    this.router.navigate(['/sync-rules']);
+  ngAfterViewInit(): void {
+    if (this.canvas) {
+      this.canvasFacade.register(this.canvas);
+    }
+  }
+
+  /**
+   * Attempts to unregister this component's canvas from the canvas facade.
+   */
+  ngOnDestroy(): void {
+    try {
+      this.canvasFacade.unregister();
+    } catch (err) {
+      console.warn('canvasFacade.unregister failed', err);
+    }
   }
   //#endregion
 
   //#region Page Events
   /**
-   * Checks the target of the mouse click and closes the node palette accordingly
-   * *Not closing context menus of the vflow canvas,
-   * *since that framework does not expose a way to deselect the element within
-   *
-   * @param event
+   * Navigates back to the rules overview page
    */
-  private handlePageClick = (event: MouseEvent) => {
-    if (!this.nodePaletteRef.nativeElement.contains(event.target)) {
-      this.showMainNodePalette = false;
-      this.showMainNodePalette = false;
-      this.nodePalette.closeSubPalettes();
-    }
+  goBack(): void {
+    this.router.navigate(['/sync-rules']);
   }
 
   /**
@@ -104,8 +120,8 @@ export class EditRuleComponent implements OnInit {
    *
    * @param nodeId
    */
-  onErrorClicked(nodeId: number) {
-    this.canvas.centerOnNode(nodeId);
+  onErrorClicked(nodeId: number): void {
+    this.canvasFacade.centerOnNode(nodeId);
   }
   //#endregion
 
@@ -116,9 +132,17 @@ export class EditRuleComponent implements OnInit {
    *
    * @param mouseEvent
    */
-  openMainNodePalette() {
+  openMainNodePalette(): void {
     this.nodePalettePosition = { x: 0, y: 0 };
     this.showMainNodePalette = true;
+  }
+
+  /**
+   * Closes the main node palette and any open sub-palettes.
+   */
+  closeNodePalette(): void {
+    this.showMainNodePalette = false;
+    this.nodePalette?.closeSubPalettes?.();
   }
 
   /**
@@ -126,24 +150,31 @@ export class EditRuleComponent implements OnInit {
    *
    * @param selection
    */
-  onNodeSelected(selection: { nodeType: NodeType, operator?: LogicOperatorMeta }) {
+  onNodeSelected(selection: { nodeType: NodeType, operator?: LogicOperatorMetadata }): void {
     this.selectedNodeType = selection.nodeType;
     this.selectedOperator = selection.operator || null;
-    this.showMainNodePalette = false
-    this.nodePalette.closeSubPalettes();
+    this.closeNodePalette();
 
     if (this.pendingNodePos) {
       switch (this.selectedNodeType) {
         case NodeType.PROVIDER:
+          this.closeAllModals();
           this.showProviderModal = true;
           break;
         case NodeType.CONSTANT:
+          this.closeAllModals();
           this.showConstantModal = true;
           break;
         case NodeType.LOGIC:
-          this.canvas.addNode(this.selectedNodeType, this.pendingNodePos, undefined, undefined, this.selectedOperator!);
+          if (this.pendingNodePos) {
+            this.canvasFacade.addNode(this.selectedNodeType, this.pendingNodePos, undefined, undefined, this.selectedOperator);
+          }
           this.clearNodeSelection();
           this.pendingNodePos = null;
+          break;
+        case NodeType.SCHEMA:
+          this.closeAllModals();
+          this.showSchemaModal = true;
           break;
       }
     }
@@ -152,7 +183,7 @@ export class EditRuleComponent implements OnInit {
   /**
    * Empties the attributes used for the node selection
    */
-  clearNodeSelection() {
+  clearNodeSelection(): void {
     this.selectedNodeType = null;
     this.selectedOperator = null;
   }
@@ -163,27 +194,33 @@ export class EditRuleComponent implements OnInit {
    * Places the selected node on the canvas if applicable
    * and closes the node selection palette
    *
-   * @param pos
+   * @param pos Page coordinates where the user clicked
    */
-  onCanvasClick(pos: { x: number, y: number }) {
+  onCanvasClick(pos: { x: number, y: number }): void {
     if (this.selectedNodeType)
       switch (this.selectedNodeType) {
         case NodeType.PROVIDER:
           this.pendingNodePos = pos;
+          this.closeAllModals();
           this.showProviderModal = true;
           break;
         case NodeType.CONSTANT:
           this.pendingNodePos = pos;
+          this.closeAllModals();
           this.showConstantModal = true;
           break;
+        case NodeType.SCHEMA:
+          this.pendingNodePos = pos;
+          this.closeAllModals();
+          this.showSchemaModal = true;
+          break;
         case NodeType.LOGIC:
-          this.canvas.addNode(this.selectedNodeType, pos, undefined, undefined, this.selectedOperator!);
+          this.canvasFacade.addNode(this.selectedNodeType, pos, undefined, undefined, this.selectedOperator || undefined);
           this.clearNodeSelection();
           break;
       }
 
-    this.showMainNodePalette = false;
-    this.nodePalette.closeSubPalettes();
+    this.closeNodePalette();
   }
 
   /**
@@ -191,26 +228,34 @@ export class EditRuleComponent implements OnInit {
    *
    * @param positions contains the viewport and canvas positions of the last right click
    */
-  onCanvasRightClick(positions: { viewportPos: { x: number, y: number }, canvasPos: { x: number, y: number } }) {
+  onCanvasRightClick(positions: { viewportPos: { x: number, y: number }, canvasPos: { x: number, y: number } }): void {
     this.pendingNodePos = positions.canvasPos;
 
     // Position the palette at the viewport location
     this.nodePalettePosition = positions.viewportPos;
     this.showMainNodePalette = true;
-    this.nodePalette.closeSubPalettes();
+    this.nodePalette?.closeSubPalettes?.();
   }
-  openRuleConfiguration() {
-    this.showRuleConfiguration = true;
+
+  /**
+   * Opens the rule configuration modal
+   */
+  openRuleConfiguration(): void {
+    this.closeAllModals();
+    this.showConfigModal = true;
   }
   //#endregion
+
 
   //#region Modal Events
   /**
    * Forwards the to be created provider node's JSON path to node creation
    * @param providerJsonPath
    */
-  onProviderCreated(providerJsonPath: any) {
-    this.canvas.addNode(NodeType.PROVIDER, this.pendingNodePos!, providerJsonPath);
+  onProviderCreated(providerData: { jsonPath: string; outputType: string }): void {
+    if (this.pendingNodePos) {
+      this.canvasFacade.addNode(NodeType.PROVIDER, this.pendingNodePos, providerData);
+    }
     this.onModalsClosed();
   }
 
@@ -218,26 +263,40 @@ export class EditRuleComponent implements OnInit {
    * Forwards the to be created constant node's value to node creation
    * @param constantData
    */
-  onConstantCreated(constantValue: any) {
-    this.canvas.addNode(NodeType.CONSTANT, this.pendingNodePos!, undefined, constantValue);
+  onConstantCreated(constantValue: any): void {
+    if (this.pendingNodePos) {
+      this.canvasFacade.addNode(NodeType.CONSTANT, this.pendingNodePos, undefined, constantValue);
+    }
     this.onModalsClosed();
   }
 
   /**
-   * Closes all modals of this page
+   * Forwards the to be created schema node's schema string to node creation
    */
-  onModalsClosed() {
-    this.showConstantModal = false;
-    this.showProviderModal = false;
-    this.showRuleConfiguration = false;
+  onSchemaCreated(value: string): void {
+    if (this.pendingNodePos) {
+      // Pass schema string to the canvas via the constantValue parameter
+      this.canvasFacade.addNode(NodeType.SCHEMA, this.pendingNodePos, undefined, value);
+    }
+    this.onModalsClosed();
+  }
+
+  /**
+   * Closes all modals of this page and reverts node creation process
+   */
+  onModalsClosed(): void {
     this.pendingNodePos = null;
+    this.closeAllModals();
     this.clearNodeSelection();
   }
 
-  ngOnDestroy(): void {
-    if (this.documentClickListener) {
-      document.removeEventListener('mousedown', this.documentClickListener, true);
-    }
+  /**
+   * loses all modals of this page
+   */
+  private closeAllModals(): void {
+    this.showProviderModal = false;
+    this.showConstantModal = false;
+    this.showConfigModal = false;
   }
 
   /**
@@ -245,17 +304,30 @@ export class EditRuleComponent implements OnInit {
    *
    * @param ruleConfiguration
    */
-  onRuleConfigurationSaved(ruleConfiguration: { name: string, description: string }) {
-    this.rulesApi.updateRule(this.ruleId!, ruleConfiguration).subscribe({
-      next: (updatedRule) => {
-        alert("Rule successfully updated")
-        console.log('Rule updated successfully', updatedRule); // TODO-s DELETE
+  onRuleConfigurationSaved(ruleConfiguration: { name: string, description: string }): void {
+    if (!this.ruleId) {
+      this.messageService.add({ severity: 'error', summary: 'Update failed', detail: 'Rule ID is missing' });
+      return;
+    }
 
-        this.ruleName = ruleConfiguration.name;
-        this.ruleDescription = ruleConfiguration.description;
+    this.rulesApi.updateRule(this.ruleId, ruleConfiguration).subscribe({
+      next: (updatedRule) => {
+        this.messageService.add({
+          severity: 'success',
+          summary: 'Configuration Updated',
+          detail: 'The rule configuration was successfully updated'
+        });
+
+        this.ruleName = updatedRule.name;
+        this.ruleDescription = updatedRule.description || '';
       },
-      error: (error) => {
-        console.error('Failed to update rule:', error);
+      error: (err: unknown) => {
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Update failed',
+          detail: (err as any)?.message || 'An unexpected error occurred. Please try again later.'
+        });
+        console.error('Failed to update rule:', err);
       }
     });
     this.onModalsClosed();

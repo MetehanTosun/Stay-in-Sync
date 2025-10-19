@@ -1,4 +1,4 @@
-import {HttpClient, HttpParams, HttpResponse} from "@angular/common/http";
+import { HttpClient, HttpParams, HttpResponse } from "@angular/common/http";
 import { Injectable } from "@angular/core";
 import { RuleCreationDTO, TransformationRule } from "../../models";
 import { Observable } from "rxjs";
@@ -15,9 +15,9 @@ export class TransformationRulesApiService {
 
   constructor(private http: HttpClient) { }
 
-  //#region Create Operations
+  //#region Create
   /**
-   * Sends a POST request for the creation of a new transformation rule.
+   * Sends a POST request for a new transformation rule.
    *
    * @param newRuleDto
    * @returns the entire http response of the POST request
@@ -29,19 +29,19 @@ export class TransformationRulesApiService {
   }
   //#endregion
 
-  //#region Read Operations
+  //#region Read
   /**
-   * Sends a GET request to read a specific transformation rules metadata.
+   * Sends a GET request for a transformation rules metadata.
    *
    * @param ruleId
-   * @returns a specific transformation rules metadata
+   * @returns the received metadata
    */
   getRule(ruleId: number): Observable<TransformationRule> {
     return this.http.get<TransformationRule>(`${this.apiUrl}/${ruleId}`);
   }
 
   /**
-   * Sends a GET request to receive a collection of all transformation rules metadata.
+   * Sends a GET request for all transformation rules metadata.
    *
    * @returns a collection of all transformation rules metadata
    */
@@ -50,22 +50,12 @@ export class TransformationRulesApiService {
   }
   //#endregion
 
-  getAllUnassignedRules(): Observable<TransformationRule[]> {
-    const params = new HttpParams().set('unassigned', 'true');
-    return this.http.get<TransformationRule[]>(`/api/config/transformation-rule`, {params});
-  }
-
-  getAllAssignedRules(): Observable<TransformationRule[]> {
-    const params = new HttpParams().set('unassigned', 'false');
-    return this.http.get<TransformationRule[]>(`/api/config/transformation-rule`, {params});
-  }
-
-  //#region Update Operations
+  //#region Update
   /**
-   * Sends a PUT request to update a specific transformation rules name or description.
+   * Sends a PUT request for a transformation rules.
    *
    * @param ruleId
-   * @param updatedRuleDto
+   * @param updatedRuleDto partial DTO containing the updated name and/or description
    * @returns the updated transformation rules metadata
    */
   updateRule(ruleId: number, updatedRuleDto: Partial<RuleCreationDTO>): Observable<TransformationRule> {
@@ -73,9 +63,9 @@ export class TransformationRulesApiService {
   }
   //#endregion
 
-  //#region Delete Operations
+  //#region Delete
   /**
-   * Sends a DELETE request to delete a specific transformation rule
+   * Sends a DELETE request far a transformation rule
    *
    * @param ruleId
    * @returns void

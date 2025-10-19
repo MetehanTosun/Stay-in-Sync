@@ -2,7 +2,7 @@ package de.unistuttgart.stayinsync.core.configuration.util;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.OperatorMetadata;
+import de.unistuttgart.stayinsync.core.configuration.persistence.entities.sync.OperatorMetadata;
 import de.unistuttgart.stayinsync.core.configuration.exception.CoreManagementException;
 import de.unistuttgart.stayinsync.core.configuration.rest.dtos.OperatorMetadataDTO;
 import io.quarkus.logging.Log;

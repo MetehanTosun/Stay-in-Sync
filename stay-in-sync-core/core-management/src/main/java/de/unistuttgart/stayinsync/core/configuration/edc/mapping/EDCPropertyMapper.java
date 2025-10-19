@@ -1,81 +1,108 @@
 package de.unistuttgart.stayinsync.core.configuration.edc.mapping;
 
 import de.unistuttgart.stayinsync.core.configuration.edc.dtoedc.EDCPropertyDto;
-import de.unistuttgart.stayinsync.core.configuration.edc.entities.EDCProperty;
+import de.unistuttgart.stayinsync.core.configuration.edc.entities.Property;
+import org.mapstruct.Mapper;
+import org.mapstruct.Mapping;
+import org.mapstruct.Named;
+import org.mapstruct.factory.Mappers;
+
+import java.util.HashMap;
+import java.util.Map;
 
 /**
- * Mapper-Klasse zur Konvertierung zwischen EDCProperty-Entities und EDCPropertyDto-Objekten.
+ * MapStruct-Mapper zur Konvertierung zwischen EDCProperty-Entities und EDCPropertyDto-Objekten.
  */
-public class EDCPropertyMapper {
+@Mapper
+public interface EDCPropertyMapper {
+
+    /**
+     * Singleton-Instanz des Mappers.
+     */
+    EDCPropertyMapper INSTANCE = Mappers.getMapper(EDCPropertyMapper.class);
 
     /**
      * Konvertiert ein EDCProperty-Entity in ein EDCPropertyDto.
      * 
      * @param entity Das zu konvertierende Entity
-     * @return Das erzeugte DTO oder null, wenn entity null ist
+     * @return Das erzeugte DTO
      */
-    public static EDCPropertyDto toDto(EDCProperty entity) {
-        if (entity == null) return null;
-        
-        EDCPropertyDto dto = new EDCPropertyDto();
-        dto.setId(entity.id);
-        
-        // Properties als Map setzen
-        if (entity.getName() != null) {
-            dto.addProperty(EDCPropertyDto.PROP_NAME, entity.getName());
-        }
-        
-        if (entity.getVersion() != null) {
-            dto.addProperty(EDCPropertyDto.PROP_VERSION, entity.getVersion());
-        }
-        
-        if (entity.getContentType() != null) {
-            dto.addProperty(EDCPropertyDto.PROP_CONTENTTYPE, entity.getContentType());
-        }
-        
-        if (entity.getDescription() != null) {
-            dto.addProperty(EDCPropertyDto.PROP_DESCRIPTION, entity.getDescription());
-        }
-        
-        return dto;
-    }
+    @Mapping(target = "properties", expression = "java(propertyToMap(entity))")
+    EDCPropertyDto toDto(Property entity);
 
     /**
      * Konvertiert ein EDCPropertyDto in ein EDCProperty-Entity.
      * 
      * @param dto Das zu konvertierende DTO
-     * @return Das erzeugte oder aktualisierte Entity oder null, wenn dto null ist
-     * @throws IllegalArgumentException wenn die im DTO angegebene ID nicht existiert
+     * @return Das erzeugte Entity
      */
-    public static EDCProperty fromDto(EDCPropertyDto dto) {
-        if (dto == null) return null;
+    @Mapping(source = "id", target = "id")
+    @Mapping(target = "name", expression = "java(getNameFromProperties(dto))")
+    @Mapping(target = "version", expression = "java(getVersionFromProperties(dto))")
+    @Mapping(target = "contentType", expression = "java(getContentTypeFromProperties(dto))")
+    @Mapping(target = "description", expression = "java(getDescriptionFromProperties(dto))")
+    Property fromDto(EDCPropertyDto dto);
+
+    /**
+     * Konvertiert die Entity-Eigenschaften in eine Map für das DTO.
+     */
+    default Map<String, Object> propertyToMap(Property entity) {
+        if (entity == null) return new HashMap<>();
         
-        var entity = new EDCProperty();
+        Map<String, Object> properties = new HashMap<>();
         
-        // Falls ID vorhanden ist, vorhandenes Entity laden (für Updates)
-        if (dto.getId() != null) {
-            entity = EDCProperty.findById(dto.getId());
-            if (entity == null) {
-                throw new IllegalArgumentException("EDCProperty " + dto.getId() + " nicht gefunden");
-            }
+        if (entity.name != null) {
+            properties.put(EDCPropertyDto.PROP_NAME, entity.name);
         }
         
-        // Felder aus dem DTO übernehmen
-        entity.setName(dto.getName());
-        entity.setVersion(dto.getVersion());
-        entity.setContentType(dto.getContentType());
-        entity.setDescription(dto.getDescription());
-        
-        // Sicherstellen, dass wir eine Beschreibung haben (Default setzen, falls nötig)
-        if (entity.getDescription() == null || entity.getDescription().trim().isEmpty()) {
-            entity.setDescription("Default description");
+        if (entity.version != null) {
+            properties.put(EDCPropertyDto.PROP_VERSION, entity.version);
         }
         
-        // Sicherstellen, dass wir einen Namen haben (Default setzen, falls nötig)
-        if (entity.getName() == null || entity.getName().trim().isEmpty()) {
-            entity.setName("Default asset");
+        if (entity.contentType != null) {
+            properties.put(EDCPropertyDto.PROP_CONTENTTYPE, entity.contentType);
         }
         
-        return entity;
+        if (entity.description != null) {
+            properties.put(EDCPropertyDto.PROP_DESCRIPTION, entity.description);
+        }
+        
+        return properties;
+    }
+
+    /**
+     * Extrahiert den Namen aus dem DTO.
+     */
+    default String getNameFromProperties(EDCPropertyDto dto) {
+        if (dto == null || dto.properties() == null) return "Default asset";
+        String name = (String) dto.properties().get(EDCPropertyDto.PROP_NAME);
+        return name != null && !name.trim().isEmpty() ? name : "Default asset";
+    }
+
+    /**
+     * Extrahiert die Version aus dem DTO.
+     */
+    default String getVersionFromProperties(EDCPropertyDto dto) {
+        if (dto == null || dto.properties() == null) return null;
+        Object value = dto.properties().get(EDCPropertyDto.PROP_VERSION);
+        return value != null ? value.toString() : null;
+    }
+
+    /**
+     * Extrahiert den Content-Type aus dem DTO.
+     */
+    default String getContentTypeFromProperties(EDCPropertyDto dto) {
+        if (dto == null || dto.properties() == null) return null;
+        Object value = dto.properties().get(EDCPropertyDto.PROP_CONTENTTYPE);
+        return value != null ? value.toString() : null;
+    }
+
+    /**
+     * Extrahiert die Beschreibung aus dem DTO.
+     */
+    default String getDescriptionFromProperties(EDCPropertyDto dto) {
+        if (dto == null || dto.properties() == null) return "Default description";
+        String description = (String) dto.properties().get(EDCPropertyDto.PROP_DESCRIPTION);
+        return description != null && !description.trim().isEmpty() ? description : "Default description";
     }
 }

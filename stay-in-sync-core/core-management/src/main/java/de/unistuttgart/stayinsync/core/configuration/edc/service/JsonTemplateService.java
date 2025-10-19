@@ -14,25 +14,25 @@ import jakarta.transaction.Transactional;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.UUID;
 
 @ApplicationScoped
 public class JsonTemplateService {
 
     @PersistenceContext
     EntityManager entityManager;
+    
+    @Inject
+    JsonTemplateMapper mapper;
 
-  
 
-
-    public JsonTemplateDto fetchJsonTemplateFromDatabase(final UUID id) throws EntityNotFoundException{
+    public JsonTemplateDto fetchJsonTemplateFromDatabase(final Long id) throws EntityNotFoundException{
         final JsonTemplate jsonTemplate = JsonTemplate.findById(id);
         if(jsonTemplate == null){
             final String errorMessage = "No Json-Template found with given id.";
             Log.errorf(errorMessage, id);
             throw new EntityNotFoundException(errorMessage);
         }
-        return JsonTemplateMapper.templateMapper.templateToTemplateDto(jsonTemplate);
+        return mapper.templateToTemplateDto(jsonTemplate);
     }
 
 
@@ -40,22 +40,22 @@ public class JsonTemplateService {
     public List<JsonTemplateDto> fetchAllTemplates(){
         List<JsonTemplateDto> jsonTemplateDtos = new ArrayList<>();
         for(JsonTemplate jsonTemplate : JsonTemplate.<JsonTemplate>listAll()){
-            jsonTemplateDtos.add(JsonTemplateMapper.templateMapper.templateToTemplateDto(jsonTemplate));
+            jsonTemplateDtos.add(mapper.templateToTemplateDto(jsonTemplate));
         }
         return jsonTemplateDtos;
     }
 
     @Transactional
     public JsonTemplateDto persistJsonTemplate (JsonTemplateDto jsonTemplateDto){
-        final JsonTemplate jsonTemplate = JsonTemplateMapper.templateMapper.templateDtoToTemplate(jsonTemplateDto);
+        final JsonTemplate jsonTemplate = mapper.templateDtoToTemplate(jsonTemplateDto);
         jsonTemplate.persist();
-        return JsonTemplateMapper.templateMapper.templateToTemplateDto(jsonTemplate);
+        return mapper.templateToTemplateDto(jsonTemplate);
     }
 
     @Transactional
-    public JsonTemplateDto update (final UUID id, final JsonTemplateDto updatedJsonTemplateDto){
+    public JsonTemplateDto update (final Long id, final JsonTemplateDto updatedJsonTemplateDto){
         final JsonTemplate persistedJsonTemplate = JsonTemplate.findById(id);
-        final JsonTemplate updatedJsonTemplate = JsonTemplateMapper.templateMapper.templateDtoToTemplate(updatedJsonTemplateDto);
+        final JsonTemplate updatedJsonTemplate = mapper.templateDtoToTemplate(updatedJsonTemplateDto);
 
         if(persistedJsonTemplate == null){
             final String errorMessage = "No Json-Template found with given id.";
@@ -67,11 +67,11 @@ public class JsonTemplateService {
         persistedJsonTemplate.setName(updatedJsonTemplate.getName());
         persistedJsonTemplate.setDescription(updatedJsonTemplate.getDescription());
 
-        return JsonTemplateMapper.templateMapper.templateToTemplateDto(persistedJsonTemplate);
+        return mapper.templateToTemplateDto(persistedJsonTemplate);
     }
 
     @Transactional
-    public boolean removeJsonTemplateFromDatabase(final UUID id){
+    public boolean removeJsonTemplateFromDatabase(final Long id){
         if(JsonTemplate.findById(id) == null){
             final String errorMessage = "No Json-Template found with given id.";
             Log.errorf(errorMessage, id);

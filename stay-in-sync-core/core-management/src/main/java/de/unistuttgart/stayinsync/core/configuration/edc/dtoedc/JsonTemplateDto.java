@@ -4,7 +4,6 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import java.util.Map;
-import java.util.UUID;
 
 /**
  * Data Transfer Object (DTO) für Policy-Templates.
@@ -16,7 +15,7 @@ import java.util.UUID;
  */
 public record JsonTemplateDto(
         @JsonProperty("id")
-        String id,
+        Long id,
 
         @JsonProperty("name")
         @NotBlank

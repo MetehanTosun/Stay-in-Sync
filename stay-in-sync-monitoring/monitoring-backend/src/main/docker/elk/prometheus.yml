@@ -10,10 +10,6 @@ scrape_configs:
       module: [http_2xx]
     static_configs:
       - targets:
-          - http://localhost:8090/q/health/live   # Core Management
-          - http://localhost:8099/q/health/live   # Monitoring Backend
-          - http://localhost:8095/q/health/live   # Polling Node (lokal)
-          - http://localhost:8091/q/health/live   # Sync Node (lokal)
           - http://host.docker.internal:8090/q/health/live   # Core Management
           - http://host.docker.internal:8099/q/health/live   # Monitoring Backend
           - http://host.docker.internal:8095/q/health/live   # Polling Node (lokal)

@@ -35,7 +35,10 @@
             "styles": [
               "src/styles.css"
             ],
-            "scripts": []
+            "scripts": [],
+            "allowedCommonJsDependencies": [
+              "typescript"
+            ]
           },
           "configurations": {
             "production": {
@@ -93,8 +96,6 @@
             ],
             "styles": [
               "@angular/material/prebuilt-themes/azure-blue.css",
-              "src/styles.css",
-
               "node_modules/primeicons/primeicons.css"
             ],
             "scripts": []

@@ -2,97 +2,90 @@ package de.unistuttgart.stayinsync.core.configuration.edc.dtoedc;
 
 import jakarta.validation.constraints.NotBlank;
 
-import java.util.UUID;
-
-public class EDCContractDefinitionDto {
-
-    private UUID id;
-
+public record EDCContractDefinitionDto(
+    Long id,
+    
     @NotBlank
-    private String contractDefinitionId;
-
+    String contractDefinitionId,
+    
     @NotBlank
-    private String assetId;
+    String assetId,
+    
+    String rawJson,
+    
+    // Policy IDs (Long for database ID, String for direct policy ID)
+    Long accessPolicyId,      // ID des EDCAccessPolicy–Datensatzes
+    String accessPolicyIdStr, // String version of policy ID from frontend
+    
+    Long contractPolicyId,    // ID der ContractPolicy (ebenfalls EDCAccessPolicy)
+    String contractPolicyIdStr // String version of policy ID from frontend
+) {
+    // Constructor with builder pattern methods for backward compatibility
+    public static class Builder {
+        private Long id;
+        private String contractDefinitionId;
+        private String assetId;
+        private String rawJson;
+        private Long accessPolicyId;
+        private String accessPolicyIdStr;
+        private Long contractPolicyId;
+        private String contractPolicyIdStr;
 
-    private String rawJson;
+        public Builder id(Long id) {
+            this.id = id;
+            return this;
+        }
 
-    // Either UUID or String format is required for policy IDs
-    private UUID accessPolicyId;      // ID des EDCAccessPolicy–Datensatzes
-    private String accessPolicyIdStr; // String version of policy ID from frontend
+        public Builder contractDefinitionId(String contractDefinitionId) {
+            this.contractDefinitionId = contractDefinitionId;
+            return this;
+        }
 
-    private UUID contractPolicyId;    // ID der ContractPolicy (ebenfalls EDCAccessPolicy)
-    private String contractPolicyIdStr; // String version of policy ID from frontend
+        public Builder assetId(String assetId) {
+            this.assetId = assetId;
+            return this;
+        }
 
-    // --- Getter & Fluent-Setter ---
+        public Builder rawJson(String rawJson) {
+            this.rawJson = rawJson;
+            return this;
+        }
 
-    public UUID getId() {
-        return id;
+        public Builder accessPolicyId(Long accessPolicyId) {
+            this.accessPolicyId = accessPolicyId;
+            return this;
+        }
+
+        public Builder accessPolicyIdStr(String accessPolicyIdStr) {
+            this.accessPolicyIdStr = accessPolicyIdStr;
+            return this;
+        }
+
+        public Builder contractPolicyId(Long contractPolicyId) {
+            this.contractPolicyId = contractPolicyId;
+            return this;
+        }
+
+        public Builder contractPolicyIdStr(String contractPolicyIdStr) {
+            this.contractPolicyIdStr = contractPolicyIdStr;
+            return this;
+        }
+
+        public EDCContractDefinitionDto build() {
+            return new EDCContractDefinitionDto(
+                id,
+                contractDefinitionId,
+                assetId,
+                rawJson,
+                accessPolicyId,
+                accessPolicyIdStr,
+                contractPolicyId,
+                contractPolicyIdStr
+            );
+        }
     }
 
-    public EDCContractDefinitionDto setId(UUID id) {
-        this.id = id;
-        return this;
-    }
-
-    public String getRawJson() {
-        return rawJson;
-    }
-
-    public void setRawJson(String rawJson) {
-        this.rawJson = rawJson;
-    }
-
-    public String getContractDefinitionId() {
-        return contractDefinitionId;
-    }
-
-    public EDCContractDefinitionDto setContractDefinitionId(String contractDefinitionId) {
-        this.contractDefinitionId = contractDefinitionId;
-        return this;
-    }
-
-    public String getAssetId() {
-        return assetId;
-    }
-
-    public EDCContractDefinitionDto setAssetId(String assetId) {
-        this.assetId = assetId;
-        return this;
-    }
-
-    public UUID getAccessPolicyId() {
-        return accessPolicyId;
-    }
-
-    public EDCContractDefinitionDto setAccessPolicyId(UUID accessPolicyId) {
-        this.accessPolicyId = accessPolicyId;
-        return this;
-    }
-
-    public String getAccessPolicyIdStr() {
-        return accessPolicyIdStr;
-    }
-
-    public EDCContractDefinitionDto setAccessPolicyIdStr(String accessPolicyIdStr) {
-        this.accessPolicyIdStr = accessPolicyIdStr;
-        return this;
-    }
-
-    public UUID getContractPolicyId() {
-        return contractPolicyId;
-    }
-
-    public EDCContractDefinitionDto setContractPolicyId(UUID contractPolicyId) {
-        this.contractPolicyId = contractPolicyId;
-        return this;
-    }
-
-    public String getContractPolicyIdStr() {
-        return contractPolicyIdStr;
-    }
-
-    public EDCContractDefinitionDto setContractPolicyIdStr(String contractPolicyIdStr) {
-        this.contractPolicyIdStr = contractPolicyIdStr;
-        return this;
+    public static Builder builder() {
+        return new Builder();
     }
 }

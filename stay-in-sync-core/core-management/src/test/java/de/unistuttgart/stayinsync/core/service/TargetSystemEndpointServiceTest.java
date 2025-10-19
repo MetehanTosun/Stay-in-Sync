@@ -1,8 +1,8 @@
 package de.unistuttgart.stayinsync.core.service;
 
-import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.TargetSystemEndpoint;
-import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.TargetSystem;
-import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.Transformation;
+import de.unistuttgart.stayinsync.core.configuration.persistence.entities.sync.TargetSystemEndpoint;
+import de.unistuttgart.stayinsync.core.configuration.persistence.entities.sync.TargetSystem;
+import de.unistuttgart.stayinsync.core.configuration.persistence.entities.sync.Transformation;
 import jakarta.persistence.EntityManager;
 import jakarta.transaction.Transactional;
 import de.unistuttgart.stayinsync.core.configuration.mapping.TargetSystemEndpointFullUpdateMapper;
@@ -56,7 +56,7 @@ public class TargetSystemEndpointServiceTest {
     TargetSystemEndpoint.deleteAll();
     TargetSystem.deleteAll();
     // create a minimal TargetSystem to attach endpoints to
-    TargetSystemDTO dto = new TargetSystemDTO(null, "TS-A", "http://ts", null, "REST", null, java.util.Set.of());
+    TargetSystemDTO dto = new TargetSystemDTO(null, "TS-A", "http://ts", null, "REST", null, null, java.util.Set.of());
     var created = targetSystemService.createTargetSystem(dto);
     targetSystemId = created.id();
   }

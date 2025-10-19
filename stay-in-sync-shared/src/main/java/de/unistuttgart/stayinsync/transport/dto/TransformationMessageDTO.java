@@ -1,6 +1,6 @@
 package de.unistuttgart.stayinsync.transport.dto;
 
-
+import de.unistuttgart.stayinsync.transport.dto.targetsystems.AasTargetArcMessageDTO;
 import de.unistuttgart.graphengine.dto.transformationrule.TransformationRuleDTO;
 import de.unistuttgart.stayinsync.transport.dto.targetsystems.RequestConfigurationMessageDTO;
 import de.unistuttgart.stayinsync.transport.domain.JobDeploymentStatus;
@@ -16,6 +16,7 @@ public record TransformationMessageDTO(
         JobDeploymentStatus deploymentStatus,
         Set<SourceSystemApiRequestConfigurationMessageDTO> requestConfigurationMessageDTOS,
         List<String> arcManifest,
-        Set<RequestConfigurationMessageDTO> targetRequestConfigurationMessageDTOS
+        Set<RequestConfigurationMessageDTO> targetRequestConfigurationMessageDTOS,
+        Set<AasTargetArcMessageDTO> aasTargetRequestConfigurationMessageDTOS
 ) {
 }

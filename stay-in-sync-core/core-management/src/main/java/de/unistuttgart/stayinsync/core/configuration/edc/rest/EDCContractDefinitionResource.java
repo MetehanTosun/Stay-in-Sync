@@ -1,8 +1,8 @@
 package de.unistuttgart.stayinsync.core.configuration.edc.rest;
 
 import de.unistuttgart.stayinsync.core.configuration.edc.dtoedc.EDCContractDefinitionDto;
-import de.unistuttgart.stayinsync.core.configuration.edc.entities.EDCContractDefinition;
-import de.unistuttgart.stayinsync.core.configuration.edc.entities.EDCInstance;
+import de.unistuttgart.stayinsync.core.configuration.edc.entities.ContractDefinition;
+import de.unistuttgart.stayinsync.core.configuration.edc.entities.EdcInstance;
 import de.unistuttgart.stayinsync.core.configuration.edc.mapping.EDCContractDefinitionMapper;
 import de.unistuttgart.stayinsync.core.configuration.edc.service.EDCContractDefinitionService;
 import jakarta.inject.Inject;
@@ -15,7 +15,6 @@ import org.jboss.logging.Logger;
 import java.net.URI;
 import java.util.List;
 import java.util.Optional;
-import java.util.UUID;
 import java.util.stream.Collectors;
 
 @Path("/api/config/edcs")
@@ -28,13 +27,16 @@ public class EDCContractDefinitionResource {
 
     @Inject
     EDCContractDefinitionService service;
+    
+    @Inject
+    EDCContractDefinitionMapper mapper;
 
     @GET
     @Path("{edcId}/contract-definitions")
-    public List<EDCContractDefinitionDto> getContractDefinitionsForEdc(@PathParam("edcId") UUID edcId) {
+    public List<EDCContractDefinitionDto> getContractDefinitionsForEdc(@PathParam("edcId") Long edcId) {
         LOG.info("Fetching contract definitions for EDC: " + edcId);
         List<EDCContractDefinitionDto> contractDefs = service.listAllByEdcId(edcId).stream()
-                .map(EDCContractDefinitionMapper::toDto)
+                .map(mapper::toDto)
                 .collect(Collectors.toList());
         LOG.info("Returning " + contractDefs.size() + " contract definitions for EDC: " + edcId);
         return contractDefs;
@@ -42,21 +44,21 @@ public class EDCContractDefinitionResource {
 
     @GET
     @Path("{edcId}/contract-definitions/{id}")
-    public EDCContractDefinitionDto getContractDefinitionForEdc(@PathParam("edcId") UUID edcId, @PathParam("id") UUID id) {
+    public EDCContractDefinitionDto getContractDefinitionForEdc(@PathParam("edcId") Long edcId, @PathParam("id") Long id) {
         LOG.info("Fetching contract definition " + id + " for EDC: " + edcId);
         return service.findByIdAndEdcId(id, edcId)
-                .map(EDCContractDefinitionMapper::toDto)
+                .map(mapper::toDto)
                 .orElseThrow(() -> new NotFoundException("ContractDefinition " + id + " not found for EDC " + edcId));
     }
 
     @POST
     @Path("{edcId}/contract-definitions")
     @Transactional
-    public Response createContractDefinitionForEdc(@PathParam("edcId") UUID edcId, EDCContractDefinitionDto dto, @Context UriInfo uriInfo) {
+    public Response createContractDefinitionForEdc(@PathParam("edcId") Long edcId, EDCContractDefinitionDto dto, @Context UriInfo uriInfo) {
         try {
             LOG.info("Creating contract definition for EDC: " + edcId);
             
-            EDCInstance edcInstance = EDCInstance.findById(edcId);
+            EdcInstance edcInstance = EdcInstance.findById(edcId);
             if (edcInstance == null) {
                 LOG.error("EDC instance not found: " + edcId);
                 return Response.status(Response.Status.NOT_FOUND)
@@ -64,18 +66,18 @@ public class EDCContractDefinitionResource {
                               .build();
             }
             
-            EDCContractDefinition entity = EDCContractDefinitionMapper.fromDto(dto);
-            entity.setEdcInstance(edcInstance);
+            ContractDefinition entity = EDCContractDefinitionMapper.fromDto(dto);
+            entity.edcInstance = edcInstance;
             
             // Persist with the owning EDC instance set to avoid detached references
-            EDCContractDefinition created = service.create(entity);
-            EDCContractDefinitionDto createdDto = EDCContractDefinitionMapper.toDto(created);
+            ContractDefinition created = service.create(entity);
+            EDCContractDefinitionDto createdDto = mapper.toDto(created);
             
             URI uri = uriInfo.getAbsolutePathBuilder()
-                             .path(createdDto.getId().toString())
+                             .path(createdDto.id().toString())
                              .build();
             
-            LOG.info("Contract definition created successfully with ID: " + createdDto.getId());
+            LOG.info("Contract definition created successfully with ID: " + createdDto.id());
             return Response.created(uri)
                           .entity(createdDto)
                           .build();
@@ -90,12 +92,22 @@ public class EDCContractDefinitionResource {
     @PUT
     @Path("{edcId}/contract-definitions/{id}")
     @Transactional
-    public Response updateContractDefinitionForEdc(@PathParam("edcId") UUID edcId, @PathParam("id") UUID id, EDCContractDefinitionDto dto) {
+    public Response updateContractDefinitionForEdc(@PathParam("edcId") Long edcId, @PathParam("id") Long id, EDCContractDefinitionDto dto) {
         try {
             LOG.info("Updating contract definition " + id + " for EDC: " + edcId);
-            dto.setId(id);
+            // Create a new DTO with updated id - only use the fields available in the record
+            dto = new EDCContractDefinitionDto(
+                id, 
+                dto.contractDefinitionId(),
+                dto.assetId(),
+                dto.rawJson(),
+                dto.accessPolicyId(),
+                dto.accessPolicyIdStr(),
+                dto.contractPolicyId(),
+                dto.contractPolicyIdStr()
+            );
             
-            EDCInstance edcInstance = EDCInstance.findById(edcId);
+            EdcInstance edcInstance = EdcInstance.findById(edcId);
             if (edcInstance == null) {
                 LOG.error("EDC instance not found: " + edcId);
                 return Response.status(Response.Status.NOT_FOUND)
@@ -103,10 +115,10 @@ public class EDCContractDefinitionResource {
                               .build();
             }
             
-            EDCContractDefinition entity = EDCContractDefinitionMapper.fromDto(dto);
-            entity.setEdcInstance(edcInstance);
+            ContractDefinition entity = EDCContractDefinitionMapper.fromDto(dto);
+            entity.edcInstance = edcInstance;
             
-            Optional<EDCContractDefinition> updated = service.update(id, entity);
+            Optional<ContractDefinition> updated = service.update(id, entity);
             if (updated.isEmpty()) {
                 LOG.error("Contract definition " + id + " not found for EDC " + edcId);
                 return Response.status(Response.Status.NOT_FOUND)
@@ -114,8 +126,8 @@ public class EDCContractDefinitionResource {
                               .build();
             }
             
-            EDCContractDefinitionDto updatedDto = EDCContractDefinitionMapper.toDto(updated.get());
-            LOG.info("Contract definition updated successfully: " + updatedDto.getId());
+            EDCContractDefinitionDto updatedDto = mapper.toDto(updated.get());
+            LOG.info("Contract definition updated successfully: " + updatedDto.id());
             return Response.ok(updatedDto).build();
         } catch (Exception e) {
             LOG.error("Error updating contract definition", e);
@@ -128,10 +140,10 @@ public class EDCContractDefinitionResource {
     @DELETE
     @Path("{edcId}/contract-definitions/{id}")
     @Transactional
-    public Response deleteContractDefinitionForEdc(@PathParam("edcId") UUID edcId, @PathParam("id") UUID id) {
+    public Response deleteContractDefinitionForEdc(@PathParam("edcId") Long edcId, @PathParam("id") Long id) {
         LOG.info("Deleting contract definition " + id + " for EDC: " + edcId);
         
-        Optional<EDCContractDefinition> contractDef = service.findByIdAndEdcId(id, edcId);
+        Optional<ContractDefinition> contractDef = service.findByIdAndEdcId(id, edcId);
         if (contractDef.isEmpty()) {
             LOG.warn("Contract definition " + id + " not found for EDC " + edcId);
             return Response.status(Response.Status.NOT_FOUND)
