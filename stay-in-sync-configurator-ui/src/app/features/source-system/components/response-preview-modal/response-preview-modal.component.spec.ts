@@ -93,7 +93,7 @@ describe('ResponsePreviewModalComponent', () => {
     component.endpointId = 5;
     svcSpy.generateTypeScript.and.returnValue(of({ generatedTypeScript: 'interface ResponseBody { id: number; }' } as any));
 
-    component.setActiveTab(1); // triggers onTabChange
+    component.setActiveTab(1); 
     tick();
 
     expect(svcSpy.generateTypeScript).toHaveBeenCalled();

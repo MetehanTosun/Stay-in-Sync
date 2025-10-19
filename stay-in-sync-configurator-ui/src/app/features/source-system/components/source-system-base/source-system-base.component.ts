@@ -110,7 +110,7 @@ export class SourceSystemBaseComponent implements OnInit {
    */
   showCreateDialog = false;
 
-  // design reverted; routes handle manage flow
+  
 
   /**
    * Currently selected file for upload
@@ -122,7 +122,7 @@ export class SourceSystemBaseComponent implements OnInit {
    */
   searchTerm: string = '';
 
-  // simplified search options placeholder if needed
+  
   searchOptions: any = {};
 
   /**
@@ -328,9 +328,9 @@ export class SourceSystemBaseComponent implements OnInit {
     this.router.navigate(['/source-system/', system.id]);
   }
 
-  // AAS: Manage Page helpers
+  
   onAasRefreshRequested(): void {
-    // Handle refresh request from AAS management component
+    
     this.loadSystems();
   }
 
@@ -473,7 +473,7 @@ export class SourceSystemBaseComponent implements OnInit {
       return text || '';
     }
 
-    // simple fallback: highlight by wrapping matches in <mark>
+    
     try {
       const term = (this.searchTerm || '').trim();
       if (!term) return text || '';

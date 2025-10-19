@@ -116,7 +116,7 @@ export class SourceSystemAasManagementService {
       const last = safePath.split('/').pop() as string;
       const parent = safePath.includes('/') ? safePath.substring(0, safePath.lastIndexOf('/')) : '';
 
-      // Try SNAPSHOT first, then LIVE as fallback for manually created elements.
+      
       const tryLoadElementDetails = (source: 'SNAPSHOT' | 'LIVE') => {
         this.aasService.getElement(systemId, smId, safePath, source)
           .subscribe({
@@ -163,7 +163,7 @@ export class SourceSystemAasManagementService {
           });
       };
       
-      // Start with SNAPSHOT, fallback to LIVE.
+      
       tryLoadElementDetails('SNAPSHOT');
     });
   }
@@ -323,7 +323,7 @@ export class SourceSystemAasManagementService {
   private inferModelType(el: any): string | undefined {
     if (!el) return undefined;
     if (el.modelType) return el.modelType;
-    // Detect Range before Property
+    
     if (el.min !== undefined || el.max !== undefined || el.minValue !== undefined || el.maxValue !== undefined) return 'Range';
     if (el.valueType) return 'Property';
     if (Array.isArray(el.inputVariables) || Array.isArray(el.outputVariables) || Array.isArray(el.inoutputVariables)) return 'Operation';

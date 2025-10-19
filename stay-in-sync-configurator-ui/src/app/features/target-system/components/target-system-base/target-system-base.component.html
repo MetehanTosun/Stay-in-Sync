@@ -60,7 +60,7 @@
       </td>
       <td>
         <div class="actions-cell">
-          <button pButton type="button" label="Manage" class="p-button-text p-button-sm" (click)="manage(system)"></button>
+          <button pButton type="button" label="Manage" class="p-button-text p-button-sm" [routerLink]="['/target-system', system.id]"></button>
           <button pButton type="button" icon="pi pi-trash" class="p-button-text p-button-sm p-button-danger" (click)="confirmDelete(system)"></button>
         </div>
       </td>
@@ -121,47 +121,117 @@
 <!-- Dialog for managing a selected Target System and its configuration -->
 <p-dialog [(visible)]="showDetailDialog" [modal]="true" [style]="{ width: '80vw', height: '80vh' }" header="Manage Target System">
   <div class="p-grid p-dir-col">
-    <!-- Metadata form for updating Target System information -->
-    <div class="p-col" style="margin-bottom: 2rem;">
-      <h3 style="margin-bottom: 1.5rem; font-size: 1.25rem; font-weight: 600;">Metadata</h3>
-      <form *ngIf="manageForm" [formGroup]="manageForm" class="p-fluid" (ngSubmit)="saveManagedMetadata()">
-        <div class="p-field" style="margin-bottom: 1rem;">
-          <label for="m_name" style="font-weight: 500; margin-bottom: 0.5rem; display: block;">Name*</label>
-          <input id="m_name" pInputText formControlName="name" style="width: 100%;" />
-        </div>
-        <div class="p-field" style="margin-bottom: 1rem;">
-          <label for="m_apiUrl" style="font-weight: 500; margin-bottom: 0.5rem; display: block;">API URL*</label>
-          <input id="m_apiUrl" pInputText formControlName="apiUrl" style="width: 100%;" />
-        </div>
-        <div class="p-field" style="margin-bottom: 1rem;">
-          <label for="m_description" style="font-weight: 500; margin-bottom: 0.5rem; display: block;">Description</label>
-          <textarea id="m_description" pInputTextarea rows="3" formControlName="description" style="width: 100%;"></textarea>
-        </div>
-        <div class="p-field" style="margin-bottom: 1rem;">
-          <button pButton type="submit" label="Save Metadata" [disabled]="manageForm.invalid"></button>
-        </div>
-      </form>
-    </div>
-    <!-- TabView separating API configuration and AAS management -->
     <p-tabView>
-      <!-- Section for managing API headers and target endpoints -->
-      <p-tabPanel *ngIf="!isAasSelected()" header="Headers & Endpoints">
-        <div class="p-grid" style="margin: 1rem 0;">
-          <div class="p-col-12 p-md-6" style="padding: 0.5rem;">
-            <p-card [style]="{'height': '100%'}">
-              <h4 style="margin-bottom: 1rem; font-size: 1.125rem; font-weight: 600;">API Headers</h4>
-              <app-manage-api-headers *ngIf="selectedSystem" [syncSystemId]="selectedSystem.id!" [allowValues]="true"></app-manage-api-headers>
-            </p-card>
+      <!-- Tab: System (Metadata) -->
+      <p-tabPanel header="System">
+
+        <div class="flex align-items-center gap-3">
+          <label class="text-xl font-bold" style="line-height: 3rem;">System Name:</label>
+          <span>
+            <p-inplace #inplace (onActivate)="onInplaceActivate()" styleClass="flex align-items-center">
+            <ng-template pTemplate="display">
+              <span class="text-xl font-semibold">{{ selectedSystem?.name }}</span>
+            </ng-template>
+
+            <ng-template pTemplate="content" let-closeCallback="closeCallback">
+        <span class="inline-flex align-items-center gap-2">
+          <input
+            type="text"
+            [(ngModel)]="selectedSystem!.name"
+            pInputText
+            autofocus
+            (keyup.enter)="onSave(closeCallback)"/>
+          <p-button icon="pi pi-times" aria-label="Cancel" (click)="onClose(closeCallback)" text severity="danger"/>
+          <p-button icon="pi pi-check" aria-label="Save" (click)="onSave(closeCallback)" text severity="success"/>
+        </span>
+            </ng-template>
+          </p-inplace>
+                    </span>
+
+        </div>
+
+        <div class="flex align-items-center gap-3">
+          <label class="text-xl font-bold" style="line-height: 3rem;">Api address:</label>
+          <span>
+            <p-inplace #inplace (onActivate)="onInplaceActivate()" styleClass="flex align-items-center">
+            <ng-template pTemplate="display">
+              <span class="text-xl font-semibold">{{ selectedSystem?.apiUrl }}</span>
+            </ng-template>
+
+            <ng-template pTemplate="content" let-closeCallback="closeCallback">
+        <span class="inline-flex align-items-center gap-2">
+          <input
+            type="text"
+            [(ngModel)]="selectedSystem!.apiUrl"
+            pInputText
+            autofocus
+            (keyup.enter)="onSave(closeCallback)"/>
+          <p-button icon="pi pi-times" aria-label="Cancel" (click)="onClose(closeCallback)" text severity="danger"/>
+          <p-button icon="pi pi-check" aria-label="Save" (click)="onSave(closeCallback)" text severity="success"/>
+        </span>
+            </ng-template>
+          </p-inplace>
+                    </span>
+
+        </div>
+
+        <div class="flex align-items-center gap-3" style="margin-top: 1rem;">
+          <label class="text-xl font-bold" style="line-height: 3rem;">Description:</label>
+          <span>
+            <p-inplace #inplace (onActivate)="onInplaceActivate()" styleClass="flex align-items-center">
+            <ng-template pTemplate="display">
+              <span class="text-xl font-semibold">{{ selectedSystem?.description || '-' }}</span>
+            </ng-template>
+
+            <ng-template pTemplate="content" let-closeCallback="closeCallback">
+        <span class="inline-flex align-items-center gap-2">
+          <textarea
+            [(ngModel)]="selectedSystem!.description"
+            pInputTextarea
+            rows="3"
+            autofocus
+            style="min-width: 400px;"></textarea>
+          <p-button icon="pi pi-times" aria-label="Cancel" (click)="onClose(closeCallback)" text severity="danger"/>
+          <p-button icon="pi pi-check" aria-label="Save" (click)="onSave(closeCallback)" text severity="success"/>
+        </span>
+            </ng-template>
+          </p-inplace>
+                    </span>
+
+        </div>
+
+      </p-tabPanel>
+
+      <!-- Tab: Headers (REST only) -->
+      <p-tabPanel *ngIf="!isAasSelected()" header="Headers">
+        <app-manage-api-headers *ngIf="selectedSystem" [syncSystemId]="selectedSystem.id!" [allowValues]="true"></app-manage-api-headers>
+      </p-tabPanel>
+
+      <!-- Tab: Endpoints (REST only) -->
+      <p-tabPanel *ngIf="!isAasSelected()" header="Endpoints">
+        <app-manage-target-endpoints *ngIf="selectedSystem" [targetSystemId]="selectedSystem.id!" (finish)="onManageFinished()"></app-manage-target-endpoints>
+      </p-tabPanel>
+
+      <!-- Tab: AAS Configuration (AAS only) -->
+      <p-tabPanel *ngIf="isAasSelected()" header="AAS Configuration">
+        <div class="p-grid p-fluid">
+          <div class="p-col-12 p-md-6">
+            <label>Base URL</label>
+            <input pInputText [value]="selectedSystem!.apiUrl" disabled/>
           </div>
-          <div class="p-col-12 p-md-6" style="padding: 0.5rem;">
-            <p-card [style]="{'height': '100%'}">
-              <h4 style="margin-bottom: 1rem; font-size: 1.125rem; font-weight: 600;">Target Endpoints</h4>
-              <app-manage-target-endpoints *ngIf="selectedSystem" [targetSystemId]="selectedSystem.id!" (finish)="onManageFinished()"></app-manage-target-endpoints>
-            </p-card>
+          <div class="p-col-12 p-md-6">
+            <label>AAS ID</label>
+            <input pInputText [(ngModel)]="selectedSystem!.aasId" placeholder="AAS Identifier"/>
           </div>
+        </div>
+        <div class="p-d-flex p-ai-center" style="margin-top: .75rem; gap: .5rem;">
+          <button pButton type="button" label="Test" (click)="aasTest()" [disabled]="aasTestLoading"></button>
+          <span *ngIf="aasTestLoading">Testing...</span>
+          <small *ngIf="aasTestError" style="color:#d32f2f;">{{ aasTestError }}</small>
         </div>
       </p-tabPanel>
-      <!-- Section for managing AAS (Asset Administration Shell) systems -->
+
+      <!-- Tab: AAS Management (AAS only) -->
       <p-tabPanel *ngIf="isAasSelected()" header="AAS Management">
         <app-aas-management [system]="selectedSystem" (refreshRequested)="onAasRefreshRequested()"></app-aas-management>
       </p-tabPanel>

@@ -116,18 +116,18 @@ export class SourceSystemPageComponent implements OnInit {
   aasValueNew = '';
   aasValueTypeHint = 'xs:string';
 
-  // Shared element dialog
+  
   showElementDialog = false;
   elementDialogData: AasElementDialogData | null = null;
 
-  // AASX upload
+  
   showAasxUpload = false;
   aasxSelectedFile: File | null = null;
   isUploadingAasx = false;
   aasxPreview: any = null;
   aasxSelection: { submodels: Array<{ id: string; full: boolean; elements: string[] }> } = { submodels: [] };
 
-  // Cache: submodelId -> (idShortPath -> modelType)
+  
   private aasTypeCache: Record<string, Record<string, string>> = {};
 
   private ensureAasTypeMap(submodelId: string): void {
@@ -196,7 +196,7 @@ export class SourceSystemPageComponent implements OnInit {
     }
   }
 
-  // AAS create dialogs
+  
   showAasSubmodelDialog = false;
   aasNewSubmodelJson = '{\n  "id": "https://example.com/ids/sm/new",\n  "idShort": "NewSubmodel"\n}';
   aasMinimalSubmodelTemplate: string = `{
@@ -356,7 +356,7 @@ export class SourceSystemPageComponent implements OnInit {
   }
 
 
-  // AAS: Manage Page helpers
+  
   isAasSelected(): boolean {
     return (this.selectedSystem?.apiType || '').toUpperCase().includes('AAS');
   }
@@ -414,9 +414,9 @@ export class SourceSystemPageComponent implements OnInit {
         });
         attach.children = mapped;
         this.aasTreeNodes = [...this.aasTreeNodes];
-        // Background precise type hydration via LIVE element details
+        
         this.hydrateAasNodeTypesForNodes(submodelId, attach.children as TreeNode[]);
-        // hydrate types in background
+        
         this.ensureAasTypeMap(submodelId);
       },
       error: (err) => this.erorrService.handleError(err)
@@ -466,7 +466,7 @@ export class SourceSystemPageComponent implements OnInit {
     const safePath = idShortPath || keyPath || (node?.data?.raw?.idShort || '');
     const last = safePath.split('/').pop() as string;
     const parent = safePath.includes('/') ? safePath.substring(0, safePath.lastIndexOf('/')) : '';
-    // Robust: try direct element details endpoint (backend has deep fallback)
+    
     if (!systemId) { this.aasSelectedLiveLoading = false; return; }
     this.aasService.getElement(systemId, smId, safePath, 'LIVE').subscribe({
       next: (found: any) => {
@@ -526,10 +526,10 @@ export class SourceSystemPageComponent implements OnInit {
           secondRef,
           annotations: annotationsRaw.map(mapAnnotation).filter(Boolean) as AasAnnotationView[]
         } as any;
-        // Fallback: If AnnotatedRelationshipElement has no annotations in direct payload, load children as annotations
+        
         if ((liveType === 'AnnotatedRelationshipElement') && (((this.aasSelectedLivePanel?.annotations?.length ?? 0) === 0))) {
           const pathForChildren = safePath;
-          // Try deep list to get full element (with annotations)
+          
           this.aasService
             .listElements(systemId, smId, {depth: 'all', source: 'LIVE'})
             .subscribe({
@@ -546,7 +546,7 @@ export class SourceSystemPageComponent implements OnInit {
                     value: a?.value
                   } as AasAnnotationView));
                 } else {
-                  // Fallback: treat shallow children as annotations
+                  
                   const list: any[] = arr.filter((el: any) => {
                     const p = el?.idShortPath || el?.idShort;
                     if (!p || !p.startsWith(pathForChildren + '/')) return false;
@@ -582,7 +582,7 @@ export class SourceSystemPageComponent implements OnInit {
         }
       },
       error: (_err: any) => {
-        // Fallback: list under parent shallow and pick child
+        
         this.aasService
           .listElements(systemId, smId, {depth: 'shallow', parentPath: parent || undefined, source: 'LIVE'})
           .subscribe({
@@ -683,7 +683,7 @@ export class SourceSystemPageComponent implements OnInit {
       .subscribe({
         next: () => {
           this.showAasValueDialog = false;
-          // refresh live details
+          
           const node = this.selectedAasNode;
           if (node?.data) {
             this.loadAasLiveElementDetails(node.data.submodelId, node.data.idShortPath, node);
@@ -729,7 +729,7 @@ export class SourceSystemPageComponent implements OnInit {
 
   deleteAasElement(submodelId: string, idShortPath: string): void {
     if (!this.selectedSystem?.id || !submodelId || !idShortPath) return;
-    // Pass raw submodelId; service will encode internally
+    
     this.aasService.deleteElement(this.selectedSystem.id, submodelId, idShortPath).subscribe({
       next: () => {
         let parent = '';
@@ -742,7 +742,7 @@ export class SourceSystemPageComponent implements OnInit {
         if (parentNode) {
           this.loadAasChildren(submodelId, parent || undefined, parentNode);
         } else {
-          // Fallback: refresh appropriate branch using LIVE view
+          
           this.refreshAasNodeLive(submodelId, parent || '', undefined);
         }
         this.messageService.add({ key: 'sourceAAS', severity: 'success', summary: 'Element deleted', detail: 'Element has been deleted.' });
@@ -777,8 +777,10 @@ export class SourceSystemPageComponent implements OnInit {
     const computedType = this.inferModelType(el);
     const label = el.idShort;
     const typeHasChildren = computedType === 'SubmodelElementCollection' || computedType === 'SubmodelElementList' || computedType === 'Operation' || computedType === 'Entity';
-    // If type is unknown, allow expansion to let user try to open children; LIVE hydration will correct it
-    const hasChildren = el?.hasChildren === true || typeHasChildren || computedType === undefined;
+    
+    const isLeafType = computedType === 'RelationshipElement' || computedType === 'AnnotatedRelationshipElement' || computedType === 'ReferenceElement';
+    
+    const hasChildren = !isLeafType && (el?.hasChildren === true || typeHasChildren || computedType === undefined);
     return {
       key: `${submodelId}::${el.idShortPath || el.idShort}`,
       label,
@@ -788,11 +790,11 @@ export class SourceSystemPageComponent implements OnInit {
     } as TreeNode;
   }
 
-  // Infer a more precise modelType when missing
+  
   private inferModelType(el: any): string | undefined {
     if (!el) return undefined;
     if (el.modelType) return el.modelType;
-    // Detect Range before Property
+    
     if (el.min !== undefined || el.max !== undefined || el.minValue !== undefined || el.maxValue !== undefined) return 'Range';
     if (el.valueType) return 'Property';
     if (Array.isArray(el.inputVariables) || Array.isArray(el.outputVariables) || Array.isArray(el.inoutputVariables)) return 'Operation';

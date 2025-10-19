@@ -49,41 +49,41 @@ export class SourceSystemAasManagementComponent implements OnInit {
   @Input() system: SourceSystemDTO | null = null;
   @Output() refreshRequested = new EventEmitter<void>();
 
-  // AAS Tree properties
+  
   aasTreeNodes: TreeNode[] = [];
   aasTreeLoading = false;
   selectedAasNode: TreeNode | null = null;
   aasSelectedLivePanel: AasElementLivePanel | null = null;
   aasSelectedLiveLoading = false;
 
-  // AAS Test properties
+  
   aasTestLoading = false;
   aasTestError: string | null = null;
 
-  // AASX upload properties
+  
   showAasxUpload = false;
   aasxSelectedFile: File | null = null;
   isUploadingAasx = false;
   aasxPreview: any = null;
   aasxSelection: { submodels: Array<{ id: string; full: boolean; elements: string[] }> } = { submodels: [] };
 
-  // Element creation dialog
+  
   showElementDialog = false;
   elementDialogData: AasElementDialogData | null = null;
 
-  // AAS Create dialogs
+  
   showAasSubmodelDialog = false;
   aasNewSubmodelJson = '{\n  "id": "https://example.com/ids/sm/new",\n  "idShort": "NewSubmodel"\n}';
   
 
-  // AAS Value dialog
+  
   showAasValueDialog = false;
   aasValueSubmodelId = '';
   aasValueElementPath = '';
   aasValueTypeHint = 'xs:string';
   aasValueNew = '';
 
-  // Templates
+  
   aasMinimalSubmodelTemplate: string = `{
   "id": "https://example.com/ids/sm/new",
   "idShort": "NewSubmodel",
@@ -117,7 +117,7 @@ export class SourceSystemAasManagementComponent implements OnInit {
   ]
 }`;
 
-  // Element templates
+  
 
   constructor(
     private aasManagementService: SourceSystemAasManagementService,
@@ -127,7 +127,7 @@ export class SourceSystemAasManagementComponent implements OnInit {
   ) {}
 
   ngOnInit(): void {
-    // Component initialization
+    
   }
 
   /**
@@ -310,7 +310,7 @@ export class SourceSystemAasManagementComponent implements OnInit {
           this.aasNewSubmodelJson = text;
         }
       } catch {
-        // ignore parse errors
+        
       }
     };
     reader.readAsText(file);
@@ -335,7 +335,7 @@ export class SourceSystemAasManagementComponent implements OnInit {
         }
       });
     } catch (e) {
-      // Error handling
+      
     }
   }
 
@@ -607,7 +607,7 @@ export class SourceSystemAasManagementComponent implements OnInit {
     }
   }
 
-  // AASX upload methods
+  
   openAasxUpload(): void {
     this.showAasxUpload = true;
     this.aasxSelectedFile = null;
@@ -616,11 +616,11 @@ export class SourceSystemAasManagementComponent implements OnInit {
   onAasxFileSelected(event: any): void {
     this.aasxSelectedFile = event.files?.[0] || null;
     if (this.aasxSelectedFile && this.system?.id) {
-      // Load preview to enable selective attach
+      
       this.aasService.previewAasx(this.system.id, this.aasxSelectedFile).subscribe({
         next: (resp) => {
           this.aasxPreview = resp?.submodels || (resp?.result ?? []);
-          // Normalize to array of {id,idShort,kind}
+          
           const arr = Array.isArray(this.aasxPreview) ? this.aasxPreview : (this.aasxPreview?.submodels ?? []);
           this.aasxSelection = { submodels: (arr || []).map((sm: any) => ({ id: sm.id || sm.submodelId, full: true, elements: [] })) };
         },
@@ -632,7 +632,7 @@ export class SourceSystemAasManagementComponent implements OnInit {
     }
   }
 
-  // AASX selective attach helpers
+  
   private getSmId(sm: any): string {
     return sm?.id || sm?.submodelId || '';
   }
@@ -666,7 +666,7 @@ export class SourceSystemAasManagementComponent implements OnInit {
     this.messageService.add({ key: 'sourceAAS', severity: 'info', summary: 'Uploading AASX', detail: `${this.aasxSelectedFile?.name} (${this.aasxSelectedFile?.size} bytes)` });
     this.isUploadingAasx = true;
     
-    // If preview is available and user made a selection, use selective attach; else default upload
+    
     const hasSelection = (this.aasxSelection?.submodels?.some(s => s.full) ?? false);
     const req$ = hasSelection ? 
       this.aasService.attachSelectedAasx(this.system.id, this.aasxSelectedFile, this.aasxSelection) : 
@@ -676,7 +676,7 @@ export class SourceSystemAasManagementComponent implements OnInit {
       next: (resp) => {
         this.isUploadingAasx = false;
         this.showAasxUpload = false;
-        // Refresh the tree to show uploaded content
+        
         this.discoverAasSnapshot();
         this.messageService.add({ key: 'sourceAAS', severity: 'success', summary: 'Upload accepted', detail: 'AASX uploaded. Snapshot refresh started.' });
       },
