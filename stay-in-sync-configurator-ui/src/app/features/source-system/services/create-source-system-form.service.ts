@@ -136,12 +136,12 @@ export class CreateSourceSystemFormService {
    */
   isFormValidForStep(form: FormGroup, step: number): boolean {
     switch (step) {
-      case 0: 
+      case 0: // Metadata step
         return !!(form.get('name')?.valid && 
                form.get('apiType')?.valid && 
                form.get('apiUrl')?.valid &&
                (form.get('apiType')?.value !== 'AAS' || form.get('aasId')?.valid));
-      case 1: 
+      case 1: // API Headers step
         const authType = form.get('authType')?.value;
         if (authType === ApiAuthType.Basic) {
           return !!(form.get('basicAuth.username')?.valid && 
@@ -151,8 +151,8 @@ export class CreateSourceSystemFormService {
                  form.get('apiKeyAuth.keyValue')?.valid);
         }
         return true;
-      case 2: 
-        return true; 
+      case 2: // Endpoints step
+        return true; // No specific validation for endpoints step
       default:
         return form.valid;
     }

@@ -228,11 +228,11 @@ export class CreateTargetSystemComponent implements OnInit, OnChanges {
     this.currentStep = 0;
   }
 
-  
+  // Helpers matching Source Create behaviour
   isAas(): boolean { return this.form.get('apiType')!.value === 'AAS'; }
   isRest(): boolean { return this.form.get('apiType')!.value === 'REST_OPENAPI'; }
 
-  
+  // AAS Test
   isTesting = false;
   aasTestOk: boolean | null = null;
   aasError: string | null = null;
@@ -319,7 +319,7 @@ export class CreateTargetSystemComponent implements OnInit, OnChanges {
     return this.formService.isFormValidForStep(this.form, 0, this.form.get('apiType')!.value, this.aasTestOk);
   }
 
-  
+  // AASX upload state & handlers (target)
   showAasxUpload = false;
   aasxSelectedFile: File | null = null;
   isUploadingAasx = false;
@@ -395,7 +395,7 @@ export class CreateTargetSystemComponent implements OnInit, OnChanges {
     });
   }
 
-  
+  // AAS tree/discovery & details (target)
   isDiscovering = false;
   treeNodes: TreeNode[] = [];
   submodels: any[] = [];
@@ -442,7 +442,7 @@ export class CreateTargetSystemComponent implements OnInit, OnChanges {
       error: () => { this.isDiscovering = false; }
     });
   }
-  
+  // duplicate removed; see method above
   /**
    * Handles expansion of a tree node by dynamically loading its children.
    * @param event Node expansion event.
@@ -571,13 +571,13 @@ export class CreateTargetSystemComponent implements OnInit, OnChanges {
         const annotationsRaw = Array.isArray(ann1) ? ann1 : (Array.isArray(ann2) ? ann2 : []);
         const mapVar = (v: any): any | null => { const val = v?.value ?? v; const idShort = val?.idShort; if (!idShort) return null; return { idShort, modelType: val?.modelType, valueType: val?.valueType }; };
         const mapAnnotation = (a: any): any | null => { 
-          
+          // For annotations, we want the annotation object itself, not its value
           const idShort = a?.idShort; 
           if (!idShort) return null; 
           return { idShort, modelType: a?.modelType, valueType: a?.valueType, value: a?.value };
         };
         
-        
+        // Handle relationship references
         const stringifyRef = (ref: any): string | undefined => {
           if (!ref) return undefined;
           const keys = ref?.keys;
@@ -623,7 +623,7 @@ export class CreateTargetSystemComponent implements OnInit, OnChanges {
     });
   }
 
-  
+  // Create dialogs & actions (target)
   showSubmodelDialog = false;
   newSubmodelJson = '{\n  "id": "https://example.com/ids/sm/new",\n  "idShort": "NewSubmodel"\n}';
   minimalSubmodelTemplate: string = `{
@@ -666,7 +666,7 @@ export class CreateTargetSystemComponent implements OnInit, OnChanges {
     } catch {}
   }
 
-  
+  // Element creation dialog
   showElementDialog = false;
   elementDialogData: AasElementDialogData | null = null;
   openCreateElement(smId: string, parent?: string): void {
@@ -685,7 +685,7 @@ export class CreateTargetSystemComponent implements OnInit, OnChanges {
       this.handleElementCreation(result.element);
     } else if (result.error) {
       console.error('[TargetCreate] Element creation failed:', result.error);
-      
+      // Show toast for duplicate idShort error
       if (result.error.includes('Duplicate entry') || result.error.includes('uk_element_submodel_idshortpath')) {
         this.messageService.add({
           key: 'targetAAS',
@@ -716,20 +716,20 @@ export class CreateTargetSystemComponent implements OnInit, OnChanges {
     try {
       console.log('[TargetCreate] Creating element:', elementData);
       
-      
+      // Encode parentPath for BaSyx (convert / to .)
       const encodedParentPath = elementData.parentPath ? 
         elementData.parentPath.replace(/\//g, '.') : 
         undefined;
       
       console.log('[TargetCreate] Encoded parentPath:', encodedParentPath);
       
-      
+      // Use the AAS client to create the element
       const smIdB64 = this.encodeIdToBase64Url(elementData.submodelId);
       await this.aasClient.createElement('target', this.createdTargetSystemId, smIdB64, elementData.body, encodedParentPath).toPromise();
       
       console.log('[TargetCreate] Element created successfully');
       
-      
+      // Show success toast
       this.messageService.add({
         key: 'targetAAS',
         severity: 'success',
@@ -738,13 +738,13 @@ export class CreateTargetSystemComponent implements OnInit, OnChanges {
         life: 3000
       });
       
-      
+      // Refresh the tree
       this.discoverSubmodels();
       
     } catch (error) {
       console.error('[TargetCreate] Error creating element:', error);
       
-      
+      // Show error toast
       const errorMessage = String((error as any)?.error || (error as any)?.message || 'Failed to create element');
       if (errorMessage.includes('Duplicate entry')) {
         this.messageService.add({
@@ -766,7 +766,7 @@ export class CreateTargetSystemComponent implements OnInit, OnChanges {
     }
   }
 
-  
+  // Delete actions & value set (target)
   showDeleteSubmodelDialog = false;
   deleteSubmodelId: string | null = null;
   deleteSubmodel(submodelId: string): void { this.deleteSubmodelId = submodelId; this.showDeleteSubmodelDialog = true; }
@@ -879,7 +879,7 @@ export class CreateTargetSystemComponent implements OnInit, OnChanges {
 
   private refreshNodeLive(submodelId: string, parentPath: string, node?: TreeNode): void {
     if (!this.createdTargetSystemId) return;
-    const smIdB64 = this.encodeIdToBase64Url(submodelId); 
+    const smIdB64 = this.encodeIdToBase64Url(submodelId); // send plain ID for LIVE upstream calls
     this.aasClient.listElements('target', this.createdTargetSystemId, smIdB64, 'shallow', parentPath || undefined).subscribe({
       next: (resp) => {
         const list = Array.isArray(resp) ? resp : (resp?.result ?? []);
@@ -910,13 +910,13 @@ export class CreateTargetSystemComponent implements OnInit, OnChanges {
     const label = el.idShort;
     const typeHasChildren = el?.modelType === 'SubmodelElementCollection' || el?.modelType === 'SubmodelElementList' || el?.modelType === 'Operation' || el?.modelType === 'Entity';
     
-    
+    // RADIKALE LÖSUNG: Prüfe explizit auf leere Collections/Lists
     let hasChildren = false;
     
     if (typeHasChildren) {
-      
+      // Für Collections/Lists: Prüfe ob sie tatsächlich Items haben
       if (el?.modelType === 'SubmodelElementCollection' || el?.modelType === 'SubmodelElementList') {
-        
+        // Prüfe verschiedene mögliche Felder für Items
         const hasItems = (el?.value && Array.isArray(el.value) && el.value.length > 0) ||
                         (el?.submodelElements && Array.isArray(el.submodelElements) && el.submodelElements.length > 0) ||
                         (el?.items && Array.isArray(el.items) && el.items.length > 0) ||
@@ -925,7 +925,7 @@ export class CreateTargetSystemComponent implements OnInit, OnChanges {
         hasChildren = hasItems;
         console.log('[TargetCreate] mapElementToNode - Collection/List:', label, 'hasItems:', hasItems, 'value:', el?.value, 'submodelElements:', el?.submodelElements);
       } else {
-        
+        // Für andere Typen (Operation, Entity): Standard-Logik
         hasChildren = el?.hasChildren === true || typeHasChildren;
       }
     } else {

@@ -26,7 +26,7 @@ describe('AasService', () => {
       const element = { idShort: 'test-element', modelType: 'Property' };
       const parentPath = 'parent/path';
 
-      
+      // AasService.createElement expects submodelId to already be Base64-encoded
       const encoded = service.encodeIdToBase64Url(submodelId);
       service.createElement(sourceSystemId, encoded, element, parentPath).subscribe();
 
@@ -118,8 +118,7 @@ describe('AasService', () => {
       expect(encoded).not.toBe(id);
       expect(encoded).not.toContain('+');
       expect(encoded).not.toContain('/');
-
-      
+      // Padding '=' may be present; do not assert its absence
     });
   });
 });
