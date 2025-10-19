@@ -4,7 +4,7 @@ import de.unistuttgart.graphengine.dto.transformationrule.GraphPersistenceRespon
 import de.unistuttgart.graphengine.dto.transformationrule.TransformationRulePayloadDTO;
 import de.unistuttgart.graphengine.dto.vFlow.VFlowGraphDTO;
 import de.unistuttgart.graphengine.dto.vFlow.VflowGraphResponseDTO;
-import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.TransformationRule;
+import de.unistuttgart.stayinsync.core.configuration.persistence.entities.sync.TransformationRule;
 import de.unistuttgart.stayinsync.core.configuration.exception.CoreManagementException;
 import de.unistuttgart.stayinsync.core.configuration.rest.dtos.OperatorMetadataDTO;
 import de.unistuttgart.stayinsync.core.configuration.rest.dtos.TransformationRuleDTO;

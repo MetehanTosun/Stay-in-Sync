@@ -7,8 +7,7 @@
   <!-- Node Body -->
   <div class="node-content">
     <div class="node-title">{{ node().data?.name }}</div>
-    <div class="node-path"><strong>Path:</strong> {{ node().data?.jsonPath || 'Not set' }}</div>
-    <div class="arc-id"><small>Arc ID: {{ node().data?.arcId || 'N/A' }}</small></div>
+    <div class="node-path"><strong>Path:</strong> {{ getTrimmedJsonpath() || 'Not set' }}</div>
   </div>
 
   <!-- I/O Handlers -->

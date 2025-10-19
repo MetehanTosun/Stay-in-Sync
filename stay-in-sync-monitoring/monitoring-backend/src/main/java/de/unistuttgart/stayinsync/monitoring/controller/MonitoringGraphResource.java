@@ -2,8 +2,6 @@ package de.unistuttgart.stayinsync.monitoring.controller;
 
 import de.unistuttgart.stayinsync.monitoring.service.MonitoringGraphService;
 import de.unistuttgart.stayinsync.transport.dto.monitoringgraph.GraphResponse;
-import de.unistuttgart.stayinsync.transport.dto.monitoringgraph.NodeDto;
-import io.quarkus.logging.Log;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
@@ -15,7 +13,6 @@ import org.eclipse.microprofile.openapi.annotations.media.ExampleObject;
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
 import org.eclipse.microprofile.openapi.annotations.responses.APIResponse;
 
-import java.util.List;
 
 @Path("/api/monitoringgraph")
 @Produces(MediaType.APPLICATION_JSON)

@@ -2,8 +2,6 @@ package de.unistuttgart.stayinsync.core.configuration.rest.dtos;
 
 import de.unistuttgart.stayinsync.transport.domain.JobDeploymentStatus;
 
-import java.util.Set;
-
 
 
 public record TransformationDetailsDTO(

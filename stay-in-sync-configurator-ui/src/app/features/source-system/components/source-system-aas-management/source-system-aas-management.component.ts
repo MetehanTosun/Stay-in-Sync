@@ -1,0 +1,689 @@
+import { Component, Input, Output, EventEmitter, OnInit } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+
+import { TreeModule } from 'primeng/tree';
+import { ButtonModule } from 'primeng/button';
+import { DialogModule } from 'primeng/dialog';
+import { InputTextModule } from 'primeng/inputtext';
+import { TextareaModule } from 'primeng/textarea';
+import { FileUploadModule } from 'primeng/fileupload';
+import { MessageModule } from 'primeng/message';
+import { ToastModule } from 'primeng/toast';
+import { CheckboxModule } from 'primeng/checkbox';
+import { TreeNode } from 'primeng/api';
+import { MessageService } from 'primeng/api';
+
+import { SourceSystemDTO } from '../../models/sourceSystemDTO';
+import { SourceSystemAasManagementService, AasElementLivePanel } from '../../services/source-system-aas-management.service';
+import { AasService } from '../../services/aas.service';
+import { AasElementDialogComponent, AasElementDialogData, AasElementDialogResult } from '../../../../shared/components/aas-element-dialog/aas-element-dialog.component';
+import { AasUtilityService } from '../../../target-system/services/aas-utility.service';
+
+@Component({
+  standalone: true,
+  selector: 'app-source-system-aas-management',
+  templateUrl: './source-system-aas-management.component.html',
+  styleUrls: ['./source-system-aas-management.component.css'],
+  imports: [
+    CommonModule,
+    TreeModule,
+    ButtonModule,
+    DialogModule,
+    InputTextModule,
+    TextareaModule,
+    FileUploadModule,
+    MessageModule,
+    ToastModule,
+    CheckboxModule,
+    FormsModule,
+    AasElementDialogComponent
+  ],
+  providers: [MessageService]
+})
+/**
+ * AAS management UI for the source system: discovery, live details,
+ * CRUD operations for submodels and elements, value setting, and AASX upload/attach.
+ */
+export class SourceSystemAasManagementComponent implements OnInit {
+  @Input() system: SourceSystemDTO | null = null;
+  @Output() refreshRequested = new EventEmitter<void>();
+
+  // AAS Tree properties
+  aasTreeNodes: TreeNode[] = [];
+  aasTreeLoading = false;
+  selectedAasNode: TreeNode | null = null;
+  aasSelectedLivePanel: AasElementLivePanel | null = null;
+  aasSelectedLiveLoading = false;
+
+  // AAS Test properties
+  aasTestLoading = false;
+  aasTestError: string | null = null;
+
+  // AASX upload properties
+  showAasxUpload = false;
+  aasxSelectedFile: File | null = null;
+  isUploadingAasx = false;
+  aasxPreview: any = null;
+  aasxSelection: { submodels: Array<{ id: string; full: boolean; elements: string[] }> } = { submodels: [] };
+
+  // Element creation dialog
+  showElementDialog = false;
+  elementDialogData: AasElementDialogData | null = null;
+
+  // AAS Create dialogs
+  showAasSubmodelDialog = false;
+  aasNewSubmodelJson = '{\n  "id": "https://example.com/ids/sm/new",\n  "idShort": "NewSubmodel"\n}';
+  
+
+  // AAS Value dialog
+  showAasValueDialog = false;
+  aasValueSubmodelId = '';
+  aasValueElementPath = '';
+  aasValueTypeHint = 'xs:string';
+  aasValueNew = '';
+
+  // Templates
+  aasMinimalSubmodelTemplate: string = `{
+  "id": "https://example.com/ids/sm/new",
+  "idShort": "NewSubmodel",
+  "kind": "Instance"
+}`;
+
+  aasPropertySubmodelTemplate: string = `{
+  "id": "https://example.com/ids/sm/new",
+  "idShort": "NewSubmodel",
+  "submodelElements": [
+    {
+      "modelType": "Property",
+      "idShort": "Name",
+      "valueType": "xs:string",
+      "value": "Foo"
+    }
+  ]
+}`;
+
+  aasCollectionSubmodelTemplate: string = `{
+  "id": "https://example.com/ids/sm/new",
+  "idShort": "NewSubmodel",
+  "submodelElements": [
+    {
+      "modelType": "SubmodelElementCollection",
+      "idShort": "address",
+      "value": [
+        { "modelType": "Property", "idShort": "street", "valueType": "xs:string", "value": "Main St" }
+      ]
+    }
+  ]
+}`;
+
+  // Element templates
+
+  constructor(
+    private aasManagementService: SourceSystemAasManagementService,
+    private aasService: AasService,
+    private aasUtility: AasUtilityService,
+    private messageService: MessageService
+  ) {}
+
+  ngOnInit(): void {
+    // Component initialization
+  }
+
+  /**
+   * Check if AAS is selected
+   */
+  isAasSelected(): boolean {
+    return (this.system?.apiType || '').toUpperCase().includes('AAS');
+  }
+
+  getAasId(): string {
+    return this.aasUtility.getAasId(this.system as any);
+  }
+
+  /**
+   * Fix tree structure after live refresh to ensure correct idShortPath
+   */
+  private fixTreeStructureAfterRefresh(elementData: any): void {
+    if (!elementData || !elementData.parentPath) return;
+    const elementIdShort = elementData.body?.idShort;
+    if (!elementIdShort) return;
+    const correctIdShortPath = elementData.parentPath + '/' + elementIdShort;
+    this.updateElementInTree(this.aasTreeNodes, elementIdShort, correctIdShortPath);
+  }
+
+  /**
+   * Update element in tree structure with correct idShortPath
+   */
+  private updateElementInTree(nodes: TreeNode[], elementIdShort: string, correctIdShortPath: string): void {
+    if (!nodes) return;
+    
+    for (const node of nodes) {
+      if (node.data?.idShort === elementIdShort) {
+        node.data.idShortPath = correctIdShortPath;
+        return;
+      }
+      
+      if (node.children) {
+        this.updateElementInTree(node.children, elementIdShort, correctIdShortPath);
+      }
+    }
+  }
+
+  /**
+   * Test AAS connection
+   */
+  testAasConnection(): void {
+    if (!this.system?.id) return;
+    this.aasTestLoading = true;
+    this.aasTestError = null;
+    
+    this.aasManagementService.testConnection(this.system.id).subscribe({
+      next: () => {
+        this.aasTestLoading = false;
+      },
+      error: (err) => {
+        this.aasTestLoading = false;
+        this.aasTestError = 'Connection failed. Please verify Base URL, AAS ID and auth.';
+      }
+    });
+  }
+
+  /**
+   * Discover AAS snapshot
+   */
+  discoverAasSnapshot(): void {
+    if (!this.system?.id) return;
+    this.aasTreeLoading = true;
+    
+    this.aasManagementService.discoverSnapshot(this.system.id).subscribe({
+      next: (treeNodes) => {
+        this.aasTreeNodes = treeNodes;
+        this.aasTreeLoading = false;
+      },
+      error: (err) => {
+        this.aasTreeLoading = false;
+      }
+    });
+  }
+
+  /**
+   * Handle AAS node expand
+   */
+  onAasNodeExpand(event: any): void {
+    const node: TreeNode = event.node;
+    if (!node || !this.system?.id) return;
+    
+    if (node.data?.type === 'submodel') {
+      this.loadAasChildren(node.data.id, undefined, node);
+    } else if (node.data?.type === 'element') {
+      this.loadAasChildren(node.data.submodelId, node.data.idShortPath, node);
+    }
+  }
+
+  /**
+   * Handle AAS node select
+   */
+  onAasNodeSelect(event: any): void {
+    const node: TreeNode = event.node;
+    this.selectedAasNode = node;
+    this.aasSelectedLivePanel = null;
+    
+    if (!node || node.data?.type !== 'element') return;
+    
+    const smId: string = node.data.submodelId;
+    const idShortPath: string = node.data.idShortPath;
+    this.loadAasLiveElementDetails(smId, idShortPath, node);
+    
+    setTimeout(() => {
+      const el = document.getElementById('aas-element-details');
+      if (el && el.scrollIntoView) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    }, 0);
+  }
+
+  /**
+   * Load AAS children
+   */
+  private loadAasChildren(submodelId: string, parentPath: string | undefined, attach: TreeNode): void {
+    if (!this.system?.id) return;
+    
+    this.aasManagementService.loadChildren(this.system.id, submodelId, parentPath, attach).subscribe({
+      next: () => {
+        this.aasTreeNodes = [...this.aasTreeNodes];
+      },
+      error: () => {}
+    });
+  }
+
+  /**
+   * Load AAS live element details
+   */
+  private loadAasLiveElementDetails(smId: string, idShortPath: string | undefined, node?: TreeNode): void {
+    if (!this.system?.id) return;
+    
+    this.aasSelectedLiveLoading = true;
+    
+    this.aasManagementService.loadElementDetails(this.system.id, smId, idShortPath, node).subscribe({
+      next: (livePanel) => {
+        this.aasSelectedLiveLoading = false;
+        this.aasSelectedLivePanel = livePanel;
+        
+        if (node && node.data) {
+          const computedPath = idShortPath || (node.key as string).split('::')[1] || '';
+          node.data.idShortPath = computedPath;
+          node.data.modelType = livePanel.type || node.data.modelType;
+          node.data.raw = { ...(node.data.raw || {}), idShortPath: computedPath, modelType: livePanel.type };
+          this.aasTreeNodes = [...this.aasTreeNodes];
+        }
+      },
+      error: () => { this.aasSelectedLiveLoading = false; }
+    });
+  }
+
+  /**
+   * Open AAS create submodel dialog
+   */
+  openAasCreateSubmodel(): void {
+    this.showAasSubmodelDialog = true;
+  }
+
+  /**
+   * Set AAS submodel template
+   */
+  setAasSubmodelTemplate(kind: 'minimal'|'property'|'collection'): void {
+    if (kind === 'minimal') this.aasNewSubmodelJson = this.aasMinimalSubmodelTemplate;
+    if (kind === 'property') this.aasNewSubmodelJson = this.aasPropertySubmodelTemplate;
+    if (kind === 'collection') this.aasNewSubmodelJson = this.aasCollectionSubmodelTemplate;
+  }
+
+  onAasSubmodelJsonFileSelected(event: any): void {
+    const file = event?.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      try {
+        const text = String(reader.result || '').trim();
+        if (text) {
+          JSON.parse(text);
+          this.aasNewSubmodelJson = text;
+        }
+      } catch {
+        // ignore parse errors
+      }
+    };
+    reader.readAsText(file);
+  }
+
+  /**
+   * Create AAS submodel
+   */
+  aasCreateSubmodel(): void {
+    if (!this.system?.id) return;
+    
+    try {
+      const body = JSON.parse(this.aasNewSubmodelJson);
+      this.aasManagementService.createSubmodel(this.system.id, body).subscribe({
+        next: () => {
+          this.showAasSubmodelDialog = false;
+          this.discoverAasSnapshot();
+          this.messageService.add({ key: 'sourceAAS', severity: 'success', summary: 'Submodel created', detail: 'Submodel was created successfully.', life: 3000 });
+        },
+        error: (err) => {
+          this.messageService.add({ key: 'sourceAAS', severity: 'error', summary: 'Error', detail: (err?.message || 'Failed to create submodel'), life: 5000 });
+        }
+      });
+    } catch (e) {
+      // Error handling
+    }
+  }
+
+  /**
+   * Open AAS create element dialog
+   */
+  openAasCreateElement(smId: string, parent?: string): void {
+    if (!this.system?.id) return;
+    
+    this.elementDialogData = {
+      submodelId: smId,
+      parentPath: parent,
+      systemId: this.system.id,
+      systemType: 'source'
+    };
+    this.showElementDialog = true;
+  }
+
+  /**
+   * Handle element dialog result
+   */
+  onElementDialogResult(result: AasElementDialogResult): void {
+    if (result.success && result.element) {
+      this.handleElementCreation(result.element);
+    } else if (result.error) {
+      if (result.error.includes('Duplicate entry') || result.error.includes('uk_element_submodel_idshortpath')) {
+        this.messageService.add({
+          key: 'sourceAAS',
+          severity: 'error',
+          summary: 'Duplicate Element',
+          detail: 'An element with this idShort already exists. Please use a different idShort.',
+          life: 5000
+        });
+      } else {
+        this.messageService.add({
+          key: 'sourceAAS',
+          severity: 'error',
+          summary: 'Error',
+          detail: result.error,
+          life: 5000
+        });
+      }
+    }
+  }
+
+  private async handleElementCreation(elementData: any): Promise<void> {
+    if (!this.system?.id) return;
+    
+    try {
+      const smIdB64 = this.aasService.encodeIdToBase64Url(elementData.submodelId);
+      await this.aasService.createElement(
+        this.system.id,
+        smIdB64,
+        elementData.body,
+        elementData.parentPath
+      ).toPromise();
+      this.messageService.add({
+        key: 'sourceAAS',
+        severity: 'success',
+        summary: 'Element Created',
+        detail: 'Element has been successfully created.',
+        life: 3000
+      });
+      this.discoverAasSnapshot();
+      this.fixTreeStructureAfterRefresh(elementData);
+      setTimeout(() => {
+        this.discoverAasSnapshot();
+        this.fixTreeStructureAfterRefresh(elementData);
+        if (this.selectedAasNode && this.selectedAasNode.data?.type === 'element') {
+          const smId = this.selectedAasNode.data.submodelId;
+          const idShortPath = this.selectedAasNode.data.idShortPath;
+          this.loadAasLiveElementDetails(smId, idShortPath, this.selectedAasNode);
+        }
+      }, 1000);
+      
+    } catch (error) {
+      const errorMessage = String((error as any)?.error || (error as any)?.message || 'Failed to create element');
+      if (errorMessage.includes('Duplicate entry')) {
+        this.messageService.add({
+          key: 'sourceAAS',
+          severity: 'error',
+          summary: 'Duplicate Element',
+          detail: 'An element with this idShort already exists. Please use a different idShort.',
+          life: 5000
+        });
+      } else {
+        this.messageService.add({
+          key: 'sourceAAS',
+          severity: 'error',
+          summary: 'Error',
+          detail: errorMessage,
+          life: 5000
+        });
+      }
+    }
+  }
+
+
+
+  /**
+   * Create AAS element (same logic as create dialog)
+   */
+
+
+  private findAasNodeByKey(key: string, nodes: TreeNode[] | undefined): TreeNode | null {
+    if (!nodes) return null;
+    for (const n of nodes) {
+      if (n.key === key) return n;
+      const found = this.findAasNodeByKey(key, n.children as TreeNode[]);
+      if (found) return found;
+    }
+    return null;
+  }
+
+  private mapElementToNode(submodelId: string, element: any): TreeNode {
+    const idShortPath = element.idShortPath || element.idShort;
+    const key = `${submodelId}::${idShortPath}`;
+    
+    return {
+      key: key,
+      label: element.idShort || element.idShortPath || 'Unknown',
+      data: {
+        type: 'element',
+        submodelId: submodelId,
+        idShortPath: idShortPath,
+        modelType: element.modelType,
+        raw: element
+      },
+      children: []
+    };
+  }
+
+  /**
+   * Refresh AAS node live (same logic as create dialog)
+   */
+  private refreshAasNodeLive(submodelId: string, parentPath: string, node?: TreeNode): void {
+    if (!this.system?.id) {
+      return;
+    }
+    
+    const key = parentPath ? `${submodelId}::${parentPath}` : submodelId;
+    this.aasService.listElements(this.system.id, submodelId, { depth: 'shallow', parentPath: parentPath || undefined, source: 'LIVE' })
+      .subscribe({
+        next: (resp) => {
+          const list = Array.isArray(resp) ? resp : (resp?.result ?? []);
+          const mapped = list.map((el: any) => {
+            if (!el.idShortPath && el.idShort) {
+              el.idShortPath = parentPath ? `${parentPath}/${el.idShort}` : el.idShort;
+            }
+            return this.mapElementToNode(submodelId, el);
+          });
+          if (node) {
+            node.children = mapped;
+            this.aasTreeNodes = [...this.aasTreeNodes];
+          } else {
+            const attachNode = this.findAasNodeByKey(submodelId, this.aasTreeNodes);
+            if (attachNode) {
+              attachNode.children = mapped;
+              this.aasTreeNodes = [...this.aasTreeNodes];
+            }
+          }
+        },
+        error: () => {}
+      });
+  }
+
+  /**
+   * Open AAS set value dialog
+   */
+  openAasSetValue(smId: string, element: any): void {
+    this.aasValueSubmodelId = smId;
+    this.aasValueElementPath = element.idShortPath || element.data?.idShortPath || element.raw?.idShortPath || element.idShort;
+    this.aasValueTypeHint = element.valueType || 'xs:string';
+    
+    if (this.aasSelectedLivePanel && this.selectedAasNode && this.selectedAasNode.data?.idShortPath === this.aasValueElementPath) {
+      this.aasValueNew = (this.aasSelectedLivePanel.value ?? '').toString();
+    } else {
+      this.aasValueNew = '';
+    }
+    this.showAasValueDialog = true;
+  }
+
+  /**
+   * Set AAS value
+   */
+  aasSetValue(): void {
+    if (!this.system?.id || !this.aasValueSubmodelId || !this.aasValueElementPath) return;
+    
+    const parsedValue = this.aasManagementService.parseValueForType(this.aasValueNew, this.aasValueTypeHint);
+    this.aasManagementService.setPropertyValue(this.system.id, this.aasValueSubmodelId, this.aasValueElementPath, parsedValue)
+      .subscribe({
+        next: () => {
+          this.showAasValueDialog = false;
+          const node = this.selectedAasNode;
+          if (node?.data) {
+            this.loadAasLiveElementDetails(node.data.submodelId, node.data.idShortPath, node);
+          } else {
+            const parent = this.aasValueElementPath.includes('/') ? this.aasValueElementPath.substring(0, this.aasValueElementPath.lastIndexOf('/')) : '';
+            const parentNode = parent ? this.aasManagementService.findNodeByKey(`${this.aasValueSubmodelId}::${parent}`, this.aasTreeNodes) : this.aasManagementService.findNodeByKey(this.aasValueSubmodelId, this.aasTreeNodes);
+            this.refreshAasNodeLive(this.aasValueSubmodelId, parent, parentNode || undefined);
+          }
+        },
+        error: () => {}
+      });
+  }
+
+  /**
+   * Delete AAS submodel
+   */
+  deleteAasSubmodel(submodelId: string): void {
+    if (!this.system?.id || !submodelId) return;
+    
+    this.aasManagementService.deleteSubmodel(this.system.id, submodelId).subscribe({
+      next: () => {
+        this.discoverAasSnapshot();
+        this.messageService.add({ key: 'sourceAAS', severity: 'success', summary: 'Submodel deleted', detail: 'Submodel, elements, and shell reference removed.' });
+      },
+      error: (err) => {
+        this.messageService.add({ key: 'sourceAAS', severity: 'error', summary: 'Error', detail: (err?.message || 'Failed to delete submodel') });
+      }
+    });
+  }
+
+  /**
+   * Delete AAS element (same logic as create dialog)
+   */
+  deleteAasElement(submodelId: string, idShortPath: string): void {
+    if (!this.system?.id || !submodelId || !idShortPath) return;
+    this.aasManagementService.deleteElement(this.system.id, submodelId, idShortPath).subscribe({
+      next: () => {
+        this.refreshAasTreeAfterDelete(submodelId, idShortPath);
+        this.messageService.add({ key: 'sourceAAS', severity: 'success', summary: 'Element Deleted', detail: 'Element has been successfully deleted.', life: 3000 });
+      },
+      error: (err) => { this.messageService.add({ key: 'sourceAAS', severity: 'error', summary: 'Error', detail: (err?.message || 'Failed to delete element') }); }
+    });
+  }
+
+  /**
+   * Get collection item count from the selected node
+   */
+  getCollectionItemCount(): string {
+    if (!this.selectedAasNode || !this.selectedAasNode.children) {
+      return '0';
+    }
+    
+    const count = this.selectedAasNode.children.length;
+    if (count === 0) {
+      return '0';
+    }
+    
+    return count.toString();
+  }
+
+  /**
+   * Refresh AAS tree after delete (same logic as create dialog)
+   */
+  private refreshAasTreeAfterDelete(submodelId: string, idShortPath: string): void {
+    const parent = idShortPath.includes('.') ? idShortPath.substring(0, idShortPath.lastIndexOf('.')) : '';
+    if (parent) {
+      const key = `${submodelId}::${parent}`;
+      const parentNode = this.findAasNodeByKey(key, this.aasTreeNodes);
+      if (parentNode) {
+        this.refreshAasNodeLive(submodelId, parent, parentNode);
+      } else {
+        this.refreshAasNodeLive(submodelId, '', undefined);
+      }
+    } else {
+      this.refreshAasNodeLive(submodelId, '', undefined);
+    }
+  }
+
+  // AASX upload methods
+  openAasxUpload(): void {
+    this.showAasxUpload = true;
+    this.aasxSelectedFile = null;
+  }
+
+  onAasxFileSelected(event: any): void {
+    this.aasxSelectedFile = event.files?.[0] || null;
+    if (this.aasxSelectedFile && this.system?.id) {
+      // Load preview to enable selective attach
+      this.aasService.previewAasx(this.system.id, this.aasxSelectedFile).subscribe({
+        next: (resp) => {
+          this.aasxPreview = resp?.submodels || (resp?.result ?? []);
+          // Normalize to array of {id,idShort,kind}
+          const arr = Array.isArray(this.aasxPreview) ? this.aasxPreview : (this.aasxPreview?.submodels ?? []);
+          this.aasxSelection = { submodels: (arr || []).map((sm: any) => ({ id: sm.id || sm.submodelId, full: true, elements: [] })) };
+        },
+        error: (err) => {
+          this.aasxPreview = null;
+          this.aasxSelection = { submodels: [] };
+        }
+      });
+    }
+  }
+
+  // AASX selective attach helpers
+  private getSmId(sm: any): string {
+    return sm?.id || sm?.submodelId || '';
+  }
+
+  getOrInitAasxSelFor(sm: any): { id: string; full: boolean; elements: string[] } {
+    const id = this.getSmId(sm);
+    let found = this.aasxSelection.submodels.find((s) => s.id === id);
+    if (!found) {
+      found = { id, full: true, elements: [] };
+      this.aasxSelection.submodels.push(found);
+    }
+    return found;
+  }
+
+  toggleAasxSubmodelFull(sm: any, checked: boolean): void {
+    const sel = this.getOrInitAasxSelFor(sm);
+    sel.full = checked;
+    if (checked) {
+      sel.elements = [];
+    }
+  }
+
+
+  uploadAasx(): void {
+    if (this.isUploadingAasx) return;
+    if (!this.aasxSelectedFile || !this.system?.id) {
+      this.messageService.add({ key: 'sourceAAS', severity: 'warn', summary: 'No file selected', detail: 'Please choose an .aasx file.' });
+      return;
+    }
+    
+    this.messageService.add({ key: 'sourceAAS', severity: 'info', summary: 'Uploading AASX', detail: `${this.aasxSelectedFile?.name} (${this.aasxSelectedFile?.size} bytes)` });
+    this.isUploadingAasx = true;
+    
+    // If preview is available and user made a selection, use selective attach; else default upload
+    const hasSelection = (this.aasxSelection?.submodels?.some(s => s.full) ?? false);
+    const req$ = hasSelection ? 
+      this.aasService.attachSelectedAasx(this.system.id, this.aasxSelectedFile, this.aasxSelection) : 
+      this.aasService.uploadAasx(this.system.id, this.aasxSelectedFile);
+    
+    req$.subscribe({
+      next: (resp) => {
+        this.isUploadingAasx = false;
+        this.showAasxUpload = false;
+        // Refresh the tree to show uploaded content
+        this.discoverAasSnapshot();
+        this.messageService.add({ key: 'sourceAAS', severity: 'success', summary: 'Upload accepted', detail: 'AASX uploaded. Snapshot refresh started.' });
+      },
+      error: (err) => {
+        this.isUploadingAasx = false;
+        this.messageService.add({ key: 'sourceAAS', severity: 'error', summary: 'Upload failed', detail: (err?.message || 'See console for details') });
+      }
+    });
+  }
+}

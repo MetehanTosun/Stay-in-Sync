@@ -37,7 +37,7 @@ public class TargetSystemEndpointResourceTest {
             em.createNativeQuery("SET FOREIGN_KEY_CHECKS=1").executeUpdate();
         } catch (Exception ignored) { }
 
-        var ts = targetSystemService.createTargetSystem(new TargetSystemDTO(null, "TS-R", "http://ts", null, "REST", null, java.util.Set.of()));
+        var ts = targetSystemService.createTargetSystem(new TargetSystemDTO(null, "TS-R", "http://ts", null, "REST", null, null, java.util.Set.of()));
         targetSystemId = ts.id();
     }
 

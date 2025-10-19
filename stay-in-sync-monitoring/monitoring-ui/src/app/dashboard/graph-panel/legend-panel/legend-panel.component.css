@@ -20,4 +20,21 @@
   margin: 0; /* Entfernt unnötige Außenabstände */
   padding: 0.5rem; /* Optional: Innenabstand anpassen */
 }
+.legend-item {
+  display: flex;
+  align-items: center; /* vertikal zentrieren */
+  gap: 8px; /* Abstand zwischen Symbol und Text */
+  margin-bottom: 4px; /* etwas Abstand zwischen den Zeilen */
+}
 
+.color-box {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  border-radius: 2px;
+}
+
+h1{
+  font-size: 1.25rem;
+  margin-left: -0.25rem;
+}

@@ -1,11 +1,14 @@
 package de.unistuttgart.stayinsync.syncnode.syncjob;
 
 import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import de.unistuttgart.stayinsync.exception.SyncNodeException;
 import de.unistuttgart.stayinsync.scriptengine.message.TransformationResult;
+import de.unistuttgart.stayinsync.syncnode.domain.AasUpdateValueDirective;
 import de.unistuttgart.stayinsync.syncnode.domain.UpsertDirective;
 import de.unistuttgart.stayinsync.transport.dto.TransformationMessageDTO;
+import de.unistuttgart.stayinsync.transport.dto.targetsystems.AasTargetArcMessageDTO;
 import de.unistuttgart.stayinsync.transport.dto.targetsystems.RequestConfigurationMessageDTO;
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.MeterRegistry;
@@ -31,7 +34,16 @@ public class TargetSystemWriterService {
     int rateLimit;
 
     @Inject
-    DirectiveExecutor directiveExecutor;
+    DirectiveExecutor restDirectiveExecutor;
+
+    @Inject
+    AasDirectiveExecutor aasDirectiveExecutor;
+
+    private record DirectiveTask(
+            JsonNode directiveNode,
+            String arcAlias,
+            TransformationMessageDTO transformationContext
+    ){}
 
     @Inject
     MeterRegistry meterRegistry;
@@ -46,20 +58,13 @@ public class TargetSystemWriterService {
                 .register(meterRegistry);
     }
 
-    private record DirectiveWithContext(
-            UpsertDirective directive,
-            RequestConfigurationMessageDTO arcConfig,
-            String targetApiUrl) {
-    }
-
     public Uni<Void> processDirectives(TransformationResult result, TransformationMessageDTO transformationContext) {
         try {
             MDC.put("transformationId", transformationContext.id().toString());
 
-            Map<String, List<UpsertDirective>> directiveMap = objectMapper.convertValue(
+            Map<String, List<JsonNode>> directiveMap = objectMapper.convertValue(
                     result.getOutputData(),
-                    new TypeReference<>() {
-                    }
+                    new TypeReference<>() {}
             );
 
             if (directiveMap == null || directiveMap.isEmpty()) {
@@ -67,25 +72,13 @@ public class TargetSystemWriterService {
                 return Uni.createFrom().voidItem();
             }
 
-            List<DirectiveWithContext> allTasks = new ArrayList<>();
+            List<DirectiveTask> allTasks = new ArrayList<>();
             directiveMap.forEach((arcAlias, directives) -> {
-                try {
-                    RequestConfigurationMessageDTO arcConfig = findArcConfig(transformationContext, arcAlias);
-                    final String targetApiUrl = arcConfig.baseUrl();
+                for(JsonNode directiveNode : directives){
+                    allTasks.add(new DirectiveTask(directiveNode, arcAlias, transformationContext));
 
-                    if (targetApiUrl == null || targetApiUrl.isBlank()) {
-                        Log.errorf("TID: %d - Skipping ARC '%s' because its base URL is missing in the configuration.",
-                                transformationContext.id(), arcAlias);
-                        return;
-                    }
-
-                    for (UpsertDirective directive : directives) {
-                        allTasks.add(new DirectiveWithContext(directive, arcConfig, targetApiUrl));
-                        // Increment the Prometheus counter for each processed message
-                        processedMessagesCounter.increment();
-                    }
-                } catch (SyncNodeException e) {
-                    Log.errorf("Malformed ARC Configuration for alias '%s': %s. Skipping all directives for this ARC.", arcAlias, e.getMessage());
+                    // Increment the Prometheus counter for each processed message
+                    processedMessagesCounter.increment();
                 }
             });
 
@@ -98,33 +91,64 @@ public class TargetSystemWriterService {
                     allTasks.size(), result.getJobId(), rateLimit);
 
             return Multi.createFrom().iterable(allTasks)
-                    .onItem().transformToUni(task ->
-                            directiveExecutor.execute(
-                                            task.directive(),
-                                            task.arcConfig(),
-                                            transformationContext.id(),
-                                            task.targetApiUrl())
+                    .onItem().transformToUni(task -> {
+                        try {
+                            return dispatchAndExecute(task)
                                     .onFailure().recoverWithItem(failure -> {
-                                        Log.errorf(failure, "A single directive execution failed but processing will continue for job %s.", result.getJobId());
+                                        Log.errorf(failure, "A recoverable execution error occurred for a directive for ARC '%s'. Processing continues.", task.arcAlias());
                                         return null;
-                                    })
-                    )
+                                    });
+                        } catch (SyncNodeException e) {
+                            Log.errorf("A recoverable configuration error occurred: %s. This directive was skipped, but processing continues.", e.getMessage());
+                            return Uni.createFrom().nullItem();
+                        }
+                    })
                     .merge(rateLimit)
                     .collect().asList()
                     .onItem().invoke(results -> Log.infof("Finished processing all directives for job %s. Processed items: %d",
                             result.getJobId(), results.size()))
                     .replaceWithVoid();
 
+        } catch (Exception e) {
+            Log.errorf(e, "An unexpected error occurred during the initial setup of directive processing for job %s.", result.getJobId());
+            return Uni.createFrom().failure(e);
         } finally {
             MDC.remove("transformationId");
         }
     }
 
-    private RequestConfigurationMessageDTO findArcConfig(TransformationMessageDTO transformationContext, String arcAlias) throws SyncNodeException {
+    private Uni<Void> dispatchAndExecute(DirectiveTask task) throws SyncNodeException {
+        JsonNode directiveNode = task.directiveNode();
+        String directiveType = directiveNode.has("__directiveType") ? directiveNode.get("__directiveType").asText() : "unknown";
+
+        if (directiveType.endsWith("_UpsertDirective")) {
+            RequestConfigurationMessageDTO arcConfig = findRestArcConfig(task.transformationContext(), task.arcAlias());
+            UpsertDirective directive = objectMapper.convertValue(directiveNode, UpsertDirective.class);
+            return restDirectiveExecutor.execute(directive, arcConfig, task.transformationContext().id(), arcConfig.baseUrl());
+        }
+
+        if ("AasUpdateValueDirective".equals(directiveType)) {
+            AasTargetArcMessageDTO arcConfig = findAasArcConfig(task.transformationContext(), task.arcAlias());
+            AasUpdateValueDirective directive = objectMapper.convertValue(directiveNode, AasUpdateValueDirective.class);
+            return aasDirectiveExecutor.executeUpdateValue(directive, arcConfig, task.transformationContext().id());
+        }
+
+        Log.warnf("Unknown directive type '%s' for arc '%s'. Skipping task.", directiveType, task.arcAlias());
+        return Uni.createFrom().voidItem();
+    }
+
+    private RequestConfigurationMessageDTO findRestArcConfig(TransformationMessageDTO transformationContext, String arcAlias) throws SyncNodeException {
         return transformationContext.targetRequestConfigurationMessageDTOS().stream()
                 .filter(c -> c.alias().equals(arcAlias))
                 .findFirst()
                 .orElseThrow(() -> new SyncNodeException("Target ARC Configuration Error",
                         "Requested ARC alias is not present in the provided transformation context: " + arcAlias));
+    }
+
+    private AasTargetArcMessageDTO findAasArcConfig(TransformationMessageDTO context, String alias) throws SyncNodeException {
+        return context.aasTargetRequestConfigurationMessageDTOS().stream()
+                .filter(c -> c.alias().equals(alias))
+                .findFirst()
+                .orElseThrow(() -> new SyncNodeException("Target AAS ARC Config Error", "Config not found for alias: " + alias));
     }
 }

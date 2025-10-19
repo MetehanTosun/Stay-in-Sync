@@ -1,7 +1,7 @@
 package de.unistuttgart.stayinsync.core.service;
 
-import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.SourceSystem;
-import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.SourceSystemEndpoint;
+import de.unistuttgart.stayinsync.core.configuration.persistence.entities.sync.SourceSystem;
+import de.unistuttgart.stayinsync.core.configuration.persistence.entities.sync.SourceSystemEndpoint;
 import de.unistuttgart.stayinsync.core.configuration.rest.dtos.CreateSourceSystemDTO;
 import de.unistuttgart.stayinsync.core.configuration.service.OpenApiSpecificationParserService;
 import de.unistuttgart.stayinsync.core.configuration.service.SourceSystemService;
@@ -428,8 +428,11 @@ public class OpenApiSpecificationParserServiceTest extends BaseTest {
         
         assertNotNull(endpoint.requestBodySchema, "Request body schema should be extracted");
         assertNotNull(endpoint.responseBodySchema, "Response body schema should be extracted");
-        assertTrue(endpoint.requestBodySchema.contains("User"), "Request schema should contain User reference");
-        assertTrue(endpoint.responseBodySchema.contains("User"), "Response schema should contain User reference");
+        // After resolving refs, ensure expected fields exist in the cleaned schema
+        assertTrue(endpoint.requestBodySchema.contains("properties"), "Request schema should include properties");
+        assertTrue(endpoint.requestBodySchema.contains("profile"), "Request schema should include nested profile");
+        assertTrue(endpoint.responseBodySchema.contains("properties"), "Response schema should include properties");
+        assertTrue(endpoint.responseBodySchema.contains("profile"), "Response schema should include nested profile");
     }
 
     /**

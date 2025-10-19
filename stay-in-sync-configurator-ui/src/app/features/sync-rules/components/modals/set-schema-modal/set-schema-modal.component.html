@@ -1,0 +1,45 @@
+<p-dialog header="Edit JSON Schema" [(visible)]="visible" [modal]="true" [closable]="false" [style]="{ width: '800px' }"
+  [contentStyle]="{ height: '75vh' }" [styleClass]="'set-schema-dialog'">
+  <form (ngSubmit)="submit()" class="p-fluid">
+    <div class="form-field">
+      <!-- MARK: Modal Header -->
+      <label for="schema-editor">JSON Schema</label>
+      <div class="schema-editor-wrapper">
+        <ngx-monaco-editor [options]="jsonEditorOptions" [model]="editorModel"
+          (onInit)="onEditorInit($event)"></ngx-monaco-editor>
+      </div>
+      <!-- MARK: Error Display -->
+      <div *ngIf="parseError" class="parse-error">Parse error: {{ parseError }}</div>
+      <div *ngIf="schemaValidationErrors?.length" class="schema-errors">
+        <div class="schema-errors-title">Schema validation errors:</div>
+        <ul>
+          <li *ngFor="let e of schemaValidationErrors">{{ e }}</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- MARK: Form Actions -->
+    <div class="form-actions">
+      <!-- File Upload -->
+      <div class="file-upload">
+        <input id="schemaFile" type="file" accept=".json,application/json" (change)="onSchemaFileSelected($event)"
+          style="display:none" #schemaFile/>
+        <p-button label="Upload JSON" icon="pi pi-upload" (click)="triggerFileSelector()"></p-button>
+        <span *ngIf="uploadedFileName" class="uploaded-name" [title]="uploadedFileName">{{
+          getTruncatedFileName(uploadedFileName) }}
+          <p-button label="Clear" icon="pi pi-times" styleClass="p-button-text"
+            (click)="clearUploadedFile()"></p-button>
+        </span>
+      </div>
+
+      <!-- Editor Actions -->
+      <div class="actions-right">
+        <p-button id="format-button" label="Format" icon="pi pi-fw pi-undo" type="button" (click)="format()"
+          styleClass="p-button-outlined"></p-button>
+        <p-button id="save-button" label="Save" icon="pi pi-save" type="submit" styleClass="save-btn"></p-button>
+        <p-button id="cancel-button" label="Cancel" icon="pi pi-times" type="button" (click)="closeModal()"
+          styleClass="cancel-btn p-button-secondary"></p-button>
+      </div>
+    </div>
+  </form>
+</p-dialog>

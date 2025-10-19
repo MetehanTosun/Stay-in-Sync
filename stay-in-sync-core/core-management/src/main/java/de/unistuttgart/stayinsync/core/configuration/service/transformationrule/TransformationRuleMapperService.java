@@ -6,7 +6,7 @@ import de.unistuttgart.graphengine.dto.vFlow.*;
 import de.unistuttgart.graphengine.dto.transformationrule.GraphDTO;
 import de.unistuttgart.graphengine.dto.transformationrule.InputDTO;
 import de.unistuttgart.graphengine.dto.transformationrule.NodeDTO;
-import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.TransformationRule;
+import de.unistuttgart.stayinsync.core.configuration.persistence.entities.sync.TransformationRule;
 import de.unistuttgart.stayinsync.core.configuration.exception.CoreManagementException;
 import de.unistuttgart.stayinsync.core.configuration.rest.dtos.TransformationRuleDTO;
 import io.quarkus.logging.Log;
@@ -41,7 +41,8 @@ public class TransformationRuleMapperService {
      */
     public TransformationRuleDTO toRuleDTO(TransformationRule entity) {
         Log.debugf("Mapping entity to TransformationRuleDTO with id: %d", entity != null ? entity.id : null);
-        if (entity == null) return null;
+        if (entity == null)
+            return null;
 
         Long transformationId = entity.transformation != null ? entity.transformation.id : null;
         Log.infof("Successfully mapped entity id %d to TransformationRuleDTO.", entity.id);
@@ -50,16 +51,17 @@ public class TransformationRuleMapperService {
                 entity.name,
                 entity.description,
                 entity.graphStatus,
-                transformationId
-        );
+                transformationId);
     }
 
     /**
      * Maps a persisted TransformationRule entity to a full GraphDTO.
      *
      * @param entity The TransformationRule entity from the database.
-     * @return The corresponding GraphDTO, including id, name, status, and node structure.
-     * @throws CoreManagementException if parsing the graph JSON from the entity fails.
+     * @return The corresponding GraphDTO, including id, name, status, and node
+     *         structure.
+     * @throws CoreManagementException if parsing the graph JSON from the entity
+     *                                 fails.
      */
     public GraphDTO toGraphDTO(TransformationRule entity) {
         Log.debugf("Mapping entity to GraphDTO with id: %d", entity != null ? entity.id : null);
@@ -68,24 +70,28 @@ public class TransformationRuleMapperService {
         }
 
         try {
-            // 1. Deserialize the JSON string into the basic GraphDTO structure (containing nodes).
+            // 1. Deserialize the JSON string into the basic GraphDTO structure (containing
+            // nodes).
             GraphDTO dto = jsonObjectMapper.readValue(entity.graph.graphDefinitionJson, GraphDTO.class);
             Log.infof("Successfully mapped entity id %d to GraphDTO.", entity.id);
             return dto;
 
         } catch (JsonProcessingException e) {
             Log.errorf(e, "Failed to parse graph JSON for TransformationRule with id %d", entity.id);
-            throw new CoreManagementException(Response.Status.INTERNAL_SERVER_ERROR, "Mapping Error", "Failed to create GraphDTO from entity JSON.", e);
+            throw new CoreManagementException(Response.Status.INTERNAL_SERVER_ERROR, "Mapping Error",
+                    "Failed to create GraphDTO from entity JSON.", e);
         }
     }
 
     /**
-     * Converts the graph from a TransformationRule entity into the VFlowGraphDTO format
+     * Converts the graph from a TransformationRule entity into the VFlowGraphDTO
+     * format
      * that the frontend UI expects.
      *
      * @param entity The TransformationRule entity from the database.
      * @return The VFlowGraphDTO with separate lists for nodes and edges.
-     * @throws CoreManagementException if parsing the graph JSON from the entity fails.
+     * @throws CoreManagementException if parsing the graph JSON from the entity
+     *                                 fails.
      */
     public VFlowGraphDTO toVFlowDto(TransformationRule entity) {
         Log.debugf("Mapping entity to VFlowGraphDTO with id: %d", entity != null ? entity.id : null);
@@ -106,7 +112,8 @@ public class TransformationRuleMapperService {
 
         } catch (JsonProcessingException e) {
             Log.errorf(e, "Failed to parse graph JSON for TransformationRule with id %d", entity.id);
-            throw new CoreManagementException(Response.Status.INTERNAL_SERVER_ERROR, "Mapping Error", "Failed to create VFlowGraphDTO from entity JSON.", e);
+            throw new CoreManagementException(Response.Status.INTERNAL_SERVER_ERROR, "Mapping Error",
+                    "Failed to create VFlowGraphDTO from entity JSON.", e);
         }
     }
 
@@ -114,7 +121,8 @@ public class TransformationRuleMapperService {
      * Helper to map a list of flattened NodeDTOs to a list of VFlowNodeDTOs.
      */
     private List<VFlowNodeDTO> mapNodeDTOsToVFlowNodes(List<NodeDTO> nodeDtos) {
-        if (nodeDtos == null) return new ArrayList<>();
+        if (nodeDtos == null)
+            return new ArrayList<>();
         List<VFlowNodeDTO> vflowNodes = new ArrayList<>();
         for (NodeDTO nodeDto : nodeDtos) {
             VFlowNodeDTO vflowNode = new VFlowNodeDTO();
@@ -140,6 +148,9 @@ public class TransformationRuleMapperService {
             data.setChangeDetectionMode(nodeDto.getChangeDetectionMode());
             data.setChangeDetectionActive(nodeDto.isChangeDetectionActive());
 
+            if (nodeDto.getNodeType().equals("CONFIG"))
+                data.setTimeWindowMillis(nodeDto.getTimeWindowMillis());
+
             vflowNode.setData(data);
             vflowNodes.add(vflowNode);
         }
@@ -147,10 +158,12 @@ public class TransformationRuleMapperService {
     }
 
     /**
-     * Helper to reconstruct the list of VFlowEdgeDTOs from the flattened inputNodes properties.
+     * Helper to reconstruct the list of VFlowEdgeDTOs from the flattened inputNodes
+     * properties.
      */
     private List<VFlowEdgeDTO> createVFlowEdgesFromNodeDTOs(List<NodeDTO> nodeDtos) {
-        if (nodeDtos == null) return new ArrayList<>();
+        if (nodeDtos == null)
+            return new ArrayList<>();
 
         List<VFlowEdgeDTO> vflowEdges = new ArrayList<>();
         for (NodeDTO targetNodeDto : nodeDtos) {
@@ -164,10 +177,9 @@ public class TransformationRuleMapperService {
                     edge.setTarget(targetIdStr);
                     edge.setId(sourceIdStr + " -> " + targetIdStr);
 
-                    if(targetNodeDto.getInputTypes() != null && targetNodeDto.getInputTypes().size() > 1) {
+                    if (targetNodeDto.getInputTypes() != null && targetNodeDto.getInputTypes().size() > 1) {
                         edge.setTargetHandle("input-" + inputDto.getOrderIndex());
                     }
-
 
                     vflowEdges.add(edge);
                 }

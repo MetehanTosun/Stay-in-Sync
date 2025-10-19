@@ -1,169 +1,125 @@
-<!-- MARK: Table -->
 <div style="height: 60rem;">
-<p-table
-  #dt
-  [value]="filteredRules"
-  dataKey="id"
-  [rows]="10"
-  [loading]="isLoading"
-  [paginator]="true"
-  paginatorPosition="bottom"
-  [scrollable]="true"
-  scrollHeight="flex"
-  [globalFilterFields]="['name', 'description', 'graphStatus']"
->
-
-  <ng-template #caption>
-    <div class="flex items-center justify-between">
-      <div class="p-toolbar-group-left">
-        <span class="text-xl font-bold">Synchronization Rules</span>
-      </div>
-      <div class="p-toolbar-group-right flex gap-2">
-<!--        <input-->
-<!--          pInputText-->
-<!--          type="text"-->
-<!--          [(ngModel)]="searchTerm"-->
-<!--          placeholder="Search by rule name..."-->
-<!--        />-->
-        <p-button
-          label="Create new Rule"
-          icon="pi pi-plus"
-          (click)="openCreateRuleModal()"
-          id="create-button"
-        ></p-button>
-      </div>
-    </div>
-  </ng-template>
-
-  <ng-template #header>
-    <tr>
-      <th style="width:25%">Name</th>
-      <th style="width:35%">Description</th>
-      <th style="width:20%">Status</th>
-      <th style="width:20%">Actions</th>
-    </tr>
-    <tr>
-      <th>
-        <p-columnFilter type="text" field="name" placeholder="Search by name" ariaLabel="Filter Name"></p-columnFilter>
-      </th>
-      <th>
-        <p-columnFilter type="text" field="description" placeholder="Search by description" ariaLabel="Filter Description"></p-columnFilter>
-      </th>
-      <th>
-        <p-columnFilter field="graphStatus" matchMode="equals" [showMenu]="false">
-          <ng-template #filter let-filter="filterCallback">
-            <p-select [(ngModel)]="selectedStatus"
-                      [options]="[{label: 'Draft', value: 'DRAFT'}, {label: 'Finalized', value: 'FINALIZED'}]"
-                      (onChange)="filter($event.value)"
-                      placeholder="Select Status"
-                      [showClear]="true"
-                      [style]="{ 'min-width': '12rem' }">
-              <ng-template let-option #item>
-                <p-tag [value]="option.label" [severity]="option.value === 'FINALIZED' ? 'success' : 'warning'"></p-tag>
-              </ng-template>
-            </p-select>
-          </ng-template>
-        </p-columnFilter>
-      </th>
-      <th></th>
-    </tr>
-  </ng-template>
-
-  <ng-template #body let-rule>
-    <tr>
-      <td>
-        <a href="javascript:void(0)"
-           class="rule-name-hitbox"
-           (click)="expandedRuleId = expandedRuleId === rule.id ? null : rule.id">
-          {{ rule.name }}
-        </a>
-      </td>
-      <td>
-        {{ rule.description }}
-      </td>
-      <td>
-        <p-tag [value]="rule.graphStatus === 'FINALIZED' ? 'Finalized' : 'Draft'"
-               [severity]="getSeverity(rule.graphStatus)">
-        </p-tag>
-      </td>
-      <td>
-        <p-button
-          icon="pi pi-pencil"
-          class="p-button-rounded p-button-text"
-          (click)="editRule(rule.id)"
-          styleClass="p-button-rounded p-button-text">
-        </p-button>
-        <p-button
-          icon="pi pi-trash"
-          class="p-button-rounded p-button-danger p-button-text"
-          (click)="deleteRule(rule.id)"
-          styleClass="p-button-rounded p-button-danger p-button-text">
-        </p-button>
-      </td>
-    </tr>
-  </ng-template>
-
-  <ng-template #emptymessage>
-    <tr>
-      <td colspan="4">
-        <div class="empty-message" style="text-align: center">
-          <h4>No rules available</h4>
-          <p>Create your first rule to get started.</p>
+  <p-table
+    #dt
+    [value]="filteredRules"
+    dataKey="id"
+    [rows]="10"
+    [loading]="isLoading"
+    [paginator]="true"
+    paginatorPosition="bottom"
+    [scrollable]="true"
+    scrollHeight="flex"
+    [globalFilterFields]="['name', 'description', 'graphStatus']"
+  >
+    <!-- MARK: Page Header -->
+    <ng-template #caption>
+      <div class="flex items-center justify-between">
+        <div class="p-toolbar-group-left">
+          <span class="text-xl font-bold">Synchronization Rules</span>
         </div>
-      </td>
-    </tr>
-  </ng-template>
-</p-table>
+        <div class="p-toolbar-group-right flex gap-2">
+          <p-button
+            label="Create new Rule"
+            icon="pi pi-plus"
+            (click)="showCreateRule = true"
+            id="create-button"
+            aria-label="Create new rule"
+          ></p-button>
+        </div>
+      </div>
+    </ng-template>
+
+
+    <!-- MARK: Table Header -->
+    <ng-template #header>
+      <tr>
+        <th style="width:25%">Name</th>
+        <th style="width:35%">Description</th>
+        <th style="width:20%">Status</th>
+        <th style="width:20%">Actions</th>
+      </tr>
+      <tr>
+        <th>
+          <p-columnFilter type="text" field="name" placeholder="Search by name" ariaLabel="Filter Name"></p-columnFilter>
+        </th>
+        <th>
+          <p-columnFilter type="text" field="description" placeholder="Search by description" ariaLabel="Filter Description"></p-columnFilter>
+        </th>
+        <th>
+          <p-columnFilter field="graphStatus" matchMode="equals" [showMenu]="false">
+            <ng-template #filter let-filter="filterCallback">
+              <p-select
+                [options]="statusOptions"
+                (onChange)="filter($event.value)"
+                placeholder="Select Status"
+                [showClear]="true"
+                aria-label="Filter by status"
+                [style]="{ 'min-width': '12rem' }"
+              >
+                <ng-template let-option>
+                  <p-tag [value]="option.label" [severity]="option.value === 'FINALIZED' ? 'success' : 'warning'"></p-tag>
+                </ng-template>
+              </p-select>
+            </ng-template>
+          </p-columnFilter>
+        </th>
+        <th></th>
+      </tr>
+    </ng-template>
+
+
+    <!-- MARK: Table Body -->
+    <ng-template #body let-rule>
+      <tr>
+        <td>
+          {{ rule.name }}
+        </td>
+        <td>
+          {{ rule.description }}
+        </td>
+        <td>
+          <p-tag
+            [value]="rule.graphStatus === 'FINALIZED' ? 'Finalized' : 'Draft'"
+            [severity]="getSeverity(rule.graphStatus)"
+          >
+          </p-tag>
+        </td>
+        <td>
+          <p-button
+            icon="pi pi-pencil"
+            styleClass="p-button-rounded p-button-text"
+            (click)="editRule(rule.id)"
+            [attr.aria-label]="'Edit rule ' + rule.name"
+          ></p-button>
+          <p-button
+            icon="pi pi-trash"
+            styleClass="p-button-rounded p-button-danger p-button-text"
+            (click)="deleteRule(rule.id)"
+            [attr.aria-label]="'Delete rule ' + rule.name"
+          ></p-button>
+        </td>
+      </tr>
+    </ng-template>
+
+    <!-- MARK: Empty Table Fallback -->
+    <ng-template #emptymessage>
+      <tr>
+        <td colspan="4" >
+          <div class="flex flex-col items-center justify-center h-[60vh]">
+            <h4 class="text-lg font-semibold mb-2">No rules available</h4>
+            <p class="text-gray-600">
+            Create your first rule to get started.          </p>
+          </div>
+        </td>
+      </tr>
+    </ng-template>
+  </p-table>
 </div>
 
 <!-- MARK: Create Rule Modal -->
-<p-dialog
-  header="Create new Rule"
+<app-create-rule-modal
   [(visible)]="showCreateRule"
-  [modal]="true"
-  [closable]="false"
-  [style]="{ width: '450px' }"
->
-<form (ngSubmit)="createRule()" class="p-fluid">
-  <!-- Neuer Regelname -->
-  <div class="form-field">
-    <label for="rule-name">Name</label>
-    <input name="rule-name" type="text" [(ngModel)]="newRule.name" placeholder="Demo Rule" class="form-input"
-           required>
-  </div>
-
-  <!-- Neue Regelbeschreibung -->
-  <div class="field mb-3">
-    <label for="rule-description" class="font-bold mb-1">Beschreibung</label>
-    <textarea
-      id="rule-description"
-      name="rule-description"
-      [(ngModel)]="newRule.description"
-      placeholder="Beschreibe die Regel..."
-      class="form-input w-full"
-      rows="3"
-      required
-      autocomplete="off"
-    ></textarea>
-  </div>
-
-    <!-- Form Actions -->
-    <div class="flex justify-content-end gap-2 mt-3">
-      <p-button
-        id="save-button"
-        label="Save"
-        icon="pi pi-save"
-        type="submit"
-      ></p-button>
-      <p-button
-        id="cancel-button"
-        label="Cancel"
-        icon="pi pi-times"
-        class="p-button-secondary"
-        type="button"
-        [style]="{ 'background-color': '#f44336', 'border-color': '#f44336', 'color': '#fff' }"
-        (click)="closeCreateRuleModal()"
-      ></p-button>
-    </div>
-  </form>
-</p-dialog>
+  [rules]="rules"
+  (created)="onCreateRule($event)"
+  (cancelled)="showCreateRule = false"
+></app-create-rule-modal>

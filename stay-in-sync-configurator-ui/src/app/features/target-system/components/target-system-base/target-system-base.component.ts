@@ -7,17 +7,22 @@ import { ButtonModule } from 'primeng/button';
 import { DialogModule } from 'primeng/dialog';
 import { InputTextModule } from 'primeng/inputtext';
 import { TextareaModule } from 'primeng/textarea';
-import { ToolbarModule } from 'primeng/toolbar';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { ConfirmationService, MessageService } from 'primeng/api';
 import { ConfirmationDialogComponent, ConfirmationDialogData } from '../../../source-system/components/confirmation-dialog/confirmation-dialog.component';
+import { TabViewModule } from 'primeng/tabview';
 import { TargetSystemResourceService } from '../../service/targetSystemResource.service';
 import { TargetSystemDTO } from '../../models/targetSystemDTO';
 import { CreateTargetSystemComponent } from '../create-target-system/create-target-system.component';
 import { ManageTargetEndpointsComponent } from '../manage-target-endpoints/manage-target-endpoints.component';
 import { ManageApiHeadersComponent } from '../../../source-system/components/manage-api-headers/manage-api-headers.component';
-import { SearchBarComponent } from '../../../source-system/components/search-bar/search-bar.component';
+import { AasManagementComponent } from '../aas-management/aas-management.component';
+import { ToastModule } from 'primeng/toast';
 
+/**
+ * Component responsible for displaying, creating, editing, and managing Target Systems.
+ * Provides CRUD operations, search filtering, and integration with AAS and API configuration.
+ */
 @Component({
   standalone: true,
   selector: 'app-target-system-base',
@@ -31,14 +36,17 @@ import { SearchBarComponent } from '../../../source-system/components/search-bar
     DialogModule,
     InputTextModule,
     ConfirmDialogModule,
+    TabViewModule,
     CreateTargetSystemComponent,
     ManageTargetEndpointsComponent,
     ManageApiHeadersComponent,
-    SearchBarComponent,
     TextareaModule,
-    ConfirmationDialogComponent
+    ConfirmationDialogComponent,
+    AasManagementComponent,
+    ToastModule
   ],
-  styleUrls: ['./target-system-base.component.css']
+  styleUrls: ['./target-system-base.component.css'],
+  providers: [MessageService]
 })
 export class TargetSystemBaseComponent implements OnInit {
   systems: TargetSystemDTO[] = [];
@@ -58,8 +66,13 @@ export class TargetSystemBaseComponent implements OnInit {
     private api: TargetSystemResourceService,
     private fb: FormBuilder,
     private confirm: ConfirmationService,
+    private messageService: MessageService,
   ) {}
 
+  /**
+   * Initializes forms for creating and managing Target Systems.
+   * Loads all available systems on component startup.
+   */
   ngOnInit(): void {
     this.form = this.fb.group({
       name: ['', Validators.required],
@@ -68,15 +81,17 @@ export class TargetSystemBaseComponent implements OnInit {
       description: ['']
     });
     this.load();
-    // initialize manageForm to avoid undefined on first render
     this.manageForm = this.fb.group({
       name: ['', Validators.required],
       apiUrl: ['', [Validators.required, Validators.pattern('https?://.+')]],
-      apiType: ['', Validators.required],
       description: ['']
     });
   }
 
+  /**
+   * Fetches all Target Systems from the backend and updates the display list.
+   * Handles loading states and error suppression.
+   */
   load(): void {
     this.loading = true;
     this.api.getAll().subscribe({
@@ -85,16 +100,24 @@ export class TargetSystemBaseComponent implements OnInit {
     });
   }
 
+  /**
+   * Updates the search term and filters the displayed systems accordingly.
+   * @param term The text entered in the search field.
+   */
   onSearchChange(term: string): void {
     this.searchTerm = term || '';
     this.applyFilter();
   }
 
+  /** Clears the current search filter and restores the full system list. */
   onSearchClear(): void {
     this.searchTerm = '';
     this.applyFilter();
   }
 
+  /**
+   * Applies a case-insensitive filter to the list of Target Systems based on name, description, or URL.
+   */
   private applyFilter(): void {
     const t = this.searchTerm.toLowerCase().trim();
     if (!t) { this.displaySystems = this.systems.slice(); return; }
@@ -106,11 +129,16 @@ export class TargetSystemBaseComponent implements OnInit {
     );
   }
 
+  /** Opens the creation wizard for a new Target System. */
   openCreate(): void {
     this.editing = null;
     this.wizardVisible = true;
   }
 
+  /**
+   * Opens the edit dialog prefilled with the selected Target System data.
+   * @param row The Target System to edit.
+   */
   edit(row: TargetSystemDTO): void {
     this.editing = row;
     this.dialogTitle = 'Target System bearbeiten';
@@ -123,6 +151,10 @@ export class TargetSystemBaseComponent implements OnInit {
     this.showDialog = true;
   }
 
+  /**
+   * Saves a Target System (either creating a new one or updating an existing one).
+   * Automatically reloads the list after saving.
+   */
   save(): void {
     const payload: TargetSystemDTO = { ...this.editing, ...this.form.value } as TargetSystemDTO;
     if (this.editing?.id) {
@@ -132,16 +164,21 @@ export class TargetSystemBaseComponent implements OnInit {
     }
   }
 
+  /** Opens the creation wizard and closes any open dialog. */
   openWizard(): void {
     this.showDialog = false;
     this.wizardVisible = true;
   }
 
+  /**
+   * Opens a confirmation dialog before deleting a Target System.
+   * @param row The Target System selected for deletion.
+   */
   confirmDelete(row: TargetSystemDTO): void {
     this.systemToDelete = row;
     this.confirmationData = {
       title: 'Confirm Delete',
-      message: `Are you sure you want to delete "${row.name}"?`,
+      message: `Are you sure you want to delete "${row.name}"? This action cannot be undone.`,
       confirmLabel: 'Delete',
       cancelLabel: 'Cancel',
       severity: 'danger'
@@ -149,19 +186,28 @@ export class TargetSystemBaseComponent implements OnInit {
     this.showConfirmationDialog = true;
   }
 
+  /**
+   * Deletes a Target System and shows a success notification on completion.
+   * @param row The Target System to delete.
+   */
   remove(row: TargetSystemDTO): void {
     if (!row.id) return;
-    this.api.delete(row.id).subscribe({ next: () => this.load() });
+    this.api.delete(row.id).subscribe({ next: () => { this.load(); this.messageService.add({ key: 'targetBase', severity: 'success', summary: 'Target System Deleted', detail: 'Target system has been removed.', life: 3000 }); } });
   }
 
+  /** Closes the current dialog window without saving changes. */
   closeDialog(): void { this.showDialog = false; }
 
+  /**
+   * Opens the management dialog for the selected Target System.
+   * Allows editing of metadata and configuration details.
+   * @param row The Target System selected for management.
+   */
   manage(row: TargetSystemDTO): void {
     this.selectedSystem = row;
     this.manageForm = this.fb.group({
       name: [row.name || '', Validators.required],
       apiUrl: [row.apiUrl || '', [Validators.required, Validators.pattern('https?://.+')]],
-      apiType: [row.apiType || '', Validators.required],
       description: [row.description || '']
     });
     this.showDetailDialog = true;
@@ -171,13 +217,16 @@ export class TargetSystemBaseComponent implements OnInit {
   showConfirmationDialog = false;
   confirmationData: ConfirmationDialogData = {
     title: 'Confirm Delete',
-    message: 'Are you sure?',
+    message: 'Are you sure you want to delete this target system?',
     confirmLabel: 'Delete',
     cancelLabel: 'Cancel',
     severity: 'danger'
   };
   systemToDelete: TargetSystemDTO | null = null;
 
+  /**
+   * Executes deletion logic after the user confirms the action in the confirmation dialog.
+   */
   onConfirmationConfirmed() {
     if (this.systemToDelete) {
       this.remove(this.systemToDelete);
@@ -186,22 +235,81 @@ export class TargetSystemBaseComponent implements OnInit {
     this.showConfirmationDialog = false;
   }
 
+  /** Cancels the deletion process and closes the confirmation dialog. */
   onConfirmationCancelled() {
     this.systemToDelete = null;
     this.showConfirmationDialog = false;
   }
 
+  /**
+   * Closes the management dialog and refreshes the Target System list.
+   */
   onManageFinished(): void {
     this.showDetailDialog = false;
     this.selectedSystem = null;
     this.load();
   }
 
+  /**
+   * Updates the metadata (name, URL, description) of the currently selected Target System.
+   * Reloads the system list after successful update.
+   */
   saveManagedMetadata(): void {
     if (!this.selectedSystem || this.manageForm.invalid) return;
     const payload: TargetSystemDTO = { ...this.selectedSystem, ...this.manageForm.value } as TargetSystemDTO;
     this.api.update(this.selectedSystem.id!, payload).subscribe({ next: () => { this.load(); } });
   }
+  // AAS-related methods
+  /**
+   * Determines if the selected Target System is of type AAS.
+   * @returns True if the API type is 'AAS', otherwise false.
+   */
+  isAasSelected(): boolean {
+    const t = (this.selectedSystem?.apiType || '').trim().toUpperCase();
+    return t === 'AAS';
+  }
+
+  /** Reloads the Target System list after AAS-related updates. */
+  onAasRefreshRequested(): void {
+    this.load();
+  }
+
+  /** Reloads the system list after a new Target System has been created. */
+  onCreated(_created: TargetSystemDTO): void {
+    this.load();
+  }
+
+  // Empty state functionality
+  isSearchActive: boolean = false;
+
+  /**
+   * Returns a context-dependent message for the empty table state.
+   * @returns Message depending on whether a search is active or not.
+   */
+  getEmptyMessage(): string {
+    if (this.isSearchActive) {
+      return 'No matching target systems found';
+    }
+    return 'No target systems available';
+  }
+
+  /** Displays a success toast message after a header is created. */
+  onHeaderCreated(): void {
+    this.messageService.add({
+      severity: 'success',
+      summary: 'Header Created',
+      detail: 'Header has been successfully created.',
+      life: 3000
+    });
+  }
+
+  /** Displays a success toast message after a header is deleted. */
+  onHeaderDeleted(): void {
+    this.messageService.add({
+      severity: 'success',
+      summary: 'Header Deleted',
+      detail: 'Header has been successfully deleted.',
+      life: 3000
+    });
+  }
 }
-
-

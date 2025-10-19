@@ -91,7 +91,6 @@ public class TransformationDeploymentFeedbackProducer {
     }
 
     private TransformationDeploymentFeedbackMessageDTO getDeploymentFeedback(Long transformationId, JobDeploymentStatus jobDeploymentStatus) {
-
         return new TransformationDeploymentFeedbackMessageDTO(jobDeploymentStatus, transformationId, System.getenv("HOSTNAME"));
     }
 

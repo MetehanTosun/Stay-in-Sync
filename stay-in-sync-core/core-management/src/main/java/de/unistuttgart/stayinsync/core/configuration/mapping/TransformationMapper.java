@@ -1,10 +1,11 @@
 package de.unistuttgart.stayinsync.core.configuration.mapping;
 
-import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.SourceSystemApiRequestConfiguration;
-import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.SourceSystemEndpoint;
-import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.Transformation;
-import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.TransformationRule;
+import de.unistuttgart.stayinsync.core.configuration.mapping.targetsystem.AasTargetApiRequestConfigurationMapper;
 import de.unistuttgart.stayinsync.core.configuration.mapping.targetsystem.RequestConfigurationMessageMapper;
+import de.unistuttgart.stayinsync.core.configuration.persistence.entities.sync.SourceSystemApiRequestConfiguration;
+import de.unistuttgart.stayinsync.core.configuration.persistence.entities.sync.SourceSystemEndpoint;
+import de.unistuttgart.stayinsync.core.configuration.persistence.entities.sync.Transformation;
+import de.unistuttgart.stayinsync.core.configuration.persistence.entities.sync.TransformationRule;
 import de.unistuttgart.stayinsync.core.configuration.rest.dtos.SyncJobTransformationDTO;
 import de.unistuttgart.stayinsync.core.configuration.rest.dtos.SyncJobTransformationRuleDTO;
 import de.unistuttgart.stayinsync.core.configuration.rest.dtos.TransformationDetailsDTO;
@@ -25,7 +26,8 @@ import java.util.stream.Collectors;
                 TransformationScriptMapper.class,
                 TransformationRuleMapper.class,
                 SourceSystemApiRequestConfigurationFullUpdateMapper.class,
-                RequestConfigurationMessageMapper.class})
+                RequestConfigurationMessageMapper.class,
+                AasTargetApiRequestConfigurationMapper.class})
 public interface TransformationMapper {
 
     // TODO: Handle complex object mappings in service layer
@@ -48,6 +50,7 @@ public interface TransformationMapper {
     @Mapping(source = "transformationRule", target = "transformationRuleDTO")
     @Mapping(source = "sourceSystemApiRequestConfigurations", target = "requestConfigurationMessageDTOS")
     @Mapping(source = "targetSystemApiRequestConfigurations", target = "targetRequestConfigurationMessageDTOS")
+    @Mapping(source = "aasTargetApiRequestConfigurations", target = "aasTargetRequestConfigurationMessageDTOS")
     @Mapping(source = "sourceSystemApiRequestConfigurations", target = "arcManifest", qualifiedByName = "buildSourceArcManifest")
     TransformationMessageDTO mapToMessageDTO(Transformation transformation);
 

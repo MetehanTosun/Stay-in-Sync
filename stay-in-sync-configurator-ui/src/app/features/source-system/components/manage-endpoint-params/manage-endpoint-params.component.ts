@@ -1,4 +1,4 @@
-import { Component, Input, OnInit, OnChanges, SimpleChanges } from '@angular/core';
+import { Component, Input, OnInit, OnChanges, SimpleChanges, Output, EventEmitter } from '@angular/core';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
 import { CommonModule } from '@angular/common';
 import { TableModule } from 'primeng/table';
@@ -6,9 +6,13 @@ import { ButtonModule } from 'primeng/button';
 import { InputTextModule } from 'primeng/inputtext';
 import { DropdownModule } from 'primeng/dropdown';
 import { CardModule } from 'primeng/card';
+import { ToastModule } from 'primeng/toast';
+import { MessageService } from 'primeng/api';
 import { ApiEndpointQueryParamResourceService } from '../../service/apiEndpointQueryParamResource.service';
 import { ApiEndpointQueryParamDTO } from '../../models/apiEndpointQueryParamDTO';
 import { ApiEndpointQueryParamType } from '../../models/apiEndpointQueryParamType';
+import {FloatLabel} from 'primeng/floatlabel';
+import {Select} from 'primeng/select';
 
 /**
  * Component to manage API endpoint query parameters.
@@ -27,8 +31,12 @@ import { ApiEndpointQueryParamType } from '../../models/apiEndpointQueryParamTyp
     InputTextModule,
     DropdownModule,
     CardModule,
+    FloatLabel,
+    Select,
+    ToastModule,
     // ggf. weitere Module
   ]
+  , providers: [MessageService]
 })
 export class ManageEndpointParamsComponent implements OnInit, OnChanges {
   /**
@@ -40,6 +48,16 @@ export class ManageEndpointParamsComponent implements OnInit, OnChanges {
    * The path of the API endpoint (optional).
    */
   @Input() endpointPath?: string;
+
+  /**
+   * Event emitted when a parameter is created
+   */
+  @Output() onCreated = new EventEmitter<void>();
+
+  /**
+   * Event emitted when a parameter is deleted
+   */
+  @Output() onDeleted = new EventEmitter<void>();
 
   /**
    * List of query parameters for the current endpoint.
@@ -83,7 +101,8 @@ export class ManageEndpointParamsComponent implements OnInit, OnChanges {
    */
   constructor(
     private fb: FormBuilder,
-    private queryParamSvc: ApiEndpointQueryParamResourceService
+    private queryParamSvc: ApiEndpointQueryParamResourceService,
+    private messageService: MessageService
   ) {
     // FormGroup immer initialisieren
     this.queryParamForm = this.fb.group({
@@ -151,8 +170,13 @@ export class ManageEndpointParamsComponent implements OnInit, OnChanges {
         next: () => {
           this.queryParamForm.reset({ queryParamType: ApiEndpointQueryParamType.Query });
           this.loadQueryParams(this.endpointId);
+          this.onCreated.emit();
+          this.messageService.add({ key: 'params', severity: 'success', summary: 'Parameter Created', detail: 'Query parameter created.', life: 3000 });
         },
-        error: (err) => console.error('Failed to add query param', err)
+        error: (err) => {
+          console.error('Failed to add query param', err);
+          this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Failed to create parameter', life: 4000 });
+        }
       });
   }
 
@@ -166,8 +190,13 @@ export class ManageEndpointParamsComponent implements OnInit, OnChanges {
       .subscribe({
         next: () => {
           this.queryParams = this.queryParams.filter(p => p.id !== paramId);
+          this.onDeleted.emit();
+          this.messageService.add({ key: 'params', severity: 'success', summary: 'Parameter Deleted', detail: 'Query parameter deleted.', life: 3000 });
         },
-        error: (err) => console.error('Failed to delete query param', err)
+        error: (err) => {
+          console.error('Failed to delete query param', err);
+          this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Failed to delete parameter', life: 4000 });
+        }
       });
   }
 
@@ -181,4 +210,4 @@ export class ManageEndpointParamsComponent implements OnInit, OnChanges {
     const cleanName = paramName.replace(/[{}]/g, '');
     return `{${cleanName}}`;
   }
-} 
+}

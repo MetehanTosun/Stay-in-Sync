@@ -1,6 +1,6 @@
 package de.unistuttgart.stayinsync.core.persistence.entities;
 
-import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.SyncJob;
+import de.unistuttgart.stayinsync.core.configuration.persistence.entities.sync.SyncJob;
 import io.quarkus.test.TestTransaction;
 import io.quarkus.test.junit.QuarkusTest;
 import org.assertj.core.api.Assertions;

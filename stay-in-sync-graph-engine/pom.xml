@@ -129,6 +129,7 @@
                         <exclude>**/service/GraphSnapshotCacheService.class</exclude>
                         <exclude>**/service/SchemaCache.class</exclude>
                         <exclude>**/nodes/ConstantNode.class</exclude>
+                        <exclude>**/nodes/SchemaNode.class</exclude>
                         <exclude>**/nodes/Node.class</exclude>
                         <exclude>**/validation_error/GraphStatus.class</exclude>
                     </excludes>

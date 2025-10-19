@@ -1,83 +1,240 @@
-/* === Aliases to match the HTML you wrote === */
+/* Main container - fills viewport */
 .replay-container {
-  /* alias of .replay-layout */
-  display: grid;
-  grid-template-columns: 1fr 420px;
-  gap: 16px;
-  height: calc(100vh - 64px);
-  padding: 16px;
+  display: flex;
+  gap: 1rem;
+  height: 99%; /* Adjust based on your header/padding */
+  padding: 1rem;
+  overflow: hidden;
+}
+
+/* Left pane - Monaco editor */
+.left-pane {
+  width: 55%;
+  display: flex;
+  flex-direction: column;
+  min-width: 400px;
+}
+
+.pane-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.75rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid var(--surface-border, #dee2e6);
+}
+
+.pane-header h2 {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--text-color, #333);
+}
+
+.editor-wrapper {
+  flex: 1;
+  border: 1px solid var(--surface-border, #ccc);
+  border-radius: 6px;
+  overflow: hidden;
+  background: #1e1e1e;
+  min-height: 0; /* Critical for flex scrolling */
+}
+
+.editor-wrapper ngx-monaco-editor {
+  height: 100%;
+  display: block;
+}
+
+/* Right pane - Tabs */
+.right-pane {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0; /* Critical for flex scrolling */
+  min-height: 0; /* Critical for flex scrolling */
+}
+
+/* Make tabs fill height */
+.full-height-tabs {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+}
+
+/* Tab content wrapper */
+.tab-content {
+  height: 100%;
+  overflow: auto;
+  padding: 1rem;
+  background: var(--surface-ground, #f8f9fa);
+  border-radius: 4px;
   box-sizing: border-box;
 }
 
-.left-pane {
-  /* alias of .code-pane */
-  background: var(--surface-card, #fff);
-  border: 1px solid var(--surface-border, #e0e0e0);
-  border-radius: 8px;
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
+.tab-content h3 {
+  margin: 0 0 1rem 0;
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--text-color, #333);
 }
 
-.right-pane {
-  /* alias of .side-pane */
-  background: var(--surface-card, #fff);
-  border: 1px solid var(--surface-border, #e0e0e0);
-  border-radius: 8px;
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
+/* JSON viewer styling */
+.tab-content ngx-json-viewer {
+  font-size: 0.9rem;
 }
 
-.pane-header,
-.side-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 12px 12px 8px 12px;
-  border-bottom: 1px solid var(--surface-border, #e0e0e0);
-}
-
-.pane-header h2,
-.pane-header h3,
-.side-header h3 {
+/* Terminal/pre blocks */
+.terminal {
+  background: #1e1e1e;
+  color: #d4d4d4;
+  padding: 1rem;
+  border-radius: 4px;
+  font-family: "Consolas", "Monaco", "Courier New", monospace;
+  font-size: 0.875rem;
+  line-height: 1.5;
+  overflow-x: auto;
+  white-space: pre-wrap;
+  word-wrap: break-word;
   margin: 0;
-  font-size: 14px;
+}
+
+/* Logs panel specific */
+.logs-panel {
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.logs-panel h3 {
+  padding: 1rem 1rem 0.5rem 1rem;
+  margin: 0;
+}
+
+.table-wrapper {
+  flex: 1;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  padding: 0 1rem 1rem 1rem;
+}
+
+.table-wrapper p-table {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Log table styling */
+.log-table {
+  font-size: 0.875rem;
+}
+
+.timestamp {
+  font-family: monospace;
+  color: var(--text-color-secondary, #6c757d);
+  white-space: nowrap;
+}
+
+/* Log level badges */
+.level-error {
+  color: #dc3545;
   font-weight: 600;
 }
 
-/* Tabs in your HTML use .tabs + .tab */
-.tabs {
-  display: inline-flex;
-  gap: 6px;
-}
-.tab {
-  border: 1px solid var(--surface-border, #e0e0e0);
-  background: #f8f9fb;
-  padding: 6px 10px;
-  font-size: 13px;
-  border-radius: 6px;
-  cursor: pointer;
-}
-.tab.active {
-  background: #eef2ff;
-  border-color: #c7d2fe;
+.level-warn,
+.level-warning {
+  color: #ffc107;
+  font-weight: 600;
 }
 
-/* Match your <pre class="code-block"> */
-.code-block,
-.code-fallback {
-  margin: 0;
-  padding: 12px;
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-  font-size: 12px;
-  line-height: 1.5;
-  white-space: pre-wrap;
-  word-break: break-word;
-  height: 100%;
+.level-info {
+  color: #0dcaf0;
+  font-weight: 600;
+}
+
+.level-debug {
+  color: #6c757d;
+  font-weight: 500;
+}
+
+.service-cell {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 150px;
+}
+
+.message-cell {
+  white-space: normal;
+  word-wrap: break-word;
+  line-height: 1.4;
+}
+
+/* Loading and error states */
+.loading-state,
+.error-state {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 3rem;
+  text-align: center;
+}
+
+.loading-state p {
+  color: var(--text-color-secondary, #6c757d);
+  font-size: 1rem;
+}
+
+.error-state .error {
+  color: #dc3545;
+  font-weight: 500;
+  font-size: 1rem;
+}
+
+
+/* Responsive adjustments */
+@media (max-width: 1200px) {
+  .replay-container {
+    flex-direction: column;
+    height: auto;
+    min-height: calc(100vh - 120px);
+  }
+
+  .left-pane {
+    width: 100%;
+    height: 500px;
+    min-height: 400px;
+  }
+
+  .right-pane {
+    width: 100%;
+    min-height: 600px;
+  }
+}
+
+/* PrimeNG table overrides for better scrolling */
+::ng-deep .p-datatable .p-datatable-wrapper {
   overflow: auto;
-  background: #0b1020;
-  color: #e6edf3;
 }
 
-/* Keep your existing json/terminal styles as-is */
+::ng-deep .p-datatable-scrollable .p-datatable-wrapper {
+  overflow-y: auto;
+}
+
+::ng-deep .p-tabpanels {
+  overflow: hidden;
+}
+
+.json-scroll-container {
+  overflow-x: auto;
+  overflow-y: hidden;
+  white-space: nowrap;
+  width: 100%;
+}
+
+.json-scroll-container ngx-json-viewer {
+  display: inline-block;
+  min-width: max-content;
+}
+

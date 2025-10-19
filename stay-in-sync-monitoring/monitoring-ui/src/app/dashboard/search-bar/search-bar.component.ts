@@ -1,8 +1,11 @@
 import {Component, EventEmitter, Output} from '@angular/core';
+import {Button} from 'primeng/button';
 
 @Component({
   selector: 'app-search-bar',
-  imports: [],
+  imports: [
+    Button
+  ],
   templateUrl: './search-bar.component.html',
   styleUrl: './search-bar.component.css'
 })

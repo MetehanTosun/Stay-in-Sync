@@ -1,96 +1,15 @@
+@import '../node-shared.css';
+
 .config-node {
-  position: relative;
   background: #f5f5f5;
   border: 3px solid #bdbdbd;
   color: #222;
-  border-radius: 14px;
-  box-shadow: 0 6px 18px rgba(189, 189, 189, 0.18);
-  padding: 20px 28px 16px 28px;
-  font-size: 1.18rem;
-  font-weight: 700;
-  min-width: 320px;
-  min-height: 60px;
-  display: flex;
-  flex-direction: column;
-  letter-spacing: 0.01em;
-  gap: 8px;
 }
 
-.config-node .node-header {
-  font-size: 1.1em;
-  font-weight: 800;
-  margin-bottom: 6px;
-  letter-spacing: 0.03em;
-  text-align: left;
-  width: 100%;
-  display: flex;
-  align-items: flex-start;
-}
-
-.config-node .node-content {
-  font-size: 1em;
-  font-weight: 500;
-  text-align: left;
-  width: 100%;
-}
-
-.config-node .node-mode {
+.node-mode {
   background: rgba(0, 0, 0, 0.05);
-  padding: 4px 8px;
-  border-radius: 4px;
-  margin-bottom: 2px;
 }
 
-.config-node .node-active {
-  font-size: 0.8em;
-}
-
-.node-active {
-  font-size: 0.85em;
-  padding: 2px 8px;
-  border-radius: 4px;
-  margin-bottom: 2px;
-  display: inline-block;
-}
-
-.active-enabled {
-  color: #00796b;
-}
-
-.active-disabled {
-  color: #c62828;
-}
-
-.tooltip-input {
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  display: flex;
-  flex-direction: row;
-  z-index: 10;
-  background: #e0e0e0;
-  color: #1b1b1b;
-  padding: 2px 6px;
-  border-radius: 6px;
-  font-size: 0.89rem;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.18);
-  white-space: nowrap;
-	font-weight: normal;
-}
-
-.tooltip-output {
-  position: absolute;
-  top: 0;
-  right: 0;
-  display: flex;
-  flex-direction: row;
-  z-index: 10;
-  background: #222;
-  color: #fff;
-  padding: 2px 6px;
-  border-radius: 6px;
-  font-size: 0.89rem;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.18);
-  white-space: nowrap;
-	font-weight: normal;
+.node-time-window {
+  color: rgb(77,77,77);
 }
