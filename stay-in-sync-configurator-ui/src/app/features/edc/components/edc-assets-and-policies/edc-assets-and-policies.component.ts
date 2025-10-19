@@ -190,6 +190,7 @@ accessPolicySuggestions: OdrlPolicyDefinition[] = [];
   private templateJsonSyncSubject = new Subject<void>();
   private assetJsonSyncSubscription: Subscription | null = null;
   private assetJsonSyncSubject = new Subject<void>();
+  private isSyncingFromForm = false; // Flag to prevent feedback loop
 
   // New Asset Dialog specific properties
   allSelectableSystems: Transformation[] = [];
@@ -527,7 +528,7 @@ accessPolicySuggestions: OdrlPolicyDefinition[] = [];
 
   // Asset methods
   openNewAssetDialog() {
-    // Always start with a clean slate by resetting all form fields
+    // Always start with a completely clean slate by resetting all form fields
     this.resetAssetFormFields();
 
     // Find the default template, which is the first in the list
@@ -540,7 +541,7 @@ accessPolicySuggestions: OdrlPolicyDefinition[] = [];
       templateContent['@id'] = "";
 
       this.expertModeJsonContent = JSON.stringify(templateContent, null, 2);
-      this.populateAssetFormFromOdrl(templateContent);
+      this.populateAssetFormFromDataAddress(templateContent.dataAddress || {});
     } else {
       // Fallback if no templates are loaded, create an empty form
       this.syncAssetJsonFromForm();
@@ -549,7 +550,7 @@ accessPolicySuggestions: OdrlPolicyDefinition[] = [];
   }
 
   // New Asset Dialog specific methods
-  onSystemSelect(selectedSystem: Transformation | null): void {
+  onSystemSelect(selectedSystem: Transformation | null) {
     if (selectedSystem && selectedSystem.id) {
       this.assetService.getTargetArcConfig(selectedSystem.id).subscribe(config => {
         this.populateFormFromTargetArc(config); // Use the new, specific helper method
@@ -638,6 +639,9 @@ accessPolicySuggestions: OdrlPolicyDefinition[] = [];
    * This is the primary mechanism for the form to update the JSON editor for assets.
    */
   syncAssetJsonFromForm(): void {
+    // Set a flag to prevent the JSON editor's change event from re-triggering a form sync
+    this.isSyncingFromForm = true;
+
     let currentAssetJson: any;
     try {
       currentAssetJson = JSON.parse(this.expertModeJsonContent || '{}');
@@ -722,26 +726,25 @@ accessPolicySuggestions: OdrlPolicyDefinition[] = [];
     try {
       const templateContent = await file.text();
       const parsedContent = JSON.parse(templateContent);
-      this.expertModeJsonContent = JSON.stringify(parsedContent, null, 2);
-      this.populateAssetFormFromOdrl(parsedContent); // Populate form fields from template file
+      this.expertModeJsonContent = JSON.stringify(parsedContent, null, 2);      this.populateAssetFormFromDataAddress(parsedContent.dataAddress || {}); // Populate form fields from template file
       this.messageService.add({ severity: 'info', summary: 'Template Loaded', detail: `Template from ${file.name} loaded into editor.` });
     } catch (error) {
       this.messageService.add({ severity: 'error', summary: 'Read Error', detail: 'Could not read the selected file or parse JSON.' });
       this.expertModeJsonContent = ''; // Clear on error
       this.resetAssetFormFields(); // Clear form fields on error
     } finally {
-      element.value = '';
+      element.value = ''; // Reset file input to allow re-selecting the same file
     }
   }
 
-  private populateAssetFormFromOdrl(odrlAsset: any): void {
+  private populateAssetFormFromDataAddress(dataAddress: any): void {
     // Hier liegt ein kritischer Fehler vor: base_url vs. baseUrl
     // Wir müssen alle möglichen Felder prüfen, da das Backend base_url erwartet, aber das Frontend
-    this.pathParamId = odrlAsset.path || '';
+    this.pathParamId = dataAddress.path || '';
 
     // Parse queryParams string into key-value pairs
     this.queryParams = [];
-    const queryParamsString = odrlAsset.queryParams || '';
+    const queryParamsString = dataAddress.queryParams || '';
     if (queryParamsString) {
       queryParamsString.split('&').forEach((pair: string) => {
         const [key, value] = pair.split('=');
@@ -753,19 +756,19 @@ accessPolicySuggestions: OdrlPolicyDefinition[] = [];
 
     // Parse headers from dataAddress properties
     this.headerParams = [];
-    for (const key in odrlAsset) {
+    for (const key in dataAddress) {
       if (key.toLowerCase().startsWith('header:')) {
-        this.headerParams.push({ key: key.substring(7), value: odrlAsset[key] });
+        this.headerParams.push({ key: key.substring(7), value: dataAddress[key] });
       }
     }
 
     this.assetAttributes = [];
-    if (odrlAsset.properties) {
-      for (const key in odrlAsset.properties) {
+    if (dataAddress.properties) {
+      for (const key in dataAddress.properties) {
         if (key.startsWith('asset:prop:custom-')) { // Assuming custom attributes have this prefix
           this.assetAttributes.push({
             key: key.replace('asset:prop:custom-', '').replace(/-/g, ' ').replace(/^\w/, c => c.toUpperCase()),
-            value: odrlAsset.properties[key]
+            value: dataAddress.properties[key]
           });
         }
       }
@@ -780,8 +783,6 @@ accessPolicySuggestions: OdrlPolicyDefinition[] = [];
    * This "translates" the backend's structure into the UI form fields.
    */
   private populateFormFromTargetArc(arcConfig: any): void {
-    this.resetAssetFormFields(); // Start with a clean slate
-
     const action = arcConfig?.actions?.[0];
     if (!action) {
       // If there's no action, there's nothing to populate
@@ -822,10 +823,16 @@ accessPolicySuggestions: OdrlPolicyDefinition[] = [];
   }
 
   syncAssetFormFromJson(): void {
+    // If the sync was triggered by the form itself, do nothing to prevent a loop.
+    if (this.isSyncingFromForm) {
+      this.isSyncingFromForm = false; // Reset the flag and exit
+      return;
+    }
+
     try {
       const assetJson = JSON.parse(this.expertModeJsonContent || '{}');
       // The populating function expects the dataAddress object, not the whole asset
-      this.populateAssetFormFromOdrl(assetJson.dataAddress || {});
+      this.populateAssetFormFromDataAddress(assetJson.dataAddress || {});
     } catch (e) {
       // If JSON is invalid, do nothing to avoid clearing the form fields while user is typing.
       console.warn('syncAssetFormFromJson: Could not parse JSON, aborting sync.');
@@ -1035,7 +1042,7 @@ accessPolicySuggestions: OdrlPolicyDefinition[] = [];
     this.assetToEditODRL = this.allOdrlAssets.find(a => a['@id'] === asset.assetId) ?? null;
     if (this.assetToEditODRL) {
       this.expertModeJsonContent = JSON.stringify(this.assetToEditODRL, null, 2);
-      this.populateAssetFormFromOdrl(this.assetToEditODRL.dataAddress || {});
+      this.populateAssetFormFromDataAddress(this.assetToEditODRL.dataAddress || {});
       this.displayEditAssetDialog = true;
       return;
     }
@@ -1046,7 +1053,7 @@ accessPolicySuggestions: OdrlPolicyDefinition[] = [];
         next: (raw: any) => {
           this.assetToEditODRL = raw as any;
           this.expertModeJsonContent = JSON.stringify(this.assetToEditODRL, null, 2);
-          this.populateAssetFormFromOdrl(this.assetToEditODRL.dataAddress || {});
+          this.populateAssetFormFromDataAddress(this.assetToEditODRL.dataAddress || {});
           this.displayEditAssetDialog = true;
         },
         error: () => {
