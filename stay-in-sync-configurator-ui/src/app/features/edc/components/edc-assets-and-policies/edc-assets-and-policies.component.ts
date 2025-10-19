@@ -153,6 +153,12 @@ accessPolicySuggestions: OdrlPolicyDefinition[] = [];
     return index;
   }
 
+  getTargetSystemName(targetSystemId: number | undefined): string {
+    if (!targetSystemId) return 'N/A';
+    const system = this.allSelectableSystems.find(s => s.id === String(targetSystemId));
+    return system?.alias || `ID: ${targetSystemId}`;
+  }
+
   isContractJsonComplex: boolean = false; // This is for contract definitions
 
 
