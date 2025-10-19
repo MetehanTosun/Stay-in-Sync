@@ -120,12 +120,28 @@ helm dependency update
 
 Installing the helm chart from within its folder with the release name **stay-in-sync**:
 
-<span style="color:red">Since this helmchart makes use of the edc umbrella chart we currently recommend installing in the chart umbrella namespace
+- <span style="color:red">Since this helmchart makes use of the edc umbrella chart we currently recommend installing in the chart umbrella namespace
   in order to avoid issues with the edc setup</span>
 ```shell
 helm install test ./ --namespace umbrella
 ```
+- <span style="color:red">Recently bitnami images have been moved to another repository, in the current state the image repository of bitnami charts have to be explicitly specified when installing (values.yml / via command) For example like so:</span>
 
+```shell
+helm install stay-in-sync ./ \
+  --set global.security.allowInsecureImages=true \
+  --set mariadb.image.repository=bitnamilegacy/mariadb \
+  --set mariadb.image.tag=12.0.2-debian-12-r0 \
+  --set mariadb.image.pullPolicy=IfNotPresent \
+  --set rabbitmq.image.repository=bitnamilegacy/rabbitmq \
+  --set rabbitmq.image.tag=4.1.3-debian-12-r1 \
+  --set rabbitmq.image.pullPolicy=IfNotPresent \
+  --set mongodb.image.repository=bitnamilegacy/mongodb \
+  --set mongodb.image.tag=8.0.13-debian-12-r0 \
+  --set mongodb.image.pullPolicy=IfNotPresent \
+  -n umbrella \
+  --create-namespace
+```
 Uninstalling the helm chart using its release name:
 
 ```shell
