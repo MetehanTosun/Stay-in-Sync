@@ -2,8 +2,8 @@ package de.unistuttgart.stayinsync.core.configuration.edc.mapping;
 
 import de.unistuttgart.stayinsync.core.configuration.edc.dtoedc.EDCAssetDto;
 import de.unistuttgart.stayinsync.core.configuration.edc.dtoedc.EDCPropertyDto;
-import de.unistuttgart.stayinsync.core.configuration.edc.entities.EDCAsset;
-import de.unistuttgart.stayinsync.core.configuration.edc.entities.EDCInstance;
+import de.unistuttgart.stayinsync.core.configuration.edc.entities.Asset;
+import de.unistuttgart.stayinsync.core.configuration.edc.entities.EdcInstance;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.Named;
@@ -19,7 +19,7 @@ import java.util.Map;
  * Verwendet zusätzlich EDCDataAddressMapper und EDCPropertyMapper für die Konvertierung
  * der entsprechenden Unter-Objekte.
  */
-@Mapper
+@Mapper(componentModel = "cdi")
 public interface EDCAssetMapper {
 
     /**
@@ -38,7 +38,7 @@ public interface EDCAssetMapper {
     @Mapping(source = "properties", target = "properties", qualifiedByName = "propertyToMap")
     @Mapping(target = "jsonLDType", constant = "Asset")
     @Mapping(source = "properties.name", target = "name")
-    EDCAssetDto assetToAssetDto(EDCAsset asset);
+    EDCAssetDto assetToAssetDto(Asset asset);
 
     /**
      * Konvertiert ein EDCAssetDto in ein EDCAsset-Entity.
@@ -49,7 +49,7 @@ public interface EDCAssetMapper {
     @Mapping(source = "targetEDCId", target = "targetEDC")
     @Mapping(source = "properties", target = "properties", qualifiedByName = "mapToProperty")
     @Mapping(target = "targetSystemEndpoint", ignore = true)
-    EDCAsset assetDtoToAsset(EDCAssetDto assetDto);
+    Asset assetDtoToAsset(EDCAssetDto assetDto);
 
     /**
      * Erzeugt den Standard-Kontext für EDC-Assets.
@@ -67,11 +67,11 @@ public interface EDCAssetMapper {
      * @param targetEDCId Die ID der zu ladenden EDCInstance
      * @return Die gefundene EDCInstance oder null, wenn keine gefunden wurde
      */
-    default EDCInstance map(Long targetEDCId) {
+    default EdcInstance map(Long targetEDCId) {
         if (targetEDCId == null) {
             return null;
         }
-        return EDCInstance.findById(targetEDCId);
+        return EdcInstance.findById(targetEDCId);
     }
 
     /**
@@ -81,7 +81,7 @@ public interface EDCAssetMapper {
      * @param targetEDC Die EDCInstance, aus der die ID extrahiert werden soll
      * @return Die ID der EDCInstance oder null, wenn targetEDC null ist
      */
-    default Long map(EDCInstance targetEDC) {
+    default Long map(EdcInstance targetEDC) {
         if (targetEDC == null) {
             return null;
         }
@@ -94,7 +94,7 @@ public interface EDCAssetMapper {
      * und das DTO eine Map von Properties verwendet.
      */
     @Named("propertyToMap")
-    default Map<String, Object> mapPropertyToMap(de.unistuttgart.stayinsync.core.configuration.edc.entities.EDCProperty properties) {
+    default Map<String, Object> mapPropertyToMap(de.unistuttgart.stayinsync.core.configuration.edc.entities.Property properties) {
         if (properties == null) return new HashMap<>();
         
         EDCPropertyDto dto = EDCPropertyMapper.INSTANCE.toDto(properties);
@@ -105,7 +105,7 @@ public interface EDCAssetMapper {
      * Helfermethode: mappt eine Map von Properties auf ein einzelnes EDCProperty.
      */
     @Named("mapToProperty")
-    default de.unistuttgart.stayinsync.core.configuration.edc.entities.EDCProperty mapMapToProperty(Map<String, Object> propertiesMap) {
+    default de.unistuttgart.stayinsync.core.configuration.edc.entities.Property mapMapToProperty(Map<String, Object> propertiesMap) {
         if (propertiesMap == null || propertiesMap.isEmpty()) return null;
         
         EDCPropertyDto dto = new EDCPropertyDto(null, propertiesMap);

@@ -1,10 +1,10 @@
 package de.unistuttgart.stayinsync.core.configuration.edc.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import de.unistuttgart.stayinsync.core.configuration.edc.entities.EDCAsset;
-import de.unistuttgart.stayinsync.core.configuration.edc.entities.EDCContractDefinition;
-import de.unistuttgart.stayinsync.core.configuration.edc.entities.EDCInstance;
-import de.unistuttgart.stayinsync.core.configuration.edc.entities.EDCPolicy;
+import de.unistuttgart.stayinsync.core.configuration.edc.entities.Asset;
+import de.unistuttgart.stayinsync.core.configuration.edc.entities.ContractDefinition;
+import de.unistuttgart.stayinsync.core.configuration.edc.entities.EdcInstance;
+import de.unistuttgart.stayinsync.core.configuration.edc.entities.Policy;
 import de.unistuttgart.stayinsync.core.configuration.edc.service.edcconnector.CreateEDCContractDefinitionDTO;
 import de.unistuttgart.stayinsync.core.configuration.edc.service.edcconnector.EDCClient;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -37,24 +37,24 @@ public class EDCContractDefinitionService {
      * @param edcId the ID of the EDC instance
      * @return List with all contract definitions for that EDC instance
      */
-    public List<EDCContractDefinition> listAllByEdcId(final Long edcId) {
+    public List<ContractDefinition> listAllByEdcId(final Long edcId) {
         LOG.info("Fetching contract definitions for EDC: " + edcId);
-        EDCInstance edcInstance = EDCInstance.findById(edcId);
+        EdcInstance edcInstance = EdcInstance.findById(edcId);
         if (edcInstance == null) {
             LOG.warn("No EDC instance found with id " + edcId);
             return new ArrayList<>();
         }
         
-    TypedQuery<EDCContractDefinition> query = entityManager.createQuery(
-        "SELECT c FROM EDCContractDefinition c " +
+    TypedQuery<ContractDefinition> query = entityManager.createQuery(
+        "SELECT c FROM ContractDefinition c " +
         "LEFT JOIN FETCH c.asset " +
         "LEFT JOIN FETCH c.accessPolicy " +
         "LEFT JOIN FETCH c.contractPolicy " +
         "WHERE c.edcInstance.id = :edcId",
-        EDCContractDefinition.class);
+        ContractDefinition.class);
         query.setParameter("edcId", edcId);
         
-        List<EDCContractDefinition> contractDefinitions = query.getResultList();
+        List<ContractDefinition> contractDefinitions = query.getResultList();
         LOG.info("Found " + contractDefinitions.size() + " contract definitions for EDC " + edcId);
         return contractDefinitions;
     }
@@ -66,19 +66,19 @@ public class EDCContractDefinitionService {
      * @param edcId the ID of the EDC instance
      * @return found contract definition or empty if not found
      */
-    public Optional<EDCContractDefinition> findByIdAndEdcId(final Long id, final Long edcId) {
+    public Optional<ContractDefinition> findByIdAndEdcId(final Long id, final Long edcId) {
         LOG.info("Fetching contract definition " + id + " for EDC: " + edcId);
-    TypedQuery<EDCContractDefinition> query = entityManager.createQuery(
+    TypedQuery<ContractDefinition> query = entityManager.createQuery(
         "SELECT c FROM EDCContractDefinition c " +
         "LEFT JOIN FETCH c.asset " +
         "LEFT JOIN FETCH c.accessPolicy " +
         "LEFT JOIN FETCH c.contractPolicy " +
         "WHERE c.id = :id AND c.edcInstance.id = :edcId",
-        EDCContractDefinition.class);
+        ContractDefinition.class);
         query.setParameter("id", id);
         query.setParameter("edcId", edcId);
         
-        List<EDCContractDefinition> results = query.getResultList();
+        List<ContractDefinition> results = query.getResultList();
         if (results.isEmpty()) {
             LOG.warn("No contract definition found with id " + id + " for EDC " + edcId);
             return Optional.empty();
@@ -113,7 +113,7 @@ public class EDCContractDefinitionService {
     }
     
     @Transactional
-    public EDCContractDefinition create(final EDCContractDefinition contractDefinition) {
+    public ContractDefinition create(final ContractDefinition contractDefinition) {
         contractDefinition.persist();
         
         // Synchronisiere mit EDC direkt nach Speicherung in der Datenbank
@@ -132,7 +132,7 @@ public class EDCContractDefinitionService {
      * 
      * @param contractDefinition Die Contract Definition, die an den EDC gesendet werden soll
      */
-    private void syncContractDefinitionWithEDC(EDCContractDefinition contractDefinition) {
+    private void syncContractDefinitionWithEDC(ContractDefinition contractDefinition) {
         if (contractDefinition == null) {
             LOG.warn("Cannot sync null contract definition with EDC");
             return;
@@ -210,14 +210,14 @@ public class EDCContractDefinitionService {
      * @return Optional with the updated EDCPolicy or an empty Optional if nothing was found.
      */
     @Transactional
-    public Optional<EDCContractDefinition> update(final Long id, final EDCContractDefinition updatedContractDefinition) {
+    public Optional<ContractDefinition> update(final Long id, final ContractDefinition updatedContractDefinition) {
         LOG.info("Updating contract definition: " + id);
         return findByIdAndEdcId(id, updatedContractDefinition.getEdcInstance().id).map(existing -> {
             // nur die zu ändernden Felder übernehmen
             existing.setContractDefinitionId(updatedContractDefinition.getContractDefinitionId());
-            existing.setAsset(EDCAsset.findById(updatedContractDefinition.getAsset() != null ? updatedContractDefinition.getAsset().id : null));
-            existing.setAccessPolicy(EDCPolicy.findById(updatedContractDefinition.getAccessPolicy() != null ? updatedContractDefinition.getAccessPolicy().id : null));
-            existing.setContractPolicy(EDCPolicy.findById(updatedContractDefinition.getContractPolicy() != null ? updatedContractDefinition.getContractPolicy().id : null));
+            existing.setAsset(Asset.findById(updatedContractDefinition.getAsset() != null ? updatedContractDefinition.getAsset().id : null));
+            existing.setAccessPolicy(Policy.findById(updatedContractDefinition.getAccessPolicy() != null ? updatedContractDefinition.getAccessPolicy().id : null));
+            existing.setContractPolicy(Policy.findById(updatedContractDefinition.getContractPolicy() != null ? updatedContractDefinition.getContractPolicy().id : null));
             existing.setEdcInstance(updatedContractDefinition.getEdcInstance());
             
             // Versuche die aktualisierte Contract Definition mit dem EDC zu synchronisieren
@@ -239,7 +239,7 @@ public class EDCContractDefinitionService {
      */
     @Transactional
     public boolean delete(Long id) {
-        return EDCContractDefinition.deleteById(id);
+        return ContractDefinition.deleteById(id);
     }
 }
 

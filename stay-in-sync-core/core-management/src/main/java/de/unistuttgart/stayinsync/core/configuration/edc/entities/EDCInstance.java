@@ -13,7 +13,7 @@ import java.util.List;
 @NoArgsConstructor // für JPA & MapStruct
 @Entity
 @Table(name = "edc_instance")
-public class EDCInstance extends PanacheEntity {
+public class EdcInstance extends PanacheEntity {
 
     @Column(nullable = false)
     public String name;
@@ -40,14 +40,14 @@ public class EDCInstance extends PanacheEntity {
      * Diese Liste enthält alle Policies, die für diese EDC-Instanz definiert sind.
      */
     @OneToMany(mappedBy = "edcInstance")
-    public List<EDCPolicy> policies = new ArrayList<>();
+    public List<Policy> policies = new ArrayList<>();
     
     /**
      * Fügt eine Policy zu dieser EDC-Instanz hinzu.
      * 
      * @param policy Die hinzuzufügende Policy
      */
-    public void addPolicy(EDCPolicy policy) {
+    public void addPolicy(Policy policy) {
         if (policies == null) {
             policies = new ArrayList<>();
         }
@@ -61,7 +61,7 @@ public class EDCInstance extends PanacheEntity {
      * @param policy Die zu entfernende Policy
      * @return true, wenn die Policy erfolgreich entfernt wurde, sonst false
      */
-    public boolean removePolicy(EDCPolicy policy) {
+    public boolean removePolicy(Policy policy) {
         if (policies != null && policies.remove(policy)) {
             policy.setEdcInstance(null);
             return true;

@@ -11,7 +11,7 @@ import jakarta.persistence.Table;
  */
 @Entity
 @Table(name = "edc_property")
-public class EDCProperty extends PanacheEntity {
+public class Property extends PanacheEntity {
 
     /**
      * Der Name des Assets.
@@ -40,7 +40,7 @@ public class EDCProperty extends PanacheEntity {
     /**
      * Default-Konstruktor für JPA.
      */
-    public EDCProperty() {
+    public Property() {
         // Standard Content-Type setzen
         this.contentType = "application/json";
         this.version = "1.0.0";
@@ -51,7 +51,7 @@ public class EDCProperty extends PanacheEntity {
      * 
      * @param description Die Beschreibung des Assets
      */
-    public EDCProperty(String description) {
+    public Property(String description) {
         this();
         this.description = description;
     }
@@ -64,7 +64,7 @@ public class EDCProperty extends PanacheEntity {
      * @param contentType Der Content-Type des Assets
      * @param version Die Version des Assets
      */
-    public EDCProperty(String name, String description, String contentType, String version) {
+    public Property(String name, String description, String contentType, String version) {
         this.name = name;
         this.description = description;
         this.contentType = contentType != null ? contentType : "application/json";

@@ -1,7 +1,7 @@
 package de.unistuttgart.stayinsync.core.configuration.edc.service;
 
 import de.unistuttgart.stayinsync.core.configuration.edc.dtoedc.EDCInstanceDto;
-import de.unistuttgart.stayinsync.core.configuration.edc.entities.EDCInstance;
+import de.unistuttgart.stayinsync.core.configuration.edc.entities.EdcInstance;
 import de.unistuttgart.stayinsync.core.configuration.edc.exception.CustomException;
 import de.unistuttgart.stayinsync.core.configuration.edc.exception.EntityCreationFailedException;
 import de.unistuttgart.stayinsync.core.configuration.edc.exception.EntityUpdateFailedException;
@@ -33,7 +33,7 @@ public class EDCService {
     public EDCInstanceDto findById(final Long id) throws CustomException {
         Log.info("Suche nach EDC-Instanz mit ID: " + id);
         
-        final EDCInstance instance = EDCInstance.findById(id);
+        final EdcInstance instance = EdcInstance.findById(id);
 
         if (instance == null) {
             final String exceptionMessage = "Keine EDC-Instanz mit ID " + id + " gefunden";
@@ -53,7 +53,7 @@ public class EDCService {
     public List<EDCInstanceDto> listAll() {
         Log.info("Abrufen aller EDC-Instanzen");
 
-        List<EDCInstance> instances = EDCInstance.listAll();
+        List<EdcInstance> instances = EdcInstance.listAll();
         List<EDCInstanceDto> dtos = instances.stream()
                 .map(mapper::toDto)
                 .toList();
@@ -71,7 +71,7 @@ public class EDCService {
     @Transactional
     public EDCInstanceDto create(final EDCInstanceDto edcInstanceDto) throws EntityCreationFailedException {
         Log.debugf("Creation of EdcInstance started.", edcInstanceDto.name());
-        final EDCInstance edcInstance = mapper.fromDto(edcInstanceDto);
+        final EdcInstance edcInstance = mapper.fromDto(edcInstanceDto);
         Log.debugf("Connection tested. EDCInstance is persisted in database");
         edcInstance.persist();
         return mapper.toDto(edcInstance);
@@ -90,7 +90,7 @@ public class EDCService {
     public EDCInstanceDto update(final Long id, final EDCInstanceDto updatedDto) throws EntityUpdateFailedException {
         Log.debug("Aktualisieren der EDC-Instanz mit ID: " + id);
         
-        final EDCInstance persistedInstance = EDCInstance.findById(id);
+        final EdcInstance persistedInstance = EdcInstance.findById(id);
         
         if (persistedInstance == null) {
             final String exceptionMessage = "Keine EDC-Instanz mit ID " + id + " für Update gefunden";
@@ -117,7 +117,7 @@ public class EDCService {
     public boolean delete(final Long id) {
         Log.info("Löschen der EDC-Instanz mit ID: " + id);
         
-        boolean deleted = EDCInstance.deleteById(id);
+        boolean deleted = EdcInstance.deleteById(id);
 
         if (deleted) {
             Log.info("EDC-Instanz mit ID " + id + " erfolgreich gelöscht");

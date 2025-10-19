@@ -1,7 +1,7 @@
 package de.unistuttgart.stayinsync.core.configuration.edc.mapping;
 
 import de.unistuttgart.stayinsync.core.configuration.edc.dtoedc.EDCInstanceDto;
-import de.unistuttgart.stayinsync.core.configuration.edc.entities.EDCInstance;
+import de.unistuttgart.stayinsync.core.configuration.edc.entities.EdcInstance;
 import org.mapstruct.*;
 import jakarta.inject.Singleton;
 
@@ -21,7 +21,7 @@ public interface EDCInstanceMapper {
      * @param entity Die zu konvertierende Entität
      * @return Das erzeugte DTO oder null, wenn die Entität null ist
      */
-    EDCInstanceDto toDto(EDCInstance entity);
+    EDCInstanceDto toDto(EdcInstance entity);
     
     /**
      * Konvertiert eine Liste von EDCInstance-Entitäten in DTOs
@@ -29,7 +29,7 @@ public interface EDCInstanceMapper {
      * @param entities Die Liste von Entitäten
      * @return Liste von DTOs
      */
-    List<EDCInstanceDto> toDtoList(List<EDCInstance> entities);
+    List<EDCInstanceDto> toDtoList(List<EdcInstance> entities);
     
     /**
      * Konvertiert ein DTO in eine EDCInstance-Entität.
@@ -37,7 +37,7 @@ public interface EDCInstanceMapper {
      * @param dto Das zu konvertierende DTO
      * @return Die erzeugte Entität oder null, wenn das DTO null ist
      */
-    EDCInstance fromDto(EDCInstanceDto dto);
+    EdcInstance fromDto(EDCInstanceDto dto);
     
     /**
      * Aktualisiert ein existierendes EDCInstance-Objekt mit Werten aus dem DTO.
@@ -47,7 +47,7 @@ public interface EDCInstanceMapper {
      * @param entity Das zu aktualisierende Ziel-Entity
      */
     @InheritConfiguration(name = "fromDto")
-    void updateEntityFromDto(EDCInstanceDto dto, @MappingTarget EDCInstance entity);
+    void updateEntityFromDto(EDCInstanceDto dto, @MappingTarget EdcInstance entity);
     
     /**
      * Nach dem Mapping führt diese Methode zusätzliche Operationen durch.
@@ -58,9 +58,9 @@ public interface EDCInstanceMapper {
      * @return Die finale Entität (entweder die existierende oder die neue)
      */
     @AfterMapping
-    default EDCInstance handleExistingEntity(EDCInstanceDto dto, @MappingTarget EDCInstance entity) {
+    default EdcInstance handleExistingEntity(EDCInstanceDto dto, @MappingTarget EdcInstance entity) {
         if (dto.id() != null) {
-            EDCInstance existingEntity = EDCInstance.findById(dto.id());
+            EdcInstance existingEntity = EdcInstance.findById(dto.id());
             
             if (existingEntity != null) {
                 // Kopiere alle Felder von der neuen Entity zur existierenden

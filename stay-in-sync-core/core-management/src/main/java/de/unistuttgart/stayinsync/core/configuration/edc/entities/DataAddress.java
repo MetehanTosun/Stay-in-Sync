@@ -11,7 +11,7 @@ import jakarta.persistence.Table;
  */
 @Entity
 @Table(name = "edc_data_address")
-public class EDCDataAddress extends PanacheEntity {
+public class DataAddress extends PanacheEntity {
 
     /**
      * Der JSON-LD Typ der Daten-Adresse, standardmäßig "DataAddress".
@@ -46,7 +46,7 @@ public class EDCDataAddress extends PanacheEntity {
     /**
      * Default-Konstruktor für JPA.
      */
-    public EDCDataAddress() {
+    public DataAddress() {
         // Standardwerte sind bereits als Feldinitialisierungen gesetzt
     }
 
@@ -55,7 +55,7 @@ public class EDCDataAddress extends PanacheEntity {
      * 
      * @param baseUrl Die Basis-URL für den Zugriff auf die Daten
      */
-    public EDCDataAddress(String baseUrl) {
+    public DataAddress(String baseUrl) {
         this.baseUrl = baseUrl;
     }
 
@@ -67,7 +67,7 @@ public class EDCDataAddress extends PanacheEntity {
      * @param proxyPath Gibt an, ob der Pfad beim Proxy-Zugriff übernommen werden soll
      * @param proxyQueryParams Gibt an, ob Query-Parameter beim Proxy-Zugriff übernommen werden sollen
      */
-    public EDCDataAddress(String type, String baseUrl, boolean proxyPath, boolean proxyQueryParams) {
+    public DataAddress(String type, String baseUrl, boolean proxyPath, boolean proxyQueryParams) {
         this.type = type != null ? type : "HttpData";
         this.baseUrl = baseUrl;
         this.proxyPath = proxyPath;

@@ -1,7 +1,6 @@
 package de.unistuttgart.stayinsync.core.configuration.edc.entities;
 
 import io.quarkus.hibernate.orm.panache.PanacheEntity;
-import de.unistuttgart.stayinsync.transport.exception.CustomException;
 import jakarta.persistence.*;
 import lombok.NoArgsConstructor;
 
@@ -15,7 +14,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @Entity
 @Table(name = "edc_policy")
-public class EDCPolicy extends PanacheEntity {
+public class Policy extends PanacheEntity {
 
     /**
      * Die Policy-ID als String, wie sie im EDC verwendet wird.
@@ -47,7 +46,7 @@ public class EDCPolicy extends PanacheEntity {
      */
     @ManyToOne
     @JoinColumn(name = "edc_instance_id")
-    public EDCInstance edcInstance;
+    public EdcInstance edcInstance;
 
     /**
      * Finder-Methode zum Abrufen einer Policy anhand ihrer policyId.
@@ -55,7 +54,7 @@ public class EDCPolicy extends PanacheEntity {
      * @param policyId Die zu suchende Policy-ID
      * @return Die gefundene EDC-Policy oder null, wenn keine gefunden wurde
      */
-    public static EDCPolicy findByPolicyId(String policyId) {
+    public static Policy findByPolicyId(String policyId) {
         if (policyId == null || policyId.isEmpty()) {
             return null;
         }
@@ -68,7 +67,7 @@ public class EDCPolicy extends PanacheEntity {
      * 
      * @param instance Die EDC-Instanz, die dieser Policy zugeordnet werden soll
      */
-    public void setEdcInstance(EDCInstance instance) {
+    public void setEdcInstance(EdcInstance instance) {
         this.edcInstance = instance;
     }
     
@@ -77,7 +76,7 @@ public class EDCPolicy extends PanacheEntity {
      * 
      * @return Die EDC-Instanz dieser Policy
      */
-    public EDCInstance getEdcInstance() {
+    public EdcInstance getEdcInstance() {
         return this.edcInstance;
     }
     

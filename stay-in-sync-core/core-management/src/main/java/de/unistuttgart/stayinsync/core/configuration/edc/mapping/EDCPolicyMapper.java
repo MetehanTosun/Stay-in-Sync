@@ -5,8 +5,8 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import de.unistuttgart.stayinsync.core.configuration.edc.dtoedc.EDCPolicyDto;
-import de.unistuttgart.stayinsync.core.configuration.edc.entities.EDCInstance;
-import de.unistuttgart.stayinsync.core.configuration.edc.entities.EDCPolicy;
+import de.unistuttgart.stayinsync.core.configuration.edc.entities.EdcInstance;
+import de.unistuttgart.stayinsync.core.configuration.edc.entities.Policy;
 import io.quarkus.logging.Log;
 import jakarta.enterprise.context.ApplicationScoped;
 import org.mapstruct.AfterMapping;
@@ -46,7 +46,7 @@ public interface EDCPolicyMapper {
     @Mapping(source = "policyJson", target = "policy", qualifiedByName = "jsonToMap")
     @Mapping(target = "context", expression = "java(getDefaultContext())")
     @Mapping(target = "rawJson", ignore = true)
-    EDCPolicyDto policyToPolicyDto(EDCPolicy policy);
+    EDCPolicyDto policyToPolicyDto(Policy policy);
     
     /**
      * Konvertiert eine Liste von EDCPolicy-Entitäten in DTOs
@@ -54,7 +54,7 @@ public interface EDCPolicyMapper {
      * @param entities Die Liste von Entitäten
      * @return Liste von DTOs
      */
-    List<EDCPolicyDto> toDtoList(List<EDCPolicy> entities);
+    List<EDCPolicyDto> toDtoList(List<Policy> entities);
 
     /**
      * Konvertiert ein EDCPolicyDto in eine EDCPolicy-Entität.
@@ -64,7 +64,7 @@ public interface EDCPolicyMapper {
      */
     @Mapping(source = "edcId", target = "edcInstance", qualifiedByName = "idToInstance")
     @Mapping(source = "policy", target = "policyJson", qualifiedByName = "mapToJson")
-    EDCPolicy policyDtoToPolicy(EDCPolicyDto policyDto);
+    Policy policyDtoToPolicy(EDCPolicyDto policyDto);
 
     /**
      * Konvertiert einen JSON-String in eine Map<String, Object>.
@@ -116,12 +116,12 @@ public interface EDCPolicyMapper {
      * @return Die gefundene EDCInstance oder null, wenn keine gefunden wurde
      */
     @Named("idToInstance")
-    default EDCInstance idToInstance(Long edcId) {
+    default EdcInstance idToInstance(Long edcId) {
         if (edcId == null) {
             Log.warn("EDC ID is null when trying to map to EDCInstance");
             return null;
         }
-        EDCInstance instance = EDCInstance.findById(edcId);
+        EdcInstance instance = EdcInstance.findById(edcId);
         if (instance == null) {
             Log.warn("Could not find EDC instance with ID: " + edcId);
         } else {
@@ -148,9 +148,9 @@ public interface EDCPolicyMapper {
      * @return Die finale Entität (entweder die existierende oder die neue)
      */
     @AfterMapping
-    default EDCPolicy handleExistingEntity(EDCPolicyDto dto, @MappingTarget EDCPolicy entity) {
+    default Policy handleExistingEntity(EDCPolicyDto dto, @MappingTarget Policy entity) {
         if (dto.id() != null) {
-            EDCPolicy existingEntity = EDCPolicy.findById(dto.id());
+            Policy existingEntity = Policy.findById(dto.id());
             
             if (existingEntity != null) {
                 // Kopiere alle Felder von der neuen Entity zur existierenden

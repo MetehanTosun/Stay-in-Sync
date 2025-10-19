@@ -3,7 +3,7 @@ package de.unistuttgart.stayinsync.core.configuration.edc.dtoedc;
 import jakarta.validation.constraints.NotBlank;
 
 /**
- * DTO for {@link de.unistuttgart.stayinsync.core.configuration.edc.entities.EDCAccessPolicyPermission}
+ * DTO for {@link de.unistuttgart.stayinsync.core.configuration.edc.entities.AccessPolicyPermission}
  */
 public record EDCAccessPolicyPermissionDto(
     Long id,

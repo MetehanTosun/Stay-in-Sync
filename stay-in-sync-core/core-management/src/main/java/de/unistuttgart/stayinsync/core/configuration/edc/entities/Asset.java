@@ -1,6 +1,6 @@
 package de.unistuttgart.stayinsync.core.configuration.edc.entities;
 
-import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.TargetSystemEndpoint;
+import de.unistuttgart.stayinsync.core.configuration.persistence.entities.sync.TargetSystemEndpoint;
 import io.quarkus.hibernate.orm.panache.PanacheEntity;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
@@ -14,7 +14,7 @@ import jakarta.validation.constraints.NotBlank;
 @Table(name = "edc_asset", uniqueConstraints = {
     @UniqueConstraint(columnNames = "asset_id")
 })
-public class EDCAsset extends PanacheEntity {
+public class Asset extends PanacheEntity {
 
     /**
      * Die eindeutige Business-ID des Assets im EDC-System.
@@ -55,7 +55,7 @@ public class EDCAsset extends PanacheEntity {
      */
     @ManyToOne(optional = false, fetch = FetchType.LAZY)
     @JoinColumn(name = "target_edc_id", nullable = false)
-    public EDCInstance targetEDC;
+    public EdcInstance targetEDC;
 
     /**
      * Die Daten-Adresse des Assets, die Informationen zum Zugriff enthält.
@@ -63,7 +63,7 @@ public class EDCAsset extends PanacheEntity {
      */
     @ManyToOne(optional = false, fetch = FetchType.LAZY, cascade = CascadeType.ALL)
     @JoinColumn(name = "data_address_id", nullable = false)
-    public EDCDataAddress dataAddress;
+    public DataAddress dataAddress;
 
     /**
      * Eigenschaften des Assets.
@@ -71,7 +71,7 @@ public class EDCAsset extends PanacheEntity {
      */
     @ManyToOne(fetch = FetchType.LAZY, cascade = CascadeType.ALL)
     @JoinColumn(name = "properties_id")
-    public EDCProperty properties;
+    public Property properties;
 
     /**
      * Optionale Zuordnung zu einem Ziel-System-Endpunkt.
@@ -86,7 +86,7 @@ public class EDCAsset extends PanacheEntity {
      */
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "access_policy_id", nullable = true)
-    public EDCPolicy accessPolicy;
+    public Policy accessPolicy;
     
     /**
      * Die Vertragsrichtlinie (Contract Policy), die diesem Asset zugeordnet ist.
@@ -94,12 +94,12 @@ public class EDCAsset extends PanacheEntity {
      */
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "contract_policy_id", nullable = true)
-    public EDCPolicy contractPolicy;
+    public Policy contractPolicy;
 
     /**
      * Default-Konstruktor für JPA.
      */
-    public EDCAsset() {
+    public Asset() {
         // Standardwerte setzen
         this.type = "HttpData";
         this.contentType = "application/json";
@@ -112,17 +112,17 @@ public class EDCAsset extends PanacheEntity {
      * @param url Die URL, unter der das Asset erreichbar ist
      * @param targetEDC Die EDC-Instanz, zu der das Asset gehört
      */
-    public EDCAsset(String assetId, String url, EDCInstance targetEDC) {
+    public Asset(String assetId, String url, EdcInstance targetEDC) {
         this();
         this.assetId = assetId;
         this.url = url;
         this.targetEDC = targetEDC;
         
         // Erstelle Standard-DataAddress
-        this.dataAddress = new EDCDataAddress(url);
+        this.dataAddress = new DataAddress(url);
         
         // Erstelle Standard-Properties
-        this.properties = new EDCProperty();
+        this.properties = new Property();
     }
 
     /**
@@ -137,8 +137,8 @@ public class EDCAsset extends PanacheEntity {
      * @param dataAddress Die Daten-Adresse des Assets
      * @param properties Die Eigenschaften des Assets
      */
-    public EDCAsset(String assetId, String url, String type, String contentType, String description,
-                  EDCInstance targetEDC, EDCDataAddress dataAddress, EDCProperty properties) {
+    public Asset(String assetId, String url, String type, String contentType, String description,
+                  EdcInstance targetEDC, DataAddress dataAddress, Property properties) {
         this.assetId = assetId;
         this.url = url;
         this.type = type != null ? type : "HttpData";
@@ -155,7 +155,7 @@ public class EDCAsset extends PanacheEntity {
      * @param assetId Die Business-ID des Assets
      * @return Das gefundene Asset oder null, wenn kein Asset mit dieser ID existiert
      */
-    public static EDCAsset findByAssetId(String assetId) {
+    public static Asset findByAssetId(String assetId) {
         return find("assetId", assetId).firstResult();
     }
 
@@ -179,7 +179,7 @@ public class EDCAsset extends PanacheEntity {
      */
     public void ensureProperties() {
         if (properties == null) {
-            properties = new EDCProperty();
+            properties = new Property();
         }
         
         // Content-Type von Asset zu Properties übertragen
@@ -204,7 +204,7 @@ public class EDCAsset extends PanacheEntity {
      */
     public void ensureDataAddress() {
         if (dataAddress == null) {
-            dataAddress = new EDCDataAddress();
+            dataAddress = new DataAddress();
         }
         
         // URL von Asset zu DataAddress übertragen

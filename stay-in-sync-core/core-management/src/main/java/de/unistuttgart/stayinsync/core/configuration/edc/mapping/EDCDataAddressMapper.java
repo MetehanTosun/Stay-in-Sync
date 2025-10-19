@@ -1,7 +1,7 @@
 package de.unistuttgart.stayinsync.core.configuration.edc.mapping;
 
 import de.unistuttgart.stayinsync.core.configuration.edc.dtoedc.EDCDataAddressDto;
-import de.unistuttgart.stayinsync.core.configuration.edc.entities.EDCDataAddress;
+import de.unistuttgart.stayinsync.core.configuration.edc.entities.DataAddress;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.factory.Mappers;
@@ -29,7 +29,7 @@ public interface EDCDataAddressMapper {
     @Mapping(source = "baseUrl", target = "baseUrl")
     @Mapping(source = "proxyPath", target = "proxyPath")
     @Mapping(source = "proxyQueryParams", target = "proxyQueryParams")
-    EDCDataAddressDto toDto(EDCDataAddress entity);
+    EDCDataAddressDto toDto(DataAddress entity);
 
     /**
      * Konvertiert ein EDCDataAddressDto in ein EDCDataAddress-Entity.
@@ -43,5 +43,5 @@ public interface EDCDataAddressMapper {
     @Mapping(source = "baseUrl", target = "baseUrl")
     @Mapping(source = "proxyPath", target = "proxyPath")
     @Mapping(source = "proxyQueryParams", target = "proxyQueryParams")
-    EDCDataAddress fromDto(EDCDataAddressDto dto);
+    DataAddress fromDto(EDCDataAddressDto dto);
 }

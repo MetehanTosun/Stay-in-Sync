@@ -7,11 +7,11 @@ import lombok.NoArgsConstructor;
 @Entity
 @Table(name = "edc_access_policy_permission")
 @NoArgsConstructor
-public class EDCAccessPolicyPermission extends PanacheEntity {
+public class AccessPolicyPermission extends PanacheEntity {
 
     @ManyToOne
     @JoinColumn(name = "policy_id", nullable = false)
-    public EDCPolicy edcAccessPolicy;
+    public Policy edcAccessPolicy;
 
     @Column(nullable = false)
     public String action;
@@ -25,11 +25,11 @@ public class EDCAccessPolicyPermission extends PanacheEntity {
     @Column(name = "constraint_right_operand", nullable = false)
     public String constraintRightOperand;
 
-    public EDCPolicy getEdcAccessPolicy() {
+    public Policy getEdcAccessPolicy() {
         return edcAccessPolicy;
     }
 
-    public void setEdcAccessPolicy(EDCPolicy edcAccessPolicy) {
+    public void setEdcAccessPolicy(Policy edcAccessPolicy) {
         this.edcAccessPolicy = edcAccessPolicy;
     }
 

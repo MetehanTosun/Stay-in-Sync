@@ -18,9 +18,9 @@ export class PolicyService {
   // UI Testing method. To use the real backend, change this to false!
   private mockMode = false;
 
-  private backendUrl = '/api/config/policies';
-  private contractDefUrl = '/api/config/edcs/contract-definitions';
-  private baseUrl = '/api/config/edcs';
+  private backendUrl = 'http://localhost:8090/api/config/policies';
+  private contractDefUrl = 'http://localhost:8090/api/config/edcs/contract-definitions';
+  private baseUrl = 'http://localhost:8090/api/config/edcs';
 
   constructor(private http: HttpClient) {}
 

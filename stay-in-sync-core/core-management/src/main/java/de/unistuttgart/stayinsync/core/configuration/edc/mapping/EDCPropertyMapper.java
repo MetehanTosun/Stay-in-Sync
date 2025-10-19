@@ -1,7 +1,7 @@
 package de.unistuttgart.stayinsync.core.configuration.edc.mapping;
 
 import de.unistuttgart.stayinsync.core.configuration.edc.dtoedc.EDCPropertyDto;
-import de.unistuttgart.stayinsync.core.configuration.edc.entities.EDCProperty;
+import de.unistuttgart.stayinsync.core.configuration.edc.entities.Property;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.Named;
@@ -28,7 +28,7 @@ public interface EDCPropertyMapper {
      * @return Das erzeugte DTO
      */
     @Mapping(target = "properties", expression = "java(propertyToMap(entity))")
-    EDCPropertyDto toDto(EDCProperty entity);
+    EDCPropertyDto toDto(Property entity);
 
     /**
      * Konvertiert ein EDCPropertyDto in ein EDCProperty-Entity.
@@ -41,12 +41,12 @@ public interface EDCPropertyMapper {
     @Mapping(target = "version", expression = "java(getVersionFromProperties(dto))")
     @Mapping(target = "contentType", expression = "java(getContentTypeFromProperties(dto))")
     @Mapping(target = "description", expression = "java(getDescriptionFromProperties(dto))")
-    EDCProperty fromDto(EDCPropertyDto dto);
+    Property fromDto(EDCPropertyDto dto);
 
     /**
      * Konvertiert die Entity-Eigenschaften in eine Map für das DTO.
      */
-    default Map<String, Object> propertyToMap(EDCProperty entity) {
+    default Map<String, Object> propertyToMap(Property entity) {
         if (entity == null) return new HashMap<>();
         
         Map<String, Object> properties = new HashMap<>();

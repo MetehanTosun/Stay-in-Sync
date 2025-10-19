@@ -4,10 +4,10 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import de.unistuttgart.stayinsync.core.configuration.edc.dtoedc.EDCAssetDto;
 import de.unistuttgart.stayinsync.core.configuration.edc.dtoedc.EDCDataAddressDto;
-import de.unistuttgart.stayinsync.core.configuration.edc.entities.EDCAsset;
-import de.unistuttgart.stayinsync.core.configuration.edc.entities.EDCDataAddress;
-import de.unistuttgart.stayinsync.core.configuration.edc.entities.EDCInstance;
-import de.unistuttgart.stayinsync.core.configuration.edc.entities.EDCProperty;
+import de.unistuttgart.stayinsync.core.configuration.edc.entities.Asset;
+import de.unistuttgart.stayinsync.core.configuration.edc.entities.DataAddress;
+import de.unistuttgart.stayinsync.core.configuration.edc.entities.EdcInstance;
+import de.unistuttgart.stayinsync.core.configuration.edc.entities.Property;
 import de.unistuttgart.stayinsync.core.configuration.edc.mapping.EDCAssetMapper;
 import de.unistuttgart.stayinsync.core.configuration.edc.service.edcconnector.CreateEDCAssetDTO;
 import de.unistuttgart.stayinsync.core.configuration.edc.service.edcconnector.EDCClient;
@@ -71,7 +71,7 @@ public class EDCAssetService {
      * @throws CustomException Wenn kein Asset mit der angegebenen ID gefunden wird
      */
     public EDCAssetDto findById(final Long id) throws CustomException {
-        final EDCAsset asset = EDCAsset.findById(id);
+        final Asset asset = Asset.findById(id);
         if (asset == null) {
             final String exceptionMessage = "Kein Asset mit ID " + id + " gefunden";
             Log.error(exceptionMessage);
@@ -86,7 +86,7 @@ public class EDCAssetService {
      * @return Eine Liste aller Assets als DTOs
      */
     public List<EDCAssetDto> listAll() {
-        List<EDCAsset> assetList = EDCAsset.listAll();
+        List<Asset> assetList = Asset.listAll();
         return assetList.stream()
                 .map(EDCAssetMapper.INSTANCE::assetToAssetDto)
                 .collect(Collectors.toList());
@@ -103,14 +103,14 @@ public class EDCAssetService {
     public EDCAssetDto create(EDCAssetDto assetDto) throws CustomException {
         // Validiere die EDC-Instanz, falls eine angegeben ist
         if (assetDto.targetEDCId() != null) {
-            EDCInstance edcInstance = EDCInstance.findById(assetDto.targetEDCId());
+            EdcInstance edcInstance = EdcInstance.findById(assetDto.targetEDCId());
             if (edcInstance == null) {
                 throw new CustomException("Keine EDC-Instanz mit ID " + assetDto.targetEDCId() + " gefunden");
             }
         }
         
         // Asset in der Datenbank erstellen
-        EDCAsset asset = EDCAssetMapper.INSTANCE.assetDtoToAsset(assetDto);
+        Asset asset = EDCAssetMapper.INSTANCE.assetDtoToAsset(assetDto);
         asset.persist();
         Log.info("Asset mit ID " + asset.id + " erstellt");
         
@@ -149,14 +149,14 @@ public class EDCAssetService {
                 if (response.getStatus() >= 400) {
                     Log.errorf("EDC-Fehler %d: %s", response.getStatus(), response.getEntity());
                     // Asset aus der Datenbank entfernen, wenn EDC-Integration fehlschlägt
-                    EDCAsset.deleteById(asset.id);
+                    Asset.deleteById(asset.id);
                     throw new CustomException("Fehler bei der EDC-Integration: " + response.getStatus());
                 }
                 
                 Log.info("Asset im EDC mit ID: " + asset.assetId + " erstellt");
             } catch (Exception e) {
                 // Bei Fehler das Asset aus der Datenbank löschen und Exception werfen
-                EDCAsset.deleteById(asset.id);
+                Asset.deleteById(asset.id);
                 throw new CustomException("Fehler beim Erstellen des Assets im EDC: " + e.getMessage());
             }
         }
@@ -174,14 +174,14 @@ public class EDCAssetService {
      */
     @Transactional
     public EDCAssetDto update(Long id, EDCAssetDto updatedAssetDto) throws CustomException {
-        final EDCAsset persistedAsset = EDCAsset.findById(id);
+        final Asset persistedAsset = Asset.findById(id);
         if (persistedAsset == null) {
             final String exceptionMessage = "Kein Asset mit ID " + id + " gefunden";
             Log.error(exceptionMessage);
             throw new CustomException(exceptionMessage);
         }
 
-        final EDCAsset updatedAsset = EDCAssetMapper.INSTANCE.assetDtoToAsset(updatedAssetDto);
+        final Asset updatedAsset = EDCAssetMapper.INSTANCE.assetDtoToAsset(updatedAssetDto);
 
         // Aktualisiere alle Felder des Assets
         persistedAsset.assetId = updatedAsset.assetId;
@@ -217,7 +217,7 @@ public class EDCAssetService {
      */
     @Transactional
     public boolean delete(final Long id) throws CustomException {
-        EDCAsset asset = EDCAsset.findById(id);
+        Asset asset = Asset.findById(id);
         
         if (asset == null) {
             Log.warn("Kein Asset mit ID " + id + " gefunden zum Löschen");
@@ -253,7 +253,7 @@ public class EDCAssetService {
         }
 
         // Löschen des Assets aus der Datenbank
-        boolean deleted = EDCAsset.deleteById(id);
+        boolean deleted = Asset.deleteById(id);
         if (deleted) {
             Log.info("Asset mit ID " + id + " gelöscht");
         } else {
@@ -276,26 +276,26 @@ public class EDCAssetService {
         Log.info("Löschvorgang gestartet für Asset mit ID " + assetId + " und EDC-ID " + edcId);
         
         // Prüfe, ob die EDC-Instanz existiert
-        EDCInstance edcInstance = EDCInstance.findById(edcId);
+        EdcInstance edcInstance = EdcInstance.findById(edcId);
         if (edcInstance == null) {
             Log.error("Keine EDC-Instanz mit ID " + edcId + " gefunden");
             throw new CustomException("Keine EDC-Instanz mit ID " + edcId + " gefunden");
         }
         
         // Suche nach dem Asset mit der angegebenen ID in der angegebenen EDC-Instanz
-        TypedQuery<EDCAsset> query = entityManager.createQuery(
+        TypedQuery<Asset> query = entityManager.createQuery(
                 "SELECT a FROM EDCAsset a WHERE a.id = :assetId AND a.targetEDC.id = :edcId",
-                EDCAsset.class);
+                Asset.class);
         query.setParameter("assetId", assetId);
         query.setParameter("edcId", edcId);
         
-        List<EDCAsset> assets = query.getResultList();
+        List<Asset> assets = query.getResultList();
         if (assets.isEmpty()) {
             Log.warn("Kein Asset mit ID " + assetId + " und EDC-ID " + edcId + " gefunden zum Löschen");
             return false;
         }
         
-        EDCAsset asset = assets.get(0);
+        Asset asset = assets.get(0);
         Log.info("Asset gefunden: ID " + assetId + ", EDC-Asset-ID " + asset.assetId);
         
         // Versuche die EDC-Integration, wenn möglich, aber lass es nicht den gesamten Löschvorgang blockieren
@@ -402,7 +402,7 @@ public class EDCAssetService {
         Log.info("Löschvorgang gestartet für Asset mit EDC-Asset-ID " + edcAssetId + " und EDC-ID " + edcId);
         
         // Prüfe, ob die EDC-Instanz existiert
-        EDCInstance edcInstance = EDCInstance.findById(edcId);
+        EdcInstance edcInstance = EdcInstance.findById(edcId);
         if (edcInstance == null) {
             Log.error("Keine EDC-Instanz mit ID " + edcId + " gefunden");
             throw new CustomException("Keine EDC-Instanz mit ID " + edcId + " gefunden");
@@ -420,9 +420,9 @@ public class EDCAssetService {
         Log.info("Gesamtanzahl der Assets für EDC-ID " + edcId + ": " + totalCount);
         
         // Direkte Suche mit nativen SQL zur Umgehung möglicher Hibernate-Cache-Probleme
-        List<EDCAsset> assets = entityManager.createNativeQuery(
+        List<Asset> assets = entityManager.createNativeQuery(
                 "SELECT * FROM edc_asset WHERE asset_id = :assetId AND target_edc_id = :edcId", 
-                EDCAsset.class)
+                Asset.class)
                 .setParameter("assetId", edcAssetId)
                 .setParameter("edcId", edcId)
                 .getResultList();
@@ -446,7 +446,7 @@ public class EDCAssetService {
             return false;
         }
         
-        EDCAsset asset = assets.get(0);
+        Asset asset = assets.get(0);
         Long assetId = asset.id;
         
         Log.info("Asset gefunden: ID " + assetId + ", EDC-Asset-ID " + edcAssetId);
@@ -540,19 +540,19 @@ public class EDCAssetService {
      */
     public EDCAssetDto findByIdAndEdcId(final Long edcId, final Long assetId) throws CustomException {
         // Prüfe, ob die EDC-Instanz existiert
-        EDCInstance edcInstance = EDCInstance.findById(edcId);
+        EdcInstance edcInstance = EdcInstance.findById(edcId);
         if (edcInstance == null) {
             throw new CustomException("Keine EDC-Instanz mit ID " + edcId + " gefunden");
         }
 
         // Suche nach dem Asset mit der angegebenen ID in der angegebenen EDC-Instanz
-        TypedQuery<EDCAsset> query = entityManager.createQuery(
+        TypedQuery<Asset> query = entityManager.createQuery(
                 "SELECT a FROM EDCAsset a WHERE a.id = :assetId AND a.targetEDC.id = :edcId",
-                EDCAsset.class);
+                Asset.class);
         query.setParameter("assetId", assetId);
         query.setParameter("edcId", edcId);
 
-        List<EDCAsset> results = query.getResultList();
+        List<Asset> results = query.getResultList();
         if (results.isEmpty()) {
             throw new CustomException("Kein Asset mit ID " + assetId + 
                     " in EDC-Instanz mit ID " + edcId + " gefunden");
@@ -570,18 +570,18 @@ public class EDCAssetService {
      */
     public List<EDCAssetDto> listAllByEdcId(final Long edcId) throws CustomException {
         // Prüfe, ob die EDC-Instanz existiert
-        EDCInstance edcInstance = EDCInstance.findById(edcId);
+        EdcInstance edcInstance = EdcInstance.findById(edcId);
         if (edcInstance == null) {
             throw new CustomException("Keine EDC-Instanz mit ID " + edcId + " gefunden");
         }
 
         // Suche nach allen Assets in der angegebenen EDC-Instanz
-        TypedQuery<EDCAsset> query = entityManager.createQuery(
-                "SELECT a FROM EDCAsset a WHERE a.targetEDC.id = :edcId",
-                EDCAsset.class);
+        TypedQuery<Asset> query = entityManager.createQuery(
+                "SELECT a FROM Asset a WHERE a.targetEDC.id = :edcId",
+                Asset.class);
         query.setParameter("edcId", edcId);
 
-        List<EDCAsset> assetList = query.getResultList();
+        List<Asset> assetList = query.getResultList();
         
         return assetList.stream()
                 .map(EDCAssetMapper.INSTANCE::assetToAssetDto)
@@ -605,7 +605,7 @@ public class EDCAssetService {
         }
 
         // Prüfe, ob die EDC-Instanz existiert
-        EDCInstance edcInstance = EDCInstance.findById(edcId);
+        EdcInstance edcInstance = EdcInstance.findById(edcId);
         if (edcInstance == null) {
             throw new CustomException("Keine EDC-Instanz mit ID " + edcId + " gefunden");
         }
@@ -798,7 +798,7 @@ public class EDCAssetService {
     @Transactional
     public EDCAssetDto createForEdc(Long edcId, EDCAssetDto assetDto) throws CustomException {
         // Prüfe, ob die EDC-Instanz existiert
-        EDCInstance edcInstance = EDCInstance.findById(edcId);
+        EdcInstance edcInstance = EdcInstance.findById(edcId);
         if (edcInstance == null) {
             throw new CustomException("Keine EDC-Instanz mit ID " + edcId + " gefunden");
         }
@@ -833,7 +833,7 @@ public class EDCAssetService {
      */
     @Transactional
     public String initiateDataTransfer(Long assetId, String destinationUrl) throws CustomException {
-        EDCAsset asset = EDCAsset.findById(assetId);
+        Asset asset = Asset.findById(assetId);
 
         if (asset == null) {
             throw new CustomException("Kein Asset mit ID " + assetId + " gefunden");
@@ -863,7 +863,7 @@ public class EDCAssetService {
      * @throws CustomException Wenn der Status nicht abgerufen werden kann
      */
     public String checkTransferStatus(Long assetId, String transferProcessId) throws CustomException {
-        EDCAsset asset = EDCAsset.findById(assetId);
+        Asset asset = Asset.findById(assetId);
 
         if (asset == null) {
             throw new CustomException("Kein Asset mit ID " + assetId + " gefunden");
