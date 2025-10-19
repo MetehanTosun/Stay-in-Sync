@@ -4,22 +4,29 @@
 <!-- We add a custom class to target it with flexbox -->
 <p-accordion class="data-sources-accordion" [activeIndex]="0">
   <p-accordionTab header="Data Sources">
-    <ng-container *ngTemplateOutlet="systemListTemplate; context: { systems: allSourceSystems$ | async }"></ng-container>
+    <ng-container
+      *ngTemplateOutlet="
+        systemListTemplate;
+        context: { systems: allSourceSystems$ | async }
+      "
+    ></ng-container>
   </p-accordionTab>
 </p-accordion>
-
 
 <!-- Accordion 2: The fixed footer for "Active in Script" -->
 <!-- This one is separate and will be styled as the footer -->
 <p-accordion class="active-script-accordion">
   <p-accordionTab header="Active in Script">
     <!-- Placeholder for your active script logic -->
-    <div *ngIf="(activeSystems$ | async) as activeSystems; else noActive">
+    <div *ngIf="activeSystems$ | async as activeSystems; else noActive">
       <div *ngIf="activeSystems.length === 0" class="p-3 text-color-secondary">
         No sources active in the script yet.
       </div>
       <ul class="list-none p-0 m-0">
-        <li *ngFor="let system of activeSystems" class="p-2 border-bottom-1 surface-border">
+        <li
+          *ngFor="let system of activeSystems"
+          class="p-2 border-bottom-1 surface-border"
+        >
           {{ system.name }}
         </li>
       </ul>
@@ -31,35 +38,78 @@
 </p-accordion>
 
 <ng-template #systemListTemplate let-systems="systems">
-  <p-accordion class="flush-accordion" [multiple]="true" *ngIf="systems?.length" (onOpen)="onSystemExpand($event.index, systems)">
+  <p-accordion
+    class="flush-accordion"
+    [multiple]="true"
+    *ngIf="systems?.length"
+    (onOpen)="onSystemExpand($event.index)"
+  >
     <p-accordionTab *ngFor="let system of systems" [header]="system.name">
-      <div *ngIf="system.isLoadingEndpoints" class="text-center p-2">
+      <div *ngIf="system.isLoadingDetails" class="text-center p-2">
         <p-progressSpinner styleClass="w-2rem h-2rem"></p-progressSpinner>
       </div>
 
       <!-- REST Endpoints -->
       <ng-container *ngIf="system.apiType !== 'AAS'">
-        <div *ngIf="!system.isLoading && (!system.endpoints || system.endpoints.length === 0)" class="p-2 text-color-secondary">
+        <div
+          *ngIf="
+            !system.isLoadingDetails &&
+            (!system.endpoints || system.endpoints.length === 0)
+          "
+          class="p-2 text-color-secondary"
+        >
           <span>No endpoints defined.</span>
         </div>
 
         <!-- Group each endpoint in a styled container -->
         <div *ngFor="let endpoint of system.endpoints" class="endpoint-group">
           <div class="endpoint-header">
-            <div class="endpoint-path-wrapper" [pTooltip]="endpoint.httpRequestType + ' ' + endpoint.endpointPath">
+            <div
+              class="endpoint-path-wrapper"
+              [pTooltip]="
+                endpoint.httpRequestType + ' ' + endpoint.endpointPath
+              "
+            >
               <span class="font-bold mr-2">{{ endpoint.httpRequestType }}</span>
               <span class="font-mono">{{ endpoint.endpointPath }}</span>
             </div>
-            <p-button icon="pi pi-plus" styleClass="p-button-sm p-button-text" (click)="onCreateArc(system, endpoint)" pTooltip="Create New ARC"></p-button>
+            <p-button
+              icon="pi pi-plus"
+              styleClass="p-button-sm p-button-text"
+              (click)="onCreateArc(system, endpoint)"
+              pTooltip="Create New ARC"
+            ></p-button>
           </div>
-          
-          <div *ngIf="(arcsBySystem$ | async)?.get(system.name) as arcsForSystem" class="arc-list">
-            <div *ngFor="let arc of arcsForSystem | filterByType : 'REST' | filterByEndpoint : endpoint.id" class="arc-item">
+
+          <div
+            *ngIf="(arcsBySystem$ | async)?.get(system.name) as arcsForSystem"
+            class="arc-list"
+          >
+            <div
+              *ngFor="
+                let arc of arcsForSystem
+                  | filterByType : 'REST'
+                  | filterByEndpoint : endpoint.id
+              "
+              class="arc-item"
+            >
               <span>{{ arc.alias }}</span>
               <div class="arc-actions">
-                <p-button icon="pi pi-pencil" styleClass="p-button-rounded p-button-text" (click)="onEditArc(system, endpoint, arc)"></p-button>
-                <p-button icon="pi pi-clone" styleClass="p-button-rounded p-button-text" (click)="onCloneArc(system, endpoint, arc)"></p-button>
-                <p-button icon="pi pi-trash" styleClass="p-button-rounded p-button-text p-button-danger" (click)="onDeleteArc(arc)"></p-button>
+                <p-button
+                  icon="pi pi-pencil"
+                  styleClass="p-button-rounded p-button-text"
+                  (click)="onEditArc(system, endpoint, arc)"
+                ></p-button>
+                <p-button
+                  icon="pi pi-clone"
+                  styleClass="p-button-rounded p-button-text"
+                  (click)="onCloneArc(system, endpoint, arc)"
+                ></p-button>
+                <p-button
+                  icon="pi pi-trash"
+                  styleClass="p-button-rounded p-button-text p-button-danger"
+                  (click)="onDeleteArc(arc)"
+                ></p-button>
               </div>
             </div>
           </div>
@@ -68,25 +118,56 @@
 
       <!-- AAS Submodels -->
       <ng-container *ngIf="system.apiType === 'AAS'">
-        <div *ngIf="!system.isLoading && (!system.submodels || system.submodels.length === 0)" class="p-2 text-color-secondary">
+        <div
+          *ngIf="
+            !system.isLoadingDetails &&
+            (!system.submodels || system.submodels.length === 0)
+          "
+          class="p-2 text-color-secondary"
+        >
           <span>No submodels found.</span>
         </div>
-        
+
         <div *ngFor="let submodel of system.submodels" class="endpoint-group">
-           <div class="endpoint-header">
-              <div class="flex align-items-center gap-2 flex-grow-1">
-                <i class="pi pi-database"></i>
-                <span class="font-bold" [pTooltip]="submodel.id">{{ submodel.idShort }}</span>
-              </div>
-              <p-button icon="pi pi-plus" styleClass="p-button-sm p-button-text" (click)="onCreateAasArc(system, submodel)" pTooltip="Create New AAS ARC"></p-button>
-           </div>
-           
-           <div *ngIf="(arcsBySystem$ | async)?.get(system.name) as arcsForSystem" class="arc-list">
-            <div *ngFor="let arc of arcsForSystem | filterByType : 'AAS' | filterBySubmodel : submodel.id" class="arc-item">
+          <div class="endpoint-header">
+            <div class="flex align-items-center gap-2 flex-grow-1">
+              <i class="pi pi-database"></i>
+              <span class="font-bold" [pTooltip]="submodel.id">{{
+                submodel.idShort
+              }}</span>
+            </div>
+            <p-button
+              icon="pi pi-plus"
+              styleClass="p-button-sm p-button-text"
+              (click)="onCreateAasArc(system, submodel)"
+              pTooltip="Create New AAS ARC"
+            ></p-button>
+          </div>
+
+          <div
+            *ngIf="(arcsBySystem$ | async)?.get(system.name) as arcsForSystem"
+            class="arc-list"
+          >
+            <div
+              *ngFor="
+                let arc of arcsForSystem
+                  | filterByType : 'AAS'
+                  | filterBySubmodel : submodel.id
+              "
+              class="arc-item"
+            >
               <span class="arc-alias">{{ arc.alias }}</span>
               <div class="arc-actions">
-                <p-button icon="pi pi-pencil" styleClass="p-button-rounded p-button-text" (click)="onEditAasArc(system, submodel, arc)"></p-button>
-                <p-button icon="pi pi-trash" styleClass="p-button-rounded p-button-text p-button-danger" (click)="onDeleteAasArc(arc)"></p-button>
+                <p-button
+                  icon="pi pi-pencil"
+                  styleClass="p-button-rounded p-button-text"
+                  (click)="onEditAasArc(system, submodel, arc)"
+                ></p-button>
+                <p-button
+                  icon="pi pi-trash"
+                  styleClass="p-button-rounded p-button-text p-button-danger"
+                  (click)="onDeleteAasArc(arc)"
+                ></p-button>
               </div>
             </div>
           </div>

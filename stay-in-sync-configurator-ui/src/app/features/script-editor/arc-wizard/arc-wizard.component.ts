@@ -35,7 +35,7 @@ import {InputTextModule} from 'primeng/inputtext';
 import {ButtonModule} from 'primeng/button';
 import {DividerModule} from 'primeng/divider';
 import {SchemaViewerComponent} from '../schema-viewer/schema-viewer.component';
-import {catchError, finalize, of} from 'rxjs';
+import {finalize} from 'rxjs';
 import {FieldsetModule} from 'primeng/fieldset';
 import {Dropdown, DropdownModule} from 'primeng/dropdown';
 import {TooltipModule} from 'primeng/tooltip';
@@ -459,9 +459,9 @@ export class ArcWizardComponent implements OnChanges {
         next: (savedArc) => {
           console.log('ARC saved/updated successfully!', savedArc);
 
-          this.arcStateService.addOrUpdateArc(savedArc);
-          this.onSaveSuccess.emit(savedArc);
-          this.closeDialog();
+            this.arcStateService.addOrUpdateArc(savedArc);
+            this.onSaveSuccess.emit(savedArc);
+            this.closeDialog();
         },
         error: (err) => {
           this.errorMessages = [

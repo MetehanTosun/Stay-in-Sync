@@ -38,7 +38,7 @@ import { AasService } from '../../source-system/services/aas.service';
 import { ToolbarModule } from 'primeng/toolbar';
 
 interface MonacoExtraLib {
-  uri: String;
+  uri: string;
   disposable: IDisposable;
 }
 
@@ -87,6 +87,7 @@ export class ScriptEditorPageComponent implements OnInit, OnDestroy {
   private monaco!: typeof import('monaco-editor');
   private monacoInstance: editor.IStandaloneCodeEditor | undefined;
   private currentExtraLibs: MonacoExtraLib[] = [];
+  private currentTargetExtraLibs: MonacoExtraLib[] = [];
   private subscriptions = new Subscription();
 
   isLoading: boolean = false;
@@ -160,16 +161,7 @@ export class ScriptEditorPageComponent implements OnInit, OnDestroy {
       })
     );
 
-    monaco.languages.typescript.typescriptDefaults.setCompilerOptions({
-      target: monaco.languages.typescript.ScriptTarget.ESNext,
-      allowNonTsExtensions: true,
-      moduleResolution: monaco.languages.typescript.ModuleResolutionKind.NodeJs,
-      module: monaco.languages.typescript.ModuleKind.CommonJS,
-      noEmit: true,
-      esModuleInterop: true,
-      // Add essential libs
-      lib: ['es2020', 'dom'],
-    });
+    this.resetMonacoCompilerOptions();
 
     monaco.languages.typescript.typescriptDefaults.setDiagnosticsOptions({
       noSemanticValidation: false,
@@ -180,7 +172,18 @@ export class ScriptEditorPageComponent implements OnInit, OnDestroy {
     this.arcStateService.initializeMonaco(monaco);
     this.monacoInstance?.onDidChangeModelContent(() => this.onModelChange.next());
 
-    this.arcStateService.initializeGlobalSourceType().subscribe();
+    this.arcStateService.initializeGlobalSourceType().subscribe({
+      next: () => {
+        console.log('%c[ScriptEditorPage] Global source systems and types initialized successfully.', 'color: #10b981;');
+        if (this.currentTransformationId) {
+          console.log(`Editor is ready. Loading context for Transformation ID: ${this.currentTransformationId}`);
+          this.loadContextForScript(this.currentTransformationId);
+        }
+      },
+      error: (err) => {
+        console.error('FATAL: Could not initialize global source systems for the editor.', err);
+      }
+    });
 
     if (this.currentTransformationId) {
       console.log(`Editor is ready. Loading context for Transformation ID: ${this.currentTransformationId}`);
@@ -266,7 +269,7 @@ export class ScriptEditorPageComponent implements OnInit, OnDestroy {
       const parentSystem = allSystems.find(s => s.name === savedArc.sourceSystemName);
 
       if (parentSystem) {
-        this.arcManagementPanel.ensureEndpointsLoaded(parentSystem);
+        this.arcStateService.ensureSystemIsLoaded(parentSystem.name).subscribe();
       }
 
       this.arcStateService.addOrUpdateArc(savedArc);
@@ -335,34 +338,65 @@ export class ScriptEditorPageComponent implements OnInit, OnDestroy {
 
   private applyTypeDefinitions(response: TypeDefinitionsResponse): void {
     if (!this.monaco) {
-      console.error("Cannot apply types, monaco instance is not available.");
+      console.error("Cannot apply types, Monaco instance is not available.");
       return;
     }
 
-    if (response && response.libraries) {
-      console.log(`[Monaco] Applying ${response.libraries.length} type definitions from backend.`);
+    const CONTRACT_URI = 'file:///stayinsync/targets/contract.d.ts';
 
-      for (const newLib of response.libraries) {
-        const libUri = `file:///${newLib.filePath}`;
+    // --- PHASE 1: DISPOSE ---
+    // Log what we are about to do.
+    const oldContractLib = this.currentTargetExtraLibs.find(lib => lib.uri === CONTRACT_URI);
+    if (oldContractLib) {
+        console.log(`%c[Monaco Sync] Found old contract.d.ts to remove. Disposing...`, 'color: orange;');
+    }
+    
+    // Dispose of all previously added target libraries.
+    this.currentTargetExtraLibs.forEach(lib => lib.disposable.dispose());
+    this.currentTargetExtraLibs = []; // Clear our tracking array.
 
-        const existingLibIndex = this.currentExtraLibs.findIndex(lib => lib.uri === libUri);
-
-        if (existingLibIndex > -1) {
-          console.log(`[Monaco] Replacing existing library: ${libUri}`);
-          const oldLib = this.currentExtraLibs[existingLibIndex];
-          oldLib.disposable.dispose();
-
-          this.currentExtraLibs.splice(existingLibIndex, 1);
-        }
-        const newDisposable = this.monaco.languages.typescript.typescriptDefaults.addExtraLib(
-          newLib.content,
-          libUri
-        );
-        this.currentExtraLibs.push({ uri: libUri, disposable: newDisposable });
+    // --- PHASE 2: ADD (Deferred) ---
+    // Schedule the addition of new libraries to the next event loop tick.
+    setTimeout(() => {
+      if (!response || !response.libraries || response.libraries.length === 0) {
+        console.warn("[Monaco Sync] No new target libraries to add. State has been cleared.");
+      } else {
+        console.log(`[Monaco Sync] Adding ${response.libraries.length} new libraries from backend.`);
+        response.libraries.forEach(lib => {
+          const libUri = `file:///${lib.filePath}`;
+          const newDisposable = this.monaco.languages.typescript.typescriptDefaults.addExtraLib(
+            lib.content,
+            libUri
+          );
+          // Track the newly added library so we can dispose it next time.
+          this.currentTargetExtraLibs.push({ uri: libUri, disposable: newDisposable });
+        });
       }
 
-      console.log('[Monaco] Type definitions applied successfully.');
-    }
+      // "Kick" the worker AFTER adding the new libs to force a re-evaluation.
+      console.log('[Monaco Sync] Resetting compiler options to force worker refresh.');
+      this.resetMonacoCompilerOptions();
+      
+      console.log('[Monaco Sync] Synchronization complete.');
+    }, 100); // 100ms delay is safer than 0 for ensuring a clean event loop turn.
+  }
+
+  /**
+   * NEW: Helper method to encapsulate the compiler options.
+   * Calling this reliably resets the TypeScript worker's internal state.
+   */
+  private resetMonacoCompilerOptions(): void {
+    if (!this.monaco) return;
+    
+    this.monaco.languages.typescript.typescriptDefaults.setCompilerOptions({
+      target: this.monaco.languages.typescript.ScriptTarget.ESNext,
+      allowNonTsExtensions: true,
+      moduleResolution: this.monaco.languages.typescript.ModuleResolutionKind.NodeJs,
+      module: this.monaco.languages.typescript.ModuleKind.CommonJS,
+      noEmit: true,
+      esModuleInterop: true,
+      lib: ['es2020', 'dom'],
+    });
   }
 
   private loadContextForScript(transformationId: string): void {
@@ -422,7 +456,7 @@ export class ScriptEditorPageComponent implements OnInit, OnDestroy {
         this.messageService.add({
           severity: 'error',
           summary: 'Validation Failed',
-          detail: 'Please fix the TypeScript errors before saving.'
+          detail: 'Typescript errors present. Saved as draft.'
         });
       }
       const transpileOutput = ts.transpileModule(this.code, {
@@ -602,6 +636,7 @@ function transform(): DirectiveMap {
   ngOnDestroy(): void {
     this.subscriptions.unsubscribe();
     this.currentExtraLibs.forEach(lib => lib.disposable.dispose());
+    this.currentTargetExtraLibs.forEach(lib => lib.disposable.dispose());
   }
 
   goBack() {

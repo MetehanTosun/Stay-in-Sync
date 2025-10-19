@@ -5,6 +5,7 @@
   [modal]="true"
   [style]="{ width: '50vw' }"
   [draggable]="false"
+  [baseZIndex]="10000"
 >
   <form [formGroup]="wizardForm" class="form-container">
     <!-- Basic Information -->
@@ -20,6 +21,7 @@
 
     <div class="form-field">
       <label for="targetSystem">Target System</label>
+      <!-- 2. Change [appendTo] to the string "body" for ALL dropdowns. -->
       <p-select
         id="targetSystem"
         [options]="(targetSystems$ | async) || []"
@@ -28,6 +30,7 @@
         formControlName="targetSystemId"
         placeholder="Select Target System"
         [showClear]="true"
+        appendTo="body"
       ></p-select>
     </div>
 
@@ -39,6 +42,7 @@
         formControlName="arcPatternType"
         optionLabel="label"
         optionValue="value"
+        appendTo="body"
       ></p-select>
     </div>
 
@@ -59,6 +63,7 @@
             optionLabel="endpointPath"
             optionValue="id"
             [showClear]="true"
+            appendTo="body"
           >
             <ng-template let-endpoint pTemplate="item">
               <div class="endpoint-option">
@@ -74,14 +79,13 @@
           <label for="createEndpoint">CREATE (POST)</label>
           <p-select
             id="createEndpoint"
-            [options]="
-              (endpointSuggestions$ | async) || []
-            "
+            [options]="(endpointSuggestions$ | async) || []"
             formControlName="createEndpointId"
             placeholder="POST-Endpoint for creation"
             optionLabel="endpointPath"
             optionValue="id"
             [showClear]="true"
+            appendTo="body"
           >
             <ng-template let-endpoint pTemplate="item">
               <div class="endpoint-option">
@@ -97,14 +101,13 @@
           <label for="updateEndpoint">UPDATE (PUT)</label>
           <p-select
             id="updateEndpoint"
-            [options]="
-              (endpointSuggestions$ | async) || []
-            "
+            [options]="(endpointSuggestions$ | async) || []"
             formControlName="updateEndpointId"
             placeholder="PUT-Endpoint for updates"
             optionLabel="endpointPath"
             optionValue="id"
             [showClear]="true"
+            appendTo="body"
           >
             <ng-template let-endpoint pTemplate="item">
               <div class="endpoint-option">

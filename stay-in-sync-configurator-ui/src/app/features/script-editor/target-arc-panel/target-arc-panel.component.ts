@@ -6,7 +6,7 @@ import {
   OnInit
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { finalize } from 'rxjs/operators';
+import {finalize} from 'rxjs/operators';
 
 import { AasTargetArcConfiguration, AnyTargetArc, TargetArcConfiguration, UpdateTransformationRequestConfigurationDTO } from '../models/target-system.models';
 import { TargetSystem } from '../models/target-system.models';
@@ -27,9 +27,7 @@ import { TargetArcWizardComponent } from '../target-arc-wizard/target-arc-wizard
 import { TreeTableModule } from 'primeng/treetable';
 import { MenuModule } from 'primeng/menu';
 import { AasService } from '../../source-system/services/aas.service';
-import { UpdateTransformationRequest } from '../../transformation/models/transformation.model';
 import { TargetArcWizardAasComponent } from '../target-arc-wizard-aas/target-arc-wizard-aas.component';
-import { SplitButtonModule } from 'primeng/splitbutton';
 
 type LibrarySystem = TargetSystem & {
   arcs: AnyTargetArc[];
@@ -214,33 +212,26 @@ export class TargetArcPanelComponent implements OnInit {
   }
 
   private sendArcUpdates(): void {
-    console.log(JSON.stringify(this.activeArcs))
-    const restArcIds: number[] = this.activeArcs
-      .filter(arc => arc.arcType === 'REST')
-      .map(arc => arc.id);
-
-    const aasArcIds: number[] = this.activeArcs
-      .filter(arc => arc.arcType === 'AAS')
-      .map(arc => arc.id);
-
     const dto: UpdateTransformationRequestConfigurationDTO = {
-      restTargetArcIds: restArcIds,
-      aasTargetArcIds: aasArcIds
+      restTargetArcIds: this.activeArcs.filter(arc => arc.arcType === 'REST').map(arc => arc.id),
+      aasTargetArcIds: this.activeArcs.filter(arc => arc.arcType === 'AAS').map(arc => arc.id)
     };
 
-    console.log('%c[TargetPanel] Sending update DTO to backend:', 'color: #f97316;', JSON.stringify(dto, null, 2));
+    console.log('%c[TargetPanel] Sending update DTO to backend:', 'color: #f97116;', dto);
 
     this.scriptEditorService.updateTransformationTargetArcs(Number(this.transformationId), dto)
     .subscribe({
-      next: () => {
+      next: (typeDefinitionsResponse) => {
+        // The response from the PUT request itself contains the new, correct types.
         this.messageService.add({ summary: 'Directives Updated', severity: 'success' });
-        this.updateMonacoTypes();
+        console.log('%c[TargetPanel] Received types from update response. Requesting editor update.', 'color: #10b981;', typeDefinitionsResponse);
+        this.monacoEditorService.requestTypeUpdate(typeDefinitionsResponse);
       },
       error: (err) => { 
         this.messageService.add({ severity: 'error', summary: 'Update Failed', detail: 'Could not update the directive configuration.' });
-        console.error(err);
-        this.loadActiveArcs();
-       }
+        console.error("Error during update flow:", err);
+        this.loadActiveArcs(); // Re-sync on failure.
+      }
     });
   }
 

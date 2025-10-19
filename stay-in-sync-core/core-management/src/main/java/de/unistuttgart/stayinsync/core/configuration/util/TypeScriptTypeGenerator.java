@@ -22,7 +22,7 @@ public class TypeScriptTypeGenerator {
 
         if(rootNode.isArray()){
             if (!rootNode.isEmpty()){
-                generateInterface("RootObject", rootNode.get(0), allInterfaces, generatedInterfaceNames);
+                generateInterface("Root", rootNode.get(0), allInterfaces, generatedInterfaceNames);
             }
         } else if(rootNode.isObject()){
             generateInterface("Root", rootNode, allInterfaces, generatedInterfaceNames);

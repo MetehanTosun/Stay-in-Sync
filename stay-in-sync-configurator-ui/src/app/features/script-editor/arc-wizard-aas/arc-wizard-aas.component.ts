@@ -117,9 +117,9 @@ export class ArcWizardAasComponent implements OnChanges {
             ...savedArc,
             sourceSystemName: this.context.system.name
           };
-          this.arcStateService.addOrUpdateArc(arcForState);
-          this.onSaveSuccess.emit(savedArc);
-          this.closeDialog();
+            this.arcStateService.addOrUpdateArc(arcForState);
+            this.onSaveSuccess.emit(savedArc);
+            this.closeDialog();
         },
         error: (err) => {
           this.messageService.add({

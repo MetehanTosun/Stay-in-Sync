@@ -13,6 +13,7 @@ import de.unistuttgart.stayinsync.core.configuration.rest.dtos.TransformationShe
 import de.unistuttgart.stayinsync.core.configuration.rest.dtos.targetsystem.GetRequestConfigurationDTO;
 import de.unistuttgart.stayinsync.core.configuration.rest.dtos.TransformationStatusUpdate;
 import de.unistuttgart.stayinsync.core.configuration.rest.dtos.targetsystem.UpdateTransformationRequestConfigurationDTO;
+import de.unistuttgart.stayinsync.core.configuration.rest.dtos.typegeneration.GetTypeDefinitionsResponseDTO;
 import de.unistuttgart.stayinsync.core.configuration.service.transformationrule.GraphStorageService;
 import de.unistuttgart.stayinsync.core.configuration.rabbitmq.producer.TransformationJobMessageProducer;
 import de.unistuttgart.stayinsync.transport.domain.JobDeploymentStatus;
@@ -48,6 +49,9 @@ public class TransformationService {
 
     @Inject
     GraphStorageService graphStorageService;
+
+    @Inject
+    TargetDtsBuilderGeneratorService targetDtsBuilderGeneratorService;
 
     @Inject
     EntityManager entityManager;
@@ -125,7 +129,7 @@ public class TransformationService {
     }
 
     @Transactional
-    public TransformationDetailsDTO updateTargetArcs(Long transformationId, UpdateTransformationRequestConfigurationDTO dto){
+    public GetTypeDefinitionsResponseDTO updateTargetArcs(Long transformationId, UpdateTransformationRequestConfigurationDTO dto){
         Log.debugf("Updating ALL Target ARCs for Transformation with id %d", transformationId);
 
         Transformation transformation = Transformation.<Transformation>findByIdOptional(transformationId)
@@ -157,13 +161,14 @@ public class TransformationService {
         }
 
         transformation.persist();
+        entityManager.flush();
 
         Log.infof("Successfully updated Target ARCs for Transformation %d. REST ARC count: %d, AAS ARC count: %d",
                 transformationId,
                 transformation.targetSystemApiRequestConfigurations.size(),
                 transformation.aasTargetApiRequestConfigurations.size());
 
-        return mapper.mapToDetailsDTO(transformation);
+        return targetDtsBuilderGeneratorService.generateForTransformation(transformationId);
     }
 
     @Transactional(SUPPORTS)

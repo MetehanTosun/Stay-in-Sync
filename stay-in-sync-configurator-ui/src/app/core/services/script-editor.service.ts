@@ -189,8 +189,8 @@ export class ScriptEditorService {
     return this.http.get<AnyTargetArc[]>(`${this.API_URL}/config/transformation/${transformationId}/target-arcs`);
   }
 
-  updateTransformationTargetArcs(transformationId: number, targetArcIds: UpdateTransformationRequestConfigurationDTO): Observable<any> {
-    return this.http.put(`${this.API_URL}/config/transformation/${transformationId}/target-arcs`, targetArcIds);
+  updateTransformationTargetArcs(transformationId: number, targetArcIds: UpdateTransformationRequestConfigurationDTO): Observable<TypeDefinitionsResponse> {
+    return this.http.put<TypeDefinitionsResponse>(`${this.API_URL}/config/transformation/${transformationId}/target-arcs`, targetArcIds);
   }
 
   getTargetTypeDefinitions(transformationId: number): Observable<TypeDefinitionsResponse> {
