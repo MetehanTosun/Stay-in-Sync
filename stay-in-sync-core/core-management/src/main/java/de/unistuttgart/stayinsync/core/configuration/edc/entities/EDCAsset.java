@@ -1,7 +1,7 @@
 package de.unistuttgart.stayinsync.core.configuration.edc.entities;
 
 import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.TargetSystemEndpoint;
-import de.unistuttgart.stayinsync.core.model.UuidEntity;
+import io.quarkus.hibernate.orm.panache.PanacheEntity;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
 
@@ -14,87 +14,87 @@ import jakarta.validation.constraints.NotBlank;
 @Table(name = "edc_asset", uniqueConstraints = {
     @UniqueConstraint(columnNames = "asset_id")
 })
-public class EDCAsset extends UuidEntity {
+public class EDCAsset extends PanacheEntity {
 
     /**
      * Die eindeutige Business-ID des Assets im EDC-System.
-     * Unterscheidet sich von der technischen UUID dieser Entity.
+     * Unterscheidet sich von der technischen ID dieser Entity.
      */
     @NotBlank
     @Column(name = "asset_id", nullable = false)
-    private String assetId;
+    public String assetId;
 
     /**
      * Die URL, unter der das Asset erreichbar ist.
      * Wird auch in der DataAddress verwendet.
      */
     @Column(name = "url", nullable = false)
-    private String url;
+    public String url;
 
     /**
      * Der Typ des Assets, typischerweise "HttpData" für REST-API-basierte Assets.
      */
     @Column(name = "type", nullable = false)
-    private String type;
+    public String type;
 
     /**
      * Der Content-Type des Assets, z.B. "application/json".
      */
     @Column(name = "content_type", nullable = false)
-    private String contentType;
+    public String contentType;
 
     /**
      * Eine optionale Beschreibung des Assets.
      */
     @Column(name = "description", length = 1024)
-    private String description;
+    public String description;
 
     /**
      * Die Ziel-EDC-Instanz, zu der dieses Asset gehört.
      * Jedes Asset muss genau einer EDC-Instanz zugeordnet sein.
      */
     @ManyToOne(optional = false, fetch = FetchType.LAZY)
-    @JoinColumn(name = "target_edc_id", columnDefinition = "CHAR(36)", nullable = false)
-    private EDCInstance targetEDC;
+    @JoinColumn(name = "target_edc_id", nullable = false)
+    public EDCInstance targetEDC;
 
     /**
      * Die Daten-Adresse des Assets, die Informationen zum Zugriff enthält.
      * Wird beim Löschen des Assets automatisch mit gelöscht (CascadeType.ALL).
      */
     @ManyToOne(optional = false, fetch = FetchType.LAZY, cascade = CascadeType.ALL)
-    @JoinColumn(name = "data_address_id", columnDefinition = "CHAR(36)", nullable = false)
-    private EDCDataAddress dataAddress;
+    @JoinColumn(name = "data_address_id", nullable = false)
+    public EDCDataAddress dataAddress;
 
     /**
      * Eigenschaften des Assets.
      * Werden beim Löschen des Assets automatisch mit gelöscht (CascadeType.ALL).
      */
     @ManyToOne(fetch = FetchType.LAZY, cascade = CascadeType.ALL)
-    @JoinColumn(name = "properties_id", columnDefinition = "CHAR(36)")
-    private EDCProperty properties;
+    @JoinColumn(name = "properties_id")
+    public EDCProperty properties;
 
     /**
      * Optionale Zuordnung zu einem Ziel-System-Endpunkt.
      */
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "target_system_endpoint_id", nullable = true)
-    private TargetSystemEndpoint targetSystemEndpoint;
+    public TargetSystemEndpoint targetSystemEndpoint;
     
     /**
      * Die Zugriffsrichtlinie (Access Policy), die diesem Asset zugeordnet ist.
      * Definiert, wer auf das Asset zugreifen darf.
      */
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "access_policy_id", columnDefinition = "CHAR(36)", nullable = true)
-    private EDCPolicy accessPolicy;
+    @JoinColumn(name = "access_policy_id", nullable = true)
+    public EDCPolicy accessPolicy;
     
     /**
      * Die Vertragsrichtlinie (Contract Policy), die diesem Asset zugeordnet ist.
      * Definiert die Bedingungen, unter denen auf das Asset zugegriffen werden darf.
      */
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "contract_policy_id", columnDefinition = "CHAR(36)", nullable = true)
-    private EDCPolicy contractPolicy;
+    @JoinColumn(name = "contract_policy_id", nullable = true)
+    public EDCPolicy contractPolicy;
 
     /**
      * Default-Konstruktor für JPA.
@@ -160,157 +160,17 @@ public class EDCAsset extends UuidEntity {
     }
 
     /**
-     * Getter für assetId.
-     */
-    public String getAssetId() {
-        return assetId;
-    }
-
-    /**
-     * Setter für assetId.
-     */
-    public void setAssetId(String assetId) {
-        this.assetId = assetId;
-    }
-
-    /**
-     * Getter für url.
-     */
-    public String getUrl() {
-        return url;
-    }
-
-    /**
-     * Setter für url.
-     */
-    public void setUrl(String url) {
-        this.url = url;
-    }
-
-    /**
-     * Getter für type.
-     */
-    public String getType() {
-        return type;
-    }
-
-    /**
-     * Setter für type.
+     * Spezielle Methode für Type, um Standardwert "HttpData" zu gewährleisten.
      */
     public void setType(String type) {
         this.type = type != null ? type : "HttpData";
     }
 
     /**
-     * Getter für contentType.
-     */
-    public String getContentType() {
-        return contentType;
-    }
-
-    /**
-     * Setter für contentType.
+     * Spezielle Methode für ContentType, um Standardwert "application/json" zu gewährleisten.
      */
     public void setContentType(String contentType) {
         this.contentType = contentType != null ? contentType : "application/json";
-    }
-
-    /**
-     * Getter für description.
-     */
-    public String getDescription() {
-        return description;
-    }
-
-    /**
-     * Setter für description.
-     */
-    public void setDescription(String description) {
-        this.description = description;
-    }
-
-    /**
-     * Getter für targetEDC.
-     */
-    public EDCInstance getTargetEDC() {
-        return targetEDC;
-    }
-
-    /**
-     * Setter für targetEDC.
-     */
-    public void setTargetEDC(EDCInstance targetEDC) {
-        this.targetEDC = targetEDC;
-    }
-
-    /**
-     * Getter für dataAddress.
-     */
-    public EDCDataAddress getDataAddress() {
-        return dataAddress;
-    }
-
-    /**
-     * Setter für dataAddress.
-     */
-    public void setDataAddress(EDCDataAddress dataAddress) {
-        this.dataAddress = dataAddress;
-    }
-
-    /**
-     * Getter für properties.
-     */
-    public EDCProperty getProperties() {
-        return properties;
-    }
-
-    /**
-     * Setter für properties.
-     */
-    public void setProperties(EDCProperty properties) {
-        this.properties = properties;
-    }
-
-    /**
-     * Getter für targetSystemEndpoint.
-     */
-    public TargetSystemEndpoint getTargetSystemEndpoint() {
-        return targetSystemEndpoint;
-    }
-
-    /**
-     * Setter für targetSystemEndpoint.
-     */
-    public void setTargetSystemEndpoint(TargetSystemEndpoint targetSystemEndpoint) {
-        this.targetSystemEndpoint = targetSystemEndpoint;
-    }
-    
-    /**
-     * Getter für accessPolicy.
-     */
-    public EDCPolicy getAccessPolicy() {
-        return accessPolicy;
-    }
-    
-    /**
-     * Setter für accessPolicy.
-     */
-    public void setAccessPolicy(EDCPolicy accessPolicy) {
-        this.accessPolicy = accessPolicy;
-    }
-    
-    /**
-     * Getter für contractPolicy.
-     */
-    public EDCPolicy getContractPolicy() {
-        return contractPolicy;
-    }
-    
-    /**
-     * Setter für contractPolicy.
-     */
-    public void setContractPolicy(EDCPolicy contractPolicy) {
-        this.contractPolicy = contractPolicy;
     }
     
     /**
@@ -324,16 +184,18 @@ public class EDCAsset extends UuidEntity {
         
         // Content-Type von Asset zu Properties übertragen
         if (contentType != null) {
+            // Für Felder mit spezieller Logik im Setter weiterhin den Setter verwenden
             properties.setContentType(contentType);
         }
         
         // Beschreibung von Asset zu Properties übertragen
         if (description != null) {
-            properties.setDescription(description);
+            // Direkter Feldzugriff nach Panache-Stil
+            properties.description = description;
         }
         
         // Asset-ID zu Properties hinzufügen
-        properties.setName(assetId);
+        properties.name = assetId;
     }
     
     /**
@@ -347,11 +209,13 @@ public class EDCAsset extends UuidEntity {
         
         // URL von Asset zu DataAddress übertragen
         if (url != null) {
-            dataAddress.setBaseUrl(url);
+            // Bei Panache können wir direkt auf die Felder zugreifen
+            dataAddress.baseUrl = url;
         }
         
         // Typ von Asset zu DataAddress übertragen
         if (type != null) {
+            // Bei komplexen Settern (mit Logik) weiterhin die Setter verwenden
             dataAddress.setType(type);
         }
     }

@@ -2,56 +2,46 @@ package de.unistuttgart.stayinsync.core.configuration.edc.mapping;
 
 import de.unistuttgart.stayinsync.core.configuration.edc.dtoedc.EDCDataAddressDto;
 import de.unistuttgart.stayinsync.core.configuration.edc.entities.EDCDataAddress;
+import org.mapstruct.Mapper;
+import org.mapstruct.Mapping;
+import org.mapstruct.factory.Mappers;
 
 /**
- * Mapper-Klasse zur Konvertierung zwischen EDCDataAddress-Entities und EDCDataAddressDto-Objekten.
+ * MapStruct-Mapper zur Konvertierung zwischen EDCDataAddress-Entities und EDCDataAddressDto-Objekten.
  */
-public class EDCDataAddressMapper {
+@Mapper
+public interface EDCDataAddressMapper {
+
+    /**
+     * Singleton-Instanz des Mappers.
+     */
+    EDCDataAddressMapper INSTANCE = Mappers.getMapper(EDCDataAddressMapper.class);
 
     /**
      * Konvertiert ein EDCDataAddress-Entity in ein EDCDataAddressDto.
      * 
      * @param entity Das zu konvertierende Entity
-     * @return Das erzeugte DTO oder null, wenn entity null ist
+     * @return Das erzeugte DTO
      */
-    public static EDCDataAddressDto toDto(EDCDataAddress entity) {
-        if (entity == null) {
-            return null;
-        }
-        
-        EDCDataAddressDto dto = new EDCDataAddressDto();
-        dto.setId(entity.id);
-        dto.setJsonLDType(entity.getJsonLDType());
-        dto.setType(entity.getType());
-        
-        // Verwende die konsistente baseUrl-Property
-        dto.setBaseUrl(entity.getBaseUrl());
-        
-        dto.setProxyPath(entity.isProxyPath());
-        dto.setProxyQueryParams(entity.isProxyQueryParams());
-        return dto;
-    }
+    @Mapping(source = "id", target = "id")
+    @Mapping(source = "jsonLDType", target = "jsonLDType")
+    @Mapping(source = "type", target = "type")
+    @Mapping(source = "baseUrl", target = "baseUrl")
+    @Mapping(source = "proxyPath", target = "proxyPath")
+    @Mapping(source = "proxyQueryParams", target = "proxyQueryParams")
+    EDCDataAddressDto toDto(EDCDataAddress entity);
 
     /**
      * Konvertiert ein EDCDataAddressDto in ein EDCDataAddress-Entity.
      * 
      * @param dto Das zu konvertierende DTO
-     * @return Das erzeugte Entity oder null, wenn dto null ist
+     * @return Das erzeugte Entity
      */
-    public static EDCDataAddress fromDto(EDCDataAddressDto dto) {
-        if (dto == null) {
-            return null;
-        }
-        
-        EDCDataAddress entity = new EDCDataAddress();
-        entity.setJsonLDType(dto.getJsonLDType());
-        entity.setType(dto.getType());
-        
-        // Verwende die konsistente baseUrl-Property
-        entity.setBaseUrl(dto.getBaseUrl());
-        
-        entity.setProxyPath(dto.getProxyPath());
-        entity.setProxyQueryParams(dto.getProxyQueryParams());
-        return entity;
-    }
+    @Mapping(source = "id", target = "id")
+    @Mapping(source = "jsonLDType", target = "jsonLDType")
+    @Mapping(source = "type", target = "type")
+    @Mapping(source = "baseUrl", target = "baseUrl")
+    @Mapping(source = "proxyPath", target = "proxyPath")
+    @Mapping(source = "proxyQueryParams", target = "proxyQueryParams")
+    EDCDataAddress fromDto(EDCDataAddressDto dto);
 }

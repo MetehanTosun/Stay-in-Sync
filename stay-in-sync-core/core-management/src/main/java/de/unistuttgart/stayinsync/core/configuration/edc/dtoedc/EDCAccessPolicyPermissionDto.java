@@ -1,61 +1,73 @@
 package de.unistuttgart.stayinsync.core.configuration.edc.dtoedc;
 
 import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
-import java.util.UUID;
 
-public class EDCAccessPolicyPermissionDto {
-    private UUID id;
-
+/**
+ * DTO for {@link de.unistuttgart.stayinsync.core.configuration.edc.entities.EDCAccessPolicyPermission}
+ */
+public record EDCAccessPolicyPermissionDto(
+    Long id,
+    
     @NotBlank
-    private String action;
-
+    String action,
+    
     @NotBlank
-    private String constraintLeftOperand;
-
+    String constraintLeftOperand,
+    
     @NotBlank
-    private String constraintOperator;
-
+    String constraintOperator,
+    
     @NotBlank
-    private String constraintRightOperand;
+    String constraintRightOperand
+) {
+    /**
+     * Builder for creating instances of {@link EDCAccessPolicyPermissionDto}
+     * for backward compatibility
+     */
+    public static class Builder {
+        private Long id;
+        private String action;
+        private String constraintLeftOperand;
+        private String constraintOperator;
+        private String constraintRightOperand;
 
-    public UUID getId() {
-        return id;
-    }
-    public EDCAccessPolicyPermissionDto setId(UUID id) {
-        this.id = id;
-        return this;
+        public Builder id(Long id) {
+            this.id = id;
+            return this;
+        }
+
+        public Builder action(String action) {
+            this.action = action;
+            return this;
+        }
+
+        public Builder constraintLeftOperand(String constraintLeftOperand) {
+            this.constraintLeftOperand = constraintLeftOperand;
+            return this;
+        }
+
+        public Builder constraintOperator(String constraintOperator) {
+            this.constraintOperator = constraintOperator;
+            return this;
+        }
+
+        public Builder constraintRightOperand(String constraintRightOperand) {
+            this.constraintRightOperand = constraintRightOperand;
+            return this;
+        }
+
+        public EDCAccessPolicyPermissionDto build() {
+            return new EDCAccessPolicyPermissionDto(
+                id,
+                action,
+                constraintLeftOperand,
+                constraintOperator,
+                constraintRightOperand
+            );
+        }
     }
 
-    public String getAction() {
-        return action;
-    }
-    public EDCAccessPolicyPermissionDto setAction(String action) {
-        this.action = action;
-        return this;
-    }
-
-    public String getConstraintLeftOperand() {
-        return constraintLeftOperand;
-    }
-    public EDCAccessPolicyPermissionDto setConstraintLeftOperand(String constraintLeftOperand) {
-        this.constraintLeftOperand = constraintLeftOperand;
-        return this;
-    }
-
-    public String getConstraintOperator() {
-        return constraintOperator;
-    }
-    public EDCAccessPolicyPermissionDto setConstraintOperator(String constraintOperator) {
-        this.constraintOperator = constraintOperator;
-        return this;
-    }
-
-    public String getConstraintRightOperand() {
-        return constraintRightOperand;
-    }
-    public EDCAccessPolicyPermissionDto setConstraintRightOperand(String constraintRightOperand) {
-        this.constraintRightOperand = constraintRightOperand;
-        return this;
+    public static Builder builder() {
+        return new Builder();
     }
 }

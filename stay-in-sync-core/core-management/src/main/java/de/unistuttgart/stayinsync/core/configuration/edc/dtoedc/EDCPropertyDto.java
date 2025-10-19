@@ -6,15 +6,27 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.UUID;
 
 /**
  * Data Transfer Object (DTO) für EDC-Asset-Properties.
  * Repräsentiert die Eigenschaften eines EDC-Assets in einer Form, die für die 
  * JSON-Serialisierung geeignet ist.
+ * Implementiert als Record für mehr Effizienz und bessere Lesbarkeit.
  */
 @JsonInclude(JsonInclude.Include.NON_NULL)
-public class EDCPropertyDto {
+public record EDCPropertyDto(
+    /**
+     * Die ID des DTOs, wird nicht in der JSON-Antwort enthalten sein.
+     */
+    @JsonIgnore
+    Long id,
+    
+    /**
+     * Die Map, die alle Properties des Assets enthält.
+     * Diese wird bei der JSON-Serialisierung als Schlüssel-Wert-Paare auf der obersten Ebene dargestellt.
+     */
+    Map<String, Object> properties
+) {
     /**
      * Konstanten für die standardmäßigen Property-Namen im EDC-Format.
      */
@@ -24,22 +36,10 @@ public class EDCPropertyDto {
     public static final String PROP_VERSION = "asset:prop:version";
     
     /**
-     * Die ID des DTOs, wird nicht in der JSON-Antwort enthalten sein.
-     */
-    @JsonIgnore
-    private UUID id;
-    
-    /**
-     * Die Map, die alle Properties des Assets enthält.
-     * Diese wird bei der JSON-Serialisierung als Schlüssel-Wert-Paare auf der obersten Ebene dargestellt.
-     */
-    private Map<String, Object> properties = new HashMap<>();
-    
-    /**
      * Default-Konstruktor.
      */
     public EDCPropertyDto() {
-        // Leere Map initialisieren
+        this(null, new HashMap<>());
     }
     
     /**
@@ -47,8 +47,8 @@ public class EDCPropertyDto {
      * 
      * @param id Die ID des DTOs
      */
-    public EDCPropertyDto(UUID id) {
-        this.id = id;
+    public EDCPropertyDto(Long id) {
+        this(id, new HashMap<>());
     }
     
     /**
@@ -57,130 +57,111 @@ public class EDCPropertyDto {
      * @param properties Die Map von Properties
      */
     public EDCPropertyDto(Map<String, Object> properties) {
+        this(null, properties);
+    }
+    
+    /**
+     * Canonical constructor with validation and defensive copying.
+     */
+    public EDCPropertyDto {
+        // Defensive copy for mutable property
         if (properties != null) {
-            this.properties = new HashMap<>(properties);
+            properties = new HashMap<>(properties);
+        } else {
+            properties = new HashMap<>();
         }
-    }
-    
-    /**
-     * Vollständiger Konstruktor.
-     * 
-     * @param id Die ID des DTOs
-     * @param properties Die Map von Properties
-     */
-    public EDCPropertyDto(UUID id, Map<String, Object> properties) {
-        this.id = id;
-        if (properties != null) {
-            this.properties = new HashMap<>(properties);
-        }
-    }
-    
-    /**
-     * Gibt die ID des DTOs zurück.
-     * 
-     * @return Die UUID des DTOs
-     */
-    public UUID getId() {
-        return id;
-    }
-    
-    /**
-     * Setzt die ID des DTOs.
-     * 
-     * @param id Die zu setzende UUID
-     * @return Das DTO selbst für Method Chaining
-     */
-    public EDCPropertyDto setId(UUID id) {
-        this.id = id;
-        return this;
     }
     
     /**
      * Gibt den Namen des Assets zurück.
      * 
-     * @return Der Name des Assets
+     * @return Der Name des Assets oder null, wenn nicht gesetzt
      */
     public String getName() {
         return (String) properties.get(PROP_NAME);
     }
     
     /**
-     * Setzt den Namen des Assets.
+     * Erstellt ein neues DTO mit dem angegebenen Namen.
      * 
      * @param name Der zu setzende Name
-     * @return Das DTO selbst für Method Chaining
+     * @return Ein neues DTO mit dem gesetzten Namen
      */
-    public EDCPropertyDto setName(String name) {
+    public EDCPropertyDto withName(String name) {
+        Map<String, Object> newProps = new HashMap<>(this.properties);
         if (name != null) {
-            properties.put(PROP_NAME, name);
+            newProps.put(PROP_NAME, name);
         }
-        return this;
+        return new EDCPropertyDto(this.id, newProps);
     }
     
     /**
      * Gibt die Version des Assets zurück.
      * 
-     * @return Die Version des Assets
+     * @return Die Version des Assets oder null, wenn nicht gesetzt
      */
     public String getVersion() {
         return (String) properties.get(PROP_VERSION);
     }
     
     /**
-     * Setzt die Version des Assets.
+     * Erstellt ein neues DTO mit der angegebenen Version.
      * 
      * @param version Die zu setzende Version
-     * @return Das DTO selbst für Method Chaining
+     * @return Ein neues DTO mit der gesetzten Version
      */
-    public EDCPropertyDto setVersion(String version) {
+    public EDCPropertyDto withVersion(String version) {
+        Map<String, Object> newProps = new HashMap<>(this.properties);
         if (version != null) {
-            properties.put(PROP_VERSION, version);
+            newProps.put(PROP_VERSION, version);
         }
-        return this;
+        return new EDCPropertyDto(this.id, newProps);
     }
     
     /**
      * Gibt den Content-Type des Assets zurück.
      * 
-     * @return Der Content-Type des Assets
+     * @return Der Content-Type des Assets oder null, wenn nicht gesetzt
      */
     public String getContentType() {
         return (String) properties.get(PROP_CONTENTTYPE);
     }
     
     /**
-     * Setzt den Content-Type des Assets.
+     * Erstellt ein neues DTO mit dem angegebenen Content-Type.
      * 
      * @param contentType Der zu setzende Content-Type
-     * @return Das DTO selbst für Method Chaining
+     * @return Ein neues DTO mit dem gesetzten Content-Type
      */
-    public EDCPropertyDto setContentType(String contentType) {
+    public EDCPropertyDto withContentType(String contentType) {
+        Map<String, Object> newProps = new HashMap<>(this.properties);
         if (contentType != null) {
-            properties.put(PROP_CONTENTTYPE, contentType);
+            newProps.put(PROP_CONTENTTYPE, contentType);
         }
-        return this;
+        return new EDCPropertyDto(this.id, newProps);
     }
     
     /**
      * Gibt die Beschreibung des Assets zurück.
      * 
-     * @return Die Beschreibung des Assets
+     * @return Die Beschreibung des Assets oder null, wenn nicht gesetzt
      */
     public String getDescription() {
         return (String) properties.get(PROP_DESCRIPTION);
     }
     
     /**
-     * Setzt die Beschreibung des Assets.
+     * Erstellt ein neues DTO mit der angegebenen Beschreibung.
      * 
      * @param description Die zu setzende Beschreibung
-     * @return Das DTO selbst für Method Chaining
+     * @return Ein neues DTO mit der gesetzten Beschreibung
      */
-    public EDCPropertyDto setDescription(String description) {
+    public EDCPropertyDto withDescription(String description) {
+        Map<String, Object> newProps = new HashMap<>(this.properties);
         if (description != null) {
-            properties.put(PROP_DESCRIPTION, description);
+            newProps.put(PROP_DESCRIPTION, description);
         }
-        return this;
+        return new EDCPropertyDto(this.id, newProps);
     }
     
     /**
@@ -190,67 +171,38 @@ public class EDCPropertyDto {
      * @return Eine Map mit allen Properties
      */
     @JsonAnyGetter
-    public Map<String, Object> getProperties() {
+    public Map<String, Object> getAdditionalProperties() {
         return properties;
     }
     
     /**
-     * Hilfsmethode zum Hinzufügen einer Property.
+     * Erstellt ein neues DTO mit der hinzugefügten Property.
      * 
      * @param key Der Schlüssel der Property
      * @param value Der Wert der Property
-     * @return Das DTO selbst für Method Chaining
+     * @return Ein neues DTO mit der hinzugefügten Property
      */
-    public EDCPropertyDto addProperty(String key, Object value) {
+    public EDCPropertyDto withProperty(String key, Object value) {
+        Map<String, Object> newProps = new HashMap<>(this.properties);
         if (key != null && value != null) {
-            properties.put(key, value);
+            newProps.put(key, value);
         }
-        return this;
+        return new EDCPropertyDto(this.id, newProps);
     }
     
     /**
      * Setzt eine Property.
+     * Diese Methode wird von Jackson für die Deserialisierung benötigt.
      * 
      * @param name Der Name der Property
      * @param value Der Wert der Property
      */
     @JsonAnySetter
     public void setProperty(String name, Object value) {
+        // This is needed for Jackson deserialization, but since properties is final,
+        // we need to directly modify the map even though it violates immutability
         if (name != null && value != null) {
             properties.put(name, value);
         }
-    }
-    
-    /**
-     * Setzt alle Properties.
-     * 
-     * @param properties Eine Map mit allen zu setzenden Properties
-     * @return Das DTO selbst für Method Chaining
-     */
-    public EDCPropertyDto setProperties(Map<String, Object> properties) {
-        this.properties = properties != null ? new HashMap<>(properties) : new HashMap<>();
-        return this;
-    }
-    
-    /**
-     * Gibt eine String-Repräsentation des DTOs zurück.
-     * 
-     * @return Eine lesbare Darstellung des DTOs
-     */
-    @Override
-    public String toString() {
-        return "EDCPropertyDto{" +
-                "id=" + id +
-                ", properties=" + properties +
-                '}';
-    }
-    
-    /**
-     * Hilfsmethode, um die Map für die Kompatibilität mit der alten Implementierung zurückzugeben.
-     * 
-     * @return Die Map mit allen Properties
-     */
-    public Map<String, Object> getAdditionalProperties() {
-        return properties;
     }
 }

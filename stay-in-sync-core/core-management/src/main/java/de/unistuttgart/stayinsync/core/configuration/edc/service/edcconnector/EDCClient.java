@@ -40,6 +40,22 @@ public interface EDCClient {
     @DELETE
     @Path("/policydefinitions/{policyId}")
     RestResponse<Void> deletePolicy(@HeaderParam("X-Api-Key") String apiKey, @PathParam("policyId") String policyId);
+    
+    @GET
+    @Path("/contractdefinitions")
+    RestResponse<JsonObject> getAllContractDefinitions(@HeaderParam("X-Api-Key") String apiKey);
+    
+    @GET
+    @Path("/contractdefinitions/{contractId}")
+    RestResponse<JsonObject> getContractDefinition(@HeaderParam("X-Api-Key") String apiKey, @PathParam("contractDefinitionId") String contractDefinitionId);
+    
+    @DELETE
+    @Path("/contractdefinitions/{contractId}")
+    RestResponse<Void> deleteContractDefinition(@HeaderParam("X-Api-Key") String apiKey, @PathParam("contractDefinitionId") String contractDefinitionId);
+    
+    @DELETE
+    @Path("/assets/{assetId}")
+    RestResponse<Void> deleteAsset(@HeaderParam("X-Api-Key") String apiKey, @PathParam("assetId") String assetId);
 
     @ClientExceptionMapper
     static RuntimeException toException(Response response) {

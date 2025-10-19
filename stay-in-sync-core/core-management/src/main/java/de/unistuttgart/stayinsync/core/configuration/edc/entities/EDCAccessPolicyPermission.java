@@ -1,14 +1,16 @@
 package de.unistuttgart.stayinsync.core.configuration.edc.entities;
 
-import de.unistuttgart.stayinsync.core.model.UuidEntity;
+import io.quarkus.hibernate.orm.panache.PanacheEntity;
 import jakarta.persistence.*;
+import lombok.NoArgsConstructor;
 
 @Entity
 @Table(name = "edc_access_policy_permission")
-public class EDCAccessPolicyPermission extends UuidEntity {
+@NoArgsConstructor
+public class EDCAccessPolicyPermission extends PanacheEntity {
 
     @ManyToOne
-    @JoinColumn(name = "policy_id", columnDefinition = "CHAR(36)", nullable = false)
+    @JoinColumn(name = "policy_id", nullable = false)
     public EDCPolicy edcAccessPolicy;
 
     @Column(nullable = false)

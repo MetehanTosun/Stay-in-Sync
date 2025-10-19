@@ -14,7 +14,7 @@ import jakarta.ws.rs.core.UriInfo;
 
 import java.net.URI;
 import java.util.List;
-import java.util.UUID;
+import java.util.Objects;
 
 @Path("/api/config/templates")
 @Produces(MediaType.APPLICATION_JSON)
@@ -26,7 +26,7 @@ public class JsonTemplateRessource {
 
     @GET
     @Path("{id}")
-    public JsonTemplateDto get(@PathParam("id") UUID id){
+    public JsonTemplateDto get(@PathParam("id") Long id){
         try {
             return service.fetchJsonTemplateFromDatabase(id);
         }catch(EntityNotFoundException e){
@@ -46,7 +46,7 @@ public class JsonTemplateRessource {
         final JsonTemplateDto createdJsonTemplate = service.persistJsonTemplate(jsonTemplateDto);
 
         URI uri = uriInfo.getAbsolutePathBuilder()
-                .path(createdJsonTemplate.id())
+                .path(Objects.toString(createdJsonTemplate.id()))
                 .build();
         return Response.created(uri)
                 .entity(createdJsonTemplate)
@@ -56,18 +56,16 @@ public class JsonTemplateRessource {
     @PUT
     @Path("{id}")
     @Transactional
-    public Response update(final JsonTemplateDto jsonTemplateDto, @PathParam("id")final String jsonTemplateId){
-        UUID jsonTemplateUuid = UUID.fromString(jsonTemplateId);
-        service.update(jsonTemplateUuid, jsonTemplateDto);
+    public Response update(final JsonTemplateDto jsonTemplateDto, @PathParam("id")final Long id){
+        service.update(id, jsonTemplateDto);
         return Response.ok(jsonTemplateDto).build();
     }
 
     @DELETE
     @Path("{id}")
     @Transactional
-    public Response deleteJsonTemplate(@PathParam("id") String jsonTemplateIdStr){
-        UUID jsonTemplateUuid = UUID.fromString(jsonTemplateIdStr);
-        service.removeJsonTemplateFromDatabase(jsonTemplateUuid);
+    public Response deleteJsonTemplate(@PathParam("id") Long id){
+        service.removeJsonTemplateFromDatabase(id);
         return Response.noContent().build();
     }
 

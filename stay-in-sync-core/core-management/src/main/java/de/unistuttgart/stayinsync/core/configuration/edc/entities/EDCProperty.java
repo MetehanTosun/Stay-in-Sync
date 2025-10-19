@@ -1,6 +1,6 @@
 package de.unistuttgart.stayinsync.core.configuration.edc.entities;
 
-import de.unistuttgart.stayinsync.core.model.UuidEntity;
+import io.quarkus.hibernate.orm.panache.PanacheEntity;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Table;
@@ -11,31 +11,31 @@ import jakarta.persistence.Table;
  */
 @Entity
 @Table(name = "edc_property")
-public class EDCProperty extends UuidEntity {
+public class EDCProperty extends PanacheEntity {
 
     /**
      * Der Name des Assets.
      */
     @Column(name = "name", length = 255)
-    private String name;
+    public String name;
 
     /**
      * Die Beschreibung des Assets.
      */
     @Column(name = "description", length = 1024)
-    private String description;
+    public String description;
 
     /**
      * Der Content-Type des Assets, standardmäßig "application/json".
      */
     @Column(name = "content_type", length = 255)
-    private String contentType;
+    public String contentType;
 
     /**
      * Die Version des Assets.
      */
     @Column(name = "version", length = 50)
-    private String version;
+    public String version;
 
     /**
      * Default-Konstruktor für JPA.
@@ -72,56 +72,14 @@ public class EDCProperty extends UuidEntity {
     }
 
     /**
-     * Getter für den Namen.
-     */
-    public String getName() {
-        return name;
-    }
-
-    /**
-     * Setter für den Namen.
-     */
-    public void setName(String name) {
-        this.name = name;
-    }
-
-    /**
-     * Getter für die Beschreibung.
-     */
-    public String getDescription() {
-        return description;
-    }
-
-    /**
-     * Setter für die Beschreibung.
-     */
-    public void setDescription(String description) {
-        this.description = description;
-    }
-
-    /**
-     * Getter für den Content-Type.
-     */
-    public String getContentType() {
-        return contentType;
-    }
-
-    /**
-     * Setter für den Content-Type.
+     * Spezielle Methode für Content-Type, um Standardwert "application/json" zu gewährleisten.
      */
     public void setContentType(String contentType) {
         this.contentType = contentType != null ? contentType : "application/json";
     }
 
     /**
-     * Getter für die Version.
-     */
-    public String getVersion() {
-        return version;
-    }
-
-    /**
-     * Setter für die Version.
+     * Spezielle Methode für Version, um Standardwert "1.0.0" zu gewährleisten.
      */
     public void setVersion(String version) {
         this.version = version != null ? version : "1.0.0";

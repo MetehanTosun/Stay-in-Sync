@@ -1,42 +1,41 @@
 package de.unistuttgart.stayinsync.core.configuration.edc.entities;
 
-import de.unistuttgart.stayinsync.core.model.UuidEntity;
+import io.quarkus.hibernate.orm.panache.PanacheEntity;
 import jakarta.persistence.*;
+import lombok.NoArgsConstructor;
 
 @Entity
 @Table(name = "edc_contract_definition")
-public class EDCContractDefinition extends UuidEntity {
+@NoArgsConstructor
+public class EDCContractDefinition extends PanacheEntity {
 
     @Column(name = "contract_definition_id", unique = true, nullable = false)
-    private String contractDefinitionId;
+    public String contractDefinitionId;
 
     @ManyToOne(optional = false)
     @JoinColumn(
         name = "asset_id",
-        columnDefinition = "CHAR(36)",
         nullable = false
     )
-    private EDCAsset asset;
+    public EDCAsset asset;
 
     @ManyToOne(optional = false)
     @JoinColumn(
         name = "access_policy_id",
-        columnDefinition = "CHAR(36)",
         nullable = false
     )
-    private EDCPolicy accessPolicy;
+    public EDCPolicy accessPolicy;
 
     @ManyToOne(optional = false)
     @JoinColumn(
         name = "contract_policy_id",
-        columnDefinition = "CHAR(36)",
         nullable = false
     )
-    private EDCPolicy contractPolicy;
+    public EDCPolicy contractPolicy;
     
     @ManyToOne
     @JoinColumn(name = "edc_instance_id")
-    private EDCInstance edcInstance;
+    public EDCInstance edcInstance;
 
     @Column(columnDefinition = "LONGTEXT")
     public String rawJson;

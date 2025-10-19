@@ -8,15 +8,17 @@ import de.unistuttgart.stayinsync.core.configuration.edc.dtoedc.EDCPolicyDto;
 import de.unistuttgart.stayinsync.core.configuration.edc.entities.EDCInstance;
 import de.unistuttgart.stayinsync.core.configuration.edc.entities.EDCPolicy;
 import io.quarkus.logging.Log;
+import jakarta.enterprise.context.ApplicationScoped;
+import org.mapstruct.AfterMapping;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
+import org.mapstruct.MappingTarget;
 import org.mapstruct.Named;
-import org.mapstruct.factory.Mappers;
 
 import java.io.IOException;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
-import java.util.UUID;
 
 /**
  * Mapper-Klasse für die Konvertierung zwischen EDCPolicy-Entitäten und DTOs.
@@ -25,13 +27,9 @@ import java.util.UUID;
  * und den Data Transfer Objects (EDCPolicyDto) zu konvertieren. Die Hauptaufgabe ist die
  * Serialisierung und Deserialisierung der Policy-Struktur zwischen JSON-String und Map-Objekt.
  */
-@Mapper(uses = {EDCInstanceMapper.class})
+@Mapper(componentModel = "cdi", uses = {EDCInstanceMapper.class})
+@ApplicationScoped
 public interface EDCPolicyMapper {
-    
-    /**
-     * Singleton-Instanz des Mappers.
-     */
-    EDCPolicyMapper policyMapper = Mappers.getMapper(EDCPolicyMapper.class);
     
     /**
      * Der ObjectMapper für die JSON-Serialisierung und -Deserialisierung.
@@ -44,10 +42,19 @@ public interface EDCPolicyMapper {
      * @param policy Die zu konvertierende Entität
      * @return Das erzeugte DTO oder null, wenn die Eingabe null ist
      */
-    @Mapping(source = "edcInstance", target = "edcId")
+    @Mapping(source = "edcInstance.id", target = "edcId")
     @Mapping(source = "policyJson", target = "policy", qualifiedByName = "jsonToMap")
     @Mapping(target = "context", expression = "java(getDefaultContext())")
+    @Mapping(target = "rawJson", ignore = true)
     EDCPolicyDto policyToPolicyDto(EDCPolicy policy);
+    
+    /**
+     * Konvertiert eine Liste von EDCPolicy-Entitäten in DTOs
+     *
+     * @param entities Die Liste von Entitäten
+     * @return Liste von DTOs
+     */
+    List<EDCPolicyDto> toDtoList(List<EDCPolicy> entities);
 
     /**
      * Konvertiert ein EDCPolicyDto in eine EDCPolicy-Entität.
@@ -55,7 +62,7 @@ public interface EDCPolicyMapper {
      * @param policyDto Das zu konvertierende DTO
      * @return Die erzeugte Entität oder null, wenn die Eingabe null ist
      */
-    @Mapping(source = "edcId", target = "edcInstance")
+    @Mapping(source = "edcId", target = "edcInstance", qualifiedByName = "idToInstance")
     @Mapping(source = "policy", target = "policyJson", qualifiedByName = "mapToJson")
     EDCPolicy policyDtoToPolicy(EDCPolicyDto policyDto);
 
@@ -102,13 +109,14 @@ public interface EDCPolicyMapper {
     }
 
     /**
-     * Hilfsmethode zum Mapping einer UUID zu einer EDCInstance.
-     * Lädt die EDCInstance aus der Datenbank anhand der UUID.
+     * Hilfsmethode zum Mapping einer ID zu einer EDCInstance.
+     * Lädt die EDCInstance aus der Datenbank anhand der ID.
      * 
-     * @param edcId Die UUID der zu ladenden EDCInstance
+     * @param edcId Die ID der zu ladenden EDCInstance
      * @return Die gefundene EDCInstance oder null, wenn keine gefunden wurde
      */
-    default EDCInstance map(UUID edcId) {
+    @Named("idToInstance")
+    default EDCInstance idToInstance(Long edcId) {
         if (edcId == null) {
             Log.warn("EDC ID is null when trying to map to EDCInstance");
             return null;
@@ -117,23 +125,9 @@ public interface EDCPolicyMapper {
         if (instance == null) {
             Log.warn("Could not find EDC instance with ID: " + edcId);
         } else {
-            Log.info("Found EDC instance: " + instance.id + " with name: " + instance.getName());
+            Log.info("Found EDC instance with ID: " + instance.id);
         }
         return instance;
-    }
-
-    /**
-     * Hilfsmethode zum Mapping einer EDCInstance zu einer UUID.
-     * Extrahiert die ID aus der EDCInstance.
-     * 
-     * @param edcInstance Die EDCInstance, aus der die ID extrahiert werden soll
-     * @return Die ID der EDCInstance oder null, wenn edcInstance null ist
-     */
-    default UUID map(EDCInstance edcInstance) {
-        if (edcInstance == null) {
-            return null;
-        }
-        return edcInstance.id;
     }
     
     /**
@@ -143,5 +137,32 @@ public interface EDCPolicyMapper {
      */
     default Map<String, String> getDefaultContext() {
         return new HashMap<>(Map.of("odrl", "http://www.w3.org/ns/odrl/2/"));
+    }
+    
+    /**
+     * Nach dem Mapping führt diese Methode zusätzliche Operationen durch.
+     * Sucht nach einer existierenden Entität mit der ID aus dem DTO, falls vorhanden.
+     * 
+     * @param dto Das Quell-DTO
+     * @param entity Die neu erstellte Entität
+     * @return Die finale Entität (entweder die existierende oder die neue)
+     */
+    @AfterMapping
+    default EDCPolicy handleExistingEntity(EDCPolicyDto dto, @MappingTarget EDCPolicy entity) {
+        if (dto.id() != null) {
+            EDCPolicy existingEntity = EDCPolicy.findById(dto.id());
+            
+            if (existingEntity != null) {
+                // Kopiere alle Felder von der neuen Entity zur existierenden
+                existingEntity.policyId = entity.policyId;
+                existingEntity.displayName = entity.displayName;
+                existingEntity.policyJson = entity.policyJson;
+                existingEntity.edcInstance = entity.edcInstance;
+                
+                return existingEntity;
+            }
+        }
+        
+        return entity;
     }
 }

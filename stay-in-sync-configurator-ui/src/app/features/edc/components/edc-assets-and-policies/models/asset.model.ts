@@ -20,6 +20,7 @@ export interface Asset {
   type: string;              // Typ des Assets (z.B. HttpData)
   url: string;               // URL für den Zugriff auf das Asset
   targetEDCId: string;       // UUID der EDC-Instanz
+  targetSystemId?: number;   // ID des zugehörigen Target Systems
   dataAddress: EDCDataAddress;
   properties?: EDCProperty[];
   queryParams?: string;

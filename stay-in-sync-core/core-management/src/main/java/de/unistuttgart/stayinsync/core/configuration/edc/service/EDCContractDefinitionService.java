@@ -22,7 +22,6 @@ import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
-import java.util.UUID;
 
 @ApplicationScoped
 public class EDCContractDefinitionService {
@@ -35,10 +34,10 @@ public class EDCContractDefinitionService {
     /**
      * Returns all contract definitions that are associated with a specific EDC instance.
      *
-     * @param edcId the UUID of the EDC instance
+     * @param edcId the ID of the EDC instance
      * @return List with all contract definitions for that EDC instance
      */
-    public List<EDCContractDefinition> listAllByEdcId(final UUID edcId) {
+    public List<EDCContractDefinition> listAllByEdcId(final Long edcId) {
         LOG.info("Fetching contract definitions for EDC: " + edcId);
         EDCInstance edcInstance = EDCInstance.findById(edcId);
         if (edcInstance == null) {
@@ -64,10 +63,10 @@ public class EDCContractDefinitionService {
      * Returns a contract definition found in the database with the id and belonging to the specific EDC instance.
      *
      * @param id used to find the contract definition
-     * @param edcId the UUID of the EDC instance
+     * @param edcId the ID of the EDC instance
      * @return found contract definition or empty if not found
      */
-    public Optional<EDCContractDefinition> findByIdAndEdcId(final UUID id, final UUID edcId) {
+    public Optional<EDCContractDefinition> findByIdAndEdcId(final Long id, final Long edcId) {
         LOG.info("Fetching contract definition " + id + " for EDC: " + edcId);
     TypedQuery<EDCContractDefinition> query = entityManager.createQuery(
         "SELECT c FROM EDCContractDefinition c " +
@@ -139,14 +138,14 @@ public class EDCContractDefinitionService {
             return;
         }
         
-        LOG.info("Attempting to sync contract definition with EDC: " + contractDefinition.getContractDefinitionId());
+        LOG.info("Attempting to sync contract definition with EDC: " + contractDefinition.contractDefinitionId);
         
-        if (contractDefinition.getEdcInstance() == null) {
+        if (contractDefinition.edcInstance == null) {
             LOG.warn("Cannot sync contract definition: EDC instance is null");
             return;
         }
         
-        String edcUrl = contractDefinition.getEdcInstance().getEdcContractDefinitionEndpoint();
+        String edcUrl = contractDefinition.edcInstance.edcContractDefinitionEndpoint;
         if (edcUrl == null || edcUrl.isEmpty()) {
             LOG.info("EDC endpoint URL not specified, using default");
             edcUrl = "http://dataprovider-controlplane.tx.test/management/v3";
@@ -157,24 +156,24 @@ public class EDCContractDefinitionService {
             try {
                 // Erstellen des DTOs für den EDC
                 CreateEDCContractDefinitionDTO edcContractDefinitionDTO = new CreateEDCContractDefinitionDTO();
-                edcContractDefinitionDTO.setId(contractDefinition.getContractDefinitionId());
+                edcContractDefinitionDTO.setId(contractDefinition.contractDefinitionId);
                 
                 // Setzen der Asset- und Policy-IDs
-                if (contractDefinition.getAsset() != null && contractDefinition.getAsset().getAssetId() != null) {
-                    edcContractDefinitionDTO.setAssetId(contractDefinition.getAsset().getAssetId());
+                if (contractDefinition.asset != null && contractDefinition.asset.assetId != null) {
+                    edcContractDefinitionDTO.setAssetId(contractDefinition.asset.assetId);
 
                 } else {
                     LOG.warn("Asset ID is missing, contract definition may be invalid in EDC");
                 }
                 
-                if (contractDefinition.getAccessPolicy() != null && contractDefinition.getAccessPolicy().getPolicyId() != null) {
-                    edcContractDefinitionDTO.setAccessPolicyId(contractDefinition.getAccessPolicy().getPolicyId());
+                if (contractDefinition.accessPolicy != null && contractDefinition.accessPolicy.policyId != null) {
+                    edcContractDefinitionDTO.setAccessPolicyId(contractDefinition.accessPolicy.policyId);
                 } else {
                     LOG.warn("Access policy ID is missing, contract definition may be invalid in EDC");
                 }
                 
-                if (contractDefinition.getContractPolicy() != null && contractDefinition.getContractPolicy().getPolicyId() != null) {
-                    edcContractDefinitionDTO.setContractPolicyId(contractDefinition.getContractPolicy().getPolicyId());
+                if (contractDefinition.contractPolicy != null && contractDefinition.contractPolicy.policyId != null) {
+                    edcContractDefinitionDTO.setContractPolicyId(contractDefinition.contractPolicy.policyId);
                 } else {
                     LOG.warn("Contract policy ID is missing, contract definition may be invalid in EDC");
                 }
@@ -187,7 +186,7 @@ public class EDCContractDefinitionService {
                 }
                 
                 // Senden der Contract Definition an den EDC
-                LOG.info("Sending contract definition to EDC: " + contractDefinition.getContractDefinitionId());
+                LOG.info("Sending contract definition to EDC: " + contractDefinition.contractDefinitionId);
                 RestResponse<JsonObject> response = client.createContractDefinition("TEST2", contractDefinition.rawJson);
                 
                 if (response.getStatus() >= 400) {
@@ -211,7 +210,7 @@ public class EDCContractDefinitionService {
      * @return Optional with the updated EDCPolicy or an empty Optional if nothing was found.
      */
     @Transactional
-    public Optional<EDCContractDefinition> update(final UUID id, final EDCContractDefinition updatedContractDefinition) {
+    public Optional<EDCContractDefinition> update(final Long id, final EDCContractDefinition updatedContractDefinition) {
         LOG.info("Updating contract definition: " + id);
         return findByIdAndEdcId(id, updatedContractDefinition.getEdcInstance().id).map(existing -> {
             // nur die zu ändernden Felder übernehmen
@@ -239,7 +238,7 @@ public class EDCContractDefinitionService {
      * @return the deleted policy
      */
     @Transactional
-    public boolean delete(UUID id) {
+    public boolean delete(Long id) {
         return EDCContractDefinition.deleteById(id);
     }
 }

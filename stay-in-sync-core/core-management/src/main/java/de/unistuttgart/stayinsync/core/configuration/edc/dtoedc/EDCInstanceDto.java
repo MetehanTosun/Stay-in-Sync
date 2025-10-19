@@ -2,10 +2,8 @@ package de.unistuttgart.stayinsync.core.configuration.edc.dtoedc;
 
 import jakarta.validation.constraints.NotBlank;
 
-import java.util.UUID;
-
 public record EDCInstanceDto(
-        UUID id,
+        Long id,
         @NotBlank String name,
         String controlPlaneManagementUrl,
         String protocolVersion,

@@ -10,8 +10,11 @@ public class DataAddressDTO {
     @JsonProperty("type")
     private String secondaryType = "HttpData";
 
-    private String baseUrl = "http://dataprovider-submodelserver.tx.test";
-
+    @JsonProperty(value = "baseUrl")
+    private String baseUrl = "";
+    
+    @JsonProperty(value = "properties")
+    private Object properties;
 
     private String proxyPath = "true";
 
@@ -73,5 +76,13 @@ public class DataAddressDTO {
 
     public void setProxyBody(String proxyBody) {
         this.proxyBody = proxyBody;
+    }
+    
+    public Object getProperties() {
+        return properties;
+    }
+    
+    public void setProperties(Object properties) {
+        this.properties = properties;
     }
 }

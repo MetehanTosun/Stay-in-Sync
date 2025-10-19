@@ -1,11 +1,9 @@
 package de.unistuttgart.stayinsync.core.configuration.edc.entities;
 
-import de.unistuttgart.stayinsync.core.model.UuidEntity;
+import io.quarkus.hibernate.orm.panache.PanacheEntity;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Table;
-import lombok.Getter;
-import lombok.Setter;
 
 /**
  * Entity-Klasse für EDC-DataAddress.
@@ -13,43 +11,43 @@ import lombok.Setter;
  */
 @Entity
 @Table(name = "edc_data_address")
-public class EDCDataAddress extends UuidEntity {
+public class EDCDataAddress extends PanacheEntity {
 
     /**
      * Der JSON-LD Typ der Daten-Adresse, standardmäßig "DataAddress".
      */
     @Column(name = "jsonld_type", nullable = false)
-    private String jsonLDType = "DataAddress";
+    public String jsonLDType = "DataAddress";
 
     /**
      * Der Typ der Daten-Adresse, standardmäßig "HttpData".
      */
     @Column(name = "type", nullable = false)
-    private String type = "HttpData";
+    public String type = "HttpData";
 
     /**
      * Die Basis-URL für den Zugriff auf die Daten.
      */
     @Column(name = "base_url", nullable = false)
-    private String baseUrl;
+    public String baseUrl;
 
     /**
      * Gibt an, ob der Pfad beim Proxy-Zugriff übernommen werden soll.
      */
     @Column(name = "proxy_path", nullable = false)
-    private boolean proxyPath = true;
+    public boolean proxyPath = true;
 
     /**
      * Gibt an, ob Query-Parameter beim Proxy-Zugriff übernommen werden sollen.
      */
     @Column(name = "proxy_query_params", nullable = false)
-    private boolean proxyQueryParams = true;
+    public boolean proxyQueryParams = true;
 
     /**
      * Default-Konstruktor für JPA.
      */
     public EDCDataAddress() {
-        // Standardwerte setzen
+        // Standardwerte sind bereits als Feldinitialisierungen gesetzt
     }
 
     /**
@@ -77,70 +75,21 @@ public class EDCDataAddress extends UuidEntity {
     }
 
     /**
-     * Getter für JSON-LD Typ.
-     */
-    public String getJsonLDType() {
-        return jsonLDType;
-    }
-
-    /**
-     * Setter für JSON-LD Typ.
-     */
-    public void setJsonLDType(String jsonLDType) {
-        this.jsonLDType = jsonLDType;
-    }
-
-    /**
-     * Getter für Typ.
-     */
-    public String getType() {
-        return type;
-    }
-
-    /**
-     * Setter für Typ.
+     * Spezielle Setter-Methode für den Typ, um den Standardwert "HttpData" zu gewährleisten.
      */
     public void setType(String type) {
         this.type = type != null ? type : "HttpData";
     }
 
     /**
-     * Getter für Basis-URL.
-     */
-    public String getBaseUrl() {
-        return baseUrl;
-    }
-
-    /**
-     * Setter für Basis-URL.
-     */
-    public void setBaseUrl(String baseUrl) {
-        this.baseUrl = baseUrl;
-    }
-
-    /**
-     * Getter für proxyPath.
-     */
-    public boolean isProxyPath() {
-        return proxyPath;
-    }
-
-    /**
-     * Setter für proxyPath.
+     * Spezielle Setter-Methode für proxyPath, um den Standardwert true zu gewährleisten.
      */
     public void setProxyPath(Boolean proxyPath) {
         this.proxyPath = proxyPath != null ? proxyPath : true;
     }
 
     /**
-     * Getter für proxyQueryParams.
-     */
-    public boolean isProxyQueryParams() {
-        return proxyQueryParams;
-    }
-
-    /**
-     * Setter für proxyQueryParams.
+     * Spezielle Setter-Methode für proxyQueryParams, um den Standardwert true zu gewährleisten.
      */
     public void setProxyQueryParams(Boolean proxyQueryParams) {
         this.proxyQueryParams = proxyQueryParams != null ? proxyQueryParams : true;

@@ -14,7 +14,6 @@ import io.quarkus.logging.Log;
 
 import java.net.URI;
 import java.util.List;
-import java.util.UUID;
 
 @Path("/api/config/edcs")
 @Produces(MediaType.APPLICATION_JSON)
@@ -24,9 +23,6 @@ public class EDCResource {
     @Inject
     public EDCService service;
 
-    
-
-
     @GET
     public List<EDCInstanceDto> list() {
         Log.info("Abrufen aller EDC-Instanzen");
@@ -35,7 +31,7 @@ public class EDCResource {
 
     @GET
     @Path("{id}")
-    public EDCInstanceDto get(@PathParam("id") UUID id) {
+    public EDCInstanceDto get(@PathParam("id") Long id) {
         Log.info("Abrufen der EDC-Instanz mit ID: " + id);
         try {
             return service.findById(id);
@@ -66,7 +62,7 @@ public class EDCResource {
     @PUT
     @Path("{id}")
     @Transactional
-    public EDCInstanceDto update(@PathParam("id") UUID id, @Valid EDCInstanceDto dto) {
+    public EDCInstanceDto update(@PathParam("id") Long id, @Valid EDCInstanceDto dto) {
         Log.info("Aktualisieren der EDC-Instanz mit ID: " + id);
         try {
             return service.update(id, dto);
@@ -79,7 +75,7 @@ public class EDCResource {
     @DELETE
     @Path("{id}")
     @Transactional
-    public void delete(@PathParam("id") UUID id) {
+    public void delete(@PathParam("id") Long id) {
         Log.info("Löschen der EDC-Instanz mit ID: " + id);
         if (!service.delete(id)) {
             Log.info("EDC-Instanz mit ID " + id + " für Löschung nicht gefunden");

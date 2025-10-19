@@ -1,12 +1,9 @@
 package de.unistuttgart.stayinsync.core.configuration.edc.entities;
 
-import de.unistuttgart.stayinsync.core.model.UuidEntity;
+import io.quarkus.hibernate.orm.panache.PanacheEntity;
 import de.unistuttgart.stayinsync.transport.exception.CustomException;
 import jakarta.persistence.*;
-import lombok.Getter;
-import lombok.Setter;
-
-import java.util.UUID;
+import lombok.NoArgsConstructor;
 
 /**
  * Entitätsklasse für EDC-Policies in der Datenbank.
@@ -15,11 +12,10 @@ import java.util.UUID;
  * Eine Policy definiert Zugriffs- und Nutzungsbedingungen für Assets im EDC-System.
  * Die vollständige Policy-Definition wird als JSON-String gespeichert.
  */
-@Setter
-@Getter
+@NoArgsConstructor
 @Entity
 @Table(name = "edc_policy")
-public class EDCPolicy extends UuidEntity {
+public class EDCPolicy extends PanacheEntity {
 
     /**
      * Die Policy-ID als String, wie sie im EDC verwendet wird.
@@ -27,14 +23,14 @@ public class EDCPolicy extends UuidEntity {
      * Beispiel: "my-policy-id" oder "policy-for-asset-123"
      */
     @Column(nullable = false, unique = true)
-    private String policyId;
+    public String policyId;
     
     /**
      * Ein optionaler Anzeigename für die Policy.
      * Dieser wird im Frontend zur übersichtlicheren Darstellung verwendet.
      */
     @Column
-    private String displayName;
+    public String displayName;
 
     /**
      * Die vollständige Policy-Definition als JSON-String.
@@ -43,7 +39,7 @@ public class EDCPolicy extends UuidEntity {
      */
     @Lob
     @Column(columnDefinition = "LONGTEXT", nullable = false)
-    private String policyJson;
+    public String policyJson;
     
     /**
      * Die zugehörige EDC-Instanz, zu der diese Policy gehört.
@@ -51,7 +47,7 @@ public class EDCPolicy extends UuidEntity {
      */
     @ManyToOne
     @JoinColumn(name = "edc_instance_id")
-    private EDCInstance edcInstance;
+    public EDCInstance edcInstance;
 
     /**
      * Finder-Methode zum Abrufen einer Policy anhand ihrer policyId.
@@ -64,8 +60,78 @@ public class EDCPolicy extends UuidEntity {
             return null;
         }
         
-        // Einfache Simulation - in einer echten Implementierung würde hier
-        // ein Datenbankzugriff erfolgen
         return find("policyId", policyId).firstResult();
+    }
+    
+    /**
+     * Setzt die EDC-Instanz für diese Policy.
+     * 
+     * @param instance Die EDC-Instanz, die dieser Policy zugeordnet werden soll
+     */
+    public void setEdcInstance(EDCInstance instance) {
+        this.edcInstance = instance;
+    }
+    
+    /**
+     * Gibt die EDC-Instanz zurück, zu der diese Policy gehört.
+     * 
+     * @return Die EDC-Instanz dieser Policy
+     */
+    public EDCInstance getEdcInstance() {
+        return this.edcInstance;
+    }
+    
+    /**
+     * Gibt die Policy-ID als String zurück.
+     * 
+     * @return Die Policy-ID
+     */
+    public String getPolicyId() {
+        return this.policyId;
+    }
+    
+    /**
+     * Setzt die Policy-ID.
+     * 
+     * @param policyId Die zu setzende Policy-ID
+     */
+    public void setPolicyId(String policyId) {
+        this.policyId = policyId;
+    }
+    
+    /**
+     * Gibt den Anzeigenamen der Policy zurück.
+     * 
+     * @return Der Anzeigename der Policy
+     */
+    public String getDisplayName() {
+        return this.displayName;
+    }
+    
+    /**
+     * Setzt den Anzeigenamen der Policy.
+     * 
+     * @param displayName Der zu setzende Anzeigename
+     */
+    public void setDisplayName(String displayName) {
+        this.displayName = displayName;
+    }
+    
+    /**
+     * Gibt die Policy-Definition als JSON-String zurück.
+     * 
+     * @return Die Policy-Definition als JSON-String
+     */
+    public String getPolicyJson() {
+        return this.policyJson;
+    }
+    
+    /**
+     * Setzt die Policy-Definition als JSON-String.
+     * 
+     * @param policyJson Die zu setzende Policy-Definition als JSON-String
+     */
+    public void setPolicyJson(String policyJson) {
+        this.policyJson = policyJson;
     }
 }

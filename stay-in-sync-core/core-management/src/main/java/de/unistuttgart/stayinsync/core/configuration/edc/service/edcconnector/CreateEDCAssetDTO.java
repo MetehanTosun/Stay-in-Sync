@@ -14,6 +14,22 @@ public class CreateEDCAssetDTO {
     DataAddressDTO dataAddress = new DataAddressDTO();
 
     PropertiesDTO properties = new PropertiesDTO();
+    
+    /**
+     * Constructor that initializes with a specific baseUrl
+     * 
+     * @param baseUrl The URL to use for the dataAddress
+     */
+    public CreateEDCAssetDTO(String baseUrl) {
+        this.dataAddress.setBaseUrl(baseUrl);
+    }
+    
+    /**
+     * Default constructor
+     */
+    public CreateEDCAssetDTO() {
+        // Default initialization is done in field declarations
+    }
 
     public String getId() {
         return id;

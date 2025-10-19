@@ -1,15 +1,14 @@
 package de.unistuttgart.stayinsync.core.configuration.edc.entities;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
-import de.unistuttgart.stayinsync.core.model.UuidEntity;
+import io.quarkus.hibernate.orm.panache.PanacheEntity;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 import java.util.Map;
-import java.util.UUID;
 
 /**
  * Entity-Klasse für Policy-Templates.
@@ -18,7 +17,8 @@ import java.util.UUID;
  */
 @Entity
 @Table(name = "json_template")
-public class JsonTemplate extends UuidEntity {
+@NoArgsConstructor
+public class JsonTemplate extends PanacheEntity {
 
     /**
      * Der Name des Templates für die Anzeige im Frontend.
@@ -27,7 +27,7 @@ public class JsonTemplate extends UuidEntity {
     @Setter
     @NotBlank
     @Column(nullable = false)
-    private String name;
+    public String name;
 
     /**
      * Eine optionale Beschreibung des Templates.
@@ -35,7 +35,7 @@ public class JsonTemplate extends UuidEntity {
     @Getter
     @Setter
     @Column(length = 1024)
-    private String description;
+    public String description;
 
     /**
      * Der JSON-Content des Templates als Map.
@@ -46,5 +46,5 @@ public class JsonTemplate extends UuidEntity {
     @Setter
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(nullable = false, columnDefinition = "JSON")
-    private Map<String, Object> content;
+    public Map<String, Object> content;
 }

@@ -32,7 +32,7 @@ import { AssetService } from './services/asset.service';
 import { PolicyService } from './services/policy.service';
 import { EdcInstanceService } from '../edc-instances/services/edc-instance.service';
 import {lastValueFrom, Subject, Subscription} from 'rxjs';
-import {debounceTime, tap} from "rxjs/operators";
+import {debounceTime, tap, switchMap} from "rxjs/operators";
 import { MultiSelectModule } from 'primeng/multiselect';
 import { Transformation } from '../../models/transformation.model';
 import { Template } from '../templates/models/template.model';
@@ -194,6 +194,7 @@ accessPolicySuggestions: OdrlPolicyDefinition[] = [];
   // New Asset Dialog specific properties
   allTransformations: Transformation[] = [];
   selectedTransformation: Transformation | null = null;
+  selectedTargetSystem: number | null = null;  // ID des ausgewählten Target Systems
   assetAttributes: { key: string; value: string }[] = [{ key: '', value: '' }]; // Start with one empty row
   pathParamId: string = '';
   queryParams: { key: string; value: string }[] = [{ key: '', value: '' }];
@@ -235,7 +236,41 @@ accessPolicySuggestions: OdrlPolicyDefinition[] = [];
 
   }
 
+  // Target Systems für die Anzeige in der Asset-Liste
+  targetSystems: { id?: number; name: string }[] = [];
+  
+  // Gibt den Namen eines Target Systems anhand seiner ID zurück
+  getTargetSystemName(targetSystemId: number | undefined): string {
+    if (!targetSystemId) return 'Not assigned';
+    const targetSystem = this.targetSystems.find(ts => ts.id === targetSystemId);
+    return targetSystem ? targetSystem.name : `Unknown (ID: ${targetSystemId})`;
+  }
+  
+  // Lädt alle verfügbaren Target Systems
+  loadTargetSystems(): void {
+    this.assetService.getTargetSystems().subscribe({
+      next: (targetSystems) => {
+        console.log('Target Systems geladen:', targetSystems);
+        this.targetSystems = targetSystems.map(ts => ({
+          id: ts.id,
+          name: ts.name
+        }));
+      },
+      error: (error) => {
+        console.error('Fehler beim Laden der Target Systems:', error);
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Fehler',
+          detail: 'Target Systems konnten nicht geladen werden.'
+        });
+      }
+    });
+  }
+
   ngOnInit(): void {
+    // Target Systems laden, unabhängig von der EDC-Instance
+    this.loadTargetSystems();
+    
     // Überprüfen, ob instance.id verfügbar ist, bevor wir Assets laden
     if (this.instance && this.instance.id) {
       console.log('Initialisiere mit EDC-ID:', this.instance.id);
@@ -563,6 +598,13 @@ accessPolicySuggestions: OdrlPolicyDefinition[] = [];
 
   hideNewAssetDialog() {
     this.displayNewAssetDialog = false;
+    this.selectedTargetSystem = null;
+    this.selectedTransformation = null;
+    // Weitere Felder zurücksetzen
+    this.assetAttributes = [{ key: '', value: '' }];
+    this.pathParamId = '';
+    this.queryParams = [{ key: '', value: '' }];
+    this.headerParams = [{ key: '', value: '' }];
   }
 
   async saveNewAsset() {
@@ -576,6 +618,11 @@ accessPolicySuggestions: OdrlPolicyDefinition[] = [];
     
     // The service layer requires the targetEDCId to be set.
     assetJson.targetEDCId = this.instance.id;
+    
+    // Wenn ein Target System ausgewählt wurde, fügen wir die ID hinzu
+    if (this.selectedTargetSystem) {
+      assetJson.targetSystemId = this.selectedTargetSystem;
+    }
     
     // The createAsset service method expects assetId to be a top-level property for the mock to work correctly.
     assetJson.assetId = assetJson['@id'];
@@ -1090,26 +1137,99 @@ accessPolicySuggestions: OdrlPolicyDefinition[] = [];
     }
   }
 
+  /**
+   * Aktualisiert die Assets-Liste vom Backend
+   */
+  async refreshAssets(): Promise<void> {
+    try {
+      console.log('Aktualisiere Assets für EDC-ID:', this.instance.id);
+      await this.loadAssets();
+      console.log('Assets erfolgreich aktualisiert');
+    } catch (error) {
+      console.error('Fehler beim Aktualisieren der Assets:', error);
+      this.messageService.add({
+        severity: 'error',
+        summary: 'Fehler',
+        detail: 'Assets konnten nicht aktualisiert werden.',
+      });
+    }
+  }
+
   deleteAsset(asset: Asset) {
     this.confirmationService.confirm({
       message: `Are you sure you want to delete the asset "${asset.assetId}"?`,
       header: 'Confirm Deletion',
       icon: 'pi pi-exclamation-triangle',
-      // Make the accept callback async to handle the service call
-      accept: async () => {
+      accept: () => {
         try {
           // Call the service to delete the asset
-          // Backend erwartet die interne UUID (id), nicht die @id
-          const deleteId = asset.id || asset.assetId;
-          await this.assetService.deleteAsset(this.instance.id, deleteId);
-
-          // if success, update the UI
-          this.assets = this.assets.filter((a) => a.assetId !== asset.assetId);
-          this.messageService.add({
-            severity: 'success',
-            summary: 'Success',
-            detail: 'Asset deleted successfully.',
+          if (!asset.id && !asset.assetId) {
+            throw new Error('Asset ID is missing');
+          }
+          
+          // Bevorzuge assetId für das Löschen, da das Backend nach der EDC-Asset-ID sucht
+          const deleteId = asset.assetId || asset.id;
+          
+          console.log('Asset details for deletion:', { 
+            backendId: asset.id, 
+            assetId: asset.assetId, 
+            usingId: deleteId,
+            edcId: this.instance.id
           });
+          
+          const edcId = String(this.instance.id);
+          const assetIdStr = String(deleteId);
+          
+          // Vereinfachter Ansatz mit direktem Zugriff auf die deleteAsset-Methode
+          console.log(`Attempting to delete asset with ID ${assetIdStr} from EDC ${edcId}`);
+          
+          // Entferne das Asset sofort aus der lokalen Liste für besseres UI-Feedback
+          this.assets = this.assets.filter(a => {
+            const assetIdMatch = a.assetId !== asset.assetId;
+            const idMatch = asset.id ? a.id !== asset.id : true;
+            return assetIdMatch && idMatch;
+          });
+          
+          this.assetService.deleteAsset(edcId, assetIdStr).subscribe({
+            next: () => {
+              console.log(`Asset ${assetIdStr} successfully deleted`);
+              
+              this.messageService.add({
+                severity: 'success',
+                summary: 'Success',
+                detail: 'Asset deleted successfully.',
+              });
+              
+              // Liste der Assets aktualisieren
+              console.log("Refreshing asset list from server");
+              this.loadAssets();
+            },
+            error: (error) => {
+              // Beim Fehler das Asset wieder zur Liste hinzufügen
+              if (error.status === 404) {
+                // Wenn das Asset nicht gefunden wurde, ist das eigentlich kein Problem
+                // da es bereits aus der UI entfernt wurde
+                console.log("Asset was not found on server (404), but that's ok - it's gone");
+                this.messageService.add({
+                  severity: 'info',
+                  summary: 'Info',
+                  detail: 'Asset was already deleted or not found.',
+                });
+                // Trotzdem die Liste aktualisieren
+                this.loadAssets();
+              } else {
+                // Bei anderen Fehlern das Asset wieder zur Liste hinzufügen
+                console.error('Failed to delete asset:', error);
+                // Asset wieder zur lokalen Liste hinzufügen, da die Löschung fehlgeschlagen ist
+                this.assets.push(asset);
+                this.messageService.add({
+                  severity: 'error',
+                  summary: 'Error',
+                  detail: `Failed to delete asset: ${error.message || 'Unknown error'}`,
+                });
+              }
+              }
+            });
         } catch (error) {
           this.messageService.add({
             severity: 'error',

@@ -10,7 +10,6 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.UUID;
 
 /**
  * Data Transfer Object (DTO) für EDC-Assets.
@@ -20,15 +19,15 @@ import java.util.UUID;
  * - Ein vereinfachtes Format für einfachere Client-Anwendungen
  * 
  * Die Konvertierung zwischen den Formaten erfolgt automatisch.
+ * Implementiert als Record für mehr Effizienz und bessere Lesbarkeit.
  */
 @JsonInclude(JsonInclude.Include.NON_NULL)
-public class EDCAssetDto {
-    
+public record EDCAssetDto(
     /**
      * Die ID des DTOs, wird nicht in der JSON-Antwort enthalten sein.
      */
     @JsonIgnore
-    private UUID id;
+    Long id,
 
     /**
      * Die Asset-ID, wird als @id im JSON dargestellt.
@@ -36,420 +35,425 @@ public class EDCAssetDto {
     @JsonProperty("@id")
     @JsonAlias({"assetId"})
     @NotBlank
-    private String assetId;
+    String assetId,
     
     /**
      * Der JSON-LD Typ des Assets, standardmäßig "Asset".
      */
     @JsonProperty("@type")
-    private String jsonLDType = "Asset";
+    String jsonLDType,
     
     /**
      * Der Name des Assets.
+     * @JsonIgnore verhindert die direkte Serialisierung auf Root-Ebene - wird nur in properties gespeichert
      */
-    private String name;
+    @JsonIgnore
+    String name,
     
     /**
      * Die URL des Assets.
+     * @JsonIgnore verhindert die direkte Serialisierung auf Root-Ebene - wird nur über dataAddress gespeichert
      */
-    private String url;
+    @JsonIgnore
+    String url,
     
     /**
      * Der Typ des Assets.
+     * @JsonIgnore verhindert die direkte Serialisierung auf Root-Ebene - wird nur über dataAddress gespeichert
      */
-    private String type;
+    @JsonIgnore
+    String type,
     
     /**
      * Der Content-Type des Assets.
+     * @JsonIgnore verhindert die direkte Serialisierung auf Root-Ebene - wird nur in properties gespeichert
      */
-    private String contentType;
+    @JsonIgnore
+    String contentType,
     
     /**
      * Die Beschreibung des Assets.
+     * @JsonIgnore verhindert die direkte Serialisierung auf Root-Ebene - wird nur in properties gespeichert
      */
-    private String description;
+    @JsonIgnore
+    String description,
     
     /**
      * Die ID der Ziel-EDC-Instanz.
      */
     @JsonProperty("targetEDCId")
-    private UUID targetEDCId;
+    Long targetEDCId,
     
     /**
      * Die Daten-Adresse des Assets.
      */
-    @JsonProperty("dataAddress")
-    @NotNull
-    private EDCDataAddressDto dataAddress;
+    EDCDataAddressDto dataAddress,
     
     /**
-     * Die Eigenschaften des Assets als Map. Der EDC erwartet die Properties als Map von Schlüssel-Wert-Paaren.
+     * Die Properties des Assets als Map.
      */
-    @JsonProperty("properties")
-    private Map<String, Object> properties = new HashMap<>();
+    Map<String, Object> properties,
     
     /**
-     * Der Kontext des Assets, wird als @context im JSON dargestellt.
+     * Der Kontext des Assets.
      */
     @JsonProperty("@context")
-    private Map<String, String> context;
-    
+    Map<String, String> context
+) {
     /**
      * Default-Konstruktor.
+     * Erstellt ein leeres Asset mit Standardwerten.
      */
     public EDCAssetDto() {
-        this.context = new HashMap<>(Map.of("edc", "https://w3id.org/edc/v0.0.1/ns/"));
-        this.properties = new HashMap<>();
-        //Standardwerte für die Properties initialisieren
-        initializeDefaultProperties();
+        this(null, "", "Asset", null, null, null, null, null, null, null, 
+             new HashMap<>(), null);
     }
     
     /**
-     * Initialisiert die Standard-Properties für das Asset.
+     * Konstruktor mit minimalen erforderlichen Parametern.
+     * 
+     * @param assetId Die Asset-ID
+     * @param name Der Name des Assets
      */
-    private void initializeDefaultProperties() {
+    public EDCAssetDto(String assetId, String name) {
+        this(null, assetId, "Asset", name, null, null, null, null, null, null,
+             new HashMap<>(), null);
+    }
+    
+    /**
+     * Konstruktor mit den wichtigsten Parametern.
+     * 
+     * @param assetId Die Asset-ID
+     * @param name Der Name des Assets
+     * @param description Die Beschreibung des Assets
+     * @param targetEDCId Die ID der Ziel-EDC-Instanz
+     * @param dataAddress Die Daten-Adresse des Assets
+     */
+    public EDCAssetDto(String assetId, String name, String description, Long targetEDCId, 
+                      EDCDataAddressDto dataAddress) {
+        this(null, assetId, "Asset", name, null, null, null, description, 
+             targetEDCId, dataAddress, new HashMap<>(), null);
+    }
+    
+    /**
+     * Canonical constructor with validation and defensive copying.
+     */
+    public EDCAssetDto {
+        // Default value for jsonLDType if null
+        if (jsonLDType == null) {
+            jsonLDType = "Asset";
+        }
+        
+        // Defensive copy for mutable property
+        if (properties == null) {
+            properties = new HashMap<>();
+        } else {
+            properties = new HashMap<>(properties);
+        }
+        
+        // Defensive copy for context if present
+        if (context != null) {
+            context = new HashMap<>(context);
+        }
+    }
+    
+    /**
+     * Gibt alle Properties des Assets zurück.
+     * Diese werden bei der JSON-Serialisierung als Top-Level-Eigenschaften eingefügt.
+     * 
+     * HINWEIS: Diese Methode ist deaktiviert, um eine doppelte Anzeige von Properties zu verhindern.
+     * Alle Properties sollten nun ausschließlich im properties-Objekt enthalten sein.
+     * 
+     * @return Eine leere Map, um Duplizierung zu vermeiden
+     */
+    @JsonAnyGetter
+    public Map<String, Object> getAdditionalProperties() {
+        // Zurückgeben einer leeren Map, damit keine doppelten Properties auf Root-Ebene angezeigt werden
+        return new HashMap<>();
+    }
+    
+    /**
+     * Erstellt ein neues Asset-DTO mit der hinzugefügten Property.
+     * 
+     * @param key Der Schlüssel der Property
+     * @param value Der Wert der Property
+     * @return Ein neues DTO mit der hinzugefügten Property
+     */
+    public EDCAssetDto withProperty(String key, Object value) {
+        if (key == null || value == null) {
+            return this;
+        }
+        
+        Map<String, Object> newProps = new HashMap<>(this.properties);
+        newProps.put(key, value);
+        
+        return new EDCAssetDto(
+            this.id, this.assetId, this.jsonLDType, this.name, this.url,
+            this.type, this.contentType, this.description, this.targetEDCId,
+            this.dataAddress, newProps, this.context
+        );
+    }
+    
+    /**
+     * Setzt eine Property.
+     * Diese Methode wird von Jackson für die Deserialisierung benötigt.
+     * 
+     * @param name Der Name der Property
+     * @param value Der Wert der Property
+     */
+    @JsonAnySetter
+    public void setProperty(String name, Object value) {
+        // This is needed for Jackson deserialization, but since properties is final,
+        // we need to directly modify the map even though it violates immutability
+        if (name != null && value != null) {
+            properties.put(name, value);
+        }
+    }
+    
+    /**
+     * Erstellt ein neues Asset-DTO mit der angegebenen ID.
+     * 
+     * @param id Die neue ID
+     * @return Ein neues DTO mit der angegebenen ID
+     */
+    public EDCAssetDto withId(Long id) {
+        return new EDCAssetDto(
+            id, this.assetId, this.jsonLDType, this.name, this.url,
+            this.type, this.contentType, this.description, this.targetEDCId,
+            this.dataAddress, this.properties, this.context
+        );
+    }
+    
+    /**
+     * Erstellt ein neues Asset-DTO mit der angegebenen Asset-ID.
+     * 
+     * @param assetId Die neue Asset-ID
+     * @return Ein neues DTO mit der angegebenen Asset-ID
+     */
+    public EDCAssetDto withAssetId(String assetId) {
+        return new EDCAssetDto(
+            this.id, assetId, this.jsonLDType, this.name, this.url,
+            this.type, this.contentType, this.description, this.targetEDCId,
+            this.dataAddress, this.properties, this.context
+        );
+    }
+    
+    /**
+     * Erstellt ein neues Asset-DTO mit dem angegebenen Namen.
+     * Aktualisiert auch den entsprechenden Property-Wert.
+     * 
+     * @param name Der neue Name
+     * @return Ein neues DTO mit dem angegebenen Namen
+     */
+    public EDCAssetDto withName(String name) {
+        Map<String, Object> updatedProperties = new HashMap<>(this.properties);
         if (name != null) {
-            properties.put("asset:prop:name", name);
+            updatedProperties.put("asset:prop:name", name);
         }
-        if (description != null) {
-            properties.put("asset:prop:description", description);
-        }
+        
+        return new EDCAssetDto(
+            this.id, this.assetId, this.jsonLDType, name, this.url,
+            this.type, this.contentType, this.description, this.targetEDCId,
+            this.dataAddress, updatedProperties, this.context
+        );
+    }
+    
+    /**
+     * Erstellt ein neues Asset-DTO mit der angegebenen URL.
+     * 
+     * @param url Die neue URL
+     * @return Ein neues DTO mit der angegebenen URL
+     */
+    public EDCAssetDto withUrl(String url) {
+        return new EDCAssetDto(
+            this.id, this.assetId, this.jsonLDType, this.name, url,
+            this.type, this.contentType, this.description, this.targetEDCId,
+            this.dataAddress, this.properties, this.context
+        );
+    }
+    
+    /**
+     * Erstellt ein neues Asset-DTO mit dem angegebenen Typ.
+     * 
+     * @param type Der neue Typ
+     * @return Ein neues DTO mit dem angegebenen Typ
+     */
+    public EDCAssetDto withType(String type) {
+        return new EDCAssetDto(
+            this.id, this.assetId, this.jsonLDType, this.name, this.url,
+            type, this.contentType, this.description, this.targetEDCId,
+            this.dataAddress, this.properties, this.context
+        );
+    }
+    
+    /**
+     * Erstellt ein neues Asset-DTO mit dem angegebenen Content-Type.
+     * Aktualisiert auch den entsprechenden Property-Wert.
+     * 
+     * @param contentType Der neue Content-Type
+     * @return Ein neues DTO mit dem angegebenen Content-Type
+     */
+    public EDCAssetDto withContentType(String contentType) {
+        Map<String, Object> updatedProperties = new HashMap<>(this.properties);
         if (contentType != null) {
-            properties.put("asset:prop:contenttype", contentType);
-        }
-    }
-    
-    /**
-     * Konstruktor mit allen Pflichtfeldern.
-     * 
-     * @param id Die ID des DTOs
-     * @param assetId Die Asset-ID
-     * @param name Der Name des Assets
-     * @param url Die URL des Assets
-     * @param type Der Typ des Assets
-     * @param contentType Der Content-Type des Assets
-     * @param description Die Beschreibung des Assets
-     * @param targetEDCId Die ID der Ziel-EDC-Instanz
-     * @param dataAddress Die Daten-Adresse des Assets
-     * @param properties Die Eigenschaften des Assets als Map
-     */
-    public EDCAssetDto(UUID id, String assetId, String name, String url, String type, String contentType, 
-                      String description, UUID targetEDCId, EDCDataAddressDto dataAddress, 
-                      Map<String, Object> properties) {
-        this();
-        this.id = id;
-        this.assetId = assetId;
-        this.name = name;
-        this.url = url;
-        this.type = type;
-        this.contentType = contentType;
-        this.description = description;
-        this.targetEDCId = targetEDCId;
-        this.dataAddress = dataAddress;
-        if (properties != null) {
-            this.properties = properties;
-        }
-        // Stellen Sie sicher, dass die Properties mit den Attributen synchronisiert sind
-        initializeDefaultProperties();
-    }
-    
-    /**
-     * Vollständiger Konstruktor.
-     * 
-     * @param id Die ID des DTOs
-     * @param assetId Die Asset-ID
-     * @param name Der Name des Assets
-     * @param url Die URL des Assets
-     * @param type Der Typ des Assets
-     * @param contentType Der Content-Type des Assets
-     * @param description Die Beschreibung des Assets
-     * @param targetEDCId Die ID der Ziel-EDC-Instanz
-     * @param dataAddress Die Daten-Adresse des Assets
-     * @param properties Die Eigenschaften des Assets als Map
-     * @param context Der Kontext des Assets
-     */
-    public EDCAssetDto(UUID id, String assetId, String name, String url, String type, String contentType, 
-                      String description, UUID targetEDCId, EDCDataAddressDto dataAddress, 
-                      Map<String, Object> properties, Map<String, String> context) {
-        this.id = id;
-        this.assetId = assetId;
-        this.name = name;
-        this.url = url;
-        this.type = type;
-        this.contentType = contentType;
-        this.description = description;
-        this.targetEDCId = targetEDCId;
-        this.dataAddress = dataAddress;
-        this.properties = properties != null ? properties : new HashMap<>();
-        this.context = context != null ? context : new HashMap<>(Map.of("edc", "https://w3id.org/edc/v0.0.1/ns/"));
-        // Stellen Sie sicher, dass die Properties mit den Attributen synchronisiert sind
-        initializeDefaultProperties();
-    }
-    
-        /**
-     * Konstruktor mit allen Feldern.
-     * 
-     * @param id Die ID des DTOs
-     * @param assetId Die Asset-ID
-     * @param name Der Name des Assets
-     * @param url Die URL des Assets
-     * @param type Der Typ des Assets
-     * @param contentType Der Content-Type des Assets
-     * @param description Die Beschreibung des Assets
-     * @param targetEDCId Die ID der Ziel-EDC-Instanz
-     * @param dataAddress Die Daten-Adresse des Assets
-     */
-    public EDCAssetDto(UUID id, String assetId, String name, String url, String type, String contentType, 
-                      String description, UUID targetEDCId, EDCDataAddressDto dataAddress) {
-        this.id = id;
-        this.assetId = assetId;
-        this.name = name;
-        this.url = url;
-        this.type = type;
-        this.contentType = contentType;
-        this.description = description;
-        this.targetEDCId = targetEDCId;
-        this.dataAddress = dataAddress;
-        this.properties = new HashMap<>();
-    }
-    
-    // Getter und Setter
-    
-    public UUID getId() {
-        return id;
-    }
-    
-    public void setId(UUID id) {
-        this.id = id;
-    }
-    
-    public String getAssetId() {
-        return assetId;
-    }
-    
-    public void setAssetId(String assetId) {
-        this.assetId = assetId;
-    }
-    
-    public String getName() {
-        return name;
-    }
-    
-    public void setName(String name) {
-        this.name = name;
-    }
-    
-    public String getUrl() {
-        return url;
-    }
-    
-    public void setUrl(String url) {
-        this.url = url;
-    }
-    
-    public String getType() {
-        return type;
-    }
-    
-    public void setType(String type) {
-        this.type = type;
-    }
-    
-    public String getJsonLDType() {
-        return jsonLDType;
-    }
-    
-    public void setJsonLDType(String jsonLDType) {
-        this.jsonLDType = jsonLDType;
-    }
-    
-    public String getContentType() {
-        return contentType;
-    }
-    
-    public void setContentType(String contentType) {
-        this.contentType = contentType;
-    }
-    
-    public String getDescription() {
-        return description;
-    }
-    
-    public void setDescription(String description) {
-        this.description = description;
-    }
-    
-    public UUID getTargetEDCId() {
-        return targetEDCId;
-    }
-    
-    public void setTargetEDCId(UUID targetEDCId) {
-        this.targetEDCId = targetEDCId;
-    }
-    
-    public EDCDataAddressDto getDataAddress() {
-        return dataAddress;
-    }
-    
-    public void setDataAddress(EDCDataAddressDto dataAddress) {
-        this.dataAddress = dataAddress;
-    }
-    
-    public Map<String, Object> getProperties() {
-        return properties;
-    }
-    
-    public void setProperties(Map<String, Object> properties) {
-        this.properties = properties != null ? properties : new HashMap<>();
-    }
-    
-    /**
-     * Hilfsmethode zum Hinzufügen einer Eigenschaft.
-     * 
-     * @param key Der Schlüssel der Eigenschaft
-     * @param value Der Wert der Eigenschaft
-     * @return Das DTO selbst für Method Chaining
-     */
-    public EDCAssetDto addProperty(String key, Object value) {
-        if (this.properties == null) {
-            this.properties = new HashMap<>();
-        }
-        this.properties.put(key, value);
-        return this;
-    }
-    
-    // Removed setPropertiesList method as we now use map-based properties directly
-    
-    public Map<String, String> getContext() {
-        return context;
-    }
-    
-    public void setContext(Map<String, String> context) {
-        this.context = context != null ? context : new HashMap<>(Map.of("edc", "https://w3id.org/edc/v0.0.1/ns/"));
-    }
-    
-    /**
-     * Gibt eine String-Repräsentation des DTOs zurück.
-     * 
-     * @return Eine lesbare Darstellung des DTOs
-     */
-    /**
-     * Konvertiert dieses DTO in ein vereinfachtes Format, das für einfache Client-Anwendungen
-     * besser geeignet ist. Das vereinfachte Format hat eine flachere Struktur.
-     * 
-     * @return Eine Map mit dem vereinfachten Format
-     */
-    public Map<String, Object> toSimplifiedFormat() {
-        Map<String, Object> simplified = new HashMap<>();
-        
-        // Kontext und ID übernehmen
-        simplified.put("@context", this.context);
-        simplified.put("@id", this.assetId);
-        
-        // Properties als eigene Map
-        Map<String, String> simpleProps = new HashMap<>();
-        if (this.properties != null) {
-            for (Map.Entry<String, Object> entry : this.properties.entrySet()) {
-                simpleProps.put(entry.getKey(), String.valueOf(entry.getValue()));
-            }
-        }
-        simplified.put("properties", simpleProps);
-        
-        // Vereinfachte DataAddress
-        if (this.dataAddress != null) {
-            Map<String, Object> simpleAddress = new HashMap<>();
-            simpleAddress.put("type", this.dataAddress.getType());
-            simpleAddress.put("baseUrl", this.dataAddress.getBaseURL());
-            simplified.put("dataAddress", simpleAddress);
+            updatedProperties.put("asset:prop:contenttype", contentType);
         }
         
-        return simplified;
+        return new EDCAssetDto(
+            this.id, this.assetId, this.jsonLDType, this.name, this.url,
+            this.type, contentType, this.description, this.targetEDCId,
+            this.dataAddress, updatedProperties, this.context
+        );
     }
     
     /**
-     * Erstellt ein EDCAssetDto aus einem vereinfachten Format.
+     * Erstellt ein neues Asset-DTO mit der angegebenen Beschreibung.
+     * Aktualisiert auch den entsprechenden Property-Wert.
      * 
-     * @param simplified Die vereinfachte Map-Darstellung des Assets
-     * @param targetEDCId Die ID der Ziel-EDC-Instanz
-     * @return Ein neues EDCAssetDto
+     * @param description Die neue Beschreibung
+     * @return Ein neues DTO mit der angegebenen Beschreibung
      */
-    public static EDCAssetDto fromSimplifiedFormat(Map<String, Object> simplified, UUID targetEDCId) {
+    public EDCAssetDto withDescription(String description) {
+        Map<String, Object> updatedProperties = new HashMap<>(this.properties);
+        if (description != null) {
+            updatedProperties.put("asset:prop:description", description);
+        }
+        
+        return new EDCAssetDto(
+            this.id, this.assetId, this.jsonLDType, this.name, this.url,
+            this.type, this.contentType, description, this.targetEDCId,
+            this.dataAddress, updatedProperties, this.context
+        );
+    }
+    
+    /**
+     * Erstellt ein neues Asset-DTO mit der angegebenen Ziel-EDC-ID.
+     * 
+     * @param targetEDCId Die neue Ziel-EDC-ID
+     * @return Ein neues DTO mit der angegebenen Ziel-EDC-ID
+     */
+    public EDCAssetDto withTargetEDCId(Long targetEDCId) {
+        return new EDCAssetDto(
+            this.id, this.assetId, this.jsonLDType, this.name, this.url,
+            this.type, this.contentType, this.description, targetEDCId,
+            this.dataAddress, this.properties, this.context
+        );
+    }
+    
+    /**
+     * Erstellt ein neues Asset-DTO mit der angegebenen Daten-Adresse.
+     * 
+     * @param dataAddress Die neue Daten-Adresse
+     * @return Ein neues DTO mit der angegebenen Daten-Adresse
+     */
+    public EDCAssetDto withDataAddress(EDCDataAddressDto dataAddress) {
+        return new EDCAssetDto(
+            this.id, this.assetId, this.jsonLDType, this.name, this.url,
+            this.type, this.contentType, this.description, this.targetEDCId,
+            dataAddress, this.properties, this.context
+        );
+    }
+    
+    /**
+     * Erstellt ein neues Asset-DTO mit den angegebenen Properties.
+     * 
+     * @param properties Die neuen Properties
+     * @return Ein neues DTO mit den angegebenen Properties
+     */
+    public EDCAssetDto withProperties(Map<String, Object> properties) {
+        return new EDCAssetDto(
+            this.id, this.assetId, this.jsonLDType, this.name, this.url,
+            this.type, this.contentType, this.description, this.targetEDCId,
+            this.dataAddress, properties != null ? new HashMap<>(properties) : new HashMap<>(), 
+            this.context
+        );
+    }
+    
+    /**
+     * Erstellt ein neues Asset-DTO mit dem angegebenen Kontext.
+     * 
+     * @param context Der neue Kontext
+     * @return Ein neues DTO mit dem angegebenen Kontext
+     */
+    public EDCAssetDto withContext(Map<String, String> context) {
+        return new EDCAssetDto(
+            this.id, this.assetId, this.jsonLDType, this.name, this.url,
+            this.type, this.contentType, this.description, this.targetEDCId,
+            this.dataAddress, this.properties, 
+            context != null ? new HashMap<>(context) : null
+        );
+    }
+    
+    /**
+     * Factory-Methode, um ein Asset-DTO aus einem vereinfachten Format zu erstellen.
+     * 
+     * @param simplified Die vereinfachte Darstellung des Assets
+     * @param targetEDCId Die ID der Ziel-EDC-Instanz
+     * @return Ein neues DTO, erstellt aus dem vereinfachten Format
+     */
+    public static EDCAssetDto fromSimplifiedFormat(Map<String, Object> simplified, Long targetEDCId) {
+        if (simplified == null) {
+            return null;
+        }
+        
         EDCAssetDto dto = new EDCAssetDto();
         
-        // Basis-Eigenschaften setzen
-        if (simplified.containsKey("@id")) {
-            dto.setAssetId((String) simplified.get("@id"));
-        } else {
-            dto.setAssetId("asset-" + UUID.randomUUID());
+        // Extrahiere die wichtigsten Felder aus der Map
+        String assetId = (String) simplified.get("assetId");
+        if (assetId != null) {
+            dto = dto.withAssetId(assetId);
         }
         
-        // Kontext übernehmen oder Standard setzen
-        if (simplified.containsKey("@context") && simplified.get("@context") instanceof Map) {
-            @SuppressWarnings("unchecked")
-            Map<String, String> contextMap = (Map<String, String>) simplified.get("@context");
-            dto.setContext(contextMap);
+        String name = (String) simplified.get("name");
+        if (name != null) {
+            dto = dto.withName(name);
         }
         
-        // Properties verarbeiten
-        if (simplified.containsKey("properties") && simplified.get("properties") instanceof Map) {
-            @SuppressWarnings("unchecked")
-            Map<String, Object> props = (Map<String, Object>) simplified.get("properties");
-            for (Map.Entry<String, Object> entry : props.entrySet()) {
-                dto.addProperty(entry.getKey(), entry.getValue());
-                
-                // Standard-Properties auch in die direkten Felder setzen
-                if (entry.getKey().equals("asset:prop:name")) {
-                    dto.setName((String) entry.getValue());
-                } else if (entry.getKey().equals("asset:prop:description")) {
-                    dto.setDescription((String) entry.getValue());
-                } else if (entry.getKey().equals("asset:prop:contenttype")) {
-                    dto.setContentType((String) entry.getValue());
-                }
-            }
+        String description = (String) simplified.get("description");
+        if (description != null) {
+            dto = dto.withDescription(description);
         }
         
-        // DataAddress verarbeiten
-        if (simplified.containsKey("dataAddress") && simplified.get("dataAddress") instanceof Map) {
-            @SuppressWarnings("unchecked")
-            Map<String, Object> addrMap = (Map<String, Object>) simplified.get("dataAddress");
+        String type = (String) simplified.get("type");
+        if (type != null) {
+            dto = dto.withType(type);
+        }
+        
+        String contentType = (String) simplified.get("contentType");
+        if (contentType != null) {
+            dto = dto.withContentType(contentType);
+        }
+        
+        String url = (String) simplified.get("url");
+        if (url != null) {
+            dto = dto.withUrl(url);
+        }
+        
+        // Verarbeite die DataAddress, falls vorhanden
+        Map<String, Object> dataAddressMap = (Map<String, Object>) simplified.get("dataAddress");
+        if (dataAddressMap != null) {
             EDCDataAddressDto addr = new EDCDataAddressDto();
             
-            if (addrMap.containsKey("type")) {
-                addr.setType((String) addrMap.get("type"));
+            String baseUrl = (String) dataAddressMap.get("baseUrl");
+            if (baseUrl != null) {
+                addr = addr.withBaseUrl(baseUrl);
             }
             
-            if (addrMap.containsKey("baseUrl")) {
-                addr.setBaseURL((String) addrMap.get("baseUrl"));
+            Boolean proxyPath = (Boolean) dataAddressMap.get("proxyPath");
+            if (proxyPath != null) {
+                addr = addr.withProxyPath(proxyPath);
             }
             
-            // Standard-Werte setzen
-            addr.setJsonLDType("DataAddress");
-            addr.setProxyPath(true);
-            addr.setProxyQueryParams(true);
+            Boolean proxyQueryParams = (Boolean) dataAddressMap.get("proxyQueryParams");
+            if (proxyQueryParams != null) {
+                addr = addr.withProxyQueryParams(proxyQueryParams);
+            }
             
-            dto.setDataAddress(addr);
+            dto = dto.withDataAddress(addr);
         }
         
-        dto.setTargetEDCId(targetEDCId);
+        dto = dto.withTargetEDCId(targetEDCId);
         
         return dto;
-    }
-
-    @Override
-    public String toString() {
-        return "EDCAssetDto{" +
-                "id=" + id +
-                ", assetId='" + assetId + '\'' +
-                ", jsonLDType='" + jsonLDType + '\'' +
-                ", name='" + name + '\'' +
-                ", url='" + url + '\'' +
-                ", type='" + type + '\'' +
-                ", contentType='" + contentType + '\'' +
-                ", description='" + description + '\'' +
-                ", targetEDCId=" + targetEDCId +
-                ", dataAddress=" + dataAddress +
-                ", properties=" + properties +
-                ", context=" + context +
-                '}';
     }
 }

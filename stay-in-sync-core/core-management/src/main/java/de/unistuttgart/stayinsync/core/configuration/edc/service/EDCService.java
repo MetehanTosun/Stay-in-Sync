@@ -12,7 +12,6 @@ import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
 
 import java.util.List;
-import java.util.UUID;
 
 /**
  * Service für die Verwaltung von EDC-Instanzen.
@@ -31,9 +30,9 @@ public class EDCService {
      * @return Die gefundene EDC-Instanz als DTO
      * @throws CustomException wenn keine EDC-Instanz mit der angegebenen ID gefunden wurde
      */
-    public EDCInstanceDto findById(final UUID id) throws CustomException {
+    public EDCInstanceDto findById(final Long id) throws CustomException {
         Log.info("Suche nach EDC-Instanz mit ID: " + id);
-
+        
         final EDCInstance instance = EDCInstance.findById(id);
 
         if (instance == null) {
@@ -42,7 +41,7 @@ public class EDCService {
             throw new CustomException(exceptionMessage);
         }
 
-        Log.info("EDC-Instanz gefunden: " + instance.getName());
+        Log.info("EDC-Instanz gefunden: " + instance.name);
         return mapper.toDto(instance);
     }
 
@@ -72,10 +71,10 @@ public class EDCService {
     @Transactional
     public EDCInstanceDto create(final EDCInstanceDto edcInstanceDto) throws EntityCreationFailedException {
         Log.debugf("Creation of EdcInstance started.", edcInstanceDto.name());
-        final EDCInstance edcInstance = EDCInstanceMapper.mapper.fromDto(edcInstanceDto);
+        final EDCInstance edcInstance = mapper.fromDto(edcInstanceDto);
         Log.debugf("Connection tested. EDCInstance is persisted in database");
         edcInstance.persist();
-        return EDCInstanceMapper.mapper.toDto(edcInstance);
+        return mapper.toDto(edcInstance);
 
     }
 
@@ -88,25 +87,19 @@ public class EDCService {
      * @throws CustomException wenn keine EDC-Instanz mit der angegebenen ID gefunden wurde
      */
     @Transactional
-    public EDCInstanceDto update(final UUID id, final EDCInstanceDto updatedDto) throws EntityUpdateFailedException {
+    public EDCInstanceDto update(final Long id, final EDCInstanceDto updatedDto) throws EntityUpdateFailedException {
         Log.debug("Aktualisieren der EDC-Instanz mit ID: " + id);
+        
         final EDCInstance persistedInstance = EDCInstance.findById(id);
-        final EDCInstance updatedInstance = mapper.fromDto(updatedDto);
+        
         if (persistedInstance == null) {
             final String exceptionMessage = "Keine EDC-Instanz mit ID " + id + " für Update gefunden";
             Log.error(exceptionMessage);
             throw new EntityUpdateFailedException(exceptionMessage);
         }
-
-        persistedInstance.setName(updatedInstance.getName());
-        persistedInstance.setControlPlaneManagementUrl(updatedInstance.getControlPlaneManagementUrl());
-        persistedInstance.setApiKey(updatedInstance.getApiKey());
-        persistedInstance.setProtocolVersion(updatedInstance.getProtocolVersion());
-        persistedInstance.setDescription(updatedInstance.getDescription());
-        persistedInstance.setBpn(updatedInstance.getBpn());
-        persistedInstance.setEdcAssetEndpoint(updatedInstance.getEdcAssetEndpoint());
-        persistedInstance.setEdcPolicyEndpoint(updatedInstance.getEdcPolicyEndpoint());
-        persistedInstance.setEdcContractDefinitionEndpoint(updatedInstance.getEdcContractDefinitionEndpoint());
+        
+        // Der Mapper wird verwendet, um die Entity direkt zu aktualisieren
+        mapper.updateEntityFromDto(updatedDto, persistedInstance);
 
         Log.info("EDC-Instanz mit ID " + id + " erfolgreich aktualisiert");
         return mapper.toDto(persistedInstance);
@@ -121,9 +114,9 @@ public class EDCService {
      * @return true, wenn die EDC-Instanz erfolgreich gelöscht wurde, sonst false
      */
     @Transactional
-    public boolean delete(final UUID id) {
+    public boolean delete(final Long id) {
         Log.info("Löschen der EDC-Instanz mit ID: " + id);
-
+        
         boolean deleted = EDCInstance.deleteById(id);
 
         if (deleted) {
