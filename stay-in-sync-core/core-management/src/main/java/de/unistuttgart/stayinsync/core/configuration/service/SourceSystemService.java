@@ -27,9 +27,6 @@ public class SourceSystemService {
     @Inject
     SourceSystemFullUpdateMapper mapper;
 
-    @Inject
-    OpenApiSpecificationParserService openApiSpecificationParserService;
-
     public List<SourceSystem> findAllSourceSystems() {
         Log.debug("Fetching all source systems");
         return SourceSystem.listAll(); 
@@ -54,7 +51,6 @@ public class SourceSystemService {
         }
 
         sourceSystem.persist();
-        openApiSpecificationParserService.synchronizeFromSpec(sourceSystem);
         return sourceSystem;
     }
 
@@ -64,7 +60,6 @@ public class SourceSystemService {
         SourceSystem existingSs = SourceSystem.findById(sourceSystemDTO.id());
         if (existingSs != null) {
             mapper.mapFullUpdate(mapper.mapToEntity(sourceSystemDTO), existingSs);
-            openApiSpecificationParserService.synchronizeFromSpec(existingSs);
         }
         return Optional.ofNullable(existingSs);
     }
