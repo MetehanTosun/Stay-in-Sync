@@ -93,12 +93,14 @@ public class RequestBuilder {
                 port = "https".equalsIgnoreCase(uri.getScheme()) ? 443 : 80;
             }
 
+            boolean useSsl = "https".equalsIgnoreCase(uri.getScheme());
+
             return webClient.request(
                     io.vertx.core.http.HttpMethod.valueOf(httpRequestType.toUpperCase()),
                     port,
                     host,
                     path
-            ).ssl(true);
+            ).ssl(useSsl);
 
         } catch (java.net.URISyntaxException e) {
 

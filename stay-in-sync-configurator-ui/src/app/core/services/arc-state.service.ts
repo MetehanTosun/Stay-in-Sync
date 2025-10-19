@@ -271,9 +271,20 @@ export class ArcStateService {
         for (const arc of system.arcs) {
           const arcNameJs = this.sanitizeForJs(arc.alias);
           const typeName = `${this.capitalize(validJsIdentifier)}${this.capitalize(arcNameJs)}ResponseType`;
-          dts += `    ${arcNameJs}: ${typeName};\n`;
-          individualTypeInterfaces += (arc.responseDts || `export interface ${typeName} {}`)
-            .replace(/^(export\s+)?(interface|type)\s+Root/, `$1$2 ${typeName}`) + '\n\n';
+          
+          // 1. Read the flag
+          const isArrayType = arc.responseIsArray;
+
+          // 2. Conditionally add array brackets '[]'
+          const finalTypeName = isArrayType ? `${typeName}[]` : typeName;
+          
+          // 3. Declare the type with NO "payload"
+          dts += `    ${arcNameJs}: ${finalTypeName};\n`;
+
+          // 4. Rename 'interface Root' to the base type name
+          const dtsContent = arc.responseDts || `interface ${typeName} {}`;
+          individualTypeInterfaces += dtsContent
+            .replace(/^(export\s+)?interface\s+Root/, `$1interface ${typeName}`) + '\n\n';
         }
         dts += '  };\n';
       } else {
@@ -283,7 +294,7 @@ export class ArcStateService {
 
     const finalDts = dts + '};\n\n' + individualTypeInterfaces;
     monaco.languages.typescript.typescriptDefaults.addExtraLib(finalDts, this.SOURCE_TYPES_URI);
-  }
+}
 
   private addGlobalApiDefinitions(): void {
     const stayinsyncApiDts = `

@@ -89,6 +89,7 @@ export interface AasArc {
   submodelIdShort: string;
   pollingIntervallTimeInMs: number;
   active: boolean;
+  responseIsArray: boolean;
 }
 
 export type AnyArc = ApiRequestConfiguration | AasArc;
