@@ -21,9 +21,6 @@ import java.util.Map;
  * </ul>
  * </p>
  *
- * <p>The {@code TODO} comments indicate areas for future development, such as handling execution context,
- * ensuring data immutability for security, and enhancing logging capabilities.</p>
- *
  * @author Maximilian Peresunchak
  * @since 1.0
  */
@@ -31,22 +28,16 @@ public class ScriptApi {
     private final Object inputData;
     private final String jobId;
 
-    // TODO: Implement a proper way to assign ExecutionContext
-    /*private final ExecutionContext executionContext;*/
-
     /**
      * Constructs a new {@code ScriptApi} instance.
      *
      * @param inputData The data to be made available to the script via {@link #getInput()}.
-     *                                                    TODO: Check requirements for possible immutability or deep copy of inputData for security reasons.
      * @param jobId     The identifier for the current job, used for contextual information like logging.
      *                  // @param executionContext The execution context associated with this script run.
-     *                  //                       TODO: Implement and integrate ExecutionContext.
      */
-    public ScriptApi(Object inputData, String jobId/*, ExecutionContext executionContext*/) {
+    public ScriptApi(Object inputData, String jobId) {
         this.inputData = inputData;
         this.jobId = jobId;
-        /*this.executionContext = executionContext;*/
     }
 
     /**
@@ -86,10 +77,6 @@ public class ScriptApi {
      * This method is exposed to the script environment via the {@link HostAccess.Export} annotation.
      * The {@code jobId} is automatically added to the Mapped Diagnostic Context (MDC) for the duration
      * of the log call, enriching log entries with contextual information.
-     * <p>
-     * TODO: Further integration with the logging environment and discussion on metrics generation are pending.
-     * TODO: Add scriptID logging as MDC.
-     * </p>
      *
      * @param message  The message string to be logged.
      * @param logLevel A string representing the desired log level (e.g., "INFO", "WARN", "ERROR", "DEBUG", "TRACE").

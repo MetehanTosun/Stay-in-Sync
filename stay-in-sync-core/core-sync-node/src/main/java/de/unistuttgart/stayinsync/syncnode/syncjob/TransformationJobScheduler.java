@@ -33,7 +33,7 @@ public class TransformationJobScheduler {
             MDC.put("transformationId", transformation.id().toString());
             Log.infof("Deploying transformation with id: %d", transformation.id());
 
-            dispatcherStateService.loadInitialTransformations(transformation);
+            dispatcherStateService.registerOrUpdateTransformation(transformation);
             transformationJobMessageConsumer.bindSyncJobReconfigurationQueue(transformation);
             consumeJobSyncData(transformation);
 
