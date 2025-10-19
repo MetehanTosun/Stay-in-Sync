@@ -18,7 +18,7 @@ public class ConfigNodeTest {
     private Map<String, Object> dataContext;
 
     @BeforeEach
-    void setUp() throws Exception {
+    void setUp() {
         configNode = new ConfigNode();
         providerNode1 = new ProviderNode("source.system1.value1");
         providerNode2 = new ProviderNode("source.system2.value2");
@@ -317,7 +317,7 @@ public class ConfigNodeTest {
 
     @Test
     @DisplayName("should filter non-ProviderNode inputs")
-    void testCalculate_WithMixedInputTypes_ShouldOnlyProcessProviderNodes() throws Exception {
+    void testCalculate_WithMixedInputTypes_ShouldOnlyProcessProviderNodes()  {
         // ARRANGE
         ConstantNode nonProviderNode = new ConstantNode("constant", "test_value");
         configNode.setInputNodes(Arrays.asList(providerNode1, nonProviderNode, providerNode2));

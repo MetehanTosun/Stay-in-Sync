@@ -1,7 +1,5 @@
 package de.unistuttgart.graphengine.nodes;
 
-
-
 import java.util.Map;
 
 /**

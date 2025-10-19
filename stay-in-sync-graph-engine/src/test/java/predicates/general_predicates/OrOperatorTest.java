@@ -41,7 +41,7 @@ public class OrOperatorTest {
 
     @Test
     @DisplayName("should return true when any input is true")
-    void testExecute_WhenAnyInputIsTrue_ShouldReturnTrue() throws GraphEvaluationException {
+    void testExecute_WhenAnyInputIsTrue_ShouldReturnTrue() {
         // ARRANGE
         when(mockLogicNode.getInputNodes()).thenReturn(List.of(mockInputNode1, mockInputNode2));
         when(mockInputNode1.getCalculatedResult()).thenReturn(false);
@@ -56,7 +56,7 @@ public class OrOperatorTest {
 
     @Test
     @DisplayName("should return false when all inputs are false")
-    void testExecute_WhenAllInputsAreFalse_ShouldReturnFalse() throws GraphEvaluationException {
+    void testExecute_WhenAllInputsAreFalse_ShouldReturnFalse() {
         // ARRANGE
         when(mockLogicNode.getInputNodes()).thenReturn(List.of(mockInputNode1, mockInputNode2));
         when(mockInputNode1.getCalculatedResult()).thenReturn(false);

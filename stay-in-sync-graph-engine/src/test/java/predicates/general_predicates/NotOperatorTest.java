@@ -39,7 +39,7 @@ public class NotOperatorTest {
 
     @Test
     @DisplayName("should return true when input is false")
-    void testExecute_WhenInputIsFalse_ShouldReturnTrue() throws GraphEvaluationException {
+    void testExecute_WhenInputIsFalse_ShouldReturnTrue() {
         // ARRANGE
         when(mockLogicNode.getInputNodes()).thenReturn(List.of(mockInputNode));
         when(mockInputNode.getCalculatedResult()).thenReturn(false);
@@ -53,7 +53,7 @@ public class NotOperatorTest {
 
     @Test
     @DisplayName("should return false when input is true")
-    void testExecute_WhenInputIsTrue_ShouldReturnFalse() throws GraphEvaluationException {
+    void testExecute_WhenInputIsTrue_ShouldReturnFalse() {
         // ARRANGE
         when(mockLogicNode.getInputNodes()).thenReturn(List.of(mockInputNode));
         when(mockInputNode.getCalculatedResult()).thenReturn(true);

@@ -36,7 +36,7 @@ public class LogicNodeTest {
     @Mock
     private Node mockInputNode2;
 
-    private Map<String, Object> dataContext; // CORRECTED: Changed from JsonNode to Object
+    private Map<String, Object> dataContext;
 
     @BeforeEach
     void setUp() {
@@ -48,7 +48,7 @@ public class LogicNodeTest {
 
     @Test
     @DisplayName("should create LogicNode with valid parameters")
-    void testConstructor_WithValidParameters_ShouldSucceed() throws Exception {
+    void testConstructor_WithValidParameters_ShouldSucceed()  {
         // ACT
         LogicNode node = new LogicNode("TestNode", mockOperator);
 
@@ -103,7 +103,7 @@ public class LogicNodeTest {
 
     @Test
     @DisplayName("should create LogicNode with inputs using varargs constructor")
-    void testConstructor_WithInputs_ShouldSetInputNodes() throws Exception {
+    void testConstructor_WithInputs_ShouldSetInputNodes()  {
         // ACT
         LogicNode node = new LogicNode("TestNode", mockOperator, mockInputNode1, mockInputNode2);
 
@@ -117,7 +117,7 @@ public class LogicNodeTest {
 
     @Test
     @DisplayName("should execute operation strategy successfully")
-    void testCalculate_WithValidOperation_ShouldExecuteStrategy() throws Exception {
+    void testCalculate_WithValidOperation_ShouldExecuteStrategy()  {
         // ARRANGE
         LogicNode node = new LogicNode("TestNode", mockOperator);
         Object expectedResult = "test_result";
@@ -133,7 +133,7 @@ public class LogicNodeTest {
 
     @Test
     @DisplayName("should propagate GraphEvaluationException from operation")
-    void testCalculate_WhenOperationThrowsGraphEvaluationException_ShouldPropagate() throws Exception {
+    void testCalculate_WhenOperationThrowsGraphEvaluationException_ShouldPropagate()  {
         // ARRANGE
         LogicNode node = new LogicNode("TestNode", mockOperator);
         GraphEvaluationException originalException = new GraphEvaluationException(
@@ -154,7 +154,7 @@ public class LogicNodeTest {
 
     @Test
     @DisplayName("should wrap generic exceptions in GraphEvaluationException")
-    void testCalculate_WhenOperationThrowsGenericException_ShouldWrapException() throws Exception {
+    void testCalculate_WhenOperationThrowsGenericException_ShouldWrapException()  {
         // ARRANGE
         LogicNode node = new LogicNode("TestNode", mockOperator);
         RuntimeException originalException = new RuntimeException("Generic error");
@@ -173,7 +173,7 @@ public class LogicNodeTest {
 
     @Test
     @DisplayName("should include operator and node name in wrapped exception message")
-    void testCalculate_WhenWrappingException_ShouldIncludeDetails() throws Exception {
+    void testCalculate_WhenWrappingException_ShouldIncludeDetails()  {
         // ARRANGE
         LogicNode node = new LogicNode("MySpecialNode", mockOperator);
         when(mockOperator.toString()).thenReturn("ADD_OPERATOR");
@@ -192,7 +192,7 @@ public class LogicNodeTest {
 
     @Test
     @DisplayName("should return operation strategy return type")
-    void testGetOutputType_WithValidOperator_ShouldReturnStrategyType() throws Exception {
+    void testGetOutputType_WithValidOperator_ShouldReturnStrategyType()  {
         // ARRANGE
         LogicNode node = new LogicNode("TestNode", mockOperator);
         doReturn(Boolean.class).when(mockOperation).getReturnType();
@@ -206,7 +206,7 @@ public class LogicNodeTest {
 
     @Test
     @DisplayName("should return Object.class when operator is null")
-    void testGetOutputType_WithNullOperator_ShouldReturnObjectClass() throws Exception {
+    void testGetOutputType_WithNullOperator_ShouldReturnObjectClass()  {
         // ARRANGE
         LogicNode node = new LogicNode("TestNode", mockOperator);
         node.setOperator(null); // Manually set to null after construction
@@ -220,7 +220,7 @@ public class LogicNodeTest {
 
     @Test
     @DisplayName("should return strategy return type for different types")
-    void testGetOutputType_WithDifferentReturnTypes_ShouldWork() throws Exception {
+    void testGetOutputType_WithDifferentReturnTypes_ShouldWork()  {
         // ARRANGE
         LogicNode node = new LogicNode("TestNode", mockOperator);
 
@@ -237,7 +237,7 @@ public class LogicNodeTest {
 
     @Test
     @DisplayName("should handle complete operation execution flow")
-    void testCalculate_CompleteFlow_ShouldWork() throws Exception {
+    void testCalculate_CompleteFlow_ShouldWork()  {
         // ARRANGE
         LogicNode node = new LogicNode("CompleteTestNode", mockOperator, mockInputNode1, mockInputNode2);
 
@@ -259,7 +259,7 @@ public class LogicNodeTest {
 
     @Test
     @DisplayName("should work with null dataContext")
-    void testCalculate_WithNullDataContext_ShouldWork() throws Exception {
+    void testCalculate_WithNullDataContext_ShouldWork()  {
         // ARRANGE
         LogicNode node = new LogicNode("TestNode", mockOperator);
         when(mockOperation.execute(node, null)).thenReturn("result");
@@ -275,7 +275,7 @@ public class LogicNodeTest {
 
     @Test
     @DisplayName("should handle operation returning null result")
-    void testCalculate_WhenOperationReturnsNull_ShouldSetNullResult() throws Exception {
+    void testCalculate_WhenOperationReturnsNull_ShouldSetNullResult() {
         // ARRANGE
         LogicNode node = new LogicNode("TestNode", mockOperator);
         when(mockOperation.execute(node, dataContext)).thenReturn(null);
@@ -291,7 +291,7 @@ public class LogicNodeTest {
 
     @Test
     @DisplayName("should handle getReturnType when operation strategy is null")
-    void testGetOutputType_WhenOperationStrategyIsNull_ShouldReturnObjectClass() throws Exception {
+    void testGetOutputType_WhenOperationStrategyIsNull_ShouldReturnObjectClass(){
         // ARRANGE
         LogicNode node = new LogicNode("TestNode", mockOperator);
         when(mockOperator.getOperationStrategy()).thenReturn(null);
