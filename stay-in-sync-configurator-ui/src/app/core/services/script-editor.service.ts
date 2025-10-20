@@ -313,13 +313,11 @@ export class ScriptEditorService {
    * @description Fetches submodel descriptions for an AAS-based system.
    * @param targetSystemId The ID of the target/source system.
    * @returns An `Observable` that emits an array of `SubmodelDescription`.
-   * @todo The URL currently points to 'source-system'. This should be updated to a generic
-   * or target-system specific endpoint if the backend implementation differs.
    */
   getSubmodelsForTargetSystem(
     targetSystemId: number
   ): Observable<SubmodelDescription[]> {
-    const url = `/api/config/source-system/${targetSystemId}/aas/submodels`;
+    const url = `/api/config/target-system/${targetSystemId}/aas/submodels`;
     const params = new HttpParams().set('source', 'SNAPSHOT');
     return this.http.get<SubmodelDescription[]>(url, { params });
   }

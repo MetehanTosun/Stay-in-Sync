@@ -4,7 +4,7 @@ import de.unistuttgart.stayinsync.core.configuration.exception.CoreManagementExc
 import de.unistuttgart.stayinsync.core.configuration.mapping.targetsystem.AasTargetApiRequestConfigurationMapper;
 import de.unistuttgart.stayinsync.core.configuration.persistence.entities.aas.AasSubmodelLite;
 import de.unistuttgart.stayinsync.core.configuration.persistence.entities.aas.AasTargetApiRequestConfiguration;
-import de.unistuttgart.stayinsync.core.configuration.persistence.entities.sync.SourceSystem;
+import de.unistuttgart.stayinsync.core.configuration.persistence.entities.sync.TargetSystem;
 import de.unistuttgart.stayinsync.core.configuration.persistence.entities.sync.Transformation;
 import de.unistuttgart.stayinsync.core.configuration.rest.dtos.aas.AasTargetArcDTO;
 import de.unistuttgart.stayinsync.core.configuration.rest.dtos.aas.CreateAasTargetArcDTO;
@@ -15,6 +15,7 @@ import jakarta.transaction.Transactional;
 import jakarta.ws.rs.core.Response;
 
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
@@ -22,21 +23,20 @@ import java.util.stream.Collectors;
 @Transactional
 public class AasTargetApiRequestConfigurationService {
 
-    // TODO: ADJUST TO TARGETSYSTEM FOR AAS
-
     @Inject
     AasTargetApiRequestConfigurationMapper mapper;
 
     public AasTargetApiRequestConfiguration create(CreateAasTargetArcDTO dto) {
         Log.debugf("Attempting to create AAS Target ARC with alias '%s'", dto.alias());
 
-        SourceSystem ts = SourceSystem.findById(dto.targetSystemId());
+        TargetSystem ts = TargetSystem.findById(dto.targetSystemId());
         if (ts == null) {
             throw new CoreManagementException(Response.Status.NOT_FOUND, "TargetSystem not found.", "TargetSystem was not found with id: " + dto.targetSystemId());
         }
 
         AasSubmodelLite sm = AasSubmodelLite.findById(dto.submodelId());
-        if (sm == null || !sm.sourceSystem.id.equals(ts.id)) {
+        // Very shallow comparison since AASSubmodelLite Entity doesn't support TargetSystem
+        if (!Objects.equals(ts.apiType, "AAS")) {
             throw new CoreManagementException(Response.Status.BAD_REQUEST, "Submodel Mismatch", "Submodel not found or does not belong to the specified TargetSystem.");
         }
 
@@ -54,9 +54,10 @@ public class AasTargetApiRequestConfigurationService {
         AasTargetApiRequestConfiguration arcToUpdate = findById(id)
                 .orElseThrow(() -> new CoreManagementException(Response.Status.NOT_FOUND, "AAS Target ARC not found",  "AAS Target ARC with id " + id + " not found."));
 
-        SourceSystem ts = SourceSystem.findById(dto.targetSystemId());
+        TargetSystem ts = TargetSystem.findById(dto.targetSystemId());
         AasSubmodelLite sm = AasSubmodelLite.findById(dto.submodelId());
-        if (ts == null || sm == null || !sm.sourceSystem.id.equals(ts.id)) {
+        // Very shallow comparison since AASSubmodelLite Entity doesn't support TargetSystem
+        if (ts == null || !Objects.equals(ts.apiType, "AAS")) {
             throw new CoreManagementException(Response.Status.BAD_REQUEST,"Invalid Reference", "Invalid System or Submodel reference.");
         }
 
