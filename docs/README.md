@@ -45,6 +45,14 @@ Add a stayinsync_core database post setup.
 
 
 #### Starting apps in dev mode: 
+
+Please build the whole project once before starting a service with the database available like so: 
+
+```shell
+mvn clean install
+```
+
+
 To start a quarkus app and its corresponding ui run in the folder of the quarkus-app
 ```shell
 mvn quarkus:dev
