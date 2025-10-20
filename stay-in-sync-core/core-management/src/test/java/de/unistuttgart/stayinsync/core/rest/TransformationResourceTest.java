@@ -1,9 +1,9 @@
 package de.unistuttgart.stayinsync.core.rest;
 
-import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.SyncJob;
-import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.Transformation;
-import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.TransformationRule;
-import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.TransformationScript;
+import de.unistuttgart.stayinsync.core.configuration.persistence.entities.sync.SyncJob;
+import de.unistuttgart.stayinsync.core.configuration.persistence.entities.sync.Transformation;
+import de.unistuttgart.stayinsync.core.configuration.persistence.entities.sync.TransformationRule;
+import de.unistuttgart.stayinsync.core.configuration.persistence.entities.sync.TransformationScript;
 import de.unistuttgart.stayinsync.core.configuration.rest.dtos.TransformationAssemblyDTO;
 import de.unistuttgart.stayinsync.core.configuration.rest.dtos.TransformationDetailsDTO;
 import de.unistuttgart.stayinsync.core.configuration.rest.dtos.TransformationShellDTO;

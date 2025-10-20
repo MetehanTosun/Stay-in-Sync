@@ -1,10 +1,10 @@
 package de.unistuttgart.stayinsync.core.configuration.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.SourceSystem;
-import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.SourceSystemEndpoint;
+import de.unistuttgart.stayinsync.core.configuration.persistence.entities.sync.SourceSystem;
+import de.unistuttgart.stayinsync.core.configuration.persistence.entities.sync.SourceSystemEndpoint;
 import de.unistuttgart.stayinsync.core.configuration.rest.dtos.ApiEndpointQueryParamDTO;
-import de.unistuttgart.stayinsync.core.configuration.domain.entities.sync.TargetSystem;
+import de.unistuttgart.stayinsync.core.configuration.persistence.entities.sync.TargetSystem;
 import de.unistuttgart.stayinsync.core.configuration.rest.dtos.CreateTargetSystemEndpointDTO;
 import de.unistuttgart.stayinsync.core.configuration.rest.dtos.CreateApiHeaderDTO;
 import de.unistuttgart.stayinsync.core.configuration.rest.dtos.CreateSourceSystemEndpointDTO;
@@ -24,6 +24,7 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
 
+import java.util.HashMap;
 import java.util.Map;
 
 @ApplicationScoped
@@ -63,7 +64,10 @@ public class OpenApiSpecificationParserService {
                 specContent = sourceSystem.openApiSpec; 
             }
     
-            SwaggerParseResult result = new OpenAPIV3Parser().readContents(specContent, null, new ParseOptions());
+            ParseOptions parseOptions = new ParseOptions();
+            parseOptions.setResolve(true); // Enable reference resolution
+            parseOptions.setResolveFully(true); // Fully resolve all references
+            SwaggerParseResult result = new OpenAPIV3Parser().readContents(specContent, null, parseOptions);
             OpenAPI openAPI = result.getOpenAPI();
     
             if (result.getMessages() != null && !result.getMessages().isEmpty()) {
@@ -104,7 +108,10 @@ public class OpenApiSpecificationParserService {
                 specContent = targetSystem.openApiSpec;
             }
 
-            SwaggerParseResult result = new OpenAPIV3Parser().readContents(specContent, null, new ParseOptions());
+            ParseOptions parseOptions = new ParseOptions();
+            parseOptions.setResolve(true); // Enable reference resolution
+            parseOptions.setResolveFully(true); // Fully resolve all references
+            SwaggerParseResult result = new OpenAPIV3Parser().readContents(specContent, null, parseOptions);
             OpenAPI openAPI = result.getOpenAPI();
 
             if (result.getMessages() != null && !result.getMessages().isEmpty()) {
@@ -177,7 +184,7 @@ public class OpenApiSpecificationParserService {
             if (!alreadyExists) {
                 Log.infof("Found new header definition in spec: '%s'. Creating entity for SourceSystem ID %d.", headerName, sourceSystem.id);
 
-                CreateApiHeaderDTO headerDTO = new CreateApiHeaderDTO(headerType, headerName);
+                CreateApiHeaderDTO headerDTO = new CreateApiHeaderDTO(headerType, headerName, java.util.Set.of());
 
                 apiHeaderService.persistRequestHeader(headerDTO, sourceSystem.id);
             } else {
@@ -204,7 +211,8 @@ public class OpenApiSpecificationParserService {
                     var mediaType = operation.getRequestBody().getContent().get("application/json");
                     if (mediaType != null && mediaType.getSchema() != null) {
                         try {
-                            requestBodySchema = objectMapper.writeValueAsString(mediaType.getSchema());
+                            var cleanedSchema = cleanSchema(mediaType.getSchema());
+                            requestBodySchema = objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(cleanedSchema);
                         } catch (Exception e) {
                             requestBodySchema = null;
                         }
@@ -217,11 +225,12 @@ public class OpenApiSpecificationParserService {
                     if (response.getContent() != null && response.getContent().get("application/json") != null) {
                         var mediaType = response.getContent().get("application/json");
                         if (mediaType.getSchema() != null) {
-                            try {
-                                responseBodySchema = objectMapper.writeValueAsString(mediaType.getSchema());
-                            } catch (Exception e) {
-                                responseBodySchema = null;
-                            }
+                        try {
+                            var cleanedSchema = cleanSchema(mediaType.getSchema());
+                            responseBodySchema = objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(cleanedSchema);
+                        } catch (Exception e) {
+                            responseBodySchema = null;
+                        }
                         }
                     }
                 }
@@ -345,5 +354,57 @@ public class OpenApiSpecificationParserService {
             case "accept-charset" -> ApiRequestHeaderType.ACCEPT_CHARSET;
             default -> ApiRequestHeaderType.CUSTOM;
         };
+    }
+
+    /**
+     * Cleans a schema by removing null values and metadata, keeping only relevant fields
+     */
+    private Map<String, Object> cleanSchema(io.swagger.v3.oas.models.media.Schema<?> schema) {
+        Map<String, Object> cleaned = new HashMap<>();
+        
+        if (schema == null) {
+            return cleaned;
+        }
+        
+        // Only include non-null, relevant fields
+        if (schema.getType() != null) {
+            cleaned.put("type", schema.getType());
+        }
+        if (schema.getDescription() != null) {
+            cleaned.put("description", schema.getDescription());
+        }
+        if (schema.getFormat() != null) {
+            cleaned.put("format", schema.getFormat());
+        }
+        if (schema.getExample() != null) {
+            cleaned.put("example", schema.getExample());
+        }
+        if (schema.getEnum() != null && !schema.getEnum().isEmpty()) {
+            cleaned.put("enum", schema.getEnum());
+        }
+        if (schema.getRequired() != null && !schema.getRequired().isEmpty()) {
+            cleaned.put("required", schema.getRequired());
+        }
+        
+        // Handle properties
+        if (schema.getProperties() != null && !schema.getProperties().isEmpty()) {
+            Map<String, Object> cleanedProperties = new HashMap<>();
+            for (Map.Entry<String, io.swagger.v3.oas.models.media.Schema> propEntry : schema.getProperties().entrySet()) {
+                cleanedProperties.put(propEntry.getKey(), cleanSchema(propEntry.getValue()));
+            }
+            cleaned.put("properties", cleanedProperties);
+        }
+        
+        // Handle items (for arrays)
+        if (schema.getItems() != null) {
+            cleaned.put("items", cleanSchema(schema.getItems()));
+        }
+        
+        // Handle $ref (if not resolved)
+        if (schema.get$ref() != null) {
+            cleaned.put("$ref", schema.get$ref());
+        }
+        
+        return cleaned;
     }
 }

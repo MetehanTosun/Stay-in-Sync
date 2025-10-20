@@ -1,59 +1,16 @@
+@import '../node-shared.css';
+
 .provider-node {
 	background: #00b82e;
 	border: 3px solid #005c18;
 	color: #fff;
-	border-radius: 14px;
-	box-shadow: 0 6px 18px rgba(0, 184, 46, 0.18);
-	padding: 20px 28px 16px 28px;
-	font-size: 1.18rem;
-	font-weight: 700;
-	min-width: 320px;
-	min-height: 80px;
-	display: flex;
-	flex-direction: column;
 	align-items: flex-start;
 	justify-content: center;
-	letter-spacing: 0.01em;
-	gap: 8px;
-}
-.provider-node .node-header {
-	font-size: 1.1em;
-	font-weight: 800;
-	margin-bottom: 6px;
-	letter-spacing: 0.03em;
-}
-.provider-node .node-content {
-	font-size: 1em;
-	font-weight: 500;
-	text-align: left;
-	width: 100%;
-}
-.provider-node .node-title {
-	font-size: 1.13em;
-	font-weight: 700;
-	margin-bottom: 2px;
-}
-.provider-node .node-path {
-	font-size: 0.98em;
-	background: rgba(255,255,255,0.13);
-	padding: 4px 8px;
-	border-radius: 4px;
-	margin-bottom: 2px;
 }
 
-.tooltip-output {
-  position: absolute;
-  top: 0;
-  right: 0;
-  display: flex;
-  flex-direction: row;
-  z-index: 10;
-  background: #222;
-  color: #fff;
-  padding: 2px 6px;
-  border-radius: 6px;
-  font-size: 0.89rem;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.18);
-  white-space: nowrap;
-	font-weight: normal;
+.node-path {
+  padding: 8px;
+  max-width: 320px;
+  overflow-x: auto;
 }
+

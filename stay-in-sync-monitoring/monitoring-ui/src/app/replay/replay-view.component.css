@@ -2,7 +2,7 @@
 .replay-container {
   display: flex;
   gap: 1rem;
-  height: calc(100vh - 120px); /* Adjust based on your header/padding */
+  height: 99%; /* Adjust based on your header/padding */
   padding: 1rem;
   overflow: hidden;
 }
@@ -192,31 +192,6 @@
   font-size: 1rem;
 }
 
-/* Button styling */
-.btn {
-  padding: 0.5rem 1rem;
-  border: none;
-  border-radius: 4px;
-  font-size: 0.875rem;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.btn-secondary {
-  background: var(--primary-color, #6366f1);
-  color: white;
-}
-
-.btn-secondary:hover {
-  background: var(--primary-color-hover, #4f46e5);
-  transform: translateY(-1px);
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-}
-
-.btn-secondary:active {
-  transform: translateY(0);
-}
 
 /* Responsive adjustments */
 @media (max-width: 1200px) {
@@ -250,3 +225,16 @@
 ::ng-deep .p-tabpanels {
   overflow: hidden;
 }
+
+.json-scroll-container {
+  overflow-x: auto;
+  overflow-y: hidden;
+  white-space: nowrap;
+  width: 100%;
+}
+
+.json-scroll-container ngx-json-viewer {
+  display: inline-block;
+  min-width: max-content;
+}
+

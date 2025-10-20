@@ -1,10 +1,14 @@
+<!-- Main table view for displaying all Target Systems -->
 <div style="height: 50rem">
+<p-toast key="targetBase"></p-toast>
+<p-toast key="targetAAS"></p-toast>
 <p-table [value]="displaySystems" [paginator]="true"
          [paginator]="true"
          paginatorPosition="bottom"
          [rows]="10"
          [scrollable]="true"
          scrollHeight="flex">
+  <!-- Table header with filters for name and API URL -->
   <ng-template pTemplate="header">
     <tr>
       <th>Name</th>
@@ -26,33 +30,66 @@
       </th>
     </tr>
   </ng-template>
+  <!-- Table caption with title and 'Create Target System' button -->
   <ng-template #caption>
     <div class="flex items-center justify-between">
       <span class="text-xl font-bold">Target Systems</span>
       <button pButton type="button" label="Create Target System" icon="pi pi-plus" (click)="openCreate()"></button>
     </div>
   </ng-template>
-  <ng-template pTemplate="body" let-row>
-    <tr>
-      <td>{{ row.name }}</td>
+  <!-- Table body displaying each Target System entry -->
+  <ng-template pTemplate="body" let-system let-rowIndex="rowIndex">
+    <tr [class.search-result]="isSearchActive">
+      <td>
+        <div class="system-name-cell">
+          <div class="system-name">{{ system.name }}</div>
+        </div>
+      </td>
       <td>
         <div class="api-url-cell">
-          <div class="api-url">{{ row.apiUrl }}</div>
-          <div class="api-type" *ngIf="row.apiType">
-            <span class="api-type-badge">{{ row.apiType }}</span>
+          <div class="api-url">{{ system.apiUrl }}</div>
+          <div class="api-type" *ngIf="system.apiType">
+            <span class="api-type-badge">{{ system.apiType }}</span>
           </div>
         </div>
       </td>
-      <td>{{ row.description }}</td>
       <td>
-        <button pButton label="Manage" class="p-button-text p-button-sm" (click)="manage(row)"></button>
-        <button pButton icon="pi pi-trash" class="p-button-text p-button-danger" (click)="confirmDelete(row)"></button>
+        <div class="description-cell">
+          <div class="description-text">{{ system.description }}</div>
+        </div>
+      </td>
+      <td>
+        <div class="actions-cell">
+          <button pButton type="button" label="Manage" class="p-button-text p-button-sm" [routerLink]="['/target-system', system.id]"></button>
+          <button pButton type="button" icon="pi pi-trash" class="p-button-text p-button-sm p-button-danger" (click)="confirmDelete(system)"></button>
+        </div>
+      </td>
+    </tr>
+  </ng-template>
+  <!-- Message displayed when no Target Systems are available -->
+  <ng-template pTemplate="emptymessage">
+    <tr>
+      <td colspan="4">
+        <div class="empty-state" style="text-align:center; padding: 2rem 0;">
+          <div class="empty-icon" style="margin-bottom:.5rem;">
+            <i class="pi pi-database"></i>
+          </div>
+          <div class="empty-message">
+            <h4>No target systems available</h4>
+            <p>No target systems available. Create your first target system to get started.</p>
+          </div>
+          <div class="empty-actions" style="margin-top: .75rem;">
+            <button pButton type="button" label="Create Target System" icon="pi pi-plus" (click)="openCreate()"></button>
+          </div>
+        </div>
       </td>
     </tr>
 
   </ng-template>
 </p-table>
+</div>
 
+<!-- Dialog for creating or editing a Target System -->
 <p-dialog [(visible)]="showDialog" [modal]="true" [style]="{width: '900px'}" [header]="dialogTitle">
   <form [formGroup]="form" class="p-fluid">
     <div class="p-field">
@@ -78,50 +115,133 @@
   </ng-template>
 </p-dialog>
 
-<app-create-target-system [(visible)]="wizardVisible"></app-create-target-system>
+<!-- Embedded wizard component for creating a Target System step-by-step -->
+<app-create-target-system [(visible)]="wizardVisible" (created)="onCreated($event)"></app-create-target-system>
 
+<!-- Dialog for managing a selected Target System and its configuration -->
 <p-dialog [(visible)]="showDetailDialog" [modal]="true" [style]="{ width: '80vw', height: '80vh' }" header="Manage Target System">
   <div class="p-grid p-dir-col">
-    <div class="p-col">
-      <h3 class="p-mb-2">Metadata</h3>
-      <form *ngIf="manageForm" [formGroup]="manageForm" class="p-fluid p-formgrid p-grid" (ngSubmit)="saveManagedMetadata()">
-        <div class="p-field p-col-12 p-md-6">
-          <label for="m_name">Name</label>
-          <input id="m_name" pInputText formControlName="name" />
+    <p-tabView>
+      <!-- Tab: System (Metadata) -->
+      <p-tabPanel header="System">
+
+        <div class="flex align-items-center gap-3">
+          <label class="text-xl font-bold" style="line-height: 3rem;">System Name:</label>
+          <span>
+            <p-inplace #inplace (onActivate)="onInplaceActivate()" styleClass="flex align-items-center">
+            <ng-template pTemplate="display">
+              <span class="text-xl font-semibold">{{ selectedSystem?.name }}</span>
+            </ng-template>
+
+            <ng-template pTemplate="content" let-closeCallback="closeCallback">
+        <span class="inline-flex align-items-center gap-2">
+          <input
+            type="text"
+            [(ngModel)]="selectedSystem!.name"
+            pInputText
+            autofocus
+            (keyup.enter)="onSave(closeCallback)"/>
+          <p-button icon="pi pi-times" aria-label="Cancel" (click)="onClose(closeCallback)" text severity="danger"/>
+          <p-button icon="pi pi-check" aria-label="Save" (click)="onSave(closeCallback)" text severity="success"/>
+        </span>
+            </ng-template>
+          </p-inplace>
+                    </span>
+
         </div>
-        <div class="p-field p-col-12 p-md-6">
-          <label for="m_apiUrl">API URL</label>
-          <input id="m_apiUrl" pInputText formControlName="apiUrl" />
+
+        <div class="flex align-items-center gap-3">
+          <label class="text-xl font-bold" style="line-height: 3rem;">Api address:</label>
+          <span>
+            <p-inplace #inplace (onActivate)="onInplaceActivate()" styleClass="flex align-items-center">
+            <ng-template pTemplate="display">
+              <span class="text-xl font-semibold">{{ selectedSystem?.apiUrl }}</span>
+            </ng-template>
+
+            <ng-template pTemplate="content" let-closeCallback="closeCallback">
+        <span class="inline-flex align-items-center gap-2">
+          <input
+            type="text"
+            [(ngModel)]="selectedSystem!.apiUrl"
+            pInputText
+            autofocus
+            (keyup.enter)="onSave(closeCallback)"/>
+          <p-button icon="pi pi-times" aria-label="Cancel" (click)="onClose(closeCallback)" text severity="danger"/>
+          <p-button icon="pi pi-check" aria-label="Save" (click)="onSave(closeCallback)" text severity="success"/>
+        </span>
+            </ng-template>
+          </p-inplace>
+                    </span>
+
         </div>
-        <!-- spacer row between metadata rows -->
-        <div class="p-col-12" style="height: 1rem;"></div>
-        <div class="p-field p-col-12 p-md-6">
-          <label for="m_apiType">API Type</label>
-          <input id="m_apiType" pInputText formControlName="apiType" />
+
+        <div class="flex align-items-center gap-3" style="margin-top: 1rem;">
+          <label class="text-xl font-bold" style="line-height: 3rem;">Description:</label>
+          <span>
+            <p-inplace #inplace (onActivate)="onInplaceActivate()" styleClass="flex align-items-center">
+            <ng-template pTemplate="display">
+              <span class="text-xl font-semibold">{{ selectedSystem?.description || '-' }}</span>
+            </ng-template>
+
+            <ng-template pTemplate="content" let-closeCallback="closeCallback">
+        <span class="inline-flex align-items-center gap-2">
+          <textarea
+            [(ngModel)]="selectedSystem!.description"
+            pInputTextarea
+            rows="3"
+            autofocus
+            style="min-width: 400px;"></textarea>
+          <p-button icon="pi pi-times" aria-label="Cancel" (click)="onClose(closeCallback)" text severity="danger"/>
+          <p-button icon="pi pi-check" aria-label="Save" (click)="onSave(closeCallback)" text severity="success"/>
+        </span>
+            </ng-template>
+          </p-inplace>
+                    </span>
+
         </div>
-        <div class="p-field p-col-12">
-          <label for="m_description">Description</label>
-          <textarea id="m_description" pInputTextarea rows="3" formControlName="description"></textarea>
+
+      </p-tabPanel>
+
+      <!-- Tab: Headers (REST only) -->
+      <p-tabPanel *ngIf="!isAasSelected()" header="Headers">
+        <app-manage-api-headers *ngIf="selectedSystem" [syncSystemId]="selectedSystem.id!" [allowValues]="true"></app-manage-api-headers>
+      </p-tabPanel>
+
+      <!-- Tab: Endpoints (REST only) -->
+      <p-tabPanel *ngIf="!isAasSelected()" header="Endpoints">
+        <app-manage-target-endpoints *ngIf="selectedSystem" [targetSystemId]="selectedSystem.id!" (finish)="onManageFinished()"></app-manage-target-endpoints>
+      </p-tabPanel>
+
+      <!-- Tab: AAS Configuration (AAS only) -->
+      <p-tabPanel *ngIf="isAasSelected()" header="AAS Configuration">
+        <div class="p-grid p-fluid">
+          <div class="p-col-12 p-md-6">
+            <label>Base URL</label>
+            <input pInputText [value]="selectedSystem!.apiUrl" disabled/>
+          </div>
+          <div class="p-col-12 p-md-6">
+            <label>AAS ID</label>
+            <input pInputText [(ngModel)]="selectedSystem!.aasId" placeholder="AAS Identifier"/>
+          </div>
         </div>
-        <div class="p-col-12">
-          <button pButton type="submit" label="Save Metadata" [disabled]="manageForm.invalid"></button>
+        <div class="p-d-flex p-ai-center" style="margin-top: .75rem; gap: .5rem;">
+          <button pButton type="button" label="Test" (click)="aasTest()" [disabled]="aasTestLoading"></button>
+          <span *ngIf="aasTestLoading">Testing...</span>
+          <small *ngIf="aasTestError" style="color:#d32f2f;">{{ aasTestError }}</small>
         </div>
-      </form>
-    </div>
-    <div class="p-col p-mt-4">
-      <h3 class="p-mb-2">API Headers</h3>
-      <app-manage-api-headers *ngIf="selectedSystem" [syncSystemId]="selectedSystem.id!"></app-manage-api-headers>
-    </div>
-    <div class="p-col p-mt-4">
-      <h3 class="p-mb-2">Endpoints</h3>
-      <app-manage-target-endpoints *ngIf="selectedSystem" [targetSystemId]="selectedSystem.id!" (finish)="onManageFinished()"></app-manage-target-endpoints>
-    </div>
+      </p-tabPanel>
+
+      <!-- Tab: AAS Management (AAS only) -->
+      <p-tabPanel *ngIf="isAasSelected()" header="AAS Management">
+        <app-aas-management [system]="selectedSystem" (refreshRequested)="onAasRefreshRequested()"></app-aas-management>
+      </p-tabPanel>
+    </p-tabView>
   </div>
 </p-dialog>
+<!-- Confirmation dialog for deleting a Target System -->
 <app-confirmation-dialog
   [(visible)]="showConfirmationDialog"
   [data]="confirmationData"
   (confirmed)="onConfirmationConfirmed()"
   (cancelled)="onConfirmationCancelled()">
 </app-confirmation-dialog>
-</div>

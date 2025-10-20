@@ -16,6 +16,9 @@ public class ConfigResource {
     @ConfigProperty(name = "grafana.base.url")
     String grafanaBaseUrl;
 
+    @ConfigProperty(name = "backend-api/mp-rest/url")
+    String coreManagementUrl;
+
     @GET
     @Path("/grafanaUrl")
     @Produces(MediaType.TEXT_PLAIN)
@@ -29,5 +32,20 @@ public class ConfigResource {
     )
     public String getGrafanaUrl() {
         return grafanaBaseUrl;
+    }
+
+    @GET
+    @Path("/coreManagementUrl")
+    @Produces(MediaType.TEXT_PLAIN)
+    @Operation(
+            summary = "Get SyncNode base URL",
+            description = "Returns the configured SyncNode base URL as defined in the application configuration."
+    )
+    @APIResponse(
+            responseCode = "200",
+            description = "The configured SyncNode base URL"
+    )
+    public String getCoreManagementUrl() {
+        return coreManagementUrl;
     }
 }

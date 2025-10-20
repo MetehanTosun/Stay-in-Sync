@@ -152,7 +152,7 @@ public class MonitoringGraphService {
             for (String pollingNodeName : tf.pollingNodes) {
                 String pollingNodeId = PREFIX_POLL + pollingNodeName;
                 nodeMap.putIfAbsent(pollingNodeId,
-                        createNode(pollingNodeId, TYPE_POLLINGNODE, pollingNodeName, STATUS_ERROR));
+                        createNode(pollingNodeId, TYPE_POLLINGNODE, pollingNodeName, STATUS_ACTIVE));
 
                 if (tf.sourceSystemIds != null) {
                     for (Long srcId : tf.sourceSystemIds) {

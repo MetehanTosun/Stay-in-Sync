@@ -4,10 +4,9 @@
   - Display, create, edit, delete, and import endpoints for a source system
   -------------------------------------------------------------------------------------------------
 -->
-
-
+<div style="height: 55rem">
+<p-toast key="endpoints"></p-toast>
 <p-table [style]="{ 'margin': '1.5rem 0' }" [value]="endpoints" [loading]="loading"
-
          [paginator]="true"
          paginatorPosition="bottom"
          [rows]="10"
@@ -16,8 +15,12 @@
   <ng-template #caption>
     <div class="flex items-center justify-between">
       <span class="text-xl font-bold">Api Endpoints</span>
-      <button pButton type="button" label="Add Api Endpoint" icon="pi pi-plus"
-              (click)="addEndpointVisible = true"></button>
+      <div class="inline-flex items-center gap-2">
+        <button pButton type="button" icon="pi pi-cloud-download" label="Import Endpoints" [disabled]="!apiUrl || importing" (click)="importEndpoints()"></button>
+        <p-progressSpinner *ngIf="importing" [style]="{width: '20px', height: '20px'}" strokeWidth="2"></p-progressSpinner>
+        <button pButton type="button" label="Add Api Endpoint" icon="pi pi-plus"
+                (click)="addEndpointVisible = true"></button>
+      </div>
     </div>
   </ng-template>
   <ng-template pTemplate="header">
@@ -38,7 +41,7 @@
           <ng-template #filter let-filter="filterCallback">
             <p-select [options]="httpRequestTypes"
                       (onChange)="filter($event.value)"
-                      placeholder="Select One"
+                      placeholder="Select Method"
                       [showClear]="true"
                       [style]="{ 'min-width': '12rem' }">
               <ng-template let-option #item>
@@ -69,7 +72,7 @@
         <button pButton type="button" label="Response Preview" (click)="showResponsePreviewModal(e)"></button>
       </td>
       <td>
-        <!-- Add manage button -->
+        <button pButton icon="pi pi-pencil" class="p-button-text" (click)="openEdit(e)"></button>
         <button pButton
                 type="button"
                 icon="pi pi-cog"
@@ -77,47 +80,39 @@
                 pTooltip="Query-Parameter verwalten"
                 tooltipPosition="top"
                 (click)="selectedEndpoint = e"></button>
-        <button pButton type="button" icon="pi pi-trash" class="p-button-text" (click)="deleteEndpoint(e)"></button>
+        <button pButton type="button" icon="pi pi-trash" class="p-button-text p-button-danger" (click)="deleteEndpoint(e)"></button>
       </td>
     </tr>
   </ng-template>
 </p-table>
-
-<!--
-  Section: Import Endpoints
--->
-<div class="p-mb-3">
-  <button
-    pButton
-    type="button"
-    icon="pi pi-cloud-download"
-    label="Import Endpoints"
-    [disabled]="!apiUrl || importing"
-    (click)="importEndpoints()">
-  </button>
-  <p-progressSpinner *ngIf="importing" styleClass="p-ml-2" strokeWidth="4"></p-progressSpinner>
 </div>
+<!-- Import button moved to table caption -->
 <!--
   Section: Edit Endpoint Dialog
 -->
-<p-dialog header="Edit Endpoint" [(visible)]="editDialog" modal="true" [style]="{ width: '600px' }">
+<p-dialog [(visible)]="editDialog" [modal]="true" [style]="{ width: '60rem', height: '50rem' }">
+  <ng-template #header>
+    <div class="inline-flex items-center justify-center gap-2">
+      <span class="font-bold whitespace-nowrap">Edit Endpoint</span>
+    </div>
+  </ng-template>
   <form [formGroup]="editForm" class="p-fluid p-formgrid p-grid">
-    <div class="p-field p-col-12">
-      <label>Path</label>
-      <input pInputText formControlName="endpointPath"/>
+    <div class="p-field p-col-12" style="margin-bottom: 1rem;">
+      <label for="editEndpointPath">Endpoint Path*</label>
+      <input id="editEndpointPath" pInputText formControlName="endpointPath"/>
     </div>
-    <div class="p-field p-col-12">
-      <label>Method</label>
-      <p-dropdown [options]="httpRequestTypes" formControlName="httpRequestType"></p-dropdown>
+    <div class="p-field p-col-12" style="margin-bottom: 1rem;">
+      <label for="editHttpRequestType">Method*</label>
+      <p-dropdown id="editHttpRequestType" [options]="httpRequestTypes" formControlName="httpRequestType"></p-dropdown>
     </div>
-    <div class="p-field p-col-12"
+    <div class="p-field p-col-12" style="margin-bottom: 1rem;"
          *ngIf="editForm.get('httpRequestType')?.value === 'POST' || editForm.get('httpRequestType')?.value === 'PUT'">
-      <label>Request-Body-Schema (JSON)</label>
+      <label>Request Body Schema (JSON)</label>
       <ngx-monaco-editor [options]="jsonEditorOptions" formControlName="requestBodySchema"></ngx-monaco-editor>
       <div *ngIf="editJsonError" class="p-error">{{ editJsonError }}</div>
     </div>
-    <div class="p-field p-col-12">
-      <label>Response-Body-Schema</label>
+    <div class="p-field p-col-12" style="margin-bottom: 1rem;">
+      <label for="editResponseBodySchema">Response-Body-Schema</label>
       <p-tabView [(activeIndex)]="editActiveTabIndex" (onChange)="onEditTabChange($event)">
         <p-tabPanel header="JSON">
           <ngx-monaco-editor [options]="jsonEditorOptions" formControlName="responseBodySchema"></ngx-monaco-editor>
@@ -146,18 +141,18 @@
       </p-tabView>
     </div>
   </form>
-  <ng-template pTemplate="footer">
-    <button pButton type="button" label="Cancel" class="p-button-text" (click)="closeEditDialog()"></button>
-    <button pButton type="button" label="Save" (click)="saveEdit()" [disabled]="editForm.invalid"></button>
+  <ng-template #footer>
+    <p-button label="Cancel" [text]="true" severity="secondary" (click)="closeEditDialog()"/>
+    <p-button label="Save" [outlined]="true" severity="secondary" (click)="saveEdit()" [disabled]="editForm.invalid" 
+              [pTooltip]="getEditEndpointTooltip()" tooltipPosition="top"/>
   </ng-template>
 </p-dialog>
 
+<!-- Cleanup of duplicate/old sections; using origin/main layout above -->
 <!-- Request Body Editor Overlay (outside of p-card/Dialog) -->
-<div *ngIf="requestBodyEditorEndpoint" class="request-body-editor-overlay" cdkDrag
-     cdkDragRootElement=".request-body-editor-overlay">
+<div *ngIf="requestBodyEditorEndpoint" class="request-body-editor-overlay" cdkDrag cdkDragRootElement=".request-body-editor-overlay">
   <div class="editor-header" cdkDragHandle>
-    <span>Request-Body-Schema für {{ requestBodyEditorEndpoint.endpointPath }}
-      ({{ requestBodyEditorEndpoint.httpRequestType }})</span>
+    <span>Request-Body-Schema für {{ requestBodyEditorEndpoint.endpointPath }} ({{ requestBodyEditorEndpoint.httpRequestType }})</span>
     <button class="close-btn" (click)="closeRequestBodyEditor()">&#10005;</button>
   </div>
   <ngx-monaco-editor [options]="jsonEditorOptions" [model]="requestBodyEditorModel"
@@ -260,7 +255,7 @@
   <ng-template #footer>
     <p-button label="Cancel" [text]="true" severity="secondary" (click)="addEndpointVisible = false"/>
     <p-button label="Save" [outlined]="true" severity="secondary" (click)="addEndpoint()"
-              [disabled]="endpointForm.invalid"/>
+              [disabled]="endpointForm.invalid" [pTooltip]="getAddEndpointTooltip()" tooltipPosition="top"/>
   </ng-template>
 </p-dialog>
 

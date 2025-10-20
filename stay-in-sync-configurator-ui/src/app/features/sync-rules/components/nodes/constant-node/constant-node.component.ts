@@ -7,9 +7,10 @@ import { CustomNodeComponent, HandleComponent, SelectableDirective } from 'ngx-v
  */
 @Component({
   selector: 'app-constant-node',
+  standalone: true,
   imports: [HandleComponent, SelectableDirective, CommonModule],
   templateUrl: './constant-node.component.html',
-  styleUrl: './constant-node.component.css'
+  styleUrls: ['./constant-node.component.css']
 })
 export class ConstantNodeComponent extends CustomNodeComponent {
   displayTooltips = false;

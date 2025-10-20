@@ -6,12 +6,11 @@ import { Router } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { HttpResponse } from '@angular/common/http';
-import {Button} from 'primeng/button';
-import {Dialog} from 'primeng/dialog';
-import {InputText} from 'primeng/inputtext';
-import {Toolbar} from 'primeng/toolbar';
-import {Tag} from 'primeng/tag';
-import {Select} from 'primeng/select';
+import { Button } from 'primeng/button';
+import { Tag } from 'primeng/tag';
+import { Select } from 'primeng/select';
+import { CreateRuleModalComponent } from '../../components/modals/create-rule-modal/create-rule-modal.component';
+import { MessageService } from 'primeng/api';
 
 /**
  * The page component responsible for viewing the list of transformation rule graphs
@@ -23,61 +22,57 @@ import {Select} from 'primeng/select';
     FormsModule,
     TableModule,
     Button,
-    Dialog,
     Tag,
-    Select
+    Select,
+    CreateRuleModalComponent
   ],
   templateUrl: './rules-overview.component.html',
-  styleUrl: './rules-overview.component.css'
+  styleUrls: ['./rules-overview.component.css']
 })
 export class RulesOverviewComponent implements OnInit {
-  //#region Setup
+  //#region Fields
   rules: TransformationRule[] = [];
   isLoading = true;
-  showCreateRule = false;
+  showCreateRule = false; // bound to the extracted modal's `visible`
   expandedRuleId: number | null = null;
 
-  // Search
-  searchTerm: string = '';
-
-  // Input Data
-  newRule: RuleCreationDTO = {
-    name: '',
-    description: ''
-  };
+  // Search and filter
+  searchTerm = '';
+  statusOptions = [
+    { label: 'Draft', value: 'DRAFT' },
+    { label: 'Finalized', value: 'FINALIZED' }
+  ];
+  //#endregion
 
   constructor(
     private router: Router,
-    private rulesApi: TransformationRulesApiService
+    private rulesApi: TransformationRulesApiService,
+    private messageService: MessageService
   ) { }
 
-  ngOnInit() : void {
+  //#region Lifecycle
+  /**
+   * Initialize the page by loading the available rules.
+   */
+  ngOnInit(): void {
     this.loadRules();
   }
   //#endregion
 
-  //#region Template Methods
+  //#region UI Events
   /**
-   * Opens the modal to receive user input for the creation of a new rule
+   * Handler for the `(created)` event emitted by the Create Rule modal.
+   * Forwards to the API to create the rule.
+   * On success navigates to the newly created rule's editor.
    */
-  openCreateRuleModal() {
-    this.showCreateRule = true;
-    this.newRule = {
-      name: '',
-      description: ''
-    };
+  onCreateRule(dto: RuleCreationDTO) {
+    this.createRule(dto);
   }
+  //#endregion
 
+  //#region Navigation
   /**
-   * Closes the rule creation modal
-   */
-  closeCreateRuleModal() {
-    this.showCreateRule = false;
-  }
-
-  /**
-   * Navigates to the editor of the given rule
-   * @param ruleId
+   * Navigate to the rule editor for the given rule id.
    */
   editRule(ruleId: number) {
     this.router.navigate(['/sync-rules/edit-rule', ruleId]);
@@ -86,89 +81,87 @@ export class RulesOverviewComponent implements OnInit {
 
   //#region REST Methods
   /**
-   * Creates a new rule with the name and description chosen by the user
-   */
-  createRule() {
-    if (!this.isInputValid()) {
-      alert("Invalid Input");// TODO-s err user
-      return
-    }
-
-    this.rulesApi.createRule(this.newRule).subscribe({
-      next: (res: HttpResponse<TransformationRule>) => {
-        if (!res.body?.id) {
-          throw new Error("Rule ID was not return - unable to forward to editor")
-        }
-        this.editRule(res.body?.id)
-      },
-      error: (err) => {
-        alert(err.error?.message || err.message);
-        console.log(err); // TODO-s err
-      },
-    })
-  }
-
-  /**
-   * Loads all transformation rules from the backend
+   * Load all transformation rules from the backend and update component state.
    */
   loadRules() {
     this.rulesApi.getRules().subscribe({
-      next: (rules: TransformationRule[]) => {
-        this.rules = rules;
+      next: (rules: TransformationRule[]) => (this.rules = rules),
+      error: (err: unknown) => {
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Error while Loading Rules',
+          detail: (err as any)?.message || 'An unexpected error occurred. Please try again later.'
+        });
+        console.error('Failed to load rules', err);
       },
-      error: (err) => {
-        alert(err.error?.message || err.message);
-        console.log(err); // TODO-s err
+      complete: () => (this.isLoading = false)
+    });
+  }
+
+  /**
+   * Creates a new rule with the data from the given DTO
+   */
+  createRule(dto: RuleCreationDTO) {
+    this.rulesApi.createRule(dto).subscribe({
+      next: (res: HttpResponse<TransformationRule>) => {
+        if (!res.body?.id) {
+          throw new Error('Rule ID was not return - unable to forward to editor');
+        }
+        this.editRule(res.body.id!);
       },
-      complete: () => {
-        this.isLoading = false;
+      error: (err: unknown) => {
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Error while Creating Rule',
+          detail: (err as any)?.message || 'An unexpected error occurred. Please try again later.'
+        });
+        console.error('Failed to create rule', err);
       }
     });
   }
 
   /**
-   * Deletes a specific transformation rule
-   * @param ruleId
+   * Deletes a specific transformation rule and reloads the list on success.
    */
   deleteRule(ruleId: number) {
     this.rulesApi.deleteRule(ruleId).subscribe({
       next: () => {
-        alert("deletion successful"); // TODO-s notify
+        this.messageService.add({
+          severity: 'success',
+          summary: 'Rule deleted',
+          detail: 'The rule was successfully deleted'
+        });
         this.loadRules();
       },
-      error: (err) => {
-        alert(err.error?.message || err.message);
-        console.log(err); // TODO-s err
+      error: (err: unknown) => {
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Unable to Delete Rule',
+          detail: (err as any)?.message || 'An unexpected error occurred. Please try again later.'
+        });
+        console.error('Failed to delete rule', err);
       }
-    })
+    });
   }
   //#endregion
 
   //#region Helpers
   /**
-   * Checks the current user input within the rule creation form
-   * @returns true if the user input is valid
+   * Map backend status to PrimeNG tag severity.
    */
-  isInputValid(): boolean {
-    if (this.newRule.name.trim() && this.newRule.description.trim()) {
-      return true;
-    }
-    return false;
-  }
-  //#endregion
-  selectedStatus: any;
-
   getSeverity(status: string): string {
     return status === 'FINALIZED' ? 'success' : 'warning';
   }
+
   /**
-   * Returns the rules filtered by the search term
+   * Returns the rules filtered by the active search term.
    */
   get filteredRules(): TransformationRule[] {
     if (!this.searchTerm.trim()) {
       return this.rules;
     }
     const term = this.searchTerm.trim().toLowerCase();
-    return this.rules.filter(rule => rule.name.toLowerCase().includes(term));
+    return this.rules.filter((rule) => rule.name.toLowerCase().includes(term));
   }
+  //#endregion
 }

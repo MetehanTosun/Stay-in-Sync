@@ -92,6 +92,9 @@ public class GraphMapper {
             nodeDto.setInputNodes(new ArrayList<>()); // Initialize empty list for connections
             nodeDto.setChangeDetectionMode(data.getChangeDetectionMode());
             nodeDto.setChangeDetectionActive(data.isChangeDetectionActive());
+            
+            if (nodeDto.getNodeType().equals("CONFIG") && data.getTimeWindowMillis() != null)
+                nodeDto.setTimeWindowMillis(data.getTimeWindowMillis());
 
             nodeDtoMap.put(vflowNode.getId(), nodeDto);
         }
@@ -153,6 +156,9 @@ public class GraphMapper {
                             break;
                         case "CONSTANT":
                             node = new ConstantNode(dto.getName(), dto.getValue());
+                            break;
+                        case "SCHEMA":
+                            node = new SchemaNode(dto.getValue() != null ? dto.getValue().toString() : "");
                             break;
                         case "LOGIC":
                             node = new LogicNode(dto.getName(), LogicOperator.valueOf(dto.getOperatorType()));

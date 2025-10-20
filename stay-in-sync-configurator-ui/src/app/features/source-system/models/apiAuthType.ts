@@ -10,6 +10,7 @@
 
 
 export const ApiAuthType = {
+    None: 'NONE',
     Basic: 'BASIC',
     ApiKey: 'API_KEY'
 } as const;

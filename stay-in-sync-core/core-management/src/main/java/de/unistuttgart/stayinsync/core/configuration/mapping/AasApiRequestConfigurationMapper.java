@@ -1,6 +1,6 @@
 package de.unistuttgart.stayinsync.core.configuration.mapping;
 
-import de.unistuttgart.stayinsync.core.configuration.domain.entities.aas.AasSourceApiRequestConfiguration;
+import de.unistuttgart.stayinsync.core.configuration.persistence.entities.aas.AasSourceApiRequestConfiguration;
 import de.unistuttgart.stayinsync.core.configuration.rest.dtos.aas.AasArcDTO;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
