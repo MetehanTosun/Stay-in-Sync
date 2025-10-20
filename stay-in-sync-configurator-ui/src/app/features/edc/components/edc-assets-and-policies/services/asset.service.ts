@@ -14,7 +14,7 @@ export class AssetService {
   private mockMode = false;
 
   private baseUrl = '/api/config/edcs';
-  private transformationsUrl = '/api/config/transformation'; // Corrected from plural to singular
+  private transformationsUrl = '/api/config/transformation';
   private targetArcUrl = '/api/config/target-arcs';
   private targetSystemsUrl = '/api/config/target-systems';
   private syncedAssetsUrl = '/api/config/synced-assets';
@@ -72,15 +72,12 @@ export class AssetService {
     );
   }
 
-  createAsset(edcId: string, asset: Asset): Observable<Asset> {
+  createAsset(edcId: string, asset: any): Observable<Asset> {
     if (this.mockMode) {
       console.warn('Mock Mode: Creating asset.');
-
-      const { assetId, targetEDCId, ...rest } = asset;
-      const cleanAsset = { ...rest, '@id': asset.assetId };
-
-      (MOCK_ODRL_ASSETS[edcId] || []).push(cleanAsset);
-      return of(this.toAsset(cleanAsset)).pipe(delay(300));
+      const newAsset = { ...asset, '@id': asset.assetId };
+      (MOCK_ODRL_ASSETS[edcId] || []).push(newAsset);
+      return of(this.toAsset(newAsset)).pipe(delay(300));
     }
     asset.targetEDCId = edcId;
     return this.http.post<Asset>(`${this.baseUrl}/${edcId}/assets`, asset).pipe(
@@ -91,16 +88,14 @@ export class AssetService {
     );
   }
 
-  updateAsset(edcId: string, assetId: string, asset: Asset): Observable<Asset> {
+  updateAsset(edcId: string, assetId: string, asset: any): Observable<Asset> {
     if (this.mockMode) {
       console.warn(`Mock Mode: Updating asset ${assetId}.`);
       const index = (MOCK_ODRL_ASSETS[edcId] || []).findIndex(a => a['@id'] === assetId);
       if (index > -1) {
-
-        const { assetId, targetEDCId, ...rest } = asset;
-        const cleanAsset = { ...rest, '@id': asset.assetId };
-        (MOCK_ODRL_ASSETS[edcId] || [])[index] = cleanAsset;
-        return of(this.toAsset(cleanAsset)).pipe(delay(300));
+        const updatedAsset = { ...asset, '@id': asset.assetId };
+        (MOCK_ODRL_ASSETS[edcId] || [])[index] = updatedAsset;
+        return of(this.toAsset(updatedAsset)).pipe(delay(300));
       }
       return of(asset);
     }
@@ -210,7 +205,14 @@ export class AssetService {
   private toAsset(raw: any): Asset {
     // The 'properties' can be an object or an array with one object. Normalize to a single object.
     const props = Array.isArray(raw?.properties) ? (raw.properties[0] || {}) : (raw?.properties || {});
-    const dataAddress = raw?.dataAddress || {};
+    const dataAddress = raw?.dataAddress || {};    
+    // Extract headers from dataAddress
+    const headers: { [key: string]: string } = {};
+    for (const key in dataAddress) {
+      if (key.toLowerCase().startsWith('header:')) {
+        headers[key.substring(7)] = dataAddress[key];
+      }
+    }
 
     return {
       id: raw?.id, // not provided by backend (ignored), kept for compatibility
@@ -221,11 +223,10 @@ export class AssetService {
       type: dataAddress?.type || 'HttpData',
       url: dataAddress?.baseUrl || dataAddress?.base_url || '',
       targetEDCId: raw?.targetEDCId || raw?.target_edc_id || '',
-
-
-      dataAddress: dataAddress,
-      queryParams: dataAddress?.queryParams, // Keep for easy access in details view
-      headers: {},
+      // Pass the original dataAddress through, so the "Details" view shows the raw truth
+      dataAddress: dataAddress, 
+      queryParams: dataAddress?.queryParams,
+      headers: headers,
 
       properties: Object.keys(props).map(key => ({
         id: key,

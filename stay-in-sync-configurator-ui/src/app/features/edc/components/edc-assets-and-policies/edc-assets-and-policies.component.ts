@@ -559,8 +559,17 @@ accessPolicySuggestions: OdrlPolicyDefinition[] = [];
 
   openManualAssetDialog() {
     this.isManualAssetCreation = true; // Set the flag for manual mode
-    this.resetAssetFormFields(); // Start with a clean slate
-    this.syncAssetFormFromJson(); // Initialize the JSON editor with a blank structure
+    this.resetAssetFormFields();
+
+    // Use the same logic as the guided creation to provide a default template
+    const defaultTemplate = this.assetTemplates.length > 0 ? this.assetTemplates[0] : null;
+    if (defaultTemplate) {
+      const templateContent = JSON.parse(JSON.stringify(defaultTemplate.content));
+      templateContent['@id'] = ""; // Start with a blank ID
+      this.expertModeJsonContent = JSON.stringify(templateContent, null, 2);
+    } else {
+      this.expertModeJsonContent = '{}'; // Fallback to an empty object
+    }
     this.displayNewAssetDialog = true;
   }
 
