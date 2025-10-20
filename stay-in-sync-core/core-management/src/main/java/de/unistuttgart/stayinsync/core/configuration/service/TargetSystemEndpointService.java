@@ -64,7 +64,8 @@ public class TargetSystemEndpointService {
     @Transactional(SUPPORTS)
     public List<TargetSystemEndpoint> findAllEndpointsWithTargetSystemIdLike(Long targetSystemId) {
         Log.debugf("Finding all endpoints of target system with id = %s", targetSystemId);
-        return TargetSystemEndpoint.list("targetSystem.id", targetSystemId);
+        return Optional.ofNullable(TargetSystemEndpoint.findByTargetSystemId(targetSystemId))
+                .orElseGet(List::of);
     }
 
     @Transactional(SUPPORTS)

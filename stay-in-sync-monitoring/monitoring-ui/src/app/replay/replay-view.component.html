@@ -1,12 +1,22 @@
+<!--
+  Replay View Template
+  --------------------
+  Displays the replay interface consisting of:
+  - A left pane with the transformation script and a Replay button.
+  - A right pane with multiple tabs (SourceData, Variables, Errors, OutputData, Logs).
+  The view allows users to inspect a snapshot, execute a replay, and review captured output.
+
+  Author: Mohammed-Ammar Hassnou
+-->
 <div class="replay-container">
-  <!-- Left pane: Monaco Editor -->
+  <!-- Left pane: Monaco editor for the transformation script -->
   <section class="left-pane">
+    <!-- Header for script section including Replay trigger button -->
     <header class="pane-header">
       <h2>Script</h2>
-      <p-button (onClick)="onReplayClick()">
-        Replay
-      </p-button>
+      <p-button (onClick)="onReplayClick()"> Replay </p-button>
     </header>
+    <!-- Monaco editor displaying or editing the TypeScript transformation code -->
     <div class="editor-wrapper">
       <ngx-monaco-editor
         [options]="editorOptions"
@@ -17,9 +27,10 @@
     </div>
   </section>
 
-  <!-- Right pane: Tabs -->
+  <!-- Right pane: Tabbed results display (SourceData, Variables, Errors, Output, Logs) -->
   <section class="right-pane">
-    <p-tabs [ngStyle]="{ height: '100%' }">
+    <!-- Tab container using PrimeNG Tabs component -->
+    <p-tabs [(value)]="selectedTab" [ngStyle]="{ height: '100%' }">
       <p-tablist>
         <p-tab value="0">SourceData</p-tab>
         <p-tab value="1">Variables</p-tab>
@@ -29,6 +40,7 @@
       </p-tablist>
 
       <p-tabpanels>
+        <!-- Tab: SourceData – displays the original JSON input of the snapshot -->
         <p-tabpanel value="0">
           <div class="tab-content json-viewer-wrapper">
             <ng-container *ngIf="!loading(); else loadingTpl">
@@ -36,7 +48,7 @@
                 <h3>Source Data</h3>
                 <div class="json-scroll-container">
                   <ngx-json-viewer
-                    [json]="data()?.transformationResult?.sourceData"
+                    [json]="formattedSourceData"
                     [expanded]="false"
                   ></ngx-json-viewer>
                 </div>
@@ -45,21 +57,24 @@
           </div>
         </p-tabpanel>
 
-
+        <!-- Tab: Variables – shows the captured variables from replay execution -->
         <p-tabpanel value="1">
           <div class="tab-content">
             <ng-container *ngIf="!loading(); else loadingTpl">
               <ng-container *ngIf="!error(); else errorTpl">
                 <h3>Variable Snapshot</h3>
-                <ngx-json-viewer
-                  [json]="variables"
-                  [expanded]="false"
-                ></ngx-json-viewer>
+                <div class="json-scroll-container">
+                  <ngx-json-viewer
+                    [json]="variables"
+                    [expanded]="false"
+                  ></ngx-json-viewer>
+                </div>
               </ng-container>
             </ng-container>
           </div>
         </p-tabpanel>
 
+        <!-- Tab: Errors – displays runtime or script errors -->
         <p-tabpanel value="2">
           <div class="tab-content">
             <ng-container *ngIf="!loading(); else loadingTpl">
@@ -71,23 +86,28 @@
           </div>
         </p-tabpanel>
 
+        <!-- Tab: OutputData – shows the transformation output JSON -->
         <p-tabpanel value="3">
           <div class="tab-content">
             <ng-container *ngIf="!loading(); else loadingTpl">
               <ng-container *ngIf="!error(); else errorTpl">
                 <h3>Output Data</h3>
-                <ngx-json-viewer
-                  [json]="outputData"
-                  [expanded]="false"
-                ></ngx-json-viewer>
+                <div class="json-scroll-container">
+                  <ngx-json-viewer
+                    [json]="outputData"
+                    [expanded]="false"
+                  ></ngx-json-viewer>
+                </div>
               </ng-container>
             </ng-container>
           </div>
         </p-tabpanel>
 
+        <!-- Tab: Logs – displays transformation logs fetched from backend -->
         <p-tabpanel value="4">
           <ng-container *ngIf="!loading(); else loadingTpl">
             <ng-container *ngIf="!error(); else errorTpl">
+              <!-- PrimeNG table listing logs with sortable columns and message filtering -->
               <p-table
                 [value]="logs"
                 [scrollable]="true"
@@ -154,7 +174,7 @@
     </p-tabs>
   </section>
 
-  <!-- Templates for Loading & Error -->
+  <!-- Shared templates for loading and error display states -->
   <ng-template #loadingTpl>
     <div class="loading-state">
       <p>Loading...</p>

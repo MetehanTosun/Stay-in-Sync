@@ -37,8 +37,6 @@ public class GraphValidatorServiceTest {
         lenient().when(sorter.sort(anyList())).thenReturn(noCycleResult);
     }
 
-    // region Bestehende Tests
-
     @Test
     void testValidateGraph_WithValidDefaultGraph_ShouldReturnNoErrors() {
         // ARRANGE
@@ -84,22 +82,33 @@ public class GraphValidatorServiceTest {
     }
 
     @Test
-    void testValidateGraph_WithCycle_ShouldReturnCycleError() throws NodeConfigurationException {
+    void testValidateGraph_WithCycle_ShouldReturnCycleError() {
         // ARRANGE
         ConfigNode configNode = createConfigNode(0);
-        LogicNode nodeA = new LogicNode("A", LogicOperator.AND);
-        nodeA.setId(1);
-        LogicNode nodeB = new LogicNode("B", LogicOperator.AND);
-        nodeB.setId(2);
-        FinalNode finalNode = createFinalNode(3, nodeA);
-        ConstantNode dummyInput = new ConstantNode("dummy", true);
-        dummyInput.setId(4);
+        LogicNode nodeA;
+        LogicNode nodeB;
+        FinalNode finalNode;
+        ConstantNode dummyInput;
+        
+        try {
+            nodeA = new LogicNode("A", LogicOperator.AND);
+            nodeA.setId(1);
+            nodeB = new LogicNode("B", LogicOperator.AND);
+            nodeB.setId(2);
+            dummyInput = new ConstantNode("dummy", true);
+            dummyInput.setId(4);
+        } catch (NodeConfigurationException e) {
+            fail("Unexpected NodeConfigurationException during test setup: " + e.getMessage());
+            return;
+        }
+        
+        finalNode = createFinalNode(3, nodeA);
 
         nodeA.setInputNodes(List.of(nodeB, dummyInput));
         nodeB.setInputNodes(List.of(nodeA, dummyInput)); // Cycle
         List<Node> graph = List.of(configNode, nodeA, nodeB, finalNode, dummyInput);
 
-        // Mocking für einen Graphen mit Zyklus
+        // Mocking for a Graph with a cycle
         GraphTopologicalSorter.SortResult cycleResult = new GraphTopologicalSorter.SortResult(List.of(), true, List.of(1, 2));
         when(sorter.sort(graph)).thenReturn(cycleResult);
 
@@ -112,11 +121,17 @@ public class GraphValidatorServiceTest {
     }
 
     @Test
-    void testValidateGraph_WithWrongInputTypeForFinalNode_ShouldReturnError() throws NodeConfigurationException {
+    void testValidateGraph_WithWrongInputTypeForFinalNode_ShouldReturnError() {
         // ARRANGE
         ConfigNode configNode = createConfigNode(0);
-        ConstantNode numberInput = new ConstantNode("numberInput", 123);
-        numberInput.setId(1);
+        ConstantNode numberInput;
+        try {
+            numberInput = new ConstantNode("numberInput", 123);
+            numberInput.setId(1);
+        } catch (NodeConfigurationException e) {
+            fail("Unexpected NodeConfigurationException during test setup: " + e.getMessage());
+            return;
+        }
 
         FinalNode finalNode = createFinalNode(2, numberInput);
         List<Node> graph = List.of(configNode, numberInput, finalNode);
@@ -129,10 +144,6 @@ public class GraphValidatorServiceTest {
         assertTrue(errors.get(0) instanceof FinalNodeError);
         assertTrue(errors.get(0).getMessage().contains("The FinalNode input must be of type BOOLEAN"));
     }
-
-    // endregion
-
-    // region Neue Tests für höhere Code Coverage
 
     @Test
     void testValidateGraph_WithNullGraph_ShouldReturnError() {
@@ -223,13 +234,20 @@ public class GraphValidatorServiceTest {
     }
 
     @Test
-    void testValidateGraph_WithFinalNodeHavingMultipleInputs_ShouldReturnError() throws NodeConfigurationException {
+    void testValidateGraph_WithFinalNodeHavingMultipleInputs_ShouldReturnError() {
         // ARRANGE
         ConfigNode configNode = createConfigNode(0);
-        ConstantNode input1 = new ConstantNode("in1", true);
-        input1.setId(1);
-        ConstantNode input2 = new ConstantNode("in2", true);
-        input2.setId(2);
+        ConstantNode input1;
+        ConstantNode input2;
+        try {
+            input1 = new ConstantNode("in1", true);
+            input1.setId(1);
+            input2 = new ConstantNode("in2", true);
+            input2.setId(2);
+        } catch (NodeConfigurationException e) {
+            fail("Unexpected NodeConfigurationException during test setup: " + e.getMessage());
+            return;
+        }
 
         FinalNode finalNode = new FinalNode();
         finalNode.setId(3);
@@ -246,15 +264,22 @@ public class GraphValidatorServiceTest {
     }
 
     @Test
-    void testValidateGraph_WithInvalidOperatorConfiguration_ShouldReturnError() throws NodeConfigurationException {
+    void testValidateGraph_WithInvalidOperatorConfiguration_ShouldReturnError() {
         // ARRANGE
         ConfigNode configNode = createConfigNode(0);
-        ConstantNode const1 = new ConstantNode("val1", 10);
-        const1.setId(1);
-
-        LogicNode invalidAddNode = new LogicNode("Invalid Add", LogicOperator.ADD);
-        invalidAddNode.setId(2);
-        invalidAddNode.setInputNodes(List.of(const1));
+        ConstantNode const1;
+        LogicNode invalidAddNode;
+        
+        try {
+            const1 = new ConstantNode("val1", 10);
+            const1.setId(1);
+            invalidAddNode = new LogicNode("Invalid Add", LogicOperator.ADD);
+            invalidAddNode.setId(2);
+            invalidAddNode.setInputNodes(List.of(const1));
+        } catch (NodeConfigurationException e) {
+            fail("Unexpected NodeConfigurationException during test setup: " + e.getMessage());
+            return;
+        }
 
         FinalNode finalNode = createFinalNode(3, configNode);
         List<Node> graph = List.of(configNode, invalidAddNode, finalNode, const1);
@@ -267,7 +292,6 @@ public class GraphValidatorServiceTest {
         assertTrue(errors.get(0) instanceof OperatorConfigurationError);
         OperatorConfigurationError opError = (OperatorConfigurationError) errors.get(0);
         assertEquals(2, opError.getNodeId());
-        // KORREKTUR 2: Assertion an die echte Fehlermeldung angepasst
         assertTrue(opError.getMessage().contains("requires at least 2 inputs"));
     }
 
@@ -289,8 +313,6 @@ public class GraphValidatorServiceTest {
         assertTrue(errors.stream().anyMatch(e -> e instanceof FinalNodeError && e.getMessage().contains("found 2")));
     }
 
-    // endregion
-
     // region Helper Methods
 
     private ConfigNode createConfigNode(int id) {
@@ -305,6 +327,4 @@ public class GraphValidatorServiceTest {
         node.setInputNodes(List.of(input));
         return node;
     }
-
-    // endregion
 }

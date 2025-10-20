@@ -1,4 +1,3 @@
-<!-- Dialog for creating and configuring a target system including API setup, AAS connection, headers, and submodels -->
 <p-dialog
   header="Create Target System"
   [(visible)]="visible"
@@ -6,12 +5,9 @@
   [style]="{ width: '60vw', height: '90vh' }"
   (onHide)="cancel()"
 >
-  <!-- Step navigation -->
   <p-steps [model]="steps" [activeIndex]="currentStep" class="mb-4"></p-steps>
 
-  <!-- Step 0: Basic Information form -->
   <ng-container *ngIf="currentStep === 0">
-    <!-- Form for entering target system basic details and authentication -->
     <form [formGroup]="form" class="p-fluid">
       <div class="p-field">
         <label for="name">Name*</label>
@@ -21,7 +17,7 @@
         <label for="apiUrl">Base URL*</label>
         <input id="apiUrl" type="text" pInputText formControlName="apiUrl"/>
       </div>
-      <!-- AAS-only field: AAS ID input -->
+      <!-- AAS-only field -->
       <div class="p-field" *ngIf="isAas()">
         <label for="aasId">AAS ID*</label>
         <input id="aasId" type="text" pInputText formControlName="aasId"/>
@@ -39,7 +35,6 @@
         <label for="apiAuthType">Authentication</label>
         <p-dropdown id="apiAuthType" [options]="authTypeOptions" formControlName="apiAuthType"></p-dropdown>
       </div>
-      <!-- Authentication configuration fields based on selected auth type -->
       <div formGroupName="authConfig">
         <ng-container *ngIf="form.get('apiAuthType')?.value === ApiAuthType.Basic">
           <div class="p-field">
@@ -62,7 +57,6 @@
           </div>
         </ng-container>
       </div>
-      <!-- REST API specific fields -->
       <div class="p-field" *ngIf="isRest()">
         <label for="openApiSpec">OpenAPI Spec URL</label>
         <input id="openApiSpec" type="text" pInputText formControlName="openApiSpec" placeholder="https://..."/>
@@ -73,7 +67,7 @@
         <small *ngIf="selectedFile">{{ selectedFile.name }}</small>
       </div>
 
-      <!-- AAS: Test connection button and status messages -->
+      <!-- AAS: Test connection -->
       <div class="p-field" *ngIf="isAas()">
         <button pButton type="button" label="Test connection" (click)="testAasConnection()" [disabled]="isTesting"></button>
         <span *ngIf="isTesting" class="ml-2">Testing...</span>
@@ -87,22 +81,16 @@
     </form>
   </ng-container>
 
-  <!-- Step 1: API Headers Management -->
   <div *ngIf="currentStep === 1" style="margin-top:1rem;">
-    <!-- Component to manage API headers with options to allow values and AAS mode -->
     <app-manage-api-headers [syncSystemId]="createdTargetSystemId" [allowValues]="true" [isAas]="isAas()" (onRetest)="testAasConnection()"></app-manage-api-headers>
   </div>
 
-  <!-- Step 2: Submodel Management (AAS/REST) -->
   <ng-container *ngIf="currentStep === 2">
     <ng-container *ngIf="isRest(); else aasTree">
-      <!-- REST API: Manage target endpoints -->
       <app-manage-target-endpoints [targetSystemId]="createdTargetSystemId"></app-manage-target-endpoints>
     </ng-container>
-    <!-- AAS: Tree structure displaying submodels and elements with interactive buttons -->
     <ng-template #aasTree>
       <div class="p-field">
-        <!-- Controls for discovering submodels, uploading AASX files, and creating submodels -->
         <button pButton type="button" label="Discover Submodels" (click)="discoverSubmodels()" [disabled]="isDiscovering"></button>
         <button pButton type="button" class="p-button-text ml-2" label="Upload AASX" (click)="openAasxUpload()" [disabled]="!createdTargetSystemId"></button>
         <button pButton type="button" class="p-button-text ml-2" label="+ Submodel" (click)="openCreateSubmodel()"></button>
@@ -110,7 +98,6 @@
       </div>
       <div style="display:flex; gap:1rem; align-items:flex-start;">
         <div style="flex: 1 1 65%; min-width: 0;">
-          <!-- Tree displaying submodels and elements -->
           <p-tree [value]="treeNodes" (onNodeExpand)="onNodeExpand($event)" (onNodeSelect)="onNodeSelect($event)" selectionMode="single">
             <ng-template let-node pTemplate="default">
               <div style="display:flex;align-items:center;gap:.5rem;">
@@ -118,7 +105,6 @@
                 <span style="font-size:.75rem;padding:.1rem .4rem;border-radius:999px;border:1px solid var(--surface-border);color:var(--text-color-secondary);">
                   {{ node.data?.type==='submodel' ? (node.data?.modelType || (node.data?.raw?.kind?.toLowerCase?.().includes('template') ? 'Submodel Template' : 'Submodel')) : (node.data?.modelType || node.data?.raw?.modelType || (node.data?.raw?.valueType ? 'Property' : 'Element')) }}
                 </span>
-                <!-- Buttons for submodel and element actions -->
                 <button *ngIf="node.data?.type==='submodel'" pButton type="button" class="p-button-text" label="Create element" (click)="openCreateElement(node.data.id)"></button>
                 <button *ngIf="node.data?.type==='submodel'" pButton type="button" class="p-button-text p-button-danger" label="Delete submodel" (click)="deleteSubmodel(node.data.id)"></button>
                 <button *ngIf="node.data?.type==='element' && (node.data?.modelType==='SubmodelElementCollection' || node.data?.modelType==='SubmodelElementList' || node.data?.modelType==='Entity')" pButton type="button" class="p-button-text" label="Add child" (click)="openCreateElement(node.data.submodelId, node.data.idShortPath)"></button>
@@ -128,7 +114,6 @@
             </ng-template>
           </p-tree>
         </div>
-        <!-- Details panel showing selected element properties -->
         <div id="element-details" class="p-card" *ngIf="selectedNode && selectedNode.data?.type==='element'" style="flex: 0 0 35%; padding:1rem;border:1px solid var(--surface-border);border-radius:4px; position: sticky; top: .5rem; align-self: flex-start; max-height: calc(100vh - 1rem); overflow: auto;">
           <div class="p-d-flex p-ai-center p-jc-between">
             <h4 style="margin:0;">Details</h4>
@@ -175,7 +160,6 @@
     </ng-template>
   </ng-container>
 
-  <!-- Footer with navigation buttons -->
   <ng-template pTemplate="footer">
     <div class="p-d-flex p-jc-between">
       <button pButton type="button" label="Back" class="p-button-text" (click)="goBack()" [disabled]="currentStep === 0"></button>
@@ -186,7 +170,6 @@
 </p-dialog>
 
 <!-- Dialog: Confirm Delete Submodel -->
-<!-- Confirmation dialog to delete a submodel and all its elements -->
 <p-dialog header="Delete Submodel" [(visible)]="showDeleteSubmodelDialog" [modal]="true" [style]="{width:'32vw'}">
   <p>Do you really want to delete this submodel? All its elements and the shell reference will be removed. This action cannot be undone.</p>
   <ng-template pTemplate="footer">
@@ -196,14 +179,12 @@
 </p-dialog>
 
 <!-- Dialog: Create Submodel -->
-<!-- Dialog to input submodel JSON or select a template for creation -->
 <p-dialog header="Create Submodel" [(visible)]="showSubmodelDialog" [modal]="true" [style]="{width:'40vw'}">
   <textarea pInputTextarea [(ngModel)]="newSubmodelJson" rows="10" style="width:100%"></textarea>
   <ng-template pTemplate="footer">
     <button pButton type="button" class="p-button-text" label="Cancel" (click)="showSubmodelDialog=false"></button>
     <button pButton type="button" label="Create" (click)="createSubmodel()"></button>
   </ng-template>
-  <!-- Quick template buttons for easy submodel creation -->
   <div class="p-mt-2" style="display:flex;gap:.5rem;flex-wrap:wrap;">
     <button pButton type="button" class="p-button-text" label="Template: Minimal" (click)="setSubmodelTemplate('minimal')"></button>
     <button pButton type="button" class="p-button-text" label="Template: With Property" (click)="setSubmodelTemplate('property')"></button>
@@ -212,7 +193,6 @@
 </p-dialog>
 
 <!-- Element Creation Dialog -->
-<!-- Dialog for creating or editing AAS elements -->
 <app-aas-element-dialog
   [(visible)]="showElementDialog"
   [data]="elementDialogData"
@@ -220,14 +200,12 @@
 </app-aas-element-dialog>
 
 <!-- Dialog: Upload AASX -->
-<!-- Dialog to upload an AASX file and select submodels for import -->
 <p-dialog header="Upload AASX" [(visible)]="showAasxUpload" [modal]="true" [style]="{width:'35vw'}">
   <div class="p-field">
     <p-fileupload mode="basic" [auto]="false" [showUploadButton]="false" [showCancelButton]="false" accept=".aasx" (onSelect)="onAasxFileSelected($event)"></p-fileupload>
     <small *ngIf="aasxSelectedFile">{{ aasxSelectedFile.name }}</small>
   </div>
   <div *ngIf="aasxPreview?.length" class="p-mt-3">
-    <!-- List of submodels found in the uploaded AASX file with checkboxes -->
     <div *ngFor="let sm of aasxPreview" class="p-mb-2">
       <div style="display:flex;align-items:center;gap:.5rem;">
         <p-checkbox binary="true" [ngModel]="getOrInitAasxSelFor(sm).full" (ngModelChange)="toggleAasxSubmodelFull(sm, $event)"></p-checkbox>
@@ -246,7 +224,6 @@
 </p-dialog>
 
 <!-- Dialog: Set Property Value -->
-<!-- Dialog to set or update the value of a selected property element -->
 <p-dialog header="Set Property Value" [(visible)]="showValueDialog" [modal]="true" [style]="{width:'35vw'}">
   <div class="p-field">
     <label>Submodel ID</label>

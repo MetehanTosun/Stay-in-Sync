@@ -25,7 +25,6 @@ public class TransformationRuleMapperServiceTest {
 
     @BeforeEach
     void setUp() {
-        // Da der Mapper jetzt JSON parsen muss, injizieren wir die Abhängigkeit manuell.
         mapper = new TransformationRuleMapperService(objectMapper);
     }
 
@@ -109,7 +108,6 @@ public class TransformationRuleMapperServiceTest {
         }, "toVFlowDto should throw CoreManagementException for malformed JSON.");
     }
 
-    // ### NEUER TESTFALL ###
     @Test
     void testMapping_WithNullGraph_ShouldReturnEmptyOrNull() {
         // ARRANGE
