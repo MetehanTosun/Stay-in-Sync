@@ -332,14 +332,6 @@ export class ArcWizardComponent implements OnChanges {
     this.headerParameters.removeAt(index);
   }
 
-  /**
-   if (this.context.arcToClone) {
-   // TODO: fetch the detailed ARC to get its saved parameter values for cloning
-   this.arcForm.patchValue({
-   alias: `${this.context.arcToClone?.alias}_copy`,
-   });
-   } */
-
   onTestCall(): void {
     if (this.arcForm.invalid) {
       this.arcForm.markAllAsTouched();
