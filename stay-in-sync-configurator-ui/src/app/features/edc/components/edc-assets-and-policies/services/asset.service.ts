@@ -4,7 +4,7 @@ import { Observable, throwError, of, forkJoin } from 'rxjs';
 import { catchError, map, delay } from 'rxjs/operators';
 import { Asset } from '../models/asset.model';
 import { Transformation } from '../../../models/transformation.model';
-import { MOCK_ODRL_ASSETS, MOCK_TRANSFORMATIONS, MOCK_TARGET_ARC_CONFIGS, MOCK_TARGET_SYSTEMS } from '../../../mocks/mock-data';
+import { MOCK_ODRL_ASSETS, MOCK_TRANSFORMATIONS, MOCK_TARGET_ARC_CONFIGS, MOCK_TARGET_SYSTEMS, MOCK_SYNCED_ASSETS } from '../../../mocks/mock-data';
 
 @Injectable({
   providedIn: 'root'
@@ -13,11 +13,11 @@ export class AssetService {
   // UI Testing method. To use the real backend, change this to false!
   private mockMode = false;
 
-  private backendApiUrl = 'http://localhost:8090/api/config'; // Central base URL for the backend
-  private baseUrl = `${this.backendApiUrl}/edcs`;
-  private transformationsUrl = `${this.backendApiUrl}/transformations`;
-  private targetArcUrl = `${this.backendApiUrl}/target-arc`;
-  private targetSystemsUrl = `${this.backendApiUrl}/target-systems`;
+  private baseUrl = '/api/config/edcs';
+  private transformationsUrl = '/api/config/transformations';
+  private targetArcUrl = '/api/config/target-arcs';
+  private targetSystemsUrl = '/api/config/target-systems';
+  private syncedAssetsUrl = '/api/config/synced-assets';
 
   constructor(private http: HttpClient) {}
 
@@ -159,6 +159,23 @@ export class AssetService {
     );
   }
 
+  /**
+   * Fetches the synced asset properties for a given ID.
+   * @param id The ID of the synced asset.
+   */
+  getSyncedAsset(id: string): Observable<any> {
+    if (this.mockMode) {
+      console.warn(`Mock Mode: Fetching synced asset for ID: ${id}`);
+      const props = MOCK_SYNCED_ASSETS[id] || {};
+      return of(props).pipe(delay(150));
+    }
+    return this.http.get<any>(`${this.syncedAssetsUrl}/${id}`).pipe(
+      catchError(err => {
+        console.error(`Failed to fetch synced asset for ID ${id}`, err);
+        return throwError(() => new Error(`Could not load synced asset properties.`));
+      })
+    );
+  }
 
   /**
    * Fetches the detailed configuration for a specific Target Arc.
@@ -185,7 +202,7 @@ export class AssetService {
       return of(suggestions.filter(s => s.includes(query)));
     }
     // Replace with a real backend call if needed
-    return this.http.get<string[]>(`${this.backendApiUrl}/endpoint-suggestions`, { params: { q: query } });
+    return this.http.get<string[]>(`/api/config/endpoint-suggestions`, { params: { q: query } });
   }
 
   // Maps backend JSON (JSON-LD style) to our Asset interface used by the UI table

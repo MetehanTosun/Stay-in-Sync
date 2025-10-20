@@ -33,7 +33,8 @@
           </p-iconfield>
 
           <!-- New asset -->
-          <button pButton pRipple label="New Asset" icon="pi pi-plus" class="p-button-success" (click)="openNewAssetDialog()"></button>
+          <button pButton pRipple label="New Asset" icon="pi pi-plus" class="p-button-success mr-2" (click)="openNewAssetDialog()"></button>
+          <button pButton pRipple label="Manual Creation" icon="pi pi-pencil" class="p-button-secondary" (click)="openManualAssetDialog()" pTooltip="Create an asset from scratch"></button>
         </div>
       </div>
     </ng-template>
@@ -246,7 +247,7 @@
       ></p-dropdown>
     </div>
 
-    <div *ngIf="selectedSystem" class="dynamic-fields-section">
+    <div *ngIf="selectedSystem || isManualAssetCreation" class="dynamic-fields-section">
       <p-divider align="center" type="dashed" styleClass="my-4">
         <b>Asset Details</b>
       </p-divider>

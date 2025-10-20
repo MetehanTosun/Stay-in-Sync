@@ -201,6 +201,7 @@ accessPolicySuggestions: OdrlPolicyDefinition[] = [];
   // New Asset Dialog specific properties
   allSelectableSystems: Transformation[] = [];
   selectedSystem: Transformation | null = null;
+  isManualAssetCreation = false; // Flag to control manual creation mode
   assetAttributes: { key: string; value: string }[] = [{ key: '', value: '' }]; // Start with one empty row
   pathParamId: string = '';
   queryParams: { key: string; value: string }[] = [{ key: '', value: '' }];
@@ -534,6 +535,7 @@ accessPolicySuggestions: OdrlPolicyDefinition[] = [];
 
   // Asset methods
   openNewAssetDialog() {
+    this.isManualAssetCreation = false; // Ensure we are in guided mode
     // Always start with a completely clean slate by resetting all form fields
     this.resetAssetFormFields();
 
@@ -555,12 +557,25 @@ accessPolicySuggestions: OdrlPolicyDefinition[] = [];
     this.displayNewAssetDialog = true;
   }
 
+  openManualAssetDialog() {
+    this.isManualAssetCreation = true; // Set the flag for manual mode
+    this.resetAssetFormFields(); // Start with a clean slate
+    this.syncAssetFormFromJson(); // Initialize the JSON editor with a blank structure
+    this.displayNewAssetDialog = true;
+  }
+
   // New Asset Dialog specific methods
   onSystemSelect(selectedSystem: Transformation | null) {
     if (selectedSystem && selectedSystem.id) {
-      this.assetService.getTargetArcConfig(selectedSystem.id).subscribe(config => {
-        this.populateFormFromTargetArc(config); // Use the new, specific helper method
-        this.syncAssetJsonFromForm();
+      // Use forkJoin to fetch both the request config and the asset properties in parallel
+      forkJoin({
+        arcConfig: this.assetService.getTargetArcConfig(selectedSystem.id),
+        syncedAsset: this.assetService.getSyncedAsset(selectedSystem.id)
+      }).subscribe(({ arcConfig, syncedAsset }) => {
+        // Pass both responses to the populating function
+        this.populateFormFromSystemSelection(arcConfig, syncedAsset);
+        // Sync the form to the JSON editor after populating
+        this.syncAssetJsonFromForm(); 
       });
     } else {
       this.resetAssetFormFields();
@@ -785,12 +800,14 @@ accessPolicySuggestions: OdrlPolicyDefinition[] = [];
   }
 
   /**
-   * Populates the asset form from a /target-arc/{id} response.
+   * Populates the asset form from the combined responses of the backend endpoints.
    * This "translates" the backend's structure into the UI form fields.
+   * @param arcConfig The response from /target-arc/{id}
+   * @param syncedAsset The response from /synced-assets/{id}
    */
-  private populateFormFromTargetArc(arcConfig: any): void {
+  private populateFormFromSystemSelection(arcConfig: any, syncedAsset: any): void {
     const action = arcConfig?.actions?.[0];
-    if (!action) {
+    if (!action && !syncedAsset) {
       // If there's no action, there's nothing to populate
       return;
     }
@@ -798,18 +815,20 @@ accessPolicySuggestions: OdrlPolicyDefinition[] = [];
     // "Translate" the fields
     this.pathParamId = action.path || '';
 
-    if (Array.isArray(action.queryParameters)) {
+    if (Array.isArray(action?.queryParameters)) {
       this.queryParams = action.queryParameters.map((p: { key: string, value: string }) => ({ ...p }));
     }
 
-    if (Array.isArray(action.headers)) {
+    if (Array.isArray(action?.headers)) {
       this.headerParams = action.headers.map((h: { key: string, value: string }) => ({ ...h }));
     }
 
     // Also update the properties in the JSON editor
     const assetJson = JSON.parse(this.expertModeJsonContent || '{}');
-    assetJson.properties['asset:prop:name'] = action.name || arcConfig.alias || '';
-    assetJson.properties['asset:prop:description'] = action.description || '';
+    assetJson.properties['asset:prop:name'] = syncedAsset?.['asset:prop:name'] || action?.name || arcConfig?.alias || '';
+    assetJson.properties['asset:prop:description'] = syncedAsset?.['asset:prop:description'] || action?.description || '';
+    assetJson.properties['asset:prop:version'] = syncedAsset?.['asset:prop:version'] || '1.0.0';
+    assetJson.properties['asset:prop:contenttype'] = syncedAsset?.['asset:prop:contenttype'] || 'application/json';
     this.expertModeJsonContent = JSON.stringify(assetJson, null, 2);
   }
 

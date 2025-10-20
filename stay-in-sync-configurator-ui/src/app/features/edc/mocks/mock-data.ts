@@ -174,3 +174,27 @@ export const MOCK_TARGET_SYSTEMS: Transformation[] = [
   { id: '10', alias: 'CRM Backend' },
   { id: '11', alias: 'Inventory Management' },
 ];
+
+/**
+ * Mock Synced Assets
+ */
+export const MOCK_SYNCED_ASSETS: { [key: string]: any } = {
+  '1': {
+    "asset:prop:name": "User List Asset",
+    "asset:prop:description": "Provides a list of all active users.",
+    "asset:prop:version": "1.1.0",
+    "asset:prop:contenttype": "application/json"
+  },
+  '2': {
+    "asset:prop:name": "Event Creation Asset",
+    "asset:prop:description": "An asset for creating new calendar events.",
+    "asset:prop:version": "2.0.0",
+    "asset:prop:contenttype": "application/json"
+  },
+  '3': {
+    "asset:prop:name": "Product Details Asset",
+    "asset:prop:description": "Provides detailed information about a single product.",
+    "asset:prop:version": "1.0.0",
+    "asset:prop:contenttype": "application/json"
+  }
+};
