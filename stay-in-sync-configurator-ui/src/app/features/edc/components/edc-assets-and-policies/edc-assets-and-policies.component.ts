@@ -112,10 +112,6 @@ allOdrlContractDefinitions: OdrlContractDefinition[] = [];
 allContractDefinitions: UiContractDefinition[] = [];
 filteredContractDefinitions: UiContractDefinition[] = [];
 
-assetIdSuggestions: Asset[] = [];
-accessPolicySuggestions: OdrlPolicyDefinition[] = [];
-
-
   // Properties for the 'New Contract Definition' dialog
   assetsForDialog: (Asset & { operator: string })[] = [];
   selectedAssetsInDialog: Asset[] = [];
@@ -202,6 +198,7 @@ accessPolicySuggestions: OdrlPolicyDefinition[] = [];
   allSelectableSystems: Transformation[] = [];
   selectedSystem: Transformation | null = null;
   isManualAssetCreation = false; // Flag to control manual creation mode
+  manualBaseUrl: string = ''; // For the manual creation URL field
   assetAttributes: { key: string; value: string }[] = [{ key: '', value: '' }]; // Start with one empty row
   pathParamId: string = '';
   queryParams: { key: string; value: string }[] = [{ key: '', value: '' }];
@@ -326,37 +323,6 @@ accessPolicySuggestions: OdrlPolicyDefinition[] = [];
     this.headerParams.splice(index, 1);
     this.syncAssetJsonFromForm();
   }
-
-
-
-
-  /**
-   * Filters assets based on user input for the autocomplete component.
-   * It searches by both Asset ID and asset's name
-   * @param event The autocomplete event containing the user's query.
-   */
-  searchAssets(event: { query: string }) {
-  const query = event.query.toLowerCase();
-  this.assetIdSuggestions = this.assets.filter(asset =>
-    asset.assetId.toLowerCase().includes(query) ||
-    (asset.description && asset.description.toLowerCase().includes(query))
-  );
-}
-
-  /**
-   * Filters access policies for the autocomplete component.
-   * Searches by both Policy ID and BPN.
-   * @param event The autocomplete event containing the user's query.
-   */
-  searchAccessPolicies(event: { query: string }) {
-  const query = event.query.toLowerCase();
-  this.accessPolicySuggestions = this.allAccessPolicies.filter(policy =>
-    (policy.policyId?.toLowerCase() || '').includes(query) ||
-    (policy['@id']?.toLowerCase() || '').includes(query) ||
-    (policy.dbId?.toLowerCase() || '').includes(query) ||
-    (policy.bpn?.toLowerCase() || '').includes(query)
-  );
-}
 
   goBack(): void {
     this.back.emit();
@@ -691,6 +657,11 @@ accessPolicySuggestions: OdrlPolicyDefinition[] = [];
       currentAssetJson.dataAddress = { type: 'HttpData' }; // Default type
     }
 
+    // If in manual mode, use the manualBaseUrl field to set the base_url
+    if (this.isManualAssetCreation) {
+      currentAssetJson.dataAddress.base_url = this.manualBaseUrl;
+    }
+
 
     // Stelle sicher, dass proxyPath und proxyQueryParams existieren
     if (currentAssetJson.dataAddress.proxyPath === undefined) {
@@ -844,6 +815,7 @@ accessPolicySuggestions: OdrlPolicyDefinition[] = [];
   private resetAssetFormFields(): void {
     this.selectedSystem = null;
     this.assetAttributes = [{ key: '', value: '' }];
+    this.manualBaseUrl = '';
     this.pathParamId = '';
     this.queryParams = []; // Reset to an empty array
     this.headerParams = []; // Reset to an empty array for consistency

@@ -205,7 +205,7 @@ export class AssetService {
   private toAsset(raw: any): Asset {
     // The 'properties' can be an object or an array with one object. Normalize to a single object.
     const props = Array.isArray(raw?.properties) ? (raw.properties[0] || {}) : (raw?.properties || {});
-    const dataAddress = raw?.dataAddress || {};    
+    const dataAddress = raw?.dataAddress || {};
     // Extract headers from dataAddress
     const headers: { [key: string]: string } = {};
     for (const key in dataAddress) {
@@ -224,7 +224,7 @@ export class AssetService {
       url: dataAddress?.baseUrl || dataAddress?.base_url || '',
       targetEDCId: raw?.targetEDCId || raw?.target_edc_id || '',
       // Pass the original dataAddress through, so the "Details" view shows the raw truth
-      dataAddress: dataAddress, 
+      dataAddress: dataAddress,
       queryParams: dataAddress?.queryParams,
       headers: headers,
 

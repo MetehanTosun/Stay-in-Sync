@@ -6,7 +6,7 @@ export interface EdcInstance {
   description: string;
   bpn: string;
   apiKey?: string;
-  edcAssetEndpoint: string;
-  edcPolicyEndpoint: string;
-  edcContractDefinitionEndpoint: string; 
+  edcAssetEndpoint?: string;
+  edcPolicyEndpoint?: string;
+  edcContractDefinitionEndpoint?: string; 
 }

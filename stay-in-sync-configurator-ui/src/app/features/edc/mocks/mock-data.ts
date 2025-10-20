@@ -1,6 +1,60 @@
 import { EdcInstance } from '../components/edc-instances/models/edc-instance.model';
 import { OdrlContractDefinition } from '../components/edc-assets-and-policies/models/policy.model';
 import { Transformation } from '../models/transformation.model';
+
+import { Template } from '../components/templates/models/template.model';
+
+
+/**
+ * Mock Templates
+ */
+export const MOCK_TEMPLATES: Template[] = [
+  {
+    id: `template-1`,
+    name: 'Default BPN Access Policy',
+    description: 'A simple policy to grant access based on a Business Partner Number.',
+    content: {
+      "@context": {"odrl": "http://www.w3.org/ns/odrl/2/"},
+      "@id": "POLICY_ID_BPN",
+      "policy": {
+        "permission": [{
+          "action": "${Action|use,read,write}",
+          "constraint": [{
+            "leftOperand": "BusinessPartnerNumber",
+            "operator": "${Operator|eq,neq}",
+            "rightOperand": "${BPN-Value}"
+          }]
+        }]
+      }
+    }
+  },
+  {
+    id: `template-2`,
+    name: 'CX Membership Policy',
+    description: 'A Catena-X policy that checks for active membership and a BPN.',
+    content: {
+      "@context": [
+        "http://www.w3.org/ns/odrl.jsonld",
+        "https://w3id.org/catenax/2025/9/policy/context.jsonld"
+      ],
+      "@type": "Set",
+      "@id": "POLICY_ID_BPN",
+      "permission": [
+        {
+          "action": "${Action|access,read,write,use}",
+          "constraint": [
+            {
+              "leftOperand": "Membership",
+              "operator": "${Operator|eq,neq}",
+              "rightOperand": "${Status|active,inactive}"
+            }
+          ]
+        }
+      ]
+    }
+  },
+];
+
 /**
  * Mock EDC Instances
  */
