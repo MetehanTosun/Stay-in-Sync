@@ -1,4 +1,5 @@
 export interface Transformation {
   id: string;
-  alias: string;
+  name: string; // Property sent by the backend
+  alias: string; // Property used by the UI dropdown
 }

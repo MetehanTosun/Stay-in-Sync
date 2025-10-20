@@ -112,9 +112,9 @@ export let MOCK_CONTRACT_DEFINITIONS: Record<string, OdrlContractDefinition[]> =
  * Mock Transformations (Target Systems)
  */
 export const MOCK_TRANSFORMATIONS: Transformation[] = [
-  { id: '1', alias: 'User Management API' },
-  { id: '2', alias: 'Events API' },
-  { id: '3', alias: 'Product Catalog API' }
+  { id: '1', name: 'User Management API', alias: 'User Management API' },
+  { id: '2', name: 'Events API', alias: 'Events API' },
+  { id: '3', name: 'Product Catalog API', alias: 'Product Catalog API' }
 ];
 
 /**
@@ -171,8 +171,8 @@ export const MOCK_TARGET_ARC_CONFIGS: { [key: string]: any } = {
  * Mock Target Systems
  */
 export const MOCK_TARGET_SYSTEMS: Transformation[] = [
-  { id: '10', alias: 'CRM Backend' },
-  { id: '11', alias: 'Inventory Management' },
+  { id: '10', name: 'CRM Backend', alias: 'CRM Backend' },
+  { id: '11', name: 'Inventory Management', alias: 'Inventory Management' },
 ];
 
 /**

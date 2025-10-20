@@ -14,7 +14,7 @@ export class AssetService {
   private mockMode = false;
 
   private baseUrl = '/api/config/edcs';
-  private transformationsUrl = '/api/config/transformations';
+  private transformationsUrl = '/api/config/transformation'; // Corrected from plural to singular
   private targetArcUrl = '/api/config/target-arcs';
   private targetSystemsUrl = '/api/config/target-systems';
   private syncedAssetsUrl = '/api/config/synced-assets';
@@ -137,8 +137,8 @@ export class AssetService {
   getSelectableSystems(): Observable<Transformation[]> {
     if (this.mockMode) {
       console.warn('Mock Mode: Fetching combined Transformations and Target Systems.');
-      const transformations = MOCK_TRANSFORMATIONS.map((t: Transformation) => ({ ...t, type: 'Transformation' }));
-      const targetSystems = MOCK_TARGET_SYSTEMS.map((t: Transformation) => ({ ...t, type: 'Target System' }));
+      const transformations = MOCK_TRANSFORMATIONS.map((t: any) => ({ ...t, alias: t.name, type: 'Transformation' }));
+      const targetSystems = MOCK_TARGET_SYSTEMS.map((t: any) => ({ ...t, type: 'Target System' }));
       return of([...transformations, ...targetSystems]).pipe(delay(100));
     }
 
@@ -146,9 +146,10 @@ export class AssetService {
     return forkJoin({
       transformations: this.http.get<Transformation[]>(this.transformationsUrl),
       targetSystems: this.http.get<Transformation[]>(this.targetSystemsUrl)
-    }).pipe(      map(({ transformations, targetSystems }: { transformations: Transformation[], targetSystems: Transformation[] }) => {
-        // Add a 'type' property to distinguish them in the UI if needed later
-        const typedTransformations = transformations.map(t => ({ ...t, type: 'Transformation' }));
+    }).pipe(
+      map(({ transformations, targetSystems }) => {
+        // The backend sends 'name', but the UI dropdown uses 'alias'. We map it here.
+        const typedTransformations = transformations.map(t => ({ ...t, alias: t.name, type: 'Transformation' as const }));
         const typedTargetSystems = targetSystems.map(t => ({ ...t, type: 'Target System' }));
         return [...typedTransformations, ...typedTargetSystems];
       }),
