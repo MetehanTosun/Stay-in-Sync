@@ -42,7 +42,7 @@ public class XorOperatorTest {
 
     @Test
     @DisplayName("should return true when exactly one input is true")
-    void testExecute_WhenOneInputIsTrue_ShouldReturnTrue() throws GraphEvaluationException {
+    void testExecute_WhenOneInputIsTrue_ShouldReturnTrue() {
         // ARRANGE
         when(mockLogicNode.getInputNodes()).thenReturn(List.of(mockInputNode1, mockInputNode2));
         when(mockInputNode1.getCalculatedResult()).thenReturn(true);
@@ -57,7 +57,7 @@ public class XorOperatorTest {
 
     @Test
     @DisplayName("should return false when both inputs are the same")
-    void testExecute_WhenBothInputsAreSame_ShouldReturnFalse() throws GraphEvaluationException {
+    void testExecute_WhenBothInputsAreSame_ShouldReturnFalse() {
         // ARRANGE
         when(mockLogicNode.getInputNodes()).thenReturn(List.of(mockInputNode1, mockInputNode2));
 
@@ -81,7 +81,7 @@ public class XorOperatorTest {
     void testExecute_WhenInputIsNotBoolean_ShouldThrowException() {
         // ARRANGE
         when(mockLogicNode.getInputNodes()).thenReturn(List.of(mockInputNode1));
-        when(mockInputNode1.getCalculatedResult()).thenReturn("true"); // Falscher Typ
+        when(mockInputNode1.getCalculatedResult()).thenReturn("true");
 
         // ACT & ASSERT
         assertThrows(GraphEvaluationException.class, () -> operation.execute(mockLogicNode, null));
@@ -89,7 +89,7 @@ public class XorOperatorTest {
 
     @Test
     @DisplayName("should ignore null inputs")
-    void testExecute_WhenInputIsNull_ShouldBeIgnored() throws GraphEvaluationException {
+    void testExecute_WhenInputIsNull_ShouldBeIgnored() {
         // ARRANGE
         when(mockLogicNode.getInputNodes()).thenReturn(List.of(mockInputNode1, mockInputNode2, mockInputNode3));
         when(mockInputNode1.getCalculatedResult()).thenReturn(true);

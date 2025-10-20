@@ -15,7 +15,7 @@ INSERT INTO OperatorMetadata(operator_name, category, description, input_types, 
 INSERT INTO OperatorMetadata(operator_name, category, description, input_types, output_type) VALUES('OR', 'GENERAL', 'Performs a strict logical OR operation.', '["BOOLEAN", "BOOLEAN"]', 'BOOLEAN');
 INSERT INTO OperatorMetadata(operator_name, category, description, input_types, output_type) VALUES('XOR', 'GENERAL', 'Checks if exactly one input is true (strict).', '["BOOLEAN", "BOOLEAN"]', 'BOOLEAN');
 INSERT INTO OperatorMetadata(operator_name, category, description, input_types, output_type) VALUES('NOT', 'GENERAL', 'Negates a single boolean value (strict).', '["BOOLEAN"]', 'BOOLEAN');
-INSERT INTO OperatorMetadata(operator_name, category, description, input_types, output_type) VALUES('MATCHES_SCHEMA', 'GENERAL', 'Validates a JSON document against a JSON schema.', '["JSON", "SCHEMA"]', 'BOOLEAN');
+INSERT INTO OperatorMetadata(operator_name, category, description, input_types, output_type) VALUES('MATCHES_SCHEMA', 'GENERAL', 'Validates a JSON document against a JSON schema.', '["ANY", "JSON"]', 'BOOLEAN');
 
 -- Number Predicates
 INSERT INTO OperatorMetadata(operator_name, category, description, input_types, output_type) VALUES('GREATER_THAN', 'NUMBER', 'Checks if a number is greater than another.', '["NUMBER", "NUMBER"]', 'BOOLEAN');

@@ -5,12 +5,13 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import de.unistuttgart.graphengine.exception.GraphEvaluationException;
-import de.unistuttgart.graphengine.nodes.Node;
+import de.unistuttgart.graphengine.exception.GraphSerializationException;
+import de.unistuttgart.graphengine.nodes.Node; 
 import de.unistuttgart.stayinsync.scriptengine.ScriptEngineService;
 import de.unistuttgart.stayinsync.scriptengine.message.TransformationResult;
-import de.unistuttgart.stayinsync.syncnode.LogicGraph.GraphHasher;
-import de.unistuttgart.stayinsync.syncnode.LogicGraph.GraphInstanceCache;
-import de.unistuttgart.stayinsync.syncnode.LogicGraph.StatefulLogicGraph;
+import de.unistuttgart.graphengine.cache.GraphHasher;
+import de.unistuttgart.graphengine.cache.GraphInstanceCache;
+import de.unistuttgart.graphengine.cache.StatefulLogicGraph;
 import de.unistuttgart.stayinsync.syncnode.SnapshotManagement.SnapshotFactory;
 import de.unistuttgart.stayinsync.syncnode.SnapshotManagement.SnapshotStore;
 import de.unistuttgart.stayinsync.syncnode.domain.ExecutionPayload;
@@ -119,6 +120,11 @@ public class TransformationExecutionService {
 
                 return graphInstance.evaluate(dataContext);
 
+            } catch (GraphSerializationException e) {
+                Log.errorf(e, "Job %s: Graph hash computation failed: %s",
+                        payload.job().jobId(), e.getMessage());
+                // Cannot proceed without valid graph hash
+                return false;
             } catch (GraphEvaluationException e) {
                 Log.errorf(e, "Job %s: Graph evaluation failed with error type %s: %s",
                         payload.job().jobId(), e.getErrorType(), e.getMessage());

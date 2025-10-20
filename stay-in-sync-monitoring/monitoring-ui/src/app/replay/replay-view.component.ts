@@ -42,28 +42,63 @@ declare const monaco: any;
   templateUrl: './replay-view.component.html',
   styleUrl: './replay-view.component.css',
 })
+/**
+ * ReplayViewComponent
+ * --------------------
+ * UI for loading a snapshot, displaying its associated TypeScript transformation,
+ * and executing a replay (TypeScript → transpile → JS run in backend sandbox).
+ *
+ * Responsibilities:
+ * - Resolve the `snapshotId` from the route and fetch the snapshot.
+ * - Load the transformation script and generated SDK for the snapshot's transformation.
+ * - Configure Monaco's TypeScript environment so globals (source/targets/etc.) are known.
+ * - Transpile TS to JS locally and call the replay backend endpoint.
+ * - Render output, captured variables, and error info for debugging.
+ *
+ * Notes:
+ * - The component only orchestrates UI and API calls; actual sandboxed execution
+ *   happens server-side in the ReplayExecutor.
+ * - No internal logic is modified by this documentation.
+ *
+ * @author Mohammed-Ammar Hassnou
+ */
 export class ReplayViewComponent implements OnInit {
+  // Router access to read the
+  // snapshotId query param.
   private route = inject(ActivatedRoute);
+  // API client for retrieving snapshots.
   private snapshots = inject(SnapshotService);
+  // API client for loading transformation scripts and generated SDK.
   private scripts = inject(ScriptService);
+  // API client for fetching recent logs for the transformation.
   private logService = inject(LogService);
+  // API client for invoking the backend replay execution.
   private replayService = inject(ReplayService);
 
-  // UI state
+  // --- UI state signals ---
+  // `loading` controls spinners, `error` holds user-facing error text,
+  // and `data` caches the loaded SnapshotDTO.
   loading = signal<boolean>(true);
   error = signal<string | null>(null);
   data = signal<SnapshotDTO | null>(null);
+  selectedTab = '0';
 
-  // Replay data
+  // --- Replay results and context ---
+  // These fields are populated after calling the backend replay endpoint.
   outputData: any;
   variables: Record<string, any> = {};
   errorInfo: string | null = null;
   snapshotId: string | null = null;
   generatedSdkCode: any;
 
+  // The TypeScript transformation code shown in the Monaco editor.
+  // Populated after fetching the script for the snapshot's transformation.
   scriptDisplay = '// loading TypeScript…';
   logs: LogEntry[] = [];
+  // Formatted source data for display (flattens top-level `source` key)
+  formattedSourceData: any = null;
 
+  /** Monaco editor configuration for displaying/transpiling the TypeScript transform. */
   editorOptions = {
     readOnly: false,
     language: 'typescript',
@@ -73,8 +108,16 @@ export class ReplayViewComponent implements OnInit {
     lineNumbers: 'on' as const,
   };
 
+  // Prevents repeated Monaco global reconfiguration when the component/editor re-initializes.
   private globalsConfigured = false;
 
+  /**
+   * Monaco editor initialization hook.
+   *
+   * Ensures that the TypeScript worker knows about global variables used in
+   * transformation scripts (e.g., `source`, `targets`, `stayinsync`, `__capture`).
+   * Triggers a re-validation so diagnostics reflect these globals.
+   */
   onEditorInit(editor: any): void {
     console.log('Monaco editor initializing...');
 
@@ -106,6 +149,12 @@ export class ReplayViewComponent implements OnInit {
     }, 100);
   }
 
+  /**
+   * Configure Monaco TypeScript defaults for the replay environment.
+   *
+   * Adds ambient declarations for globals, sets compiler/diagnostic options,
+   * and ensures consistent type-checking for scripts pasted or loaded into the editor.
+   */
   private configureMonacoGlobals(): void {
     if (typeof monaco === 'undefined') {
       console.error('Monaco is not defined');
@@ -155,6 +204,14 @@ declare var __capture: (name: string, value: any) => void;
     console.log('Monaco globals configured successfully');
   }
 
+  /**
+   * Lifecycle: initialize component state.
+   *
+   * - Optionally pre-configures Monaco if it was loaded before the component.
+   * - Reads the `snapshotId` from the route and loads the snapshot.
+   * - Fetches the associated transformation script + generated SDK.
+   * - Loads recent logs for the snapshot's transformation to aid debugging.
+   */
   ngOnInit(): void {
     // Pre-configure Monaco if it's already available
     // This handles cases where Monaco loads before component initialization
@@ -180,6 +237,21 @@ declare var __capture: (name: string, value: any) => void;
           return;
         }
         this.data.set(snap);
+
+        // Build a display-friendly source object (flatten top-level `source`)
+        const rawSource = snap?.transformationResult?.sourceData as any;
+        const flattened =
+          rawSource &&
+          typeof rawSource === 'object' &&
+          'source' in rawSource &&
+          rawSource.source &&
+          typeof rawSource.source === 'object'
+            ? rawSource.source
+            : rawSource ?? {};
+        // Preserve existing fields
+        const displayObj = { ...(flattened || {}) } as any;
+
+        this.formattedSourceData = displayObj;
 
         const transformationId = snap.transformationResult?.transformationId;
         if (transformationId == null) {
@@ -246,6 +318,14 @@ declare var __capture: (name: string, value: any) => void;
     });
   }
 
+  /**
+   * Handler for the "Replay" action.
+   *
+   * Transpiles the editor's TypeScript into JavaScript (client-side) and constructs
+   * a `ReplayExecuteRequestDTO` payload including the snapshot's source data and
+   * the generated SDK code. Sends the request to the backend and stores the
+   * returned output/variables/error for display.
+   */
   onReplayClick(): void {
     if (!this.data()) {
       this.errorInfo = 'No snapshot data available';
@@ -307,6 +387,12 @@ declare var __capture: (name: string, value: any) => void;
     console.log(dto);
   }
 
+  /**
+   * Convert a JavaScript Date to nanoseconds since epoch.
+   *
+   * @param date The Date instance to convert.
+   * @returns Epoch time in nanoseconds.
+   */
   private toNanoSeconds(date: Date) {
     return date.getTime() * 1_000_000;
   }
