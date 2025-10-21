@@ -12,6 +12,8 @@ import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.*;
 import io.quarkus.logging.Log;
 
+import java.util.Map;
+
 import java.net.URI;
 import java.util.List;
 
@@ -75,12 +77,25 @@ public class EDCResource {
     @DELETE
     @Path("{id}")
     @Transactional
-    public void delete(@PathParam("id") Long id) {
+    public Response delete(@PathParam("id") Long id) {
         Log.info("Löschen der EDC-Instanz mit ID: " + id);
-        if (!service.delete(id)) {
-            Log.info("EDC-Instanz mit ID " + id + " für Löschung nicht gefunden");
-            throw new NotFoundException("EDC-Instanz mit ID " + id + " nicht gefunden");
+        try {
+            if (!service.delete(id)) {
+                Log.info("EDC-Instanz mit ID " + id + " für Löschung nicht gefunden");
+                throw new NotFoundException("EDC-Instanz mit ID " + id + " nicht gefunden");
+            }
+            Log.info("EDC-Instanz mit ID " + id + " erfolgreich gelöscht");
+            return Response.noContent().build();
+        } catch (CustomException e) {
+            Log.error("Fehler beim Löschen der EDC-Instanz: " + e.getMessage());
+            return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
+                .entity(Map.of("error", e.getMessage()))
+                .build();
+        } catch (Exception e) {
+            Log.error("Unerwarteter Fehler beim Löschen der EDC-Instanz: " + e.getMessage(), e);
+            return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
+                .entity(Map.of("error", "Ein interner Serverfehler ist aufgetreten"))
+                .build();
         }
-        Log.info("EDC-Instanz mit ID " + id + " erfolgreich gelöscht");
     }
 }

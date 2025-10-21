@@ -87,7 +87,7 @@ export class EdcInstancesComponent implements OnInit {
 
   private createEmptyInstance(): EdcInstance {
     return {
-      id: '',
+      id: null, // Use null for new instances
       name: '',
       controlPlaneManagementUrl: '',
       protocolVersion: '',
@@ -137,7 +137,11 @@ saveNewInstance(): void {
 
 
   editInstance(instance: EdcInstance): void {
-    this.instanceToEdit = { ...instance };
+    // Make a deep copy of the instance
+    this.instanceToEdit = { 
+      ...instance
+    };
+    console.log(`Editing instance with ID: ${this.instanceToEdit.id || 'new'}`);
     this.displayEditInstanceDialog = true;
   }
 
@@ -148,25 +152,70 @@ saveNewInstance(): void {
 
   saveEditedInstance(): void {
   if (this.instanceToEdit && this.instanceToEdit.name && this.instanceToEdit.controlPlaneManagementUrl && this.instanceToEdit.bpn) {
-    this.edcInstanceService.updateEdcInstance(this.instanceToEdit.id, this.instanceToEdit).subscribe({
-      next: (updated) => {
-        this.edcInstances = this.edcInstances.map(instance =>
-          instance.id === updated.id ? updated : instance
-        );
-        this.messageService.add({ severity: 'success', summary: 'Success', detail: 'Instance updated successfully.' });
-        this.hideEditInstanceDialog();
-      },
-      error: (err) => {
-        console.error('Fehler beim Aktualisieren der Instanz', err);
-        this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Failed to update instance.' });
-      }
-    });
+    try {
+      // Make sure we have an ID to update, or handle as new instance if not
+      const idToUse = this.instanceToEdit.id !== undefined && this.instanceToEdit.id !== null 
+        ? this.instanceToEdit.id 
+        : null;
+      
+      console.log(`Updating instance with ID: ${idToUse}`);
+      
+      this.edcInstanceService.updateEdcInstance(idToUse, this.instanceToEdit).subscribe({
+        next: (updated) => {
+          if (idToUse) {
+            // Update existing instance in the list
+            this.edcInstances = this.edcInstances.map(instance =>
+              instance.id === updated.id ? updated : instance
+            );
+          } else {
+            // Add as new instance if it was created instead of updated
+            this.edcInstances = [...this.edcInstances, updated];
+          }
+          
+          this.messageService.add({ 
+            severity: 'success', 
+            summary: 'Success', 
+            detail: idToUse ? 'Instance updated successfully.' : 'New instance created successfully.' 
+          });
+          this.hideEditInstanceDialog();
+        },
+        error: (err) => {
+          console.error('Fehler beim Aktualisieren der Instanz', err);
+          let errorDetail = 'Failed to update instance.';
+          
+          if (err.status === 404) {
+            errorDetail = 'Instance not found. It might have been deleted.';
+          } else if (err.message === 'Invalid ID format') {
+            errorDetail = 'Invalid ID format. Please try again.';
+          }
+          
+          this.messageService.add({ severity: 'error', summary: 'Error', detail: errorDetail });
+        }
+      });
+    } catch (error) {
+      console.error('Error preparing instance update:', error);
+      this.messageService.add({ 
+        severity: 'error', 
+        summary: 'Error', 
+        detail: 'An error occurred while preparing to update the instance.' 
+      });
+    }
   } else {
     this.messageService.add({ severity: 'warn', summary: 'Validation Error', detail: 'Name, Management URL, and BPN are required.' });
   }
 }
 
 deleteInstance(instance: EdcInstance): void {
+  // Cannot delete an instance without an ID
+  if (instance.id === null || instance.id === undefined) {
+    this.messageService.add({ 
+      severity: 'warn', 
+      summary: 'Warning', 
+      detail: 'Cannot delete an instance without an ID.' 
+    });
+    return;
+  }
+  
   this.confirmationService.confirm({
     message: `Are you sure you want to delete the instance "${instance.name}"?`,
     header: 'Confirm Deletion',
@@ -174,16 +223,27 @@ deleteInstance(instance: EdcInstance): void {
     acceptButtonStyleClass: 'p-button-danger',
     rejectButtonStyleClass: 'p-button-text',
     accept: () => {
-      this.edcInstanceService.deleteEdcInstance(instance.id).subscribe({
-        next: () => {
-          this.edcInstances = this.edcInstances.filter(i => i.id !== instance.id);
-          this.messageService.add({ severity: 'success', summary: 'Success', detail: 'Instance deleted successfully.' });
-        },
-        error: (err) => {
-          console.error('Fehler beim Löschen der Instanz', err);
-          this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Failed to delete instance.' });
-        }
-      });
+      try {
+        this.edcInstanceService.deleteEdcInstance(instance.id!.toString()).subscribe({
+          next: () => {
+            this.edcInstances = this.edcInstances.filter(i => i.id !== instance.id);
+            this.messageService.add({ severity: 'success', summary: 'Success', detail: 'Instance deleted successfully.' });
+          },
+          error: (err) => {
+            console.error('Fehler beim Löschen der Instanz', err);
+            let errorDetail = 'Failed to delete instance.';
+            if (err.status === 404) {
+              errorDetail = 'Instance not found. It might have been already deleted.';
+            } else if (err.status === 500) {
+              errorDetail = 'Server error while deleting instance. It might be referenced by other entities.';
+            }
+            this.messageService.add({ severity: 'error', summary: 'Error', detail: errorDetail });
+          }
+        });
+      } catch (error) {
+        console.error('Error preparing instance deletion:', error);
+        this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Invalid ID format.' });
+      }
     },
   });
 }

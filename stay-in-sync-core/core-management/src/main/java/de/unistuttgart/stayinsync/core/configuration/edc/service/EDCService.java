@@ -112,20 +112,27 @@ public class EDCService {
      *
      * @param id Die ID der zu löschenden EDC-Instanz
      * @return true, wenn die EDC-Instanz erfolgreich gelöscht wurde, sonst false
+     * @throws CustomException wenn beim Löschen ein Fehler auftritt
      */
     @Transactional
-    public boolean delete(final Long id) {
+    public boolean delete(final Long id) throws CustomException {
         Log.info("Löschen der EDC-Instanz mit ID: " + id);
         
-        boolean deleted = EdcInstance.deleteById(id);
+        try {
+            boolean deleted = EdcInstance.deleteById(id);
 
-        if (deleted) {
-            Log.info("EDC-Instanz mit ID " + id + " erfolgreich gelöscht");
-        } else {
-            Log.warn("EDC-Instanz mit ID " + id + " konnte nicht gelöscht werden");
+            if (deleted) {
+                Log.info("EDC-Instanz mit ID " + id + " erfolgreich gelöscht");
+            } else {
+                Log.warn("EDC-Instanz mit ID " + id + " konnte nicht gelöscht werden");
+            }
+
+            return deleted;
+        } catch (Exception e) {
+            final String exceptionMessage = "Fehler beim Löschen der EDC-Instanz mit ID " + id + ": " + e.getMessage();
+            Log.error(exceptionMessage, e);
+            throw new CustomException(exceptionMessage);
         }
-
-        return deleted;
     }
 
 

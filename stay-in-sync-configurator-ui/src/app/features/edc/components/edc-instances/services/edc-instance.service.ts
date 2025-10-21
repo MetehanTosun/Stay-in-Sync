@@ -32,7 +32,13 @@ export class EdcInstanceService {
       const instance = MOCK_EDC_INSTANCES.find(i => i.id === id);
       return of(instance!).pipe(delay(300));
     }
-    return this.http.get<EdcInstance>(`${this.backendUrl}/${id}`);
+    // Ensure id is a number when sending to backend
+    const numericId = parseInt(id, 10);
+    if (isNaN(numericId)) {
+      console.error(`Invalid ID format for fetching: ${id}`);
+      throw new Error('Invalid ID format');
+    }
+    return this.http.get<EdcInstance>(`${this.backendUrl}/${numericId}`);
   }
 
   // Neue Instanz anlegen
@@ -47,21 +53,41 @@ export class EdcInstanceService {
   }
 
   // Instanz aktualisieren
-  updateEdcInstance(id: string, instance: EdcInstance): Observable<EdcInstance> {
+  updateEdcInstance(id: string | number | null | undefined, instance: EdcInstance): Observable<EdcInstance> {
     if (this.mockMode) {
       console.warn(`Mock Mode: Updating EDC instance ${id}.`);
+      const idToUse = id || `edc-instance-${Date.now()}`;
       const index = MOCK_EDC_INSTANCES.findIndex(i => i.id === id);
       if (index > -1) {
-        MOCK_EDC_INSTANCES[index] = { ...instance, id };
+        MOCK_EDC_INSTANCES[index] = { ...instance, id: idToUse };
         return of(MOCK_EDC_INSTANCES[index]).pipe(delay(300));
       }
       return of(instance);
     }
-    return this.http.put<EdcInstance>(`${this.backendUrl}/${id}`, instance);
+
+    // If ID is null/undefined, we're creating a new instance
+    if (id === null || id === undefined) {
+      console.log('No ID provided, treating as a new instance creation');
+      return this.createEdcInstance(instance);
+    }
+
+    // Ensure id is a number when sending to backend
+    const numericId = typeof id === 'number' ? id : parseInt(id.toString(), 10);
+    if (isNaN(numericId)) {
+      console.error(`Invalid ID format for update: ${id}`);
+      throw new Error('Invalid ID format');
+    }
+    return this.http.put<EdcInstance>(`${this.backendUrl}/${numericId}`, instance);
   }
 
   // Instanz löschen
-  deleteEdcInstance(id: string): Observable<void> {
+  deleteEdcInstance(id: string | number | null | undefined): Observable<void> {
+    // Cannot delete without a valid ID
+    if (id === null || id === undefined) {
+      console.error('Cannot delete instance with null or undefined ID');
+      throw new Error('Invalid ID: Cannot delete without a valid ID');
+    }
+
     if (this.mockMode) {
       console.warn(`Mock Mode: Deleting EDC instance ${id}.`);
       const index = MOCK_EDC_INSTANCES.findIndex(i => i.id === id);
@@ -70,6 +96,14 @@ export class EdcInstanceService {
       }
       return of(undefined).pipe(delay(300));
     }
-    return this.http.delete<void>(`${this.backendUrl}/${id}`);
+
+    // Ensure id is a number when sending to backend
+    const numericId = typeof id === 'number' ? id : parseInt(id.toString(), 10);
+    if (isNaN(numericId)) {
+      console.error(`Invalid ID format for deletion: ${id}`);
+      throw new Error('Invalid ID format');
+    }
+    
+    return this.http.delete<void>(`${this.backendUrl}/${numericId}`);
   }
 }
