@@ -1,4 +1,4 @@
-/* Context Header Styles (Unchanged) */
+/* Context Header Styles */
 .context-header {
   display: flex;
   align-items: center;
@@ -34,7 +34,6 @@
 }
 
 :host ::ng-deep .p-tabview .p-tabview-panel {
-    /* More vertical space for a less cramped feel */
     padding: 1.5rem 0.5rem; 
 }
 
@@ -43,7 +42,6 @@
     padding: 0;
 }
 
-/* Ensure table header text is not overly large */
 :host ::ng-deep .p-datatable-sm .p-datatable-thead > tr > th {
     font-size: 0.9rem;
 }

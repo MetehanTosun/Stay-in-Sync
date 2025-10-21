@@ -9,8 +9,3 @@
   flex-direction: column;
   gap: 0.5rem;
 }
-
-:host ::ng-deep .p-dialog .p-dialog-content {
-  overflow-y: auto;
-  padding-bottom: 10rem;
-}

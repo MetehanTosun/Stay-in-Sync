@@ -1,22 +1,22 @@
 :host {
   display: block;
-  height: calc(100vh - 2rem);
+  height: calc(100vh - 2.5rem);
   padding: 1rem;
-  box-sizing: border-box; /* Ensures padding is included in height */
+  box-sizing: border-box;
   background-color: var(--surface-ground);
 }
 
 .script-editor-layout {
   display: grid;
   grid-template-columns: 380px 1fr 380px;
-  grid-template-rows: auto 1fr; /* Row 1 for header, Row 2 for content */
+  grid-template-rows: auto 1fr;
   height: 100%;
   gap: 1rem;
 }
 
-/* NEW HEADER STYLES */
+/* Header Styles */
 .page-header {
-  grid-column: 1 / -1; /* Make header span all 3 columns */
+  grid-column: 1 / -1;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -26,7 +26,6 @@
   border-radius: var(--border-radius);
 }
 
-/* Make the inplace editor blend in nicely */
 .script-title-inplace .p-inplace-display {
   padding: 0.5rem;
   border-radius: var(--border-radius);
@@ -38,7 +37,7 @@
 }
 
 
-/* MAIN LAYOUT STYLES (Unchanged from previous fix) */
+/* Main Layout Styles */
 .side-panel-source,
 .side-panel-target,
 .main-panel {
@@ -55,19 +54,17 @@
 
 .side-panel-source,
 .side-panel-target {
-  display: flex; /* Use flexbox to control child height */
+  display: flex;
   flex-direction: column;
   background-color: var(--surface-card);
   border: 1px solid var(--surface-border);
   border-radius: var(--border-radius);
-  overflow: hidden; /* Hide anything that tries to break out */
+  overflow: hidden;
 }
 
-/* DEEP SELECTOR FOR PRIMENG's PANEL IN THE RIGHT-SIDE TARGET PANEL */
-/* This ensures it also becomes flush and integrates perfectly */
 :host ::ng-deep .side-panel-target .p-panel {
   height: 100%;
-  border: none; /* Remove the panel's own border */
+  border: none;
   border-radius: 0;
 }
 :host ::ng-deep .side-panel-target .p-panel .p-panel-header {
@@ -76,14 +73,14 @@
 
 
 /*
-  TARGET THE ACCORDION INSIDE THE LEFT PANEL
+  Accordion inside Data Sources
 */
 :host ::ng-deep .side-panel-source .p-accordion {
-  flex-grow: 1; /* Allow accordion to fill space */
+  flex-grow: 1;
   display: flex;
   flex-direction: column;
-  overflow-y: auto; /* SCROLLBAR IS HERE */
+  overflow-y: auto;
   overflow-x: hidden;
   min-height: 0;
-  border: none; /* Remove accordion's default border */
+  border: none;
 }

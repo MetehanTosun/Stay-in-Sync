@@ -79,7 +79,7 @@
                         <input type="text" pInputText formControlName="key" placeholder="param-key" [readOnly]="param.get('isRequired')?.value"/>
                       </td>
                       <td>
-                        <!-- RESTORED: Type-safe inputs using ngSwitch -->
+                        <!-- Type-safe inputs -->
                         <div [ngSwitch]="param.get('type')?.value">
                           <p-inputNumber *ngSwitchCase="'number'" formControlName="value" mode="decimal" [showButtons]="true"></p-inputNumber>
                           <p-inputSwitch *ngSwitchCase="'boolean'" formControlName="value"></p-inputSwitch>
@@ -104,7 +104,7 @@
                       <p-button label="Add Custom" icon="pi pi-plus" styleClass="p-button-outlined" (click)="addHeader()"></p-button>
                     </div>
                   </ng-template>
-                  <!-- RESTORED: Full header parameter table functionality -->
+                  <!-- Full header parameter table -->
                   <ng-template pTemplate="header">
                     <tr>
                       <th style="width: 40%">Key</th>

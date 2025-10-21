@@ -21,7 +21,6 @@
 
     <div class="form-field">
       <label for="targetSystem">Target System</label>
-      <!-- 2. Change [appendTo] to the string "body" for ALL dropdowns. -->
       <p-select
         id="targetSystem"
         [options]="(targetSystems$ | async) || []"

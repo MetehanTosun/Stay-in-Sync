@@ -1,7 +1,24 @@
-import { Component, EventEmitter, inject, Input, OnChanges, Output, SimpleChanges } from '@angular/core';
+import {
+  Component,
+  EventEmitter,
+  inject,
+  Input,
+  OnChanges,
+  Output,
+  SimpleChanges,
+} from '@angular/core';
 
-import { AasArc, AasArcSaveRequest, SubmodelDescription } from '../models/arc.models';
-import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
+import {
+  AasArc,
+  AasArcSaveRequest,
+  SubmodelDescription,
+} from '../models/arc.models';
+import {
+  FormBuilder,
+  FormGroup,
+  ReactiveFormsModule,
+  Validators,
+} from '@angular/forms';
 import { ArcStateService } from '../../../core/services/arc-state.service';
 import { AasService } from '../../source-system/services/aas.service';
 import { MessageService } from 'primeng/api';
@@ -15,6 +32,12 @@ import { finalize } from 'rxjs';
 import { TooltipModule } from 'primeng/tooltip';
 import { SourceSystem } from '../../source-system/models/source-system.models';
 
+/**
+ * @description
+ * A wizard component displayed in a dialog for creating and editing Asset Administration Shell (AAS)
+ * based API Request Configurations (ARCs). It handles form validation, data population for edit mode,
+ * and communication with the backend service to save the ARC.
+ */
 @Component({
   selector: 'app-arc-wizard-aas',
   standalone: true,
@@ -26,23 +49,45 @@ import { SourceSystem } from '../../source-system/models/source-system.models';
     InputTextModule,
     InputNumberModule,
     InputSwitchModule,
-    TooltipModule
+    TooltipModule,
   ],
   templateUrl: './arc-wizard-aas.component.html',
   styleUrls: ['./arc-wizard-aas.component.css'],
 })
 export class ArcWizardAasComponent implements OnChanges {
+  /**
+   * @description Controls the visibility of the wizard dialog.
+   */
   @Input() visible = false;
+  /**
+   * @description The context object providing necessary data for the wizard.
+   * Includes the parent source system, the target submodel, and an optional ARC object for editing.
+   */
   @Input() context!: {
     system: SourceSystem;
     submodel: SubmodelDescription;
     arcToEdit?: AasArc;
   };
+  /**
+   * @description Emits an event when the dialog is closed, either by the user or after a successful save.
+   */
   @Output() onHide = new EventEmitter<void>();
+  /**
+   * @description Emits the successfully saved ARC configuration.
+   */
   @Output() onSaveSuccess = new EventEmitter<AasArc>();
 
+  /**
+   * @description The reactive form group that manages the state of the wizard's input fields.
+   */
   arcForm: FormGroup;
+  /**
+   * @description A flag to indicate when a save operation is in progress, used to show loading indicators.
+   */
   isSaving = false;
+  /**
+   * @description A flag to determine if the wizard is in 'edit' or 'create' mode.
+   */
   isEditMode = false;
 
   private fb = inject(FormBuilder);
@@ -50,6 +95,9 @@ export class ArcWizardAasComponent implements OnChanges {
   private arcStateService = inject(ArcStateService);
   private messageService = inject(MessageService);
 
+  /**
+   * @description Initializes the component and sets up the reactive form with its controls and validators.
+   */
   constructor() {
     this.arcForm = this.fb.group({
       alias: ['', Validators.required],
@@ -58,8 +106,14 @@ export class ArcWizardAasComponent implements OnChanges {
     });
   }
 
+  /**
+   * @description Angular lifecycle hook that responds to changes in data-bound input properties.
+   * It initializes the wizard's state when it becomes visible.
+   * @param {SimpleChanges} changes - An object representing the changes to the input properties.
+   */
   ngOnChanges(changes: SimpleChanges): void {
-    if (changes['visible'] && this.visible && this.context) {
+    const visibilityConfig = 'visible';
+    if (changes[visibilityConfig] && this.visible && this.context) {
       this.resetWizard();
       this.isEditMode = !!this.context.arcToEdit;
 
@@ -69,6 +123,11 @@ export class ArcWizardAasComponent implements OnChanges {
     }
   }
 
+  /**
+   * @private
+   * @description Populates the form fields with data from an existing ARC when in 'edit' mode.
+   * @param {AasArc} arc - The ARC object to load into the form.
+   */
   private populateForm(arc: AasArc): void {
     this.arcForm.patchValue({
       alias: arc.alias,
@@ -77,6 +136,10 @@ export class ArcWizardAasComponent implements OnChanges {
     });
   }
 
+  /**
+   * @description Handles the save action. It validates the form, constructs the save request DTO,
+   * calls the appropriate service method (create or update), and handles the response.
+   */
   onSaveArc(): void {
     if (this.arcForm.invalid) {
       this.arcForm.markAllAsTouched();
@@ -90,7 +153,7 @@ export class ArcWizardAasComponent implements OnChanges {
 
     this.isSaving = true;
     const formValue = this.arcForm.getRawValue();
-    
+
     const saveRequest: AasArcSaveRequest = {
       id: this.context.arcToEdit?.id,
       sourceSystemId: this.context.system.id!,
@@ -104,43 +167,49 @@ export class ArcWizardAasComponent implements OnChanges {
       ? this.aasService.updateAasArc(saveRequest.id!, saveRequest)
       : this.aasService.createAasArc(saveRequest);
 
-    saveOperation
-      .pipe(finalize(() => (this.isSaving = false)))
-      .subscribe({
-        next: (savedArc) => {
-          this.messageService.add({
-            severity: 'success',
-            summary: 'Success',
-            detail: `AAS ARC '${savedArc.alias}' has been saved.`,
-          });
-          const arcForState : AasArc = {
-            ...savedArc,
-            sourceSystemName: this.context.system.name
-          };
-            this.arcStateService.addOrUpdateArc(arcForState);
-            this.onSaveSuccess.emit(savedArc);
-            this.closeDialog();
-        },
-        error: (err) => {
-          this.messageService.add({
-            severity: 'error',
-            summary: 'Save Failed',
-            detail: err.error?.message || 'Could not save the AAS ARC.',
-          });
-          console.error('Save AAS ARC error:', err);
-        },
-      });
+    saveOperation.pipe(finalize(() => (this.isSaving = false))).subscribe({
+      next: (savedArc) => {
+        this.messageService.add({
+          severity: 'success',
+          summary: 'Success',
+          detail: `AAS ARC '${savedArc.alias}' has been saved.`,
+        });
+        const arcForState: AasArc = {
+          ...savedArc,
+          sourceSystemName: this.context.system.name,
+        };
+        this.arcStateService.addOrUpdateArc(arcForState);
+        this.onSaveSuccess.emit(savedArc);
+        this.closeDialog();
+      },
+      error: (err) => {
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Save Failed',
+          detail: err.error?.message || 'Could not save the AAS ARC.',
+        });
+        console.error('Save AAS ARC error:', err);
+      },
+    });
   }
 
+  /**
+   * @description Emits the onHide event to signal that the dialog should be closed.
+   */
   closeDialog(): void {
     this.onHide.emit();
   }
 
+  /**
+   * @private
+   * @description Resets the wizard to its initial state, clearing the form and any state flags.
+   */
   private resetWizard(): void {
     this.isSaving = false;
     this.isEditMode = false;
+    const defaultPollingRate = 1000;
     this.arcForm.reset({
-      pollingRate: 20000,
+      pollingRate: defaultPollingRate,
       active: true,
     });
   }

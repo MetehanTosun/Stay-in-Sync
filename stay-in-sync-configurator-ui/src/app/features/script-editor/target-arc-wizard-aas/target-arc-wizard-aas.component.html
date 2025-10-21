@@ -8,7 +8,7 @@
   [resizable]="false"
 >
   <form [formGroup]="wizardForm" class="form-container">
-    
+
     <!-- Alias -->
     <div class="form-field">
       <label for="alias">Alias *</label>
@@ -32,6 +32,7 @@
         placeholder="Select AAS Target System"
         [showClear]="true"
         styleClass="w-full"
+        appendTo="body"
       ></p-dropdown>
     </div>
 
@@ -40,7 +41,7 @@
       <div class="flex justify-content-center my-3" *ngIf="isLoadingSubmodels">
         <p-progressSpinner styleClass="w-3rem h-3rem"></p-progressSpinner>
       </div>
-      
+
       <div class="form-field" *ngIf="!isLoadingSubmodels">
         <label for="submodel">Submodel *</label>
         <p-dropdown
@@ -52,6 +53,7 @@
           placeholder="Select Submodel"
           [showClear]="true"
           styleClass="w-full"
+          appendTo="body"
         >
           <ng-template let-submodel pTemplate="item">
             <div class="flex flex-column align-items-start">

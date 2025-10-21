@@ -27,8 +27,8 @@
 
 :host ::ng-deep .data-sources-accordion .p-accordion-content {
   padding: 0;
-  flex-grow: 1; /* Allow content panel to grow */
-  display: flex; /* Make it a flex container for its child */
+  flex-grow: 1;
+  display: flex;
   flex-direction: column;
   min-height: 0;
 }
@@ -52,10 +52,10 @@
   border-radius: 0;
 }
 
-/* Inner headers ("Dummy_JSON") - Made much thinner */
+/* Inner headers  */
 :host ::ng-deep .inner-accordion .p-accordion-header-link {
-   padding: 0.4rem 1rem !important; /* Thinner padding */
-   font-size: 0.85rem !important;    /* Smaller font */
+   padding: 0.4rem 1rem !important;
+   font-size: 0.85rem !important;
    background-color: var(--surface-section) !important;
 }
 
@@ -69,7 +69,7 @@
 }
 
 
-/* Modern Scrollbar for the correct container */
+/* Scrollbar for the data sources container */
 :host ::ng-deep .data-sources-accordion > .p-accordion-tab > .p-toggleable-content > .p-accordion-content > .p-accordioncontent-content {
   scrollbar-width: thin;
   scrollbar-color: var(--surface-400) transparent;
@@ -78,7 +78,7 @@
   width: 6px;
 }
 
-/* Endpoint & ARC List Styling (Unchanged) */
+/* Endpoint & ARC List Styling */
 .endpoint-group {
   border-bottom: 1px solid var(--surface-border);
   padding-bottom: 0.5rem;

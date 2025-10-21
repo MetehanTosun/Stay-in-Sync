@@ -1,7 +1,4 @@
-<!-- This is the entire content of the component's HTML file -->
-
 <!-- Accordion 1: The scrollable list of all data sources -->
-<!-- We add a custom class to target it with flexbox -->
 <p-accordion class="data-sources-accordion" [activeIndex]="0">
   <p-accordionTab header="Data Sources">
     <ng-container
@@ -14,10 +11,8 @@
 </p-accordion>
 
 <!-- Accordion 2: The fixed footer for "Active in Script" -->
-<!-- This one is separate and will be styled as the footer -->
 <p-accordion class="active-script-accordion">
   <p-accordionTab header="Active in Script">
-    <!-- Placeholder for your active script logic -->
     <div *ngIf="activeSystems$ | async as activeSystems; else noActive">
       <div *ngIf="activeSystems.length === 0" class="p-3 text-color-secondary">
         No sources active in the script yet.
@@ -61,7 +56,7 @@
           <span>No endpoints defined.</span>
         </div>
 
-        <!-- Group each endpoint in a styled container -->
+        <!-- Group each endpoint -->
         <div *ngFor="let endpoint of system.endpoints" class="endpoint-group">
           <div class="endpoint-header">
             <div

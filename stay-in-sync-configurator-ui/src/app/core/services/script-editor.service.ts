@@ -1,7 +1,6 @@
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
 import { forkJoin, map, Observable, of } from 'rxjs';
-import { SyncJobContextData } from '../../features/script-editor/sync-job-context-panel/sync-job-context-panel.component';
 
 import {
   ApiEndpointParamDTO,
@@ -317,7 +316,7 @@ export class ScriptEditorService {
   getSubmodelsForTargetSystem(
     targetSystemId: number
   ): Observable<SubmodelDescription[]> {
-    const url = `/api/config/target-system/${targetSystemId}/aas/submodels`;
+    const url = `/api/config/source-system/${targetSystemId}/aas/submodels`;
     const params = new HttpParams().set('source', 'SNAPSHOT');
     return this.http.get<SubmodelDescription[]>(url, { params });
   }
@@ -396,17 +395,6 @@ export class ScriptEditorService {
 
         return wizardData;
       })
-    );
-  }
-
-  /**
-   * @description Fetches context data related to a specific sync job execution.
-   * @param jobId The ID of the sync job.
-   * @returns An `Observable` of `SyncJobContextData`.
-   */
-  getSyncJobContext(jobId: string): Observable<SyncJobContextData> {
-    return this.http.get<SyncJobContextData>(
-      `${this.API_URL}/config/sync-job/${jobId}/`
     );
   }
 

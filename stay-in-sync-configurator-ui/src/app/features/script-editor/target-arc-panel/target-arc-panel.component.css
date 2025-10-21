@@ -1,30 +1,31 @@
 .custom-panel-header {
-  width: 100%; /* Ensure the container takes full width of the panel header */
+  width: 100%;
 }
 
 .header-actions {
   display: flex;
   gap: 0.5rem;
-  margin-top: 0.75rem; /* Space between the title and the buttons */
+  margin-top: 0.75rem;
 }
 
 /*
   Main Panel Layout & Scrolling
 */
 :host ::ng-deep .p-panel-content {
-  padding: 0; /* Remove padding to make accordion flush */
+  padding: 0;
   overflow-y: auto;
-  
-  /* Modern scrollbar */
   scrollbar-width: thin;
   scrollbar-color: var(--surface-400) transparent;
 }
+
 :host ::ng-deep .p-panel-content::-webkit-scrollbar {
   width: 6px;
 }
+
 :host ::ng-deep .p-panel-content::-webkit-scrollbar-track {
   background: transparent;
 }
+
 :host ::ng-deep .p-panel-content::-webkit-scrollbar-thumb {
   background-color: var(--surface-400);
   border-radius: 10px;
