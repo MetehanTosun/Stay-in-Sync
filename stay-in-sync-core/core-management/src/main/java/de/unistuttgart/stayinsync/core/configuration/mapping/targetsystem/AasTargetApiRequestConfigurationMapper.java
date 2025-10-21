@@ -7,7 +7,8 @@ import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.MappingConstants;
 
-@Mapper(componentModel = MappingConstants.ComponentModel.JAKARTA_CDI)
+@Mapper(componentModel = MappingConstants.ComponentModel.JAKARTA_CDI,
+        uses = { TargetRequestHeaderMessageMapper.class })
 public interface AasTargetApiRequestConfigurationMapper {
 
     @Mapping(target = "arcType", constant = "AAS")
@@ -19,5 +20,6 @@ public interface AasTargetApiRequestConfigurationMapper {
 
     @Mapping(target = "baseUrl", source = "targetSystem.apiUrl")
     @Mapping(target = "submodelId", source = "submodel.submodelId")
+    @Mapping(target = "headers", source = "targetSystem.apiRequestHeaders")
     AasTargetArcMessageDTO mapToMessageDTO(AasTargetApiRequestConfiguration source);
 }

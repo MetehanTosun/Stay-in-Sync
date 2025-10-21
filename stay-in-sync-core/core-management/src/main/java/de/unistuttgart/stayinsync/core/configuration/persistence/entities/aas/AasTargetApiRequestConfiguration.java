@@ -1,6 +1,6 @@
 package de.unistuttgart.stayinsync.core.configuration.persistence.entities.aas;
 
-import de.unistuttgart.stayinsync.core.configuration.persistence.entities.sync.TargetSystem;
+import de.unistuttgart.stayinsync.core.configuration.persistence.entities.sync.SourceSystem;
 import de.unistuttgart.stayinsync.core.configuration.persistence.entities.sync.Transformation;
 import io.quarkus.hibernate.orm.panache.PanacheEntity;
 import jakarta.persistence.*;
@@ -17,7 +17,7 @@ public class AasTargetApiRequestConfiguration extends PanacheEntity {
     public String alias;
 
     @ManyToOne(optional = false, fetch = FetchType.LAZY)
-    public TargetSystem targetSystem;
+    public SourceSystem targetSystem;
 
     @ManyToOne(optional = false, fetch = FetchType.LAZY)
     public AasSubmodelLite submodel;

@@ -13,7 +13,6 @@ import io.vertx.mutiny.ext.web.client.WebClient;
 import jakarta.enterprise.context.ApplicationScoped;
 import org.slf4j.MDC;
 
-import java.io.UnsupportedEncodingException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URLEncoder;
@@ -68,7 +67,7 @@ public class AasDirectiveExecutor {
 
                             Log.infof("Executing AAS Update: PATCH %s%s", arcConfig.baseUrl(), requestUriPath);
 
-                            return executePatchRequest(arcConfig.baseUrl(), requestUriPath, payloadBuffer)
+                            return executePatchRequest(arcConfig, requestUriPath, payloadBuffer)
                                     .invoke(response -> logAasUpdateResponse(response, requestUriPath));
 
                         } catch (SyncNodeException e) {
@@ -111,14 +110,14 @@ public class AasDirectiveExecutor {
     /**
      * Creates and executes the HTTP PATCH request using the WebClient.
      *
-     * @param baseUrl        The base URL of the AAS server.
+     * @param arcConfig The AAS target configuration.
      * @param requestUriPath The fully constructed and encoded request path.
      * @param payloadBuffer  The JSON payload as a Vert.x Buffer.
      * @return A {@link Uni} that will emit the HTTP response.
      */
-    private Uni<HttpResponse<Buffer>> executePatchRequest(String baseUrl, String requestUriPath, Buffer payloadBuffer) {
+    private Uni<HttpResponse<Buffer>> executePatchRequest(AasTargetArcMessageDTO arcConfig, String requestUriPath, Buffer payloadBuffer) {
         try {
-            URI serverUri = new URI(baseUrl);
+            URI serverUri = new URI(arcConfig.baseUrl());
             int port = serverUri.getPort() != -1 ? serverUri.getPort() : ("https".equalsIgnoreCase(serverUri.getScheme()) ? 443 : 80);
             boolean useSsl = "https".equalsIgnoreCase(serverUri.getScheme());
 
@@ -126,9 +125,11 @@ public class AasDirectiveExecutor {
                     .ssl(useSsl)
                     .putHeader(CONTENT_TYPE_HEADER, CONTENT_TYPE_JSON);
 
+            arcConfig.headers().forEach(headerPair -> request.putHeader(headerPair.headerName(), headerPair.headerValue()));
+
             return request.sendBuffer(payloadBuffer);
         } catch (URISyntaxException e) {
-            return Uni.createFrom().failure(new SyncNodeException("Invalid URL", "The AAS base URL has invalid syntax: " + baseUrl, e));
+            return Uni.createFrom().failure(new SyncNodeException("Invalid URL", "The AAS base URL has invalid syntax: " + arcConfig.baseUrl(), e));
         }
     }
 

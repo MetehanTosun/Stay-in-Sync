@@ -8,6 +8,7 @@ import de.unistuttgart.stayinsync.syncnode.domain.ApiCallConfiguration;
 import de.unistuttgart.stayinsync.syncnode.domain.UpsertDirective;
 import de.unistuttgart.stayinsync.syncnode.syncjob.assets.CheckResponseCacheService;
 import de.unistuttgart.stayinsync.transport.domain.TargetApiRequestConfigurationActionRole;
+import de.unistuttgart.stayinsync.transport.dto.ApiRequestHeaderMessageDTO;
 import de.unistuttgart.stayinsync.transport.dto.targetsystems.ActionMessageDTO;
 import de.unistuttgart.stayinsync.transport.dto.targetsystems.RequestConfigurationMessageDTO;
 import io.quarkus.cache.CacheResult;
@@ -27,10 +28,7 @@ import org.slf4j.MDC;
 
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 
 /**
  * Executes "upsert" (update or insert) logic against target systems based on script-generated directives.
@@ -79,7 +77,7 @@ public class DirectiveExecutor {
         try (var ignored = MDC.putCloseable("transformationId", transformationId.toString())) {
             Log.infof("Processing directive: %s for target: %s", directive.get__directiveType(), targetApiUrl);
 
-            return executeCheckRequest(directive, arcConfig, transformationId, targetApiUrl)
+            return executeCheckRequest(directive, arcConfig, targetApiUrl)
                     .flatMap(checkResponse -> processCheckResponse(checkResponse, directive, arcConfig, transformationId, targetApiUrl))
                     .onFailure().invoke(failure ->
                             Log.errorf(failure, "A technical error occurred during directive execution for '%s'. Title: %s",
@@ -104,10 +102,11 @@ public class DirectiveExecutor {
                                                            RequestConfigurationMessageDTO arcConfig, Long transformationId, String targetApiUrl) {
         String checkResponseBody = checkResponse.bodyAsString();
         int statusCode = checkResponse.statusCode();
-
-        if (statusCode == Response.Status.OK.getStatusCode()) {
+        int acceptingStatusCodeLowerBound = 200;
+        int acceptingStatusCodeUpperBound = 299;
+        if (statusCode >= acceptingStatusCodeLowerBound && statusCode <= acceptingStatusCodeUpperBound) {
             responseCache.addResponse(transformationId, arcConfig.id(), checkResponseBody);
-            Log.infof("CHECK successful (200 OK), entity exists. Proceeding with UPDATE.");
+            Log.infof("CHECK successful (2XX accepted)");
             return executeUpdateRequest(directive, arcConfig, targetApiUrl, checkResponseBody);
         } else if (statusCode == Response.Status.NOT_FOUND.getStatusCode()) {
             Log.infof("CHECK returned 404 Not Found. Proceeding with CREATE.");
@@ -123,12 +122,11 @@ public class DirectiveExecutor {
      *
      * @param directive        The upsert directive containing the CHECK configuration.
      * @param arcConfig        The target ARC configuration.
-     * @param transformationId The current transformation ID.
      * @param targetApiUrl     The base URL of the target API.
      * @return A {@link Uni} that will emit the HTTP response of the CHECK request.
      */
     private Uni<HttpResponse<Buffer>> executeCheckRequest(UpsertDirective directive, RequestConfigurationMessageDTO arcConfig,
-                                                          Long transformationId, String targetApiUrl) {
+                                                          String targetApiUrl) {
         try {
             String pathTemplate = findPathForAction(arcConfig, TargetApiRequestConfigurationActionRole.CHECK)
                     .orElseThrow(() -> new IllegalStateException("CHECK action path is missing for ARC " + arcConfig.alias()));
@@ -138,7 +136,7 @@ public class DirectiveExecutor {
             MultivaluedMap<String, String> queryParams = extractQueryParams(checkConfig);
             String fullUrlForCache = buildFullUrlForCache(targetApiUrl, resolvedPath, queryParams);
 
-            return cachedCheckRequest(targetApiUrl, resolvedPath, queryParams, fullUrlForCache, transformationId);
+            return cachedCheckRequest(targetApiUrl, resolvedPath, queryParams, fullUrlForCache, arcConfig);
         } catch (IllegalStateException e) {
             return Uni.createFrom().failure(new SyncNodeException("Configuration Error", e.getMessage(), e));
         }
@@ -152,14 +150,14 @@ public class DirectiveExecutor {
      * @param resolvedPath     The path with placeholders already resolved.
      * @param queryParams      The query parameters for the request.
      * @param fullUrlForCache  The full URL string used as part of the cache key.
-     * @param transformationId The current transformation ID (used for logging within the cache key generator).
+     * @param arcConfig        The Api Request Configuration object with metadata about the request.
      * @return A {@link Uni} that emits the HTTP response.
      */
     @CacheResult(cacheName = "check-cache", keyGenerator = UrlCacheKeyGenerator.class)
     public Uni<HttpResponse<Buffer>> cachedCheckRequest(String targetApiUrl, String resolvedPath, MultivaluedMap<String, String> queryParams,
-                                                        String fullUrlForCache, Long transformationId) {
+                                                        String fullUrlForCache, RequestConfigurationMessageDTO arcConfig) {
         Log.infof("Executing CACHED CHECK: GET %s", fullUrlForCache);
-        return buildRequest(HttpMethod.GET, targetApiUrl, resolvedPath, queryParams, null)
+        return buildRequest(HttpMethod.GET, targetApiUrl, resolvedPath, queryParams, arcConfig.headers(), null)
                 .flatMap(HttpRequest::send);
     }
 
@@ -182,7 +180,7 @@ public class DirectiveExecutor {
                 Buffer payloadBuffer = jsonToBuffer(createConfig.getPayload());
 
                 Log.infof("Executing CREATE: POST %s", targetApiUrl + resolvedPath);
-                return buildRequest(HttpMethod.POST, targetApiUrl, resolvedPath, new MultivaluedHashMap<>(), payloadBuffer)
+                return buildRequest(HttpMethod.POST, targetApiUrl, resolvedPath, new MultivaluedHashMap<>(), arcConfig.headers(), payloadBuffer)
                         .flatMap(request -> request.sendBuffer(payloadBuffer))
                         .invoke(response -> logWriteResponse("CREATE", response, payloadBuffer));
             } catch (RuntimeException e) {
@@ -213,7 +211,7 @@ public class DirectiveExecutor {
                 String resolvedPath = resolvePathParameters(pathTemplate, resolvedParams);
 
                 Log.infof("Executing UPDATE: PUT %s", targetApiUrl + resolvedPath);
-                return buildRequest(HttpMethod.PUT, targetApiUrl, resolvedPath, new MultivaluedHashMap<>(), payloadBuffer)
+                return buildRequest(HttpMethod.PUT, targetApiUrl, resolvedPath, new MultivaluedHashMap<>(), arcConfig.headers(), payloadBuffer)
                         .flatMap(request -> request.sendBuffer(payloadBuffer))
                         .invoke(response -> logWriteResponse("UPDATE", response, payloadBuffer));
             } catch (JsonProcessingException e) {
@@ -232,11 +230,13 @@ public class DirectiveExecutor {
      * @param baseApiUrl  The base URL of the API, including the scheme.
      * @param path        The resource path for the request.
      * @param queryParams Any query parameters to add.
+     * @param headers     The list of predefined headers Key-Value pairs for the target system.
      * @param payload     The request body, or null if there is none.
      * @return A {@link Uni} that emits the configured {@link HttpRequest} or a failure with a {@link SyncNodeException} if the baseApiUrl is invalid.
      */
     private Uni<HttpRequest<Buffer>> buildRequest(HttpMethod method, String baseApiUrl, String path,
-                                                  MultivaluedMap<String, String> queryParams, Buffer payload) {
+                                                  MultivaluedMap<String, String> queryParams,
+                                                  List<ApiRequestHeaderMessageDTO> headers, Buffer payload) {
         try {
             URI uri = new URI(baseApiUrl);
             boolean useSsl = "https".equalsIgnoreCase(uri.getScheme());
@@ -244,6 +244,7 @@ public class DirectiveExecutor {
 
             HttpRequest<Buffer> request = webClient.request(method, port, uri.getHost(), path).ssl(useSsl);
             queryParams.forEach((key, values) -> values.forEach(value -> request.addQueryParam(key, value)));
+            headers.forEach(headerPair -> request.putHeader(headerPair.headerName(), headerPair.headerValue()));
             if (payload != null) {
                 request.putHeader("Content-Type", "application/json");
             }

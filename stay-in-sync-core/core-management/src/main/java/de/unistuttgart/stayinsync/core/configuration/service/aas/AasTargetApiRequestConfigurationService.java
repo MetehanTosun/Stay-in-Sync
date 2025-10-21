@@ -4,7 +4,7 @@ import de.unistuttgart.stayinsync.core.configuration.exception.CoreManagementExc
 import de.unistuttgart.stayinsync.core.configuration.mapping.targetsystem.AasTargetApiRequestConfigurationMapper;
 import de.unistuttgart.stayinsync.core.configuration.persistence.entities.aas.AasSubmodelLite;
 import de.unistuttgart.stayinsync.core.configuration.persistence.entities.aas.AasTargetApiRequestConfiguration;
-import de.unistuttgart.stayinsync.core.configuration.persistence.entities.sync.TargetSystem;
+import de.unistuttgart.stayinsync.core.configuration.persistence.entities.sync.SourceSystem;
 import de.unistuttgart.stayinsync.core.configuration.persistence.entities.sync.Transformation;
 import de.unistuttgart.stayinsync.core.configuration.rest.dtos.aas.AasTargetArcDTO;
 import de.unistuttgart.stayinsync.core.configuration.rest.dtos.aas.CreateAasTargetArcDTO;
@@ -29,7 +29,7 @@ public class AasTargetApiRequestConfigurationService {
     public AasTargetApiRequestConfiguration create(CreateAasTargetArcDTO dto) {
         Log.debugf("Attempting to create AAS Target ARC with alias '%s'", dto.alias());
 
-        TargetSystem ts = TargetSystem.findById(dto.targetSystemId());
+        SourceSystem ts = SourceSystem.findById(dto.targetSystemId());
         if (ts == null) {
             throw new CoreManagementException(Response.Status.NOT_FOUND, "TargetSystem not found.", "TargetSystem was not found with id: " + dto.targetSystemId());
         }
@@ -54,7 +54,7 @@ public class AasTargetApiRequestConfigurationService {
         AasTargetApiRequestConfiguration arcToUpdate = findById(id)
                 .orElseThrow(() -> new CoreManagementException(Response.Status.NOT_FOUND, "AAS Target ARC not found",  "AAS Target ARC with id " + id + " not found."));
 
-        TargetSystem ts = TargetSystem.findById(dto.targetSystemId());
+        SourceSystem ts = SourceSystem.findById(dto.targetSystemId());
         AasSubmodelLite sm = AasSubmodelLite.findById(dto.submodelId());
         // Very shallow comparison since AASSubmodelLite Entity doesn't support TargetSystem
         if (ts == null || !Objects.equals(ts.apiType, "AAS")) {
