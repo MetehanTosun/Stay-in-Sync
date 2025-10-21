@@ -1,65 +1,86 @@
+:host {
+  display: block;
+  height: calc(100vh - 2.5rem);
+  padding: 1rem;
+  box-sizing: border-box;
+  background-color: var(--surface-ground);
+}
 
 .script-editor-layout {
   display: grid;
   grid-template-columns: 380px 1fr 380px;
-  grid-template-rows: 60px 1fr;
+  grid-template-rows: auto 1fr;
   height: 100%;
-  gap: 0.75rem;
+  gap: 1rem;
 }
 
-.top-header {
+/* Header Styles */
+.page-header {
   grid-column: 1 / -1;
-  grid-row: 1;
   display: flex;
   align-items: center;
-  gap: 1em;
+  justify-content: space-between;
+  padding: 0 1.25rem;
+  background-color: var(--surface-card);
+  border: 1px solid var(--surface-border);
+  border-radius: var(--border-radius);
 }
 
-.top-header h2 {
- margin: 1px;
+.script-title-inplace .p-inplace-display {
+  padding: 0.5rem;
+  border-radius: var(--border-radius);
+  transition: background-color 0.2s;
+  cursor: pointer;
+}
+.script-title-inplace .p-inplace-display:hover {
+  background-color: var(--surface-hover);
+}
+
+
+/* Main Layout Styles */
+.side-panel-source,
+.side-panel-target,
+.main-panel {
+  grid-row: 2;
+  min-height: 0;
+  position: relative;
 }
 
 .main-panel {
-  min-height: 0;
-  grid-row: 2;
-  grid-column: 2;
-}
-
-.side-panel-source {
-  grid-column: 1;
-}
-
-.side-panel-target{
-  grid-column: 3;
-}
-
-:host app-arc-management-panel,
-:host app-target-arc-panel,
-:host .main-panel > p-panel {
-  flex-grow: 1;
-}
-
-:host ::ng-deep .p-panel {
-  height: 100%;
-  display: flex;
-  flex-direction: column;
-}
-
-:host ::ng-deep .p-panel .p-panel-content {
-  flex-grow: 1;
-  overflow-y: auto;
-}
-
-:host ::ng-deep .editor-panel .p-panel-content {
-  position: relative;
-  padding: 20rem;
+  border-radius: var(--border-radius);
+  border: 1px solid var(--surface-border);
   overflow: hidden;
 }
 
-.monaco-editor-wrapper {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
+.side-panel-source,
+.side-panel-target {
+  display: flex;
+  flex-direction: column;
+  background-color: var(--surface-card);
+  border: 1px solid var(--surface-border);
+  border-radius: var(--border-radius);
+  overflow: hidden;
+}
+
+:host ::ng-deep .side-panel-target .p-panel {
+  height: 100%;
+  border: none;
+  border-radius: 0;
+}
+:host ::ng-deep .side-panel-target .p-panel .p-panel-header {
+  border-radius: 0;
+}
+
+
+/*
+  Accordion inside Data Sources
+*/
+:host ::ng-deep .side-panel-source .p-accordion {
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  overflow-x: hidden;
+  min-height: 0;
+  border: none;
 }

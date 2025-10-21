@@ -26,12 +26,37 @@ import jakarta.ws.rs.core.Response;
 import java.util.*;
 import java.util.stream.Collectors;
 
+/**
+ * This service is the core engine responsible for generating all TypeScript Declaration Files (.d.ts)
+ * for the 'targets' object in the script editor. It orchestrates the entire generation process for both
+ * REST and AAS Target ARCs associated with a transformation.
+ * <p>
+ * The primary goal is to provide a strongly-typed development experience for the end-user, enabling
+ * rich autocompletion and type-checking within the Monaco editor. It achieves this by:
+ * <ul>
+ *   <li>Parsing OpenAPI specifications for REST-based target systems.</li>
+ *   <li>Generating TypeScript interfaces ({@code declare interface}) for all shared data models (schemas).</li>
+ *   <li>Creating a fluent "Builder" pattern for each REST ARC, allowing users to construct API calls in a guided, type-safe manner.</li>
+ *   <li>Integrating with {@link AasTargetDtsGeneratorService} to generate corresponding builders for AAS ARCs.</li>
+ *   <li>Assembling all generated types into a set of interconnected "library" files, including a global manifest (targets)
+ *       and a contract (DirectiveMap) that defines the script's required output structure.</li>
+ * </ul>
+ */
 @ApplicationScoped
 public class TargetDtsBuilderGeneratorService {
 
     @Inject
     AasTargetDtsGeneratorService aasTargetDtsGeneratorService;
 
+    /**
+     * The main entry point for the service. It orchestrates the end-to-end generation of all necessary
+     * .d.ts files for a given transformation. It gathers all active REST and AAS ARCs, generates their respective
+     * type libraries, and assembles them along with shared libraries (base, contract, manifest) into a single response DTO.
+     *
+     * @param transformationId The ID of the transformation for which to generate the type definitions.
+     * @return A {@link GetTypeDefinitionsResponseDTO} containing a list of all generated {@link TypeLibraryDTO} files.
+     * @throws CoreManagementException if the transformation is not found.
+     */
     public GetTypeDefinitionsResponseDTO generateForTransformation(Long transformationId) {
         Transformation transformation = Transformation.<Transformation>findByIdOptional(transformationId)
                 .orElseThrow(() -> new CoreManagementException(Response.Status.NOT_FOUND, "Transformation not found", "Transformation with id %d not found.", transformationId));
@@ -69,6 +94,15 @@ public class TargetDtsBuilderGeneratorService {
         return new GetTypeDefinitionsResponseDTO(allLibraries);
     }
 
+    /**
+     * Parses a string containing an OpenAPI 3 specification into a structured {@link OpenAPI} object.
+     * This method is cached using {@code @CacheResult} to avoid re-parsing the same specification content multiple times,
+     * which is a computationally expensive operation.
+     *
+     * @param specificationContent The raw string content of the OpenAPI specification.
+     * @return The parsed {@link OpenAPI} object model.
+     * @throws CoreManagementException if the specification content is invalid and cannot be parsed.
+     */
     @CacheResult(cacheName = "openapi-specs-cache")
     public OpenAPI parseSpecification(String specificationContent) {
         try {
@@ -79,6 +113,12 @@ public class TargetDtsBuilderGeneratorService {
         }
     }
 
+    /**
+     * Gathers all unique target systems from a set of REST ARCs and parses their OpenAPI specifications.
+     *
+     * @param arcs A set of {@link TargetSystemApiRequestConfiguration} for which to parse specs.
+     * @return A map where the key is the target system ID and the value is the parsed {@link OpenAPI} object.
+     */
     private Map<Long, OpenAPI> getParsedOpenApiSpecifications(Set<TargetSystemApiRequestConfiguration> arcs) {
         return arcs.stream()
                 .map(arc -> arc.targetSystem)
@@ -90,6 +130,15 @@ public class TargetDtsBuilderGeneratorService {
                 ));
     }
 
+    /**
+     * Generates a single .d.ts file containing TypeScript interfaces for all shared schemas (components.schemas)
+     * found across multiple OpenAPI specifications. This creates a common library of data models (e.g., Product, Customer)
+     * that can be referenced by multiple ARC-specific builders, promoting code reuse and consistency.
+     *
+     * @param parsedSpecifications A map of target system IDs to their parsed {@link OpenAPI} objects.
+     * @param context              The {@link DtsGenerationContext} to track already generated model names and prevent duplicates.
+     * @return A {@link TypeLibraryDTO} representing the {@code stayinsync/shared/models.d.ts} file.
+     */
     private TypeLibraryDTO generateSharedModelsLibrary(Map<Long, OpenAPI> parsedSpecifications, DtsGenerationContext context) {
         StringBuilder content = new StringBuilder();
 
@@ -106,10 +155,26 @@ public class TargetDtsBuilderGeneratorService {
         return new TypeLibraryDTO("stayinsync/shared/models.d.ts", content.toString());
     }
 
+    /**
+     * Generates a dedicated .d.ts file for a single REST Target ARC. This file contains all the necessary
+     * TypeScript declarations for that ARC's fluent builder pattern, including:
+     * <ul>
+     *   <li>A series of chained builder interfaces for setting required and optional parameters.</li>
+     *   <li>The main builder interface (e.g., {@code SynchronizeProducts_UpsertBuilder}).</li>
+     *   <li>The final directive type (e.g., {@code SynchronizeProducts_UpsertDirective}).</li>
+     *   <li>The client class (e.g., {@code SynchronizeProducts_Client}) that serves as the entry point.</li>
+     * </ul>
+     *
+     * @param arc             The {@link TargetSystemApiRequestConfiguration} to generate the library for.
+     * @param specification   The parsed {@link OpenAPI} specification for the ARC's target system.
+     * @param context         The {@link DtsGenerationContext} for tracking generated types.
+     * @param hasSharedModels A boolean indicating if a {@code /// <reference ...>} path to the shared models library should be included.
+     * @return A {@link TypeLibraryDTO} representing the ARC-specific file (e.g., {@code stayinsync/targets/arcs/synchronizeProducts.d.ts}).
+     */
     private TypeLibraryDTO generateArcLibrary(TargetSystemApiRequestConfiguration arc, OpenAPI specification, DtsGenerationContext context, boolean hasSharedModels) {
         StringBuilder dtsContent = new StringBuilder();
 
-        if(hasSharedModels){
+        if (hasSharedModels) {
             dtsContent.append("/// <reference path=\"../shared/models.d.ts\" />\n\n");
         }
 
@@ -128,6 +193,24 @@ public class TargetDtsBuilderGeneratorService {
         return new TypeLibraryDTO(filePath, dtsContent.toString());
     }
 
+    /**
+     * Generates the content for the {@code stayinsync/targets/manifest.d.ts} file. This file declares the global {@code targets} constant,
+     * which acts as the main namespace and entry point for users in the script editor. It populates this object with a
+     * property for each active REST and AAS ARC, typed to its corresponding client class.
+     * <p><b>Example Output:</b></p>
+     * <pre>{@code
+     * declare const targets: {
+     *   /&#42;&#42; ARC for REST target 'synchronizeProducts'. &#42;/
+     *   synchronizeProducts: SynchronizeProducts_Client;
+     *   /&#42;&#42; ARC for AAS target 'updateAasSubmodel'. &#42;/
+     *   updateAasSubmodel: UpdateAasSubmodel_Client;
+     * }
+     * }</pre>
+     *
+     * @param restArcs The set of active REST ARCs.
+     * @param aasArcs  The set of active AAS ARCs.
+     * @return A string containing the full content of the manifest file.
+     */
     private String generatedGlobalTargetsNamespace(Set<TargetSystemApiRequestConfiguration> restArcs, Set<AasTargetApiRequestConfiguration> aasArcs) {
         StringBuilder content = new StringBuilder();
 
@@ -146,14 +229,24 @@ public class TargetDtsBuilderGeneratorService {
         }
 
         return String.format(
-                "/**\n * Global object providing access to all configured Target ARCs.\n" +
-                        " * Use this to define the instructions (Directives) for your target systems.\n" +
-                        " */\n" +
-                        "declare const targets: {\n%s}",
+                """
+                        /**
+                         * Global object providing access to all configured Target ARCs.
+                         * Use this to define the instructions (Directives) for your target systems.
+                         */
+                        declare const targets: {
+                        %s}""",
                 content
         );
     }
 
+    /**
+     * Generates the main builder interface for a REST ARC's upsert pattern (e.g., {@code SynchronizeProducts_UpsertBuilder}).
+     * This interface exposes the {@code usingCheck()}, {@code usingCreate()}, and {@code usingUpdate()} methods, along with the final {@code build()} method.
+     *
+     * @param arc The ARC for which to generate the builder interface.
+     * @return A string containing the TypeScript {@code declare interface} block.
+     */
     private String generateMainUpsertBuilder(TargetSystemApiRequestConfiguration arc) {
         String builderName = toPascalCase(arc.alias) + "_UpsertBuilder";
         String directiveName = toPascalCase(arc.alias) + "_UpsertDirective";
@@ -173,10 +266,29 @@ public class TargetDtsBuilderGeneratorService {
         return builder.toString();
     }
 
+    /**
+     * Generates the final directive type interface for an ARC (e.g., {@code SynchronizeProducts_UpsertDirective}). This is an
+     * opaque "marker" interface that extends the base {@code TargetDirective}. Its purpose is to be the return type of the
+     * builder's {@code build()} method, ensuring type safety in the {@code DirectiveMap}.
+     *
+     * @param arc The ARC for which to generate the directive interface.
+     * @return A string containing the TypeScript {@code declare interface} block.
+     */
     private String generateDirectiveInterfaces(TargetSystemApiRequestConfiguration arc) {
         return String.format("declare interface %s extends TargetDirective { /* Internal recipe type for the executor */ }\n", toPascalCase(arc.alias) + "_UpsertDirective");
     }
 
+    /**
+     * Generates a chain of builder interfaces for a single action (e.g., CHECK, CREATE, UPDATE). This is the core
+     * of the fluent builder pattern. It creates a sequence of interfaces where each interface has exactly one method for
+     * a required parameter, which then returns the next interface in the chain. This forces the user to provide all
+     * required parameters in a specific order. Optional parameters are added to the final interface in the chain.
+     *
+     * @param action        The action (CHECK, CREATE, or UPDATE) to generate builders for.
+     * @param specification The relevant {@link OpenAPI} specification.
+     * @param context       The {@link DtsGenerationContext}.
+     * @return A string containing all the chained {@code declare interface} blocks for this action.
+     */
     private String generateBuilderInterfacesForAction(TargetSystemApiRequestConfigurationAction action, OpenAPI specification, DtsGenerationContext context) {
         Operation operation = findOperation(action.endpoint, specification);
         if (operation == null) {
@@ -234,6 +346,19 @@ public class TargetDtsBuilderGeneratorService {
         return interfaces.toString();
     }
 
+    /**
+     * Appends methods for all optional parameters and a generic {@code withCustomQueryParam} method to the final
+     * builder interface in a chain. It also handles adding an optional {@code withPayload} method if the endpoint's
+     * request body is not marked as required.
+     *
+     * @param sb                 The {@link StringBuilder} to append the method signatures to.
+     * @param interfaceName      The name of the final interface (e.g., {@code CheckBuilder_Final}).
+     * @param optionalParameters The list of optional {@link Parameter}s for the endpoint.
+     * @param operation          The OpenAPI {@link Operation} object for the endpoint.
+     * @param specification      The {@link OpenAPI} specification.
+     * @param context            The {@link DtsGenerationContext}.
+     * @param action             The current action being processed.
+     */
     private void appendOptionalMethods(StringBuilder sb, String interfaceName, List<Parameter> optionalParameters,
                                        Operation operation, OpenAPI specification, DtsGenerationContext context, TargetSystemApiRequestConfigurationAction action) {
         boolean isOptional = true;
@@ -249,13 +374,26 @@ public class TargetDtsBuilderGeneratorService {
         }
     }
 
+    /**
+     * Generates the full TypeScript method signature for a single parameter in a builder interface (e.g., {@code withQueryParamId(value: number): NextBuilder}).
+     * It has special logic for path parameters in an UPDATE action, generating a signature that accepts a callback function
+     * {@code (checkResponse: CheckResponseType) => number} to dynamically source the ID from the result of the CHECK action.
+     *
+     * @param parameter         The OpenAPI {@link Parameter} object.
+     * @param nextInterfaceName The name of the interface that this method should return.
+     * @param action            The current action being processed.
+     * @param isOptional        A boolean indicating if the parameter is optional, which adds a {@code ?} to the method name.
+     * @param specification     The {@link OpenAPI} specification.
+     * @param context           The {@link DtsGenerationContext}.
+     * @return A string containing the complete method signature.
+     */
     private String generateMethodSignature(Parameter parameter, String nextInterfaceName,
                                            TargetSystemApiRequestConfigurationAction action, boolean isOptional, OpenAPI specification, DtsGenerationContext context) {
         String methodName = "with" + toPascalCase(parameter.getIn()) + "Param" + toPascalCase(parameter.getName());
         String paramType = extractTsTypeFromSchema(parameter.getSchema(), specification, context);
         String optionalMarker = isOptional ? "?" : "";
 
-        if (action.actionRole == TargetApiRequestConfigurationActionRole.UPDATE && "path".equals(parameter.getIn())){
+        if (action.actionRole == TargetApiRequestConfigurationActionRole.UPDATE && "path".equals(parameter.getIn())) {
             String checkResponseType = extractCheckResponseTypeName(action, specification, context);
             if (checkResponseType != null) {
                 return String.format("%s%s(idProvider: (checkResponse: %s) => %s): %s",
@@ -266,6 +404,13 @@ public class TargetDtsBuilderGeneratorService {
         return String.format("%s%s(value: %s): %s", methodName, optionalMarker, paramType, nextInterfaceName);
     }
 
+    /**
+     * Finds the corresponding OpenAPI {@link Operation} object within a parsed specification based on an endpoint's path and HTTP method.
+     *
+     * @param endpoint      The {@link SyncSystemEndpoint} to find.
+     * @param specification The {@link OpenAPI} specification to search within.
+     * @return The found {@link Operation} object, or {@code null} if not found.
+     */
     private Operation findOperation(SyncSystemEndpoint endpoint, OpenAPI specification) {
         if (specification == null || specification.getPaths() == null) {
             return null;
@@ -276,7 +421,7 @@ public class TargetDtsBuilderGeneratorService {
             return null;
         }
 
-        return switch(endpoint.httpRequestType.toUpperCase()){
+        return switch (endpoint.httpRequestType.toUpperCase()) {
             case "GET" -> pathItem.getGet();
             case "POST" -> pathItem.getPost();
             case "PUT" -> pathItem.getPut();
@@ -286,6 +431,15 @@ public class TargetDtsBuilderGeneratorService {
         };
     }
 
+    /**
+     * Extracts the TypeScript type name for an endpoint's request body (application/json).
+     * It resolves {@code $ref} pointers to shared schemas or derives the type directly.
+     *
+     * @param requestBody   The OpenAPI {@link RequestBody} object.
+     * @param specification The {@link OpenAPI} specification.
+     * @param context       The {@link DtsGenerationContext}.
+     * @return The TypeScript type name (e.g., "Product", "any").
+     */
     private String extractPayloadTypeName(RequestBody requestBody, OpenAPI specification, DtsGenerationContext context) {
         if (requestBody.get$ref() != null) {
             String ref = requestBody.get$ref();
@@ -300,23 +454,33 @@ public class TargetDtsBuilderGeneratorService {
         return "any";
     }
 
-    private String extractCheckResponseTypeName(TargetSystemApiRequestConfigurationAction updateAction,OpenAPI specification, DtsGenerationContext context) {
+    /**
+     * Specifically for UPDATE actions, this method finds the associated CHECK action within the same ARC and
+     * determines the TypeScript type name of its successful (2xx) JSON response. This is used to strongly type the
+     * {@code checkResponse} parameter in the {@code idProvider} callback for path parameters.
+     *
+     * @param updateAction  The UPDATE action.
+     * @param specification The {@link OpenAPI} specification.
+     * @param context       The {@link DtsGenerationContext}.
+     * @return The TypeScript type name of the CHECK action's response (e.g., "Products").
+     */
+    private String extractCheckResponseTypeName(TargetSystemApiRequestConfigurationAction updateAction, OpenAPI specification, DtsGenerationContext context) {
         Optional<TargetSystemApiRequestConfigurationAction> checkAction = updateAction.targetSystemApiRequestConfiguration.actions.stream()
                 .filter(action -> action.actionRole == TargetApiRequestConfigurationActionRole.CHECK)
                 .findFirst();
 
-        if(checkAction.isEmpty()) {
+        if (checkAction.isEmpty()) {
             return "any /* No CHECK action defined in this ARC */";
         }
 
         Operation checkOperation = findOperation(checkAction.get().endpoint, specification);
 
-        if( checkOperation == null) {
+        if (checkOperation == null) {
             return "any /* CHECK operation could not be found in the OpenAPI spec */";
         }
 
         ApiResponse successResponse = null;
-        for(Map.Entry<String, ApiResponse> entry : checkOperation.getResponses().entrySet()){
+        for (Map.Entry<String, ApiResponse> entry : checkOperation.getResponses().entrySet()) {
             if (entry.getKey().startsWith("2")) {
                 successResponse = entry.getValue();
                 break;
@@ -335,6 +499,16 @@ public class TargetDtsBuilderGeneratorService {
         return "any /* No JSON response content */";
     }
 
+    /**
+     * Generates a TypeScript {@code declare interface} block from an OpenAPI {@link Schema} object. It handles properties,
+     * required fields, and {@code allOf} composition to correctly represent the data model.
+     *
+     * @param interfaceName The desired name for the TypeScript interface.
+     * @param schema        The OpenAPI {@link Schema} object to convert.
+     * @param specification The {@link OpenAPI} specification (for resolving {@code $ref}).
+     * @param context       The {@link DtsGenerationContext}.
+     * @return A string containing the complete {@code declare interface} definition.
+     */
     private String generateInterfaceFromSchema(String interfaceName, Schema<?> schema, OpenAPI specification, DtsGenerationContext context) {
         StringBuilder currentInterface = new StringBuilder();
         Map<String, Schema> allProperties = new LinkedHashMap<>();
@@ -373,7 +547,7 @@ public class TargetDtsBuilderGeneratorService {
 
         currentInterface.append(String.format("declare interface %s {\n", interfaceName));
 
-        if (!allProperties.isEmpty()){
+        if (!allProperties.isEmpty()) {
             allProperties.forEach((fieldName, fieldSchema) -> {
                 String validFieldName = fieldName.matches("^[a-zA-Z_][a-zA-Z0-9_]*$") ? fieldName : String.format("'%s'", fieldName);
                 String type = extractTsTypeFromSchema(fieldSchema, specification, context);
@@ -390,6 +564,15 @@ public class TargetDtsBuilderGeneratorService {
         return currentInterface.toString();
     }
 
+    /**
+     * Recursively extracts a TypeScript type from an OpenAPI {@link Schema} object. It handles various schema types, including
+     * {@code $ref} pointers, enums, arrays, objects, and primitive types. For inline objects, it can generate an anonymous interface.
+     *
+     * @param schema        The {@link Schema} object.
+     * @param specification The {@link OpenAPI} specification.
+     * @param context       The {@link DtsGenerationContext}.
+     * @return The corresponding TypeScript type as a string (e.g., "string", "number[]", "Product").
+     */
     private String extractTsTypeFromSchema(Schema<?> schema, OpenAPI specification, DtsGenerationContext context) {
         if (schema == null) return "any";
 
@@ -422,7 +605,19 @@ public class TargetDtsBuilderGeneratorService {
         return mapOpenApiToTsType(schema.getType());
     }
 
-    private TypeLibraryDTO generateContractLibrary(Set<TargetSystemApiRequestConfiguration> restArcs, Set<AasTargetApiRequestConfiguration> aasArcs){
+    /**
+     * Generates the content for the {@code stayinsync/targets/contract.d.ts} file. This is one of the most important generated files as it defines:
+     * <ol>
+     *   <li>The {@code DirectiveMap} interface, which specifies the exact shape of the object that the user's {@code transform()} function must return.</li>
+     *   <li>The {@code declare function transform(): DirectiveMap;} signature, which tells the TypeScript compiler about the global entry point function.</li>
+     * </ol>
+     * This enforces the primary contract between the user's script and the execution engine.
+     *
+     * @param restArcs The set of active REST ARCs.
+     * @param aasArcs  The set of active AAS ARCs.
+     * @return A {@link TypeLibraryDTO} containing the content of the contract file.
+     */
+    private TypeLibraryDTO generateContractLibrary(Set<TargetSystemApiRequestConfiguration> restArcs, Set<AasTargetApiRequestConfiguration> aasArcs) {
         StringBuilder content = new StringBuilder();
 
         // --- DirectiveMap Interface declaration ---
@@ -466,6 +661,12 @@ public class TargetDtsBuilderGeneratorService {
         return new TypeLibraryDTO("stayinsync/targets/contract.d.ts", content.toString());
     }
 
+    /**
+     * Maps a primitive OpenAPI data type string to its TypeScript equivalent.
+     *
+     * @param openApiType The OpenAPI type string (e.g., "integer", "string").
+     * @return The corresponding TypeScript type string (e.g., "number", "string").
+     */
     private String mapOpenApiToTsType(String openApiType) {
         if (openApiType == null) {
             return "any";
@@ -480,17 +681,28 @@ public class TargetDtsBuilderGeneratorService {
         };
     }
 
+    /**
+     * A utility function to convert a string from any case (snake_case, kebab-case, space-separated) to PascalCase.
+     *
+     * @param s The input string.
+     * @return The PascalCase version of the string.
+     */
     private String toPascalCase(String s) {
         if (s == null || s.isEmpty()) {
             return s;
         }
 
-        //return s.substring(0, 1).toUpperCase() + s.substring(1);
         return Arrays.stream(s.split("[_\\- ]"))
                 .map(word -> word.substring(0, 1).toUpperCase() + word.substring(1))
                 .collect(Collectors.joining());
     }
 
+    /**
+     * A utility function to convert a SCREAMING_SNAKE_CASE enum name to PascalCase.
+     *
+     * @param enumName The input enum name string.
+     * @return The PascalCase version of the string.
+     */
     private String enumNameToPascalCase(String enumName) {
         if (enumName == null || enumName.isEmpty()) {
             return enumName;
@@ -500,6 +712,11 @@ public class TargetDtsBuilderGeneratorService {
                 .collect(Collectors.joining());
     }
 
+    /**
+     * A simple inner class used as a stateful context object during the type generation process.
+     * Its primary purpose is to hold a set of model names that have already been generated to prevent
+     * duplicate interface definitions in the shared models library.
+     */
     private static class DtsGenerationContext {
         private final Set<String> generatedModelNames = new HashSet<>();
     }

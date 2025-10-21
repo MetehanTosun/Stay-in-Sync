@@ -1,22 +1,54 @@
 import { inject, Injectable } from '@angular/core';
-import { BehaviorSubject, Observable, of, throwError } from 'rxjs';
-import { catchError, map, tap } from 'rxjs/operators';
+import { BehaviorSubject, forkJoin, Observable, of, throwError } from 'rxjs';
+import { catchError, map, take, tap } from 'rxjs/operators';
 import {
-  ApiRequestConfiguration,
-  AasArc,
   AnyArc,
   ArcMap,
+  SubmodelDescription,
 } from '../../features/script-editor/models/arc.models';
 import { ScriptEditorService } from './script-editor.service';
 import { HttpClient } from '@angular/common/http';
+import {
+  SourceSystem,
+  SourceSystemEndpoint,
+} from '../../features/source-system/models/source-system.models';
+import { AasService } from '../../features/source-system/services/aas.service';
 
-// Defines the shape of the state managed by this service.
+/**
+ * @description Represents the state of a single Source System within the ArcStateService.
+ * It extends the base SourceSystem model with dynamic data loaded on-demand, such as
+ * its ARCs, endpoints, and loading status.
+ */
+export type SystemState = SourceSystem & {
+  arcs?: AnyArc[];
+  endpoints?: SourceSystemEndpoint[];
+  submodels?: SubmodelDescription[];
+  isLoadingDetails: boolean; // For endpoints/submodels
+};
+
+/**
+ * @description Defines the overall shape of the state managed by this service.
+ */
 interface ArcState {
-  allSystemNames: string[];
-  arcsBySystem: Map<string, AnyArc[]>;
-  loadingSystems: Set<string>;
+  /** A map of all known source systems, keyed by their unique name. */
+  systems: Map<string, SystemState>;
+  /** Tracks the initial loading of the master list of all systems. */
+  isLoadingSystems: boolean;
 }
 
+/**
+ * @description
+ * The ArcStateService is a central, in-memory state store for managing all Source Systems
+ * and their associated API Request Configurations (ARCs). It serves three primary purposes:
+ *
+ * 1. **State Management:** It holds the single source of truth for all systems and ARCs in a
+ *    `BehaviorSubject`, providing reactive data streams (`Observable`) to the application.
+ * 2. **Data Fetching:** It orchestrates the on-demand loading of system details (endpoints, submodels)
+ *    and ARCs, preventing redundant API calls.
+ * 3. **Monaco Editor Integration:** It dynamically generates and injects TypeScript type definitions
+ *    (`.d.ts`) into the Monaco editor instance, providing rich autocompletion and type safety for
+ *    the `source` object in user scripts.
+ */
 @Injectable({
   providedIn: 'root',
 })
@@ -24,22 +56,58 @@ export class ArcStateService {
   private monaco: typeof import('monaco-editor') | undefined;
   private http = inject(HttpClient);
   private scriptEditorService = inject(ScriptEditorService);
-
-  private readonly state = new BehaviorSubject<ArcState>({
-    allSystemNames: [],
-    arcsBySystem: new Map(),
-    loadingSystems: new Set(),
-  });
+  private aasService = inject(AasService);
 
   private readonly SOURCE_TYPES_URI = 'file:///stayinsync-source-types.d.ts';
-
-  public readonly arcsBySystem$ = this.state
-    .asObservable()
-    .pipe(map((s) => s.arcsBySystem));
+  private readonly GLOBAL_API_URI = 'file:///global-stayinsync-api.d.ts';
 
   /**
-   * Initializes the service with the Monaco instance.
-   * This MUST be called from `onEditorInit` in your main component.
+   * @description The core state of the service, wrapped in a BehaviorSubject to provide
+   * replay of the last known value to new subscribers.
+   */
+  private readonly state = new BehaviorSubject<ArcState>({
+    systems: new Map(),
+    isLoadingSystems: false,
+  });
+
+  /**
+   * @description Public observable stream that emits an array of all known SystemState objects.
+   * UI components can subscribe to this to display the list of all source systems.
+   */
+  public readonly systems$: Observable<SystemState[]> = this.state
+    .asObservable()
+    .pipe(map((s) => Array.from(s.systems.values())));
+
+  /**
+   * @description Public observable stream that transforms the system state into a Map where
+   * keys are system names and values are arrays of their ARCs.
+   */
+  public readonly arcsBySystem$: Observable<Map<string, AnyArc[]>> =
+    this.systems$.pipe(
+      map((systems) => {
+        const arcMap = new Map<string, AnyArc[]>();
+        systems.forEach((system) => {
+          if (system.arcs && system.arcs.length > 0) {
+            arcMap.set(system.name, system.arcs);
+          }
+        });
+        return arcMap;
+      })
+    );
+
+  /**
+   * @description Public observable stream that emits an array of only the systems that currently
+   * have one or more ARCs loaded. Useful for the "Active in Script" tab.
+   */
+  public readonly activeSystems$: Observable<SystemState[]> =
+    this.systems$.pipe(
+      map((systems) => systems.filter((s) => s.arcs && s.arcs.length > 0))
+    );
+
+  /**
+   * @description Initializes the service with a Monaco editor instance.
+   * This method MUST be called once from the parent component to enable type generation.
+   * @param monacoInstance The imported `monaco-editor` instance.
    */
   public initializeMonaco(
     monacoInstance: typeof import('monaco-editor')
@@ -48,110 +116,26 @@ export class ArcStateService {
     this.addGlobalApiDefinitions();
   }
 
-  public initializeGlobalSourceType(): Observable<void> {
-    const monaco = this.monaco;
-    if (!monaco) {
-      return throwError(
-        () =>
-          new Error(
-            'ArcStateService has not been initialized. Call initializeMonaco() first.'
-          )
-      );
-    }
-
-    return this.scriptEditorService.getSourceSystemNames().pipe(
-      tap((allSystemNames) => {
-        this.updateState({ allSystemNames: allSystemNames });
-        this.regenerateAllTypeDefinitions();
-      }),
-      map(() => undefined)
-    );
-  }
-
   /**
-   * Fetches all ARCs for a single source system to display in the panel.
-   * This is intended to be called when a user expands a source system accordion.
-   * It is idempotent and avoids re-fetching if data is already present or loading.
-   * @param systemName The name of the source system.
-   * @param systemId The ID of the source system.
-   */
-  public loadArcsForSourceSystem(systemName: string, systemId: number): Observable<void> {
-    const currentState = this.state.getValue();
-    
-    if (currentState.arcsBySystem.has(systemName) || currentState.loadingSystems.has(systemName)) {
-      console.log(`%c[ArcState] ARCs for '${systemName}' are already loaded or in-flight. Skipping fetch.`, 'color: #a1a1aa;');
-      return of(undefined);
-    }
-
-    console.log(`%c[ArcState] Attemping to load ALL ARCs for:`, 'color: #f97316;', systemName);
-
-    const newLoadingSet = new Set(currentState.loadingSystems).add(systemName);
-    this.updateState({ loadingSystems: newLoadingSet });
-
-    return this.scriptEditorService.getArcsForSourceSystem(systemId).pipe(
-      tap((loadedArcs) => {
-        console.groupCollapsed(`%c[ArcState] Received data from API for [${systemName}]`, 'color: #22c55e;');
-        console.log('API Response:', loadedArcs);
-        console.groupEnd();
-        
-        const newState = this.state.getValue();
-        const updatedArcsBySystem = new Map(newState.arcsBySystem);
-
-        const enrichedArcs = loadedArcs.map((arc) => ({
-          ...arc,
-          sourceSystemName: systemName,
-        }));
-        updatedArcsBySystem.set(systemName, enrichedArcs);
-
-        newState.loadingSystems.delete(systemName);
-
-        this.updateState({
-          arcsBySystem: updatedArcsBySystem,
-          loadingSystems: newState.loadingSystems,
-        });
-        console.log("here arcs");
-        console.log(this.arcsBySystem$);
-
-        this.regenerateAllTypeDefinitions();
-      }),
-      map(() => undefined),
-      catchError((err) => {
-        console.error(`Failed to load ARCs for system: ${systemName}`, err);
-        const newState = this.state.getValue();
-        newState.loadingSystems.delete(systemName);
-        this.updateState({ loadingSystems: newState.loadingSystems });
-        return of(undefined);
-      })
-    );
-  }
-
-  /**
-   * The primary method for lazy-loading ARCs for multiple source systems by name.
-   * It is idempotent and prevents re-fetching data that is already loaded or is in-flight.
-   * @param systemNames An array of source system names detected in the editor.
+   * @description Legacy method for loading types based on system names detected in the editor.
    */
   public loadTypesForSourceSystemNames(
     systemNames: string[]
   ): Observable<void> {
     const currentState = this.state.getValue();
-
-    const namesToFetch = systemNames.filter(
-      (name) =>
-        !currentState.arcsBySystem.has(name) &&
-        !currentState.loadingSystems.has(name)
-    );
-
-    console.log(`%c[ArcState] Attemping to load types for:`, 'color: #f97316;', namesToFetch);
+    const namesToFetch = systemNames.filter((name) => {
+      const system = currentState.systems.get(name);
+      return system && !system.arcs; // Fetch if the system exists but its ARCs are not loaded
+    });
 
     if (namesToFetch.length === 0) {
       return of(undefined);
     }
 
-    const newLoadingSet = new Set(currentState.loadingSystems);
-    namesToFetch.forEach((name) => newLoadingSet.add(name));
-    this.updateState({ loadingSystems: newLoadingSet });
-
-    console.log('reaching inside calling batch system names');
+    // Mark systems as loading
+    namesToFetch.forEach((name) =>
+      this.updateSystemState(name, { isLoadingDetails: true })
+    );
 
     return this.http
       .post<ArcMap>(
@@ -160,183 +144,262 @@ export class ArcStateService {
       )
       .pipe(
         tap((loadedArcMap) => {
-          console.groupCollapsed(`%c[ArcState] Received data from API for [${namesToFetch.join(', ')}]`, 'color: #22c55e;');
-        console.log('API Response:', loadedArcMap);
-        console.groupEnd();
-
-          const newState = this.state.getValue();
-          const updatedArcsBySystem = new Map(newState.arcsBySystem);
-
           for (const [systemName, arcs] of Object.entries(loadedArcMap)) {
             const enrichedArcs = arcs.map((arc) => ({
               ...arc,
               sourceSystemName: systemName,
             }));
-            updatedArcsBySystem.set(systemName, enrichedArcs);
+            this.updateSystemState(systemName, {
+              arcs: enrichedArcs,
+              isLoadingDetails: false,
+            });
           }
-
-          namesToFetch.forEach((name) => newState.loadingSystems.delete(name));
-
-          this.updateState({
-            arcsBySystem: updatedArcsBySystem,
-            loadingSystems: newState.loadingSystems,
+          // For any systems that were in namesToFetch but not in the response
+          namesToFetch.forEach((name) => {
+            if (!loadedArcMap[name]) {
+              this.updateSystemState(name, { isLoadingDetails: false });
+            }
           });
-
           this.regenerateAllTypeDefinitions();
         }),
         map(() => undefined),
         catchError((err) => {
-          console.error(
-            `Failed to load ARCs for systems: ${namesToFetch.join(', ')}`,
-            err
+          namesToFetch.forEach((name) =>
+            this.updateSystemState(name, { isLoadingDetails: false })
           );
-          const newState = this.state.getValue();
-          namesToFetch.forEach((name) => newState.loadingSystems.delete(name));
-          this.updateState({ loadingSystems: newState.loadingSystems });
           return of(undefined);
         })
       );
   }
 
   /**
-   * Call this after a new ARC is created to add it to the state instantly.
-   * @param newArc The newly created ARC. It MUST include `sourceSystemName`.
+   * @description Fetches the master list of all source systems from the backend to
+   * populate the initial state. This should be called once when the editor initializes.
+   * It also triggers the first generation of type definitions.
+   * @returns An `Observable<void>` that completes when the operation is finished.
+   */
+  public initializeGlobalSourceType(): Observable<void> {
+    if (!this.monaco) {
+      return throwError(() => new Error('ArcStateService not initialized.'));
+    }
+
+    this.updateState({ isLoadingSystems: true });
+
+    return this.scriptEditorService.getSourceSystems().pipe(
+      tap((allSystems) => {
+        const systemsMap = new Map<string, SystemState>();
+        allSystems.forEach((system) => {
+          systemsMap.set(system.name, {
+            ...system,
+            isLoadingDetails: false,
+          });
+        });
+        this.updateState({ systems: systemsMap, isLoadingSystems: false });
+        this.regenerateAllTypeDefinitions();
+      }),
+      map(() => undefined)
+    );
+  }
+
+  /**
+   * @description Ensures that all details for a given system (ARCs, endpoints, or submodels)
+   * are loaded into the state. It is idempotent and will not re-fetch data that is already
+   * present or currently being loaded. This is the primary method for UI components to
+   * trigger on-demand data loading (e.g., when an accordion is expanded).
+   * @param systemName The name of the system to load.
+   * @returns An `Observable<void>` that completes when the loading is finished.
+   */
+  public ensureSystemIsLoaded(systemName: string): Observable<void> {
+    const system = this.state.getValue().systems.get(systemName);
+
+    if (!system) {
+      return of(undefined);
+    }
+
+    // Determine if we need to fetch details based on the system's API type.
+    const needsRestDetails = system.apiType !== 'AAS' && !system.endpoints;
+    const needsAasDetails = system.apiType === 'AAS' && !system.submodels;
+
+    // If details are already loaded OR it's currently loading, do nothing.
+    if ((!needsRestDetails && !needsAasDetails) || system.isLoadingDetails) {
+      return of(undefined);
+    }
+
+    // Select the correct service call based on API type.
+    const loadDetails$ =
+      system.apiType === 'AAS'
+        ? this.aasService.listSubmodels(system.id)
+        : this.scriptEditorService.getEndpointsForSourceSystem(system.id);
+
+    // Optimize to avoid re-fetching ARCs if they already exist in the state.
+    const loadArcs$ = system.arcs
+      ? of(system.arcs)
+      : this.scriptEditorService
+          .getArcsForSourceSystem(system.id)
+          .pipe(
+            map((arcs) =>
+              arcs.map((arc) => ({ ...arc, sourceSystemName: systemName }))
+            )
+          );
+
+    this.updateSystemState(systemName, { isLoadingDetails: true });
+
+    // Execute fetches in parallel and update the state upon completion.
+    return forkJoin([loadDetails$, loadArcs$]).pipe(
+      tap(([details, arcs]) => {
+        const partialUpdate = {
+          ...(system.apiType === 'AAS'
+            ? { submodels: details as SubmodelDescription[] }
+            : { endpoints: details as SystemState['endpoints'] }),
+          arcs: arcs as AnyArc[],
+          isLoadingDetails: false,
+        };
+
+        this.updateSystemState(systemName, partialUpdate);
+        this.regenerateAllTypeDefinitions();
+      }),
+      map(() => undefined),
+      catchError((err) => {
+        this.updateSystemState(systemName, { isLoadingDetails: false });
+        return of(undefined);
+      })
+    );
+  }
+
+  /**
+   * @description Adds a new ARC to the state or updates an existing one. This is the primary
+   * method for committing changes from the ARC wizard. After updating the state, it triggers
+   * a regeneration of the Monaco types. If it's the first ARC for a system, it also ensures
+   * the system's details (endpoints) are loaded.
+   * @param newArc The ARC object to add or update. It must include `sourceSystemName`.
    */
   public addOrUpdateArc(newArc: AnyArc): void {
-    console.log('%c[ArcState] addOrUpdateArc called with:', 'color: #8b5cf6;', newArc);
     if (!newArc.sourceSystemName) {
-      console.error(
-        'Cannot add ARC to state: sourceSystemName is missing.',
-        newArc
-      );
       return;
     }
 
     const currentState = this.state.getValue();
-    const updatedArcsBySystem = new Map(currentState.arcsBySystem);
-    const systemArcs = updatedArcsBySystem.get(newArc.sourceSystemName) || [];
+    const system = currentState.systems.get(newArc.sourceSystemName);
 
-    const existingIndex = systemArcs.findIndex((a) => a.id === newArc.id);
-    if (existingIndex > -1) {
-      systemArcs[existingIndex] = newArc;
-    } else {
-      systemArcs.push(newArc);
+    if (!system) {
+      return;
     }
 
-    updatedArcsBySystem.set(newArc.sourceSystemName, systemArcs);
-    this.updateState({ arcsBySystem: updatedArcsBySystem });
+    const currentArcs = system.arcs || [];
+    const existingIndex = currentArcs.findIndex((a) => a.id === newArc.id);
+
+    let updatedArcs: AnyArc[];
+    if (existingIndex > -1) {
+      updatedArcs = [...currentArcs];
+      updatedArcs[existingIndex] = newArc;
+    } else {
+      updatedArcs = [...currentArcs, newArc];
+    }
+
+    this.updateSystemState(newArc.sourceSystemName, { arcs: updatedArcs });
+
+    // If this was the first ARC added, trigger a load of the system's details
+    // to ensure the UI can display the ARC under its parent endpoint.
+    if (currentArcs.length === 0 && updatedArcs.length === 1) {
+      this.ensureSystemIsLoaded(newArc.sourceSystemName)
+        .pipe(take(1))
+        .subscribe();
+    }
+
     this.regenerateAllTypeDefinitions();
   }
 
   /**
-   * Call this after an ARC is successfully deleted to remove it from the state.
-   * @param arcToRemove The ARC that was deleted. It MUST include `sourceSystemName`.
+   * @description Removes an ARC from the state. Called after a successful deletion from the backend.
+   * Triggers a regeneration of Monaco types to remove the deleted ARC's type.
+   * @param arcToRemove The ARC object to remove. It must include `sourceSystemName`.
    */
   public removeArc(arcToRemove: AnyArc): void {
-    console.log('%c[ArcState] removeArc called with:', 'color: #ef4444;', arcToRemove);
     if (!arcToRemove.sourceSystemName) {
-      console.error('Cannot remove ARC from state: sourceSystemName is missing.', arcToRemove);
       return;
     }
 
-    const currentState = this.state.getValue();
-    const updatedArcsBySystem = new Map(currentState.arcsBySystem);
-    const systemArcs = updatedArcsBySystem.get(arcToRemove.sourceSystemName) || [];
+    const system = this.state
+      .getValue()
+      .systems.get(arcToRemove.sourceSystemName);
+    if (!system || !system.arcs) return;
 
-    const filteredArcs = systemArcs.filter(a => a.id !== arcToRemove.id);
-
-    if (filteredArcs.length > 0) {
-      updatedArcsBySystem.set(arcToRemove.sourceSystemName, filteredArcs);
-    } else {
-      // If no ARCs are left for this system, remove the system key entirely
-      updatedArcsBySystem.delete(arcToRemove.sourceSystemName);
-    }
-
-    this.updateState({ arcsBySystem: updatedArcsBySystem });
+    const filteredArcs = system.arcs.filter((a) => a.id !== arcToRemove.id);
+    this.updateSystemState(arcToRemove.sourceSystemName, {
+      arcs: filteredArcs,
+    });
     this.regenerateAllTypeDefinitions();
   }
 
   /**
-   * This central function generates the complete `.d.ts` file for all loaded ARCs.
+   * @private
+   * @description The core type generation engine. It iterates through the current state,
+   * constructs a TypeScript declaration file (`.d.ts`) for the global `source` object,
+   * and injects it into the Monaco editor instance.
    */
   private regenerateAllTypeDefinitions(): void {
-    console.groupCollapsed('%c[ArcState] Regenerating All Type Definitions...', 'font-weight: bold; color: #ef4444;');
     const monaco = this.monaco;
-    if (!monaco) {
-      throwError(
-        () =>
-          new Error(
-            'ArcStateService has not been initialized. Call initializeMonaco() first.'
-          )
-      );
-      return;
-    }
+    if (!monaco) return;
 
     const currentState = this.state.getValue();
-    console.log('Current state being used for generation:', currentState);
-    const allSystemNames = currentState.allSystemNames;
+    const allSystems = Array.from(currentState.systems.values());
 
-    if (!allSystemNames || allSystemNames.length === 0) {
-      console.warn('[ArcState] No system names loaded. Aborting DTS generation.');
-      console.groupEnd();
-      return;
-    }
+    if (allSystems.length === 0) return;
 
     let dts = 'declare const source: {\n';
     let individualTypeInterfaces = '';
 
-    for (const systemName of allSystemNames) {
-      const validJsIdentifier = this.sanitizeForJs(systemName);
+    // 1. Iterate through all systems in the state.
+    for (const system of allSystems) {
+      const validJsIdentifier = this.sanitizeForJs(system.name);
 
-      if (currentState.arcsBySystem.has(systemName)) {
-        const arcs = currentState.arcsBySystem.get(systemName)!;
+      // 2. If a system has ARCs, generate a typed entry for it.
+      if (system.arcs && system.arcs.length > 0) {
         dts += `  ${validJsIdentifier}: {\n`;
-        for (const arc of arcs) {
+        for (const arc of system.arcs) {
           const arcNameJs = this.sanitizeForJs(arc.alias);
-          const typeName = `${this.capitalize(validJsIdentifier)}${this.capitalize(arcNameJs)}ResponseType`;
+          // Create a unique type name, e.g., "Dummy_JSONGetProductsResponseType".
+          const typeName = `${this.capitalize(
+            validJsIdentifier
+          )}${this.capitalize(arcNameJs)}ResponseType`;
 
-          dts += `    ${arcNameJs}: ${typeName};\n`;
-          individualTypeInterfaces += (arc.responseDts || `export interface ${typeName} {}`)
-            .replace(/^(export\s+)?(interface|type)\s+Root/, `$1$2 ${typeName}`) + '\n\n';
+          // 3. Read the `responseIsArray` flag from the ARC object.
+          const isArrayType = arc.responseIsArray;
+
+          // 4. Conditionally append array brackets `[]` to the type name.
+          const finalTypeName = isArrayType ? `${typeName}[]` : typeName;
+
+          // 5. Add the final declaration to the `source` object.
+          dts += `    ${arcNameJs}: ${finalTypeName};\n`;
+
+          // 6. Take the `responseDts` from the ARC (which always starts with `interface Root`)
+          //    and rename `Root` to our unique `typeName`.
+          const dtsContent = arc.responseDts || `interface ${typeName} {}`;
+          individualTypeInterfaces +=
+            dtsContent.replace(
+              /^(export\s+)?interface\s+Root/,
+              `$1interface ${typeName}`
+            ) + '\n\n';
         }
         dts += '  };\n';
       } else {
-        // This system's types haven't been loaded yet. Define it as 'any'.
+        // If no ARCs are loaded, type the system as 'any'.
         dts += `  ${validJsIdentifier}: any;\n`;
       }
     }
 
     const finalDts = dts + '};\n\n' + individualTypeInterfaces;
-    console.log('[ArcState] Upserting library content into Monaco...');
-
-    monaco.languages.typescript.typescriptDefaults.addExtraLib(finalDts,this.SOURCE_TYPES_URI);
-    console.log('[ArcState] Library update call complete.');
-
-    // ================== NEW VERIFICATION STEP ==================
-// Use a setTimeout to allow Monaco's event loop to process the update
-setTimeout(() => {
-    const allLibs = monaco.languages.typescript.typescriptDefaults.getExtraLibs();
-    console.groupCollapsed('%c[VERIFICATION] Checking Monaco\'s loaded libraries...', 'color: #10b981; font-weight: bold;');
-    console.log('Total libs found:', Object.keys(allLibs).length);
-
-    // The keys of this object are the URIs of the libs
-    console.log('All library URIs:', Object.keys(allLibs));
-
-    // Let's check the content of OUR specific library
-    const ourLibContent = allLibs[this.SOURCE_TYPES_URI]?.content;
-    if (ourLibContent) {
-        console.log(`%cContent of '${this.SOURCE_TYPES_URI}':`, 'font-weight: bold;');
-        console.log(ourLibContent);
-    } else {
-        console.error(`%cFAILURE: Library '${this.SOURCE_TYPES_URI}' was NOT FOUND in Monaco after update!`, 'color: red;');
-    }
-    console.groupEnd();
-}, 500); // 500ms delay to be safe
-// ==========================================================
-
-    console.groupEnd();
+    // 7. Push the complete .d.ts string into Monaco as an "extra library".
+    monaco.languages.typescript.typescriptDefaults.addExtraLib(
+      finalDts,
+      this.SOURCE_TYPES_URI
+    );
   }
 
+  /**
+   * @private
+   * @description Injects global API definitions (e.g., for `stayinsync.log`) into Monaco.
+   */
   private addGlobalApiDefinitions(): void {
     const stayinsyncApiDts = `
       declare const stayinsync: {
@@ -347,35 +410,55 @@ setTimeout(() => {
     if (this.monaco) {
       this.monaco.languages.typescript.typescriptDefaults.addExtraLib(
         stayinsyncApiDts,
-        'file:///global-stayinsync-api.d.ts'
+        this.GLOBAL_API_URI
       );
     }
   }
 
-  private updateState(partialState: Partial<ArcState>): void {
-    const oldState = this.state.getValue();
-    const newState = { ...oldState, ...partialState };
+  /**
+   * @private
+   * @description Helper to update a single system's state in an immutable way.
+   * @param systemName The name of the system to update.
+   * @param partialSystemState An object with the properties of the system to update.
+   */
+  private updateSystemState(
+    systemName: string,
+    partialSystemState: Partial<SystemState>
+  ): void {
+    const currentState = this.state.getValue();
+    const newSystemsMap = new Map(currentState.systems);
+    const currentSystem = newSystemsMap.get(systemName);
 
-    console.groupCollapsed(`%c[ArcState] State Updated`, 'font-weight: bold; color: #3b82f6;');
-    console.log('%cPartial state applied:', 'font-weight: bold;', partialState);
-    console.log('%cPrevious full state:', 'font-weight: bold;', oldState);
-    console.log('%cNew full state:', 'font-weight: bold;', newState);
-    console.groupEnd();
-
-    this.state.next(newState);
-
-
-    //this.state.next({ ...this.state.getValue(), ...partialState });
+    if (currentSystem) {
+      newSystemsMap.set(systemName, {
+        ...currentSystem,
+        ...partialSystemState,
+      });
+      this.updateState({ systems: newSystemsMap });
+    }
   }
 
+  /**
+   * @private
+   * @description Helper to update the top-level state in an immutable way.
+   * @param partialState An object with the properties of the state to update.
+   */
+  private updateState(partialState: Partial<ArcState>): void {
+    this.state.next({ ...this.state.getValue(), ...partialState });
+  }
+
+  /**
+   * @private
+   * @description Utility function to capitalize a string.
+   */
   private capitalize(s: string): string {
     if (!s) return '';
     return s.charAt(0).toUpperCase() + s.slice(1);
   }
 
   /**
-   * Converts a string into a safe identifier for JavaScript/TypeScript.
-   * Replaces dashes and other invalid characters with underscores.
+   * @private
+   * @description Utility function to convert a string into a safe identifier for JavaScript/TypeScript.
    */
   private sanitizeForJs(name: string): string {
     if (!name) return 'invalidName';

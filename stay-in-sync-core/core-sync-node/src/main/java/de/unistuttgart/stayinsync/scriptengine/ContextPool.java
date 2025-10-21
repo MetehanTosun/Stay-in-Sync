@@ -201,13 +201,7 @@ public class ContextPool {
                         .resourceLimits(ResourceLimits.newBuilder()
                                 .statementLimit(100_000L, null)
                                 .build());
-                /*
-                Todo: Preparation for module loading inside script environment
-                if("js".equals(languageId)) {
-                    builder.option("js.commonjs-require", "true");
-                    builder.option("js.commonjs-require-cwd", "PATH TO MODULE MANAGEMENT");
-                }
-                */
+
                 Context newContext = builder.build();
                 allCreatedContexts.add(newContext);
                 pool.add(newContext);

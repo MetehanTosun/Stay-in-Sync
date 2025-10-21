@@ -4,7 +4,7 @@ export interface TargetSystem {
   apiUrl: string;
   description: string;
   apiType: string;
-  openAPI: string; // TODO: check if necessary
+  openAPI: string;
   targetSystemEndpointIds: number[];
 }
 
@@ -30,7 +30,6 @@ export interface EndpointSuggestion {
   endpointPath: string;
   httpRequestType: string;
   description?: string;
-  //TODO: check for additional display context
 }
 
 export interface CreateTargetArcDTO {

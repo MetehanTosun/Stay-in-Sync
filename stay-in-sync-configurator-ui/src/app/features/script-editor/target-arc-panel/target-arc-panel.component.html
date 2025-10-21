@@ -1,15 +1,8 @@
-<p-panel
-  header="Target Directives"
-  [toggleable]="true"
-  styleClass="h-full flex flex-column"
->
-  <!-- Header with title and actions -->
+<p-panel styleClass="h-full">
   <ng-template pTemplate="header">
-    <div class="flex justify-content-between w-full align-items-center">
+    <div class="custom-panel-header">
       <span class="p-panel-title">Target Directives</span>
-      <div class="flex gap-2">
-        <!-- Menu Button Create -->
-        <p-menu #menu [model]="createMenuItems" [popup]="true"></p-menu>
+      <div class="header-actions">
         <p-button
           label="Create New"
           icon="pi pi-plus"
@@ -17,74 +10,68 @@
           styleClass="p-button-sm"
         ></p-button>
 
-        <!-- From Library Button -->
         <p-button
           label="From Library"
           icon="pi pi-book"
-          styleClass="p-button-sm p-button-secondary"
+          styleClass="p-button-sm p-button-outlined"
           (click)="showLibrary()"
         ></p-button>
+
+        <p-menu
+          #menu
+          [model]="createMenuItems"
+          [popup]="true"
+          appendTo="body"
+          [style]="{ 'z-index': 1101 }"
+        ></p-menu>
       </div>
     </div>
   </ng-template>
 
-  <div *ngIf="isLoading" class="text-center p-4 flex-grow-1">
+  <div *ngIf="isLoading" class="text-center p-4">
     <p-progressSpinner styleClass="w-3rem h-3rem"></p-progressSpinner>
   </div>
 
-  <!-- TreeTable of all active Target Arcs in script -->
-  <p-treeTable
-    *ngIf="!isLoading"
-    [value]="activeArcsTree"
-    styleClass="compact-treetable flex-grow-1"
+  <p-accordion
+    *ngIf="!isLoading && activeArcsTree.length > 0"
+    [multiple]="true"
   >
-    <ng-template pTemplate="header">
-      <tr>
-        <th style="width: 75%">Name</th>
-        <th style="width: 25%" class="text-center">Action</th>
-      </tr>
-    </ng-template>
-
-    <ng-template pTemplate="body" let-rowNode let-rowData="rowData">
-      <tr>
-        <td>
-          <p-treeTableToggler [rowNode]="rowNode"></p-treeTableToggler>
-
+    <p-accordionTab
+      *ngFor="let systemNode of activeArcsTree"
+      [header]="systemNode.data.name"
+    >
+      <div *ngFor="let arcNode of systemNode.children" class="arc-item">
+        <div class="flex align-items-center gap-2">
           <i
-            *ngIf="rowData.type === 'arc' && isRestArc(rowData.arc)"
-            class="pi pi-globe mr-2"
+            *ngIf="isRestArc(arcNode.data.arc)"
+            class="pi pi-globe text-primary"
             pTooltip="REST ARC"
           ></i>
           <i
-            *ngIf="rowData.type === 'arc' && isAasArc(rowData.arc)"
-            class="pi pi-database mr-2"
+            *ngIf="isAasArc(arcNode.data.arc)"
+            class="pi pi-database text-primary"
             pTooltip="AAS ARC"
           ></i>
-
-          <span [class.font-bold]="rowData.type === 'system'">{{
-            rowData.name
-          }}</span>
-        </td>
-        <td class="text-center">
+          <span>{{ arcNode.data.name }}</span>
+        </div>
+        <div class="arc-actions">
           <p-button
-            *ngIf="rowData.type === 'arc'"
             icon="pi pi-trash"
             styleClass="p-button-rounded p-button-danger p-button-text"
-            (click)="removeArc(rowData.arc)"
+            (click)="removeArc(arcNode.data.arc)"
             pTooltip="Remove from Transformation"
           ></p-button>
-        </td>
-      </tr>
-    </ng-template>
+        </div>
+      </div>
+    </p-accordionTab>
+  </p-accordion>
 
-    <ng-template pTemplate="emptymessage">
-      <tr>
-        <td colspan="2" class="text-center p-3 text-color-secondary">
-          No directives are configured for this Transformation.
-        </td>
-      </tr>
-    </ng-template>
-  </p-treeTable>
+  <div
+    *ngIf="!isLoading && activeArcsTree.length === 0"
+    class="text-center p-3 text-color-secondary"
+  >
+    No directives are configured yet.
+  </div>
 </p-panel>
 
 <!-- "From Library"-Dialog -->

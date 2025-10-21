@@ -15,7 +15,6 @@ import java.util.concurrent.ConcurrentHashMap;
  *
  * <p>Currently, this cache is primarily designed for JavaScript ("js") scripts, as indicated by
  * the script wrapping and {@code Source.newBuilder("js", ...)} calls.
- * The {@code TODO} comment suggests future extensions for other languages like Python or C-scripts.</p>
  *
  * @author Maximilian Peresunchak
  * @since 1.0
@@ -43,11 +42,6 @@ public class ScriptCache {
 
     /**
      * Checks if a script with the given ID and hash exists in the cache.
-     * <p>
-     * TODO: This method is marked as an extension point for language-specific caches,
-     * implying future enhancements might involve different caching strategies for languages
-     * like Python or C-scripts.
-     * </p>
      *
      * @param scriptId   The ID of the script.
      * @param scriptHash The hash of the script's content.

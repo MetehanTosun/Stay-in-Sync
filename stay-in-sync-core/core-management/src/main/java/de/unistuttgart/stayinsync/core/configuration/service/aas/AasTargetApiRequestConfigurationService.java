@@ -15,14 +15,13 @@ import jakarta.transaction.Transactional;
 import jakarta.ws.rs.core.Response;
 
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
 @ApplicationScoped
 @Transactional
 public class AasTargetApiRequestConfigurationService {
-
-    // TODO: ADJUST TO TARGETSYSTEM FOR AAS
 
     @Inject
     AasTargetApiRequestConfigurationMapper mapper;
@@ -36,7 +35,8 @@ public class AasTargetApiRequestConfigurationService {
         }
 
         AasSubmodelLite sm = AasSubmodelLite.findById(dto.submodelId());
-        if (sm == null || !sm.sourceSystem.id.equals(ts.id)) {
+        // Very shallow comparison since AASSubmodelLite Entity doesn't support TargetSystem
+        if (!Objects.equals(ts.apiType, "AAS")) {
             throw new CoreManagementException(Response.Status.BAD_REQUEST, "Submodel Mismatch", "Submodel not found or does not belong to the specified TargetSystem.");
         }
 
@@ -56,7 +56,8 @@ public class AasTargetApiRequestConfigurationService {
 
         SourceSystem ts = SourceSystem.findById(dto.targetSystemId());
         AasSubmodelLite sm = AasSubmodelLite.findById(dto.submodelId());
-        if (ts == null || sm == null || !sm.sourceSystem.id.equals(ts.id)) {
+        // Very shallow comparison since AASSubmodelLite Entity doesn't support TargetSystem
+        if (ts == null || !Objects.equals(ts.apiType, "AAS")) {
             throw new CoreManagementException(Response.Status.BAD_REQUEST,"Invalid Reference", "Invalid System or Submodel reference.");
         }
 

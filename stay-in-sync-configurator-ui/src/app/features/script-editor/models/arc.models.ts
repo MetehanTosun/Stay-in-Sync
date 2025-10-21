@@ -39,7 +39,6 @@ export interface ApiRequestConfiguration {
   httpMethod: 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH';
   responseDts: string;
   responseIsArray: boolean;
-  // TODO: Include other relevant fields as needed for display or cloning.
 }
 
 export type ArcMap = Record<string, AnyArc[]>;
@@ -89,6 +88,7 @@ export interface AasArc {
   submodelIdShort: string;
   pollingIntervallTimeInMs: number;
   active: boolean;
+  responseIsArray: boolean;
 }
 
 export type AnyArc = ApiRequestConfiguration | AasArc;

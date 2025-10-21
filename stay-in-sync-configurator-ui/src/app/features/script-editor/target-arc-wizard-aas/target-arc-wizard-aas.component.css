@@ -1,30 +1,11 @@
-
-/*
- * ====================================================================
- *  FIX 2: Abstand und Layout verbessern (Sauberkeit)
- * ====================================================================
- * Gib dem Formular-Container etwas mehr Platz.
- */
 .form-container {
   display: flex;
   flex-direction: column;
-  gap: 1.5rem; /* Fügt vertikalen Abstand zwischen den Formularfeldern hinzu */
+  gap: 1.5rem;
 }
 
 .form-field {
   display: flex;
   flex-direction: column;
-  gap: 0.5rem; /* Fügt Abstand zwischen Label und Input hinzu */
-}
-
-/*
- * ====================================================================
- *  FIX 3: Stelle sicher, dass der Dialog-Inhalt scrollbar ist,
- *         falls der Bildschirm zu klein ist.
- * ====================================================================
- * PrimeNG fügt dies oft hinzu, aber wir stellen es explizit sicher.
- */
-:host ::ng-deep .p-dialog .p-dialog-content {
-  overflow-y: auto;
-  padding-bottom: 10rem; /* Gib am Ende etwas mehr Platz */
+  gap: 0.5rem;
 }

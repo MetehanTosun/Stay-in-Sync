@@ -1,13 +1,21 @@
 import {
+  ChangeDetectionStrategy,
   ChangeDetectorRef,
   Component,
   EventEmitter,
-  OnInit,
+  NgZone,
   Output,
 } from '@angular/core';
-import { ScriptEditorService } from '../../../core/services/script-editor.service';
-import { ArcStateService } from '../../../core/services/arc-state.service';
-import { AasArc, AnyArc, ApiRequestConfiguration, SubmodelDescription } from '../models/arc.models';
+import {
+  ArcStateService,
+  SystemState,
+} from '../../../core/services/arc-state.service';
+import {
+  AasArc,
+  AnyArc,
+  ApiRequestConfiguration,
+  SubmodelDescription,
+} from '../models/arc.models';
 import {
   SourceSystem,
   SourceSystemEndpoint,
@@ -19,17 +27,10 @@ import { PanelModule } from 'primeng/panel';
 import { ProgressSpinnerModule } from 'primeng/progressspinner';
 import { TooltipModule } from 'primeng/tooltip';
 import { TabViewModule } from 'primeng/tabview';
-import { combineLatest, map, Observable, shareReplay, Subscription } from 'rxjs';
+import { Observable, tap } from 'rxjs';
 import { FilterByEndpointPipe } from '../../source-system/pipes/filter-by-endpoint.pipe';
-import { AasService } from '../../source-system/services/aas.service';
 import { FilterByTypePipe } from '../../source-system/pipes/filter-by-type.pipe';
 import { FilterBySubmodelPipe } from '../../source-system/pipes/filter-by-submodel.pipe';
-
-type SystemWithState = SourceSystem & {
-  endpoints?: SourceSystemEndpoint[];
-  submodels?: SubmodelDescription[];
-  isLoading: boolean;
-};
 
 @Component({
   selector: 'app-arc-management-panel',
@@ -44,151 +45,133 @@ type SystemWithState = SourceSystem & {
     TabViewModule,
     FilterByEndpointPipe,
     FilterByTypePipe,
-    FilterBySubmodelPipe
+    FilterBySubmodelPipe,
   ],
   templateUrl: './arc-management-panel.component.html',
   styleUrl: './arc-management-panel.component.css',
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class ArcManagementPanelComponent implements OnInit {
+export class ArcManagementPanelComponent {
+  // --- Event Outputs for REST ARCs ---
+  /** Emits when the user requests to create a new REST-based ARC. */
   @Output() createArc = new EventEmitter<{
     system: SourceSystem;
     endpoint: SourceSystemEndpoint;
   }>();
+  /** Emits when the user requests to edit an existing REST-based ARC. */
   @Output() editArc = new EventEmitter<{
     system: SourceSystem;
     endpoint: SourceSystemEndpoint;
     arc: ApiRequestConfiguration;
   }>();
+  /** Emits when the user requests to delete an existing REST-based ARC. */
   @Output() deleteArc = new EventEmitter<{ arc: ApiRequestConfiguration }>();
+  /** Emits when the user requests to clone an existing REST-based ARC. */
   @Output() cloneArc = new EventEmitter<{
     system: SourceSystem;
     endpoint: SourceSystemEndpoint;
     arc: ApiRequestConfiguration;
   }>();
 
-  @Output() createAasArc = new EventEmitter<{ system: SourceSystem; submodel: SubmodelDescription }>();
-  @Output() editAasArc = new EventEmitter<{ system: SourceSystem; submodel: SubmodelDescription; arc: AasArc }>();
+  // --- Event Outputs for AAS ARCs ---
+  /** Emits when the user requests to create a new AAS-based ARC. */
+  @Output() createAasArc = new EventEmitter<{
+    system: SourceSystem;
+    submodel: SubmodelDescription;
+  }>();
+  /** Emits when the user requests to edit an existing AAS-based ARC. */
+  @Output() editAasArc = new EventEmitter<{
+    system: SourceSystem;
+    submodel: SubmodelDescription;
+    arc: AasArc;
+  }>();
+  /** Emits when the user requests to delete an existing AAS-based ARC. */
   @Output() deleteAasArc = new EventEmitter<{ arc: AasArc }>();
 
-  allSourceSystems$!: Observable<SystemWithState[]>;
+  /**
+   * @description An observable stream of all source systems, used to populate the "All Data Sources" tab.
+   * This stream is also tapped to maintain a local snapshot of the system list for direct access.
+   */
+  public readonly allSourceSystems$: Observable<SystemState[]>;
 
-  activeSystems$!: Observable<SystemWithState[]>;
+  /**
+   * @description An observable stream of only the systems that have active ARCs, used to populate the "Active in Script" tab.
+   */
+  public readonly activeSystems$: Observable<SystemState[]>;
 
-  arcsBySystem$: Observable<Map<string, AnyArc[]>>;
+  /**
+   * @description An observable stream that provides a Map of ARCs keyed by their source system name.
+   * @deprecated Consider using `allSourceSystems$` and deriving ARC data from the `SystemState` objects directly.
+   */
+  public readonly arcsBySystem$: Observable<Map<string, AnyArc[]>>;
 
-  private stateSubscription: Subscription | undefined;
+  /**
+   * @private
+   * @description A local, non-observable copy of the latest `SystemState` array. This is used for
+   * direct, synchronous access to a system object when an event (like `onOpen`) provides an index.
+   */
+  private systemsSnapshot: SystemState[] = [];
 
   constructor(
-    private scriptEditorService: ScriptEditorService,
     private arcStateService: ArcStateService,
-    private aasService: AasService,
-    private cdr: ChangeDetectorRef
+    private cdr: ChangeDetectorRef,
+    private ngZone: NgZone
   ) {
-    this.arcsBySystem$ = this.arcStateService.arcsBySystem$ as Observable<Map<string, AnyArc[]>>;
-  }
-
-  ngOnInit(): void {
-    this.allSourceSystems$ = this.scriptEditorService.getSourceSystems().pipe(
-      map((systems) =>
-        systems.map((s) => ({
-          ...s,
-          endpoints: [],
-          isLoading: false,
-        }))
-      ),
-      shareReplay(1) // API call is made only once
-    );
-
-    this.activeSystems$ = combineLatest([
-      this.arcStateService.arcsBySystem$,
-      this.allSourceSystems$,
-    ]).pipe(
-      map(([arcMap, allSystemsWithState]) => {
-        const activeSystemNames = Array.from(arcMap.keys());
-        if (activeSystemNames.length === 0) {
-          return [];
-        }
-
-        return allSystemsWithState.filter((system) =>
-          activeSystemNames.includes(system.name)
-        );
+    this.allSourceSystems$ = this.arcStateService.systems$.pipe(
+      tap((systems) => {
+        this.systemsSnapshot = systems;
       })
     );
+    this.activeSystems$ = this.arcStateService.activeSystems$;
+    this.arcsBySystem$ = this.arcStateService.arcsBySystem$;
+  }
 
-    this.stateSubscription = combineLatest([
-      this.arcStateService.arcsBySystem$,
-      this.allSourceSystems$
-    ]).subscribe(([arcMap, allSystems]) => {
-      const systemNamesWithArcs = Array.from(arcMap.keys());
-      
-      systemNamesWithArcs.forEach(systemName => {
-        const system = allSystems.find(s => s.name === systemName);
+  /**
+   * @description Handles the `onOpen` event from the PrimeNG accordion. It identifies the system
+   * that was expanded and triggers the `ArcStateService` to fetch its details (endpoints, ARCs, etc.)
+   * if they haven't been loaded already.
+   *
+   * The logic is wrapped in `queueMicrotask` and `ngZone.onStable` to work around complexities
+   * with `OnPush` change detection and asynchronous data loading initiated from a template event.
+   * This ensures that Angular's change detection cycle is stable before we mark the component for a re-render.
+   * @param index The index of the accordion tab that was opened, corresponding to the system's position in the `systemsSnapshot`.
+   */
+  public onSystemExpand(index: number): void {
+    const system = this.systemsSnapshot[index];
+    if (!system) return;
 
-        if (system && system.endpoints?.length === 0 && !system.isLoading) {
-          console.log(`%c[Panel] Reactively fetching endpoints for '${system.name}' because new ARCs were detected.`, 'color: #8b5cf6;');
-          this.reactivelyLoadSystemDetails(system);
-        }
+    // Use queueMicrotask to defer the action until after the current browser task (including rendering) is complete.
+    // This prevents "Expression Changed After It Was Checked" errors with OnPush strategy.
+    queueMicrotask(() => {
+      this.arcStateService.ensureSystemIsLoaded(system.name).subscribe({
+        next: () => {
+          // Once the async data loading is complete, we wait for Angular's zone to become stable
+          // before telling the ChangeDetectorRef to schedule a new check of this component and its children.
+          this.ngZone.onStable.pipe().subscribe(() => {
+            this.cdr.markForCheck();
+          });
+        },
+        error: (err) => {
+          // Also mark for check on error to ensure any loading spinners are hidden.
+          this.ngZone.onStable.pipe().subscribe(() => {
+            this.cdr.markForCheck();
+          });
+        },
       });
     });
   }
 
-  private reactivelyLoadSystemDetails(system: SystemWithState): void {
-    if (system.apiType === 'AAS') {
-      if (!system.submodels && !system.isLoading) {
-        console.log(`%c[Panel] Reactively fetching submodels for '${system.name}'...`, 'color: #8b5cf6;');
-        this.ensureSubmodelsLoaded(system);
-      }
-    } else {
-      if (system.endpoints?.length === 0 && !system.isLoading) {
-        console.log(`%c[Panel] Reactively fetching endpoints for '${system.name}'...`, 'color: #8b5cf6;');
-        this.ensureEndpointsLoaded(system);
-      }
-    }
-  }
-
-  onSystemExpand(index:number, systems: SystemWithState[]): void {
-    const system = systems[index];
-    if(!system) return;
-
-    if (system.apiType === 'AAS') {
-      this.ensureSubmodelsLoaded(system);
-    } else {
-      this.ensureEndpointsLoaded(system);
-    }
-    
-    this.arcStateService.loadArcsForSourceSystem(system.name, system.id).subscribe();
-  }
-
-  public ensureEndpointsLoaded(system: SystemWithState): void {
-    if (system && system.endpoints?.length === 0 && !system.isLoading) {
-      console.log(`%c[Panel] Parent commanded to ensure endpoints are loaded for '${system.name}'. Fetching now.`, 'color: #f97316;');
-      system.isLoading = true;
-      this.scriptEditorService
-        .getEndpointsForSourceSystem(system.id)
-        .subscribe((endpoints) => {
-          system.endpoints = endpoints;
-          system.isLoading = false;
-          this.cdr.detectChanges();
-        });
-    }
-  }
-
-  public ensureSubmodelsLoaded(system: SystemWithState): void {
-    if (system && !system.submodels && !system.isLoading) {
-      system.isLoading = true;
-      this.aasService.listSubmodels(system.id).subscribe(submodels => {
-        system.submodels = submodels;
-        system.isLoading = false;
-        this.cdr.detectChanges();
-      });
-    }
-  }
+  // --- Public Event Emitter Methods ---
 
   onCreateArc(system: SourceSystem, endpoint: SourceSystemEndpoint): void {
     this.createArc.emit({ system, endpoint });
   }
 
-  onCloneArc(system: SourceSystem, endpoint: SourceSystemEndpoint, arc: ApiRequestConfiguration): void {
+  onCloneArc(
+    system: SourceSystem,
+    endpoint: SourceSystemEndpoint,
+    arc: ApiRequestConfiguration
+  ): void {
     this.cloneArc.emit({ system, endpoint, arc });
   }
 
@@ -208,17 +191,15 @@ export class ArcManagementPanelComponent implements OnInit {
     this.createAasArc.emit({ system, submodel });
   }
 
-  onEditAasArc(system: SourceSystem, submodel: SubmodelDescription, arc: AasArc): void {
+  onEditAasArc(
+    system: SourceSystem,
+    submodel: SubmodelDescription,
+    arc: AasArc
+  ): void {
     this.editAasArc.emit({ system, submodel, arc });
   }
 
   onDeleteAasArc(arc: AasArc): void {
     this.deleteAasArc.emit({ arc });
-  }
-
-  ngOnDestroy(): void {
-    if (this.stateSubscription) {
-      this.stateSubscription.unsubscribe();
-    }
   }
 }

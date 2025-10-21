@@ -20,13 +20,26 @@ public class TypeScriptTypeGenerator {
         StringBuilder allInterfaces = new StringBuilder();
         Set<String> generatedInterfaceNames = new HashSet<>();
 
-        if(rootNode.isArray()){
-            if (!rootNode.isEmpty()){
-                generateInterface("RootObject", rootNode.get(0), allInterfaces, generatedInterfaceNames);
+        JsonNode nodeToProcess;
+
+        if (rootNode.isArray()) {
+            // If the root is an array, the object we need to describe is the FIRST ELEMENT.
+            if (rootNode.isEmpty()) {
+                // If the array is empty, we still need to return a valid 'interface Root'.
+                return "interface Root { [key: string]: any; }";
             }
-        } else if(rootNode.isObject()){
-            generateInterface("Root", rootNode, allInterfaces, generatedInterfaceNames);
+            nodeToProcess = rootNode.get(0);
+        } else if (rootNode.isObject()) {
+            // If the root is already an object, that's what we need to describe.
+            nodeToProcess = rootNode;
+        } else {
+            // Fallback for primitive types.
+            return "interface Root { value: any; }";
         }
+
+        // This is the key: We now have a single object node to process.
+        // We call your original, UNCHANGED helper method with this node.
+        generateInterface("Root", nodeToProcess, allInterfaces, generatedInterfaceNames);
 
         return allInterfaces.toString();
     }

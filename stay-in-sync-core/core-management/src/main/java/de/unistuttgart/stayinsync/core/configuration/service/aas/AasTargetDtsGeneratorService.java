@@ -9,18 +9,25 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 /**
- * Generates TypeScript Definition files (.d.ts) for AAS Target ARCs.
- * This service reads the structure of a Submodel from the AasElementLite snapshot
- * and creates a deeply nested, fully typed client API for the script editor.
+ * Generates TypeScript Definition files (.d.ts) for AAS (Asset Administration Shell) Target ARCs.
+ * <p>
+ * This service is responsible for translating the hierarchical structure of an AAS Submodel,
+ * which is persisted as a flattened list of {@link AasElementLite} entities, into a deeply nested,
+ * fully typed client API for use in the script editor. It recursively builds a TypeScript class
+ * structure that mirrors the Submodel's elements, providing script-writers with a fluent,
+ * type-safe way to define directives for interacting with AAS Submodels.
  */
 @ApplicationScoped
 public class AasTargetDtsGeneratorService {
 
     /**
-     * Main entry point. Generates a list of TypeLibraryDTOs for a set of AAS ARCs.
-     * Each ARC gets its own type definition file.
-     * @param aasArcs A set of AAS Target ARCs to generate types for.
-     * @return A list of TypeLibraryDTOs ready to be sent to the frontend.
+     * The main public entry point for the service. It orchestrates the generation of TypeScript
+     * definition libraries for a given set of AAS Target ARCs. It iterates through each ARC,
+     * generating a dedicated, self-contained .d.ts file for it.
+     *
+     * @param aasArcs A set of {@link AasTargetApiRequestConfiguration} entities for which to generate types.
+     * @return A {@code List} of {@link TypeLibraryDTO} objects, each representing a generated .d.ts file.
+     * Returns an empty list if the input set is null or empty.
      */
     public List<TypeLibraryDTO> generateForAasArcs(Set<AasTargetApiRequestConfiguration> aasArcs) {
         if (aasArcs == null || aasArcs.isEmpty()) {
@@ -36,6 +43,11 @@ public class AasTargetDtsGeneratorService {
 
     /**
      * Generates the complete .d.ts file content for a single AAS Target ARC.
+     * This method fetches the structural snapshot of the associated Submodel (as a list of {@link AasElementLite}),
+     * reconstructs its hierarchy, and then recursively generates the TypeScript class and interface definitions.
+     *
+     * @param arc The {@link AasTargetApiRequestConfiguration} to process.
+     * @return A {@link TypeLibraryDTO} containing the file path and the generated TypeScript content.
      */
     private TypeLibraryDTO generateArcLibrary(AasTargetApiRequestConfiguration arc) {
         List<AasElementLite> elements = AasElementLite.list("submodelLite.id", arc.submodel.id);
@@ -67,7 +79,14 @@ public class AasTargetDtsGeneratorService {
     }
 
     /**
-     * Recursively generates the `declare class` structure and all nested `interface` types.
+     * Recursively generates the TypeScript {@code declare class} structure for a given level of the Submodel hierarchy,
+     * along with any nested {@code interface} types required by its children.
+     *
+     * @param className            The name of the TypeScript class to generate.
+     * @param children             A list of {@link AasElementLite} representing the direct children at this level of the hierarchy.
+     * @param hierarchy            A map used for efficiently looking up the children of any element by its path.
+     * @param generatedNestedTypes A set to track the names of already generated nested types to prevent duplication.
+     * @return A {@code String} containing the complete TypeScript definition for the class and its nested types.
      */
     private String generateClientClass(String className, List<AasElementLite> children, Map<String, List<AasElementLite>> hierarchy, Set<String> generatedNestedTypes) {
         StringBuilder classContent = new StringBuilder();
@@ -88,8 +107,20 @@ public class AasTargetDtsGeneratorService {
     }
 
     /**
-     * Generates the typescript type for a single field inside a class or an interface.
-     * This is the central method, which decides if a field will be a simple `setValue` action or a complex `Collection` with multiple actions.
+     * Generates the TypeScript type for a single field within a class or an interface. This is the central
+     * recursive method that determines the shape of the generated API for each element.
+     * <ul>
+     *   <li>For a "Property" element, it generates an object with a {@code setValue} method.</li>
+     *   <li>For a "SubmodelElementList" or "SubmodelElementCollection", it generates a new, complex interface
+     *       type with methods like {@code addElement} and {@code deleteElement}, and then recursively calls itself
+     *       to define the properties for the collection's children.</li>
+     * </ul>
+     *
+     * @param element              The {@link AasElementLite} to generate a type for.
+     * @param hierarchy            The complete hierarchy map for child lookups.
+     * @param nestedInterfaces     A {@link StringBuilder} to which any newly generated nested interface definitions are appended.
+     * @param generatedNestedTypes A set for tracking already generated types to avoid duplicates.
+     * @return A {@code String} representing the TypeScript type for the element's field (e.g., "{ setValue... }", "MyCollectionType", "any").
      */
     private String generateFieldType(AasElementLite element, Map<String, List<AasElementLite>> hierarchy, StringBuilder nestedInterfaces, Set<String> generatedNestedTypes) {
         String baseName = toPascalCase(element.idShort);
@@ -129,6 +160,14 @@ public class AasTargetDtsGeneratorService {
         return "any";
     }
 
+    /**
+     * A fallback method that creates a placeholder type definition for an AAS ARC. This is used when the
+     * ARC's submodel has no structural snapshot data (i.e., no {@link AasElementLite} entities are found),
+     * preventing errors in the script editor.
+     *
+     * @param arc The {@link AasTargetApiRequestConfiguration} for which to create the empty library.
+     * @return A {@link TypeLibraryDTO} containing a simple, empty class declaration.
+     */
     private TypeLibraryDTO createEmptyArcLibrary(AasTargetApiRequestConfiguration arc) {
         String clientClassName = toPascalCase(arc.alias) + "_Client";
         String content = String.format("declare class %s {}\n", clientClassName);
@@ -136,8 +175,12 @@ public class AasTargetDtsGeneratorService {
         return new TypeLibraryDTO(filePath, content);
     }
 
-    // --- Helper Methods ---
-
+    /**
+     * A utility method to map a value type string (often from an XSD schema) to a primitive TypeScript type.
+     *
+     * @param valueType The source value type string (e.g., "xs:string", "boolean").
+     * @return The corresponding TypeScript type as a {@code String} (e.g., "string", "boolean", "any").
+     */
     private String mapValueTypeToTs(String valueType) {
         if (valueType == null || valueType.isBlank()) return "any";
         return switch (valueType.toLowerCase()) {
@@ -148,6 +191,12 @@ public class AasTargetDtsGeneratorService {
         };
     }
 
+    /**
+     * A simple utility method to capitalize the first letter of a string.
+     *
+     * @param s The string to capitalize.
+     * @return The capitalized string.
+     */
     private String capitalize(String s) {
         if (s == null || s.isEmpty()) {
             return s;
@@ -155,6 +204,13 @@ public class AasTargetDtsGeneratorService {
         return s.substring(0, 1).toUpperCase() + s.substring(1);
     }
 
+    /**
+     * A utility function to convert a string from any case (e.g., snake_case, kebab-case) to PascalCase,
+     * suitable for TypeScript class or interface names.
+     *
+     * @param s The input string.
+     * @return The PascalCase version of the string.
+     */
     private String toPascalCase(String s) {
         if (s == null || s.isEmpty()) return s;
         return Arrays.stream(s.split("[_\\- ]"))
@@ -162,6 +218,14 @@ public class AasTargetDtsGeneratorService {
                 .collect(Collectors.joining());
     }
 
+    /**
+     * A utility function that sanitizes a string to ensure it is a valid TypeScript/JavaScript identifier.
+     * It replaces invalid characters with underscores and prepends an underscore if the string starts with a digit.
+     * This is crucial because AAS {@code idShort} values can contain characters that are not permitted in variable names.
+     *
+     * @param s The input string (typically an {@code idShort}) to sanitize.
+     * @return A valid TypeScript identifier as a {@code String}.
+     */
     private String sanitizeForTs(String s) {
         if (s == null || s.isEmpty()) {
             return "_invalidIdentifier";
