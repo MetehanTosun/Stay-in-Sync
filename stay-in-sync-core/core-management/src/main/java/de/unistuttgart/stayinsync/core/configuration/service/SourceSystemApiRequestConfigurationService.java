@@ -9,19 +9,15 @@ import de.unistuttgart.stayinsync.core.configuration.exception.CoreManagementExc
 import de.unistuttgart.stayinsync.core.configuration.mapping.AasApiRequestConfigurationMapper;
 import de.unistuttgart.stayinsync.core.configuration.mapping.SourceSystemApiRequestConfigurationFullUpdateMapper;
 import de.unistuttgart.stayinsync.core.configuration.rest.dtos.CreateSourceArcDTO;
-import de.unistuttgart.stayinsync.core.configuration.rest.dtos.CreateRequestConfigurationDTO;
 import de.unistuttgart.stayinsync.core.configuration.rest.dtos.GetRequestConfigurationDTO;
 import de.unistuttgart.stayinsync.core.configuration.util.TypeScriptTypeGenerator;
 import de.unistuttgart.stayinsync.core.configuration.messaging.producer.PollingJobMessageProducer;
 import de.unistuttgart.stayinsync.transport.domain.ApiEndpointQueryParamType;
 import de.unistuttgart.stayinsync.transport.domain.JobDeploymentStatus;
 import io.quarkus.logging.Log;
-import io.smallrye.common.constraint.NotNull;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
-import jakarta.validation.Valid;
-import jakarta.validation.Validator;
 import jakarta.ws.rs.NotFoundException;
 import jakarta.ws.rs.core.Response;
 
@@ -33,11 +29,6 @@ import static jakarta.transaction.Transactional.TxType.SUPPORTS;
 @ApplicationScoped
 @Transactional(REQUIRED)
 public class SourceSystemApiRequestConfigurationService {
-    @Inject
-    Validator validator;
-
-    @Inject
-    SourceSystemEndpointService sourceSystemEndpointService;
 
     @Inject
     TypeScriptTypeGenerator typeGenerator;
@@ -50,24 +41,6 @@ public class SourceSystemApiRequestConfigurationService {
 
     @Inject
     PollingJobMessageProducer pollingJobMessageProducer;
-
-    // TODO: Evaluate if method is necessary since ARC creation has cascading effects
-    public SourceSystemApiRequestConfiguration persistApiRequestConfiguration(@NotNull @Valid CreateRequestConfigurationDTO sourceSystemApiRequestConfigurationDTO, Long endpointId) {
-        SourceSystemApiRequestConfiguration sourceSystemApiRequestConfiguration = fullUpdateMapper.mapToEntity(sourceSystemApiRequestConfigurationDTO);
-
-        Log.debugf("Persisting request-configurations: %s, for endpoint with id: %s", sourceSystemApiRequestConfiguration, endpointId);
-
-        SourceSystemEndpoint sourceSystemEndpoint = sourceSystemEndpointService.findSourceSystemEndpointById(endpointId).orElseThrow(() ->
-                new CoreManagementException("Unable to find Source System", "There is no source-system with id %s", endpointId));
-
-        sourceSystemApiRequestConfiguration.sourceSystem = sourceSystemEndpoint.sourceSystem;
-        sourceSystemApiRequestConfiguration.sourceSystemEndpoint = sourceSystemEndpoint;
-        sourceSystemEndpoint.apiRequestConfigurations.add(sourceSystemApiRequestConfiguration);
-        sourceSystemApiRequestConfiguration.persist();
-
-
-        return sourceSystemApiRequestConfiguration;
-    }
 
     public void updateDeploymentStatus(Long requestConfigId, JobDeploymentStatus jobDeploymentStatus, String hostname) {
         SourceSystemApiRequestConfiguration sourceSystemApiRequestConfiguration = findApiRequestConfigurationById(requestConfigId);

@@ -5,12 +5,9 @@ import de.unistuttgart.stayinsync.core.configuration.persistence.entities.aas.Aa
 import de.unistuttgart.stayinsync.core.configuration.persistence.entities.sync.*;
 import de.unistuttgart.stayinsync.core.configuration.exception.CoreManagementException;
 import de.unistuttgart.stayinsync.core.configuration.mapping.TransformationMapper;
-import de.unistuttgart.stayinsync.core.configuration.mapping.targetsystem.RequestConfigurationMapper;
 import de.unistuttgart.stayinsync.core.configuration.persistence.entities.sync.Transformation;
 import de.unistuttgart.stayinsync.core.configuration.rest.dtos.TransformationAssemblyDTO;
-import de.unistuttgart.stayinsync.core.configuration.rest.dtos.TransformationDetailsDTO;
 import de.unistuttgart.stayinsync.core.configuration.rest.dtos.TransformationShellDTO;
-import de.unistuttgart.stayinsync.core.configuration.rest.dtos.targetsystem.GetRequestConfigurationDTO;
 import de.unistuttgart.stayinsync.core.configuration.rest.dtos.TransformationStatusUpdate;
 import de.unistuttgart.stayinsync.core.configuration.rest.dtos.targetsystem.UpdateTransformationRequestConfigurationDTO;
 import de.unistuttgart.stayinsync.core.configuration.rest.dtos.typegeneration.GetTypeDefinitionsResponseDTO;
@@ -40,9 +37,6 @@ public class TransformationService {
 
     @Inject
     TransformationMapper mapper;
-
-    @Inject
-    RequestConfigurationMapper requestConfigurationMapper;
 
     @Inject
     SyncJobService syncJobService;
@@ -117,51 +111,34 @@ public class TransformationService {
         return transformation;
     }
 
-    public List<GetRequestConfigurationDTO> getTargetArcs(Long transformationId) {
-        Log.debugf("Getting Target ARCs for Transformation with id %d", transformationId);
-
-        Transformation transformation = Transformation.<Transformation>findByIdOptional(transformationId)
-                .orElseThrow(() -> new CoreManagementException(Response.Status.NOT_FOUND, "Transformation not found", "Transformation with id %d not found.", transformationId));
-
-        Set<TargetSystemApiRequestConfiguration> targetArcs = transformation.targetSystemApiRequestConfigurations;
-        List<TargetSystemApiRequestConfiguration> targetArcsToList = targetArcs.stream().toList();
-        return requestConfigurationMapper.mapToGetDTOList(targetArcsToList);
-    }
-
+    /**
+     * Updates the Many-to-Many relationship between a Transformation and its Target ARCs.
+     * This method provides a transactional, atomic update by clearing all existing target ARC associations
+     * and re-linking them based on the provided lists of IDs. After successfully persisting the new
+     * relationships, it regenerates and returns the corresponding TypeScript Declaration files (.d.ts)
+     * for the Monaco editor.
+     *
+     * @param transformationId The ID of the Transformation to update.
+     * @param dto              The {@link UpdateTransformationRequestConfigurationDTO} containing the complete lists of REST and AAS Target ARC IDs to be linked.
+     * @return A {@link GetTypeDefinitionsResponseDTO} containing the newly generated TypeScript libraries reflecting the updated configuration.
+     * @throws CoreManagementException if the Transformation or any of the specified ARC IDs cannot be found.
+     */
     @Transactional
-    public GetTypeDefinitionsResponseDTO updateTargetArcs(Long transformationId, UpdateTransformationRequestConfigurationDTO dto){
+    public GetTypeDefinitionsResponseDTO updateTargetArcs(Long transformationId, UpdateTransformationRequestConfigurationDTO dto) {
         Log.debugf("Updating ALL Target ARCs for Transformation with id %d", transformationId);
 
-        Transformation transformation = Transformation.<Transformation>findByIdOptional(transformationId)
-                .orElseThrow(() -> new CoreManagementException(Response.Status.NOT_FOUND, "Transformation not found", "Transformation with id %d not found.", transformationId));
+        Transformation transformation = findTransformationOrThrow(transformationId);
 
+        // Clear existing associations before re-linking.
         transformation.targetSystemApiRequestConfigurations.clear();
         transformation.aasTargetApiRequestConfigurations.clear();
 
-        if (dto.restTargetArcIds() != null && !dto.restTargetArcIds().isEmpty()) {
-            List<TargetSystemApiRequestConfiguration> restArcsToLink = TargetSystemApiRequestConfiguration.list("id in ?1", dto.restTargetArcIds());
-
-            if (restArcsToLink.size() != dto.restTargetArcIds().size()) {
-                throw new CoreManagementException(Response.Status.BAD_REQUEST, "Invalid REST ARC ID", "One or more provided REST Target ARC IDs could not be found.");
-            }
-
-            transformation.targetSystemApiRequestConfigurations.addAll(restArcsToLink);
-            restArcsToLink.forEach(arc -> arc.transformations.add(transformation));
-        }
-
-        if (dto.aasTargetArcIds() != null && !dto.aasTargetArcIds().isEmpty()) {
-            List<AasTargetApiRequestConfiguration> aasArcsToLink = AasTargetApiRequestConfiguration.list("id in ?1", dto.aasTargetArcIds());
-
-            if (aasArcsToLink.size() != dto.aasTargetArcIds().size()) {
-                throw new CoreManagementException(Response.Status.BAD_REQUEST, "Invalid AAS ARC ID", "One or more provided AAS Target ARC IDs could not be found.");
-            }
-
-            transformation.aasTargetApiRequestConfigurations.addAll(aasArcsToLink);
-            aasArcsToLink.forEach(arc -> arc.transformations.add(transformation));
-        }
+        // Bind the new sets of ARCs.
+        bindRestTargetArcs(transformation, dto.restTargetArcIds());
+        bindAasTargetArcs(transformation, dto.aasTargetArcIds());
 
         transformation.persist();
-        entityManager.flush();
+        entityManager.flush(); // Ensure changes are written to the DB before DTS generation.
 
         Log.infof("Successfully updated Target ARCs for Transformation %d. REST ARC count: %d, AAS ARC count: %d",
                 transformationId,
@@ -169,6 +146,78 @@ public class TransformationService {
                 transformation.aasTargetApiRequestConfigurations.size());
 
         return targetDtsBuilderGeneratorService.generateForTransformation(transformationId);
+    }
+
+    /**
+     * Finds a Transformation by its ID or throws a NOT_FOUND exception if it doesn't exist.
+     *
+     * @param transformationId The ID of the transformation to find.
+     * @return The found {@link Transformation} entity.
+     * @throws CoreManagementException if the transformation is not found.
+     */
+    private Transformation findTransformationOrThrow(Long transformationId) {
+        return Transformation.<Transformation>findByIdOptional(transformationId)
+                .orElseThrow(() -> new CoreManagementException(Response.Status.NOT_FOUND, "Transformation not found", "Transformation with id %d not found.", transformationId));
+    }
+
+    /**
+     * Finds and links a list of REST Target ARCs to a Transformation.
+     *
+     * @param transformation The parent {@link Transformation} entity.
+     * @param restArcIds     The list of REST Target ARC IDs to link.
+     * @throws CoreManagementException if any of the provided IDs do not correspond to an existing entity.
+     */
+    private void bindRestTargetArcs(Transformation transformation, Set<Long> restArcIds) {
+        if (restArcIds == null || restArcIds.isEmpty()) {
+            Log.info("No REST Target ARCs to bind.");
+            return;
+        }
+
+        List<TargetSystemApiRequestConfiguration> arcsToLink = TargetSystemApiRequestConfiguration.list("id in ?1", restArcIds);
+        validateArcCount(arcsToLink.size(), restArcIds.size(), "REST");
+
+        transformation.targetSystemApiRequestConfigurations.addAll(arcsToLink);
+        // Also update the inverse side of the relationship for proper JPA state management.
+        arcsToLink.forEach(arc -> arc.transformations.add(transformation));
+    }
+
+    /**
+     * Finds and links a list of AAS Target ARCs to a Transformation.
+     *
+     * @param transformation The parent {@link Transformation} entity.
+     * @param aasArcIds      The list of AAS Target ARC IDs to link.
+     * @throws CoreManagementException if any of the provided IDs do not correspond to an existing entity.
+     */
+    private void bindAasTargetArcs(Transformation transformation, Set<Long> aasArcIds) {
+        if (aasArcIds == null || aasArcIds.isEmpty()) {
+            Log.info("No AAS Target ARCs to bind.");
+            return;
+        }
+
+        List<AasTargetApiRequestConfiguration> arcsToLink = AasTargetApiRequestConfiguration.list("id in ?1", aasArcIds);
+        validateArcCount(arcsToLink.size(), aasArcIds.size(), "AAS");
+
+        transformation.aasTargetApiRequestConfigurations.addAll(arcsToLink);
+        // Also update the inverse side of the relationship for proper JPA state management.
+        arcsToLink.forEach(arc -> arc.transformations.add(transformation));
+    }
+
+    /**
+     * A utility method to validate that the number of ARCs found in the database matches the number of IDs requested.
+     *
+     * @param foundCount     The number of entities retrieved from the database.
+     * @param requestedCount The number of IDs provided in the request DTO.
+     * @param arcType        A string representing the ARC type (e.g., "REST", "AAS") for use in the error message.
+     * @throws CoreManagementException if the counts do not match.
+     */
+    private void validateArcCount(int foundCount, int requestedCount, String arcType) {
+        if (foundCount != requestedCount) {
+            throw new CoreManagementException(
+                    Response.Status.BAD_REQUEST,
+                    String.format("Invalid %s ARC ID", arcType),
+                    String.format("One or more provided %s Target ARC IDs could not be found.", arcType)
+            );
+        }
     }
 
     @Transactional(SUPPORTS)

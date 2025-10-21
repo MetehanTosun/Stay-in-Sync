@@ -1,13 +1,9 @@
 package de.unistuttgart.stayinsync.core.configuration.service;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import de.unistuttgart.stayinsync.core.configuration.exception.CoreManagementException;
-import de.unistuttgart.stayinsync.core.configuration.persistence.entities.aas.AasTargetApiRequestConfiguration;
 import de.unistuttgart.stayinsync.core.configuration.persistence.entities.sync.SyncSystemEndpoint;
 import de.unistuttgart.stayinsync.core.configuration.persistence.entities.sync.TargetSystemApiRequestConfiguration;
 import de.unistuttgart.stayinsync.core.configuration.persistence.entities.sync.TargetSystemApiRequestConfigurationAction;
 import de.unistuttgart.stayinsync.core.configuration.persistence.entities.sync.Transformation;
-import de.unistuttgart.stayinsync.core.configuration.service.aas.AasSdkGeneratorService;
 import de.unistuttgart.stayinsync.transport.domain.TargetApiRequestConfigurationActionRole;
 import io.swagger.v3.oas.models.OpenAPI;
 import io.swagger.v3.oas.models.Operation;
@@ -15,21 +11,33 @@ import io.swagger.v3.oas.models.PathItem;
 import io.swagger.v3.oas.models.parameters.Parameter;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
+
 import java.util.*;
 import java.util.stream.Collectors;
 
 /**
  * Generates the executable JavaScript SDK for a given Transformation.
- * This SDK creates the 'targets' object in the GraalJS context, providing a fluent API
- * for building directives based on the configured Target ARCs.
- * The generated script is intended to be persisted with the Transformation entity.
+ * This SDK creates the 'targets' object within the GraalJS runtime context, providing a fluent API
+ * for building directives based on the configured Target ARCs. The generated script is intended to be
+ * persisted with the Transformation entity and executed at runtime.
+ * <p>
+ * The core responsibility of this service is to translate the declarative configuration of REST-based
+ * Target ARCs into a functional, imperative JavaScript API that is intuitive for the script-writer.
+ * It dynamically creates classes and methods that correspond to the actions and parameters defined
+ * <p>
+ * in the associated OpenAPI specifications.
  */
 @ApplicationScoped
 public class TargetSdkGeneratorService {
+
     @Inject
     TargetDtsBuilderGeneratorService dtsGeneratorService;
+
     /**
      * Generates the full JavaScript SDK script for a given Transformation entity.
+     * This is the main entry point of the service. It constructs the entire script by initializing
+     * the global `targets` object and then iterating through each configured REST Target ARC,
+     * appending the SDK snippet for each one.
      *
      * @param transformation The Transformation entity containing the Target ARC configurations.
      * @return A String containing the complete, executable JavaScript SDK.
@@ -55,8 +63,19 @@ public class TargetSdkGeneratorService {
         }
         return sdkScript.toString();
     }
+
     /**
-     * Generates the JavaScript SDK snippet for a single Target ARC.
+     * Generates the JavaScript SDK snippet for a single REST Target ARC.
+     * The generated code is wrapped in an IIFE (Immediately Invoked Function Expression)
+     * to create a private scope, preventing variable collisions between different ARCs.
+     * <p>
+     * Inside this scope, it defines a JavaScript `UpsertBuilder` class that manages the construction
+     * of a directive object. It then attaches a `defineUpsert` method to the global `targets` object,
+     * which serves as a factory for this builder.
+     *
+     * @param arc           The Target ARC configuration for which to generate the SDK.
+     * @param specification The parsed OpenAPI specification for the ARC's target system.
+     * @return A String containing the complete JavaScript code block for one ARC.
      */
     private String generateSdkForArc(TargetSystemApiRequestConfiguration arc, OpenAPI specification) {
         String arcAlias = arc.alias;
@@ -107,9 +126,17 @@ public class TargetSdkGeneratorService {
         arcSdk.append("})();\n\n"); // End of IIFE
         return arcSdk.toString();
     }
+
     /**
-     * Generates the main `usingCheck`, `usingCreate`, or `usingUpdate` method.
-     * This method creates a temporary builder object for configuring the specific action.
+     * Generates one of the main builder methods: `usingCheck`, `usingCreate`, or `usingUpdate`.
+     * This method accepts a `configurator` function from the user. Inside, it constructs a
+     * temporary, action-specific builder object that exposes methods for setting parameters
+     * (e.g., `withQueryParamId`, `withPayload`). The user's `configurator` function is then
+     * executed with this temporary builder, providing a clean, chainable API.
+     *
+     * @param action        The configuration for the specific action (CHECK, CREATE, or UPDATE).
+     * @param specification The parsed OpenAPI specification containing endpoint details.
+     * @return A String containing the complete JavaScript method definition (e.g., `usingCheck(configurator) { ... }`).
      */
     private String generateActionWrapperMethod(TargetSystemApiRequestConfigurationAction action, OpenAPI specification) {
         String actionNamePascal = toPascalCase(action.actionRole.name());
@@ -138,8 +165,17 @@ public class TargetSdkGeneratorService {
         method.append("    }\n\n");
         return method.toString();
     }
+
     /**
-     * Generates the `withPayload` method for the temporary action builder.
+     * Generates the `withPayload` method snippet for an action's temporary builder object.
+     * This method is only generated if the corresponding OpenAPI operation defines a request body.
+     * The generated JavaScript function assigns the user-provided payload object to the
+     * correct configuration key within the main directive object.
+     *
+     * @param action        The action being configured.
+     * @param specification The parsed OpenAPI specification.
+     * @param configKey     The key in the directive object where the payload should be stored (e.g., "createConfiguration").
+     * @return An {@link Optional} containing the JavaScript method snippet string, or an empty Optional if no request body exists.
      */
     private Optional<String> generateWithPayloadMethodSnippet(TargetSystemApiRequestConfigurationAction action, OpenAPI specification, String configKey) {
         Operation operation = findOperation(action.endpoint, specification);
@@ -158,6 +194,21 @@ public class TargetSdkGeneratorService {
         return Optional.of(snippet);
     }
 
+    /**
+     * Generates a list of all parameter-setting methods (e.g., `withQueryParamId`, `withPathParamUserId`)
+     * for an action's temporary builder object. It iterates through all parameters defined in the
+     * OpenAPI operation for the endpoint.
+     * <p>
+     * It includes special, sophisticated logic for path parameters in an `UPDATE` action. It generates
+     * JavaScript code that uses a {@code Proxy} to intercept property access when the user provides a
+     * function (e.g., {@code res => res.body.id}). This allows the SDK to dynamically construct a placeholder
+     * string like {@code {{checkResponse.body.id}}} that can be resolved at runtime.
+     *
+     * @param action        The action for which to generate parameter methods.
+     * @param specification The parsed OpenAPI specification.
+     * @param configKey     The key in the directive object where parameter values should be stored.
+     * @return A List of Strings, where each string is a complete JavaScript method definition.
+     */
     private List<String> generateParameterMethodSnippets(TargetSystemApiRequestConfigurationAction action, OpenAPI specification, String configKey) {
         List<String> methodSnippets = new ArrayList<>();
         Operation operation = findOperation(action.endpoint, specification);
@@ -211,6 +262,14 @@ public class TargetSdkGeneratorService {
         return methodSnippets;
     }
 
+    /**
+     * A utility method to find the corresponding OpenAPI {@link Operation} object within a parsed specification
+     * based on an endpoint's path and HTTP method.
+     *
+     * @param endpoint      The {@link SyncSystemEndpoint} to find.
+     * @param specification The {@link OpenAPI} specification to search within.
+     * @return The found {@link Operation} object, or {@code null} if not found.
+     */
     private Operation findOperation(SyncSystemEndpoint endpoint, OpenAPI specification) {
         if (specification == null || specification.getPaths() == null) return null;
         PathItem pathItem = specification.getPaths().get(endpoint.endpointPath);
@@ -223,6 +282,14 @@ public class TargetSdkGeneratorService {
             default -> null;
         };
     }
+
+    /**
+     * A utility function to convert a string from any case (snake_case, kebab-case, space-separated)
+     * to a format suitable for method or class names (typically a variation of PascalCase).
+     *
+     * @param s The input string.
+     * @return The formatted version of the string.
+     */
     private String toPascalCase(String s) {
         if (s == null || s.isEmpty()) return s;
         return Arrays.stream(s.split("[_\\- ]"))
