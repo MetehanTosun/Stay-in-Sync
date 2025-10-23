@@ -69,7 +69,7 @@ public class EDCContractDefinitionService {
     public Optional<ContractDefinition> findByIdAndEdcId(final Long id, final Long edcId) {
         LOG.info("Fetching contract definition " + id + " for EDC: " + edcId);
     TypedQuery<ContractDefinition> query = entityManager.createQuery(
-        "SELECT c FROM EDCContractDefinition c " +
+        "SELECT c FROM ContractDefinition c " +
         "LEFT JOIN FETCH c.asset " +
         "LEFT JOIN FETCH c.accessPolicy " +
         "LEFT JOIN FETCH c.contractPolicy " +
@@ -81,6 +81,34 @@ public class EDCContractDefinitionService {
         List<ContractDefinition> results = query.getResultList();
         if (results.isEmpty()) {
             LOG.warn("No contract definition found with id " + id + " for EDC " + edcId);
+            return Optional.empty();
+        }
+        
+        return Optional.of(results.get(0));
+    }
+    
+    /**
+     * Returns a contract definition found in the database with the contractDefinitionId and belonging to the specific EDC instance.
+     *
+     * @param contractDefinitionId the contractDefinitionId (String) used to find the contract definition
+     * @param edcId the ID of the EDC instance
+     * @return found contract definition or empty if not found
+     */
+    public Optional<ContractDefinition> findByContractDefinitionIdAndEdcId(final String contractDefinitionId, final Long edcId) {
+        LOG.info("Fetching contract definition by contractDefinitionId: " + contractDefinitionId + " for EDC: " + edcId);
+    TypedQuery<ContractDefinition> query = entityManager.createQuery(
+        "SELECT c FROM ContractDefinition c " +
+        "LEFT JOIN FETCH c.asset " +
+        "LEFT JOIN FETCH c.accessPolicy " +
+        "LEFT JOIN FETCH c.contractPolicy " +
+        "WHERE c.contractDefinitionId = :contractDefinitionId AND c.edcInstance.id = :edcId",
+        ContractDefinition.class);
+        query.setParameter("contractDefinitionId", contractDefinitionId);
+        query.setParameter("edcId", edcId);
+        
+        List<ContractDefinition> results = query.getResultList();
+        if (results.isEmpty()) {
+            LOG.warn("No contract definition found with contractDefinitionId " + contractDefinitionId + " for EDC " + edcId);
             return Optional.empty();
         }
         
@@ -185,9 +213,37 @@ public class EDCContractDefinitionService {
                     LOG.warn("Could not serialize EDC Contract Definition DTO for logging", ex);
                 }
                 
+                // Generiere das JSON für den EDC
+                String jsonToSend;
+                if (contractDefinition.rawJson != null && !contractDefinition.rawJson.isEmpty()) {
+                    // Prüfe, ob das rawJson die notwendigen EDC-Felder enthält
+                    if (!contractDefinition.rawJson.contains("\"@context\"") || !contractDefinition.rawJson.contains("https://w3id.org/edc/v0.0.1/ns/")) {
+                        LOG.warn("Raw JSON does not contain proper EDC context, generating JSON from DTO");
+                        try {
+                            // Generiere JSON aus dem DTO
+                            jsonToSend = objectMapper.writeValueAsString(edcContractDefinitionDTO);
+                        } catch (Exception e) {
+                            LOG.error("Failed to generate JSON from DTO", e);
+                            return; // Abbruch, wenn das Mapping fehlschlägt
+                        }
+                    } else {
+                        // Verwende das vorhandene rawJson
+                        jsonToSend = contractDefinition.rawJson;
+                    }
+                } else {
+                    try {
+                        // Generiere JSON aus dem DTO
+                        jsonToSend = objectMapper.writeValueAsString(edcContractDefinitionDTO);
+                    } catch (Exception e) {
+                        LOG.error("Failed to generate JSON from DTO", e);
+                        return; // Abbruch, wenn das Mapping fehlschlägt
+                    }
+                }
+                
                 // Senden der Contract Definition an den EDC
                 LOG.info("Sending contract definition to EDC: " + contractDefinition.contractDefinitionId);
-                RestResponse<JsonObject> response = client.createContractDefinition("TEST2", contractDefinition.rawJson);
+                LOG.info("JSON to send: " + jsonToSend);
+                RestResponse<JsonObject> response = client.createContractDefinition("TEST2", jsonToSend);
                 
                 if (response.getStatus() >= 400) {
                     LOG.error("Error creating contract definition in EDC: " + response.getStatus() + ", " + response.getEntity());
@@ -233,12 +289,77 @@ public class EDCContractDefinitionService {
     }
 
     /**
-     * Removes the policy from the database
-     * @param id used to find policy to be deleted in database
-     * @return the deleted policy
+     * Removes the contract definition from the database and EDC
+     * @param id used to find contract definition to be deleted
+     * @return true if successfully deleted, false otherwise
      */
     @Transactional
     public boolean delete(Long id) {
+        LOG.info("Attempting to delete contract definition with ID: " + id);
+        
+        // First find the contract definition to get its contractDefinitionId
+        ContractDefinition contractDefToDelete = ContractDefinition.findById(id);
+        if (contractDefToDelete == null) {
+            LOG.warn("Contract definition with ID " + id + " not found, cannot delete");
+            return false;
+        }
+        
+        LOG.info("Found contract definition to delete: id=" + contractDefToDelete.id + 
+                ", contractDefinitionId=" + contractDefToDelete.getContractDefinitionId());
+        
+        // Try to delete from EDC first if we have the necessary info
+        if (contractDefToDelete.edcInstance != null && 
+            contractDefToDelete.getContractDefinitionId() != null && 
+            !contractDefToDelete.getContractDefinitionId().isEmpty()) {
+            
+            try {
+                // Use the appropriate EDC URL from the instance if available
+                String edcUrl = contractDefToDelete.edcInstance.edcContractDefinitionEndpoint;
+                if (edcUrl == null || edcUrl.trim().isEmpty()) {
+                    edcUrl = contractDefToDelete.edcInstance.controlPlaneManagementUrl;
+                }
+                
+                EDCClient client;
+                if (edcUrl != null && !edcUrl.trim().isEmpty()) {
+                    LOG.info("Using EDC URL from instance for deletion: " + edcUrl);
+                    client = createClient(edcUrl);
+                } else {
+                    LOG.info("Using hardcoded EDC URL for deletion");
+                    client = createClient("http://dataprovider-controlplane.tx.test/management/v3");
+                }
+                
+                LOG.info("Deleting contract definition from EDC: " + contractDefToDelete.getContractDefinitionId());
+                
+                try {
+                    // Use API key from EDC instance if available, otherwise fallback to TEST2
+                    String apiKey = contractDefToDelete.edcInstance.apiKey;
+                    if (apiKey == null || apiKey.trim().isEmpty()) {
+                        apiKey = "TEST2"; // Default fallback
+                        LOG.info("Using default API key: TEST2");
+                    } else {
+                        LOG.info("Using API key from EDC instance configuration");
+                    }
+                    
+                    RestResponse<Void> response = client.deleteContractDefinition(apiKey, contractDefToDelete.getContractDefinitionId());
+                    
+                    if (response.getStatus() >= 400 && response.getStatus() != 404) {
+                        // Log error but continue with database deletion - 404 is ok as contract definition might not exist in EDC
+                        LOG.warn("Error deleting contract definition from EDC: HTTP status " + response.getStatus());
+                    } else {
+                        LOG.info("Contract definition successfully deleted from EDC: " + contractDefToDelete.getContractDefinitionId());
+                    }
+                } catch (Exception e) {
+                    LOG.error("Error deleting contract definition from EDC", e);
+                    // Continue with database deletion even if EDC deletion failed
+                }
+            } catch (Exception e) {
+                LOG.error("Error creating EDC client", e);
+            }
+        } else {
+            LOG.warn("Cannot delete contract definition from EDC: EDC instance or contract definition ID is missing");
+        }
+        
+        // Now delete from database
         return ContractDefinition.deleteById(id);
     }
 }

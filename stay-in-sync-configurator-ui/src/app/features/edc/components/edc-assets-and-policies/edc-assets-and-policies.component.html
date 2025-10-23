@@ -486,6 +486,12 @@
       <button pButton pRipple type="button" label="Upload JSON to Editor" icon="pi pi-folder-open" class="p-button-outlined w-full" (click)="templateFileInput.click()"></button>
     </div>
 
+    <!-- Feld für Contract Definition ID -->
+    <div class="field col-12">
+      <label for="contractDefId" class="font-bold">Contract Definition ID</label>
+      <input id="contractDefId" type="text" pInputText [(ngModel)]="contractDefId" (ngModelChange)="updateContractIdInJson($event)" placeholder="Enter a unique contract definition ID (required)" class="w-full" [disabled]="isContractJsonComplex" />
+    </div>
+
     <div class="field col-12">
       <div class="flex justify-content-between align-items-center mb-2">
         <label for="cdAccessPolicy" class="font-bold">Select Access Policy</label>

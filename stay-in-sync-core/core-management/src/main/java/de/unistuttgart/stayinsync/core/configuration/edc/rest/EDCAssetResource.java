@@ -176,10 +176,18 @@ public class EDCAssetResource {
             Long edcId = Long.parseLong(edcIdStr);
 
             LOG.info("Fetching assets for EDC: " + edcId);
-            List<EDCAssetDto> assets = service.listAllByEdcId(edcId);
-
-            LOG.info("Returning " + assets.size() + " assets for EDC: " + edcId);
-            return Response.ok(assets).build();
+            
+            try {
+                List<EDCAssetDto> assets = service.listAllByEdcId(edcId);
+                LOG.info("Returning " + assets.size() + " assets for EDC: " + edcId);
+                return Response.ok(assets).build();
+            } catch (CustomException e) {
+                // Handle the case when the EDC instance doesn't exist
+                LOG.error("EDC instance not found: " + e.getMessage());
+                return Response.status(Response.Status.NOT_FOUND)
+                        .entity(e.getMessage())
+                        .build();
+            }
         } catch (NumberFormatException e) {
             LOG.error("Invalid EDC ID format: " + edcIdStr);
             return Response.status(Response.Status.BAD_REQUEST)

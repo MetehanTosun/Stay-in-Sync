@@ -32,6 +32,24 @@ public class DataAddress extends PanacheEntity {
     public String baseUrl;
 
     /**
+     * Der Pfad, der an die Basis-URL angehängt werden soll.
+     */
+    @Column(name = "path")
+    public String path;
+
+    /**
+     * Query-Parameter als JSON-String.
+     */
+    @Column(name = "query_params", columnDefinition = "TEXT")
+    public String queryParams;
+
+    /**
+     * Header-Parameter als JSON-String.
+     */
+    @Column(name = "header_params", columnDefinition = "TEXT")
+    public String headerParams;
+
+    /**
      * Gibt an, ob der Pfad beim Proxy-Zugriff übernommen werden soll.
      */
     @Column(name = "proxy_path", nullable = false)
@@ -73,6 +91,27 @@ public class DataAddress extends PanacheEntity {
         this.proxyPath = proxyPath;
         this.proxyQueryParams = proxyQueryParams;
     }
+    
+    /**
+     * Erweiterter Konstruktor mit allen Parametern.
+     *
+     * @param type Der Typ der Daten-Adresse
+     * @param baseUrl Die Basis-URL für den Zugriff auf die Daten
+     * @param path Der Pfad, der an die Basis-URL angehängt werden soll
+     * @param queryParams Query-Parameter als JSON-String
+     * @param headerParams Header-Parameter als JSON-String
+     * @param proxyPath Gibt an, ob der Pfad beim Proxy-Zugriff übernommen werden soll
+     * @param proxyQueryParams Gibt an, ob Query-Parameter beim Proxy-Zugriff übernommen werden sollen
+     */
+    public DataAddress(String type, String baseUrl, String path, String queryParams, String headerParams, boolean proxyPath, boolean proxyQueryParams) {
+        this.type = type != null ? type : "HttpData";
+        this.baseUrl = baseUrl;
+        this.path = path;
+        this.queryParams = queryParams;
+        this.headerParams = headerParams;
+        this.proxyPath = proxyPath;
+        this.proxyQueryParams = proxyQueryParams;
+    }
 
     /**
      * Spezielle Setter-Methode für den Typ, um den Standardwert "HttpData" zu gewährleisten.
@@ -93,5 +132,59 @@ public class DataAddress extends PanacheEntity {
      */
     public void setProxyQueryParams(Boolean proxyQueryParams) {
         this.proxyQueryParams = proxyQueryParams != null ? proxyQueryParams : true;
+    }
+
+    /**
+     * Getter für den Pfad.
+     * 
+     * @return Den Pfad oder null, wenn nicht gesetzt
+     */
+    public String getPath() {
+        return path;
+    }
+
+    /**
+     * Setter für den Pfad.
+     * 
+     * @param path Der Pfad, der an die Basis-URL angehängt werden soll
+     */
+    public void setPath(String path) {
+        this.path = path;
+    }
+
+    /**
+     * Getter für die Query-Parameter.
+     * 
+     * @return Die Query-Parameter als JSON-String oder null, wenn nicht gesetzt
+     */
+    public String getQueryParams() {
+        return queryParams;
+    }
+
+    /**
+     * Setter für die Query-Parameter.
+     * 
+     * @param queryParams Die Query-Parameter als JSON-String
+     */
+    public void setQueryParams(String queryParams) {
+        this.queryParams = queryParams;
+    }
+
+    /**
+     * Getter für die Header-Parameter.
+     * 
+     * @return Die Header-Parameter als JSON-String oder null, wenn nicht gesetzt
+     */
+    public String getHeaderParams() {
+        return headerParams;
+    }
+
+    /**
+     * Setter für die Header-Parameter.
+     * 
+     * @param headerParams Die Header-Parameter als JSON-String
+     */
+    public void setHeaderParams(String headerParams) {
+        this.headerParams = headerParams;
     }
 }

@@ -1,5 +1,6 @@
 package de.unistuttgart.stayinsync.core.configuration.edc.service;
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import de.unistuttgart.stayinsync.core.configuration.edc.service.edcconnector.CreateEDCPolicyDTO;
 import de.unistuttgart.stayinsync.core.configuration.edc.service.edcconnector.EDCClient;
@@ -13,6 +14,9 @@ import jakarta.transaction.Transactional;
 import org.eclipse.microprofile.rest.client.RestClientBuilder;
 import org.jboss.logging.Logger;
 import org.jboss.resteasy.reactive.RestResponse;
+
+import java.util.HashMap;
+import java.util.ArrayList;
 
 import java.net.URI;
 import java.util.ArrayList;
@@ -40,10 +44,24 @@ public class EDCPolicyService {
     @Inject
     ObjectMapper objectMapper;
     
-    public EDCClient createClient(String baseUrl) {
-        return RestClientBuilder.newBuilder()
-                .baseUri(URI.create(baseUrl))
-                .build(EDCClient.class);
+    private EDCClient createClient(String baseUrl) {
+        try {
+            LOG.info("Creating EDC Client with base URL: " + baseUrl);
+            
+            // Stelle sicher, dass die URL gültig ist
+            if (baseUrl == null || baseUrl.trim().isEmpty()) {
+                LOG.warn("Invalid base URL provided: " + baseUrl);
+                baseUrl = "http://dataprovider-controlplane.tx.test/management/v3";
+                LOG.info("Using fallback URL: " + baseUrl);
+            }
+            
+            return RestClientBuilder.newBuilder()
+                    .baseUri(URI.create(baseUrl))
+                    .build(EDCClient.class);
+        } catch (Exception e) {
+            LOG.error("Error creating EDC client: " + e.getMessage(), e);
+            return null;
+        }
     }
 
         /**
@@ -54,20 +72,36 @@ public class EDCPolicyService {
      */
     public List<Policy> listAllByEdcId(final Long edcId) {
         LOG.info("Fetching policies for EDC: " + edcId);
-        EdcInstance edcInstance = EdcInstance.findById(edcId);
-        if (edcInstance == null) {
-            LOG.warn("No EDC instance found with id " + edcId);
+        
+        // Sicherstellen, dass edcId nicht null ist
+        if (edcId == null) {
+            LOG.warn("EDC ID is null, returning empty list");
             return new ArrayList<>();
         }
         
-        TypedQuery<Policy> query = entityManager.createQuery(
-                "SELECT p FROM Policy p WHERE p.edcInstance.id = :edcId", 
-                Policy.class);
-        query.setParameter("edcId", edcId);
-        
-        List<Policy> policyList = query.getResultList();
-        LOG.info("Found " + policyList.size() + " policies for EDC " + edcId);
-        return policyList;
+        try {
+            // EDC-Instanz abrufen und prüfen
+            EdcInstance edcInstance = EdcInstance.findById(edcId);
+            if (edcInstance == null) {
+                LOG.warn("No EDC instance found with id " + edcId);
+                return new ArrayList<>();
+            }
+            
+            // Query für die Policies erstellen und ausführen
+            TypedQuery<Policy> query = entityManager.createQuery(
+                    "SELECT p FROM Policy p WHERE p.edcInstance.id = :edcId", 
+                    Policy.class);
+            query.setParameter("edcId", edcId);
+            
+            List<Policy> policyList = query.getResultList();
+            LOG.info("Found " + policyList.size() + " policies for EDC " + edcId);
+            
+            return policyList;
+        } catch (Exception e) {
+            LOG.error("Error fetching policies for EDC " + edcId + ": " + e.getMessage(), e);
+            // Im Fehlerfall eine leere Liste zurückgeben
+            return new ArrayList<>();
+        }
     }
     
     /**
@@ -80,12 +114,10 @@ public class EDCPolicyService {
     public Optional<Policy> findByIdAndEdcId(final Long id, final Long edcId) {
         LOG.info("Fetching policy " + id + " for EDC: " + edcId);
         TypedQuery<Policy> query = entityManager.createQuery(
-                "SELECT p FROM EDCPolicy p WHERE p.id = :policyId AND p.edcInstance.id = :edcId", 
+                "SELECT p FROM Policy p WHERE p.id = :policyId AND p.edcInstance.id = :edcId",
                 Policy.class);
         query.setParameter("policyId", id);
-        query.setParameter("edcId", edcId);
-        
-        List<Policy> results = query.getResultList();
+        query.setParameter("edcId", edcId);        List<Policy> results = query.getResultList();
         if (results.isEmpty()) {
             LOG.warn("No policy found with id " + id + " for EDC " + edcId);
             return Optional.empty();
@@ -124,11 +156,28 @@ public class EDCPolicyService {
                        ", PolicyEndpoint=" + policy.getEdcInstance().edcPolicyEndpoint);
                        
                 // Create EDC client with URL from EDC instance or fallback to hardcoded URL
-                String edcUrl = policy.getEdcInstance().controlPlaneManagementUrl;
+                // Verwende zuerst den spezifischen Policy-Endpunkt wenn verfügbar
+                String edcUrl = policy.getEdcInstance().edcPolicyEndpoint;
+                
+                // Fallback auf die allgemeine Management-URL + richtiges Suffix für Policies
+                if (edcUrl == null || edcUrl.trim().isEmpty()) {
+                    edcUrl = policy.getEdcInstance().controlPlaneManagementUrl;
+                    // Stelle sicher, dass wir nicht "/policydefinitions" doppelt anhängen
+                    if (edcUrl != null && !edcUrl.trim().isEmpty() && !edcUrl.endsWith("/policydefinitions")) {
+                        // Stelle sicher, dass die URL mit "/" endet
+                        if (!edcUrl.endsWith("/")) {
+                            edcUrl = edcUrl + "/";
+                        }
+                        LOG.info("Using controlPlaneManagementUrl for policy endpoint: " + edcUrl);
+                    }
+                } else {
+                    LOG.info("Using specific policy endpoint from database: " + edcUrl);
+                }
+                
                 EDCClient client;
                 
                 if (edcUrl != null && !edcUrl.trim().isEmpty()) {
-                    LOG.info("Using EDC URL from database: " + edcUrl);
+                    LOG.info("Using EDC URL for policy creation: " + edcUrl);
                     client = createClient(edcUrl);
                 } else {
                     LOG.info("Using hardcoded EDC URL");
@@ -218,29 +267,96 @@ public class EDCPolicyService {
                 
                 try {
                     LOG.info("Sending policy to EDC: " + policy.getPolicyId());
-                    LOG.info("Policy JSON: " + policy.getPolicyJson());
                     
                     // Make sure the DTO is properly prepared
                     edcPolicyDTO = prepareEDCPolicyDTO(edcPolicyDTO);
                     
-                    // Log the EDC DTO that we're about to send
-                    try {
-                        LOG.info("EDC Policy DTO: " + objectMapper.writeValueAsString(edcPolicyDTO));
-                    } catch (Exception ex) {
-                        LOG.warn("Could not serialize EDC Policy DTO for logging", ex);
+                    // JSON für EDC API vorbereiten - Das Format muss dem EDC API-Format entsprechen
+                    String jsonToSend = "{}"; // Standardwert initialisieren
+                    
+                    // Prüfen, ob das originale JSON bereits das erwartete Format hat
+                    boolean hasCorrectFormat = false;
+                    if (policy.getPolicyJson() != null && !policy.getPolicyJson().trim().isEmpty()) {
+                        try {
+                            // Prüfen, ob das originale JSON bereits den "policy"-Namespace enthält
+                            Map<String, Object> jsonMap = objectMapper.readValue(policy.getPolicyJson(), new TypeReference<Map<String, Object>>() {});
+                            hasCorrectFormat = jsonMap.containsKey("@context") && 
+                                              (jsonMap.containsKey("https://w3id.org/edc/v0.0.1/ns/policy") || 
+                                               jsonMap.containsKey("policy"));
+                            
+                            if (hasCorrectFormat) {
+                                LOG.info("Original policy JSON has correct format, using it");
+                                jsonToSend = policy.getPolicyJson();
+                            }
+                        } catch (Exception e) {
+                            LOG.warn("Error parsing original policy JSON, will create new one: " + e.getMessage());
+                            hasCorrectFormat = false;
+                        }
+                    }
+                    
+                    // Wenn das originale JSON nicht das richtige Format hat, erstellen wir ein neues
+                    if (!hasCorrectFormat) {
+                        try {
+                            LOG.info("Creating new policy JSON with correct format for EDC API");
+                            Map<String, Object> edcJson = new HashMap<>();
+                            
+                            // Füge @context hinzu
+                            Map<String, Object> context = new HashMap<>();
+                            context.put("edc", "https://w3id.org/edc/v0.0.1/ns/");
+                            context.put("odrl", "http://www.w3.org/ns/odrl/2/");
+                            edcJson.put("@context", context);
+                            
+                            // Füge @id hinzu
+                            edcJson.put("@id", policy.getPolicyId());
+                            
+                            // Füge notwendiges policy-Objekt hinzu
+                            if (edcPolicyDTO.getPolicy() != null && edcPolicyDTO.getPolicy().getPermission() != null) {
+                                edcJson.put("https://w3id.org/edc/v0.0.1/ns/policy", edcPolicyDTO.getPolicy());
+                            } else {
+                                // Erstelle ein Minimal-Policy-Objekt
+                                Map<String, Object> policyObj = new HashMap<>();
+                                policyObj.put("@type", "odrl:Set");
+                                
+                                List<Map<String, Object>> permissions = new ArrayList<>();
+                                Map<String, Object> permission = new HashMap<>();
+                                permission.put("odrl:action", "USE");
+                                
+                                Map<String, Object> constraint = new HashMap<>();
+                                constraint.put("odrl:leftOperand", "BusinessPartnerNumber");
+                                constraint.put("odrl:operator", "=");
+                                constraint.put("odrl:rightOperand", "BPNL000000000000");
+                                
+                                permission.put("odrl:constraint", constraint);
+                                permissions.add(permission);
+                                
+                                policyObj.put("odrl:permission", permissions);
+                                edcJson.put("https://w3id.org/edc/v0.0.1/ns/policy", policyObj);
+                            }
+                            
+                            jsonToSend = objectMapper.writeValueAsString(edcJson);
+                            LOG.info("Created policy JSON for EDC API: " + jsonToSend);
+                        } catch (Exception e) {
+                            LOG.error("Error creating policy JSON for EDC API: " + e.getMessage(), e);
+                            throw e; // Re-throw to be caught by outer try/catch
+                        }
                     }
                     
                     // Send to EDC - using a placeholder API Key here
                     LOG.info("Calling EDC API with apiKey: TEST2");
-                    RestResponse<JsonObject> response = client.createPolicy("TEST2", policy.getPolicyJson());
                     
-                    if (response.getStatus() >= 400) {
-                        LOG.error("Error sending policy to EDC: " + response.getStatus() + ", " + response.getEntity());
-                    } else {
-                        LOG.info("Policy successfully sent to EDC with status: " + response.getStatus());
-                        if (response.getEntity() != null) {
-                            LOG.info("EDC response: " + response.getEntity());
+                    try {
+                        RestResponse<JsonObject> response = client.createPolicy("TEST2", jsonToSend);
+                        
+                        if (response.getStatus() >= 400) {
+                            LOG.error("Error sending policy to EDC: " + response.getStatus() + ", " + response.getEntity());
+                        } else {
+                            LOG.info("Policy successfully sent to EDC with status: " + response.getStatus());
+                            if (response.getEntity() != null) {
+                                LOG.info("EDC response: " + response.getEntity());
+                            }
                         }
+                    } catch (Exception apiEx) {
+                        LOG.error("Exception occurred when calling EDC API: ", apiEx);
                     }
                 } catch (Exception e) {
                     LOG.error("Error sending policy to EDC", e);
@@ -287,7 +403,20 @@ public class EDCPolicyService {
             try {
                 // First delete the existing policy in EDC if we have a policy ID
                 if (policyLinkedToDatabase.getPolicyId() != null && !policyLinkedToDatabase.getPolicyId().trim().isEmpty()) {
-                    EDCClient client = createClient("http://dataprovider-controlplane.tx.test/management/v3");
+                    // Verwende die richtige EDC URL aus der Instanz, wenn verfügbar
+                    String edcUrl = policyLinkedToDatabase.getEdcInstance().edcPolicyEndpoint;
+                    if (edcUrl == null || edcUrl.trim().isEmpty()) {
+                        edcUrl = policyLinkedToDatabase.getEdcInstance().controlPlaneManagementUrl;
+                    }
+                    
+                    EDCClient client;
+                    if (edcUrl != null && !edcUrl.trim().isEmpty()) {
+                        LOG.info("Using EDC URL from instance: " + edcUrl);
+                        client = createClient(edcUrl);
+                    } else {
+                        LOG.info("Using hardcoded EDC URL for update");
+                        client = createClient("http://dataprovider-controlplane.tx.test/management/v3");
+                    }
                     
                     try {
                         // Delete existing policy
@@ -365,17 +494,40 @@ public class EDCPolicyService {
             !policyToDelete.getPolicyId().trim().isEmpty()) {
             
             try {
-                EDCClient client = createClient("http://dataprovider-controlplane.tx.test/management/v3");
+                // Verwende die richtige EDC URL aus der Instanz, wenn verfügbar
+                String edcUrl = policyToDelete.getEdcInstance().edcPolicyEndpoint;
+                if (edcUrl == null || edcUrl.trim().isEmpty()) {
+                    edcUrl = policyToDelete.getEdcInstance().controlPlaneManagementUrl;
+                }
+                
+                EDCClient client;
+                if (edcUrl != null && !edcUrl.trim().isEmpty()) {
+                    LOG.info("Using EDC URL from instance for deletion: " + edcUrl);
+                    client = createClient(edcUrl);
+                } else {
+                    LOG.info("Using hardcoded EDC URL for deletion");
+                    client = createClient("http://dataprovider-controlplane.tx.test/management/v3");
+                }
+                
                 LOG.info("Deleting policy from EDC: " + policyToDelete.getPolicyId());
                 
                 try {
-                    RestResponse<Void> response = client.deletePolicy("TEST2", policyToDelete.getPolicyId());
+                    // Verwende den API-Key aus der EDC-Instanz, falls verfügbar, sonst Fallback auf TEST2
+                    String apiKey = policyToDelete.getEdcInstance().apiKey;
+                    if (apiKey == null || apiKey.trim().isEmpty()) {
+                        apiKey = "TEST2"; // Default-Fallback
+                        LOG.info("Using default API key: TEST2");
+                    } else {
+                        LOG.info("Using API key from EDC instance configuration");
+                    }
+                    
+                    RestResponse<Void> response = client.deletePolicy(apiKey, policyToDelete.getPolicyId());
                     
                     if (response.getStatus() >= 400 && response.getStatus() != 404) {
                         // Log error but continue with database deletion - 404 is ok as policy might not exist in EDC
-                        LOG.warn("Error deleting policy from EDC: " + response.getStatus());
+                        LOG.warn("Error deleting policy from EDC: HTTP status " + response.getStatus());
                     } else {
-                        LOG.info("Policy successfully deleted from EDC");
+                        LOG.info("Policy successfully deleted from EDC: " + policyToDelete.getPolicyId());
                     }
                 } catch (Exception e) {
                     LOG.error("Error deleting policy from EDC", e);
@@ -392,7 +544,7 @@ public class EDCPolicyService {
         try {
             // Find contract definitions where this policy is either the access policy or contract policy
             TypedQuery<ContractDefinition> query = entityManager.createQuery(
-                "SELECT cd FROM EDCContractDefinition cd WHERE cd.accessPolicy.id = :policyId OR cd.contractPolicy.id = :policyId", 
+                "SELECT cd FROM ContractDefinition cd WHERE cd.accessPolicy.id = :policyId OR cd.contractPolicy.id = :policyId", 
                 ContractDefinition.class);
             query.setParameter("policyId", policyToDelete.id);
             List<ContractDefinition> contractDefs = query.getResultList();
@@ -415,6 +567,18 @@ public class EDCPolicyService {
         }
         
         try {
+            // Double-check if there are any remaining references before deletion
+            TypedQuery<Long> checkQuery = entityManager.createQuery(
+                "SELECT COUNT(cd.id) FROM ContractDefinition cd WHERE cd.accessPolicy.id = :policyId OR cd.contractPolicy.id = :policyId", 
+                Long.class);
+            checkQuery.setParameter("policyId", policyToDelete.id);
+            Long referenceCount = checkQuery.getSingleResult();
+            
+            if (referenceCount > 0) {
+                LOG.error("Cannot delete policy " + id + ": Still referenced by " + referenceCount + " contract definitions");
+                return false;
+            }
+            
             // Now delete the policy itself
             entityManager.remove(policyToDelete);
             entityManager.flush(); // Force the delete to happen now
@@ -422,10 +586,14 @@ public class EDCPolicyService {
             return true;
         } catch (Exception e) {
             LOG.error("Error deleting policy " + id + " via EntityManager", e);
-            // Fall back to PanacheEntityBase.deleteById
-            boolean result = Policy.deleteById(id);
-            LOG.info("Delete operation for policy " + id + " via PanacheEntityBase returned: " + result);
-            return result;
+            // Fall back to PanacheEntityBase.deleteById only if it's not a constraint violation
+            if (!(e instanceof jakarta.persistence.PersistenceException && e.getCause() != null && 
+                  e.getCause().toString().contains("ConstraintViolationException"))) {
+                boolean result = Policy.deleteById(id);
+                LOG.info("Delete operation for policy " + id + " via PanacheEntityBase returned: " + result);
+                return result;
+            }
+            return false;
         }
     }
     

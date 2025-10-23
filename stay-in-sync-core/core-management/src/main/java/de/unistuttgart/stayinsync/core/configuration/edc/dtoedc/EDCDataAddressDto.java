@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import java.util.Map;
 
 /**
  * Data Transfer Object (DTO) für EDC-DataAddress.
@@ -35,6 +36,24 @@ public record EDCDataAddressDto(
     @JsonProperty("baseUrl")
     @NotBlank
     String baseUrl,
+    
+    /**
+     * Der Pfad, der an die Basis-URL angehängt werden soll.
+     */
+    @JsonProperty("path")
+    String path,
+    
+    /**
+     * Query-Parameter als String. Muss aus Kompatibilitätsgründen wieder als String gespeichert werden.
+     */
+    @JsonProperty("queryParams")
+    String queryParams,
+    
+    /**
+     * Header-Parameter als Map von Schlüssel-Wert-Paaren.
+     */
+    @JsonProperty("headerParams")
+    Map<String, String> headerParams,
 
     /**
      * Gibt an, ob der Pfad beim Proxy-Zugriff übernommen werden soll.
@@ -52,7 +71,7 @@ public record EDCDataAddressDto(
      * Standardkonstruktor mit Defaultwerten.
      */
     public EDCDataAddressDto() {
-        this(null, "DataAddress", "HttpData", "", true, true);
+        this(null, "DataAddress", "HttpData", "", null, null, null, true, true);
     }
     
     /**
@@ -61,7 +80,7 @@ public record EDCDataAddressDto(
      * @param baseUrl Die Basis-URL für den Zugriff auf die Daten
      */
     public EDCDataAddressDto(String baseUrl) {
-        this(null, "DataAddress", "HttpData", baseUrl, true, true);
+        this(null, "DataAddress", "HttpData", baseUrl, null, null, null, true, true);
     }
 
     /**
@@ -82,6 +101,7 @@ public record EDCDataAddressDto(
      */
     public EDCDataAddressDto withId(Long id) {
         return new EDCDataAddressDto(id, this.jsonLDType, this.type, this.baseUrl, 
+                                    this.path, this.queryParams, this.headerParams,
                                     this.proxyPath, this.proxyQueryParams);
     }
 
@@ -93,6 +113,7 @@ public record EDCDataAddressDto(
      */
     public EDCDataAddressDto withJsonLDType(String jsonLDType) {
         return new EDCDataAddressDto(this.id, jsonLDType, this.type, this.baseUrl, 
+                                    this.path, this.queryParams, this.headerParams,
                                     this.proxyPath, this.proxyQueryParams);
     }
 
@@ -104,6 +125,7 @@ public record EDCDataAddressDto(
      */
     public EDCDataAddressDto withType(String type) {
         return new EDCDataAddressDto(this.id, this.jsonLDType, type, this.baseUrl, 
+                                    this.path, this.queryParams, this.headerParams,
                                     this.proxyPath, this.proxyQueryParams);
     }
 
@@ -115,6 +137,43 @@ public record EDCDataAddressDto(
      */
     public EDCDataAddressDto withBaseUrl(String baseUrl) {
         return new EDCDataAddressDto(this.id, this.jsonLDType, this.type, baseUrl, 
+                                    this.path, this.queryParams, this.headerParams,
+                                    this.proxyPath, this.proxyQueryParams);
+    }
+    
+    /**
+     * Erstellt ein neues DTO mit dem angegebenen Pfad.
+     * 
+     * @param path Der neue Pfad
+     * @return Ein neues DTO mit dem angegebenen Pfad
+     */
+    public EDCDataAddressDto withPath(String path) {
+        return new EDCDataAddressDto(this.id, this.jsonLDType, this.type, this.baseUrl, 
+                                    path, this.queryParams, this.headerParams,
+                                    this.proxyPath, this.proxyQueryParams);
+    }
+    
+    /**
+     * Erstellt ein neues DTO mit den angegebenen Query-Parametern.
+     * 
+     * @param queryParams Die neuen Query-Parameter
+     * @return Ein neues DTO mit den angegebenen Query-Parametern
+     */
+    public EDCDataAddressDto withQueryParams(String queryParams) {
+        return new EDCDataAddressDto(this.id, this.jsonLDType, this.type, this.baseUrl, 
+                                    this.path, queryParams, this.headerParams,
+                                    this.proxyPath, this.proxyQueryParams);
+    }
+    
+    /**
+     * Erstellt ein neues DTO mit den angegebenen Header-Parametern.
+     * 
+     * @param headerParams Die neuen Header-Parameter
+     * @return Ein neues DTO mit den angegebenen Header-Parametern
+     */
+    public EDCDataAddressDto withHeaderParams(Map<String, String> headerParams) {
+        return new EDCDataAddressDto(this.id, this.jsonLDType, this.type, this.baseUrl, 
+                                    this.path, this.queryParams, headerParams,
                                     this.proxyPath, this.proxyQueryParams);
     }
 
@@ -136,6 +195,7 @@ public record EDCDataAddressDto(
      */
     public EDCDataAddressDto withProxyPath(Boolean proxyPath) {
         return new EDCDataAddressDto(this.id, this.jsonLDType, this.type, this.baseUrl, 
+                                    this.path, this.queryParams, this.headerParams,
                                     proxyPath, this.proxyQueryParams);
     }
 
@@ -147,6 +207,7 @@ public record EDCDataAddressDto(
      */
     public EDCDataAddressDto withProxyQueryParams(Boolean proxyQueryParams) {
         return new EDCDataAddressDto(this.id, this.jsonLDType, this.type, this.baseUrl, 
+                                    this.path, this.queryParams, this.headerParams,
                                     this.proxyPath, proxyQueryParams);
     }
     

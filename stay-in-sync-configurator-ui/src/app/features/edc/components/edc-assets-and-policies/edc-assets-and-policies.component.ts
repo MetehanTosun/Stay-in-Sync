@@ -87,6 +87,7 @@ export class EdcAssetsAndPoliciesComponent implements OnInit, OnDestroy {
   policyLoading: boolean = true;
   displayNewAccessPolicyDialog: boolean = false;
   displayNewContractPolicyDialog: boolean = false;
+  contractDefId: string = ''; // Hinzugefügt: Feld für Contract Definition ID
 
   newContractPolicy: {
     id: string;
@@ -292,7 +293,7 @@ filteredContractDefinitions: UiContractDefinition[] = [];
           },
           "dataAddress": {
             "type": "HttpData",
-            "base_url": ""
+            "baseUrl": "https://example.com" // Korrigiert auf baseUrl statt base_url mit einem gültigen Beispielwert
           }
         }
       }
@@ -328,12 +329,22 @@ filteredContractDefinitions: UiContractDefinition[] = [];
     this.back.emit();
   }
 
+  /**
+   * Hilfsfunktion, die sicherstellt, dass die instance.id als String zurückgegeben wird
+   */
+  private getInstanceId(): string {
+    if (this.instance && this.instance.id !== null) {
+      return String(this.instance.id);
+    }
+    throw new Error("EDC-Instance ID ist nicht verfügbar");
+  }
+
   private async loadAssets(): Promise<void> {
     this.assetLoading = true;
     try {
       console.log('Lade Assets für EDC-ID:', this.instance.id);
       console.log('Full EDC instance:', this.instance);
-      const response = await lastValueFrom(this.assetService.getAssets(this.instance.id));
+      const response = await lastValueFrom(this.assetService.getAssets(this.getInstanceId()));
       console.log('Assets geladen:', response);
       console.log('Anzahl geladener Assets:', response.length);
       this.assets = response;
@@ -371,8 +382,8 @@ filteredContractDefinitions: UiContractDefinition[] = [];
   this.policyLoading = true;
 
     forkJoin({
-    accessPolicies: this.policyService.getPolicies(this.instance.id),
-    contractDefinitions: this.policyService.getContractDefinitions(this.instance.id)
+    accessPolicies: this.policyService.getPolicies(this.getInstanceId()),
+    contractDefinitions: this.policyService.getContractDefinitions(this.getInstanceId())
     }).subscribe({
     next: ({ accessPolicies, contractDefinitions }) => {
       // Policy-Map für schnellen Lookup (ODRL-ID => Policy)
@@ -391,6 +402,14 @@ filteredContractDefinitions: UiContractDefinition[] = [];
       this.allOdrlContractDefinitions = contractDefinitions;
 
   this.allContractDefinitions = contractDefinitions.map((cd): UiContractDefinition => {
+        console.log("Converting ContractDefinition to UI format:", cd); // Log to see what's coming from backend
+        
+        // Stelle sicher, dass wir die numerische DB-ID und contractDefinitionId haben
+        const dbId = cd.id || (cd as any).dbId || null;
+        const contractDefinitionId = cd['@id'] || (cd as any).contractDefinitionId || null;
+        
+        console.log(`ContractDefinition mapping - DB ID: ${dbId}, contractDefinitionId: ${contractDefinitionId}`);
+        
         const candidates: string[] = [
           cd.accessPolicyId as any,
           (cd as any).accessPolicyIdStr,
@@ -408,9 +427,10 @@ filteredContractDefinitions: UiContractDefinition[] = [];
         const assetIds = (cd.assetsSelector && cd.assetsSelector.length)
           ? cd.assetsSelector.map((s: any) => s.operandRight).join(', ')
           : (cd as any).assetId || 'Unknown Asset';
-
+        
         return {
-          id: cd['@id'],
+          id: dbId,                   // Speichere die DB-ID für DELETE-Operationen
+          contractDefinitionId,      // Speichere die Contract Definition ID für Anzeige
           assetId: assetIds,
           bpn: parentPolicy?.bpn || 'Unknown BPN',
           accessPolicyId: parentPolicy?.policyId || parentPolicy?.['@id'] || parentPolicy?.dbId || ''
@@ -532,9 +552,16 @@ filteredContractDefinitions: UiContractDefinition[] = [];
     if (defaultTemplate) {
       const templateContent = JSON.parse(JSON.stringify(defaultTemplate.content));
       templateContent['@id'] = ""; // Start with a blank ID
+      // Setze die manualBaseUrl aus dem Template
+      if (templateContent.dataAddress && templateContent.dataAddress.baseUrl) {
+        this.manualBaseUrl = templateContent.dataAddress.baseUrl;
+      } else {
+        this.manualBaseUrl = "https://example.com"; // Standard-Wert
+      }
       this.expertModeJsonContent = JSON.stringify(templateContent, null, 2);
     } else {
       this.expertModeJsonContent = '{}'; // Fallback to an empty object
+      this.manualBaseUrl = "https://example.com"; // Standard-Wert
     }
     this.displayNewAssetDialog = true;
   }
@@ -572,14 +599,48 @@ filteredContractDefinitions: UiContractDefinition[] = [];
     }
 
     // The service layer requires the targetEDCId to be set.
-    assetJson.targetEDCId = this.instance.id;
+    assetJson.targetEDCId = this.getInstanceId();
 
     // The createAsset service method expects assetId to be a top-level property for the mock to work correctly.
     assetJson.assetId = assetJson['@id'];
+    
+    // Sicherstellen, dass die Datenstruktur korrekt ist
+    if (!assetJson.dataAddress) {
+      assetJson.dataAddress = { type: 'HttpData' };
+    }
+    
+    // Sicherstellen, dass baseUrl und nicht base_url verwendet wird
+    if (assetJson.dataAddress.base_url && !assetJson.dataAddress.baseUrl) {
+      assetJson.dataAddress.baseUrl = assetJson.dataAddress.base_url;
+      delete assetJson.dataAddress.base_url;
+    }
+    
+    // Validiere, dass baseUrl eine gültige URL ist
+    if (assetJson.dataAddress.baseUrl) {
+      try {
+        // Versuche, die URL zu validieren
+        if (!assetJson.dataAddress.baseUrl.startsWith('http://') && 
+            !assetJson.dataAddress.baseUrl.startsWith('https://')) {
+          // Füge http:// hinzu, wenn kein Protokoll angegeben ist
+          assetJson.dataAddress.baseUrl = 'http://' + assetJson.dataAddress.baseUrl;
+        }
+        new URL(assetJson.dataAddress.baseUrl);
+      } catch (e) {
+        throw new Error('Die angegebene baseUrl ist keine gültige URL. Bitte geben Sie eine vollständige URL ein (z.B. https://example.com).');
+      }
+    }
+    
+    // Sicherstellen, dass die Pflichtfelder in properties vorhanden sind
+    if (!assetJson.properties['asset:prop:name']) {
+      assetJson.properties['asset:prop:name'] = assetJson['@id']; // Fallback-Name
+    }
+    if (!assetJson.properties['asset:prop:contenttype']) {
+      assetJson.properties['asset:prop:contenttype'] = 'application/json'; // Standard-Contenttype
+    }
 
     console.log('Sending Asset to Backend:', JSON.stringify(assetJson, null, 2));
     try {
-      const response = await lastValueFrom(this.assetService.createAsset(this.instance.id, assetJson));
+      const response = await lastValueFrom(this.assetService.createAsset(this.getInstanceId(), assetJson));
       console.log('Asset successfully created:', response);
       this.messageService.add({
         severity: 'success',
@@ -593,12 +654,24 @@ filteredContractDefinitions: UiContractDefinition[] = [];
       // Detailliertere Fehlermeldung
       let detail = 'Failed to save asset.';
 
-      if (err.error && err.error.message) {
-        detail = `Server error: ${err.error.message}`;
+      if (err.error) {
+        if (err.error.message) {
+          detail = `Server error: ${err.error.message}`;
+        } else if (err.error.detail) {
+          detail = `Server error: ${err.error.detail}`;
+        } else if (typeof err.error === 'string') {
+          detail = `Server error: ${err.error}`;
+        }
+        console.log('Vollständige Fehlerdetails:', err.error);
       } else if (err.message) {
         detail = err.message;
       } else if (typeof err === 'object') {
         detail = JSON.stringify(err);
+      }
+
+      // Speziellen Hinweis geben, wenn es ein 500er Fehler ist
+      if (err.status === 500) {
+        detail += ' (Status 500: Interner Serverfehler. Das Asset-Format könnte nicht den Server-Anforderungen entsprechen.)';
       }
 
       this.messageService.add({ severity: 'error', summary: 'Error', detail });
@@ -657,9 +730,14 @@ filteredContractDefinitions: UiContractDefinition[] = [];
       currentAssetJson.dataAddress = { type: 'HttpData' }; // Default type
     }
 
-    // If in manual mode, use the manualBaseUrl field to set the base_url
+    // If in manual mode, use the manualBaseUrl field to set the baseUrl
     if (this.isManualAssetCreation) {
-      currentAssetJson.dataAddress.base_url = this.manualBaseUrl;
+      // Sicherstellen, dass 'baseUrl' (nicht 'base_url') verwendet wird - das Backend erwartet baseUrl
+      currentAssetJson.dataAddress.baseUrl = this.manualBaseUrl;
+      // Lösche base_url falls vorhanden, um Konflikte zu vermeiden
+      if (currentAssetJson.dataAddress.base_url) {
+        delete currentAssetJson.dataAddress.base_url;
+      }
     }
 
 
@@ -739,8 +817,8 @@ filteredContractDefinitions: UiContractDefinition[] = [];
   }
 
   private populateAssetFormFromDataAddress(dataAddress: any): void {
-    // Hier liegt ein kritischer Fehler vor: base_url vs. baseUrl
-    // Wir müssen alle möglichen Felder prüfen, da das Backend base_url erwartet, aber das Frontend
+    // Korrigierter Kommentar: Das Backend erwartet baseUrl (nicht base_url)
+    // Wir müssen die konsistente Verwendung von baseUrl sicherstellen
     this.pathParamId = dataAddress.path || '';
 
     // Parse queryParams string into key-value pairs
@@ -868,6 +946,20 @@ filteredContractDefinitions: UiContractDefinition[] = [];
   }
 
   /**
+   * Aktualisiert die Contract Definition ID im JSON basierend auf dem Eingabefeld
+   */
+  updateContractIdInJson(newId: string): void {
+    try {
+      const currentJson = JSON.parse(this.expertModeJsonContent || '{}');
+      currentJson['@id'] = newId; // Setze die ID im JSON
+      this.expertModeJsonContent = JSON.stringify(currentJson, null, 2);
+      console.log(`Contract Definition ID wurde auf "${newId}" aktualisiert`);
+    } catch (e) {
+      console.error('Fehler beim Aktualisieren der Contract ID im JSON:', e);
+    }
+  }
+
+  /**
    * Updates the contract definition JSON based on changes in the simple form.
    */
   syncJsonFromContractForm(): void {
@@ -894,6 +986,8 @@ filteredContractDefinitions: UiContractDefinition[] = [];
     this.isContractJsonComplex = false; // Reset
     try {
       const odrlPayload: OdrlContractDefinition = JSON.parse(this.expertModeJsonContent || '{}');
+      // Aktualisiere auch das Contract Definition ID Feld
+      this.contractDefId = odrlPayload['@id'] || '';
       const assetSelectors = odrlPayload.assetsSelector || [];
 
       // A contract is "complex" if it contains criteria that are not simple 'eq' or 'in' selectors on asset ID
@@ -1003,7 +1097,7 @@ filteredContractDefinitions: UiContractDefinition[] = [];
           }
 
           console.log('Uploading asset:', JSON.stringify(assetJson, null, 2));
-          await this.assetService.createAsset(this.instance.id, assetJson);
+          await this.assetService.createAsset(this.getInstanceId(), assetJson);
           successfulUploads.push(file.name);
         } catch (error: any) {
           failedUploads.push({name: file.name, reason: error.message || 'Could not process file.'});
@@ -1055,7 +1149,7 @@ filteredContractDefinitions: UiContractDefinition[] = [];
 
     // Fallback: Einzelnes Asset vom Backend laden (nutzt UUID id)
     if (asset.id) {
-      this.assetService.getAssetRaw(this.instance.id, asset.id).subscribe({
+      this.assetService.getAssetRaw(this.getInstanceId(), asset.id).subscribe({
         next: (raw: any) => {
           this.assetToEditODRL = raw as any;
           this.expertModeJsonContent = JSON.stringify(this.assetToEditODRL, null, 2);
@@ -1093,7 +1187,7 @@ filteredContractDefinitions: UiContractDefinition[] = [];
 
       // Use the update service method instead of create
       console.log('Sending updated asset to backend:', JSON.stringify(assetJson, null, 2));
-      await lastValueFrom(this.assetService.updateAsset(this.instance.id, this.assetToEditODRL['@id'], assetJson));
+      await lastValueFrom(this.assetService.updateAsset(this.getInstanceId(), this.assetToEditODRL['@id'], assetJson));
       this.messageService.add({ severity: 'success', summary: 'Success', detail: 'Asset updated successfully.' });
       this.loadAssets();
       this.hideEditAssetDialog();
@@ -1115,7 +1209,7 @@ filteredContractDefinitions: UiContractDefinition[] = [];
           // Call the service to delete the asset
           // Backend erwartet die interne UUID (id), nicht die @id
           const deleteId = asset.id || asset.assetId;
-          await this.assetService.deleteAsset(this.instance.id, deleteId);
+          await this.assetService.deleteAsset(this.getInstanceId(), deleteId);
 
           // if success, update the UI
           this.assets = this.assets.filter((a) => a.assetId !== asset.assetId);
@@ -1180,7 +1274,7 @@ filteredContractDefinitions: UiContractDefinition[] = [];
 
   // Call:
   try {
-    const resp = await this.policyService.uploadPolicyDefinition(this.instance.id, raw).toPromise();
+    const resp = await this.policyService.uploadPolicyDefinition(this.getInstanceId(), raw).toPromise();
 
     // Erfolg nur, wenn Server 2xx und eine ID zurückkommt (oder wenigstens 201)
     const body: any = resp?.body ?? {};
@@ -1267,10 +1361,10 @@ filteredContractDefinitions: UiContractDefinition[] = [];
       }
 
       console.log('Saving edited policy with dbId:', policyJson.dbId);
-      await lastValueFrom(this.policyService.uploadPolicyDefinition(this.instance.id, policyJson));
+      await lastValueFrom(this.policyService.uploadPolicyDefinition(this.getInstanceId(), policyJson));
 
       // Nach dem Speichern die Daten neu laden
-      await lastValueFrom(this.policyService.getPolicies(this.instance.id).pipe(
+      await lastValueFrom(this.policyService.getPolicies(this.getInstanceId()).pipe(
         tap((policies: OdrlPolicyDefinition[]) => {
           console.log('Reloaded policies after edit:', policies);
           this.allAccessPolicies = policies;
@@ -1303,7 +1397,7 @@ filteredContractDefinitions: UiContractDefinition[] = [];
           throw new Error('Policy has no dbId, cannot delete');
         }
         console.log('Deleting policy with dbId:', policy.dbId, 'for EDC:', this.instance.id);
-        await lastValueFrom(this.policyService.deletePolicy(this.instance.id, policy.dbId));
+        await lastValueFrom(this.policyService.deletePolicy(this.getInstanceId(), policy.dbId));
 
         console.log('Policy deleted successfully, reloading data from server...');
         // Nach dem Löschen neu laden, anstatt nur die lokalen Arrays zu filtern
@@ -1408,7 +1502,7 @@ filteredContractDefinitions: UiContractDefinition[] = [];
           }
 
 
-          await this.policyService.uploadPolicyDefinition(this.instance.id, policyJson);
+          await this.policyService.uploadPolicyDefinition(this.getInstanceId(), policyJson);
           successfulUploads.push(file.name);
         } catch (error: any) {
           failedUploads.push({name: file.name, reason: error.message || 'Could not process file.'});
@@ -1467,11 +1561,12 @@ filteredContractDefinitions: UiContractDefinition[] = [];
     }));
     this.selectedAssetsInDialog = []; // Clear previous selections
     this.newContractPolicy = this.createEmptyContractPolicy();
+    this.contractDefId = ''; // Zurücksetzen der Contract Definition ID
 
-    // Create a default empty JSON structure
+    // Create a default empty JSON structure ohne automatisch generierte ID
     this.expertModeJsonContent = JSON.stringify({
       '@context': { edc: 'https://w3id.org/edc/v0.0.1/ns/' },
-      '@id': `contract-def-new-${Date.now()}`,
+      '@id': '', // Benutzer muss die ID selbst eingeben
       accessPolicyId: '',
       contractPolicyId: '',
       assetsSelector: [],
@@ -1515,8 +1610,8 @@ filteredContractDefinitions: UiContractDefinition[] = [];
       // Ensure required fields for backend DTO
       let contractDefinitionId = String(raw['@id'] || '').trim();
       if (!contractDefinitionId) {
-        contractDefinitionId = `contract-def-${Date.now()}`;
-        raw['@id'] = contractDefinitionId;
+        // Keine automatische ID-Generierung mehr
+        throw new Error("Contract Definition ID is required. Please enter a valid ID in the form or JSON.");
       }
 
       // Determine accessPolicyId string from simple form selection or raw JSON
@@ -1556,7 +1651,7 @@ filteredContractDefinitions: UiContractDefinition[] = [];
         rawJson: JSON.stringify(raw)
       };
 
-  await lastValueFrom(this.policyService.createContractDefinition(this.instance.id, dto as any));
+  await lastValueFrom(this.policyService.createContractDefinition(this.getInstanceId(), dto as any));
       this.messageService.add({ severity: 'success', summary: 'Success', detail: 'Contract Definition created successfully.' });
       this.loadPoliciesAndDefinitions();
       this.hideNewContractPolicyDialog();
@@ -1637,14 +1732,16 @@ filteredContractDefinitions: UiContractDefinition[] = [];
           }
 
 
-          await lastValueFrom(this.policyService.createContractDefinition(this.instance.id, contractDefJson));
+          await lastValueFrom(this.policyService.createContractDefinition(this.getInstanceId(), contractDefJson));
 
           const parentPolicy = this.allAccessPolicies.find(p =>
             p.policyId === contractDefJson.accessPolicyId ||
             p['@id'] === contractDefJson.accessPolicyId
           );
+          // Temporäre ID verwenden bis wir die tatsächliche DB-ID kennen
           this.allContractDefinitions.unshift({
-            id: contractDefJson['@id'],
+            id: 0, // Temporäre ID, wird später durch echte DB-ID ersetzt
+            contractDefinitionId: contractDefJson['@id'],
             assetId: selector.operandRight,
             bpn: parentPolicy?.bpn || 'Unknown BPN',
             accessPolicyId: contractDefJson.accessPolicyId
@@ -1740,8 +1837,8 @@ filteredContractDefinitions: UiContractDefinition[] = [];
      this.isExpertMode = false; // Default to normal mode
      this.isComplexSelectorForEdit = false; // Reset
 
-     // Find the full ODRL object for expert mode
-     this.contractDefinitionToEditODRL = this.allOdrlContractDefinitions.find(cd => cd['@id'] === contractPolicy.id) ?? null;
+     // Find the full ODRL object for expert mode - Vergleiche mit contractDefinitionId statt id
+     this.contractDefinitionToEditODRL = this.allOdrlContractDefinitions.find(cd => cd['@id'] === contractPolicy.contractDefinitionId) ?? null;
 
      if (!this.contractDefinitionToEditODRL) {
        this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Could not find the full contract definition to edit.' });
@@ -1882,7 +1979,7 @@ filteredContractDefinitions: UiContractDefinition[] = [];
         return;
       }
 
-      await this.policyService.updateContractDefinition(this.instance.id, odrlPayload);
+      await this.policyService.updateContractDefinition(this.getInstanceId(), odrlPayload);
 
       // Update the UI model by reloading everything to ensure data consistency
       await this.loadPoliciesAndDefinitions();
@@ -1908,7 +2005,9 @@ filteredContractDefinitions: UiContractDefinition[] = [];
     icon: 'pi pi-exclamation-triangle',
     accept: async () => {
       try {
-        await this.policyService.deleteContractDefinition(this.instance.id, contractPolicy.id);
+        // Log die ID, die zum Löschen verwendet wird
+        console.log(`Deleting contract definition with ID: ${contractPolicy.id}, contractDefinitionId: ${contractPolicy.contractDefinitionId}`);
+        await this.policyService.deleteContractDefinition(this.getInstanceId(), contractPolicy.id);
 
         // UI-Listen aktualisieren
         this.allContractDefinitions = this.allContractDefinitions.filter(cd => cd.id !== contractPolicy.id);
@@ -2264,13 +2363,13 @@ viewContractDefinitionDetails(event: TableRowSelectEvent): void {
   const contractPolicy = event.data as UiContractDefinition;
 
   const odrlContractDef = this.allOdrlContractDefinitions.find(
-    cd => cd['@id'] === contractPolicy.id
+    cd => cd['@id'] === contractPolicy.contractDefinitionId
   );
 
   if (odrlContractDef) {
     // Raw JSON
     this.jsonToView = JSON.stringify(odrlContractDef, null, 2);
-    this.viewDialogHeader = `Details for Contract Definition: ${contractPolicy.id}`;
+    this.viewDialogHeader = `Details for Contract Definition: ${contractPolicy.contractDefinitionId || contractPolicy.id}`;
 
     // Verknüpfte Access Policy suchen
     this.linkedAccessPolicy = this.allAccessPolicies.find(p =>

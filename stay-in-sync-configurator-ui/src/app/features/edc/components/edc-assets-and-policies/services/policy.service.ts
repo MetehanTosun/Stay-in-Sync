@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpResponse } from '@angular/common/http';
-import { Observable, map, of, delay, tap } from 'rxjs';
+import { Observable, map, of, delay, tap, switchMap } from 'rxjs';
 import {
   OdrlPolicyDefinition,
   OdrlContractDefinition,
@@ -281,11 +281,17 @@ export class PolicyService {
       console.warn(`Mock Mode: Fetching contract definitions for EDC ID: ${edcId}`);
       return of(MOCK_CONTRACT_DEFINITIONS[edcId] || []).pipe(delay(300));
     }
+    
+    console.log(`Fetching contract definitions for EDC ID: ${edcId}`);
     return this.http.get<any[]>(`${this.baseUrl}/${edcId}/contract-definitions`).pipe(
+      tap(dtos => console.log('Raw contract definitions from backend:', dtos)),
       map((dtos) => (dtos || []).map((dto) => {
-  const cdId = dto.contractDefinitionId || dto['@id'] || dto.id || '';
+        // Map backend DTO structure to frontend model
+        const cdId = dto.contractDefinitionId || dto['@id'] || dto.id || '';
         const assetId = dto.assetId || '';
         const accessPolicyId = dto.accessPolicyIdStr || dto.accessPolicyId || '';
+        const contractPolicyId = dto.contractPolicyIdStr || dto.contractPolicyId || '';
+        
         const assetsSelector = assetId
           ? [{
               operandLeft: 'https://w3id.org/edc/v0.0.1/ns/id',
@@ -293,13 +299,17 @@ export class PolicyService {
               operandRight: assetId,
             }]
           : [];
+          
         return {
           ...dto,
-          ['@id']: cdId,
+          id: dto.id,             // Keep the numeric id for backend operations
+          '@id': cdId,            // Use contractDefinitionId for display
           assetsSelector,
           accessPolicyId,
+          contractPolicyId,
         } as OdrlContractDefinition;
-      }))
+      })),
+      tap(mappedDtos => console.log('Mapped contract definitions for frontend:', mappedDtos))
     );
   }
 
@@ -314,7 +324,20 @@ export class PolicyService {
       MOCK_CONTRACT_DEFINITIONS[edcId].push(cd);
       return of(cd).pipe(delay(300));
     }
-    return this.http.post(`${this.baseUrl}/${edcId}/contract-definitions`, cd);
+    
+    // Map frontend model to backend DTO structure
+    const backendDto = {
+      ...cd,
+      contractDefinitionId: cd['@id'], // Backend expects contractDefinitionId 
+    };
+    
+    console.log(`Sending POST request to ${this.baseUrl}/${edcId}/contract-definitions`, backendDto);
+    return this.http.post(`${this.baseUrl}/${edcId}/contract-definitions`, backendDto).pipe(
+      tap(
+        (response) => console.log(`Successfully created contract definition`, response),
+        (error: any) => console.error(`Error creating contract definition:`, error)
+      )
+    );
   }
 
   // updateContractDefinition(cd: OdrlContractDefinition): Observable<any> {
@@ -330,21 +353,67 @@ export class PolicyService {
       }
       return of(cd).pipe(delay(300));
     }
-    return this.http.put(`${this.baseUrl}/${edcId}/contract-definitions/${cd['@id']}`, cd);
+    
+    // Ensure we have a valid ID for the URL - use id if available, otherwise @id
+    const idForUrl = cd.id || cd['@id'];
+    
+    console.log(`Sending PUT request to ${this.baseUrl}/${edcId}/contract-definitions/${idForUrl}`, {
+      ...cd,
+      // Map from frontend model to backend DTO structure
+      contractDefinitionId: cd['@id'] // Backend expects contractDefinitionId
+    });
+    
+    return this.http.put(`${this.baseUrl}/${edcId}/contract-definitions/${idForUrl}`, {
+      ...cd,
+      contractDefinitionId: cd['@id'] // Backend expects contractDefinitionId
+    }).pipe(
+      tap(
+        (response) => console.log(`Successfully updated contract definition ${idForUrl}`, response),
+        (error: any) => console.error(`Error updating contract definition ${idForUrl}:`, error)
+      )
+    );
   }
 
   // deleteContractDefinition(id: string): Observable<void> {
   //   return this.http.delete<void>(`${this.contractDefUrl}/${id}`);
-  deleteContractDefinition(edcId: string, id: string): Observable<void> {
+  deleteContractDefinition(edcId: string, id: string | number): Observable<void> {
     if (this.mockMode) {
       console.warn(`Mock Mode: Deleting contract definition ${id} for EDC ID: ${edcId}`);
       if (MOCK_CONTRACT_DEFINITIONS[edcId]) {
         MOCK_CONTRACT_DEFINITIONS[edcId] = MOCK_CONTRACT_DEFINITIONS[edcId].filter(
-          cd => cd['@id'] !== id
+          cd => cd['@id'] !== id && cd.id !== id // Check both ID types
         );
       }
       return of(undefined).pipe(delay(300));
     }
-    return this.http.delete<void>(`${this.baseUrl}/${edcId}/contract-definitions/${id}`);
+    
+    // ID kann entweder eine numerische DB-ID (z.B. 1) oder eine String-ID (z.B. contract-1234) sein
+    // Wir nehmen die numerische DB-ID, wenn es ein Objekt mit dieser ID gibt
+    return this.getContractDefinitions(edcId).pipe(
+      map(definitions => {
+        // Suchen nach einem Match entweder für @id oder id
+        const definition = definitions.find(def => 
+          def['@id'] === id || 
+          def.id === id ||
+          String(def.id) === String(id)
+        );
+        
+        if (definition) {
+          // Wenn wir eine Definition finden, verwenden wir die numerische DB-ID
+          return definition.id;
+        }
+        // Ansonsten verwenden wir die ID, die übergeben wurde
+        return id;
+      }),
+      switchMap((resolvedId: string | number) => {
+        console.log(`Sending DELETE request to ${this.baseUrl}/${edcId}/contract-definitions/${resolvedId}`);
+        return this.http.delete<void>(`${this.baseUrl}/${edcId}/contract-definitions/${resolvedId}`).pipe(
+          tap(
+            () => console.log(`Successfully deleted contract definition ${id} (resolved to ID: ${resolvedId})`),
+            (error: any) => console.error(`Error deleting contract definition ${id} (resolved to ID: ${resolvedId}):`, error)
+          )
+        );
+      })
+    );
   }
 }

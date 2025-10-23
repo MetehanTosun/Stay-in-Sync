@@ -76,13 +76,18 @@ public interface EDCPolicyMapper {
     @Named("jsonToMap")
     default Map<String, Object> jsonToMap(String json) {
         if (json == null || json.isEmpty()) {
+            Log.info("Policy JSON is null or empty, returning empty map");
             return new HashMap<>();
         }
         
         try {
-            return objectMapper.readValue(json, new TypeReference<Map<String, Object>>() {});
+            Log.debug("Converting JSON to Map: " + json);
+            Map<String, Object> result = objectMapper.readValue(json, new TypeReference<Map<String, Object>>() {});
+            Log.debug("Successfully converted JSON to Map");
+            return result;
         } catch (IOException e) {
-            Log.error("Fehler beim Deserialisieren des Policy-JSON: " + e.getMessage(), e);
+            Log.error("Fehler beim Deserialisieren des Policy-JSON: " + e.getMessage() + ", JSON: " + json, e);
+            // Im Fehlerfall eine leere Map zurückgeben, um NPEs zu vermeiden
             return new HashMap<>();
         }
     }

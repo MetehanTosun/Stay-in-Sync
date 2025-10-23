@@ -1,8 +1,12 @@
 package de.unistuttgart.stayinsync.core.configuration.edc.service;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import de.unistuttgart.stayinsync.core.configuration.edc.dtoedc.EDCAssetDto;
+import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
+import java.util.logging.Logger;
 import de.unistuttgart.stayinsync.core.configuration.edc.dtoedc.EDCDataAddressDto;
 import de.unistuttgart.stayinsync.core.configuration.edc.entities.Asset;
 import de.unistuttgart.stayinsync.core.configuration.edc.entities.DataAddress;
@@ -35,12 +39,14 @@ import java.util.stream.Collectors;
  */
 @ApplicationScoped
 public class EDCAssetService {
-
-    @PersistenceContext
-    EntityManager entityManager;
+    
+    private static final Logger LOG = Logger.getLogger(EDCAssetService.class.getName());
 
     @Inject
-    ObjectMapper objectMapper;
+    EntityManager entityManager;
+    
+    @Inject
+    HttpDataFetcherService httpDataFetcherService;
 
     /**
      * Erstellt einen EDC-Client für die angegebene Basis-URL.
@@ -137,6 +143,27 @@ public class EDCAssetService {
                 // Erstelle ein neues CreateEDCAssetDTO mit der Asset-ID und der URL
                 CreateEDCAssetDTO edcAssetDTO = new CreateEDCAssetDTO(urlToUse);
                 edcAssetDTO.setId(asset.assetId != null ? asset.assetId : "asset-" + UUID.randomUUID());
+                
+                // Übertrage die zusätzlichen Parameter auf das DTO
+                if (asset.dataAddress != null) {
+                    // Path übertragen
+                    if (asset.dataAddress.path != null && !asset.dataAddress.path.isEmpty()) {
+                        edcAssetDTO.getDataAddress().setPath(asset.dataAddress.path);
+                        LOG.info("Übertrage path an EDC: " + asset.dataAddress.path);
+                    }
+                    
+                    // QueryParams übertragen
+                    if (asset.dataAddress.queryParams != null && !asset.dataAddress.queryParams.isEmpty()) {
+                        edcAssetDTO.getDataAddress().setQueryParams(asset.dataAddress.queryParams);
+                        LOG.info("Übertrage queryParams an EDC: " + asset.dataAddress.queryParams);
+                    }
+                    
+                    // HeaderParams direkt als String übertragen
+                    if (asset.dataAddress.headerParams != null && !asset.dataAddress.headerParams.isEmpty()) {
+                        edcAssetDTO.getDataAddress().setHeaderParams(asset.dataAddress.headerParams);
+                        LOG.info("Übertrage headerParams an EDC als String");
+                    }
+                }
                 
                 if (asset.description != null) {
                     edcAssetDTO.getProperties().setDescription(asset.description);
@@ -657,6 +684,76 @@ public class EDCAssetService {
             proxyPath = extractProxyPath(daMap);
             proxyQueryParams = extractProxyQueryParams(daMap);
         }
+        
+        // Extrahiere path, queryParams und headerParams aus daMap
+        String dataAddressPath = null;
+        Map<String, String> dataAddressQueryParams = null;
+        String queryParamsString = null; // Für die direkte Weitergabe an EDC
+        Map<String, String> dataAddressHeaderParams = new HashMap<>();
+        
+        if (frontendJson.containsKey("dataAddress") && frontendJson.get("dataAddress") instanceof Map) {
+            @SuppressWarnings("unchecked")
+            Map<String, Object> daMap = (Map<String, Object>) frontendJson.get("dataAddress");
+            
+            // Pfad extrahieren
+            if (daMap.containsKey("path") && daMap.get("path") instanceof String) {
+                dataAddressPath = (String) daMap.get("path");
+                LOG.info("Extracted path from dataAddress: " + dataAddressPath);
+            }
+            
+            // Query-Parameter extrahieren - als String beibehalten (wie vom UI gesendet)
+            if (daMap.containsKey("queryParams")) {
+                Object queryParamsObj = daMap.get("queryParams");
+                String rawQueryParamsStr = null;
+                
+                if (queryParamsObj instanceof String) {
+                    // Direkt den String-Wert beibehalten
+                    rawQueryParamsStr = (String) queryParamsObj;
+                    // Für die Entität müssen wir es parsen
+                    dataAddressQueryParams = parseQueryParamsString(rawQueryParamsStr);
+                    LOG.info("Got queryParams string from frontend: " + rawQueryParamsStr);
+                } else if (queryParamsObj instanceof Map) {
+                    @SuppressWarnings("unchecked")
+                    Map<String, String> paramsMap = (Map<String, String>) queryParamsObj;
+                    dataAddressQueryParams = paramsMap;
+                    // Auch als String speichern für das DTO
+                    try {
+                        ObjectMapper objectMapper = new ObjectMapper();
+                        rawQueryParamsStr = objectMapper.writeValueAsString(paramsMap);
+                    } catch (Exception e) {
+                        LOG.warning("Fehler beim Konvertieren der Query-Parameter: " + e.getMessage());
+                    }
+                    LOG.info("Extracted queryParams from map");
+                }
+                
+                // Den Raw-String für die Weitergabe an EDC speichern
+                if (rawQueryParamsStr != null) {
+                    // Variable für das aktuelle Objekt speichern
+                    queryParamsString = rawQueryParamsStr;
+                }
+            }
+            
+            // Header-Parameter extrahieren - als einzelne Properties mit header: Präfix erwartet
+            // Suche nach header: Präfix-Feldern (wie im UI gesetzt)
+            for (Map.Entry<String, Object> entry : daMap.entrySet()) {
+                if (entry.getKey().toLowerCase().startsWith("header:") && entry.getValue() instanceof String) {
+                    String headerKey = entry.getKey().substring("header:".length());
+                    dataAddressHeaderParams.put(headerKey, (String) entry.getValue());
+                    LOG.info("Found header parameter: " + headerKey + "=" + entry.getValue());
+                }
+            }
+            
+            // Falls headerParams als Map vorhanden sind (für Abwärtskompatibilität)
+            if (daMap.containsKey("headerParams")) {
+                Object headerParamsObj = daMap.get("headerParams");
+                if (headerParamsObj instanceof Map) {
+                    @SuppressWarnings("unchecked")
+                    Map<String, String> headersMap = (Map<String, String>) headerParamsObj;
+                    dataAddressHeaderParams.putAll(headersMap);
+                    LOG.info("Added headerParams from map");
+                }
+            }
+        }
 
         // DataAddressDto erstellen
         EDCDataAddressDto dataAddressDto = new EDCDataAddressDto(
@@ -664,6 +761,9 @@ public class EDCAssetService {
             "DataAddress",           // jsonLDType
             dataAddressType,         // type
             baseUrl,                 // baseUrl
+            dataAddressPath,         // path
+            queryParamsString,       // queryParams als String für EDC-Integration
+            dataAddressHeaderParams.isEmpty() ? null : dataAddressHeaderParams, // headerParams
             proxyPath,               // proxyPath
             proxyQueryParams         // proxyQueryParams
         );
@@ -758,6 +858,42 @@ public class EDCAssetService {
             }
         }
         return true;
+    }
+
+    /**
+     * Hilfsmethode zum Parsen eines URL-Query-Parameter-Strings in eine Map.
+     * 
+     * @param queryParamsStr Ein String im Format "key1=value1&key2=value2"
+     * @return Eine Map mit den geparsten Query-Parametern
+     */
+    private Map<String, String> parseQueryParamsString(String queryParamsStr) {
+        if (queryParamsStr == null || queryParamsStr.isEmpty()) {
+            return null;
+        }
+        
+        Map<String, String> paramsMap = new HashMap<>();
+        String[] pairs = queryParamsStr.split("&");
+        
+        for (String pair : pairs) {
+            int idx = pair.indexOf("=");
+            if (idx > 0) {
+                String key = pair.substring(0, idx);
+                String value = idx < pair.length() - 1 ? pair.substring(idx + 1) : "";
+                
+                try {
+                    // URL-Decodierung der Parameter
+                    key = URLDecoder.decode(key, StandardCharsets.UTF_8);
+                    value = URLDecoder.decode(value, StandardCharsets.UTF_8);
+                    paramsMap.put(key, value);
+                } catch (IllegalArgumentException e) {
+                    // Bei Fehlern beim Decodieren, Original-Werte verwenden
+                    paramsMap.put(key, value);
+                    LOG.warning("Fehler beim Decodieren von URL-Parameter: " + e.getMessage());
+                }
+            }
+        }
+        
+        return paramsMap;
     }
 
     /**
@@ -879,6 +1015,31 @@ public class EDCAssetService {
             return "COMPLETED";  // Für Testzwecke immer COMPLETED zurückgeben
         } catch (Exception e) {
             throw new CustomException("Fehler beim Überprüfen des Transfer-Status: " + e.getMessage());
+        }
+    }
+    
+    /**
+     * Ruft Daten basierend auf einem Asset ab.
+     * Unterstützt jetzt auch erweiterte Parameter wie Pfad, Query-Parameter und Header-Parameter.
+     *
+     * @param assetId Die ID des Assets
+     * @return Die abgerufenen Daten als String
+     * @throws CustomException Wenn Fehler beim Abrufen auftreten
+     */
+    public String fetchAssetData(Long assetId) throws CustomException {
+        Asset asset = Asset.findById(assetId);
+        if (asset == null) {
+            throw new CustomException("Kein Asset mit ID " + assetId + " gefunden");
+        }
+        
+        if (asset.dataAddress == null) {
+            throw new CustomException("Asset hat keine DataAddress");
+        }
+        
+        try {
+            return httpDataFetcherService.fetchData(asset.dataAddress);
+        } catch (Exception e) {
+            throw new CustomException("Fehler beim Abrufen der Daten: " + e.getMessage(), e);
         }
     }
 }

@@ -1,7 +1,10 @@
 package de.unistuttgart.stayinsync.core.configuration.edc.service.edcconnector;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonInclude;
+import java.util.Map;
 
+@JsonInclude(JsonInclude.Include.NON_NULL)
 public class DataAddressDTO {
 
     @JsonProperty("@type")
@@ -15,6 +18,15 @@ public class DataAddressDTO {
     
     @JsonProperty(value = "properties")
     private Object properties;
+    
+    @JsonProperty(value = "path")
+    private String path;
+    
+    @JsonProperty(value = "queryParams")
+    private String queryParams;
+    
+    @JsonProperty(value = "headerParams")
+    private String headerParams;
 
     private String proxyPath = "true";
 
@@ -84,5 +96,29 @@ public class DataAddressDTO {
     
     public void setProperties(Object properties) {
         this.properties = properties;
+    }
+    
+    public String getPath() {
+        return path;
+    }
+
+    public void setPath(String path) {
+        this.path = path;
+    }
+
+    public String getQueryParams() {
+        return queryParams;
+    }
+
+    public void setQueryParams(String queryParams) {
+        this.queryParams = queryParams;
+    }
+
+    public String getHeaderParams() {
+        return headerParams;
+    }
+
+    public void setHeaderParams(String headerParams) {
+        this.headerParams = headerParams;
     }
 }

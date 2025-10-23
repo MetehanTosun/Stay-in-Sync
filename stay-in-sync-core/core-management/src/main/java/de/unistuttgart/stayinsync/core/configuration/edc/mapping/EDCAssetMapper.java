@@ -9,6 +9,8 @@ import org.mapstruct.Mapping;
 import org.mapstruct.Named;
 import org.mapstruct.factory.Mappers;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+
 import java.util.HashMap;
 import java.util.Map;
 
@@ -19,7 +21,7 @@ import java.util.Map;
  * Verwendet zusätzlich EDCDataAddressMapper und EDCPropertyMapper für die Konvertierung
  * der entsprechenden Unter-Objekte.
  */
-@Mapper(componentModel = "cdi")
+@Mapper
 public interface EDCAssetMapper {
 
     /**
@@ -87,6 +89,74 @@ public interface EDCAssetMapper {
         }
         return targetEDC.id;
     }
+    
+        /**
+     * Hilfsmethode zum Konvertieren eines Object-Typs in einen String.
+     * Wird für die Typumwandlung von queryParams benötigt.
+     * 
+     * @param obj Das zu konvertierende Objekt
+     * @return Der String-Wert des Objekts oder null
+     */
+    default String map(Object obj) {
+        if (obj == null) {
+            return null;
+        }
+        
+        if (obj instanceof String) {
+            return (String) obj;
+        }
+        
+        try {
+            if (obj instanceof Map) {
+                ObjectMapper objectMapper = new ObjectMapper();
+                return objectMapper.writeValueAsString(obj);
+            }
+        } catch (Exception e) {
+            System.err.println("Error converting object to string: " + e.getMessage());
+        }
+        
+        return obj.toString();
+    }
+    
+    /**
+     * Konvertiert eine Map<String, String> zu einem JSON-String.
+     * 
+     * @param value Die Map, die konvertiert werden soll
+     * @return Der JSON-String
+     */
+    default String map(Map<String, String> value) {
+        if (value == null || value.isEmpty()) {
+            return null;
+        }
+        try {
+            ObjectMapper objectMapper = new ObjectMapper();
+            return objectMapper.writeValueAsString(value);
+        } catch (Exception e) {
+            System.err.println("Error converting map to string: " + e.getMessage());
+            return "{}";
+        }
+    }
+    
+    /**
+     * Konvertiert einen JSON-String zu einer Map<String, String>.
+     * 
+     * @param value Der JSON-String, der konvertiert werden soll
+     * @return Die Map mit den Schlüssel-Wert-Paaren
+     */
+    default Map<String, String> mapStringToMap(String value) {
+        if (value == null || value.isBlank()) {
+            return null;
+        }
+        try {
+            ObjectMapper objectMapper = new ObjectMapper();
+            return objectMapper.readValue(value, 
+                objectMapper.getTypeFactory().constructMapType(
+                    HashMap.class, String.class, String.class));
+        } catch (Exception e) {
+            System.err.println("Error converting string to map: " + e.getMessage());
+            return new HashMap<>();
+        }
+    }
 
     /**
      * Helfermethode: mappt eine einzelne EDCProperty zu einer Map von Properties.
@@ -111,4 +181,40 @@ public interface EDCAssetMapper {
         EDCPropertyDto dto = new EDCPropertyDto(null, propertiesMap);
         return EDCPropertyMapper.INSTANCE.fromDto(dto);
     }
+
+    /**
+     * Wandelt einen String wie "key1=value1&key2=value2" in eine Map<String, String> um.
+     * Diese Methode ist für URL-Parameter-formatierte Strings gedacht.
+     */
+    @Named("urlParamStringToMap")
+    default Map<String, String> stringToMap(String value) {
+        if (value == null || value.isBlank()) {
+            return null;
+        }
+        Map<String, String> map = new HashMap<>();
+        for (String pair : value.split("&")) {
+            String[] kv = pair.split("=", 2);
+            if (kv.length == 2) {
+                map.put(kv[0], kv[1]);
+            }
+        }
+        return map;
+    }
+
+    /**
+     * Wandelt eine Map<String, String> in einen String wie "key1=value1&key2=value2" um.
+     * Diese Methode ist für URL-Parameter-formatierte Strings gedacht.
+     */
+    @Named("mapToUrlParamString")
+    default String mapToString(Map<String, String> map) {
+        if (map == null || map.isEmpty()) {
+            return null;
+        }
+        return map.entrySet().stream()
+                .map(e -> e.getKey() + "=" + e.getValue())
+                .reduce((a, b) -> a + "&" + b)
+                .orElse(null);
+    }
 }
+    
+

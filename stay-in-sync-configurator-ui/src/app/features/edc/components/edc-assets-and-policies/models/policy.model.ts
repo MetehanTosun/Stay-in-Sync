@@ -59,11 +59,12 @@ export interface OdrlCriterion {
  * UI-spezifische Contract Definition
  */
 export interface UiContractDefinition {
-  id: string;
+  id: number;                      // Numerische Datenbank-ID für Backend-Operationen
+  contractDefinitionId?: string;   // String-ID für die Anzeige
   assetId: string;
   bpn: string;
   accessPolicyId: string;
-   assetsSelector?: OdrlCriterion[]; // optional, da leer sein kann
+  assetsSelector?: OdrlCriterion[]; // optional, da leer sein kann
 }
 
 /**

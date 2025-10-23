@@ -57,6 +57,7 @@ public class EDCContractDefinitionResource {
     public Response createContractDefinitionForEdc(@PathParam("edcId") Long edcId, EDCContractDefinitionDto dto, @Context UriInfo uriInfo) {
         try {
             LOG.info("Creating contract definition for EDC: " + edcId);
+            LOG.info("Received DTO: " + dto);
             
             EdcInstance edcInstance = EdcInstance.findById(edcId);
             if (edcInstance == null) {
@@ -66,8 +67,54 @@ public class EDCContractDefinitionResource {
                               .build();
             }
             
+            // Validiere, dass entweder assetId oder asset gesetzt ist
+            if (dto.assetId() == null || dto.assetId().isBlank()) {
+                LOG.error("Asset ID is required");
+                return Response.status(Response.Status.BAD_REQUEST)
+                              .entity("Asset ID is required")
+                              .build();
+            }
+            
+            // Validiere, dass mindestens eine Policy angegeben ist
+            if ((dto.accessPolicyId() == null && (dto.accessPolicyIdStr() == null || dto.accessPolicyIdStr().isBlank())) ||
+                (dto.contractPolicyId() == null && (dto.contractPolicyIdStr() == null || dto.contractPolicyIdStr().isBlank()))) {
+                LOG.error("Access policy and contract policy are required");
+                return Response.status(Response.Status.BAD_REQUEST)
+                              .entity("Both access policy and contract policy are required")
+                              .build();
+            }
+            
+            LOG.info("Converting DTO to entity");
             ContractDefinition entity = EDCContractDefinitionMapper.fromDto(dto);
+            
+            // Validiere, dass die Entity-Referenzen korrekt aufgelöst wurden
+            if (entity.asset == null) {
+                LOG.error("Asset with ID " + dto.assetId() + " not found");
+                return Response.status(Response.Status.NOT_FOUND)
+                              .entity("Asset with ID " + dto.assetId() + " not found")
+                              .build();
+            }
+            
+            if (entity.accessPolicy == null) {
+                String policyId = dto.accessPolicyIdStr() != null ? dto.accessPolicyIdStr() : 
+                                 (dto.accessPolicyId() != null ? dto.accessPolicyId().toString() : "null");
+                LOG.error("Access Policy with ID " + policyId + " not found");
+                return Response.status(Response.Status.NOT_FOUND)
+                              .entity("Access Policy with ID " + policyId + " not found")
+                              .build();
+            }
+            
+            if (entity.contractPolicy == null) {
+                String policyId = dto.contractPolicyIdStr() != null ? dto.contractPolicyIdStr() : 
+                                 (dto.contractPolicyId() != null ? dto.contractPolicyId().toString() : "null");
+                LOG.error("Contract Policy with ID " + policyId + " not found");
+                return Response.status(Response.Status.NOT_FOUND)
+                              .entity("Contract Policy with ID " + policyId + " not found")
+                              .build();
+            }
+            
             entity.edcInstance = edcInstance;
+            LOG.info("Saving contract definition entity");
             
             // Persist with the owning EDC instance set to avoid detached references
             ContractDefinition created = service.create(entity);
@@ -140,24 +187,72 @@ public class EDCContractDefinitionResource {
     @DELETE
     @Path("{edcId}/contract-definitions/{id}")
     @Transactional
-    public Response deleteContractDefinitionForEdc(@PathParam("edcId") Long edcId, @PathParam("id") Long id) {
-        LOG.info("Deleting contract definition " + id + " for EDC: " + edcId);
-        
-        Optional<ContractDefinition> contractDef = service.findByIdAndEdcId(id, edcId);
-        if (contractDef.isEmpty()) {
-            LOG.warn("Contract definition " + id + " not found for EDC " + edcId);
-            return Response.status(Response.Status.NOT_FOUND)
-                          .entity("Contract definition " + id + " not found for EDC " + edcId)
-                          .build();
-        }
-        
-        if (service.delete(id)) {
-            LOG.info("Contract definition " + id + " deleted successfully");
-            return Response.noContent().build();
-        } else {
-            LOG.error("Failed to delete contract definition " + id);
+    public Response deleteContractDefinitionForEdc(@PathParam("edcId") Long edcId, @PathParam("id") String idParam) {
+        try {
+            LOG.info("Deleting contract definition with parameter: " + idParam + " for EDC: " + edcId);
+            
+            // Validiere Parameter
+            if (edcId == null || edcId <= 0) {
+                LOG.warn("Invalid EDC ID: " + edcId);
+                return Response.status(Response.Status.BAD_REQUEST)
+                            .entity("Invalid EDC ID: " + edcId)
+                            .build();
+            }
+            
+            if (idParam == null || idParam.isEmpty()) {
+                LOG.warn("Invalid Contract Definition ID: " + idParam);
+                return Response.status(Response.Status.BAD_REQUEST)
+                            .entity("Invalid Contract Definition ID: " + idParam)
+                            .build();
+            }
+            
+            Optional<ContractDefinition> contractDef;
+            
+            // Prüfe, ob der Parameter eine Zahl (DB-ID) oder ein String (contractDefinitionId) ist
+            if (idParam.matches("\\d+")) {
+                // Wenn der Parameter eine Zahl ist, behandele ihn als Datenbank-ID
+                Long id = Long.parseLong(idParam);
+                LOG.info("Parameter scheint eine Datenbank-ID zu sein: " + id);
+                contractDef = service.findByIdAndEdcId(id, edcId);
+            } else {
+                // Andernfalls behandele ihn als contractDefinitionId (String)
+                LOG.info("Parameter scheint eine contractDefinitionId zu sein: " + idParam);
+                contractDef = service.findByContractDefinitionIdAndEdcId(idParam, edcId);
+            }
+            
+            if (contractDef.isEmpty()) {
+                LOG.warn("Contract definition " + idParam + " not found for EDC " + edcId);
+                return Response.status(Response.Status.NOT_FOUND)
+                              .entity("Contract definition " + idParam + " not found for EDC " + edcId)
+                              .build();
+            }
+            
+            ContractDefinition contractDefEntity = contractDef.get();
+            LOG.info("Found contract definition to delete: id=" + contractDefEntity.id + 
+                     ", contractDefinitionId=" + contractDefEntity.getContractDefinitionId());
+            
+            if (service.delete(contractDefEntity.id)) {
+                LOG.info("Contract definition " + idParam + " (DB-ID: " + contractDefEntity.id + ") deleted successfully");
+                
+                // Verify the contract definition is actually gone from the database
+                Optional<ContractDefinition> checkDeleted = service.findByIdAndEdcId(contractDefEntity.id, edcId);
+                if (checkDeleted.isPresent()) {
+                    LOG.error("Contract definition " + idParam + " (DB-ID: " + contractDefEntity.id + ") still exists in database after deletion!");
+                } else {
+                    LOG.info("Verified contract definition " + idParam + " (DB-ID: " + contractDefEntity.id + ") is no longer in database");
+                }
+                
+                return Response.noContent().build();
+            } else {
+                LOG.error("Failed to delete contract definition " + idParam + " (DB-ID: " + contractDefEntity.id + ")");
+                return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
+                              .entity("Failed to delete contract definition " + idParam)
+                              .build();
+            }
+        } catch (Exception e) {
+            LOG.error("Error deleting contract definition", e);
             return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
-                          .entity("Failed to delete contract definition " + id)
+                          .entity("Error deleting contract definition: " + e.getMessage())
                           .build();
         }
     }

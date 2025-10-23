@@ -7,11 +7,15 @@ import de.unistuttgart.stayinsync.core.configuration.edc.mapping.EDCPolicyMapper
 import de.unistuttgart.stayinsync.core.configuration.edc.service.EDCPolicyService;
 import io.quarkus.logging.Log;
 import jakarta.inject.Inject;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
+import jakarta.persistence.TypedQuery;
 import jakarta.transaction.Transactional;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.*;
 
 import java.net.URI;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -34,6 +38,9 @@ public class EDCPolicyResource {
     
     @Inject
     EDCPolicyMapper mapper;
+    
+    @PersistenceContext
+    EntityManager entityManager;
 
     /**
      * Listet alle Policies für eine bestimmte EDC-Instanz auf.
@@ -43,16 +50,41 @@ public class EDCPolicyResource {
      */
     @GET
     @Path("{edcId}/policies")
-    public List<EDCPolicyDto> listPoliciesForEdc(@PathParam("edcId") Long edcId) {
-        Log.info("Fetching policies for EDC: " + edcId);
-        List<Policy> policies = service.listAllByEdcId(edcId);
-        
-        List<EDCPolicyDto> policyDtos = policies.stream()
-                .map(mapper::policyToPolicyDto)
-                .collect(Collectors.toList());
-                
-        Log.info("Returning " + policyDtos.size() + " policies for EDC: " + edcId);
-        return policyDtos;
+    public Response listPoliciesForEdc(@PathParam("edcId") Long edcId) {
+        try {
+            Log.info("Fetching policies for EDC: " + edcId);
+            
+            // Überprüfe, ob die EDC-Instanz existiert
+            EdcInstance edcInstance = EdcInstance.findById(edcId);
+            if (edcInstance == null) {
+                Log.error("EDC instance not found: " + edcId);
+                return Response.status(Response.Status.NOT_FOUND)
+                              .entity("EDC instance not found: " + edcId)
+                              .build();
+            }
+            
+            List<Policy> policies = service.listAllByEdcId(edcId);
+            
+            // Sammle erfolgreich gemappte DTOs und protokolliere Fehler für fehlgeschlagene Mappings
+            List<EDCPolicyDto> policyDtos = new ArrayList<>();
+            for (Policy policy : policies) {
+                try {
+                    EDCPolicyDto dto = mapper.policyToPolicyDto(policy);
+                    policyDtos.add(dto);
+                } catch (Exception e) {
+                    Log.error("Error mapping policy " + policy.id + " to DTO: " + e.getMessage(), e);
+                    // Fehlerhafte Policy überspringen, aber weiterverarbeiten
+                }
+            }
+            
+            Log.info("Returning " + policyDtos.size() + " policies for EDC: " + edcId);
+            return Response.ok(policyDtos).build();
+        } catch (Exception e) {
+            Log.error("Error fetching policies for EDC " + edcId, e);
+            return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
+                          .entity("Error fetching policies: " + e.getMessage())
+                          .build();
+        }
     }
 
     /**
@@ -226,36 +258,74 @@ public class EDCPolicyResource {
     @Path("{edcId}/policies/{id}")
     @Transactional
     public Response deletePolicyForEdc(@PathParam("edcId") Long edcId, @PathParam("id") Long id) {
-        Log.info("Deleting policy " + id + " for EDC: " + edcId);
-        
-        Optional<Policy> policy = service.findByIdAndEdcId(id, edcId);
-        if (policy.isEmpty()) {
-            Log.warn("Policy " + id + " not found for EDC " + edcId);
-            return Response.status(Response.Status.NOT_FOUND)
-                         .entity("Policy " + id + " not found for EDC " + edcId)
-                         .build();
-        }
-        
-        Policy policyEntity = policy.get();
-        Log.info("Found policy to delete: id=" + policyEntity.id + ", policyId=" + policyEntity.getPolicyId());
-        
-        if (service.delete(id)) {
-            Log.info("Policy " + id + " deleted successfully");
+        try {
+            Log.info("Deleting policy " + id + " for EDC: " + edcId);
             
-            // Verify the policy is actually gone from the database
-            Optional<Policy> checkDeleted = service.findByIdAndEdcId(id, edcId);
-            if (checkDeleted.isPresent()) {
-                Log.error("Policy " + id + " still exists in database after deletion!");
-            } else {
-                Log.info("Verified policy " + id + " is no longer in database");
+            // Validiere Parameter
+            if (edcId == null || edcId <= 0) {
+                Log.warn("Invalid EDC ID: " + edcId);
+                return Response.status(Response.Status.BAD_REQUEST)
+                            .entity("Invalid EDC ID: " + edcId)
+                            .build();
             }
             
-            return Response.noContent().build();
-        } else {
-            Log.error("Failed to delete policy " + id);
+            if (id == null || id <= 0) {
+                Log.warn("Invalid Policy ID: " + id);
+                return Response.status(Response.Status.BAD_REQUEST)
+                            .entity("Invalid Policy ID: " + id)
+                            .build();
+            }
+            
+            Optional<Policy> policy = service.findByIdAndEdcId(id, edcId);
+            if (policy.isEmpty()) {
+                Log.warn("Policy " + id + " not found for EDC " + edcId);
+                return Response.status(Response.Status.NOT_FOUND)
+                            .entity("Policy " + id + " not found for EDC " + edcId)
+                            .build();
+            }
+            
+            // Prüfe, ob die Policy von ContractDefinitions verwendet wird
+            Policy policyEntity = policy.get();
+            Log.info("Found policy to delete: id=" + policyEntity.id + ", policyId=" + policyEntity.getPolicyId());
+            
+            // Prüfe, ob die Policy referenziert wird, bevor wir löschen
+            TypedQuery<Long> checkQuery = entityManager.createQuery(
+                "SELECT COUNT(cd.id) FROM ContractDefinition cd WHERE cd.accessPolicy.id = :policyId OR cd.contractPolicy.id = :policyId", 
+                Long.class);
+            checkQuery.setParameter("policyId", policyEntity.id);
+            Long referenceCount = checkQuery.getSingleResult();
+            
+            if (referenceCount > 0) {
+                Log.warn("Policy " + id + " is referenced by " + referenceCount + " contract definitions and cannot be deleted");
+                return Response.status(Response.Status.CONFLICT)
+                           .entity("Policy " + id + " cannot be deleted because it is still referenced by " + 
+                                  referenceCount + " contract definitions. Delete those contract definitions first.")
+                           .build();
+            }
+            
+            if (service.delete(id)) {
+                Log.info("Policy " + id + " deleted successfully");
+                
+                // Verify the policy is actually gone from the database
+                Optional<Policy> checkDeleted = service.findByIdAndEdcId(id, edcId);
+                if (checkDeleted.isPresent()) {
+                    Log.error("Policy " + id + " still exists in database after deletion!");
+                } else {
+                    Log.info("Verified policy " + id + " is no longer in database");
+                }
+                
+                return Response.noContent().build();
+            } else {
+                Log.error("Failed to delete policy " + id);
+                return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
+                            .entity("Failed to delete policy " + id)
+                            .build();
+            }
+        } catch (Exception e) {
+            Log.error("Unexpected error while deleting policy " + id + " for EDC " + edcId, e);
             return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
-                         .entity("Failed to delete policy " + id)
-                         .build();
+                        .entity("Unexpected error while deleting policy: " + e.getMessage())
+                        .build();
         }
     }
 
