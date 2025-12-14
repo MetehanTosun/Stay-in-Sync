@@ -5,13 +5,12 @@ The stay-in-sync project aims to provide a solution to synchronizing data betwee
 
 ### What is inside of the repository?
 
-The repository currently consits of five quarkus apps, two angular ui's and a helmchart for deployment. 
+The repository currently consits of four quarkus apps, two angular ui's and a helmchart for deployment. 
 
 * [stay-in-sync-core](../stay-in-sync-core) consists of the three quarkus services
   * [core-management](../stay-in-sync-core/core-management) Enables configuration of the application and dispatches necessary jobs for synchronization
   * [core-polling-node](../stay-in-sync-core/core-polling-node) Polls data & provides data from source systems
   * [core-sync-node](../stay-in-sync-core/core-sync-node) Executes transformation script and writes data to a target system
-  * [core-graph-engine](../stay-in-sync-core/core-graph-engine) Provides visual graph-based conditional synchronization logic and change detection
 * [stay-in-sync-configurator-ui](../stay-in-sync-configurator-ui) Frontend which exposes the api of the core-management to the user
 * [stay-in-sync-monitoring](../stay-in-sync-monitoring) Provides debugging functionality for transformations and monitoring data
   * [monitoring-ui](../stay-in-sync-monitoring/monitoring-ui) Application Metrics, Logs and further data
